@@ -1473,6 +1473,8 @@ DefineOptionSet[CoatingOptions:>Evaluate@{
           Object[Instrument,HeatBlock],
           Model[Instrument,BiosafetyCabinet],
           Object[Instrument,BiosafetyCabinet],
+          Model[Instrument,HandlingStation,BiosafetyCabinet],
+          Object[Instrument,HandlingStation,BiosafetyCabinet],
           Model[Instrument,Incubator],
           Object[Instrument,Incubator],
           Model[Instrument,Refrigerator],

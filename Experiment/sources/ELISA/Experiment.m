@@ -11556,7 +11556,7 @@ elisaResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:
 			 Replace[BlankStopSolutions]->elisaExpandOrShrink[Map[Link,stopResourcesBlankIndexed//ToList]],
 			 Replace[BlankSubstrateSolutionVolumes]->elisaExpandOrShrink[SafeRound[resolvedBlankSubstrateSolutionVolume,0.1Microliter]],
 			 Replace[BlankStopSolutionVolumes]->elisaExpandOrShrink[SafeRound[resolvedBlankStopSolutionVolume,0.1Microliter]],
-			 Replace[BufferContainerPlacements]->{{Link[washingBufferResource],{"Buffer D Slot"}}},
+			 Replace[BufferContainerPlacements]->{{Link[washingBufferResource],{"Buffer A Slot"}}},
 			 ELISAPlate->Link[elisaPlateResource],
 			 SecondaryELISAPlate->Link[secondaryELISAPlateResource],
 			 Replace[ELISAPlateAssignment]->associatedELISAPlateAssignment,

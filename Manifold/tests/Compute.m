@@ -409,12 +409,12 @@ DefineTests[Compute,
 					SLLPackage -> Developer,
 					RunAsUser -> Object[User, "Test user for notebook-less test protocols"],
 					DisablePaclets -> True,
-					MathematicaVersion -> "13.3.1",
+					MathematicaVersion -> "14.2.0",
 					Upload -> False
 				],
 				{ZDriveFilePaths, SLLVersion, SLLPackage, RunAsUser, FargateCluster, DisablePaclets, MathematicaVersion}
 			] /. {lnk : _Link | _Object :> lnk[Object]},
-			{{"Z://testDirectory"}, Develop, Developer, Object[User, "id:n0k9mG8AXZP6"], "manifold-mm-cluster", True, "13.3.1"},
+			{{"Z://testDirectory"}, Develop, Developer, Object[User, "id:n0k9mG8AXZP6"], "manifold-mm-cluster", True, "14.2.0"},
 			Stubs :> {$PersonID = Object[User, Emerald, Developer, "hendrik"]}
 		],
 		Test["FargateCluster defaults to manifold-mm-cluster when run as a superuser:",

@@ -464,6 +464,46 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 				True
 			],
 			True
+		],
+
+		Test["If the State of the sample is not Liquid, is has no MiscicibleLiquids:",
+			If[MatchQ[Lookup[packet, State], Except[Liquid]],
+				MatchQ[Lookup[packet, MiscibleLiquids], {}],
+				True
+			],
+			True
+		],
+
+		Test["If the sample has miscible liquids, each member of MiscicibleLiquids is itself a liquid:",
+			If[MatchQ[Lookup[packet, MiscibleLiquids], {ObjectP[]..}],
+				Download[Lookup[packet, MiscibleLiquids], State],
+				{}
+			],
+			{Liquid...}
+		],
+
+		Test["If water is a member of MiscicibleLiquids, then it does not have a discrete WaterSolubility at ambient conditions (" <> ToString[$AmbientTemperature] <> "):",
+			If[MemberQ[Lookup[packet, MiscibleLiquids], ObjectP[Model[Molecule, "id:vXl9j57PmP5D"]]],
+				MatchQ[Cases[Lookup[packet, WaterSolubility], {EqualP[$AmbientTemeprature], _}], {}],
+				True
+			],
+			True
+		],
+
+		Test["If Waste is True then Expires must be True and ShelfLife set to <= 180 days:",
+			If[Lookup[packet, Waste],
+				AllTrue[
+					{
+						Lookup[packet, Expires],
+						Lookup[packet,ShelfLife] <= 180 Day
+					},
+					TrueQ
+				],
+				(* If Waste is False or Null, this test should Pass *)
+				True,
+				True
+			],
+			True
 		]
 	}
 ];

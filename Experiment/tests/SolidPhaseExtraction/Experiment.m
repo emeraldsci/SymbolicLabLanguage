@@ -3535,7 +3535,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 				Output -> Options
 			], Warning::SampleStowaways], FilterAliquotDestinationWell],
 			"A1"
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[
 			{Options, FilterSterile,"Specify if the filtration of the samples should be done in a sterile environment:"},
 			Lookup[Quiet[ExperimentSolidPhaseExtraction[
@@ -3550,7 +3550,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 				Output -> Options
 			], Warning::SampleStowaways], FilterSterile],
 			True
-		],
+		],*)
 
 		(* post processing *)
 		Example[

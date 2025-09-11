@@ -990,6 +990,10 @@ DefineTests[mspPrimaryData,
         Example[{Additional, "Generate a TabView figure showing details about the unit operations in a MSP protocol that contains a Transfer unit operation wherein WeightAppearance images were taken:"},
             mspPrimaryData[Object[Protocol, ManualSamplePreparation, "id:GmzlKjNpXYRE"]],
             {_Labeled}
+        ],
+        Example[{Additional, "Generate a TabView figure showing details about the unit operations in a MSP protocol that contains a Transfer unit operation wherein solid samples were weighed by difference:"},
+            mspPrimaryData[Object[Protocol, ManualSamplePreparation, "id:KBL5DvP8zEx7"]],
+            {_Labeled}
         ]
     }
 ];

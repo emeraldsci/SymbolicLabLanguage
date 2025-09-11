@@ -129,7 +129,7 @@ DefineOptions[
 
 Error::OptionMismatch="Images can only be acquired from the Side using a SampleImager, or from Overhead using a PlateImager. Please change one or the other option.";
 Error::IlluminationOptionMismatch="Side illumination cannot be performed using a PlateImager. Please change one or the other option.";
-Error::HazardousImaging="Sample(s) `1` are set to be imaged from the top which would require us to remove the cap outside of a glove box or fume hood. This is not possible because they are marked as hazardous in open air (e.g. WaterReactive). If you would still like to image these samples, consider setting ImagingDirection->Side, but note that this may not provide a clear image of the contents.";
+Error::HazardousImaging="Sample(s) `1` are set to be imaged from the top which would require us to remove the cap outside of a glove box or fume hood. This is not possible because they are marked as hazardous in open air (e.g. WaterReactive, Ventilated, Fuming, InertHandling, Pyrophoric). If you would still like to image these samples, consider setting ImagingDirection->Side, but note that this may not provide a clear image of the contents.";
 
 (* Core experiment overload *)
 ExperimentImageSample[mySamples:ListableP[ObjectP[{Object[Sample],Model[Sample]}]],myOptions:OptionsPattern[]]:=Module[
@@ -140,8 +140,8 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[{Object[Sample],Model[Sample]}
 		upload, confirm, fastTrack, parentProtocol, cache,expandedSafeOps,preferredVessels,preferredPlates,sampleFields,
 		objectContainerFields,modelContainerFields, preferredContainerModelsFieldSpec,instrumentOptionObjects,downloadedPackets,
 		cacheBall,samplePackets,parentPostProcessingBool,filteredSamplesIn,filteredExpandedOptions,resolvedOptionsResult,
-		resolvedOptions,resolvedOptionsTests,listedHealthSafetyFields,nonHazardousPicklist,imagingFromTopPicklist,
-		nonHazardousInputs,hazardousInputs,hazardCheckedSamples,hazardCheckedResolvedOptions,hazardousImagingIndexPosition,hazardTests,
+		resolvedOptions,resolvedOptionsTests,listedHealthSafetyFields,nonHazardousBools,imagingFromTopHazardousBools,
+		nonHazardousInputs,hazardousInputs,hazardCheckedSamples,hazardCheckedResolvedOptions,hazardTests,
 		collapsedResolvedOptions,resolvedPreparation,optionsResolverOnly,returnEarlyBecauseOptionsResolverOnly,
 		returnEarlyBecauseFailuresQ,returnEarlyBecauseAllHazardousSamples,performSimulationQ,
 		protocolObject,protocolPacketWithResources,resourcePacketTests,simulatedProtocol,finalSimulation, containerModelFields
@@ -247,7 +247,7 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[{Object[Sample],Model[Sample]}
 	preferredPlates = Join[PreferredContainer[All, Type->Plate], PreferredContainer[All, Type->Plate, LightSensitive->True]];
 
 	(* Get lists of fields required for aliquot / sample prep, and add on a few ImageSample-specific ones *)
-	sampleFields = Join[SamplePreparationCacheFields[Object[Sample], Format -> Packet],Packet[Living,RequestedResources]];
+	sampleFields = Packet@@DeleteDuplicates[Join[SamplePreparationCacheFields[Object[Sample]],{ParticularlyHazardousSubstance,HazardousBan,WaterReactive,Pyrophoric,Fuming,Ventilated,InertHandling,Pyrophoric,Anhydrous,NFPA,Living,RequestedResources}]];
 	objectContainerFields = Join[SamplePreparationCacheFields[Object[Container]], {Position, Container}];
 	modelContainerFields = Join[SamplePreparationCacheFields[Model[Container]], {CompatibleCameras, NumberOfPositions, Opaque, PlateColor, WellColor, PlateImagerRack, PreferredCamera, PreferredIllumination, SampleImagerRack, Unimageable}];
 
@@ -441,71 +441,100 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[{Object[Sample],Model[Sample]}
 						MatchQ[myObject,#[Object]]&
 					],
 					(* all Objects should have these either inherited from the Model or updated through UploadSampleTransfer *)
-					{(*ParticularlyHazardousSubstance,*)HazardousBan,WaterReactive,Pyrophoric,NFPA}
+					{ParticularlyHazardousSubstance,HazardousBan,WaterReactive,Pyrophoric,Fuming,Ventilated,InertHandling,Pyrophoric,Anhydrous,NFPA}
 				]
 		],
 		filteredSamplesIn
 	];
 
-	(* Create a non-hazardous Picklist *)
-	nonHazardousPicklist=Map[
+	(* Create a non-hazardous boolean list *)
+	nonHazardousBools=Map[
 		Which[
 			(* If all hazard field are False *)
 			!MemberQ[#, True], True,
 			(* If NFPA-Health <= 2 *)
-			MemberQ[Last[#], Alternatives[(Health -> LessEqualP[2]), Null]], True,
+			MatchQ[Last[#], Alternatives[KeyValuePattern[Health -> LessEqualP[2]], Null]], True,
 			(* Otherwise, it's hazardous *)
 			True, False
 		] &,
 		listedHealthSafetyFields
 	];
 
-	(* Create a imagingFromTop Picklist, including those with resolved ImagingDirections -> Top OR All *)
-	imagingFromTopPicklist = Map[
-		MemberQ[#, Top]||MatchQ[#, Top|All] &,
-		Lookup[resolvedOptions, ImagingDirection]
-	];
+	(* Use nonHazardousBools to pick nonHazardous and hazardous inputs *)
+	nonHazardousInputs=PickList[filteredSamplesIn,nonHazardousBools];
+	hazardousInputs=PickList[filteredSamplesIn,nonHazardousBools, False];
 
-	(* Use nonHazardousPicklist to pick nonHazardous and hazardous inputs *)
-	nonHazardousInputs=PickList[filteredSamplesIn,nonHazardousPicklist];
-	hazardousInputs=PickList[filteredSamplesIn,nonHazardousPicklist, False];
+	(* Create a imagingFromTopHazardousBools list for hazardous inputs, including those with resolved ImagingDirections -> Top OR All. If imaging from side, we won't care *)
+	(* Note that we always resolve to Top for plate imager in resolver and we carry the same check here. Plate is only for small-amount. *)
+	imagingFromTopHazardousBools = MapThread[
+		If[(#1==False)&&(MemberQ[#2,Top]||MatchQ[#2,Top|All])&&!MatchQ[#3,ObjectP[{Model[Instrument, PlateImager], Object[Instrument, PlateImager]}]],
+			True,
+			False
+		]&,
+		{nonHazardousBools,Lookup[resolvedOptions,ImagingDirection],Lookup[resolvedOptions,Instrument]}
+	];
 
 	(* Setting hazard-checked samples and options *)
 	{hazardCheckedSamples,hazardCheckedResolvedOptions} = Which[
 		(* If no hazard identified, proceed with all inputs *)
-		MatchQ[nonHazardousInputs,filteredSamplesIn],
+		!MemberQ[imagingFromTopHazardousBools,True],
 		{filteredSamplesIn,resolvedOptions},
 
-		(* If explicitly setting ImagingDirection->Side, throw error message but proceed with all inputs *)
-		!MemberQ[Lookup[resolvedOptions, ImagingDirection],(Top|All),Infinity],
-		{filteredSamplesIn,resolvedOptions},
+		(* If ImagingDirection is NOT set to Side on sample imager, remove from the list and continue *)
+		(* Note that we always resolve to Top for plate imager in resolver and we carry the same check here *)
+		(* Only do this if we actually have some valid input in Engine, and skip the whole thing if all inputs are invalid or we are not in Engine (we will throw error) *)
+		MatchQ[$ECLApplication,Engine]&&MemberQ[imagingFromTopHazardousBools,False],
+		Module[
+			{hazardousImagingIndexPosition,validOptions,numberOfReplicates,aliquotRaw,trimmedAliquotOption,aliquotDestinationWellRaw,trimmedAliquotDestinationWellOption},
+			hazardousImagingIndexPosition = Position[imagingFromTopHazardousBools, True];
+			validOptions=OptionsHandling`Private`removeSelectedIndexMatchedOptions[hazardousImagingIndexPosition,resolvedOptions,ExperimentImageSample];
+			(*ExperimentImageSample does not have NumberOfReplicates option defined, so it will be always 1 when aliquoting to containers. Keeping the name so that the *)
+			numberOfReplicates = 1;
 
-		(* If ImagingDirection is NOT set to Side while $ECLApplication is Engine, throw warning message and proceed with nonhazardous inputs *)
-		MatchQ[$ECLApplication,Engine]&&Length[nonHazardousInputs]!=0,
-		(
-			hazardousImagingIndexPosition = Position[MapThread[
-				If[#1==False&&(MemberQ[#2,Top]||MatchQ[#2,Top|All]),True,False]&,
-				{nonHazardousPicklist,Lookup[resolvedOptions,ImagingDirection]}
-			],True];
-			{Delete[filteredSamplesIn,
-				hazardousImagingIndexPosition],OptionsHandling`Private`removeSelectedIndexMatchedOptions[hazardousImagingIndexPosition,resolvedOptions,ExperimentImageSample]}
-		),
+			(*	The option AliquotContainers is NOT Index-Matched to Samples in so we need to trim it as a special case
+					Length[AliquotContainers] = 1 OR Length[mySamples])
+					We have to handle each of those cases and trim the indexes associated with samples being filtered out
+			*)
+			aliquotRaw = Lookup[resolvedOptions,AliquotContainer];
+			trimmedAliquotOption = Flatten@Delete[
+				Partition[aliquotRaw, numberOfReplicates],
+				hazardousImagingIndexPosition
+			];
 
-		(* Otherwise, throw warning message and return early *)
+			aliquotDestinationWellRaw = Lookup[expandedSafeOps,DestinationWell];
+			trimmedAliquotDestinationWellOption = Flatten@Delete[
+				Partition[aliquotDestinationWellRaw, numberOfReplicates],
+				hazardousImagingIndexPosition
+			];
+			(* Return our new samples and options *)
+			{
+				PickList[filteredSamplesIn, imagingFromTopHazardousBools, False],
+				ReplaceRule[validOptions, {AliquotContainer -> trimmedAliquotOption,DestinationWell -> trimmedAliquotDestinationWellOption}]
+			}
+		],
+
+		(* Otherwise, throw error message if not in Engine and return early *)
 		True,
 		(
 			If[!gatherTests&&!MatchQ[$ECLApplication,Engine],
-				Message[Error::HazardousImaging,ObjectToString[DeleteNestedDuplicates[hazardousInputs],Cache -> cacheBall, Simulation -> updatedSimulation]]
+				Message[Error::HazardousImaging,ObjectToString[DeleteNestedDuplicates[PickList[filteredSamplesIn, imagingFromTopHazardousBools]],Cache -> cacheBall, Simulation -> updatedSimulation]]
 			];
 			{Null, Null}
 		)
 	];
 
 	hazardTests = If[gatherTests,
-		{Test[
-			"All samples requested to be imaged from the top can be safely opened:",
-			Or[NullQ[hazardCheckedSamples], NullQ[hazardCheckedResolvedOptions]],
-			False]},
+		{
+			Test[
+				"All samples requested to be imaged from the top can be safely opened:",
+				Or[
+					NullQ[hazardCheckedSamples],
+					MatchQ[hazardCheckedSamples,{}],
+					NullQ[hazardCheckedResolvedOptions]
+				],
+				False
+			]
+		},
 		{}
 	];
 
@@ -537,6 +566,7 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[{Object[Sample],Model[Sample]}
 	(* If option resolution failed OR all samples are hazardous to be imaged, return early. *)
 	returnEarlyBecauseAllHazardousSamples = Or[
 		NullQ[hazardCheckedSamples],
+		MatchQ[hazardCheckedSamples,{}],
 		NullQ[hazardCheckedResolvedOptions]
 	];
 
@@ -816,7 +846,7 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 	instrumentOptionObjects=DeleteDuplicates@Cases[Lookup[imageSampleOptionsAssociation,Instrument],ObjectP[Object[Instrument]],Infinity];
 
 	(* Get lists of fields required for aliquot / sample prep, and add on a few ImageSample-specific ones *)
-	sampleFields = SamplePreparationCacheFields[Object[Sample], Format -> Packet];
+	sampleFields = Packet@@DeleteDuplicates[Join[SamplePreparationCacheFields[Object[Sample]],{ParticularlyHazardousSubstance,HazardousBan,WaterReactive,Pyrophoric,Fuming,Ventilated,InertHandling,Pyrophoric,Anhydrous,NFPA}]];
 	objectContainerFields = Join[SamplePreparationCacheFields[Object[Container]], {Position, Container, DateUnsealed}];
 	modelContainerFields = Join[SamplePreparationCacheFields[Model[Container]], {CompatibleCameras, NumberOfPositions, Opaque, PlateColor, WellColor, PlateImagerRack, PreferredCamera, PreferredIllumination, SampleImagerRack, Unimageable}];
 
@@ -1410,7 +1440,7 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 				imagingDirection = If[!MatchQ[unresolvedImagingDirection, Automatic],
 
 					(* If ImagingDirection was specified by user, use that value (including lists) *)
-					(* DeleteDuplicates becasue with multiple input samples unresolvedImagingDirection is a list of those specified attribute, except for All *)
+					(* DeleteDuplicates because with multiple input samples unresolvedImagingDirection is a list of those specified attribute, except for All *)
 					If[Length[unresolvedImagingDirection]>1,
 						DeleteDuplicates[unresolvedImagingDirection],
 						If[unresolvedImagingDirection=!=All,ToList[unresolvedImagingDirection],unresolvedImagingDirection]
@@ -1433,8 +1463,15 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 								MatchQ[defaultCamera[finalContainerModelPacket], Overhead],
 								{Top},
 
-								(* If overhead imaging is not preferred, make a decision based on container opacity, if the container has been previously opened, and if the sample inside the container is anhydrous and requires ventilation *)
-								If[TrueQ[Lookup[finalContainerModelPacket, Opaque]]&&!NullQ[Lookup[containerPacket,DateUnsealed]]&&!TrueQ[Lookup[samplePacket,Ventilated]]&&!TrueQ[Lookup[samplePacket,Anhydrous]]&&!TrueQ[Lookup[finalContainerModelPacket,Hermetic]],
+								(* If overhead imaging is not preferred, make a decision based on container opacity, if the container has been previously opened, and if the sample inside the container is not safe to handle in open Ambient environment *)
+								If[
+									And[
+										TrueQ[Lookup[finalContainerModelPacket, Opaque]],
+										!NullQ[Lookup[containerPacket,DateUnsealed]],
+										!MemberQ[Lookup[samplePacket,{ParticularlyHazardousSubstance,HazardousBan,WaterReactive,Pyrophoric,Fuming,Ventilated,InertHandling,Pyrophoric,Anhydrous}],True],
+										MatchQ[Lookup[samplePacket,NFPA], Alternatives[KeyValuePattern[Health -> LessEqualP[2]], Null]],
+										!TrueQ[Lookup[finalContainerModelPacket,Hermetic]]
+									],
 
 									(* If imaging an opaque, unopened container and the sample does not require a ventilated environment and is not anhydrous, top is the most revealing direction *)
 									{Top},

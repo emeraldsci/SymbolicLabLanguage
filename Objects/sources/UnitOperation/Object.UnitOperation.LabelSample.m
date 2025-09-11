@@ -139,7 +139,7 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 			ToleranceInteger -> {
 				Format -> Multiple,
 				Class -> Integer,
-				Pattern :> GreaterP[0, 1],
+				Pattern :> GreaterEqualP[0, 1],
 				Description -> "The allowed tolerance when preparing the specified Amount of sample. This option can only be set if ExactAmount is set to True.",
 				Category -> "General",
 				Migration->SplitField

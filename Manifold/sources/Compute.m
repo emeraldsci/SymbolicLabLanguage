@@ -123,7 +123,7 @@ DefineOptionSet[BaseComputationKernelOptions :> {
 		Default->Null,
 		Description->"Specify which Mathematica version should be used to run this Manifold job. Null defaults to 13.3.1.",
 		AllowNull->True,
-		Widget->Widget[Type->Enumeration,Pattern:>Alternatives["13.3.1"]],
+		Widget->Widget[Type->Enumeration,Pattern:>ManifoldMathematicaVersionsP],
 		Category->"Hidden"
 	},
 	{

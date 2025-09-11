@@ -61,7 +61,7 @@ DefineObjectType[Object[Instrument, Sonicator], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Part],
+			Relation -> Object[Item, Lid],
 			Description -> "The lid to cover the sonicator reservoir when the sonicator is not in use.",
 			Category -> "Instrument Specifications"
 		}

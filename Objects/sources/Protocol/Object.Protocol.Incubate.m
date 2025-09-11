@@ -1362,7 +1362,26 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Headers -> {Instrument->"Sample", RemainingSonicationTime->"Remaining Sonication Time"},
 			Developer->True
 		},
-
+		ProbeStorageContainerPlacements ->{
+			Format -> Multiple,
+			Class -> {Link, Expression},
+			Pattern :> {_Link, {LocationPositionP..}},
+			Relation -> {Object[Sensor, Temperature]|Object[Item, Lid], Null},
+			Description -> "List of container placements for placing the temperature probe and the reservoir lid into their storage positions on the sonicator.",
+			Category -> "General",
+			Developer -> True,
+			Headers -> {"Object to Place", "Placement Tree"}
+		},
+		ProbeInUseContainerPlacements ->{
+			Format -> Multiple,
+			Class -> {Link, Expression},
+			Pattern :> {_Link, {LocationPositionP..}},
+			Relation -> {Object[Sensor, Temperature], Null},
+			Description -> "List of container placements for placing the temperature probe to the sonicator Probe InUse Slot for temperature measurement in the current incubation.",
+			Category -> "General",
+			Developer -> True,
+			Headers -> {"Object to Place", "Placement Tree"}
+		},
 
 		(*-- HOMOGENIZE FIELDS --*)
 		HomogenizeIndices->{

@@ -261,6 +261,30 @@ validModelMoleculeQTests[packet : PacketP[Model[Molecule]]] := With[
 				]
 			],
 			True
+		],
+
+		Test["If the State of a molecule is not Liquid, is has no MiscicibleLiquids:",
+			If[MatchQ[Lookup[packet, State], Except[Liquid]],
+				MatchQ[Lookup[packet, MiscibleLiquids], {}],
+				True
+			],
+			True
+		],
+
+		Test["Each member of MiscicibleLiquids is itself a liquid:",
+			If[MatchQ[Lookup[packet, MiscibleLiquids], {ObjectP[]..}],
+				Download[Lookup[packet, MiscibleLiquids], State],
+				{}
+			],
+			{Liquid...}
+		],
+
+		Test["If water is a member of MiscicibleLiquids, then it does not have a discrete WaterSolubility at ambient conditions (" <> ToString[$AmbientTemperature] <> "):",
+			If[MemberQ[Lookup[packet, MiscibleLiquids], ObjectP[Model[Molecule, "id:vXl9j57PmP5D"]]],
+				MatchQ[Cases[Lookup[packet, WaterSolubility], {EqualP[$AmbientTemeprature], _}], {}],
+				True
+			],
+			True
 		]
 
 	}

@@ -2436,6 +2436,22 @@ validInstrumentHandlingStationAmbientQTests[packet:PacketP[Object[Instrument,Han
 
 validInstrumentInfraredProbeQTests[packet:PacketP[Object[Instrument,InfraredProbe]]]:={};
 
+(* ::Subsection::Closed:: *)
+(*validInstrumentKarlFischerTitratorQTests*)
+
+validInstrumentKarlFischerTitratorQTests[packet:PacketP[Object[Instrument, KarlFischerTitrator]]]:={
+	(* Individual fields *)
+	NotNullFieldTest[
+		packet,
+		{
+			MediumCap,
+			WasteContainerCap,
+			MediumWeightSensor,
+			StirBarRetriever,
+			ContainerDisconnectionSlot
+		}
+	]
+};
 
 (* ::Subsection::Closed:: *)
 (*validInstrumentIonChromatographyQTests*)
@@ -4994,6 +5010,7 @@ registerValidQTestFunction[Object[Instrument, SupercriticalFluidChromatography],
 registerValidQTestFunction[Object[Instrument, Incubator],validInstrumentIncubatorQTests];
 registerValidQTestFunction[Object[Instrument, InfraredProbe],validInstrumentInfraredProbeQTests];
 registerValidQTestFunction[Object[Instrument, IonChromatography],validInstrumentIonChromatographyQTests];
+registerValidQTestFunction[Object[Instrument, KarlFischerTitrator],validInstrumentKarlFischerTitratorQTests];
 registerValidQTestFunction[Object[Instrument, LightMeter],validInstrumentLightMeterQTests];
 registerValidQTestFunction[Object[Instrument, LiquidHandler],validInstrumentLiquidHandlerQTests];
 registerValidQTestFunction[Object[Instrument, LiquidHandler, AcousticLiquidHandler],validInstrumentAcousticLiquidHandlerQTests];

@@ -385,18 +385,8 @@ DefineOptionSet[HandlingConditionOption :> {
 			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to a condition that fulfills all safety requirements of the samples being transferred.",
 			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Object,
-				Pattern :> ObjectP[{
-					Model[HandlingCondition]
-				}],
-				PreparedContainer -> False(*,
-				OpenPaths -> {
-					{
-						Object[Catalog, "Root"],
-						"Handling Environments"
-					}
-				}*)
+			Widget -> Alternatives[
+				Widget[Type -> Expression, Pattern :> ObjectP[{Model[HandlingCondition]}]|{ObjectP[{Model[HandlingCondition]}]...}, Size -> Line]
 			],
 			Description -> "The abstract condition that describes the environment in which the transfer will be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Benchtop Handling Station). This option cannot be set when Preparation->Robotic.",
 			Category -> "Hidden"
@@ -441,6 +431,24 @@ DefineOptionSet[TransferEnvironmentOption :> {
 			],
 			Description->"The environment in which the transfer will be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Benchtop Handling Station). Containers involved in the transfer will first be moved into the TransferEnvironment (with covers on), uncovered inside of the TransferEnvironment, then covered after the Transfer has finished -- before they're moved back onto the operator cart. Consult the SterileTechnique/RNaseFreeTechnique option when using a BSC. This option cannot be set when Preparation->Robotic.",
 			Category->"Instrument Specifications"
+		}
+	]
+}];
+
+
+(* ::Subsection::Closed:: *)
+(* EquivalentTransferEnvironmentsOption *)
+
+DefineOptionSet[EquivalentTransferEnvironmentsOption :> {
+	IndexMatching[
+		IndexMatchingInput -> "experiment samples",
+		{
+			OptionName -> EquivalentTransferEnvironments,
+			Default -> Automatic,
+			AllowNull -> True,
+			Widget -> Widget[Type -> Expression, Pattern :> {ObjectP[]...}, Size -> Line],
+			Description -> "A list of equivalent environments in which the transfer will be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Benchtop Handling Station). This option is used to pass the resolved equivalent TransferEnvironment models to the resource packet function.",
+			Category -> "Hidden"
 		}
 	]
 }];

@@ -1,3 +1,8 @@
+(* ::Package:: *)
+
+(* ::Text:: *)
+(*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
+
 DefineObjectType[Object[UnitTest], {
   Description -> "An object tracking tests of code evaluation tailored to specific functions when evaluated in isolation.",
   CreatePrivileges -> None,

@@ -3337,37 +3337,44 @@ Test["If ExperimentType -> Powder, DiffractionPattern must be populated; otherwi
 (*validDataIRSpectroscopyQTests*)
 
 
-validDataIRSpectroscopyQTests[packet:PacketP[Object[Data,IRSpectroscopy]]]:={
-NotNullFieldTest[
-	packet,
-	{
-		WavenumberResolution,
-		ExportDirectory,
-		MinWavenumber,
-		MaxWavenumber,
-		MethodFiles,
-		Instrument
-	}
-],
+validDataIRSpectroscopyQTests[packet : PacketP[Object[Data, IRSpectroscopy]]] := {
+	NotNullFieldTest[
+		packet,
+		{
+			WavenumberResolution,
+			ExportDirectory,
+			MinWavenumber,
+			MaxWavenumber,
+			MethodFiles,
+			Instrument
+		}
+	],
 
-Test["If DataType -> Blank and Blanks -> Null, then LoadingSample should be Null. Otherwise, it should be informed:",
-	Lookup[packet, {Blanks, DataType, LoadingSamples}],
-	{Null,Blank,Null} | {Null,Blank,{}} | {_, Analyte, Except[Null]} | {Except[Null], Blank, Except[Null]}
-],
+	Test["If DataType -> Blank and Blanks -> Null, then LoadingSample should be Null. Otherwise, it should be informed:",
+		Lookup[packet, {Blanks, DataType, LoadingSamples}],
+		{Null, Blank, Null} | {Null, Blank, {}} | {_, Analyte, Except[Null]} | {Except[Null], Blank, Except[Null]}
+	],
 
-UniquelyInformedTest[packet, {IntegrationTime, NumberOfReadings}],
-RequiredTogetherTest[packet,{BlankAmount, Blanks}],
+	UniquelyInformedTest[packet, {IntegrationTime, NumberOfReadings}],
+	RequiredTogetherTest[packet, {BlankAmount, Blanks}],
 
-Test["If DataType -> Analyte, SamplesIn and SampleAmount must be informed:",
-	Lookup[packet,{DataType,SamplesIn,SampleAmount}],
-	{Analyte, Except[Null|{}],Except[Null]} | {Except[Analyte],_,_}
-],
+	Test["If DataType -> Analyte, SamplesIn and SampleAmount must be informed:",
+		Lookup[packet, {DataType, SamplesIn, SampleAmount}],
+		{Analyte, Except[Null | {}], Except[Null]} | {Except[Analyte], _, _}
+	],
 
-RequiredTogetherTest[packet,{SampleAmount, SamplesIn}],
-RequiredTogetherTest[packet,{SuspensionSolutionVolume, SuspensionSolution}]
+	RequiredTogetherTest[packet, {SampleAmount, SamplesIn}],
+	RequiredTogetherTest[packet, {SuspensionSolutionVolume, SuspensionSolution}]
 };
 
 
+
+(* ::Subsection::Closed:: *)
+(*validDataKarlFischerTitrationQTests*)
+
+
+validDataKarlFischerTitrationQTests[packet:PacketP[Object[Data, KarlFischerTitration]]]:={
+};
 
 (* ::Subsection::Closed:: *)
 (*validFragmentAnalysisDataTests*)
@@ -3702,6 +3709,7 @@ registerValidQTestFunction[Object[Data, FluorescenceSpectroscopy],validDataFluor
 registerValidQTestFunction[Object[Data, FluorescenceThermodynamics],validDataFluorescenceThermodynamicsQTests];
 registerValidQTestFunction[Object[Data, FreezeCells],validDataFreezeCellsQTests];
 registerValidQTestFunction[Object[Data, IRSpectroscopy],validDataIRSpectroscopyQTests];
+registerValidQTestFunction[Object[Data, KarlFischerTitration],validDataKarlFischerTitrationQTests];
 registerValidQTestFunction[Object[Data, LCMS],validDataLCMSQTests];
 registerValidQTestFunction[Object[Data, LiquidLevel],validDataLiquidLevelQTests];
 registerValidQTestFunction[Object[Data, MassSpectrometry],validDataMassSpectrometryQTests];

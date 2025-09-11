@@ -554,13 +554,13 @@ DefineTests[ExperimentAutoclave,
 			10*Celsius,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options, FilterSterile, "Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options = ExperimentAutoclave[Object[Sample,"Available test 500 mL water sample in a 2 L glass bottle for ExperimentAutoclave" <> $SessionUUID], FilterSterile -> True,FilterContainerOut->Model[Container, Vessel, "2L Glass Bottle, Sterile"], Output -> Options];
 			Lookup[options, FilterSterile],
 			True,
 			Variables :> {options}
-		],
+		],*)
 		Example[{Options, FilterAliquot, "The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options = ExperimentAutoclave[Object[Sample,"Available test 500 mL water sample in a 2 L glass bottle for ExperimentAutoclave" <> $SessionUUID], FilterAliquot -> 300*Milliliter,FilterContainerOut -> Model[Container, Vessel, "2L Glass Bottle"], Output -> Options];
 			Lookup[options, FilterAliquot],

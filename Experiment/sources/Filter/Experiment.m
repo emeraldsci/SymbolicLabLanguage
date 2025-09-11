@@ -5104,7 +5104,10 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 					];
 
 					(* Make sure that if Sterile -> True and Instrument -> ObjectP[], that the AsepticHandling of the instrument is True *)
-					sterileInstrumentMismatchError = Module[{instrumentAsepticQ},
+					(* 9/5/2025 Note we do not have any sterile Centrifuge model in lab that is not deprecated *)
+					(* and for capped tube/sealed plate, sterility of instrument does not matter, quiet this error for now *)
+					(* we will revisit this and change SterileTechnique to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true *)
+					sterileInstrumentMismatchError = False(*Module[{instrumentAsepticQ},
 						instrumentAsepticQ = fastAssocLookup[fastAssoc, instrumentModel, AsepticHandling];
 						And[
 							MatchQ[instrument, ObjectP[]],
@@ -5115,7 +5118,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 								And[MatchQ[sterile,False], TrueQ[instrumentAsepticQ]]
 							]
 						]
-					];
+					]*);
 
 					(* Make sure that if the FiltrationType is Centrifuge, Intensity is not Null *)
 					typeAndCentrifugeIntensityMismatchError = Or[

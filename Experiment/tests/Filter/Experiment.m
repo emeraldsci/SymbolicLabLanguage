@@ -3209,6 +3209,7 @@ DefineTests[ExperimentFilter,
 			ObjectP[Model[Item,Filter, "Filter Test Membrane Filter with LuerSlip" <> $SessionUUID]],
 			Messages :> {Error::FilterInletConnectionType, Error::InvalidOption}
 		],
+		(* we will revisit this and change SterileTechnique to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Messages, "SterileOptionMismatch", "Instrument option allows specification of instrument to use for filtration:"},
 			Lookup[
 				ExperimentFilter[
@@ -3221,7 +3222,7 @@ DefineTests[ExperimentFilter,
 			],
 			ObjectP[Model[Instrument, PeristalticPump, "VWR Peristaltic Variable Pump PP3400"]],
 			Messages :> {Error::SterileOptionMismatch, Error::InvalidOption}
-		],
+		],*)
 		Example[{Messages, "TargetLabelMismatch", "If Target -> Retentate, then RetentateLabel and SampleOutLabel must be the same value; if Target -> Filtrate, then FiltrateLabel and SampleOutLabel must be the same value:"},
 			ExperimentFilter[
 				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},

@@ -1365,7 +1365,7 @@ DefineObjectType[Object[Protocol, Transfer], {
 					Object[Container]
 				],
 				UnitOperation -> Object[UnitOperation],
-				Operator -> Object[User,Emerald,Operator]
+				Operator -> Object[User,Emerald]
 			},
 			Description -> "The information regarding stray material during a weighing instance. OperatorMaterialLossAssessment indicates the response of the operator as to whether stray material is after weighing. MeasuredTransferWeightAppearance is the image immediately taken after the weighing step. MaterialLossAutoDetected indicates whether a material loss is detected based on relevant weight data tracked. MaterialLossWeight is the weight that is not effectively transferred to the weighing container. MeasuredTransferWeightAppearance is the image immediately taken after material loss is autodetected. UnitOperation is the unit operation the log is associated with. Sample is the material ends up in the destination container. UnitOperation is the object pertaining to the transfer by weighing that is performed. Operator is the lab operator who performed the weighing.",
 			Category -> "General"

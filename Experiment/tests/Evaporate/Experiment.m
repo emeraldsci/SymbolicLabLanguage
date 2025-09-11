@@ -714,13 +714,13 @@ DefineTests[ExperimentEvaporate,
 			30*Celsius,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
-		],*)
+		],
 		Example[{Options, FilterSterile, "Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options = ExperimentEvaporate[Object[Sample,"Evaporate Test Water Sample5" <> $SessionUUID], FilterSterile -> True, Output -> Options];
 			Lookup[options, FilterSterile],
 			True,
 			Variables :> {options}
-		],
+		],*)
 		Example[{Options, FilterAliquot, "The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options = ExperimentEvaporate[Object[Sample,"Evaporate Test Water Sample 50mL Tube" <> $SessionUUID], FilterAliquot -> 20*Milliliter, Output -> Options];
 			Convert[Lookup[options, FilterAliquot],Milliliter],

@@ -195,6 +195,7 @@ DefineOptions[ExperimentFillToVolume,
 		TransferDestinationWellOption,
 		TransferInstrumentOption,
 		TransferEnvironmentOption,
+		EquivalentTransferEnvironmentsOption,
 		TransferTipOptions,
 		TransferNeedleOption,
 		TransferFunnelOption,
@@ -2424,14 +2425,11 @@ fillToVolumeResourcePackets[mySamples : {ObjectP[{Object[Sample], Object[Contain
 	combinedMapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentFillToVolume, myResolvedOptions];
 	combinedMapThreadFriendlyOptionsNoHidden = OptionsHandling`Private`mapThreadOptions[ExperimentFillToVolume, RemoveHiddenOptions[ExperimentFillToVolume, myResolvedOptions]];
 
-	(* If multiple transfer environment resources are the same back to back, they should be the same resource object for BSCs and Glove Boxes. *)
-	(* This is because only 1 operator can use a BSC or glove box at the same time. We don't have the same restriction for fume hoods and *)
-	(* benches so these will be globally assigned to the same resource. *)
-
-	(* NOTE: Benches and fume hoods will be immediately released after they're instrument selected so multiple people can use *)
-	(* them at the same time. *)
-
-	splitTransferEnvironments = Split[Download[Lookup[combinedMapThreadFriendlyOptions, TransferEnvironment], Object]];
+	(* try to group adjacent transfers as much as possible now that we know each transfer has a specific list of "real" equivalent environments that we can do transfers on no problem
+	 given a list: list = {{a, b, c}, {a, b}, {a, c}, {d}, {a, d}}
+	 the goal is get this output: {{{a}, {a}, {a}}, {{d}, {d}}} (the first set will use TransferEnvironment a, the next one uses TransferEnvironment d)
+	 such that we have the longest group that shares the same TransferEnvironment resource *)
+	splitTransferEnvironments = splitByCommonElements[Lookup[combinedMapThreadFriendlyOptions, EquivalentTransferEnvironments]];
 
 	(* Create our index matched transfer environment resources. *)
 	transferEnvironmentResources = Map[
@@ -2439,7 +2437,11 @@ fillToVolumeResourcePackets[mySamples : {ObjectP[{Object[Sample], Object[Contain
 		Function[{groupedTransferEnvironments},
 			Sequence @@ ConstantArray[
 				Resource[
-					Instrument -> First[groupedTransferEnvironments],
+					(* InstrumentResourceP only accepts a single instrument OBJECT/MODEL, or a list of instrument MODELs, but not a list of OBJECTs, so we have to branch here *)
+					Instrument -> If[MatchQ[First[groupedTransferEnvironments], {ObjectP[Model[Instrument]]..}],
+						First[groupedTransferEnvironments],
+						First[First[groupedTransferEnvironments]]
+					],
 					Time -> 30 * Minute * Length[groupedTransferEnvironments],
 					Name -> CreateUUID[]
 				],

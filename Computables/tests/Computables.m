@@ -271,8 +271,8 @@ DefineTests[
 		(* BioSafetycabinet has no parts, but does have contents *)
 		Test["No Parts returns Null:",
 			partsCurrentComputable[
-				Download[Object[Instrument,BiosafetyCabinet,"Test Instrument BiosafetyCabinet 1 for partsCurrentComputable unit tests "<>$SessionUUID],ContentsLog],
-				Download[Object[Instrument,BiosafetyCabinet,"Test Instrument BiosafetyCabinet 1 for partsCurrentComputable unit tests "<>$SessionUUID],Contents]
+				Download[Object[Instrument,HandlingStation,BiosafetyCabinet,"Test Instrument BiosafetyCabinet 1 for partsCurrentComputable unit tests "<>$SessionUUID],ContentsLog],
+				Download[Object[Instrument,HandlingStation,BiosafetyCabinet,"Test Instrument BiosafetyCabinet 1 for partsCurrentComputable unit tests "<>$SessionUUID],Contents]
 			],
 			Null,
 			TimeConstraint->500
@@ -300,7 +300,7 @@ DefineTests[
 			(* All objects created for this unit test *)
 			objects=Cases[
 				Flatten[{
-					Object[Instrument,BiosafetyCabinet,"Test Instrument BiosafetyCabinet 1 for partsCurrentComputable unit tests "<>$SessionUUID],
+					Object[Instrument,HandlingStation,BiosafetyCabinet,"Test Instrument BiosafetyCabinet 1 for partsCurrentComputable unit tests "<>$SessionUUID],
 					Object[Instrument,HPLC,"Test Instrument HPLC 1 for partsCurrentComputable unit tests "<>$SessionUUID],
 					Object[Instrument,Pipette,"Test Instrument Pipette 1 for partsCurrentComputable unit tests "<>$SessionUUID],
 					Object[Part,Lamp,"Test Part Lamp 1 for partsCurrentComputable unit tests "<>$SessionUUID],
@@ -325,7 +325,7 @@ DefineTests[
 
 				objectIDs$=CreateID[
 					{
-						Object[Instrument,BiosafetyCabinet],
+						Object[Instrument,HandlingStation,BiosafetyCabinet],
 						Object[Instrument,HPLC],
 						Object[Instrument,Pipette],
 						Object[Part,Lamp],
@@ -346,9 +346,9 @@ DefineTests[
 				{
 					<|
 						Object->objectIDs$[[1]],
-						Type->Object[Instrument,BiosafetyCabinet],
+						Type->Object[Instrument,HandlingStation,BiosafetyCabinet],
 						Name->"Test Instrument BiosafetyCabinet 1 for partsCurrentComputable unit tests "<>$SessionUUID,
-						Model->Link[Model[Instrument,BiosafetyCabinet,"id:zGj91aR3ddrO"],Objects],
+						Model->Link[Model[Instrument,HandlingStation,BiosafetyCabinet,"id:XnlV5jNYpXYP"],Objects],
 						Replace[Contents]->{
 							{"Lysol Reservoir Slot",Link[objectIDs$[[13]],Container,linkIDs$[[10]]]}
 						},
@@ -490,7 +490,7 @@ DefineTests[
 			(* All objects created for this unit test *)
 			objects=Cases[
 				Flatten[{
-					Object[Instrument,BiosafetyCabinet,"Test Instrument BiosafetyCabinet 1 for partsCurrentComputable unit tests "<>$SessionUUID],
+					Object[Instrument,HandlingStation,BiosafetyCabinet,"Test Instrument BiosafetyCabinet 1 for partsCurrentComputable unit tests "<>$SessionUUID],
 					Object[Instrument,HPLC,"Test Instrument HPLC 1 for partsCurrentComputable unit tests "<>$SessionUUID],
 					Object[Instrument,Pipette,"Test Instrument Pipette 1 for partsCurrentComputable unit tests "<>$SessionUUID],
 					Object[Part,Lamp,"Test Part Lamp 1 for partsCurrentComputable unit tests "<>$SessionUUID],
@@ -528,7 +528,7 @@ DefineTests[
 		],
 		(* BioSafetyCabinet has no parts, but does have contents *)
 		Test["If contentsLog doesn't contain a part, return Null:",
-			partsHistoryComputable[Download[Object[Instrument,BiosafetyCabinet,"Test Instrument BiosafetyCabinet 1 for partsHistoryComputatble unit tests "<>$SessionUUID], ContentsLog], Download[Object[Instrument,BiosafetyCabinet,"Test Instrument BiosafetyCabinet 1 for partsHistoryComputatble unit tests "<>$SessionUUID], Parts]],
+			partsHistoryComputable[Download[Object[Instrument,HandlingStation,BiosafetyCabinet,"Test Instrument BiosafetyCabinet 1 for partsHistoryComputatble unit tests "<>$SessionUUID], ContentsLog], Download[Object[Instrument,HandlingStation,BiosafetyCabinet,"Test Instrument BiosafetyCabinet 1 for partsHistoryComputatble unit tests "<>$SessionUUID], Parts]],
 			Null,
 			TimeConstraint -> 500
 		],
@@ -547,7 +547,7 @@ DefineTests[
 			(* All objects created for this unit test *)
 			objects=Cases[
 				Flatten[{
-					Object[Instrument,BiosafetyCabinet,"Test Instrument BiosafetyCabinet 1 for partsHistoryComputatble unit tests "<>$SessionUUID],
+					Object[Instrument,HandlingStation,BiosafetyCabinet,"Test Instrument BiosafetyCabinet 1 for partsHistoryComputatble unit tests "<>$SessionUUID],
 					Object[Instrument,HPLC,"Test Instrument HPLC 1 for partsHistoryComputatble unit tests "<>$SessionUUID],
 					Object[Instrument,Pipette,"Test Instrument Pipette 1 for partsHistoryComputatble unit tests "<>$SessionUUID],
 					Object[Instrument,WaterPurifier,"Test Instrument WaterPurifier 1 for partsHistoryComputatble unit tests "<>$SessionUUID],
@@ -574,7 +574,7 @@ DefineTests[
 
 				objectIDs$=CreateID[
 					{
-						Object[Instrument,BiosafetyCabinet],
+						Object[Instrument,HandlingStation,BiosafetyCabinet],
 						Object[Instrument,HPLC],
 						Object[Instrument,Pipette],
 						Object[Part,Lamp],
@@ -597,9 +597,9 @@ DefineTests[
 				{
 					<|
 						Object->objectIDs$[[1]],
-						Type->Object[Instrument,BiosafetyCabinet],
+						Type->Object[Instrument,HandlingStation,BiosafetyCabinet],
 						Name->"Test Instrument BiosafetyCabinet 1 for partsHistoryComputatble unit tests "<>$SessionUUID,
-						Model->Link[Model[Instrument,BiosafetyCabinet,"id:zGj91aR3ddrO"],Objects],
+						Model->Link[Model[Instrument,HandlingStation,BiosafetyCabinet,"id:XnlV5jNYpXYP"],Objects],
 						Replace[Contents]->{
 							{"Lysol Reservoir Slot",Link[objectIDs$[[13]],Container,linkIDs$[[10]]]}
 						},
@@ -759,7 +759,7 @@ DefineTests[
 			(* All objects created for this unit test *)
 			objects=Cases[
 				Flatten[{
-					Object[Instrument,BiosafetyCabinet,"Test Instrument BiosafetyCabinet 1 for partsHistoryComputatble unit tests "<>$SessionUUID],
+					Object[Instrument,HandlingStation,BiosafetyCabinet,"Test Instrument BiosafetyCabinet 1 for partsHistoryComputatble unit tests "<>$SessionUUID],
 					Object[Instrument,HPLC,"Test Instrument HPLC 1 for partsHistoryComputatble unit tests "<>$SessionUUID],
 					Object[Instrument,Pipette,"Test Instrument Pipette 1 for partsHistoryComputatble unit tests "<>$SessionUUID],
 					Object[Instrument,HPLC,"Test Instrument HPLC 1 for partsHistoryComputatble unit tests "<>$SessionUUID],

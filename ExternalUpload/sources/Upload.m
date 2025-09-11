@@ -573,10 +573,14 @@ cleanUpHTMLString[_] := Null;
 
 (* ::Subsubsection::Closed:: *)
 (*new parser using pyECL*)
+
+Authors[parseProductURL] := {"hanming.yang"};
+
 parseProductURL[url:(Null | _String)] := Module[
 	{
 		pyECLReturn, supplierInput, cleanedName, cleanedDescription, cleanedAssoc, result,
-		cleanedPrice, cleanedAmount, cleanedNumberOfItems, firstAttemptResults, correctedPrice
+		cleanedPrice, cleanedAmount, cleanedNumberOfItems, firstAttemptResults, correctedPrice,
+		timeLimit
 	},
 
 	supplierInput = Switch[url,
@@ -673,7 +677,7 @@ parseProductURL[url:(Null | _String)] := Module[
 					]
 				]
 		],
-		30
+		80
 	];
 
 	If[!MatchQ[pyECLReturn, _Association],

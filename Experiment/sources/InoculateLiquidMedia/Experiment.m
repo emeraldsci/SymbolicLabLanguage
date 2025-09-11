@@ -161,7 +161,7 @@ DefineOptions[ExperimentInoculateLiquidMedia,
 					}
 				],
 				Description -> "The environment in which the inoculation is performed for the input sample (e.g., cell suspension or inoculum). Containers involved are first moved into the TransferEnvironment (with covers on), then uncovered inside of the TransferEnvironment for inoculation, and covered before moving back onto the operator cart. This option is only applicable if Preparation is set to Manual.",
-				ResolutionDescription -> "If Preparation is Manual, automatically set to Model[Instrument, BiosafetyCabinet, \"Thermo Scientific 1300 SeriesClass II, Type A2 Biosafety Cabinet (Tissue Culture)\"] for mammalian cell samples, otherwise set to Model[Instrument, HandlingStation, BiosafetyCabinet, \"Biosafety Cabinet Handling Station for Microbiology\"].",
+				ResolutionDescription -> "If Preparation is Manual, automatically set to Model[Instrument,HandlingStation,BiosafetyCabinet,\"Biosafety Cabinet Handling Station for Tissue Culture\"] for mammalian cell samples, otherwise set to Model[Instrument, HandlingStation, BiosafetyCabinet, \"Biosafety Cabinet Handling Station for Microbiology\"].",
 				Category -> "General"
 			],
 			(* 1.2 Instrument Specifications for Manual Transfer and Hamilton Transfer *)
@@ -779,9 +779,7 @@ Warning::ConflictingInoculationSource = "`3`. Thus the input samples `1` are not
 (* Invalid Options *)
 Error::InvalidInoculationInstrument = "The specified Instrument(s), `1`, cannot be used for InoculationSource `2`. `3`. Please specify a different Instrument, or allow this option to be set automatically.";
 Error::IncompatibleInstrumentAndCellType = "The input samples, `1`, have cell types `2` incompatible with Instrument `3`. `4`.";
-Error::IncompatibleBiosafetyCabinetAndCellType = "The input samples, `1`, have cell types `2` incompatible with the biosafety cabinet specified in TransferEnvironment `3`. Model[Instrument, BiosafetyCabinet, \"Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet \
-(Tissue Culture)\"] (or an object of this model) allows inoculation of mammalian cells. Model[Instrument, BiosafetyCabinet, \"Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet \
-(Microbial)\"] allows inoculation of microbial cells. Please specify a TransferEnvironment compatible with the cells in the samples or leave it to be set automatically.";
+Error::IncompatibleBiosafetyCabinetAndCellType = "The input samples, `1`, have cell types `2` incompatible with the biosafety cabinet specified in TransferEnvironment `3`. Model[Instrument,HandlingStation,BiosafetyCabinet,\"Biosafety Cabinet Handling Station for Tissue Culture\"](or an object of this model) allows inoculation of mammalian cells. Model[Instrument,HandlingStation,BiosafetyCabinet,\"Biosafety Cabinet Handling Station for Microbiology\"] allows inoculation of microbial cells. Please specify a TransferEnvironment compatible with the cells in the samples or leave it to be set automatically.";
 Error::InoculationSourceOptionMismatch = "InoculationSource is set to `1`. `3`. Please look at the ExperimentInoculateLiquidMedia help file to see what options can be specified when InoculationSource is `1`, or allow the options to be set automatically";
 Warning::NoPreferredLiquidMedia = "The input samples, `1`, either do not have any model cell in their composition or the model cells in the Composition do not have a PreferredLiquidMedia. DestinationMedia will be set to Model[Sample, Media, \"LB Broth, Miller\"].";
 Error::DestinationMediaContainerOverfill = "The input samples, `1` would have total volume(s) `3` in DestinationMediaContainer `2`. This would result in overflowing. Please either decrease the Volume or MediaVolume in order to submit a valid experiment.";

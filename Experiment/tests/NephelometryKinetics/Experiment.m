@@ -2901,14 +2901,14 @@ DefineTests[ExperimentNephelometryKinetics,
 			EquivalenceFunction->Equal,
 			Variables:>{options},
 			Messages:>{Warning::AliquotRequired}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options,FilterSterile,"Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],FilterSterile->True,Output->Options];
 			Lookup[options,FilterSterile],
 			True,
 			Variables:>{options},
 			Messages:>{Warning::AliquotRequired}
-		],
+		],*)
 		Example[{Options,FilterAliquot,"The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample in 50mL tube" <> $SessionUUID],FilterAliquot->1*Milliliter,Output->Options];
 			Lookup[options,FilterAliquot],

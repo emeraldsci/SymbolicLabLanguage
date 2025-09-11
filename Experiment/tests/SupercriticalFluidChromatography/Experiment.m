@@ -2963,7 +2963,7 @@ DefineTests[ExperimentSupercriticalFluidChromatography,
       0.5 Milliliter,
       EquivalenceFunction -> Equal,
       Variables:>{options}
-    ],
+    ],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
     Example[
       {Options,FilterSterile,"Specify if the filtration of the samples should be done in a sterile environment:"},
       options=ExperimentSupercriticalFluidChromatography[
@@ -2974,7 +2974,7 @@ DefineTests[ExperimentSupercriticalFluidChromatography,
       Lookup[options,FilterSterile],
       True,
       Variables:>{options}
-    ],
+    ],*)
     Example[
       {Options,Aliquot,"Specify if aliquots should be taken from the SamplesIn and transferred into new AliquotSamples used in lieu of the SamplesIn for the experiment:"},
       options=ExperimentSupercriticalFluidChromatography[

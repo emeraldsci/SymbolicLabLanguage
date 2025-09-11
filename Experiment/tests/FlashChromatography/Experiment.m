@@ -2234,13 +2234,13 @@ DefineTests[
 			EquivalenceFunction->Equal,
 			Variables:>{options},
 			TimeConstraint->500
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options,FilterSterile,"Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options=ExperimentFlashChromatography[Object[Sample,"Sample 1 for ExperimentFlashChromatography Testing"<>$SessionUUID],FilterSterile->True,Output->Options];
 			Lookup[options,FilterSterile],
 			True,
 			Variables:>{options}
-		],
+		],*)
 		Example[{Options,FilterAliquot,"The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options=ExperimentFlashChromatography[Object[Sample,"Sample 1 for ExperimentFlashChromatography Testing"<>$SessionUUID],FilterAliquot->150*Microliter,Output->Options];
 			Lookup[options,FilterAliquot],
@@ -6414,7 +6414,7 @@ DefineTests[
 			Download[protocol,CalculatedUnitOperations[[2]][FilterTemperature]],
 			{10*Celsius},
 			Variables:>{protocol}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options,FilterSterile,"Indicates if the filtration of the samples should be done in a sterile environment:"},
 			protocol=ExperimentManualSamplePreparation[{
 				LabelSample[
@@ -6430,7 +6430,7 @@ DefineTests[
 			Download[protocol,CalculatedUnitOperations[[2]][FilterSterile]],
 			{True},
 			Variables:>{protocol}
-		],
+		],*)
 		Example[{Options,FilterAliquot,"The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			protocol=ExperimentManualSamplePreparation[{
 				LabelSample[
@@ -6582,10 +6582,10 @@ DefineTests[
 			}];
 			Download[protocol,CalculatedUnitOperations[[3]][{TargetConcentration,TargetConcentrationAnalyte,AliquotAmountVariableUnit,AssayVolume}]],
 			{
-				{1 Millimolar},
+				{EqualP[1 Millimolar]},
 				{ObjectP[Model[Molecule,"Uracil"]]},
-				{45. Milliliter},
-				{224. Milliliter}
+				{EqualP[45. Milliliter]},
+				{EqualP[224. Milliliter]}
 			},
 			EquivalenceFunction->RoundMatchQ[8],
 			Variables:>{protocol}

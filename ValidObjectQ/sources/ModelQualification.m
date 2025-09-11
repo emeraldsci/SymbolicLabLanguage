@@ -1222,6 +1222,18 @@ validModelQualificationIonChromatographyQTests[packet:PacketP[Model[Qualificatio
 
 	}];
 
+(* ::Subsection::Closed:: *)
+(*validModelQualificationKarlFischerTitratorQTests*)
+
+
+validModelQualificationKarlFischerTitratorQTests[packet:PacketP[Model[Qualification, KarlFischerTitrator]]]:= {
+	NotNullFieldTest[
+		packet,
+		{TitrationTechnique, SamplingMethods}
+	]
+};
+
+
 
 (* ::Subsection::Closed:: *)
 (*validModelQualificationLCMSQTests*)
@@ -1305,9 +1317,12 @@ validModelQualificationLiquidLevelDetectionQTests[packet:PacketP[Model[Qualifica
 
 
 validModelQualificationLiquidLevelDetectorQTests[packet:PacketP[Model[Qualification,LiquidLevelDetector]]]:={
-
-	(* For macro and carboy volume checks *)
-	RequiredTogetherTest[packet,{SensorArmHeight,GageBlockDistances,TareDistanceTolerance,GageBlockDistanceTolerance}],
+	
+	(*For macro volume checks *)
+	RequiredTogetherTest[packet, {SensorArmHeights, SensorArmDistanceTolerance}],
+	
+	(* For carboy volume checks *)
+	RequiredTogetherTest[packet,{GageBlockDistances,TareDistanceTolerance,GageBlockDistanceTolerance}],
 
 	(* For plate volume checks *)
 	RequiredTogetherTest[packet,{PlateModel,PlatePreparation,PlateSampleVolumes,BufferModel,PlateVolumeTolerances,EmptyWellDistanceTolerance}],
@@ -2671,8 +2686,9 @@ registerValidQTestFunction[Model[Qualification, HPLC],validModelQualificationHPL
 registerValidQTestFunction[Model[Qualification, LCMS],validModelQualificationLCMSQTests];
 registerValidQTestFunction[Model[Qualification, Incubator],validModelQualificationIncubatorQTests];
 registerValidQTestFunction[Model[Qualification, InstrumentAlarmAudit],validModelQualificationInstrumentAlarmAuditQTests];
-registerValidQTestFunction[Model[Qualification,InteractiveTraining],validModelQualificationInteractiveTrainingQTests];
+registerValidQTestFunction[Model[Qualification, InteractiveTraining],validModelQualificationInteractiveTrainingQTests];
 registerValidQTestFunction[Model[Qualification, IonChromatography],validModelQualificationIonChromatographyQTests];
+registerValidQTestFunction[Model[Qualification, KarlFischerTitrator],validModelQualificationKarlFischerTitratorQTests];
 registerValidQTestFunction[Model[Qualification, LiquidHandler],validModelQualificationLiquidHandlerQTests];
 registerValidQTestFunction[Model[Qualification, LiquidParticleCounter],validModelQualificationLiquidParticleCounterQTests];
 registerValidQTestFunction[Model[Qualification, LiquidLevelDetection],validModelQualificationLiquidLevelDetectionQTests];

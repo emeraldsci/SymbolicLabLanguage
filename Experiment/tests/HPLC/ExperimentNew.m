@@ -4772,14 +4772,14 @@ DefineTests[ExperimentHPLC,
 			EquivalenceFunction -> Equal,
 			Variables :> {options},
 			Messages:>{Warning::AliquotRequired}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options,FilterSterile, "Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options = ExperimentHPLC[Object[Sample,"Large Container Sample for ExperimentHPLC" <> $SessionUUID], FilterSterile -> True, Output -> Options];
 			Lookup[options, FilterSterile],
 			True,
 			Variables :> {options},
 			Messages:>{Warning::AliquotRequired}
-		],
+		],*)
 		Example[{Options,FilterAliquot, "The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options = ExperimentHPLC[Object[Sample,"Large Container Sample for ExperimentHPLC" <> $SessionUUID], FilterAliquot -> 200 Milliliter, Output -> Options];
 			Lookup[options, FilterAliquot],

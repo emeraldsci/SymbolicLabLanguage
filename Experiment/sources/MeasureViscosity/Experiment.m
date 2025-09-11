@@ -4361,7 +4361,7 @@ experimentMeasureViscosityResourcePackets[mySamples:{ObjectP[Object[Sample]]..},
 		sampleTemperature,nitroValveBool,needleResource,residualIncubation,instrumentSetupTearDown,processingTime,recoupSamples, simulation,
 
 		(*Cleaning buffers*)
-		primaryBuffer,primaryBufferResource,secondaryCleaningSolutionResource,tertiaryCleaningSolutionResource,primaryBufferAmount,secondaryCleaningAmount,tertiaryCleaningAmount,
+		primaryBuffer,primaryBufferResource,secondaryCleaningSolutionResource,tertiaryCleaningSolutionResource,primaryBufferAmount,secondaryCleaningAmount,tertiaryCleaningAmount,cleaningWipesResource,cleaningSolutionResource,
 		numSamples,assayType,primaryVolumePerSampleB05, secondaryVolumePerSampleB05, tertiaryVolumePerSampleB05, primaryVolumePerSampleC05, secondaryVolumePerSampleC05, tertiaryVolumePerSampleC05, primaryVolumePerSampleE02, secondaryVolumePerSampleE02, tertiaryVolumePerSampleE02,volCleaning,bufferedVol,allWasteWeight,optionsRule,previewRule
 	},
 	(* expand the resolved options if they weren't expanded already *)
@@ -4756,6 +4756,24 @@ experimentMeasureViscosityResourcePackets[mySamples:{ObjectP[Object[Sample]]..},
 
 	(* ContainersIn *)
 	containersInResources=(Link[Resource[Sample->#],Protocols]&)/@Lookup[samplePackets,Container][Object];
+	
+	(* For Viscometer Piston Cleaning*)
+	cleaningWipesResource = Link[
+		Resource[
+			Sample->Model[Item, Consumable, "id:8qZ1VWNmdLJX"], (* Model[Item, Consumable, "Lens cleaning tissue, pack of 50"] *)
+			Amount->3,
+			Name->ToString[Unique[]]
+		]
+	];
+	
+	cleaningSolutionResource = Link[
+		Resource[
+			Sample-> Model[Sample, StockSolution, "id:R8e1Pjeapqjj"], (* Model[Sample, StockSolution, "1% Aquet in Milli-Q Water, Filtered"] *)
+			Amount-> 5 Milliliter, (* ≥ 5 Millilter is enough estimate of liquid used to wet the wipes *)
+			Container-> Model[Container, Vessel, "id:bq9LA0dBGGR6"] (*Model[Container, Vessel, "50mL Tube"]*),
+			Name->ToString[Unique[]]
+		]
+	];
 
 	(* --- Generate the protocol packet --- *)
 	protocolPacket=<|
@@ -4811,6 +4829,8 @@ experimentMeasureViscosityResourcePackets[mySamples:{ObjectP[Object[Sample]]..},
 		SecondaryCleaningSolvent-> Link[secondaryCleaningSolutionResource],
 		TertiaryCleaningSolvent -> Link[tertiaryCleaningSolutionResource],
 		PrimaryBufferStorageCondition -> Lookup[expandedResolvedOptions,PrimaryBufferStorageCondition],
+		Replace[PistonCleaningWipes]->cleaningWipesResource,
+		Replace[PistonCleaningSolution]->cleaningSolutionResource,
 
 		Replace[SamplesInStorage] -> Lookup[optionsWithReplicates,SamplesInStorageCondition],
 		Replace[SamplesOutStorage] -> Lookup[optionsWithReplicates,SamplesOutStorageCondition],

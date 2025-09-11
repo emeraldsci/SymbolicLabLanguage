@@ -114,6 +114,14 @@ DefineObjectType[Object[Protocol, MeasureWeight], {
 			Description -> "The containers containing this protocols' SamplesIn, expanded according to NumberOfReplicates.",
 			Category -> "Organizational Information"
 		},
+		BenchmarkingItems -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Container], Object[Item]],
+			Description -> "A list of items to be measured to benchmark item model's stored TareWeight/Weight.",
+			Category -> "Weighing"
+		},
 
 		UpdateModel -> {
 			Format -> Single,
@@ -139,7 +147,9 @@ DefineObjectType[Object[Protocol, MeasureWeight], {
 				Holder -> Link,
 				CalibrateContainer -> Expression,
 				SortingIndex -> Expression,
-				Index -> Expression
+				Index -> Expression,
+				HandlingEnvironment -> Link,
+				CoveredContainer -> Link
 			},
 			Pattern :> {
 				WorkingContainerIn -> _Link,
@@ -154,7 +164,9 @@ DefineObjectType[Object[Protocol, MeasureWeight], {
 				Holder -> _Link,
 				CalibrateContainer -> BooleanP,
 				SortingIndex -> _Integer,
-				Index -> _Integer
+				Index -> _Integer,
+				HandlingEnvironment -> _Link,
+				CoveredContainer -> _Link
 			},
 			Relation -> {
 				WorkingContainerIn -> Alternatives[
@@ -209,7 +221,15 @@ DefineObjectType[Object[Protocol, MeasureWeight], {
 				],
 				CalibrateContainer -> None,
 				SortingIndex -> None,
-				Index -> None
+				Index -> None,
+				HandlingEnvironment -> Alternatives[
+					Model[Instrument, HandlingStation],
+					Object[Instrument, HandlingStation]
+				],
+				CoveredContainer -> Alternatives[
+					Model[Container],
+					Object[Container]
+				]
 			},
 			Units -> {
 				WorkingContainerIn -> None,
@@ -224,7 +244,9 @@ DefineObjectType[Object[Protocol, MeasureWeight], {
 				Holder -> None,
 				CalibrateContainer -> None,
 				SortingIndex -> None,
-				Index -> None
+				Index -> None,
+				HandlingEnvironment -> None,
+				CoveredContainer -> None
 			},
 			Headers -> {
 				WorkingContainerIn -> "WorkingContainerIn",
@@ -239,7 +261,9 @@ DefineObjectType[Object[Protocol, MeasureWeight], {
 				Holder->"Holder",
 				CalibrateContainer->"CalibrateContainer",
 				SortingIndex -> "SortingIndex",
-				Index -> "Index"
+				Index -> "Index",
+				HandlingEnvironment -> "HandlingEnvironment",
+				CoveredContainer -> "CoveredContainer"
 
 			},
 			Description -> "The list of containers or items, sorted by batch, and their corresponding resources needed for weighing and/or transferring.",

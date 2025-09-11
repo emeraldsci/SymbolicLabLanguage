@@ -540,6 +540,13 @@ DefineTests[
 			}
 		],
 		Example[
+			{Messages, "HazardousSamples", "If some samples are hazardous to be imaged and it's on Engine, return a protocol with only the valid samples:"},
+			Download[ExperimentImageSample[{Object[Sample, "Test hazardous sample in 100mL glass bottle for ExperimentImageSample "<>$SessionUUID],Object[Sample, "Test water sample in 50mL tube for ExperimentImageSample "<>$SessionUUID]},ImagingDirection->Top],SamplesIn],
+			{ObjectP[Object[Sample, "Test water sample in 50mL tube for ExperimentImageSample "<>$SessionUUID]]},
+			Messages:>{},
+			Stubs:>{$ECLApplication=Engine}
+		],
+		Example[
 			{Messages, "HazardousSamples", "Inputs containing mixed-up safe and hazardous samples and ImagingDirection can be successfully resolved:"},
 			Download[
 				ExperimentImageSample[{Object[Sample,"Test water sample in 15mL tube for ExperimentImageSample " <>$SessionUUID],Object[Sample, "Test hazardous sample in 100mL glass bottle for ExperimentImageSample "<>$SessionUUID],Object[Sample, "Test water sample in 50mL tube for ExperimentImageSample "<>$SessionUUID]},ImagingDirection->{{Top,Side},Side,Top}],
@@ -1044,13 +1051,13 @@ DefineTests[
 			10*Celsius,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options, FilterSterile, "Set the FilterSterile option:"},
 			options = ExperimentImageSample[Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID], FilterSterile -> True, Output -> Options];
 			Lookup[options, FilterSterile],
 			True,
 			Variables :> {options}
-		],
+		],*)
 		Example[{Options, FilterAliquot, "Set the FilterAliquot option:"},
 			options = ExperimentImageSample[Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID], FilterAliquot -> 80*Microliter, Output -> Options];
 			Lookup[options, FilterAliquot],

@@ -291,6 +291,9 @@ DefineObjectType[Object[Sensor], {
 				Object[Instrument, MassSpectrometer][CollisionCellGasDeliveryPressureSensor],
 				Object[Instrument, Spectrophotometer][PurgeGasTankPressureSensor],
 				Object[Instrument, Spectrophotometer][PurgeGasDeliveryPressureSensor],
+				Object[Instrument, PortableCooler][TemperatureSensor],
+				Object[Instrument, KarlFischerTitrator][KarlFischerReagentWeightSensor],
+				Object[Instrument, KarlFischerTitrator][MediumWeightSensor],
 				Object[Instrument, PortableCooler][TemperatureSensor]
 			],
 			Description -> "All instruments and/or sensors that are being directly monitored by this sensor.",

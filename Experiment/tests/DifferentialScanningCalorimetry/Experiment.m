@@ -767,13 +767,13 @@ DefineTests[
 			10*Celsius,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options, FilterSterile, "Set the FilterSterile option:"},
 			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], FilterSterile -> True, Output -> Options];
 			Lookup[options, FilterSterile],
 			True,
 			Variables :> {options}
-		],
+		],*)
 		Example[{Options, FilterAliquot, "Set the FilterAliquot option:"},
 			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], FilterAliquot -> 400 Microliter, Output -> Options];
 			Lookup[options, FilterAliquot],

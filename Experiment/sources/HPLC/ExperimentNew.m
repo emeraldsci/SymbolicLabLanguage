@@ -4963,7 +4963,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		groupedAliquotingSamplesTuples, volumeFitAliquotContainerQ,
 		preresolvedConsolidateAliquots, invalidContainerModelBools,
 		uniqueAliquotableSamples, uniqueNonAliquotablePlates,
-		uniqueNonAliquotableVessels, uniqueNonAliquotableSmallVessels, uniqueNonAliquotableLargeVessels, uniqueNonSuitableContainers,
+		uniqueNonAliquotableVessels, uniqueAliquotableVessels, uniqueNonAliquotableSmallVessels, uniqueNonAliquotableLargeVessels, uniqueNonSuitableContainers,
 		defaultStandardBlankContainer,
 		standardBlankContainerMaxVolume, standardBlankSampleMaxVolume,
 		standardInjectionTuples, blankInjectionTuples,
@@ -10758,6 +10758,12 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		{False, ObjectP[$ChromatographyLCCompatibleVials]}
 	];
 
+	(* Need anything that is aliquotable too *)
+	uniqueAliquotableVessels = Complement[
+		Cases[simulatedSampleContainers,Except[ObjectP[Object[Container, Plate]]]],
+		uniqueNonAliquotableVessels
+	];
+
 	(* For prep Agilent, split uniqueNonAliquotableVessels into two parts with different models *)
 	uniqueNonAliquotableSmallVessels = DeleteDuplicates@PickList[
 		simulatedSampleContainers,
@@ -10878,7 +10884,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 			]
 		],
 		(* <= 48 vials *)
-		Total[Length[uniqueNonAliquotableVessels],numberOfStandardBlankContainersRequired] <= 48
+		Total[{Length[uniqueNonAliquotableVessels],numberOfStandardBlankContainersRequired}] <= 48
 	];
 
 	(* Waters Instrument - Count the samples, Standards, Blanks and containers for the Waters Acquity instrument *)
@@ -10956,19 +10962,19 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		(* non aliquotable samples - we check for each type it is below the limit *)
 		(* Aliquotable samples - we always use 50mL tube so we count that only *)
 		And[
-			Total[
+			Total[{
 				agilentSmallRackCount,
 				agilentLargeRackCount
-			] <= 5,
+			}] <= 5,
 			agilentSmallRackCount+If[MatchQ[requestedFractionRack,Small],1,0]<=3,
 			agilentLargeRackCount+If[MatchQ[requestedFractionRack,Large],1,0]<=3,
 			Length[uniqueNonSuitableContainers]==0
 		],
 		And[
-			Total[
+			Total[{
 				agilentSmallRackCount,
 				agilentLargeRackCount
-			] <= 6,
+			}] <= 6,
 			Length[uniqueNonSuitableContainers]==0
 		]
 	];
@@ -14702,12 +14708,15 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 				IntersectingQ[semiResolvedAlternateInstruments /. {Automatic :> {}}, watersHPLCInstruments]
 			],
 			validWatersCountQ,
-			Total[
+			Total[{
 				Count[DeleteDuplicates[simulatedSampleContainers], ObjectP[Object[Container, Plate]]],
 				Ceiling[
 					(numberOfStandardBlankContainersRequired + Length[uniqueNonAliquotableVessels]) / 48
-				]
-			]>2
+				],
+				(* Samples that must be transferred to a plate *)
+				(* For plate samples, we have considered them above, and may keep them in their own plate if possible *)
+				Ceiling[Length[uniqueAliquotableVessels] / 96]
+			}]>2
 		],
 		Replace[specifiedAliquotBools, Automatic -> True, {1}],
 		(* SemiPrep Agilent - Aliquot if unique plates + vessels > 6 positions *)
@@ -14717,12 +14726,12 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 				MemberQ[semiResolvedAlternateInstruments /. {Automatic :> {}}, semiPrepAgilentHPLCPattern]
 			],
 			validSemiPrepAgilentCountQ,
-			Total[
+			Total[{
 				Count[DeleteDuplicates[simulatedSampleContainers], ObjectP[Object[Container, Plate]]],
 				Ceiling[
 					(numberOfStandardBlankContainersRequired + Length[uniqueNonAliquotableVessels]) / 54
 				]
-			]>6
+			}]>6
 		],
 		Replace[specifiedAliquotBools, Automatic -> True, {1}],
 		(* Otherwise just keep the raw Aliquot option *)

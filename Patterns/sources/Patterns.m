@@ -52,6 +52,13 @@ ECL`Authors[CellQuantificationUnitP]:={"lei.tian"};
 ECL`Authors[MultiMethodAliquotsP]:={"lei.tian"};
 
 
+(* ::Subsubsection::Closed:: *)
+(* AnimalP *)
+AnimalP = Alternatives[Human, Rat, Mouse, Monkey, Cat, Dog];
+
+(* ::Subsubsection::Closed:: *)
+(* DosageRouteP *)
+DosageRouteP = Alternatives[Oral, Intravenous, Subcutaneous, Inhalation, SkinAbsorption, Intraperitoneal];
 
 (* ::Subsubsection::Closed:: *)
 (* MagneticBeadSeparationModeP *)
@@ -5155,7 +5162,7 @@ SensorMaintenanceTypeP=Alternatives[maintenance[CalibrateCarbonDioxide],maintena
 (*SensorLogTypeP*)
 
 
-SensorLogTypeP=Alternatives["60SecondsLog", "5SecondsLog","0.5SecondsLog","remoteTempLog","60SecondsStringLog","0.25SecondsLogA","0.1SecondsLog"];
+SensorLogTypeP=Alternatives["60SecondsLog", "5SecondsLog","0.5SecondsLog","remoteTempLog","60SecondsStringLog","0.1SecondsLog","0.1SecondsLogB","0.1SecondsLogC"];
 
 
 
@@ -5334,6 +5341,12 @@ GasWashingBottlePorosityP=(Coarse|ExtraCoarse);
 
 PAGEDataTypeP=(Analyte|Standard|Ladder);
 
+
+(* ::Subsubsection::Closed:: *)
+(*KarlFischerTitrationDataTypeP*)
+
+
+KarlFischerTitrationDataTypeP=(Analyte|Standard|Blank);
 
 
 (* ::Subsubsection::Closed:: *)
@@ -6189,7 +6202,7 @@ MetricThreadP = Alternatives["M0.25x0.075","M0.3x0.08","M0.3x0.09","M0.35x0.09",
 (*MeasurementMethodP*)
 
 
-MeasurementMethodP = Alternatives[Temperature, CarbonDioxide, UltrasonicDistance, RelativeHumidity, Weight, pH, Conductivity, LiquidLevel, Pressure, Counter, FlowRate, Moisture, Oxygen, Light, Distance, Continuity];
+MeasurementMethodP = Alternatives[Temperature, CarbonDioxide, UltrasonicDistance, RelativeHumidity, Weight, pH, Conductivity, LiquidLevel, Pressure, Counter, FlowRate, Moisture, Oxygen, Light, Distance, Continuity, Vibration];
 
 
 
@@ -6914,7 +6927,8 @@ PolymerArrangementP=Alternating|Periodic|Statistical|Block|Grafted;
 (*CountP*)
 
 
-CountP=_Integer;
+(* note that this MUST not be _Integer because count should be allowed to be 4 Unit, and while that matches GreaterEqualP[0, 1], it does NOT match _Integer *)
+CountP=GreaterEqualP[0., 1.];
 
 
 (* ::Subsubsection::Closed:: *)
@@ -9722,7 +9736,8 @@ FootprintP = Alternatives[
 	Tube50mLRack15,
 	Tube50mLRack24,
 	MagnumHopperBin17x24x11,
-    StrongHold48InchCabinetShelf,
+	StrongHold48InchCabinetShelf,
+	Aseptic24x24Bag,
 	(*Container Holders*)
 	SmallVessel,
 	MediumVessel,
@@ -9903,7 +9918,11 @@ FootprintP = Alternatives[
 	ID41mmTorus,
 	ID51mmTorus,
 	ID56mmTorus,
-	ID70mmTorus
+	ID70mmTorus,
+	(* KarlFischerTitratino Molecular Sieve Tubes *)
+	MolecularSieveNarrowTube,
+	MolecularSieveUShapedTube,
+	MolecularSieveRotatableTube
 ];
 
 (*CellIncubatorDeckP*)
@@ -11112,7 +11131,8 @@ CoverFootprintP = Alternatives[
 	Septum2440Flask, Septum31x16, TubeCap50mL, CrossFlowContainerCap50mL,
 	CrossFlowContainerCap250mL,CrossFlowContainerCap500mL, SIQualCap,CapSnap27x21,CapScrewTube18x14,Cap11x27,CapSnap38x6,
 	Cap57x83, CapScrewSpigotCarboy20L, Cap13x3, CapScrewBottle24x12,
-	SmallBeakerLid, MediumBeakerLid, LargeBeakerLid
+	SmallBeakerLid, MediumBeakerLid, LargeBeakerLid,
+	MoledularSieveNarrowTubeCap, MolecularSieveRotatableTubeCap
 ];
 
 
@@ -12357,6 +12377,9 @@ PricingCategoryP=Alternatives[
 	"Integrated Incubator",
 	"Liquid Nitrogen Dewar",
 
+	(* Karl Fischer Titration *)
+	"Karl Fischer Titration",
+
 	(* Liquid Handler Robotics *)
 	"Buffer Prep Robotics",
 	"Post-Processing Robotics",
@@ -12643,6 +12666,10 @@ ComputerComponentP = Alternatives[
 
 
 ComputerTypeP = Alternatives[InstrumentComputer, WorkstationComputer, TabletComputer];
+
+(* ::Subsubsection::Closed:: *)
+(*MathematicaVersionP*)
+ManifoldMathematicaVersionsP = Alternatives["13.3.1","14.2.0"];
 
 
 (* ::Subsubsection::Closed:: *)
@@ -12985,6 +13012,7 @@ InstrumentSoftwareP = Alternatives[AcqirisSoftware,
 	GilsonTRILUTIONLH30ServicePack2,
 	GilsonTRILUTIONLH30ServicePack3,
 	GilsonTRILUTIONLH30Special2417,
+	GilsonTRILUTIONLH40,
 	GilsonUSBDrivers64,
 	GilsonVERITY4000SeriesSyringePumpGEARSPlugins,
 	HamiltonAgilentCentrifugeVenusDriver,
@@ -13078,6 +13106,7 @@ InstrumentSoftwareP = Alternatives[AcqirisSoftware,
 	NucleofectorSwitch,
 	OctetDataAcquisition,
 	Omega,
+	OMNIS,
 	OndaxSAMSpectraAnalyzerandMapper,
 	OndaxSpectraXplorer,
 	OndaxWPS,
@@ -13752,7 +13781,9 @@ SupportTicketStatusP = Alternatives[
 	ShiftManagerSupport,
 	SciOpsSupport,
 	BlockingRequested,
-	VerificationRequested
+	VerificationRequested,
+	Blocked,
+	Resolved
 ];
 
 
@@ -13876,7 +13907,26 @@ KarlFischerTechniqueP = Coulometric | Volumetric;
 
 KarlFischerSamplingMethodP = Liquid | Headspace;
 
+(* ::Subsubsection::Closed:: *)
+(*KarlFischerReagentP*)
 
+KarlFischerReagentP = Alternatives[
+	HydranalCoulomatAGOven,
+	HydranalCoulomatAG,
+	HydranalComposite5,
+	HydranalComposite5K,
+	HydranalComposite2,
+	HydranalComposite1
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*KarlFischerTitrationMediumP*)
+
+KarlFischerTitrationMediumP = Alternatives[
+	MethanolDry,
+	MethanolRapid
+];
 
 (* ::Subsubsection::Closed:: *)
 (* DLSSolventNameP *)

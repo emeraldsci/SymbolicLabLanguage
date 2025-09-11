@@ -159,6 +159,9 @@
 	"Mathematica13.2AdditionalSymbols":[
 		"Value"
 	],
+	"Mathematica14.2ConflictSymbols":[
+		"ContourLabelStyle"
+	],
 	"legacySymbols":[
 		"RowLabels"
 	],
@@ -211,7 +214,6 @@
 		"ConfidenceBands",
 		"ConfidenceInterval",
 		"ContourLabelPositions",
-		"ContourLabelStyle",
 		"ContourSpacing",
 		"ContrastImage1",
 		"ContrastImage2",

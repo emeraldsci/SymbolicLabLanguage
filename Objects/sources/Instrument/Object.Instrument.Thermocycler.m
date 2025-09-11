@@ -154,6 +154,14 @@ DefineObjectType[Object[Instrument, Thermocycler], {
 			Description -> "Fluorescent cutoff filters available to the instrument. The distance represents the wavelength at which the transmission decreases to 50% throughput in a shortpass filter.",
 			Category -> "Operating Limits"
 		},
+		ControlBoxSerialNumber -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "Serial number of Thermocycler control box, needed for SSL connection.",
+			Category -> "Organizational Information",
+			Abstract -> True
+		},
 		IntegratedLiquidHandler -> {
 			Format -> Single,
 			Class -> Link,
