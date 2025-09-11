@@ -192,7 +192,7 @@ DefineUsage[UploadStockSolution,
 			"UploadSampleModel",
 			"UploadProduct"
 		},
-		Author->{"tim.pierpont", "steven"}
+		Author->{"lei.tian", "tim.pierpont", "steven"}
 	}
 ];
 
@@ -360,7 +360,7 @@ DefineUsage[UploadStockSolutionOptions,
 			"UploadSampleModel",
 			"UploadProduct"
 		},
-		Author->{"tim.pierpont", "steven"}
+		Author->{"lei.tian", "tim.pierpont", "steven"}
 	}
 ];
 
@@ -528,6 +528,6 @@ DefineUsage[ValidUploadStockSolutionQ,
 			"UploadSampleModel",
 			"UploadProduct"
 		},
-		Author->{"tim.pierpont", "steven"}
+		Author->{"lei.tian", "tim.pierpont", "steven"}
 	}
 ];

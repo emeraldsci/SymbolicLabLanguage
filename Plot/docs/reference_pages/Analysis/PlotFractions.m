@@ -39,11 +39,6 @@ DefineUsage[PlotFractions,
 		"PlotChromatography",
 		"EmeraldListLinePlot"
 	},
-	Author -> {
-		"kevin.hou",
-		"brad",
-		"robert",
-		"Ruben"
-	},
+	Author -> {"dirk.schild", "kevin.hou", "brad", "robert", "Ruben"},
 	Preview->True
 }];

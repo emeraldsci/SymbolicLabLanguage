@@ -18,10 +18,20 @@ DefineUsage[ExperimentMeasureOsmolality,
 						{
 							InputName->"Objects",
 							Description->"The samples or containers for whose contents the osmolality will be measured.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -67,10 +77,20 @@ DefineUsage[ExperimentMeasureOsmolalityOptions,
 						{
 							InputName->"Objects",
 							Description->"The samples or containers for whose solutions the osmolality will be measured.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -115,12 +135,20 @@ DefineUsage[ValidExperimentMeasureOsmolalityQ,
 						{
 							InputName -> "Samples",
 							Description -> "The samples to be measured.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-								Dereference -> {
-									Object[Container] -> Field[Contents[[All, 2]]]
-								}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -155,12 +183,20 @@ DefineUsage[ExperimentMeasureOsmolalityPreview,
 						{
 							InputName -> "Samples",
 							Description -> "The samples to be measured.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-								Dereference -> {
-									Object[Container] -> Field[Contents[[All, 2]]]
-								}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},

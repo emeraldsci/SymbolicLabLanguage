@@ -4,6 +4,11 @@
 	Also adds some TagTrace calls to functions once it makes it	inside the definition.
 *)
 
+
+
+(* Authors definition for Core`Private`AddTracingDefinition *)
+Authors[Core`Private`AddTracingDefinition]:={"xu.yi"};
+
 AddTracingDefinition[f_String, rest___] := AddTracingDefinition[Symbol[f],rest];
 AddTracingDefinition[f_Symbol, tagRules_Association] := AddTracingDefinition[f,tagRules,Null];
 AddTracingDefinition[f_Symbol, tagRules_Association, optionsPosition:(_Integer|Null)] := With[
@@ -34,7 +39,7 @@ AddTracingDefinition[f_Symbol, tagRules_Association, optionsPosition:(_Integer|N
 				also block $ECLTracing to be on, because right now it's disabled by default on Production,
 				but we are specifically trying to track real calls made by users
 			*)
-		    HoldPattern[f[args___] /; TrueQ[blocker]] :> Block[{blocker=False , ECL`Web`$ECLTracing=True},
+		    HoldPattern[f[args___] /; TrueQ[blocker]] :> Block[{blocker=False , ECL`Web`$ECLTracing:=!MatchQ[ECL`$UnitTestObject, _ECL`Object]},
 				(* logging wrapped around main definition*)
             	With[{out=TraceExpression[
   					fstring,
@@ -47,7 +52,11 @@ AddTracingDefinition[f_Symbol, tagRules_Association, optionsPosition:(_Integer|N
 						(* TraceExpression fails if values are too large, so shorten the call if necessary *)
 	                    TagTrace["sll.function.call", shrunkenStringExpression[Hold[f[args]]]];
 	                    TagTrace["sll.function.user", ToString[$PersonID,InputForm]];
+						TagTrace["sll.function.user.name", ToString[Constellation`Private`$ECLUserName, InputForm]];
+						TagTrace["sll.function.financingteam.name", ToString[Constellation`Private`$ECLFinancingTeamName, InputForm]];
                         TagTrace["sll.function.package",Packager`FunctionPackage[f]];
+                        TagTrace["sll.notebook",ToString[$Notebook,InputForm]];
+                        TagTrace["sll.page",ToString[$NotebookPage,InputForm]];
 					    (* specific tagging for this function *)
                         KeyValueMap[TagTrace, tagRules];
                         If[$VerboseTracing,
@@ -56,17 +65,17 @@ AddTracingDefinition[f_Symbol, tagRules_Association, optionsPosition:(_Integer|N
                             )
                         ];
                         (*
-                            We want to separate the inputs from the options, but in general this is tricky at best, and impossibe at worst (ambiguous cases).
-							If an integer corresponding to the index of the options was passed in excplitly, use the argument as the options.
+                            We want to separate the inputs from the options, but in general this is tricky at best, and impossible at worst (ambiguous cases).
+							If an integer corresponding to the index of the options was passed in explicitly, use the argument as the options.
                         *)
-                        If[ 
-                            And[  
+                        If[
+                            And[
 								(* option index was given *)
                                 IntegerQ[optionsPosition],
 								(* options exist in the call being saved *) 
                                 Length[Hold[args]] >= optionsPosition
                             ],
-							(* 
+							(*
 								If 'n' is options position, drop 1;;n-1 elements from the input call
 								this leaves us with just the options
 							*)
@@ -75,10 +84,10 @@ AddTracingDefinition[f_Symbol, tagRules_Association, optionsPosition:(_Integer|N
                             ]
                         ];
 
-                    	(* 
+                    	(*
 							re-call the exact call that got us here, 
 							but now with blocker blocked we'll hit the regular definition 
-						*)		
+						*)
 						(* 
 							if we're in command center, stop subsequent tracing to avoid dynamic things
 							repeatedly hitting tracing. not a problem in any other ECLApplication.
@@ -119,7 +128,12 @@ shrunkenStringExpression[expression_] := StringTake[ToString[ReplaceAll[
 addLogging[] := (
 	addPlotLogging[];
 	addAnalysisLogging[];
-)
+	addExperimentLogging[];
+	(* Ideally, I would like to use check for Engine here instead of this, but for some reason I could not make it work *)
+	If[Length[Names["InternalExperiment`Private`*"]]>100,
+		addEngineTracing[]
+	];
+);
 
 (*
 	Add logging to all command builder plot functions
@@ -138,7 +152,7 @@ addPlotLogging[] := Module[{plotFuncs},
 
 (*
 	Add logging to all command builder Analysis functions.
-	Explicity constructs companion functions in order to get companion-specific tags on them
+	Explicitly constructs companion functions in order to get companion-specific tags on them
 *)
 addAnalysisLogging[] := Module[{parentAnalysisFunctions},
 	parentAnalysisFunctions = Flatten[ Values[ $CommandBuilderFunctions["Analysis"] ] ];
@@ -152,11 +166,92 @@ addAnalysisLogging[] := Module[{parentAnalysisFunctions},
 			AddTracingDefinition[#<>"Preview", <|"sll.function.category"->"Analysis", "sll.companion.type"->"Preview","sll.companion"->"True"|>];
 			(* validq function *)
 			AddTracingDefinition["Valid"<>#<>"Q", <|"sll.function.category"->"Analysis", "sll.companion.type"->"ValidQ","sll.companion"->"True"|>];
-		)&,    
+		)&,
     	parentAnalysisFunctions
 	];
 
 	(* this is not in $CommandBuilderFunctions but is used *)
 	AddTracingDefinition[ECL`AnalyzeFractionsApp,<|"sll.function.category"->"Analysis"|>];
 
+];
+
+(*
+	Add logging to all command builder Experiment functions.
+	Explicitly constructs companion functions in order to get companion-specific tags on them
+*)
+addExperimentLogging[] := Module[{parentExperimentFunctions},
+	parentExperimentFunctions = DeleteDuplicates@Flatten[Values[$CommandBuilderFunctions["Experiment"]]];
+	Map[
+		(
+			(* parent function *)
+			AddTracingDefinition[#,<|"sll.function.category"->"Experiment"|>];
+			(* options function *)
+			AddTracingDefinition[#<>"Options" ,<|"sll.function.category"->"Experiment", "sll.companion.type"->"Options","sll.companion"->"True"|>];
+			(* preview function *)
+			AddTracingDefinition[#<>"Preview", <|"sll.function.category"->"Experiment", "sll.companion.type"->"Preview","sll.companion"->"True"|>];
+			(* validq function *)
+			AddTracingDefinition["Valid"<>#<>"Q", <|"sll.function.category"->"Experiment", "sll.companion.type"->"ValidQ","sll.companion"->"True"|>];
+		)&,
+		parentExperimentFunctions
+	];
+];
+
+
+(*
+	Add logging of all functions we are calling in Engine. We are currently only auto-include helper functions from the InternalExperiment` package and not force-adding anything else since we expect these to be called more frequently
+*)
+addEngineTracing[]:=Module[
+	{
+		executeTasks,executeFunctions,branchTasks,allBranchFunctions,sllBranchFunctions,compileFunctions,parseFunctions,
+		exportFunctions,importFunctions,engineFunctions,allIEprivateSymbols,meaningfulIESymbols,engineSymbolsToTrace,
+		emptyListMemory,extraFunctions
+	},
+
+	(* Pull out  the functions called in Execute and Branch tasks if we have procedures loaded *)
+	If[MatchQ[ProcedureFramework`Private`procedures,<||>],
+		(
+		sllBranchFunctions={};
+		executeFunctions={};
+		),
+		(
+			executeTasks=Cases[Flatten[Values[ProcedureFramework`Private`procedures[[All,"Tasks"]]]],KeyValuePattern[{"TaskType"->"Execute"}]];
+			executeFunctions=ReleaseHold/@DeleteDuplicates[Lookup[Lookup[executeTasks,"Args"],"Function"]];
+			branchTasks=Cases[Flatten[Values[ProcedureFramework`Private`procedures[[All,"Tasks"]]]],KeyValuePattern[{"TaskType"->"Branch"}]];
+
+			(* Get the names of the actual functions (removing input args) *)
+			allBranchFunctions=ReleaseHold/@DeleteDuplicates[Cases[branchTasks,(Verbatim[Function][func_[___]]:>func),Infinity]];
+
+			(* Branch functions may point to Mathematica functions, pull out only SLL functions *)
+			sllBranchFunctions=Select[allBranchFunctions,MatchQ[FunctionPackage[#],_String]&];
+		)
+	];
+
+	(* Lookup functions defined by compiler/parser registers and in software exporter/importer look-ups *)
+	compileFunctions = Values[ECL`CompilerLookup];
+	parseFunctions = Values[ECL`ParserLookup];
+	exportFunctions = Values[ECL`$ExporterLookup];
+	importFunctions = Values[ECL`$ImporterLookup];
+	extraFunctions = {Experiment`Private`ExperimentCover,Experiment`Private`ExperimentUncover};
+
+	engineFunctions = Join[executeFunctions, sllBranchFunctions, compileFunctions, parseFunctions, exportFunctions, importFunctions, extraFunctions];
+
+	(*Determine what functions in the InternalExperiment` package are worth tracing*)
+	allIEprivateSymbols = ToString/@Names["InternalExperiment`Private`*"];
+	emptyListMemory=ByteCount[{}];
+	meaningfulIESymbols = Select[allIEprivateSymbols, Quiet[Check[ByteCount@DownValues[#],0]] > emptyListMemory &];
+
+	(* only pick Private functions since we don't want to accidentally trace something like NullQ *)
+	(* we need ToExpression here because Names returns strings but DownValues are totally fine with this and conveniently Hold everything from evaluating for us *)
+	engineSymbolsToTrace=Select[
+		DeleteDuplicates[ToExpression/@Join[engineFunctions, meaningfulIESymbols]],
+		And[
+			StringContainsQ[ToString[#], "Private"],
+			StringFreeQ[ToString[#], "$"]
+		]&
+	];
+
+	Map[
+		AddTracingDefinition[#,<|"sll.function.category"->StringSplit[ToString[#],"`"][[1]]|>]&,
+		engineSymbolsToTrace
+	]
 ];

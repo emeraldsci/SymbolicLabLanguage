@@ -1034,7 +1034,7 @@ DefineObjectType[Object[Protocol, CyclicVoltammetry], {
 		LoadingSamplePreparationPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SamplePreparationP,
 			Description -> "Instructions specifying the preparation of LoadingSamples solutions. First the Electrolyte is dissolved into the Solvent solution to prepare the ElectrolyteSolution. The ElectrolyteSolution is then used to mix the ReferenceCouplingSample to prepare the ReferenceSolution. The ElectrolyteSolution is also used to mix the solid SamplesIn and an optional InternalStandard to prepare the LoadingSample solution.",
 			Category -> "Sample Preparation"
 		},
@@ -1042,7 +1042,7 @@ DefineObjectType[Object[Protocol, CyclicVoltammetry], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
 			Description -> "The specific subprotocol to prepare the LoadingSamples solutions. First the Electrolyte is dissolved into the Solvent solution to prepare the ElectrolyteSolution. The ElectrolyteSolution is then used to mix the ReferenceCouplingSample to prepare the ReferenceSolution. The ElectrolyteSolution is also used to mix the solid SamplesIn and an optional InternalStandard to prepare the LoadingSample solution.",
 			Category -> "Sample Preparation"
 		},
@@ -1474,7 +1474,7 @@ DefineObjectType[Object[Protocol, CyclicVoltammetry], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> Link,
-			Relation -> Object[Data][Protocol],
+			Relation -> Object[Data],
 			Description -> "For each member of SamplesIn, indicates the data object containing the cyclic voltammetry measurement results. The measurements are performed using the parameters specified in Primary/Secondary/Tertiary/Quaternary-CyclicVoltammetryPotentials.",
 			Category -> "Experimental Results",
 			IndexMatching -> SamplesIn

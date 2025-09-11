@@ -30,7 +30,9 @@ DefineTests[
 			TimeConstraint->300
 		]
 	},
-
+	TurnOffMessages :> {
+		Warning::SampleMustBeMoved
+	},
 	SymbolSetUp:>(
 		(* Set $CreatedObjects to {} to catch all of objects created *)
 		$CreatedObjects={};
@@ -158,7 +160,9 @@ DefineTests[
 			TimeConstraint->300
 		]
 	},
-
+	TurnOffMessages :> {
+		Warning::SampleMustBeMoved
+	},
 	SymbolSetUp:>(
 		(* Set $CreatedObjects to {} to catch all of objects created *)
 		$CreatedObjects={};
@@ -280,7 +284,9 @@ DefineTests[ValidExperimentAdjustpHQ,
 			TimeConstraint->300
 		]
 	},
-
+	TurnOffMessages :> {
+		Warning::SampleMustBeMoved
+	},
 	SymbolSetUp:>(
 		(* Set $CreatedObjects to {} to catch all of objects created *)
 		$CreatedObjects={};

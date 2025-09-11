@@ -281,6 +281,9 @@ DefineUsage[NamedObject,
 			{"NamedObject[obj]", "namedObj", "returns `obj` with the ID replaced with the Name of `obj`, if it has a name. Otherwise just returns `obj`."},
 			{"NamedObject[expr]", "namedExpr", "returns `expr` with all ObjectReferences, Links, and Packets replaced with the ObjectReferences by Name where applicable (to infinite depth)."}
 		},
+		MoreInformation -> {
+			"If a packet containing a name is supplied as input or in the cache, NamedObject doesn't contact the database and therefore object validity is not verified."
+		},
 		Input :> {
 			{"obj", ObjectP[], "A valid SLL object reference, link, or packet."},
 			{"expr", _Expression, "An arbitrary expression."}
@@ -321,7 +324,7 @@ DefineUsage[AchievableResolution,
 			{"achievableAmount", MassP|VolumeP, "An amount that can be measured accurately in the ECL."}
 		},
 		SeeAlso -> {
-			"ExperimentSampleManipulation",
+			"ExperimentSamplePreparation",
 			"ExperimentStockSolution"
 		},
 		Author -> {"daniel.shlian", "tyler.pabst", "steven"}
@@ -354,7 +357,7 @@ DefineUsage[TransferDevices,
 		},
 		SeeAlso -> {
 			"AchievableResolution",
-			"ExperimentSampleManipulation",
+			"ExperimentSamplePreparation",
 			"ExperimentStockSolution"
 		},
 		Author -> {"hayley", "mohamad.zandian"}

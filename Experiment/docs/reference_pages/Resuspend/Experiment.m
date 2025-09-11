@@ -19,15 +19,28 @@ DefineUsage[ExperimentResuspend,
 					IndexMatching[
 						{
 							InputName -> "Sample",
-							Description -> "The sample to be resuspended.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-								Dereference -> {
-									Object[Container] -> Field[Contents[[All, 2]]]
-								},
-								PreparedSample -> False,
-								PreparedContainer -> False
+							Description -> "The sample to be diluted.",
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									},
+									PreparedSample -> False,
+									PreparedContainer -> False
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								]
 							],
 							Expandable -> False
 						},
@@ -38,7 +51,7 @@ DefineUsage[ExperimentResuspend,
 					{
 						OutputName -> "Protocol",
 						Description -> "A protocol containing instructions for completion of the requested sample resuspension.",
-						Pattern :> ObjectP[{Object[Protocol, ManualSamplePreparation],Object[Protocol, RoboticSamplePreparation]}]
+						Pattern :> ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation], Object[Protocol, RoboticSamplePreparation], Object[Protocol, RoboticCellPreparation]}]
 					}
 				}
 			}
@@ -75,19 +88,27 @@ DefineUsage[ExperimentResuspendOptions,
 				Inputs:>{
 					IndexMatching[
 						{
-							InputName -> "Objects",
-							Description-> "The sample to be resuspended.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes->{Object[Sample],Object[Container]},
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							InputName -> "Sample",
+							Description -> "The sample to be diluted.",
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									},
+									PreparedSample -> False,
+									PreparedContainer -> False
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
-							Expandable->False
+							Expandable -> False
 						},
-						IndexName->"experiment samples"
+						IndexName -> "experiment samples"
 					]
 				},
 				Outputs:>{
@@ -128,19 +149,27 @@ DefineUsage[ExperimentResuspendPreview,
 				Inputs:>{
 					IndexMatching[
 						{
-							InputName -> "Objects",
-							Description-> "The sample to be resuspended.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes->{Object[Sample],Object[Container]},
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							InputName -> "Sample",
+							Description -> "The sample to be diluted.",
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									},
+									PreparedSample -> False,
+									PreparedContainer -> False
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
-							Expandable->False
+							Expandable -> False
 						},
-						IndexName->"experiment samples"
+						IndexName -> "experiment samples"
 					]
 				},
 				Outputs:>{
@@ -179,19 +208,27 @@ DefineUsage[ValidExperimentResuspendQ,
 				Inputs:>{
 					IndexMatching[
 						{
-							InputName -> "Objects",
-							Description-> "The sample to be resuspended.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes->{Object[Sample],Object[Container]},
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							InputName -> "Sample",
+							Description -> "The sample to be diluted.",
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									},
+									PreparedSample -> False,
+									PreparedContainer -> False
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
-							Expandable->False
+							Expandable -> False
 						},
-						IndexName->"experiment samples"
+						IndexName -> "experiment samples"
 					]
 				},
 				Outputs:>{

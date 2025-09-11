@@ -131,6 +131,14 @@ DefineObjectType[Model[Instrument, pHMeter], {
 			Description->"For each member of Probes, the minimum required z distance that the probe needs to be submerged for measurement.",
 			IndexMatching -> Probes,
 			Category -> "Instrument Specifications"
+		},
+		TitrationInstrument -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Instrument, pHTitrator],
+			Description -> "The pHTitrator associated with this instrument that perform AdjustpH in Robotic mode.",
+			Category -> "Instrument Specifications"
 		}
 	}
 }];

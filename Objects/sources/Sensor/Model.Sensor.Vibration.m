@@ -10,29 +10,34 @@ DefineObjectType[Model[Sensor, Vibration], {
   Cache->Session,
   Fields -> {
 
+    VibrationSensorType -> {
+      Format -> Single,
+      Class -> Expression,
+      Pattern :> VibrationSensorTypeP,
+      Description -> "The aspect of vibration being measured by this sensor - acceleration or velocity.",
+      Category -> "Sensor Information",
+      Abstract -> True
+    },
     MaxVibration -> {
       Format -> Single,
-      Class -> Real,
-      Pattern :> GreaterEqualP[0*Millimeter/Second],
-      Units -> Millimeter/Second,
+      Class -> VariableUnit,
+      Pattern :> GreaterEqualP[0*Millimeter/Second]|GreaterEqualP[0* Meter/Second^2],
       Description -> "Maximum vibration that can be reliably read by this model of sensor.",
       Category -> "Sensor Information",
       Abstract -> True
     },
     MinVibration -> {
       Format -> Single,
-      Class -> Real,
-      Pattern :> UnitsP[Millimeter/Second],
-      Units -> Millimeter/Second,
+      Class -> VariableUnit,
+      Pattern :> UnitsP[Millimeter/Second]|UnitsP[0* Meter/Second^2],
       Description -> "Minimum vibration that can be reliably read by this model of sensor.",
       Category -> "Sensor Information",
       Abstract -> True
     },
     Resolution -> {
       Format -> Single,
-      Class -> Real,
-      Pattern :> GreaterP[0*Millimeter/Second],
-      Units -> Millimeter/Second,
+      Class -> VariableUnit,
+      Pattern :> GreaterP[0*Millimeter/Second]|GreaterEqualP[0* Meter/Second^2],
       Description -> "This is the smallest change in vibration that corresponds to a change in displayed value. Also known as readability, increment, scale division.",
       Category -> "Sensor Information"
     },

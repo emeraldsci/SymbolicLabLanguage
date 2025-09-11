@@ -55,22 +55,42 @@ DefineObjectType[Object[Maintenance,CalibrateNMRShim],{
 			Category -> "General",
 			Developer -> True
 		},
-		NMRTubePlacements -> {
+		StickerSheet -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item, Consumable] | Model[Item, Consumable],
+			Description -> "A book of laminated sheets that is used to collect the object stickers for NMR tubes going into the instrument. The stickers of NMR tubes are taken off temporarily and collected in this book, and restickered after the measurement is done, because loading NMR tubes with stickers into the NMR instrument can lead to bad shimming, compromised data quality, and even broken tubes inside NMR historically.",
+			Developer -> True,
+			Category -> "General"
+		},
+		UnrackedNMRTubeStickerPositions -> {
+			Format -> Multiple,
+			Class -> {Integer, String},
+			Pattern :> {GreaterP[0], _String},
+			Headers -> {"Page", "Slot Name"},
+			Description -> "For each member of UnrackedNMRTubeLoadingPlacements, indicates the page number and the slot on the StickerSheet book where the sticker of the unracked NMR tube is collected temporarily.",
+			Developer -> True,
+			IndexMatching -> UnrackedNMRTubeLoadingPlacements,
+			Category -> "General"
+		},
+		UnrackedNMRTubePlacements -> {
 			Format -> Multiple,
 			Class -> {Link, Link, String},
 			Pattern :> {_Link, _Link, LocationPositionP},
 			Relation -> {Object[Container], Object[Container], Null},
-			Description -> "A list of placements used to move the NMR tubes onto the NMR tube rack or into the spinners.",
-			Headers -> {"NMR Tube to Place", "NMR Tube Destination", "Placement Position"},
+			Description -> "For each member of UnrackedNMRTubeLoadingPlacements, the placement used to move the NMR tubes into the spinners.",
+			Headers -> {"Spinner", "NMR Tube To Move", "Placement Position"},
 			Category -> "Placements",
+			IndexMatching -> UnrackedNMRTubeLoadingPlacements,
 			Developer -> True
 		},
-		NMRTubeRackPlacements -> {
+		UnrackedNMRTubeLoadingPlacements -> {
 			Format -> Multiple,
 			Class -> {Link, Expression},
 			Pattern :> {_Link, {LocationPositionP..}},
 			Relation -> {Object[Container], Null},
-			Description -> "A list of placements used to move the NMR tube racks onto the NMR autosampler.",
+			Description -> "A list of placements used to move the unracked NMR tubes onto the NMR autosampler.",
 			Headers -> {"NMR Tube Rack to Place", "Placement Tree"},
 			Category -> "Placements",
 			Developer -> True
@@ -82,6 +102,14 @@ DefineObjectType[Object[Maintenance,CalibrateNMRShim],{
 			Relation -> Object[Qualification,NMR],
 			Description -> "The qualification protocol run after calibration to verify it.",
 			Category -> "Experimental Results"
+		},
+		TopSpinVersion -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The current version of TopSpin used by the NMR instrument.",
+			Category -> "General",
+			Developer -> True
 		}
 	}
 }];

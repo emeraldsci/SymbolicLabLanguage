@@ -488,7 +488,7 @@ AnalyzeParallelLineOptions[xySTD:analyzeParallelLineDataP, xyAnalyte:analyzePara
 
 	listedOptions = ToList[ops];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	options = AnalyzeParallelLine[xySTD,xyAnalyte,Append[noOutputOptions,Output->Options]];

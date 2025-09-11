@@ -13,7 +13,7 @@ DefineOptionSet[
     ProtocolOptions,
     SamplesInStorageOption,
     SimulationOption,
-    PostProcessingOptions
+    BiologyPostProcessingOptions
   }
 ];
 
@@ -3394,7 +3394,7 @@ DefineOptionSet[StainMixOptions :> {
     ResidualIncubation,
     {
       Description->"Indicates if the incubation should continue after StainTime has finished while waiting to progress to the next step in the protocol.",
-      ResolutionDescription->"Automatically set to to True if StainTemperature is non-Ambient and the cell samples being incubated are TransportWarmed, or if the cell samples are TransportChilled and StainTemperature is below Ambient, unless otherwise specified in the StainingMethod for the cell line.",
+      ResolutionDescription->"Automatically set to to True if the cell samples have non-ambient TransportTemperature and non-ambient StainTemperature, unless otherwise specified in the StainingMethod for the cell line.",
       Category->"Staining"
     }
   ]/.{ResidualIncubation->StainResidualIncubation}
@@ -4007,7 +4007,7 @@ DefineOptionSet[MordantMixOptions :> {
     ResidualIncubation,
     {
       Description->"Indicates if the incubation should continue after MordantTime has finished while waiting to progress to the next step in the protocol.",
-      ResolutionDescription->"Automatically set to to True if MordantTemperature is non-Ambient and the cell samples being incubated are TransportWarmed, or if the cell samples are TransportChilled and MordantTemperature is below Ambient, unless otherwise specified in the StainingMethod for the cell line.",
+      ResolutionDescription->"Automatically set to to True if MordantTemperature is non-Ambient and the cell samples being incubated have non-ambient TransportTemperature, unless otherwise specified in the StainingMethod for the cell line.",
       Category->"Mordanting"
     }
   ]/.{ResidualIncubation->MordantResidualIncubation}
@@ -4621,7 +4621,7 @@ DefineOptionSet[DecolorizerMixOptions :> {
     ResidualIncubation,
     {
       Description->"Indicates if the incubation should continue after DecolorizerTime has finished while waiting to progress to the next step in the protocol.",
-      ResolutionDescription->"Automatically set to to True if DecolorizerTemperature is non-Ambient and the cell samples being incubated are TransportWarmed, or if the cell samples are TransportChilled and DecolorizerTemperature is below Ambient, unless otherwise specified in the StainingMethod for the cell line.",
+      ResolutionDescription->"Automatically set to to True if DecolorizerTemperature is non-Ambient and the cell samples being incubated have non-Ambient TransportTemperature, unless otherwise specified in the StainingMethod for the cell line.",
       Category->"Decolorizing"
     }
   ]/.{ResidualIncubation->DecolorizerResidualIncubation}
@@ -5236,7 +5236,7 @@ DefineOptionSet[CounterStainMixOptions :> {
     ResidualIncubation,
     {
       Description->"Indicates if the incubation should continue after CounterStainTime has finished while waiting to progress to the next step in the protocol.",
-      ResolutionDescription->"Automatically set to to True if CounterStainTemperature is non-Ambient and the cell samples being incubated are TransportWarmed, or if the cell samples are TransportChilled and CounterStainTemperature is below Ambient, unless otherwise specified in the StainingMethod for the cell line.",
+      ResolutionDescription->"Automatically set to to True if CounterStainTemperature is non-Ambient and the cell samples being incubated have non-Ambient TransportTemperature, unless otherwise specified in the StainingMethod for the cell line.",
       Category->"Counter Staining"
     }
   ]/.{ResidualIncubation->CounterStainResidualIncubation}
@@ -5690,26 +5690,11 @@ DefineOptionSet[CellMixOptions :> {
       AllowNull->True,
       Widget -> Widget[Type->Enumeration,Pattern:>BooleanP],
       Description->"Indicates if the incubation and/or mixing should continue after Time/MaxTime has finished while waiting to progress to the next step in the protocol.",
-      ResolutionDescription->"Automatically resolves to True if Temperature is non-Ambient and the samples being incubated are TransportWarmed.",
+      ResolutionDescription->"Automatically resolves to True if Temperature is non-Ambient and the samples being incubated have non-ambient TransportTemperature.",
       Category->"Mix"
     }
   ]
 }];
-
-(* ::Subsection::Closed:: *)
-(*CellPreparatoryUnitOperationsOptions*)
-DefineOptionSet[
-  CellPrepOptions:>{
-    {
-      OptionName->CellPreparatoryUnitOperations,
-      Default->Null,
-      Description->"Specifies a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSampleManipulation.",
-      AllowNull->True,
-      Category->"Sample Preparation",
-      Widget->sampleManipulationWidget
-    }
-  }
-];
 
 
 (* ::Subsection:: *)
@@ -5988,7 +5973,7 @@ DefineOptionSet[
     {
       OptionName -> CellType,
       Default -> Automatic,
-      Description->"The taxon of the organism or cell line from which the cell sample originates. Options include Bacterial, Mammalian, Insect, Plant, and Yeast.",
+      Description->"The taxon of the organism or cell line from which the cell sample originates. Options include Bacterial, Mammalian, and Yeast.",
       ResolutionDescription -> "Automatically set to the CellType field of the input sample. If the CellType field of the input sample is Unspecified, automatically set to the majority cell type of the input sample based on its composition.",
       AllowNull -> True,
       Widget -> Widget[

@@ -27,6 +27,11 @@ DefineTests[PlotConductivity,
       _?ValidGraphicsQ
     ],
     Example[
+      {Basic,"Plots conductivity data when given a conductivity protocol object:"},
+      PlotConductivity[Object[Data, Conductivity, "id:Vrbp1jKr3rae"][Protocol]],
+      SlideView[{ValidGraphicsP[] ..}]
+    ],
+    Example[
       {Options,TargetUnits,"Specify units for the XY axes:"},
       PlotConductivity[Object[Data, Conductivity, "id:Vrbp1jKr3rae"], TargetUnits -> Automatic],
       _?ValidGraphicsQ

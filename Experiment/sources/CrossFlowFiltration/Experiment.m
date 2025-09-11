@@ -202,7 +202,7 @@ DefineOptions[ExperimentCrossFlowFiltration,
 					"Volume"->Widget[Type->Quantity,Pattern:>RangeP[1 Milliliter,18 Liter],Units->Milliliter],
 					"Weight"->Widget[Type->Quantity,Pattern:>GreaterP[1 Gram],Units->Gram]
 				],
-				Description->"The amount of DiafiltrationBuffer for Diafiltration, ConcentrationDiafiltration and ConcentrationDiafiltrationConcentration mode. This option can be specified as \"Fold\", \"Volumne\" and \"Weight\". If specified as \"Volumne\" and \"Weight\", the exact amount (in volume or mass) of DiafiltrationBuffer is used. If specified as \"Fold\", the experiment uses Fold * SampleInVolume for DiafiltrationBuffer. Note: 99.3% of solvent in the sample will be exchanged when Fold -> 5.",
+				Description->"The amount of DiafiltrationBuffer for Diafiltration, ConcentrationDiafiltration and ConcentrationDiafiltrationConcentration mode. This option can be specified as \"Fold\", \"Volume\" and \"Weight\". If specified as \"Volume\" and \"Weight\", the exact amount (in volume or mass) of DiafiltrationBuffer is used. If specified as \"Fold\" and FiltrationMode is Diafiltration, the experiment uses Fold * SampleInVolume for DiafiltrationBuffer. If specified as \"Fold\" and FiltrationMode is ConcentrationDiafiltration or ConcentrationDiafiltrationConcentration, the experiment uses Fold * (SampleInVolume - PrimaryConcentrationTarget) if PrimaryConcentrationTarget is specified as Volume, or Fold * (SampleInVolume / PrimaryConcentrationTarget) if PrimaryConcentrationTarget is specified as a Concentration Factor for DiafiltrationBuffer. For example, given {DiafiltrationTarget -> 5, FiltrationMode -> Diafiltration, SampleInVolume is 6 Milliliter}, the DiafiltrationBuffer volume is (5 * 6 =) 30 Milliliter; given {DiafiltrationTarget -> 5, FiltrationMode -> ConcentrationDiafiltration, SampleInVolume is 6 Milliliter, PrimaryConcentrationTarget -> 2 Milliliter}, the DiafiltrationBuffer volume is (5 * (6 - 2) =) 20 Milliliter; given {DiafiltrationTarget -> 5, FiltrationMode -> Diafiltration, SampleInVolume is 6 Milliliter, PrimaryConcentrationTarget -> 2}, the DiafiltrationBuffer volume is (5 * (6 / 2) =) 15 Milliliter.",
 				ResolutionDescription->"Automatically set 5 if FiltrationMode is Diafiltration, ConcentrationDiafiltration or ConcentrationDiafiltrationConcentration.",
 				Category->"Filtration"
 			},
@@ -212,8 +212,8 @@ DefineOptions[ExperimentCrossFlowFiltration,
 				AllowNull->True,
 				Widget->Alternatives[
 					"Concentration Factor"->Widget[Type->Number,Pattern:>GreaterEqualP[1]],
-					"Volume"->Widget[Type->Quantity,Pattern:>RangeP[1 Milliliter,18 Liter],Units->Milliliter],
-					"Weight"->Widget[Type->Quantity,Pattern:>GreaterP[1 Gram],Units->Gram]
+					"Volume"->Widget[Type->Quantity,Pattern:>RangeP[0 Milliliter,18 Liter],Units->Milliliter],
+					"Weight"->Widget[Type->Quantity,Pattern:>GreaterEqualP[0 Gram],Units->Gram]
 				],
 				Description->"The amount of volume or the factor of volume for the first concentration process of sample that will be removed from the sample to the permeate during concentration.",
 				ResolutionDescription->"Automatically set to 10 if FiltrationMode is Concentration or ConcentrationDiafiltration and. Automatically set to 5 if FiltrationMode is ConcentrationDiafiltrationConcentration and SecondaryConcentrationTarget is not specified. If FiltrationMode is ConcentrationDiafiltrationConcentration SecondaryConcentrationTarget is specified, this option will set to (10/SecondaryConcentrationTarget) to result in a 10-fold concentration across both concentration steps.",
@@ -225,8 +225,8 @@ DefineOptions[ExperimentCrossFlowFiltration,
 				AllowNull->True,
 				Widget->Alternatives[
 					"Concentration Factor"->Widget[Type->Number,Pattern:>GreaterEqualP[1]],
-					"Volume"->Widget[Type->Quantity,Pattern:>RangeP[1 Milliliter,18 Liter],Units->Milliliter],
-					"Weight"->Widget[Type->Quantity,Pattern:>GreaterP[1 Gram],Units->Gram]
+					"Volume"->Widget[Type->Quantity,Pattern:>RangeP[0 Milliliter,18 Liter],Units->Milliliter],
+					"Weight"->Widget[Type->Quantity,Pattern:>GreaterEqualP[0 Gram],Units->Gram]
 				],
 				Description->"The amount of volume or the factor of volume for the second portion of sample that will be removed from the sample to the permeate during concentration.",
 				ResolutionDescription->"Automatically set based on FiltrationMode and PrimaryConcentrationTarget. When PrimaryConcentrationTarget is not specified, this option is set to 2 if FiltrationMode is ConcentrationDiafiltrationConcentration. If PrimaryConcentrationTarget is specified, this option will set to (10/PrimaryConcentrationTarget) to result in a 10-fold concentration across both concentration steps.",
@@ -367,7 +367,7 @@ DefineOptions[ExperimentCrossFlowFiltration,
 					}]
 				],
 				Description->"Container used to store the sample during the experiment.",
-				ResolutionDescription->"When usingModel[Instrument,CrossFlowFiltration,\"KrosFlo KR2i\"] as the Instrument, automatically set to the smallest Object[Container, Vessel, CrossFlowContainer] that can accommodate the entire sample volume. Otherwise, set based on the container of SamplesIn, if the SamplesIn are contained in containers with a model Model[Container, Vessel, \"50mL Tube\"], set to the object of those containers, else set to Model[Container, Vessel, \"50mL Tube\"].",
+				ResolutionDescription->"When using Model[Instrument,CrossFlowFiltration,\"KrosFlo KR2i\"] as the Instrument, automatically set to the smallest Object[Container, Vessel, CrossFlowContainer] that can accommodate the entire sample volume. Otherwise, set based on the container of SamplesIn, if the SamplesIn are contained in containers with a model Model[Container, Vessel, \"50mL Tube\"], set to the object of those containers, else set to Model[Container, Vessel, \"50mL Tube\"].",
 				Category->"Instrument Setup"
 			},
 			{
@@ -383,7 +383,7 @@ DefineOptions[ExperimentCrossFlowFiltration,
 				Category->"Filtration"
 			},
 			(* ---------- Output ---------- *)
-			
+
 			{
 				OptionName->RetentateContainerOut,
 				Default->Automatic,
@@ -632,7 +632,8 @@ DefineOptions[ExperimentCrossFlowFiltration,
 			ResolutionDescription->"When usingModel[Instrument,CrossFlowFiltration,\"KrosFlo KR2i\"] as the Instrument, if FilterFlush is True, automatically set to 10 PSI.",
 			Category->"Flushing"
 		},
-		FuntopiaSharedOptions,
+		ModelInputOptions,
+		NonBiologyFuntopiaSharedOptions,
 		SamplesInStorageOption,
 		SimulationOption
 	}
@@ -670,7 +671,7 @@ Warning::CrossFlowFilterSpecifiedMismatch="The specified filter `1` does not mat
 Warning::CrossFlowNonOptimalSizeCutoff="The sample `1` does not have molecular weight information for some components, so the largest possible value for SizeCutoff will be returned (`2`). Please populate the MolecularWeight field for the relevant molecules in the Composition of `1`, or specify SizeCutoff or CrossFlowFilter options.";
 Warning::CrossFlowDiafiltrationBufferIgnored="A diafiltration buffer was specified for a concentration only recipe. The specified buffer `1` will be ignored.";
 Warning::CrossFlowDiafiltrationTubingIgnored="Tubing was specified for the diafiltration buffer for a concentration only recipe. The specified Tubing for the diafiltration buffer `1` will be ignored.";
-Error::CrossFlowRetentateVolumeTooLow="The retentate volume specified by `1` is below the minimum amount that can be handled by the `2` `3`. Please increase the retentate volume by adjusting `1`.";
+Error::CrossFlowRetentateVolumeTooLow="The calculated final retentate volume `1` for sample(s) `2` is below the minimum amount that can be handled by the filtration container or filter `3` (`4`). Please increase the retentate volume by adjusting `1`, or decrease the input sample volume such that it can fit into a smaller filtration container.";
 Warning::CrossFlowFilterUnavailableFilters="Even though the experiment resolved to Sterile, a sterile filter with the specified SizeCutoff `1` could not be found. A non-sterile filter with the specified cutoff will be returned. If a non-sterile filter is not acceptable for this experiment, please specify a CrossFlowFilter.";
 Warning::CrossFlowDefaultFilterReturned="Since a filter with required sterility, volume range and size cutoff could not be found, a default filter will be returned. If this filter is not acceptable for this experiment, please specify a different SizeCutoff or a CrossFlowFilter.";
 Error::CrossFlowDiafiltrationTubingMissing="The diafiltration tubing (last element of Tubing) was specified as Null even though a diafiltration is part of the requested recipe. Please change the last element of Tubing to a valid tubing object.";
@@ -678,7 +679,6 @@ Error::CrossFlowPermeateExceedsCapacity="The permeate volume exceeds the capacit
 Error::CrossFlowSampleDeadVolume="The Sample volume (`1`) and/or the expected retentate volume (`2`), are below the cross-filtration system's dead-volume plus the sample reservoirs minimum volume, (`3`). This will result in drawing air into the system and increasing pressures. Please increase the initial volume, decrease the target concentration factor, or let these options resolve automatically.";
 Warning::CrossFlowPrimeBuffersIncompatible="The FilterPrimeRinseBuffer (`1`) and the first DiafiltrationBuffer (`2`) are not of the same model. Please make sure this is indeed desired and adjust the FilterPrimeRinseBuffer accordingly, or set it to Automatic.";
 Error::CrossFlowInvalidTubing="The tubing specified for `1` is not appropriate. The specified tubing must be with the appropriate connectors (`2`) and lengths (`3`).";
-Warning::CrossFlowFilterPrimeVolumeTooLow="The specified FilterPrimeVolume `1` is too low to fully wet the surface of the specified CrossFlowFilter. A filter prime volume of `` will be returned. If FilterPrimeVolume `1` is not acceptable for this experiment, please specify a different FilterPrimeVolume or CrossFlowFilter.";
 Error::CrossFlowFilteConflictingFilterStorageCondition="The filter was specified multiple storage conditions `2`. The experiment cannot proceed with conflicting storage information.";
 Error::CrossFlowFiltrationUnneededOptions="The specified option(s), `1`, is not required when the instrument is set to `2`. Please leave these options as Automatic.";
 Error::CrossFlowFiltrationRequiredOptions="The specified option(s), `1`, cannot be set to Null when the instrument is set to `2`. Please leave these options as Automatic or set them accordingly.";
@@ -688,9 +688,13 @@ Error::CrossFlowFilterDiaFiltrationExchangeCount="When using uPulse, the specifi
 Error::CrossFlowFilterInvalidDiaFiltrationMode="When using uPulse, the specified sample(s), `1`, has specified FiltrationMode `2` that are not supported by the Instrument `3`.";
 Error::CrossFlowFilterInvalidDiafiltrationTarget="When using uPulse, the specified sample(s), `1`, has specified DiafiltrationTarget `2` that require exchange `3` volumes. However when using uPulse, the ExperimentCrossFlowFiltration only allows to exchange 45 milliliter when using uPulse as the instrument.";
 Error::CrossFlowFilterInvalidDeadVolumeRecoveryMode="The specified sample(s), `1`, has specified DeadVolumeRecoveryMode `2` that conflict with the Instrument `3` and the FiltrationMode `4`. If using Model[Instrument, CrossFlowFiltration, \"KrosFlo KR2i\"] as the Instrument, this option can only be set to Null. If using Model[Instrument, CrossFlowFiltration, \"\[Micro]PULSE - TFF\"] as the Instrument, this option can be Air, Null or Buffer, but can only be set to Buffer when FiltrationMode requires Diafiltration (ConcentrationDiafiltrationConcentration or ConcentrationDiafiltration).";
-Error::CrossFlowTooManySamples="When using `1` as the instrument, less or equal to 10 samples can be ran for each experiment. Please consider separate these samples into two experiment."
+Error::CrossFlowTooManySamples="When using `1` as the instrument, less or equal to 10 samples can be ran for each experiment. Please consider separate these samples into two experiment.";
 Error::CrossFlowKR2ICannotRunMultipleSamples="When using `1` as the instrument, only 1 sample can be ran for each experiment, due to long instrument set-up time. Please separate these samples into multiple experiment. If sample volume is not too large (e.g. < 200 mL), consider using Model[Instrument, CrossFlowFiltration, \"\[Micro]PULSE - TFF\"] as the Instrument and filter these sample in multiple 50mL Tubes (Model[Container, Vessel, \"50mL Tube\"]).";
 
+(* ::Subsection:: *)
+(* Constants *)
+$MinMicropulseRetentateVolume = 1.5 Milliliter;
+$uPulseFilterRate = 1.5 Milliliter/Minute;
 (* ::Subsection:: *)
 (*List overload*)
 
@@ -698,7 +702,7 @@ Error::CrossFlowKR2ICannotRunMultipleSamples="When using `1` as the instrument, 
 (* ExperimentCrossFlowFiltration (container input) *)
 
 
-ExperimentCrossFlowFiltration[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String|{LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions : OptionsPattern[ExperimentCrossFlowFiltration]] := Module[
+ExperimentCrossFlowFiltration[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String|{LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions : OptionsPattern[ExperimentCrossFlowFiltration]] := Module[
 	{listedOptions, outputSpecification, output, gatherTests, containerToSampleResult, samplePreparationSimulation,containerToSampleSimulation,
 		containerToSampleTests, messages, listedContainers, validSamplePreparationResult, myOptionsWithPreparedSamplesNamed,
 		samples, sampleOptions, containerToSampleOutput, mySamplesWithPreparedSamplesNamed},
@@ -712,7 +716,7 @@ ExperimentCrossFlowFiltration[myContainers : ListableP[ObjectP[{Object[Container
 	messages = Not[gatherTests];
 	
 	(* make sure we're working with a list of options and samples, and remove all temporal links *)
-	{listedContainers, listedOptions} = removeLinks[ToList[myContainers], ToList[myOptions]];
+	{listedContainers, listedOptions} = {ToList[myContainers], ToList[myOptions]};
 	
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
@@ -723,7 +727,7 @@ ExperimentCrossFlowFiltration[myContainers : ListableP[ObjectP[{Object[Container
 			ToList[myOptions]
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 	
 	(* If we are given an invalid define name, return early. *)
@@ -787,13 +791,13 @@ ExperimentCrossFlowFiltration[myContainers : ListableP[ObjectP[{Object[Container
 ExperimentCrossFlowFiltration[mySamples:ListableP[ObjectP[{Object[Sample]}]],myOptions:OptionsPattern[]]:=Module[
 	{
 		(* Initial options handling *)
-		outputSpecification,output,gatherTests,messages,listedSamples,listedOptions,validSamplePreparationResult,samplePreparationSimulation,mySamplesWithPreparedSamplesNamed,sample,validLengths,validLengthTests,safeOptionsNamed,safeOpsTests,myOptionsWithPreparedSamplesNamed,safeOps,templatedOptions,templateTests,inheritedOptions,expandedSafeOps,expandedSafeOpsAssociation,allOtherObjects,
+		outputSpecification,output,gatherTests,messages,listedSamples,listedOptions,validSamplePreparationResult,samplePreparationSimulation,mySamplesWithPreparedSamplesNamed,validLengths,validLengthTests,safeOptionsNamed,safeOpsTests,myOptionsWithPreparedSamplesNamed,safeOps,templatedOptions,templateTests,inheritedOptions,expandedSafeOps,expandedSafeOpsAssociation,allOtherObjects,
 		
 		(* Error checking for specified objects *)
-		allObjectInputs,validObjectsQList,myOptionsWithPreparedSamples,mySamplesWithPreparedSamples,cache,
+		myOptionsWithPreparedSamples,mySamplesWithPreparedSamples,cache,
 		
 		(* Cacheball variables *)
-		initialInstrument,instrumentModels,initialSampleReservoirs,sampleReservoirModels,initialFilter,filterModels,initialPrecutTubingObjects,initialPrecutTubingModels,initialTubing,tubingModels,precutTubingModels,initialContainers,moleculeModels,initialDiafiltrationBuffer,initialFilterPrimeRinseBuffer,objectSampleFields,objectContainerFields,modelContainerFields,packetObjectSample,packetObjectContainer,packetModelContainer,packetOutputContainer,downloadedPackets,cacheBall,outputContainerFields,outputContainerModels,
+		initialInstrument,instrumentModels,instrumentObjects,initialSampleReservoirs,sampleReservoirModels,initialFilter,filterModels,initialPrecutTubingObjects,initialPrecutTubingModels,initialTubing,tubingModels,precutTubingModels,initialContainers,moleculeModels,initialDiafiltrationBuffer,initialFilterPrimeRinseBuffer,objectSampleFields,objectContainerFields,modelContainerFields,packetObjectSample,packetObjectContainer,packetModelContainer,packetOutputContainer,downloadedPackets,cacheBall,outputContainerFields,outputContainerModels,
 		
 		(* Resolver and resource variables *)
 		resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,resourcePackets,resourcePacketTests,protocolObject,uPulseFilterChipModels, filterObjects,
@@ -827,7 +831,7 @@ ExperimentCrossFlowFiltration[mySamples:ListableP[ObjectP[{Object[Sample]}]],myO
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 	
 	(* If we are given an invalid define name, return early. *)
@@ -844,6 +848,9 @@ ExperimentCrossFlowFiltration[mySamples:ListableP[ObjectP[{Object[Sample]}]],myO
 		{SafeOptions[ExperimentCrossFlowFiltration,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],{}}
 	];
 
+	(* replace all objects referenced by Name to ID *)
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> samplePreparationSimulation];
+
 	(* If the specified options don't match their patterns, or option lengths are invalid, return $Failed *)
 	If[
 		FailureQ[safeOps],
@@ -854,9 +861,6 @@ ExperimentCrossFlowFiltration[mySamples:ListableP[ObjectP[{Object[Sample]}]],myO
 			Preview->Null
 		}]
 	];
-	
-	(* replace all objects referenced by Name to ID *)
-	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed];
 	
 	(* Check if all options are the right length *)
 	{validLengths,validLengthTests}=If[
@@ -905,44 +909,6 @@ ExperimentCrossFlowFiltration[mySamples:ListableP[ObjectP[{Object[Sample]}]],myO
 	
 	(* ---------- Create and Download Cacheball ---------- *)
 	
-	(* ----- Check if all objects are in the database ----- *)
-	
-	(* List of all options that can be objects *)
-	allObjectInputs=Flatten[
-		{
-			CrossFlowFilter,
-			SampleReservoir,
-			DiafiltrationBufferContainerToFeedContainerTubing,
-			FeedContainerToFeedPressureSensorTubing,
-			PermeatePressureSensorToConductivitySensorTubing,
-			RetentatePressureSensorToConductivitySensorTubing,
-			RetentateConductivitySensorToFeedContainerTubing,
-			AbsorbanceInTubing,
-			AbsorbanceOutTubing,
-			FilterPrimeBuffer,
-			FilterPrimeRinseBuffer,
-			FilterFlushBuffer,
-			PermeateContainerOut,
-			DiafiltrationBuffer,
-			RetentateContainerOut,
-			Instrument
-		}
-	]/.Null->Nothing;
-	
-	(* Make a list of all specified objects *)
-	validObjectsQList=If[
-		
-		(* If no prep primitives, put in sample -- convert automatic to an existing object to make it pass DatabaseMemberQ *)
-		NullQ[Lookup[expandedSafeOpsAssociation,PreparatoryUnitOperations]] && NullQ[Lookup[expandedSafeOpsAssociation,PreparatoryPrimitives]],
-		Join[
-			Flatten[Lookup[expandedSafeOpsAssociation,allObjectInputs]],
-			sample
-		]/.Automatic->Model[Molecule,"Water"],
-		
-		(* Otherwise, don't include sample as it was defined as a primitive and will fail the database check *)
-		Flatten[Lookup[expandedSafeOpsAssociation,allObjectInputs]]/.Automatic->Model[Molecule,"Water"]
-	];
-	
 	(* ----- Find Instruments ----- *)
 	
 	(* Check if instrument is specified as an object *)
@@ -958,6 +924,7 @@ ExperimentCrossFlowFiltration[mySamples:ListableP[ObjectP[{Object[Sample]}]],myO
 	(* Find all output containers *)
 	{
 		instrumentModels,
+		instrumentObjects,
 		sampleReservoirModels,
 		filterModels,
 		tubingModels,
@@ -968,6 +935,7 @@ ExperimentCrossFlowFiltration[mySamples:ListableP[ObjectP[{Object[Sample]}]],myO
 	}=Search[
 		{
 			Model[Instrument,CrossFlowFiltration],
+			Object[Instrument,CrossFlowFiltration],
 			Model[Container,Vessel,CrossFlowContainer],
 			Model[Item,CrossFlowFilter],
 			Model[Plumbing, Tubing],
@@ -978,6 +946,7 @@ ExperimentCrossFlowFiltration[mySamples:ListableP[ObjectP[{Object[Sample]}]],myO
 		},
 		{
 			Deprecated!=True,
+			DateRetired == Null && DeveloperObject != True,
 			Deprecated!=True,
 			Deprecated!=True,
 			StringContainsQ[Name, "PharmaPure"]&&Deprecated!=True,
@@ -993,6 +962,7 @@ ExperimentCrossFlowFiltration[mySamples:ListableP[ObjectP[{Object[Sample]}]],myO
 			CleanerOnly == (False | Null) && (Deprecated!=True)
 		},
 		SubTypes-> {
+			True,
 			True,
 			True,
 			True,
@@ -1103,6 +1073,7 @@ ExperimentCrossFlowFiltration[mySamples:ListableP[ObjectP[{Object[Sample]}]],myO
 	downloadedPackets=Quiet[
 		Download[
 			{
+				instrumentObjects,
 			sampleReservoirModels,
 			filterModels,
 			uPulseFilterChipModels,
@@ -1116,7 +1087,8 @@ ExperimentCrossFlowFiltration[mySamples:ListableP[ObjectP[{Object[Sample]}]],myO
 			allOtherObjects
 			},
 			{
-				{Packet[Name, MinVolume, MaxVolume, Sterile, CapConnectionTypes,CapConnectionSizes, Connectors, Deprecated, Footprint, Positions,SelfStanding, RentByDefault,DefaultStorageCondition, Aperture, InternalDepth, OpenContainer,Dimensions, InternalDimensions, InternalDiameter, MaxTemperature,MinTemperature, MaxCentrifugationForce, AvailableLayouts,LiquidHandlerAdapter, ContainerMaterials, Immobile,CompatibleCoverFootprints, AluminumFoil, Ampoule, BuiltInCover,CompatibleCoverTypes, Counterweights, EngineDefault, Hermetic,Opaque, Parafilm, RequestedResources, Reusability, RNaseFree,Squeezable, StorageBuffer, StorageBufferVolume, TareWeight,VolumeCalibrations, Model, Status, InletRetentateConnectionType,InletRetentateConnectionSize, PermeateConnectionType,PermeateConnectionSize, InnerDiameter, WettedMaterials,IncompatibleMaterials, DefaultFlowRate, SizeCutoff,FilterSurfaceArea, Density, MembraneMaterial, ModuleFamily,MolecularWeightCutoff]},
+				{Packet[Name, Model]},
+				{Packet[Name, MinVolume, MaxVolume, Sterile, CapConnectionTypes,CapConnectionSizes, Connectors, Deprecated, Footprint, Positions,SelfStanding, RentByDefault,DefaultStorageCondition, Aperture, InternalDepth, OpenContainer,Dimensions, InternalDimensions, InternalDiameter, MaxTemperature,MinTemperature, MaxCentrifugationForce, AvailableLayouts,LiquidHandlerAdapter, ContainerMaterials, Immobile,CompatibleCoverFootprints, AluminumFoil, Ampoule, BuiltInCover,CompatibleCoverTypes, Counterweights, EngineDefault, Hermetic,Opaque, Parafilm, RequestedResources, Reusable, RNaseFree,Squeezable, StorageBuffer, StorageBufferVolume, TareWeight,VolumeCalibrations, Model, Status, InletRetentateConnectionType,InletRetentateConnectionSize, PermeateConnectionType,PermeateConnectionSize, InnerDiameter, WettedMaterials,IncompatibleMaterials, DefaultFlowRate, SizeCutoff,FilterSurfaceArea, Density, MembraneMaterial, ModuleFamily,MolecularWeightCutoff]},
 				{Packet[Name,ModuleFamily,SizeCutoff,MembraneMaterial,Sterile,FilterSurfaceArea,MinVolume,MaxVolume,InletRetentateConnectionType,InletRetentateConnectionSize,PermeateConnectionType,PermeateConnectionSize,DefaultFlowRate,Connectors,FilterType,RentByDefault]},
 				{Packet[MolecularWeightCutoff,MaxVolumeOfUses,MembraneMaterial,Sterile,MinVolume]},
 				{Packet[Name,InnerDiameter,Connectors,ParentTubing,Size]},
@@ -1126,13 +1098,13 @@ ExperimentCrossFlowFiltration[mySamples:ListableP[ObjectP[{Object[Sample]}]],myO
 				{packetObjectContainer},
 				{Packet[Name,Density,Viscosity]},
 				{Packet[Model]},
-				{Packet[Model, VolumeOfUses],Packet[Model],Packet[DefaultStorageCondition, Aperture, InternalDepth, OpenContainer,Dimensions, InternalDimensions, InternalDiameter, MaxTemperature,MinTemperature, MaxCentrifugationForce, AvailableLayouts,LiquidHandlerAdapter, ContainerMaterials, Immobile,CompatibleCoverFootprints, AluminumFoil, Ampoule, BuiltInCover,CompatibleCoverTypes, Counterweights, EngineDefault, Hermetic,Opaque, Parafilm, RequestedResources, Reusability, RNaseFree,Squeezable, StorageBuffer, StorageBufferVolume, TareWeight,VolumeCalibrations, Name, Model, Status, MinVolume, MaxVolume,CapConnectionTypes, CapConnectionSizes, InletRetentateConnectionType,InletRetentateConnectionSize, PermeateConnectionType,PermeateConnectionSize, Connectors, InnerDiameter, WettedMaterials,IncompatibleMaterials, DefaultFlowRate, SizeCutoff,FilterSurfaceArea, Density, MembraneMaterial, ModuleFamily,MolecularWeightCutoff, Sterile, SelfStanding,RentByDefault]}
+				{Packet[Model, VolumeOfUses],Packet[Model],Packet[DefaultStorageCondition, Aperture, InternalDepth, OpenContainer,Dimensions, InternalDimensions, InternalDiameter, MaxTemperature,MinTemperature, MaxCentrifugationForce, AvailableLayouts,LiquidHandlerAdapter, ContainerMaterials, Immobile,CompatibleCoverFootprints, AluminumFoil, Ampoule, BuiltInCover,CompatibleCoverTypes, Counterweights, EngineDefault, Hermetic,Opaque, Parafilm, RequestedResources, Reusable, RNaseFree,Squeezable, StorageBuffer, StorageBufferVolume, TareWeight,VolumeCalibrations, Name, Model, Status, MinVolume, MaxVolume,CapConnectionTypes, CapConnectionSizes, InletRetentateConnectionType,InletRetentateConnectionSize, PermeateConnectionType,PermeateConnectionSize, Connectors, InnerDiameter, WettedMaterials,IncompatibleMaterials, DefaultFlowRate, SizeCutoff,FilterSurfaceArea, Density, MembraneMaterial, ModuleFamily,MolecularWeightCutoff, Sterile, SelfStanding,RentByDefault]}
 			},
 			Cache->cache,
 			Date->Now,
 			Simulation->samplePreparationSimulation
 		],
-		{Download::FieldDoesntExist,Download::ObjectDoesNotExist}
+		{Download::FieldDoesntExist}
 	];
 
 	(* Clean up the cacheball *)
@@ -1189,7 +1161,7 @@ ExperimentCrossFlowFiltration[mySamples:ListableP[ObjectP[{Object[Sample]}]],myO
 			Cache->cacheBall,
 			Simulation->samplePreparationSimulation
 		],
-		{Null, Null}
+		{Null, samplePreparationSimulation}
 	];
 	
 	
@@ -1208,15 +1180,16 @@ ExperimentCrossFlowFiltration[mySamples:ListableP[ObjectP[{Object[Sample]}]],myO
 	(* If we are returning the result, prepare the protocol packet and upload if requested *)
 	protocolObject=If[
 		!MatchQ[resourcePackets,$Failed]&&!MatchQ[resolvedOptionsResult,$Failed],
-		ECL`InternalUpload`UploadProtocol[
+		UploadProtocol[
 			resourcePackets,
 			Upload->Lookup[expandedSafeOps,Upload],
 			Confirm->Lookup[expandedSafeOps,Confirm],
+			CanaryBranch->Lookup[expandedSafeOps,CanaryBranch],
 			Email->Lookup[expandedSafeOps,Email],
 			ParentProtocol->Lookup[expandedSafeOps,ParentProtocol],
 			ConstellationMessage->{Object[Protocol,CrossFlowFiltration]},
 			Cache->cacheBall,
-			Simulation->samplePreparationSimulation
+			Simulation-> updatedSimulation
 		],
 		$Failed
 	];
@@ -1262,7 +1235,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 		simulation, updatedSimulation, implyK2RIQ,resolvedInstrument,resolvedInstrumentModel,uPulseQ,initialSizeCutoff,
 		
 		(* Cacheball extraction *)
-		filterModelPackets,tubingModelPackets,precutTubingModelPackets,outputContainerModelPackets,solventModelPackets,instrumentModelPackets,sampleComponentPackets,simulatedSamplePackets,nonDeveloperSampleReservoirs,sampleReservoirModelPackets,sampleModelPackets,inputInstrumentPacket,inputFilterPackets,inputFilterModelPacket,inputSampleReservoirPackets,inputRetentateContainerPacket,inputPermeateContainerPackets,sampleNames,sampleStorageConditionModels,sampleStorageConditionExpression,sterileContainers,nonSterileContainers,
+		filterModelPackets,tubingModelPackets,precutTubingModelPackets,outputContainerModelPackets,solventModelPackets,instrumentModelPackets,sampleComponentPackets,simulatedSamplePackets,nonDeveloperSampleReservoirs,sampleReservoirModelPackets,sampleModelPackets,inputInstrumentPacket,inputFilterPackets,inputFilterModelPacket,inputSampleReservoirPackets,inputRetentateContainerPacket,inputPermeateContainerPackets,sampleNames,sampleStorageConditionModels,sampleStorageConditionExpression,
 		
 		(* Input validation check variables *)
 		discardedInputs,discardedTest,sampleContainerPackets,sampleVolumes,volumeInformationValidQ,sampleMissingVolumeTest,volumeInformationValidTest,sampleWithoutCompositionList,sampleMissingCompositionTest,
@@ -1272,13 +1245,13 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 		
 		(* Conflicting options check variables *)
 		validInstrumentQ,validInstrumentTest,resolvedSampleInVolumes,resolvedFiltrationModes,validSampleInVolumeList,crossFlowExceedCapacityList,validFiltrationModeList,validTargetAmountList,validTargetList,failedTargetStepsList, failedTargetValuesList,reservoirCompatibleWithVolumeList,filterCompatibleWithVolumeList,retentateVolumeValidList,permeateVolumeValidList,retentateVolumeSampleCompatibleList,permeateVolumeSampleCompatibleList,permeateVolumesScaleCompatibleList,
-		validSampleInVolumeTest,solvent,liquidComponents,solventDensity,resolvedFiltrationMode,validFiltrationModeQ,primaryConcentrationConcentrationContributionToPermeate,summedConcentrationConcentrationContributionToPermeate,defaultTotalConcentrationFactor,resolvedPrimaryConcentrationTargets,resolvedSecondaryConcentrationTargets,volumeOutputsValidList,
-		resolvedDiafiltrationTargets,concentrationPermeateVolume,concentrationTargets,validTargetAmountsQ,validTargetAmountsTest,targetValidQList,validTargetQ,failedTargetSteps,failedTargetValues,validTargetQTest,inputSampleReservoirVolume,reservoirCompatibleWithVolumeQ,reservoirCompatibleTest,inputFilterVolume,filterCompatibleWithVolumeQ,filterCompatibleTest,inputRetentateContainerVolume,retentateVolumeValidTest,preResolvedPermeateContainerVolume,permeateVolumeValidQ,failedPermeateAliquotVolumes,failedPermeateContainer,failedPermeateContainerVolumes,permeateVolumeValidTest,retentateVolumeSampleCompatibleQ,retentateVolumeSampleCompatibleTest,permeateVolumeSampleCompatibleQ,permeateVolumeSampleCompatibleTest,diafiltrationPermeateVolumes, totalPermeateVolume,permeateVolumesScaleCompatibleQ,permeateVolumesScaleCompatibleTest,specifiedVolumeOutput,
-		minFilterVolumes,specifiedTargetOptionList,failingVolumeOutputs,failedRetentateMinSpecificationList,failedRetentateAboveMinOptionList,failedRetentateAboveMinComponentList,minSampleReservoirVolume,failingVolumeOutput,retentateVolumeAboveMinQ,failedRetentateAboveMinComponent,volumeOutputsValidQ,failedVolumeOutputOptionsList,volumeOutputsValidTest,failedRetentateAboveMinOption,failedRetentateMinSpecification,retentateVolumeAboveMinTest,diafiltrationBuffersValidList,diafiltrationBuffersValidQ,diafiltrationBuffersValidTest,filterPrimeOptionsValidList,filterPrimeOptionsValidQ,failedFilterPrimeOptionNames,filterPrimeOptionsValidTest,filterFlushOptionsValidList,filterFlushOptionsValidQ,failedFilterFlushOptionNames,filterFlushRinseValidTest,wavelengthScanQ,wavelengthScanTime,wavelengthScanValidQ, preResolvedSampleInVolumes,
+		validSampleInVolumeTest,solvent,liquidComponents,solventDensity,resolvedFiltrationMode,validFiltrationModeQ,defaultTotalConcentrationFactor,resolvedPrimaryConcentrationTargets,resolvedSecondaryConcentrationTargets,volumeOutputsValidList,
+		resolvedDiafiltrationTargets,concentrationPermeateVolume,concentrationTargets,validTargetAmountsQ,validTargetAmountsTest,targetValidQList,validTargetQ,failedTargetSteps,failedTargetValues,validTargetQTest,inputSampleReservoirVolume,reservoirCompatibleWithVolumeQ,reservoirCompatibleTest,inputFilterVolume,filterCompatibleWithVolumeQ,filterCompatibleTest,inputRetentateContainerVolume,retentateVolumeValidTest,preResolvedPermeateContainerVolume,permeateVolumeValidQ,failedPermeateAliquotVolumes,failedPermeateContainer,failedPermeateContainerVolumes,permeateVolumeValidTest,retentateVolumeSampleCompatibleQ,retentateVolumeSampleCompatibleTest,permeateVolumeSampleCompatibleQ,permeateVolumeSampleCompatibleTest, totalPermeateVolume,permeateVolumesScaleCompatibleQ,permeateVolumesScaleCompatibleTest,specifiedVolumeOutput,
+		minFilterVolumes,specifiedTargetOptionList,failingVolumeOutputs,failedRetentateMinSpecificationList,failedRetentateAboveMinOptionList,failedRetentateAboveMinVolumes,minSampleReservoirVolume,failingVolumeOutput,retentateVolumeAboveMinQ,failedRetentateAboveMinVolume,volumeOutputsValidQ,failedVolumeOutputOptionsList,volumeOutputsValidTest,failedRetentateAboveMinOption,failedRetentateMinSpecification,retentateVolumeAboveMinTest,diafiltrationBuffersValidList,diafiltrationBuffersValidQ,diafiltrationBuffersValidTest,filterPrimeOptionsValidList,filterPrimeOptionsValidQ,failedFilterPrimeOptionNames,filterPrimeOptionsValidTest,filterFlushOptionsValidList,filterFlushOptionsValidQ,failedFilterFlushOptionNames,filterFlushRinseValidTest, preResolvedSampleInVolumes,
 
 		(* Options resolver variables *)
-		resolvedSterile,resolvedTransmembranePressureTargets,resolvedPermeateContainerOuts,resolvedPermeateStorageConditions,resolvedDiafiltrationBuffers,crossFlowNonOptimalSizeCutoffList,implicitRetentateVolumeValidList,
-		 crossFlowFilterSterileUnavailableList, crossFlowDefaultFilterReturnedList,theoreticalRetentateVolume,retentateVolumeValidQ,retentateFitsInContainer,resolvedRetentateContainersOut,
+		resolvedSterile,resolvedTransmembranePressureTargets,resolvedPermeateContainerOuts,resolvedPermeateStorageConditions,resolvedDiafiltrationBuffers,crossFlowNonOptimalSizeCutoffList,
+		 crossFlowFilterSterileUnavailableList, crossFlowDefaultFilterReturnedList,theoreticalRetentateVolume,retentateVolumeValidQ,resolvedRetentateContainersOut,
 		componentMolecularWeights,elementSize,databaseDaltonSizeCutoffs,databaseMicronSizeCutoffs,maxSizeCutoff,resolvedFilterPacket,resolvedPrimaryPumpFlowRates,fittingSampleReservoirs,
 		numberOfSmallestReservoirs,resolvedSampleReservoirs,resolvedSampleReservoirPacket,sampleReservoirSterileMatchQ,incompatibleInputs,
 		resolvedFilterPrimeBuffer,resolvedFilterPrimeVolume,firstDiafiltrationBufferModel,primeSameAsDiafiltrationQ, resolvedFilterPrimeRinse,
@@ -1291,7 +1264,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 		incompatibleFilterFlushBuffer,incompatibleFilterFlushBufferTest,nameNotUniqueQ,duplicateNameTest,retentateVolumeAboveMinList,sampleReservoirSterileMatchList,
 
 		(* Post-processing and output variables *)
-		invalidInputs,invalidOptionsList,invalidOptionErrors,invalidOptions,errors,resolvedAliquotOptions,aliquotTests,resolvedPostProcessingOptions,allOptions,email,
+		invalidInputs,invalidOptionsList,invalidOptionErrors,invalidOptions,resolvedAliquotOptions,aliquotTests,resolvedPostProcessingOptions,allOptions,email,
 		fastCacheBall, implyUPulseQ,resolvedOptions,allTests,testsRule,resultRule,firstDiafiltrationBuffer, firstFilterPacket, crossFlowSterileMisMatchList,
 		maxSizeCutoffs, sizeCutoffsMatchList, specifiedFiltersSteriles,	specifiedSampleReservoirSteriles, specifiedSampleSteriles,kr2iUniqueOptions,
 		uPulseUniqueOptions, specifiedKR2iOptions, specifieduPulseOptions, resolvedDiafiltrationModes,	resolvedDiaFiltrationExchangeCounts, preResolvedFilterStorageConditions,
@@ -1309,7 +1282,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 		invalidDeadVolumeRecoveryModeOptions, invalidDeadVolumeRecoveryModeTests,compatibleFilterPrimeRinseBufferWarning,crossFlowSterileMisMatchWarnings,
 		crossFlowNonOptimalSizeCutoffWarnings,sizeCutoffsMatchWarnings,crossFlowFilterSterileUnavailableWarnings,crossFlowDefaultFilterReturnedWarnings,
 		crossFlowExceedCapacityWarnings,resolvedSampleLabels,resolvedSampleContainerLabels,resolvedRetentateContainerOutLabels,resolvedPermeateContainerOutLabels,
-		resolvedRetentateSampleOutLabels, resolvedPermeateSampleOutLabels,misMatchedSampleModels, deadVolumeErrorQ
+		resolvedRetentateSampleOutLabels, resolvedPermeateSampleOutLabels,misMatchedSampleModels, deadVolumeErrorQ, finalRetentateVolumes
 	},
 
 	(* Determine the requested output format *)
@@ -1356,23 +1329,19 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 	};
 	
 	(* make the up front Download call *)
-	allPackets = Check[
-		Quiet[
-			Download[
-				{
-					simulatedSamples
-				},
-				{
-					{packetObjectSample,packetObjectContainer,packetModelContainer,Packet[Composition[[All,2]][{Name,MolecularWeight}]],Packet[StorageCondition[StorageCondition]],Packet[Model[{Name,Density,Deprecated,IncompatibleMaterials}]]}
-				},
-				Cache -> cache,
-				Simulation -> updatedSimulation,
-				Date -> Now
-			],
-			{Download::FieldDoesntExist}
+	allPackets = Quiet[
+		Download[
+			{
+				simulatedSamples
+			},
+			{
+				{packetObjectSample,packetObjectContainer,packetModelContainer,Packet[Composition[[All,2]][{Name,MolecularWeight}]],Packet[StorageCondition[StorageCondition]],Packet[Model[{Name,Density,Deprecated,IncompatibleMaterials}]]}
+			},
+			Cache -> cache,
+			Simulation -> updatedSimulation,
+			Date -> Now
 		],
-		$Failed,
-		{Download::ObjectDoesNotExist}
+		{Download::FieldDoesntExist}
 	];
 	
 	(* Download information we need in both the Options and ResourcePackets functions *)
@@ -2111,7 +2080,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 		MatchQ[Lookup[crossFlowOptionsAssociation,TubingType],Except[Automatic]],
 		Lookup[crossFlowOptionsAssociation,TubingType],
 		
-		(* Else resolve based on the insturment, for uPulse, set to Null, for KR2i set to PharmaPure *)
+		(* Else resolve based on the instrument, for uPulse, set to Null, for KR2i set to PharmaPure *)
 		uPulseQ, Null,
 		True, PharmaPure
 	];
@@ -2147,12 +2116,13 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 		(*3*)failingVolumeOutputs,
 		(*4*)failedRetentateAboveMinOptionList,
 		(*5*)failedRetentateMinSpecificationList,
-		(*6*)failedRetentateAboveMinComponentList,
+		(*6*)failedRetentateAboveMinVolumes,
 		(*7*)maxSizeCutoffs,
 		(*8*)diafiltrationList,
 		(*9*)concentrationList,
 		(*10*)theoreticalRetentateVolumes,
 		(*11*)diafiltrationVolumes,
+		(*12*)finalRetentateVolumes,
 
 		(*valid checks*)
 		(*1*)validSampleInVolumeList,
@@ -2256,7 +2226,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 					
 					(* If filter is specified, return its min volume *)
 					MatchQ[Lookup[optionSet,CrossFlowFilter],ObjectReferenceP[{Object[Item]}]],
-					fastAssocLookup[fastCacheBall, Download[fastAssocLookup[fastCacheBall, Lookup[optionSet,CrossFlowFilter], Model],Object], MinVolume]/.Null->0Milliliter,
+					fastAssocLookup[fastCacheBall, Lookup[optionSet, CrossFlowFilter], {Model, MinVolume}]/.Null->0Milliliter,
 
 					(* Otherwise, find the minimum volume amongst filters that can fit our sample volume *)
 					True, Min[Lookup[Select[filterModelPackets,And[Lookup[#,MinVolume,0 Milliliter]<=resolvedSampleInVolume<=Lookup[#,MaxVolume,0 Milliliter]]&],MinVolume]]
@@ -2264,20 +2234,25 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 				
 
 				(* Find the minimum volume of the sample reservoir *)
-				minSampleReservoirVolume=If[
+				minSampleReservoirVolume=Which[
 
 					(* If sample reservoir is specified, return its min volume *)
-					MatchQ[Lookup[optionSet,SampleReservoir],Except[Automatic]],
-					Lookup[inputSampleReservoirPacket,MinVolume],
+					MatchQ[Lookup[optionSet,SampleReservoir],Except[Automatic]], Lookup[inputSampleReservoirPacket,MinVolume],
+
+					(* if we're using the micro pulse, then use 1.5mL *)
+					(* NOTE: This value was changed after extensive testing with the uPulse determined that 1mL was an absolute lower limit *)
+					(* due to physical constraints of the uPulse tube reaching inside the 50mL tube *)
+					(* $MinMicropulseRetentateVolume was chosen to provide a slight buffer against pulling air into the system *)
+					uPulseQ, $MinMicropulseRetentateVolume,
 
 					(* Otherwise, find the minimum volume amongst containers that can fit our sample volume *)
-					Min[Lookup[Select[sampleReservoirModelPackets,And[Lookup[#,MinVolume,0 Milliliter]<=resolvedSampleInVolume<=Lookup[#,MaxVolume,0 Milliliter]]&],MinVolume]]
+					True, Min[Lookup[Select[sampleReservoirModelPackets,And[Lookup[#,MinVolume,0 Milliliter]<=resolvedSampleInVolume<=Lookup[#,MaxVolume,0 Milliliter]]&],MinVolume]]
 				];
 
 				(*Check if the sample in volume is larger than the remaining sample volume*)
 				validSampleInVolumeQ = If[uPulseQ, True, (resolvedSampleInVolume <= Lookup[samplePacket, Volume])];
 				
-				(* ----- Is SampleInVolume copacetic with Targets? ----- *)
+				(* ----- Is SampleInVolume compatible with Targets? ----- *)
 				(* Find the solvent *)
 				solvent=ToList@Which[
 
@@ -2285,42 +2260,44 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 					Or[!MemberQ[MatchQ[#,UnitsP[1 Gram]]&/@Lookup[optionSet,{DiafiltrationTarget,PrimaryConcentrationTarget,SecondaryConcentrationTarget}],True],sampleWithoutCompositionQ],"No weight targets",
 
 					(* If solvent field for sample is informed, use it *)
-					!MatchQ[Lookup[samplePacket,Solvent,Null],Null|{}],Module[{},
+					!MatchQ[Lookup[samplePacket,Solvent,Null],Null|{}],
+						Module[{},
 
-						(* Find the liquid components, which are the solvents -- this is used below for density calculations, so we need to set this variable here *)
-						liquidComponents={{100VolumePercent, Download[Lookup[samplePacket,Solvent],Object]}};
+							(* Find the liquid components, which are the solvents -- this is used below for density calculations, so we need to set this variable here *)
+							liquidComponents={{100VolumePercent, Download[Lookup[samplePacket,Solvent],Object]}};
 
-						(* Return the molecules as our solvent *)
-						Download[ToList[Lookup[samplePacket,Solvent]],Object]
-					],
+							(* Return the molecules as our solvent *)
+							Download[ToList[Lookup[samplePacket,Solvent]],Object]
+						],
 
 					(* Otherwise, find the solvent *)
-					True,Module[{componentsAmount,solventPositions},
+					True,
+						Module[{componentsAmount,solventPositions},
 
-						(* Get all components and their amounts*)
-						componentsAmount={First[#],Download[Last[#],Object]}&/@Lookup[samplePacket,Composition,{}];
+							(* Get all components and their amounts*)
+							componentsAmount={First[#],Download[#[[2]],Object]}&/@Lookup[samplePacket,Composition,{}];
 
-						(* Find the liquid components *)
-						liquidComponents=Select[componentsAmount,MatchQ[First[#],Alternatives[UnitsP[IndependentUnit["VolumePercent"]],UnitsP[1 VolumePercent]]]&];
+							(* Find the liquid components *)
+							liquidComponents=Select[componentsAmount,MatchQ[First[#],Alternatives[UnitsP[IndependentUnit["VolumePercent"]],UnitsP[1 VolumePercent]]]&];
 
-						(* Find the positions of the solvents *)
-						solventPositions=If[
+							(* Find the positions of the solvents *)
+							solventPositions=If[
 
-							(* If we have liquid components, find their positions *)
-							MatchQ[liquidComponents,Except[{}]],
-							Flatten[Position[componentsAmount,#]&/@liquidComponents],
+								(* If we have liquid components, find their positions *)
+								MatchQ[liquidComponents,Except[{}]],
+								Flatten[Position[componentsAmount,#]&/@liquidComponents],
 
-							(* Otherwise, we don't have a solvent *)
-							Null
-						];
+								(* Otherwise, we don't have a solvent *)
+								Null
+							];
 
-						(* If we found a solvent, return it *)
-						If[
-							MatchQ[solventPositions,Except[Null]],
-							Last/@Part[componentsAmount,solventPositions],
-							Null
+							(* If we found a solvent, return it *)
+							If[
+								MatchQ[solventPositions,Except[Null]],
+								Last/@Part[componentsAmount,solventPositions],
+								Null
+							]
 						]
-					]
 				];
 
 				(* Find the density of the solvent *)
@@ -2474,7 +2451,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 				defaultTotalConcentrationFactor = Module[{concentrationFactorByContainerConstraint},
 					concentrationFactorByContainerConstraint = Round[resolvedSampleInVolume / Max[minSampleReservoirVolume, minFilterVolume],0.1];
 
-					(* return the smaller of the possible concenration factors, either by container constraint or default *)
+					(* return the smaller of the possible concentration factors, either by container constraint or default *)
 					Min[concentrationFactorByContainerConstraint,If[uPulseQ,10,5]]
 				];
 
@@ -2510,16 +2487,13 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 					{Null, Null}
 				];
 
-				(* figure out the volume we will have in permeate from primary concentration *)
-				summedConcentrationConcentrationContributionToPermeate = preResolvedSampleInVolume * (1 - 1/(resolvedPrimaryConcentrationTarget*resolvedSecondaryConcentrationTarget)/.Null->1);
-				primaryConcentrationConcentrationContributionToPermeate = preResolvedSampleInVolume * (1 - 1/(resolvedPrimaryConcentrationTarget)/.Null->1);
 
 				(* now figure out the diafiltration target if needed *)
 				resolvedDiafiltrationTarget = Which[
 					(* they specified it? hurray! *)
 					MatchQ[Lookup[optionSet,DiafiltrationTarget], Except[Automatic]],
 					Lookup[optionSet,DiafiltrationTarget],
-					(* unspecified but we're using Diafiltration alone and dont have permeate volume *)
+					(* unspecified but we're using Diafiltration alone and don't have permeate volume *)
 					MatchQ[Lookup[optionSet,DiafiltrationTarget], Automatic]&&MatchQ[resolvedFiltrationMode, Alternatives[Diafiltration, ConcentrationDiafiltration, ConcentrationDiafiltrationConcentration]]&&MatchQ[Lookup[optionSet, PermeateAliquotVolume],Null|All],
 					5,
 					(* otherwise,we're not concentrating so move on with nulls *)
@@ -2576,7 +2550,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 					StringRiffle[Pick[concentrationTargets,targetValidQList,False],", "]
 				];
 				
-				(* ----- Is SampleReservoir copacetic with SampleInVolume? ----- *)
+				(* ----- Is SampleReservoir compatible with SampleInVolume? ----- *)
 
 				(* Find the min and max volumes for the reservoir *)
 				inputSampleReservoirVolume=If[
@@ -2585,7 +2559,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 					Null
 				];
 
-				(* Check if sample volume is copacetic with the reservoir *)
+				(* Check if sample volume is compatible with the reservoir *)
 				reservoirCompatibleWithVolumeQ=If[
 
 					(* If Lookup[optionSet, SampleReservoir] is specified, check if the sample volume fits in the reservoir *)
@@ -2595,7 +2569,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 				];
 
 
-				(*----- Is CrossFlowFilter copacetic with SampleInVolume? ----- *)
+				(*----- Is CrossFlowFilter compatible with SampleInVolume? ----- *)
 
 				(* Find the min and max volumes for the filter *)
 				inputFilterVolume=If[
@@ -2604,7 +2578,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 					{}
 				];
 
-				(* Check if filter is copacetic with the reservoir *)
+				(* Check if filter is compatible with the reservoir *)
 				filterCompatibleWithVolumeQ=If[
 
 					(* If SampleFilterType and SampleInVolume are specified, check that SampleInVolume fits in the filter *)
@@ -2614,7 +2588,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 					True
 				];
 				
-				(* ----- Is RetentateAliquotVolume copacetic with RetentateContainerOut? ----- *)
+				(* ----- Is RetentateAliquotVolume compatible with RetentateContainerOut? ----- *)
 
 				(* Find the min and max volumes for our container *)
 				inputRetentateContainerVolume=If[
@@ -2636,7 +2610,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 				];
 
 
-				(* ----- Is PermeateAliquotVolume copacetic with PermeateContainerOut? ----- *)
+				(* ----- Is PermeateAliquotVolume compatible with PermeateContainerOut? ----- *)
 
 				(* Find the max volumes for containers *)
 				preResolvedPermeateContainerVolume=If[
@@ -2658,7 +2632,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 					True
 				];
 
-				(* ----- Is RetentateAliquotVolume copacetic with SampleInVolume? ----- *)
+				(* ----- Is RetentateAliquotVolume compatible with SampleInVolume? ----- *)
 				
 				(* Calculate the permeate volume from concentration targets *)
 				concentrationPermeateVolume=If[concentrationQ,
@@ -2670,6 +2644,11 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 				totalPermeateVolume = Total[Flatten[{diafiltrationPermeateVolume,concentrationPermeateVolume}]];
 				
 				finalRetentateVolume = (resolvedSampleInVolume - Total[ToList[concentrationPermeateVolume]]);
+				retentateVolumeAboveMinQ=Or[
+					finalRetentateVolume>=Max[minFilterVolume,minSampleReservoirVolume],
+					(* this is admittedly weird.  HOWEVER, if finalRetentateVolume is less than zero then we're already throwing other messages and don't want to throw these too *)
+					finalRetentateVolume < 0 Milliliter
+				];
 
 				(* Check if RetentateAliquotVolume exceeds sample volume *)
 				retentateVolumeSampleCompatibleQ=If[
@@ -2678,7 +2657,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 					True
 				];
 
-				(* ----- Is PermeateAliquotVolume copacetic with SampleInVolume after the whole recipe? ----- *)
+				(* ----- Is PermeateAliquotVolume compatible with SampleInVolume after the whole recipe? ----- *)
 				(* Check if PermeateAliquotVolumes exceed calculated permeate Volume *)
 				permeateVolumeSampleCompatibleQ=If[
 					(* If permeate volumes were specified, *)
@@ -2688,14 +2667,14 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 					True
 				];
 
-				(* ----- Is PermeateAliquotVolume copacetic with max scale capacity? ----- *)
+				(* ----- Is PermeateAliquotVolume compatible with max scale capacity? ----- *)
 				(* This check only relevant to diafiltration steps because sample volume cannot exceed 2 liters, whereas the scales go up to 20 kilogram. Since there is a container, we are going to cap the volume at 18 liters. Additionally, there is no default diafiltration step so for this to fail, at least one diafiltration step must be specified by the user. Since we only calculate targets for diafiltration steps either at 3X sample volume as default or by user specification, we need to check if either of those values exceed 18 liters *)
 
 				(* Check if PermeateAliquotVolume will exceed scale capacity *)
 				permeateVolumesScaleCompatibleQ = totalPermeateVolume<=18Liter;
 
-				(* ----- RetentateAliquotVolume, PermeateAliquotVolume and Targets Copacetic Fest ----- *)
-				(* Error checking for each of these three options have been done individually above. However, since RetentateAliquotVolume, PermeateAliquotVolume and Targets are related to one another, you can design a non-physical experiment by defining more than two of them. To ensure that the each of them are copacetic with the other two and with other options, we have to go on this massive error hunt below *)
+				(* ----- RetentateAliquotVolume, PermeateAliquotVolume and Targets Compatible Fest ----- *)
+				(* Error checking for each of these three options have been done individually above. However, since RetentateAliquotVolume, PermeateAliquotVolume and Targets are related to one another, you can design a non-physical experiment by defining more than two of them. To ensure that the each of them are compatible with the other two and with other options, we have to go on this massive error hunt below *)
 
 				(* Check which of the relevant options are specified *)
 				specifiedVolumeOutput = MapThread[
@@ -2722,268 +2701,93 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 						{DiafiltrationTarget,PrimaryConcentrationTarget,SecondaryConcentrationTarget}
 					}
 				];
-				
-				(* Check that the specified options are copacetic *)
+
+				(* Check that the specified options are compatible *)
+				(* If targets are invalid, skip this check as we are already failing on that *)
 				failingVolumeOutput=Which[
-
-					(* If targets are invalid, skip this check as we are already failing on that *)
 					!validTargetAmountsQ,{},
-
-					(* If nothing is specified, check against database minima *)
-					Length[specifiedVolumeOutput]==0,Module[{},
-
-						(* Check if the theoretical retentate volume is above the minimum of the smallest reservoir or filter -- since nothing is specified, we will adjust the volumes in the resolver so we only need to make sure 90% sample volume is above the min volume of the flow path we can construct. 90% is an arbitrary cutoff but we need to have one to avoid running an experiment where nothing crosses the filter because the sample volume is the same as, or very close to, the min volume *)
-						retentateVolumeAboveMinQ=(finalRetentateVolume)>=Max[minFilterVolume,minSampleReservoirVolume];
-
-						(* If anything failed, find out which one failed *)
-						failedRetentateAboveMinComponent=Which[
-
-							(* If nothing failed, carry on *)
-							retentateVolumeAboveMinQ,"",
-
-							(* If the retentate volume is below both filter and reservoir *)
-							finalRetentateVolume<minFilterVolume&&finalRetentateVolume<minSampleReservoirVolume,"sample reservoir and filter",
-
-							(* If the retentate volume is below filter only *)
-							finalRetentateVolume<minFilterVolume,"filter",
-
-							(* If the retentate volume is below reservoir only *)
-							finalRetentateVolume<minSampleReservoirVolume,"sample reservoir"
-						];
-					],
-
-					(* If only retentate volume is specified *)
-					MatchQ[specifiedVolumeOutput,{RetentateAliquotVolume}],Module[{},
-
-						(* Check if the theoretical retentate volume is above the minimum of the smallest reservoir or filter -- since retentate volume is the only specification, we will concentrate the sample 90% so 10% of the sample volume has to be above the min volume of the flow path we can construct. If the specified volume is below 10% sample volume, we will aliquot it into a different container after the experiment *)
-						retentateVolumeAboveMinQ=finalRetentateVolume>=Max[minFilterVolume,minSampleReservoirVolume];
-
-						(* If anything failed, find out which one failed *)
-						failedRetentateAboveMinComponent=Which[
-
-							(* If nothing failed, carry on *)
-							retentateVolumeAboveMinQ,"",
-
-							(* If the retentate volume is below both filter and reservoir *)
-							Lookup[optionSet, RetentateAliquotVolume]<minFilterVolume&&Lookup[optionSet, RetentateAliquotVolume]<minSampleReservoirVolume,"sample reservoir and filter",
-
-							(* If the retentate volume is below filter only *)
-							Lookup[optionSet, RetentateAliquotVolume]<minFilterVolume,"filter",
-
-							(* If the retentate volume is below reservoir only *)
-							Lookup[optionSet, RetentateAliquotVolume]<minSampleReservoirVolume,"sample reservoir"
-						];
-					],
-
-					(* If only permeate volumes are specified *)
-					MatchQ[specifiedVolumeOutput,{PermeateAliquotVolume}],Module[{maxRetentateVolume},
-
-						(* Calculate the retentate volume based on specified permeate volumes -- this volume is what is left behind when all the permeate is removed from the initial sample, so the maximum of retentate volume as dictated by permeate volumes *)
-						maxRetentateVolume=resolvedSampleInVolume-concentrationPermeateVolume;
-
-						(* Check if changing the retentate out volume to the filter or sample reservoir minimum would create less permeate than was specified *)
-						retentateVolumeAboveMinQ=maxRetentateVolume>=Max[minFilterVolume,minSampleReservoirVolume];
-
-						(* If anything failed, find out which one failed *)
-						failedRetentateAboveMinComponent=Which[
-
-							(* If nothing failed, carry on *)
-							retentateVolumeAboveMinQ,"",
-
-							(* If the retentate volume calculated from permeate is below both filter and reservoir *)
-							maxRetentateVolume<minFilterVolume&&maxRetentateVolume<minSampleReservoirVolume,"sample reservoir and filter",
-
-							(* If the retentate volume calculated from permeate  is below filter only *)
-							maxRetentateVolume<minFilterVolume,"filter",
-
-							(* If the retentate volume calculated from permeate is below reservoir only *)
-							maxRetentateVolume<minSampleReservoirVolume,"sample reservoir"
-						];
-					],
 
 					(* If targets are specified, we are going to assume that it is correct, and check that the rest of the options do not exceed their specified amount *)
 					Length[Intersection[specifiedVolumeOutput,{DiafiltrationTarget, PrimaryConcentrationTarget, SecondaryConcentrationTarget}]]>0,Module[{optionsValidList},
-						
-						(* Check if the calculated retentate volume is above the minimum of the smallest reservoir or filter *)
-						retentateVolumeAboveMinQ=Which[
 
-							(* If specified as All, skip this check *)
-							MatchQ[Lookup[optionSet, RetentateAliquotVolume],All], True,
-
-							(* If retentate volume is specified, check against that *)
-							MatchQ[Lookup[optionSet, RetentateAliquotVolume],Except[Automatic|All]],
-							Lookup[optionSet, RetentateAliquotVolume]>=Max[minFilterVolume,minSampleReservoirVolume],
-
-							(* Otherwise, check against what we calculated *)
-							True,finalRetentateVolume>=Max[minFilterVolume,minSampleReservoirVolume]
-						];
-						
-						(* If anything failed, find out which one failed *)
-						failedRetentateAboveMinComponent=Which[
-
-							(* If nothing failed, carry on *)
-							retentateVolumeAboveMinQ,"",
-
-							(* If retentate volume was specified, use that volume *)
-							MatchQ[Lookup[optionSet, RetentateAliquotVolume],Except[Automatic]],Which[
-
-								(* If the retentate volume is below both filter and reservoir *)
-								Lookup[optionSet, RetentateAliquotVolume]<minFilterVolume&&Lookup[optionSet, RetentateAliquotVolume]<minSampleReservoirVolume,"sample reservoir and filter",
-
-								(* If the retentate volume is below filter only *)
-								Lookup[optionSet, RetentateAliquotVolume]<minFilterVolume,"filter",
-
-								(* If the retentate volume is below reservoir only *)
-								Lookup[optionSet, RetentateAliquotVolume]<minSampleReservoirVolume,"sample reservoir"
-							],
-
-							(* Otherwise, retentate volume is not specified so we need to use the calculated volumes *)
-							True,Which[
-
-								(* If the retentate volume is below both filter and reservoir *)
-								finalRetentateVolume<minFilterVolume&&finalRetentateVolume<minSampleReservoirVolume,"sample reservoir and filter",
-
-								(* If the retentate volume is below filter only *)
-								finalRetentateVolume<minFilterVolume,"filter",
-
-								(* If the retentate volume is below reservoir only *)
-								finalRetentateVolume<minSampleReservoirVolume,"sample reservoir"
-							]
-						];
-
-						(* Check that the options are copacetic *)
-						optionsValidList=Which[
+						(* Check that the options are compatible *)
+						optionsValidList = Which[
 
 							(* If both other options are specified *)
-							MemberQ[specifiedVolumeOutput,RetentateAliquotVolume]&&MemberQ[specifiedVolumeOutput,PermeateAliquotVolume],{
+							MemberQ[specifiedVolumeOutput, RetentateAliquotVolume] && MemberQ[specifiedVolumeOutput, PermeateAliquotVolume], {
 
 								(* Retentate volume is less than or equal to calculated *)
-								Lookup[optionSet, RetentateAliquotVolume]<=finalRetentateVolume,
+								Lookup[optionSet, RetentateAliquotVolume] <= finalRetentateVolume,
 
 								(* Permeate volume is less than or equal to calculated *)
-								Lookup[optionSet, PermeateAliquotVolume]<=totalPermeateVolume
+								Lookup[optionSet, PermeateAliquotVolume] <= totalPermeateVolume
 							},
 
 							(* If only retentate volume is specified, check that it is less than or equal to calculated *)
-							MemberQ[specifiedVolumeOutput,RetentateAliquotVolume],{Lookup[optionSet, RetentateAliquotVolume]<=finalRetentateVolume,True},
+							MemberQ[specifiedVolumeOutput, RetentateAliquotVolume], {Lookup[optionSet, RetentateAliquotVolume] <= finalRetentateVolume, True},
 
 							(* If only permeate volumes are specified, check that they are less than or equal to calculated *)
-							MemberQ[specifiedVolumeOutput,PermeateAliquotVolume],{True,Lookup[optionSet, PermeateAliquotVolume]<=totalPermeateVolume},
+							MemberQ[specifiedVolumeOutput, PermeateAliquotVolume], {True, Lookup[optionSet, PermeateAliquotVolume] <= totalPermeateVolume},
 
 							(* Otherwise, return true for everything *)
-							True,{True,True}
+							True, {True, True}
 						];
-						
+
 
 						(* If options failed, return which ones failed *)
 						If[
-							MemberQ[optionsValidList,False],
+							MemberQ[optionsValidList, False],
 							Switch[optionsValidList,
-								{False,False},Flatten@{RetentateAliquotVolume,PermeateAliquotVolume,specifiedTargetOptions},
-								{False,True},Flatten@{RetentateAliquotVolume,specifiedTargetOptions},
-								{True,False},Flatten@{PermeateAliquotVolume,specifiedTargetOptions}
+								{False, False}, Flatten@{RetentateAliquotVolume, PermeateAliquotVolume, specifiedTargetOptions},
+								{False, True}, Flatten@{RetentateAliquotVolume, specifiedTargetOptions},
+								{True, False}, Flatten@{PermeateAliquotVolume, specifiedTargetOptions}
 							],
 							{}
 						]
 					],
-
 					(* Otherwise, only branch left is the case where only RetentateAliquotVolume and PermeateAliquotVolume are specified, so we are going to assume that the RetentateAliquotVolume is correct and calculate permeate volumes from that *)
-					True,Module[{optionsValid},
+					VolumeQ[Lookup[optionSet, RetentateAliquotVolume]] && VolumeQ[Lookup[optionSet, PermeateAliquotVolume]],
+						Module[{optionsValid, specifiedRetentateAliquotVolume, specifiedPermeateAliquotVolume},
+							{specifiedRetentateAliquotVolume, specifiedPermeateAliquotVolume} = Lookup[optionSet, {RetentateAliquotVolume, PermeateAliquotVolume}];
 
-						(* Check if the calculated retentate volume is above the minimum of the smallest reservoir or filter *)
-						retentateVolumeAboveMinQ=finalRetentateVolume>=Max[minFilterVolume,minSampleReservoirVolume];
+							(* Check that the options are compatible -- depending on if the aliquot volume is set, each one needs to pass that test *)
+							optionsValid=And[
 
-						(* If anything failed, find out which one failed *)
-						failedRetentateAboveMinComponent=Which[
+								(* Retentate volume is less than or equal to calculated *)
+								specifiedRetentateAliquotVolume <= finalRetentateVolume,
 
-							(* If nothing failed, carry on *)
-							retentateVolumeAboveMinQ,"",
+								(* Permeate volume is less than or equal to calculated *)
+								specifiedPermeateAliquotVolume <= totalPermeateVolume
+							];
 
-							(* If the retentate volume is below both filter and reservoir *)
-							Lookup[optionSet, RetentateAliquotVolume]<minFilterVolume&&Lookup[optionSet, RetentateAliquotVolume]<minSampleReservoirVolume,"sample reservoir and filter",
-
-							(* If the retentate volume is below filter only *)
-							Lookup[optionSet, RetentateAliquotVolume]<minFilterVolume,"filter",
-
-							(* If the retentate volume is below reservoir only *)
-							Lookup[optionSet, RetentateAliquotVolume]<minSampleReservoirVolume,"sample reservoir"
-						];
-
-						(* Check that the options are copacetic -- since both are specified, they both need to pass this test *)
-						optionsValid=And[
-
-							(* Retentate volume is less than or equal to calculated *)
-							Lookup[optionSet, RetentateAliquotVolume]<=finalRetentateVolume,
-
-							(* Permeate volume is less than or equal to calculated *)
-							Lookup[optionSet, PermeateAliquotVolume]<=totalPermeateVolume
-						];
-
-						(* If options failed, return the only two that have been specified *)
-						If[
-							!optionsValid,
-							{RetentateAliquotVolume,PermeateAliquotVolume},
-							{}
-						]
-					]
+							(* If options failed, return the only two that have been specified *)
+							If[
+								!optionsValid,
+								{RetentateAliquotVolume,PermeateAliquotVolume},
+								{}
+							]
+						],
+					True, {}
 				];
 
 				(* Check if anything failed *)
 				volumeOutputsValidQ=Length[failingVolumeOutput]==0;
 				
 				(* Find out how the retentate volume was specified *)
-				failedRetentateAboveMinOption=Which[
-					
+				failedRetentateAboveMinOption = Which[
+
 					(* If Targets was specified, it was used to calculate the retentate volume so regardless of what else was specified, it was targets that caused the issue *)
-					Length[Intersection[specifiedVolumeOutput,specifiedTargetOptions]]>0,ToString[specifiedTargetOptions],
-					
+					Length[Intersection[specifiedVolumeOutput, specifiedTargetOptions]] > 0, specifiedTargetOptions,
+
 					(* If PermeateAliquotVolumes was specified, that has to be the culprit *)
-					MatchQ[specifiedVolumeOutput,{PermeateAliquotVolume}],"PermeateAliquotVolume",
-					
+					MatchQ[specifiedVolumeOutput, {PermeateAliquotVolume}], PermeateAliquotVolume,
+
 					(* If neither of those were specified, sample volume is the only other option that can trigger this error *)
-					True,"SampleInVolume"
+					True, SampleInVolume
 				];
-				
-				(* Find out if we compared to the minimum of a specified option or the database *)
-				failedRetentateMinSpecification=Which[
-					
-					(* If nothing failed, carry on *)
-					retentateVolumeAboveMinQ,"",
-					
-					(* If both filter and reservoir failed and either was specified *)
-					And[
-						StringMatchQ[failedRetentateAboveMinComponent,"sample reservoir and filter"],
-						Or[
-							MatchQ[Lookup[optionSet, CrossFlowFilter],Except[Automatic]],
-							MatchQ[Lookup[optionSet, SampleReservoir],Except[Automatic]]
-						]
-					],"specified",
-					
-					(* If both filter and reservoir failed and neither was specified *)
-					And[
-						StringMatchQ[failedRetentateAboveMinComponent,"sample reservoir and filter"],
-						MatchQ[Lookup[optionSet, CrossFlowFilter],Automatic],
-						MatchQ[Lookup[optionSet, SampleReservoir],Automatic]
-					],"smallest database",
-					
-					(* If only filter failed and it was specified *)
-					StringMatchQ[failedRetentateAboveMinComponent,"filter"]&&MatchQ[Lookup[optionSet, CrossFlowFilter],Except[Automatic]],"specified",
-					
-					(* If only filter failed and it was specified *)
-					StringMatchQ[failedRetentateAboveMinComponent,"filter"]&&MatchQ[Lookup[optionSet, CrossFlowFilter],Automatic],"smallest database",
-					
-					(* If only filter failed and it was specified *)
-					StringMatchQ[failedRetentateAboveMinComponent,"sample reservoir"]&&MatchQ[Lookup[optionSet, SampleReservoir],Except[Automatic]],"specified",
-					
-					(* If only filter failed and it was specified *)
-					StringMatchQ[failedRetentateAboveMinComponent,"sample reservoir"]&&MatchQ[Lookup[optionSet, SampleReservoir],Automatic],"smallest database",
-					
-					(* Otherwise, no errors *)
-					True,""
-				];
-				
-				
-				(* ----- Is DiafiltrationBuffer copacetic with FiltrationMode? ----- *)
+
+
+				(* ----- Is DiafiltrationBuffer compatible with FiltrationMode? ----- *)
 
 				(* Check if the diafiltration buffers are legit for each step -- Diafiltration buffers are a mix between sample objects and Null. This step checks if any diafiltration steps have Null values. We don't care about concentration steps with sample objects at this stage. Those will turn to Nulls in the resolver and throw a warning *)
 				diafiltrationBuffersBooleans=If[
@@ -3246,10 +3050,10 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 					Or[sampleWithoutCompositionQ,!volumeInformationValidQ,!retentateVolumeAboveMinQ],50 Kilodalton,
 
 					(* If sample has bacteria or yeast, return 0.1 uM if using KR2i else 30 Kilodalton *)
-					MemberQ[Last[Transpose[Lookup[samplePacket,Composition,{}]]],LinkP[{Model[Cell,Bacteria],Model[Cell,Yeast]}]],If[uPulseQ, 30 Kilodalton ,0.1 Micron],
+					MemberQ[Transpose[Lookup[samplePacket,Composition,{}]][[2]],LinkP[{Model[Cell,Bacteria],Model[Cell,Yeast]}]],If[uPulseQ, 30 Kilodalton ,0.1 Micron],
 					
 					(* If sample has mammalian cells, return 0.2 uM if using KR2i else 10 Kilodalton *)
-					MemberQ[Last[Transpose[Lookup[samplePacket,Composition,{}]]],LinkP[Model[Cell,Mammalian]]],If[uPulseQ, 10 Kilodalton,0.2 Micron],
+					MemberQ[Transpose[Lookup[samplePacket,Composition,{}]][[2]],LinkP[Model[Cell,Mammalian]]],If[uPulseQ, 10 Kilodalton,0.2 Micron],
 					
 					(* If sample has more than 1 component with known molecular weight, return the size of the filter closest to the midpoint the two largest component molecular weights and below the largest molecular weight *)
 					Length[elementSize]>1,
@@ -3345,7 +3149,15 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 						],
 						
 						(* If only filter is specified, return the filter and its size cutoff *)
-						MatchQ[Lookup[optionSet, SizeCutoff],Automatic]&&MatchQ[Lookup[optionSet, CrossFlowFilter],Except[Automatic]],{Lookup[optionSet, CrossFlowFilter],Lookup[inputFilterPacket,SizeCutoff]},
+						MatchQ[Lookup[optionSet, SizeCutoff],Automatic]&&MatchQ[Lookup[optionSet, CrossFlowFilter],Except[Automatic]],
+						Module[{filterSizeCutoff},
+							(* If we were given a filter object, we have to get the cutoff from the model packet *)
+							filterSizeCutoff = If[MatchQ[inputFilterPacket,PacketP[Model[Item,Filter,MicrofluidicChip]]],
+								Lookup[inputFilterPacket,MolecularWeightCutoff] /. Null -> 0 kilodalton,
+								fastAssocLookup[fastCacheBall, Download[Lookup[inputFilterPacket,Model],Object], MolecularWeightCutoff] /. Null -> 0 Kilodalton
+							];
+							{Lookup[optionSet, CrossFlowFilter],filterSizeCutoff}
+						],
 						
 						(* If only SizeCutoff is specified, find a filter based on the size cutoff *)
 						MatchQ[Lookup[optionSet, SizeCutoff],Except[Automatic]]&&MatchQ[Lookup[optionSet, CrossFlowFilter],Automatic],
@@ -3709,7 +3521,39 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 					uPulseQ,MatchQ[Download[Lookup[resolvedSampleReservoir,Model],Object],Except[ObjectP[{Model[Container, Vessel, "50mL Tube"]}]]],
 					True, False
 				];
-				
+
+				(* return the object whose MinVolume is above the volume we're dealing with *)
+				(* this could be the filter or the sample reservoir *)
+				failedRetentateMinSpecification = Which[
+					(* if we are above the min then no problem *)
+					retentateVolumeAboveMinQ, Null,
+					(* if we're below the minFilterVolume, then we have a problem *)
+					finalRetentateVolume < minFilterVolume, resolvedFilter,
+
+					(* if we're below the minSampleReservoirVolume, then we also have a problem *)
+					finalRetentateVolume < minSampleReservoirVolume, resolvedSampleReservoir
+				];
+
+				(* If anything failed, find out which one failed *)
+				failedRetentateAboveMinVolume = Which[
+
+					(* If nothing failed, carry on *)
+					retentateVolumeAboveMinQ, Null,
+
+					(* If the retentate volume is below filter MinVolume *)
+					finalRetentateVolume < minFilterVolume && MatchQ[resolvedFilter, ObjectP[Model]], fastAssocLookup[fastCacheBall, resolvedFilter, MinVolume],
+					finalRetentateVolume < minFilterVolume, fastAssocLookup[fastCacheBall, resolvedFilter, {Model, MinVolume}],
+
+					(* If the retentate volume is below reservoir MinVolume *)
+					finalRetentateVolume < minSampleReservoirVolume && uPulseQ, $MinMicropulseRetentateVolume,
+					finalRetentateVolume < minSampleReservoirVolume && MatchQ[resolvedSampleReservoir, ObjectP[Model]], fastAssocLookup[fastCacheBall, resolvedSampleReservoir, MinVolume],
+					finalRetentateVolume < minSampleReservoirVolume, fastAssocLookup[fastCacheBall, resolvedSampleReservoir, {Model, MinVolume}],
+
+					(* shouldn't get here *)
+					True, Null
+				];
+
+
 				(* Prepare a packet of the resolved sample reservoir *)
 				resolvedSampleReservoirPacket=fetchPacketFromCache[resolvedSampleReservoir,newCache];
 
@@ -3783,12 +3627,13 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 					(*3*)failingVolumeOutput,
 					(*4*)failedRetentateAboveMinOption,
 					(*5*)failedRetentateMinSpecification,
-					(*6*)failedRetentateAboveMinComponent,
+					(*6*)failedRetentateAboveMinVolume,
 					(*7*)maxSizeCutoff,
 					(*8*)diafiltrationQ,
 					(*9*)concentrationQ,
 					(*10*)theoreticalRetentateVolume,
 					(*11*)diafiltrationPermeateVolume,
+					(*12*)finalRetentateVolume,
 
 					(* Valid checks *)
 					(*1*)validSampleInVolumeQ,
@@ -3907,7 +3752,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 		If filter is PES, wash with 1 mL per cm2, otherwise wash with 2 mL per cm2 *)
 		calculatedFilterPrimeVolume=If[
 			uPulseQ,
-			45Milliliter,
+			40 Milliliter,
 			Min[
 				500Milliliter,
 				1.2*If[
@@ -4068,9 +3913,6 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 		(* If specified, use it *)
 		MatchQ[initialFilterFlush,Except[Automatic]],initialFilterFlush,
 
-		(* If filter is being stored, return True *)
-		MatchQ[resolvedFilterStorageConditions,Except[{Disposal..}]],True,
-
 		(* If any filter flush option is specified, return True -- we are making an exception for Rinse. If its specified as false, it is not a problem so we are only checking for True *)
 		Or[
 			MatchQ[initialFilterFlushRinse,True],
@@ -4079,6 +3921,9 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 			MatchQ[roundedFilterFlushFlowRate,Except[Automatic]],
 			MatchQ[roundedFilterFlushTransmembranePressureTarget,Except[Automatic]]
 		],True,
+
+		(* If filter is being discarded, return False *)
+		MatchQ[resolvedFilterStorageConditions,{Disposal..}],False,
 
 		(* Otherwise resolve to false *)
 		uPulseQ,True,
@@ -4120,7 +3965,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 		MatchQ[roundedFilterFlushVolume,Except[Automatic]],UnitConvert[roundedFilterFlushVolume,Milliliter],
 		
 		(* If filter flush is false, return Null *)
-		resolvedFilterFlush && uPulseQ, 45 Milliliter,
+		resolvedFilterFlush && uPulseQ, 40 Milliliter,
 
 		(* Otherwise, calculate from filter's surface area *)
 		resolvedFilterFlush,Module[{surfaceArea,calculatedFilterFlushVolume},
@@ -4181,7 +4026,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 				retentateConductivitySensorInletTubingPacket, retentateConductivitySensorOutletTubingPacket, permeateConductivitySensorInletTubingPacket,
 				permeateConductivitySensorOutletTubingPacket, filterToPermeatePressureSensorTubingPacket, feedPressureSensorToFilterTubingPacket,
 				filterToRetentatePressureSensorTubingPacket,diafiltrationTubingObj, permeateTubingObj, retentateTubingObj,conductivitySensorTubingObj,
-				filterTubingParentTubingObj
+				filterTubingParentTubingObj, filterAuxiliaryPermeateTubingPacket
 			},
 
 			(* NOTE: Depending on the filter we are using, we might have to cut an additional tubing *)
@@ -4218,6 +4063,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 					permeateConductivitySensorInletTubingPacket,
 					permeateConductivitySensorOutletTubingPacket,
 					filterToPermeatePressureSensorTubingPacket,
+					filterAuxiliaryPermeateTubingPacket,
 					feedPressureSensorToFilterTubingPacket,
 					filterToRetentatePressureSensorTubingPacket
 				},
@@ -4523,16 +4369,18 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 		gatherTests&&!(And@@volumeOutputsValidList),Test["If two or more options amongst Targets, RetentateAliquotVolume and PermeateAliquotVolume are specified, the volumes specified by these options are consistent:",True,False]
 	];
 
-	(* ----- Is RetentateVolumeOut,PermeateAliquotVolume or Targets copacetic with CrossFlowFilter and SampleReservoir? ----- *)
+	(* ----- Is RetentateVolumeOut,PermeateAliquotVolume or Targets compatible with CrossFlowFilter and SampleReservoir? ----- *)
 
 	(* Check if the calculated or the specified retentate amount was below the minimum container in any scenario above and throw an error -- we only want this going off if we have valid volume information so it's also checked against that *)
 	If[
 		volumeInformationValidQ&&!(And@@retentateVolumeAboveMinList)&&messages,
 		Message[
+			(* what we actually want is the final retentate volume and the *)
 			Error::CrossFlowRetentateVolumeTooLow,
-			PickList[failedRetentateAboveMinOptionList,retentateVolumeAboveMinList,False],
-			PickList[failedRetentateMinSpecificationList,retentateVolumeAboveMinList,False],
-			PickList[failedRetentateAboveMinComponentList,retentateVolumeAboveMinList,False]
+			ObjectToString[PickList[finalRetentateVolumes,retentateVolumeAboveMinList,False]],
+			ObjectToString[PickList[mySamples, retentateVolumeAboveMinList, False], Cache -> newCache],
+			ObjectToString[PickList[failedRetentateMinSpecificationList,retentateVolumeAboveMinList,False]],
+			ObjectToString[PickList[failedRetentateAboveMinVolumes,retentateVolumeAboveMinList,False]]
 		]
 	];
 
@@ -4664,7 +4512,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 		Nothing
 	];
 
-	(* ----- Is FilterPrime copacetic with other filter prime options? ----- *)
+	(* ----- Is FilterPrime compatible with other filter prime options? ----- *)
 	(* Make a list of filter prime options and whether they were specified -- for rinse, we only care about it being specified as True. If it is set to False, no issues *)
 	filterPrimeOptionsValidList={
 		{
@@ -4716,7 +4564,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 		gatherTests&&!filterPrimeOptionsValidQ,Test["If FilterPrime is set to False, no other priming options are specified:",True,False]
 	];
 
-	(* ----- Is FilterFlush copacetic with other filter flush options? ----- *)
+	(* ----- Is FilterFlush compatible with other filter flush options? ----- *)
 
 	(* Make a list of filter flush options and whether they were specified -- for rinse, we only care about it being specified as True. If it is set to False, no issues *)
 	filterFlushOptionsValidList={
@@ -5012,6 +4860,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 			RequiredAliquotAmounts->requiredAliquotAmounts,
 			AliquotWarningMessage->aliquotWarningMessage,
 			Cache->newCache,
+			Simulation->updatedSimulation,
 			Output->{Result,Tests}
 		],
 		{
@@ -5024,6 +4873,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 				RequiredAliquotAmounts->requiredAliquotAmounts,
 				AliquotWarningMessage->aliquotWarningMessage,
 				Cache->newCache,
+				Simulation->updatedSimulation,
 				Output->Result
 			],
 			{}
@@ -5228,7 +5078,6 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 			Template->Lookup[myOptions,Template],
 			FastTrack->initialFastTrack,
 			PreparatoryUnitOperations->Lookup[myOptions,PreparatoryUnitOperations],
-			PreparatoryPrimitives->Lookup[myOptions,PreparatoryPrimitives],
 			SampleLabel -> resolvedSampleLabels,
 			SampleContainerLabel -> resolvedSampleContainerLabels,
 			RetentateContainerOutLabel -> resolvedRetentateContainerOutLabels,
@@ -5338,13 +5187,13 @@ calculatePermeateTargetToVolume[targets:{_}|{_,_}, startingVolume_ ,sampleDensit
 (* only one target *)
 calculatePermeateTargetToVolume[target_, volume_,density_]:= Which[
 	(* If defined as fold sample volume, multiply by sample volume *)
-	MatchQ[target,UnitsP[1]],SafeRound[volume * (1 - 1/target),1Milliliter],
+	MatchQ[target,UnitsP[1]],SafeRound[volume * (1 - 1/target),0.1Milliliter],
 
 	(* If defined as volume, return as is *)
 	MatchQ[target,UnitsP[1 Milliliter]],target,
 
 	(* If defined as weight, divide by density *)
-	MatchQ[target,UnitsP[1 Gram]],SafeRound[UnitConvert[target/density,Milliliter],1Milliliter],
+	MatchQ[target,UnitsP[1 Gram]],SafeRound[UnitConvert[target/density,Milliliter],0.1Milliliter],
 
 	(* There are no other conditions but return a logical number as the default anyway *)
 	True,0 Milliliter
@@ -5361,15 +5210,26 @@ calculateConcentrationTargets[volumes : {_, _}, startingVolume_] := Module[
 ];
 
 (* diafiltration Target to volume *)
-calculateDiafiltrationVolume[sampleInVolume_,primaryConcentrationTarget_,diafiltrationTarget_, solventDensity_]:=Which[
+calculateDiafiltrationVolume[sampleInVolume_, primaryConcentrationTarget_, diafiltrationTarget_, solventDensity_] := Which[
 	(* If target is specified as fold sample volume, multiply target by sample volume *)
-	MatchQ[diafiltrationTarget,UnitsP[1]],(sampleInVolume/primaryConcentrationTarget/. Null->1)*diafiltrationTarget,
+	MatchQ[diafiltrationTarget, UnitsP[1]] && MatchQ[primaryConcentrationTarget, UnitsP[1] | NullP],
+		(sampleInVolume / primaryConcentrationTarget /. Null -> 1) * diafiltrationTarget,
+
+	(* If we are doing ConcentrationDiafiltration... mode, we should calculate the exchange volume using the remaining sample volume (after PrimaryConcentrationTarget amount has been removed from sample) times DiafiltrationTarget *)
+	MatchQ[diafiltrationTarget, UnitsP[1]] && MatchQ[primaryConcentrationTarget, UnitsP[1 Liter]],
+		(sampleInVolume - primaryConcentrationTarget) * diafiltrationTarget,
+
 	(* If target is specified as volume, return volume as is *)
-	MatchQ[diafiltrationTarget,UnitsP[1 Liter]],diafiltrationTarget,
+	MatchQ[diafiltrationTarget, UnitsP[1 Liter]],
+		diafiltrationTarget,
+
 	(* If target is specified as weight, convert to volume *)
-	MatchQ[diafiltrationTarget,UnitsP[1 Gram]],Floor[UnitConvert[diafiltrationTarget/solventDensity,Milliliter]],
+	MatchQ[diafiltrationTarget, UnitsP[1 Gram]],
+		Floor[UnitConvert[diafiltrationTarget / solventDensity, Milliliter]],
+
 	(* in case its null *)
-	True, 0Liter
+	True,
+		0Liter
 ];
 
 calculateDiafiltrationTargetReal[sampleInVolume_, diafiltrationVolume_, primaryConcentrationTarget_]:=(diafiltrationVolume/sampleInVolume)*primaryConcentrationTarget;
@@ -5394,8 +5254,8 @@ DefineOptions[crossFlowResourcePackets,
 crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{___Rule},myResolvedOptions:{__Rule},myOptions:OptionsPattern[crossFlowResourcePackets]]:=Module[
 	{
 		outputSpecification,output,gatherTests,messages,cache,fastCacheBall,diafiltrationList,concentrationList,
-		washContainers,wasteContainerModels,fittingModels,tubingModels,cuttingJigModels,
-		sampleReservoirRackModels, resolvedInstrumentObject,downloadedPackets,washContainerPackets,wasteContainerPackets,
+		washContainers,wasteContainerModels,fittingModels,tubingModels,cuttingJigModels, resolvedInstrument,
+		sampleReservoirRackModels,downloadedPackets,washContainerPackets,wasteContainerPackets,
 		fittingPackets,tubingPackets,diafiltrationBufferPackets,sampleReservoirRackPackets,cuttingJigPackets,
 		newCache,filterPacket,instrumentModelPacket,simulatedSamplePackets,containerInObject,samplesInResources,
 		instrumentResource,protocolPacket, containersInResource, pairedSamplesInAndVolumes,resolvedOptionsNoHidden,
@@ -5464,7 +5324,8 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 	];
 
 	(* Find the instrument object so we can pull the conductivity sensors *)
-	resolvedInstrumentObject=Lookup[expandedResolvedOptions,Instrument];
+	resolvedInstrument = Lookup[expandedResolvedOptions, Instrument];
+
 	(* Download the packets *)
 	downloadedPackets=Quiet[
 		Download[
@@ -5508,17 +5369,18 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 	filterPacket=fetchPacketFromCache[#,newCache]&/@Lookup[expandedResolvedOptions,CrossFlowFilter];
 
 	(* Get the model of resolved instrument*)
-	instrumentModel= If[
-		MatchQ[Lookup[expandedResolvedOptions,Instrument],ObjectReferenceP[Model[Instrument]]],
-		Lookup[expandedResolvedOptions,Instrument],
-		Download[fastAssocLookup[fastCacheBall, Lookup[expandedResolvedOptions, Instrument], Model], Object]
+	instrumentModel = If[MatchQ[resolvedInstrument, ObjectP[Model[Instrument]]],
+		(* If the resolved option is a Model use that. *)
+		resolvedInstrument,
+		(* Otherwise its an Object, get its packet and look up the Model from the packet. *)
+		Download[fastAssocLookup[fastCacheBall, resolvedInstrument, Model], Object]
 	];
 
 	(* Prepare an instrument model packet for lookups*)
 	instrumentModelPacket=fetchPacketFromFastAssoc[instrumentModel,fastCacheBall];
 
 	(* build a boolean to indicate which instrument we are using *)
-	uPulseQ = MatchQ[instrumentModel, ObjectReferenceP[Model[Instrument, CrossFlowFiltration, "\[Micro]PULSE - TFF"]]];
+	uPulseQ = MatchQ[instrumentModel, ObjectReferenceP[Model[Instrument, CrossFlowFiltration, "id:vXl9j5lJXvnJ"]]];
 
 	(* ---------- Generate Resources ---------- *)
 
@@ -5585,17 +5447,18 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 			{
 				diafiltrationTargets,filtrationModes, primaryConcentrationTargets, secondaryConcentrationTargets,sampleInVolumes, diafiltrationVolumes,
 				diafiltrationBufferResources, filterPrimeVolume,filterPrimeBufferResources, filterPrimeRinseResources, filterFlushBufferResources,filterFlushRinseResources,
-				filterResources, permeateContainerResources,retentateContainerResources,systemFlushBufferResource,systemPrimeBufferResource,
+				filterResources, permeateContainerResources,retentateContainerResources,
 				wasteContainerResource, permeateAliquotVolumes, sampleReservoirs, crossFlowFilters, permeateContainersOut, retentateContainersOut,
 				diafiltrationBuffers, filterPrimeBuffer, filterPrimeRinse, filterFlushVolume, filterFlushBuffer, filterFlushRinse, filterPrime,
-				filterFlush, steriles, filterVolumeAssoc, numUniqueFilters, experimentRunTime, filterIndices, filterUniqueID, filterPrimeRinseBuffer,
+				filterFlush, steriles, filterVolumeAssoc, numUniqueFilters, instrumentSetupTearDownTime, instrumentFilterRate, primeFlushFilterVolume,
+				experimentRunTime, filterIndices, filterUniqueID, filterPrimeRinseBuffer,
 				sampleReservoirRackResource, temporaryPermeateContainersOutResources, currFilterIndex, diafiltrationContainerRackResource,
 				liquidComponentLists, solvents, solventDensities, diafiltrationBufferSolvents, diafiltrationBufferDensities,
 				primaryConcentrationVolumes, secondaryConcentrationVolumes, calculatedPrimaryTargets, calculatedSecondaryTargets, sanitizedPrimaryTargets,
-				sanitizedSecondaryTargets, sanitizedDiafiltrationTargets, temporaryDiafiltrationBufferContainerResources,
-				tubeBlockResource, systemPrimeDiafiltrationBufferResource, systemFlushDiafiltrationBufferResource,
+				sanitizedSecondaryTargets, sanitizedDiafiltrationTargets,
+				tubeBlockResource,
 				filterPrimeDiafiltrationBufferResources, filterPrimeRinseDiafiltrationBufferResources, filterFlushDiafiltrationBufferResources,
-				filterFlushRinseDiafiltrationBufferResources, cleaningFilterResource ,sampleRunTimes, filterPrimeTime, filterFlushTime,
+				filterFlushRinseDiafiltrationBufferResources, sampleRunTimes, filterPrimeTime, filterFlushTime,
 				primaryConcentrationWeights, secondaryConcentrationWeights, diafiltrationWeights
 			},
 
@@ -5668,7 +5531,7 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 				Module[{componentsAmount,solventPositions,liquidComponents},
 
 					(* Get all components and their amounts*)
-					componentsAmount={First[#],Download[Last[#],Object]}&/@Lookup[#,Composition,{}];
+					componentsAmount={First[#],Download[#[[2]],Object]}&/@Lookup[#,Composition,{}];
 
 					(* Find the liquid components *)
 					liquidComponents=Select[componentsAmount,MatchQ[First[#],Alternatives[UnitsP[IndependentUnit["VolumePercent"]],UnitsP[1 VolumePercent]]]&];
@@ -5772,7 +5635,7 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 					Module[{componentsAmount,liquidComponents,solventPositions},
 
 						(* Get all components and their amounts*)
-						componentsAmount={First[#],Download[Last[#],Object]}&/@Lookup[bufferPacket,Composition,{}];
+						componentsAmount={First[#],Download[#[[2]],Object]}&/@Lookup[bufferPacket,Composition,{}];
 
 						(* Find the liquid components *)
 						liquidComponents=Select[componentsAmount,MatchQ[First[#],Alternatives[UnitsP[IndependentUnit["VolumePercent"]],UnitsP[1 VolumePercent]]]&];
@@ -5901,7 +5764,7 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 						},
 						If[
 							concentrationQ,
-							Experiment`Private`calculatePermeateTargetToVolume[{primaryConcentrationTarget, secondaryConcentrationTarget},sampleInVolume,solventDensity,FirstOrDefault[diafiltrationBufferDensity, 1Gram/Milliliter]],
+							Experiment`Private`calculatePermeateTargetToVolume[{primaryConcentrationTarget, secondaryConcentrationTarget},sampleInVolume,solventDensity,If[DensityQ[diafiltrationBufferDensity],diafiltrationBufferDensity,1Gram/Milliliter]],
 							{0Milliliter, 0Milliliter}
 						]
 					],
@@ -6164,24 +6027,33 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 			(* Calculate the number of filters *)
 			numUniqueFilters = Length[DeleteDuplicates[filterResources]];
 
+			(* Define a time to setup and teardown the instrument *)
+			instrumentSetupTearDownTime = 15 Minute;
+
+			(* Define the filter rate of the instrument *)
+			instrumentFilterRate = $uPulseFilterRate;
+
+			(* Define the prime/flush filter throughput volume *)
+			primeFlushFilterVolume = 20 Milliliter;
+
 			(* Now calculate experiment time, including filter change times and additional prime and flush time *)
-			sampleRunTimes = (diafiltrationVolumes + primaryConcentrationVolumes + secondaryConcentrationVolumes )/(2Milliliter/Minute)+10 Minute;
+			sampleRunTimes = (diafiltrationVolumes + primaryConcentrationVolumes + secondaryConcentrationVolumes )/instrumentFilterRate+(instrumentSetupTearDownTime * Length[primaryConcentrationVolumes]);
 
 			(* Calculate filter prime time *)
 			filterPrimeTime = Which[
-				filterPrime&&filterPrimeRinse, (filterPrimeVolume/(2Milliliter/Minute))*2,
-				filterPrime,(filterPrimeVolume/(2Milliliter/Minute)),
+				filterPrime&&filterPrimeRinse, (primeFlushFilterVolume/instrumentFilterRate)*2 + (instrumentSetupTearDownTime * 2),
+				filterPrime,(primeFlushFilterVolume/instrumentFilterRate) + instrumentSetupTearDownTime,
 				True, 0 Minute
 			] * numUniqueFilters;
 
 			(* Get number of washes *)
 			filterFlushTime = Which[
-				filterFlush&&filterFlushRinse, (filterFlushVolume/(2Milliliter/Minute))*2,
-				filterFlush,(filterFlushVolume/(2Milliliter/Minute)),
+				filterFlush&&filterFlushRinse, (primeFlushFilterVolume/instrumentFilterRate)*2 + (instrumentSetupTearDownTime * 2),
+				filterFlush,(primeFlushFilterVolume/instrumentFilterRate) + instrumentSetupTearDownTime,
 				True, 0 Minute
 			] * numUniqueFilters;
 
-			experimentRunTime =Total[ sampleRunTimes + filterPrimeTime + filterFlushTime] + (5Minute * 2);
+			experimentRunTime = Total[sampleRunTimes + filterPrimeTime + filterFlushTime] ;
 
 			(* ----- Generate the FilterPrimeBuffer resource ----- *)
 			(* For each of filter we will prime it once *)
@@ -6194,14 +6066,17 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 						{
 							Resource[
 								Sample -> filterPrimeBuffer,
-								Amount -> Min[filterPrimeVolume + 5Milliliter, 50Milliliter],
+								Amount -> Min[filterPrimeVolume, 40Milliliter],
 								Container -> Model[Container, Vessel, "50mL Tube"],
 								Name -> ToString[CreateUUID[]],
 								RentContainer -> True
 							],
+							(* NOTE: the FilterPrimeDiafiltrationBufferResource needs to be 5mL greater than the FilterPrimeBuffer resource *)
+							(* Otherwise, the instrument will try and have the buffer refilled, which is currently not *)
+							(* supported in the procedure *)
 							Resource[
 								Sample->filterPrimeBuffer,
-								Amount->Min[filterPrimeVolume + 5Milliliter, 50Milliliter],
+								Amount->Min[filterPrimeVolume + 5Milliliter, 45 Milliliter],
 								Container->Model[Container, Vessel, "50mL Tube"],
 								Name->ToString[CreateUUID[]],
 								RentContainer->True
@@ -6221,14 +6096,17 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 						{
 							Resource[
 								Sample->filterPrimeRinseBuffer,
-								Amount->Min[filterPrimeVolume + 5Milliliter, 50Milliliter],
+								Amount->Min[filterPrimeVolume, 40Milliliter],
 								Container->Model[Container, Vessel, "50mL Tube"],
 								Name->ToString[CreateUUID[]],
 								RentContainer->True
 							],
+							(* NOTE: the FilterPrimeRinseDiafiltrationBuffer resource needs to be 5mL greater than the FilterPrimeRinseBuffer resource *)
+							(* Otherwise, the instrument will try and have the buffer refilled, which is currently not *)
+							(* supported in the procedure *)
 							Resource[
 								Sample->filterPrimeRinseBuffer,
-								Amount->Min[filterPrimeVolume + 5Milliliter, 50Milliliter],
+								Amount->Min[filterPrimeVolume + 5Milliliter, 45 Milliliter],
 								Container->Model[Container, Vessel, "50mL Tube"],
 								Name->ToString[CreateUUID[]],
 								RentContainer->True
@@ -6250,14 +6128,17 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 						{
 							Resource[
 								Sample->filterFlushBuffer,
-								Amount->Min[filterPrimeVolume+5Milliliter, 50Milliliter],
+								Amount->Min[filterFlushVolume, 40 Milliliter],
 								Container->Model[Container, Vessel, "50mL Tube"],
 								Name->ToString[CreateUUID[]],
 								RentContainer->True
 							],
+							(* NOTE: the FilterFlushDiafiltrationBuffer resource needs to be 5mL greater than the FilterFlushBuffer resource *)
+							(* Otherwise, the instrument will try and have the buffer refilled, which is currently not *)
+							(* supported in the procedure *)
 							Resource[
 								Sample->filterFlushBuffer,
-								Amount->Min[filterPrimeVolume+5Milliliter, 50Milliliter],
+								Amount->Min[filterFlushVolume+5Milliliter, 45 Milliliter],
 								Container->Model[Container, Vessel, "50mL Tube"],
 								Name->ToString[CreateUUID[]],
 								RentContainer->True
@@ -6277,14 +6158,17 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 						{
 							Resource[
 								Sample->Model[Sample,"Milli-Q water"],
-								Amount->Min[filterPrimeVolume+5Milliliter, 50Milliliter],
+								Amount->Min[filterFlushVolume, 40 Milliliter],
 								Container->Model[Container, Vessel, "50mL Tube"],
 								Name->ToString[CreateUUID[]],
 								RentContainer->True
 							],
+							(* NOTE: the FilterFlushDiafiltrationBuffer resource needs to be 5mL greater than the FilterFlushBuffer resource *)
+							(* Otherwise, the instrument will try and have the buffer refilled, which is currently not *)
+							(* supported in the procedure *)
 							Resource[
 								Sample->Model[Sample,"Milli-Q water"],
-								Amount->Min[filterPrimeVolume+5Milliliter, 50Milliliter],
+								Amount->Min[filterFlushVolume+5Milliliter, 45 Milliliter],
 								Container->Model[Container, Vessel, "50mL Tube"],
 								Name->ToString[CreateUUID[]],
 								RentContainer->True
@@ -6346,15 +6230,15 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 
 			checkpoints= If[uPulseQ,
 				{
-					{"Preparing Samples",20 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->20 Minute]]},
-					{"Filtration",experimentRunTime,"Cleaning filters and filtering samples.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->experimentRunTime]]},
-					{"Storing Samples",20 Minute,"Storing all samples and items",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->20 Minute]]}
+					{"Preparing Samples",20 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->$BaselineOperator,Time->20 Minute]]},
+					{"Filtration",experimentRunTime,"Cleaning filters and filtering samples.",Link[Resource[Operator->$BaselineOperator,Time->experimentRunTime]]},
+					{"Storing Samples",20 Minute,"Storing all samples and items",Link[Resource[Operator->$BaselineOperator,Time->20 Minute]]}
 				},
 				{
-					{"Preparing Samples",10 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10 Minute]]},
-					{"Instrument Setup",20 Minute,"Plumbing and sample are connected instrument and software setup is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->120 Minute]]},
-					{"Filtration",experimentRunTime,"Sample is filtered.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->experimentRunTime]]},
-					{"Instrument CleanUp",20 Minute,"Sample is removed from the instrument and instrument is returned to a ready state for the next user.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->120 Minute]]}
+					{"Preparing Samples", 10 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->$BaselineOperator,Time->10 Minute]]},
+					{"Instrument Setup", 2 Day, "Plumbing and sample are connected instrument and software setup is performed.",Link[Resource[Operator->$BaselineOperator,Time->120 Minute]]},
+					{"Filtration", experimentRunTime, "Sample is filtered.",Link[Resource[Operator->$BaselineOperator,Time->experimentRunTime]]},
+					{"Instrument CleanUp", 5 Hour, "Sample is removed from the instrument and instrument is returned to a ready state for the next user.",Link[Resource[Operator->$BaselineOperator,Time->120 Minute]]}
 				}
 			];
 
@@ -6443,9 +6327,9 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 				permeatePressureSensorToConductivitySensorTubingPacket,retentateConductivitySensorToFeedContainerTubingPacket,
 				retentatePressureSensorToConductivitySensorTubingPacket,retentateConductivitySensorInletTubingPacket,
 				retentateConductivitySensorOutletTubingPacket,permeateConductivitySensorInletTubingPacket,permeateConductivitySensorOutletTubingPacket,
-				filterToPermeatePressureSensorTubingPacket, filterToRetentatePressureSensorTubingPacket, feedPressureSensorToFilterTubingPacket,
-				diafiltrationTubingObj,permeateTubingObj,retentateTubingObj,conductivitySensorTubingObj,
-				filterTubingParentTubingObj,allTubingModelNoDupes,
+				filterToPermeatePressureSensorTubingPacket, filterAuxiliaryPermeateTubingPacket,
+				filterToRetentatePressureSensorTubingPacket, feedPressureSensorToFilterTubingPacket, diafiltrationTubingObj,
+				permeateTubingObj,retentateTubingObj,conductivitySensorTubingObj, filterTubingParentTubingObj,allTubingModelNoDupes,
 				parentTubingLookup,diafiltrationTubingResource,permeateTubingResource,retentateTubingResource,
 				conductivitySensorTubingResource,filterToPermeatePressureSensorParentTubingResource,KR2iDeadVolume,systemPermeateVolume,resolvedFilterPrimeVolume,
 				filterPrimeVolumeToResourcePick,filterPrimeBufferResource,filterPrimeBufferContainerResource,
@@ -6491,7 +6375,8 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 				xamplerFilterModels,xamplerFilterQ,filterConnectionsCouplingRingResources,feedContainerFittingConnectionsCouplingRingResources,
 				filterPrimeFittingConnectionsCouplingRingResources, filterFlushFittingConnectionsCouplingRingResources,
 				diafiltrationWeight, concentrationPermeateWeightsByStep, outputContainerModels, sterileContainers,
-				nonSterileContainers, maxVolumeSterileContainer, maxVolumeNonSterileContainer
+				nonSterileContainers, maxVolumeSterileContainer, maxVolumeNonSterileContainer, filterConnectionTubingClamps,
+				tubeClampPliersResource
 			},
 
 			(* ----- Generate the instrument resource ----- *)
@@ -6579,8 +6464,7 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 			sampleModelPackets=fetchPacketFromCache[#,newCache]&/@Download[FirstOrDefault[Lookup[firstSamplePacket,Model]],Object];
 
 			(* If Solvent field for sample is informed, use it; otherwise, determine the solvents *)
-			solvent=If[
-				!MatchQ[Lookup[firstSamplePacket,Solvent,Null],Null|{}],
+			solvent=If[!MatchQ[Lookup[firstSamplePacket,Solvent,Null],Null|{}],
 				Module[{},
 
 					(* Find the liquid components, which are the solvents -- this is used below for density calculations, so we need to set this variable here *)
@@ -6592,7 +6476,7 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 				Module[{componentsAmount,solventPositions},
 
 					(* Get all components and their amounts*)
-					componentsAmount={First[#],Download[Last[#],Object]}&/@Lookup[firstSamplePacket,Composition,{}];
+					componentsAmount={First[#],Download[#[[2]],Object]}&/@Lookup[firstSamplePacket,Composition,{}];
 
 					(* Find the liquid components *)
 					liquidComponents=Select[componentsAmount,MatchQ[First[#],Alternatives[UnitsP[IndependentUnit["VolumePercent"]],UnitsP[1 VolumePercent]]]&];
@@ -6673,7 +6557,7 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 					Module[{componentsAmount,liquidComponents,solventPositions},
 
 						(* Get all components and their amounts*)
-						componentsAmount={First[#],Download[Last[#],Object]}&/@Lookup[bufferPacket,Composition,{}];
+						componentsAmount={First[#],Download[#[[2]],Object]}&/@Lookup[bufferPacket,Composition,{}];
 
 						(* Find the liquid components *)
 						liquidComponents=Select[componentsAmount,MatchQ[First[#],Alternatives[UnitsP[IndependentUnit["VolumePercent"]],UnitsP[1 VolumePercent]]]&];
@@ -6733,7 +6617,7 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 							!MemberQ[solventDensities,Null],
 							Total[MapThread[
 								#1/100*#2&,
-								{Unitless[First/@Last[solventAndLiquidComponents]],solventDensities}
+								{Unitless[First/@(solventAndLiquidComponents[[2]])],solventDensities}
 							]],
 
 							(* Otherwise *)
@@ -6852,6 +6736,7 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 			(* Get a boolean that states whether the filter is an xampler filter or not *)
 			(* Generate the coupling ring resources *)
 			(* The filters that require TriCloverClamp connections are the following *)
+			(* These filters also have very un-barbed bar connectors, and require tubing clamps. *)
 			xamplerFilterModels = {
 				Model[Item, CrossFlowFilter, "id:E8zoYvNEGW0X"], (* Model[Item, CrossFlowFilter, "Dry Xampler PS 100 kDa"] *)
 				Model[Item, CrossFlowFilter, "id:Vrbp1jKWwNAx"], (* Model[Item, CrossFlowFilter, "Dry Xampler PS 50 kDa"] *)
@@ -6881,6 +6766,7 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 					permeateConductivitySensorInletTubingPacket,
 					permeateConductivitySensorOutletTubingPacket,
 					filterToPermeatePressureSensorTubingPacket,
+					filterAuxiliaryPermeateTubingPacket,
 					feedPressureSensorToFilterTubingPacket,
 					filterToRetentatePressureSensorTubingPacket
 				},
@@ -8020,10 +7906,10 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 			];
 
 			(* ---------- Calculate the permeateWeightAlarm and retentateWeightAlarm ---------- *)
-			(* we dont need to worry about the permeateWeightAlarm since the software does that automatically. we will uyse this to set a weight alarm in the permeate to make sure nothing overflows *)
+			(* we don't need to worry about the permeateWeightAlarm since the software does that automatically. we will uyse this to set a weight alarm in the permeate to make sure nothing overflows *)
 			permeateWeightAlarm=Round[Total[Flatten[{concentrationPermeateWeightsByStep,diafiltrationWeight}/.Null->0Gram]]];
 
-			(* retentate weight alarm should go off if we're losing more weight than expected sample volume*diafiltration density - concentration targets * density. dont forget to take dead volumes into account! *)
+			(* retentate weight alarm should go off if we're losing more weight than expected sample volume*diafiltration density - concentration targets * density. don't forget to take dead volumes into account! *)
 			retentateWeightAlarm=Round[sampleInVolume*(diafiltrationBufferDensities[[1]] /. Null->solventDensity) - (Total[concentrationPermeateWeightsByStep]) - KR2iDeadVolume*(diafiltrationBufferDensities[[1]]/. Null->solventDensity),10^-1];
 
 			(* ---------- Helper function for getting fitting image files ---------- *)
@@ -8062,9 +7948,31 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 				{
 					Resource[Sample->Model[Part, Clamp, "id:J8AY5jA8belb"],Name->CreateUUID[],Rent->True],
 					Resource[Sample->Model[Part, Clamp, "id:J8AY5jA8belb"],Name->CreateUUID[],Rent->True],
+					Null,
 					Null
 				},
 				{Null,Null,Null}
+			];
+
+			(* Generate filter tube clamp resources "Constant-Tension Single Zinc-Plate Steel Spring for 7/16\" OD Tubing" *)
+			(* Generate a plier resource to help install the tube clamps. *)
+			(* NOTE: This field is index matching to FilterConnections - so if that changes in the compiler, this needs to change as well *)
+			{filterConnectionTubingClamps, tubeClampPliersResource} = If[xamplerFilterQ,
+				(*For Xampler filters use: *)
+				{
+					{
+						Null,
+						Null,
+						Resource[Sample -> Model[Item, Clamp, "id:E8zoYvOopMDX"], Amount -> 2, Name -> "Filter Clamps"],
+						Resource[Sample -> Model[Item, Clamp, "id:E8zoYvOopMDX"], Amount -> 2, Name -> "Filter Clamps"]
+					},
+					Resource[Sample -> Model[Item, "id:n0k9mGOoWvn3"], Name -> "Spring Clamp Pliers"]
+				},
+				(* Otherwise we have TC or luer fittings and do not need clamps. *)
+				{
+					{Null, Null, Null},
+					Null
+				}
 			];
 
 			(* NOTE: This field is index matching to FeedContainerFittingConnections - so if that changes in the compiler, this needs to change as well *)
@@ -8114,10 +8022,10 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 
 				(* Checkpoints *)
 				Replace[Checkpoints]->{
-					{"Preparing Samples",10 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10 Minute]]},
-					{"Instrument Setup",120 Minute,"Plumbing and sample are connected instrument and software setup is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->120 Minute]]},
-					{"Filtration",experimentRunTime,"Sample is filtered.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->experimentRunTime]]},
-					{"Instrument Teardown",120 Minute,"Sample is removed from the instrument and instrument is returned to a ready state for the next user.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->120 Minute]]}
+					{"Preparing Samples",10 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->$BaselineOperator,Time->10 Minute]]},
+					{"Instrument Setup",120 Minute,"Plumbing and sample are connected instrument and software setup is performed.",Link[Resource[Operator->$BaselineOperator,Time->120 Minute]]},
+					{"Filtration",experimentRunTime,"Sample is filtered.",Link[Resource[Operator->$BaselineOperator,Time->experimentRunTime]]},
+					{"Instrument Teardown",120 Minute,"Sample is removed from the instrument and instrument is returned to a ready state for the next user.",Link[Resource[Operator->$BaselineOperator,Time->120 Minute]]}
 				},
 
 				(* Storage *)
@@ -8219,8 +8127,10 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 				SystemFlushFeedContainerFilterOutletFitting->Link[systemFlushFeedContainerFilterOutletFittingResource],
 				SystemFlushFeedContainerDetectorInletFitting->Link[systemFlushFeedContainerDetectorInletFittingResource],
 
-				(* Coupling Ring Resources *)
+				(* Coupling Ring / Tube Clamp Resources *)
 				Replace[FilterConnectionsCouplingRings] -> Link/@filterConnectionsCouplingRingResources,
+				Replace[FilterConnectionsTubeClamps] -> Link/@filterConnectionTubingClamps,
+				TubeClampPliers -> Link[tubeClampPliersResource],
 				Replace[FeedContainerFittingConnectionsCouplingRings] -> Link/@feedContainerFittingConnectionsCouplingRingResources,
 				Replace[FilterPrimeFittingConnectionsCouplingRings] -> Link/@filterPrimeFittingConnectionsCouplingRingResources,
 				Replace[FilterFlushFittingConnectionsCouplingRings]-> Link/@filterFlushFittingConnectionsCouplingRingResources,
@@ -8236,6 +8146,9 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 				RetentatePressureSensorToConductivitySensorTubing->Link[Lookup[retentatePressureSensorToConductivitySensorTubingPacket, Object]],
 				PermeatePressureSensorToConductivitySensorTubing->Link[Lookup[permeatePressureSensorToConductivitySensorTubingPacket, Object]],
 				FilterToPermeatePressureSensorTubing->Link[If[NullQ[filterToPermeatePressureSensorTubingPacket],filterToPermeatePressureSensorTubingPacket,Lookup[filterToPermeatePressureSensorTubingPacket, Object]]],
+				AuxiliaryPermeateTubing -> Link[If[NullQ[filterAuxiliaryPermeateTubingPacket], filterAuxiliaryPermeateTubingPacket, Lookup[filterAuxiliaryPermeateTubingPacket, Object]]],
+				(* If we require AuxiliaryPermeateTubing we will need to clamp it: *)
+				AuxiliaryPermeateSiphonClamp -> If[NullQ[filterAuxiliaryPermeateTubingPacket], Null, Link[Resource[Sample -> Model[Item, Clamp, "id:dORYzZdZL1d5"(*"Pinch Clamp, Ratchet-Style, 1.5\" Long"*)], Name -> "Auxiliary Permeate Tubing Clamp"]]],
 				FilterToRetentatePressureSensorTubing->Link[If[NullQ[filterToRetentatePressureSensorTubingPacket],filterToRetentatePressureSensorTubingPacket,Lookup[filterToRetentatePressureSensorTubingPacket, Object]]],
 				FeedPressureSensorToFilterTubing->Link[If[NullQ[feedPressureSensorToFilterTubingPacket],feedPressureSensorToFilterTubingPacket,Lookup[feedPressureSensorToFilterTubingPacket, Object]]],
 
@@ -8253,7 +8166,7 @@ crossFlowResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 				ExperimentalFirstCheckInTime->frequentCheckInTime,
 				FilterPrimeRunTime->(totalFilterPrimeRunTime/.{0 Minute->Null}),
 				FilterFlushRunTime->(totalFilterFlushRunTime/.{0 Minute->Null}),
-				Replace[ScaleAlarms]->{permeateWeightAlarm, If[retentateWeightAlarm>0Gram, retentateWeightAlarm, 0.1Gram]}, (* its not a great indication if the dead volume is larger than the leftover volume.. but if it is, dont set alarms. if this matters for the filter, we raise a warning *)
+				Replace[ScaleAlarms]->{permeateWeightAlarm, If[retentateWeightAlarm>0Gram, retentateWeightAlarm, 0.1Gram]}, (* its not a great indication if the dead volume is larger than the leftover volume.. but if it is, don't set alarms. if this matters for the filter, we raise a warning *)
 				SystemFlushFilterPlaceholder->Link[systemFlushFakeColumnResource],
 				SystemFlushFilterPlaceholderFittings->(Link[#]&/@systemFlushFakeColumnFittingResources),
 				Replace[SystemFlushFilterPlaceholderFittingImages]->Link[getFittingImages[systemFlushFakeColumnFittingResources,fittingPackets]],
@@ -8800,7 +8713,7 @@ DefineOptions[ExperimentCrossFlowFiltrationOptions,
 ];
 
 
-ExperimentCrossFlowFiltrationOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ExperimentCrossFlowFiltrationOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,noOutputOptions,options},
 
 	(* Get the options as a list *)
@@ -8834,7 +8747,7 @@ DefineOptions[ValidExperimentCrossFlowFiltrationQ,
 ];
 
 
-ValidExperimentCrossFlowFiltrationQ[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ValidExperimentCrossFlowFiltrationQ[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,preparedOptions,experimentCrossFlowFiltrationTests,validObjectBoolean,voqWarning,allTests,verbose,outputFormat},
 
 	(* Get the options as a list *)
@@ -8876,7 +8789,7 @@ DefineOptions[ExperimentCrossFlowFiltrationPreview,
 ];
 
 
-ExperimentCrossFlowFiltrationPreview[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ExperimentCrossFlowFiltrationPreview[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,noOutputOptions},
 
 	(* Get the options as a list *)
@@ -8901,7 +8814,8 @@ calculateAllTubingPackets[sampleReservoirPacket_,xamplerFilterQ_,fastCache_]:=Mo
 		permeatePressureSensorToConductivitySensorTubingPacket,retentateConductivitySensorToFeedContainerTubingPacket,
 		retentatePressureSensorToConductivitySensorTubingPacket,retentateConductivitySensorInletTubingPacket,
 		retentateConductivitySensorOutletTubingPacket, permeateConductivitySensorInletTubingPacket,permeateConductivitySensorOutletTubingPacket,
-		filterToPermeatePressureSensorTubingPacket,feedPressureSensorToFilterTubingPacket,filterToRetentatePressureSensorTubingPacket
+		filterToPermeatePressureSensorTubingPacket,feedPressureSensorToFilterTubingPacket,filterToRetentatePressureSensorTubingPacket,
+		filterAuxiliaryPermeateTubingPacket
 	},
 
 	(* Find the connections for the sample reservoir *)
@@ -9075,6 +8989,11 @@ calculateAllTubingPackets[sampleReservoirPacket_,xamplerFilterQ_,fastCache_]:=Mo
 		tinyLengthTubing
 	];
 
+	filterAuxiliaryPermeateTubingPacket=findPrecutTubing[
+		filterTubingParentTubingObj,
+		tinyLengthTubing
+	];
+
 	feedPressureSensorToFilterTubingPacket=findPrecutTubing[
 		filterTubingParentTubingObj,
 		tinyLengthTubing
@@ -9098,6 +9017,7 @@ calculateAllTubingPackets[sampleReservoirPacket_,xamplerFilterQ_,fastCache_]:=Mo
 			permeateConductivitySensorInletTubingPacket,
 			permeateConductivitySensorOutletTubingPacket,
 			filterToPermeatePressureSensorTubingPacket,
+			filterAuxiliaryPermeateTubingPacket,
 			feedPressureSensorToFilterTubingPacket,
 			filterToRetentatePressureSensorTubingPacket
 		},
@@ -9160,9 +9080,6 @@ DefineOptions[resolveCrossFlowFiltrationMethod,
 		OutputOption
 	}
 ];
-
-(* Error message for resolveCrossFlowFiltrationMethod*)
-Error::ConflictingCountLiduiqParticlesMethodRequirements="The following option(s)/input(s) were specified that require a Manual Preparation method, `1`. However, the following option(s)/input(s) were specified that require a Robotic Preparation method, `2`. Please resolve this conflict in order to submit a valid Centrifuge protocol.";
 
 (* NOTE: You should NOT throw messages in this function. Just return the methods by which you can perform your primitive with *)
 (* the given options. *)

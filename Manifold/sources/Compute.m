@@ -123,7 +123,7 @@ DefineOptionSet[BaseComputationKernelOptions :> {
 		Default->Null,
 		Description->"Specify which Mathematica version should be used to run this Manifold job. Null defaults to 13.3.1.",
 		AllowNull->True,
-		Widget->Widget[Type->Enumeration,Pattern:>Alternatives["12.0.1", "12.2.0", "13.3.1"]],
+		Widget->Widget[Type->Enumeration,Pattern:>Alternatives["13.3.1"]],
 		Category->"Hidden"
 	},
 	{
@@ -258,14 +258,6 @@ DefineOptionSet[ComputationExecutionOptions :> {
 		AllowNull->False,
 		Widget->Widget[Type->Enumeration,Pattern:>Alternatives[True,False]],
 		Category->"General"
-	},
-	{
-		OptionName->CanLaunchKernel,
-		Default->False,
-		Description->"Specify if the computation can launch a manifold kernel if one is not available.",
-		AllowNull->False,
-		Widget->Widget[Type->Enumeration,Pattern:>Alternatives[True,False]],
-		Category->"Hidden"
 	}
 }];
 
@@ -286,15 +278,6 @@ DefineOptions[Compute,
 			Description->"The notebook in which all Computation pages spawned from the job will be deposited.",
 			AllowNull->True,
 			Widget->Widget[Type->Object,Pattern:>ObjectP[Object[LaboratoryNotebook]]],
-			Category->"Organizational Information"
-		},
-		{
-			OptionName->ForceComputation,
-			Default->Automatic,
-			Description->"A setting to determine whether the evaluation should be forced to occur on a new instance of a Object[Notebook, Computation] even if an active Interactive Kernel is present.",
-			ResolutionDescription->"Resolves to True if settings to either Schedule or Trigger are not None, and False otherwise.",
-			AllowNull->False,
-			Widget->Widget[Type->Enumeration,Pattern:>Alternatives[True,False,Automatic]],
 			Category->"Organizational Information"
 		},
 		{
@@ -319,7 +302,6 @@ developerOptions[] := {
 	FargateCluster,
 	DisablePaclets,
 	MathematicaVersion,
-	HardwareConfiguration,
 	Environment
 };
 
@@ -332,10 +314,9 @@ Compute[computeInput_, ops:OptionsPattern[Compute]]:=Module[
 	{
 		originalOps,publicOps,safeOps,expandedOps,notebookInputQ,resolvedOps,
 		notebookCloudFile,developerKeys,
-		developerOps,jobPacket,uploadResult, readyKernel,
-		interactiveManifoldOptions, notebook, 
+		developerOps,jobPacket,uploadResult, notebook,
 		notebookCloudFilePath, userNotebooks, defaultNotebooks,
-		assetFile
+		assetFile, validLengths, cloudFileInputQ, realAssetFile
 	},
 
 	developerKeys = developerOptions[];
@@ -377,10 +358,19 @@ Compute[computeInput_, ops:OptionsPattern[Compute]]:=Module[
 	(* True if the input was a notebook page, False otherwise *)
 	notebookInputQ=MatchQ[Hold[computeInput],Hold[Object[Notebook,Page,_String]]];
 
+	(* True if the input was a cloud file, False otherwise *)
+	cloudFileInputQ = MatchQ[Hold[computeInput],Hold[Object[EmeraldCloudFile, _String]]];
+
 	(* Resolve options and throw any warnings or errors if needed *)
 	(* also return resolved notebooks and asset file if the input is a notebook, which are used later *)
 	(* computeInput needs to be held because it can be an expression (e.g. ManinfoldRunUnitTest[AnalyzePeaks]) that we do not want to evaluate early *)
 	{resolvedOps, userNotebooks, defaultNotebooks, assetFile} = resolveOptionsDownload[expandedOps,originalOps,notebookInputQ, Hold[computeInput]];
+
+	(* if the input is an Object[EmeraldCloudFile], assume it's meant to be the template file and use it as the assetFile. *)
+	realAssetFile = If[cloudFileInputQ,
+		computeInput,
+		assetFile
+	];
 
 	(* Early fail state if option resolution could not be completed *)
 	If[MatchQ[resolvedOps,$Failed],
@@ -395,29 +385,10 @@ Compute[computeInput_, ops:OptionsPattern[Compute]]:=Module[
 		]
 	];
 
-	(* If ForceComputation -> False and there's a matching manifold kernel in the kernel pool, use those existing kernels instead *)
-	If[
-		Not@TrueQ@Lookup[resolvedOps,ForceComputation],
-
-		readyKernel = kernelForConfiguration[developerOps];
-		If[MatchQ[readyKernel, ObjectP[Object[Software, ManifoldKernel]]],
-			Return[RunManifoldKernelCommand[computeInput, readyKernel, ZDriveFilePaths -> Lookup[resolvedOps, ZDriveFilePaths]]]
-		];
-
-		If[TrueQ[Lookup[resolvedOps, CanLaunchKernel]],
-			interactiveManifoldOptions = Normal@KeyTake[Association@developerOps, Symbol /@ Keys@Options[LaunchManifoldKernel]];
-			LaunchManifoldKernel[interactiveManifoldOptions];
-			readyKernel = kernelForConfiguration[developerOps];
-			If[MatchQ[readyKernel, ObjectP[Object[Software, ManifoldKernel]]],
-				Return[RunManifoldKernelCommand[computeInput, readyKernel, ZDriveFilePaths -> Lookup[resolvedOps, ZDriveFilePaths]]]
-			];
-		];
-	];
-
 	(* If the input is an expression, convert it to a notebook and upload as a cloud file. *)
 	(* If the input is a notebook, just get the object reference for its AssetFile *)
-	{notebookCloudFile, notebookCloudFilePath} = If[notebookInputQ,
-		{ assetFile, Null },
+	{notebookCloudFile, notebookCloudFilePath} = If[notebookInputQ || cloudFileInputQ,
+		{ realAssetFile, Null },
 		(* this returns both *)
 		convertExpressionToNotebook[computeInput,Lookup[resolvedOps,Upload]]
 	];
@@ -487,8 +458,7 @@ resolveOptionsDownload[safeOps_,originalOps_,notebookQ_, Hold[computeInput_]]:=M
 	{
 		cloudOnlyOps,localQ,waitQ,originalCloudOps,fieldsToCheck,
 		resolvedMaxTime,resolvedEstimatedTime,computationOps,
-		requestedJobTypes,resolvedJobType,forceComputationOption,
-		resolvedForceComputation, validFields,typesToCheck,typesForMessage,
+		requestedJobTypes,resolvedJobType,validFields,typesToCheck,typesForMessage,
 		triggerOption,trackedFieldsOption,resolvedTrackedFields,
 		resolvedTrackedTypes,resolvedTypeFields,userTeams,devTeam,
 		resolvedNotebook,resolvedNotebookPageName,notebookDropOps,
@@ -595,15 +565,6 @@ resolveOptionsDownload[safeOps_,originalOps_,notebookQ_, Hold[computeInput_]]:=M
 		{OneTime},
 		requestedJobTypes
 	];
-
-	(*Resolve ForceComputation based on the Job type.
-	  If JobType is something other than {OneTime}, then it is triggered or scheduled.
-	  In that case, we want to force job to occur as a Computation rather than
-	  on an interactive Manifold kernel.*)
-	forceComputationOption = Lookup[safeOps, ForceComputation];
-	resolvedForceComputation = forceComputationOption /. {
-		Automatic -> Not[MatchQ[resolvedJobType, {OneTime}]]
-	};
 
 	(* Lookup the trigger option and tracked fields options *)
 	{triggerOption,trackedFieldsOption}=Lookup[safeOps,{Trigger,TrackedFields}];
@@ -800,7 +761,6 @@ resolveOptionsDownload[safeOps_,originalOps_,notebookQ_, Hold[computeInput_]]:=M
 	jobOps={
 		WaitForComputation->waitQ,
 		JobType->resolvedJobType,
-		ForceComputation->resolvedForceComputation,
 		TrackedFields->resolvedTrackedFields,
 		Schedule->resolvedSchedule,
 		RepeatFrequency->resolvedRepeats,
@@ -891,7 +851,7 @@ convertExpressionToNotebook[genericExpression_, uploadOption:True|False]:=Module
 		*)
 		UploadCloudFile[templateNotebookFileName,Upload->uploadOption]
 	];
-	
+
 	(* Close the local converted notebook *)
 	UsingFrontEnd[NotebookClose[convertedNotebook]];
 
@@ -904,9 +864,10 @@ convertExpressionToNotebook[genericExpression_, uploadOption:True|False]:=Module
 (* ::Subsubsection::Closed:: *)
 (*makeBlankNotebook*)
 
+makeBlankNotebook[]:=makeBlankNotebook[Null];
 (* Create a blank notebook object *)
-makeBlankNotebook[]:=Module[
-	{emptyNotebookFile,emptyNotebook,notebookObject},
+makeBlankNotebook[ownerNotebook:(ObjectP[Object[LaboratoryNotebook]]|Null)] := Module[
+	{emptyNotebookFile, emptyNotebook},
 
 	(* Make a temporary unique file path and export a blank notebook. *)
 	emptyNotebookFile=Export[FileNameJoin[{$TemporaryDirectory,CreateUUID[]<>".nb"}]," "];
@@ -922,9 +883,8 @@ makeBlankNotebook[]:=Module[
 	UsingFrontEnd[NotebookClose[emptyNotebook]];
 
 	(* Upload the notebook as a cloud file and return it as an object reference *)
-	UploadCloudFile[emptyNotebookFile]
+	UploadCloudFile[emptyNotebookFile, Notebook -> ownerNotebook]
 ];
-
 
 
 (* ::Subsubsection::Closed:: *)
@@ -959,9 +919,6 @@ formatJobPacket[resolvedOps_, template_, notebook_, notebookCloudFilePath_, user
 
 	(* Assign a notebook to the job. If it's the default *)
 	resolvedNotebook=Which[
-		(* If we don't have a notebook, just set to Null *)
-		NullQ[$Notebook],
-		Null,
 		(* Use the current notebook if the RunAsUser has access to it *)
 		MemberQ[validLabNotebooks, $Notebook],
 		Link[$Notebook, Objects],

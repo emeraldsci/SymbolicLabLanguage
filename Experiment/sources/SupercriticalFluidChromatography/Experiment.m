@@ -17,7 +17,15 @@ DefineOptions[ExperimentSupercriticalFluidChromatography,
       AllowNull -> False,
       Widget -> Widget[
         Type -> Object,
-        Pattern :> ObjectP[{Model[Instrument, SupercriticalFluidChromatography], Object[Instrument, SupercriticalFluidChromatography]}]
+        Pattern :> ObjectP[{Model[Instrument, SupercriticalFluidChromatography], Object[Instrument, SupercriticalFluidChromatography]}],
+        OpenPaths -> {
+          {
+            Object[Catalog, "Root"],
+            "Instruments",
+            "Chromatography",
+            "Supercritical Fluid Chromatography"
+          }
+        }
       ],
       Category->"Protocol"
     },
@@ -73,7 +81,15 @@ DefineOptions[ExperimentSupercriticalFluidChromatography,
         AllowNull -> True,
         Widget -> Widget[
           Type -> Object,
-          Pattern :> ObjectP[{Model[Item,Column], Object[Item,Column]}]
+          Pattern :> ObjectP[{Model[Item,Column], Object[Item,Column]}],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Liquid Chromatography",
+              "Supercritical Fluid Chromatography Columns"
+            }
+          }
         ],
         Category->"Protocol"
       }
@@ -88,7 +104,15 @@ DefineOptions[ExperimentSupercriticalFluidChromatography,
         AllowNull -> True,
         Widget ->Widget[
           Type -> Object,
-          Pattern :> ObjectP[{Model[Item,Column], Object[Item,Column]}]
+          Pattern :> ObjectP[{Model[Item,Column], Object[Item,Column]}],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Liquid Chromatography",
+              "Supercritical Fluid Chromatography Columns"
+            }
+          }
         ],
         Category->"Protocol"
       }
@@ -151,7 +175,14 @@ DefineOptions[ExperimentSupercriticalFluidChromatography,
       AllowNull -> True,
       Widget -> Widget[
         Type -> Object,
-        Pattern :> ObjectP[{Object[Sample],Model[Sample]}]
+        Pattern :> ObjectP[{Object[Sample],Model[Sample]}],
+        OpenPaths -> {
+          {
+            Object[Catalog, "Root"],
+            "Materials",
+            "Reagents"
+          }
+        }
       ],
       Category->"Protocol"
     },
@@ -163,7 +194,14 @@ DefineOptions[ExperimentSupercriticalFluidChromatography,
       AllowNull -> True,
       Widget -> Widget[
         Type -> Object,
-        Pattern :> ObjectP[{Object[Sample],Model[Sample]}]
+        Pattern :> ObjectP[{Object[Sample],Model[Sample]}],
+        OpenPaths -> {
+          {
+            Object[Catalog, "Root"],
+            "Materials",
+            "Reagents"
+          }
+        }
       ],
       Category->"Protocol"
     },
@@ -175,7 +213,14 @@ DefineOptions[ExperimentSupercriticalFluidChromatography,
       AllowNull -> True,
       Widget -> Widget[
         Type -> Object,
-        Pattern :> ObjectP[{Object[Sample],Model[Sample]}]
+        Pattern :> ObjectP[{Object[Sample],Model[Sample]}],
+        OpenPaths -> {
+          {
+            Object[Catalog, "Root"],
+            "Materials",
+            "Reagents"
+          }
+        }
       ],
       Category->"Protocol"
     },
@@ -187,7 +232,14 @@ DefineOptions[ExperimentSupercriticalFluidChromatography,
       AllowNull -> True,
       Widget -> Widget[
         Type -> Object,
-        Pattern :> ObjectP[{Object[Sample],Model[Sample]}]
+        Pattern :> ObjectP[{Object[Sample],Model[Sample]}],
+        OpenPaths -> {
+          {
+            Object[Catalog, "Root"],
+            "Materials",
+            "Reagents"
+          }
+        }
       ],
       Category->"Protocol"
     },
@@ -208,7 +260,13 @@ DefineOptions[ExperimentSupercriticalFluidChromatography,
               Widget[
                 Type -> Object,
                 Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
-                ObjectTypes -> {Model[Sample], Object[Sample]}
+                ObjectTypes -> {Model[Sample], Object[Sample]},
+                OpenPaths -> {
+                  {
+                    Object[Catalog, "Root"],
+                    "Materials"
+                  }
+                }
               ],
               Widget[
                 Type -> Enumeration,
@@ -229,7 +287,15 @@ DefineOptions[ExperimentSupercriticalFluidChromatography,
             "Column" -> Alternatives[
               Widget[
                 Type -> Object,
-                Pattern :> ObjectP[{Model[Item,Column], Object[Item,Column]}]
+                Pattern :> ObjectP[{Model[Item,Column], Object[Item,Column]}],
+                OpenPaths -> {
+                  {
+                    Object[Catalog, "Root"],
+                    "Materials",
+                    "Liquid Chromatography",
+                    "Supercritical Fluid Chromatography Columns"
+                  }
+                }
               ],
               Widget[
                 Type -> Enumeration,
@@ -264,7 +330,15 @@ DefineOptions[ExperimentSupercriticalFluidChromatography,
             "Column" -> Alternatives[
               Widget[
                 Type -> Object,
-                Pattern :> ObjectP[{Model[Item,Column], Object[Item,Column]}]
+                Pattern :> ObjectP[{Model[Item,Column], Object[Item,Column]}],
+                OpenPaths -> {
+                  {
+                    Object[Catalog, "Root"],
+                    "Materials",
+                    "Liquid Chromatography",
+                    "Supercritical Fluid Chromatography Columns"
+                  }
+                }
               ],
               Widget[
                 Type -> Enumeration,
@@ -330,7 +404,16 @@ DefineOptions[ExperimentSupercriticalFluidChromatography,
       AllowNull -> False,
       Widget -> Widget[
         Type -> Object,
-        Pattern :> ObjectP[{Object[Sample],Model[Sample]}]
+        Pattern :> ObjectP[{Object[Sample],Model[Sample]}],
+        OpenPaths -> {
+          {
+            Object[Catalog, "Root"],
+            "Materials",
+            "Reagents"
+          }
+        },
+        PreparedSample->False,
+        PreparedContainer->False
       ],
       Category->"Sample Parameters"
     },
@@ -721,7 +804,14 @@ DefineOptions[ExperimentSupercriticalFluidChromatography,
       AllowNull -> False,
       Widget -> Widget[
         Type -> Object,
-        Pattern :> ObjectP[{Object[Sample],Model[Sample]}]
+        Pattern :> ObjectP[{Object[Sample],Model[Sample]}],
+        OpenPaths -> {
+          {
+            Object[Catalog, "Root"],
+            "Materials",
+            "Reagents"
+          }
+        }
       ],
       Category->"Detector Parameters"
     },
@@ -732,7 +822,15 @@ DefineOptions[ExperimentSupercriticalFluidChromatography,
       AllowNull -> False,
       Widget -> Widget[
         Type -> Object,
-        Pattern :> ObjectP[{Object[Sample],Model[Sample]}]
+        Pattern :> ObjectP[{Object[Sample],Model[Sample]}],
+        OpenPaths -> {
+          {
+            Object[Catalog, "Root"],
+            "Materials",
+            "Mass Spectrometry",
+            "Calibrants"
+          }
+        }
       ],
       Category->"Detector Parameters"
     },
@@ -946,7 +1044,15 @@ DefineOptions[ExperimentSupercriticalFluidChromatography,
         Category -> "Standard",
         Widget -> Widget[
           Type -> Object,
-          Pattern :> ObjectP[{Model[Sample],Object[Sample]}]
+          Pattern :> ObjectP[{Model[Sample],Object[Sample]}],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Reagents",
+              "Standards"
+            }
+          }
         ]
       },
       {
@@ -991,9 +1097,31 @@ DefineOptions[ExperimentSupercriticalFluidChromatography,
         AllowNull -> True,
         Widget -> Alternatives[
           Adder[
-            Widget[Type -> Object, Pattern :> ObjectP[{Model[Item,Column], Object[Item,Column]}]]
+            Widget[
+              Type -> Object,
+              Pattern :> ObjectP[{Model[Item,Column], Object[Item,Column]}],
+              OpenPaths -> {
+                {
+                  Object[Catalog, "Root"],
+                  "Materials",
+                  "Liquid Chromatography",
+                  "Supercritical Fluid Chromatography Columns"
+                }
+              }
+            ]
           ],
-          Widget[Type -> Object, Pattern :> ObjectP[{Model[Item,Column], Object[Item,Column]}]]
+          Widget[
+            Type -> Object,
+            Pattern :> ObjectP[{Model[Item,Column], Object[Item,Column]}],
+            OpenPaths -> {
+              {
+                Object[Catalog, "Root"],
+                "Materials",
+                "Liquid Chromatography",
+                "Supercritical Fluid Chromatography Columns"
+              }
+            }
+          ]
         ],
         Category->"Standard"
       },
@@ -1538,7 +1666,15 @@ DefineOptions[ExperimentSupercriticalFluidChromatography,
         Category -> "Blanks",
         Widget -> Widget[
           Type -> Object,
-          Pattern :> ObjectP[{Model[Sample],Object[Sample]}]
+          Pattern :> ObjectP[{Model[Sample],Object[Sample]}],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Reagents",
+              "Standards"
+            }
+          }
         ]
       },
       {
@@ -1583,9 +1719,31 @@ DefineOptions[ExperimentSupercriticalFluidChromatography,
         AllowNull -> True,
         Widget -> Alternatives[
           Adder[
-            Widget[Type -> Object, Pattern :> ObjectP[{Model[Item,Column], Object[Item,Column]}]]
+            Widget[
+              Type -> Object,
+              Pattern :> ObjectP[{Model[Item,Column], Object[Item,Column]}],
+              OpenPaths -> {
+                {
+                  Object[Catalog, "Root"],
+                  "Materials",
+                  "Liquid Chromatography",
+                  "Supercritical Fluid Chromatography Columns"
+                }
+              }
+            ]
           ],
-          Widget[Type -> Object, Pattern :> ObjectP[{Model[Item,Column], Object[Item,Column]}]]
+          Widget[
+            Type -> Object,
+            Pattern :> ObjectP[{Model[Item,Column], Object[Item,Column]}],
+            OpenPaths -> {
+              {
+                Object[Catalog, "Root"],
+                "Materials",
+                "Liquid Chromatography",
+                "Supercritical Fluid Chromatography Columns"
+              }
+            }
+          ]
         ],
         Category->"Blanks"
       },
@@ -3168,9 +3326,20 @@ DefineOptions[ExperimentSupercriticalFluidChromatography,
         Category->"ColumnFlush"
       }
     ],
-    FuntopiaSharedOptions,
-    SamplesInStorageOptions
-
+    ModifyOptions[
+      ModelInputOptions,
+      OptionName -> PreparedModelAmount
+    ],
+    ModifyOptions[
+      ModelInputOptions,
+      PreparedModelContainer,
+      {
+        ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Plate, \"96-well 2mL Deep Well Plate\"]."
+      }
+    ],
+    NonBiologyFuntopiaSharedOptions,
+    SamplesInStorageOptions,
+    SimulationOption
   }
 ];
 
@@ -3209,7 +3378,7 @@ Error::NonbinaryGradientDefined="No more than one cosolvent can be specified for
 Error::SelectorInjectionTableConflict="The specified ColumnSelector does not match the columns within the InjectionTable. Consider allowing ColumnSelector to set automatically.";
 Error::GradientStartEndDurationConflict = "If GradientStart and GradientEnd are specified, GradientDuration must be specified as well in `1` options for `2`.";
 Error::GradientStartEndConflict = "GradientStart and GradientEnd must be specified simultaneously or not at all in `1` options for `2`.";
-
+Error::GradientCO2PressureConflict = "The following ABPR pressures (CO2 gradient pressures) were specified: `1`. However, the resolved instrument model `2` requires that those pressures be between `3` and `4`. Please specify pressures withing that range.";
 
 Warning::CosolventConflict="The resolution of `1` differ from provided gradient methods' respective cosolvents. Nonetheless, the experiment will commence as directed.";
 Warning::ScanTimeAdjusted="The scan time specified in the following options do not match the acceptable values and will have to be rounded to proceed: `1`. If you don't wish rounding to occur automatically, please supply a value from the following list: `2`.";
@@ -3220,13 +3389,13 @@ Warning::ScanTimeAdjusted="The scan time specified in the following options do n
 
 
 ExperimentSupercriticalFluidChromatography[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
-  {listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCacheNamed,
-    samplePreparationCache,safeOps,safeOpsTests,validLengths,validLengthTests,availableInstruments,allObjects,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,
+  {listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
+    safeOps,safeOpsTests,validLengths,validLengthTests,availableInstruments,allObjects,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,
     safeOpsNamed, objectSampleFields, analyteFields, objectContainerFields, modelContainerFieldsPacket,listedSamples,
-    modelInstrumentFields,columnFields,modelColumnFields,gradientFields,sampleFields,modelContainerFields,optionsWithObjects,userSpecifiedObjects,simulatedSampleQ,objectsExistQs,
-    objectsExistTests,sampleObjects,modelContainerObjects,instrumentObjects,modelInstrumentObjects,columnObjects,modelColumnObjects,gradientObjects,
-    templatedOptions,templateTests,inheritedOptions,expandedSafeOps,cacheBall,resolvedOptionsResult,instrumentFields,injectionTableLookup,injectionTableObjects,
-    resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests},
+    modelInstrumentFields,columnFields,modelColumnFields,gradientFields,sampleFields,modelContainerFields,optionsWithObjects,
+    sampleObjects,modelContainerObjects,instrumentObjects,modelInstrumentObjects,columnObjects,modelColumnObjects,gradientObjects,
+    templatedOptions,templateTests,inheritedOptions,expandedSafeOps,cache,cacheBall,resolvedOptionsResult,instrumentFields,injectionTableLookup,injectionTableObjects,
+    resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests, updatedSimulation},
 
   (* Determine the requested return value from the function *)
   outputSpecification=Quiet[OptionValue[Output]];
@@ -3240,20 +3409,20 @@ ExperimentSupercriticalFluidChromatography[mySamples:ListableP[ObjectP[Object[Sa
   (* Simulate our sample preparation. *)
   validSamplePreparationResult=Check[
     (* Simulate sample preparation. *)
-    {mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed}=simulateSamplePreparationPackets[
+    {mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
       ExperimentSupercriticalFluidChromatography,
       listedSamples,
       listedOptions
     ],
     $Failed,
-    {Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+    {Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
   ];
 
   (* If we are given an invalid define name, return early. *)
   If[MatchQ[validSamplePreparationResult,$Failed],
     (* Return early. *)
-    (* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-    ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+    (* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+    Return[$Failed]
   ];
 
   (* Call SafeOptions to make sure all options match pattern *)
@@ -3261,15 +3430,6 @@ ExperimentSupercriticalFluidChromatography[mySamples:ListableP[ObjectP[Object[Sa
     SafeOptions[ExperimentSupercriticalFluidChromatography,myOptionsWithPreparedSamplesNamed,AutoCorrect->False,Output->{Result,Tests}],
     {SafeOptions[ExperimentSupercriticalFluidChromatography,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],{}}
   ];
-
-  (* Call ValidInputLengthsQ to make sure all options are the right length *)
-  {validLengths,validLengthTests}=If[gatherTests,
-    ValidInputLengthsQ[ExperimentSupercriticalFluidChromatography,{mySamplesWithPreparedSamplesNamed},myOptionsWithPreparedSamplesNamed,Output->{Result,Tests}],
-    {ValidInputLengthsQ[ExperimentSupercriticalFluidChromatography,{mySamplesWithPreparedSamplesNamed},myOptionsWithPreparedSamplesNamed],Null}
-  ];
-
-  (* Sanitize the samples and options using sanitizInput funciton*)
-  {mySamplesWithPreparedSamples, {safeOps, myOptionsWithPreparedSamples, samplePreparationCache}} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, {safeOpsNamed, myOptionsWithPreparedSamplesNamed, samplePreparationCacheNamed}];
 
   (* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
   If[MatchQ[safeOps,$Failed],
@@ -3280,6 +3440,16 @@ ExperimentSupercriticalFluidChromatography[mySamples:ListableP[ObjectP[Object[Sa
       Preview -> Null
     }]
   ];
+
+  (* Call ValidInputLengthsQ to make sure all options are the right length *)
+  {validLengths,validLengthTests}=If[gatherTests,
+    ValidInputLengthsQ[ExperimentSupercriticalFluidChromatography,{mySamplesWithPreparedSamplesNamed},myOptionsWithPreparedSamplesNamed,Output->{Result,Tests}],
+    {ValidInputLengthsQ[ExperimentSupercriticalFluidChromatography,{mySamplesWithPreparedSamplesNamed},myOptionsWithPreparedSamplesNamed],Null}
+  ];
+
+  (* Sanitize the samples and options using sanitizInput funciton*)
+  {mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
+
 
   (* If option lengths are invalid return $Failed (or the tests up to this point) *)
   If[!validLengths,
@@ -3419,7 +3589,8 @@ ExperimentSupercriticalFluidChromatography[mySamples:ListableP[ObjectP[Object[Sa
       MaxDesolvationTemperature,
       Manufacturer,
       AutosamplerDeckModel,
-      Deprecated
+      Deprecated,
+      WettedMaterials
     ],
     Packet[Field[AutosamplerDeckModel][{Positions}]]
   };
@@ -3436,7 +3607,7 @@ ExperimentSupercriticalFluidChromatography[mySamples:ListableP[ObjectP[Object[Sa
   };
 
   (* Set fields to download from gradient objects *)
-  gradientFields = {Packet[CosolventA,CosolventB,CosolventC,CosolventD,Gradient]};
+  gradientFields = {Packet[CosolventA,CosolventB,CosolventC,CosolventD,Gradient,EquilibrationTime,FlushTime]};
 
   (*define all the fields that we want*)
   objectSampleFields=Union[SamplePreparationCacheFields[Object[Sample]],{Analytes,Density,LightSensitive,State}];
@@ -3486,39 +3657,6 @@ ExperimentSupercriticalFluidChromatography[mySamples:ListableP[ObjectP[Object[Sa
     Null
   ];
 
-  (* Extract any objects that the user has explicitly specified *)
-  userSpecifiedObjects = DeleteDuplicates@Cases[
-    Flatten@Join[listedSamples,Lookup[listedOptions,optionsWithObjects,Null],injectionTableObjects],
-    ObjectP[]
-  ];
-
-  (* Check that the specified objects exist or are visible to the current user *)
-  simulatedSampleQ = Lookup[fetchPacketFromCache[#,samplePreparationCache],Simulated,False]&/@userSpecifiedObjects;
-  objectsExistQs = DatabaseMemberQ[PickList[userSpecifiedObjects,simulatedSampleQ,False]];
-
-  (* Build tests for object existence *)
-  objectsExistTests = If[gatherTests,
-    MapThread[
-      Test[StringTemplate["Specified object `1` exists in the database:"][#1],#2,True]&,
-      {PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs}
-    ],
-    {}
-  ];
-
-  (* If objects do not exist, return failure *)
-  If[!(And@@objectsExistQs),
-    If[!gatherTests,
-      Message[Error::ObjectDoesNotExist,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]];
-      Message[Error::InvalidInput,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]
-    ];
-    Return[outputSpecification/.{
-      Result -> $Failed,
-      Tests -> Join[safeOpsTests,validLengthTests,templateTests,objectsExistTests],
-      Options -> $Failed,
-      Preview -> Null
-    }]
-  ];
-
   (*all the instruments to use*)
   availableInstruments={Model[Instrument, SupercriticalFluidChromatography, "Waters UPC2 PDA QDa"]};
 
@@ -3535,7 +3673,6 @@ ExperimentSupercriticalFluidChromatography[mySamples:ListableP[ObjectP[Object[Sa
           Model[Item, Column, "id:4pO6dM5ZbjrB"],
           (* containers *)
           Model[Container, Vessel, "HPLC vial (high recovery)"],
-          Model[Container, Vessel, "HPLC vial (flat bottom)"],
           (* Instruments *)
           availableInstruments,
           Model[Container, Rack, "Waters Acquity UPLC Autosampler Rack"],
@@ -3570,14 +3707,16 @@ ExperimentSupercriticalFluidChromatography[mySamples:ListableP[ObjectP[Object[Sa
 
   (* Combine our downloaded and simulated cache. *)
   (* It is important that the sample preparation cache is added first to the cache ball, before the main download. *)
+  cache = Lookup[safeOps, Cache];
   cacheBall=DeleteCases[
     FlattenCachePackets@Quiet[
       {
-        samplePreparationCache,
+        cache,
         Download[
           {sampleObjects,modelContainerObjects,instrumentObjects,modelInstrumentObjects,columnObjects,modelColumnObjects,gradientObjects},
           {sampleFields,modelContainerFieldsPacket,instrumentFields,modelInstrumentFields,columnFields,modelColumnFields,gradientFields},
-          Cache->samplePreparationCache,
+          Cache->cache,
+          Simulation -> updatedSimulation,
           Date -> Now
         ]
       },
@@ -3589,7 +3728,7 @@ ExperimentSupercriticalFluidChromatography[mySamples:ListableP[ObjectP[Object[Sa
   (* Build the resolved options *)
   resolvedOptionsResult=If[gatherTests,
     (* We are gathering tests. This silences any messages being thrown. *)
-    {resolvedOptions,resolvedOptionsTests}=resolveExperimentSupercriticalFluidChromatographyOptions[ToList[mySamplesWithPreparedSamples],expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+    {resolvedOptions,resolvedOptionsTests}=resolveExperimentSupercriticalFluidChromatographyOptions[ToList[mySamplesWithPreparedSamples],expandedSafeOps,Cache->cacheBall, Simulation -> updatedSimulation,Output->{Result,Tests}];
 
     (* Therefore, we have to run the tests to see if we encountered a failure. *)
     If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -3599,7 +3738,7 @@ ExperimentSupercriticalFluidChromatography[mySamples:ListableP[ObjectP[Object[Sa
 
     (* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
     Check[
-      {resolvedOptions,resolvedOptionsTests}={resolveExperimentSupercriticalFluidChromatographyOptions[ToList[mySamplesWithPreparedSamples],expandedSafeOps,Cache->cacheBall],{}},
+      {resolvedOptions,resolvedOptionsTests}={resolveExperimentSupercriticalFluidChromatographyOptions[ToList[mySamplesWithPreparedSamples],expandedSafeOps,Cache->cacheBall, Simulation -> updatedSimulation],{}},
       $Failed,
       {Error::InvalidInput,Error::InvalidOption}
     ]
@@ -3625,8 +3764,8 @@ ExperimentSupercriticalFluidChromatography[mySamples:ListableP[ObjectP[Object[Sa
 
   (* Build packets with resources *)
   {resourcePackets,resourcePacketTests} = If[gatherTests,
-    sfcResourcePackets[ToList[mySamplesWithPreparedSamples],templatedOptions,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-    {sfcResourcePackets[ToList[mySamplesWithPreparedSamples],templatedOptions,resolvedOptions,Cache->cacheBall],{}}
+    sfcResourcePackets[ToList[mySamplesWithPreparedSamples],templatedOptions,resolvedOptions,Cache->cacheBall,Simulation -> updatedSimulation,Output->{Result,Tests}],
+    {sfcResourcePackets[ToList[mySamplesWithPreparedSamples],templatedOptions,resolvedOptions,Cache->cacheBall,Simulation -> updatedSimulation],{}}
   ];
 
   (* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -3648,26 +3787,28 @@ ExperimentSupercriticalFluidChromatography[mySamples:ListableP[ObjectP[Object[Sa
         Rest[resourcePackets],
         Upload->Lookup[safeOps,Upload],
         Confirm->Lookup[safeOps,Confirm],
+        CanaryBranch->Lookup[safeOps,CanaryBranch],
         ParentProtocol->Lookup[safeOps,ParentProtocol],
         Priority->Lookup[safeOps,Priority],
         StartDate->Lookup[safeOps,StartDate],
         HoldOrder->Lookup[safeOps,HoldOrder],
         QueuePosition->Lookup[safeOps,QueuePosition],
         ConstellationMessage->Object[Protocol,SupercriticalFluidChromatography],
-        Cache->samplePreparationCache
+        Simulation -> updatedSimulation
       ],
       (*otherwise just protocol packet*)
       UploadProtocol[
         First[resourcePackets],
         Upload->Lookup[safeOps,Upload],
         Confirm->Lookup[safeOps,Confirm],
+        CanaryBranch->Lookup[safeOps,CanaryBranch],
         ParentProtocol->Lookup[safeOps,ParentProtocol],
         Priority->Lookup[safeOps,Priority],
         StartDate->Lookup[safeOps,StartDate],
         HoldOrder->Lookup[safeOps,HoldOrder],
         QueuePosition->Lookup[safeOps,QueuePosition],
         ConstellationMessage->Object[Protocol,SupercriticalFluidChromatography],
-        Cache->samplePreparationCache
+        Simulation -> updatedSimulation
       ]
     ],
     $Failed
@@ -3683,10 +3824,9 @@ ExperimentSupercriticalFluidChromatography[mySamples:ListableP[ObjectP[Object[Sa
 ];
 
 (*container overload*)
-ExperimentSupercriticalFluidChromatography[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
-  {listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-    samplePreparationCache,containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,containerToSampleTests,sampleCache,
-    listedContainers},
+ExperimentSupercriticalFluidChromatography[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+  {outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
+    updatedSimulation,containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests,containerToSampleSimulation},
 
   (* Determine the requested return value from the function *)
   outputSpecification=Quiet[OptionValue[Output]];
@@ -3695,36 +3835,35 @@ ExperimentSupercriticalFluidChromatography[myContainers:ListableP[ObjectP[{Objec
   (* Determine if we should keep a running list of tests *)
   gatherTests=MemberQ[output,Tests];
 
-  {listedContainers, listedOptions}=removeLinks[ToList[myContainers], ToList[myOptions]];
-
   (* First, simulate our sample preparation. *)
   validSamplePreparationResult=Check[
     (* Simulate sample preparation. *)
-    {mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+    {mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
       ExperimentSupercriticalFluidChromatography,
-      listedContainers,
-      listedOptions
+      ToList[myContainers],
+      ToList[myOptions],
+      DefaultPreparedModelContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"]
     ],
     $Failed,
-    {Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+    {Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
   ];
 
   (* If we are given an invalid define name, return early. *)
   If[MatchQ[validSamplePreparationResult,$Failed],
     (* Return early. *)
-    (* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-    ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+    (* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+    Return[$Failed]
   ];
 
   (* Convert our given containers into samples and sample index-matched options. *)
   containerToSampleResult=If[gatherTests,
     (* We are gathering tests. This silences any messages being thrown. *)
-    {containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+    {containerToSampleOutput,containerToSampleTests,containerToSampleSimulation}=containerToSampleOptions[
       ExperimentSupercriticalFluidChromatography,
       mySamplesWithPreparedSamples,
       myOptionsWithPreparedSamples,
-      Output->{Result,Tests},
-      Cache->samplePreparationCache
+      Output->{Result,Tests,Simulation},
+      Simulation -> updatedSimulation
     ];
 
     (* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -3735,63 +3874,58 @@ ExperimentSupercriticalFluidChromatography[myContainers:ListableP[ObjectP[{Objec
 
     (* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
     Check[
-      containerToSampleOutput=containerToSampleOptions[
+      {containerToSampleOutput, containerToSampleSimulation}=containerToSampleOptions[
         ExperimentSupercriticalFluidChromatography,
         mySamplesWithPreparedSamples,
         myOptionsWithPreparedSamples,
-        Output->Result,
-        Cache->samplePreparationCache
+        Output-> {Result,Simulation},
+        Simulation -> updatedSimulation
       ],
       $Failed,
       {Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
     ]
   ];
 
-  (* Update our cache with our new simulated values. *)
-  (* It is important the sample preparation cache appears first in the cache ball. *)
-  updatedCache=Flatten[{
-    samplePreparationCache,
-    Lookup[sampleOptions,Cache,{}]
-  }];
-
   (* If we were given an empty container, return early. *)
   If[MatchQ[containerToSampleResult,$Failed],
     (* containerToSampleOptions failed - return $Failed *)
-    outputSpecification/.{
+    outputSpecification /. {
       Result -> $Failed,
       Tests -> containerToSampleTests,
       Options -> $Failed,
       Preview -> Null
     },
+
     (* Split up our containerToSample result into the samples and sampleOptions. *)
-    {samples,sampleOptions, sampleCache}=containerToSampleOutput;
+    {samples, sampleOptions} = containerToSampleOutput;
 
     (* Call our main function with our samples and converted options. *)
-    ExperimentSupercriticalFluidChromatography[samples,ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache,sampleCache}]]]
+    ExperimentSupercriticalFluidChromatography[samples,ReplaceRule[sampleOptions,Simulation -> containerToSampleSimulation]]
   ]
 ];
 
 DefineOptions[
   resolveExperimentSupercriticalFluidChromatographyOptions,
-  Options:>{HelperOutputOption,CacheOption}
+  Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentSupercriticalFluidChromatographyOptions]]:=Module[
-  {outputSpecification,output,gatherTests,cache,samplePrepOptions,supercriticalFluidChromatographyOptions,simulatedSamples,resolvedSamplePrepOptions,simulatedCache,
+  {outputSpecification,output,gatherTests,cache,samplePrepOptions,supercriticalFluidChromatographyOptions,simulatedSamples,resolvedSamplePrepOptions,
     samplePrepTests,supercriticalFluidChromatographyOptionsAssociation,invalidInputs,invalidOptions,resolvedAliquotOptions,
     resolvedPostProcessingOptions,gatherTestsQ,messagesQ,engineQ,samplePackets,sampleStatuses,discardedSamples,discardedSamplesTest,resolvedExperimentOptions,resolvedOptions,
     roundedOptionsAssociation,simulatedSamplePackets,sampleContainers,simulatedSampleContainers,simulatedSampleContainerModels,containerlessSamples,containersExistTest,
     validNameQ,validNameTest,specifiedInstrumentPacket,specifiedInstrumentModelPacket,notRetiredInstrumentQ,retiredInstrumentTest,notDeprecatedInstrumentQ,
-    injectionTableSampleConflictQ,foreignSamplesOptions,foreignSamplesTest,aliquotOptions,validAliquotContainerOptions,incompatibleBool,incompatibleSamples,incompatibleSamplesTest,
+    injectionTableSampleConflictQ,foreignSamplesOptions,foreignSamplesTest,aliquotOptions,validAliquotContainerOptions,compatibleMaterialsBool,incompatibleSamplesTest,
     deprecatedInstrumentTest,specifiedColumnModelPackets,specifiedGuardCartridgeModelPacket,specifiedGuardColumnModelPacket,specifiedColumnTypes,typeColumnCompatibleQ,
     typeColumnTest,specifiedColumnTechniques,columnTechniqueCompatibleQ,columnTechniqueTest,columnTests,columnTemperatureOptions,compatibleColumnTemperatureRanges,
     compatibleColumnTemperatureRange,specifiedColumnTemperatures,incompatibleColumnTemperatures,injectionTableLookup,injectionTableSpecifiedQ,gradientOptions,
     roundedGradientOptions,roundedGradientTests,allRoundingTests,volumeOptions,voltageOptions,invalidInstrumentOption,allAliquotOptionValues,
-    wavelengthResolutionOptions,massDetectionOptions,absorbanceRateOptions,maxAccelerationRoundedAssociation,maxAccelerationRoundedTests,
+    wavelengthResolutionOptions,massDetectionOptions,absorbanceRateOptions,maxAccelerationRoundedAssociation,maxAccelerationRoundedTests, compatibleMaterialsInvalidOption,
     maxAccelerationOption,possibleAbsorbanceRateValues,roundedInjectionTable,onlyVoltageAssociation, onlyKiloVoltageAssociation,multiplePrimeSameColumnBool, multipleFlushSameColumnBool,
     volumeRoundedAssociation,volumeRoundedTests,roundedInjectionTableAssociation,injectionTableRoundedTests,voltageRoundedAssociation,voltageRoundedTests,kiloVoltageOptions,
     kiloVoltageRoundedAssociation,kiloVoltageRoundedTests,standardOptions,injectionTableTypes,standardOptionSpecifiedBool,
-    standardExistsQ,resolvedStandardFrequency,resolvedStandard,preexpandedBlankOptions, preexpandedStandardOptions,
+    standardExistsQ, specifiedMethodGradient, injectionTableMethodGradientList, instrumentModel, minBackPressure, maxBackPressure, eachABPRConflictQ, invalidABPRMethodList, injectionTableCO2PressureConflictQ, injectionTableCO2PressureOptions,
+    injectionTableCO2PressureTest,resolvedStandardFrequency,resolvedStandard,preexpandedBlankOptions, preexpandedStandardOptions,
     blankOptions,blankOptionSpecifiedBool,blankExistsQ,columnSelectorSampleConflictBool,tableColumnSampleConflictBool,
     resolvedBlankFrequency,resolvedBlank,columnSelectorSampleConflictQ,tableColumnSampleConflictQ,columnFlushExistQ,autosamplerDeckModel, availableAutosamplerRacks,
     allTests,expandedStandardOptions,expandedBlankOptions, columnLookup,resolvedOptionsForInjectionTable,injectionTableColumnFlushGradientsInitial,
@@ -3854,7 +3988,7 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
     numberOfStandardBlankContainersRequired,validContainerCountQ,containerCountTest,preresolvedAliquotBools,validAliquotContainerBools,validAliquotContainerTest,
     aliquotOptionSpecifiedBools,resolvedAliquotContainers,requiredAliquotVolumes,resolvedInjectionTableResult, invalidInjectionTableOptions, invalidInjectionTableTests,
     preresolvedAliquotOptions,resolveAliquotOptionsResult,resolveAliquotOptionTests,validSampleStorageConditionQ,invalidStorageConditionOptions,invalidStorageConditionTest,
-    specifiedSampleStorageCondition
+    specifiedSampleStorageCondition, simulation, updatedSimulation
   },
 
   (*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -3868,14 +4002,15 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
 
   (* Fetch our cache from the parent function. *)
   cache = Lookup[ToList[myResolutionOptions], Cache, {}];
+  simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
-  (* Seperate out our SupercriticalFluidChromatography options from our Sample Prep options. *)
+  (* Separate out our SupercriticalFluidChromatography options from our Sample Prep options. *)
   {samplePrepOptions,supercriticalFluidChromatographyOptions}=splitPrepOptions[myOptions];
 
   (* Resolve our sample prep options *)
-  {{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-    resolveSamplePrepOptions[ExperimentSupercriticalFluidChromatography,mySamples,samplePrepOptions,Cache->cache,Output->{Result,Tests}],
-    {resolveSamplePrepOptions[ExperimentSupercriticalFluidChromatography,mySamples,samplePrepOptions,Cache->cache,Output->Result],{}}
+  {{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+    resolveSamplePrepOptionsNew[ExperimentSupercriticalFluidChromatography,mySamples,samplePrepOptions,Cache->cache,Simulation->simulation,Output->{Result,Tests}],
+    {resolveSamplePrepOptionsNew[ExperimentSupercriticalFluidChromatography,mySamples,samplePrepOptions,Cache->cache,Simulation->simulation,Output->Result],{}}
   ];
 
   (* Determine if we should keep a running list of tests *)
@@ -3900,8 +4035,21 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
   supercriticalFluidChromatographyOptionsAssociation = Association[supercriticalFluidChromatographyOptions];
 
   (* Extract the packets that we need from our downloaded cache. *)
-  (* Remember to download from simulatedSamples, using our simulatedCache *)
+  (* Remember to download from simulatedSamples, using our simulation blob *)
   (* Quiet[Download[...],Download::FieldDoesntExist] *)
+
+  {
+    simulatedSamplePackets,
+    simulatedSampleContainerModels
+  } = Transpose@Quiet[Download[
+    simulatedSamples,
+    {
+      Packet[Container, Volume, pH, IncompatibleMaterials],
+      Container[Model][Object]
+    },
+    Simulation -> updatedSimulation,
+    Cache -> cache
+  ],{Download::FieldDoesntExist}];
 
   (* If you have Warning:: messages, do NOT throw them when MatchQ[$ECLApplication,Engine]. Warnings should NOT be surfaced in engine. *)
 
@@ -3909,9 +4057,6 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
 
   (* Extract downloaded mySamples packets *)
   samplePackets = fetchPacketFromCache[#,cache]&/@mySamples;
-
-  (* Fetch simulated samples' cached packets *)
-  simulatedSamplePackets = fetchPacketFromCache[#,simulatedCache]&/@simulatedSamples;
 
   (* Extract sample statuses *)
   sampleStatuses = Lookup[samplePackets,Status];
@@ -3938,15 +4083,6 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
 
   (* Extract simulated sample containers *)
   simulatedSampleContainers = Download[Lookup[simulatedSamplePackets,Container],Object];
-
-  (* Find simulated container models *)
-  simulatedSampleContainerModels = Map[
-    If[NullQ[#],
-      Null,
-      Download[Lookup[fetchPacketFromCache[#,simulatedCache],Model],Object]
-    ]&,
-    simulatedSampleContainers
-  ];
 
   (* Extract any samples without a container *)
   containerlessSamples = PickList[mySamples,sampleContainers,Null];
@@ -3988,11 +4124,10 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
   (* Fetch model instrument packet if specified *)
   specifiedInstrumentModelPacket = Switch[Lookup[supercriticalFluidChromatographyOptionsAssociation,Instrument],
     ObjectP[Object[Instrument,SupercriticalFluidChromatography]],
-    fetchModelPacketFromCacheHPLC[Lookup[supercriticalFluidChromatographyOptionsAssociation,Instrument],simulatedCache],
+      fetchModelPacketFromCacheHPLC[Lookup[supercriticalFluidChromatographyOptionsAssociation,Instrument],cache],
     ObjectP[Model[Instrument,SupercriticalFluidChromatography]],
-    fetchPacketFromCache[Download[Lookup[supercriticalFluidChromatographyOptionsAssociation,Instrument],Object],simulatedCache],
-    _,
-    Null
+      fetchPacketFromCache[Download[Lookup[supercriticalFluidChromatographyOptionsAssociation,Instrument],Object],cache],
+    _, Null
   ];
 
   (* Bool tracking if specified instrument is retired *)
@@ -4026,19 +4161,15 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
   invalidInstrumentOption=If[Or[!notRetiredInstrumentQ,!notDeprecatedInstrumentQ],{Instrument},{}];
 
   (*get boolean for which sample/instrument combinations are incompatible (based on material). *)
-  incompatibleBool=Map[
-    Not[Quiet[CompatibleMaterialsQ[specifiedInstrumentModelPacket,Last[#],Cache->simulatedCache]]]&,
-    simulatedSamplePackets
+  {compatibleMaterialsBool, incompatibleSamplesTest}=If[gatherTestsQ,
+    CompatibleMaterialsQ[specifiedInstrumentModelPacket,Flatten[simulatedSamplePackets],Cache -> cache, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+    {CompatibleMaterialsQ[specifiedInstrumentModelPacket,Flatten[simulatedSamplePackets],Cache -> cache, Simulation -> updatedSimulation, Output -> Result], {}}
   ];
 
-  incompatibleSamples=PickList[mySamples,incompatibleBool];
-
-  incompatibleSamplesTest=If[Length[incompatibleSamples]==0,
-    testOrNull["Samples are all chemical compatible with the instrument:",True],
-    If[messagesQ,
-      Message[Error::IncompatibleSample,ObjectToString[incompatibleSamples,Cache->simulatedCache]]
-    ];
-    testOrNull["Samples are all chemical compatible with the instrument:",False]
+  (* if the materials are incompatible, then the Instrument is invalid *)
+  compatibleMaterialsInvalidOption = If[Not[compatibleMaterialsBool] && messagesQ,
+    {Instrument},
+    {}
   ];
 
   (* Extract column model packets if option is specified *)
@@ -4199,7 +4330,7 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
   (*is the injection specified (meaning that it has tuples within it)?*)
   injectionTableSpecifiedQ=MatchQ[injectionTableLookup,Except[Automatic|Null]];
 
-  (*we need to make sure that if the injection table is specified that the samples and the input are copacetic*)
+  (*we need to make sure that if the injection table is specified that the samples and the input are compatible*)
   injectionTableSampleConflictQ=If[injectionTableSpecifiedQ,
     !MatchQ[Download[Cases[injectionTableLookup,{Sample,___}]/.{Sample,x_,___}:>x,Object,Cache->cache],Download[mySamples,Object,Cache->cache]],
     (**)
@@ -4279,6 +4410,38 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
 
   (*use the helper function to round all of the gradient options collectively*)
   {roundedGradientOptions,roundedGradientTests}=Experiment`Private`roundGradientOptions[gradientOptions,supercriticalFluidChromatographyOptionsAssociation,gatherTestsQ];
+  
+  (* Check whether valid Object[Method, SupercriticalFluidGradient] is specified. *)
+  If[injectionTableSpecifiedQ,
+    (* Exclude 'Automatic' from the specified method list *)
+    specifiedMethodGradient = Cases[injectionTableLookup[[All,5]], Except[ListableP[(Null|None|Automatic)]]];
+    
+    injectionTableMethodGradientList = Map[Lookup[fetchPacketFromCache[Download[#, Object], cache], Gradient]&, specifiedMethodGradient];
+    
+    (* Get min/max back pressure. This is related to ABPR error *)
+    {instrumentModel, minBackPressure, maxBackPressure} = Lookup[specifiedInstrumentModelPacket, {Object, MinBackPressure, MaxBackPressure}];
+    
+    (* Check each gradient method's ABPR pressure (CO2) pressure is valid. *)
+    eachABPRConflictQ = Map[MatchQ[#, {False..}] &, Map[RangeQ[#[[All, 7]], {1600 PSI, maxBackPressure}] &, injectionTableMethodGradientList]];
+    
+    (* Get invalid methods *)
+    invalidABPRMethodList = PickList[specifiedMethodGradient, eachABPRConflictQ, True];
+    
+    (* Check whether CO2 pressure is between MinBackPressure and MaxBackPressure of the instrument model. Outside of the range will cause an instrument error *)
+    injectionTableCO2PressureConflictQ = AnyTrue[eachABPRConflictQ, TrueQ],
+    injectionTableCO2PressureConflictQ = False
+  ];
+
+  injectionTableCO2PressureOptions = If[injectionTableCO2PressureConflictQ,
+    If[messagesQ, Message[Error::GradientCO2PressureConflict, invalidABPRMethodList, instrumentModel, minBackPressure, maxBackPressure]];
+    {InjectionTable},
+    {}
+  ];
+
+  injectionTableCO2PressureTest = If[injectionTableCO2PressureConflictQ,
+    testOrNull["The specified CO2 Pressure for Object[Method] is not within the range:", False],
+    testOrNull["The specified CO2 Pressure for Object[Method] is within the range:", True]
+  ];
 
   (* Options which reference volumes *)
   volumeOptions = {
@@ -4382,7 +4545,8 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
 
   (*now we ask whether any standards are to exist or already do*)
   standardExistsQ=Or[Or@@standardOptionSpecifiedBool,MemberQ[injectionTableTypes,Standard]];
-
+  
+  
   (*now do the same with the blank options*)
   blankOptions={Blank,BlankInjectionVolume,BlankFrequency,BlankColumn,BlankColumnTemperature,BlankCO2Gradient,BlankGradientA,
     BlankGradientB,BlankGradientC,BlankGradientD,BlankFlowRate,BlankGradient,BlankGradientDuration,BlankBackPressure,BlankIonMode,BlankMakeupFlowRate,
@@ -4547,7 +4711,7 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
                eachColumn,
                (*check whether both the injection table and option are specified and matching*)
                If[MatchQ[eachInjectionTableColumn,ObjectP[]],
-                 !MatchQ[Download[fetchPacketFromCache[eachColumn,simulatedCache],Object],ObjectP[Download[fetchPacketFromCache[eachInjectionTableColumn,simulatedCache],Object]]],
+                 !MatchQ[Download[fetchPacketFromCache[eachColumn,cache],Object],ObjectP[Download[fetchPacketFromCache[eachInjectionTableColumn,cache],Object]]],
                  False
                ],
                (*also need to check whether the column selection is specified and whether this is in there*)
@@ -4611,8 +4775,8 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
   ];
 
   tableColumnConflictTest = If[tableColumnConflictQ,
-    testOrNull["If ColumnSelector and any of Column, BlankColumn, and StandardColumn are specified, they are copacetic:",True],
-    testOrNull["If ColumnSelector and any of Column, BlankColumn, and StandardColumn are specified, they are copacetic:",False]
+    testOrNull["If ColumnSelector and any of Column, BlankColumn, and StandardColumn are specified, they are compatible:",True],
+    testOrNull["If ColumnSelector and any of Column, BlankColumn, and StandardColumn are specified, they are compatible:",False]
   ];
 
   (*now resolve the column selector and check that it's good with the injection Table*)
@@ -4642,8 +4806,8 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
   ];
 
   selectorInjectionTableConflictTest = If[selectorInjectionTableConflictQ,
-    testOrNull["If ColumnSelector and columns within InjectionTable are specified, they are copacetic:",True],
-    testOrNull["If ColumnSelector and columns within InjectionTable are specified, they are copacetic:",False]
+    testOrNull["If ColumnSelector and columns within InjectionTable are specified, they are compatible:",True],
+    testOrNull["If ColumnSelector and columns within InjectionTable are specified, they are compatible:",False]
   ];
 
   (*resolved column refresh frequency*)
@@ -4957,7 +5121,7 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
   ];
 
   expandedColumnFlushOptions = If[!columnFlushExistQ,
-    Association[#->{}&/@columnFlushOptions],
+    Association[#->Null&/@columnFlushOptions],
     Last[ExpandIndexMatchedInputs[
       ExperimentSupercriticalFluidChromatography,
       {mySamples},
@@ -5353,8 +5517,8 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
   If[messagesQ&&gradientInjectionTableSpecifiedDifferentlyQ,Message[Error::InjectionTableGradientConflict,ObjectToString@Drop[gradientInjectionTableSpecifiedDifferentlyOptions]]];
 
   gradientInjectionTableSpecifiedDifferentlyTest=If[gradientInjectionTableSpecifiedDifferentlyQ,
-    testOrNull["If InjectionTable is specified as well as Gradient, StandardGradient, BlankGradient, ColumnFlushGradient, and/or ColumnPrimeGradient, they are copacetic:",True],
-    testOrNull["If InjectionTable is specified as well as Gradient, StandardGradient, BlankGradient, ColumnFlushGradient, and/or ColumnPrimeGradient, they are copacetic:",False]
+    testOrNull["If InjectionTable is specified as well as Gradient, StandardGradient, BlankGradient, ColumnFlushGradient, and/or ColumnPrimeGradient, they are compatible:",True],
+    testOrNull["If InjectionTable is specified as well as Gradient, StandardGradient, BlankGradient, ColumnFlushGradient, and/or ColumnPrimeGradient, they are compatible:",False]
   ];
 
   (*check if the gradient short cut options are conflicting*)
@@ -5797,7 +5961,9 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
     resolvedSamplingConeVoltages,
     resolvedMassDetectionGains,
     scanTimeSampleRoundingBool
-  }=Transpose@MapThread[Function[{ionMode,makeupFlowRate,massDetection,scanTime,probeTemperature,esiCapillaryVoltage,samplingConeVoltage,massDetectionGain,samplePacket},Module[
+  }=Transpose@MapThread[
+    Function[{ionMode,makeupFlowRate,massDetection,scanTime,probeTemperature,esiCapillaryVoltage,samplingConeVoltage,massDetectionGain,samplePacket},
+      Module[
         {samplepH,resolvedIonMode,resolvedMakeupFlowRate,resolvedMassDetection,resolvedScanTime,resolvedProbeTemperature,resolvedESICapillaryVoltage,
           resolvedSamplingConeVoltage,resolvedMassDetectionGain,scanTimeRoundingQ},
 
@@ -5839,16 +6005,23 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
           scanTimeRoundingQ
         }
       ]
-    ],Append[Lookup[roundedOptionsAssociation,{
-      IonMode,
-      MakeupFlowRate,
-      MassDetection,
-      ScanTime,
-      ProbeTemperature,
-      ESICapillaryVoltage,
-      SamplingConeVoltage,
-      MassDetectionGain
-    }],simulatedSamplePackets]
+    ],
+    Append[
+      Lookup[
+        roundedOptionsAssociation,
+        {
+          IonMode,
+          MakeupFlowRate,
+          MassDetection,
+          ScanTime,
+          ProbeTemperature,
+          ESICapillaryVoltage,
+          SamplingConeVoltage,
+          MassDetectionGain
+        }
+      ],
+      simulatedSamplePackets
+    ]
   ];
 
   (*now we resolve for mass spec options for the standard, blank, column flush, column flush*)
@@ -6015,7 +6188,7 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
       (*check if automatic, and if so depends on the absorbance wavelength*)
       {Automatic,_Span|All},{1.2 Nanometer,False,False},
       {Automatic,GreaterP[0*Nanometer]},{Null,False,False},
-      (*if it's set, we need to make sure copacetic*)
+      (*if it's set, we need to make sure compatible*)
       {Null,_Span|All},{Null,True,False},
       (*need to round to one of the values potentially*)
       {GreaterP[0*Nanometer],_},If[Count[Abs[possibleWavelengthResolutions - wavelengthResolution], LessEqualP[0*Nanometer]]>0,
@@ -6125,7 +6298,7 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
           (*check if automatic, and if so depends on the absorbance wavelength*)
           {Automatic,_Span|All},{First@resolvedWavelengthResolutions,False,False},
           {Automatic,GreaterP[0*Nanometer]},{Null,False,False},
-          (*if it's set, we need to make sure copacetic*)
+          (*if it's set, we need to make sure compatible*)
           {Null,_Span|All},{Null,True,False},
           (*need to round to one of the values potentially*)
           {GreaterP[0*Nanometer],_},If[Count[Abs[possibleWavelengthResolutions - wavelengthResolution], LessEqualP[0*Nanometer]]>0,
@@ -6169,7 +6342,7 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
   roundedSamplingRateRoundingOptions=PickList[absorbanceRateOptions,roundedSamplingRateRoundingBool];
 
   If[Length[roundedSamplingRateRoundingOptions]>0&&messagesQ,
-    Message[Warning::AbsorbanceRateAdjusted,ObjectToString[roundedSamplingRateRoundingOptions]]
+    Message[Warning::AbsorbanceRateAdjusted,ObjectToString[roundedSamplingRateRoundingOptions],"can only be specific values"]
   ];
 
   (*do the same with the *)
@@ -6192,8 +6365,8 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
   ];
 
   wavelengthResolutionConflictTests=If[Length[wavelengthResolutionConflictOptions]>0,
-    testOrNull["If WavelengthResolution, StandardWavelengthResolution, BlankWavelengthResolution, ColumnPrimeWavelengthResolution, and/or ColumnFlushWavelengthResolution are specified, they are copacetic to the corresponding _AbsorbanceWavelength specification:",True],
-    testOrNull["If WavelengthResolution, StandardWavelengthResolution, BlankWavelengthResolution, ColumnPrimeWavelengthResolution, and/or ColumnFlushWavelengthResolution are specified, they are copacetic to the corresponding _AbsorbanceWavelength specification:",False]
+    testOrNull["If WavelengthResolution, StandardWavelengthResolution, BlankWavelengthResolution, ColumnPrimeWavelengthResolution, and/or ColumnFlushWavelengthResolution are specified, they are compatible to the corresponding _AbsorbanceWavelength specification:",True],
+    testOrNull["If WavelengthResolution, StandardWavelengthResolution, BlankWavelengthResolution, ColumnPrimeWavelengthResolution, and/or ColumnFlushWavelengthResolution are specified, they are compatible to the corresponding _AbsorbanceWavelength specification:",False]
   ];
 
   (* resolve the Email option if Automatic *)
@@ -6225,12 +6398,13 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
 
   (* If the sample's container model is not compatible with the instrument,
   it will not be possible to run the samples. *)
+  (* TODO this seems like it must be super slow; figure out a way to not map like this *)
   invalidContainerModelBools = Map[
     (*check if we have plate, if so, check if it can fit on the autosampler*)
     Function[{currentContainer}, If[MatchQ[currentContainer,ObjectP[Model[Container,Plate]]],
-      !CompatibleFootprintQ[autosamplerDeckModel,currentContainer,ExactMatch->False,Cache->cache],
+      !CompatibleFootprintQ[autosamplerDeckModel,currentContainer,ExactMatch->False,Cache->cache,Simulation -> updatedSimulation],
       (*otherwise, see if it fits into no rack*)
-      Not[Or@@Map[CompatibleFootprintQ[#,currentContainer,ExactMatch->False,Cache->cache]&,availableAutosamplerRacks]]
+      Not[Or@@Map[CompatibleFootprintQ[#,currentContainer,ExactMatch->False,Cache->cache,Simulation -> updatedSimulation]&,availableAutosamplerRacks]]
     ]],
     simulatedSampleContainerModels
   ];
@@ -6239,7 +6413,7 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
   (* NOTE: this doesnt consider samples that are aliquotted and NOT consolidated.. Therefore the number could be higher! *)
   uniqueAliquotableSamples = DeleteDuplicates@PickList[simulatedSamples,specifiedAliquotBools,True|Automatic];
 
-  (* Find containers for samples that definitely cannot be aliquotted *)
+  (* Find containers for samples that definitely cannot be aliquoted *)
   uniqueNonAliquotablePlates = DeleteDuplicates@Cases[
     PickList[simulatedSampleContainers,specifiedAliquotBools,False],
     ObjectP[Object[Container,Plate]]
@@ -6421,7 +6595,8 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
       RequiredAliquotContainers -> resolvedAliquotContainers,
       AliquotWarningMessage -> "because the given samples are not in containers that are compatible with SupercriticalFluidChromatography instruments.",
       Output -> {Result,Tests},
-      Cache -> cache
+      Cache -> cache,
+      Simulation->updatedSimulation
     ],{Warning::InstrumentPrecision}],
     {
       Quiet[resolveAliquotOptions[
@@ -6432,7 +6607,8 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
         RequiredAliquotAmounts -> requiredAliquotVolumes,
         RequiredAliquotContainers -> resolvedAliquotContainers,
         AliquotWarningMessage -> "because the given samples are not in containers that are compatible with SupercriticalFluidChromatography instruments.",
-        Cache -> cache
+        Cache -> cache,
+        Simulation->updatedSimulation
       ],{Warning::InstrumentPrecision}],
       {}
     }
@@ -6450,8 +6626,8 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
   specifiedSampleStorageCondition=Lookup[supercriticalFluidChromatographyOptionsAssociation,SamplesInStorageCondition];
   validSampleStorageConditionQ=If[!MatchQ[specifiedSampleStorageCondition,ListableP[Automatic|Null]],
     If[messagesQ,
-      ValidContainerStorageConditionQ[mySamples,specifiedSampleStorageCondition],
-      Quiet[ValidContainerStorageConditionQ[mySamples,specifiedSampleStorageCondition]]
+      ValidContainerStorageConditionQ[mySamples,specifiedSampleStorageCondition, Simulation -> updatedSimulation],
+      Quiet[ValidContainerStorageConditionQ[mySamples,specifiedSampleStorageCondition, Simulation -> updatedSimulation]]
     ],
     True
   ];
@@ -6616,6 +6792,7 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
     ParentProtocol->Lookup[roundedOptionsAssociation,ParentProtocol],
     Operator->Lookup[roundedOptionsAssociation,Operator],
     Confirm->Lookup[roundedOptionsAssociation,Confirm],
+    CanaryBranch->Lookup[roundedOptionsAssociation,CanaryBranch],
     Name->Lookup[roundedOptionsAssociation,Name],
     Upload->Lookup[roundedOptionsAssociation,Upload],
     Output->Lookup[roundedOptionsAssociation,Output],
@@ -6626,7 +6803,7 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
 
   (* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
 
-  invalidInputs=DeleteDuplicates[Flatten[{discardedSamples,containerlessSamples,incompatibleSamples,invalidContainerCountSamples}]];
+  invalidInputs=DeleteDuplicates[Flatten[{discardedSamples,containerlessSamples,invalidContainerCountSamples}]];
 
   invalidOptions=DeleteDuplicates[Flatten[{
     invalidInstrumentOption,
@@ -6638,13 +6815,15 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
     gradientStartEndSpecifiedAdverselyOptions,
     gradientInjectionTableSpecifiedDifferentlyOptions,
     invalidGradientCompositionOptions,
+    injectionTableCO2PressureOptions,
     nonBinaryCompositionOptions,
     gradientShortcutOptions,
     wavelengthResolutionConflictOptions,
     multipleGradientsColumnPrimeFlushOptions,
     validAliquotContainerOptions,
     invalidInjectionTableOptions,
-    invalidStorageConditionOptions
+    invalidStorageConditionOptions,
+    compatibleMaterialsInvalidOption
   }]];
 
   (*combine all of the tests*)
@@ -6661,6 +6840,7 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
     gradientStartEndSpecifiedAdverselyTest,
     gradientInjectionTableSpecifiedDifferentlyTest,
     invalidGradientCompositionTest,
+    injectionTableCO2PressureTest,
     wavelengthResolutionConflictTests,
     nonBinaryCompositionTest,
     gradientStartEndAConflictTests,
@@ -6676,7 +6856,7 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
 
   (* Throw Error::InvalidInput if there are invalid inputs. *)
   If[Length[invalidInputs]>0&&!gatherTests,
-    Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+    Message[Error::InvalidInput,ObjectToString[invalidInputs,Simulation -> updatedSimulation]]
   ];
 
   (* Throw Error::InvalidOption if there are invalid options. *)
@@ -6717,7 +6897,7 @@ resolveExperimentSupercriticalFluidChromatographyOptions[mySamples:{ObjectP[Obje
 
 DefineOptions[
   sfcResourcePackets,
-  Options:>{OutputOption,CacheOption}
+  Options:>{OutputOption,CacheOption,SimulationOption}
 ];
 
 
@@ -6772,7 +6952,7 @@ sfcResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
     columnFlushAbsorbanceSelection, columnFlushMinAbsorbanceWavelengths, columnFlushMaxAbsorbanceWavelengths,
     allMakeupSolvents,makeupSolventVolumes,totalMakeupVolumeNeeded,makeSolventResource,operatorResource,
     cosolventAResource,cosolventBResource,cosolventCResource,cosolventDResource,allGradients,allGradientTuples,
-    sampleTimes,standardTimes,blankTimes,columnPrimeTimes,columnFlushTimes,allTimes, columnOrientations,
+    sampleTimes,standardTimes,blankTimes,columnPrimeTimes,columnFlushTimes,allTimes, columnOrientations, simulation,
     systemPrimeBufferPlacements, systemFlushBufferPlacements,needleWashSolution, externalNeedleWashSolution, needleWashSolutionPlacements
   },
 
@@ -6785,7 +6965,9 @@ sfcResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
   messages = Not[gatherTests];
 
   (*get the cache*)
-  cache=OptionValue[Cache];
+  cache=Lookup[ToList[ops], Cache, {}];
+  simulation=Lookup[ToList[ops], Simulation, Simulation[]];
+
 
   (* Pull out the number of replicates; make sure all Nulls become 1 *)
   numReplicates = Lookup[myResolvedOptions, NumberOfReplicates] /. {Null -> 1};
@@ -7770,7 +7952,7 @@ sfcResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
   }];
 
   (* Use Level 2 Operators *)
-  operatorResource = Model[User, Emerald, Operator, "Trainee"];
+  operatorResource = $BaselineOperator;
 
   (* --- Generate the protocol packet --- *)
   protocolPacket=<|
@@ -7795,8 +7977,7 @@ sfcResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
     MassAnalyzer->Lookup[instrumentModelPacket,MassAnalyzer],
     IonSource->First@Lookup[instrumentModelPacket,IonSources],
 
-    (* We let Cover pick the plate seal resource and this is just a model here *)
-    PlateSeal -> Link[Model[Item, PlateSeal, "id:Vrbp1jKZJ0Rm"]],
+    (* We will create Cover resources in the compiler, when we have the WorkingContainers and can prepare resources that are index matched to the WorkingContainers field *)
 
     (*currently, we're not resource picking this, we'll just use whatever the instrument has*)
     Calibrant->Link@Lookup[myResolvedOptions,Calibrant],
@@ -8017,7 +8198,7 @@ sfcResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
   unCollapsedResolvedOptions=Last[ExpandIndexMatchedInputs[ExperimentSupercriticalFluidChromatography,{mySamples},myResolvedOptions]];
 
   (* generate a packet with the shared fields *)
-  sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions,Cache->cache];
+  sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions,Cache->cache,Simulation -> simulation];
 
   (* Merge the shared fields with the specific fields *)
   finalizedPacket = Join[protocolPacket,sharedFieldPacket];
@@ -8035,8 +8216,8 @@ sfcResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
   (* call fulfillableResourceQ on all the resources we created *)
   {fulfillable, frqTests} = Which[
     MatchQ[$ECLApplication, Engine], {True, {}},
-    gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache->cache],
-    True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache->cache], Null}
+    gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache->cache, Simulation -> simulation],
+    True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache->cache, Simulation -> simulation], Null}
   ];
 
   (* generate the tests rule *)
@@ -8069,13 +8250,13 @@ DefineOptions[ExperimentSupercriticalFluidChromatographyPreview,
   SharedOptions :> {ExperimentSupercriticalFluidChromatography}
 ];
 
-ExperimentSupercriticalFluidChromatographyPreview[myObjects:ListableP[ObjectP[Object[Container]]]|ListableP[(ObjectP[Object[Sample]]|_String)],myOptions:OptionsPattern[]]:=Module[
+ExperimentSupercriticalFluidChromatographyPreview[myObjects:ListableP[ObjectP[{Object[Container], Model[Sample]}]]|ListableP[(ObjectP[Object[Sample]]|_String)],myOptions:OptionsPattern[]]:=Module[
   {listedOptions, noOutputOptions},
 
   (* get the options as a list *)
   listedOptions = ToList[myOptions];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
   noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
   (* return only the preview for ExperimentSupercriticalFluidChromatography *)
@@ -8106,13 +8287,13 @@ DefineOptions[ExperimentSupercriticalFluidChromatographyOptions,
   SharedOptions :> {ExperimentSupercriticalFluidChromatography}
 ];
 
-ExperimentSupercriticalFluidChromatographyOptions[myObjects:ListableP[ObjectP[Object[Container]]]|ListableP[(ObjectP[Object[Sample]]|_String)],myOptions:OptionsPattern[]]:=Module[
+ExperimentSupercriticalFluidChromatographyOptions[myObjects:ListableP[ObjectP[{Object[Container], Model[Sample]}]]|ListableP[(ObjectP[Object[Sample]]|_String)],myOptions:OptionsPattern[]]:=Module[
   {listedOptions, noOutputOptions, options},
 
   (* get the options as a list *)
   listedOptions = ToList[myOptions];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
   noOutputOptions = DeleteCases[listedOptions, (Output -> _) | (OutputFormat->_)];
 
   (* return only the preview for ExperimentSupercriticalFluidChromatography *)
@@ -8149,16 +8330,16 @@ DefineOptions[ValidExperimentSupercriticalFluidChromatographyQ,
 ];
 
 
-ValidExperimentSupercriticalFluidChromatographyQ[myObject:(ObjectP[Object[Sample]]|_String),myOptions:OptionsPattern[]]:=ValidExperimentSupercriticalFluidChromatographyQ[{myObject},myOptions];
+ValidExperimentSupercriticalFluidChromatographyQ[myObject:(ObjectP[{Object[Sample], Model[Sample]}]|_String),myOptions:OptionsPattern[]]:=ValidExperimentSupercriticalFluidChromatographyQ[{myObject},myOptions];
 
-ValidExperimentSupercriticalFluidChromatographyQ[myObjects:{(ObjectP[Object[Sample]]|_String)...},myOptions:OptionsPattern[]]:=Module[
+ValidExperimentSupercriticalFluidChromatographyQ[myObjects:{(ObjectP[{Object[Sample], Model[Sample]}]|_String)...},myOptions:OptionsPattern[]]:=Module[
   {listedOptions,preparedOptions,hplcTests,validObjectBooleans,voqWarnings,
     allTests,verbose,outputFormat},
 
   (* get the options as a list *)
   listedOptions = ToList[myOptions];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
   preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
   (* return only the tests for ExperimentSupercriticalFluidChromatography *)

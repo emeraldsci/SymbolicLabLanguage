@@ -269,6 +269,14 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Category -> "Column Installation",
 			Developer -> True
 		},
+		ColumnAppearances -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The image of the columns installed in the column compartment of the instrument taken before and after the injection run and at every instrument processing check-ins.",
+			Category -> "Column Installation"
+		},
 
 		(* --- Buffers --- *)
 		BufferA -> {
@@ -280,9 +288,7 @@ DefineObjectType[Object[Protocol, FPLC], {
 				Model[Sample]
 			],
 			Description -> "The first available solution for the run gradient.",
-			Developer -> True,
-			Category -> "Gradient",
-			Abstract -> True
+			Category -> "Gradient"
 		},
 		BufferB -> {
 			Format -> Single,
@@ -293,9 +299,7 @@ DefineObjectType[Object[Protocol, FPLC], {
 				Model[Sample]
 			],
 			Description -> "The second available solution for the run gradient.",
-			Developer -> True,
-			Category -> "Gradient",
-			Abstract -> True
+			Category -> "Gradient"
 		},
 		BufferC -> {
 			Format -> Single,
@@ -306,7 +310,6 @@ DefineObjectType[Object[Protocol, FPLC], {
 				Model[Sample]
 			],
 			Description -> "The third available solution for the run gradient.",
-			Developer -> True,
 			Category -> "Gradient"
 		},
 		BufferD -> {
@@ -318,7 +321,6 @@ DefineObjectType[Object[Protocol, FPLC], {
 				Model[Sample]
 			],
 			Description -> "The fourth available solution for the run gradient.",
-			Developer -> True,
 			Category -> "Gradient"
 		},
 		BufferE -> {
@@ -330,9 +332,7 @@ DefineObjectType[Object[Protocol, FPLC], {
 				Model[Sample]
 			],
 			Description -> "The fifth available solution for the run gradient.",
-			Developer -> True,
-			Category -> "Gradient",
-			Abstract -> True
+			Category -> "Gradient"
 		},
 		BufferF -> {
 			Format -> Single,
@@ -343,9 +343,7 @@ DefineObjectType[Object[Protocol, FPLC], {
 				Model[Sample]
 			],
 			Description -> "The sixth available solution for the run gradient.",
-			Developer -> True,
-			Category -> "Gradient",
-			Abstract -> True
+			Category -> "Gradient"
 		},
 		BufferG -> {
 			Format -> Single,
@@ -356,9 +354,7 @@ DefineObjectType[Object[Protocol, FPLC], {
 				Model[Sample]
 			],
 			Description -> "The seventh available solution for the run gradient.",
-			Developer -> True,
-			Category -> "Gradient",
-			Abstract -> True
+			Category -> "Gradient"
 		},
 		BufferH -> {
 			Format -> Single,
@@ -369,9 +365,7 @@ DefineObjectType[Object[Protocol, FPLC], {
 				Model[Sample]
 			],
 			Description -> "The eighth available solution for the run gradient.",
-			Developer -> True,
-			Category -> "Gradient",
-			Abstract -> True
+			Category -> "Gradient"
 		},
 		BufferASelection -> {
 			Format -> Multiple,
@@ -518,26 +512,6 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Developer -> True,
 			Headers -> {"Object to Place", "Placement Tree"}
 		},
-		BufferCapConnections -> {
-			Format -> Multiple,
-			Class -> {Link, String, Link, String},
-			Pattern :> {_Link, ConnectorNameP, _Link, ConnectorNameP},
-			Relation -> {Object[Item,Cap], Null, Object[Container], Null},
-			Description -> "The instructions for attaching the caps to the buffer bottles.",
-			Headers -> {"Buffer Cap", "Cap Threads", "Buffer Container", "Buffer Container Spout"},
-			Category -> "General",
-			Developer -> True
-		},
-		SampleCapConnections -> {
-			Format -> Multiple,
-			Class -> {Link, String, Link, String},
-			Pattern :> {_Link, ConnectorNameP, _Link, ConnectorNameP},
-			Relation -> {Object[Item,Cap], Null, Object[Container], Null},
-			Description -> "The instructions for attaching the caps to the sample bottles.",
-			Headers -> {"Buffer Cap", "Cap Threads", "Buffer Container", "Buffer Container Spout"},
-			Category -> "General",
-			Developer -> True
-		},
 		BufferLineConnections -> {
 			Format -> Multiple,
 			Class -> {Link, String, Link, String},
@@ -558,16 +532,6 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Category -> "General",
 			Developer -> True
 		},
-		SystemPrimeSampleCapConnections -> {
-			Format -> Multiple,
-			Class -> {Link, String, Link, String},
-			Pattern :> {_Link, ConnectorNameP, _Link, ConnectorNameP},
-			Relation -> {Object[Item,Cap], Null, Object[Container], Null},
-			Description -> "The instructions for attaching the caps to the system prime cleaning buffers for the sample lines.",
-			Headers -> {"Buffer Cap", "Cap Threads", "Buffer Container", "Buffer Container Spout"},
-			Category -> "General",
-			Developer -> True
-		},
 		SystemPrimeBufferLineConnections -> {
 			Format -> Multiple,
 			Class -> {Link, String, Link, String},
@@ -575,16 +539,6 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Relation -> {Object[Plumbing], Null, Object[Item,Cap], Null},
 			Description -> "The instructions attaching the inlet lines to the system prime buffer and sample caps.",
 			Headers -> {"Instrument Buffer Inlet Line", "Inlet Line Connection", "Buffer Cap", "Buffer Cap Connector"},
-			Category -> "General",
-			Developer -> True
-		},
-		SystemFlushSampleCapConnections -> {
-			Format -> Multiple,
-			Class -> {Link, String, Link, String},
-			Pattern :> {_Link, ConnectorNameP, _Link, ConnectorNameP},
-			Relation -> {Object[Item,Cap], Null, Object[Container], Null},
-			Description -> "The instructions for attaching the caps to the system flush cleaning buffers for the sample lines.",
-			Headers -> {"Buffer Cap", "Cap Threads", "Buffer Container", "Buffer Container Spout"},
 			Category -> "General",
 			Developer -> True
 		},
@@ -639,40 +593,132 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Developer -> True
 		},
 
-		InitialBufferAVolumes -> {
-			Format -> Multiple,
+		InitialBufferAVolume -> {
+			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0 * Liter],
+			Pattern :> GreaterEqualP[0*Liter],
 			Units -> Liter,
-			Description -> "For each member of BufferASelection, the measured volume immediately before the experiment was started.",
-			IndexMatching -> BufferASelection,
+			Description -> "The volume of BufferA immediately before the experiment is started as measured by the integrated ultrasonic liquid level detection sensor.",
 			Category -> "General"
 		},
-		InitialBufferBVolumes -> {
-			Format -> Multiple,
+		InitialBufferBVolume -> {
+			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0 * Liter],
+			Pattern :> GreaterEqualP[0*Liter],
 			Units -> Liter,
-			Description -> "For each member of BufferBSelection, the measured volume immediately before the experiment was started.",
-			IndexMatching -> BufferBSelection,
+			Description -> "The volume of BufferB immediately before the experiment is started as measured by the integrated ultrasonic liquid level detection sensor.",
 			Category -> "General"
 		},
-		InitialBufferAAppearances -> {
-			Format -> Multiple,
+		InitialBufferCVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferC immediately before the experiment is started as measured by the integrated ultrasonic liquid level detection sensor.",
+			Category -> "General"
+		},
+		InitialBufferDVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferD immediately before the experiment is started as measured by the integrated ultrasonic liquid level detection sensor.",
+			Category -> "General"
+		},
+		InitialBufferEVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferE immediately before the experiment is started as measured by the integrated ultrasonic liquid level detection sensor.",
+			Category -> "General"
+		},
+		InitialBufferFVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferF immediately before the experiment is started as measured by the integrated ultrasonic liquid level detection sensor.",
+			Category -> "General"
+		},
+		InitialBufferGVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferG immediately before the experiment is started as measured by the integrated ultrasonic liquid level detection sensor.",
+			Category -> "General"
+		},
+		InitialBufferHVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferH immediately before the experiment is started as measured by the integrated ultrasonic liquid level detection sensor.",
+			Category -> "General"
+		},
+		InitialBufferAAppearance -> {
+			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
-			Description -> "For each member of BufferASelection, an image taken immediately before the experiment was started.",
-			IndexMatching -> BufferASelection,
+			Description -> "The side on image of BufferA bottle taken immediately before the experiment is started as taken by the integrated camera.",
 			Category -> "General"
 		},
-		InitialBufferBAppearances -> {
-			Format -> Multiple,
+		InitialBufferBAppearance -> {
+			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
-			Description -> "For each member of BufferBSelection, an image taken immediately before the experiment was started.",
-			IndexMatching -> BufferBSelection,
+			Description -> "The side on image of BufferB taken immediately before the experiment is started as taken by the integrated camera.",
+			Category -> "General"
+		},
+		InitialBufferCAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The side on image of BufferC taken immediately before the experiment is started as taken by the integrated camera.",
+			Category -> "General"
+		},
+		InitialBufferDAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The side on image of BufferD taken immediately before the experiment is started as taken by the integrated camera.",
+			Category -> "General"
+		},
+		InitialBufferEAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The side on image of BufferE bottle taken immediately before the experiment is started as taken by the integrated camera.",
+			Category -> "General"
+		},
+		InitialBufferFAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The side on image of BufferF taken immediately before the experiment is started as taken by the integrated camera.",
+			Category -> "General"
+		},
+		InitialBufferGAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The side on image of BufferG taken immediately before the experiment is started as taken by the integrated camera.",
+			Category -> "General"
+		},
+		InitialBufferHAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The side on image of BufferH taken immediately before the experiment is started as taken by the integrated camera.",
 			Category -> "General"
 		},
 
@@ -1502,40 +1548,133 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Category -> "Column Flush"
 		},
 
-		FinalBufferAVolumes -> {
-			Format -> Multiple,
+		FinalBufferAVolume -> {
+			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0 * Liter],
+			Pattern :> GreaterEqualP[0*Liter],
 			Units -> Liter,
-			Description -> "For each member of BufferASelection, the measured volume immediately after the experiment was finished.",
-			IndexMatching -> BufferASelection,
+			Description -> "The volume of BufferA immediately after the experiment is completed as detected by the integrated ultrasonic liquid level sensor.",
 			Category -> "General"
 		},
-		FinalBufferBVolumes -> {
-			Format -> Multiple,
+		FinalBufferBVolume -> {
+			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0 * Liter],
+			Pattern :> GreaterEqualP[0*Liter],
 			Units -> Liter,
-			Description -> "For each member of BufferBSelection, the measured volume immediately after the experiment was finished.",
-			IndexMatching -> BufferBSelection,
+			Description -> "The volume of BufferB immediately after the experiment is completed as detectoed by the integrated ultrasonic liquid level sensor.",
 			Category -> "General"
 		},
-		FinalBufferAAppearances -> {
-			Format -> Multiple,
+		FinalBufferCVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferC immediately after the experiment is completed as detected by the integrated ultrasonic liquid level sensor.",
+			Category -> "General"
+		},
+		FinalBufferDVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferD immediately after the experiment is completed as detected by the integrated ultrasonic liquid level sensor.",
+			Category -> "General"
+		},
+		FinalBufferEVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferE immediately after the experiment is completed as detected by the integrated ultrasonic liquid level sensor.",
+			Category -> "General"
+		},
+		FinalBufferFVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferF immediately after the experiment is completed as detectoed by the integrated ultrasonic liquid level sensor.",
+			Category -> "General"
+		},
+		FinalBufferGVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferG immediately after the experiment is completed as detected by the integrated ultrasonic liquid level sensor.",
+			Category -> "General"
+		},
+		FinalBufferHVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferH immediately after the experiment is completed as detected by the integrated ultrasonic liquid level sensor.",
+			Category -> "General"
+		},
+
+		FinalBufferAAppearance -> {
+			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
-			Description -> "For each member of BufferASelection, an image of the corresponding BufferA taken immediately after the experiment was finished.",
-			IndexMatching -> BufferASelection,
+			Description -> "The image of BufferA taken immediately after the experiment is completed as captured by the integrated camera on the instrument.",
 			Category -> "General"
 		},
-		FinalBufferBAppearances -> {
-			Format -> Multiple,
+		FinalBufferBAppearance -> {
+			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
-			Description -> "For each member of BufferBSelection, an image of the corresponding taken immediately after the experiment was finished.",
-			IndexMatching -> BufferBSelection,
+			Description -> "The image of BufferB taken immediately after the experiment is completed as captured by the integrated camera on the instrument.",
+			Category -> "General"
+		},
+		FinalBufferCAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The image of BufferC taken immediately after the experiment is completed as captured by the integrated camera on the instrument.",
+			Category -> "General"
+		},
+		FinalBufferDAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The image of BufferD taken immediately after the experiment is completed as captured by the integrated camera on the instrument.",
+			Category -> "General"
+		},
+		FinalBufferEAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The image of BufferE taken immediately after the experiment is completed as captured by the integrated camera on the instrument.",
+			Category -> "General"
+		},
+		FinalBufferFAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The image of BufferF taken immediately after the experiment is completed as captured by the integrated camera on the instrument.",
+			Category -> "General"
+		},
+		FinalBufferGAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The image of BufferG taken immediately after the experiment is completed as captured by the integrated camera on the instrument.",
+			Category -> "General"
+		},
+		FinalBufferHAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The image of BufferH taken immediately after the experiment is completed as captured by the integrated camera on the instrument.",
 			Category -> "General"
 		},
 		PrimeData -> {
@@ -1601,6 +1740,14 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Class -> String,
 			Pattern :> _String,
 			Description -> "The file names of the purge methods used when priming/purging the sample lines for Flow Injection.",
+			Category -> "General",
+			Developer -> True
+		},
+		CopyFilePath -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The location of a batch script which copies data from the temporary directory of the software to the public path.",
 			Category -> "General",
 			Developer -> True
 		},
@@ -1804,15 +1951,6 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Category -> "General",
 			Developer -> True
 		},
-		WasteWeightData -> {
-			Format -> Single,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Data][Protocol],
-			Description -> "The weight data of the waste carboy after the FPLC protocol is complete.",
-			Category -> "General",
-			Developer -> True
-		},
 
 		(* --- Cleaning --- *)
 		TubingRinseSolution -> {
@@ -1883,6 +2021,26 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Developer -> True,
 			Headers -> {"Object to Place", "Placement Tree"}
 		},
+		StorageBufferContainerPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Expression},
+			Pattern :> {_Link, {LocationPositionP..}},
+			Relation -> {Object[Container] | Object[Sample] | Model[Sample], Null},
+			Description -> "A list of deck placements used for placing instrument storage buffers onto the instrument buffer deck at the end of the protocol. The instrument storage buffers are used to store the buffer lines while the instrument is not in use.",
+			Category -> "Placements",
+			Developer -> True,
+			Headers -> {"Object to Place", "Placement Tree"}
+		},
+		StorageBufferLineConnections -> {
+			Format -> Multiple,
+			Class -> {Link, String, Link, String},
+			Pattern :> {_Link, ConnectorNameP, _Link, ConnectorNameP},
+			Relation -> {Object[Plumbing], Null, Object[Item,Cap], Null},
+			Description -> "The instructions attaching the inlet lines to the instrument buffer caps.",
+			Headers -> {"Instrument Buffer Inlet Line", "Inlet Line Connection", "Buffer Cap", "Buffer Cap Connector"},
+			Category -> "Cleaning",
+			Developer -> True
+		},
 		SystemPrimeBufferContainerPlacements -> {
 			Format -> Multiple,
 			Class -> {Link, Expression},
@@ -1919,6 +2077,60 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Category -> "Cleaning",
 			Developer -> True
 		},
+		InitialSystemPrimeBufferCVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of SystemPrimeBufferC immediately before the priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemPrimeBufferDVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of SystemPrimeBufferD immediately before the priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemPrimeBufferEVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of SystemPrimeBufferE immediately before the priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemPrimeBufferFVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of SystemPrimeBufferF immediately before the priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemPrimeBufferGVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of SystemPrimeBufferG immediately before the priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemPrimeBufferHVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of SystemPrimeBufferH immediately before the priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
 		InitialSystemPrimeBufferAAppearance -> {
 			Format -> Single,
 			Class -> Link,
@@ -1934,6 +2146,60 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
 			Description -> "An image of SystemPrimeBufferB taken immediately before priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemPrimeBufferCAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemPrimeBufferC taken immediately before priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemPrimeBufferDAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemPrimeBufferD taken immediately before priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemPrimeBufferEAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemPrimeBufferE taken immediately before priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemPrimeBufferFAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemPrimeBufferF taken immediately before priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemPrimeBufferGAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemPrimeBufferG taken immediately before priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemPrimeBufferHAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemPrimeBufferH taken immediately before priming the instrument.",
 			Category -> "Cleaning",
 			Developer -> True
 		},
@@ -1955,6 +2221,60 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Category -> "Cleaning",
 			Developer -> True
 		},
+		FinalSystemPrimeBufferCVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of the SystemPrimeBufferC immediately after the system prime.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemPrimeBufferDVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of the SystemPrimeBufferD immediately after the system prime.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemPrimeBufferEVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of the SystemPrimeBufferE immediately after the system prime.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemPrimeBufferFVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of the SystemPrimeBufferF immediately after the system prime.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemPrimeBufferGVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of the SystemPrimeBufferG immediately after the system prime.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemPrimeBufferHVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of the SystemPrimeBufferH immediately after the system prime.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
 		FinalSystemPrimeBufferAAppearance -> {
 			Format -> Single,
 			Class -> Link,
@@ -1970,6 +2290,60 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
 			Description -> "An image of SystemPrimeBufferB taken immediately after priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemPrimeBufferCAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemPrimeBufferC taken immediately after priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemPrimeBufferDAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemPrimeBufferD taken immediately after priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemPrimeBufferEAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemPrimeBufferE taken immediately after priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemPrimeBufferFAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemPrimeBufferF taken immediately after priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemPrimeBufferGAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemPrimeBufferG taken immediately after priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemPrimeBufferHAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemPrimeBufferH taken immediately after priming the instrument.",
 			Category -> "Cleaning",
 			Developer -> True
 		},
@@ -2010,6 +2384,60 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Category -> "Cleaning",
 			Developer -> True
 		},
+		InitialSystemFlushBufferCVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of SystemFlushBufferC immediately before the priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemFlushBufferDVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of SystemFlushBufferD immediately before the priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemFlushBufferEVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of SystemFlushBufferE immediately before the priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemFlushBufferFVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of SystemFlushBufferF immediately before the priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemFlushBufferGVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of SystemFlushBufferG immediately before the priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemFlushBufferHVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of SystemFlushBufferH immediately before the priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
 		InitialSystemFlushBufferAAppearance -> {
 			Format -> Single,
 			Class -> Link,
@@ -2025,6 +2453,60 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
 			Description -> "An image of SystemFlushBufferB taken immediately before priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemFlushBufferCAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemFlushBufferC taken immediately before priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemFlushBufferDAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemFlushBufferD taken immediately before priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemFlushBufferEAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemFlushBufferE taken immediately before priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemFlushBufferFAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemFlushBufferF taken immediately before priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemFlushBufferGAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemFlushBufferG taken immediately before priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		InitialSystemFlushBufferHAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemFlushBufferH taken immediately before priming the instrument.",
 			Category -> "Cleaning",
 			Developer -> True
 		},
@@ -2046,6 +2528,60 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Category -> "Cleaning",
 			Developer -> True
 		},
+		FinalSystemFlushBufferCVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of the SystemFlushBufferC immediately after the system Flush.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemFlushBufferDVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of the SystemFlushBufferD immediately after the system Flush.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemFlushBufferEVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of the SystemFlushBufferE immediately after the system Flush.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemFlushBufferFVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of the SystemFlushBufferF immediately after the system Flush.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemFlushBufferGVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of the SystemFlushBufferG immediately after the system Flush.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemFlushBufferHVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Liter],
+			Units -> Liter,
+			Description -> "The volume of the SystemFlushBufferH immediately after the system Flush.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
 		FinalSystemFlushBufferAAppearance -> {
 			Format -> Single,
 			Class -> Link,
@@ -2061,6 +2597,60 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
 			Description -> "An image of SystemFlushBufferB taken immediately after priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemFlushBufferCAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemFlushBufferC taken immediately after priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemFlushBufferDAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemFlushBufferD taken immediately after priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemFlushBufferEAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemFlushBufferE taken immediately after priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemFlushBufferFAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemFlushBufferF taken immediately after priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemFlushBufferGAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemFlushBufferG taken immediately after priming the instrument.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		FinalSystemFlushBufferHAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image of SystemFlushBufferH taken immediately after priming the instrument.",
 			Category -> "Cleaning",
 			Developer -> True
 		},
@@ -2088,7 +2678,7 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[Object[Sample], Model[Sample]],
-			Description -> "The buffer sample used to generate the buffer gradient to purge buffer B line at the start of an FPLC protocol.",
+			Description -> "The buffer sample used to generate the buffer gradient to purge buffer A line at the start of an FPLC protocol.",
 			Category -> "Gradient",
 			Developer -> True
 		},
@@ -2098,6 +2688,60 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Pattern :> _Link,
 			Relation -> Alternatives[Object[Sample], Model[Sample]],
 			Description -> "The buffer sample used to generate the buffer gradient to purge buffer B line at the start of an FPLC protocol.",
+			Category -> "Gradient",
+			Developer -> True
+		},
+		SystemPrimeBufferC -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample]],
+			Description -> "The buffer sample used to generate the buffer gradient to purge buffer C line at the start of an FPLC protocol.",
+			Category -> "Gradient",
+			Developer -> True
+		},
+		SystemPrimeBufferD -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample]],
+			Description -> "The buffer sample used to generate the buffer gradient to purge buffer D line at the start of an FPLC protocol.",
+			Category -> "Gradient",
+			Developer -> True
+		},
+		SystemPrimeBufferE -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample]],
+			Description -> "The buffer sample used to generate the buffer gradient to purge buffer E line at the start of an FPLC protocol.",
+			Category -> "Gradient",
+			Developer -> True
+		},
+		SystemPrimeBufferF -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample]],
+			Description -> "The buffer sample used to generate the buffer gradient to purge buffer F line at the start of an FPLC protocol.",
+			Category -> "Gradient",
+			Developer -> True
+		},
+		SystemPrimeBufferG -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample]],
+			Description -> "The buffer sample used to generate the buffer gradient to purge buffer G line at the start of an FPLC protocol.",
+			Category -> "Gradient",
+			Developer -> True
+		},
+		SystemPrimeBufferH -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample]],
+			Description -> "The buffer sample used to generate the buffer gradient to purge buffer H line at the start of an FPLC protocol.",
 			Category -> "Gradient",
 			Developer -> True
 		},
@@ -2124,7 +2768,7 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[Object[Sample], Model[Sample]],
-			Description -> "The buffer sample used to generate the buffer gradient to purge buffer A lines at the end of an FPLC protocol.",
+			Description -> "The buffer sample used to generate the buffer gradient to purge buffer A instrument lines at the end of an FPLC protocol.",
 			Category -> "Gradient",
 			Developer -> True
 		},
@@ -2133,7 +2777,61 @@ DefineObjectType[Object[Protocol, FPLC], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[Object[Sample], Model[Sample]],
-			Description -> "The buffer sample used to generate the buffer gradient to purge buffer B  instrument lines at the end of an FPLC protocol.",
+			Description -> "The buffer sample used to generate the buffer gradient to purge buffer B instrument lines at the end of an FPLC protocol.",
+			Category -> "Gradient",
+			Developer -> True
+		},
+		SystemFlushBufferC -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample]],
+			Description -> "The buffer sample used to generate the buffer gradient to purge buffer C instrument lines at the end of an FPLC protocol.",
+			Category -> "Gradient",
+			Developer -> True
+		},
+		SystemFlushBufferD -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample]],
+			Description -> "The buffer sample used to generate the buffer gradient to purge buffer D instrument lines at the end of an FPLC protocol.",
+			Category -> "Gradient",
+			Developer -> True
+		},
+		SystemFlushBufferE -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample]],
+			Description -> "The buffer sample used to generate the buffer gradient to purge buffer E instrument lines at the end of an FPLC protocol.",
+			Category -> "Gradient",
+			Developer -> True
+		},
+		SystemFlushBufferF -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample]],
+			Description -> "The buffer sample used to generate the buffer gradient to purge buffer F instrument lines at the end of an FPLC protocol.",
+			Category -> "Gradient",
+			Developer -> True
+		},
+		SystemFlushBufferG -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample]],
+			Description -> "The buffer sample used to generate the buffer gradient to purge buffer G instrument lines at the end of an FPLC protocol.",
+			Category -> "Gradient",
+			Developer -> True
+		},
+		SystemFlushBufferH -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample]],
+			Description -> "The buffer sample used to generate the buffer gradient to purge buffer H instrument lines at the end of an FPLC protocol.",
 			Category -> "Gradient",
 			Developer -> True
 		},
@@ -2166,24 +2864,6 @@ DefineObjectType[Object[Protocol, FPLC], {
 			],
 			Description -> "Four additional fraction containers used to replace the original fraction containers after these have been filled.",
 			Category -> "Fraction Collection",
-			Developer -> True
-		},
-
-		InjectionPlateManipulations -> {
-			Format -> Multiple,
-			Class -> Expression,
-			Pattern :> SampleManipulationP,
-			Description -> "A set of instructions specifying the transfers of the Blanks, Standards, and SamplesIn into a single injection plate.",
-			Category -> "Sample Preparation",
-			Developer -> True
-		},
-		InjectionPlatePrep -> {
-			Format -> Single,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation],
-			Description -> "The sample manipulation used to prepare the injection plate.",
-			Category -> "Sample Preparation",
 			Developer -> True
 		},
 		InjectionPlate -> {
@@ -2537,6 +3217,17 @@ DefineObjectType[Object[Protocol, FPLC], {
 			],
 			Description -> "The Buffer D sample used to generate the buffer gradient for the protocol for each column flush.",
 			Category -> "Gradient",
+			Developer -> True
+		},
+		RunningBuffer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container]
+			],
+			Description -> "The current buffer operators are working with during the purging procedure.",
+			Category -> "Operations Information",
 			Developer -> True
 		}
 	}

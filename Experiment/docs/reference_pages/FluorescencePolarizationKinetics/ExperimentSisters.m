@@ -20,34 +20,39 @@ DefineUsage[ExperimentFluorescencePolarizationKineticsOptions,
               InputName->"Samples",
               Description->"The samples for which to measure fluorescence polarization kinetics.",
               Widget->Alternatives[
-	              "Sample or Container"->Widget[
-		              Type -> Object,
-		              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-		              ObjectTypes -> {Object[Sample], Object[Container]},
-		              Dereference -> {
-			              Object[Container] -> Field[Contents[[All, 2]]]
-		              }
-	              ],
-	              "Container with Well Position"->{
-		              "Well Position" -> Alternatives[
-			              "A1 to P24" -> Widget[
-				              Type -> Enumeration,
-				              Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-				              PatternTooltip -> "Enumeration must be any well from A1 to H12."
-			              ],
-			              "Container Position" -> Widget[
-				              Type -> String,
-				              Pattern :> LocationPositionP,
-				              PatternTooltip -> "Any valid container position.",
-				              Size->Line
-			              ]
-		              ],
-		              "Container" -> Widget[
-			              Type -> Object,
-			              Pattern :> ObjectP[{Object[Container]}]
-		              ]
-	              }
-              ]
+				  "Sample or Container"->Widget[
+					  Type -> Object,
+					  Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+					  ObjectTypes -> {Object[Sample], Object[Container]},
+					  Dereference -> {
+						  Object[Container] -> Field[Contents[[All, 2]]]
+					  }
+				  ],
+				  "Container with Well Position"->{
+					  "Well Position" -> Alternatives[
+						  "A1 to P24" -> Widget[
+							  Type -> Enumeration,
+							  Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+							  PatternTooltip -> "Enumeration must be any well from A1 to H12."
+						  ],
+						  "Container Position" -> Widget[
+							  Type -> String,
+							  Pattern :> LocationPositionP,
+							  PatternTooltip -> "Any valid container position.",
+							  Size->Line
+						  ]
+					  ],
+					  "Container" -> Widget[
+						  Type -> Object,
+						  Pattern :> ObjectP[{Object[Container]}]
+					  ]
+				  },
+				  "Model Sample"->Widget[
+					  Type -> Object,
+					  Pattern :> ObjectP[Model[Sample]],
+					  ObjectTypes -> {Model[Sample]}
+				  ]
+			  ]
             },
             IndexName->"experiment samples"
           ]
@@ -119,7 +124,12 @@ DefineUsage[ExperimentFluorescencePolarizationKineticsPreview,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							]
 						},
 						IndexName->"experiment samples"
@@ -162,7 +172,40 @@ DefineUsage[ValidExperimentFluorescencePolarizationKineticsQ,
 						{
 							InputName -> "Samples",
 							Description -> "The samples for which to measure fluorescence polarization kinetics.",
-							Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Object[Sample], Object[Container,Plate]}], ObjectTypes -> {Object[Sample], Object[Container,Plate]}]
+							Widget -> Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Container with Well Position"->{
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to H12."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size->Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
+							]
 						},
 						IndexName->"experiment samples"
 					]

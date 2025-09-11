@@ -75,10 +75,7 @@ DefineUsage[PlotAbsorbanceQuantification,
 			"ExperimentAbsorbanceSpectroscopy",
 			"AnalyzeAbsorbanceQuantification"
 		},
-		Author -> {
-			"sebastian.bernasek",
-			"brad"
-		},
+		Author -> {"dirk.schild", "sebastian.bernasek", "brad"},
 		Preview->True
 	}
 ];

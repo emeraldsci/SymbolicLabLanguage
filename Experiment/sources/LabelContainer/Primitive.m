@@ -182,7 +182,7 @@ resolveLabelContainerPrimitive[myLabels:ListableP[_String],myOptions:OptionsPatt
   {outputSpecification, output, gatherTests, listedLabels, listedOptions, safeOps, safeOpsTests,
     validLengths, validLengthTests, expandedSafeOps, containerOption, allContainerObjects,
     allContainerModels, cacheBall, resolvedOptionsResult, simulation, unitOperationPacket, resourceTests,
-    resolvedOptions,resolvedOptionsTests
+    resolvedOptions,resolvedOptionsTests, updatedSimulation, sanitizedLabels, safeOpsNamed
   },
 
   (* Determine the requested return value from the function *)
@@ -196,16 +196,14 @@ resolveLabelContainerPrimitive[myLabels:ListableP[_String],myOptions:OptionsPatt
   {listedLabels, listedOptions}=removeLinks[ToList[myLabels], ToList[myOptions]];
 
   (* Call SafeOptions to make sure all options match pattern *)
-  {safeOps,safeOpsTests}=If[gatherTests,
+  {safeOpsNamed,safeOpsTests}=If[gatherTests,
     SafeOptions[resolveLabelContainerPrimitive,listedOptions,AutoCorrect->False,Output->{Result,Tests}],
     {SafeOptions[resolveLabelContainerPrimitive,listedOptions,AutoCorrect->False],{}}
   ];
-
-  (* Call ValidInputLengthsQ to make sure all options are the right length *)
-  {validLengths,validLengthTests}=If[gatherTests,
-    ValidInputLengthsQ[resolveLabelContainerPrimitive,{listedLabels},safeOps,Output->{Result,Tests}],
-    {ValidInputLengthsQ[resolveLabelContainerPrimitive,{listedLabels},safeOps],Null}
-  ];
+  simulation = Lookup[safeOpsNamed, Simulation, Null];
+  (* Replace all objects referenced by Name to ID *)
+  (* note that listedLabels won't ever have objects so this is a little silly but need to assign the output to something to make it return the safeOps (which I do care about)*)
+  {sanitizedLabels, safeOps} = sanitizeInputs[listedLabels, safeOpsNamed, Simulation -> simulation];
 
   (* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
   If[MatchQ[safeOps,$Failed],
@@ -217,6 +215,14 @@ resolveLabelContainerPrimitive[myLabels:ListableP[_String],myOptions:OptionsPatt
       Simulation -> Null
     }]
   ];
+
+  (* Call ValidInputLengthsQ to make sure all options are the right length *)
+  {validLengths,validLengthTests}=If[gatherTests,
+    ValidInputLengthsQ[resolveLabelContainerPrimitive,{listedLabels},safeOps,Output->{Result,Tests}],
+    {ValidInputLengthsQ[resolveLabelContainerPrimitive,{listedLabels},safeOps],Null}
+  ];
+
+
 
   (* If option lengths are invalid return $Failed (or the tests up to this point) *)
   If[!validLengths,
@@ -253,7 +259,7 @@ resolveLabelContainerPrimitive[myLabels:ListableP[_String],myOptions:OptionsPatt
       }
     },
     Cache->Lookup[expandedSafeOps,Cache,{}],
-    Simulation->Lookup[expandedSafeOps, Simulation, Null],
+    Simulation->simulation,
     Date->Now
   ]}],Download::FieldDoesntExist];
 
@@ -274,8 +280,8 @@ resolveLabelContainerPrimitive[myLabels:ListableP[_String],myOptions:OptionsPatt
   ];
 
   (* If we were asked for a simulation, also return a simulation. *)
-  simulation = If[MemberQ[output, Simulation],
-    simulateLabelContainerPrimitive[unitOperationPacket,listedLabels,resolvedOptions,Cache->cacheBall,Simulation->Lookup[expandedSafeOps, Simulation, Null],ParentProtocol->Lookup[safeOps, ParentProtocol, Null]],
+  updatedSimulation = If[MemberQ[output, Simulation],
+    simulateLabelContainerPrimitive[unitOperationPacket,listedLabels,resolvedOptions,Cache->cacheBall,Simulation->simulation,ParentProtocol->Lookup[safeOps, ParentProtocol, Null]],
     Null
   ];
 
@@ -283,7 +289,7 @@ resolveLabelContainerPrimitive[myLabels:ListableP[_String],myOptions:OptionsPatt
   outputSpecification/.{
     Result -> unitOperationPacket,
     Options -> resolvedOptions,
-    Simulation -> simulation,
+    Simulation -> updatedSimulation,
     Tests -> Flatten[{resolvedOptionsTests, resourceTests}]
   }
 ];
@@ -438,7 +444,15 @@ simulateLabelContainerPrimitive[myUnitOperationPacket:PacketP[], myLabels:{_Stri
       ResolvedOptions-> {}
     |>;
 
-    SimulateResources[protocolPacket, {myUnitOperationPacket}, ParentProtocol->Lookup[myResolvedOptions, ParentProtocol, Null], Simulation->Lookup[ToList[myResolutionOptions], Simulation, Null]]
+    (* Note: In SimulateResources (in the call of UploadSample), if we are simulating a covered container by default, *)
+    (* we are turning off the cover simulation here with IgnoreCoverSimulation->True since LabelContainer is only picking container, not cover *)
+    SimulateResources[
+      protocolPacket,
+      {myUnitOperationPacket},
+      IgnoreCoverSimulation -> True,
+      ParentProtocol -> Lookup[myResolvedOptions, ParentProtocol, Null],
+      Simulation -> Lookup[ToList[myResolutionOptions], Simulation, Null]
+    ]
   ];
 
   (* Get the simulated objects of our samples. *)

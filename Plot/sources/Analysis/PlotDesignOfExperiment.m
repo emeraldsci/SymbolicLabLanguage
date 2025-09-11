@@ -20,7 +20,7 @@ PlotDesignOfExperiment[anaObj:ObjectP[Object[Analysis,DesignOfExperiment]]]:=Mod
 		Return[Graphics[{}]]
 	];
 
-	(* total number of poitns in grid search *)
+	(* total number of points in grid search *)
 	If[MatchQ[pRanges,{}|$Failed], (* if no reference *)
 		(
 			pRanges = Table[Automatic,pDim];

@@ -119,6 +119,7 @@ DefineTests[
 							OptionName->Temperature,
 							Default->37*Celsius,
 							AllowNull->True,
+							HideNull->False,
 							Description->"The Gibbs free energies of the folded structures are computed at this temperature.",
 							ResolutionDescription->Null,
 							Category->"Folding Method",

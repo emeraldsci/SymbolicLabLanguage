@@ -33,6 +33,22 @@ DefineObjectType[Model[Maintenance, InstallGasCylinder], {
 			Pattern :> ConnectorNameP,
 			Description -> "The connector on the gas cylinder that will be used to connect it to the gas line in the lab.",
 			Category -> "General"
+		},
+		CryogenicGloves -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Item, Glove],
+			Description -> "The type of cryo gloves worn to protect the hands from ultra low temperature surfaces/fluids.",
+			Category -> "Health & Safety"
+		},
+		WrenchType -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Item, Wrench],
+			Description -> "The type of wrench required for adjusting connections or valves on the gas cylinder.",
+			Category -> "General"
 		}
 	}
 }];

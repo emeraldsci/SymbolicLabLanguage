@@ -116,7 +116,7 @@ DefineObjectType[Object[Protocol, BioLayerInterferometry], {
     ProbeRackPlatePrimitives->{
       Format->Multiple,
       Class->Expression,
-      Pattern:>SampleManipulationP,
+      Pattern:>(SampleManipulationP|SamplePreparationP),
       Description -> "A set of instructions specifying loading of the probe rack plate with the required solutions.",
       Category -> "Sample Preparation"
     },
@@ -154,7 +154,7 @@ DefineObjectType[Object[Protocol, BioLayerInterferometry], {
     AssayPlatePrimitives->{
       Format->Multiple,
       Class->Expression,
-      Pattern:>SampleManipulationP,
+      Pattern:>(SampleManipulationP|SamplePreparationP),
       Description -> "A set of instructions specifying the loading of the assay plate with the required solutions.",
       Category -> "Sample Preparation"
     },
@@ -162,27 +162,10 @@ DefineObjectType[Object[Protocol, BioLayerInterferometry], {
       Format->Single,
       Class->Link,
       Pattern:>_Link,
-      Relation->Object[Protocol,SampleManipulation],
+      Relation->Object[Protocol,SampleManipulation]|Object[Protocol,RoboticSamplePreparation]|Object[Protocol,ManualSamplePreparation]|Object[Notebook,Script],
       Description->"A sample manipulation protocol used to load the assay plate.",
       Category -> "Sample Preparation"
     },
-    (*
-    AssayPreparationPrimitives ->{
-      Format->Multiple,
-      Class->Expression,
-      Pattern:>SampleManipulationP,
-      Description -> "The complete set of instructions for all manipulations performed in this experiment.",
-      Category -> "Sample Preparation"
-    },
-    AssayPreparationManipulation->{
-      Format->Single,
-      Class->Link,
-      Pattern:>_Link,
-      Relation->Object[Protocol,SampleManipulation],
-      Description->"A sample manipulation protocol used to load the assay plate.",
-      Category -> "Sample Preparation"
-    },
-    *)
 
     (* -------------------------------------------- *)
     (* -- Named Solutions and Storage Conditions -- *)
@@ -292,7 +275,7 @@ DefineObjectType[Object[Protocol, BioLayerInterferometry], {
     KineticsSampleFixedDilutionsPrimitives -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> (Null|SampleManipulationP),
+      Pattern :> (SampleManipulationP|SamplePreparationP),
       Description -> "Instructions specifying preparation of a linear dilution series.",
       Category -> "Sample Preparation"
     },
@@ -323,7 +306,7 @@ DefineObjectType[Object[Protocol, BioLayerInterferometry], {
     KineticsSampleSerialDilutionsPrimitives -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> (Null|SampleManipulationP),
+      Pattern :> (SampleManipulationP|SamplePreparationP),
       Description -> "Instructions specifying preparation of dilution series.",
       Category -> "Sample Preparation"
     },
@@ -368,7 +351,7 @@ DefineObjectType[Object[Protocol, BioLayerInterferometry], {
     DevelopmentSampleFixedDilutionsPrimitives -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> (Null|SampleManipulationP),
+      Pattern :> (SampleManipulationP|SamplePreparationP),
       Description -> "Instructions specifying preparation of a linear dilution series.",
       Category -> "Sample Preparation"
     },
@@ -400,7 +383,7 @@ DefineObjectType[Object[Protocol, BioLayerInterferometry], {
     DevelopmentSampleSerialDilutionsPrimitives -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> (Null|SampleManipulationP),
+      Pattern :> (SampleManipulationP|SamplePreparationP),
       Description -> "Instructions specifying preparation of dilution series.",
       Category -> "Sample Preparation"
     },
@@ -471,7 +454,7 @@ DefineObjectType[Object[Protocol, BioLayerInterferometry], {
     QuantitationStandardFixedDilutionsPrimitives -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> (Null|SampleManipulationP),
+      Pattern :> (SampleManipulationP|SamplePreparationP),
       Description -> "Instructions specifying the transfer of solutions to create the Quantitation standard linear dilutions.",
       Category -> "Sample Preparation"
     },
@@ -503,7 +486,7 @@ DefineObjectType[Object[Protocol, BioLayerInterferometry], {
     QuantitationStandardSerialDilutionsPrimitives -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> (Null|SampleManipulationP),
+      Pattern :> (SampleManipulationP|SamplePreparationP),
       Description -> "Instructions specifying the transfer of solutions to create the Quantitation standard serial dilutions.",
       Category -> "Sample Preparation"
     },
@@ -595,16 +578,8 @@ DefineObjectType[Object[Protocol, BioLayerInterferometry], {
     PreMixSolutionsPrimitives -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> (Null|SampleManipulationP),
+      Pattern :> (SampleManipulationP|SamplePreparationP),
       Description -> "Instructions specifying the PreMix solution preparation.",
-      Category -> "Sample Preparation"
-    },
-    PreMixSolutionsManipulation -> {
-      Format -> Multiple,
-      Class -> Link,
-      Pattern :> _Link,
-      Relation -> Object[Protocol,SampleManipulation],
-      Description -> "The specific subprotocol performed to create the PreMix solutions.",
       Category -> "Sample Preparation"
     },
 
@@ -713,7 +688,7 @@ DefineObjectType[Object[Protocol, BioLayerInterferometry], {
     RecoupSamplePrimitives -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> (Null|{SampleManipulationP...}),
+      Pattern :> {(SampleManipulationP|SamplePreparationP)...},
       Description -> "For each member of SamplesIn, instructions specifying the transfer of the sample back into the original container after completion of the assay.",
       Category -> "Sample Post-Processing",
       IndexMatching -> SamplesIn
@@ -722,7 +697,7 @@ DefineObjectType[Object[Protocol, BioLayerInterferometry], {
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Object[Protocol,SampleManipulation],
+      Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation],
       Description -> "For each member of SamplesIn, the specific subprotocol performed to transfer the sample back into the origin container after completion of the assay.",
       Category -> "Sample Post-Processing",
       IndexMatching -> SamplesIn

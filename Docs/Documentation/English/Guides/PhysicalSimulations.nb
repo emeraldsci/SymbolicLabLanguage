@@ -1,3 +1,567 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3cead7d8f6912af7264b242126d0602b40b5bfdd4faef190c43b259e1bf25f60
-size 23453
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     22686,        557]
+NotebookOptionsPosition[     17278,        457]
+NotebookOutlinePosition[     18927,        496]
+CellTagsIndexPosition[     18884,        493]
+WindowTitle->PhysicalSimulations
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "c6cf373b-c0fd-424f-84f0-5c9fcfd38cce"]
+        }],ExpressionUUID->"96cf57bd-c2fd-4b29-b940-fc8fb2666764"],
+        StripOnInput->False], {"\<\"SimulateEnthalpy\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Simulation/ref/SimulateEnthalpy"], "\<\"SimulateEntropy\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Simulation/ref/SimulateEntropy"], \
+"\<\"SimulateEquilibrium\"\>":>Documentation`HelpLookup[
+       "paclet:Simulation/ref/SimulateEquilibrium"], \
+"\<\"SimulateEquilibriumConstant\"\>":>Documentation`HelpLookup[
+       "paclet:Simulation/ref/SimulateEquilibriumConstant"], \
+"\<\"SimulateFolding\"\>":>Documentation`HelpLookup[
+       "paclet:Simulation/ref/SimulateFolding"], "\<\"SimulateFreeEnergy\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Simulation/ref/SimulateFreeEnergy"], \
+"\<\"SimulateHybridization\"\>":>Documentation`HelpLookup[
+       "paclet:Simulation/ref/SimulateHybridization"], \
+"\<\"SimulateKinetics\"\>":>Documentation`HelpLookup[
+       "paclet:Simulation/ref/SimulateKinetics"], "\<\"SimulateMeltingCurve\"\
+\>":>Documentation`HelpLookup[
+       "paclet:Simulation/ref/SimulateMeltingCurve"], \
+"\<\"SimulateMeltingTemperature\"\>":>Documentation`HelpLookup[
+       "paclet:Simulation/ref/SimulateMeltingTemperature"], \
+"\<\"SimulateProbeSelection\"\>":>Documentation`HelpLookup[
+       "paclet:Simulation/ref/SimulateProbeSelection"], \
+"\<\"SimulateReactivity\"\>":>Documentation`HelpLookup[
+       "paclet:Simulation/ref/SimulateReactivity"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "8983b9dc-5ab6-4bd7-8e26-82ba53f7d8a6"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "281b7fd5-16f6-463f-ab8d-f8e528a9046b"]
+        }],ExpressionUUID->"021181ff-265e-4ed5-8fe3-f81212a1ec65"],
+        StripOnInput->False], {"\<\"AnalysisBySubjectMatter\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/AnalysisBySubjectMatter"], \
+"\<\"NumericAnalysis\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/NumericAnalysis"], \
+"\<\"PlottingBySubjectMatter\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/PlottingBySubjectMatter"], \
+"\<\"StatisticalDistributions\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/StatisticalDistributions"], \
+"\<\"VisualizingConstellationObjects\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/VisualizingConstellationObjects"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "152e6f91-eeec-4684-b1f8-ac41d6b55797"]
+    }], "AnchorBar",ExpressionUUID->"3cce45b8-fd78-4689-ac32-5743b4f7fcb0"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"5e860df7-b9a4-47dd-bd99-4cf7a1efb40f"],
+
+Cell["Physical Simulations", "GuideTitle",
+ CellID->13915490,ExpressionUUID->"829044f8-f6a2-4359-8063-5a8c48cd3d2d"],
+
+Cell["\<\
+Collection of functions for simulating thermodynamic or kinetic properties \
+for chemical reactions and oligonucleotides.\
+\>", "GuideAbstract",
+ CellID->267327140,ExpressionUUID->"9e627427-ad6f-4913-91f7-9ddc298cd22f"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->89040585,ExpressionUUID->"34a8db85-cb37-4245-a956-d1bd790e10ac"],
+
+Cell["Thermodynamics & Kinetics", "GuideFunctionsSubsection",
+ CellID->815014080,ExpressionUUID->"79544ce7-0518-482e-9165-c38486732b1d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateEquilibrium"]],
+    "paclet:Simulation/ref/SimulateEquilibrium"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "57de5f72-df12-4423-921b-32bb0ead152c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Performs simulation of the equilibrium state from the chemical reactions \
+with given initial conditions."
+}], "GuideText",
+ CellID->313157159,ExpressionUUID->"320f8660-7c13-4205-a84b-12007ffdd4b2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateKinetics"]],"paclet:Simulation/ref/SimulateKinetics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9a88c087-9c16-4d80-9257-50731acb7f57"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Performs simulation of the chemical reactions with given initial \
+conditions and duration and returns the trajectory of concentrations of \
+reaction components against time."
+}], "GuideText",
+ CellID->21771250,ExpressionUUID->"ad0f0680-8969-449e-9e15-783c5691c468"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateFreeEnergy"]],
+    "paclet:Simulation/ref/SimulateFreeEnergy"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "63ee61da-47ab-4532-87c6-4893ef2041ca"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the Gibbs free energy from the chemical reactions, and from the \
+hybridization or melting reactions of oligonucleotides."
+}], "GuideText",
+ CellID->844219072,ExpressionUUID->"ae4aec0f-6f4a-4f31-b497-ed7504fafac0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateEquilibriumConstant"]],
+    "paclet:Simulation/ref/SimulateEquilibriumConstant"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6e1ebe32-0125-43cf-b915-b703f521e904"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the equilibrium constant from the chemical reactions."
+}], "GuideText",
+ CellID->37272869,ExpressionUUID->"b603b7de-1c14-4aa6-b4e0-779781e8d994"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->691208594,ExpressionUUID->"61746a94-f77c-4096-bf8f-4a336aa87304"],
+
+Cell["Oligonucleotides", "GuideFunctionsSubsection",
+ CellID->397558323,ExpressionUUID->"6b4d26d3-f6bc-4d2c-a225-0ce62ba1e101"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateEnthalpy"]],"paclet:Simulation/ref/SimulateEnthalpy"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "27edaa89-af1c-44a3-a740-372c8f360c15"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the change in enthalpy of the given reaction between two \
+oligonucleotides with traditional Nearest Neighbor thermodynamic analysis."
+}], "GuideText",
+ CellID->66285100,ExpressionUUID->"816ef76c-b450-477a-adb1-91c469be292d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateEntropy"]],"paclet:Simulation/ref/SimulateEntropy"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "46b778f6-267d-45a9-a7ce-66b091e60a2d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the change in entropy of the given reaction between two \
+oligonucleotides with traditional Nearest Neighbor thermodynamic analysis."
+}], "GuideText",
+ CellID->269112492,ExpressionUUID->"df7063be-94f7-4b42-8874-12bee6656ce0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateFreeEnergy"]],
+    "paclet:Simulation/ref/SimulateFreeEnergy"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a312827f-12e0-49ac-b33f-eb32686b6615"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the free energy of the given reaction between two \
+oligonucleotides at the specified concentration with traditional Nearest \
+Neighbor thermodynamic analysis."
+}], "GuideText",
+ CellID->555520159,ExpressionUUID->"fabb1127-f070-4d20-9f97-40f6b929ebd3"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateEquilibriumConstant"]],
+    "paclet:Simulation/ref/SimulateEquilibriumConstant"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d22ea092-719e-4c52-99f5-d4bcd3b87436"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the equilibrium constant of the given reaction between two \
+oligonucleotides at the specified concentration with traditional Nearest \
+Neighbor thermodynamic analysis."
+}], "GuideText",
+ CellID->127316896,ExpressionUUID->"dd2a6f36-4672-4ab0-be85-43f52d125d73"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateFolding"]],"paclet:Simulation/ref/SimulateFolding"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "bbec5a4e-d6e1-4aa4-a208-c4d953c7b17b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Predicts potential secondary structures of the given oligonucleotides."
+}], "GuideText",
+ CellID->154836649,ExpressionUUID->"16302bdf-c573-49ba-a71e-29864904ee44"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateHybridization"]],
+    "paclet:Simulation/ref/SimulateHybridization"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "343c5f30-0531-4691-90e2-9f9857c5544e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Predicts potential hybridized structures from multiple given \
+oligonucleotides."
+}], "GuideText",
+ CellID->393076038,ExpressionUUID->"10940a14-5ac8-49cd-a6b0-6bc7cebc39da"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateReactivity"]],
+    "paclet:Simulation/ref/SimulateReactivity"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "05d42ca9-9687-4d5c-96dd-11396b645b80"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a putative reaction mechanism that describes the hybridization \
+behavior of the system of nucleic acids or adds reaction rates to known \
+reaction types from the given nucleic acid reaction."
+}], "GuideText",
+ CellID->99364543,ExpressionUUID->"48241b3a-4b5f-4845-af64-9f4916904976"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateEquilibrium"]],
+    "paclet:Simulation/ref/SimulateEquilibrium"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "76fef8bf-8eb2-4e93-9cd0-90033a144879"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Performs simulation of the equilibrium state from the oligonucleotides \
+reactions with given initial conditions."
+}], "GuideText",
+ CellID->25068839,ExpressionUUID->"ea2f10dc-2d69-497d-946c-9a129219c942"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateKinetics"]],"paclet:Simulation/ref/SimulateKinetics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ea03929c-9485-4ddf-9e22-e99341e3aee7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Performs simulation of the oligonucleotides reactions with given initial \
+conditions and duration and returns the trajectory of concentrations of \
+reaction components against time."
+}], "GuideText",
+ CellID->3696538,ExpressionUUID->"6653183d-b2da-4199-8d5e-71fa5eee6d65"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateMeltingCurve"]],
+    "paclet:Simulation/ref/SimulateMeltingCurve"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "40d2a8ae-f5c7-4e70-80db-51f6cedf3bab"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Performs simulation of the melting reactions from given oligonucleotides \
+and returns the trajectory of concentrations of oligonucleotide species \
+against temperature."
+}], "GuideText",
+ CellID->362351488,ExpressionUUID->"55af94e6-2dc2-4127-b2f1-c550ee8c59e2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateMeltingTemperature"]],
+    "paclet:Simulation/ref/SimulateMeltingTemperature"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "af59036f-c251-4894-a5dc-6a6fb48a8697"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the melting temperature of the given reaction between two \
+oligonucleotides at the specified concentration with traditional Nearest \
+Neighbor thermodynamic analysis."
+}], "GuideText",
+ CellID->255018301,ExpressionUUID->"946f8014-830e-4eea-b14f-52596708cc0b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateProbeSelection"]],
+    "paclet:Simulation/ref/SimulateProbeSelection"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f362d71b-02bb-4df7-94ff-9073276d6100"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Simulates which probe sequence would most faithfully bind to the target \
+sequence, with any folding or self-pairing of the probe or target sequence \
+taken into account."
+}], "GuideText",
+ CellID->62377562,ExpressionUUID->"506c3640-4089-4e32-b3d8-01aad4173e92"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->245354804,ExpressionUUID->"8cee528a-e603-4f99-875d-ee09749c0fb4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"e67eff6d-a175-4212-984b-1ed078c4f3b0"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->398313677,ExpressionUUID->"7be1b5fb-fb71-4435-9a97-c08d62470bfe"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->52095300,ExpressionUUID->"11918831-9f49-4e63-9b51-2bf5b6c477a0"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["AnalysisBySubjectMatter"]],
+   "paclet:Docs/guide/AnalysisBySubjectMatter"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->117680081,ExpressionUUID->"3e4e854b-7a94-482d-b09d-c2c0cff1069e"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["PlottingBySubjectMatter"]],
+   "paclet:Docs/guide/PlottingBySubjectMatter"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->240092483,ExpressionUUID->"95a2367d-1501-407c-a594-1f50954040ee"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["VisualizingConstellationObjects"]],
+   "paclet:Docs/guide/VisualizingConstellationObjects"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->454049933,ExpressionUUID->"fa84eea0-749e-4984-92eb-cb268e1ac0c5"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["NumericAnalysis"]],"paclet:Docs/guide/NumericAnalysis"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->268008591,ExpressionUUID->"b3d46c7b-7b48-4973-9f59-71e609a989f6"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["StatisticalDistributions"]],
+   "paclet:Docs/guide/StatisticalDistributions"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->42116779,ExpressionUUID->"26d74a30-2aaa-413b-8fa3-f0cfd87168e1"],
+
+Cell["", "FooterCell",
+ CellID->27049689,ExpressionUUID->"ae9be6f7-2e1d-40cc-bce7-55f858bbcf66"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{564, Automatic}, {Automatic, 54}},
+WindowTitle->"PhysicalSimulations",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Mon 14 Nov 2022 19:10:11", "context" -> "Docs`", 
+    "keywords" -> {
+     "SimulateEquilibrium", "SimulateKinetics", "SimulateFreeEnergy", 
+      "SimulateEquilibriumConstant", "SimulateEnthalpy", "SimulateEntropy", 
+      "SimulateFolding", "SimulateHybridization", "SimulateReactivity", 
+      "SimulateMeltingCurve", "SimulateMeltingTemperature", 
+      "SimulateProbeSelection"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "Collection of functions for simulating thermodynamic or kinetic \
+properties for chemical reactions and oligonucleotides.", "synonyms" -> {}, 
+    "titlemodifier" -> "", "Windowtitle" -> "PhysicalSimulations", "title" -> 
+    "PhysicalSimulations", "type" -> "Guide", "uri" -> 
+    "Docs/guide/PhysicalSimulations", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.0 for Microsoft Windows (64-bit) (September 6, 2019)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[591, 21, 4799, 110, 56, "AnchorBarGrid",ExpressionUUID->"5e860df7-b9a4-47dd-bd99-4cf7a1efb40f",
+ CellID->1],
+Cell[5393, 133, 116, 1, 50, "GuideTitle",ExpressionUUID->"829044f8-f6a2-4359-8063-5a8c48cd3d2d",
+ CellID->13915490],
+Cell[5512, 136, 229, 4, 52, "GuideAbstract",ExpressionUUID->"9e627427-ad6f-4913-91f7-9ddc298cd22f",
+ CellID->267327140],
+Cell[5744, 142, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"34a8db85-cb37-4245-a956-d1bd790e10ac",
+ CellID->89040585],
+Cell[5859, 145, 136, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"79544ce7-0518-482e-9165-c38486732b1d",
+ CellID->815014080],
+Cell[5998, 148, 522, 13, 53, "GuideText",ExpressionUUID->"320f8660-7c13-4205-a84b-12007ffdd4b2",
+ CellID->313157159],
+Cell[6523, 163, 579, 13, 59, "GuideText",ExpressionUUID->"ad0f0680-8969-449e-9e15-783c5691c468",
+ CellID->21771250],
+Cell[7105, 178, 545, 13, 59, "GuideText",ExpressionUUID->"ae4aec0f-6f4a-4f31-b497-ed7504fafac0",
+ CellID->844219072],
+Cell[7653, 193, 494, 12, 38, "GuideText",ExpressionUUID->"b603b7de-1c14-4aa6-b4e0-779781e8d994",
+ CellID->37272869],
+Cell[8150, 207, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"61746a94-f77c-4096-bf8f-4a336aa87304",
+ CellID->691208594],
+Cell[8266, 210, 127, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"6b4d26d3-f6bc-4d2c-a225-0ce62ba1e101",
+ CellID->397558323],
+Cell[8396, 213, 547, 12, 53, "GuideText",ExpressionUUID->"816ef76c-b450-477a-adb1-91c469be292d",
+ CellID->66285100],
+Cell[8946, 227, 545, 12, 59, "GuideText",ExpressionUUID->"df7063be-94f7-4b42-8874-12bee6656ce0",
+ CellID->269112492],
+Cell[9494, 241, 583, 14, 59, "GuideText",ExpressionUUID->"fabb1127-f070-4d20-9f97-40f6b929ebd3",
+ CellID->555520159],
+Cell[10080, 257, 610, 14, 80, "GuideText",ExpressionUUID->"dd2a6f36-4672-4ab0-be85-43f52d125d73",
+ CellID->127316896],
+Cell[10693, 273, 474, 11, 38, "GuideText",ExpressionUUID->"16302bdf-c573-49ba-a71e-29864904ee44",
+ CellID->154836649],
+Cell[11170, 286, 501, 13, 38, "GuideText",ExpressionUUID->"10940a14-5ac8-49cd-a6b0-6bc7cebc39da",
+ CellID->393076038],
+Cell[11674, 301, 615, 14, 80, "GuideText",ExpressionUUID->"48241b3a-4b5f-4845-af64-9f4916904976",
+ CellID->99364543],
+Cell[12292, 317, 529, 13, 59, "GuideText",ExpressionUUID->"ea2f10dc-2d69-497d-946c-9a129219c942",
+ CellID->25068839],
+Cell[12824, 332, 586, 13, 59, "GuideText",ExpressionUUID->"6653183d-b2da-4199-8d5e-71fa5eee6d65",
+ CellID->3696538],
+Cell[13413, 347, 588, 14, 59, "GuideText",ExpressionUUID->"55af94e6-2dc2-4127-b2f1-c550ee8c59e2",
+ CellID->362351488],
+Cell[14004, 363, 607, 14, 80, "GuideText",ExpressionUUID->"946f8014-830e-4eea-b14f-52596708cc0b",
+ CellID->255018301],
+Cell[14614, 379, 592, 14, 59, "GuideText",ExpressionUUID->"506c3640-4089-4e32-b3d8-01aad4173e92",
+ CellID->62377562],
+Cell[15209, 395, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"8cee528a-e603-4f99-875d-ee09749c0fb4",
+ CellID->245354804],
+Cell[15318, 398, 392, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"7be1b5fb-fb71-4435-9a97-c08d62470bfe",
+ CellID->398313677],
+Cell[15713, 412, 105, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"11918831-9f49-4e63-9b51-2bf5b6c477a0",
+ CellID->52095300],
+Cell[15821, 415, 269, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"3e4e854b-7a94-482d-b09d-c2c0cff1069e",
+ CellID->117680081],
+Cell[16093, 423, 269, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"95a2367d-1501-407c-a594-1f50954040ee",
+ CellID->240092483],
+Cell[16365, 431, 285, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"fa84eea0-749e-4984-92eb-cb268e1ac0c5",
+ CellID->454049933],
+Cell[16653, 439, 249, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"b3d46c7b-7b48-4973-9f59-71e609a989f6",
+ CellID->268008591],
+Cell[16905, 446, 270, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"26d74a30-2aaa-413b-8fa3-f0cfd87168e1",
+ CellID->42116779],
+Cell[17178, 454, 96, 1, 41, "FooterCell",ExpressionUUID->"ae9be6f7-2e1d-40cc-bce7-55f858bbcf66",
+ CellID->27049689]
+}
+]
+*)
+
+(* End of internal cache information *)
+

@@ -21,13 +21,13 @@ DefineOptions[ValidExperimentBioconjugationQ,
 ];
 
 (* --- Source code --- *)
-ValidExperimentBioconjugationQ[myInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]],_String]]], myNewIdentityModels:ListableP[ObjectP[IdentityModelTypes]], myOptions:OptionsPattern[ValidExperimentBioconjugationQ]]:=Module[
+ValidExperimentBioconjugationQ[myInputs:ListableP[ListableP[Alternatives[ObjectP[{Object[Sample], Object[Container], Model[Sample]}],_String]]], myNewIdentityModels:ListableP[ObjectP[IdentityModelTypes]], myOptions:OptionsPattern[ValidExperimentBioconjugationQ]]:=Module[
   {listedOptions, preparedOptions, bioconjugationTests,initialTestDescription, allTests, verbose,outputFormat},
 
   (* get the options as a list *)
   listedOptions = ToList[myOptions];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
   preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
   (* return only the tests for ExperimentBioconjugation *)
@@ -86,13 +86,13 @@ DefineOptions[ExperimentBioconjugationOptions,
 ];
 
 (* --- Source code --- *)
-ExperimentBioconjugationOptions[myInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]],_String]]], myNewIdentityModels:ListableP[ObjectP[IdentityModelTypes]], myOptions:OptionsPattern[ExperimentBioconjugationOptions]]:=Module[
+ExperimentBioconjugationOptions[myInputs:ListableP[ListableP[Alternatives[ObjectP[{Object[Sample], Object[Container], Model[Sample]}],_String]]], myNewIdentityModels:ListableP[ObjectP[IdentityModelTypes]], myOptions:OptionsPattern[ExperimentBioconjugationOptions]]:=Module[
   {listedOptions,noOutputOptions,options},
 
   (* get the options as a list *)
   listedOptions=ToList[myOptions];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
   noOutputOptions=DeleteCases[listedOptions,Alternatives[Output->_,OutputFormat->_]];
 
   (* return only the options for ExperimentBioconjugation *)
@@ -116,13 +116,13 @@ DefineOptions[ExperimentBioconjugationPreview,
 
 
 (* --- Source code --- *)
-ExperimentBioconjugationPreview[myInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]],_String]]], myNewIdentityModels:ListableP[ObjectP[IdentityModelTypes]], myOptions:OptionsPattern[ExperimentBioconjugationPreview]]:=Module[
+ExperimentBioconjugationPreview[myInputs:ListableP[ListableP[Alternatives[ObjectP[{Object[Sample], Object[Container], Model[Sample]}],_String]]], myNewIdentityModels:ListableP[ObjectP[IdentityModelTypes]], myOptions:OptionsPattern[ExperimentBioconjugationPreview]]:=Module[
   {listedOptions,noOutputOptions},
 
   (* get the options as a list *)
   listedOptions = ToList[myOptions];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
   noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _]];
 
   (* return only the preview for ExperimentBioconjugation *)

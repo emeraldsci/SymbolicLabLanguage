@@ -33,14 +33,6 @@ DefineObjectType[Model[Container,Plate,Irregular,ArrayCard],{
 			Description->"The identity models of the probe molecules pre-dried on the array card.",
 			Category->"Container Specifications",
 			Abstract->True
-		},
-		KitProductsContainers->{
-			Format->Multiple,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Object[Product][KitComponents,ProductModel],
-			Description->"Products ordering information for this array card with its supplied reagents as part of one or more kits.",
-			Category->"Inventory"
 		}
 	}
 }];

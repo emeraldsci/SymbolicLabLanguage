@@ -464,12 +464,41 @@ objectPacketToDisplay[currentPacket:PacketP[], myObject_, myType_, formatedTitle
 
 (* Plot the Inspect packet *)
 plotObjectPacket[packet_, gridItems_, title_, favorites_, safeOps_]:=Module[{plot, plotItem, favoriteGridItem},
+
 	(* Plot the object being viewed. If Abstract is True or the object is not plottable, the result is Null. *)
-	plot=Quiet[If[!Abstract /. safeOps,
-		(* if type is model[container] return the cloud file object instead of the raw image to prevent freezing *)
-		If[TrueQ[ECL`$CCD],
-			PlotObject[packet],
-			Staticize[PlotObject[packet]]
+	plot = Quiet[If[!Abstract /. safeOps,
+		(* If the inspected object is a protocol object, the PlotObject call will plot all of the data linked to the protocol. *)
+		(* Need to set some time constraints so that protocols with lots of data or with very large data types don't take forever to inspect. *)
+		If[MatchQ[Lookup[packet, Type], TypeP[Object[Protocol]]],
+			If[Length[Lookup[packet, Data, {}]] > 0,
+				Module[{plot},
+					(* Try plotting with a time constraint. *)
+					plot = If[TrueQ[ECL`$CCD],
+						(* Allow 20 seconds to plot the protocol data, if not complete in that time, set plot to "Timed Out" and generate a dynamic button. *)
+						TimeConstrained[PlotObject[packet], 25, "Timed Out"],
+						TimeConstrained[Staticize[PlotObject[packet]], 25, "Timed Out"]
+					];
+
+					(* If the plotting timed out, show a button that will evaluate PlotObject if it is clicked. Otherwise return the PlotObject output. *)
+					If[MatchQ[plot, "Timed Out"],
+						Module[{},
+							Tooltip[
+								evaluationButton[Quiet[PlotObject[packet]], Label -> "Plot and Display Protocol Data" <> "\n(" <> ToString[Length[Lookup[packet, Data, {}]]] <> " Data Objects)"],
+								Style["Click to Evaluate", FontFamily -> "Helvetica", FontSize -> 11, RGBColor["#4A4A4A"]],
+								TooltipStyle -> {Background -> RGBColor["#FFEE78"], CellFrameColor -> RGBColor["#8E8E8E"], CellFrame -> 1}
+							]
+						],
+						plot
+					]
+				],
+				Null
+			],
+			(* Otherwise, if not inspecting a protocol object, just plot it without the time constraint. *)
+			(* If type is model[container] return the cloud file object instead of the raw image to prevent freezing *)
+			If[TrueQ[ECL`$CCD],
+				PlotObject[packet],
+				Staticize[PlotObject[packet]]
+			]
 		]
 	]];
 
@@ -816,7 +845,7 @@ formatKey[myKey_, myObject_, myType_, myItem_]:=Module[{text, description, style
 ];
 
 (* --- Overload for Types --- *)
-(* Mouse over shows pattern, clicking don't do shit *)
+(* Mouse over shows pattern, clicking doesn't do anything *)
 formatKey[myKey_, myPattern_]:=Module[{text, styledDescription, infoIcon, mouseOver},
 
 	(* Generate text in formated style *)
@@ -1433,7 +1462,7 @@ formatValue[value_, key_Symbol, packet_, type:TypeP[], nameCache:{_Association..
 (* Helper function to make a button graphic for Inspect action buttons *)
 actionButtonGraphic[myText_String]:=Module[{stylizedText},
 	(* Stylize the text*)
-	stylizedText=Style[myText, FontFamily -> "Helvetica", FontSize -> 11, RGBColor["#CACACA"]];
+	stylizedText=Style[myText, FontFamily -> "Helvetica", FontSize -> 11, TextAlignment -> Center, RGBColor["#CACACA"]];
 
 	(* Frame the sytlized text *)
 	Framed[stylizedText, RoundingRadius -> 5, Alignment -> Center, FrameStyle -> None, Background -> RGBColor["#232628"], FrameMargins -> 5]];

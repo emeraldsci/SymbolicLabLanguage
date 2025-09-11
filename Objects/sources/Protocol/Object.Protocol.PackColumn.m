@@ -372,142 +372,354 @@ DefineObjectType[Object[Protocol, PackColumn], {
 			Developer -> True
 		},
 
-		InitialBufferAVolumes -> {
-			Format -> Multiple,
+		InitialBufferAVolume -> {
+			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0 * Liter],
+			Pattern :> GreaterEqualP[0*Liter],
 			Units -> Liter,
-			Description -> "For each member of BufferASelection, the measured volume immediately before the experiment was started.",
-			IndexMatching -> BufferASelection,
-			Category -> "General",
-			Developer -> True
+			Description -> "The volume of BufferA immediately before the experiment is started as measured by the integrated ultrasonic liquid level detection sensor.",
+			Category -> "General"
 		},
-		InitialBufferBVolumes -> {
-			Format -> Multiple,
+		InitialBufferBVolume -> {
+			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0 * Liter],
+			Pattern :> GreaterEqualP[0*Liter],
 			Units -> Liter,
-			Description -> "For each member of BufferBSelection, the measured volume immediately before the experiment was started.",
-			IndexMatching -> BufferBSelection,
-			Category -> "General",
-			Developer -> True
+			Description -> "The volume of BufferB immediately before the experiment is started as measured by the integrated ultrasonic liquid level detection sensor.",
+			Category -> "General"
 		},
-		InitialBufferAAppearances -> {
-			Format -> Multiple,
+		InitialBufferCVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferC immediately before the experiment is started as measured by the integrated ultrasonic liquid level detection sensor.",
+			Category -> "General"
+		},
+		InitialBufferDVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferD immediately before the experiment is started as measured by the integrated ultrasonic liquid level detection sensor.",
+			Category -> "General"
+		},
+		InitialBufferEVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferE immediately before the experiment is started as measured by the integrated ultrasonic liquid level detection sensor.",
+			Category -> "General"
+		},
+		InitialBufferFVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferF immediately before the experiment is started as measured by the integrated ultrasonic liquid level detection sensor.",
+			Category -> "General"
+		},
+		InitialBufferGVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferG immediately before the experiment is started as measured by the integrated ultrasonic liquid level detection sensor.",
+			Category -> "General"
+		},
+		InitialBufferHVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferH immediately before the experiment is started as measured by the integrated ultrasonic liquid level detection sensor.",
+			Category -> "General"
+		},
+		InitialBufferAAppearance -> {
+			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
-			Description -> "For each member of BufferASelection, an image taken immediately before the experiment was started.",
-			IndexMatching -> BufferASelection,
-			Category -> "General",
-			Developer -> True
+			Description -> "The side on image of BufferA bottle taken immediately before the experiment is started as taken by the integrated camera.",
+			Category -> "General"
 		},
-		InitialBufferBAppearances -> {
-			Format -> Multiple,
+		InitialBufferBAppearance -> {
+			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
-			Description -> "For each member of BufferBSelection, an image taken immediately before the experiment was started.",
-			IndexMatching -> BufferBSelection,
-			Category -> "General",
-			Developer -> True
+			Description -> "The side on image of BufferB taken immediately before the experiment is started as taken by the integrated camera.",
+			Category -> "General"
+		},
+		InitialBufferCAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The side on image of BufferC taken immediately before the experiment is started as taken by the integrated camera.",
+			Category -> "General"
+		},
+		InitialBufferDAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The side on image of BufferD taken immediately before the experiment is started as taken by the integrated camera.",
+			Category -> "General"
+		},
+		InitialBufferEAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The side on image of BufferE bottle taken immediately before the experiment is started as taken by the integrated camera.",
+			Category -> "General"
+		},
+		InitialBufferFAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The side on image of BufferF taken immediately before the experiment is started as taken by the integrated camera.",
+			Category -> "General"
+		},
+		InitialBufferGAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The side on image of BufferG taken immediately before the experiment is started as taken by the integrated camera.",
+			Category -> "General"
+		},
+		InitialBufferHAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The side on image of BufferH taken immediately before the experiment is started as taken by the integrated camera.",
+			Category -> "General"
 		},
 
-		FinalBufferAVolumes -> {
-			Format -> Multiple,
+		FinalBufferAVolume -> {
+			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0 * Liter],
+			Pattern :> GreaterEqualP[0*Liter],
 			Units -> Liter,
-			Description -> "For each member of BufferASelection, the measured volume immediately after the experiment was finished.",
-			IndexMatching -> BufferASelection,
-			Category -> "General",
-			Developer -> True
+			Description -> "The volume of BufferA immediately after the experiment is completed as detected by the integrated ultrasonic liquid level sensor.",
+			Category -> "General"
 		},
-		FinalBufferBVolumes -> {
-			Format -> Multiple,
+		FinalBufferBVolume -> {
+			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0 * Liter],
+			Pattern :> GreaterEqualP[0*Liter],
 			Units -> Liter,
-			Description -> "For each member of BufferBSelection, the measured volume immediately after the experiment was finished.",
-			IndexMatching -> BufferBSelection,
-			Category -> "General",
-			Developer -> True
+			Description -> "The volume of BufferB immediately after the experiment is completed as detectoed by the integrated ultrasonic liquid level sensor.",
+			Category -> "General"
 		},
-		FinalBufferAAppearances -> {
-			Format -> Multiple,
+		FinalBufferCVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferC immediately after the experiment is completed as detected by the integrated ultrasonic liquid level sensor.",
+			Category -> "General"
+		},
+		FinalBufferDVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferD immediately after the experiment is completed as detected by the integrated ultrasonic liquid level sensor.",
+			Category -> "General"
+		},
+		FinalBufferEVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferE immediately after the experiment is completed as detected by the integrated ultrasonic liquid level sensor.",
+			Category -> "General"
+		},
+		FinalBufferFVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferF immediately after the experiment is completed as detectoed by the integrated ultrasonic liquid level sensor.",
+			Category -> "General"
+		},
+		FinalBufferGVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferG immediately after the experiment is completed as detected by the integrated ultrasonic liquid level sensor.",
+			Category -> "General"
+		},
+		FinalBufferHVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferH immediately after the experiment is completed as detected by the integrated ultrasonic liquid level sensor.",
+			Category -> "General"
+		},
+
+		FinalBufferAAppearance -> {
+			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
-			Description -> "For each member of BufferASelection, an image of the corresponding BufferA taken immediately after the experiment was finished.",
-			IndexMatching -> BufferASelection,
-			Category -> "General",
-			Developer -> True
+			Description -> "The image of BufferA taken immediately after the experiment is completed as captured by the integrated camera on the instrument.",
+			Category -> "General"
 		},
-		FinalBufferBAppearances -> {
-			Format -> Multiple,
+		FinalBufferBAppearance -> {
+			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
-			Description -> "For each member of BufferBSelection, an image of the corresponding taken immediately after the experiment was finished.",
-			IndexMatching -> BufferBSelection,
-			Category -> "General",
-			Developer -> True
+			Description -> "The image of BufferB taken immediately after the experiment is completed as captured by the integrated camera on the instrument.",
+			Category -> "General"
+		},
+		FinalBufferCAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The image of BufferC taken immediately after the experiment is completed as captured by the integrated camera on the instrument.",
+			Category -> "General"
+		},
+		FinalBufferDAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The image of BufferD taken immediately after the experiment is completed as captured by the integrated camera on the instrument.",
+			Category -> "General"
+		},
+		FinalBufferEAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The image of BufferE taken immediately after the experiment is completed as captured by the integrated camera on the instrument.",
+			Category -> "General"
+		},
+		FinalBufferFAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The image of BufferF taken immediately after the experiment is completed as captured by the integrated camera on the instrument.",
+			Category -> "General"
+		},
+		FinalBufferGAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The image of BufferG taken immediately after the experiment is completed as captured by the integrated camera on the instrument.",
+			Category -> "General"
+		},
+		FinalBufferHAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The image of BufferH taken immediately after the experiment is completed as captured by the integrated camera on the instrument.",
+			Category -> "General"
+		},
+
+		(* --- Buffers --- *)
+		BufferA -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Sample],
+				Model[Sample]
+			],
+			Description -> "The first available solution for the run gradient.",
+			Category -> "Gradient"
+		},
+		BufferB -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Sample],
+				Model[Sample]
+			],
+			Description -> "The second available solution for the run gradient.",
+			Category -> "Gradient"
 		},
 		BufferC -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Model[Sample] | Object[Sample],
-			Description -> "For each member of SamplesIn, the buffer that will be used to pack the resin during an FPLC run.",
-			Category -> "General",
-			Developer -> True
+			Relation -> Alternatives[
+				Object[Sample],
+				Model[Sample]
+			],
+			Description -> "The third available solution for the run gradient.",
+			Category -> "Gradient"
 		},
 		BufferD -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Model[Sample] | Object[Sample],
-			Description -> "For each member of SamplesIn, the buffer that will be used to pack the resin during an FPLC run.",
-			Category -> "General",
-			Developer -> True
+			Relation -> Alternatives[
+				Object[Sample],
+				Model[Sample]
+			],
+			Description -> "The fourth available solution for the run gradient.",
+			Category -> "Gradient"
 		},
 		BufferE -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Model[Sample] | Object[Sample],
-			Description -> "For each member of SamplesIn, the buffer that will be used to pack the resin during an FPLC run.",
-			Category -> "General",
-			Developer -> True
+			Relation -> Alternatives[
+				Object[Sample],
+				Model[Sample]
+			],
+			Description -> "The fifth available solution for the run gradient.",
+			Category -> "Gradient"
 		},
 		BufferF -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Model[Sample] | Object[Sample],
-			Description -> "For each member of SamplesIn, the buffer that will be used to pack the resin during an FPLC run.",
-			Category -> "General",
-			Developer -> True
+			Relation -> Alternatives[
+				Object[Sample],
+				Model[Sample]
+			],
+			Description -> "The sixth available solution for the run gradient.",
+			Category -> "Gradient"
 		},
 		BufferG -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Model[Sample] | Object[Sample],
-			Description -> "For each member of SamplesIn, the buffer that will be used to pack the resin during an FPLC run.",
-			Category -> "General",
-			Developer -> True
+			Relation -> Alternatives[
+				Object[Sample],
+				Model[Sample]
+			],
+			Description -> "The seventh available solution for the run gradient.",
+			Category -> "Gradient"
 		},
 		BufferH -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Model[Sample] | Object[Sample],
-			Description -> "For each member of SamplesIn, the buffer that will be used to pack the resin during an FPLC run.",
-			Category -> "General",
-			Developer -> True
+			Relation -> Alternatives[
+				Object[Sample],
+				Model[Sample]
+			],
+			Description -> "The eighth available solution for the run gradient.",
+			Category -> "Gradient"
 		},
-
 
 		GradientMethods -> {
 			Format -> Multiple,

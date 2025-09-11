@@ -23,7 +23,7 @@ DefineObjectType[Model[Part, ShakerAdapter], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Model[Instrument, Shaker][CompatibleAdapters],
-			Description -> "Overhead stirrers that can use this stirrer shaft.",
+			Description -> "Shakers that can use this shaker adapter.",
 			Category -> "Model Information"
 		}
 	}

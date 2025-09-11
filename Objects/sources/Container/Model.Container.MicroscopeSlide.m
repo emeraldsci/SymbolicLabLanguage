@@ -145,13 +145,14 @@ DefineObjectType[Model[Container,MicroscopeSlide],{
 			Category -> "General",
 			Developer->True
 		},
-		KitProductsContainers -> {
+		ProductsContained -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Product][KitComponents, ProductModel],
-			Description -> "Products ordering information for this microscope slide container with its supplied samples as part of one or more kits.",
-			Category -> "Inventory"
+			Relation -> Object[Product][DefaultContainerModel],
+			Description -> "Products representing regularly ordered items that are delivered on this slide by default.",
+			Category -> "Inventory",
+			Developer->True
 		}
 	}
 }];

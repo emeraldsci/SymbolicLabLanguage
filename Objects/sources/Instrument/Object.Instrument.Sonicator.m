@@ -56,6 +56,14 @@ DefineObjectType[Object[Instrument, Sonicator], {
 			Pattern :> {GreaterP[0*Meter],GreaterP[0*Meter],GreaterP[0*Meter]},
 			Description -> "The size of space inside the sonicator reservoir in the form of: {X Direction (Width),Y Direction (Depth),Z Direction (Height)}.",
 			Category -> "Dimensions & Positions"
+		},
+		ReservoirCover -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Part],
+			Description -> "The lid to cover the sonicator reservoir when the sonicator is not in use.",
+			Category -> "Instrument Specifications"
 		}
 	}
 }];

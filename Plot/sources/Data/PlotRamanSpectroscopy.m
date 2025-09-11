@@ -13,7 +13,7 @@ DefineOptions[PlotRamanSpectroscopy,
 		{
 			OptionName -> ReduceData,
 			Default -> Automatic,
-			Description -> "Indicates if the number of spectra should be reduced when a dense sampling pattern was used. When True, only 10% of the collected spectra will be plotted.",
+			Description -> "Indicates if the number of spectra should be reduced when a dense sampling pattern was used. When True, a maximum of 50 spectra will be plotted.",
 			AllowNull -> False,
 			Category -> "Raman",
 			Widget -> Widget[
@@ -35,8 +35,12 @@ DefineOptions[PlotRamanSpectroscopy,
 	},
 	SharedOptions :> {
 		ModifyOptions["Shared",
-			ListPlotOptions,
-			{OptionName->FrameLabel,Default->{"Raman Shift", Automatic}}
+			EmeraldListLinePlot,
+			{
+				{OptionName->FrameLabel,Default->{"Raman Shift", Automatic}},
+				{OptionName->Zoomable, Default-> True}
+			}
+
 		],
 		EmeraldListLinePlot
 	}
@@ -46,6 +50,8 @@ DefineOptions[PlotRamanSpectroscopy,
 Error::NoDataForPlotRamanSpectroscopyOutput = "The requested output format `1` requires data which is not included in the input.";
 Error::RamanMeasurementPositionSpectraMismatch = "The number of spectra and the number of positions at which they were collected do not match. Please check the input for errors.";
 Warning::HighRamanSpectraDensity = "The number of spectra that are plotted may make the output difficult to interpret and increase the amount of time it takes for plots to generate, set ReduceData ->True or Automatic to reduce the data density to 10%.";
+Error::NoRamanSpectroscopyDataToPlot = "The protocol object does not contain any associated raman spectroscopy data.";
+Error::RamanSpectroscopyProtocolDataNotPlotted = "The data objects linked to the input protocol were not able to be plotted. The data objects may be missing field values that are required for plotting. Please inspect the data objects to ensure that they contain the data to be plotted, and call PlotRamanSpectroscopy or PlotObject on an individual data object to identify the missing values.";
 
 (* Raw Definition *)
 (* multiple spectra with positions and/or average *)
@@ -61,12 +67,83 @@ PlotRamanSpectroscopy[dataSets:(rawPlotInputP|Null),positionSets:(rawPlotInputP|
 			PlotRamanSpectroscopy[nullPacket, inputOptions]
 		];
 
+(* Protocol Overload *)
+PlotRamanSpectroscopy[
+	obj: ObjectP[Object[Protocol, RamanSpectroscopy]],
+	ops: OptionsPattern[PlotRamanSpectroscopy]
+] := Module[{safeOps, output, data, previewPlot, plots, resolvedOptions, finalResult, outputPlot, outputOptions},
+
+	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
+	safeOps = SafeOptions[PlotRamanSpectroscopy, ToList[ops]];
+
+	(* Requested output, either a single value or list of Alternatives[Result,Options,Preview,Tests] *)
+	output = ToList[Lookup[safeOps, Output]];
+
+	(* Download the data from the input protocol *)
+	data = Download[obj, Data];
+
+	(* Return an error if there is no data or it is not the correct data type *)
+	If[!MatchQ[data, {ObjectP[Object[Data, RamanSpectroscopy]]..}],
+		Message[Error::NoRamanSpectroscopyDataToPlot];
+		Return[$Failed]
+	];
+
+	(* If Preview is requested, return a plot with all of the data objects in the protocol overlaid in one plot *)
+	previewPlot = If[MemberQ[output, Preview],
+		PlotRamanSpectroscopy[data, Sequence @@ ReplaceRule[safeOps, Output -> Preview]],
+		Null
+	];
+
+	(* If either Result or Options are requested, map over the data objects. Remove anything that failed from the list of plots to be displayed*)
+	{plots, resolvedOptions} = If[MemberQ[output, (Result | Options)],
+		Transpose[
+			(PlotRamanSpectroscopy[#, Sequence @@ ReplaceRule[safeOps, Output -> {Result, Options}]]& /@ data) /. $Failed -> Nothing
+		],
+		{{}, {}}
+	];
+
+	(* If all of the data objects failed to plot, return an error *)
+	If[MatchQ[plots, (ListableP[{}] | ListableP[Null])] && MatchQ[previewPlot, (Null | $Failed)],
+		Message[Error::RamanSpectroscopyProtocolDataNotPlotted];
+		Return[$Failed],
+		Nothing
+	];
+
+	(* If Result was requested, output the plots in slide view, unless there is only one plot then we can just show it not in slide view. *)
+	outputPlot = If[MemberQ[output, Result],
+		If[Length[plots] > 1,
+			SlideView[plots],
+			First[plots]
+		]
+	];
+
+	(* If Options were requested, just take the first set of options since they are the same for all plots. Make it a List first just in case there is only one option set. *)
+	outputOptions = If[MemberQ[output, Options],
+		First[ToList[resolvedOptions]]
+	];
+
+	(* Prepare our final result *)
+	finalResult = output /. {
+		Result -> outputPlot,
+		Options -> outputOptions,
+		Preview -> previewPlot,
+		Tests -> {}
+	};
+
+	(* Return the result *)
+	If[
+		Length[finalResult] == 1,
+		First[finalResult],
+		finalResult
+	]
+];
+
 (* Packet Definition *)
 PlotRamanSpectroscopy[infs:ListableP[ObjectP[Object[Data,RamanSpectroscopy]]],inputOptions:OptionsPattern[PlotRamanSpectroscopy]]:=Module[
 	{
 		reduceData, output, outputFormat, listedOptions, safeOps, plotOptions, resolvedReduceData,
 		(*downloaded fields*)
-		allDownload, allRamanSpectra, allAverageSpectra, allMeasurementPositions,
+		downloadFields, allDownload, allRamanSpectra, allAverageSpectra, allMeasurementPositions,
 		ramanSpectra, averageSpectra, measurementPositions,
 		(*outputs*)
 		fullSpectraOutputOps, averageSpectraOutputOps, samplingPatternOutputOps, samplingPatternOutput3DOps,
@@ -79,19 +156,25 @@ PlotRamanSpectroscopy[infs:ListableP[ObjectP[Object[Data,RamanSpectroscopy]]],in
 
 	(* Make sure we're working with a list of options *)
 	listedOptions=ToList[inputOptions];
-	safeOps=SafeOptions[PlotRamanSpectroscopy,listedOptions];
+	safeOps= SafeOptions[PlotRamanSpectroscopy,listedOptions];
+
 
 	(* look up unresolved options *)
-	{reduceData, output, outputFormat}=Lookup[safeOps,{ReduceData, Output, OutputFormat}];
+	{reduceData, output, outputFormat}= Lookup[safeOps,{ReduceData, Output, OutputFormat}];
 
 	(* pull out the plot options to pass directly to EmeraldListLinePlot *)
 	plotOptions = Normal@KeyDrop[safeOps, {ReduceData,OutputFormat}];
 
+	(*We don't need to spend time downloading the big lists stored in RamanSpectra and MeasurementPositions if OutputFormat is set to Average*)
+	downloadFields = If[MatchQ[outputFormat,Average],
+		{Null,AverageRamanSpectrum, Null},
+		{RamanSpectra, AverageRamanSpectrum, MeasurementPositions}
+	];
+
 	(* download things we might need *)
 	allDownload = Download[
 		ToList[infs],
-		{RamanSpectra, AverageRamanSpectrum, MeasurementPositions}
-	];
+		downloadFields];
 
 	allRamanSpectra = allDownload[[All,1]];
 	allAverageSpectra = allDownload[[All,2]];
@@ -100,7 +183,7 @@ PlotRamanSpectroscopy[infs:ListableP[ObjectP[Object[Data,RamanSpectroscopy]]],in
 	(* Listable iteration *)
 	{allFormattedPlots, allFinalResolvedOps} = Transpose@MapThread[
 		Function[{ramanSpectra, averageSpectra, measurementPositions},
-			(* do some error checking to make sure index matchign is ok *)
+			(* do some error checking to make sure index matching is ok *)
 			If[!MemberQ[{measurementPositions, ramanSpectra}, Null]&&!SameLengthQ[measurementPositions, ramanSpectra],
 				Message[Error::RamanMeasurementPositionSpectraMismatch];
 				Return[$Failed]
@@ -126,13 +209,13 @@ PlotRamanSpectroscopy[infs:ListableP[ObjectP[Object[Data,RamanSpectroscopy]]],in
 					(* combine them so that we can properly pair down the data density *)
 					combinedPositionandSpectra = Transpose[{measurementPositions, ramanSpectra}];
 
-					(* pare the data -right now we jsut take 10 % when this is reuqested *)
+					(* pair the data -right now we just take every 50th spectrum *)
 					If[MatchQ[resolvedReduceData, True],
 
 						(* partition by the appropriate group and  *)
-						Partition[combinedPositionandSpectra, (Round[Length[ramanSpectra]/10, 1])/.(0->1)][[All,1]],
+						Partition[combinedPositionandSpectra, (Round[Length[ramanSpectra]/50, 1])/.(0->1)][[All,1]],
 
-						(*if we arent paring, just leave it*)
+						(*if we arent pairing, just leave it*)
 						combinedPositionandSpectra
 					]
 				],
@@ -149,39 +232,29 @@ PlotRamanSpectroscopy[infs:ListableP[ObjectP[Object[Data,RamanSpectroscopy]]],in
 				{Null, Null}
 			];
 
-			(* prepare the sampling pattern based output *)
-			{samplingPatternOutput, samplingPatternOutputOps}= If[!MemberQ[{measurementPositions, ramanSpectra}, Null]&&MatchQ[outputFormat, (All|PositionsWithSpectra)],
-				Module[{positionsWithToolTip, positionsWithToolTipOps},
 
-					(* attach the spectra to each position in the sampling pattern - just take the x, y here*)
-					{positionsWithToolTip, positionsWithToolTipOps} = Transpose@Map[Module[{plot,ops},
-						{plot, ops} = EmeraldListLinePlot[#[[2]], ReplaceRule[plotOptions, {Output -> {Result, Options}}]];
+			{{samplingPatternOutput, samplingPatternOutputOps}, {samplingPatternOutput3D, samplingPatternOutput3DOps}} =
+					If[!MemberQ[{measurementPositions, ramanSpectra}, Null] && MatchQ[outputFormat, All | PositionsWithSpectra],
 
-						{Tooltip[Most[#[[1]]], plot], ops}
-					]&, spectraWithLocations];
+						Module[{tooltip2D, tooltip3D, ops},
 
-					(* make the plot of the positions so they can mouseover to get the spectra *)
-					{ListLinePlot[positionsWithToolTip, AspectRatio->1, PlotMarkers->{Automatic, Scaled[0.02]}, Axes ->None], positionsWithToolTipOps[[1]]}
-				],
-				{Null, Null}
-			];
+							(* Generate shared tooltip data with plot for each point *)
+							(* Zoomable is set to False as these plots are part of a tooltip*)
+							{tooltip2D, tooltip3D, ops} =
+									Transpose @ Map[
+										With[{plot = EmeraldListLinePlot[#[[2]], ReplaceRule[plotOptions, {Output -> {Result, Options}, Zoomable -> False}]]},
+											{Tooltip[Most[#[[1]]], plot[[1]]], Tooltip[#[[1]], plot[[1]]], plot[[2]]}
+										]&,
+										spectraWithLocations
+									];
 
-			(* prepare the sampling pattern based output *)
-			{samplingPatternOutput3D, samplingPatternOutput3DOps} = If[!MemberQ[{measurementPositions, ramanSpectra}, Null]&&MatchQ[outputFormat, (All|PositionsWithSpectra)],
-				Module[{positionsWithToolTip, positionsWithToolTipOps},
-
-					(* attache the spectra to each position in the sampling pattern *)
-					{positionsWithToolTip, positionsWithToolTipOps} = Transpose@Map[Module[{plot,ops},
-						{plot, ops} = EmeraldListLinePlot[#[[2]], ReplaceRule[plotOptions, {Output -> {Result, Options}}]];
-
-						{Tooltip[#[[1]], plot], ops}
-					]&, spectraWithLocations];
-
-					(* make the plot of the positions so they can mouseover to t get hte spectra *)
-					{ListPointPlot3D[positionsWithToolTip, AspectRatio->1, Axes ->None], positionsWithToolTipOps[[1]]}
-				],
-				{Null,Null}
-			];
+							{
+								{ListLinePlot[tooltip2D, AspectRatio -> 1, PlotMarkers -> {Automatic, Scaled[0.02]}, Axes -> None], ops[[1]]},
+								{ListPointPlot3D[tooltip3D, AspectRatio -> 1, Axes -> None], ops[[1]]}
+							}
+						],
+						{{Null, Null}, {Null, Null}}
+					];
 
 			(* prepare the full output *)
 			{fullSpectraOutput, fullSpectraOutputOps} = If[!MemberQ[{measurementPositions, ramanSpectra}, Null]&&MatchQ[outputFormat, (All|SpectraByPosition)],
@@ -265,18 +338,10 @@ PlotRamanSpectroscopy[infs:ListableP[ObjectP[Object[Data,RamanSpectroscopy]]],in
 				All,
 				TabView[
 					{
-						"Averaged Spectrum"-> Zoomable[
-							averageSpectraOutput
-						],
-						"Sampling Pattern with Spectra (2D)"-> Zoomable[
-							samplingPatternOutput
-						],
-						"Sampling Pattern with Spectra (3D)"-> Zoomable[
-							samplingPatternOutput3D
-						],
-						"Spectra from Sampling Position"-> Zoomable[
-							fullSpectraOutput
-						]
+						"Averaged Spectrum"-> averageSpectraOutput,
+						"Sampling Pattern with Spectra (2D)"-> samplingPatternOutput,
+						"Sampling Pattern with Spectra (3D)"-> samplingPatternOutput3D,
+						"Spectra from Sampling Position"->fullSpectraOutput
 					},
 					Alignment -> Center
 				],

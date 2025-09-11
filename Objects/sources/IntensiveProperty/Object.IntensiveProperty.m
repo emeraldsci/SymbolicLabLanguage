@@ -33,7 +33,7 @@ DefineObjectType[Object[IntensiveProperty], {
 			Class->Expression,
 			Pattern:>{(CompositionP|Null)...},
 			Relation->Null,
-			Description->"The amount of each molecular model for each given measurement of the itensive property.",
+			Description->"The amount of each molecular model for each given measurement of the intensive property.",
 			Category -> "Organizational Information",
 			Abstract->True
 		},

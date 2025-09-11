@@ -34,6 +34,6 @@ DefineOptions[DefineTags,
 ];
 
 
-InstallDefaultUploadFunction[DefineTags, Object[Sample], ExternalUpload`Private`resolveDefaultUploadFunctionOptions, {InstallNameOverload -> False, InstallObjectOverload -> True}];
+InstallDefaultUploadFunction[DefineTags, Object[Sample], OptionResolver -> resolveDefaultUploadFunctionOptions, InstallNameOverload -> False, InstallObjectOverload -> True];
 InstallValidQFunction[DefineTags, Object[Sample]];
 InstallOptionsFunction[DefineTags, Object[Sample]];

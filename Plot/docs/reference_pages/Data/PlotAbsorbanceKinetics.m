@@ -41,6 +41,26 @@ DefineUsage[PlotAbsorbanceKinetics,
 				}
 			},
 			{
+				Definition -> {"PlotAbsorbanceKinetics[protocol]", "plot"},
+				Description -> "creates a 'plot' of the trajectory values in the data objects found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing absorbance kinetics data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, AbsorbanceKinetics]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the absorbance kinetics protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
+			},
+			{
 				Definition->{"PlotAbsorbanceKinetics[spectrum]","plot"},
 				Description->"provides a graphical plot of the provided spectrum.",
 
@@ -67,11 +87,7 @@ DefineUsage[PlotAbsorbanceKinetics,
 			"PlotAbsorbanceSpectroscopy",
 			"PlotNMR"
 		},
-		Author -> {
-			"amir.saadat",
-			"hayley",
-			"brad"
-		},
+		Author -> {"yanzhe.zhu", "amir.saadat", "hayley", "brad"},
 		Preview->True
 	}
 ];

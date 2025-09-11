@@ -594,7 +594,7 @@ DefineTests[
 			Module[{imageSamplePacket, updatedSimulation},
 				imageSamplePacket = <|
 					Object -> CreateID[Object[Protocol, ImageSample]],
-					Replace[BatchedImagingParametersNew] -> {
+					Replace[BatchedImagingParameters] -> {
 						<|
 							Imager -> Link[Object[Instrument, SampleImager, "id:R8e1Pjp4DD7p"], "lkjlkjlkjlkjklj"],
 							ImageContainer -> False,
@@ -610,12 +610,13 @@ DefineTests[
 							ImagingDistance -> 38.5 Centimeter,
 							Pedestals -> SmallAndLarge,
 							ExposureTime -> 33 Millisecond,
-							FocalLength -> 55 Millimeter
+							FocalLength -> 55 Millimeter,
+							Backdrop -> Null
 						|>
 					}
 				|> /. {link_Link:>RemoveLinkID[link]};
 				updatedSimulation = UpdateSimulation[Simulation[], Simulation[imageSamplePacket]];
-				Lookup[Lookup[First[updatedSimulation], Packets][[1]], BatchedImagingParametersNew]
+				Lookup[Lookup[First[updatedSimulation], Packets][[1]], BatchedImagingParameters]
 			],
 			{ <|
 				Imager -> Link[Object[Instrument, SampleImager, "id:R8e1Pjp4DD7p"]],
@@ -632,7 +633,8 @@ DefineTests[
 				ImagingDistance -> 38.5 Centimeter,
 				Pedestals -> SmallAndLarge,
 				ExposureTime -> 33 Millisecond,
-				FocalLength -> 55 Millimeter
+				FocalLength -> 55 Millimeter,
+				Backdrop -> Null
 			|>
 			}
 		],

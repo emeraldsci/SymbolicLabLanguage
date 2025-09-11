@@ -1,26 +1,26 @@
 (* ::Package:: *)
 
 (* ::Text:: *)
-(*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2024 Emerald Cloud Lab, Inc.*)
 
 
 DefineObjectType[Object[Data, Appearance, Colonies], {
-  Description->"Image representing the physical appearance of a sample that contains bacterial colonies. Contains specific information regarding non-brightfield images of the colonies, including Fluorescent images, images from a BlueWhite Screen, and images taken with Darkfield lighting.",
-  CreatePrivileges->None,
-  Cache->Session,
+  Description -> "Image representing the physical appearance of a sample that contains bacterial colonies. Contains specific information regarding non-brightfield images of the colonies, including Fluorescent images, images from a BlueWhite Screen, and images taken with Darkfield lighting.",
+  CreatePrivileges -> None,
+  Cache -> Session,
   Fields -> {
 
     (* Imaging Specifications *)
     (* VioletEmission, GreenEmission, OrangeEmission, RedEmission, DeepRedEmission, BlueWhite, Darkfield *)
-    VioletFluorescenceImageFile->{
+    VioletFluorescenceImageFile -> {
       Format -> Single,
       Class -> Link,
       Pattern :> _Link,
       Relation -> Object[EmeraldCloudFile],
-      Description -> "An image file containing the image of the sample while using a 337 Nanometer excitation wavelength and a 447 Nanometer wavelength emission filter.",
+      Description -> "An image file containing the image of the sample while using a 377 Nanometer excitation wavelength and a 447 Nanometer wavelength emission filter.",
       Category -> "Imaging Specifications"
     },
-    VioletFluorescenceExcitationWavelength->{
+    VioletFluorescenceExcitationWavelength -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0 Nanometer],
@@ -28,7 +28,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
       Description -> "The wavelength of the excitation filter used to image the sample that corresponds to VioletFluorescence.",
       Category -> "Imaging Specifications"
     },
-    VioletFluorescenceEmissionWavelength->{
+    VioletFluorescenceEmissionWavelength -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0 Nanometer],
@@ -36,7 +36,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
       Description -> "The wavelength of the emission filter used to image the sample that corresponds to VioletFluorescence.",
       Category -> "Imaging Specifications"
     },
-    VioletFluorescenceExposureTime->{
+    VioletFluorescenceExposureTime -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0 Millisecond],
@@ -62,7 +62,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
     },
 
     (* GreenFluorescence *)
-    GreenFluorescenceImageFile->{
+    GreenFluorescenceImageFile -> {
       Format -> Single,
       Class -> Link,
       Pattern :> _Link,
@@ -70,7 +70,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
       Description -> "An image file containing the image of the sample while using a 457 Nanometer excitation wavelength and a 536 Nanometer wavelength emission filter.",
       Category -> "Imaging Specifications"
     },
-    GreenFluorescenceExcitationWavelength->{
+    GreenFluorescenceExcitationWavelength -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0 Nanometer],
@@ -78,7 +78,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
       Description -> "The wavelength of the excitation filter used to image the sample that corresponds to GreenFluorescence.",
       Category -> "Imaging Specifications"
     },
-    GreenFluorescenceEmissionWavelength->{
+    GreenFluorescenceEmissionWavelength -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0 Nanometer],
@@ -86,7 +86,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
       Description -> "The wavelength of the emission filter used to image the sample that corresponds to GreenFluorescence.",
       Category -> "Imaging Specifications"
     },
-    GreenFluorescenceExposureTime->{
+    GreenFluorescenceExposureTime -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0 Millisecond],
@@ -112,7 +112,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
     },
 
     (* OrangeFluorescence *)
-    OrangeFluorescenceImageFile->{
+    OrangeFluorescenceImageFile -> {
       Format -> Single,
       Class -> Link,
       Pattern :> _Link,
@@ -120,7 +120,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
       Description -> "An image file containing the image of the sample while using a 531 Nanometer excitation wavelength and a 593 Nanometer wavelength emission filter.",
       Category -> "Imaging Specifications"
     },
-    OrangeFluorescenceExcitationWavelength->{
+    OrangeFluorescenceExcitationWavelength -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0 Nanometer],
@@ -128,7 +128,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
       Description -> "The wavelength of the excitation filter used to image the sample that corresponds to OrangeFluorescence.",
       Category -> "Imaging Specifications"
     },
-    OrangeFluorescenceEmissionWavelength->{
+    OrangeFluorescenceEmissionWavelength -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0 Nanometer],
@@ -136,7 +136,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
       Description -> "The wavelength of the emission filter used to image the sample that corresponds to OrangeFluorescence.",
       Category -> "Imaging Specifications"
     },
-    OrangeFluorescenceExposureTime->{
+    OrangeFluorescenceExposureTime -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0 Millisecond],
@@ -162,7 +162,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
     },
 
     (* RedFluorescence *)
-    RedFluorescenceImageFile->{
+    RedFluorescenceImageFile -> {
       Format -> Single,
       Class -> Link,
       Pattern :> _Link,
@@ -170,7 +170,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
       Description -> "An image file containing the image of the sample while using a 531 Nanometer excitation wavelength and a 624 Nanometer wavelength emission filter.",
       Category -> "Imaging Specifications"
     },
-    RedFluorescenceExcitationWavelength->{
+    RedFluorescenceExcitationWavelength -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0 Nanometer],
@@ -178,7 +178,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
       Description -> "The wavelength of the excitation filter used to image the sample that corresponds to RedFluorescence.",
       Category -> "Imaging Specifications"
     },
-    RedFluorescenceEmissionWavelength->{
+    RedFluorescenceEmissionWavelength -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0 Nanometer],
@@ -186,7 +186,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
       Description -> "The wavelength of the emission filter used to image the sample that corresponds to RedFluorescence.",
       Category -> "Imaging Specifications"
     },
-    RedFluorescenceExposureTime->{
+    RedFluorescenceExposureTime -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0 Millisecond],
@@ -212,7 +212,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
     },
 
     (* DarkRedFluorescence *)
-    DarkRedFluorescenceImageFile->{
+    DarkRedFluorescenceImageFile -> {
       Format -> Single,
       Class -> Link,
       Pattern :> _Link,
@@ -220,7 +220,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
       Description -> "An image file containing the image of the sample while using a 628 Nanometer excitation wavelength and a 692 Nanometer wavelength emission filter.",
       Category -> "Imaging Specifications"
     },
-    DarkRedFluorescenceExcitationWavelength->{
+    DarkRedFluorescenceExcitationWavelength -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0 Nanometer],
@@ -228,7 +228,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
       Description -> "The wavelength of the excitation filter used to image the sample that corresponds to DarkRedFluorescence.",
       Category -> "Imaging Specifications"
     },
-    DarkRedFluorescenceEmissionWavelength->{
+    DarkRedFluorescenceEmissionWavelength -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0 Nanometer],
@@ -236,7 +236,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
       Description -> "The wavelength of the emission filter used to image the sample that corresponds to DarkRedFluorescence.",
       Category -> "Imaging Specifications"
     },
-    DarkRedFluorescenceExposureTime->{
+    DarkRedFluorescenceExposureTime -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0 Millisecond],
@@ -262,15 +262,15 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
     },
 
     (* BlueWhiteScreen *)
-    BlueWhiteScreenImageFile->{
+    BlueWhiteScreenImageFile -> {
       Format -> Single,
       Class -> Link,
       Pattern :> _Link,
       Relation -> Object[EmeraldCloudFile],
-      Description -> "An image file containing the image of the sample while using a white light source light and a ___ Nanometer absorbance filter.", (* TODO: Figure out the exact wavelength and make sure this screens out only 1 wavelength *)
+      Description -> "An image file containing the image of the sample while using a white light source light and a blue-light blocking chroma filter.",
       Category -> "Imaging Specifications"
     },
-    BlueWhiteScreenFilterWavelength->{
+    BlueWhiteScreenFilterWavelength -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0 Nanometer],
@@ -278,7 +278,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
       Description -> "The wavelength of light that is filtered out before the source white light hits the sample colonies.",
       Category -> "Imaging Specifications"
     },
-    BlueWhiteScreenExposureTime->{
+    BlueWhiteScreenExposureTime -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0 Millisecond],
@@ -304,7 +304,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
     },
 
     (* Darkfield *)
-    DarkfieldImageFile->{
+    DarkfieldImageFile -> {
       Format -> Single,
       Class -> Link,
       Pattern :> _Link,
@@ -312,7 +312,7 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
       Description -> "An image file containing the image of the sample while the sample was illuminated with white light from a ring around the sample.",
       Category -> "Imaging Specifications"
     },
-    DarkfieldExposureTime->{
+    DarkfieldExposureTime -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0 Millisecond],
@@ -354,12 +354,12 @@ DefineObjectType[Object[Data, Appearance, Colonies], {
       Description -> "Exposure analyses performed on the image files in this data.",
       Category -> "Analysis & Reports"
     },
-    CellTypes->{
-      Format->Multiple,
-      Class->Link,
-      Pattern:>_Link,
-      Relation->Model[Cell],
-      Description->"The identity models of cell lines that the sample contains as defined by the most recent ColonyAnalysis.",
+    CellTypes -> {
+      Format -> Multiple,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Model[Cell],
+      Description -> "The identity models of cell lines that the sample contains as defined by the most recent ColonyAnalysis.",
       Category -> "Analysis & Reports"
     }
   }

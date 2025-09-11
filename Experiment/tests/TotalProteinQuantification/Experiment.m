@@ -49,13 +49,79 @@ DefineTests[
 		(* -- Additional Examples -- *)
 		(* -- Message tests -- *)
 		(* Error Messages before option resolution *)
-		Example[{Messages,"ObjectDoesNotExist","Any input samples or options that are Objects must exist in the database:"},
-			ExperimentTotalProteinQuantification[Object[Sample,"Fake nonexistent test sample for ExperimentTotalProteinQuantification"]],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentTotalProteinQuantification[Object[Sample, "Nonexistent sample"]],
 			$Failed,
-			Messages :> {
-				Error::ObjectDoesNotExist,
-				Error::InvalidInput
-			}
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentTotalProteinQuantification[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentTotalProteinQuantification[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentTotalProteinQuantification[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentTotalProteinQuantification[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentTotalProteinQuantification[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
 		],
 		Example[{Messages,"Discarded Samples","If the provided sample is discarded, an error will be thrown:"},
 			ExperimentTotalProteinQuantification[Object[Sample,"Test discarded test lysate for ExperimentTotalProteinQuantification"<>$SessionUUID]],
@@ -979,39 +1045,6 @@ DefineTests[
 			}
 		],
 		(* - Sample Prep unit tests - *)
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples to have their TotalProteinConcentrations measured:"},
-			options=ExperimentTotalProteinQuantification[{"Container 1","Container 2"},
-				PreparatoryPrimitives->{
-					Define[
-						Name->"Container 1",
-						Container->Model[Container, Vessel, "2mL Tube"]
-					],
-					Define[
-						Name->"Container 2",
-						Container->Model[Container, Vessel, "2mL Tube"]
-					],
-					Transfer[
-						Source->Object[Sample,"Test lysate for ExperimentTotalProteinQuantification"<>$SessionUUID],
-						Amount->200*Microliter,
-						Destination->{"Container 1","A1"}
-					],
-					Transfer[
-						Source->Object[Sample,"Test lysate for ExperimentTotalProteinQuantification"<>$SessionUUID],
-						Amount->100*Microliter,
-						Destination->{"Container 2","A1"}
-					],
-					Transfer[
-						Source->Model[Sample, "Milli-Q water"],
-						Amount->100*Microliter,
-						Destination->{"Container 2","A1"}
-					]
-				},
-				Output->Options
-			];
-			Lookup[options,AssayType],
-			Bradford,
-			Variables:>{options}
-		],
 		Example[{Options,PreparatoryUnitOperations,"Specify prepared samples to have their TotalProteinConcentrations measured:"},
 			options=ExperimentTotalProteinQuantification[{"Container 1","Container 2"},
 				PreparatoryUnitOperations->{
@@ -1396,7 +1429,7 @@ DefineTests[
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentTotalProteinQuantification[Object[Sample,"Test lysate for ExperimentTotalProteinQuantification"<>$SessionUUID], AliquotContainer -> Model[Container, Vessel, "2mL Tube"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]}},
 			Variables :> {options}
 		],
 		Example[{Options,IncubateAliquotDestinationWell,"Indicates the desired position in the corresponding IncubateAliquotContainer in which the aliquot samples will be placed:"},
@@ -1420,8 +1453,41 @@ DefineTests[
 		Example[{Options,DestinationWell,"Indicates the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentTotalProteinQuantification[Object[Sample,"Test lysate for ExperimentTotalProteinQuantification"<>$SessionUUID],DestinationWell -> "A1", Output -> Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables :> {options}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentTotalProteinQuantification[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Vessel, "2mL Tube"],
+				PreparedModelAmount -> 1.5 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Vessel, "2mL Tube"]]..},
+				{EqualP[1.5 Milliliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentTotalProteinQuantification[
+				Model[Sample, "Ammonium hydroxide"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True,
+				Mix -> True
+			],
+			ObjectP[Object[Protocol, TotalProteinQuantification]]
 		]
 	},
 	Parallel -> True,

@@ -39,27 +39,8 @@ DefineUsage[AnalyzeDownsampling,
             Pattern :> ObjectP[Object[Analysis,Downsampling]]
           }
         }
-      },
-      {
-        Definition -> {"AnalyzeDownsampling[numericalData]", "object"},
-        Description -> "downsamples and compresses 'numericalData', storing the downsampled result in 'object'.",
-				CommandBuilder -> False,
-        Inputs :> {
-          {
-            InputName -> "numericalData",
-            Description -> "A list of two- or three-dimensional data points {{x1,y1}..} or {{x1,y1,z1}...}.",
-            Widget -> Widget[Type->Expression,Pattern:>Alternatives[MatrixP[],QuantityMatrixP[]],Size->Paragraph]
-          }
-        },
-        Outputs :> {
-          {
-            OutputName -> "object",
-            Description -> "An analysis object containing the downsampled data.",
-            Pattern :> ObjectP[Object[Analysis,Downsampling]]
-          }
-        }
       }
-  	},
+    },
 		MoreInformation -> {
 			"N-dimensional data is assumed to have one dependent variable and N-1 independent variables. The dependent variable is assumed to be the last dimension.",
 			"Data is downsampled onto an evenly spaced grid in the independent variables.",

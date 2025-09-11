@@ -10,92 +10,92 @@
 
 DefineOptions[PlotKineticRates,
 	Options :> {
-    {
-        OptionName -> TotalConcentration,
-        Default -> False,
-        Description -> "Whether to plot a single predicted trajectory corresponding to the sum of concentrations over all species.",
-        AllowNull -> False,
-        Widget -> Widget[Type->Enumeration, Pattern:>BooleanP]
-    },
-    (*** Data Specifications Options ***)
-    {
-      OptionName -> PlotType,
-      Default -> {Log,Log},
-      Description -> "Scaling of axes in goodness of fit plot.",
-      AllowNull -> False,
-      Widget ->
-      {
-        "X"->Widget[Type->Enumeration, Pattern:>Alternatives[Linear,Log]],
-        "Y"->Widget[Type->Enumeration, Pattern:>Alternatives[Linear,Log]]
-      },
-      Category->"Data Specifications"
-    },
-    {
-      OptionName -> PlotStyle,
-      Default -> Trajectories,
-      Description -> "Type of plot to create.",
-      AllowNull -> False,
-      Widget -> Widget[Type->Enumeration, Pattern:>Alternatives[Trajectories,GoodnessOfFit]],
-      Category->"Data Specifications"
-    },
-    {
-      OptionName -> FeatureDisplay,
-      Default -> {BestFit},
-      Description -> "Features to display on the goodness of fit plot.",
-      AllowNull -> True,
-      Widget -> Alternatives[
-        "Single Feature"->Widget[Type->Enumeration, Pattern:>Alternatives[BestFit, SampleMinimum]],
-        "Multiple Features"->Adder[Widget[Type->Enumeration, Pattern:>Alternatives[BestFit, SampleMinimum]]],
-        "Other"->Widget[Type->Enumeration,Pattern:>Alternatives[{}]]
-      ],
-      Category->"Data Specifications"
-    },
-    {
-      OptionName -> Rates,
-      Default -> Automatic,
-      Description -> "The rates to be varied in the goodness of fit plot, along with their values or ranges.",
-      AllowNull -> False,
-      Widget -> Alternatives[
-        Widget[Type->Enumeration, Pattern:>Alternatives[Automatic]],
-        Widget[Type->Expression,Pattern:>_,Size->Word]
-      ],
-      Category->"Data Specifications"
-    },
+		{
+			OptionName -> TotalConcentration,
+			Default -> False,
+			Description -> "Whether to plot a single predicted trajectory corresponding to the sum of concentrations over all species.",
+			AllowNull -> False,
+			Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP]
+		},
+		(*** Data Specifications Options ***)
+		{
+			OptionName -> PlotType,
+			Default -> {Log, Log},
+			Description -> "Scaling of axes in goodness of fit plot.",
+			AllowNull -> False,
+			Widget ->
+				{
+					"X" -> Widget[Type -> Enumeration, Pattern :> Alternatives[Linear, Log]],
+					"Y" -> Widget[Type -> Enumeration, Pattern :> Alternatives[Linear, Log]]
+				},
+			Category -> "Data Specifications"
+		},
+		{
+			OptionName -> PlotStyle,
+			Default -> Trajectories,
+			Description -> "Type of plot to create.",
+			AllowNull -> False,
+			Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[Trajectories, GoodnessOfFit]],
+			Category -> "Data Specifications"
+		},
+		{
+			OptionName -> FeatureDisplay,
+			Default -> {BestFit},
+			Description -> "Features to display on the goodness of fit plot.",
+			AllowNull -> True,
+			Widget -> Alternatives[
+				"Single Feature" -> Widget[Type -> Enumeration, Pattern :> Alternatives[BestFit, SampleMinimum]],
+				"Multiple Features" -> Adder[Widget[Type -> Enumeration, Pattern :> Alternatives[BestFit, SampleMinimum]]],
+				"Other" -> Widget[Type -> Enumeration, Pattern :> Alternatives[{}]]
+			],
+			Category -> "Data Specifications"
+		},
+		{
+			OptionName -> Rates,
+			Default -> Automatic,
+			Description -> "The rates to be varied in the goodness of fit plot, along with their values or ranges.",
+			AllowNull -> False,
+			Widget -> Alternatives[
+				Widget[Type -> Enumeration, Pattern :> Alternatives[Automatic]],
+				Widget[Type -> Expression, Pattern :> _, Size -> Word]
+			],
+			Category -> "Data Specifications"
+		},
 
-    (*** Output Option ***)
-    OutputOption
+		(*** Output Option ***)
+		OutputOption
 
 	},
 	SharedOptions :> {
 
-    (*** Legend Options ***)
-    ModifyOptions["Shared",LegendOption,
-      {
-        {OptionName->Legend,Default->None,AllowNull->True}
-      }
-    ],
+		(*** Legend Options ***)
+		ModifyOptions["Shared", LegendOption,
+			{
+				{OptionName -> Legend, Default -> None, AllowNull -> True}
+			}
+		],
 
-    (*** Frame Options ***)
-    ModifyOptions["Shared",ListPlotOptions,
-      {
-        {OptionName->Frame,Default->{True,True,False,False}},
-        {OptionName->FrameStyle,Default->Automatic},
-        {OptionName->FrameLabel}
-      }
-    ],
+		(*** Frame Options ***)
+		ModifyOptions["Shared", ListPlotOptions,
+			{
+				{OptionName -> Frame, Default -> {True, True, False, False}},
+				{OptionName -> FrameStyle, Default -> Automatic},
+				{OptionName -> FrameLabel}
+			}
+		],
 
-    (*** Plot Labeling Options ***)
-    ModifyOptions["Shared",ListPlotOptions,
-      {
-        {OptionName->PlotLabel,Default->Automatic},
-        {OptionName->LabelStyle}
-      }
-    ],
+		(*** Plot Labeling Options ***)
+		ModifyOptions["Shared", ListPlotOptions,
+			{
+				{OptionName -> PlotLabel, Default -> Automatic},
+				{OptionName -> LabelStyle}
+			}
+		],
 
-    (* Note the order of the functions so the shared option values would take precedence from top to bottom *)
-    PlotTrajectory,
+		(* Note the order of the functions so the shared option values would take precedence from top to bottom *)
+		PlotTrajectory,
 		EmeraldListLinePlot,
-    EmeraldListContourPlot
+		EmeraldListContourPlot
 
 	}
 ];
@@ -129,12 +129,12 @@ PlotKineticRates[fittedRatePacket0: ObjectP[Object[Analysis, Kinetics]],ops:Opti
 	];
 
   (* Figures and options from the underlying plot functions *)
-	{fig,returnedOps}=Switch[Lookup[safeOps,PlotStyle],
-	  Trajectories,
+	{fig,returnedOps}= Switch[Lookup[safeOps, PlotStyle],
+		Trajectories,
 			plotKineticRatesTrajectories[fittedRatePacket,internalPlotOps],
-	  GoodnessOfFit,
+		GoodnessOfFit,
 	    plotKineticRatesObjectiveFunction[fittedRatePacket,internalPlotOps]
-	 ];
+	];
 
    (* The final resolved options based on safeOps and the return from underlying plot functions *)
    resolvedOps=ReplaceRule[safeOps,Prepend[returnedOps,Output->output]];
@@ -153,7 +153,7 @@ plotKineticRatesTrajectories[fittedRatePacket_,safeOps_List]:=Module[
 
   {
     rawLegend,trainingPlots,testingPlots,specs,colorRules,trainingTrajs,predTrajs,specLists,
-    internalTrainingPlotOps,internalTestingPlotOps,internalShowOps,finalPlot,returnedOps,
+    internalTrainingPlotOps,internalTestingPlotOps,finalPlot,mergedReturnedOps,
     trainingOps,testingOps
   },
 
@@ -218,22 +218,10 @@ plotKineticRatesTrajectories[fittedRatePacket_,safeOps_List]:=Module[
     {trainingOps,testingOps}
   ];
 
-  (* The options to pass to Show *)
-	internalShowOps=
-    {
-      PlotRange->All
-    };
-
   (* combine the plots *)
-  finalPlot=Show[Flatten[{trainingPlots,testingPlots}],internalShowOps];
+  finalPlot=Show[Flatten[{trainingPlots,testingPlots}]];
 
-  (* The final resolved options based on safeOps and the return from PlotFit giving precedence to internalShowOps. Override the options returned from the plot calls by the one used in Show *)
-  returnedOps=ReplaceRule[
-    mergedReturnedOps,
-    internalShowOps
-  ];
-
-  {finalPlot,returnedOps}
+  {finalPlot,mergedReturnedOps}
 
 ];
 

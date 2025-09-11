@@ -11,7 +11,7 @@
 (* ::Section:: *)
 (*Unit Testing*)
 
-(* fake injection table:
+(* example injection table:
 
  {
  {Standard, Model[Sample, "Hexanes"], LiquidInjection, {StandardVial -> Model[Container, Vessel, "2 mL clear glass GC vial"], VortexTime -> 5*Second}, Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGC" <> $SessionUUID]},
@@ -71,6 +71,39 @@ DefineTests[ExperimentGasChromatography,
 			$Failed,
 			Messages:>{Error::GCGasSaverConflict,Error::InvalidOption},
 			TimeConstraint -> 300
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the amount of an input Model[Sample] and the container in which it is to be prepared:"},
+			options = ExperimentGasChromatography[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Vessel, "2 mL clear glass GC vial"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Vessel, "id:AEqRl9KmRnj1"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentGasChromatography[
+				Model[Sample, "Milli-Q water"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True,
+				Mix -> True
+			],
+			ObjectP[Object[Protocol, GasChromatography]]
 		],
 		Example[
 			{Options,Instrument,"Specify the gas chromatograph used to separate analytes in a sample in the gas phase during this experiment:"},
@@ -168,7 +201,7 @@ DefineTests[ExperimentGasChromatography,
 				Column->Model[Item, Column, "HP-5ms Ultra Inert, 30 m, 0.25 mm ID, 0.25 \[Mu]m film thickness, 7 inch cage"],
 				Output -> Options];
 			Lookup[options,Column],
-			{ObjectP[Model[Item, Column, "HP-5ms Ultra Inert, 30 m, 0.25 mm ID, 0.25 \[Mu]m film thickness, 7 inch cage"]]},
+			ObjectP[Model[Item, Column, "HP-5ms Ultra Inert, 30 m, 0.25 mm ID, 0.25 \[Mu]m film thickness, 7 inch cage"]],
 			Variables:>{options},
 			TimeConstraint -> 300
 		],
@@ -178,7 +211,7 @@ DefineTests[ExperimentGasChromatography,
 				TrimColumn->False,
 				Output -> Options];
 			Lookup[options,TrimColumn],
-			{False},
+			False,
 			Variables:>{options},
 			TimeConstraint -> 300
 		],
@@ -189,7 +222,7 @@ DefineTests[ExperimentGasChromatography,
 				TrimColumnLength->10*Centimeter,
 				Output -> Options];
 			Lookup[options,TrimColumnLength],
-			{10*Centimeter},
+			10*Centimeter,
 			EquivalenceFunction->Equal,
 			Variables:>{options},
 			TimeConstraint -> 300
@@ -1069,7 +1102,83 @@ DefineTests[ExperimentGasChromatography,
 				SeparationMethod->Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGC" <> $SessionUUID],
 				Output -> Options];
 			Lookup[options,SeparationMethod],
-			{_Association..},
+			_Association,
+			Variables:>{options},
+			Messages:>{Warning::OverwritingSeparationMethod},
+			TimeConstraint -> 300
+		],
+		Example[
+			{Options,SeparationMethod,"Specify one InitialColumnFlowRate that matches with the SeparationMethod and one that differs:"},
+			options=ExperimentGasChromatography[{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID]},
+				SeparationMethod->Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGC" <> $SessionUUID],
+				InitialColumnFlowRate -> {1.7 Milliliter/Minute, 1.5 Milliliter/Minute},
+				Output -> Options];
+			Lookup[options,InitialColumnFlowRate],
+			{1.7 Milliliter/Minute, 1.5 Milliliter/Minute},
+			Variables:>{options},
+			Messages:>{Warning::OverwritingSeparationMethod},
+			TimeConstraint -> 300
+		],
+		Example[
+			{Options,SeparationMethod,"Specify one BlankInitialColumnFlowRate that matches with the BlankSeparationMethod and one that differs:"},
+			options=ExperimentGasChromatography[Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID],
+				Blank -> Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID],
+				BlankSeparationMethod -> Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGC" <> $SessionUUID],
+				BlankInitialColumnFlowRate -> {1.7 Milliliter/Minute, 1.5 Milliliter/Minute},
+				Output -> Options];
+			Lookup[options,BlankInitialColumnFlowRate],
+			{1.7 Milliliter/Minute, 1.5 Milliliter/Minute},
+			Variables:>{options},
+			Messages:>{Warning::OverwritingSeparationMethod},
+			TimeConstraint -> 300
+		],
+		Example[
+			{Options,SeparationMethod,"Specify one StandardInitialColumnFlowRate that matches with the StandardSeparationMethod and one that differs:"},
+			options=ExperimentGasChromatography[Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID],
+				Standard -> Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID],
+				StandardSeparationMethod -> Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGC" <> $SessionUUID],
+				StandardInitialColumnFlowRate -> {1.7 Milliliter/Minute, 1.5 Milliliter/Minute},
+				Output -> Options];
+			Lookup[options,StandardInitialColumnFlowRate],
+			{1.7 Milliliter/Minute, 1.5 Milliliter/Minute},
+			Variables:>{options},
+			Messages:>{Warning::OverwritingSeparationMethod},
+			TimeConstraint -> 300
+		],
+		Example[
+			{Options,SeparationMethod,"Specify one InitialColumnFlowRate that matches with the SeparationMethod and one that differs and check if the InitialColumnAverageVelocity,InitialColumnPressure,and InitialColumnResidenceTime are recalculated:"},
+			options=ExperimentGasChromatography[{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID]},
+				SeparationMethod->Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGC" <> $SessionUUID],
+				InitialColumnFlowRate -> {1.7 Milliliter/Minute, 1.5 Milliliter/Minute},
+				Output -> Options];
+			Lookup[options, {InitialColumnAverageVelocity,InitialColumnPressure,InitialColumnResidenceTime}],
+			{{Quantity[37.32`,("Centimeters")/("Seconds")],Quantity[34.21`,("Centimeters")/("Seconds")]},{Quantity[17.968`,("PoundsForce")/("Inches")^2],Quantity[16.388`,("PoundsForce")/("Inches")^2]},{Quantity[1.34`,"Minutes"],Quantity[1.46`,"Minutes"]}},
+			Variables:>{options},
+			Messages:>{Warning::OverwritingSeparationMethod},
+			TimeConstraint -> 300
+		],
+		Example[
+			{Options,SeparationMethod,"Specify a collection of inlet, column, and oven parameters that will be used to perform the chromatographic separation after the sample has been injected:"},
+			options=ExperimentGasChromatography[{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID]},
+				Standard -> Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID],
+				StandardSeparationMethod->Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGC" <> $SessionUUID],
+				StandardInitialColumnFlowRate -> {1.7 Milliliter/Minute, 1.5 Milliliter/Minute},
+				Output -> Options];
+			Lookup[options, {StandardInitialColumnAverageVelocity,StandardInitialColumnPressure,StandardInitialColumnResidenceTime}],
+			{{Quantity[37.32`,("Centimeters")/("Seconds")],Quantity[34.21`,("Centimeters")/("Seconds")]},{Quantity[17.968`,("PoundsForce")/("Inches")^2],Quantity[16.388`,("PoundsForce")/("Inches")^2]},{Quantity[1.34`,"Minutes"],Quantity[1.46`,"Minutes"]}},
+			Variables:>{options},
+			Messages:>{Warning::OverwritingSeparationMethod},
+			TimeConstraint -> 300
+		],
+		Example[
+			{Options,SeparationMethod,"Specify one BlankInitialColumnFlowRate that matches with the BlankSeparationMethod and one that differs and check if the BlankInitialColumnAverageVelocity,BlankInitialColumnPressure,and BlankInitialColumnResidenceTime are recalculated:"},
+			options=ExperimentGasChromatography[{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID]},
+				Blank -> Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID],
+				BlankSeparationMethod->Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGC" <> $SessionUUID],
+				BlankInitialColumnFlowRate -> {1.7 Milliliter/Minute, 1.5 Milliliter/Minute},
+				Output -> Options];
+			Lookup[options, {BlankInitialColumnAverageVelocity,BlankInitialColumnPressure,BlankInitialColumnResidenceTime}],
+			{{Quantity[37.32`,("Centimeters")/("Seconds")],Quantity[34.21`,("Centimeters")/("Seconds")]},{Quantity[17.968`,("PoundsForce")/("Inches")^2],Quantity[16.388`,("PoundsForce")/("Inches")^2]},{Quantity[1.34`,"Minutes"],Quantity[1.46`,"Minutes"]}},
 			Variables:>{options},
 			Messages:>{Warning::OverwritingSeparationMethod},
 			TimeConstraint -> 300
@@ -2098,7 +2207,7 @@ DefineTests[ExperimentGasChromatography,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,StandardSPMEDerivatizationPositionOffset,"Specify the distance from the SPMEDerivatizationPosition at which the Solid Phase MicroExtraction (SPME) fiber will be treated with the derivatizing agent during fiber preparation:"},
+			{Options,StandardSPMEDerivatizationPositionOffset,"Specify the distance from the StandardSPMEDerivatizationPosition at which the Solid Phase MicroExtraction (SPME) fiber will be treated with the derivatizing agent during fiber preparation:"},
 			options=ExperimentGasChromatography[{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 3" <> $SessionUUID]},
 				StandardSPMEDerivatizingAgent->Model[Sample,"Hexanes"],
 				StandardSPMEDerivatizationPositionOffset->20*Milli*Meter,
@@ -2399,7 +2508,7 @@ DefineTests[ExperimentGasChromatography,
 				StandardSeparationMethod->Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGC" <> $SessionUUID],
 				Output -> Options];
 			Lookup[options,StandardSeparationMethod],
-			{_Association..},
+			_Association,
 			Variables:>{options},
 			Messages:>{Warning::OverwritingSeparationMethod},
 			TimeConstraint -> 300
@@ -2547,7 +2656,7 @@ DefineTests[ExperimentGasChromatography,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,StandardInitialColumnFlowRate,"Specify the initial column gas flow rate setpoint:"},
+			{Options,StandardInitialColumnFlowRate,"Specify the initial column gas flow rate setpoint for a Standard:"},
 			options=ExperimentGasChromatography[{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 3" <> $SessionUUID]},
 				StandardInitialColumnFlowRate->1.5*Milli*Liter/Minute,
 				Output -> Options];
@@ -2558,7 +2667,7 @@ DefineTests[ExperimentGasChromatography,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,StandardInitialColumnPressure,"Specify the initial column pressure (in PSI gauge pressure) setpoint:"},
+			{Options,StandardInitialColumnPressure,"Specify the initial column pressure (in PSI gauge pressure) setpoint for a Standard:"},
 			options=ExperimentGasChromatography[{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 3" <> $SessionUUID]},
 				StandardInitialColumnPressure->12*PSI,
 				Output -> Options];
@@ -2569,7 +2678,7 @@ DefineTests[ExperimentGasChromatography,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,StandardInitialColumnAverageVelocity,"Specify the initial column average linear gas velocity setpoint:"},
+			{Options,StandardInitialColumnAverageVelocity,"Specify the initial column average linear gas velocity setpoint for the standard:"},
 			options=ExperimentGasChromatography[{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 3" <> $SessionUUID]},
 				StandardInitialColumnAverageVelocity->40*Centimeter/Second,
 				Output -> Options];
@@ -2580,7 +2689,7 @@ DefineTests[ExperimentGasChromatography,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,StandardInitialColumnResidenceTime,"Specify the initial column residence time setpoint:"},
+			{Options,StandardInitialColumnResidenceTime,"Specify the initial column residence time setpoint for the standard:"},
 			options=ExperimentGasChromatography[{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 3" <> $SessionUUID]},
 				StandardInitialColumnResidenceTime->1.2*Minute,
 				Output -> Options];
@@ -3120,7 +3229,7 @@ DefineTests[ExperimentGasChromatography,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,BlankSPMEDerivatizationPositionOffset,"Specify the distance from the SPMEDerivatizationPosition at which the Solid Phase MicroExtraction (SPME) fiber will be treated with the derivatizing agent during fiber preparation:"},
+			{Options,BlankSPMEDerivatizationPositionOffset,"Specify the distance from the BlankSPMEDerivatizationPosition at which the Solid Phase MicroExtraction (SPME) fiber will be treated with the derivatizing agent during fiber preparation:"},
 			options=ExperimentGasChromatography[{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 3" <> $SessionUUID]},
 				BlankSPMEDerivatizingAgent->Model[Sample,"Hexanes"],
 				BlankSPMEDerivatizationPositionOffset->20*Milli*Meter,
@@ -3421,7 +3530,7 @@ DefineTests[ExperimentGasChromatography,
 				BlankSeparationMethod->Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGC" <> $SessionUUID],
 				Output -> Options];
 			Lookup[options,BlankSeparationMethod],
-			{_Association..},
+			_Association,
 			Variables:>{options},
 			Messages:>{Warning::OverwritingSeparationMethod},
 			TimeConstraint -> 300
@@ -3569,7 +3678,7 @@ DefineTests[ExperimentGasChromatography,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,BlankInitialColumnFlowRate,"Specify the initial column gas flow rate setpoint:"},
+			{Options,BlankInitialColumnFlowRate,"Specify the initial column gas flow rate setpoint for a Blank:"},
 			options=ExperimentGasChromatography[{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 3" <> $SessionUUID]},
 				BlankInitialColumnFlowRate->1.5*Milli*Liter/Minute,
 				Output -> Options];
@@ -3580,7 +3689,7 @@ DefineTests[ExperimentGasChromatography,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,BlankInitialColumnPressure,"Specify the initial column pressure (in PSI gauge pressure) setpoint:"},
+			{Options,BlankInitialColumnPressure,"Specify the initial column pressure (in PSI gauge pressure) setpoint for a Blank:"},
 			options=ExperimentGasChromatography[{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 3" <> $SessionUUID]},
 				BlankInitialColumnPressure->12*PSI,
 				Output -> Options];
@@ -3591,7 +3700,7 @@ DefineTests[ExperimentGasChromatography,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,BlankInitialColumnAverageVelocity,"Specify the initial column average linear gas velocity setpoint:"},
+			{Options,BlankInitialColumnAverageVelocity,"Specify the initial column average linear gas velocity setpoint for the blank:"},
 			options=ExperimentGasChromatography[{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 3" <> $SessionUUID]},
 				BlankInitialColumnAverageVelocity->40*Centimeter/Second,
 				Output -> Options];
@@ -3602,7 +3711,7 @@ DefineTests[ExperimentGasChromatography,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,BlankInitialColumnResidenceTime,"Specify the initial column residence time setpoint:"},
+			{Options,BlankInitialColumnResidenceTime,"Specify the initial column residence time setpoint for the blank:"},
 			options=ExperimentGasChromatography[{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 3" <> $SessionUUID]},
 				BlankInitialColumnResidenceTime->1.2*Minute,
 				Output -> Options];
@@ -3722,7 +3831,7 @@ DefineTests[ExperimentGasChromatography,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,InjectionTable,"Specify the order of Sample, Standard, and Blank sample loading into the Instrument during measurement and/or collection. Also includes the flushing and priming of the column:"},
+			{Options,InjectionTable,"Specify the order of Sample, Standard, and Blank sample loading into the Instrument during measurement:"},
 			options=ExperimentGasChromatography[{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID]},
 				InjectionTable->{
 					{Standard, Model[Sample, "Hexanes"], LiquidInjection, {StandardVial -> Model[Container, Vessel, "2 mL clear glass GC vial"], VortexTime -> 5*Second}, Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGC" <> $SessionUUID]},
@@ -3730,6 +3839,20 @@ DefineTests[ExperimentGasChromatography,
 					{Sample, Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID], LiquidInjection, {VortexMixRate -> 500*RPM}, Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGC" <> $SessionUUID]},
 					{Blank, Model[Sample, "Hexanes"], LiquidInjection, {BlankVial -> Model[Container, Vessel, "2 mL clear glass GC vial"], VortexTime -> 5*Second}, Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGC" <> $SessionUUID]},
 					{Blank, Null, Null, {}, Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGC" <> $SessionUUID]}
+				},
+				Output -> Options];
+			Lookup[options,InjectionTable],
+			_List,
+			Variables:>{options},
+			Messages:>{Warning::OverwritingSeparationMethod},
+			TimeConstraint -> 300
+		],
+		Example[
+			{Options,InjectionTable,"Specify the order of Sample (only) loading into the Instrument without any Standard or Blank:"},
+			options=ExperimentGasChromatography[{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID]},
+				InjectionTable->{
+					{Sample, Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], LiquidInjection, {VortexTime -> 5*Second}, Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGC" <> $SessionUUID]},
+					{Sample, Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID], LiquidInjection, {VortexMixRate -> 500*RPM}, Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGC" <> $SessionUUID]}
 				},
 				Output -> Options];
 			Lookup[options,InjectionTable],
@@ -3768,31 +3891,7 @@ DefineTests[ExperimentGasChromatography,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,PreparatoryPrimitives,"Specify a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSampleManipulation:"},
-			protocol=ExperimentGasChromatography["My prepared sample",
-				PreparatoryPrimitives->{
-					Define[
-						Name -> "My prepared sample",
-						Sample -> {Model[Container, Vessel, "1L Glass Bottle"],"A1"}
-					],
-					Transfer[
-						Source -> Model[Sample, "Methanol - LCMS grade"],
-						Destination -> "My prepared sample",
-						Amount -> 499 Milliliter
-					],
-					Transfer[
-						Source -> Model[Sample, "Heptafluorobutyric acid"],
-						Destination -> "My prepared sample",
-						Amount -> 1 Milliliter
-					]
-				}
-			],
-			ObjectP[Object[Protocol,GasChromatography]],
-			Variables:>{protocol},
-			Messages:>{Warning::AliquotRequired}
-		],
-		Example[
-			{Options,PreparatoryUnitOperations,"Specify a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSampleManipulation:"},
+			{Options,PreparatoryUnitOperations,"Specify a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSamplePreparation:"},
 			protocol=ExperimentGasChromatography["My prepared sample",
 				PreparatoryUnitOperations->{
 					LabelContainer[
@@ -3817,7 +3916,8 @@ DefineTests[ExperimentGasChromatography,
 			],
 			ObjectP[Object[Protocol,GasChromatography]],
 			Variables:>{protocol},
-			Messages:>{Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired},
+			TimeConstraint -> 600
 		],
 
 		(*all the sample prep stuff*)
@@ -4081,16 +4181,16 @@ DefineTests[ExperimentGasChromatography,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,Filtration,"Specify if the SamplesIn should be filter prior to starting the experiment or any aliquoting:"},
-			options=ExperimentGasChromatography[
+			{Options, Filtration, "Specify if the SamplesIn should be filtered prior to starting the experiment or any aliquoting:"},
+			options = ExperimentGasChromatography[
 				{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 3" <> $SessionUUID]},
-				Filtration->True,
+				Filtration -> True,
 				Output -> Options
 			];
-			Lookup[options,Filtration],
+			Lookup[options, Filtration],
 			True,
-			Variables:>{options},
-			Messages:>{Warning::AliquotRequired},
+			Variables :> {options},
+			Messages :> {Warning::AliquotRequired},
 			TimeConstraint -> 300
 		],
 		Example[
@@ -4456,7 +4556,7 @@ DefineTests[ExperimentGasChromatography,
 				Output -> Options
 			];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1","A1","A1"},
 			Variables:>{options},
 			TimeConstraint -> 300
 		],
@@ -4546,7 +4646,27 @@ DefineTests[ExperimentGasChromatography,
 		],
 
 		(* --- Messages --- *)
-		Example[{Messages,"UnneededSyringeComponent","An warning is given if unnecessary syringe components are specified:"},
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentGasChromatography[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentGasChromatography[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentGasChromatography[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentGasChromatography[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages,"UnneededSyringeComponent","A warning is given if unnecessary syringe components are specified:"},
 			ExperimentGasChromatography[
 				Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID],
 				LiquidInjectionSyringe->Model[Container, Syringe, "id:dORYzZJxRqER"],
@@ -4562,7 +4682,7 @@ DefineTests[ExperimentGasChromatography,
 				Unset[$CreatedObjects]
 			)
 		],
-		Example[{Messages,"OverwritingSeparationMethod","An warning is given if the SeparationMethod is overwritten:"},
+		Example[{Messages,"OverwritingSeparationMethod","A warning is given if the SeparationMethod is overwritten:"},
 			ExperimentGasChromatography[
 				Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID],
 				SeparationMethod->Object[Method,GasChromatography,"Test SeparationMethod for ExperimentGC" <> $SessionUUID],
@@ -4578,7 +4698,7 @@ DefineTests[ExperimentGasChromatography,
 				Unset[$CreatedObjects]
 			)
 		],
-		Example[{Messages,"GCColumnMinTemperatureExceeded","An warning is given if the temperature settings in the experiment are lower than the MinTemperature of the GCColumn:"},
+		Example[{Messages,"GCColumnMinTemperatureExceeded","A warning is given if the temperature settings in the experiment are lower than the MinTemperature of the GCColumn:"},
 			ExperimentGasChromatography[
 				Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID],
 				Column->Model[Item, Column,"Column with high MinTemperature for ExperimentGC" <> $SessionUUID],
@@ -4594,7 +4714,7 @@ DefineTests[ExperimentGasChromatography,
 				Unset[$CreatedObjects]
 			)
 		],
-		Example[{Messages,"AutomaticallySelectedWashSolvent","An warning is given if solvent washes are specified but no wash solvent is specified:"},
+		Example[{Messages,"AutomaticallySelectedWashSolvent","A warning is given if solvent washes are specified but no wash solvent is specified:"},
 			ExperimentGasChromatography[
 				Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID],
 				DilutionSolvent->Automatic,
@@ -4610,7 +4730,7 @@ DefineTests[ExperimentGasChromatography,
 				Unset[$CreatedObjects]
 			)
 		],
-		Example[{Messages,"AutomaticallySelectedDilutionSolvent","An warning is given if a DilutionSolventVolume is specified but no DilutionSolvent is specified:"},
+		Example[{Messages,"AutomaticallySelectedDilutionSolvent","A warning is given if a DilutionSolventVolume is specified but no DilutionSolvent is specified:"},
 			ExperimentGasChromatography[
 				Object[Sample, "ExperimentGC Test Sample 3" <> $SessionUUID],
 				DilutionSolventVolume -> 25 Microliter
@@ -5106,10 +5226,11 @@ DefineTests[ExperimentGasChromatography,
 			$Failed,
 			Messages :> {
 				Error::GCContainerIncompatible,
+				Error::CoverNeededForContainer,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages,"OptionValueAboveLimit","An error is given if the option value it set to high for the instrument:"},
+		Example[{Messages,"OptionValueOutOfBounds","An error is given if the option value it set too high for the instrument:"},
 			ExperimentGasChromatography[
 				{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 3" <> $SessionUUID]},
 				SampleAspirationRate->100*Milliliter/Second,
@@ -5117,7 +5238,19 @@ DefineTests[ExperimentGasChromatography,
 			],
 			$Failed,
 			Messages :> {
-				Error::OptionValueAboveLimit,
+				Error::OptionValueOutOfBounds,
+				Error::InvalidOption
+			}
+		],
+		Test["An error is given if the option value it set to low for the instrument:",
+			ExperimentGasChromatography[
+				{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 3" <> $SessionUUID]},
+				SampleInjectionRate->8.3 Microliter/Second,
+				SamplingMethod->HeadspaceInjection
+			],
+			$Failed,
+			Messages :> {
+				Error::OptionValueOutOfBounds,
 				Error::InvalidOption
 			}
 		],
@@ -5147,7 +5280,7 @@ DefineTests[ExperimentGasChromatography,
 		Example[{Messages,"GCSeptumNotCompatible","An error is given if the InletSeptum cannot currently be used on instrument:"},
 			ExperimentGasChromatography[
 				{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 3" <> $SessionUUID]},
-				InletSeptum->Model[Item, Septum,"Fake Septum for ExperimentGC"]
+				InletSeptum->Model[Item, Septum,"Example Septum for ExperimentGC " <> $SessionUUID]
 			],
 			$Failed,
 			Messages :> {
@@ -5261,16 +5394,72 @@ DefineTests[ExperimentGasChromatography,
 				Error::GCIncompatibleLiquidHandlingSyringe,
 				Error::InvalidOption
 			}
+		],
+		Example[{Messages, "CoverNeededForContainer", "An error is given if a compatible cap cannot be found for the container to be loaded onto the GC autosampler:"},
+			ExperimentGasChromatography[
+				Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID],
+				AliquotContainer -> Model[Container, Vessel, "10L Polypropylene Carboy"]
+			],
+			$Failed,
+			Messages :> {
+				Error::GCContainerIncompatible,
+				Error::CoverNeededForContainer,
+				Error::InvalidOption
+			}
+		],
+		Test["Users may use any vial with the correct footprint for the autosampler and with any pierceable cap as long as the sample does not need to move on the GC deck:",
+			ExperimentGasChromatography[
+				Object[Sample, "Example sample in a vial with a non-magnetic cap for ExperimentGasChromatography tests " <> $SessionUUID],
+				Agitate -> False,
+				Vortex -> False
+			],
+			ObjectP[Object[Protocol, GasChromatography]]
+		],
+		Test["Aliquoting to a container with a magnetic cap is required, if the sample needs to move on the GC deck:",
+			ExperimentGasChromatography[
+				Object[Sample, "Example sample in a vial with a non-magnetic cap for ExperimentGasChromatography tests " <> $SessionUUID],
+				Agitate -> False,
+				Vortex -> True
+			],
+			ObjectP[Object[Protocol, GasChromatography]],
+			Messages :> {Warning::AliquotRequired}
+		],
+		Example[{Messages, "CapSwap", "A Warning is surfaced if a sample is in a container that requires its current cover to be replaced with a new cap:"},
+			ExperimentGasChromatography[
+				Object[Sample, "Example sample in a vial with a non-pierceable cap for ExperimentGasChromatography tests " <> $SessionUUID]
+			],
+			ObjectP[Object[Protocol, GasChromatography]],
+			Messages :> {
+				Warning::ContainerCapSwapRequired
+			}
+		],
+		Test["A Warning is surfaced if a standard is in a container that requires its current cover to be replaced with a compatible cap:",
+			ExperimentGasChromatography[
+				Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID],
+				Standard -> Object[Sample, "Example sample in a vial with a non-pierceable cap for ExperimentGasChromatography tests " <> $SessionUUID]
+			],
+			ObjectP[Object[Protocol, GasChromatography]],
+			Messages :> {Warning::ContainerCapSwapRequired}
+		],
+		Test["A Warning is surfaced if a blank is in a container that requires current cover to be replaced with a compatible cap:",
+			ExperimentGasChromatography[
+				Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID],
+				Standard -> Object[Sample, "Example sample in a vial with a non-pierceable cap for ExperimentGasChromatography tests " <> $SessionUUID]
+			],
+			ObjectP[Object[Protocol, GasChromatography]],
+			Messages :> {Warning::ContainerCapSwapRequired}
 		]
-
 	},
-	SymbolSetUp:>(
+	(* without this, telescope crashes and the test fails *)
+	HardwareConfiguration -> HighRAM,
+	SymbolSetUp :> (
 		Off[Warning::SamplesOutOfStock];
 		Off[Warning::InstrumentUndergoingMaintenance];
 
 		(*module for deleting created objects*)
 		Module[{objects, existingObjects},
 			objects={
+				Object[Container, Bench, "Example bench for ExperimentGasChromatography tests " <> $SessionUUID],
 				Object[Sample,"ExperimentGC Test Sample 1" <> $SessionUUID],
 				Object[Sample,"ExperimentGC Test Sample 2" <> $SessionUUID],
 				Object[Sample,"ExperimentGC Test Sample 3" <> $SessionUUID],
@@ -5279,20 +5468,34 @@ DefineTests[ExperimentGasChromatography,
 				Object[Sample,"ExperimentGC Large Test Sample 1" <> $SessionUUID],
 				Object[Sample,"Test sample for invalid container for ExperimentGC tests" <> $SessionUUID],
 				Object[Sample,"Test sample for discarded sample for ExperimentGC tests" <> $SessionUUID],
+				Object[Sample, "Example sample in a uncovered vial for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Sample, "Example sample in a vial with a non-magnetic cap for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Sample, "Example sample in a vial with a non-pierceable cap for ExperimentGasChromatography tests " <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 1 for ExperimentGC tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 2 for ExperimentGC tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 3 for ExperimentGC tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 4 for ExperimentGC tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 5 for ExperimentGC tests" <> $SessionUUID],
+				Object[Container, Vessel, "Example vial without a cover for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Container, Vessel, "Example vial with a non-pierceable cap for ExperimentGasChromatography tests " <> $SessionUUID],
 				Object[Container,Vessel,"Test large vial 1 for ExperimentGC tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test invalid container 1 for ExperimentGC tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test discarded vial 1 for ExperimentGC tests" <> $SessionUUID],
+				Object[Container, Vessel, "Example vial with a non-magnetic cap for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 1 for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 2 for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 3 for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 4 for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 5 for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Item, Cap, "Example large magnetic vial cap for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Item, Cap, "Example non-magnetic vial cap for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Item, Cap, "Example non-pierceable vial cap for ExperimentGasChromatography tests " <> $SessionUUID],
 				Object[Protocol,GasChromatography,"My particular ExperimentGasChromatography protocol" <> $SessionUUID],
 				Object[Method,GasChromatography,"Test SeparationMethod for ExperimentGC" <> $SessionUUID],
 				Object[Item,Cap,"Stocked vial cap 1 for ExperimentGC" <> $SessionUUID],
 				Object[Item,Cap,"Stocked vial cap 2 for ExperimentGC" <> $SessionUUID],
 				Object[Item,Cap,"Stocked vial cap 3 for ExperimentGC" <> $SessionUUID],
-				Model[Item, Septum,"Fake Septum for ExperimentGC"],
+				Model[Item, Septum, "Example Septum for ExperimentGC " <> $SessionUUID],
 				Model[Item, Column,"Column with high MinTemperature for ExperimentGC" <> $SessionUUID]
 			};
 
@@ -5300,212 +5503,269 @@ DefineTests[ExperimentGasChromatography,
 			EraseObject[existingObjects, Force -> True, Verbose -> False]
 
 		];
-		(*module for creating objects*)
-		Module[{containerPackets,samplePackets,methodPackets,stockedProductPackets},
-
-			containerPackets = {
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 1 for ExperimentGC tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "0.3 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 2 for ExperimentGC tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 3 for ExperimentGC tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 4 for ExperimentGC tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 5 for ExperimentGC tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "10 mL clear glass GC vial"], Objects],
-					Name -> "Test large vial 1 for ExperimentGC tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2mL Tube"], Objects],
-					Name -> "Test invalid container 1 for ExperimentGC tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test discarded vial 1 for ExperimentGC tests" <> $SessionUUID
-				]
-			};
-
-			(* Create GC method packets here *)
-
-			UploadSample[Lookup[containerPackets, Model][Object], ConstantArray[{"Left Slot", Object[Container, Shelf, "id:D8KAEvGwRr9m"]}, Length[containerPackets]], Name -> Lookup[containerPackets, Name]];
-
-			samplePackets = UploadSample[
+		Block[{$AllowPublicObjects = True, $DeveloperUpload = True},
+			Module[
 				{
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"]
+					testBench, container1, container2, container3, container4, container5,  discardedContainer,
+					largeContainer, invalidContainer, containerWithNonPierceableCap, containerWithNonMagneticCap, containerWithoutCover,
+					cover1, cover2, cover3, cover4, cover5, largeMagneticCap, nonMagneticCap, nonPierceableCap, coverPackets, samplePackets,
+					methodPackets, stockedProductPackets
 				},
+
+				testBench = Upload[
+					<|
+						Type -> Object[Container, Bench],
+						Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+						Name -> "Example bench for ExperimentGasChromatography tests " <> $SessionUUID,
+						DeveloperObject -> True,
+						StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+						Site -> Link[$Site]
+					|>
+				];
+
 				{
-					{"A1",Object[Container,Vessel,"Test vial 1 for ExperimentGC tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 2 for ExperimentGC tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 3 for ExperimentGC tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 4 for ExperimentGC tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 5 for ExperimentGC tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test large vial 1 for ExperimentGC tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test invalid container 1 for ExperimentGC tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test discarded vial 1 for ExperimentGC tests" <> $SessionUUID]}
-				},
-				InitialAmount ->
-						{
-							2000 Microliter,
-							300 Microliter,
-							1000 Microliter,
-							1000 Microliter,
-							100 Microliter,
-							4000 Microliter,
-							2000 Microliter,
-							1800 Microliter
-						},
-				Name->{
-					"ExperimentGC Test Sample 1" <> $SessionUUID,
-					"ExperimentGC Test Sample 2" <> $SessionUUID,
-					"ExperimentGC Test Sample 3" <> $SessionUUID,
-					"ExperimentGC Test Sample 4" <> $SessionUUID,
-					"ExperimentGC Test Sample 5" <> $SessionUUID,
-					"ExperimentGC Large Test Sample 1" <> $SessionUUID,
-					"Test sample for invalid container for ExperimentGC tests" <> $SessionUUID,
-					"Test sample for discarded sample for ExperimentGC tests" <> $SessionUUID
-				},
-				Upload->False
-			];
+					container1, container2, container3, container4, container5, containerWithoutCover,
+					discardedContainer, containerWithNonPierceableCap, largeContainer, invalidContainer, containerWithNonMagneticCap,
+					cover1, cover2, cover3, cover4, cover5, largeMagneticCap, nonMagneticCap, nonPierceableCap
+				} = UploadSample[
+					{
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],(*2 mL clear glass GC vial*)
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],
+						Model[Container, Vessel, "id:jLq9jXvwdnRW"], (*10 mL clear glass GC vial*)
+						Model[Container, Vessel, "id:3em6Zv9NjjN8"], (*2mL Tube*)
+						Model[Container, Vessel, "id:XnlV5jNXm8oP"], (*Thermo Scientific SureSTART 2 mL Glass Crimp Top Vials, Level 2 High-Throughput Applications*)
+						Model[Item, Cap, "id:L8kPEjn1PRww"],(*2 mL GC vial cap, magnetic*)
+						Model[Item, Cap, "id:L8kPEjn1PRww"],
+						Model[Item, Cap, "id:L8kPEjn1PRww"],
+						Model[Item, Cap, "id:L8kPEjn1PRww"],
+						Model[Item, Cap, "id:L8kPEjn1PRww"],
+						Model[Item, Cap, "id:AEqRl9Kmnrqv"],
+						Model[Item, Cap, "id:jLq9jXOmYw5q"],(*Thermo Scientific SureSTART 11 mm Crimp Caps, White Silicone/Red PTFE*)
+						Model[Item, Cap, "id:6V0npvmo1qX8"](*"Tube Cap, 12x6mm" w/ Pierceable -> False*)
+					},
+					{
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench}
+					},
+					Name -> {
+						"Test vial 1 for ExperimentGC tests" <> $SessionUUID,
+						"Test vial 2 for ExperimentGC tests" <> $SessionUUID,
+						"Test vial 3 for ExperimentGC tests" <> $SessionUUID,
+						"Test vial 4 for ExperimentGC tests" <> $SessionUUID,
+						"Test vial 5 for ExperimentGC tests" <> $SessionUUID,
+						"Example vial without a cover for ExperimentGasChromatography tests " <> $SessionUUID,
+						"Test discarded vial 1 for ExperimentGC tests" <> $SessionUUID,
+						"Example vial with a non-pierceable cap for ExperimentGasChromatography tests " <> $SessionUUID,
+						"Test large vial 1 for ExperimentGC tests" <> $SessionUUID,
+						"Test invalid container 1 for ExperimentGC tests" <> $SessionUUID,
+						"Example vial with a non-magnetic cap for ExperimentGasChromatography tests " <> $SessionUUID,
+						"Example magnetic vial cap 1 for ExperimentGasChromatography tests " <> $SessionUUID,
+						"Example magnetic vial cap 2 for ExperimentGasChromatography tests " <> $SessionUUID,
+						"Example magnetic vial cap 3 for ExperimentGasChromatography tests " <> $SessionUUID,
+						"Example magnetic vial cap 4 for ExperimentGasChromatography tests " <> $SessionUUID,
+						"Example magnetic vial cap 5 for ExperimentGasChromatography tests " <> $SessionUUID,
+						"Example large magnetic vial cap for ExperimentGasChromatography tests " <> $SessionUUID,
+						"Example non-magnetic vial cap for ExperimentGasChromatography tests " <> $SessionUUID,
+						"Example non-pierceable vial cap for ExperimentGasChromatography tests " <> $SessionUUID
+					}
+				];
 
-			Upload[samplePackets];
+				coverPackets = UploadCover[
+					{container1, container2, container3, container4, container5, largeContainer, containerWithNonMagneticCap, containerWithNonPierceableCap},
+					Cover -> {cover1, cover2, cover3, cover4, cover5, largeMagneticCap, nonMagneticCap, nonPierceableCap},
+					Upload -> False
+				];
 
-			(* discard the discarded sample+container by moving to waste *)
-			UploadLocation[Object[Container,Vessel,"Test discarded vial 1 for ExperimentGC tests" <> $SessionUUID], Waste];
+				samplePackets = UploadSample[
+					{
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"], (*80% Heptane, 20% Ethanol diluent for SFC*)
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"],
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"],
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"],
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"],
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"],
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"],
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"],
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"],
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"],
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"]
+					},
+					{
+						{"A1", container1},
+						{"A1", container2},
+						{"A1", container3},
+						{"A1", container4},
+						{"A1", container5},
+						{"A1", largeContainer},
+						{"A1", invalidContainer},
+						{"A1", discardedContainer},
+						{"A1", containerWithoutCover},
+						{"A1", containerWithNonMagneticCap},
+						{"A1", containerWithNonPierceableCap}
+					},
+					InitialAmount ->
+							{
+								2000 Microliter,
+								300 Microliter,
+								1000 Microliter,
+								1000 Microliter,
+								100 Microliter,
+								4000 Microliter,
+								2000 Microliter,
+								1800 Microliter,
+								1000 Microliter,
+								1000 Microliter,
+								1000 Microliter
+							},
+					Name->{
+						"ExperimentGC Test Sample 1" <> $SessionUUID,
+						"ExperimentGC Test Sample 2" <> $SessionUUID,
+						"ExperimentGC Test Sample 3" <> $SessionUUID,
+						"ExperimentGC Test Sample 4" <> $SessionUUID,
+						"ExperimentGC Test Sample 5" <> $SessionUUID,
+						"ExperimentGC Large Test Sample 1" <> $SessionUUID,
+						"Test sample for invalid container for ExperimentGC tests" <> $SessionUUID,
+						"Test sample for discarded sample for ExperimentGC tests" <> $SessionUUID,
+						"Example sample in a uncovered vial for ExperimentGasChromatography tests " <> $SessionUUID,
+						"Example sample in a vial with a non-magnetic cap for ExperimentGasChromatography tests " <> $SessionUUID,
+						"Example sample in a vial with a non-pierceable cap for ExperimentGasChromatography tests " <> $SessionUUID
+					},
+					Upload->False
+				];
 
-			(*sever the link to the model*)
+				Upload[Join[coverPackets, samplePackets]];
 
-			Upload[
-				{
+				(* discard the discarded sample+container by moving to waste *)
+				UploadLocation[discardedContainer, Waste];
+
+				(*sever the link to the model*)
+
+				Upload[
+					{
+						Association[
+							Object -> Object[Sample,"ExperimentGC Test Sample 1" <> $SessionUUID],
+							Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {5 Millimolar, Link[Model[Molecule, "Acetone"]], Now}}
+						],
+						Association[
+							Object -> Object[Sample,"ExperimentGC Test Sample 4" <> $SessionUUID],
+							Model -> Null
+						]
+					}
+				];
+
+				methodPackets = {
 					Association[
-						Object -> Object[Sample,"ExperimentGC Test Sample 1" <> $SessionUUID],
-						Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {5 Millimolar, Link[Model[Molecule, "Acetone"]]}}
+						Type -> Object[Method, GasChromatography],
+						Name -> "Test SeparationMethod for ExperimentGC" <> $SessionUUID,
+						Replace[ColumnLength]->30*Meter,
+						Replace[ColumnDiameter]->0.32*Milli*Meter,
+						Replace[ColumnFilmThickness]->0.25*Micro*Meter,
+						InletLinerVolume->870*Micro*Liter,
+						Detector->FlameIonizationDetector,
+						CarrierGas->Helium,
+						InletSeptumPurgeFlowRate->3*Milli*Liter/Minute,
+						InitialInletTemperature->250*Celsius,
+						SplitRatio->20,
+						InitialInletPressure->25*PSI,
+						InitialInletTime->1*Minute,
+						GasSaver->True,
+						GasSaverFlowRate->25*Milli*Liter/Minute,
+						GasSaverActivationTime->3*Minute,
+						InitialColumnFlowRate->1.7*Milli*Liter/Minute,
+						ColumnFlowRateProfile->ConstantFlowRate,
+						OvenEquilibrationTime->2*Minute,
+						InitialOvenTemperature->50*Celsius,
+						OvenTemperatureProfile->Isothermal,
+						PostRunOvenTemperature->35*Celsius,
+						PostRunOvenTime->2*Minute
+					]
+				};
+
+				Upload[methodPackets];
+
+				stockedProductPackets = {
+					Association[
+						Type->Object[Item,Cap],
+						Name->"Stocked vial cap 1 for ExperimentGC" <> $SessionUUID,
+						Model->Link[Model[Item, Cap, "id:AEqRl9Kmnrqv"],Objects],
+						Status->Stocked
 					],
 					Association[
-						Object -> Object[Sample,"ExperimentGC Test Sample 4" <> $SessionUUID],
-						Model -> Null
+						Type->Object[Item,Cap],
+						Name->"Stocked vial cap 2 for ExperimentGC" <> $SessionUUID,
+						Model->Link[Model[Item, Cap, "id:AEqRl9Kmnrqv"],Objects],
+						Status->Stocked
+					],
+					Association[
+						Type->Object[Item,Cap],
+						Name->"Stocked vial cap 3 for ExperimentGC" <> $SessionUUID,
+						Model->Link[Model[Item, Cap, "id:AEqRl9Kmnrqv"],Objects],
+						Status->Stocked
 					]
-				}
-			];
+				};
 
-			methodPackets = {
-				Association[
-					Type -> Object[Method, GasChromatography],
-					Name -> "Test SeparationMethod for ExperimentGC" <> $SessionUUID,
-					Replace[ColumnLength]->30*Meter,
-					Replace[ColumnDiameter]->0.32*Milli*Meter,
-					Replace[ColumnFilmThickness]->0.25*Micro*Meter,
-					InletLinerVolume->870*Micro*Liter,
-					Detector->FlameIonizationDetector,
-					CarrierGas->Helium,
-					InletSeptumPurgeFlowRate->3*Milli*Liter/Minute,
-					InitialInletTemperature->250*Celsius,
-					SplitRatio->20,
-					InitialInletPressure->25*PSI,
-					InitialInletTime->1*Minute,
-					GasSaver->True,
-					GasSaverFlowRate->25*Milli*Liter/Minute,
-					GasSaverActivationTime->3*Minute,
-					InitialColumnFlowRate->1.7*Milli*Liter/Minute,
-					ColumnFlowRateProfile->ConstantFlowRate,
-					OvenEquilibrationTime->2*Minute,
-					InitialOvenTemperature->50*Celsius,
-					OvenTemperatureProfile->Isothermal,
-					PostRunOvenTemperature->35*Celsius,
-					PostRunOvenTime->2*Minute
-				]
-			};
+				Upload[stockedProductPackets];
 
-			Upload[methodPackets];
-
-			stockedProductPackets = {
-				Association[
-					Type->Object[Item,Cap],
-					Name->"Stocked vial cap 1 for ExperimentGC" <> $SessionUUID,
-					Model->Link[Model[Item, Cap, "id:AEqRl9Kmnrqv"],Objects],
-					Status->Stocked
-				],
-				Association[
-					Type->Object[Item,Cap],
-					Name->"Stocked vial cap 2 for ExperimentGC" <> $SessionUUID,
-					Model->Link[Model[Item, Cap, "id:AEqRl9Kmnrqv"],Objects],
-					Status->Stocked
-				],
-				Association[
-					Type->Object[Item,Cap],
-					Name->"Stocked vial cap 3 for ExperimentGC" <> $SessionUUID,
-					Model->Link[Model[Item, Cap, "id:AEqRl9Kmnrqv"],Objects],
-					Status->Stocked
-				]
-			};
-
-			Upload[stockedProductPackets];
-
-			Upload[{
-				<|
-					Type->Model[Item, Septum],
-					Name->"Fake Septum for ExperimentGC",
-					Diameter->1Millimeter
-				|>,
-				<|
-					Type -> Model[Item, Column],
-					ChromatographyType -> GasChromatography,
-					ColumnFormat -> Quantity[7., "Inches"],
-					ColumnLength -> Quantity[30000., "Millimeters"],
-					ColumnType -> Analytical,
-					Replace[Connectors] -> {{"Column Inlet", Tube, None, Quantity[0.00984251968503937, "Inches"], Quantity[0.015748031496062992, "Inches"], None}, {"Column Outlet", Tube, None, Quantity[0.00984251968503937, "Inches"], Quantity[0.015748031496062992, "Inches"], None}},
-					DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-					Diameter -> Quantity[0.25, "Millimeters"],
-					Dimensions -> {Quantity[0.1905, "Meters"], Quantity[0.1905, "Meters"], Quantity[0.0635, "Meters"]},
-					FilmThickness -> Quantity[0.25, "Micrometers"],
-					MaxFlowRate -> Quantity[16000., "Milliliters"/"Minutes"],
-					MaxNumberOfUses -> 9999,
-					MaxPressure -> Quantity[100., "PoundsForce"/"Inches"^2],
-					MaxShortExposureTemperature -> Quantity[350., "DegreesCelsius"],
-					MaxTemperature -> Quantity[325., "DegreesCelsius"],
-					MinFlowRate -> Quantity[0., "Milliliters"/"Minutes"],
-					MinPressure -> Quantity[0., "PoundsForce"/"Inches"^2],
-					MinTemperature -> Quantity[40, "DegreesCelsius"],
-					PackingType -> WCOT,
-					Polarity -> NonPolar,
-					SeparationMode -> GasChromatography,
-					Size -> Quantity[30., "Meters"],
-					Replace[StationaryPhaseBonded] -> {Bonded, Crosslinked},
-					Replace[WettedMaterials] -> {Silica},
-					DeveloperObject -> True,
-					Name -> "Column with high MinTemperature for ExperimentGC" <> $SessionUUID
-				|>
-			}]
-
+				Upload[{
+					<|
+						Type->Model[Item, Septum],
+						Name->"Example Septum for ExperimentGC " <> $SessionUUID,
+						Diameter->1Millimeter
+					|>,
+					<|
+						Type -> Model[Item, Column],
+						ChromatographyType -> GasChromatography,
+						ColumnFormat -> Quantity[7., "Inches"],
+						ColumnLength -> Quantity[30000., "Millimeters"],
+						ColumnType -> Analytical,
+						Replace[Connectors] -> {{"Column Inlet", Tube, None, Quantity[0.00984251968503937, "Inches"], Quantity[0.015748031496062992, "Inches"], None}, {"Column Outlet", Tube, None, Quantity[0.00984251968503937, "Inches"], Quantity[0.015748031496062992, "Inches"], None}},
+						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+						Diameter -> Quantity[0.25, "Millimeters"],
+						Dimensions -> {Quantity[0.1905, "Meters"], Quantity[0.1905, "Meters"], Quantity[0.0635, "Meters"]},
+						FilmThickness -> Quantity[0.25, "Micrometers"],
+						MaxFlowRate -> Quantity[16000., "Milliliters"/"Minutes"],
+						MaxNumberOfUses -> 9999,
+						MaxPressure -> Quantity[100., "PoundsForce"/"Inches"^2],
+						MaxShortExposureTemperature -> Quantity[350., "DegreesCelsius"],
+						MaxTemperature -> Quantity[325., "DegreesCelsius"],
+						MinFlowRate -> Quantity[0., "Milliliters"/"Minutes"],
+						MinPressure -> Quantity[0., "PoundsForce"/"Inches"^2],
+						MinTemperature -> Quantity[40, "DegreesCelsius"],
+						PackingType -> WCOT,
+						Polarity -> NonPolar,
+						SeparationMode -> GasChromatography,
+						Size -> Quantity[30., "Meters"],
+						Replace[StationaryPhaseBonded] -> {Bonded, Crosslinked},
+						Replace[WettedMaterials] -> {Silica},
+						DeveloperObject -> True,
+						Name -> "Column with high MinTemperature for ExperimentGC" <> $SessionUUID
+					|>
+				}]
+			]
 		]
-
 	),
 	SymbolTearDown:>(
 		On[Warning::SamplesOutOfStock];
@@ -5513,6 +5773,7 @@ DefineTests[ExperimentGasChromatography,
 
 		Module[{objects, existingObjects},
 			objects={
+				Object[Container, Bench, "Example bench for ExperimentGasChromatography tests " <> $SessionUUID],
 				Object[Sample,"ExperimentGC Test Sample 1" <> $SessionUUID],
 				Object[Sample,"ExperimentGC Test Sample 2" <> $SessionUUID],
 				Object[Sample,"ExperimentGC Test Sample 3" <> $SessionUUID],
@@ -5521,19 +5782,34 @@ DefineTests[ExperimentGasChromatography,
 				Object[Sample,"ExperimentGC Large Test Sample 1" <> $SessionUUID],
 				Object[Sample,"Test sample for invalid container for ExperimentGC tests" <> $SessionUUID],
 				Object[Sample,"Test sample for discarded sample for ExperimentGC tests" <> $SessionUUID],
+				Object[Sample, "Example sample in a uncovered vial for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Sample, "Example sample in a vial with a non-magnetic cap for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Sample, "Example sample in a vial with a non-pierceable cap for ExperimentGasChromatography tests " <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 1 for ExperimentGC tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 2 for ExperimentGC tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 3 for ExperimentGC tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 4 for ExperimentGC tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 5 for ExperimentGC tests" <> $SessionUUID],
+				Object[Container, Vessel, "Example vial without a cover for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Container, Vessel, "Example vial with a non-pierceable cap for ExperimentGasChromatography tests " <> $SessionUUID],
 				Object[Container,Vessel,"Test large vial 1 for ExperimentGC tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test invalid container 1 for ExperimentGC tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test discarded vial 1 for ExperimentGC tests" <> $SessionUUID],
+				Object[Container, Vessel, "Example vial with a non-magnetic cap for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 1 for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 2 for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 3 for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 4 for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 5 for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Item, Cap, "Example large magnetic vial cap for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Item, Cap, "Example non-magnetic vial cap for ExperimentGasChromatography tests " <> $SessionUUID],
+				Object[Item, Cap, "Example non-pierceable vial cap for ExperimentGasChromatography tests " <> $SessionUUID],
 				Object[Protocol,GasChromatography,"My particular ExperimentGasChromatography protocol" <> $SessionUUID],
 				Object[Method,GasChromatography,"Test SeparationMethod for ExperimentGC" <> $SessionUUID],
 				Object[Item,Cap,"Stocked vial cap 1 for ExperimentGC" <> $SessionUUID],
 				Object[Item,Cap,"Stocked vial cap 2 for ExperimentGC" <> $SessionUUID],
 				Object[Item,Cap,"Stocked vial cap 3 for ExperimentGC" <> $SessionUUID],
+				Model[Item, Septum,"Example Septum for ExperimentGC " <> $SessionUUID],
 				Model[Item, Column,"Column with high MinTemperature for ExperimentGC" <> $SessionUUID]
 			};
 
@@ -5554,11 +5830,11 @@ DefineTests[
 	ExperimentGasChromatographyOptions,
 	{
 		Example[{Basic,"Display the option values which will be used in the experiment:"},
-			ExperimentGasChromatographyOptions[Object[Sample,"ExperimentGCOptions Test Sample 1" <> $SessionUUID]],
+			ExperimentGasChromatographyOptions[Object[Sample,"ExperimentGasChromatographyOptions Test Sample 1" <> $SessionUUID]],
 			_Grid
 		],
 		Example[{Basic,"View any potential issues with provided inputs/options displayed:"},
-			ExperimentGasChromatographyOptions[Object[Sample,"Test sample for discarded sample for ExperimentGCOptions tests" <> $SessionUUID]],
+			ExperimentGasChromatographyOptions[Object[Sample,"Test sample for discarded sample for ExperimentGasChromatographyOptions tests" <> $SessionUUID]],
 			_Grid,
 			Messages:>{
 				Error::DiscardedSamples,
@@ -5566,188 +5842,111 @@ DefineTests[
 			}
 		],
 		Example[{Options,OutputFormat,"If OutputFormat -> List, return a list of options:"},
-			ExperimentGasChromatographyOptions[Object[Sample,"ExperimentGCOptions Test Sample 1" <> $SessionUUID],OutputFormat->List],
+			ExperimentGasChromatographyOptions[Object[Sample,"ExperimentGasChromatographyOptions Test Sample 1" <> $SessionUUID],OutputFormat->List],
 			{(_Rule|_RuleDelayed)..}
 		]
 	},
-	SymbolSetUp:>(
+	SymbolSetUp:> (
 		Off[Warning::SamplesOutOfStock];
 		Off[Warning::InstrumentUndergoingMaintenance];
 
 		(*module for deleting created objects*)
 		Module[{objects, existingObjects},
 			objects={
-				Object[Sample,"ExperimentGCOptions Test Sample 1" <> $SessionUUID],
-				Object[Sample,"ExperimentGCOptions Test Sample 2" <> $SessionUUID],
-				Object[Sample,"ExperimentGCOptions Test Sample 3" <> $SessionUUID],
-				Object[Sample,"ExperimentGCOptions Test Sample 4" <> $SessionUUID],
-				Object[Sample,"ExperimentGCOptions Test Sample 5" <> $SessionUUID],
-				Object[Sample,"ExperimentGCOptions Large Test Sample 1" <> $SessionUUID],
-				Object[Sample,"Test sample for invalid container for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Sample,"Test sample for discarded sample for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 1 for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 2 for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 3 for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 4 for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 5 for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test large vial 1 for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test invalid container 1 for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Protocol,GasChromatography,"My particular ExperimentGasChromatography protocol" <> $SessionUUID],
-				Object[Method,GasChromatography,"Test SeparationMethod for ExperimentGCOptions" <> $SessionUUID]
+				Object[Container, Bench, "Example bench for ExperimentGasChromatographyOptions tests " <> $SessionUUID],
+				Object[Sample,"ExperimentGasChromatographyOptions Test Sample 1" <> $SessionUUID],
+				Object[Sample,"Test sample for discarded sample for ExperimentGasChromatographyOptions tests" <> $SessionUUID],
+				Object[Container,Vessel,"Test vial 1 for ExperimentGasChromatographyOptions tests" <> $SessionUUID],
+				Object[Container,Vessel,"Test discarded vial 1 for ExperimentGasChromatographyOptions tests" <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 1 for ExperimentGasChromatographyOptions tests " <> $SessionUUID]
 			};
 
 			existingObjects = PickList[objects, DatabaseMemberQ[#]&/@objects];
 			EraseObject[existingObjects, Force -> True, Verbose -> False]
 
 		];
-		(*module for creating objects*)
-		Module[{containerPackets,samplePackets,methodPackets},
+		Block[{$AllowPublicObjects = True, $DeveloperUpload = True},
+			Module[
+				{
+					testBench, container1, discardedContainer, cover1, coverPackets, samplePackets
+				},
 
-			containerPackets = {
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 1 for ExperimentGCOptions tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "0.3 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 2 for ExperimentGCOptions tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 4 for ExperimentGCOptions tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 3 for ExperimentGCOptions tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "10 mL clear glass GC vial"], Objects],
-					Name -> "Test large vial 1 for ExperimentGCOptions tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "10 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 5 for ExperimentGCOptions tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2mL Tube"], Objects],
-					Name -> "Test invalid container 1 for ExperimentGCOptions tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test discarded vial 1 for ExperimentGCOptions tests" <> $SessionUUID
+				testBench = Upload[
+					<|
+						Type -> Object[Container, Bench],
+						Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+						Name -> "Example bench for ExperimentGasChromatographyOptions tests " <> $SessionUUID,
+						DeveloperObject -> True,
+						StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+						Site -> Link[$Site]
+					|>
+				];
+
+				{
+					container1,
+					discardedContainer,
+					cover1
+				} = UploadSample[
+					{
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],(*2 mL clear glass GC vial*)
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],
+						Model[Item, Cap, "id:L8kPEjn1PRww"](*2 mL GC vial cap, magnetic*)
+					},
+					{
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench}
+					},
+					Name -> {
+						"Test vial 1 for ExperimentGasChromatographyOptions tests" <> $SessionUUID,
+						"Test discarded vial 1 for ExperimentGasChromatographyOptions tests" <> $SessionUUID,
+						"Example magnetic vial cap 1 for ExperimentGasChromatographyOptions tests " <> $SessionUUID
+					}
+				];
+
+				coverPackets = UploadCover[
+					{container1},
+					Cover -> {cover1},
+					Upload -> False
+				];
+
+				samplePackets = UploadSample[
+					{
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"], (*80% Heptane, 20% Ethanol diluent for SFC*)
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"]
+					},
+					{
+						{"A1", container1},
+						{"A1", discardedContainer}
+					},
+					InitialAmount ->
+							{
+								2000 Microliter,
+								1800 Microliter
+							},
+					Name->{
+						"ExperimentGasChromatographyOptions Test Sample 1" <> $SessionUUID,
+						"Test sample for discarded sample for ExperimentGasChromatographyOptions tests" <> $SessionUUID
+					},
+					Upload->False
+				];
+
+				Upload[Join[coverPackets, samplePackets]];
+
+				(* discard the discarded sample+container by moving to waste *)
+				UploadLocation[discardedContainer, Waste];
+
+				(*sever the link to the model*)
+				Upload[
+					{
+						Association[
+							Object -> Object[Sample,"ExperimentGasChromatographyOptions Test Sample 1" <> $SessionUUID],
+							Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {5 Millimolar, Link[Model[Molecule, "Acetone"]], Now}}
+						]
+					}
 				]
-			};
-
-			(* Create GC method packets here *)
-
-			UploadSample[Lookup[containerPackets,Model][Object],ConstantArray[{"Left Slot",Object[Container,Shelf,"id:D8KAEvGwRr9m"]},Length[containerPackets]],Name->Lookup[containerPackets,Name]];
-
-			samplePackets = UploadSample[
-				{
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"]
-				},
-				{
-					{"A1",Object[Container,Vessel,"Test vial 1 for ExperimentGCOptions tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 2 for ExperimentGCOptions tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 3 for ExperimentGCOptions tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 4 for ExperimentGCOptions tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 5 for ExperimentGCOptions tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test large vial 1 for ExperimentGCOptions tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test invalid container 1 for ExperimentGCOptions tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCOptions tests" <> $SessionUUID]}
-				},
-				InitialAmount ->
-						{
-							2000 Microliter,
-							300 Microliter,
-							1000 Microliter,
-							1000 Microliter,
-							2000 Microliter,
-							4000 Microliter,
-							2000 Microliter,
-							1800 Microliter
-						},
-				Name->{
-					"ExperimentGCOptions Test Sample 1" <> $SessionUUID,
-					"ExperimentGCOptions Test Sample 2" <> $SessionUUID,
-					"ExperimentGCOptions Test Sample 3" <> $SessionUUID,
-					"ExperimentGCOptions Test Sample 4" <> $SessionUUID,
-					"ExperimentGCOptions Test Sample 5" <> $SessionUUID,
-					"ExperimentGCOptions Large Test Sample 1" <> $SessionUUID,
-					"Test sample for invalid container for ExperimentGCOptions tests" <> $SessionUUID,
-					"Test sample for discarded sample for ExperimentGCOptions tests" <> $SessionUUID
-				},
-				Upload->False
-			];
-
-			Upload[samplePackets];
-
-			(* discard the discarded sample+container by moving to waste *)
-			UploadLocation[Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCOptions tests" <> $SessionUUID], Waste];
-
-			(*sever the link to the model*)
-
-			Upload[
-				{
-					Association[
-						Object -> Object[Sample,"ExperimentGCOptions Test Sample 1" <> $SessionUUID],
-						Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {5 Millimolar, Link[Model[Molecule, "Acetone"]]}}
-					],
-					Association[
-						Object -> Object[Sample,"ExperimentGCOptions Test Sample 4" <> $SessionUUID],
-						Model -> Null
-					]
-				}
-			];
-
-			methodPackets = {
-				Association[
-					Type -> Object[Method, GasChromatography],
-					Name -> "Test SeparationMethod for ExperimentGCOptions" <> $SessionUUID,
-					Replace[ColumnLength]->30*Meter,
-					Replace[ColumnDiameter]->0.32*Milli*Meter,
-					Replace[ColumnFilmThickness]->0.25*Micro*Meter,
-					InletLinerVolume->870*Micro*Liter,
-					Detector->FlameIonizationDetector,
-					CarrierGas->Helium,
-					InletSeptumPurgeFlowRate->3*Milli*Liter/Minute,
-					InitialInletTemperature->250*Celsius,
-					SplitRatio->20,
-					InitialInletPressure->25*PSI,
-					InitialInletTime->1*Minute,
-					GasSaver->True,
-					GasSaverFlowRate->25*Milli*Liter/Minute,
-					GasSaverActivationTime->3*Minute,
-					InitialColumnFlowRate->1.7*Milli*Liter/Minute,
-					ColumnFlowRateProfile->ConstantFlowRate,
-					OvenEquilibrationTime->2*Minute,
-					InitialOvenTemperature->50*Celsius,
-					OvenTemperatureProfile->Isothermal,
-					PostRunOvenTemperature->35*Celsius,
-					PostRunOvenTime->2*Minute
-				]
-			};
-
-			Upload[methodPackets];
-
+			]
 		]
-
 	),
 	SymbolTearDown:>(
 		On[Warning::SamplesOutOfStock];
@@ -5755,22 +5954,12 @@ DefineTests[
 
 		Module[{objects, existingObjects},
 			objects={
-				Object[Sample,"ExperimentGCOptions Test Sample 1" <> $SessionUUID],
-				Object[Sample,"ExperimentGCOptions Test Sample 2" <> $SessionUUID],
-				Object[Sample,"ExperimentGCOptions Test Sample 3" <> $SessionUUID],
-				Object[Sample,"ExperimentGCOptions Test Sample 4" <> $SessionUUID],
-				Object[Sample,"ExperimentGCOptions Large Test Sample 1" <> $SessionUUID],
-				Object[Sample,"Test sample for invalid container for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Sample,"Test sample for discarded sample for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 1 for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 2 for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 3 for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 4 for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test large vial 1 for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test invalid container 1 for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCOptions tests" <> $SessionUUID],
-				Object[Protocol,GasChromatography,"My particular ExperimentGasChromatography protocol" <> $SessionUUID],
-				Object[Method,GasChromatography,"Test SeparationMethod for ExperimentGCOptions" <> $SessionUUID]
+				Object[Container, Bench, "Example bench for ExperimentGasChromatographyOptions tests " <> $SessionUUID],
+				Object[Sample,"ExperimentGasChromatographyOptions Test Sample 1" <> $SessionUUID],
+				Object[Sample,"Test sample for discarded sample for ExperimentGasChromatographyOptions tests" <> $SessionUUID],
+				Object[Container,Vessel,"Test vial 1 for ExperimentGasChromatographyOptions tests" <> $SessionUUID],
+				Object[Container,Vessel,"Test discarded vial 1 for ExperimentGasChromatographyOptions tests" <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 1 for ExperimentGasChromatographyOptions tests " <> $SessionUUID]
 			};
 
 			existingObjects = PickList[objects, DatabaseMemberQ[#]&/@objects];
@@ -5788,19 +5977,19 @@ DefineTests[
 	ValidExperimentGasChromatographyQ,
 	{
 		Example[{Basic,"Verify that the experiment can be run without issues:"},
-			ValidExperimentGasChromatographyQ[Object[Sample,"ValidExperimentGCQ Test Sample 1" <> $SessionUUID]],
+			ValidExperimentGasChromatographyQ[Object[Sample,"ValidExperimentGasChromatographyQ Test Sample 1" <> $SessionUUID]],
 			True
 		],
 		Example[{Basic,"Return False if there are problems with the inputs or options:"},
-			ValidExperimentGasChromatographyQ[Object[Sample,"Test sample for discarded sample for ValidExperimentGCQ tests" <> $SessionUUID]],
+			ValidExperimentGasChromatographyQ[Object[Sample,"Test sample for discarded sample for ValidExperimentGasChromatographyQ tests" <> $SessionUUID]],
 			False
 		],
 		Example[{Options,OutputFormat,"Return a test summary:"},
-			ValidExperimentGasChromatographyQ[Object[Sample,"ValidExperimentGCQ Test Sample 1" <> $SessionUUID],OutputFormat->TestSummary],
+			ValidExperimentGasChromatographyQ[Object[Sample,"ValidExperimentGasChromatographyQ Test Sample 1" <> $SessionUUID],OutputFormat->TestSummary],
 			_EmeraldTestSummary
 		],
 		Example[{Options,Verbose,"Print verbose messages reporting test passage/failure:"},
-			ValidExperimentGasChromatographyQ[Object[Sample,"ValidExperimentGCQ Test Sample 1" <> $SessionUUID],Verbose->True],
+			ValidExperimentGasChromatographyQ[Object[Sample,"ValidExperimentGasChromatographyQ Test Sample 1" <> $SessionUUID],Verbose->True],
 			True
 		]
 	},
@@ -5811,166 +6000,100 @@ DefineTests[
 		(*module for deleting created objects*)
 		Module[{objects, existingObjects},
 			objects={
-				Object[Sample,"ValidExperimentGCQ Test Sample 1" <> $SessionUUID],
-				Object[Sample,"ValidExperimentGCQ Test Sample 2" <> $SessionUUID],
-				Object[Sample,"ValidExperimentGCQ Test Sample 3" <> $SessionUUID],
-				Object[Sample,"ValidExperimentGCQ Test Sample 4" <> $SessionUUID],
-				Object[Sample,"ValidExperimentGCQ Large Test Sample 1" <> $SessionUUID],
-				Object[Sample,"Test sample for invalid container for ValidExperimentGCQ tests" <> $SessionUUID],
-				Object[Sample,"Test sample for discarded sample for ValidExperimentGCQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 1 for ValidExperimentGCQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 2 for ValidExperimentGCQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 3 for ValidExperimentGCQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 4 for ValidExperimentGCQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test large vial 1 for ValidExperimentGCQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test invalid container 1 for ValidExperimentGCQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test discarded vial 1 for ValidExperimentGCQ tests" <> $SessionUUID],
-				Object[Protocol,GasChromatography,"My particular ExperimentGasChromatography protocol" <> $SessionUUID],
-				Object[Method,GasChromatography,"Test SeparationMethod for ValidExperimentGCQ" <> $SessionUUID]
+				Object[Container, Bench, "Example bench for ValidExperimentGasChromatographyQ tests " <> $SessionUUID],
+				Object[Sample,"ValidExperimentGasChromatographyQ Test Sample 1" <> $SessionUUID],
+				Object[Sample,"Test sample for discarded sample for ValidExperimentGasChromatographyQ tests" <> $SessionUUID],
+				Object[Container,Vessel,"Test vial 1 for ValidExperimentGasChromatographyQ tests" <> $SessionUUID],
+				Object[Container,Vessel,"Test discarded vial 1 for ValidExperimentGasChromatographyQ tests" <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 1 for ValidExperimentGasChromatographyQ tests " <> $SessionUUID]
 			};
 
 			existingObjects = PickList[objects, DatabaseMemberQ[#]&/@objects];
 			EraseObject[existingObjects, Force -> True, Verbose -> False]
 
 		];
-		(*module for creating objects*)
-		Module[{containerPackets,samplePackets,methodPackets},
+		Block[{$AllowPublicObjects = True, $DeveloperUpload = True},
+			Module[
+				{
+					testBench, container1, discardedContainer, cover1, coverPackets, samplePackets
+				},
 
-			containerPackets = {
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 1 for ValidExperimentGCQ tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "0.3 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 2 for ValidExperimentGCQ tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 4 for ValidExperimentGCQ tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 3 for ValidExperimentGCQ tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "10 mL clear glass GC vial"], Objects],
-					Name -> "Test large vial 1 for ValidExperimentGCQ tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2mL Tube"], Objects],
-					Name -> "Test invalid container 1 for ValidExperimentGCQ tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test discarded vial 1 for ValidExperimentGCQ tests" <> $SessionUUID
+				testBench = Upload[
+					<|
+						Type -> Object[Container, Bench],
+						Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+						Name -> "Example bench for ValidExperimentGasChromatographyQ tests " <> $SessionUUID,
+						DeveloperObject -> True,
+						StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+						Site -> Link[$Site]
+					|>
+				];
+
+				{
+					container1,
+					discardedContainer,
+					cover1
+				} = UploadSample[
+					{
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],(*2 mL clear glass GC vial*)
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],
+						Model[Item, Cap, "id:L8kPEjn1PRww"](*2 mL GC vial cap, magnetic*)
+					},
+					{
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench}
+					},
+					Name -> {
+						"Test vial 1 for ValidExperimentGasChromatographyQ tests" <> $SessionUUID,
+						"Test discarded vial 1 for ValidExperimentGasChromatographyQ tests" <> $SessionUUID,
+						"Example magnetic vial cap 1 for ValidExperimentGasChromatographyQ tests " <> $SessionUUID
+					}
+				];
+
+				coverPackets = UploadCover[
+					{container1},
+					Cover -> {cover1},
+					Upload -> False
+				];
+
+				samplePackets = UploadSample[
+					{
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"], (*80% Heptane, 20% Ethanol diluent for SFC*)
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"]
+					},
+					{
+						{"A1", container1},
+						{"A1", discardedContainer}
+					},
+					InitialAmount ->
+							{
+								2000 Microliter,
+								1800 Microliter
+							},
+					Name->{
+						"ValidExperimentGasChromatographyQ Test Sample 1" <> $SessionUUID,
+						"Test sample for discarded sample for ValidExperimentGasChromatographyQ tests" <> $SessionUUID
+					},
+					Upload->False
+				];
+
+				Upload[Join[coverPackets, samplePackets]];
+
+				(* discard the discarded sample+container by moving to waste *)
+				UploadLocation[discardedContainer, Waste];
+
+				(*sever the link to the model*)
+				Upload[
+					{
+						Association[
+							Object -> Object[Sample,"ValidExperimentGasChromatographyQ Test Sample 1" <> $SessionUUID],
+							Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {5 Millimolar, Link[Model[Molecule, "Acetone"]], Now}}
+						]
+					}
 				]
-			};
-
-			(* Create GC method packets here *)
-
-			UploadSample[Lookup[containerPackets,Model][Object],ConstantArray[{"Left Slot",Object[Container,Shelf,"id:D8KAEvGwRr9m"]},Length[containerPackets]],Name->Lookup[containerPackets,Name]];
-
-			samplePackets = UploadSample[
-				{
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"]
-				},
-				{
-					{"A1",Object[Container,Vessel,"Test vial 1 for ValidExperimentGCQ tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 2 for ValidExperimentGCQ tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 3 for ValidExperimentGCQ tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 4 for ValidExperimentGCQ tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test large vial 1 for ValidExperimentGCQ tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test invalid container 1 for ValidExperimentGCQ tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test discarded vial 1 for ValidExperimentGCQ tests" <> $SessionUUID]}
-				},
-				InitialAmount ->
-						{
-							2000 Microliter,
-							300 Microliter,
-							1000 Microliter,
-							1000 Microliter,
-							4000 Microliter,
-							2000 Microliter,
-							1800 Microliter
-						},
-				Name->{
-					"ValidExperimentGCQ Test Sample 1" <> $SessionUUID,
-					"ValidExperimentGCQ Test Sample 2" <> $SessionUUID,
-					"ValidExperimentGCQ Test Sample 3" <> $SessionUUID,
-					"ValidExperimentGCQ Test Sample 4" <> $SessionUUID,
-					"ValidExperimentGCQ Large Test Sample 1" <> $SessionUUID,
-					"Test sample for invalid container for ValidExperimentGCQ tests" <> $SessionUUID,
-					"Test sample for discarded sample for ValidExperimentGCQ tests" <> $SessionUUID
-				},
-				Upload->False
-			];
-
-			Upload[samplePackets];
-
-			(* discard the discarded sample+container by moving to waste *)
-			UploadLocation[Object[Container,Vessel,"Test discarded vial 1 for ValidExperimentGCQ tests" <> $SessionUUID], Waste];
-
-			(*sever the link to the model*)
-
-			Upload[
-				{
-					Association[
-						Object -> Object[Sample,"ValidExperimentGCQ Test Sample 1" <> $SessionUUID],
-						Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {5 Millimolar, Link[Model[Molecule, "Acetone"]]}}
-					],
-					Association[
-						Object -> Object[Sample,"ValidExperimentGCQ Test Sample 4" <> $SessionUUID],
-						Model -> Null
-					]
-				}
-			];
-
-			methodPackets = {
-				Association[
-					Type -> Object[Method, GasChromatography],
-					Name -> "Test SeparationMethod for ValidExperimentGCQ" <> $SessionUUID,
-					Replace[ColumnLength]->30*Meter,
-					Replace[ColumnDiameter]->0.32*Milli*Meter,
-					Replace[ColumnFilmThickness]->0.25*Micro*Meter,
-					InletLinerVolume->870*Micro*Liter,
-					Detector->FlameIonizationDetector,
-					CarrierGas->Helium,
-					InletSeptumPurgeFlowRate->3*Milli*Liter/Minute,
-					InitialInletTemperature->250*Celsius,
-					SplitRatio->20,
-					InitialInletPressure->25*PSI,
-					InitialInletTime->1*Minute,
-					GasSaver->True,
-					GasSaverFlowRate->25*Milli*Liter/Minute,
-					GasSaverActivationTime->3*Minute,
-					InitialColumnFlowRate->1.7*Milli*Liter/Minute,
-					ColumnFlowRateProfile->ConstantFlowRate,
-					OvenEquilibrationTime->2*Minute,
-					InitialOvenTemperature->50*Celsius,
-					OvenTemperatureProfile->Isothermal,
-					PostRunOvenTemperature->35*Celsius,
-					PostRunOvenTime->2*Minute
-				]
-			};
-
-			Upload[methodPackets];
-
+			]
 		]
-
 	),
 	SymbolTearDown:>(
 		On[Warning::SamplesOutOfStock];
@@ -5978,22 +6101,12 @@ DefineTests[
 
 		Module[{objects, existingObjects},
 			objects={
-				Object[Sample,"ValidExperimentGCQ Test Sample 1" <> $SessionUUID],
-				Object[Sample,"ValidExperimentGCQ Test Sample 2" <> $SessionUUID],
-				Object[Sample,"ValidExperimentGCQ Test Sample 3" <> $SessionUUID],
-				Object[Sample,"ValidExperimentGCQ Test Sample 4" <> $SessionUUID],
-				Object[Sample,"ValidExperimentGCQ Large Test Sample 1" <> $SessionUUID],
-				Object[Sample,"Test sample for invalid container for ValidExperimentGCQ tests" <> $SessionUUID],
-				Object[Sample,"Test sample for discarded sample for ValidExperimentGCQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 1 for ValidExperimentGCQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 2 for ValidExperimentGCQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 3 for ValidExperimentGCQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 4 for ValidExperimentGCQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test large vial 1 for ValidExperimentGCQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test invalid container 1 for ValidExperimentGCQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test discarded vial 1 for ValidExperimentGCQ tests" <> $SessionUUID],
-				Object[Protocol,GasChromatography,"My particular ExperimentGasChromatography protocol" <> $SessionUUID],
-				Object[Method,GasChromatography,"Test SeparationMethod for ValidExperimentGCQ" <> $SessionUUID]
+				Object[Container, Bench, "Example bench for ValidExperimentGasChromatographyQ tests " <> $SessionUUID],
+				Object[Sample,"ValidExperimentGasChromatographyQ Test Sample 1" <> $SessionUUID],
+				Object[Sample,"Test sample for discarded sample for ValidExperimentGasChromatographyQ tests" <> $SessionUUID],
+				Object[Container,Vessel,"Test vial 1 for ValidExperimentGasChromatographyQ tests" <> $SessionUUID],
+				Object[Container,Vessel,"Test discarded vial 1 for ValidExperimentGasChromatographyQ tests" <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 1 for ValidExperimentGasChromatographyQ tests " <> $SessionUUID]
 			};
 
 			existingObjects = PickList[objects, DatabaseMemberQ[#]&/@objects];
@@ -6011,15 +6124,15 @@ DefineTests[
 	ExperimentGasChromatographyPreview,
 	{
 		Example[{Basic,"No preview is currently available for ExperimentGasChromatography:"},
-			ExperimentGasChromatographyPreview[Object[Sample,"ExperimentGCPreview Test Sample 1" <> $SessionUUID]],
+			ExperimentGasChromatographyPreview[Object[Sample,"ExperimentGasChromatographyPreview Test Sample 1" <> $SessionUUID]],
 			Null
 		],
 		Example[{Additional,"If you wish to understand how the experiment will be performed, try using ExperimentGasChromatographyOptions:"},
-			ExperimentGasChromatographyOptions[Object[Sample,"ExperimentGCPreview Test Sample 1" <> $SessionUUID]],
+			ExperimentGasChromatographyOptions[Object[Sample,"ExperimentGasChromatographyPreview Test Sample 1" <> $SessionUUID]],
 			_Grid
 		],
 		Example[{Additional,"The inputs and options can also be checked to verify that the experiment can be safely run using ValidExperimentGasChromatographyQ:"},
-			ValidExperimentGasChromatographyQ[Object[Sample,"ExperimentGCPreview Test Sample 1" <> $SessionUUID]],
+			ValidExperimentGasChromatographyQ[Object[Sample,"ExperimentGasChromatographyPreview Test Sample 1" <> $SessionUUID]],
 			True
 		]
 	},
@@ -6030,166 +6143,87 @@ DefineTests[
 		(*module for deleting created objects*)
 		Module[{objects, existingObjects},
 			objects={
-				Object[Sample,"ExperimentGCPreview Test Sample 1" <> $SessionUUID],
-				Object[Sample,"ExperimentGCPreview Test Sample 2" <> $SessionUUID],
-				Object[Sample,"ExperimentGCPreview Test Sample 3" <> $SessionUUID],
-				Object[Sample,"ExperimentGCPreview Test Sample 4" <> $SessionUUID],
-				Object[Sample,"ExperimentGCPreview Large Test Sample 1" <> $SessionUUID],
-				Object[Sample,"Test sample for invalid container for ExperimentGCPreview tests" <> $SessionUUID],
-				Object[Sample,"Test sample for discarded sample for ExperimentGCPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 1 for ExperimentGCPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 2 for ExperimentGCPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 3 for ExperimentGCPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 4 for ExperimentGCPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test large vial 1 for ExperimentGCPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test invalid container 1 for ExperimentGCPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCPreview tests" <> $SessionUUID],
-				Object[Protocol,GasChromatography,"My particular ExperimentGasChromatography protocol" <> $SessionUUID],
-				Object[Method,GasChromatography,"Test SeparationMethod for ExperimentGCPreview" <> $SessionUUID]
+				Object[Container, Bench, "Example bench for ExperimentGasChromatographyPreview tests " <> $SessionUUID],
+				Object[Sample,"ExperimentGasChromatographyPreview Test Sample 1" <> $SessionUUID],
+				Object[Container,Vessel,"Test vial 1 for ExperimentGasChromatographyPreview tests" <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 1 for ExperimentGasChromatographyPreview tests " <> $SessionUUID]
 			};
 
 			existingObjects = PickList[objects, DatabaseMemberQ[#]&/@objects];
 			EraseObject[existingObjects, Force -> True, Verbose -> False]
 
 		];
-		(*module for creating objects*)
-		Module[{containerPackets,samplePackets,methodPackets},
+		Block[{$AllowPublicObjects = True, $DeveloperUpload = True},
+			Module[
+				{
+					testBench, container1, cover1, coverPackets, samplePackets
+				},
 
-			containerPackets = {
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 1 for ExperimentGCPreview tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "0.3 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 2 for ExperimentGCPreview tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 4 for ExperimentGCPreview tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 3 for ExperimentGCPreview tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "10 mL clear glass GC vial"], Objects],
-					Name -> "Test large vial 1 for ExperimentGCPreview tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2mL Tube"], Objects],
-					Name -> "Test invalid container 1 for ExperimentGCPreview tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test discarded vial 1 for ExperimentGCPreview tests" <> $SessionUUID
+				testBench = Upload[
+					<|
+						Type -> Object[Container, Bench],
+						Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+						Name -> "Example bench for ExperimentGasChromatographyPreview tests " <> $SessionUUID,
+						DeveloperObject -> True,
+						StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+						Site -> Link[$Site]
+					|>
+				];
+
+				{
+					container1,
+					cover1
+				} = UploadSample[
+					{
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],(*2 mL clear glass GC vial*)
+						Model[Item, Cap, "id:L8kPEjn1PRww"](*2 mL GC vial cap, magnetic*)
+					},
+					{
+						{"Work Surface", testBench},
+						{"Work Surface", testBench}
+					},
+					Name -> {
+						"Test vial 1 for ExperimentGasChromatographyPreview tests" <> $SessionUUID,
+						"Example magnetic vial cap 1 for ExperimentGasChromatographyPreview tests " <> $SessionUUID
+					}
+				];
+
+				coverPackets = UploadCover[
+					{container1},
+					Cover -> {cover1},
+					Upload -> False
+				];
+
+				samplePackets = UploadSample[
+					{
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"] (*80% Heptane, 20% Ethanol diluent for SFC*)
+					},
+					{
+						{"A1", container1}
+					},
+					InitialAmount ->
+							{
+								2000 Microliter
+							},
+					Name->{
+						"ExperimentGasChromatographyPreview Test Sample 1" <> $SessionUUID
+					},
+					Upload->False
+				];
+
+				Upload[Join[coverPackets, samplePackets]];
+
+				(*sever the link to the model*)
+				Upload[
+					{
+						Association[
+							Object -> Object[Sample,"ExperimentGasChromatographyPreview Test Sample 1" <> $SessionUUID],
+							Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {5 Millimolar, Link[Model[Molecule, "Acetone"]], Now}}
+						]
+					}
 				]
-			};
-
-			(* Create GC method packets here *)
-
-			UploadSample[Lookup[containerPackets,Model][Object],ConstantArray[{"Left Slot",Object[Container,Shelf,"id:D8KAEvGwRr9m"]},Length[containerPackets]],Name->Lookup[containerPackets,Name]];
-
-			samplePackets = UploadSample[
-				{
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"]
-				},
-				{
-					{"A1",Object[Container,Vessel,"Test vial 1 for ExperimentGCPreview tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 2 for ExperimentGCPreview tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 3 for ExperimentGCPreview tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 4 for ExperimentGCPreview tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test large vial 1 for ExperimentGCPreview tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test invalid container 1 for ExperimentGCPreview tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCPreview tests" <> $SessionUUID]}
-				},
-				InitialAmount ->
-						{
-							2000 Microliter,
-							300 Microliter,
-							1000 Microliter,
-							1000 Microliter,
-							4000 Microliter,
-							2000 Microliter,
-							1800 Microliter
-						},
-				Name->{
-					"ExperimentGCPreview Test Sample 1" <> $SessionUUID,
-					"ExperimentGCPreview Test Sample 2" <> $SessionUUID,
-					"ExperimentGCPreview Test Sample 3" <> $SessionUUID,
-					"ExperimentGCPreview Test Sample 4" <> $SessionUUID,
-					"ExperimentGCPreview Large Test Sample 1" <> $SessionUUID,
-					"Test sample for invalid container for ExperimentGCPreview tests" <> $SessionUUID,
-					"Test sample for discarded sample for ExperimentGCPreview tests" <> $SessionUUID
-				},
-				Upload->False
-			];
-
-			Upload[samplePackets];
-
-			(* discard the discarded sample+container by moving to waste *)
-			UploadLocation[Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCPreview tests" <> $SessionUUID], Waste];
-
-			(*sever the link to the model*)
-
-			Upload[
-				{
-					Association[
-						Object -> Object[Sample,"ExperimentGCPreview Test Sample 1" <> $SessionUUID],
-						Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {5 Millimolar, Link[Model[Molecule, "Acetone"]]}}
-					],
-					Association[
-						Object -> Object[Sample,"ExperimentGCPreview Test Sample 4" <> $SessionUUID],
-						Model -> Null
-					]
-				}
-			];
-
-			methodPackets = {
-				Association[
-					Type -> Object[Method, GasChromatography],
-					Name -> "Test SeparationMethod for ExperimentGCPreview" <> $SessionUUID,
-					Replace[ColumnLength]->30*Meter,
-					Replace[ColumnDiameter]->0.32*Milli*Meter,
-					Replace[ColumnFilmThickness]->0.25*Micro*Meter,
-					InletLinerVolume->870*Micro*Liter,
-					Detector->FlameIonizationDetector,
-					CarrierGas->Helium,
-					InletSeptumPurgeFlowRate->3*Milli*Liter/Minute,
-					InitialInletTemperature->250*Celsius,
-					SplitRatio->20,
-					InitialInletPressure->25*PSI,
-					InitialInletTime->1*Minute,
-					GasSaver->True,
-					GasSaverFlowRate->25*Milli*Liter/Minute,
-					GasSaverActivationTime->3*Minute,
-					InitialColumnFlowRate->1.7*Milli*Liter/Minute,
-					ColumnFlowRateProfile->ConstantFlowRate,
-					OvenEquilibrationTime->2*Minute,
-					InitialOvenTemperature->50*Celsius,
-					OvenTemperatureProfile->Isothermal,
-					PostRunOvenTemperature->35*Celsius,
-					PostRunOvenTime->2*Minute
-				]
-			};
-
-			Upload[methodPackets];
-
+			]
 		]
-
 	),
 	SymbolTearDown:>(
 		On[Warning::SamplesOutOfStock];
@@ -6197,22 +6231,10 @@ DefineTests[
 
 		Module[{objects, existingObjects},
 			objects={
-				Object[Sample,"ExperimentGCPreview Test Sample 1" <> $SessionUUID],
-				Object[Sample,"ExperimentGCPreview Test Sample 2" <> $SessionUUID],
-				Object[Sample,"ExperimentGCPreview Test Sample 3" <> $SessionUUID],
-				Object[Sample,"ExperimentGCPreview Test Sample 4" <> $SessionUUID],
-				Object[Sample,"ExperimentGCPreview Large Test Sample 1" <> $SessionUUID],
-				Object[Sample,"Test sample for invalid container for ExperimentGCPreview tests" <> $SessionUUID],
-				Object[Sample,"Test sample for discarded sample for ExperimentGCPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 1 for ExperimentGCPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 2 for ExperimentGCPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 3 for ExperimentGCPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 4 for ExperimentGCPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test large vial 1 for ExperimentGCPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test invalid container 1 for ExperimentGCPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCPreview tests" <> $SessionUUID],
-				Object[Protocol,GasChromatography,"My particular ExperimentGasChromatography protocol" <> $SessionUUID],
-				Object[Method,GasChromatography,"Test SeparationMethod for ExperimentGCPreview" <> $SessionUUID]
+				Object[Container, Bench, "Example bench for ExperimentGasChromatographyPreview tests " <> $SessionUUID],
+				Object[Sample,"ExperimentGasChromatographyPreview Test Sample 1" <> $SessionUUID],
+				Object[Container,Vessel,"Test vial 1 for ExperimentGasChromatographyPreview tests" <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 1 for ExperimentGasChromatographyPreview tests " <> $SessionUUID]
 			};
 
 			existingObjects = PickList[objects, DatabaseMemberQ[#]&/@objects];
@@ -6271,6 +6293,30 @@ DefineTests[ExperimentGCMS,
 			$Failed,
 			Messages:>{Error::GCGasSaverConflict,Error::InvalidOption},
 			TimeConstraint -> 300
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the amount of an input Model[Sample] and the container in which it is to be prepared:"},
+			options = ExperimentGCMS[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Vessel, "2 mL clear glass GC vial"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Vessel, "id:AEqRl9KmRnj1"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
 		],
 		Example[
 			{Options,Instrument,"Specify the gas chromatograph used to separate analytes in a sample in the gas phase during this experiment:"},
@@ -6338,7 +6384,7 @@ DefineTests[ExperimentGCMS,
 				Column->Model[Item, Column, "HP-5ms Ultra Inert, 30 m, 0.25 mm ID, 0.25 \[Mu]m film thickness, 7 inch cage"],
 				Output -> Options];
 			Lookup[options,Column],
-			{ObjectP[Model[Item, Column, "HP-5ms Ultra Inert, 30 m, 0.25 mm ID, 0.25 \[Mu]m film thickness, 7 inch cage"]]},
+			ObjectP[Model[Item, Column, "HP-5ms Ultra Inert, 30 m, 0.25 mm ID, 0.25 \[Mu]m film thickness, 7 inch cage"]],
 			Variables:>{options},
 			TimeConstraint -> 300
 		],
@@ -6348,7 +6394,7 @@ DefineTests[ExperimentGCMS,
 				TrimColumn->False,
 				Output -> Options];
 			Lookup[options,TrimColumn],
-			{False},
+			False,
 			Variables:>{options},
 			TimeConstraint -> 300
 		],
@@ -6359,7 +6405,7 @@ DefineTests[ExperimentGCMS,
 				TrimColumnLength->10*Centimeter,
 				Output -> Options];
 			Lookup[options,TrimColumnLength],
-			{10*Centimeter},
+			10*Centimeter,
 			EquivalenceFunction->Equal,
 			Variables:>{options},
 			TimeConstraint -> 300
@@ -7219,7 +7265,83 @@ DefineTests[ExperimentGCMS,
 				SeparationMethod->Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID],
 				Output -> Options];
 			Lookup[options,SeparationMethod],
-			{_Association..},
+			_Association,
+			Variables:>{options},
+			Messages:>{Warning::OverwritingSeparationMethod},
+			TimeConstraint -> 300
+		],
+		Example[
+			{Options,SeparationMethod,"Specify one InitialColumnFlowRate that matches with the SeparationMethod and one that differs from the SeparationMethod:"},
+			options=ExperimentGCMS[{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID]},
+				SeparationMethod->Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID],
+				InitialColumnFlowRate -> {1.7 Milliliter/Minute, 1.5 Milliliter/Minute},
+				Output -> Options];
+			Lookup[options,InitialColumnFlowRate],
+			{1.7 Milliliter/Minute, 1.5 Milliliter/Minute},
+			Variables:>{options},
+			Messages:>{Warning::OverwritingSeparationMethod},
+			TimeConstraint -> 300
+		],
+		Example[
+			{Options,SeparationMethod,"Specify one BlankInitialColumnFlowRate that matches with the BlankSeparationMethod and one that differs from the BlankSeparationMethod:"},
+			options=ExperimentGCMS[Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID],
+				Blank -> Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID],
+				BlankSeparationMethod -> Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID],
+				BlankInitialColumnFlowRate -> {1.7 Milliliter/Minute, 1.5 Milliliter/Minute},
+				Output -> Options];
+			Lookup[options,BlankInitialColumnFlowRate],
+			{1.7 Milliliter/Minute, 1.5 Milliliter/Minute},
+			Variables:>{options},
+			Messages:>{Warning::OverwritingSeparationMethod},
+			TimeConstraint -> 300
+		],
+		Example[
+			{Options,SeparationMethod,"Specify one StandardInitialColumnFlowRate that matches with the StandardSeparationMethod and one that differs from the StandardSeparationMethod:"},
+			options=ExperimentGCMS[Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID],
+				Standard -> Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID],
+				StandardSeparationMethod -> Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID],
+				StandardInitialColumnFlowRate -> {1.7 Milliliter/Minute, 1.5 Milliliter/Minute},
+				Output -> Options];
+			Lookup[options,StandardInitialColumnFlowRate],
+			{1.7 Milliliter/Minute, 1.5 Milliliter/Minute},
+			Variables:>{options},
+			Messages:>{Warning::OverwritingSeparationMethod},
+			TimeConstraint -> 300
+		],
+		Example[
+			{Options,SeparationMethod,"Specify one InitialColumnFlowRate that matches with the SeparationMethod and one that differs and check if the InitialColumnAverageVelocity,InitialColumnPressure,and InitialColumnResidenceTime are recalculated:"},
+			options=ExperimentGCMS[{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID]},
+				SeparationMethod->Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID],
+				InitialColumnFlowRate -> {1.7 Milliliter/Minute, 1.5 Milliliter/Minute},
+				Output -> Options];
+			Lookup[options, {InitialColumnAverageVelocity,InitialColumnPressure,InitialColumnResidenceTime}],
+			{{Quantity[37.32`,("Centimeters")/("Seconds")],Quantity[34.21`,("Centimeters")/("Seconds")]},{Quantity[17.968`,("PoundsForce")/("Inches")^2],Quantity[16.388`,("PoundsForce")/("Inches")^2]},{Quantity[1.34`,"Minutes"],Quantity[1.46`,"Minutes"]}},
+			Variables:>{options},
+			Messages:>{Warning::OverwritingSeparationMethod},
+			TimeConstraint -> 300
+		],
+		Example[
+			{Options,SeparationMethod,"Specify a collection of inlet, column, and oven parameters that will be used to perform the chromatographic separation after the sample has been injected:"},
+			options=ExperimentGCMS[{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID]},
+				Standard -> Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID],
+				StandardSeparationMethod->Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID],
+				StandardInitialColumnFlowRate -> {1.7 Milliliter/Minute, 1.5 Milliliter/Minute},
+				Output -> Options];
+			Lookup[options, {StandardInitialColumnAverageVelocity,StandardInitialColumnPressure,StandardInitialColumnResidenceTime}],
+			{{Quantity[37.32`,("Centimeters")/("Seconds")],Quantity[34.21`,("Centimeters")/("Seconds")]},{Quantity[17.968`,("PoundsForce")/("Inches")^2],Quantity[16.388`,("PoundsForce")/("Inches")^2]},{Quantity[1.34`,"Minutes"],Quantity[1.46`,"Minutes"]}},
+			Variables:>{options},
+			Messages:>{Warning::OverwritingSeparationMethod},
+			TimeConstraint -> 300
+		],
+		Example[
+			{Options,SeparationMethod,"Specify one BlankInitialColumnFlowRate that matches with the BlankSeparationMethod and one that differs and check if the BlankInitialColumnAverageVelocity,BlankInitialColumnPressure,and BlankInitialColumnResidenceTime are recalculated:"},
+			options=ExperimentGCMS[{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID]},
+				Blank -> Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID],
+				BlankSeparationMethod->Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID],
+				BlankInitialColumnFlowRate -> {1.7 Milliliter/Minute, 1.5 Milliliter/Minute},
+				Output -> Options];
+			Lookup[options, {BlankInitialColumnAverageVelocity,BlankInitialColumnPressure,BlankInitialColumnResidenceTime}],
+			{{Quantity[37.32`,("Centimeters")/("Seconds")],Quantity[34.21`,("Centimeters")/("Seconds")]},{Quantity[17.968`,("PoundsForce")/("Inches")^2],Quantity[16.388`,("PoundsForce")/("Inches")^2]},{Quantity[1.34`,"Minutes"],Quantity[1.46`,"Minutes"]}},
 			Variables:>{options},
 			Messages:>{Warning::OverwritingSeparationMethod},
 			TimeConstraint -> 300
@@ -8168,7 +8290,7 @@ DefineTests[ExperimentGCMS,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,StandardSPMEDerivatizationPositionOffset,"Specify the distance from the SPMEDerivatizationPosition at which the Solid Phase MicroExtraction (SPME) fiber will be treated with the derivatizing agent during fiber preparation:"},
+			{Options,StandardSPMEDerivatizationPositionOffset,"Specify the distance from the StandardSPMEDerivatizationPosition at which the Solid Phase MicroExtraction (SPME) fiber will be treated with the derivatizing agent during fiber preparation:"},
 			options=ExperimentGCMS[{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
 				StandardSPMEDerivatizingAgent->Model[Sample,"Hexanes"],
 				StandardSPMEDerivatizationPositionOffset->20*Milli*Meter,
@@ -8469,7 +8591,7 @@ DefineTests[ExperimentGCMS,
 				StandardSeparationMethod->Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID],
 				Output -> Options];
 			Lookup[options,StandardSeparationMethod],
-			{_Association..},
+			_Association,
 			Variables:>{options},
 			Messages:>{Warning::OverwritingSeparationMethod},
 			TimeConstraint -> 300
@@ -8617,7 +8739,7 @@ DefineTests[ExperimentGCMS,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,StandardInitialColumnFlowRate,"Specify the initial column gas flow rate setpoint:"},
+			{Options,StandardInitialColumnFlowRate,"Specify the initial column gas flow rate setpoint for a Standard:"},
 			options=ExperimentGCMS[{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
 				StandardInitialColumnFlowRate->1.5*Milli*Liter/Minute,
 				Output -> Options];
@@ -8628,7 +8750,7 @@ DefineTests[ExperimentGCMS,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,StandardInitialColumnPressure,"Specify the initial column pressure (in PSI gauge pressure) setpoint:"},
+			{Options,StandardInitialColumnPressure,"Specify the initial column pressure (in PSI gauge pressure) setpoint for a Standard:"},
 			options=ExperimentGCMS[{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
 				StandardInitialColumnPressure->12*PSI,
 				Output -> Options];
@@ -8639,7 +8761,7 @@ DefineTests[ExperimentGCMS,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,StandardInitialColumnAverageVelocity,"Specify the initial column average linear gas velocity setpoint:"},
+			{Options,StandardInitialColumnAverageVelocity,"Specify the initial column average linear gas velocity setpoint for the Standard:"},
 			options=ExperimentGCMS[{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
 				StandardInitialColumnAverageVelocity->40*Centimeter/Second,
 				Output -> Options];
@@ -9190,7 +9312,7 @@ DefineTests[ExperimentGCMS,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,BlankSPMEDerivatizationPositionOffset,"Specify the distance from the SPMEDerivatizationPosition at which the Solid Phase MicroExtraction (SPME) fiber will be treated with the derivatizing agent during fiber preparation:"},
+			{Options,BlankSPMEDerivatizationPositionOffset,"Specify the distance from the BlankSPMEDerivatizationPosition at which the Solid Phase MicroExtraction (SPME) fiber will be treated with the derivatizing agent during fiber preparation:"},
 			options=ExperimentGCMS[{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
 				BlankSPMEDerivatizingAgent->Model[Sample,"Hexanes"],
 				BlankSPMEDerivatizationPositionOffset->20*Milli*Meter,
@@ -9491,7 +9613,7 @@ DefineTests[ExperimentGCMS,
 				BlankSeparationMethod->Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID],
 				Output -> Options];
 			Lookup[options,BlankSeparationMethod],
-			{_Association..},
+			_Association,
 			Variables:>{options},
 			Messages:>{Warning::OverwritingSeparationMethod},
 			TimeConstraint -> 300
@@ -9639,7 +9761,7 @@ DefineTests[ExperimentGCMS,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,BlankInitialColumnFlowRate,"Specify the initial column gas flow rate setpoint:"},
+			{Options,BlankInitialColumnFlowRate,"Specify the initial column gas flow rate setpoint for a Blank:"},
 			options=ExperimentGCMS[{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
 				BlankInitialColumnFlowRate->1.5*Milli*Liter/Minute,
 				Output -> Options];
@@ -9650,7 +9772,7 @@ DefineTests[ExperimentGCMS,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,BlankInitialColumnPressure,"Specify the initial column pressure (in PSI gauge pressure) setpoint:"},
+			{Options,BlankInitialColumnPressure,"Specify the initial column pressure (in PSI gauge pressure) setpoint for a Blank:"},
 			options=ExperimentGCMS[{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
 				BlankInitialColumnPressure->12*PSI,
 				Output -> Options];
@@ -9661,7 +9783,7 @@ DefineTests[ExperimentGCMS,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,BlankInitialColumnAverageVelocity,"Specify the initial column average linear gas velocity setpoint:"},
+			{Options,BlankInitialColumnAverageVelocity,"Specify the initial column average linear gas velocity setpoint for the Blank:"},
 			options=ExperimentGCMS[{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
 				BlankInitialColumnAverageVelocity->40*Centimeter/Second,
 				Output -> Options];
@@ -9792,7 +9914,7 @@ DefineTests[ExperimentGCMS,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,InjectionTable,"Specify the order of Sample, Standard, and Blank sample loading into the Instrument during measurement and/or collection. Also includes the flushing and priming of the column:"},
+			{Options,InjectionTable,"Specify the order of Sample, Standard, and Blank sample loading into the Instrument during measurement:"},
 			options=ExperimentGCMS[{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID]},
 				InjectionTable->{
 					{Standard, Model[Sample, "Hexanes"], LiquidInjection, {StandardVial -> Model[Container, Vessel, "2 mL clear glass GC vial"], VortexTime -> 5*Second}, Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID]},
@@ -9800,6 +9922,20 @@ DefineTests[ExperimentGCMS,
 					{Sample, Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], LiquidInjection, {VortexMixRate -> 500*RPM}, Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID]},
 					{Blank, Model[Sample, "Hexanes"], LiquidInjection, {BlankVial -> Model[Container, Vessel, "2 mL clear glass GC vial"], VortexTime -> 5*Second}, Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID]},
 					{Blank, Null, Null, {}, Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID]}
+				},
+				Output -> Options];
+			Lookup[options,InjectionTable],
+			_List,
+			Variables:>{options},
+			Messages:>{Warning::OverwritingSeparationMethod},
+			TimeConstraint -> 300
+		],
+		Example[
+			{Options,InjectionTable,"Specify the order of Sample (only) loading into the Instrument without any Standard or Blank:"},
+			options=ExperimentGasChromatography[{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID]},
+				InjectionTable->{
+					{Sample, Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], LiquidInjection, {VortexTime -> 5*Second}, Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID]},
+					{Sample, Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], LiquidInjection, {VortexMixRate -> 500*RPM}, Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID]}
 				},
 				Output -> Options];
 			Lookup[options,InjectionTable],
@@ -9838,7 +9974,7 @@ DefineTests[ExperimentGCMS,
 			TimeConstraint -> 300
 		],
 		Example[
-			{Options,PreparatoryUnitOperations,"Specify a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSampleManipulation:"},
+			{Options,PreparatoryUnitOperations,"Specify a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSamplePreparation:"},
 			protocol=ExperimentGCMS["My prepared sample",
 				PreparatoryUnitOperations->{
 					LabelContainer[
@@ -9863,7 +9999,8 @@ DefineTests[ExperimentGCMS,
 			],
 			ObjectP[Object[Protocol,GasChromatography]],
 			Variables:>{protocol},
-			Messages:>{Warning::RoundedTransferAmount,Warning::AliquotRequired}
+			Messages:>{Warning::RoundedTransferAmount,Warning::AliquotRequired},
+			TimeConstraint -> 600
 		],
 
 		(*all the sample prep stuff*)
@@ -10502,7 +10639,7 @@ DefineTests[ExperimentGCMS,
 				Output -> Options
 			];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1","A1","A1"},
 			Variables:>{options},
 			TimeConstraint -> 300
 		],
@@ -10590,17 +10727,6 @@ DefineTests[ExperimentGCMS,
 			Variables:>{options},
 			TimeConstraint -> 300
 		],
-		Example[{Messages,"GCColumnMaxTemperatureExceeded","An error is given if the Temperature setpoints exceed the maximum column temperature:"},
-			ExperimentGCMS[
-				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
-				ColumnConditioningTemperature->400Celsius
-			],
-			$Failed,
-			Messages :> {
-				Error::GCColumnMaxTemperatureExceeded,
-				Error::InvalidOption
-			}
-		],
 		Example[{Messages,"GCSampleVolumeOutOfRange","An error is given if the specified InjectionVolume does not fall between 1% and 100% of the volume of the specified InjectionSyringe:"},
 			ExperimentGCMS[
 				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
@@ -10681,10 +10807,11 @@ DefineTests[ExperimentGCMS,
 			$Failed,
 			Messages :> {
 				Error::GCContainerIncompatible,
+				Error::CoverNeededForContainer,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages,"OptionValueAboveLimit","An error is given if the option value it set to high for the instrument:"},
+		Example[{Messages,"OptionValueOutOfBounds","An error is given if the option value it set too high for the instrument:"},
 			ExperimentGCMS[
 				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
 				SampleAspirationRate->100*Milliliter/Second,
@@ -10692,7 +10819,7 @@ DefineTests[ExperimentGCMS,
 			],
 			$Failed,
 			Messages :> {
-				Error::OptionValueAboveLimit,
+				Error::OptionValueOutOfBounds,
 				Error::InvalidOption
 			}
 		],
@@ -10722,7 +10849,7 @@ DefineTests[ExperimentGCMS,
 		Example[{Messages,"GCSeptumNotCompatible","An error is given if the InletSeptum cannot currently be used on instrument:"},
 			ExperimentGCMS[
 				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
-				InletSeptum->Model[Item, Septum,"Septum for ExperimentGCMS" <> $SessionUUID]
+				InletSeptum->Model[Item, Septum,"Example Septum for ExperimentGCMS " <> $SessionUUID]
 			],
 			$Failed,
 			Messages :> {
@@ -10837,9 +10964,9 @@ DefineTests[ExperimentGCMS,
 				Error::InvalidOption
 			}
 		],
-		
+
 		(* --- Messages --- *)
-		Example[{Messages,"UnneededSyringeComponent","An warning is given if unnecessary syringe components are specified:"},
+		Example[{Messages,"UnneededSyringeComponent","A warning is given if unnecessary syringe components are specified:"},
 			ExperimentGCMS[
 				Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID],
 				LiquidInjectionSyringe->Model[Container, Syringe, "id:dORYzZJxRqER"],
@@ -10855,7 +10982,7 @@ DefineTests[ExperimentGCMS,
 				Unset[$CreatedObjects]
 			)
 		],
-		Example[{Messages,"OverwritingSeparationMethod","An warning is given if the SeparationMethod is overwritten:"},
+		Example[{Messages,"OverwritingSeparationMethod","A warning is given if the SeparationMethod is overwritten:"},
 			ExperimentGCMS[
 				Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID],
 				SeparationMethod->Object[Method,GasChromatography,"Test SeparationMethod for ExperimentGCMS" <> $SessionUUID],
@@ -10871,7 +10998,7 @@ DefineTests[ExperimentGCMS,
 				Unset[$CreatedObjects]
 			)
 		],
-		Example[{Messages,"GCColumnMinTemperatureExceeded","An warning is given if the temperature settings in the experiment are lower than the MinTemperature of the GCColumn:"},
+		Example[{Messages,"GCColumnMinTemperatureExceeded","A warning is given if the temperature settings in the experiment are lower than the MinTemperature of the GCColumn:"},
 			ExperimentGCMS[
 				Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID],
 				Column->Model[Item, Column,"Column with high MinTemperature for ExperimentGCMS" <> $SessionUUID],
@@ -10887,7 +11014,7 @@ DefineTests[ExperimentGCMS,
 				Unset[$CreatedObjects]
 			)
 		],
-		Example[{Messages,"AutomaticallySelectedWashSolvent","An warning is given if solvent washes are specified but no wash solvent is specified:"},
+		Example[{Messages,"AutomaticallySelectedWashSolvent","A warning is given if solvent washes are specified but no wash solvent is specified:"},
 			ExperimentGCMS[
 				Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID],
 				DilutionSolvent->Automatic,
@@ -10903,7 +11030,7 @@ DefineTests[ExperimentGCMS,
 				Unset[$CreatedObjects]
 			)
 		],
-		Example[{Messages,"AutomaticallySelectedDilutionSolvent","An warning is given if a DilutionSolventVolume is specified but no DilutionSolvent is specified:"},
+		Example[{Messages,"AutomaticallySelectedDilutionSolvent","A warning is given if a DilutionSolventVolume is specified but no DilutionSolvent is specified:"},
 			ExperimentGCMS[
 				Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID],
 				DilutionSolventVolume -> 25 Microliter
@@ -11319,146 +11446,6 @@ DefineTests[ExperimentGCMS,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages,"GCSampleVolumeOutOfRange","An error is given if the specified InjectionVolume does not fall between 1% and 100% of the volume of the specified InjectionSyringe:"},
-			ExperimentGCMS[
-				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
-				InjectionVolume -> 250*Microliter,
-				LiquidInjectionSyringe -> Model[Container, Syringe, "id:dORYzZJxRqER"]
-			],
-			$Failed,
-			Messages :> {
-				Error::GCSampleVolumeOutOfRange,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages,"CospecifiedInitialColumnConditions","An error is given if options are selected that cannot be specified for any separation simultaneously:"},
-			ExperimentGCMS[
-				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
-				InitialColumnFlowRate->100Milliliter/Minute,
-				InitialColumnPressure->50PSI
-			],
-			$Failed,
-			Messages :> {
-				Error::CospecifiedInitialColumnConditions,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages,"IncompatibleInletAndInletOption","An error is given if options are selected that are not compatible with a SplitSplitless inlet:"},
-			ExperimentGCMS[
-				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
-				SolventEliminationFlowRate->100Milliliter/Minute,
-				Inlet->SplitSplitless
-			],
-			$Failed,
-			Messages :> {
-				Error::IncompatibleInletAndInletOption,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages,"SplitRatioAndFlowRateCospecified","An error is given if SplitRatio and SplitVentFlowRate are specified simultaneously:"},
-			ExperimentGCMS[
-				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
-				SplitRatio->20,
-				SplitVentFlowRate->60Milliliter/Minute
-			],
-			$Failed,
-			Messages :> {
-				Error::SplitRatioAndFlowRateCospecified,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages,"GCOptionsAreConflicting","An error is given if SplitRatio or SplitVentFlowRate are specified when SolventEliminationFlowRate is also specified:"},
-			ExperimentGCMS[
-				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
-				SplitRatio->20,
-				SolventEliminationFlowRate->60Milliliter/Minute
-			],
-			$Failed,
-			Messages :> {
-				Error::GCOptionsAreConflicting,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages,"OptionsNotCompatibleWithSamplingMethod","An error is given if Liquid sampling options are specified if the SamplingMethod is not set to LiquidInjection:"},
-			ExperimentGCMS[
-				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
-				SamplingMethod->HeadspaceInjection,
-				LiquidPreInjectionSyringeWashVolume->60Microliter
-			],
-			$Failed,
-			Messages :> {
-				Error::OptionsNotCompatibleWithSamplingMethod,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages,"GCContainerIncompatible","An error is given if the containers specified are incompatible with the specified Instrument:"},
-			ExperimentGCMS[
-				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
-				AliquotContainer->Model[Container,Vessel,"10L Polypropylene Carboy"]
-			],
-			$Failed,
-			Messages :> {
-				Error::GCContainerIncompatible,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages,"OptionValueAboveLimit","An error is given if the option value it set to high for the instrument:"},
-			ExperimentGCMS[
-				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
-				SampleAspirationRate->100*Milliliter/Second,
-				SamplingMethod->LiquidInjection
-			],
-			$Failed,
-			Messages :> {
-				Error::OptionValueAboveLimit,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages,"DetectorOptionsIncompatible","An error is given if the options are not compatible with a specified detector:"},
-			ExperimentGCMS[
-				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
-				Detector->MassSpectrometer,
-				FIDTemperature->200Celsius
-			],
-			$Failed,
-			Messages :> {
-				Error::DetectorOptionsIncompatible,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages,"GCORingNotCompatible","An error is given if the LinerORing cannot currently be used on instrument:"},
-			ExperimentGCMS[
-				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
-				LinerORing->Model[Item, ORing, "id:aXRlGn6pznXB"]
-			],
-			$Failed,
-			Messages :> {
-				Error::GCORingNotCompatible,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages,"GCSeptumNotCompatible","An error is given if the InletSeptum cannot currently be used on instrument:"},
-			ExperimentGCMS[
-				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
-				InletSeptum->Model[Item, Septum,"Septum for ExperimentGCMS" <> $SessionUUID]
-			],
-			$Failed,
-			Messages :> {
-				Error::GCSeptumNotCompatible,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages,"GCIncompatibleColumn","An error is given if the Column is not a GC column:"},
-			ExperimentGCMS[
-				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
-				Column->Model[Item, Column, "id:D8KAEvGloNL3"]
-			],
-			$Failed,
-			Messages :> {
-				Error::GCIncompatibleColumn,
-				Error::InvalidOption
-			}
-		],
 		Example[{Messages,"GCTrimColumnConflict","An error is given if a TrimColumnLength is specified if TrimColumn is False:"},
 			ExperimentGCMS[
 				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
@@ -11482,78 +11469,59 @@ DefineTests[ExperimentGCMS,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages,"GCIncompatibleLiquidInjectionSyringe","An error is given if the LiquidInjectionSyringe does not have the correct GCInjectionTypeLiquidInjection:"},
+		Example[{Messages, "CoverNeededForContainer", "An error is given if a compatible cap cannot be found for the container to be loaded onto the GC autosampler:"},
 			ExperimentGCMS[
-				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
-				LiquidInjectionSyringe->Model[Container, Syringe, "id:P5ZnEj4P88P0"]
+				Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID],
+				AliquotContainer -> Model[Container, Vessel, "10L Polypropylene Carboy"]
 			],
 			$Failed,
 			Messages :> {
-				Error::GCIncompatibleLiquidInjectionSyringe,
+				Error::GCContainerIncompatible,
+				Error::CoverNeededForContainer,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages,"GCHeadspaceInjectionSyringeRequired","An error is given if a HeadspaceInjection sample has been specified but a HeadspaceInjectionSyringe has not:"},
+		Test["Users may use any vial with the correct footprint for the autosampler and with any pierceable cap as long as the sample does not need to move on the GC deck:",
 			ExperimentGCMS[
-				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
-				SamplingMethod->HeadspaceInjection,
-				HeadspaceInjectionSyringe->Null
+				Object[Sample, "Example sample in a vial with a non-magnetic cap for ExperimentGCMS tests " <> $SessionUUID],
+				Agitate -> False,
+				Vortex -> False
 			],
-			$Failed,
+			ObjectP[Object[Protocol, GasChromatography]]
+		],
+		Test["Aliquoting to a container with a magnetic cap is required, if the sample needs to move on the GC deck:",
+			ExperimentGCMS[
+				Object[Sample, "Example sample in a vial with a non-magnetic cap for ExperimentGCMS tests " <> $SessionUUID],
+				Agitate -> False,
+				Vortex -> True
+			],
+			ObjectP[Object[Protocol, GasChromatography]],
+			Messages :> {Warning::AliquotRequired}
+		],
+		Example[{Messages, "CapSwap", "A Warning is surfaced if a sample is in a container that requires its current cover to be replaced with a new cap:"},
+			ExperimentGCMS[
+				Object[Sample, "Example sample in a vial with a non-pierceable cap for ExperimentGCMS tests " <> $SessionUUID]
+			],
+			ObjectP[Object[Protocol, GasChromatography]],
 			Messages :> {
-				Error::GCHeadspaceInjectionSyringeRequired,
-				Error::GCSampleVolumeOutOfRange,
-				Error::InvalidOption
+				Warning::ContainerCapSwapRequired
 			}
 		],
-		Example[{Messages,"GCIncompatibleHeadspaceInjectionSyringe","An error is given if the HeadspaceInjectionSyringe does not have the correct GCInjectionType:"},
+		Test["A Warning is surfaced if a standard is in a container that requires its current cover to be replaced with a compatible cap:",
 			ExperimentGCMS[
-				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
-				HeadspaceInjectionSyringe->Model[Container, Syringe, "id:P5ZnEj4P88P0"]
+				Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID],
+				Standard -> Object[Sample, "Example sample in a vial with a non-pierceable cap for ExperimentGCMS tests " <> $SessionUUID]
 			],
-			$Failed,
-			Messages :> {
-				Error::GCIncompatibleHeadspaceInjectionSyringe,
-				Error::InvalidOption
-			}
+			ObjectP[Object[Protocol, GasChromatography]],
+			Messages :> {Warning::ContainerCapSwapRequired}
 		],
-		Example[{Messages,"GCSPMEInjectionFiberRequired","An error is given if a SPMEInjection sample has been specified but a SPMEInjectionFiber has not:"},
+		Test["A Warning is surfaced if a blank is in a container that requires current cover to be replaced with a compatible cap:",
 			ExperimentGCMS[
-				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
-				SamplingMethod->SPMEInjection,
-				SPMEInjectionFiber->Null
+				Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID],
+				Standard -> Object[Sample, "Example sample in a vial with a non-pierceable cap for ExperimentGCMS tests " <> $SessionUUID]
 			],
-			$Failed,
-			Messages :> {
-				Error::GCSPMEInjectionFiberRequired,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages,"GCLiquidHandlingSyringeRequired","An error is given if a LiquidHandling step has been specified but a LiquidHandlingSyringe has not:"},
-			ExperimentGCMS[
-				Object[Sample, "ExperimentGCMS Test Sample 5" <> $SessionUUID],
-				DilutionSolventVolume->100Microliter,
-				DilutionSolvent -> Model[Sample, "Hexanes"],
-				LiquidHandlingSyringe->Null
-			],
-			$Failed,
-			Messages :> {
-				Error::GCLiquidHandlingSyringeRequired,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages,"GCIncompatibleLiquidHandlingSyringe","An error is given if the LiquidHandlingSyringe does not have the correct GCInjectionType:"},
-			ExperimentGCMS[
-				Object[Sample, "ExperimentGCMS Test Sample 5" <> $SessionUUID],
-				DilutionSolventVolume->100Microliter,
-				DilutionSolvent -> Model[Sample, "Hexanes"],
-				LiquidHandlingSyringe->Model[Container, Syringe, "id:P5ZnEj4P88P0"]
-			],
-			$Failed,
-			Messages :> {
-				Error::GCIncompatibleLiquidHandlingSyringe,
-				Error::InvalidOption
-			}
+			ObjectP[Object[Protocol, GasChromatography]],
+			Messages :> {Warning::ContainerCapSwapRequired}
 		]
 	},
 
@@ -11561,13 +11529,14 @@ DefineTests[ExperimentGCMS,
 	(* Variables :> {$SessionUUID},*)
 	Stubs :> {Quiet[_,_] = Quiet[_]},
 (*	Stubs :> {Quiet[Download[___],_] = Quiet[Download[___],{Download::FieldDoesntExist, Download::NotLinkField, Download::MissingCacheField, Download::ObjectDoesNotExist,Download::MissingField}]},*)
-	SymbolSetUp:>(
+	SymbolSetUp:> (
 		Off[Warning::SamplesOutOfStock];
 		Off[Warning::InstrumentUndergoingMaintenance];
 
 		(*module for deleting created objects*)
 		Module[{objects, existingObjects},
 			objects={
+				Object[Container, Bench, "Example bench for ExperimentGCMS tests " <> $SessionUUID],
 				Object[Sample,"ExperimentGCMS Test Sample 1" <> $SessionUUID],
 				Object[Sample,"ExperimentGCMS Test Sample 2" <> $SessionUUID],
 				Object[Sample,"ExperimentGCMS Test Sample 3" <> $SessionUUID],
@@ -11576,20 +11545,34 @@ DefineTests[ExperimentGCMS,
 				Object[Sample,"ExperimentGCMS Large Test Sample 1" <> $SessionUUID],
 				Object[Sample,"Test sample for invalid container for ExperimentGCMS tests" <> $SessionUUID],
 				Object[Sample,"Test sample for discarded sample for ExperimentGCMS tests" <> $SessionUUID],
+				Object[Sample, "Example sample in a uncovered vial for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Sample, "Example sample in a vial with a non-magnetic cap for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Sample, "Example sample in a vial with a non-pierceable cap for ExperimentGCMS tests " <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 1 for ExperimentGCMS tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 2 for ExperimentGCMS tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 3 for ExperimentGCMS tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 4 for ExperimentGCMS tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 5 for ExperimentGCMS tests" <> $SessionUUID],
+				Object[Container, Vessel, "Example vial without a cover for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Container, Vessel, "Example vial with a non-pierceable cap for ExperimentGCMS tests " <> $SessionUUID],
 				Object[Container,Vessel,"Test large vial 1 for ExperimentGCMS tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test invalid container 1 for ExperimentGCMS tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCMS tests" <> $SessionUUID],
-				Object[Protocol,GasChromatography,"My particular ExperimentGCMS protocol" <> $SessionUUID],
-				Object[Method,GasChromatography,"Test SeparationMethod for ExperimentGCMS" <> $SessionUUID],
-				Object[Item,Cap,"Stocked vial cap 1 for ExperimentGCMS" <> $SessionUUID],
-				Object[Item,Cap,"Stocked vial cap 2 for ExperimentGCMS" <> $SessionUUID],
-				Object[Item,Cap,"Stocked vial cap 3 for ExperimentGCMS" <> $SessionUUID],
-				Model[Item, Septum, "Septum for ExperimentGCMS" <> $SessionUUID],
+				Object[Container, Vessel, "Example vial with a non-magnetic cap for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 1 for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 2 for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 3 for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 4 for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 5 for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Item, Cap, "Example large magnetic vial cap for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Item, Cap, "Example non-magnetic vial cap for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Item, Cap, "Example non-pierceable vial cap for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Protocol, GasChromatography, "My particular ExperimentGCMS protocol" <> $SessionUUID],
+				Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID],
+				Object[Item, Cap, "Stocked vial cap 1 for ExperimentGCMS" <> $SessionUUID],
+				Object[Item, Cap, "Stocked vial cap 2 for ExperimentGCMS" <> $SessionUUID],
+				Object[Item, Cap, "Stocked vial cap 3 for ExperimentGCMS" <> $SessionUUID],
+				Model[Item, Septum, "Example Septum for ExperimentGCMS " <> $SessionUUID],
 				Model[Item, Column, "Column with high MinTemperature for ExperimentGCMS" <> $SessionUUID]
 			};
 
@@ -11597,213 +11580,269 @@ DefineTests[ExperimentGCMS,
 			EraseObject[existingObjects, Force -> True, Verbose -> False]
 
 		];
-		(*module for creating objects*)
-		Module[{containerPackets,samplePackets,methodPackets,stockedProductPackets},
-
-			containerPackets = {
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 1 for ExperimentGCMS tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "0.3 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 2 for ExperimentGCMS tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 4 for ExperimentGCMS tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 3 for ExperimentGCMS tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 5 for ExperimentGCMS tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "10 mL clear glass GC vial"], Objects],
-					Name -> "Test large vial 1 for ExperimentGCMS tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2mL Tube"], Objects],
-					Name -> "Test invalid container 1 for ExperimentGCMS tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test discarded vial 1 for ExperimentGCMS tests" <> $SessionUUID
-				]
-			};
-
-			(* Create GC method packets here *)
-
-			UploadSample[Lookup[containerPackets,Model][Object],ConstantArray[{"Left Slot",Object[Container,Shelf,"id:D8KAEvGwRr9m"]},Length[containerPackets]],Name->Lookup[containerPackets,Name]];
-
-			samplePackets = UploadSample[
+		Block[{$AllowPublicObjects = True, $DeveloperUpload = True},
+			Module[
 				{
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"]
+					testBench, container1, container2, container3, container4, container5,  discardedContainer,
+					largeContainer, invalidContainer, containerWithNonPierceableCap, containerWithNonMagneticCap, containerWithoutCover,
+					cover1, cover2, cover3, cover4, cover5, largeMagneticCap, nonMagneticCap, nonPierceableCap, coverPackets, samplePackets,
+					methodPackets, stockedProductPackets
 				},
+
+				testBench = Upload[
+					<|
+						Type -> Object[Container, Bench],
+						Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+						Name -> "Example bench for ExperimentGCMS tests " <> $SessionUUID,
+						DeveloperObject -> True,
+						StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+						Site -> Link[$Site]
+					|>
+				];
+
 				{
-					{"A1",Object[Container,Vessel,"Test vial 1 for ExperimentGCMS tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 2 for ExperimentGCMS tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 3 for ExperimentGCMS tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 4 for ExperimentGCMS tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 5 for ExperimentGCMS tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test large vial 1 for ExperimentGCMS tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test invalid container 1 for ExperimentGCMS tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCMS tests" <> $SessionUUID]}
-				},
-				InitialAmount ->
-						{
-							2000 Microliter,
-							300 Microliter,
-							1000 Microliter,
-							1000 Microliter,
-							200 Microliter,
-							4000 Microliter,
-							2000 Microliter,
-							1800 Microliter
-						},
-				Name->{
-					"ExperimentGCMS Test Sample 1" <> $SessionUUID,
-					"ExperimentGCMS Test Sample 2" <> $SessionUUID,
-					"ExperimentGCMS Test Sample 3" <> $SessionUUID,
-					"ExperimentGCMS Test Sample 4" <> $SessionUUID,
-					"ExperimentGCMS Test Sample 5" <> $SessionUUID,
-					"ExperimentGCMS Large Test Sample 1" <> $SessionUUID,
-					"Test sample for invalid container for ExperimentGCMS tests" <> $SessionUUID,
-					"Test sample for discarded sample for ExperimentGCMS tests" <> $SessionUUID
-				},
-				Upload->False
-			];
+					container1, container2, container3, container4, container5, containerWithoutCover,
+					discardedContainer, containerWithNonPierceableCap, largeContainer, invalidContainer, containerWithNonMagneticCap,
+					cover1, cover2, cover3, cover4, cover5, largeMagneticCap, nonMagneticCap, nonPierceableCap
+				} = UploadSample[
+					{
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],(*2 mL clear glass GC vial*)
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],
+						Model[Container, Vessel, "id:jLq9jXvwdnRW"], (*10 mL clear glass GC vial*)
+						Model[Container, Vessel, "id:3em6Zv9NjjN8"], (*2mL Tube*)
+						Model[Container, Vessel, "id:XnlV5jNXm8oP"], (*Thermo Scientific SureSTART 2 mL Glass Crimp Top Vials, Level 2 High-Throughput Applications*)
+						Model[Item, Cap, "id:L8kPEjn1PRww"],(*2 mL GC vial cap, magnetic*)
+						Model[Item, Cap, "id:L8kPEjn1PRww"],
+						Model[Item, Cap, "id:L8kPEjn1PRww"],
+						Model[Item, Cap, "id:L8kPEjn1PRww"],
+						Model[Item, Cap, "id:L8kPEjn1PRww"],
+						Model[Item, Cap, "id:AEqRl9Kmnrqv"],
+						Model[Item, Cap, "id:jLq9jXOmYw5q"],(*Thermo Scientific SureSTART 11 mm Crimp Caps, White Silicone/Red PTFE*)
+						Model[Item, Cap, "id:6V0npvmo1qX8"](*"Tube Cap, 12x6mm" w/ Pierceable -> False*)
+					},
+					{
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench}
+					},
+					Name -> {
+						"Test vial 1 for ExperimentGCMS tests" <> $SessionUUID,
+						"Test vial 2 for ExperimentGCMS tests" <> $SessionUUID,
+						"Test vial 3 for ExperimentGCMS tests" <> $SessionUUID,
+						"Test vial 4 for ExperimentGCMS tests" <> $SessionUUID,
+						"Test vial 5 for ExperimentGCMS tests" <> $SessionUUID,
+						"Example vial without a cover for ExperimentGCMS tests " <> $SessionUUID,
+						"Test discarded vial 1 for ExperimentGCMS tests" <> $SessionUUID,
+						"Example vial with a non-pierceable cap for ExperimentGCMS tests " <> $SessionUUID,
+						"Test large vial 1 for ExperimentGCMS tests" <> $SessionUUID,
+						"Test invalid container 1 for ExperimentGCMS tests" <> $SessionUUID,
+						"Example vial with a non-magnetic cap for ExperimentGCMS tests " <> $SessionUUID,
+						"Example magnetic vial cap 1 for ExperimentGCMS tests " <> $SessionUUID,
+						"Example magnetic vial cap 2 for ExperimentGCMS tests " <> $SessionUUID,
+						"Example magnetic vial cap 3 for ExperimentGCMS tests " <> $SessionUUID,
+						"Example magnetic vial cap 4 for ExperimentGCMS tests " <> $SessionUUID,
+						"Example magnetic vial cap 5 for ExperimentGCMS tests " <> $SessionUUID,
+						"Example large magnetic vial cap for ExperimentGCMS tests " <> $SessionUUID,
+						"Example non-magnetic vial cap for ExperimentGCMS tests " <> $SessionUUID,
+						"Example non-pierceable vial cap for ExperimentGCMS tests " <> $SessionUUID
+					}
+				];
 
-			Upload[samplePackets];
+				coverPackets = UploadCover[
+					{container1, container2, container3, container4, container5, largeContainer, containerWithNonMagneticCap, containerWithNonPierceableCap},
+					Cover -> {cover1, cover2, cover3, cover4, cover5, largeMagneticCap, nonMagneticCap, nonPierceableCap},
+					Upload -> False
+				];
 
-			(* discard the discarded sample+container by moving to waste *)
-			UploadLocation[Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCMS tests" <> $SessionUUID], Waste];
+				samplePackets = UploadSample[
+					{
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"], (*80% Heptane, 20% Ethanol diluent for SFC*)
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"],
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"],
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"],
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"],
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"],
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"],
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"],
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"],
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"],
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"]
+					},
+					{
+						{"A1", container1},
+						{"A1", container2},
+						{"A1", container3},
+						{"A1", container4},
+						{"A1", container5},
+						{"A1", largeContainer},
+						{"A1", invalidContainer},
+						{"A1", discardedContainer},
+						{"A1", containerWithoutCover},
+						{"A1", containerWithNonMagneticCap},
+						{"A1", containerWithNonPierceableCap}
+					},
+					InitialAmount ->
+							{
+								2000 Microliter,
+								300 Microliter,
+								1000 Microliter,
+								1000 Microliter,
+								100 Microliter,
+								4000 Microliter,
+								2000 Microliter,
+								1800 Microliter,
+								1000 Microliter,
+								1000 Microliter,
+								1000 Microliter
+							},
+					Name->{
+						"ExperimentGCMS Test Sample 1" <> $SessionUUID,
+						"ExperimentGCMS Test Sample 2" <> $SessionUUID,
+						"ExperimentGCMS Test Sample 3" <> $SessionUUID,
+						"ExperimentGCMS Test Sample 4" <> $SessionUUID,
+						"ExperimentGCMS Test Sample 5" <> $SessionUUID,
+						"ExperimentGCMS Large Test Sample 1" <> $SessionUUID,
+						"Test sample for invalid container for ExperimentGCMS tests" <> $SessionUUID,
+						"Test sample for discarded sample for ExperimentGCMS tests" <> $SessionUUID,
+						"Example sample in a uncovered vial for ExperimentGCMS tests " <> $SessionUUID,
+						"Example sample in a vial with a non-magnetic cap for ExperimentGCMS tests " <> $SessionUUID,
+						"Example sample in a vial with a non-pierceable cap for ExperimentGCMS tests " <> $SessionUUID
+					},
+					Upload->False
+				];
 
-			(*sever the link to the model*)
+				Upload[Join[coverPackets, samplePackets]];
 
-			Upload[
-				{
+				(* discard the discarded sample+container by moving to waste *)
+				UploadLocation[discardedContainer, Waste];
+
+				(*sever the link to the model*)
+
+				Upload[
+					{
+						Association[
+							Object -> Object[Sample,"ExperimentGCMS Test Sample 1" <> $SessionUUID],
+							Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {5 Millimolar, Link[Model[Molecule, "Acetone"]], Now}}
+						],
+						Association[
+							Object -> Object[Sample,"ExperimentGCMS Test Sample 4" <> $SessionUUID],
+							Model -> Null
+						]
+					}
+				];
+
+				methodPackets = {
 					Association[
-						Object -> Object[Sample,"ExperimentGCMS Test Sample 1" <> $SessionUUID],
-						Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {5 Millimolar, Link[Model[Molecule, "Acetone"]]}}
+						Type -> Object[Method, GasChromatography],
+						Name -> "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID,
+						Replace[ColumnLength]->30*Meter,
+						Replace[ColumnDiameter]->0.32*Milli*Meter,
+						Replace[ColumnFilmThickness]->0.25*Micro*Meter,
+						InletLinerVolume->870*Micro*Liter,
+						Detector->FlameIonizationDetector,
+						CarrierGas->Helium,
+						InletSeptumPurgeFlowRate->3*Milli*Liter/Minute,
+						InitialInletTemperature->250*Celsius,
+						SplitRatio->20,
+						InitialInletPressure->25*PSI,
+						InitialInletTime->1*Minute,
+						GasSaver->True,
+						GasSaverFlowRate->25*Milli*Liter/Minute,
+						GasSaverActivationTime->3*Minute,
+						InitialColumnFlowRate->1.7*Milli*Liter/Minute,
+						ColumnFlowRateProfile->ConstantFlowRate,
+						OvenEquilibrationTime->2*Minute,
+						InitialOvenTemperature->50*Celsius,
+						OvenTemperatureProfile->Isothermal,
+						PostRunOvenTemperature->35*Celsius,
+						PostRunOvenTime->2*Minute
+					]
+				};
+
+				Upload[methodPackets];
+
+				stockedProductPackets = {
+					Association[
+						Type->Object[Item,Cap],
+						Name->"Stocked vial cap 1 for ExperimentGCMS" <> $SessionUUID,
+						Model->Link[Model[Item, Cap, "id:AEqRl9Kmnrqv"],Objects],
+						Status->Stocked
 					],
 					Association[
-						Object -> Object[Sample,"ExperimentGCMS Test Sample 4" <> $SessionUUID],
-						Model -> Null
+						Type->Object[Item,Cap],
+						Name->"Stocked vial cap 2 for ExperimentGCMS" <> $SessionUUID,
+						Model->Link[Model[Item, Cap, "id:AEqRl9Kmnrqv"],Objects],
+						Status->Stocked
+					],
+					Association[
+						Type->Object[Item,Cap],
+						Name->"Stocked vial cap 3 for ExperimentGCMS" <> $SessionUUID,
+						Model->Link[Model[Item, Cap, "id:AEqRl9Kmnrqv"],Objects],
+						Status->Stocked
 					]
-				}
-			];
+				};
 
-			methodPackets = {
-				Association[
-					Type -> Object[Method, GasChromatography],
-					Name -> "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID,
-					Replace[ColumnLength]->30*Meter,
-					Replace[ColumnDiameter]->0.32*Milli*Meter,
-					Replace[ColumnFilmThickness]->0.25*Micro*Meter,
-					InletLinerVolume->870*Micro*Liter,
-					Detector->MassSpectrometer,
-					CarrierGas->Helium,
-					InletSeptumPurgeFlowRate->3*Milli*Liter/Minute,
-					InitialInletTemperature->250*Celsius,
-					SplitRatio->20,
-					InitialInletPressure->25*PSI,
-					InitialInletTime->1*Minute,
-					GasSaver->True,
-					GasSaverFlowRate->25*Milli*Liter/Minute,
-					GasSaverActivationTime->3*Minute,
-					InitialColumnFlowRate->1.7*Milli*Liter/Minute,
-					ColumnFlowRateProfile->ConstantFlowRate,
-					OvenEquilibrationTime->2*Minute,
-					InitialOvenTemperature->50*Celsius,
-					OvenTemperatureProfile->Isothermal,
-					PostRunOvenTemperature->35*Celsius,
-					PostRunOvenTime->2*Minute
-				]
-			};
+				Upload[stockedProductPackets];
 
-			Upload[methodPackets];
-
-			stockedProductPackets = {
-				Association[
-					Type->Object[Item,Cap],
-					Name->"Stocked vial cap 1 for ExperimentGCMS" <> $SessionUUID,
-					Model->Link[Model[Item, Cap, "id:AEqRl9Kmnrqv"],Objects],
-					Status->Stocked
-				],
-				Association[
-					Type->Object[Item,Cap],
-					Name->"Stocked vial cap 2 for ExperimentGCMS" <> $SessionUUID,
-					Model->Link[Model[Item, Cap, "id:AEqRl9Kmnrqv"],Objects],
-					Status->Stocked
-				],
-				Association[
-					Type->Object[Item,Cap],
-					Name->"Stocked vial cap 3 for ExperimentGCMS" <> $SessionUUID,
-					Model->Link[Model[Item, Cap, "id:AEqRl9Kmnrqv"],Objects],
-					Status->Stocked
-				]
-			};
-
-			Upload[stockedProductPackets];
-
-			Upload[{
-				<|
-					Type->Model[Item, Septum],
-					Name->"Septum for ExperimentGCMS" <> $SessionUUID,
-					Diameter->1Millimeter
-				|>,
-				<|
-					Type -> Model[Item, Column],
-					ChromatographyType -> GasChromatography,
-					ColumnFormat -> Quantity[7., "Inches"],
-					ColumnLength -> Quantity[30000., "Millimeters"],
-					ColumnType -> Analytical,
-					Replace[Connectors] -> {{"Column Inlet", Tube, None, Quantity[0.00984251968503937, "Inches"], Quantity[0.015748031496062992, "Inches"], None}, {"Column Outlet", Tube, None, Quantity[0.00984251968503937, "Inches"], Quantity[0.015748031496062992, "Inches"], None}},
-					DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-					Diameter -> Quantity[0.25, "Millimeters"],
-					Dimensions -> {Quantity[0.1905, "Meters"], Quantity[0.1905, "Meters"], Quantity[0.0635, "Meters"]},
-					FilmThickness -> Quantity[0.25, "Micrometers"],
-					MaxFlowRate -> Quantity[16000., "Milliliters"/"Minutes"],
-					MaxNumberOfUses -> 9999,
-					MaxPressure -> Quantity[100., "PoundsForce"/"Inches"^2],
-					MaxShortExposureTemperature -> Quantity[350., "DegreesCelsius"],
-					MaxTemperature -> Quantity[325., "DegreesCelsius"],
-					MinFlowRate -> Quantity[0., "Milliliters"/"Minutes"],
-					MinPressure -> Quantity[0., "PoundsForce"/"Inches"^2],
-					MinTemperature -> Quantity[40, "DegreesCelsius"],
-					PackingType -> WCOT,
-					Polarity -> NonPolar,
-					SeparationMode -> GasChromatography,
-					Size -> Quantity[30., "Meters"],
-					Replace[StationaryPhaseBonded] -> {Bonded, Crosslinked},
-					Replace[WettedMaterials] -> {Silica},
-					DeveloperObject -> True,
-					Name -> "Column with high MinTemperature for ExperimentGCMS" <> $SessionUUID
-				|>
-
-			}]
-
+				Upload[{
+					<|
+						Type->Model[Item, Septum],
+						Name->"Example Septum for ExperimentGCMS " <> $SessionUUID,
+						Diameter->1Millimeter
+					|>,
+					<|
+						Type -> Model[Item, Column],
+						ChromatographyType -> GasChromatography,
+						ColumnFormat -> Quantity[7., "Inches"],
+						ColumnLength -> Quantity[30000., "Millimeters"],
+						ColumnType -> Analytical,
+						Replace[Connectors] -> {{"Column Inlet", Tube, None, Quantity[0.00984251968503937, "Inches"], Quantity[0.015748031496062992, "Inches"], None}, {"Column Outlet", Tube, None, Quantity[0.00984251968503937, "Inches"], Quantity[0.015748031496062992, "Inches"], None}},
+						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+						Diameter -> Quantity[0.25, "Millimeters"],
+						Dimensions -> {Quantity[0.1905, "Meters"], Quantity[0.1905, "Meters"], Quantity[0.0635, "Meters"]},
+						FilmThickness -> Quantity[0.25, "Micrometers"],
+						MaxFlowRate -> Quantity[16000., "Milliliters"/"Minutes"],
+						MaxNumberOfUses -> 9999,
+						MaxPressure -> Quantity[100., "PoundsForce"/"Inches"^2],
+						MaxShortExposureTemperature -> Quantity[350., "DegreesCelsius"],
+						MaxTemperature -> Quantity[325., "DegreesCelsius"],
+						MinFlowRate -> Quantity[0., "Milliliters"/"Minutes"],
+						MinPressure -> Quantity[0., "PoundsForce"/"Inches"^2],
+						MinTemperature -> Quantity[40, "DegreesCelsius"],
+						PackingType -> WCOT,
+						Polarity -> NonPolar,
+						SeparationMode -> GasChromatography,
+						Size -> Quantity[30., "Meters"],
+						Replace[StationaryPhaseBonded] -> {Bonded, Crosslinked},
+						Replace[WettedMaterials] -> {Silica},
+						DeveloperObject -> True,
+						Name -> "Column with high MinTemperature for ExperimentGCMS" <> $SessionUUID
+					|>
+				}]
+			]
 		]
-
 	),
 	SymbolTearDown:>(
 		On[Warning::SamplesOutOfStock];
@@ -11811,26 +11850,43 @@ DefineTests[ExperimentGCMS,
 
 		Module[{objects, existingObjects},
 			objects={
+				Object[Container, Bench, "Example bench for ExperimentGCMS tests " <> $SessionUUID],
 				Object[Sample,"ExperimentGCMS Test Sample 1" <> $SessionUUID],
 				Object[Sample,"ExperimentGCMS Test Sample 2" <> $SessionUUID],
 				Object[Sample,"ExperimentGCMS Test Sample 3" <> $SessionUUID],
 				Object[Sample,"ExperimentGCMS Test Sample 4" <> $SessionUUID],
+				Object[Sample,"ExperimentGCMS Test Sample 5" <> $SessionUUID],
 				Object[Sample,"ExperimentGCMS Large Test Sample 1" <> $SessionUUID],
 				Object[Sample,"Test sample for invalid container for ExperimentGCMS tests" <> $SessionUUID],
 				Object[Sample,"Test sample for discarded sample for ExperimentGCMS tests" <> $SessionUUID],
+				Object[Sample, "Example sample in a uncovered vial for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Sample, "Example sample in a vial with a non-magnetic cap for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Sample, "Example sample in a vial with a non-pierceable cap for ExperimentGCMS tests " <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 1 for ExperimentGCMS tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 2 for ExperimentGCMS tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 3 for ExperimentGCMS tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test vial 4 for ExperimentGCMS tests" <> $SessionUUID],
+				Object[Container,Vessel,"Test vial 5 for ExperimentGCMS tests" <> $SessionUUID],
+				Object[Container, Vessel, "Example vial without a cover for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Container, Vessel, "Example vial with a non-pierceable cap for ExperimentGCMS tests " <> $SessionUUID],
 				Object[Container,Vessel,"Test large vial 1 for ExperimentGCMS tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test invalid container 1 for ExperimentGCMS tests" <> $SessionUUID],
 				Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCMS tests" <> $SessionUUID],
-				Object[Protocol,GasChromatography,"My particular ExperimentGCMS protocol" <> $SessionUUID],
-				Object[Method,GasChromatography,"Test SeparationMethod for ExperimentGCMS" <> $SessionUUID],
-				Object[Item,Cap,"Stocked vial cap 1 for ExperimentGCMS" <> $SessionUUID],
-				Object[Item,Cap,"Stocked vial cap 2 for ExperimentGCMS" <> $SessionUUID],
-				Object[Item,Cap,"Stocked vial cap 3 for ExperimentGCMS" <> $SessionUUID],
-				Model[Item, Septum, "Septum for ExperimentGCMS" <> $SessionUUID],
+				Object[Container, Vessel, "Example vial with a non-magnetic cap for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 1 for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 2 for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 3 for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 4 for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 5 for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Item, Cap, "Example large magnetic vial cap for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Item, Cap, "Example non-magnetic vial cap for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Item, Cap, "Example non-pierceable vial cap for ExperimentGCMS tests " <> $SessionUUID],
+				Object[Protocol, GasChromatography, "My particular ExperimentGCMS protocol" <> $SessionUUID],
+				Object[Method, GasChromatography, "Test SeparationMethod for ExperimentGCMS" <> $SessionUUID],
+				Object[Item, Cap, "Stocked vial cap 1 for ExperimentGCMS" <> $SessionUUID],
+				Object[Item, Cap, "Stocked vial cap 2 for ExperimentGCMS" <> $SessionUUID],
+				Object[Item, Cap, "Stocked vial cap 3 for ExperimentGCMS" <> $SessionUUID],
+				Model[Item, Septum, "Example Septum for ExperimentGCMS " <> $SessionUUID],
 				Model[Item, Column, "Column with high MinTemperature for ExperimentGCMS" <> $SessionUUID]
 			};
 
@@ -11839,7 +11895,8 @@ DefineTests[ExperimentGCMS,
 
 		]
 	),
-	Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]}
+	Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]},
+	HardwareConfiguration -> HighRAM
 ];
 
 
@@ -11873,166 +11930,98 @@ DefineTests[
 		(*module for deleting created objects*)
 		Module[{objects, existingObjects},
 			objects={
-				Object[Sample,"ExperimentGCMSOptions Test Sample 1" <> $SessionUUID],
-				Object[Sample,"ExperimentGCMSOptions Test Sample 2" <> $SessionUUID],
-				Object[Sample,"ExperimentGCMSOptions Test Sample 3" <> $SessionUUID],
-				Object[Sample,"ExperimentGCMSOptions Test Sample 4" <> $SessionUUID],
-				Object[Sample,"ExperimentGCMSOptions Large Test Sample 1" <> $SessionUUID],
-				Object[Sample,"Test sample for invalid container for ExperimentGCMSOptions tests" <> $SessionUUID],
-				Object[Sample,"Test sample for discarded sample for ExperimentGCMSOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 2 for ExperimentGCMSOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 3 for ExperimentGCMSOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 4 for ExperimentGCMSOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test large vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test invalid container 1 for ExperimentGCMSOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID],
-				Object[Protocol,GasChromatography,"My particular ExperimentGCMSOptions protocol" <> $SessionUUID],
-				Object[Method,GasChromatography,"Test SeparationMethod for ExperimentGCMSOptions" <> $SessionUUID]
+				Object[Container, Bench, "Example bench for ExperimentGCMSOptions tests " <> $SessionUUID],
+				Object[Sample, "ExperimentGCMSOptions Test Sample 1" <> $SessionUUID],
+				Object[Sample, "Test sample for discarded sample for ExperimentGCMSOptions tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test discarded vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 1 for ExperimentGCMSOptions tests " <> $SessionUUID]
 			};
 
 			existingObjects = PickList[objects, DatabaseMemberQ[#]&/@objects];
 			EraseObject[existingObjects, Force -> True, Verbose -> False]
-
 		];
-		(*module for creating objects*)
-		Module[{containerPackets,samplePackets,methodPackets},
+		Block[{$AllowPublicObjects = True, $DeveloperUpload = True},
+			Module[
+				{
+					testBench, container1, discardedContainer, cover1, coverPackets, samplePackets
+				},
 
-			containerPackets = {
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "0.3 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 2 for ExperimentGCMSOptions tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 4 for ExperimentGCMSOptions tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 3 for ExperimentGCMSOptions tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "10 mL clear glass GC vial"], Objects],
-					Name -> "Test large vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2mL Tube"], Objects],
-					Name -> "Test invalid container 1 for ExperimentGCMSOptions tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test discarded vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID
+				testBench = Upload[
+					<|
+						Type -> Object[Container, Bench],
+						Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+						Name -> "Example bench for ExperimentGCMSOptions tests " <> $SessionUUID,
+						DeveloperObject -> True,
+						StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+						Site -> Link[$Site]
+					|>
+				];
+
+				{
+					container1, discardedContainer, cover1
+				} = UploadSample[
+					{
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],(*2 mL clear glass GC vial*)
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],
+						Model[Item, Cap, "id:L8kPEjn1PRww"](*2 mL GC vial cap, magnetic*)
+					},
+					{
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench}
+					},
+					Name -> {
+						"Test vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID,
+						"Test discarded vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID,
+						"Example magnetic vial cap 1 for ExperimentGCMSOptions tests " <> $SessionUUID
+					}
+				];
+
+				coverPackets = UploadCover[
+					{container1},
+					Cover -> {cover1},
+					Upload -> False
+				];
+
+				samplePackets = UploadSample[
+					{
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"], (*80% Heptane, 20% Ethanol diluent for SFC*)
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"]
+					},
+					{
+						{"A1", container1},
+						{"A1", discardedContainer}
+					},
+					InitialAmount ->
+							{
+								2000 Microliter,
+								1800 Microliter
+							},
+					Name->{
+						"ExperimentGCMSOptions Test Sample 1" <> $SessionUUID,
+						"Test sample for discarded sample for ExperimentGCMSOptions tests" <> $SessionUUID
+					},
+					Upload->False
+				];
+
+				Upload[Join[coverPackets, samplePackets]];
+
+				(* discard the discarded sample+container by moving to waste *)
+				UploadLocation[discardedContainer, Waste];
+
+				(*sever the link to the model*)
+
+				Upload[
+					{
+						Association[
+							Object -> Object[Sample,"ExperimentGCMSOptions Test Sample 1" <> $SessionUUID],
+							Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {5 Millimolar, Link[Model[Molecule, "Acetone"]], Now}}
+						]
+					}
 				]
-			};
-
-			(* Create GC method packets here *)
-
-			UploadSample[Lookup[containerPackets,Model][Object],ConstantArray[{"Left Slot",Object[Container,Shelf,"id:D8KAEvGwRr9m"]},Length[containerPackets]],Name->Lookup[containerPackets,Name]];
-
-			samplePackets = UploadSample[
-				{
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"]
-				},
-				{
-					{"A1",Object[Container,Vessel,"Test vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 2 for ExperimentGCMSOptions tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 3 for ExperimentGCMSOptions tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 4 for ExperimentGCMSOptions tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test large vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test invalid container 1 for ExperimentGCMSOptions tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID]}
-				},
-				InitialAmount ->
-						{
-							2000 Microliter,
-							300 Microliter,
-							1000 Microliter,
-							1000 Microliter,
-							4000 Microliter,
-							2000 Microliter,
-							1800 Microliter
-						},
-				Name->{
-					"ExperimentGCMSOptions Test Sample 1" <> $SessionUUID,
-					"ExperimentGCMSOptions Test Sample 2" <> $SessionUUID,
-					"ExperimentGCMSOptions Test Sample 3" <> $SessionUUID,
-					"ExperimentGCMSOptions Test Sample 4" <> $SessionUUID,
-					"ExperimentGCMSOptions Large Test Sample 1" <> $SessionUUID,
-					"Test sample for invalid container for ExperimentGCMSOptions tests" <> $SessionUUID,
-					"Test sample for discarded sample for ExperimentGCMSOptions tests" <> $SessionUUID
-				},
-				Upload->False
-			];
-
-			Upload[samplePackets];
-
-			(* discard the discarded sample+container by moving to waste *)
-			UploadLocation[Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID], Waste];
-
-			(*sever the link to the model*)
-
-			Upload[
-				{
-					Association[
-						Object -> Object[Sample,"ExperimentGCMSOptions Test Sample 1" <> $SessionUUID],
-						Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {5 Millimolar, Link[Model[Molecule, "Acetone"]]}}
-					],
-					Association[
-						Object -> Object[Sample,"ExperimentGCMSOptions Test Sample 4" <> $SessionUUID],
-						Model -> Null
-					]
-				}
-			];
-
-			methodPackets = {
-				Association[
-					Type -> Object[Method, GasChromatography],
-					Name -> "Test SeparationMethod for ExperimentGCMSOptions" <> $SessionUUID,
-					Replace[ColumnLength]->30*Meter,
-					Replace[ColumnDiameter]->0.32*Milli*Meter,
-					Replace[ColumnFilmThickness]->0.25*Micro*Meter,
-					InletLinerVolume->870*Micro*Liter,
-					Detector->MassSpectrometer,
-					CarrierGas->Helium,
-					InletSeptumPurgeFlowRate->3*Milli*Liter/Minute,
-					InitialInletTemperature->250*Celsius,
-					SplitRatio->20,
-					InitialInletPressure->25*PSI,
-					InitialInletTime->1*Minute,
-					GasSaver->True,
-					GasSaverFlowRate->25*Milli*Liter/Minute,
-					GasSaverActivationTime->3*Minute,
-					InitialColumnFlowRate->1.7*Milli*Liter/Minute,
-					ColumnFlowRateProfile->ConstantFlowRate,
-					OvenEquilibrationTime->2*Minute,
-					InitialOvenTemperature->50*Celsius,
-					OvenTemperatureProfile->Isothermal,
-					PostRunOvenTemperature->35*Celsius,
-					PostRunOvenTime->2*Minute
-				]
-			};
-
-			Upload[methodPackets];
-
+			]
 		]
-
 	),
 	SymbolTearDown:>(
 		On[Warning::SamplesOutOfStock];
@@ -12040,27 +12029,16 @@ DefineTests[
 
 		Module[{objects, existingObjects},
 			objects={
-				Object[Sample,"ExperimentGCMSOptions Test Sample 1" <> $SessionUUID],
-				Object[Sample,"ExperimentGCMSOptions Test Sample 2" <> $SessionUUID],
-				Object[Sample,"ExperimentGCMSOptions Test Sample 3" <> $SessionUUID],
-				Object[Sample,"ExperimentGCMSOptions Test Sample 4" <> $SessionUUID],
-				Object[Sample,"ExperimentGCMSOptions Large Test Sample 1" <> $SessionUUID],
-				Object[Sample,"Test sample for invalid container for ExperimentGCMSOptions tests" <> $SessionUUID],
-				Object[Sample,"Test sample for discarded sample for ExperimentGCMSOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 2 for ExperimentGCMSOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 3 for ExperimentGCMSOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 4 for ExperimentGCMSOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test large vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test invalid container 1 for ExperimentGCMSOptions tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID],
-				Object[Protocol,GasChromatography,"My particular ExperimentGCMSOptions protocol" <> $SessionUUID],
-				Object[Method,GasChromatography,"Test SeparationMethod for ExperimentGCMSOptions" <> $SessionUUID]
+				Object[Container, Bench, "Example bench for ExperimentGCMSOptions tests " <> $SessionUUID],
+				Object[Sample, "ExperimentGCMSOptions Test Sample 1" <> $SessionUUID],
+				Object[Sample, "Test sample for discarded sample for ExperimentGCMSOptions tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test discarded vial 1 for ExperimentGCMSOptions tests" <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 1 for ExperimentGCMSOptions tests " <> $SessionUUID]
 			};
 
 			existingObjects = PickList[objects, DatabaseMemberQ[#]&/@objects];
 			EraseObject[existingObjects, Force -> True, Verbose -> False]
-
 		]
 	),
 	Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]}
@@ -12096,166 +12074,99 @@ DefineTests[
 		(*module for deleting created objects*)
 		Module[{objects, existingObjects},
 			objects={
-				Object[Sample,"ValidExperimentGCMSQ Test Sample 1" <> $SessionUUID],
-				Object[Sample,"ValidExperimentGCMSQ Test Sample 2" <> $SessionUUID],
-				Object[Sample,"ValidExperimentGCMSQ Test Sample 3" <> $SessionUUID],
-				Object[Sample,"ValidExperimentGCMSQ Test Sample 4" <> $SessionUUID],
-				Object[Sample,"ValidExperimentGCMSQ Large Test Sample 1" <> $SessionUUID],
-				Object[Sample,"Test sample for invalid container for ValidExperimentGCMSQ tests" <> $SessionUUID],
-				Object[Sample,"Test sample for discarded sample for ValidExperimentGCMSQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 2 for ValidExperimentGCMSQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 3 for ValidExperimentGCMSQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 4 for ValidExperimentGCMSQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test large vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test invalid container 1 for ValidExperimentGCMSQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test discarded vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID],
-				Object[Protocol,GasChromatography,"My particular ValidExperimentGCMSQ protocol" <> $SessionUUID],
-				Object[Method,GasChromatography,"Test SeparationMethod for ValidExperimentGCMSQ" <> $SessionUUID]
+				Object[Container, Bench, "Example bench for ValidExperimentGCMSQ tests " <> $SessionUUID],
+				Object[Sample, "ValidExperimentGCMSQ Test Sample 1" <> $SessionUUID],
+				Object[Sample, "Test sample for discarded sample for ValidExperimentGCMSQ tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test discarded vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 1 for ValidExperimentGCMSQ tests " <> $SessionUUID]
 			};
 
 			existingObjects = PickList[objects, DatabaseMemberQ[#]&/@objects];
 			EraseObject[existingObjects, Force -> True, Verbose -> False]
-
 		];
-		(*module for creating objects*)
-		Module[{containerPackets,samplePackets,methodPackets},
+		Block[{$AllowPublicObjects = True, $DeveloperUpload = True},
+			(*module for creating objects*)
+			Module[
+				{
+					testBench, container1, discardedContainer, cover1, coverPackets, samplePackets
+				},
 
-			containerPackets = {
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "0.3 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 2 for ValidExperimentGCMSQ tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 4 for ValidExperimentGCMSQ tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 3 for ValidExperimentGCMSQ tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "10 mL clear glass GC vial"], Objects],
-					Name -> "Test large vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2mL Tube"], Objects],
-					Name -> "Test invalid container 1 for ValidExperimentGCMSQ tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test discarded vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID
+				testBench = Upload[
+					<|
+						Type -> Object[Container, Bench],
+						Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+						Name -> "Example bench for ValidExperimentGCMSQ tests " <> $SessionUUID,
+						DeveloperObject -> True,
+						StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+						Site -> Link[$Site]
+					|>
+				];
+
+				{
+					container1, discardedContainer, cover1
+				} = UploadSample[
+					{
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],(*2 mL clear glass GC vial*)
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],
+						Model[Item, Cap, "id:L8kPEjn1PRww"](*2 mL GC vial cap, magnetic*)
+					},
+					{
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench}
+					},
+					Name -> {
+						"Test vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID,
+						"Test discarded vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID,
+						"Example magnetic vial cap 1 for ValidExperimentGCMSQ tests " <> $SessionUUID
+					}
+				];
+
+				coverPackets = UploadCover[
+					{container1},
+					Cover -> {cover1},
+					Upload -> False
+				];
+
+				samplePackets = UploadSample[
+					{
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"], (*80% Heptane, 20% Ethanol diluent for SFC*)
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"]
+					},
+					{
+						{"A1", container1},
+						{"A1", discardedContainer}
+					},
+					InitialAmount ->
+							{
+								2000 Microliter,
+								1800 Microliter
+							},
+					Name->{
+						"ValidExperimentGCMSQ Test Sample 1" <> $SessionUUID,
+						"Test sample for discarded sample for ValidExperimentGCMSQ tests" <> $SessionUUID
+					},
+					Upload->False
+				];
+
+				Upload[Join[coverPackets, samplePackets]];
+
+				(* discard the discarded sample+container by moving to waste *)
+				UploadLocation[discardedContainer, Waste];
+
+				(*sever the link to the model*)
+
+				Upload[
+					{
+						Association[
+							Object -> Object[Sample,"ValidExperimentGCMSQ Test Sample 1" <> $SessionUUID],
+							Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {5 Millimolar, Link[Model[Molecule, "Acetone"]], Now}}
+						]
+					}
 				]
-			};
-
-			(* Create GC method packets here *)
-
-			UploadSample[Lookup[containerPackets,Model][Object],ConstantArray[{"Left Slot",Object[Container,Shelf,"id:D8KAEvGwRr9m"]},Length[containerPackets]],Name->Lookup[containerPackets,Name]];
-
-			samplePackets = UploadSample[
-				{
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"]
-				},
-				{
-					{"A1",Object[Container,Vessel,"Test vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 2 for ValidExperimentGCMSQ tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 3 for ValidExperimentGCMSQ tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 4 for ValidExperimentGCMSQ tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test large vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test invalid container 1 for ValidExperimentGCMSQ tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test discarded vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID]}
-				},
-				InitialAmount ->
-						{
-							2000 Microliter,
-							300 Microliter,
-							1000 Microliter,
-							1000 Microliter,
-							4000 Microliter,
-							2000 Microliter,
-							1800 Microliter
-						},
-				Name->{
-					"ValidExperimentGCMSQ Test Sample 1" <> $SessionUUID,
-					"ValidExperimentGCMSQ Test Sample 2" <> $SessionUUID,
-					"ValidExperimentGCMSQ Test Sample 3" <> $SessionUUID,
-					"ValidExperimentGCMSQ Test Sample 4" <> $SessionUUID,
-					"ValidExperimentGCMSQ Large Test Sample 1" <> $SessionUUID,
-					"Test sample for invalid container for ValidExperimentGCMSQ tests" <> $SessionUUID,
-					"Test sample for discarded sample for ValidExperimentGCMSQ tests" <> $SessionUUID
-				},
-				Upload->False
-			];
-
-			Upload[samplePackets];
-
-			(* discard the discarded sample+container by moving to waste *)
-			UploadLocation[Object[Container,Vessel,"Test discarded vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID], Waste];
-
-			(*sever the link to the model*)
-
-			Upload[
-				{
-					Association[
-						Object -> Object[Sample,"ValidExperimentGCMSQ Test Sample 1" <> $SessionUUID],
-						Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {5 Millimolar, Link[Model[Molecule, "Acetone"]]}}
-					],
-					Association[
-						Object -> Object[Sample,"ValidExperimentGCMSQ Test Sample 4" <> $SessionUUID],
-						Model -> Null
-					]
-				}
-			];
-
-			methodPackets = {
-				Association[
-					Type -> Object[Method, GasChromatography],
-					Name -> "Test SeparationMethod for ValidExperimentGCMSQ" <> $SessionUUID,
-					Replace[ColumnLength]->30*Meter,
-					Replace[ColumnDiameter]->0.32*Milli*Meter,
-					Replace[ColumnFilmThickness]->0.25*Micro*Meter,
-					InletLinerVolume->870*Micro*Liter,
-					Detector->MassSpectrometer,
-					CarrierGas->Helium,
-					InletSeptumPurgeFlowRate->3*Milli*Liter/Minute,
-					InitialInletTemperature->250*Celsius,
-					SplitRatio->20,
-					InitialInletPressure->25*PSI,
-					InitialInletTime->1*Minute,
-					GasSaver->True,
-					GasSaverFlowRate->25*Milli*Liter/Minute,
-					GasSaverActivationTime->3*Minute,
-					InitialColumnFlowRate->1.7*Milli*Liter/Minute,
-					ColumnFlowRateProfile->ConstantFlowRate,
-					OvenEquilibrationTime->2*Minute,
-					InitialOvenTemperature->50*Celsius,
-					OvenTemperatureProfile->Isothermal,
-					PostRunOvenTemperature->35*Celsius,
-					PostRunOvenTime->2*Minute
-				]
-			};
-
-			Upload[methodPackets];
-
+			]
 		]
-
 	),
 	SymbolTearDown:>(
 		On[Warning::SamplesOutOfStock];
@@ -12263,27 +12174,16 @@ DefineTests[
 
 		Module[{objects, existingObjects},
 			objects={
-				Object[Sample,"ValidExperimentGCMSQ Test Sample 1" <> $SessionUUID],
-				Object[Sample,"ValidExperimentGCMSQ Test Sample 2" <> $SessionUUID],
-				Object[Sample,"ValidExperimentGCMSQ Test Sample 3" <> $SessionUUID],
-				Object[Sample,"ValidExperimentGCMSQ Test Sample 4" <> $SessionUUID],
-				Object[Sample,"ValidExperimentGCMSQ Large Test Sample 1" <> $SessionUUID],
-				Object[Sample,"Test sample for invalid container for ValidExperimentGCMSQ tests" <> $SessionUUID],
-				Object[Sample,"Test sample for discarded sample for ValidExperimentGCMSQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 2 for ValidExperimentGCMSQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 3 for ValidExperimentGCMSQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 4 for ValidExperimentGCMSQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test large vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test invalid container 1 for ValidExperimentGCMSQ tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test discarded vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID],
-				Object[Protocol,GasChromatography,"My particular ValidExperimentGCMSQ protocol" <> $SessionUUID],
-				Object[Method,GasChromatography,"Test SeparationMethod for ValidExperimentGCMSQ" <> $SessionUUID]
+				Object[Container, Bench, "Example bench for ValidExperimentGCMSQ tests " <> $SessionUUID],
+				Object[Sample, "ValidExperimentGCMSQ Test Sample 1" <> $SessionUUID],
+				Object[Sample, "Test sample for discarded sample for ValidExperimentGCMSQ tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test discarded vial 1 for ValidExperimentGCMSQ tests" <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 1 for ValidExperimentGCMSQ tests " <> $SessionUUID]
 			};
 
 			existingObjects = PickList[objects, DatabaseMemberQ[#]&/@objects];
 			EraseObject[existingObjects, Force -> True, Verbose -> False]
-
 		]
 	),
 	Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]}
@@ -12314,195 +12214,104 @@ DefineTests[
 
 		(*module for deleting created objects*)
 		Module[{objects, existingObjects},
-			objects={
-				Object[Sample,"ExperimentGCMSPreview Test Sample 1" <> $SessionUUID],
-				Object[Sample,"ExperimentGCMSPreview Test Sample 2" <> $SessionUUID],
-				Object[Sample,"ExperimentGCMSPreview Test Sample 3" <> $SessionUUID],
-				Object[Sample,"ExperimentGCMSPreview Test Sample 4" <> $SessionUUID],
-				Object[Sample,"ExperimentGCMSPreview Large Test Sample 1" <> $SessionUUID],
-				Object[Sample,"Test sample for invalid container for ExperimentGCMSPreview tests" <> $SessionUUID],
-				Object[Sample,"Test sample for discarded sample for ExperimentGCMSPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 1 for ExperimentGCMSPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 2 for ExperimentGCMSPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 3 for ExperimentGCMSPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 4 for ExperimentGCMSPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test large vial 1 for ExperimentGCMSPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test invalid container 1 for ExperimentGCMSPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCMSPreview tests" <> $SessionUUID],
-				Object[Protocol,GasChromatography,"My particular ExperimentGCMSPreview protocol" <> $SessionUUID],
-				Object[Method,GasChromatography,"Test SeparationMethod for ExperimentGCMSPreview" <> $SessionUUID]
+			objects = {
+				Object[Container, Bench, "Example bench for ExperimentGCMSPreview tests " <> $SessionUUID],
+				Object[Sample, "ExperimentGCMSPreview Test Sample 1" <> $SessionUUID],
+				Object[Container, Vessel, "Test vial 1 for ExperimentGCMSPreview tests" <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 1 for ExperimentGCMSPreview tests " <> $SessionUUID]
 			};
 
 			existingObjects = PickList[objects, DatabaseMemberQ[#]&/@objects];
 			EraseObject[existingObjects, Force -> True, Verbose -> False]
-
 		];
 		(*module for creating objects*)
-		Module[{containerPackets,samplePackets,methodPackets},
+		Block[{$AllowPublicObjects = True, $DeveloperUpload = True},
+			(*module for creating objects*)
+			Module[
+				{
+					testBench, container1, cover1, coverPackets, samplePackets
+				},
 
-			containerPackets = {
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 1 for ExperimentGCMSPreview tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "0.3 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 2 for ExperimentGCMSPreview tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 4 for ExperimentGCMSPreview tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test vial 3 for ExperimentGCMSPreview tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "10 mL clear glass GC vial"], Objects],
-					Name -> "Test large vial 1 for ExperimentGCMSPreview tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2mL Tube"], Objects],
-					Name -> "Test invalid container 1 for ExperimentGCMSPreview tests" <> $SessionUUID
-				],
-				Association[
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2 mL clear glass GC vial"], Objects],
-					Name -> "Test discarded vial 1 for ExperimentGCMSPreview tests" <> $SessionUUID
+				testBench = Upload[
+					<|
+						Type -> Object[Container, Bench],
+						Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+						Name -> "Example bench for ExperimentGCMSPreview tests " <> $SessionUUID,
+						DeveloperObject -> True,
+						StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+						Site -> Link[$Site]
+					|>
+				];
+
+				{
+					container1, cover1
+				} = UploadSample[
+					{
+						Model[Container, Vessel, "id:AEqRl9KmRnj1"],(*2 mL clear glass GC vial*)
+						Model[Item, Cap, "id:L8kPEjn1PRww"](*2 mL GC vial cap, magnetic*)
+					},
+					{
+						{"Work Surface", testBench},
+						{"Work Surface", testBench}
+					},
+					Name -> {
+						"Test vial 1 for ExperimentGCMSPreview tests" <> $SessionUUID,
+						"Example magnetic vial cap 1 for ExperimentGCMSPreview tests " <> $SessionUUID
+					}
+				];
+
+				coverPackets = UploadCover[
+					{container1},
+					Cover -> {cover1},
+					Upload -> False
+				];
+
+				samplePackets = UploadSample[
+					{
+						Model[Sample, StockSolution, "id:n0k9mG8XGPVn"] (*80% Heptane, 20% Ethanol diluent for SFC*)
+					},
+					{
+						{"A1", container1}
+					},
+					InitialAmount ->
+							{
+								2000 Microliter
+							},
+					Name->{
+						"ExperimentGCMSPreview Test Sample 1" <> $SessionUUID
+					},
+					Upload->False
+				];
+
+				Upload[Join[coverPackets, samplePackets]];
+
+				(*sever the link to the model*)
+
+				Upload[
+					{
+						Association[
+							Object -> Object[Sample,"ExperimentGCMSPreview Test Sample 1" <> $SessionUUID],
+							Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {5 Millimolar, Link[Model[Molecule, "Acetone"]], Now}}
+						]
+					}
 				]
-			};
-
-			(* Create GC method packets here *)
-
-			UploadSample[Lookup[containerPackets,Model][Object],ConstantArray[{"Left Slot",Object[Container,Shelf,"id:D8KAEvGwRr9m"]},Length[containerPackets]],Name->Lookup[containerPackets,Name]];
-
-			samplePackets = UploadSample[
-				{
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],
-					Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"]
-				},
-				{
-					{"A1",Object[Container,Vessel,"Test vial 1 for ExperimentGCMSPreview tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 2 for ExperimentGCMSPreview tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 3 for ExperimentGCMSPreview tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test vial 4 for ExperimentGCMSPreview tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test large vial 1 for ExperimentGCMSPreview tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test invalid container 1 for ExperimentGCMSPreview tests" <> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCMSPreview tests" <> $SessionUUID]}
-				},
-				InitialAmount ->
-						{
-							2000 Microliter,
-							300 Microliter,
-							1000 Microliter,
-							1000 Microliter,
-							4000 Microliter,
-							2000 Microliter,
-							1800 Microliter
-						},
-				Name->{
-					"ExperimentGCMSPreview Test Sample 1" <> $SessionUUID,
-					"ExperimentGCMSPreview Test Sample 2" <> $SessionUUID,
-					"ExperimentGCMSPreview Test Sample 3" <> $SessionUUID,
-					"ExperimentGCMSPreview Test Sample 4" <> $SessionUUID,
-					"ExperimentGCMSPreview Large Test Sample 1" <> $SessionUUID,
-					"Test sample for invalid container for ExperimentGCMSPreview tests" <> $SessionUUID,
-					"Test sample for discarded sample for ExperimentGCMSPreview tests" <> $SessionUUID
-				},
-				Upload->False
-			];
-
-			Upload[samplePackets];
-
-			(* discard the discarded sample+container by moving to waste *)
-			UploadLocation[Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCMSPreview tests" <> $SessionUUID], Waste];
-
-			(*sever the link to the model*)
-
-			Upload[
-				{
-					Association[
-						Object -> Object[Sample,"ExperimentGCMSPreview Test Sample 1" <> $SessionUUID],
-						Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {5 Millimolar, Link[Model[Molecule, "Acetone"]]}}
-					],
-					Association[
-						Object -> Object[Sample,"ExperimentGCMSPreview Test Sample 4" <> $SessionUUID],
-						Model -> Null
-					]
-				}
-			];
-
-			methodPackets = {
-				Association[
-					Type -> Object[Method, GasChromatography],
-					Name -> "Test SeparationMethod for ExperimentGCMSPreview" <> $SessionUUID,
-					Replace[ColumnLength]->30*Meter,
-					Replace[ColumnDiameter]->0.32*Milli*Meter,
-					Replace[ColumnFilmThickness]->0.25*Micro*Meter,
-					InletLinerVolume->870*Micro*Liter,
-					Detector->MassSpectrometer,
-					CarrierGas->Helium,
-					InletSeptumPurgeFlowRate->3*Milli*Liter/Minute,
-					InitialInletTemperature->250*Celsius,
-					SplitRatio->20,
-					InitialInletPressure->25*PSI,
-					InitialInletTime->1*Minute,
-					GasSaver->True,
-					GasSaverFlowRate->25*Milli*Liter/Minute,
-					GasSaverActivationTime->3*Minute,
-					InitialColumnFlowRate->1.7*Milli*Liter/Minute,
-					ColumnFlowRateProfile->ConstantFlowRate,
-					OvenEquilibrationTime->2*Minute,
-					InitialOvenTemperature->50*Celsius,
-					OvenTemperatureProfile->Isothermal,
-					PostRunOvenTemperature->35*Celsius,
-					PostRunOvenTime->2*Minute
-				]
-			};
-
-			Upload[methodPackets];
-
+			]
 		]
-
 	),
 	SymbolTearDown:>(
 		On[Warning::SamplesOutOfStock];
 		On[Warning::InstrumentUndergoingMaintenance];
 
 		Module[{objects, existingObjects},
-			objects={
-				Object[Sample,"ExperimentGCMSPreview Test Sample 1" <> $SessionUUID],
-				Object[Sample,"ExperimentGCMSPreview Test Sample 2" <> $SessionUUID],
-				Object[Sample,"ExperimentGCMSPreview Test Sample 3" <> $SessionUUID],
-				Object[Sample,"ExperimentGCMSPreview Test Sample 4" <> $SessionUUID],
-				Object[Sample,"ExperimentGCMSPreview Large Test Sample 1" <> $SessionUUID],
-				Object[Sample,"Test sample for invalid container for ExperimentGCMSPreview tests" <> $SessionUUID],
-				Object[Sample,"Test sample for discarded sample for ExperimentGCMSPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 1 for ExperimentGCMSPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 2 for ExperimentGCMSPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 3 for ExperimentGCMSPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test vial 4 for ExperimentGCMSPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test large vial 1 for ExperimentGCMSPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test invalid container 1 for ExperimentGCMSPreview tests" <> $SessionUUID],
-				Object[Container,Vessel,"Test discarded vial 1 for ExperimentGCMSPreview tests" <> $SessionUUID],
-				Object[Protocol,GasChromatography,"My particular ExperimentGCMSPreview protocol" <> $SessionUUID],
-				Object[Method,GasChromatography,"Test SeparationMethod for ExperimentGCMSPreview" <> $SessionUUID]
+			objects = {
+				Object[Container, Bench, "Example bench for ExperimentGCMSPreview tests " <> $SessionUUID],
+				Object[Sample, "ExperimentGCMSPreview Test Sample 1" <> $SessionUUID],
+				Object[Container, Vessel, "Test vial 1 for ExperimentGCMSPreview tests" <> $SessionUUID],
+				Object[Item, Cap, "Example magnetic vial cap 1 for ExperimentGCMSPreview tests " <> $SessionUUID]
 			};
 
 			existingObjects = PickList[objects, DatabaseMemberQ[#]&/@objects];
 			EraseObject[existingObjects, Force -> True, Verbose -> False]
-
 		]
 	),
 	Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]}

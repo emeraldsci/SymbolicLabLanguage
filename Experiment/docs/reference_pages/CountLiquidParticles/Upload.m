@@ -49,7 +49,7 @@ DefineUsage[UploadCountLiquidParticlesMethod,{
 		"Download",
 		"Inspect"
 	},
-	Author->{"jihan.kim", "lige.tonggu", "weiran.wang"}
+	Author->{"melanie.reschke", "jihan.kim", "lige.tonggu", "weiran.wang"}
 }];
 
 
@@ -105,7 +105,7 @@ DefineUsage[UploadCountLiquidParticlesMethodOptions,
 			"Download",
 			"Inspect"
 		},
-		Author->{"jihan.kim", "lige.tonggu", "weiran.wang"}
+		Author->{"melanie.reschke", "jihan.kim", "lige.tonggu", "weiran.wang"}
 	}
 ];
 
@@ -158,7 +158,7 @@ DefineUsage[ValidUploadCountLiquidParticlesMethodQ,
 			"Download",
 			"Inspect"
 		},
-		Author->{"jihan.kim", "lige.tonggu", "weiran.wang"}
+		Author->{"melanie.reschke", "jihan.kim", "lige.tonggu", "weiran.wang"}
 	}
 ];
 
@@ -216,6 +216,6 @@ DefineUsage[UploadCountLiquidParticlesMethodPreview,
 			"Download",
 			"Inspect"
 		},
-		Author->{"jihan.kim", "lige.tonggu", "weiran.wang"}
+		Author->{"melanie.reschke", "jihan.kim", "lige.tonggu", "weiran.wang"}
 	}
 ];

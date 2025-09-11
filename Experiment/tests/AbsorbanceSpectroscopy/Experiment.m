@@ -56,8 +56,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 				Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID],
 				Preparation -> Robotic
 			],
-			ObjectP[],
-			Messages:>{Warning::InsufficientVolume}
+			ObjectP[]
 		],
 		Example[{Additional,"Robotic test call with Injection Samples results in the Object[Protocol, RoboticSamplePreparation] fields being filled out (with the same resources as the output unit operation):"},
 			Module[{protocol},
@@ -96,8 +95,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 					]
 				]
 			],
-			True,
-			Messages:>{Warning::InsufficientVolume}
+			True
 		],
 		Example[{Additional,"Manual test call:"},
 			ExperimentSamplePreparation[{
@@ -139,7 +137,6 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			ObjectP[Object[Protocol, AbsorbanceSpectroscopy]],
 			Messages :> {Warning::InputContainsTemporalLinks}
 		],
-
 		Example[{Options,Methods,"Specify the Method set for the protocol:"},
 			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID],Methods -> Microfluidic,Output->Options];
 			Lookup[options, Methods],
@@ -233,7 +230,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 				AliquotContainer->Model[Container, Cuvette, "id:M8n3rxYE557M"]
 			],
 			$Failed,
-			Messages:>{Error::AbsorbanceSpectroscopyIncompatibleCuvette, Error::AbsorbanceSpectroscopyCuvetteVolumeOutOfRange, Error::InvalidOption, Error::InvalidInput, Error::DeprecatedModels}
+			Messages:>{Error::AbsorbanceSpectroscopyIncompatibleCuvette, Error::InvalidOption, Error::DeprecatedModels}
 		],
 		Example[{Messages,"AbsorbanceSpectroscopyCuvetteVolumeOutOfRange","The assay volume (total volume of samples and buffers inside a particular pool) has to fall within the working range of an available cuvette:"},
 			ExperimentAbsorbanceSpectroscopy[
@@ -332,7 +329,10 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			Variables :> {protocol}
 		],
 		Example[{Options,Instrument,"If PlateReaderMix is True, Instrument resolves to the FLUOstar Omega:"},
-			protocol = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID], PlateReaderMix -> True];
+			(* Use a no-CellType non-living/sterile sample*)
+			protocol = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy Blank Buffer 3" <> $SessionUUID],
+				Aliquot -> True, (*Make sure potential work cells will allow all by setting Aliquot -> True*)
+				PlateReaderMix -> True];
 			Download[protocol, Instrument],
 			ObjectP[Model[Instrument, PlateReader, "FLUOstar Omega"]],
 			Variables :> {protocol}
@@ -415,6 +415,13 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			Download[protocol, Status],
 			Processing|ShippingMaterials|Backlogged,
 			Variables :> {protocol}
+		],
+		Test["Specify the CanaryBranch on which the protocol is run:",
+			protocol = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID], CanaryBranch -> "d1cacc5a-948b-4843-aa46-97406bbfc368"];
+			Download[protocol, CanaryBranch],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Variables :> {protocol},
+			Stubs:>{GitBranchExistsQ[___] = True, InternalUpload`Private`sllDistroExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
 		],
 		Example[{Options,Temperature,"Specify the temperature at which the plates should be read in the plate reader:"},
 			protocol = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID],Temperature -> 45*Celsius];
@@ -565,6 +572,20 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			EquivalenceFunction -> Equal,
 			Messages :> {Warning::InstrumentPrecision,Warning::AliquotRequired},
 			Variables :> {options, protocol}
+		],
+		Example[{Options, Instrument, "Instrument is automatically set to Model[Instrument, PlateReader, \"id:zGj91a7Ll0Rv\"] if TargetCarbonDioxideLevel/TargetOxygenLevel is set:"},
+			Lookup[
+				ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID], TargetCarbonDioxideLevel -> 5 * Percent, Output -> Options],
+				{Instrument, Methods}
+			],
+			{ObjectP[Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"]], PlateReader}
+		],
+		Example[{Options, TargetCarbonDioxideLevel, "TargetCarbonDioxideLevel is automatically set to 5 Percent if sample contains Mammalian cells:"},
+			Lookup[
+				ExperimentAbsorbanceSpectroscopy[{Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1"<>$SessionUUID], Object[Sample, "ExperimentAbsorbanceSpectroscopy test mammalian sample, no model" <> $SessionUUID]}, Instrument -> Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"], Output -> Options],
+				TargetCarbonDioxideLevel
+			],
+			5 * Percent
 		],
 		Example[{Options,NumberOfReadings,"Indicate that 50 flashes should be performed in order to gather 50 measurements which are averaged together to produce a single reading:"},
 			ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID],NumberOfReadings->50][NumberOfReadings],
@@ -799,6 +820,58 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			{ObjectP[Model[Sample, StockSolution, "50% Methanol in MilliQ Water, Filtered"]]},
 			Variables :> {options, protocol}
 		],
+		Test["Populate the BlankLabels when specifying the blank(s) that should be for this experiment:",
+			protocol = ExperimentAbsorbanceSpectroscopy[
+				Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID],
+				Blanks -> Model[Sample, StockSolution, "50% Methanol in MilliQ Water, Filtered"]
+			];
+			Download[protocol, {SamplesIn, Blanks, BlankLabels}],
+			{
+				{LinkP[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID]]},
+				{LinkP[Model[Sample, StockSolution, "50% Methanol in MilliQ Water, Filtered"]]},
+				{_String}
+			}
+		],
+		Test["Make blank samples for each sample replicate when using PlateReader method:",
+			protocol = ExperimentAbsorbanceSpectroscopy[
+				{
+					Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (1.5 mL)" <> $SessionUUID],
+					Object[Sample, "ExperimentAbsorbanceSpectroscopy Acetone Test Chemical 2 (1.5 mL)" <> $SessionUUID]
+				},
+				Methods -> PlateReader,
+				Blanks -> Model[Sample, StockSolution, "50% Methanol in MilliQ Water, Filtered"],
+				NumberOfReplicates -> 2
+			];
+			Download[protocol, BlankLabels],
+			{__String}?(Length[DeleteDuplicates[#]] == 2&),
+			Messages :> {Warning::ReplicateAliquotsRequired}
+		],
+		Test["Make only one blank sample for each sample replicate when using Cuvette method:",
+			protocol = ExperimentAbsorbanceSpectroscopy[
+				{
+					Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (1.5 mL)" <> $SessionUUID],
+					Object[Sample, "ExperimentAbsorbanceSpectroscopy Acetone Test Chemical 2 (1.5 mL)" <> $SessionUUID]
+				},
+				Methods -> Cuvette,
+				Blanks -> Model[Sample, StockSolution, "50% Methanol in MilliQ Water, Filtered"],
+				NumberOfReplicates -> 2
+			];
+			Download[protocol, BlankLabels],
+			{__String}?(Length[DeleteDuplicates[#]] == 1&),
+			Messages :> {Warning::ReplicateAliquotsRequired}
+		],
+		Example[{Messages, "TooManyBlanks", "Throw an error is user tries to specify more than one blank samples for cuvette mode:"},
+			ExperimentAbsorbanceSpectroscopy[
+				{
+					Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (1.5 mL)" <> $SessionUUID],
+					Object[Sample, "ExperimentAbsorbanceSpectroscopy Acetone Test Chemical 2 (1.5 mL)" <> $SessionUUID]
+				},
+				Methods -> Cuvette,
+				Blanks -> {Model[Sample, StockSolution, "50% Methanol in MilliQ Water, Filtered"], Model[Sample, "id:8qZ1VWNmdLBD"]}
+			],
+			$Failed,
+			Messages :> {Warning::AliquotRequired, Error::TooManyBlanks, Error::InvalidOption}
+		],
 		Example[{Options, Blanks, "Indicate what the blank(s) should be for this experiment, expanded for multiple samples:"},
 			protocol = ExperimentAbsorbanceSpectroscopy[
 				{Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID], Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2" <> $SessionUUID]},
@@ -912,7 +985,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			{0.1*Milliliter},
 			EquivalenceFunction -> Equal,
 			Variables :> {options, protocol},
-			Messages:>{Warning::NotEqualBlankVolumesWarning}
+			Messages:>{Warning::NotEqualBlankVolumes}
 		],
 		Example[{Options, BlankVolumes, "Indicate the volume of blank to use for each sample, using multiple samples:"},
 			protocol = ExperimentAbsorbanceSpectroscopy[
@@ -924,7 +997,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			{0.1*Milliliter, 0.15*Milliliter},
 			EquivalenceFunction -> Equal,
 			Variables :> {options, protocol},
-			Messages:>{Warning::NotEqualBlankVolumesWarning}
+			Messages:>{Warning::NotEqualBlankVolumes}
 		],
 		Example[{Options, BlankVolumes, "If BlankAbsorbance -> True, BlankVolumes is not specified, and Instrument -> a BMG plate reader, resolve BlankVolumes to the volume of the corresponding sample:"},
 			protocol = ExperimentAbsorbanceSpectroscopy[
@@ -966,7 +1039,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			Download[protocol, BlankVolumes],
 			{0.1111*Milliliter},
 			EquivalenceFunction -> Equal,
-			Messages :> {Warning::InstrumentPrecision,Warning::NotEqualBlankVolumesWarning},
+			Messages :> {Warning::InstrumentPrecision,Warning::NotEqualBlankVolumes},
 			Variables :> {options, protocol}
 		],
 		Example[{Options, BlankVolumes, "Indicate the volume of blank to use for each sample:"},
@@ -980,7 +1053,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			0.1*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options, protocol},
-			Messages :> {Warning::NotEqualBlankVolumesWarning}
+			Messages :> {Warning::NotEqualBlankVolumes}
 		],
 		Example[{Options, BlankVolumes, "Indicate the volume of blank to use for each sample, using multiple samples:"},
 			options = ExperimentAbsorbanceSpectroscopy[
@@ -993,7 +1066,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			{0.1*Milliliter, 0.15*Milliliter},
 			EquivalenceFunction -> Equal,
 			Variables :> {options, protocol},
-			Messages:> {Warning::NotEqualBlankVolumesWarning}
+			Messages:> {Warning::NotEqualBlankVolumes}
 		],
 		Example[{Options, BlankVolumes, "If BlankAbsorbance -> True, BlankVolumes is not specified, and Instrument -> a BMG plate reader, resolve BlankVolumes to the volume of the corresponding sample:"},
 			options = ExperimentAbsorbanceSpectroscopy[
@@ -1039,7 +1112,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			Lookup[options, BlankVolumes],
 			0.1111*Milliliter,
 			EquivalenceFunction -> Equal,
-			Messages :> {Warning::InstrumentPrecision,Warning::NotEqualBlankVolumesWarning},
+			Messages :> {Warning::InstrumentPrecision,Warning::NotEqualBlankVolumes},
 			Variables :> {options, protocol}
 		],
 		Example[{Options,PlateReaderMix,"Set PlateReaderMix to True to shake the input plate in the reader before the assay begins:"},
@@ -1229,6 +1302,43 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 				Error::InvalidOption
 			}
 		],
+		Example[{Messages,"PlateReaderReadings","Throws an error if NumberOfReadings is set when Lunatic is required:"},
+			ExperimentAbsorbanceSpectroscopy[
+				Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID],
+				NumberOfReadings->2,
+				Instrument->Model[Instrument, PlateReader, "Lunatic"]
+			],
+			$Failed,
+			Messages:>{
+				Error::PlateReaderReadings,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages,"PlateReaderReadings","Throws an error if NumberOfReadings is set when Cary 3500 is required:"},
+			ExperimentAbsorbanceSpectroscopy[
+				Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (1.5 mL)" <> $SessionUUID],
+				NumberOfReadings->2,
+				Instrument->Model[Instrument, Spectrophotometer, "id:01G6nvwR99K1"](* Cary 3500 *)
+			],
+			$Failed,
+			Messages:>{
+				Error::PlateReaderReadings,
+				Warning::AliquotRequired,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages,"PlateReaderReadings","Throws an error if NumberOfReadings is set to Null when BMG plate reader is required:"},
+			ExperimentAbsorbanceSpectroscopy[
+				{Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (200 uL)" <> $SessionUUID], Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID]},
+				NumberOfReadings->Null,
+				Instrument->Model[Instrument, PlateReader, "FLUOstar Omega"]
+			],
+			$Failed,
+			Messages:>{
+				Error::PlateReaderReadings,
+				Error::InvalidOption
+			}
+		],
 		Example[{Messages,"PlateReaderMixingUnsupported","Throws an error if mixing within the plate reader chamber is being requested, but the instrument does not support it:"},
 			ExperimentAbsorbanceSpectroscopy[
 				Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID],
@@ -1289,6 +1399,16 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			Messages :> {Error::DiscardedSamples, Error::InvalidInput},
 			Variables :> {options, protocol}
 		],
+		Example[{Messages, "NonLiquidSamples", "If the provided sample is not Liquid, an error will be thrown:"},
+			ExperimentAbsorbanceSpectroscopy[
+				Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (Solid)" <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {
+				Error::NonLiquidSample,
+				Error::InvalidInput
+			}
+		],
 		Example[{Messages, "TemperatureIncompatibleWithPlateReader", "Returns an error if the Temperature option is specified with an instrument that does not support it:"},
 			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID], Temperature -> 30 Celsius, Instrument -> Model[Instrument, PlateReader, "Lunatic"], Output -> Options];
 			Lookup[options, Temperature],
@@ -1302,6 +1422,15 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			10*Minute,
 			Messages :> {Error::TemperatureIncompatibleWithPlateReader, Error::InvalidOption},
 			Variables :> {options, protocol}
+		],
+		Example[{Messages,"TemperatureNoEquilibration","A warning will be shown if Temperature is set above Ambient and EquilibrationTime is set to zero:"},
+			ExperimentAbsorbanceSpectroscopy[
+				Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID],
+				Temperature -> 35 Celsius,
+				EquilibrationTime -> 0 Second
+			],
+			ObjectP[Object[Protocol,AbsorbanceSpectroscopy]],
+			Messages:>Warning::TemperatureNoEquilibration
 		],
 		Example[{Messages, "UnsupportedPlateReader", "Returns an error if the specified plate reader model is deprecated:"},
 			ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID], Instrument -> Model[Instrument, PlateReader, "FlexStation 3"]],
@@ -1523,10 +1652,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 					Preparation -> Robotic
 				]
 			}],
-			ObjectP[Object[Protocol,RoboticSamplePreparation]],
-			Messages:>{
-				Warning::InsufficientVolume
-			}
+			ObjectP[Object[Protocol,RoboticSamplePreparation]]
 		],
 		Test["Generate an AbsorbanceSpectroscopy protocol object based on a single primitive with Preparation->Manual:",
 			Experiment[{
@@ -1547,10 +1673,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 					InjectionSampleStorageCondition->AmbientStorage
 				]
 			}],
-			ObjectP[Object[Protocol,RoboticSamplePreparation]],
-			Messages:>{
-				Warning::InsufficientVolume
-			}
+			ObjectP[Object[Protocol,RoboticSamplePreparation]]
 		],
 
 		Example[{Options, SamplesInStorageCondition, "Populate the SamplesInStorage field:"},
@@ -1580,6 +1703,32 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			ObjectP[Object[Protocol, AbsorbanceSpectroscopy]],
 			TimeConstraint -> 2000
 		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentAbsorbanceSpectroscopy[
+				(* Red food dye *)
+				{Model[Sample, "id:BYDOjvG9z6Jl"], Model[Sample, "id:BYDOjvG9z6Jl"]},
+				(* UV-Star Plate*)
+				PreparedModelContainer -> Model[Container, Plate, "id:n0k9mGzRaaBn"],
+				PreparedModelAmount -> 200 Microliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:BYDOjvG9z6Jl"]]..},
+				{ObjectP[Model[Container, Plate, "id:n0k9mGzRaaBn"]]..},
+				{EqualP[200 Microliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
 		Example[{Options, PreparatoryUnitOperations, "Use PreparatoryUnitOperations option to create test standards prior to running the experiment:"},
 			protocol = ExperimentAbsorbanceSpectroscopy[
 				{"red dye sample", Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID]},
@@ -1591,19 +1740,6 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			];
 			Download[protocol, PreparatoryUnitOperations],
 			{SamplePreparationP..},
-			Variables :> {protocol}
-		],
-		Example[{Options, PreparatoryPrimitives, "Use PreparatoryPrimitives option to create test standards prior to running the experiment:"},
-			protocol = ExperimentAbsorbanceSpectroscopy[
-				{"red dye sample", Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID]},
-				Instrument -> Model[Instrument, PlateReader, "Lunatic"],
-				PreparatoryPrimitives -> {
-					Define[Name -> "red dye sample", Container -> Model[Container, Vessel, "2mL Tube"]],
-					Transfer[Source -> Model[Sample, "Red Food Dye"], Amount -> 200*Microliter, Destination -> "red dye sample"]
-				}
-			];
-			Download[protocol, PreparatoryPrimitives],
-			{SampleManipulationP..},
 			Variables :> {protocol}
 		],
 		(* incubate options *)
@@ -1924,7 +2060,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 		Example[{Options, DestinationWell, "Indicates the position in the AliquotContainer that we want to move the sample into:"},
 			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID], AliquotContainer -> Model[Container, Plate, "96-well UV-Star Plate"], DestinationWell -> "A2", Output -> Options];
 			Lookup[options, DestinationWell],
-			"A2",
+			{"A2"},
 			Variables :> {options}
 		],
 		Example[{Options, AliquotAmount, "The amount of each sample that should be transferred from the SamplesIn into the AliquotSamples which should be used in lieu of the SamplesIn for the experiment:"},
@@ -2007,7 +2143,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID], AliquotContainer -> Model[Container, Plate, "96-well UV-Star Plate"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Plate, "96-well UV-Star Plate"]]},
+			{{1, ObjectP[Model[Container, Plate, "96-well UV-Star Plate"]]}},
 			Variables :> {options}
 		],
 		Example[{Messages,"InvalidBlankContainer","Throws an error because no blank volume has been specified but blank Buffer 1 is in a 50mL tube and must be transferred into the assay container to be read:"},
@@ -2028,7 +2164,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 				BlankVolumes->100 Microliter
 			],
 			ObjectP[Object[Protocol,AbsorbanceSpectroscopy]],
-			Messages:>{Warning::UnnecessaryBlankTransfer,Warning::NotEqualBlankVolumesWarning}
+			Messages:>{Warning::UnnecessaryBlankTransfer,Warning::NotEqualBlankVolumes}
 		],
 		Example[{Messages,"NotEqualBlankVolumesWarning","Print a warning message if the blank volume is not equal to the volume of the sample:"},
 			ExperimentAbsorbanceSpectroscopy[
@@ -2038,7 +2174,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 				BlankVolumes->100 Microliter
 			],
 			ObjectP[Object[Protocol,AbsorbanceSpectroscopy]],
-			Messages:>{Warning::UnnecessaryBlankTransfer,Warning::NotEqualBlankVolumesWarning}
+			Messages:>{Warning::UnnecessaryBlankTransfer,Warning::NotEqualBlankVolumes}
 		],
 		Example[{Messages,"ReplicateAliquotsRequired","Throws an error if replicates are specified and Aliquot->False since replicates are performed by reading multiple aliquots of the same sample:"},
 			ExperimentAbsorbanceSpectroscopy[
@@ -2128,8 +2264,8 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 				RequiredResources[[All, 2]]
 			],
 			Sort@{
-				BlankContainers,Blanks,Checkpoints,ContainersIn,Instrument,Null,PrimaryFlushingSolvent,PrimaryInjections,PrimaryPreppingSolvent,
-				SamplesIn,SecondaryFlushingSolvent,SecondaryPreppingSolvent
+				BlankContainers,Blanks,Checkpoints,ContainersIn,Instrument,Line1PrimaryPurgingSolvent,Line1SecondaryPurgingSolvent,Null,PrimaryInjections,
+				SamplesIn
 			}
 		],
 		Example[{Options, QuantificationAnalyte, "Specify the desired component to be quantified:"},
@@ -2161,12 +2297,83 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Peptide oligomer 5 (200 uL), no model" <> $SessionUUID]],
 			ObjectP[Object[Protocol, AbsorbanceSpectroscopy]],
 			TimeConstraint -> 2000
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentAbsorbanceSpectroscopy[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentAbsorbanceSpectroscopy[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentAbsorbanceSpectroscopy[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentAbsorbanceSpectroscopy[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentAbsorbanceSpectroscopy[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule},
+			Messages:>{Warning::AliquotRequired}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentAbsorbanceSpectroscopy[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule},
+			Messages:>{Warning::AliquotRequired}
 		]
-	(*Example[{Additional, "If the input sample has no model, still successfully returns a protocol when running all the sample prep options:"},
-		ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Peptide oligomer 5 (200 uL), no model" <> $SessionUUID], Incubate -> True, Mix -> True, Centrifuge -> True, Filtration -> True, Aliquot -> True],
-		ObjectP[Object[Protocol, AbsorbanceSpectroscopy]],
-		TimeConstraint -> 2000
-	],*)
 	},
 	(* every time a test is run reset $CreatedObjects and erase things at the end *)
 	SetUp :> (ClearDownload[]; ClearMemoization[]; $CreatedObjects = {}),
@@ -2187,6 +2394,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 				Object[Container, Plate, "ExperimentAbsorbanceSpectroscopy New Test Plate 2" <> $SessionUUID],
 				Object[Container, Plate, "Test container 2 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
 				Object[Container, Plate, "Test container 19 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 20 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 3 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 4 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 5 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
@@ -2201,6 +2409,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 				Object[Container, Vessel, "Test container 14 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 15 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 16 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 17 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
 				Object[Container,Cuvette,"Test Standard Cuvette with Stirring 1 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
 				Object[Container,Cuvette,"Test Standard Cuvette with Stirring 2 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
 				Object[Container,Cuvette,"Test Standard Cuvette with Stirring 3 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
@@ -2253,7 +2462,8 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 				Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Peptide oligomer 4 (200 uL)" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Peptide oligomer 5 (200 uL), no model" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceSpectroscopy Acetone Test Chemical 2 (1.5 mL)" <> $SessionUUID],
-
+				Object[Sample, "ExperimentAbsorbanceSpectroscopy test mammalian sample, no model" <> $SessionUUID],
+				Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (Solid)" <> $SessionUUID],
 
 				Object[Sample, "ExperimentAbsorbanceSpectroscopy Injection 1" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceSpectroscopy Injection 2" <> $SessionUUID],
@@ -2269,8 +2479,8 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 				{
 					fakeBench,
 					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11,
-					container12, container13, container14, container15, container16, container17, container18, container19, cuvette1, cuvette2, cuvette3, cuvette4, cuvette5, cuvette6, cuvette7, cuvette8, cuvette9, cuvette10, cuvette11, cuvette12, sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12,
-					sample13, sample14, sample15, sample16, sample17,sample18,sample19, sample20, sample21, plateSamples, allObjs, stirBars, cuvetteCaps, stirBarObjs, cuvetteCapsObjs
+					container12, container13, container14, container15, container16, container17, container18, container19, container20, container21, cuvette1, cuvette2, cuvette3, cuvette4, cuvette5, cuvette6, cuvette7, cuvette8, cuvette9, cuvette10, cuvette11, cuvette12, sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12,
+					sample13, sample14, sample15, sample16, sample17,sample18,sample19, sample20, sample21, sample22, sample23, plateSamples, allObjs, stirBars, cuvetteCaps, stirBarObjs, cuvetteCapsObjs
 				},
 
 				fakeBench=Upload[<|Type->Object[Container,Bench],Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],Name->"Test bench for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID,DeveloperObject->True|>];
@@ -2479,6 +2689,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 					container3,
 					container4,
 					container19,
+					container20,
 					container5,
 					container6,
 					container7,
@@ -2504,7 +2715,8 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 					cuvette9,
 					cuvette10,
 					cuvette11,
-					cuvette12
+					cuvette12,
+					container21
 				}=UploadSample[
 					{
 						Model[Container, Plate, "96-well UV-Star Plate"],
@@ -2512,6 +2724,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 						Model[Container, Plate, "96-well UV-Star Plate"],
 						Model[Container, Plate, "96-well UV-Star Plate"],
 						Model[Container, Plate, "96-well UV-Star Plate"],
+						Model[Container, Plate, "96-well UV-Star Plate"],
 						Model[Container, Vessel, "50mL Tube"],
 						Model[Container, Vessel, "2mL Tube"],
 						Model[Container, Vessel, "2mL Tube"],
@@ -2537,9 +2750,12 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 						Model[Container, Cuvette, "id:Vrbp1jKkre0x"],
 						Model[Container, Cuvette, "id:Vrbp1jKkre0x"],
 						Model[Container, Cuvette, "id:Vrbp1jKkre0x"],
-						Model[Container, Cuvette, "id:Vrbp1jKkre0x"]
+						Model[Container, Cuvette, "id:Vrbp1jKkre0x"],
+						Model[Container, Vessel, "2mL Tube"]
 					},
 					{
+						{"Work Surface",fakeBench},
+						{"Work Surface",fakeBench},
 						{"Work Surface",fakeBench},
 						{"Work Surface",fakeBench},
 						{"Work Surface",fakeBench},
@@ -2578,6 +2794,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 						"ExperimentAbsorbanceSpectroscopy New Test Plate 2" <> $SessionUUID,
 						"Test container 2 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID,
 						"Test container 19 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID,
+						"Test container 20 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID,
 						"Test container 3 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID,
 						"Test container 4 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID,
 						"Test container 5 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID,
@@ -2603,7 +2820,8 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 						"Test Micro Cuvette with Stirring 1 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID,
 						"Test Micro Cuvette with Stirring 2 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID,
 						"Test Micro Cuvette with Stirring 3 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID,
-						"Test Micro Cuvette with Stirring 4 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID
+						"Test Micro Cuvette with Stirring 4 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID,
+						"Test container 17 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID
 					}
 				];
 
@@ -2628,7 +2846,9 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 					sample17,
 					sample18,
 					sample19,
-					sample20
+					sample20,
+					sample22,
+					sample23
 				}=UploadSample[
 					{
 						Model[Sample, "Red Food Dye"],
@@ -2651,7 +2871,9 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 						Model[Sample, "ACTH 18-39"],
 						Model[Sample, "Leucine Enkephalin (Oligomer)"],
 						Model[Sample, "Leucine Enkephalin (Oligomer)"],
-						Model[Sample, "Acetone, HPLC Grade"]
+						Model[Sample, "Acetone, HPLC Grade"],
+						{{1000 * EmeraldCell / Milliliter, Model[Cell, Mammalian, "id:eGakldJvLvzq"]}, {100 * VolumePercent, Model[Molecule, "id:vXl9j57PmP5D"]}},
+						Model[Sample,"Sodium Chloride"]
 					},
 					{
 						{"A1",container},
@@ -2669,14 +2891,16 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 						{"A1",container10},
 						{"A1",container11},
 						{"A1",container12},
-						{"A2",container},
-						{"A1",container13},
+						{"A3",container},
+						{"D1",container13},
 						{"A1",container14},
 						{"A1",container15},
 						{"A1",container16},
-						{"A1",container18}
+						{"A1",container18},
+						{"A1",container20},
+						{"A1",container21}
 					},
-					State -> Liquid,
+					State -> Join[ConstantArray[Liquid,22], {Solid}],
 					InitialAmount->{
 						200*Microliter,
 						200*Microliter,
@@ -2698,7 +2922,9 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 						200*Microliter,
 						200*Microliter,
 						200*Microliter,
-						1.5*Milliliter
+						1.5*Milliliter,
+						200*Microliter,
+						0.2Gram
 					},
 					Name->{
 						"ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID,
@@ -2721,9 +2947,15 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 						"ExperimentAbsorbanceSpectroscopy New Test Peptide oligomer 3 (200 uL)" <> $SessionUUID,
 						"ExperimentAbsorbanceSpectroscopy New Test Peptide oligomer 4 (200 uL)" <> $SessionUUID,
 						"ExperimentAbsorbanceSpectroscopy New Test Peptide oligomer 5 (200 uL), no model" <> $SessionUUID,
-						"ExperimentAbsorbanceSpectroscopy Acetone Test Chemical 2 (1.5 mL)" <> $SessionUUID
-					}
+						"ExperimentAbsorbanceSpectroscopy Acetone Test Chemical 2 (1.5 mL)" <> $SessionUUID,
+						"ExperimentAbsorbanceSpectroscopy test mammalian sample, no model" <> $SessionUUID,
+						"ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (Solid)" <> $SessionUUID
+					},
+					Living -> False
 				];
+
+				(* make sample a mammalian cell type *)
+				Upload[<|Object -> sample, CellType -> Mammalian|>];
 
 				plateSamples=UploadSample[
 					ConstantArray[Model[Sample, "ACTH 18-39"],32],
@@ -2780,7 +3012,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 						},
 						UnresolvedOptions -> {EquilibrationTime -> 46*Minute}
 					|>,
-					<|Object -> Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID], Replace[Composition] -> {{5 Millimolar, Link[Model[Molecule, "Water"]]}}|>,
+					<|Object -> Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID], Replace[Composition] -> {{5 Millimolar, Link[Model[Molecule, "Water"]], Now}}|>,
 					(* test on a model-less sample *)
 					<|Object -> sample19, Model -> Null|>
 				}]];
@@ -2810,7 +3042,8 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 					|>
 				]&/@Flatten[stirBarObjs];
 
-				UploadSampleStatus[sample4, Discarded, FastTrack -> True]
+				UploadSampleStatus[sample4, Discarded, FastTrack -> True];
+				UploadLocation[sample4, Waste, FastTrack->True];
 			]
 		]
 	),
@@ -2827,6 +3060,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 				Object[Container, Plate, "ExperimentAbsorbanceSpectroscopy New Test Plate 2" <> $SessionUUID],
 				Object[Container, Plate, "Test container 2 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
 				Object[Container, Plate, "Test container 19 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 20 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 3 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 4 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 5 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
@@ -2841,6 +3075,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 				Object[Container, Vessel, "Test container 14 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 15 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 16 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 17 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
 				Object[Container,Cuvette,"Test Standard Cuvette with Stirring 1 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
 				Object[Container,Cuvette,"Test Standard Cuvette with Stirring 2 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
 				Object[Container,Cuvette,"Test Standard Cuvette with Stirring 3 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
@@ -2895,7 +3130,8 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 				Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Peptide oligomer 4 (200 uL)" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Peptide oligomer 5 (200 uL), no model" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceSpectroscopy Acetone Test Chemical 2 (1.5 mL)" <> $SessionUUID],
-
+				Object[Sample, "ExperimentAbsorbanceSpectroscopy test mammalian sample, no model" <> $SessionUUID],
+				Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (Solid)" <> $SessionUUID],
 				Object[Protocol, AbsorbanceSpectroscopy, "Old Absorbance Spectroscopy Protocol with 1 Hour of equilibration time" <> $SessionUUID]
 			};
 			existingObjs = PickList[allObjs, DatabaseMemberQ[allObjs]];
@@ -2969,6 +3205,11 @@ DefineTests[ValidExperimentAbsorbanceSpectroscopyQ,
 		Test["If Confirm -> True, immediately confirm the protocol without sending it into the cart:",
 			ValidExperimentAbsorbanceSpectroscopyQ[Object[Sample, "ValidExperimentAbsorbanceSpectroscopyQ New Test Chemical 1" <> $SessionUUID], Confirm -> True],
 			True
+		],
+		Test["Specify the CanaryBranch on which the protocol is run:",
+			ValidExperimentAbsorbanceSpectroscopyQ[Object[Sample, "ValidExperimentAbsorbanceSpectroscopyQ New Test Chemical 1" <> $SessionUUID], CanaryBranch -> "d1cacc5a-948b-4843-aa46-97406bbfc368"],
+			True,
+			Stubs:>{GitBranchExistsQ[___] = True, InternalUpload`Private`sllDistroExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
 		],
 		Example[{Options,Temperature,"Specify the temperature at which the plates should be read in the plate reader:"},
 			ValidExperimentAbsorbanceSpectroscopyQ[Object[Sample, "ValidExperimentAbsorbanceSpectroscopyQ New Test Chemical 1" <> $SessionUUID],Temperature -> 45*Celsius],
@@ -3467,7 +3708,7 @@ DefineTests[ValidExperimentAbsorbanceSpectroscopyQ,
 						{"A1",container10},
 						{"A1",container11},
 						{"A1",container12},
-						{"A2",container}
+						{"A3",container}
 					},
 					InitialAmount->{
 						200*Microliter,
@@ -3842,7 +4083,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopyOptions,
 			0.1*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options},
-			Messages :> {Warning::NotEqualBlankVolumesWarning}
+			Messages :> {Warning::NotEqualBlankVolumes}
 		],
 		Example[{Options, BlankVolumes, "Indicate the volume of blank to use for each sample, using multiple samples:"},
 			options = ExperimentAbsorbanceSpectroscopyOptions[
@@ -3855,7 +4096,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopyOptions,
 			{0.1*Milliliter, 0.15*Milliliter},
 			EquivalenceFunction -> Equal,
 			Variables :> {options},
-			Messages :> {Warning::NotEqualBlankVolumesWarning}
+			Messages :> {Warning::NotEqualBlankVolumes}
 		],
 		Example[{Options, BlankVolumes, "If BlankAbsorbance -> True, BlankVolumes is not specified, and Instrument -> a BMG plate reader, resolve BlankVolumes to the volume of the corresponding sample:"},
 			options = ExperimentAbsorbanceSpectroscopyOptions[
@@ -3901,7 +4142,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopyOptions,
 			Lookup[options, BlankVolumes],
 			0.1111*Milliliter,
 			EquivalenceFunction -> Equal,
-			Messages :> {Warning::InstrumentPrecision,Warning::NotEqualBlankVolumesWarning},
+			Messages :> {Warning::InstrumentPrecision,Warning::NotEqualBlankVolumes},
 			Variables :> {options}
 		],
 		Example[{Options, PreparatoryUnitOperations, "Use PreparatoryUnitOperations option to create test standards prior to running the experiment:"},

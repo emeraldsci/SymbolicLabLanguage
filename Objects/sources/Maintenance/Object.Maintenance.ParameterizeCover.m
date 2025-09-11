@@ -60,7 +60,7 @@ DefineObjectType[Object[Maintenance,ParameterizeCover],{
       Category -> "Qualifications & Maintenance",
       IndexMatching -> Covers
     },
-    (*This is going to be uploaded fresh each loop, we dont need to keep it around once we turn it into a model*)
+    (*This is going to be uploaded fresh each loop, we don't need to keep it around once we turn it into a model*)
     EquivalentObject -> {
       Format->Single,
       Class->String,

@@ -17,7 +17,7 @@ Warning::SampleStowaways="The input samples to this experiment reside in contain
 Warning::Nonsterile="Some of the specified object (`1`) are non-sterile and will come into contact with your input samples (`2`), which are presently sterile.  If you wish to avoid risking lost of sterilization, please consider using sterile samples in lieu of `2`.";
 Error::ImmobileSamples = "Samples in immobile containers cannot be `1` because their containers are fixed in place and cannot be moved to a `2`. Check: `3`";
 Error::ConfirmUploadConflict="A protocol cannot be confirmed if Upload is False.";
-Error::ConflictingUnitOperationMethodRequirements="The following requirements can only be performed manually: `1`. However, the following requirements can only be performed robotically: `2`. Please resolve this conflict in order to submit a valid unit operation.";
+Error::ConflictingUnitOperationMethodRequirements="The following requirements can only be performed manually: `1`. However, the following requirements can only be performed robotically: `2`. Please resolve this conflict in order to submit a valid protocol.";
 Error::ConflictingMethodRequirements="The following requirements can only be performed manually: `1`. However, the following requirements can only be performed robotically: `2`. Please resolve this conflict in order to submit a valid request.";
 
 
@@ -25,7 +25,7 @@ Error::ConflictingMethodRequirements="The following requirements can only be per
 (*Instrument Option Messages*)
 
 
-Warning::InstrumentPrecision="The machine precision of `1` has a resolution of `2` and therefore `3` will have to be rounded from `4` to `5` to proceed. If you don't wish rounding to occur automatically, please supply a value within the given resolution.";
+Warning::InstrumentPrecision="The machine precision of `1` has a resolution of `2`. Therefore, `3` will have to be rounded to `4` to proceed. To avoid automatic rounding, please provide a value that meets the resolution.";
 
 
 (* ::Subsection:: *)

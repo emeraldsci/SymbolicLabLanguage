@@ -180,6 +180,16 @@ DefineTests[
 			Download[sampleResource,Amount],
 			EqualP[400.` Microliter],
 			Variables:>{protocol,sampleResource}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have an operator input that does not exist (name form):"},
+			ExperimentVapro5600Training[Object[User, Emerald, Operator, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have an operator input that does not exist (ID form):"},
+			ExperimentVapro5600Training[Object[User, Emerald, Operator, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
 		]
 	},
 	Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]},
@@ -221,227 +231,228 @@ DefineTests[
 
 			EraseObject[PickList[testObjList,existsFilter],Force->True,Verbose->False];
 		];
-
-		Module[
-			{
-				testBenchPacket,testBench,containerIDs,sampleIDs,osmometerContainerIDs,osmometerContainerModels,osmometerContainerNames,osmometerContainerPackets,desiccantIDs,osmometerModelIDs,osmometerIDs,pipetteIDs,
-				tweezerIDs,tweezerModels,tweezerNames,tweezerPackets,inoculationPaperIDs,protocolIDs,operatorIDs,containerModels,containerNames,dessicantModels,dessicantNames,desiccantPackets,containerPackets,samplePackets,sampleUpdatePackets,
-				osmometerModelPackets,osmometerPackets,additionalPackets,
-				locationPackets,allUploadPackets
-			},
-			
-			testBenchPacket = UploadSample[
-				Model[Container,Bench,"The Bench of Testing"],
-				{"First Floor Slot",Object[Container,Building,"15500 Wells Port Drive"]},
-				Name->"Test Bench for ExperimentVapro5600Training"<>$SessionUUID,
-				FastTrack->True,
-				Upload->False
-			];
-			testBench = Lookup[testBenchPacket[[1]],Object];
-			
-			osmometerModelIDs=CreateID[ConstantArray[Model[Instrument,Osmometer],1]];
-			osmometerIDs=CreateID[ConstantArray[Object[Instrument,Osmometer],2]];
-			pipetteIDs=CreateID[ConstantArray[Object[Instrument,Pipette],1]];
-			inoculationPaperIDs=CreateID[ConstantArray[Object[Item,InoculationPaper],1]];
-			protocolIDs=CreateID[ConstantArray[Object[Protocol,Vapro5600Training],1]];
-			operatorIDs=CreateID[ConstantArray[Object[User,Emerald,Operator],1]];
-
-			(**** Test sample containers ****)
-			containerIDs = CreateID[ConstantArray[Object[Container,Vessel],4]];
-			containerModels = {Model[Container,Vessel,"1mL clear glass ampule"],Model[Container,Vessel,"1mL clear glass ampule"],Model[Container,Vessel,"1mL clear glass ampule"],Model[Container,Vessel,"150mL Plastic Container"]};
-			containerNames = Map[#<>$SessionUUID&,
-				{"Test container 1 for ExperimentVapro5600Training", "Test container 2 for ExperimentVapro5600Training", "Test container 3 for ExperimentVapro5600Training", "Test Container for Inoculation Papers for ExperimentVapro5600Training"}
-			];
-			containerPackets = UploadSample[
-				containerModels,
-				ConstantArray[{"Bench Top Slot",testBench},Length[containerModels]],
-				Name->containerNames,
-				ID->containerIDs[ID],
-				Cache->testBenchPacket,
-				Upload->False
-			];
-			
-			(**** Test osmometer containers ****)
-			osmometerContainerIDs = CreateID[ConstantArray[Object[Container,Vessel],2]];
-			osmometerContainerModels = {Model[Container,Vessel,"Vapro 5600 Osmometer Cleaning Solution Supply Container"],Model[Container,Vessel,"Vapro 5600 Osmometer Waste Container"]};
-			osmometerContainerNames = Map[#<>$SessionUUID&,
-				{"Test Vapro 5600 Osmometer Cleaning Solution Supply Container for ExperimentVapro5600Training","Test Vapro 5600 Osmometer Waste Container for ExperimentVapro5600Training"}
-			];
-			osmometerContainerPackets = UploadSample[
-				osmometerContainerModels,
-				ConstantArray[{"Bench Top Slot",testBench},Length[osmometerContainerModels]],
-				Name->osmometerContainerNames,
-				ID->osmometerContainerIDs[ID],
-				Cache->testBenchPacket,
-				Upload->False
-			];
-			
-			(**** Test desiccant ****)
-			desiccantIDs = CreateID[ConstantArray[Object[Item,Cartridge,Desiccant],1]];
-			dessicantModels = {Model[Item,Cartridge,Desiccant,"SS-238 Desiccant Cartridge, Vapro 5600"]};
-			dessicantNames = Map[#<>$SessionUUID&,
-				{"Test SS-238 Desiccant Cartridge, Vapro 5600 for ExperimentVapro5600Training"}
-			];
-			desiccantPackets = UploadSample[
-				dessicantModels,
-				ConstantArray[{"Bench Top Slot",testBench},Length[dessicantModels]],
-				Name->dessicantNames,
-				ID->desiccantIDs[ID],
-				Cache->testBenchPacket,
-				Upload->False
-			];
-			
-			(**** Test samples ****)
-			sampleIDs=CreateID[ConstantArray[Object[Sample],3]];
-			samplePackets=UploadSample[
+		Block[{$DeveloperUpload = True},
+			Module[
 				{
-					(*1*)Model[Sample,"id:D8KAEvGLvEAR"],
-					(*2*)Model[Sample,"id:D8KAEvGLvEAR"],
-					(*3*)Model[Sample,"id:D8KAEvGLvEAR"] (* This will be overwritten with Null later *)
+					testBenchPacket,testBench,containerIDs,sampleIDs,osmometerContainerIDs,osmometerContainerModels,osmometerContainerNames,osmometerContainerPackets,desiccantIDs,osmometerModelIDs,osmometerIDs,pipetteIDs,
+					tweezerIDs,tweezerModels,tweezerNames,tweezerPackets,inoculationPaperIDs,protocolIDs,operatorIDs,containerModels,containerNames,dessicantModels,dessicantNames,desiccantPackets,containerPackets,samplePackets,sampleUpdatePackets,
+					osmometerModelPackets,osmometerPackets,additionalPackets,
+					locationPackets,allUploadPackets
 				},
-				{
-					(*1*){"A1",containerIDs[[1]]},
-					(*2*){"A1",containerIDs[[2]]},
-					(*3*){"A1",containerIDs[[3]]}
-				},
-				InitialAmount->{
-					(*1*)1 Milliliter,
-					(*2*)1 Milliliter,
-					(*3*)1 Milliliter
-				},
-				Name->{
-					(*1*)"Test discarded standard for ExperimentVapro5600Training"<>$SessionUUID,
-					(*2*)"Test standard for ExperimentVapro5600Training"<>$SessionUUID,
-					(*3*)"Test standard without model for ExperimentVapro5600Training"<>$SessionUUID
-				},
-				ID->sampleIDs[ID],
-				Cache->containerPackets,
-				Upload->False
-			];
-			
-			(* Make some changes to our samples to make them unique/invalid. *)
-			sampleUpdatePackets={
-				(*1*)<|Object->sampleIDs[[1]],Status->Discarded,DeveloperObject->False|>,
-				(*2*)<|Object->sampleIDs[[2]],Status->Available,DeveloperObject->False|>,
-				(*3*)<|Object->sampleIDs[[3]],Model->Null,Status->Available,DeveloperObject->False|>
-			};
 
-			osmometerModelPackets={
-				<|
-					Object->osmometerModelIDs[[1]],
-					Name->"Test non Vapro 5600 for ExperimentVapro5600Training"<>$SessionUUID,
-					MinOsmolality->5 Millimole/Kilogram,
-					MaxOsmolality->10000 Millimole/Kilogram,
-					MinSampleVolume->5 Microliter,
-					MaxSampleVolume->15 Microliter,
-					EquilibrationTime->10 Second,
-					ManufacturerOsmolalityRepeatability->1 Millimole/Kilogram
-				|>
-			};
+				testBenchPacket = UploadSample[
+					Model[Container,Bench,"The Bench of Testing"],
+					{"First Floor Slot",Object[Container,Building,"15500 Wells Port Drive"]},
+					Name->"Test Bench for ExperimentVapro5600Training"<>$SessionUUID,
+					FastTrack->True,
+					Upload->False
+				];
+				testBench = Lookup[testBenchPacket[[1]],Object];
 
-			(* The instrument itself *)
-			osmometerPackets={
-				<|
-					Object->osmometerIDs[[1]],
-					Name->"Test Vapro 5600 for ExperimentVapro5600Training"<>$SessionUUID,
-					Model->Link[Model[Instrument,Osmometer,"Vapro 5600"],Objects],
-					Status->Available,
-					Replace[SerialNumbers]->{"Instrument","5600202558"},
-					Cost->9827.04 USD,
-					DataFilePath->"Data\\Vapro5600\\VaproTest",
-					Replace[ManufacturerCalibrants]->{
-						Link[Model[Sample,"Osmolality Standard 290 mmol/kg Sodium Chloride"]],
-						Link[Model[Sample,"Osmolality Standard 1000 mmol/kg Sodium Chloride"]],
-						Link[Model[Sample,"Osmolality Standard 100 mmol/kg Sodium Chloride"]]
+				osmometerModelIDs=CreateID[ConstantArray[Model[Instrument,Osmometer],1]];
+				osmometerIDs=CreateID[ConstantArray[Object[Instrument,Osmometer],2]];
+				pipetteIDs=CreateID[ConstantArray[Object[Instrument,Pipette],1]];
+				inoculationPaperIDs=CreateID[ConstantArray[Object[Item,InoculationPaper],1]];
+				protocolIDs=CreateID[ConstantArray[Object[Protocol,Vapro5600Training],1]];
+				operatorIDs=CreateID[ConstantArray[Object[User,Emerald,Operator],1]];
+
+				(**** Test sample containers ****)
+				containerIDs = CreateID[ConstantArray[Object[Container,Vessel],4]];
+				containerModels = {Model[Container,Vessel,"1mL clear glass ampule"],Model[Container,Vessel,"1mL clear glass ampule"],Model[Container,Vessel,"1mL clear glass ampule"],Model[Container,Vessel,"150mL Plastic Container"]};
+				containerNames = Map[#<>$SessionUUID&,
+					{"Test container 1 for ExperimentVapro5600Training", "Test container 2 for ExperimentVapro5600Training", "Test container 3 for ExperimentVapro5600Training", "Test Container for Inoculation Papers for ExperimentVapro5600Training"}
+				];
+				containerPackets = UploadSample[
+					containerModels,
+					ConstantArray[{"Bench Top Slot",testBench},Length[containerModels]],
+					Name->containerNames,
+					ID->containerIDs[ID],
+					Cache->testBenchPacket,
+					Upload->False
+				];
+
+				(**** Test osmometer containers ****)
+				osmometerContainerIDs = CreateID[ConstantArray[Object[Container,Vessel],2]];
+				osmometerContainerModels = {Model[Container,Vessel,"Vapro 5600 Osmometer Cleaning Solution Supply Container"],Model[Container,Vessel,"Vapro 5600 Osmometer Waste Container"]};
+				osmometerContainerNames = Map[#<>$SessionUUID&,
+					{"Test Vapro 5600 Osmometer Cleaning Solution Supply Container for ExperimentVapro5600Training","Test Vapro 5600 Osmometer Waste Container for ExperimentVapro5600Training"}
+				];
+				osmometerContainerPackets = UploadSample[
+					osmometerContainerModels,
+					ConstantArray[{"Bench Top Slot",testBench},Length[osmometerContainerModels]],
+					Name->osmometerContainerNames,
+					ID->osmometerContainerIDs[ID],
+					Cache->testBenchPacket,
+					Upload->False
+				];
+
+				(**** Test desiccant ****)
+				desiccantIDs = CreateID[ConstantArray[Object[Item,Cartridge,Desiccant],1]];
+				dessicantModels = {Model[Item,Cartridge,Desiccant,"SS-238 Desiccant Cartridge, Vapro 5600"]};
+				dessicantNames = Map[#<>$SessionUUID&,
+					{"Test SS-238 Desiccant Cartridge, Vapro 5600 for ExperimentVapro5600Training"}
+				];
+				desiccantPackets = UploadSample[
+					dessicantModels,
+					ConstantArray[{"Bench Top Slot",testBench},Length[dessicantModels]],
+					Name->dessicantNames,
+					ID->desiccantIDs[ID],
+					Cache->testBenchPacket,
+					Upload->False
+				];
+
+				(**** Test samples ****)
+				sampleIDs=CreateID[ConstantArray[Object[Sample],3]];
+				samplePackets=UploadSample[
+					{
+						(*1*)Model[Sample,"id:D8KAEvGLvEAR"],
+						(*2*)Model[Sample,"id:D8KAEvGLvEAR"],
+						(*3*)Model[Sample,"id:D8KAEvGLvEAR"] (* This will be overwritten with Null later *)
 					},
-					Software->"Vapro Lab Report",
-					CleaningSolutionContainer->Link[osmometerContainerIDs[[1]]],
-					WasteContainer->Link[osmometerContainerIDs[[2]]],
-					DesiccantCartridge->Link[desiccantIDs[[1]]],
-					Site -> Link[$Site],
-					DeveloperObject->False
-				|>,
-				<|
-					Object->osmometerIDs[[2]],
-					Name->"Test non Vapro 5600 for ExperimentVapro5600Training"<>$SessionUUID,
-					Model->Link[osmometerModelIDs[[1]],Objects],
-					Status->Available,
-					Replace[SerialNumbers]->{"Instrument","5600202558"},
-					Cost->9827.04 USD,
-					DataFilePath->"Data\\nonVapro5600\\nonVaproTest",
-					Replace[ManufacturerCalibrants]->{
-						Link[Model[Sample,"Osmolality Standard 290 mmol/kg Sodium Chloride"]],
-						Link[Model[Sample,"Osmolality Standard 1000 mmol/kg Sodium Chloride"]],
-						Link[Model[Sample,"Osmolality Standard 100 mmol/kg Sodium Chloride"]]
+					{
+						(*1*){"A1",containerIDs[[1]]},
+						(*2*){"A1",containerIDs[[2]]},
+						(*3*){"A1",containerIDs[[3]]}
 					},
-					Software->"nonVapro Lab Report",
-					Site -> Link[$Site],
-					DeveloperObject->False
-				|>
-			};
-			
-			(****Test tweezer packets****)
-			tweezerIDs=CreateID[ConstantArray[Object[Item,Tweezer],1]];
-			tweezerModels = {Model[Item,Tweezer,"id:bq9LA0JqYMez"]};
-			tweezerNames = Map[#<>$SessionUUID&,
-				{"AC-036 Forceps, Tests forceps for ExperimentVapro5600Training"}
-			];
-			tweezerPackets = UploadSample[
-				tweezerModels,
-				ConstantArray[{"Bench Top Slot",testBench},Length[tweezerModels]],
-				Name->tweezerNames,
-				ID->tweezerIDs[ID],
-				Cache->testBenchPacket,
-				Upload->False
-			];
+					InitialAmount->{
+						(*1*)1 Milliliter,
+						(*2*)1 Milliliter,
+						(*3*)1 Milliliter
+					},
+					Name->{
+						(*1*)"Test discarded standard for ExperimentVapro5600Training"<>$SessionUUID,
+						(*2*)"Test standard for ExperimentVapro5600Training"<>$SessionUUID,
+						(*3*)"Test standard without model for ExperimentVapro5600Training"<>$SessionUUID
+					},
+					ID->sampleIDs[ID],
+					Cache->containerPackets,
+					Upload->False
+				];
 
-			(* Create test samples *)
-			additionalPackets={
-				<|
-					Object->pipetteIDs[[1]],
-					Name->"AC-037 10 uL Pipette, Test pipette for ExperimentVapro5600Training"<>$SessionUUID,
-					Model->Link[Model[Instrument,Pipette,"AC-037 10 uL Pipette, Vapro 5600"],Objects],
-					Status->Available,
-					Site->Link[$Site],
-					DeveloperObject->False
-				|>,
-				<|
-					Object->inoculationPaperIDs[[1]],
-					Model->Link[Model[Item,InoculationPaper,"6.7mm diameter solute free paper"],Objects],
-					Name->"Test Inoculation Papers for ExperimentVapro5600Training"<>$SessionUUID,
-					DeveloperObject->False,
-					Status->Available,
-					Count->5000
-				|>,
-				<|
-					Object->protocolIDs[[1]],
-					Name->"Osmolality Test Template Protocol for ExperimentVapro5600Training"<>$SessionUUID,
-					ResolvedOptions->{MaxNumberOfMeasurements->6},
-					DeveloperObject->False
-				|>,
-				<|
-					Object->operatorIDs[[1]],
-					Model->Link[Model[User,Emerald,Operator,"Level 1"],Objects],
-					Name->"Test operator for ExperimentVapro5600Training"<>$SessionUUID,
-					DeveloperObject->False,
-					Status->Active
-				|>
-			};
+				(* Make some changes to our samples to make them unique/invalid. *)
+				sampleUpdatePackets={
+					(*1*)<|Object->sampleIDs[[1]],Status->Discarded,DeveloperObject->False|>,
+					(*2*)<|Object->sampleIDs[[2]],Status->Available,DeveloperObject->False|>,
+					(*3*)<|Object->sampleIDs[[3]],Model->Null,Status->Available,DeveloperObject->False|>
+				};
 
-			(* Move inoculation papers to the created container *)
-			locationPackets=UploadLocation[
-				inoculationPaperIDs[[1]],
-				{"A1",containerIDs[[4]]},
-				Upload->False,
-				Cache->Flatten[{containerPackets,additionalPackets}]
-			];
+				osmometerModelPackets={
+					<|
+						Object->osmometerModelIDs[[1]],
+						Name->"Test non Vapro 5600 for ExperimentVapro5600Training"<>$SessionUUID,
+						MinOsmolality->5 Millimole/Kilogram,
+						MaxOsmolality->10000 Millimole/Kilogram,
+						MinSampleVolume->5 Microliter,
+						MaxSampleVolume->15 Microliter,
+						EquilibrationTime->10 Second,
+						ManufacturerOsmolalityRepeatability->1 Millimole/Kilogram
+					|>
+				};
 
-			allUploadPackets=Flatten[{
-				testBenchPacket,containerPackets,osmometerContainerPackets,desiccantPackets,samplePackets,sampleUpdatePackets,
-				osmometerModelPackets,osmometerPackets,tweezerPackets,additionalPackets,locationPackets
-			}];
+				(* The instrument itself *)
+				osmometerPackets={
+					<|
+						Object->osmometerIDs[[1]],
+						Name->"Test Vapro 5600 for ExperimentVapro5600Training"<>$SessionUUID,
+						Model->Link[Model[Instrument,Osmometer,"Vapro 5600"],Objects],
+						Status->Available,
+						Replace[SerialNumbers]->{"Instrument","5600202558"},
+						Cost->9827.04 USD,
+						DataFilePath->"Data\\Vapro5600\\VaproTest",
+						Replace[ManufacturerCalibrants]->{
+							Link[Model[Sample,"Osmolality Standard 290 mmol/kg Sodium Chloride"]],
+							Link[Model[Sample,"Osmolality Standard 1000 mmol/kg Sodium Chloride"]],
+							Link[Model[Sample,"Osmolality Standard 100 mmol/kg Sodium Chloride"]]
+						},
+						Software->"Vapro Lab Report",
+						CleaningSolutionContainer->Link[osmometerContainerIDs[[1]]],
+						WasteContainer->Link[osmometerContainerIDs[[2]]],
+						DesiccantCartridge->Link[desiccantIDs[[1]]],
+						Site -> Link[$Site],
+						DeveloperObject->False
+					|>,
+					<|
+						Object->osmometerIDs[[2]],
+						Name->"Test non Vapro 5600 for ExperimentVapro5600Training"<>$SessionUUID,
+						Model->Link[osmometerModelIDs[[1]],Objects],
+						Status->Available,
+						Replace[SerialNumbers]->{"Instrument","5600202558"},
+						Cost->9827.04 USD,
+						DataFilePath->"Data\\nonVapro5600\\nonVaproTest",
+						Replace[ManufacturerCalibrants]->{
+							Link[Model[Sample,"Osmolality Standard 290 mmol/kg Sodium Chloride"]],
+							Link[Model[Sample,"Osmolality Standard 1000 mmol/kg Sodium Chloride"]],
+							Link[Model[Sample,"Osmolality Standard 100 mmol/kg Sodium Chloride"]]
+						},
+						Software->"nonVapro Lab Report",
+						Site -> Link[$Site],
+						DeveloperObject->False
+					|>
+				};
 
-			Upload[allUploadPackets]
+				(****Test tweezer packets****)
+				tweezerIDs=CreateID[ConstantArray[Object[Item,Tweezer],1]];
+				tweezerModels = {Model[Item,Tweezer,"id:bq9LA0JqYMez"]};
+				tweezerNames = Map[#<>$SessionUUID&,
+					{"AC-036 Forceps, Tests forceps for ExperimentVapro5600Training"}
+				];
+				tweezerPackets = UploadSample[
+					tweezerModels,
+					ConstantArray[{"Bench Top Slot",testBench},Length[tweezerModels]],
+					Name->tweezerNames,
+					ID->tweezerIDs[ID],
+					Cache->testBenchPacket,
+					Upload->False
+				];
+
+				(* Create test samples *)
+				additionalPackets={
+					<|
+						Object->pipetteIDs[[1]],
+						Name->"AC-037 10 uL Pipette, Test pipette for ExperimentVapro5600Training"<>$SessionUUID,
+						Model->Link[Model[Instrument,Pipette,"AC-037 10 uL Pipette, Vapro 5600"],Objects],
+						Status->Available,
+						Site->Link[$Site],
+						DeveloperObject->False
+					|>,
+					<|
+						Object->inoculationPaperIDs[[1]],
+						Model->Link[Model[Item,InoculationPaper,"6.7mm diameter solute free paper"],Objects],
+						Name->"Test Inoculation Papers for ExperimentVapro5600Training"<>$SessionUUID,
+						DeveloperObject->False,
+						Status->Available,
+						Count->5000
+					|>,
+					<|
+						Object->protocolIDs[[1]],
+						Name->"Osmolality Test Template Protocol for ExperimentVapro5600Training"<>$SessionUUID,
+						ResolvedOptions->{MaxNumberOfMeasurements->6},
+						DeveloperObject->False
+					|>,
+					<|
+						Object->operatorIDs[[1]],
+						Model->Link[Model[User,Emerald,Operator,"Level 1"],Objects],
+						Name->"Test operator for ExperimentVapro5600Training"<>$SessionUUID,
+						DeveloperObject->False,
+						Status->Active
+					|>
+				};
+
+				(* Move inoculation papers to the created container *)
+				locationPackets=UploadLocation[
+					inoculationPaperIDs[[1]],
+					{"A1",containerIDs[[4]]},
+					Upload->False,
+					Cache->Flatten[{containerPackets,additionalPackets}]
+				];
+
+				allUploadPackets=Flatten[{
+					testBenchPacket,containerPackets,osmometerContainerPackets,desiccantPackets,samplePackets,sampleUpdatePackets,
+					osmometerModelPackets,osmometerPackets,tweezerPackets,additionalPackets,locationPackets
+				}];
+
+				Upload[allUploadPackets]
+			]
 		]
 	),
 	SymbolTearDown:>(

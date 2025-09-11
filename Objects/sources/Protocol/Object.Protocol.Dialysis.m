@@ -174,21 +174,21 @@ DefineObjectType[Object[Protocol, Dialysis], {
 		DialysisMembraneSoakPrimitives-> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer of dialysis membrane soak solution into a container before the DialysisMembrane is soaked.",
 			Category -> "General"
 		},
 		DialysisMembraneSoakWaitPrimitives-> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the time the DialysisMembrane sits in soak solution.",
 			Category -> "General"
 		},
 		DialysisMembraneSoakRemovePrimitives-> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer of dialyis membrane soak solution out of the DialysisMembrane.",
 			Category -> "General"
 		},
@@ -203,7 +203,7 @@ DefineObjectType[Object[Protocol, Dialysis], {
 		SampleLoadingPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the sample transfer of the experimental samples into the DialysisMembranes prior to the dialysis.",
 			Category -> "Sample Preparation"
 		},
@@ -211,7 +211,7 @@ DefineObjectType[Object[Protocol, Dialysis], {
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
+			Relation->Object[Protocol,SampleManipulation]|Object[Protocol,RoboticSamplePreparation]|Object[Protocol,ManualSamplePreparation]|Object[Notebook,Script],
 			Description->"Sample manipulations protocols used to load the samples into the DialysisMembranes and the dialysate into dialysate containers prior to the dialysis.",
 			Category->"Sample Preparation"
 		},
@@ -363,35 +363,35 @@ DefineObjectType[Object[Protocol, Dialysis], {
 		DialysatePrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer of the Dialysate into the DialysateContainer prior to the first round of dialysis.",
 			Category -> "Sample Preparation"
 		},
 		SecondaryDialysatePrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer of the Dialysate into the DialysateContainer prior to the second round of dialysis.",
 			Category -> "Sample Preparation"
 		},
 		TertiaryDialysatePrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer of the Dialysate into the DialysateContainer prior to the third round of dialysis.",
 			Category -> "Sample Preparation"
 		},
 		QuaternaryDialysatePrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer of the Dialysate into the DialysateContainer prior to the fourth round of dialysis.",
 			Category -> "Sample Preparation"
 		},
 		QuinaryDialysatePrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer of the Dialysate into the DialysateContainer prior to the fifth round of dialysis.",
 			Category -> "Sample Preparation"
 		},
@@ -724,35 +724,35 @@ DefineObjectType[Object[Protocol, Dialysis], {
 		DialysateSamplingPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer sampling volumes of Dialysates into the DialysateContainersOut after the first round of dialysis.",
 			Category -> "Storage Information"
 		},
 		SecondaryDialysateSamplingPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer sampling volumes of SecondaryDialysates into the SecondaryDialysateContainersOut after the second round of dialysis.",
 			Category -> "Storage Information"
 		},
 		TertiaryDialysateSamplingPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer sampling volumes of TertiaryDialysates into the TertiaryDialysateContainersOut after the third round of dialysis.",
 			Category -> "Storage Information"
 		},
 		QuaternaryDialysateSamplingPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer sampling volumes of QuaternaryDialysates into the QuaternaryDialysateContainersOut after the fourth round of dialysis.",
 			Category -> "Storage Information"
 		},
 		QuinaryDialysateSamplingPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer sampling volumes of QuinaryDialysates into the QuinaryDialysateContainersOut after the firth round of dialysis.",
 			Category -> "Storage Information"
 		},
@@ -1011,28 +1011,28 @@ DefineObjectType[Object[Protocol, Dialysis], {
 		RetentateSamplingPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer sampling volumes of the retentate into the RetentateContainersOut after the first round of dialysis.",
 			Category -> "Storage Information"
 		},
 		SecondaryRetentateSamplingPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer sampling volumes of the retentate into the SecondaryRetentateContainersOut after the second round of dialysis.",
 			Category -> "Storage Information"
 		},
 		TertiaryRetentateSamplingPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer sampling volumes of the retentate into the TertiaryRetentateContainersOut after the third round of dialysis.",
 			Category -> "Storage Information"
 		},
 		QuaternaryRetentateSamplingPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer sampling volumes of the retentate into the QuaternaryRetentateContainersOut after the fourth round of dialysis.",
 			Category -> "Storage Information"
 		},
@@ -1040,7 +1040,7 @@ DefineObjectType[Object[Protocol, Dialysis], {
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
+			Relation->Object[Protocol,SampleManipulation]|Object[Protocol,RoboticSamplePreparation]|Object[Protocol,ManualSamplePreparation]|Object[Notebook,Script],
 			Description->"Sample manipulations protocols used to take samplings of retentate and dialysate after dialysis.",
 			Category->"Storage Information"
 		},
@@ -1081,7 +1081,7 @@ DefineObjectType[Object[Protocol, Dialysis], {
 		RetentateCollectionPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer of the retentate into the RetentateContainersOut after the final round of dialysis.",
 			Category -> "Storage Information"
 		},
@@ -1089,7 +1089,7 @@ DefineObjectType[Object[Protocol, Dialysis], {
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
+			Relation->Object[Protocol,SampleManipulation]|Object[Protocol,RoboticSamplePreparation]|Object[Protocol,ManualSamplePreparation]|Object[Notebook,Script],
 			Description->"Sample manipulations protocols used to transfer the retentate into the RetentateContainersOut after the final round of dialysis.",
 			Category->"Storage Information"
 		},

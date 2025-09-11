@@ -13,13 +13,21 @@ DefineUsage[ExperimentVisualInspection,{
                {
                   InputName->"Samples",
                   Description->"The samples to be inspected or the containers directly storing the samples to be inspected.",
-                  Widget->Widget[
-                     Type->Object,
-                     Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                     ObjectTypes->{Object[Sample],Object[Container]},
-                     Dereference->{
-                        Object[Container]->Field[Contents[[All,2]]]
-                     }
+                  Widget -> Alternatives[
+                     "Sample or Container" -> Widget[
+                        Type -> Object,
+                        Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                        ObjectTypes -> {Object[Sample], Object[Container]},
+                        Dereference -> {
+                           Object[Container] -> Field[Contents[[All, 2]]]
+                        }
+                     ],
+                     (* TODO: Confirm "Container with Well Position" works with function *)
+                     "Model Sample" -> Widget[
+                        Type -> Object,
+                        Pattern :> ObjectP[Model[Sample]],
+                        ObjectTypes -> {Model[Sample]}
+                     ]
                   ],
                   Expandable -> False
                },
@@ -41,7 +49,7 @@ DefineUsage[ExperimentVisualInspection,{
       "ValidExperimentVisualInspectionQ",
       "ExperimentImageSample"
    },
-   Author->{"eunbin.go", "jihan.kim"}
+   Author->{"dima", "eunbin.go", "jihan.kim"}
 }];
 
 (* ::Subsubsection::Closed:: *)
@@ -59,14 +67,23 @@ DefineUsage[ExperimentVisualInspectionOptions,
                   {
                      InputName->"Objects",
                      Description->"The samples to be inspected or the containers directly storing the samples to be inspected.",
-                     Widget->Widget[
-                        Type->Object,
-                        Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                        ObjectTypes->{Object[Sample],Object[Container]},
-                        Dereference->{
-                           Object[Container]->Field[Contents[[All,2]]]
-                        }
-                     ]
+                     Widget -> Alternatives[
+                        "Sample or Container" -> Widget[
+                           Type -> Object,
+                           Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                           ObjectTypes -> {Object[Sample], Object[Container]},
+                           Dereference -> {
+                              Object[Container] -> Field[Contents[[All, 2]]]
+                           }
+                        ],
+                        (* TODO: Confirm "Container with Well Position" works with function *)
+                        "Model Sample" -> Widget[
+                           Type -> Object,
+                           Pattern :> ObjectP[Model[Sample]],
+                           ObjectTypes -> {Model[Sample]}
+                        ]
+                     ],
+                     Expandable -> False
                   },
                   IndexName->"experiment samples"
                ]
@@ -87,7 +104,7 @@ DefineUsage[ExperimentVisualInspectionOptions,
          "ExperimentVisualInspection",
          "ValidExperimentVisualInspectionQ"
       },
-      Author -> {"eunbin.go", "jihan.kim"}
+      Author -> {"dima", "eunbin.go", "jihan.kim"}
    }
 ];
 
@@ -108,14 +125,23 @@ DefineUsage[ValidExperimentVisualInspectionQ,
                   {
                      InputName->"Objects",
                      Description->"The samples to be inspected or the containers directly storing the samples to be inspected.",
-                     Widget->Widget[
-                        Type->Object,
-                        Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                        ObjectTypes->{Object[Sample],Object[Container]},
-                        Dereference->{
-                           Object[Container]->Field[Contents[[All,2]]]
-                        }
-                     ]
+                     Widget -> Alternatives[
+                        "Sample or Container" -> Widget[
+                           Type -> Object,
+                           Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                           ObjectTypes -> {Object[Sample], Object[Container]},
+                           Dereference -> {
+                              Object[Container] -> Field[Contents[[All, 2]]]
+                           }
+                        ],
+                        (* TODO: Confirm "Container with Well Position" works with function *)
+                        "Model Sample" -> Widget[
+                           Type -> Object,
+                           Pattern :> ObjectP[Model[Sample]],
+                           ObjectTypes -> {Model[Sample]}
+                        ]
+                     ],
+                     Expandable -> False
                   },
                   IndexName->"experiment samples"
                ]
@@ -133,6 +159,6 @@ DefineUsage[ValidExperimentVisualInspectionQ,
          "ExperimentVisualInspection",
          "ExperimentVisualInspectionOptions"
       },
-      Author -> {"eunbin.go", "jihan.kim"}
+      Author -> {"dima", "eunbin.go", "jihan.kim"}
    }
 ];

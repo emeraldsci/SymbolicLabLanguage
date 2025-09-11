@@ -44,6 +44,56 @@ DefineObjectType[Model[Pricing], {
 			Category -> "Organizational Information",
 			AdminWriteOnly->True
 		},
+
+		LoginActivationDate -> {
+			Format -> Single,
+			Class -> Date,
+			Pattern :> _?DateObjectQ,
+			Description -> "The date on which this pricing scheme grants members of the associated financing team access to ECL systems such as Command Center and data in Constellation.",
+			Category -> "Organizational Information",
+			AdminWriteOnly->True
+		},
+		StorageActivationDate -> {
+			Format -> Single,
+			Class -> Date,
+			Pattern :> _?DateObjectQ,
+			Description -> "The date on which this pricing scheme grants the associated financing team access to storage at ECL facilities.",
+			Category -> "Organizational Information",
+			AdminWriteOnly->True
+		},
+		ThreadActivationDate -> {
+			Format -> Single,
+			Class -> Date,
+			Pattern :> _?DateObjectQ,
+			Description -> "The date on which this pricing scheme grants the associated financing team capacity to run experiments at ECL facilities.",
+			Category -> "Organizational Information",
+			AdminWriteOnly->True
+		},
+		ThreadDeactivationDate -> {
+			Format -> Single,
+			Class -> Date,
+			Pattern :> _?DateObjectQ,
+			Description -> "The date past which this pricing scheme no longer grants the associated financing team capacity to run experiments at ECL facilities.",
+			Category -> "Organizational Information",
+			AdminWriteOnly->True
+		},
+		LoginDeactivationDate -> {
+			Format -> Single,
+			Class -> Date,
+			Pattern :> _?DateObjectQ,
+			Description -> "The date past which this pricing scheme no longer grants members of the associated financing team access to ECL systems such as Command Center and data in Constellation.",
+			Category -> "Organizational Information",
+			AdminWriteOnly->True
+		},
+		StorageDeactivationDate -> {
+			Format -> Single,
+			Class -> Date,
+			Pattern :> _?DateObjectQ,
+			Description -> "The date past which this pricing scheme no longer grants the associated financing team access to storage at ECL facilities.",
+			Category -> "Organizational Information",
+			AdminWriteOnly->True
+		},
+
 		CommitmentLength -> {
 			Format -> Single,
 			Class -> Real,
@@ -143,6 +193,20 @@ DefineObjectType[Model[Pricing], {
 			Category -> "Pricing Information",
 			AdminWriteOnly->True
 		},
+		OperatorModelPrice -> {
+			Format -> Multiple,
+			Headers -> {"Operator Model", "Price per hour"},
+			Class -> {Link, Real},
+			Pattern :> {_Link, GreaterEqualP[0 * USD / Hour]},
+			Units -> {None, USD / Hour},
+			Relation -> {
+				Model[User,Emerald,Operator],
+				Null
+			},
+			Description -> "The amount charged by the ECL for operator time per hour based on the Operator Model.",
+			Category -> "Pricing Information",
+			AdminWriteOnly->True
+		},
 		InstrumentPricing -> {
 			Format -> Multiple,
 			Class -> {Integer, Real},
@@ -224,6 +288,15 @@ DefineObjectType[Model[Pricing], {
 			Pattern :> GreaterEqualP[0, 1],
 			Description -> "The number of free occasions to clean items (e.g. dishwash glassware) not subject to cleaning fees.",
 			Category -> "Pricing Information",
+			AdminWriteOnly -> True
+		},
+		IncludedCleaningFees -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * USD],
+			Units -> USD,
+			Description -> "The price of free cleaning (e.g. dishwash glassware) not subject to fees.",
+			Category -> "Pricing Information",
 			AdminWriteOnly->True
 		},
 		IncludedStockingFees -> {
@@ -249,7 +322,16 @@ DefineObjectType[Model[Pricing], {
 			Class -> Real,
 			Pattern :> GreaterEqualP[0 Kilo * Centimeter^3],
 			Units -> Kilo * Centimeter^3,
-			Description -> "The amount of storage not subject to fees.",
+			Description -> "The amount of storage not subject to fees for this billing cycle.",
+			Category -> "Pricing Information",
+			AdminWriteOnly -> True
+		},
+		IncludedStorageFees -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * USD],
+			Units -> USD,
+			Description -> "The price of free storage not subject to fees.",
 			Category -> "Pricing Information",
 			AdminWriteOnly->True
 		},
@@ -271,6 +353,7 @@ DefineObjectType[Model[Pricing], {
 			Category -> "Pricing Information",
 			AdminWriteOnly->True
 		},
+		(*
 		IncludedConstellationStorage -> {
 			Format -> Single,
 			Class -> Real,
@@ -280,6 +363,7 @@ DefineObjectType[Model[Pricing], {
 			Category -> "Pricing Information",
 			AdminWriteOnly->True
 		},
+		*)
 		DeveloperObject -> {
 			Format -> Single,
 			Class -> Expression,

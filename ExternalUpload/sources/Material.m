@@ -50,7 +50,7 @@ DefineOptions[UploadMaterial,
 				Default -> Null,
 				AllowNull -> True,
 				Widget -> Adder[Widget[Type -> Object, Pattern :> ObjectP[Object[Data]]]],
-				Description -> "Reference microscope images exemplifying the typical appearance of this tissue.",
+				Description -> "Reference microscope images exemplifying the typical appearance of this material.",
 				Category -> "Experimental Results"
 			}
 		]

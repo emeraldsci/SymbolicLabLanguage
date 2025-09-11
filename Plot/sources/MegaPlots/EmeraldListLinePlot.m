@@ -151,14 +151,33 @@ DefineOptions[EmeraldListLinePlot,
 
 		(* Hidden options specific to EmeraldListLinePlot *)
 		NormalizeOption,
-		{
+		IndexMatching[
+			IndexMatchingParent->InsetImages,
+			{
 			OptionName -> InsetImages,
 			Default -> Null,
 			Description -> "Image or list of images to inset horizontally across the top of the plot.",
 			AllowNull -> True,
 			Category -> "Hidden",
-			Widget -> Widget[Type -> Expression, Pattern :> NullP|{}|ListableP[_Image], Size -> Paragraph]
-		},
+			Widget -> Widget[Type -> Expression, Pattern :> NullP|_Image, Size -> Paragraph]
+			},
+			{
+				OptionName->InsetImageSizeX,
+				Default->Automatic,
+				AllowNull->False,
+				Category->"Hidden",
+				Widget->Widget[Type->Number,Pattern:>GreaterEqualP[0.]],
+				Description->"The list of widths of the InsetImages in pixel."
+			},
+			{
+				OptionName->InsetImagePositionX,
+				Default->Automatic,
+				AllowNull->False,
+				Category->"Hidden",
+				Widget->Widget[Type->Number,Pattern:>RangeP[-Infinity,Infinity]],
+				Description->"The x-coordinate position that the InsetImage is placed on the overall plot graphic."
+			}
+		],
 		{
 			OptionName->XTransformationFunction,
 			Default->Null,
@@ -166,6 +185,23 @@ DefineOptions[EmeraldListLinePlot,
 			Category->"Hidden",
 			Widget->Widget[Type->Expression,Pattern:>_List,Size->Line],
 			Description->"List of symbolic functions which will transform the x-axis of the peak data."
+		},
+		
+		{
+			OptionName->InsetImageSizeY,
+			Default->Automatic,
+			AllowNull->False,
+			Category->"Hidden",
+			Widget->Widget[Type->Number,Pattern:> GreaterEqualP[0.]],
+			Description->"The height of the InsetImages in pixel."
+		},
+		{
+			OptionName->InsetImagePositionY,
+			Default->Automatic,
+			AllowNull->False,
+			Category->"Hidden",
+			Widget->Widget[Type->Number,Pattern:> RangeP[-Infinity,Infinity]],
+			Description->"The y-coordinate position that the InsetImage is placed on the overall plot graphic."
 		},
 
 		(* Shared options from PeakEpilog which should be hidden *)
@@ -216,7 +252,8 @@ EmeraldListLinePlot[in:oneDataSetP|{(oneDataSetP|{oneDataSetP..})..},ops:Options
 		secondXRanges,secondYRanges, secondYGraphic,fractions,peaks,ladders,verticalLineEpilog,frame,
 		frameTicks, secondYColor, frameLabels,	plotStyle, legend, joined, tooltips, junk,
 		xyMeansQxStdDevsQyStdDevsQ,xyMeansQ,xStdDevsQ,yStdDevsQ, xStdDevsUnitless, yStdDevsUnitless,
-		plotRangeApprox,unzoomableFig,allResolvedOptions,validResolvedOptions,secondYStyle,el
+		plotRangeApprox,unzoomableFig,expandedSafeOps,insetImages,updatedUnzoomableFig,allResolvedOptions,validResolvedOptions,secondYStyle,el,
+		definitionToUse
 	},
 
 	(* Convert the original option into a list *)
@@ -492,9 +529,30 @@ EmeraldListLinePlot[in:oneDataSetP|{(oneDataSetP|{oneDataSetP..})..},ops:Options
 		MAKE THE PLOT
 	*)
 
-	(* Generate the plot and add inset images *)
+	(* Generate the plot *)
 	unzoomableFig=ListLinePlot[primaryDataToPlotWithTooltips,internalMMPlotOps];
-	unzoomableFig=addInsetImages[unzoomableFig,Lookup[safeOps,InsetImages],plotRangeUnitless,Lookup[plotOptions,ImageSize]];
+	
+	(* add InsetImages if applicable *)
+	insetImages = Cases[ToList[Lookup[safeOps,InsetImages]],_Image]/.{}->Null;
+	(* For the ExpandIndexMatchedInputs, need to specify which definition we need to use for the checks. *)
+	definitionToUse = If[MatchQ[in, oneDataSetP],
+		1,
+		3
+	];
+	expandedSafeOps=ExpandIndexMatchedInputs[EmeraldListLinePlot,{in},safeOps/.{(InsetImages->x_) -> (InsetImages->insetImages)}, definitionToUse][[2]];
+	
+	updatedUnzoomableFig = If[MatchQ[Length[insetImages],GreaterP[0]],
+		Module[{expandedInsetImageSizeX,expandedInsetImagePositionX},
+			expandedInsetImageSizeX = Lookup[expandedSafeOps,InsetImageSizeX];
+			
+			expandedInsetImagePositionX = Lookup[expandedSafeOps,InsetImagePositionX];
+			
+			addInsetImages[unzoomableFig,insetImages,plotRangeUnitless,Lookup[plotOptions,ImageSize],expandedInsetImageSizeX,Lookup[safeOps,InsetImageSizeY],expandedInsetImagePositionX,Lookup[safeOps,InsetImagePositionY]]
+		],
+		
+		unzoomableFig
+	];
+	
 
 	(* Mostly resolved options to emerald plot function, using ReplaceRule to ensure all options have been kept. *)
 	mostlyResolvedOps=ReplaceRule[safeOps,ReplaceRule[plotOptions,resolvedOptions],Append->False]/.{
@@ -519,7 +577,7 @@ EmeraldListLinePlot[in:oneDataSetP|{(oneDataSetP|{oneDataSetP..})..},ops:Options
 
 	(* Use the ResolvedPlotOptions helper to extract resolved options from the MM Plot (e.g. PlotRange) *)
 	resolvedOps=Quiet[
-		resolvedPlotOptions[unzoomableFig,mostlyResolvedOps,ListLinePlot],
+		resolvedPlotOptions[updatedUnzoomableFig,mostlyResolvedOps,ListLinePlot],
 		(* Absolute Options is bugged, remove this quiet once WRI has fixed it *)
 		{Axes::axes}
 	];
@@ -547,8 +605,8 @@ EmeraldListLinePlot[in:oneDataSetP|{(oneDataSetP|{oneDataSetP..})..},ops:Options
 
 	(* Apply Zoomable if it was requested*)
 	finalPlot=If[TrueQ[Lookup[safeOps,Zoomable]],
-		Zoomable[unzoomableFig],
-		unzoomableFig
+		Zoomable[updatedUnzoomableFig],
+		updatedUnzoomableFig
 	];
 
 	(* Return the result, according to the output option. *)
@@ -772,7 +830,7 @@ packetToELLP[objs:(ListableP[ObjectReferenceP[],{2}]|ListableP[LinkP[],{2}]),fnc
 
 (* Map over inner lists when specified *)
 packetToELLP[infs:{packetOrInfoP[]..},fnc_,inputOptions:{(_Rule|_RuleDelayed)...}]:=Module[
-	{mappedOptions,optionsForEachPlot,mappedPlots,nullPrimaryIndices},
+	{mappedOptions,optionsForEachPlot,mappedPlots,nullPrimaryIndices, nullObjs, nullPrimaryFields},
 
 	(* Generate a separate list of options for each mapped plot function *)
 	mappedOptions=updateOptionsForMapping[fnc,Length[infs],inputOptions];

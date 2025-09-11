@@ -11,7 +11,7 @@
 DefineTests[PlotCircularDichroism,
 	{
 		Example[
-			{Basic,"Plots circular dichroism spectroscopy data when given an AbsorbanceSpectroscopy data object:"},
+			{Basic,"Plots circular dichroism spectroscopy data when given a CircularDichroism data object:"},
 			PlotCircularDichroism[Object[Data, CircularDichroism, "id:eGakldJqOnaB"]],
 			ValidGraphicsP[],
 			TimeConstraint->120
@@ -23,9 +23,15 @@ DefineTests[PlotCircularDichroism,
 			TimeConstraint->120
 		],
 		Example[
-			{Basic,"Plots circular dichroism spectroscopy data when given an AbsorbanceSpectroscopy data link:"},
+			{Basic,"Plots circular dichroism spectroscopy data when given a CircularDichroism data link:"},
 			PlotCircularDichroism[Link[Object[Data, CircularDichroism, "id:eGakldJqOnaB"],Protocol]],
 			ValidGraphicsP[],
+			TimeConstraint->120
+		],
+		Example[
+			{Basic,"Plots circular dichroism spectroscopy data when given a CircularDichroism protocol object:"},
+			PlotCircularDichroism[Object[Data, CircularDichroism, "id:eGakldJqOnaB"][Protocol]],
+			SlideView[{ValidGraphicsP[] ..}],
 			TimeConstraint->120
 		],
 		Example[
@@ -234,57 +240,160 @@ DefineTests[PlotCircularDichroism,
 			ValidGraphicsP[],
 			TimeConstraint->120
 		],
-
 		Test[
 			"Setting Output to Preview returns the plot:",
 			PlotCircularDichroism[Object[Data, CircularDichroism, "id:eGakldJqOnaB"],Output->Preview],
 			ValidGraphicsP[],
 			TimeConstraint->120
 		],
-
 		Test[
 			"Setting Output to Options returns the resolved options:",
 			PlotCircularDichroism[Object[Data, CircularDichroism, "id:eGakldJqOnaB"],Output->Options],
 			ops_/;MatchQ[ops,OptionsPattern[PlotCircularDichroism]],
 			TimeConstraint->120
 		],
-
 		Test[
 			"Setting Output to Tests returns a list of tests:",
 			PlotCircularDichroism[Object[Data, CircularDichroism, "id:eGakldJqOnaB"],Output->Tests],
 			{(_EmeraldTest|_Example)...},
 			TimeConstraint->120
 		],
-
 		Test[
 			"Setting Output to {Result,Options} returns the plot along with all resolved options for data object input:",
 			PlotCircularDichroism[Object[Data, CircularDichroism, "id:eGakldJqOnaB"],Output->{Result,Options}],
 			output_List/;MatchQ[First@output,ValidGraphicsP[]]&&MatchQ[Last@output,OptionsPattern[PlotCircularDichroism]]
 		],
-
 		Test[
 			"Setting Output to {Result,Options} returns the plot along with all resolved options for raw spectrum input:",
 			PlotCircularDichroism[Download[Object[Data, CircularDichroism, "id:eGakldJqOnaB"],CircularDichroismAbsorbanceSpectrum],Output->{Result,Options}],
 			output_List/;MatchQ[output,{ValidGraphicsP[], OptionsPattern[PlotCircularDichroism]}],
 			TimeConstraint->120
 		],
-
 		Test[
 			"Setting Output to Options returns all of the defined options:",
 			Sort@Keys@PlotCircularDichroism[Object[Data, CircularDichroism, "id:eGakldJqOnaB"],Output->Options],
 			Sort@Keys@SafeOptions@PlotCircularDichroism,
 			TimeConstraint->120
 		],
-
-		(* Dummy tests to satiate command builder *)
-		Example[{Messages,"NoDataForPlotRamanSpectroscopyOutput","Dummy Test:"},True,True],
-		Example[{Messages,"RamanMeasurementPositionSpectraMismatch","Dummy Test:"},True,True],
-		Example[{Messages,"HighRamanSpectraDensity","Dummy Test:"},True,True],
-		Example[{Messages,"WavelengthRequired","Dummy Test:"},True,True]
-
+		Example[{Messages, "NoCircularDichroismDataToPlot" ,"Throws an error when the protocol does not contain any associated circular dichroism data:"},
+			PlotCircularDichroism[Object[Protocol, CircularDichroism, "Protocol without data for PlotCircularDichroism tests " <> $SessionUUID]],
+			$Failed,
+			Messages :> Error::NoCircularDichroismDataToPlot
+		],
+		Example[{Messages, "CircularDichroismProtocolDataNotPlotted", "Throws an error when the data does not contain required fields:"},
+			PlotCircularDichroism[Object[Data, CircularDichroism, "Incomplete CircularDichroism Data 1 for PlotCircularDichroism tests " <> $SessionUUID]],
+			$Failed,
+			Messages :> Error::CircularDichroismProtocolDataNotPlotted
+		],
+		Example[{Messages, "CircularDichroismProtocolDataNotPlotted", "Throws an error when the one of the input data does not contain required fields:"},
+			PlotCircularDichroism[
+				{
+					Object[Data, CircularDichroism, "Incomplete CircularDichroism Data 1 for PlotCircularDichroism tests " <> $SessionUUID],
+					Object[Data, CircularDichroism, "id:eGakldJqOnaB"]
+				}
+			],
+			$Failed,
+			Messages :> Error::CircularDichroismProtocolDataNotPlotted
+		],
+		Example[{Messages, "CircularDichroismProtocolDataNotPlotted", "Throws an error when all the data do not contain required fields:"},
+			PlotCircularDichroism[
+				{
+					Object[Data, CircularDichroism, "Incomplete CircularDichroism Data 1 for PlotCircularDichroism tests " <> $SessionUUID],
+					Object[Data, CircularDichroism, "Incomplete CircularDichroism Data 2 for PlotCircularDichroism tests " <> $SessionUUID]
+				}
+			],
+			$Failed,
+			Messages :> Error::CircularDichroismProtocolDataNotPlotted
+		],
+		Example[{Messages, "CircularDichroismProtocolDataNotPlotted", "Throws an error when some of the data does not contain required fields:"},
+			PlotCircularDichroism[
+				{
+					Object[Data, CircularDichroism, "Incomplete CircularDichroism Data 1 for PlotCircularDichroism tests " <> $SessionUUID],
+					Object[Data, CircularDichroism, "Incomplete CircularDichroism Data 2 for PlotCircularDichroism tests " <> $SessionUUID],
+					Object[Data, CircularDichroism, "id:eGakldJqOnaB"]
+				}
+			],
+			$Failed,
+			Messages :> Error::CircularDichroismProtocolDataNotPlotted
+		]
 	},
 	Variables:>{dynamicSample},
 	SetUp:>(
 		dynamicSample={Object[Data, CircularDichroism, "id:eGakldJqOnaB"],Object[Data, CircularDichroism, "id:pZx9jo8k3RxM"],Object[Data, CircularDichroism, "id:Vrbp1jKYdBbz"]};
-	)
+	),
+	SymbolSetUp :> Block[{$DeveloperUpload = True, $AllowPublicObjects = True},
+		Module[
+			{
+				objects, existsFilter
+			},
+			$CreatedObjects = {};
+
+			(* Erase any objects that we failed to erase in the last unit test. *)
+			objects = {
+				(* Protocols *)
+				Object[Protocol, CircularDichroism, "Protocol without data for PlotCircularDichroism tests " <> $SessionUUID],
+				(* Data Objects *)
+				Object[Data, CircularDichroism, "Incomplete CircularDichroism Data 1 for PlotCircularDichroism tests " <> $SessionUUID],
+				Object[Data, CircularDichroism, "Incomplete CircularDichroism Data 2 for PlotCircularDichroism tests " <> $SessionUUID]
+			};
+
+			existsFilter = DatabaseMemberQ[objects];
+
+			EraseObject[
+				PickList[objects, existsFilter],
+				Force -> True,
+				Verbose -> False
+			];
+
+			(* Upload temporary test protocols and data objects. *)
+			Upload[{
+				<|
+					Type -> Object[Protocol, CircularDichroism],
+					Name -> "Protocol without data for PlotCircularDichroism tests " <> $SessionUUID,
+					Site -> Link[$Site]
+				|>,
+				<|
+					Type -> Object[Data, CircularDichroism],
+					Name -> "Incomplete CircularDichroism Data 1 for PlotCircularDichroism tests " <> $SessionUUID
+				|>,
+				<|
+					Type -> Object[Data, CircularDichroism],
+					Name -> "Incomplete CircularDichroism Data 2 for PlotCircularDichroism tests " <> $SessionUUID
+				|>
+			}];
+
+		]
+	],
+
+	SymbolTearDown :> (
+		Module[{allObjects, existsFilter},
+
+			(* Define a list of all of the objects that are created in the SymbolSetUp - containers, samples, models, etc. *)
+			allObjects = Cases[{
+				(* Protocols *)
+				Object[Protocol, CircularDichroism, "Protocol without data for PlotCircularDichroism tests " <> $SessionUUID],
+				(* Data Objects *)
+				Object[Data, CircularDichroism, "Incomplete CircularDichroism Data 1 for PlotCircularDichroism tests " <> $SessionUUID],
+				Object[Data, CircularDichroism, "Incomplete CircularDichroism Data 2 for PlotCircularDichroism tests " <> $SessionUUID]
+			},
+				ObjectP[]
+			];
+
+			(* Erase any objects that we failed to erase in the last unit test *)
+			existsFilter = DatabaseMemberQ[allObjects];
+
+			Quiet[EraseObject[
+				PickList[
+					allObjects,
+					existsFilter
+				],
+				Force -> True,
+				Verbose -> False
+			]];
+		]
+	),
+
+	Stubs:> {
+		$PersonID = Object[User, "Test user for notebook-less test protocols"]
+	}
 ];

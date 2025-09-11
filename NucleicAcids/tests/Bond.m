@@ -26,7 +26,7 @@
 (* ::Subsubsection::Closed:: *)
 (*Bond*)
 
-
+Authors[Bond]:={"scicomp"};
 DefineTests[Bond,{
 	Example[{Basic,"A bond between the third motif in the first strand, and the fourth motif in the second strand:"},
 		Bond[{1,3},{2,4}],

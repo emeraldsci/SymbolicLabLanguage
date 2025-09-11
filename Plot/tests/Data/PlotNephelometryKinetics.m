@@ -27,6 +27,12 @@ DefineTests[PlotNephelometryKinetics,{
 	],
 
 	Example[
+		{Basic,"Plot the results of a NephelometryKinetics protocol using a protocol object as input:"},
+		PlotNephelometryKinetics[Object[Protocol, NephelometryKinetics, "PlotNephelometryKinetics Test Protocol with data"]],
+		ValidGraphicsP[]
+	],
+
+	Example[
 		{Options,PlotType,"PlotType can be specified:"},
 		PlotNephelometryKinetics[Object[Data,NephelometryKinetics,"PlotNephelometryKinetics Test Dilutions and Blanks Data"],PlotType->ListLinePlot],
 		ValidGraphicsP[]

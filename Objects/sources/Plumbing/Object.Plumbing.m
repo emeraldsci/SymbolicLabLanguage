@@ -188,6 +188,16 @@ DefineObjectType[Object[Plumbing], {
 			Category -> "Plumbing Information",
 			Headers -> {"Connector Name", "Connector Type","Thread Type","Inner Diameter","Outer Diameter","Gender"}
 		},
+		ConnectorGrips -> {
+			Format -> Multiple,
+			Class -> {String, Expression, Real, Real, Real},
+			Pattern :> {ConnectorNameP, ConnectorGripTypeP, GreaterP[0 Inch], GreaterEqualP[0 Newton*Meter], GreaterP[0 Newton*Meter]},
+			Units -> {None, None, Inch, Newton*Meter, Newton*Meter},
+			Description -> "For each member of Connectors, specifications for a region on this item that may be used in concert with tools or fingers to assist in establishing a Connection to the Connector. Connector Name denotes the Connector to which a grip corresponds. Grip Type indicates the form the grip takes. Options include Flats or Knurled. Flats are parallel faces on the body of an object designed interface with the mouth of a wrench. Knurled denotes that a pattern is etched into the body of an object to increase roughness. Grip Size is the distance across flats or the diameter of the grip. Min torque is the lower bound energetic work required to make a leak-proof seal via rotational force. Max torque is the upper bound after which the fitting may be irreparably distorted or damaged.",
+			Category -> "Plumbing Information",
+			Headers -> {"Connector Name", "Grip Type", "Grip Size", "Min Torque", "Max Torque"},
+			IndexMatching -> Connectors
+		},
 		Nuts -> {
 			Format -> Multiple,
 			Class -> {String, Link, Expression},
@@ -282,25 +292,7 @@ DefineObjectType[Object[Plumbing], {
 			Headers -> {"Date", "Connector Name", "Connector Trimmed Length", "Final Plumbing Length", "Responsible Party"},
 			Category -> "Plumbing Information"
 		},
-		(* --- Physical Properties --- *)
-		Count->{
-			Format -> Single,
-			Class -> Integer,
-			Pattern :> GreaterEqualP[0,1],
-			Units -> None,
-			Description -> "The current number of individual items that are part of this plumbing component.",
-			Category -> "Physical Properties"
-		},
-		CountLog->{
-			Format -> Multiple,
-			Class -> {Date, Integer, Link},
-			Pattern :> {_?DateObjectQ, GreaterEqualP[0,1], _Link},
-			Relation -> {Null, Null, Object[Protocol] | Object[Maintenance] | Object[Qualification] | Object[Product] | Object[User]},
-			Units -> {None, None, None},
-			Description -> "A historical record of the count of the plumbing component.",
-			Category -> "Physical Properties",
-			Headers ->{"Date","Count","Responsible Party"}
-		},
+
 		(* --- Inventory --- *)
 		SerialNumber -> {
 			Format -> Single,
@@ -446,6 +438,13 @@ DefineObjectType[Object[Plumbing], {
 			Relation -> {Null, Null, Object[Container][ContentsLog, 3] | Object[Instrument][ContentsLog, 3], Null, Object[User] | Object[Protocol] | Object[Qualification] | Object[Maintenance]},
 			Description -> "The location history of the plumbing component.",
 			Headers -> {"Date","Change Type","Container","Position","Responsible Party"},
+			Category -> "Storage Information"
+		},
+		AsepticTransportContainerType -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> AsepticTransportContainerTypeP,
+			Description -> "Indicates how this plumbing component is contained in an aseptic barrier and if it needs to be unbagged before being used in a protocol, maintenance, or qualification.",
 			Category -> "Storage Information"
 		},
 		Site -> {

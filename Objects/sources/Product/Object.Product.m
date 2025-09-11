@@ -60,6 +60,13 @@ DefineObjectType[Object[Product], {
 			Category -> "Organizational Information",
 			Abstract -> True
 		},
+		Verified -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the information in this model has been reviewed for accuracy by an ECL employee.",
+			Category -> "Organizational Information"
+		},
 		(* --- Product Specifications --- *)
 		KitComponents -> {
 			Format -> Multiple,
@@ -103,9 +110,7 @@ DefineObjectType[Object[Product], {
 					Model[Plumbing][KitProducts],
 					Model[Item][KitProducts],
 					Model[Wiring][KitProducts],
-					Model[Container, Plate, Filter][KitProductsContainers],
-					Model[Container, Vessel, Filter][KitProductsContainers],
-					Model[Container, Plate, Irregular, ArrayCard][KitProductsContainers]
+					Model[Container][KitProductsContainers]
 				],
 				DefaultContainerModel -> Alternatives[
 					Model[Container, Vessel],
@@ -113,7 +118,8 @@ DefineObjectType[Object[Product], {
 					Model[Container, GasCylinder],
 					Model[Container, Bag],
 					Model[Container, Shipping],
-					Model[Container, Plate]
+					Model[Container, Plate],
+					Model[Container, MicroscopeSlide]
 				],
 				Amount -> Null,
 				Position -> Null,
@@ -211,6 +217,30 @@ DefineObjectType[Object[Product], {
 			Category->"Product Specifications",
 			Developer ->True
 		},
+		SealedContainer -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates whether the items of this product arrive as sealed containers with caps or lids. If SealedContainer -> True, no special storage handling will be performed, even if Sterile -> True.",
+			Category -> "Product Specifications",
+			Developer -> True
+		},
+		AsepticShippingContainerType -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> AsepticShippingContainerTypeP,
+			Description -> "Describes the manner in which an aseptic product is packed and shipped by the manufacturer. A value of None indicates that the product is not shipped in any specifically aseptic packaging, while a value of Null indicates no available information.",
+			Category -> "Product Specifications",
+			Developer -> True
+		},
+		AsepticRebaggingContainerType -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> AsepticTransportContainerTypeP,
+			Description -> "Describes the type of container items of this product will be transferred to if they arrive in a non-resealable aseptic shipping container.",
+			Category -> "Product Specifications",
+			Developer -> True
+		},
 		ImageFile -> {
 			Format -> Single,
 			Class -> Link,
@@ -254,7 +284,7 @@ DefineObjectType[Object[Product], {
 			Format -> Single,
 			Class -> String,
 			Pattern :> _String,
-			Description -> "The full description of the item as it is listed in the suppler's catalog including any relevant information on the number of samples per item, the sample type, and/or the amount per sample if that information is included in the suppliers catalog list and necessary to place an order for the correct unit of the item which this product represents.",
+			Description -> "The full description of the item as it is listed in the supplier's catalog including any relevant information on the number of samples per item, the sample type, and/or the amount per sample if that information is included in the suppliers catalog list and necessary to place an order for the correct unit of the item which this product represents.",
 			Category -> "Product Specifications"
 		},
 		Manufacturer -> {
@@ -319,7 +349,8 @@ DefineObjectType[Object[Product], {
 				Model[Container, Bag][ProductsContained],
 				Model[Container, Shipping][ProductsContained],
 				Model[Container, ProteinCapillaryElectrophoresisCartridge][ProductsContained],
-				Model[Container, Plate][ProductsContained]
+				Model[Container, Plate][ProductsContained],
+				Model[Container, MicroscopeSlide][ProductsContained]
 			],
 			Description -> "The model of the container that the sample arrives in upon delivery. If a plate is given, the sample will always be placed in A1.",
 			Category -> "Product Specifications",
@@ -413,6 +444,13 @@ DefineObjectType[Object[Product], {
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
 			Description -> "List of images of items that should be thrown out upon receiving.",
+			Category -> "Product Specifications"
+		},
+		RetainCase -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the item should be kept in a case (or blister pack) upon completion of a receiving.",
 			Category -> "Product Specifications"
 		},
 

@@ -330,6 +330,14 @@ $ShipFromECLSharedShippingFields ={
 		Description -> "For each member of ShippingContainers, the shipping labels affixed to the package.",
 		Category -> "Shipping Information",
 		IndexMatching->ShippingContainers
+	},
+	Fragile -> {
+		Format -> Multiple,
+		Class -> Boolean,
+		Pattern :> BooleanP,
+		Description -> "For each member of SamplesIn, indicates whether the shipped sample is wrapped with an additional layer of protective material.",
+		Category -> "Shipping Information",
+		IndexMatching -> SamplesIn
 	}
 };
 

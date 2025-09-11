@@ -1,3 +1,266 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:fc471628ad3415803292b8c4e210370b37a0272d15db38f70c27455945c3bd7c
-size 10309
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[      9843,        256]
+NotebookOptionsPosition[      7210,        201]
+NotebookOutlinePosition[      8464,        235]
+CellTagsIndexPosition[      8421,        232]
+WindowTitle->Motifs
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "01084ab2-b9ba-46e9-b022-f229f5afc402"]
+        }],ExpressionUUID->"a4d1e342-a178-4766-9aa7-5601e3a7fada"],
+        StripOnInput->False], {"\<\"MotifForm\"\>":>Documentation`HelpLookup[
+       "paclet:Plot/ref/MotifForm"], "\<\"MotifLabel\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/MotifLabel"], "\<\"MotifPolymer\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/MotifPolymer"], "\<\"MotifSequence\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/MotifSequence"], "\<\"NameMotifs\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/NameMotifs"], "\<\"ValidMotifQ\"\>":>
+       Documentation`HelpLookup["paclet:NucleicAcids/ref/ValidMotifQ"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "f1745a25-4a3f-4a46-9147-5f8907380d09"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "6a4d8504-bf63-47e0-8c8e-6a092cb0dfaf"]
+        }],ExpressionUUID->"f8e214d8-30a2-4b4f-9ba4-8f8b25b1e683"],
+        StripOnInput->False], {},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "616ed247-7b47-4fe0-a976-847fba0eeb6c"]
+    }], "AnchorBar",ExpressionUUID->"6d3d9e0f-2a05-4517-9d03-16187b26ab94"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"9245cdac-e3d5-4e6b-a2b9-e0dd3f9ab387"],
+
+Cell["Motifs", "GuideTitle",
+ CellID->906723038,ExpressionUUID->"0a2a9d65-8673-4c97-b2d3-bf25eb7d7a4b"],
+
+Cell["", "GuideAbstract",
+ CellID->333700560,ExpressionUUID->"c53ff584-060b-4be7-88cf-785c176dc40e"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->18599297,ExpressionUUID->"95494dbd-dcda-43e7-88db-883f6a09c4d3"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["MotifForm"]],"paclet:Plot/ref/MotifForm"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"0863e59e-b768-4766-a265-92170e98c711"]],\
+ "InlineGuideFunctionListing",
+ CellID->14511295,ExpressionUUID->"efe19ae7-4639-40bf-bb28-f7395be502c1"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["ValidMotifQ"]],"paclet:NucleicAcids/ref/ValidMotifQ"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"d58b7d4f-669f-4e4b-878b-0f56373e9839"]],\
+ "InlineGuideFunctionListing",
+ CellID->250393218,ExpressionUUID->"4c2a4bcb-e180-43a4-ab75-290bc3ef07aa"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["MotifSequence"]],"paclet:NucleicAcids/ref/MotifSequence"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a65bc850-125b-4f61-ad41-06f73a75bbbc"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["MotifPolymer"]],"paclet:NucleicAcids/ref/MotifPolymer"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2bfc87e3-15cc-477f-9410-6bbc43977dc8"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["MotifLabel"]],"paclet:NucleicAcids/ref/MotifLabel"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "736c7317-c411-4f18-9244-bc5a66f4f10a"]
+}], "InlineGuideFunctionListing",
+ CellID->132936348,ExpressionUUID->"0781fe45-b3f1-44de-b971-d42b13642240"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["NameMotifs"]],"paclet:NucleicAcids/ref/NameMotifs"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"da3f12f5-55e9-4147-ab93-204c8c716f4b"]],\
+ "InlineGuideFunctionListing",
+ CellID->483277645,ExpressionUUID->"15e5f683-4082-456f-a01e-e45b40332514"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->672414891,ExpressionUUID->"59ea57f1-9e76-4df3-bcd2-5a1535e14b50"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"02817e92-2303-4ed4-9306-fba56179e48c"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->23801860,ExpressionUUID->"73f3ba62-7e39-496f-bbc7-0b22a9212d14"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->983361438,ExpressionUUID->"a9073a7b-dca0-4709-8f69-da7122314f42"],
+
+Cell["", "FooterCell",
+ CellID->149101832,ExpressionUUID->"16e93f3e-0023-440b-acba-7195a5864830"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{144, Automatic}, {Automatic, 474}},
+WindowTitle->"Motifs",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Fri 5 Oct 2018 15:26:36", "context" -> "Docs`", 
+    "keywords" -> {
+     "MotifForm", "ValidMotifQ", "MotifSequence", "MotifPolymer", 
+      "MotifLabel", "NameMotifs"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "", "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> "Motifs", 
+    "title" -> "Motifs", "type" -> "Guide", "uri" -> "Docs/guide/Motifs", 
+    "WorkflowDockedCell" -> ""}, "SearchTextTranslated" -> "", "LinkTrails" -> 
+  ""},
+FrontEndVersion->"11.3 for Microsoft Windows (64-bit) (March 6, 2018)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[578, 21, 3439, 86, 58, "AnchorBarGrid",ExpressionUUID->"9245cdac-e3d5-4e6b-a2b9-e0dd3f9ab387",
+ CellID->1],
+Cell[4020, 109, 103, 1, 50, "GuideTitle",ExpressionUUID->"0a2a9d65-8673-4c97-b2d3-bf25eb7d7a4b",
+ CellID->906723038],
+Cell[4126, 112, 100, 1, 31, "GuideAbstract",ExpressionUUID->"c53ff584-060b-4be7-88cf-785c176dc40e",
+ CellID->333700560],
+Cell[4229, 115, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"95494dbd-dcda-43e7-88db-883f6a09c4d3",
+ CellID->18599297],
+Cell[4344, 118, 345, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"efe19ae7-4639-40bf-bb28-f7395be502c1",
+ CellID->14511295],
+Cell[4692, 128, 358, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"4c2a4bcb-e180-43a4-ab75-290bc3ef07aa",
+ CellID->250393218],
+Cell[5053, 138, 1082, 28, 25, "InlineGuideFunctionListing",ExpressionUUID->"0781fe45-b3f1-44de-b971-d42b13642240",
+ CellID->132936348],
+Cell[6138, 168, 356, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"15e5f683-4082-456f-a01e-e45b40332514",
+ CellID->483277645],
+Cell[6497, 178, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"59ea57f1-9e76-4df3-bcd2-5a1535e14b50",
+ CellID->672414891],
+Cell[6606, 181, 391, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"73f3ba62-7e39-496f-bbc7-0b22a9212d14",
+ CellID->23801860],
+Cell[7000, 195, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"a9073a7b-dca0-4709-8f69-da7122314f42",
+ CellID->983361438],
+Cell[7109, 198, 97, 1, 41, "FooterCell",ExpressionUUID->"16e93f3e-0023-440b-acba-7195a5864830",
+ CellID->149101832]
+}
+]
+*)
+
+(* End of internal cache information *)
+

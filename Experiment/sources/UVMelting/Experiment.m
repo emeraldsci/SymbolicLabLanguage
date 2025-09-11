@@ -21,7 +21,9 @@ absorbanceThermodynamicsAllowedCuvettes = {
 	Model[Container, Cuvette, "id:eGakld01zz3E"], (* Micro scale *)
 	Model[Container, Cuvette, "id:R8e1PjRDbbld"], (* Semi-micro scale *)
 	Model[Container, Cuvette, "id:1ZA60vAA1PE8"], (* Semi-micro scale *)
-	Model[Container, Cuvette, "id:Y0lXejGKdd1x"] (* Standard scale *)
+	Model[Container, Cuvette, "id:Y0lXejGKdd1x"], (* Standard scale *)
+	Model[Container, Cuvette, "id:1ZA60vA840Ew"], (* Sub-micro scale *)
+	Model[Container, Cuvette, "id:O81aEBvP0LON"] (* Sub-micro scale *)
 };
 absorbanceThermodynamicsAllowedCuvettesP = ObjectP[absorbanceThermodynamicsAllowedCuvettes];
 
@@ -306,10 +308,25 @@ DefineOptions[ExperimentUVMelting,
 
 		],
 		(* Shared options *)
-		FuntopiaSharedOptionsPooled,
+		NonBiologyFuntopiaSharedOptionsPooled,
 		SubprotocolDescriptionOption,
+		SimulationOption,
 		SamplesInStorageOptions,
 		SamplesOutStorageOptions,
+		ModifyOptions[
+			ModelInputOptions,
+			{
+				{
+					OptionName -> PreparedModelAmount,
+					NestedIndexMatching -> True
+				},
+				{
+					OptionName -> PreparedModelContainer,
+					NestedIndexMatching -> True,
+					ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Cuvette, \"Micro Scale Black Walled UV Quartz Cuvette\"]."
+				}
+			}
+		],
 		{
 			OptionName -> NumberOfReplicates,
 			Default -> Null,
@@ -347,10 +364,10 @@ Error::UVMeltingIncompatibleBlankOptions = "The specified blank options (Blank a
 
 
 (* Overload for mixed input like {s1,{s2,s3}} -> We assume the first sample is going to be inside a pool and turn this into {{s1},{s2,s3}} *)
-ExperimentUVMelting[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]],_String,{LocationPositionP,_String|ObjectP[Object[Container]]}]]],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,listedInputs,outputSpecification,output,gatherTests,containerToSampleResult,containerToSampleOutput,sampleCache,
+ExperimentUVMelting[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[{Object[Sample],Object[Container],Model[Sample]}],_String,{LocationPositionP,_String|ObjectP[Object[Container]]}]]],myOptions:OptionsPattern[]]:=Module[
+	{listedOptions,listedInputs,outputSpecification,output,gatherTests,containerToSampleResult,containerToSampleOutput,containerToSampleSimulation,
 		containerToSampleTests,samples,sampleOptions,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-		samplePreparationCache,updatedCache,listedSamples,defineAssociations,definedContainerRules,prepPrim,contentsPerDefinedContainerObject,uniqueSampleTransfersPerDefinedContainer,
+		updatedSimulation,listedSamples,defineAssociations,definedContainerRules,prepPrim,contentsPerDefinedContainerObject,uniqueSampleTransfersPerDefinedContainer,
 		totalSampleCountsPerDefinedContainerRules,totalSampleCountsPerDefinedContainer,prepUnitOperations,labelContainerPrimitives},
 
 	(* Make sure we're working with a list of options *)
@@ -412,32 +429,33 @@ ExperimentUVMelting[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentUVMelting,
 			listedSamples,
-			listedOptions
+			listedOptions,
+			DefaultPreparedModelContainer -> Model[Container, Cuvette, "id:eGakld01zz3E"] (*"Micro Scale Black Walled UV Quartz Cuvette"*)
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* for each group, mapping containerToSampleOptions over each group to get the samples out *)
 	(* ignoring the options, since'll use the ones from from ExpandIndexMatchedInputs *)
 	containerToSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=pooledContainerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests,containerToSampleSimulation}=pooledContainerToSampleOptions[
 			ExperimentUVMelting,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests,Simulation},
+			Simulation->updatedSimulation
 		];
 
 		(* Therefore,we have to run the tests to see if we encountered a failure. *)
@@ -449,12 +467,12 @@ ExperimentUVMelting[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		{
 			Check[
-				containerToSampleOutput=pooledContainerToSampleOptions[
+				{containerToSampleOutput,containerToSampleSimulation}=pooledContainerToSampleOptions[
 					ExperimentUVMelting,
 					mySamplesWithPreparedSamples,
 					myOptionsWithPreparedSamples,
-					Output->Result,
-					Cache->samplePreparationCache
+					Output-> {Result,Simulation},
+					Simulation->updatedSimulation
 				],
 				$Failed,
 				{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
@@ -462,13 +480,6 @@ ExperimentUVMelting[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[
 			{}
 		}
 	];
-
-	(* Update our cache with our new simulated values. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
-
 
 	(* If we were given an empty container,return early. *)
 	If[ContainsAny[containerToSampleResult,{$Failed}],
@@ -485,14 +496,14 @@ ExperimentUVMelting[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[
 		{samples,sampleOptions}=containerToSampleOutput;
 		(* take the samples from the mapped containerToSampleOptions, and the options from expandedOptions *)
 		(* this way we'll end up index matching each grouping to an option *)
-		ExperimentUVMeltingCore[samples,ReplaceRule[sampleOptions,Cache->updatedCache]]
+		ExperimentUVMeltingCore[samples,ReplaceRule[sampleOptions,Simulation->containerToSampleSimulation]]
 	]
 ];
 
 (* This is the core function taking only clean pooled lists of samples in the form -> {{s1},{s2},{s3,s4},{s5,s6,s7}} *)
 ExperimentUVMeltingCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],myOptions:OptionsPattern[ExperimentUVMelting]]:=Module[
 	{listedOptions,flatSampleList,outputSpecification,output,gatherTests,safeOps,safeOpsTests,validLengths,
-		validLengthTests,templatedOptions,templateTests,inheritedOptions,upload,confirm,fastTrack,parentProtocol,
+		validLengthTests,templatedOptions,templateTests,inheritedOptions,upload,confirm,canaryBranch,fastTrack,parentProtocol,
 		cache,expandedSafeOps,cacheBall,resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,
 		collapsedResolvedOptions,resourcePackets,resourcePacketTests,preferredContainers,
 		containerOutObjects,containerOutModels,instruments, parentProtocolPacketLists, samplifiedInputPackets,
@@ -502,7 +513,7 @@ ExperimentUVMeltingCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 		instrumentModelPackets,instrumentPackets,userInstrumentModelPackets,userInstrumentObjectPackets,modelContainerFields,objectContainerFields,objectContainerPacketFields,
 		userInstrumentObjectModelPackets,userInstrumentOption,sampleContainerModels,
 		allTests,validQ,previewRule,optionsRule,testsRule,resultRule,validSamplePreparationResult,mySamplesWithPreparedSamples,
-		myOptionsWithPreparedSamples,samplePreparationCache, objectSamplePacketFields, modelSamplePacketFields,polymerTypePackets,
+		myOptionsWithPreparedSamples,updatedSimulation, objectSamplePacketFields, modelSamplePacketFields,polymerTypePackets,
 		listedSamples,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed
 	},
 
@@ -519,20 +530,20 @@ ExperimentUVMeltingCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentUVMelting,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist,Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -541,14 +552,8 @@ ExperimentUVMeltingCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 		{SafeOptions[ExperimentUVMelting,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],{}}
 	];
 
-	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentUVMelting,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentUVMelting,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
-
+	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
+	
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
 		Return[outputSpecification/.{
@@ -557,6 +562,12 @@ ExperimentUVMeltingCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 			Options->$Failed,
 			Preview->Null
 		}]
+	];
+	
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentUVMelting,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentUVMelting,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -589,7 +600,7 @@ ExperimentUVMeltingCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 	inheritedOptions=ReplaceRule[safeOps,templatedOptions];
 
 	(* get assorted hidden options *)
-	{upload,confirm,fastTrack,parentProtocol,cache} = Lookup[inheritedOptions,{Upload,Confirm,FastTrack,ParentProtocol,Cache}];
+	{upload,confirm,canaryBranch,fastTrack,parentProtocol,cache} = Lookup[inheritedOptions,{Upload,Confirm,CanaryBranch,FastTrack,ParentProtocol,Cache}];
 
 	(* Expand index-matching options *)
 	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentUVMelting,{mySamplesWithPreparedSamples},inheritedOptions]];
@@ -712,16 +723,17 @@ ExperimentUVMeltingCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 			{modelContainerFields}
 
 		}],
-		Cache->Flatten[{Lookup[safeOps,Cache],samplePreparationCache}],
+		Cache->cache,
+		Simulation -> updatedSimulation,
 		Date -> Now
 	],{Download::FieldDoesntExist}];
 
-	cacheBall=DeleteDuplicates[FlattenCachePackets[{parentProtocolPacketLists,samplePreparationCache,samplifiedInputPackets,preferredContainersPackets,aliquotContainerObjectPackets,aliquotContainerModelPackets,containerOutObjectPackets,containerOutModelPackets,instrumentModelPackets,instrumentPackets,userInstrumentModelPackets,userInstrumentObjectPackets,userInstrumentObjectModelPackets,sampleContainerModels}]];
+	cacheBall=DeleteDuplicates[FlattenCachePackets[{parentProtocolPacketLists,cache,samplifiedInputPackets,preferredContainersPackets,aliquotContainerObjectPackets,aliquotContainerModelPackets,containerOutObjectPackets,containerOutModelPackets,instrumentModelPackets,instrumentPackets,userInstrumentModelPackets,userInstrumentObjectPackets,userInstrumentObjectModelPackets,sampleContainerModels}]];
 
 	(* Build the resolved options - check whether we need to return early *)
 	resolvedOptionsResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentUVMeltingOptions[mySamplesWithPreparedSamples,expandedSafeOps, Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveExperimentUVMeltingOptions[mySamplesWithPreparedSamples,expandedSafeOps, Cache->cacheBall, Simulation -> updatedSimulation,Output->{Result,Tests}];
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
 			{resolvedOptions,resolvedOptionsTests},
@@ -729,7 +741,7 @@ ExperimentUVMeltingCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 		],
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption; if those were thrown, we encountered a failure *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentUVMeltingOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveExperimentUVMeltingOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall, Simulation -> updatedSimulation],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -754,8 +766,8 @@ ExperimentUVMeltingCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 
 	(* Build packets with resources *)
 	{resourcePackets,resourcePacketTests}=If[gatherTests,
-		uvMeltingResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,collapsedResolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{uvMeltingResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,collapsedResolvedOptions,Cache->cacheBall],{}}
+		uvMeltingResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,collapsedResolvedOptions,Cache->cacheBall,Simulation -> updatedSimulation,Output->{Result,Tests}],
+		{uvMeltingResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,collapsedResolvedOptions,Cache->cacheBall,Simulation -> updatedSimulation],{}}
 	];
 
 
@@ -787,11 +799,12 @@ ExperimentUVMeltingCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 	];
 
 	(* generate the Result output rule, but only if we've got a Valid experiment call (determined above) *)
-	(* Upload the resulting protocol/resource objects; must upload protocol and resource before Status change for UPS' ShippingMaterials shite *)
+	(* Upload the resulting protocol/resource objects; must upload protocol and resource before Status change for UPS' ShippingMaterials changes *)
 	resultRule = Result -> If[MemberQ[output, Result] && validQ,
 		UploadProtocol[
 			resourcePackets,
 			Confirm -> confirm,
+			CanaryBranch -> canaryBranch,
 			Upload -> upload,
 			ParentProtocol -> parentProtocol,
 			Priority->Lookup[safeOps,Priority],
@@ -799,7 +812,8 @@ ExperimentUVMeltingCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 			HoldOrder->Lookup[safeOps,HoldOrder],
 			QueuePosition->Lookup[safeOps,QueuePosition],
 			ConstellationMessage->Object[Protocol,UVMelting],
-			Cache->samplePreparationCache
+			Cache->cacheBall,
+			Simulation -> updatedSimulation
 		],
 		$Failed
 	];
@@ -818,7 +832,7 @@ ExperimentUVMeltingCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 
 DefineOptions[
 	resolveExperimentUVMeltingOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentUVMeltingOptions]]:=Module[
@@ -848,7 +862,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 		taggedContainersOut,noMixDespiteAliquottingWarnings,
 		sampleCategory,wavelength,minWavelength,maxWavelength,maxTemperature,minTemperature,numberOfCycles,equilibrationTime,
 		temperatureRampOrder,temperatureResolution,temperatureRampRate,temperatureMonitor,blankMeasurement,name,
-		confirm,template,samplesInStorageCondition,cache,operator,parentProtocol,upload,outputOption,email,imageSample,
+		confirm,canaryBranch,template,samplesInStorageCondition,cache,operator,parentProtocol,upload,outputOption,email,imageSample,
 		numberOfReplicates,resolvedEmail,resolvedImage,groupedContainersOut,resolvedContainerOutGroupedByIndex,
 		numContainersPerIndex,invalidContainerOutSpecs,containerOutMismatchedIndexOptions,containerOutMismatchedIndexTest,
 		numReservedWellsPerIndex,numWells,numWellsPerContainerRules,numWellsAvailablePerIndex,overOccupiedContainerOutBool,
@@ -860,12 +874,12 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 		noMixDespiteAliquottingOptions,noMixDespiteAliquottingTests,badBlankMeasurementOption,badBlankMeasurementTest,
 		suppliedNumberOfReplicates,numberOfNonAliquottedInputs,numberOfAliquottedInputs,intNumReplicates,numberOfCuvetteSamples,
 		tooManySamples,tooManySamplesOptions,tooManySamplesTest,resolveSamplePrepOptionsWithoutAliquot,resolvedAliquotOptions,
-		resolvedAliquotOptionsTests,sampleVolumes,assayBufferVolumes,concentratedBufferVolumes,bufferDiluentVolumes,aliquotContainerModels,
+		resolvedAliquotOptionsTests,aliquotContainerModels, fastAssoc,
 		insufficientBufferForBlankingTest,invalidInputs,invalidOptions,
 		resolvedOptions,allTests,resultRule,testsRule,resolvedPostProcessingOptions, maxSamplesPerExperiment, potentialAnalytes, potentialAnalyteTests,
 		numReplicatesNoAliquotOptions, numReplicatesNoAliquotTest, modelSamplePacketFields, objectSamplePacketFields, polymerTypePackets,
 		potentialAnalytesTypes, separateSamplesAndBlanksQ, blanksInvalidTest, blanksInvalidOptions, resolvedBlanks,
-		incompatibleBlanksQ, incompatibleBlanksTest, incompatibleBlanksOptions
+		incompatibleBlanksQ, incompatibleBlanksTest, incompatibleBlanksOptions, updatedSimulation, simulation
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -883,6 +897,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 
 	(* Fetch our cache from the parent function. *)
 	inheritedCache = Lookup[ToList[myResolutionOptions],Cache,{}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
 	(* Separate out our MeasureWeight options from our SamplePrep options. *)
 	{samplePrepOptions,uvMeltingOptions}=splitPrepOptions[myOptions];
@@ -891,12 +906,13 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 	uvMeltingOptionsAssociation = Association[uvMeltingOptions];
 
 	(* Resolve our sample prep options *)
-	{{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-		resolveSamplePrepOptions[ExperimentUVMelting,myPooledSamples,samplePrepOptions,Cache->inheritedCache,Output->{Result,Tests}],
-		{resolveSamplePrepOptions[ExperimentUVMelting,myPooledSamples,samplePrepOptions,Cache->inheritedCache,Output->Result],{}}
+	{{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentUVMelting,myPooledSamples,samplePrepOptions,Cache->inheritedCache,Simulation->simulation,Output->{Result,Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentUVMelting,myPooledSamples,samplePrepOptions,Cache->inheritedCache,Simulation->simulation,Output->Result],{}}
 	];
 
-	simulatedCache=DeleteDuplicates[simulatedCache];
+	simulatedCache=FlattenCachePackets[{inheritedCache, Lookup[First[updatedSimulation], Packets]}];
+	fastAssoc = makeFastAssocFromCache[simulatedCache];
 	flatSimulatedSamples=Flatten[simulatedSamples];
 	poolingLengths=Length/@simulatedSamples;
 
@@ -954,7 +970,8 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 					objectSamplePacketFields
 				}
 			},
-			Cache->simulatedCache,
+			Cache->inheritedCache,
+			Simulation -> updatedSimulation,
 			Date -> Now
 		],
 		{Download::FieldDoesntExist}
@@ -979,18 +996,18 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 	discardedInvalidInputs=If[MatchQ[discardedSamplePackets,{}],{},Lookup[discardedSamplePackets,Object]];
 
 	(* If there are invalid inputs and we are throwing messages,throw an error message and keep track of the invalid inputs.*)
-	If[Length[discardedInvalidInputs]>0&&messages,Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->simulatedCache]]];
+	If[Length[discardedInvalidInputs]>0&&messages,Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Simulation->updatedSimulation]]];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	discardedTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[discardedInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" are not discarded:",True,False]
+				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Simulation->updatedSimulation]<>" are not discarded:",True,False]
 			];
 			passingTest=If[Length[discardedInvalidInputs]==Length[flatSampleList],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[flatSampleList,discardedInvalidInputs],Cache->simulatedCache]<>" are not discarded:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[flatSampleList,discardedInvalidInputs],Simulation->updatedSimulation]<>" are not discarded:",True,True]
 			];
 			{failingTest,passingTest}
 		],Nothing
@@ -1009,7 +1026,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 
 	(* If there are invalid inputs and we are throwing messages,do so *)
 	If[Length[nonLiquidSampleInvalidInputs]>0&&messages,
-		Message[Error::NonLiquidSample,ObjectToString[nonLiquidSampleInvalidInputs,Cache->simulatedCache]];
+		Message[Error::NonLiquidSample,ObjectToString[nonLiquidSampleInvalidInputs,Simulation->updatedSimulation]];
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
@@ -1017,12 +1034,12 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[nonLiquidSampleInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[nonLiquidSampleInvalidInputs,Cache->simulatedCache]<>" have a Liquid State:",True,False]
+				Test["Our input samples "<>ObjectToString[nonLiquidSampleInvalidInputs,Simulation->updatedSimulation]<>" have a Liquid State:",True,False]
 			];
 
 			passingTest=If[Length[nonLiquidSampleInvalidInputs]==Length[flatSampleList],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[flatSampleList,nonLiquidSampleInvalidInputs],Cache->simulatedCache]<>" have a Liquid State:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[flatSampleList,nonLiquidSampleInvalidInputs],Simulation->updatedSimulation]<>" have a Liquid State:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -1097,7 +1114,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions below *)
 	mismatchingPoolMixOptions=If[Length[poolMixMismatch]>0&&messages,
 		Message[Error::MismatchingNestedIndexMatchingdMixOptions,
-			ObjectToString[poolMixMismatch[[All,1]],Cache->simulatedCache],
+			ObjectToString[poolMixMismatch[[All,1]],Simulation->updatedSimulation],
 			poolMixMismatch[[All,2]],
 			poolMixMismatch[[All,3]]
 		];
@@ -1117,12 +1134,12 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["For the input sample(s) "<>ObjectToString[passingInputs,Cache->simulatedCache]<>", the NestedIndexMatchingMix related options are not specified when NestedIndexMatchingMix is set to False:",True,True],
+				Test["For the input sample(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>", the NestedIndexMatchingMix related options are not specified when NestedIndexMatchingMix is set to False:",True,True],
 				Nothing
 			];
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[nonPassingInputs]>0,
-				Test["For the input sample(s) "<>ObjectToString[nonPassingInputs,Cache->simulatedCache]<>", the NestedIndexMatchingMix related options are not specified when NestedIndexMatchingMix is set to False:",True,False],
+				Test["For the input sample(s) "<>ObjectToString[nonPassingInputs,Simulation->updatedSimulation]<>", the NestedIndexMatchingMix related options are not specified when NestedIndexMatchingMix is set to False:",True,False],
 				Nothing
 			];
 			(* Return our created tests. *)
@@ -1158,7 +1175,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions below *)
 	mismatchingPoolMixTypeOptions=If[Length[poolMixTypeMismatch]>0&&messages,
 		Message[Error::NestedIndexMatchingMixVolumeNotCompatibleWithMixType,
-			ObjectToString[poolMixTypeMismatch[[All,1]],Cache->simulatedCache],
+			ObjectToString[poolMixTypeMismatch[[All,1]],Simulation->updatedSimulation],
 			poolMixTypeMismatch[[All,2]],
 			poolMixTypeMismatch[[All,3]],
 			poolMixTypeMismatch[[All,4]]
@@ -1179,12 +1196,12 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["For the input sample(s) "<>ObjectToString[passingInputs,Cache->simulatedCache]<>", the NestedIndexMatchingMixVolume is specified when NestedIndexMatchingMixType is set to Pipette and NestedIndexMatchingMixVolume is set to Null if NestedIndexMatchingMixType is set to Invert:",True,True],
+				Test["For the input sample(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>", the NestedIndexMatchingMixVolume is specified when NestedIndexMatchingMixType is set to Pipette and NestedIndexMatchingMixVolume is set to Null if NestedIndexMatchingMixType is set to Invert:",True,True],
 				Nothing
 			];
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[nonPassingInputs]>0,
-				Test["For the input sample(s) "<>ObjectToString[nonPassingInputs,Cache->simulatedCache]<>", the NestedIndexMatchingMixVolume is specified when NestedIndexMatchingMixType is set to Pipette and NestedIndexMatchingMixVolume is set to Null if NestedIndexMatchingMixType is set to Invert:",True,False],
+				Test["For the input sample(s) "<>ObjectToString[nonPassingInputs,Simulation->updatedSimulation]<>", the NestedIndexMatchingMixVolume is specified when NestedIndexMatchingMixType is set to Pipette and NestedIndexMatchingMixVolume is set to Null if NestedIndexMatchingMixType is set to Invert:",True,False],
 				Nothing
 			];
 			(* Return our created tests. *)
@@ -1228,7 +1245,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions below *)
 	mismatchingPoolIncubateOptions=If[Length[poolIncubateMismatch]>0&&messages,
 		Message[Error::MismatchingNestedIndexMatchingIncubateOptions,
-			ObjectToString[poolIncubateMismatch[[All,1]],Cache->simulatedCache],
+			ObjectToString[poolIncubateMismatch[[All,1]],Simulation->updatedSimulation],
 			poolIncubateMismatch[[All,2]],
 			poolIncubateMismatch[[All,3]]
 		];
@@ -1248,12 +1265,12 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["For the input sample(s) "<>ObjectToString[passingInputs,Cache->simulatedCache]<>", the NestedIndexMatchingIncubate related options are not specified when NestedIndexMatchingIncubate is set to False:",True,True],
+				Test["For the input sample(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>", the NestedIndexMatchingIncubate related options are not specified when NestedIndexMatchingIncubate is set to False:",True,True],
 				Nothing
 			];
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[nonPassingInputs]>0,
-				Test["For the input sample(s) "<>ObjectToString[nonPassingInputs,Cache->simulatedCache]<>", the NestedIndexMatchingIncubate related options are not specified when NestedIndexMatchingIncubate is set to False:",True,False],
+				Test["For the input sample(s) "<>ObjectToString[nonPassingInputs,Simulation->updatedSimulation]<>", the NestedIndexMatchingIncubate related options are not specified when NestedIndexMatchingIncubate is set to False:",True,False],
 				Nothing
 			];
 			(* Return our created tests. *)
@@ -1355,7 +1372,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 	badInstrumentTest = If[gatherTests,
 		Module[{result},
 			result=MatchQ[badInstrumentOption,{}];
-			Test["The provided instrument " <> ObjectToString[unresolvedInstrument, Cache -> simulatedCache] <> " is currently supported for UVMelting:",result,True]
+			Test["The provided instrument " <> ObjectToString[unresolvedInstrument, Simulation -> updatedSimulation] <> " is currently supported for UVMelting:",result,True]
 		]
 	];
 
@@ -1372,7 +1389,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 			Which[
 				MatchQ[#, ObjectP[Model]],#,
 				MatchQ[#, {_Integer,ObjectP[Model]}], Last[#],
-				True, cacheLookupUVMelting[simulatedCache,#,{Model}]
+				True, fastAssocLookup[fastAssoc,#,Model]
 			]
 		]&,
 		unresolvedAliquotContainers
@@ -1403,8 +1420,8 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions below *)
 	badAliquotContainerOptions=If[Length[aliquotContainerConflicts]>0&&messages,
 		Message[Error::IncompatibleCuvette,
-			ObjectToString[aliquotContainerConflicts[[All,1]],Cache->simulatedCache],
-			ObjectToString[aliquotContainerConflicts[[All,2]],Cache->simulatedCache]
+			ObjectToString[aliquotContainerConflicts[[All,1]],Simulation->updatedSimulation],
+			ObjectToString[aliquotContainerConflicts[[All,2]],Simulation->updatedSimulation]
 		];
 		{AliquotContainer},
 		{}
@@ -1422,12 +1439,12 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["For the input sample(s) "<>ObjectToString[passingInputs,Cache->simulatedCache]<>", the AliquotContainer, if specified, is a cuvette supported by this experiment:",True,True],
+				Test["For the input sample(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>", the AliquotContainer, if specified, is a cuvette supported by this experiment:",True,True],
 				Nothing
 			];
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[nonPassingInputs]>0,
-				Test["For the input sample(s) "<>ObjectToString[nonPassingInputs,Cache->simulatedCache]<>",the AliquotContainer, if specified, is a cuvette supported by this experiment:",True,False],
+				Test["For the input sample(s) "<>ObjectToString[nonPassingInputs,Simulation->updatedSimulation]<>",the AliquotContainer, if specified, is a cuvette supported by this experiment:",True,False],
 				Nothing
 			];
 			(* Return our created tests. *)
@@ -1495,7 +1512,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 	(* we don't want to throw this error if we already have thrown the discarded / non-volume / non-liquid input test *)
 	badTotalVolumeOptions=If[Length[totalVolumeConflicts]>0 && messages && !(Length[discardedInvalidInputs]>0) && !(Length[nonLiquidSampleInvalidInputs]>0),
 		Message[Error::NestedIndexMatchingVolumeOutOfRange,
-			ObjectToString[totalVolumeConflicts[[All,1]],Cache->simulatedCache],
+			ObjectToString[totalVolumeConflicts[[All,1]],Simulation->updatedSimulation],
 			UnitConvert[totalVolumeConflicts[[All,2]],Milliliter]
 		];
 		{AliquotContainer},
@@ -1514,12 +1531,12 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["For the input sample(s) "<>ObjectToString[passingInputs,Cache->simulatedCache]<>", the total volume of the pools including buffer if specified falls into the working range of the compatible cuvettes:",True,True],
+				Test["For the input sample(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>", the total volume of the pools including buffer if specified falls into the working range of the compatible cuvettes:",True,True],
 				Nothing
 			];
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[nonPassingInputs]>0,
-				Test["For the input sample(s) "<>ObjectToString[nonPassingInputs,Cache->simulatedCache]<>", the total volume of the pools including buffer if specified falls into the working range of the compatible cuvettes:",True,False],
+				Test["For the input sample(s) "<>ObjectToString[nonPassingInputs,Simulation->updatedSimulation]<>", the total volume of the pools including buffer if specified falls into the working range of the compatible cuvettes:",True,False],
 				Nothing
 			];
 			(* Return our created tests. *)
@@ -1549,7 +1566,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 	(* we don't want to throw this error if we already have thrown the discarded / non-volume / non-liquid input test *)
 	badContainerOutOptions=If[Length[containerOutConflicts]>0 && messages,
 		Message[Error::SamplesOutStorageConditionConflict,
-			ObjectToString[containerOutConflicts[[All,1]],Cache->simulatedCache],
+			ObjectToString[containerOutConflicts[[All,1]],Simulation->updatedSimulation],
 			containerOutConflicts[[All,2]]
 		];
 		{ContainerOut, SamplesOutStorageCondition},
@@ -1568,12 +1585,12 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["For the input sample(s) "<>ObjectToString[passingInputs,Cache->simulatedCache]<>", the SamplesOutStorageCondition is set to Disposal when ContainerOut is not specified:",True,True],
+				Test["For the input sample(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>", the SamplesOutStorageCondition is set to Disposal when ContainerOut is not specified:",True,True],
 				Nothing
 			];
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[nonPassingInputs]>0,
-				Test["For the input sample(s) "<>ObjectToString[nonPassingInputs,Cache->simulatedCache]<>", the SamplesOutStorageCondition is set to Disposal when ContainerOut is not specified:",True,False],
+				Test["For the input sample(s) "<>ObjectToString[nonPassingInputs,Simulation->updatedSimulation]<>", the SamplesOutStorageCondition is set to Disposal when ContainerOut is not specified:",True,False],
 				Nothing
 			];
 			(* Return our created tests. *)
@@ -1708,7 +1725,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 						Null,
 						If[MatchQ[targetContainer,ObjectP[Model[Container]]],
 							targetContainer,
-							cacheLookupUVMelting[simulatedCache,targetContainer,{Model}]
+							fastAsscLookup[fastAssoc,targetContainer,Model]
 						]
 					];
 
@@ -1839,8 +1856,8 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 
 	(* decide the potential analytes to use; specifying the Analyte here will pre-empt warnings thrown by this function *)
 	{potentialAnalytes, potentialAnalyteTests} = If[gatherTests,
-		selectAnalyteFromSample[samplePackets,  Cache -> simulatedCache, Output -> {Result, Tests}],
-		{selectAnalyteFromSample[samplePackets,  Cache -> simulatedCache, Output -> Result], Null}
+		selectAnalyteFromSample[samplePackets,  Simulation -> updatedSimulation, DetectionMethod -> Absorbance, Output -> {Result, Tests}],
+		{selectAnalyteFromSample[samplePackets,  Simulation -> updatedSimulation, DetectionMethod -> Absorbance, Output -> Result], Null}
 	];
   (*Get the type of polymer from each analyte*)
 	potentialAnalytesTypes=If[MatchQ[#,Null],
@@ -1886,8 +1903,8 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 
 
 	(* pull out all the shared options from the input options *)
-	{name, confirm, template, samplesInStorageCondition, cache, operator, parentProtocol, upload, outputOption, email, imageSample,numberOfReplicates} = Lookup[myOptions,
-		{Name, Confirm, Template, SamplesInStorageCondition, Cache, Operator, ParentProtocol, Upload, Output, Email, ImageSample,NumberOfReplicates}
+	{name, confirm, canaryBranch, template, samplesInStorageCondition, cache, operator, parentProtocol, upload, outputOption, email, imageSample,numberOfReplicates} = Lookup[myOptions,
+		{Name, Confirm, CanaryBranch, Template, SamplesInStorageCondition, Cache, Operator, ParentProtocol, Upload, Output, Email, ImageSample,NumberOfReplicates}
 	];
 
 
@@ -1905,7 +1922,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 	(* Automatic resolves to False for this experiment, or to whatever the ParentProtocol option was *)
 	resolvedImage=If[MatchQ[imageSample,Automatic],
 		If[MatchQ[parentProtocol,ObjectP[Object[Protocol]]],
-			cacheLookupUVMelting[simulatedCache,parentProtocol,ImageSample],
+			fastAssocLookup[fastAssoc,parentProtocol,ImageSample],
 			(* if there is no ParentProtocol, or if the ParentProtocol is a Qualification or Maintenance *)
 			False
 		],
@@ -2029,7 +2046,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 	(* throw an error in case we have a storage condition conflict *)
 	badStorageConditionOptions=If[Length[containerOutStorageConditionConflicts]>0 && messages,
 		Message[Error::ContainerOutStorageConditionConflict,
-			ObjectToString[containerOutStorageConditionConflicts[[All,1]],Cache->simulatedCache],
+			ObjectToString[containerOutStorageConditionConflicts[[All,1]],Simulation->updatedSimulation],
 			DeleteDuplicates[containerOutStorageConditionConflicts[[All,2]]]
 		];
 		{SamplesOutStorageCondition},
@@ -2047,13 +2064,13 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest=If[Length[failingInputs]>0,
-				Test["For sample(s) or sample pool(s) "<>ObjectToString[failingInputs,Cache->simulatedCache]<>", only one storage condition is provided for each container out:",True,False],
+				Test["For sample(s) or sample pool(s) "<>ObjectToString[failingInputs,Simulation->updatedSimulation]<>", only one storage condition is provided for each container out:",True,False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["For sample(s) or sample pool(s) "<>ObjectToString[passingInputs,Cache->simulatedCache]<>" only one storage condition is provided for each container out:",True,True],
+				Test["For sample(s) or sample pool(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>" only one storage condition is provided for each container out:",True,True],
 				Nothing
 			];
 
@@ -2082,7 +2099,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 				(* indexed container *)
 				MatchQ[#, {_Integer,ObjectP[Model]}], Last[#],
 				(* if we reached here we have Object[Container] in which case we lookup the model from the cache *)
-				True, cacheLookupUVMelting[simulatedCache,#,{Model}]
+				True, fastAssocLookup[fastAssoc, #, Model]
 			]
 		]&,
 		targetContainers
@@ -2120,9 +2137,9 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 	(* we don't want to throw this warning if we already have thrown the discarded / non-volume / non-liquid input test *)
 	badMinVolumeOptions=If[Length[minVolumeConflicts]>0 && messages && !(Length[discardedInvalidInputs]>0) && !(Length[nonLiquidSampleInvalidInputs]>0),
 		Message[Warning::NestedIndexMatchingVolumeBelowMinThreshold,
-			ObjectToString[minVolumeConflicts[[All,1]],Cache->simulatedCache],
+			ObjectToString[minVolumeConflicts[[All,1]],Simulation->updatedSimulation],
 			UnitConvert[minVolumeConflicts[[All,2]],Milliliter],
-			ObjectToString[minVolumeConflicts[[All,3]],Cache->simulatedCache],
+			ObjectToString[minVolumeConflicts[[All,3]],Simulation->updatedSimulation],
 			UnitConvert[minVolumeConflicts[[All,4]],Milliliter]
 		];
 		{AliquotContainer},
@@ -2141,12 +2158,12 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Warning["For the input sample(s) "<>ObjectToString[passingInputs,Cache->simulatedCache]<>", the total volume of the pools including buffer is above the recommended minimum volume threshold of the specified AliquotContainer:",True,True],
+				Warning["For the input sample(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>", the total volume of the pools including buffer is above the recommended minimum volume threshold of the specified AliquotContainer:",True,True],
 				Nothing
 			];
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[nonPassingInputs]>0,
-				Warning["For the input sample(s) "<>ObjectToString[nonPassingInputs,Cache->simulatedCache]<>", the total volume of the pools including buffer is above the recommended minimum volume threshold of the specified AliquotContainer:",True,False],
+				Warning["For the input sample(s) "<>ObjectToString[nonPassingInputs,Simulation->updatedSimulation]<>", the total volume of the pools including buffer is above the recommended minimum volume threshold of the specified AliquotContainer:",True,False],
 				Nothing
 			];
 			(* Return our created tests. *)
@@ -2165,7 +2182,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 	(* Check for transferRequiredWarnings and throw the corresponding Error if we're throwing messages. We don't collect any invalid options for warnings. *)
 	(* we only throw this if we're not on Engine since we only want this warning displayed to the user, but not upset Engine *)
 	transferRequiredOptions=If[Or@@transferRequiredWarnings && messages &&!MatchQ[$ECLApplication,Engine],
-		Message[Warning::TransferRequired,ObjectToString[PickList[simulatedSamples,transferRequiredWarnings],Cache->simulatedCache],ObjectToString[resolvedInstrument,Cache->simulatedCache],ObjectToString[PickList[targetContainers,transferRequiredWarnings],Cache->simulatedCache]],
+		Message[Warning::TransferRequired,ObjectToString[PickList[simulatedSamples,transferRequiredWarnings],Simulation->updatedSimulation],ObjectToString[resolvedInstrument,Simulation->updatedSimulation],ObjectToString[PickList[targetContainers,transferRequiredWarnings],Simulation->updatedSimulation]],
 		{}
 	];
 
@@ -2182,13 +2199,13 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest=If[Length[failingInputs]>0,
-				Warning["The sample(s) "<>ObjectToString[failingInputs,Cache->simulatedCache]<>", are in a container compatible with the instrument or the user provided information to transfer. Note that if this is False, the samples will be transferred to a suitable container prior to measurement:",True,False],
+				Warning["The sample(s) "<>ObjectToString[failingInputs,Simulation->updatedSimulation]<>", are in a container compatible with the instrument or the user provided information to transfer. Note that if this is False, the samples will be transferred to a suitable container prior to measurement:",True,False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Warning["The sample(s) "<>ObjectToString[passingInputs,Cache->simulatedCache]<>"  are in a container compatible with the instrument or the user provided information to transfer. Note that if this is False, the samples will be transferred to a suitable container prior to measurement:",True,True],
+				Warning["The sample(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>"  are in a container compatible with the instrument or the user provided information to transfer. Note that if this is False, the samples will be transferred to a suitable container prior to measurement:",True,True],
 				Nothing
 			];
 
@@ -2209,7 +2226,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 	(* we only throw this if we're not on Engine since we only want this warning displayed to the user, but not upset Engine *)
 	noMixDespiteAliquottingOptions=If[Or@@noMixDespiteAliquottingWarnings && messages &&!MatchQ[$ECLApplication,Engine],
 		Message[Warning::NoMixingDespiteAliquotting,
-			ObjectToString[PickList[simulatedSamples,noMixDespiteAliquottingWarnings],Cache->simulatedCache]
+			ObjectToString[PickList[simulatedSamples,noMixDespiteAliquottingWarnings],Simulation->updatedSimulation]
 		],
 		{}
 	];
@@ -2227,13 +2244,13 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest=If[Length[failingInputs]>0,
-				Warning["The sample(s) "<>ObjectToString[failingInputs,Cache->simulatedCache]<>", are mixed after they've been aliquotted into the cuvette:",True,False],
+				Warning["The sample(s) "<>ObjectToString[failingInputs,Simulation->updatedSimulation]<>", are mixed after they've been aliquotted into the cuvette:",True,False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Warning["The sample(s) "<>ObjectToString[passingInputs,Cache->simulatedCache]<>" are mixed after they've been aliquotted into the cuvette:",True,True],
+				Warning["The sample(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>" are mixed after they've been aliquotted into the cuvette:",True,True],
 				Nothing
 			];
 
@@ -2257,7 +2274,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 
 	(* throw an error message if we have a bad BlankMeasurement option *)
 	If[messages &&!MatchQ[badBlankMeasurementOption,{}],
-		Message[Error::UnableToBlank,ObjectToString[PickList[simulatedSamples,targetContainers,Null],Cache->simulatedCache]];
+		Message[Error::UnableToBlank,ObjectToString[PickList[simulatedSamples,targetContainers,Null],Simulation->updatedSimulation]];
 	];
 
 	(* make a test for not being able to blank *)
@@ -2345,7 +2362,8 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 			RequiredAliquotContainers->targetContainers,
 			RequiredAliquotAmounts->Null,
 			AliquotWarningMessage->Null,
-			Cache->simulatedCache,
+			Cache->inheritedCache,
+			Simulation->updatedSimulation,
 			Output -> {Result, Tests}
 			],
 		{resolveAliquotOptions[
@@ -2356,7 +2374,8 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 			RequiredAliquotContainers->targetContainers,
 			RequiredAliquotAmounts->Null,
 			AliquotWarningMessage->Null,
-			Cache->simulatedCache,
+			Cache->inheritedCache,
+			Simulation->updatedSimulation,
 			Output->Result],
 			{}}
 		];
@@ -2423,7 +2442,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 	(* throw an error if SamplesIn are also appearing in Blanks *)
 	blanksInvalidOptions = If[Not[separateSamplesAndBlanksQ] && messages,
 		(
-			Message[Error::BlanksContainSamplesIn, ObjectToString[Select[Lookup[samplePackets, Object], MemberQ[Lookup[blankSamplePackets, Object], #]&], Cache -> simulatedCache]];
+			Message[Error::BlanksContainSamplesIn, ObjectToString[Select[Lookup[samplePackets, Object], MemberQ[Lookup[blankSamplePackets, Object], #]&], Simulation -> updatedSimulation]];
 			{Blank}
 		),
 		{}
@@ -2473,7 +2492,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 
 	(* Throw Error::InvalidInput if there are invalid inputs and we're throwing messages. *)
 	If[Length[invalidInputs]>0&&messages,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Simulation->updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options and we're throwing messages. *)
@@ -2591,7 +2610,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 
 
 DefineOptions[uvMeltingResourcePackets,
-	Options:>{CacheOption,HelperOutputOption}
+	Options:>{SimulationOption,CacheOption,HelperOutputOption}
 ];
 
 
@@ -2610,7 +2629,7 @@ uvMeltingResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 		expPooledSamplesIn,expPooledMixField,expPooledIncubateField, referenceCuvetteResource, temperatureProbeResource,
 		protocolPacket,sharedFieldPacket,finalizedPacket,allResourceBlobs,fulfillable,frqTests,previewRule,
 		optionsRule,testsRule,resultRule, samplesInWithNumReplicates, samplesOutWithNumReplicates, blanksWithNumReplicates,
-		pairedBlanksAndVolumes, blankVolumeRules, blankResourceReplaceRules, blankResources
+		pairedBlanksAndVolumes, blankVolumeRules, blankResourceReplaceRules, blankResources, simulation
 	},
 
 	outputSpecification=OptionValue[Output];
@@ -2622,8 +2641,9 @@ uvMeltingResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 
 	(* lookup the cache *)
 	cache=Lookup[ToList[myOptions],Cache];
+	simulation=Lookup[ToList[myOptions],Simulation];
 
-	(* determine the pool lenghts*)
+	(* determine the pool lengths*)
 	poolLengths=Map[Length[#]&,myPooledSamples];
 
 	(* expand the resolved options if they weren't expanded already *)
@@ -2735,7 +2755,12 @@ uvMeltingResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	];
 
 	(* TODO I don't love that I'm doing this Download here but need a way to figure it out ASAP and we can reconfigure this better going forward *)
-	{cuvetteMaxVolumes, cuvetteModelMaxVolumes} = Transpose[Quiet[Download[cuvettes, {MaxVolume, Model[MaxVolume]}, Cache->cache], {Download::FieldDoesntExist, Download::NotLinkField}]];
+	{cuvetteMaxVolumes, cuvetteModelMaxVolumes} = Transpose[Quiet[Download[
+		cuvettes,
+		{MaxVolume, Model[MaxVolume]},
+		Cache->cache,
+		Simulation -> simulation
+	], {Download::FieldDoesntExist, Download::NotLinkField}]];
 	blankVolumes = MapThread[
 		If[VolumeQ[#1],
 			#1,
@@ -2897,10 +2922,18 @@ uvMeltingResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	];
 
 	(* expand the pooled-indexed fields according to the NumberOfReplicates *)
-	{expAssayBufferVolumes,expConcentratedBufferVolumes,expBufferDiluentVolumes,expPooledSamplesIn,expPooledMixField,expPooledIncubateField}=Flatten[
-		Map[Function[{listEntry},
-			ConstantArray[listEntry,numReplicatesNoNull]],#]
-	,1]&/@{assayBufferVolumes,concentratedBufferVolumes,bufferDiluentVolumes,Download[myPooledSamples,Object],pooledMixField,pooledIncubateField};
+	{expAssayBufferVolumes,expConcentratedBufferVolumes,expBufferDiluentVolumes,expPooledSamplesIn,expPooledMixField,expPooledIncubateField}=Map[
+		Flatten[
+			Map[
+				Function[{listEntry},
+					ConstantArray[listEntry,numReplicatesNoNull]
+				],
+				#
+			],
+			1
+		]&,
+		{assayBufferVolumes,concentratedBufferVolumes,bufferDiluentVolumes,Download[myPooledSamples,Object],pooledMixField,pooledIncubateField}
+	];
 
 	(* assemble the protocol packet *)
 	protocolPacket = Join[
@@ -2957,17 +2990,17 @@ uvMeltingResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 			ThermocyclingTime -> estimatedRunTime,
 
 			Replace[Checkpoints] -> {
-				{"Picking Resources", 30 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 30Minute]]},
-				{"Preparing Samples", 0*Hour, "Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.", Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time -> 5*Minute]]},
-				{"Preparing Instrumentation", 15 Minute, "The spectrophotometer is configured for the protocol and all required materials are placed on deck.", Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time -> 15 Minute]]},
-				{"Acquiring Data", estimatedRunTime, "Samples are thermocycled and absorbance data are collected.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> estimatedRunTime]]},
-				{"Cleaning Up", 20 Minute, "Samples are retrieved from instrumentation and materials are cleaned and returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 20Minute]]}
+				{"Picking Resources", 30 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 30Minute]]},
+				{"Preparing Samples", 0*Hour, "Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.", Link[Resource[Operator->$BaselineOperator,Time -> 5*Minute]]},
+				{"Preparing Instrumentation", 15 Minute, "The spectrophotometer is configured for the protocol and all required materials are placed on deck.", Link[Resource[Operator->$BaselineOperator,Time -> 15 Minute]]},
+				{"Acquiring Data", estimatedRunTime, "Samples are thermocycled and absorbance data are collected.", Link[Resource[Operator -> $BaselineOperator, Time -> estimatedRunTime]]},
+				{"Cleaning Up", 20 Minute, "Samples are retrieved from instrumentation and materials are cleaned and returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 20Minute]]}
 			}
 		]
 	];
 
 	(* generate a packet with the shared sample prep and aliquotting fields *)
-	sharedFieldPacket = populateSamplePrepFields[myPooledSamples, expandedResolvedOptions,Cache->cache];
+	sharedFieldPacket = populateSamplePrepFields[myPooledSamples, expandedResolvedOptions,Cache->cache,Simulation->simulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket = Join[sharedFieldPacket, protocolPacket];
@@ -2979,8 +3012,8 @@ uvMeltingResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	(* call fulfillableResourceQ on all resources we created *)
 	{fulfillable,frqTests}=Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->cache],Null}
+		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cache,Simulation->simulation],
+		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->cache,Simulation->simulation],Null}
 	];
 
 	(* generate the Preview option; that is always Null *)
@@ -3155,7 +3188,7 @@ ValidExperimentUVMeltingQ[myContainers : {ObjectP[Object[Container]]..}, myOptio
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentUVMelting *)
@@ -3198,13 +3231,13 @@ ValidExperimentUVMeltingQ[myContainers : {ObjectP[Object[Container]]..}, myOptio
 ];
 
 (* --- Overload for SemiPooledInputs --- *)
-ValidExperimentUVMeltingQ[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]],_String,{LocationPositionP,_String|ObjectP[Object[Container]]}]]],myOptions:OptionsPattern[ExperimentUVMeltingOptions]]:=Module[
+ValidExperimentUVMeltingQ[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[{Object[Sample],Object[Container],Model[Sample]}],_String,{LocationPositionP,_String|ObjectP[Object[Container]]}]]],myOptions:OptionsPattern[ValidExperimentUVMeltingQ]]:=Module[
 	{listedOptions, preparedOptions, uvMeltingTests, allTests, verbose,outputFormat},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentUVMelting *)
@@ -3215,13 +3248,13 @@ ValidExperimentUVMeltingQ[mySemiPooledInputs:ListableP[ListableP[Alternatives[Ob
 		{validObjectBooleans, voqWarnings},
 
 		(* create warnings for invalid objects *)
-		validObjectBooleans = ValidObjectQ[Flatten[mySemiPooledInputs], OutputFormat -> Boolean];
+		validObjectBooleans = ValidObjectQ[DeleteCases[Flatten[ToList[mySemiPooledInputs]], _String], OutputFormat -> Boolean];
 		voqWarnings = MapThread[
 			Warning[StringJoin[ToString[#1, InputForm], " is valid (run ValidObjectQ for more detailed information):"],
 				#2,
 				True
 			]&,
-			{Flatten[mySemiPooledInputs], validObjectBooleans}
+			{DeleteCases[Flatten[ToList[mySemiPooledInputs]], _String], validObjectBooleans}
 		];
 
 		(* get all the tests/warnings *)
@@ -3245,7 +3278,7 @@ ValidExperimentUVMeltingQ[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}]
 (* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentUVMelting *)
@@ -3306,7 +3339,7 @@ ExperimentUVMeltingOptions[myContainers : {ObjectP[Object[Container]]..}, myOpti
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* return only the options for ExperimentUVMelting *)
@@ -3321,13 +3354,13 @@ ExperimentUVMeltingOptions[myContainers : {ObjectP[Object[Container]]..}, myOpti
 ];
 
 (* --- Overload for SemiPooledInputs --- *)
-ExperimentUVMeltingOptions[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]],_String,{LocationPositionP,_String|ObjectP[Object[Container]]}]]],myOptions:OptionsPattern[ExperimentUVMeltingOptions]]:=Module[
+ExperimentUVMeltingOptions[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[{Object[Sample],Object[Container],Model[Sample]}],_String,{LocationPositionP,_String|ObjectP[Object[Container]]}]]],myOptions:OptionsPattern[ExperimentUVMeltingOptions]]:=Module[
 	{listedOptions,noOutputOptions},
 
 	(* get the options as a list *)
 	listedOptions=ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions=DeleteCases[listedOptions,Alternatives[Output->_,OutputFormat->_]];
 
 	(* return only the options for ExperimentUVMelting *)
@@ -3347,7 +3380,7 @@ ExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}
 	(* get the options as a list *)
 	listedOptions=ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions=DeleteCases[listedOptions,Alternatives[Output->_,OutputFormat->_]];
 
 	(* return only the options for ExperimentUVMelting *)
@@ -3378,7 +3411,7 @@ ExperimentUVMeltingPreview[myContainers : {ObjectP[Object[Container]]..}, myOpti
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _]];
 
 	(* return only the preview for ExperimentUVMelting *)
@@ -3387,13 +3420,13 @@ ExperimentUVMeltingPreview[myContainers : {ObjectP[Object[Container]]..}, myOpti
 ];
 
 (* SemiPooledInputs *)
-ExperimentUVMeltingPreview[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]],_String,{LocationPositionP,_String|ObjectP[Object[Container]]}]]],myOptions:OptionsPattern[ExperimentUVMeltingPreview]]:=Module[
+ExperimentUVMeltingPreview[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[{Object[Sample],Object[Container],Model[Sample]}],_String,{LocationPositionP,_String|ObjectP[Object[Container]]}]]],myOptions:OptionsPattern[ExperimentUVMeltingPreview]]:=Module[
 	{listedOptions,noOutputOptions},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _]];
 
 	(* return only the preview for ExperimentUVMelting *)
@@ -3407,7 +3440,7 @@ ExperimentUVMeltingPreview[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _]];
 
 	(* return only the preview for ExperimentUVMelting *)

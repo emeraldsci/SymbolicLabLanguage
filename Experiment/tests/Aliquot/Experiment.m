@@ -146,6 +146,21 @@ DefineTests[ExperimentAliquot,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Additional, "Resolve to a valid DestinationWell if the sample has properties that would lead to ContainerOut resolve to a sterile container model:"},
+			Lookup[
+				ExperimentAliquot[Object[Sample, "ExperimentAliquot New Test Chemical 1 (200 uL)"<>$SessionUUID], Output -> Options],
+				DestinationWell
+			],
+			{WellPositionP},
+			SetUp :> (Upload[<|
+				Object->Object[Sample, "ExperimentAliquot New Test Chemical 1 (200 uL)"<>$SessionUUID],
+				Living -> True
+			|>]),
+			TearDown :> (Upload[<|
+				Object->Object[Sample, "ExperimentAliquot New Test Chemical 1 (200 uL)"<>$SessionUUID],
+				Living -> Null
+			|>])
+		],
 
 		(* --- Options testing --- *)
 
@@ -246,11 +261,186 @@ DefineTests[ExperimentAliquot,
 			EquivalenceFunction -> Equal,
 			TimeConstraint -> 300
 		],
-
+		Example[{Options, WorkCell, "If aliquotting mammalian samples robotically, perform in the bioSTAR:"},
+			protocol = ExperimentAliquot[
+				{Model[Sample, "HEK293"]},
+				PreparedModelContainer -> Model[Container, Plate, "96-well flat bottom plate, Sterile, Nuclease-Free"],
+				PreparedModelAmount -> 0.25 Milliliter,
+				Preparation -> Robotic
+			];
+			resolvedWorkCell = Download[Download[protocol, OutputUnitOperations], WorkCell];
+			{
+				protocol,
+				resolvedWorkCell
+			},
+			{
+				ObjectP[Object[Protocol, RoboticCellPreparation]],
+				{bioSTAR}
+			},
+			Variables :> {protocol, resolvedWorkCell}
+		],
+		Example[{Options, WorkCell, "If aliquotting bacterial samples robotically, perform in the microbioSTAR:"},
+			protocol = ExperimentAliquot[
+				{Model[Sample, "E.coli MG1655"]},
+				PreparedModelContainer -> Model[Container, Plate, "96-well flat bottom plate, Sterile, Nuclease-Free"],
+				PreparedModelAmount -> 0.25 Milliliter,
+				Preparation -> Robotic
+			];
+			resolvedWorkCell = Download[Download[protocol, OutputUnitOperations], WorkCell];
+			{
+				protocol,
+				resolvedWorkCell
+			},
+			{
+				ObjectP[Object[Protocol, RoboticCellPreparation]],
+				{microbioSTAR}
+			},
+			Variables :> {protocol, resolvedWorkCell}
+		],
+		Example[{Options, WorkCell, "If aliquotting non-living, non-sterile samples robotically, perform in the STAR:"},
+			protocol = ExperimentAliquot[
+				{Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "96-well flat bottom plate, Sterile, Nuclease-Free"],
+				PreparedModelAmount -> 0.25 Milliliter,
+				Preparation -> Robotic
+			];
+			resolvedWorkCell = Download[Download[protocol, OutputUnitOperations], WorkCell];
+			{
+				protocol,
+				resolvedWorkCell
+			},
+			{
+				ObjectP[Object[Protocol, RoboticSamplePreparation]],
+				{STAR}
+			},
+			Variables :> {protocol, resolvedWorkCell}
+		],
+		Example[{Options, WorkCell, "If aliquotting sterile samples robotically, perform in the bioSTAR:"},
+			protocol = ExperimentAliquot[
+				{Model[Sample, "LCMS Grade Water"]},
+				PreparedModelContainer -> Model[Container, Plate, "96-well flat bottom plate, Sterile, Nuclease-Free"],
+				PreparedModelAmount -> 0.25 Milliliter,
+				Preparation -> Robotic
+			];
+			resolvedWorkCell = Download[Download[protocol, OutputUnitOperations], WorkCell];
+			{
+				protocol,
+				resolvedWorkCell
+			},
+			{
+				ObjectP[Object[Protocol, RoboticCellPreparation]],
+				{bioSTAR}
+			},
+			Variables :> {protocol, resolvedWorkCell}
+		],
+		Example[{Options, WorkCell, "If Preparation is Manual, WorkCell is Null:"},
+			options = ExperimentAliquot[
+				{Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Preparation -> Manual,
+				Output -> Options
+			];
+			Lookup[options, WorkCell],
+			Null,
+			Variables :> {options}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentAliquot[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared (preparation -> robotic):"},
+			options = ExperimentAliquot[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Preparation -> Robotic,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "If a model input is specified, make sure the protocol object/unit operations are created properly (robotic):"},
+			protocol = ExperimentAliquot[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Preparation -> Robotic
+			];
+			outputUOs = Download[protocol, OutputUnitOperations[Object]];
+			roboticUOs = Download[outputUOs[[1]], RoboticUnitOperations[Object]];
+			{
+				Download[outputUOs, Source],
+				roboticUOs
+			},
+			{
+				{{{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]}..}},
+				{ObjectP[Object[UnitOperation, LabelSample]], ObjectP[Object[UnitOperation, LabelContainer]], ObjectP[Object[UnitOperation, Transfer]], ObjectP[Object[UnitOperation, Mix]]}
+			},
+			Variables :> {protocol, outputUOs, roboticUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "If a model input is specified, make sure the protocol object/unit operations are created properly (manual):"},
+			protocol = ExperimentAliquot[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Preparation -> Manual
+			];
+			outputUOs = Download[protocol, OutputUnitOperations[Object]];
+			{
+				outputUOs,
+				Download[outputUOs[[1]], SampleLink]
+			},
+			{
+				{ObjectP[Object[UnitOperation, LabelSample]], ObjectP[Object[UnitOperation, LabelContainer]], ObjectP[Object[UnitOperation, Transfer]]},
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..}
+			},
+			Variables :> {protocol, outputUOs}
+		],
 		Example[{Options, Confirm, "If Confirm -> True, Skip InCart and go directly to Processing:"},
 			Download[ExperimentAliquot[Object[Sample, "ExperimentAliquot New Test Chemical 1 (200 uL)"<>$SessionUUID], Confirm -> True], Status],
 			Processing|ShippingMaterials|Backlogged,
 			TimeConstraint -> 120
+		],
+		Example[{Options, CanaryBranch, "Specify the CanaryBranch on which the protocol is run:"},
+			Download[ExperimentAliquot[Object[Sample, "ExperimentAliquot New Test Chemical 1 (200 uL)"<>$SessionUUID], CanaryBranch -> "d1cacc5a-948b-4843-aa46-97406bbfc368"], CanaryBranch],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			TimeConstraint -> 120,
+			Stubs:>{GitBranchExistsQ[___] = True, InternalUpload`Private`sllDistroExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
 		],
 
 		Example[{Options, Name, "Name the protocol for aliquoting sample:"},
@@ -357,6 +547,7 @@ DefineTests[ExperimentAliquot,
 			primitives = Download[ExperimentAliquot[Object[Sample, "ExperimentAliquot New Test Chemical 1 (200 uL)"<>$SessionUUID], Amount -> All], OutputUnitOperations[[1]][RoboticUnitOperations]];
 			Download[FirstCase[primitives, ObjectP[Object[UnitOperation, Transfer]]], AmountVariableUnit],
 			{200 Microliter},
+			EquivalenceFunction -> Equal,
 			Variables :> {primitives}
 		],
 		Test["Do not set the resolved Amount option to All if the requested Amount is less than the current sample volume, or current sample volume is unknown:",
@@ -786,6 +977,21 @@ DefineTests[ExperimentAliquot,
 			False | Null,
 			Variables :> {prot}
 		],
+		Example[{Options, MeasureWeight, "If sample has Living -> True, do not do post processing imaging and measurements:"},
+			Lookup[
+				ExperimentAliquot[Object[Sample, "ExperimentAliquot New Test Chemical 1 (200 uL)"<>$SessionUUID], Output -> Options],
+				{ImageSample, MeasureVolume, MeasureWeight}
+			],
+			{False, False, False},
+			SetUp :> (Upload[<|
+				Object->Object[Sample, "ExperimentAliquot New Test Chemical 1 (200 uL)"<>$SessionUUID],
+				Living -> True
+			|>]),
+			TearDown :> (Upload[<|
+				Object->Object[Sample, "ExperimentAliquot New Test Chemical 1 (200 uL)"<>$SessionUUID],
+				Living -> Null
+			|>])
+		],
 		Example[{Options, SourceLabel, "Specify the label given to the input sample:"},
 			options = ExperimentAliquot[Object[Sample, "ExperimentAliquot New Test Chemical 1 (1.5 mL, 5 mL)"<>$SessionUUID], 1 Millimolar, SourceLabel -> "Sample 1", Output -> Options, Preparation -> Robotic];
 			Lookup[options, SourceLabel],
@@ -943,12 +1149,233 @@ DefineTests[ExperimentAliquot,
 		],
 
 		(* --- Messages --- *)
-		Example[{Messages, "ObjectDoesNotExist", "If an object does not exist, throw an error and return $Failed immediately:"},
-			ExperimentAliquot[{Object[Sample, "Chemical that doesn't exist at all for ExperimentAliquot testing"<>$SessionUUID], Object[Sample, "ExperimentAliquot New Test Chemical 1 (200 uL)"<>$SessionUUID]}],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentAliquot[Object[Sample, "Nonexistent sample"]],
 			$Failed,
-			Messages :> {
-				Download::ObjectDoesNotExist
-			}
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentAliquot[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentAliquot[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentAliquot[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentAliquot[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentAliquot[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist for the Amount overload (name form):"},
+			ExperimentAliquot[Object[Sample, "Nonexistent sample"], 1 Milliliter],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist for the Amount overload (name form):"},
+			ExperimentAliquot[Object[Container, Vessel, "Nonexistent container"], 1 Milliliter],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist for the Amount overload (ID form):"},
+			ExperimentAliquot[Object[Sample, "id:12345678"], 1 Milliliter],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist for the Amount overload (ID form):"},
+			ExperimentAliquot[Object[Container, Vessel, "id:12345678"], 1 Milliliter],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample for the Amount overload but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentAliquot[sampleID, 1 Milliliter, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container for the Amount overload but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentAliquot[containerID, 1 Milliliter, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist for the Concentration overload (name form):"},
+			ExperimentAliquot[Object[Sample, "Nonexistent sample"], 10 Micromolar],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist for the Concentration overload (name form):"},
+			ExperimentAliquot[Object[Container, Vessel, "Nonexistent container"], 10 Micromolar],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist for the Concentration overload (ID form):"},
+			ExperimentAliquot[Object[Sample, "id:12345678"], 10 Micromolar],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist for the Concentration overload (ID form):"},
+			ExperimentAliquot[Object[Container, Vessel, "id:12345678"], 10 Micromolar],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample for the Concentration overload but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					{
+						{100 Micromolar, Model[Molecule, "Sodium Chloride"]},
+						{100 VolumePercent, Model[Molecule, "Water"]}
+					},
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentAliquot[sampleID, 10 Micromolar, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container for the Concentration overload but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					{
+						{100 Micromolar, Model[Molecule, "Sodium Chloride"]},
+						{100 VolumePercent, Model[Molecule, "Water"]}
+					},
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentAliquot[containerID, 10 Micromolar, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
 		],
 		Example[{Messages, "InputContainsTemporalLinks", "Throw a message if given a temporal link:"},
 			ExperimentAliquot[Link[Object[Sample, "ExperimentAliquot New Test Chemical 1 (200 uL)"<>$SessionUUID], Now - 1 Minute]],
@@ -1214,6 +1641,12 @@ DefineTests[ExperimentAliquot,
 				Error::InvalidOption
 			}
 		],
+		Example[{Messages, "AssayVolumeAboveMaximum", "If AssayVolume is calcualted to be above $MaxTransferVolume, throw an error:"},
+			ExperimentAliquot[Object[Sample, "ExperimentAliquot New Test Chemical 1 (1.5 mL, 5 mL)"<>$SessionUUID], 50 Nanomolar],
+			$Failed,
+			TimeConstraint -> 500,
+			Messages :> {Error::AssayVolumeAboveMaximum, Error::InvalidOption}
+		],
 		Test["If the SamplesInStorageCondition option is specified, have the SamplesInStorage field be filled with the proper storage condition:",
 			Download[ExperimentAliquot[{Object[Sample, "ExperimentAliquot New Test Chemical 1 (25 mL)"<>$SessionUUID], Object[Sample, "ExperimentAliquot New Test Chemical 1 (25 mL)"<>$SessionUUID]}, 200 Microliter, SamplesInStorageCondition -> Refrigerator], OutputUnitOperations[SamplesInStorageCondition]],
 			{{Refrigerator}}
@@ -1386,6 +1819,38 @@ DefineTests[ExperimentAliquot,
 				{2, ObjectP[Model[Container, Plate, "6-well Tissue Culture Plate"]]}
 			},
 			Variables :> {options}
+		],
+		Test["If aliquoting something that is incompatible with glass, don't pick a container that has glass in it:",
+			Download[
+				ExperimentAliquot[
+					{{
+						Object[Sample, "ExperimentAliquot Test Sample 1 that is incompatible with glass " <> $SessionUUID],
+						Object[Sample, "ExperimentAliquot Test Sample 2 that is incompatible with glass " <> $SessionUUID]
+					}}
+				],
+				OutputUnitOperations[[1]][ContainerLink][ContainerMaterials]
+			],
+			{{Polypropylene}}
+		],
+		Test["Generate an Object[Protocol, ManualCellPreparation] if Preparation -> Manual and a cell-containing sample is used:",
+			ExperimentAliquot[
+				{Object[Sample, "ExperimentAliquot Test cell Sample 1 " <> $SessionUUID]},
+				Preparation -> Manual,
+				ImageSample -> False,
+				MeasureVolume -> False,
+				MeasureWeight -> False
+			],
+			ObjectP[Object[Protocol, ManualCellPreparation]]
+		],
+		Test["Generate an Object[Protocol, RoboticCellPreparation] if Preparation -> Robotic and a cell-containing sample is used:",
+			ExperimentAliquot[
+				{Object[Sample, "ExperimentAliquot Test cell Sample 1 " <> $SessionUUID]},
+				Preparation -> Robotic,
+				ImageSample -> False,
+				MeasureVolume -> False,
+				MeasureWeight -> False
+			],
+			ObjectP[Object[Protocol, RoboticCellPreparation]]
 		]
 	},
 	Stubs :> {
@@ -1429,6 +1894,9 @@ DefineTests[ExperimentAliquot,
 				Object[Container, Vessel, "Test container 17 for ExperimentAliquot Tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 18 for ExperimentAliquot Tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 19 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 20 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 21 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 22 (cell sample) for ExperimentAliquot Tests" <> $SessionUUID],
 
 				Object[Container, Plate, "Test plate 1 for ExperimentAliquot Tests" <> $SessionUUID],
 				Object[Container, Plate, "Test plate 2 for ExperimentAliquot Tests" <> $SessionUUID],
@@ -1460,6 +1928,9 @@ DefineTests[ExperimentAliquot,
 				Object[Sample, "ExperimentAliquot Test Sample with Conc Composition" <> $SessionUUID],
 				Object[Sample, "ExperimentAliquot Test Sample with Mass Conc Composition" <> $SessionUUID],
 				Object[Sample, "ExperimentAliquot Test Sample that is Liquid Handler Incompatible" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot Test Sample 1 that is incompatible with glass " <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot Test Sample 2 that is incompatible with glass " <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot Test cell Sample 1 " <> $SessionUUID],
 
 				Object[Protocol, RoboticSamplePreparation, "Previous Aliquot SamplePreparation" <> $SessionUUID]
 			};
@@ -1471,10 +1942,11 @@ DefineTests[ExperimentAliquot,
 				{
 					templateProt,
 					molarStockSolutionModel, massConcStockSolutionModel,
-					fakeBench,
-					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, container13, container14, container15, container16, container17, container18, container19, plate1, plate2, plate3,
+					testBench,
+					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, container13, container14, container15, container16, container17, container18, container19, container20, container21, container22,
+					plate1, plate2, plate3,
 					sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12, sample13, sample14, sample15, sample16, sample17, sample18, sample19, sample20, sample21,
-					sample22, sample23,
+					sample22, sample23, sample24, sample25, sample26,
 
 					allObjs
 				},
@@ -1502,7 +1974,12 @@ DefineTests[ExperimentAliquot,
 					}
 				];
 
-				fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Test bench for ExperimentAliquot Tests" <> $SessionUUID, DeveloperObject -> True|>];
+				testBench = Upload[<|
+					Type -> Object[Container, Bench],
+					Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+					Name -> "Test bench for ExperimentAliquot Tests" <> $SessionUUID,
+					DeveloperObject -> True
+				|>];
 				{
 					container,
 					container2,
@@ -1523,9 +2000,12 @@ DefineTests[ExperimentAliquot,
 					container17,
 					container18,
 					container19,
+					container20,
+					container21,
 					plate1,
 					plate2,
-					plate3
+					plate3,
+					container22
 				} = UploadSample[
 					{
 						Model[Container, Vessel, "2mL Tube"],
@@ -1547,35 +2027,44 @@ DefineTests[ExperimentAliquot,
 						Model[Container, Vessel, "50mL Tube"],
 						Model[Container, Vessel, "50mL Tube"],
 						Model[Container, Vessel, "50mL Tube"],
+						Model[Container, Vessel, "50mL Tube"],
+						Model[Container, Vessel, "50mL Tube"],
 						Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 						Model[Container, Plate, "96-well 2mL Deep Well Plate"],
-						Model[Container, Plate, "6-well Tissue Culture Plate"]
+						Model[Container, Plate, "6-well Tissue Culture Plate"],
+						Model[Container, Vessel, "2mL Tube"]
 					},
 					{
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench}
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench}
 					},
 					Status -> {
+						Available,
+						Available,
+						Available,
 						Available,
 						Available,
 						Available,
@@ -1619,9 +2108,12 @@ DefineTests[ExperimentAliquot,
 						"Test container 17 for ExperimentAliquot Tests" <> $SessionUUID,
 						"Test container 18 for ExperimentAliquot Tests" <> $SessionUUID,
 						"Test container 19 for ExperimentAliquot Tests" <> $SessionUUID,
+						"Test container 20 for ExperimentAliquot Tests" <> $SessionUUID,
+						"Test container 21 for ExperimentAliquot Tests" <> $SessionUUID,
 						"Test plate 1 for ExperimentAliquot Tests" <> $SessionUUID,
 						"Test plate 2 for ExperimentAliquot Tests" <> $SessionUUID,
-						"Test full plate 3 for ExperimentAliquot Tests" <> $SessionUUID
+						"Test full plate 3 for ExperimentAliquot Tests" <> $SessionUUID,
+						"Test container 22 (cell sample) for ExperimentAliquot Tests" <> $SessionUUID
 					}
 				];
 				{
@@ -1647,7 +2139,10 @@ DefineTests[ExperimentAliquot,
 					sample20,
 					sample21,
 					sample22,
-					sample23
+					sample23,
+					sample24,
+					sample25,
+					sample26
 				} = UploadSample[
 					{
 						Model[Sample, "Milli-Q water"],
@@ -1672,7 +2167,10 @@ DefineTests[ExperimentAliquot,
 						Model[Sample, "Milli-Q water"],
 						molarStockSolutionModel,
 						massConcStockSolutionModel,
-						Model[Sample, "Sulfuric acid"]
+						Model[Sample, "Sulfuric acid"],
+						Model[Sample, "Triethylamine trihydrofluoride"],
+						Model[Sample, "Triethylamine trihydrofluoride"],
+						Model[Sample, "E.coli MG1655"]
 					},
 					{
 						{"A1", container},
@@ -1697,7 +2195,10 @@ DefineTests[ExperimentAliquot,
 						{"B1", plate3},
 						{"A1", container17},
 						{"A1", container18},
-						{"A1", container19}
+						{"A1", container19},
+						{"A1", container20},
+						{"A1", container21},
+						{"A1", container22}
 					},
 					InitialAmount -> {
 						200 * Microliter,
@@ -1722,7 +2223,10 @@ DefineTests[ExperimentAliquot,
 						3 * Milliliter,
 						3 * Milliliter,
 						3 * Milliliter,
-						10 * Milliliter
+						10 * Milliliter,
+						40 * Milliliter,
+						40 * Milliliter,
+						1 * Milliliter
 					},
 					Name -> {
 						"ExperimentAliquot New Test Chemical 1 (200 uL)" <> $SessionUUID,
@@ -1747,14 +2251,17 @@ DefineTests[ExperimentAliquot,
 						"ExperimentAliquot New Test Chemical 4 in occupied plate" <> $SessionUUID,
 						"ExperimentAliquot Test Sample with Conc Composition" <> $SessionUUID,
 						"ExperimentAliquot Test Sample with Mass Conc Composition" <> $SessionUUID,
-						"ExperimentAliquot Test Sample that is Liquid Handler Incompatible" <> $SessionUUID
+						"ExperimentAliquot Test Sample that is Liquid Handler Incompatible" <> $SessionUUID,
+						"ExperimentAliquot Test Sample 1 that is incompatible with glass " <> $SessionUUID,
+						"ExperimentAliquot Test Sample 2 that is incompatible with glass " <> $SessionUUID,
+						"ExperimentAliquot Test cell Sample 1 " <> $SessionUUID
 					}
 				];
 
 
 				allObjs = {
-					plate1, plate2, plate3, container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, container13, container14, container15, container16, container17, container18, container19,
-					sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12, sample13, sample14, sample15, sample16, sample17, sample18, sample19, sample20, sample21, sample22, sample23
+					plate1, plate2, plate3, container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, container13, container14, container15, container16, container17, container18, container19, container20, container21,
+					sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12, sample13, sample14, sample15, sample16, sample17, sample18, sample19, sample20, sample21, sample22, sample23, sample24, sample25, sample26
 				};
 
 				(* get rid of the Model field for these samples so that we can make sure everything works when that is the case *)
@@ -1764,32 +2271,32 @@ DefineTests[ExperimentAliquot,
 						Object -> sample3,
 						Model -> Null,
 						Replace[Composition] -> {
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]},
-							{5 Millimolar, Link[Model[Molecule, "Methylamine"]]}
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now},
+							{5 Millimolar, Link[Model[Molecule, "Methylamine"]], Now}
 						}
 					|>,
 					<|
 						Object -> sample5,
 						Model -> Null,
 						Replace[Composition] -> {
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]},
-							{3 Millimolar, Link[Model[Molecule, "Methylamine"]]}
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now},
+							{3 Millimolar, Link[Model[Molecule, "Methylamine"]], Now}
 						}
 					|>,
 					<|
 						Object -> sample6,
 						Model -> Null,
 						Replace[Composition] -> {
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]},
-							{5 Milligram / Milliliter, Link[Model[Molecule, "Sodium Chloride"]]}
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now},
+							{5 Milligram / Milliliter, Link[Model[Molecule, "Sodium Chloride"]], Now}
 						}
 					|>,
 					<|
 						Object -> sample7,
 						Model -> Null,
 						Replace[Composition] -> {
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]},
-							{3 Milligram / Milliliter, Link[Model[Molecule, "Sodium Chloride"]]}
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now},
+							{3 Milligram / Milliliter, Link[Model[Molecule, "Sodium Chloride"]], Now}
 						}
 					|>,
 					<|Type -> Object[Protocol, HPLC], Name -> "ExperimentAliquot HPLC parent" <> $SessionUUID, DeveloperObject -> True|>
@@ -1807,63 +2314,239 @@ DefineTests[ExperimentAliquot,
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Test bench for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Protocol, HPLC, "ExperimentAliquot HPLC parent"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 1 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 2 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 3 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 4 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 5 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 6 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 7 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 8 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 9 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 10 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 11 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 12 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 13 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 14 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 15 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 16 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 17 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 18 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Vessel, "Test container 19 for ExperimentAliquot Tests"<>$SessionUUID],
+				Object[Container, Bench, "Test bench for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Protocol, HPLC, "ExperimentAliquot HPLC parent" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 10 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 11 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 12 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 13 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 14 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 15 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 16 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 17 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 18 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 19 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 20 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 21 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 22 (cell sample) for ExperimentAliquot Tests" <> $SessionUUID],
 
-				Object[Container, Plate, "Test plate 1 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Plate, "Test plate 2 for ExperimentAliquot Tests"<>$SessionUUID],
-				Object[Container, Plate, "Test full plate 3 for ExperimentAliquot Tests"<>$SessionUUID],
+				Object[Container, Plate, "Test plate 1 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Plate, "Test plate 2 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Plate, "Test full plate 3 for ExperimentAliquot Tests" <> $SessionUUID],
 
-				Model[Sample, StockSolution, "Test Concentration Stock Solution For Aliquot Tests"<>$SessionUUID],
-				Model[Sample, StockSolution, "Test Mass Concentration Stock Solution For Aliquot Tests"<>$SessionUUID],
+				Model[Sample, StockSolution, "Test Concentration Stock Solution For Aliquot Tests" <> $SessionUUID],
+				Model[Sample, StockSolution, "Test Mass Concentration Stock Solution For Aliquot Tests" <> $SessionUUID],
 
-				Object[Sample, "ExperimentAliquot New Test Chemical 1 (200 uL)"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Chemical 1 (1.5 mL)"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Chemical 1 (1.5 mL, 5 mL)"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Chemical 1 (1.8 mL)"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Chemical 1 (1.8 mL, 3 mL)"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Chemical 1 (1.5 mL, 5 mg / mL)"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Chemical 1 (1.8 mL, 3 mg / mL)"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Chemical 1 (25 mL)"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Chemical 1 (10 mL)"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Chemical 1 (no volume)"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Chemical 1 (5 mL)"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Chemical 1 (3 mL)"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Chemical 1 (Discarded)"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Chemical 1 (100 mg)"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Resin 1 (100 mg)"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Chemical 1 (3 Tablets)"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Chemical 1 in occupied plate"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Chemical 2 in occupied plate"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Chemical 3 in occupied plate"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot New Test Chemical 4 in occupied plate"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot Test Sample with Conc Composition"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot Test Sample with Mass Conc Composition"<>$SessionUUID],
-				Object[Sample, "ExperimentAliquot Test Sample that is Liquid Handler Incompatible"<>$SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 1 (200 uL)" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 1 (1.5 mL)" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 1 (1.5 mL, 5 mL)" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 1 (1.8 mL)" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 1 (1.8 mL, 3 mL)" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 1 (1.5 mL, 5 mg / mL)" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 1 (1.8 mL, 3 mg / mL)" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 1 (25 mL)" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 1 (10 mL)" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 1 (no volume)" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 1 (5 mL)" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 1 (3 mL)" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 1 (Discarded)" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 1 (100 mg)" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Resin 1 (100 mg)" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 1 (3 Tablets)" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 1 in occupied plate" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 2 in occupied plate" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 3 in occupied plate" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot New Test Chemical 4 in occupied plate" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot Test Sample with Conc Composition" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot Test Sample with Mass Conc Composition" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot Test Sample that is Liquid Handler Incompatible" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot Test Sample 1 that is incompatible with glass " <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot Test Sample 2 that is incompatible with glass " <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot Test cell Sample 1 " <> $SessionUUID],
 
-				Object[Protocol, RoboticSamplePreparation, "Previous Aliquot SamplePreparation"<>$SessionUUID]
+				Object[Protocol, RoboticSamplePreparation, "Previous Aliquot SamplePreparation" <> $SessionUUID]
 			};
 			existingObjs = PickList[allObjs, DatabaseMemberQ[allObjs]];
 			EraseObject[existingObjs, Force -> True, Verbose -> False]
 		]
+	)
+];
+
+
+
+(* ::Subsection:: *)
+(*Aliquot*)
+
+
+
+DefineTests[Aliquot,
+	{
+		Example[{Basic, "Perform quantitative aliquot:"},
+			Experiment[
+				{
+					Aliquot[
+						Source -> Object[Sample, "Aliquot New Test Chemical 1 (200 uL)"<>$SessionUUID],
+						Amount -> All
+					]
+				}
+			],
+			ObjectP[Object[Protocol]]
+		],
+		Example[{Basic, "Aliquot multiple samples:"},
+			Experiment[
+				{
+					Aliquot[
+						Source -> {Object[Sample, "Aliquot New Test Chemical 1 (200 uL)"<>$SessionUUID], Object[Sample, "Aliquot New Test Chemical 2 (200 uL)"<>$SessionUUID], Object[Sample, "Aliquot New Test Chemical 3 (200 uL)"<>$SessionUUID]},
+						Amount -> 100 Microliter
+					]
+				}
+			],
+			ObjectP[Object[Protocol]]
+		],
+		Example[{Basic, "Diluting a sample to a target concentration:"},
+			Experiment[
+				{
+					Aliquot[
+						Source -> Object[Sample, "Aliquot New Test Chemical 3 (200 uL)"<>$SessionUUID],
+						TargetConcentration -> 1000 Micromolar,
+						AssayVolume -> 200 Microliter,
+						AssayBuffer -> Model[Sample, StockSolution, "70% Ethanol"]
+					]
+				}
+			],
+			ObjectP[Object[Protocol]]
+		]
+	},
+	SymbolSetUp :> (
+		Off[Warning::SamplesOutOfStock];
+		Off[Warning::InstrumentUndergoingMaintenance];
+		{
+			Module[
+				{allObjs, existingObjs},
+				allObjs = {
+					Object[Container, Bench, "Test bench for Aliquot tests"<>$SessionUUID],
+					Object[Container, Vessel, "Test container 1 for Aliquot tests"<>$SessionUUID],
+					Object[Container, Plate, "Test plate 1 for Aliquot tests"<>$SessionUUID],
+					Object[Container, Plate, "Test plate 2 for Aliquot tests"<>$SessionUUID],
+					Object[Sample, "Aliquot New Test Chemical 1 (200 uL)"<>$SessionUUID],
+					Object[Sample, "Aliquot New Test Chemical 2 (200 uL)"<>$SessionUUID],
+					Object[Sample, "Aliquot New Test Chemical 3 (200 uL)"<>$SessionUUID]
+				};
+				existingObjs = PickList[allObjs, DatabaseMemberQ[allObjs]];
+				EraseObject[existingObjs, Force -> True, Verbose -> False]
+			],
+			Module[
+				{
+					fakeBench,
+					container, plate1, plate2,
+					sample, sample2, sample3,
+
+					allObjs
+				},
+
+				fakeBench=Upload[<|Type->Object[Container,Bench],Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],Name->"Test bench for Aliquot tests"<>$SessionUUID,DeveloperObject->True|>];
+				{
+					container,
+					plate1,
+					plate2
+				}=UploadSample[
+					{
+						Model[Container,Vessel,"2mL Tube"],
+						Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+						Model[Container, Plate, "96-well 2mL Deep Well Plate"]
+					},
+					{
+						{"Work Surface",fakeBench},
+						{"Work Surface",fakeBench},
+						{"Work Surface",fakeBench}
+					},
+					Status->{
+						Available,
+						Available,
+						Available
+					},
+					Name->{
+						"Test container 1 for Aliquot tests"<>$SessionUUID,
+						"Test plate 1 for Aliquot tests"<>$SessionUUID,
+						"Test plate 2 for Aliquot tests"<>$SessionUUID
+					}
+				];
+				{
+					sample,
+					sample2,
+					sample3
+				}=UploadSample[
+					{
+						Model[Sample,"Milli-Q water"],
+						Model[Sample,"Milli-Q water"],
+						Model[Sample,"Milli-Q water"]
+					},
+					{
+						{"A1",container},
+						{"A2", plate1},
+						{"B1", plate2}
+					},
+					InitialAmount->{
+						200*Microliter,
+						200*Microliter,
+						200*Microliter
+					},
+					Name-> {
+						"Aliquot New Test Chemical 1 (200 uL)"<>$SessionUUID,
+						"Aliquot New Test Chemical 2 (200 uL)"<>$SessionUUID,
+						"Aliquot New Test Chemical 3 (200 uL)"<>$SessionUUID
+					}
+				];
+
+
+				allObjs = {
+					container,
+					sample, sample2, sample3,
+					plate1, plate2
+				};
+
+				Upload[Flatten[{
+					<|Object->#,DeveloperObject->True|>&/@allObjs,
+					<|
+						Object -> sample3,
+						Concentration -> 5*Millimolar,
+						Replace[Composition] -> {
+							{5 Millimolar, Link[Model[Molecule, "Methylamine"]], Now},
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
+						}
+					|>
+				}]];
+
+			]
+		}
+	),
+	SymbolTearDown :> (
+		On[Warning::SamplesOutOfStock];
+		On[Warning::InstrumentUndergoingMaintenance];
+		{
+			Module[
+				{allObjs, existingObjs},
+				allObjs = {
+					Object[Container, Bench, "Test bench for Aliquot tests"<>$SessionUUID],
+					Object[Container, Vessel, "Test container 1 for Aliquot tests"<>$SessionUUID],
+					Object[Container, Plate, "Test plate 1 for Aliquot tests"<>$SessionUUID],
+					Object[Container, Plate, "Test plate 2 for Aliquot tests"<>$SessionUUID],
+					Object[Sample, "Aliquot New Test Chemical 1 (200 uL)"<>$SessionUUID],
+					Object[Sample, "Aliquot New Test Chemical 2 (200 uL)"<>$SessionUUID],
+					Object[Sample, "Aliquot New Test Chemical 3 (200 uL)"<>$SessionUUID]
+				};
+				existingObjs = PickList[allObjs, DatabaseMemberQ[allObjs]];
+				EraseObject[existingObjs, Force -> True, Verbose -> False]
+			]
+		}
 	)
 ];

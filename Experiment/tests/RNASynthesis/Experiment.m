@@ -1564,6 +1564,13 @@ DefineTests[
 				Status],
 			InCart
 		],
+		Example[{Options,CanaryBranch,"Specify the CanaryBranch on which the protocol is run:"},
+			Download[
+				ExperimentRNASynthesis[{Model[Sample,"polyAUTest ExpRNASynthesis Test"<>$SessionUUID],Model[Sample,"polyAUTest ExpRNASynthesis Test"<>$SessionUUID]},CanaryBranch->"d1cacc5a-948b-4843-aa46-97406bbfc368"],
+				CanaryBranch],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Stubs:>{GitBranchExistsQ[___] = True, InternalUpload`Private`sllDistroExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
+		],
 		Example[{Options,Template,"Inherit the resolved options of a previous protocol:"},
 			(referenceProtocol=ExperimentRNASynthesis[{Model[Sample,"polyAUTest ExpRNASynthesis Test"<>$SessionUUID],Model[Sample,"polyAUTest ExpRNASynthesis Test"<>$SessionUUID]},Scale->1 Micromole];
 			Lookup[
@@ -2730,7 +2737,7 @@ DefineTests[
 					Mass->Quantity[0.0012`,"Grams"],
 					Model->Link[Model[Sample,"id:WNa4ZjRD0z3z"],Objects],
 					Status->Available,
-					Replace[Composition]->{{100 MassPercent,Link[Model[Resin,"id:9RdZXv1l7pX9"]]}},
+					Replace[Composition]->{{100 MassPercent,Link[Model[Resin,"id:9RdZXv1l7pX9"]],Now}},
 					DeveloperObject->True,
 					Site->Link[$Site],
 					Container->Link[Object[Container,ReactionVessel,SolidPhaseSynthesis,"Test container for 40 nmol column for ExperimentRNASynthesis"<>$SessionUUID],Contents,2],
@@ -2741,7 +2748,7 @@ DefineTests[
 					Type->Object[Sample],
 					Name->"Test 40 nmol column for ExperimentRNASynthesis (2)"<>$SessionUUID,
 					Model->Link[Model[Sample,"id:WNa4ZjRD0z3z"],Objects],
-					Replace[Composition]->{{100 MassPercent,Link[Model[Resin,"id:9RdZXv1l7pX9"]]}},
+					Replace[Composition]->{{100 MassPercent,Link[Model[Resin,"id:9RdZXv1l7pX9"]],Now}},
 					Mass->Quantity[0.0012`,"Grams"],
 					Status->Available,
 					Site->Link[$Site],
@@ -2754,7 +2761,7 @@ DefineTests[
 					Type->Object[Sample],
 					Name->"Test 40 nmol column for ExperimentRNASynthesis No Loading"<>$SessionUUID,
 					Model->Link[Model[Sample,"id:WNa4ZjRD0z3z"],Objects],
-					Replace[Composition]->{{Null,Null}},
+					Replace[Composition]->{{Null,Null,Null}},
 					Mass->Quantity[0.0012`,"Grams"],
 					Status->Available,
 					Site->Link[$Site],
@@ -2769,7 +2776,7 @@ DefineTests[
 					Status->Available,
 					Type->Object[Sample],
 					Name->"Test 1000 nmol column for ExperimentRNASynthesis"<>$SessionUUID,
-					Replace[Composition]->{{100MassPercent,Link[Model[Resin,"id:9RdZXv1l7pX9"]]}},
+					Replace[Composition]->{{100MassPercent,Link[Model[Resin,"id:9RdZXv1l7pX9"]],Now}},
 					DeveloperObject->True,
 					Site->Link[$Site],
 					Container->Link[Object[Container,ReactionVessel,SolidPhaseSynthesis,"Test container for 40 nmol column for ExperimentRNASynthesis"<>$SessionUUID],Contents,2],
@@ -2877,7 +2884,7 @@ DefineTests[
 			Upload[<|
 				Type->Object[Sample],
 				Mass->Quantity[0.006`,"Grams"],
-				Replace[Composition]->{{100MassPercent,Link[Model[Resin,SolidPhaseSupport,"Test model resin oligomer GC for ExperimentRNASynthesis"<>$SessionUUID]]}},
+				Replace[Composition]->{{100MassPercent,Link[Model[Resin,SolidPhaseSupport,"Test model resin oligomer GC for ExperimentRNASynthesis"<>$SessionUUID]],Now}},
 				Status->Available,
 				Site->Link[$Site],
 				Name->"Test GC resin for ExperimentRNASynthesis"<>$SessionUUID,
@@ -2915,7 +2922,7 @@ DefineTests[
 				Container->Link[Object[Container,Vessel,"Test container for amidite for ExperimentRNASynthesis"<>$SessionUUID],Contents,2],
 				Mass->Quantity[4.`,"Grams"],
 				Model->Link[Model[Sample,"dT-CE Phosphoramidite"],Objects],
-				Replace[Composition]->{{100 MassPercent,Link[Model[Molecule,"id:01G6nvwRWRLd"]]}},
+				Replace[Composition]->{{100 MassPercent,Link[Model[Molecule,"id:01G6nvwRWRLd"]],Now}},
 				Position->"A1",
 				Status->Stocked,
 				Site->Link[$Site],
@@ -3218,7 +3225,7 @@ DefineTests[ValidExperimentRNASynthesisQ,
 		Example[
 			{Basic, "If an option is invalid, returns False:"},
 			ValidExperimentRNASynthesisQ[{Model[Sample, "polyAUUest for ValidExperimentRNASynthesisQ"]},
-				Phosphoramidites -> {{RNA["A"], Model[Sample, "NonExistingSample"<>ToString[Unique[]]]}}
+				InitialWashTime -> -1 Second
 			],
 			False
 		],

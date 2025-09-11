@@ -1,3 +1,293 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:08ae1a8caf2d00daf0606b08faafe661f822381f861ec819af4312c95159c352
-size 11327
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     10834,        283]
+NotebookOptionsPosition[      8069,        226]
+NotebookOutlinePosition[      9328,        260]
+CellTagsIndexPosition[      9285,        257]
+WindowTitle->State
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "b8ce8edf-02fb-4f45-9913-cd91a864eb57"]
+        }],ExpressionUUID->"27cdefa9-df13-4dd6-bb4d-d5fa3eda0cdc"],
+        StripOnInput->False], {"\<\"SpeciesList\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SpeciesList"], "\<\"State\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/State"], "\<\"StateFirst\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StateFirst"], "\<\"StateLast\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StateLast"], "\<\"StateMost\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StateMost"], "\<\"StateQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StateQ"], "\<\"StateRest\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StateRest"], "\<\"ToState\"\>":>
+       Documentation`HelpLookup["paclet:NucleicAcids/ref/ToState"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "3a5b34ea-9eda-4fcd-a87f-f321af6e58c0"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "c9bee462-95ae-4779-be4b-8e7b83647c50"]
+        }],ExpressionUUID->"43b7c6e1-f9c8-4d48-a7b9-1bd12f387220"],
+        StripOnInput->False], {},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "507ab201-9226-4933-a454-a63c1910e644"]
+    }], "AnchorBar",ExpressionUUID->"e4bc1b58-c02d-40ce-add1-42229cf853b0"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"657044f5-7f56-4b8c-97e8-8d3ea382a070"],
+
+Cell["State", "GuideTitle",
+ CellID->120312992,ExpressionUUID->"8adfe827-675d-401f-be70-b2b756e2d640"],
+
+Cell["", "GuideAbstract",
+ CellID->15685511,ExpressionUUID->"6b9b6849-d2fe-4497-893b-ad42986d243c"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->184722681,ExpressionUUID->"b01d276d-8d8a-4fe6-b084-8bf610ad4d39"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["State"]],"paclet:NucleicAcids/ref/State"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"c3731742-c76b-4988-9b1b-177de08f88d2"]],\
+ "InlineGuideFunctionListing",
+ CellID->9616282,ExpressionUUID->"4dc0c3c4-6088-4b44-acd2-57768b9a400a"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["StateQ"]],"paclet:NucleicAcids/ref/StateQ"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"6ffa9550-403b-4dfa-b27c-4904539c1c0f"]],\
+ "InlineGuideFunctionListing",
+ CellID->646870802,ExpressionUUID->"0dfa2960-59ed-4fb8-afa0-b124ad842fc1"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["ToState"]],"paclet:NucleicAcids/ref/ToState"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"7a681c33-a898-4a02-a88c-c8d0b65e3918"]],\
+ "InlineGuideFunctionListing",
+ CellID->84123155,ExpressionUUID->"e7afb4f1-9959-47e6-b4ae-c231bfd87ffd"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["StateFirst"]],"paclet:NucleicAcids/ref/StateFirst"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "38b806ff-37ea-45a4-bf09-53450d97ac0f"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["StateLast"]],"paclet:NucleicAcids/ref/StateLast"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7f6256be-f3df-4542-84a7-e598e01611b6"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["StateRest"]],"paclet:NucleicAcids/ref/StateRest"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "cf43ff65-fffd-4046-9bba-dbb7834e2faa"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["StateMost"]],"paclet:NucleicAcids/ref/StateMost"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ea79339a-459f-4b21-8555-c4cb051eb515"]
+}], "InlineGuideFunctionListing",
+ CellID->546136899,ExpressionUUID->"bc45e679-bcb6-487c-b5ae-ed907e2baf9c"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["SpeciesList"]],"paclet:NucleicAcids/ref/SpeciesList"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"07b4466a-eb66-43c3-b07c-fe2b66c9a902"]],\
+ "InlineGuideFunctionListing",
+ CellID->956649456,ExpressionUUID->"da2b0467-6f08-46df-802a-95b020d1136f"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->4808595,ExpressionUUID->"fa89c1ea-72e2-4099-95d4-d7789dad04e1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"0543a319-2761-4c99-a004-78b0e130625d"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->10125697,ExpressionUUID->"30113dd5-97b8-4089-bff7-b2f08b01e6fc"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->74668061,ExpressionUUID->"077e16df-67b2-44ae-ab22-84685d126f0c"],
+
+Cell["", "FooterCell",
+ CellID->61676876,ExpressionUUID->"43b510f5-04be-49aa-91b9-499f59a3e6e5"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{144, Automatic}, {Automatic, 474}},
+WindowTitle->"State",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Fri 5 Oct 2018 15:31:30", "context" -> "Docs`", 
+    "keywords" -> {
+     "State", "StateQ", "ToState", "StateFirst", "StateLast", "StateRest", 
+      "StateMost", "SpeciesList"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "", "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> "State", 
+    "title" -> "State", "type" -> "Guide", "uri" -> "Docs/guide/State", 
+    "WorkflowDockedCell" -> ""}, "SearchTextTranslated" -> "", "LinkTrails" -> 
+  ""},
+FrontEndVersion->"11.3 for Microsoft Windows (64-bit) (March 6, 2018)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[577, 21, 3621, 91, 58, "AnchorBarGrid",ExpressionUUID->"657044f5-7f56-4b8c-97e8-8d3ea382a070",
+ CellID->1],
+Cell[4201, 114, 102, 1, 50, "GuideTitle",ExpressionUUID->"8adfe827-675d-401f-be70-b2b756e2d640",
+ CellID->120312992],
+Cell[4306, 117, 99, 1, 31, "GuideAbstract",ExpressionUUID->"6b9b6849-d2fe-4497-893b-ad42986d243c",
+ CellID->15685511],
+Cell[4408, 120, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"b01d276d-8d8a-4fe6-b084-8bf610ad4d39",
+ CellID->184722681],
+Cell[4524, 123, 344, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"4dc0c3c4-6088-4b44-acd2-57768b9a400a",
+ CellID->9616282],
+Cell[4871, 133, 348, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"0dfa2960-59ed-4fb8-afa0-b124ad842fc1",
+ CellID->646870802],
+Cell[5222, 143, 349, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"e7afb4f1-9959-47e6-b4ae-c231bfd87ffd",
+ CellID->84123155],
+Cell[5574, 153, 1422, 38, 25, "InlineGuideFunctionListing",ExpressionUUID->"bc45e679-bcb6-487c-b5ae-ed907e2baf9c",
+ CellID->546136899],
+Cell[6999, 193, 358, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"da2b0467-6f08-46df-802a-95b020d1136f",
+ CellID->956649456],
+Cell[7360, 203, 104, 1, 29, "SectionFooterSpacer",ExpressionUUID->"fa89c1ea-72e2-4099-95d4-d7789dad04e1",
+ CellID->4808595],
+Cell[7467, 206, 391, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"30113dd5-97b8-4089-bff7-b2f08b01e6fc",
+ CellID->10125697],
+Cell[7861, 220, 105, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"077e16df-67b2-44ae-ab22-84685d126f0c",
+ CellID->74668061],
+Cell[7969, 223, 96, 1, 41, "FooterCell",ExpressionUUID->"43b510f5-04be-49aa-91b9-499f59a3e6e5",
+ CellID->61676876]
+}
+]
+*)
+
+(* End of internal cache information *)
+

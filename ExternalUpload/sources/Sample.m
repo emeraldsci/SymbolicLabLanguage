@@ -143,6 +143,17 @@ DefineOptions[UploadSampleModel,
 				Category -> "Organizational Information"
 			},
 			{
+				OptionName -> CellType,
+				Default -> Null,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> CellTypeP
+				],
+				Description -> "The taxon of the organism or cell line from which the cell sample originates. Options include Bacterial, Mammalian, Insect, Plant, and Yeast.",
+				Category -> "Organizational Information"
+			},
+			{
 				OptionName -> Solvent,
 				Default -> Null,
 				AllowNull -> True,
@@ -378,7 +389,15 @@ DefineOptions[UploadSampleModel,
 				Category -> "Physical Properties"
 			},
 			{
-				OptionName -> TabletWeight,
+				OptionName -> Sachet,
+				Default -> False,
+				AllowNull -> False,
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+				Description -> "Indicates if this sample is in the form of a small pouch filled with a measured amount of loose solid substance.",
+				Category -> "Physical Properties"
+			},
+			{
+				OptionName -> SolidUnitWeight,
 				Default -> Null,
 				AllowNull -> True,
 				Widget -> Widget[
@@ -386,7 +405,15 @@ DefineOptions[UploadSampleModel,
 					Pattern :> GreaterP[0 * Gram],
 					Units -> {1, {Gram, {Milligram, Gram}}}
 				],
-				Description -> "If this is a tablet, the weight of a single tablet.",
+				Description -> "If this is a tablet or sachet, the weight of a single tablet or sachet.",
+				Category -> "Physical Properties"
+			},
+			{
+				OptionName -> DefaultSachetPouch,
+				Default -> Null,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Material]]],
+				Description -> "The material of the pouch that the filler of the sachet is wrapped in to form a single unit of sachet.",
 				Category -> "Physical Properties"
 			},
 			{
@@ -458,19 +485,11 @@ DefineOptions[UploadSampleModel,
 				Category -> "Storage Information"
 			},
 			{
-				OptionName -> TransportWarmed,
+				OptionName -> TransportTemperature,
 				Default -> Null,
 				AllowNull -> True,
-				Widget -> Widget[Type -> Quantity, Pattern :> RangeP[30 Celsius, 105 Celsius], Units -> {1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}],
-				Description -> "The temperature that samples of this model should be incubated at while transported between instruments during experimentation.",
-				Category -> "Storage Information"
-			},
-			{
-				OptionName -> TransportChilled,
-				Default -> Null,
-				AllowNull -> True,
-				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-				Description -> "Indicates if samples of this model should be refrigerated during transport when used in experiments.",
+				Widget -> Widget[Type -> Quantity, Pattern:>Alternatives[RangeP[-86*Celsius, 10*Celsius], RangeP[30*Celsius, 105*Celsius]], Units -> {1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}],
+				Description -> "The temperature that if samples of this model should be heated or refrigerated during transport when used in experiments.",
 				Category -> "Storage Information"
 			},
 			{
@@ -479,6 +498,14 @@ DefineOptions[UploadSampleModel,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Object, Pattern :> ObjectP[Object[Method, ThawCells]]],
 				Description -> "The default method by which to thaw cryovials of this sample model.",
+				Category -> "Storage Information"
+			},
+			{
+				OptionName -> AsepticTransportContainerType,
+				Default -> Null,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> AsepticTransportContainerTypeP],
+				Description -> "The manner in which samples of this model are contained in an aseptic barrier and if they need to be unbagged before being used in a protocol, maintenance, or qualification.",
 				Category -> "Storage Information"
 			},
 			{
@@ -516,7 +543,7 @@ DefineOptions[UploadSampleModel,
 ];
 
 
-InstallDefaultUploadFunction[UploadSampleModel, Model[Sample], resolvedUploadSampleOptions];
+InstallDefaultUploadFunction[UploadSampleModel, Model[Sample], OptionResolver -> resolvedUploadSampleOptions, AuxilliaryPacketsFunction -> uploadSampleModelAuxilliaryPackets];
 InstallValidQFunction[UploadSampleModel, Model[Sample]];
 InstallOptionsFunction[UploadSampleModel, Model[Sample]];
 
@@ -524,40 +551,83 @@ InstallOptionsFunction[UploadSampleModel, Model[Sample]];
 (* ::Subsubsection::Closed:: *)
 (*Option Resolver*)
 
-Error::MissingLivingOption = "The Model[Cell](s), `1` were found in the provided Composition. Please use the Living option to specify whether the cells are alive or dead.";
+Error::MissingLivingOption = "For inputs, `1`, the Model[Cell](s), `2` were found in the provided Composition. Please use the Living option to specify whether the cells are alive or dead.";
+
+(* Takes in a list of inputs and a list of options, return a list of resolved options. *)
+(* This is a legacy resolver where the original version wasn't listable, so this is a bit hacky in the short term *)
+(* This helper will soon be re-written *)
+(* But I want to get the framework refactor online first as a separate entity for better testing *)
+resolvedUploadSampleOptions[myType_, myInput:{___}, myOptions_, rawOptions_] := Module[
+	{result, inputsWithInvalidOptions},
+
+	(* Map over the singleton function - this is legacy code *)
+	{result, inputsWithInvalidOptions} = Transpose@MapThread[
+		Module[{originalResult},
+
+			(* Run the option resolver for each input. Quiet and catch the living option error message that's thrown so we can thrown it just the once later *)
+			Quiet[Check[
+				originalResult = resolvedUploadSampleOptions[myType, #1, #2, #3];
+				{originalResult, {}},
+
+				(* If we threw the missing living option message, store that invalid input *)
+				{originalResult, #1},
+
+				(* Only check for intended message *)
+				{Error::MissingLivingOption}
+			], {Error::MissingLivingOption}]
+		]&,
+		{myInput, myOptions, rawOptions}
+	];
+
+	(* If any of the inputs failed, now throw the message to the front end, once, in listed form *)
+	If[!MatchQ[Flatten[inputsWithInvalidOptions], {}],
+		Message[Error::MissingLivingOption, Flatten[inputsWithInvalidOptions], Cases[#, ObjectP[Model[Cell]], Infinity] & /@ Lookup[PickList[result, inputsWithInvalidOptions, Except[{}]], Composition]]
+	];
+
+	(* Return the output in the expected format *)
+	<|
+		Result -> result,
+		InvalidInputs -> {},
+		InvalidOptions -> If[!MatchQ[Flatten[inputsWithInvalidOptions], {}], {Living}, {}]
+	|>
+];
 
 (* New object overload. *)
-resolvedUploadSampleOptions[myType_, myName_String, myOptions_, rawOptions_]:=Module[
-	{myOptionsAssociation, resolvedNotebook, myOptionsAssociationWithNotebook, myOptionsWithName, pubChemInformation, myOptionsWithPubChem, myOptionsWithSynonyms, allIdentityModels,
-		resolvedSafetyOptions, myFinalizedOptions,modelCellInComposition,livingOptionProvidedBool},
+resolvedUploadSampleOptions[myType_, myName_String, myOptions_, rawOptions_] := Module[
+	{
+		myOptionsAssociation, resolvedNotebook, myOptionsAssociationWithNotebook, myOptionsWithName, pubChemInformation, safeComposition,
+		myOptionsWithPubChem, myOptionsWithSynonyms, allIdentityModels, resolvedSafetyOptions, mysemiFinalizedOptions,
+		modelCellInComposition, cellPacketsInComposition, livingOptionProvidedBool, cellTypeProvidedBool, allIdentityModelPackets,
+		resolvedCellType, resolvedSterile, resolvedAsepticHandling, myFinalizedOptions
+	},
 
 	(* Convert the options to an association. *)
-	myOptionsAssociation=Association @@ myOptions;
+	myOptionsAssociation = Association @@ myOptions;
 	resolvedNotebook = If[MatchQ[Lookup[myOptionsAssociation, Notebook], Automatic],
 		Download[$Notebook, Object],
 		Lookup[myOptionsAssociation, Notebook]
 	];
 
-	myOptionsAssociationWithNotebook = Append[myOptionsAssociation, Notebook->resolvedNotebook];
+	myOptionsAssociationWithNotebook = Append[myOptionsAssociation, Notebook -> resolvedNotebook];
 
 	(* This option resolver is a little unusual in that we have to AutoFill the options in order to compute *)
 	(* either the tests or the results. *)
 
 	(* -- AutoFill based on the information we're given. -- *)
 	(* Overwrite the Name option if it is Null. *)
-	myOptionsWithName=If[MatchQ[Lookup[myOptionsAssociationWithNotebook, Name], Null],
+	myOptionsWithName = If[MatchQ[Lookup[myOptionsAssociationWithNotebook, Name], Null],
 		Append[myOptionsAssociationWithNotebook, Name -> myName],
 		myOptionsAssociationWithNotebook
 	];
 
 	(* Try to get information from PubChem. *)
-	pubChemInformation=parseChemicalIdentifier[myName];
+	pubChemInformation = parseChemicalIdentifier[myName];
 
-	myOptionsWithPubChem=If[MatchQ[pubChemInformation, $Failed],
+	myOptionsWithPubChem = If[MatchQ[pubChemInformation, $Failed],
 		myOptionsWithName,
 		Module[{filteredPubChemOptions},
 			(* Some PubChem keys may not be options to UploadSampleModel. *)
-			filteredPubChemOptions=Association@(KeyValueMap[
+			filteredPubChemOptions = Association@(KeyValueMap[
 				Function[{key, value},
 					If[KeyExistsQ[myOptionsAssociationWithNotebook, key],
 						key -> value,
@@ -581,22 +651,28 @@ resolvedUploadSampleOptions[myType_, myName_String, myOptions_, rawOptions_]:=Mo
 	];
 
 	(* Make sure that if we have a Name and Synonyms field  that Name is apart of the Synonyms list. *)
-	myOptionsWithSynonyms=If[MatchQ[Lookup[myOptionsWithPubChem, Synonyms], Null] || (!MemberQ[Lookup[myOptionsWithPubChem, Synonyms], Lookup[myOptionsWithPubChem, Name]] && MatchQ[Lookup[myOptionsWithPubChem, Name], _String]),
+	myOptionsWithSynonyms = If[MatchQ[Lookup[myOptionsWithPubChem, Synonyms], Null] || (!MemberQ[Lookup[myOptionsWithPubChem, Synonyms], Lookup[myOptionsWithPubChem, Name]] && MatchQ[Lookup[myOptionsWithPubChem, Name], _String]),
 		Append[myOptionsWithPubChem, Synonyms -> (Append[Lookup[myOptionsWithPubChem, Synonyms] /. Null -> {}, Lookup[myOptionsWithPubChem, Name]])],
 		myOptionsWithPubChem
 	];
 
+	(* Extract the composition *)
+	safeComposition = If[MatchQ[Lookup[myOptionsAssociation, Composition], Null],
+		{},
+		Lookup[myOptionsAssociation, Composition]
+	];
+
 	(* Get the identity models from our composition. *)
-	allIdentityModels=Cases[Lookup[myOptionsAssociation, Composition][[All, 2]], IdentityModelP];
+	allIdentityModels = Cases[safeComposition[[All, 2]], IdentityModelP];
 
 	(* If we have a composition, combine the EHS information from those identity models. *)
-	resolvedSafetyOptions=If[Length[allIdentityModels] > 0,
-		Module[{identityModelSafetyFields, identityModelSafetyFieldsPacket, allIdentityModelPackets},
+	resolvedSafetyOptions = If[Length[allIdentityModels] > 0,
+		Module[{identityModelSafetyFields, identityModelSafetyFieldsPacket},
 			(* Get all of the safety fields from our identity models. *)
-			identityModelSafetyFields=ToExpression /@ Options[ExternalUpload`Private`IdentityModelHealthAndSafetyOptions][[All, 1]];
-			identityModelSafetyFieldsPacket=Packet @@ Flatten[{identityModelSafetyFields, Density, pH}];
+			identityModelSafetyFields = ToExpression /@ Options[ExternalUpload`Private`IdentityModelHealthAndSafetyOptions][[All, 1]];
+			identityModelSafetyFieldsPacket = Packet @@ Flatten[{identityModelSafetyFields, CellType}];
 
-			(* Do our download. *)
+			(* Do our download, this download is also used later when resolving cell type. *)
 			allIdentityModelPackets=Quiet[
 				Download[allIdentityModels, identityModelSafetyFieldsPacket],
 				{Download::FieldDoesntExist, Download::MissingField, Download::ObjectDoesNotExist, Download::Part, Download::MissingCacheField}
@@ -610,7 +686,8 @@ resolvedUploadSampleOptions[myType_, myName_String, myOptions_, rawOptions_]:=Mo
 						Nothing,
 						ehsField -> Fold[
 							ExternalUpload`Private`combineEHSFields[ehsField, #1, #2][[2]]&, (* Note: ExternalUpload`Private`combineEHSFields returns a rule. *)
-							Lookup[allIdentityModelPackets, ehsField, {Null, Null}]
+							(* if we are working with the cases when a given field is $Failed (for example DoubleGloveRequired for Cells) -> swap it to Null *)
+							Lookup[allIdentityModelPackets, ehsField, {Null, Null}]/.{$Failed->Null}
 						]
 					]
 				],
@@ -621,24 +698,199 @@ resolvedUploadSampleOptions[myType_, myName_String, myOptions_, rawOptions_]:=Mo
 		{}
 	];
 
-	(* Combine our safety options. *)
-	myFinalizedOptions=Merge[{resolvedSafetyOptions, myOptionsWithSynonyms}, First];
+	(* Combine our safety options from IdentityModelHealthAndSafetyOptions. *)
+	(* Note:ModelSampleHealthAndSafetyOptions also contains:Anhydrous, AsepticHandling, CellType, CultureAdhesion, *)
+	(* DefaultStorageCondition, Expires, SampleHandling, ShelfLife, State, Sterile, TransportTemperature, UnsealedShelfLife *)
+	(* Those options are not in resolvedSafetyOptions, but in myOptionsWithSynonyms with default/user-specified values *)
+	mysemiFinalizedOptions = Merge[{resolvedSafetyOptions, myOptionsWithSynonyms}, First];
 
 	(* Extract any Model[Cell] from the composition *)
-	modelCellInComposition = Cases[Lookup[myOptionsAssociation, Composition][[All, 2]], ObjectP[Model[Cell]]];
-	
+	modelCellInComposition = Cases[safeComposition[[All, 2]], ObjectP[Model[Cell]]];
+	cellPacketsInComposition = Cases[allIdentityModelPackets, ObjectP[modelCellInComposition]];
+
 	(* Extract the living option from the rawOptions *)
-	livingOptionProvidedBool = MatchQ[Lookup[rawOptions,Living,$Failed],BooleanP];
+	livingOptionProvidedBool = MatchQ[Lookup[rawOptions, Living, $Failed], BooleanP];
 
 	(* Throw an error if the Living option was not provided and there are Model[Cell]'s in the Composition *)
-	If[Length[modelCellInComposition] > 0 &&!livingOptionProvidedBool,
+	If[Length[modelCellInComposition] > 0 && !livingOptionProvidedBool,
 		Message[Error::MissingLivingOption, modelCellInComposition]
 	];
 
+	(* Extract the living option from the rawOptions *)
+	cellTypeProvidedBool = MatchQ[Lookup[rawOptions, CellType, $Failed], CellTypeP];
+
+	resolvedCellType = Which[
+		(* not a living situation *)
+		MatchQ[Lookup[mysemiFinalizedOptions, Living], False|Null],
+			Null,
+		(* living and we have a CellType specified *)
+		cellTypeProvidedBool,
+			Lookup[rawOptions, CellType],
+		(* we don't have a provided CellType, resolve from the composition *)
+		Length[modelCellInComposition] > 0,
+			Which[
+				(* we have only one cell in the composition *)
+				Length[modelCellInComposition] == 1,
+					Lookup[First@cellPacketsInComposition, CellType],
+				(* we have only the same type of cells in the composition - steal it from the first one *)
+				Length[DeleteDuplicates@Lookup[cellPacketsInComposition, CellType]] == 1,
+					Lookup[First@cellPacketsInComposition, CellType],
+				(* we have more than 1 different cell type, we are using these in order of Mammalian>Plant>Insect>Fungal>Yeast>Bacteria to get the highest ranking cell type *)
+				Length[DeleteDuplicates@Lookup[cellPacketsInComposition, CellType]]>1,
+					FirstCase[List@@CellTypeP, Alternatives@@DeleteDuplicates[Lookup[cellPacketsInComposition, CellType]]],
+				(* we somehow were not able to resolve the CellType here, return Null *)
+				True,
+					Null
+			],
+		(* we somehow failed to resolve it, return Null *)
+		True,
+			Null
+	];
+
+	resolvedSterile = Which[
+		(* Do we have Sterile specified *)
+		MatchQ[Lookup[rawOptions, Sterile], BooleanP], MatchQ[Lookup[rawOptions, Sterile], BooleanP],
+		(* Do we have living set as True? Set False for microbial cells *)
+		TrueQ[Lookup[mysemiFinalizedOptions, Living]] && MemberQ[Lookup[cellPacketsInComposition, CellType], MicrobialCellTypeP],
+			False,
+		(* we somehow failed to resolve it, return Null *)
+		True,
+			Null
+	];
+
+	resolvedAsepticHandling = Which[
+		(* Do we have AsepticHandling specified *)
+		MatchQ[Lookup[rawOptions, AsepticHandling], BooleanP], MatchQ[Lookup[rawOptions, AsepticHandling], BooleanP],
+		(* Do we have living set as True? Set True for all cell samples *)
+		TrueQ[Lookup[mysemiFinalizedOptions, Living]], True,
+		(* Do we have Sterile set as True? Set True to keep sterile state *)
+		TrueQ[resolvedSterile], True,
+		(* we somehow failed to resolve it, return Null *)
+		True, Null
+	];
+
+	(* Upload Sterile/CellType/AsepticHandling options. *)
+	myFinalizedOptions = ReplaceRule[
+		Normal[mysemiFinalizedOptions],
+		{
+			CellType -> resolvedCellType,
+			Sterile -> resolvedSterile,
+			AsepticHandling -> resolvedAsepticHandling
+		}
+	];
+
 	(* Return our options. *)
-	Normal[myFinalizedOptions]
+	myFinalizedOptions
 ];
 
 
 (* This existing object overload is the same as the default resolver. *)
 resolvedUploadSampleOptions[myType_, myInput:ObjectP[], myOptions_, rawOptions_]:=resolveDefaultUploadFunctionOptions[myType, myInput, myOptions, rawOptions];
+
+
+(* ::Subsubsection::Closed:: *)
+(* Auxilliary packets function *)
+uploadSampleModelAuxilliaryPackets[myType_, myInputs_List, myOptionsList_List, myResolvedMapThreadOptionsList_List] := Module[
+	{
+		modelSampleInputQs, auxilliaryPackets,
+		activeSamplesPackets, timeOfUpdate
+	},
+
+	(* Check if we're modifying an existing Model[Sample] *)
+	modelSampleInputQs = MatchQ[#, ObjectP[Model[Sample]]] & /@ myInputs;
+
+	(* Search for any active samples of the models that are being modified and download packets for them *)
+	activeSamplesPackets = Module[
+		{modelSampleInputs, activeSamplesSearchResult},
+
+		(* Pick out the inputs that are Model[Sample]s *)
+		modelSampleInputs = PickList[myInputs, modelSampleInputQs];
+
+		(* Search for the active samples for each input *)
+		activeSamplesSearchResult = With[
+			{
+				types = ConstantArray[Object[Sample], Length[modelSampleInputs]],
+				clauses = (Status != Discarded && Model == #) & /@ modelSampleInputs
+			},
+			Search[types, clauses]
+		];
+
+		(* Download whole packets for all the samples *)
+		activeSamplesPackets = Download[activeSamplesSearchResult];
+
+		(* Index match the results back with the original inputs, filling with Null *)
+		ReplacePart[
+			ConstantArray[Null, Length[myInputs]],
+			AssociationThread[Position[modelSampleInputQs, True], activeSamplesPackets]
+		]
+	];
+
+	(* Save the current time to attribute the changes to *)
+	timeOfUpdate = Now;
+
+	(* Generate the auxilliary packets for each input *)
+	auxilliaryPackets = MapThread[
+		Function[{input, resolvedOptionSet, activeSamplePackets},
+			Module[
+				{},
+
+				(* If our input isn't a Model[Sample] i.e. we're not modifying an existing model, there's nothing to do *)
+				If[!MatchQ[input, ObjectP[Model[Sample]]],
+					Return[{}, Module]
+				];
+
+				(* Otherwise generate packets to copy the changes over to the associated Object[Sample]s *)
+				Map[
+					Function[samplePacket,
+						Module[
+							{modifiedOptions, filteredOptions, changePacket},
+
+							(* Make any modifications to the option values *)
+							modifiedOptions = Map[
+								Function[{optionRule},
+									Module[{optionSymbol,optionValue},
+
+										(* Split the option into symbol and value *)
+										optionSymbol = First[optionRule];
+										optionValue = Last[optionRule];
+
+										(* Append the time to the end of the composition *)
+										If[MatchQ[optionSymbol, Composition] && !MatchQ[optionValue, Null | {Null}],
+											optionSymbol -> Map[
+												Function[{myEntry},
+													{myEntry[[1]], Link[myEntry[[2]]], timeOfUpdate}
+												],
+												optionValue
+											],
+
+											(* Otherwise just pass through the option *)
+											optionSymbol -> If[MatchQ[optionValue, {Null}], Null, optionValue]
+										]
+									]
+								],
+								resolvedOptionSet
+							];
+
+							(* Remove any options that shouldn't be used to update fields *)
+							filteredOptions = Cases[modifiedOptions, HoldPattern[Except[Name] -> _]];
+
+							(* Return the change packet *)
+							changePacket = generateChangePacket[Object[Sample], filteredOptions, ExistingPacket -> samplePacket];
+
+							(* Add in the object key for the existing object *)
+							Append[
+								changePacket,
+								Object -> Lookup[samplePacket, Object]
+							]
+						]
+					],
+					activeSamplePackets
+				]
+			]
+		],
+		{myInputs, myResolvedMapThreadOptionsList, activeSamplesPackets}
+	];
+
+	(* Return the index matched lists of packets *)
+	auxilliaryPackets
+];

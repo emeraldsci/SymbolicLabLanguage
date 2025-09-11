@@ -102,7 +102,7 @@ DefineObjectType[Object[Protocol, AgaroseGelElectrophoresis], {
 		LoadingPlatePrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the transfers of the loading dye, ladders, and samples into the loading plate.",
 			Category -> "Loading"
 		},
@@ -110,25 +110,9 @@ DefineObjectType[Object[Protocol, AgaroseGelElectrophoresis], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol,SampleManipulation] | Object[Protocol, RoboticSamplePreparation],
 			Description -> "A sample manipulation protocol used to transfer the loading dye, ladders and samples into the loading plate.",
 			Category -> "Loading"
-		},
-		LoadingPlateMix->{
-			Format->Single,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Alternatives[Object[Protocol,Incubate],Object[Protocol,ManualSamplePreparation]],
-			Description->"An incubation protocol used to mix the contents of the LoadingPlate after the LoadingPlateManipulation.",
-			Category->"Loading"
-		},
-		LoadingPlateCentrifugation->{
-			Format->Single,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Alternatives[Object[Protocol,Centrifuge],Object[Protocol,ManualSamplePreparation]],
-			Description->"A centrifuge protocol used to get rid of any air bubbles present in the LoadingPlate introduced by the LoadingPlateMix.",
-			Category->"Loading"
 		},
 		DestinationPlate -> {
 			Format -> Single,

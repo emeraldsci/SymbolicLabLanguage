@@ -1,3 +1,11 @@
+(* ::Package:: *)
+
+(* ::Text:: *)
+(*\[Copyright] 2011-2024 Emerald Cloud Lab, Inc.*)
+
+(* ::Subsubsection::Closed:: *)
+(*PredictDestinationPhase*)
+
 DefineUsage[PredictDestinationPhase,
   {
     BasicDefinitions -> {
@@ -33,9 +41,12 @@ DefineUsage[PredictDestinationPhase,
       "SimulateLogPartitionCoefficient",
       "PredictSamplePhase"
     },
-    Author -> {"thomas", "lige.tonggu"}
+    Author -> {"taylor.hochuli", "thomas", "lige.tonggu"}
   }
 ];
+
+(* ::Subsubsection::Closed:: *)
+(*PredictSamplePhase*)
 
 DefineUsage[PredictSamplePhase,
   {
@@ -76,7 +87,7 @@ DefineUsage[PredictSamplePhase,
       "SimulateLogPartitionCoefficient",
       "PredictDestinationPhase"
     },
-    Author -> {"thomas", "lige.tonggu"}
+    Author -> {"taylor.hochuli", "thomas", "lige.tonggu"}
   }
 ];
 
@@ -116,6 +127,6 @@ DefineUsage[SimulateLogPartitionCoefficient,
       "PredictDestinationPhase",
       "PredictSamplePhase"
     },
-    Author -> {"thomas", "lige.tonggu"}
+    Author -> {"taylor.hochuli", "thomas", "lige.tonggu"}
   }
 ];

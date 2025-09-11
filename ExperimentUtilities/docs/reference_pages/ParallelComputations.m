@@ -18,13 +18,13 @@ DefineUsage[
 		},
 		Input :> {},
 		Output :> {
-			{"updatedProtocols", {ObjectP[ProtocolTypes[]]...}, "All protocols that previously had ComputationsOutstanding"}
+			{"updatedProtocols", {ObjectP[ProtocolTypes[Output -> Short]]...}, "All protocols that previously had ComputationsOutstanding"}
 		},
 		Sync -> Automatic,
 		SeeAlso -> {
 			"ProcedureFramework`Private`parallelExecuteAssociation",
 			"CreateAsanaTask"
 		},
-		Author -> {"waseem.vali", "malav.desai", "steven"}
+		Author -> {"xu.yi", "waseem.vali", "malav.desai", "steven"}
 	}
 ];

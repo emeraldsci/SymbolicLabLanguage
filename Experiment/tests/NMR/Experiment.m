@@ -290,7 +290,7 @@ DefineTests[ExperimentNMR,
 			EquivalenceFunction -> Equal,
 			Variables :> {protocol}
 		],
-		Example[{Options, NumberOfTimeIntervals, "Specify the number of time intervals at the end of which another NMR specturm is collected:"},
+		Example[{Options, NumberOfTimeIntervals, "Specify the number of time intervals at the end of which another NMR spectrum is collected:"},
 			protocol = ExperimentNMR[Object[Sample, "ExperimentNMR New Test Chemical 1 (100 mg)" <> $SessionUUID], NumberOfTimeIntervals -> 5];
 			Download[protocol, NumberOfTimeIntervals],
 			{5},
@@ -369,12 +369,12 @@ DefineTests[ExperimentNMR,
 			{
 				{True,True},
 				{
-					LinkP[Model[Container, Vessel, "3mm NMR Sealed Coaxial Insert with 3-(Trimethylsilyl)propionic-2,2,3,3-d4 in Deuterium Oxide"]],
-					LinkP[Model[Container, Vessel, "3mm NMR Sealed Coaxial Insert with 3-(Trimethylsilyl)propionic-2,2,3,3-d4 in Deuterium Oxide"]]
+					LinkP[Model[Container, Vessel, "id:7X104vnDxX9R"]], (* "3mm NMR Sealed Coaxial Insert with 3-(Trimethylsilyl)propionic-2,2,3,3-d4 in Deuterium Oxide" *)
+					LinkP[Model[Container, Vessel, "id:7X104vnDxX9R"]] (* "3mm NMR Sealed Coaxial Insert with 3-(Trimethylsilyl)propionic-2,2,3,3-d4 in Deuterium Oxide" *)
 				},
 				{
-					LinkP[Model[Container, Bag, "2 x 3 Inch Plastic Bag For NMR Sealed Inserts"]],
-					LinkP[Model[Container, Bag, "2 x 3 Inch Plastic Bag For NMR Sealed Inserts"]]
+					LinkP[Model[Container, Bag, "id:O81aEB1LOw0j"]], (* "Plastic Bag For NMR Sealed Inserts" *)
+					LinkP[Model[Container, Bag, "id:O81aEB1LOw0j"]] (* "Plastic Bag For NMR Sealed Inserts" *)
 				}
 			},
 			Variables :> {protocol}
@@ -391,8 +391,8 @@ DefineTests[ExperimentNMR,
 			{
 				{Quantity[0.4, "Milliliters"]},
 				{True},
-				{LinkP[Model[Container, Vessel, "3mm NMR Sealed Coaxial Insert with 3-(Trimethylsilyl)propionic-2,2,3,3-d4 in Deuterium Oxide"]]},
-				{LinkP[Model[Container, Bag, "2 x 3 Inch Plastic Bag For NMR Sealed Inserts"]]}
+				{LinkP[Model[Container, Vessel, "id:7X104vnDxX9R"]]}, (* "3mm NMR Sealed Coaxial Insert with 3-(Trimethylsilyl)propionic-2,2,3,3-d4 in Deuterium Oxide" *)
+				{LinkP[Model[Container, Bag, "id:O81aEB1LOw0j"]]} (* "Plastic Bag For NMR Sealed Inserts" *)
 			},
 			Variables :> {protocol},
 			Messages:>{Warning::NonStandardSolvent}
@@ -435,26 +435,54 @@ DefineTests[ExperimentNMR,
 			Download[ExperimentNMR[Object[Sample, "ExperimentNMR New Test Chemical 1 (100 uL)" <> $SessionUUID], Confirm -> True], Status],
 			Processing|ShippingMaterials|Backlogged
 		],
+		Example[{Options, CanaryBranch, "Specify the CanaryBranch on which the protocol is run:"},
+			Download[ExperimentNMR[Object[Sample, "ExperimentNMR New Test Chemical 1 (100 uL)" <> $SessionUUID], CanaryBranch -> "d1cacc5a-948b-4843-aa46-97406bbfc368"], CanaryBranch],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Stubs:>{GitBranchExistsQ[___] = True, InternalUpload`Private`sllDistroExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
+		],
 		Example[{Options, Name, "Set name of the new protocol:"},
 			Download[ExperimentNMR[Object[Sample, "ExperimentNMR New Test Chemical 1 (100 uL)" <> $SessionUUID], Name -> "NMR protocol 24601"], Name],
 			"NMR protocol 24601"
 		],
 
 		(* --- Sample prep option tests --- *)
-		Example[{Options, PreparatoryPrimitives, "Use the PreparatoryPrimitives option to prepare samples from models before the experiment is run:"},
-			protocol = ExperimentNMR[
-				{"caffeine sample 1", "caffeine sample 2"},
-				PreparatoryPrimitives -> {
-					Define[Name -> "caffeine sample 1", Container -> Model[Container, Vessel, "2mL Tube"]],
-					Define[Name -> "caffeine sample 2", Container -> Model[Container, Vessel, "2mL Tube"]],
-					Transfer[Source -> Model[Sample, "Caffeine"], Destination -> "caffeine sample 1", Amount -> 500*Milligram],
-					Transfer[Source -> Model[Sample, "Caffeine"], Destination -> "caffeine sample 2", Amount -> 300*Milligram]
-				}
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify models directly and use PreparedModelContainer and PreparedModelAmount to specify where and how much of those models should be used:"},
+			options = ExperimentNMR[
+				(* Caffeine *)
+				{Model[Sample, "id:L8kPEjNLDDBP"], Model[Sample, "id:L8kPEjNLDDBP"]},
+				PreparedModelAmount -> 500 Milligram,
+				(* 2mL Tube *)
+				PreparedModelContainer -> Model[Container, Vessel, "id:3em6Zv9NjjN8"],
+				Output -> Options
 			];
-			Download[protocol, PreparatoryPrimitives],
-			{SampleManipulationP..},
-			Variables :> {protocol}
-
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				(* Caffeine *)
+				{ObjectP[Model[Sample, "id:L8kPEjNLDDBP"]]..},
+				(* 2mL Tube *)
+				{ObjectP[Model[Container, Vessel, "id:3em6Zv9NjjN8"]]..},
+				{EqualP[500 Milligram]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentNMR[
+				Model[Sample, "Caffeine"],
+				PreparedModelAmount -> 5 Milligram,
+				MixType -> Vortex,
+				IncubationTime -> 10 Minute,
+				Aliquot -> True
+			],
+			ObjectP[Object[Protocol, NMR]]
 		],
 		Example[{Options, PreparatoryUnitOperations, "Use the PreparatoryUnitOperations option to prepare samples from models before the experiment is run:"},
 			protocol = ExperimentNMR[
@@ -471,7 +499,24 @@ DefineTests[ExperimentNMR,
 			Variables :> {protocol}
 
 		],
-
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "If models are not specified, PreparedModelAmount and PreparedModelContainer are set to Null:"},
+			options = ExperimentNMR[
+				Object[Sample, "ExperimentNMR New Test Chemical 1 (100 uL)" <> $SessionUUID],
+				Output -> Options
+			];
+			Lookup[options, {PreparedModelContainer, PreparedModelAmount}],
+			{Null, Null},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "If models are not specified for container input, PreparedModelAmount and PreparedModelContainer are set to Null:"},
+			options = ExperimentNMR[
+				Object[Container, Vessel, "Test container 1 for ExperimentNMR tests" <> $SessionUUID],
+				Output -> Options
+			];
+			Lookup[options, {PreparedModelContainer, PreparedModelAmount}],
+			{Null, Null},
+			Variables :> {options, prepUOs}
+		],
 		Example[{Options, Incubate, "Set the Incubate option:"},
 			options = ExperimentNMR[Object[Sample, "ExperimentNMR New Test Chemical 1 (100 uL)" <> $SessionUUID], Incubate -> True, Output -> Options];
 			Lookup[options, Incubate],
@@ -797,13 +842,13 @@ DefineTests[ExperimentNMR,
 		Example[{Options, AliquotContainer, "Set the AliquotContainer option:"},
 			options = ExperimentNMR[Object[Sample, "ExperimentNMR New Test Chemical 1 (100 uL)" <> $SessionUUID], AliquotContainer -> Model[Container, Vessel, "2mL Tube"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]}},
 			Variables :> {options}
 		],
 		Example[{Options, DestinationWell, "Set the DestinationWell option:"},
 			options = ExperimentNMR[Object[Sample, "ExperimentNMR New Test Chemical 1 (100 uL)" <> $SessionUUID], DestinationWell -> "A1", Output -> Options];
 			Lookup[options, DestinationWell],
-			"A1",
+			{"A1"},
 			Variables :> {options}
 		],
 		Example[{Options, ImageSample, "Set the ImageSample option:"},
@@ -826,6 +871,26 @@ DefineTests[ExperimentNMR,
 		],
 
 		(* --- Messages tests --- *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentNMR[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentNMR[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentNMR[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentNMR[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
 		Example[{Messages, "InputContainsTemporalLinks", "Throw a message if given a temporal link:"},
 			ExperimentNMR[Link[Object[Sample, "ExperimentNMR New Test Chemical 1 (100 uL)" <> $SessionUUID], Now - 1 Minute]],
 			ObjectP[Object[Protocol, NMR]],
@@ -1289,7 +1354,7 @@ DefineTests[ExperimentNMR,
 					<|Object -> sample6, Status -> Discarded, Model -> Null|>,
 					<|Object -> sample11, Model -> Null|>
 				}], PacketP[]]];
-				Upload[<|Object -> sample5, Model -> Null, Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {5 Millimolar, Link[Model[Molecule, "Acetone"]]}}|>];
+				Upload[<|Object -> sample5, Model -> Null, Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {5 Millimolar, Link[Model[Molecule, "Acetone"]], Now}}|>];
 
 				testProtocol1 = ExperimentNMR[Object[Sample, "ExperimentNMR New Test Chemical 1 (100 uL)" <> $SessionUUID], Name -> "NMR Protocol 1" <> $SessionUUID, Confirm -> True, Nucleus -> "13C", SampleTemperature -> -10*Celsius];
 				completeTheTestProtocol = UploadProtocolStatus[testProtocol1, Completed, FastTrack -> True];
@@ -1606,7 +1671,7 @@ DefineTests[ValidExperimentNMRQ,
 					<|Object -> sample8, Model -> Null|>,
 					<|Object -> sample9, Model -> Null|>
 				}], PacketP[]]];
-				Upload[<|Object -> sample5, Model -> Null, Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {5 Millimolar, Link[Model[Molecule, "Acetone"]]}}|>];
+				Upload[<|Object -> sample5, Model -> Null, Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {5 Millimolar, Link[Model[Molecule, "Acetone"]], Now}}|>];
 			]
 		]
 	),
@@ -2018,7 +2083,7 @@ DefineTests[ExperimentNMROptions,
 					<|Object -> sample8, Model -> Null|>,
 					<|Object -> sample9, Model -> Null|>
 				}], PacketP[]]];
-				Upload[<|Object -> sample5, Model -> Null, Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {5 Millimolar, Link[Model[Molecule, "Acetone"]]}}|>];
+				Upload[<|Object -> sample5, Model -> Null, Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {5 Millimolar, Link[Model[Molecule, "Acetone"]], Now}}|>];
 			]
 		]
 	),

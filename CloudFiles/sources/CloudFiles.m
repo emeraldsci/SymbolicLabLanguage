@@ -66,7 +66,7 @@ UploadCloudFile[rawPath:FilePathP | File[FilePathP] | _Image, myOptions:OptionsP
 	]
 ];
 
-UploadCloudFile[rawPaths:{(FilePathP | File[FilePathP] | _Image) ..}, myOptions:OptionsPattern[]]:=Module[
+UploadCloudFile[rawPaths:{(FilePathP | File[FilePathP] | _Image) ..}, myOptions:OptionsPattern[]]:=TraceExpression["UploadCloudFile",Module[
 	{
 		upload, expandedPaths, listedNames, sanitizedPaths, missingFiles, emptyFiles, directories, paths,
 		cloudFiles, fileSizes, fileTypes, names, resolvedNames, cloudFilePackets, safeOps, listedOptions, outputSpecification,
@@ -316,7 +316,7 @@ UploadCloudFile[rawPaths:{(FilePathP | File[FilePathP] | _Image) ..}, myOptions:
 		Options -> RemoveHiddenOptions[UploadCloudFile, safeOps],
 		Preview -> Null
 	}
-];
+]];
 
 (* helper that finds if names will cause file system problems *)
 problematicFileNames[resolvedNames_, gatherTests_, optionBoolean_]:= Module[
@@ -375,7 +375,7 @@ UploadCloudFileOptions[myInputs:ListableP[(FilePathP | File[FilePathP] | _Image)
 	(* get the options as a list *)
 	listedOptions=ToList[myOptions];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions=DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* get only the options for UploadCloudFile *)
@@ -587,7 +587,7 @@ RenameCloudFileOptions[cloudFiles:ListableP[ObjectP[Object[EmeraldCloudFile]]], 
 	(* get the options as a list *)
 	listedOptions=ToList[myOptions];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions=DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* get only the options for RenameCloudFile *)
@@ -687,10 +687,19 @@ DownloadCloudFile[object:ObjectP[Object[EmeraldCloudFile]], rawPath:_String]:=Fi
 
 DownloadCloudFile[objects:{ObjectP[Object[EmeraldCloudFile]]..}, rawPaths:{_String..}]:=Module[{cloudFiles, names,
 	extensions, paths, s3Keys, s3Names, s3Extensions, calculatedExtensions, calculatedNames, calculatedFullNames,
-	completePaths, pathFoundBools, cloudFileExistsBools},
+	completePaths, pathFoundBools, cloudFileExistsBools, fileNames},
 
 	(* Download the S3 bucket and file name and type *)
 	{cloudFiles, names, extensions}=Transpose[Download[objects, {CloudFile, FileName, FileType}]];
+
+	(* If object name is longer than 150 characters, then hash it to a 16 character hash *)
+	fileNames = If[# === Null, 
+					Null, 
+    				If[StringLength[#] > 150, 
+     					StringTake[IntegerString[Hash[#], 16], UpTo[16]], 
+						#
+					]
+				] & /@ names;
 
 	(* Expand the file paths *)
 	paths=ExpandFileName[#] & /@ rawPaths;
@@ -717,7 +726,7 @@ If we don't know the name, call it Untitled_UUID.extension *)
 			!MatchQ[name, "" | Null], name,
 			!MatchQ[s3Name, "" | Null], s3Name,
 			True, StringJoin["Untitled_", StringReplace[CreateUUID[], "-" -> ""]]
-		]], {names, s3Names}];
+		]], {fileNames, s3Names}];
 
 	(* Determine what name+extension to use in the event that the user didn't provide on in the path. *)
 	calculatedFullNames=MapThread[Function[{name, extension},

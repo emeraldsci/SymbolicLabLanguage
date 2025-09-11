@@ -24,6 +24,14 @@ DefineObjectType[Model[Item, CalibrationDistanceBlock], {
 			Description -> "The material that the weight is made out of.",
 			Category -> "Physical Properties",
 			Abstract -> True
+		},
+		Shape3DFile -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The design file that describes the 3D shape of this calibration block.",
+			Category -> "Physical Properties"
 		}
 	}
 }];

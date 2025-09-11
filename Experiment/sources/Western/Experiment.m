@@ -333,9 +333,11 @@ DefineOptions[ExperimentWestern,
 			]
 		},
 		WesSharedImagingOptions,
-		FuntopiaSharedOptions,
+		NonBiologyFuntopiaSharedOptions,
+		ModelInputOptions,
 		SamplesInStorageOptions,
-		SubprotocolDescriptionOption
+		SubprotocolDescriptionOption,
+		SimulationOption
 }];
 
 
@@ -345,51 +347,102 @@ DefineOptions[ExperimentWestern,
 
 
 (* - Container to Sample Overload - *)
-ExperimentWestern[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myAntibodyContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,initialOptionsWithPreparedSamples,initialSamplePreparationCache,
-		allPreparedSamples,myAntibodySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,containerToSampleResult,containerToSampleOutput,sampleCache,antibodyCache,
-		antibodyContainerToSampleResult,antibodyContainerToSampleOutput,antibodyContainerToSampleTests,containerToSampleTests,joinedTests,updatedCache,samples,sampleOptions,antibodies,antibodyOptions},
+ExperimentWestern[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myAntibodyContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+	{
+		listedOptions, outputSpecification, output, gatherTests, singletonInputPattern, expandedContainers, expandedAntibodyContainers,
+		inputLength, stringAntibodyContainers,
+		validSamplePreparationResult, allPreparedSamples, myOptionsWithPreparedSamplesWithModifiedPreparedModelOps,
+		updatedSimulation, mySamplesWithPreparedSamples, myPreparedAntibodySamples, myAntibodySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
+		containerToSampleResult, containerToSampleOutput, containerToSampleTests, containerToSampleSimulation, antibodyContainerToSampleResult,
+		antibodyContainerToSampleOutput, antibodyContainerToSampleTests, secondContainerToSampleSimulation, joinedTests,
+		samples, sampleOptions, antibodies, antibodyOptions
+	},
 
 	(* Make sure we're working with a list of options *)
-	listedOptions=ToList[myOptions];
+	listedOptions = ToList[myOptions];
 
 	(* Determine the requested return value from the function *)
-	outputSpecification=Quiet[OptionValue[Output]];
-	output=ToList[outputSpecification];
+	outputSpecification = Quiet[OptionValue[Output]];
+	output = ToList[outputSpecification];
 
 	(* Determine if we should keep a running list of tests *)
 	gatherTests=MemberQ[output,Tests];
 
+	(* Expand the inputs to be index matching *)
+	singletonInputPattern = ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]};
+	{expandedContainers, expandedAntibodyContainers} = Switch[{myContainers, myAntibodyContainers},
+		(* if both are just a singleton value or both lists then we don't really need to do anything *)
+		{singletonInputPattern, singletonInputPattern},
+			{ToList[myContainers], ToList[myAntibodyContainers]},
+		{{singletonInputPattern..}, {singletonInputPattern..}},
+			{myContainers, myAntibodyContainers},
+		(* Expand based on the length of the list *)
+		{{singletonInputPattern..}, singletonInputPattern},
+			Module[
+				{containerInputLength},
+				containerInputLength = Length[myContainers];
+				{
+					myContainers,
+					ConstantArray[myAntibodyContainers, containerInputLength]
+				}
+			],
+		{singletonInputPattern, {singletonInputPattern..}},
+			Module[
+				{antibodyContainerInputLength},
+				antibodyContainerInputLength = Length[myAntibodyContainers];
+				{
+					ConstantArray[myContainers, antibodyContainerInputLength],
+					myAntibodyContainers
+				}
+			]
+	];
+	inputLength = Length[expandedContainers];
+
+	(* Antibodies should only be simulated if they are specified explicitly in PreparatoryUnitOperations (i.e. if they
+	are strings, not if they are models or objects) *)
+	stringAntibodyContainers = Cases[expandedAntibodyContainers, _String];
+
 	(* First, simulate our sample preparation. *)
-	validSamplePreparationResult=Check[
-		(* Simulate sample preparation - not wrapping myAntibodies with ToList, because we want the secondary input to remain unlisted if given as a single so that it can be expanded by expandIndexMatchedInputs later. *)
-		{allPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+	validSamplePreparationResult = Check[
+		(* Simulate sample preparation *)
+		(* We only simulate model sample inputs, not model antibody inputs because model antibodies are already handled in the resource packets *)
+		{allPreparedSamples, myOptionsWithPreparedSamplesWithModifiedPreparedModelOps, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentWestern,
-			Join[ToList[myContainers],ToList[myAntibodyContainers]],
-			ToList[myOptions]
+			Join[expandedContainers, stringAntibodyContainers],
+			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
-
-	{mySamplesWithPreparedSamples, myAntibodySamplesWithPreparedSamples}=TakeDrop[allPreparedSamples, Length[ToList[myContainers]]];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
-	(* Return early. *)
-	(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Return early. *)
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
+
+	{mySamplesWithPreparedSamples, myPreparedAntibodySamples} = TakeDrop[allPreparedSamples, inputLength];
+
+	(* Replace any string labels in expandedAntibodyContainers with the simulated containers, but leave any model or
+	object samples and any object containers as they are *)
+	myAntibodySamplesWithPreparedSamples = expandedAntibodyContainers /. AssociationThread[stringAntibodyContainers, myPreparedAntibodySamples];
+
+	(* put the "proper" specified preparatory models in here now *)
+	(* need to switch back to the not-expanded version of this option again *)
+	(* Our current index matching system does not support ModelInputOptions match to both samples and antibodysamples *)
+	(* Have to Null the value but it is okay since LabelSample has been created in PreparatoryUnitOperations during simulateSamplePreparationPacketsNew so ModelInputOptions are useless now *)
+	myOptionsWithPreparedSamples = ReplaceRule[myOptionsWithPreparedSamplesWithModifiedPreparedModelOps, {PreparedModelContainer -> Null, PreparedModelAmount -> Null}];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
 	(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests,containerToSampleSimulation}=containerToSampleOptions[
 			ExperimentWestern,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests,Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -400,12 +453,12 @@ ExperimentWestern[myContainers:ListableP[ObjectP[{Object[Container],Object[Sampl
 
 	(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput,containerToSampleSimulation}=containerToSampleOptions[
 				ExperimentWestern,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output-> {Result,Simulation},
+				Simulation->updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
@@ -415,12 +468,12 @@ ExperimentWestern[myContainers:ListableP[ObjectP[{Object[Container],Object[Sampl
 	(* Convert our given antibody containers into antibodies and antibody index-matched options. *)
 	antibodyContainerToSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{antibodyContainerToSampleOutput,antibodyContainerToSampleTests}=containerToSampleOptions[
+		{antibodyContainerToSampleOutput, antibodyContainerToSampleTests, secondContainerToSampleSimulation}=containerToSampleOptions[
 			ExperimentWestern,
 			myAntibodySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests,Simulation},
+			Simulation -> containerToSampleSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -431,12 +484,12 @@ ExperimentWestern[myContainers:ListableP[ObjectP[{Object[Container],Object[Sampl
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			antibodyContainerToSampleOutput=containerToSampleOptions[
+			{antibodyContainerToSampleOutput, secondContainerToSampleSimulation}=containerToSampleOptions[
 				ExperimentWestern,
 				myAntibodySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output->{Result, Simulation},
+				Simulation -> containerToSampleSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
@@ -444,12 +497,6 @@ ExperimentWestern[myContainers:ListableP[ObjectP[{Object[Container],Object[Sampl
 	];
 
 	joinedTests=Join[containerToSampleTests,antibodyContainerToSampleTests];
-
-	(* Update our cache with our new simulated values. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
 
 	(* If we were given an empty container, return early. *)
 	If[Or[MatchQ[containerToSampleResult,$Failed],MatchQ[antibodyContainerToSampleResult,$Failed]],
@@ -461,35 +508,38 @@ ExperimentWestern[myContainers:ListableP[ObjectP[{Object[Container],Object[Sampl
 			Preview -> Null
 		},
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions,sampleCache}=containerToSampleOutput;
+		{samples,sampleOptions}=containerToSampleOutput;
 
 		(* Split up our antibodyContainerToSample result into antibodies and antibodyOptions *)
-		{antibodies,antibodyOptions,antibodyCache}=antibodyContainerToSampleOutput;
+		{antibodies,antibodyOptions}=antibodyContainerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentWestern[samples,antibodies,ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache, sampleCache, antibodyCache}]]]
+		ExperimentWestern[samples, antibodies, ReplaceRule[sampleOptions, Simulation -> secondContainerToSampleSimulation]]
 	]
 ];
 
 (* - Main Sample Overload - *)
-
 ExperimentWestern[mySamples:ListableP[ObjectP[Object[Sample]]],myAntibodies:ListableP[ObjectP[{Object[Sample],Model[Sample]}]],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,listedSamples,outputSpecification,output,gatherTests,messages,validSamplePreparationResult,mySamplesWithPreparedSamples,initialOptionsWithPreparedSamples,initialSamplePreparationCache,
-		allPreparedSamples,myAntibodySamplesWithPreparedSamplesList,myAntibodySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,mySamplesWithPreparedSamplesNamed,	myAntibodySamplesWithPreparedSamplesNamed,samplePreparationCacheNamed,
-		myOptionsWithPreparedSamplesNamed, safeOpsNamed, combinedNamedSamples,combinedSamples,safeOps,safeOpsTests,validLengths,validLengthTests,
-		templatedOptions,templateTests,inheritedOptions,expandedLysates,expandedPrimaryAntibodies,expandedSafeOps,westernOptionsAssociation,suppliedLadder,suppliedWashBuffer,suppliedConcentratedLoadingBuffer,suppliedInstrument,suppliedBlockingBuffer,
-		suppliedSecondaryAntibody,suppliedStandardPrimaryAntibody,suppliedStandardSecondaryAntibody,suppliedPrimaryAntibodyDiluent,ladderDownloadFields,washBufferDownloadFields,concentratedLoadingBufferDownloadFields,
-		uniqueSecondaryAntibodyObjects,uniqueSecondaryAntibodyModels,uniqueStandardPrimaryAbObjects,uniqueStandardPrimaryAbModels,uniqueStandardSecondaryAbObjects,uniqueStandardSecondaryAbModels,
+	{
+		listedOptions,listedSamples,outputSpecification,output,gatherTests,messages,validSamplePreparationResult,mySamplesWithPreparedSamples,
+		allPreparedSamples,myAntibodySamplesWithPreparedSamplesList,myAntibodySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
+		mySamplesWithPreparedSamplesNamed,myAntibodySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed,
+		combinedNamedSamples,combinedSamples,safeOps,safeOpsTests,validLengths,validLengthTests,templatedOptions,templateTests,
+		inheritedOptions,expandedLysates,expandedPrimaryAntibodies,expandedSafeOps,westernOptionsAssociation,suppliedLadder,
+		suppliedWashBuffer,suppliedConcentratedLoadingBuffer,suppliedInstrument,suppliedBlockingBuffer,suppliedSecondaryAntibody,
+		suppliedStandardPrimaryAntibody,suppliedStandardSecondaryAntibody,suppliedPrimaryAntibodyDiluent,ladderDownloadFields,
+		washBufferDownloadFields,concentratedLoadingBufferDownloadFields,uniqueSecondaryAntibodyObjects,uniqueSecondaryAntibodyModels,
+		uniqueStandardPrimaryAbObjects,uniqueStandardPrimaryAbModels,uniqueStandardSecondaryAbObjects,uniqueStandardSecondaryAbModels,
 		listedBlockingBuffer,uniqueBlockingBufferObjects,uniqueBlockingBufferModels,uniquePrimaryAntibodyDiluentObjects,uniquePrimaryAntibodyDiluentModels,
 		primaryAntibodyObjectInputs,primaryAntibodyModelInputs,objectSamplePacketFields,modelSamplePacketFields,objectContainerFields,modelContainerFields,
-		optionsWithObjects,userSpecifiedObjects,simulatedSampleQ,objectsExistQs,objectsExistTests,
-		modelContainerPacketFields,samplesContainerModelPacketFields,
-		liquidHandlerContainers,listedSampleContainerPackets,listedAntibodyObjectInputPackets,listedModelInstrumentPackets,listedLadderOptionPackets,listedWashBufferOptionPackets,listedConcentratedLoadingBufferOptionPackets,
+		modelContainerPacketFields,samplesContainerModelPacketFields,cache,liquidHandlerContainers,listedSampleContainerPackets,
+		listedAntibodyObjectInputPackets,listedModelInstrumentPackets,listedLadderOptionPackets,listedWashBufferOptionPackets,listedConcentratedLoadingBufferOptionPackets,
 		listedSecondaryAbObjectPackets,listedSecondaryAbModelPackets,listedStandardPrimaryAbObjectPackets,listedStandardPrimaryAbModelPackets,listedStandardSecondaryAbObjectPackets,
 		listedStandardSecondaryAbModelPackets,listedBlockingBufferObjectPackets,listedBlockingBufferModelPackets,listedPrimaryAntibodyDiluentObjectPackets,
 		listedPrimaryAntibodyDiluentModelPackets,inputsInOrder,antibodiesInOrder,listedPrimaryAntibodyCompositionPackets,liquidHandlerContainerPackets,
-		cacheBall,inputObjects,antibodyObjects,resolvedOptionsResult,
-		resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests},
+		cacheBall,inputObjects,antibodyObjects,resolvedOptionsResult,updatedSimulation,resolvedOptions,resolvedOptionsTests,
+		collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests
+	},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -505,24 +555,25 @@ ExperimentWestern[mySamples:ListableP[ObjectP[Object[Sample]]],myAntibodies:List
 
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
-		(* Simulate sample preparation - not wrapping myAntibodies with ToList, because we want the secondary input to remain unlisted if given as a single so that it can be expanded by expandIndexMatchedInputs later. *)
-		{allPreparedSamples,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed}=simulateSamplePreparationPackets[
+		(* Simulate sample preparation *)
+		(* We only simulate model sample inputs, not model antibody inputs because model antibodies are already handled in the resource packets *)
+		{allPreparedSamples,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentWestern,
-			Join[listedSamples,ToList[myAntibodies]],
+			listedSamples,
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
-
-	{mySamplesWithPreparedSamplesNamed, myAntibodySamplesWithPreparedSamplesNamed}=TakeDrop[allPreparedSamples, Length[listedSamples]];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
-	(* Return early. *)
-	(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Return early. *)
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
+
+	{mySamplesWithPreparedSamplesNamed, myAntibodySamplesWithPreparedSamplesNamed} = {allPreparedSamples, ToList[myAntibodies]};
 
 	(* Call SafeOptions to make sure all options match pattern *)
 	{safeOpsNamed,safeOpsTests}=If[gatherTests,
@@ -534,7 +585,18 @@ ExperimentWestern[mySamples:ListableP[ObjectP[Object[Sample]]],myAntibodies:List
 	combinedNamedSamples=Join[mySamplesWithPreparedSamplesNamed,myAntibodySamplesWithPreparedSamplesNamed];
 
 	(* Sanitize the samples and antibodies and options using sanitizInput funciton*)
-	{combinedSamples, {safeOps, myOptionsWithPreparedSamples, samplePreparationCache}} = sanitizeInputs[combinedNamedSamples, {safeOpsNamed, myOptionsWithPreparedSamplesNamed, samplePreparationCacheNamed}];
+	{combinedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[combinedNamedSamples, safeOpsNamed, myOptionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
+
+
+	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
+	If[MatchQ[safeOps,$Failed],
+		Return[outputSpecification/.{
+			Result -> $Failed,
+			Tests -> safeOpsTests,
+			Options -> $Failed,
+			Preview -> Null
+		}]
+	];
 
 	(* Separate them into samples and antibody samples*)
 	{mySamplesWithPreparedSamples, myAntibodySamplesWithPreparedSamplesList}=TakeList[combinedSamples,{Length[mySamplesWithPreparedSamplesNamed],Length[myAntibodySamplesWithPreparedSamplesNamed]}];
@@ -549,16 +611,6 @@ ExperimentWestern[mySamples:ListableP[ObjectP[Object[Sample]]],myAntibodies:List
 	{validLengths,validLengthTests}=If[gatherTests,
 		ValidInputLengthsQ[ExperimentWestern,{mySamplesWithPreparedSamples,myAntibodySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
 		{ValidInputLengthsQ[ExperimentWestern,{mySamplesWithPreparedSamples,myAntibodySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
-
-	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
-	If[MatchQ[safeOps,$Failed],
-		Return[outputSpecification/.{
-			Result -> $Failed,
-			Tests -> safeOpsTests,
-			Options -> $Failed,
-			Preview -> Null
-		}]
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -682,61 +734,8 @@ ExperimentWestern[mySamples:ListableP[ObjectP[Object[Sample]]],myAntibodies:List
 	(* - All liquid handler compatible containers (for resources and Aliquot) - *)
 	liquidHandlerContainers=hamiltonAliquotContainers["Memoization"];
 
-	(* - Throw an error and return failed if any of the specified Objects are not members of the database - *)
-	(* Any options whose values _could_ be an object *)
-	optionsWithObjects = {
-		SecondaryAntibody,
-		StandardPrimaryAntibody,
-		StandardSecondaryAntibody,
-		BlockingBuffer,
-		PrimaryAntibodyDiluent,
-		Ladder,
-		WashBuffer,
-		ConcentratedLoadingBuffer,
-		Denaturant,
-		LadderPeroxidaseReagent
-	};
-
-	(* Extract any objects that the user has explicitly specified *)
-	userSpecifiedObjects = DeleteDuplicates@Cases[
-		Flatten@Join[listedSamples,ToList[myAntibodies],Lookup[listedOptions,optionsWithObjects,Null]],
-		ObjectP[]
-	];
-
-	(* Check that the specified objects exist or are visible to the current user *)
-	simulatedSampleQ = Map[
-		If[MatchQ[#,ObjectP[Lookup[samplePreparationCache,Object,{}]]],
-			Lookup[fetchPacketFromCache[#,samplePreparationCache],Simulated,False],
-			False
-		]&,
-		userSpecifiedObjects
-	];
-	objectsExistQs = DatabaseMemberQ[PickList[userSpecifiedObjects,simulatedSampleQ,False]];
-
-	(* Build tests for object existence *)
-	objectsExistTests = If[gatherTests,
-		MapThread[
-			Test[StringTemplate["Specified object `1` exists in the database:"][#1],#2,True]&,
-			{PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]
-		];
-		Return[outputSpecification/.{
-			Result -> $Failed,
-			Tests -> Join[safeOpsTests,validLengthTests,templateTests,objectsExistTests],
-			Options -> $Failed,
-			Preview -> Null
-		}]
-	];
-
 	(* - Big Download to make cacheBall and get the inputs in order by ID - *)
+	cache = Lookup[expandedSafeOps,Cache,{}];
 	{
 		listedSampleContainerPackets,listedAntibodyObjectInputPackets,listedModelInstrumentPackets,listedLadderOptionPackets,listedWashBufferOptionPackets,listedConcentratedLoadingBufferOptionPackets,
 		listedSecondaryAbObjectPackets,listedSecondaryAbModelPackets,listedStandardPrimaryAbObjectPackets,listedStandardPrimaryAbModelPackets,listedStandardSecondaryAbObjectPackets,
@@ -817,7 +816,8 @@ ExperimentWestern[mySamples:ListableP[ObjectP[Object[Sample]]],myAntibodies:List
 				},
 				{modelContainerPacketFields}
 			},
-			Cache->Flatten[{Lookup[expandedSafeOps,Cache,{}],samplePreparationCache}],
+			Cache->cache,
+			Simulation -> updatedSimulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist,Download::NotLinkField}
@@ -825,7 +825,7 @@ ExperimentWestern[mySamples:ListableP[ObjectP[Object[Sample]]],myAntibodies:List
 
 	cacheBall=FlattenCachePackets[
 		{
-			samplePreparationCache,listedSampleContainerPackets,listedAntibodyObjectInputPackets,listedModelInstrumentPackets,listedLadderOptionPackets,listedWashBufferOptionPackets,
+			cache,listedSampleContainerPackets,listedAntibodyObjectInputPackets,listedModelInstrumentPackets,listedLadderOptionPackets,listedWashBufferOptionPackets,
 			listedConcentratedLoadingBufferOptionPackets,listedSecondaryAbObjectPackets,listedSecondaryAbModelPackets,listedStandardPrimaryAbObjectPackets,listedStandardPrimaryAbModelPackets,
 			listedStandardSecondaryAbObjectPackets,listedStandardSecondaryAbModelPackets,listedBlockingBufferObjectPackets,listedBlockingBufferModelPackets,listedPrimaryAntibodyDiluentObjectPackets,
 			listedPrimaryAntibodyDiluentModelPackets,listedPrimaryAntibodyCompositionPackets,liquidHandlerContainerPackets
@@ -839,7 +839,7 @@ ExperimentWestern[mySamples:ListableP[ObjectP[Object[Sample]]],myAntibodies:List
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveWesExperimentOptions[inputObjects,antibodyObjects,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveWesExperimentOptions[inputObjects,antibodyObjects,expandedSafeOps,Cache->cacheBall,Simulation -> updatedSimulation,Output->{Result,Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -849,7 +849,7 @@ ExperimentWestern[mySamples:ListableP[ObjectP[Object[Sample]]],myAntibodies:List
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveWesExperimentOptions[inputObjects,antibodyObjects,expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveWesExperimentOptions[inputObjects,antibodyObjects,expandedSafeOps,Cache->cacheBall,Simulation -> updatedSimulation],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -875,37 +875,39 @@ ExperimentWestern[mySamples:ListableP[ObjectP[Object[Sample]]],myAntibodies:List
 
 	(* Build packets with resources *)
 	{resourcePackets,resourcePacketTests} = If[gatherTests,
-		wesResourcePackets[inputObjects,antibodyObjects,templatedOptions,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{wesResourcePackets[inputObjects,antibodyObjects,templatedOptions,resolvedOptions,Cache->cacheBall],{}}
+		wesResourcePackets[inputObjects,antibodyObjects,templatedOptions,resolvedOptions,Cache->cacheBall,Simulation -> updatedSimulation,Output->{Result,Tests}],
+		{wesResourcePackets[inputObjects,antibodyObjects,templatedOptions,resolvedOptions,Cache->cacheBall,Simulation -> updatedSimulation],{}}
 	];
 
 
-(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
-If[!MemberQ[output,Result],
-	Return[outputSpecification/.{
-		Result -> Null,
-		Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
-		Options -> RemoveHiddenOptions[ExperimentWestern,collapsedResolvedOptions],
-		Preview -> Null
-	}]
-];
+	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
+	If[!MemberQ[output,Result],
+		Return[outputSpecification/.{
+			Result -> Null,
+			Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
+			Options -> RemoveHiddenOptions[ExperimentWestern,collapsedResolvedOptions],
+			Preview -> Null
+		}]
+	];
 
-(* We have to return the result. Call UploadProtocol[...] to prepare our protocol packet (and upload it if asked). *)
-protocolObject = If[!MatchQ[resourcePackets,$Failed]&&!MatchQ[resolvedOptionsResult,$Failed],
-	UploadProtocol[
-		resourcePackets,
-		Upload->Lookup[safeOps,Upload],
-		Confirm->Lookup[safeOps,Confirm],
-		ParentProtocol->Lookup[safeOps,ParentProtocol],
-		Priority->Lookup[safeOps,Priority],
-		StartDate->Lookup[safeOps,StartDate],
-		HoldOrder->Lookup[safeOps,HoldOrder],
-		QueuePosition->Lookup[safeOps,QueuePosition],
-		ConstellationMessage->Object[Protocol,Western],
-		Cache->cacheBall
-	],
-	$Failed
-];
+	(* We have to return the result. Call UploadProtocol[...] to prepare our protocol packet (and upload it if asked). *)
+	protocolObject = If[!MatchQ[resourcePackets,$Failed]&&!MatchQ[resolvedOptionsResult,$Failed],
+		UploadProtocol[
+			resourcePackets,
+			Upload->Lookup[safeOps,Upload],
+			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
+			ParentProtocol->Lookup[safeOps,ParentProtocol],
+			Priority->Lookup[safeOps,Priority],
+			StartDate->Lookup[safeOps,StartDate],
+			HoldOrder->Lookup[safeOps,HoldOrder],
+			QueuePosition->Lookup[safeOps,QueuePosition],
+			ConstellationMessage->Object[Protocol,Western],
+			Cache->cacheBall,
+			Simulation -> updatedSimulation
+		],
+		$Failed
+	];
 
 	(* Return requested output *)
 	outputSpecification/.{

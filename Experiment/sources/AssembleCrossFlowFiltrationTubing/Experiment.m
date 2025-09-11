@@ -63,7 +63,7 @@ ExperimentAssembleCrossFlowFiltrationTubing[tubingModels:ObjectP[Model[Plumbing,
 (* Core overload *)
 ExperimentAssembleCrossFlowFiltrationTubing[tubingModels:ObjectP[Model[Plumbing,PrecutTubing]]|{ObjectP[Model[Plumbing,PrecutTubing]]..},counts:{_Integer..},myOptions:OptionsPattern[]]:=Module[
 	{
-		listedOptions,upload,cache,fastTrack,parentProtocol,confirm,notebook,author,listedTubingModels,listedCounts,fittingModels,allDownloads,tubingModelPackets,parentTubingModelPackets,fittingModelPackets,notebookPacket,authorPacket,databaseMemberQ,deprecatedQ,parentTubingDiameters,connectors,fittings,fittingResources,uniqueParentTubings,tubingResources,expandedParentTubingModelPackets,finalTubingResources,expandedPrecutTubingPackets,stickerTagResource,protocolID,checkpointEstimates,protocolPacket,newCache,uploadResult,
+		listedOptions,upload,cache,fastTrack,parentProtocol,confirm,canaryBranch,notebook,author,listedTubingModels,listedCounts,fittingModels,allDownloads,tubingModelPackets,parentTubingModelPackets,fittingModelPackets,notebookPacket,authorPacket,databaseMemberQ,deprecatedQ,parentTubingDiameters,connectors,fittings,fittingResources,uniqueParentTubings,tubingResources,expandedParentTubingModelPackets,finalTubingResources,expandedPrecutTubingPackets,stickerTagResource,protocolID,checkpointEstimates,protocolPacket,newCache,uploadResult,
 		outputSpecification, output,gatherTests,unresolvedOptions, applyTemplateOptionTests,messages,sameInputLengthsQ, sameInputLengthTests,
 		safeOptions,safeOptionTests,validLengths,validLengthTests,objectsExistTests,expandedSafeOptions,objectsFromOptions,userSpecifiedObjects,objectsExistQs,cacheBall,
 		preparedResourcesPackets, resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,resourcePackets,resourcePacketTests,
@@ -115,7 +115,7 @@ ExperimentAssembleCrossFlowFiltrationTubing[tubingModels:ObjectP[Model[Plumbing,
 		}]
 	];
 
-	(***  MANY of the following checks are not really required here, since we dont have any fancy options just yet. but in case we do in the future, we should be safe to work with them  ***)
+	(***  MANY of the following checks are not really required here, since we don't have any fancy options just yet. but in case we do in the future, we should be safe to work with them  ***)
 	(* set a local variable with the user-provided options in list form; make sure to gather tests from here *)
 	{unresolvedOptions, applyTemplateOptionTests} = If[gatherTests,
 		ApplyTemplateOptions[ExperimentAssembleCrossFlowFiltrationTubing, {listedTubingModels}, listedOptions, 3, Output -> {Result, Tests}],
@@ -167,7 +167,7 @@ ExperimentAssembleCrossFlowFiltrationTubing[tubingModels:ObjectP[Model[Plumbing,
 	];
 
 	(* Get the options *)
-	{upload,cache,fastTrack,parentProtocol,confirm}=Lookup[safeOptions,{Upload,Cache,FastTrack,ParentProtocol,Confirm}];
+	{upload,cache,fastTrack,parentProtocol,confirm,canaryBranch}=Lookup[safeOptions,{Upload,Cache,FastTrack,ParentProtocol,Confirm,CanaryBranch}];
 
 
 	(* Expand index-matching options *)
@@ -284,7 +284,7 @@ ExperimentAssembleCrossFlowFiltrationTubing[tubingModels:ObjectP[Model[Plumbing,
 	];
 
 	(* -------------------------- *)
-	(* --- RESOLVE THE OPTIONS (but we dont have options, so gonna skip this altogether for now---*)
+	(* --- RESOLVE THE OPTIONS (but we don't have options, so gonna skip this altogether for now---*)
 	(* -------------------------- *)
 
 	(* Build the resolved options *)
@@ -386,6 +386,7 @@ ExperimentAssembleCrossFlowFiltrationTubing[tubingModels:ObjectP[Model[Plumbing,
 			resourcePackets,
 			Upload->Lookup[safeOptions,Upload],
 			Confirm->Lookup[safeOptions,Confirm],
+			CanaryBranch->Lookup[safeOptions,CanaryBranch],
 			ParentProtocol->Lookup[safeOptions,ParentProtocol],
 			Priority->Lookup[safeOptions,Priority],
 			StartDate->Lookup[safeOptions,StartDate],
@@ -582,9 +583,9 @@ assembleCrossFlowFiltrationTubingResourcePackets[
 
 	(* Generate the checkpoint estimates *)
 	checkpointEstimates={
-		{"Picking Resources",10 Minute,"Materials that are necessary for the protocol are gathered.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"]]]},
-		{"Building Precut Tubings",10 Minute*Total[ToList[counts]],"Tubings are cut and affixed with fittings.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"]]]},
-		{"Storing Resources",10 Minute,"Materials are stored.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"]]]}
+		{"Picking Resources",10 Minute,"Materials that are necessary for the protocol are gathered.",Link[Resource[Operator->$BaselineOperator]]},
+		{"Building Precut Tubings",10 Minute*Total[ToList[counts]],"Tubings are cut and affixed with fittings.",Link[Resource[Operator->$BaselineOperator]]},
+		{"Storing Resources",10 Minute,"Materials are stored.",Link[Resource[Operator->$BaselineOperator]]}
 	};
 
 	(* Create the protocol packet *)

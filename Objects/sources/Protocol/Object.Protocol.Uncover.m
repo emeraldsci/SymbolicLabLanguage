@@ -17,7 +17,11 @@ DefineObjectType[Object[Protocol, Uncover], {
 				Model[Instrument, Crimper],
 				Object[Instrument, Crimper],
 				Model[Part, CapPrier],
-				Object[Part, CapPrier]
+				Object[Part, CapPrier],
+				Model[Part, Decrimper],
+				Object[Part, Decrimper],
+				Model[Part, AmpouleOpener],
+				Object[Part, AmpouleOpener]
 			],
 			Description -> "The device used to help remove the cover to the top of the container.",
 			Category -> "General"
@@ -68,6 +72,24 @@ DefineObjectType[Object[Protocol, Uncover], {
 
 			],
 			Description -> "The environment that should be used to perform the covering.",
+			Category -> "General"
+		},
+		InitialEnvironment -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Instrument],
+				Model[Container, Bench],
+				Model[Container, OperatorCart],
+
+				Object[Instrument],
+				Object[Container],
+				Object[Item],
+				Object[Part]
+
+			],
+			Description -> "The environment in which the input ContainersIn were initially prior to being uncovered.  If they were initially in a BSC and needed to be moved to a different BSC to be uncovered, they will be moved back to the initial BSC after being re-covered.",
 			Category -> "General"
 		},
 		SterileTechnique -> {

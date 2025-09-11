@@ -38,13 +38,7 @@ DefineUsage[PlotKineticRates,
       "PlotReactionMechanism",
       "PlotTrajectory"
   	},
-  	Author -> {
-  		"amir.saadat",
-      "brad",
-      "alice",
-      "qian",
-      "thomas"
-  	},
+  	Author -> {"dirk.schild", "amir.saadat", "brad", "alice", "qian", "thomas"},
   	Sync->Automatic,
   	Preview->True
   }

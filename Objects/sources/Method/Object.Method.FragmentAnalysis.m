@@ -101,6 +101,74 @@ DefineObjectType[Object[Method,FragmentAnalysis], {
 			Description -> "The desired total volume of sample and SampleDiluent (if applicable) that is contained in the plate prior to addition of the LoadingBuffer and before loading into the instrument.",
 			Category -> "Sample Preparation"
 		},
+		SampleThaw -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the sample(s) are incubated at a specified SampleThawTemperature for the length of SampleThawTime until visibly liquid.",
+			Category -> "Sample Preparation"
+		},
+		SampleThawTemperature -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Celsius],
+			Units -> Celsius,
+			Description -> "Temperature at which the sample(s) are incubated for the length of SampleThawTime until visibly liquid.",
+			Category -> "Sample Preparation"
+		},
+		SampleThawTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Minute],
+			Units -> Minute,
+			Description -> "Time at which the sample(s) are incubated at a specified SampleThawTemperature until visibly liquid.",
+			Category -> "Sample Preparation"
+		},
+		SampleMaxThawTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Minute],
+			Units -> Minute,
+			Description -> "Maximum time at which the sample(s) are incubated at a specified SampleThawTemperature until visibly liquid.",
+			Category -> "Sample Preparation"
+		},
+		SampleIncubation -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the sample(s) are equilibrated at a specified SampleIncubationTemperature for the length of SampleIncubationTime before being transferred to the SamplePlate. This incubation step is necessary for RNA samples (eg denaturation) and is not necessary for DNA samples.", (* add description for DNA vs RNA*)
+			Category -> "Sample Preparation"
+		},
+		SampleIncubationTemperature -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[Ambient,GreaterP[-20*Celsius]],
+			Description -> "Temperature (Ambient or a specified temperature above -20 Celsius) at which the sample(s) are equilibrated for the length of SampleIncubationTime before being transferred to the SamplePlate. This incubation step is necessary for RNA samples (eg denaturation) and is not necessary for DNA samples.",
+			Category -> "Sample Preparation"
+		},
+		SampleIncubationTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Minute],
+			Units -> Minute,
+			Description -> "Time at which the sample(s) are equilibrated at SampleIncubationTemperature before being transferred to the SamplePlate. This incubation step is necessary for RNA samples (eg denaturation) and is not necessary for DNA samples.",
+			Category -> "Sample Preparation"
+		},
+		SampleTransferSourceTemperature->{
+			Format->Single,
+			Description->"Temperature (Ambient, Cold (approximately 4 Celsius) or a temperature above -20 Celsius) at which the sample(s) are at during transfer to the SamplePlate.",
+			Pattern:>Alternatives[Ambient,Cold,GreaterP[-20*Celsius]],
+			Class->Expression,
+			Category->"Sample Preparation"
+		},
+		SampleTransportTemperature -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Celsius],
+			Units -> Celsius,
+			Description -> "Temperature at which the sample(s) are kept during transport after incubation and before transfer to the SamplePlate.",
+			Category -> "Sample Preparation"
+		},
 		SampleLoadingBuffer -> {
 			Format -> Single,
 			Class -> Link,
@@ -133,6 +201,81 @@ DefineObjectType[Object[Method,FragmentAnalysis], {
 			Description -> "The desired volume of Ladder that is contained in the plate prior to addition of the LadderLoadingBuffer and before loading into the instrument.",
 			Category -> "Sample Preparation"
 		},
+		LadderThaw -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the ladder(s) are incubated at a specified LadderThawTemperature for the length of LadderThawTime until visibly liquid.",
+			Category -> "Sample Preparation"
+		},
+		LadderThawTemperature -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Celsius],
+			Units -> Celsius,
+			Description -> "Temperature at which the ladder(s) are incubated for the length of LadderThawTime until visibly liquid..",
+			Category -> "Sample Preparation"
+		},
+		LadderThawTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Minute],
+			Units -> Minute,
+			Description -> "Time at which the ladder(s) are incubated at a specified LadderThawTemperature until visibly liquid.",
+			Category -> "Sample Preparation"
+		},
+		LadderMaxThawTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Minute],
+			Units -> Minute,
+			Description -> "Maximum time at which the ladder(s) are incubated at a specified LadderThawTemperature until visibly liquid.",
+			Category -> "Sample Preparation"
+		},
+		LadderIncubation -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the ladder(s) are equilibrated at a specified LadderIncubationTemperature for the length of LadderIncubationTime before being transferred to the SamplePlate. This incubation step is necessary for RNA samples (eg denaturation) and is not necessary for DNA samples.",
+			Category -> "Sample Preparation"
+		},
+		LadderIncubationTemperature -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[Ambient,GreaterP[-20*Celsius]],
+			Description -> "Temperature (Ambient or a specified temperature above -20 Celsius) at which the ladder(s) are equilibrated for the length of LadderIncubationTime before being transferred to the SamplePlate. This incubation step is necessary for RNA samples (eg denaturation) and is not necessary for DNA samples.",
+			Category -> "Sample Preparation"
+		},
+		LadderIncubationTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Minute],
+			Units -> Minute,
+			Description -> "Time at which the ladder(s) are equilibrated at LadderIncubationTemperature before being transferred to the SamplePlate. This incubation step is necessary for RNA samples (eg denaturation) and is not necessary for DNA samples.",
+			Category -> "Sample Preparation"
+		},
+		LadderLoading->{
+			Format->Single,
+			Class->Expression,
+			Pattern:>Alternatives[Robotic, Manual],
+			Description->"Indicates if the ladder(s) are loaded by a robotic liquid handler or manually into the sample plate.",
+			Category -> "Sample Preparation"
+		},
+		LadderTransferSourceTemperature->{
+			Format->Single,
+			Description->"Temperature condition (Ambient, Cold (approximately 4 Celsius) or a temperature above -20 Celsius) at which the sample(s) are at during transfer to the SamplePlate.",
+			Pattern:>Alternatives[Ambient,Cold,GreaterP[-20*Celsius]],
+			Class->Expression,
+			Category->"Sample Preparation"
+		},
+		LadderTransportTemperature -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Celsius],
+			Units -> Celsius,
+			Description -> "Temperature at which the ladder(s) are kept during transport after incubation and before transfer to the SamplePlate.",
+			Category -> "Sample Preparation"
+		},
 		LadderLoadingBuffer -> {
 			Format -> Single,
 			Class -> Link,
@@ -155,6 +298,28 @@ DefineObjectType[Object[Method,FragmentAnalysis], {
 			Pattern :> _Link,
 			Relation -> Model[Sample],
 			Description -> "The solution that is dispensed in the wells required to be filled that is not filled by a sample or a ladder. For example, for a run using NumberOfCapillaries of 96, if there are only 79 samples and 1 ladder, 16 wells are filled with the Blank.",
+			Category -> "Sample Preparation"
+		},
+		SamplePlateTransferDestinationTemperature -> {
+			Format -> Single,
+			Pattern:>Alternatives[Ambient,Cold,GreaterP[-20*Celsius]],
+			Class->Expression,
+			Description -> "Temperature condition (Ambient, Cold (approximately 4 Celsius) or a temperature above -20 Celsius) at which the SamplePlate is at during transfer of sample(s) and ladder(s) into the SamplePlate.",
+			Category -> "Sample Preparation"
+		},
+		SamplePlateTransportTemperature -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Celsius],
+			Units -> Celsius,
+			Description -> "Temperature at which the SamplePlate is kept during transport after preparation and before loading into the instrument.",
+			Category -> "Sample Preparation"
+		},
+		RNaseFreeTechnique -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if preparation of the SamplePlate uses RNaseFreeTechnique.",
 			Category -> "Sample Preparation"
 		},
 		(*===Capillary Conditioning===*)

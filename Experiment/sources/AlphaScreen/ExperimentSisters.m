@@ -16,7 +16,7 @@ DefineOptions[ExperimentAlphaScreenPreview,
 	SharedOptions :> {ExperimentAlphaScreen}
 ];
 
-ExperimentAlphaScreenPreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentAlphaScreenPreview]]:=Module[
+ExperimentAlphaScreenPreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentAlphaScreenPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -42,7 +42,7 @@ DefineOptions[ExperimentAlphaScreenOptions,
 	SharedOptions :> {ExperimentAlphaScreen}
 ];
 
-ExperimentAlphaScreenOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentAlphaScreenOptions]]:=Module[
+ExperimentAlphaScreenOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentAlphaScreenOptions]]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -71,7 +71,7 @@ DefineOptions[ValidExperimentAlphaScreenQ,
 	SharedOptions :> {ExperimentAlphaScreen}
 ];
 
-ValidExperimentAlphaScreenQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ValidExperimentAlphaScreenQ]]:=Module[
+ValidExperimentAlphaScreenQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentAlphaScreenQ]]:=Module[
 	{listedInput,listedOptions,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat,result},
 
 	listedInput=ToList[myInput];

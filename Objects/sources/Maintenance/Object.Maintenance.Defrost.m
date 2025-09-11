@@ -24,7 +24,7 @@ DefineObjectType[Object[Maintenance, Defrost], {
 				Object[Container],
 				Model[Container]
 			],
-			Description -> "Containers that were temporarily relocated from the target instument during the defrost maintenance procedure.",
+			Description -> "Containers that were temporarily relocated from the target instrument during the defrost maintenance procedure.",
 			Category -> "General",
 			Abstract -> True
 		},
@@ -107,6 +107,22 @@ DefineObjectType[Object[Maintenance, Defrost], {
 			Relation -> Object[Container],
 			Description -> "The containers that are audited as a subprotocol of Defrost.",
 			Category -> "General"
+		},
+		BeforeMaintenanceImage -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image file taken by an operator before defrosting the target.",
+			Category -> "Cleaning"
+		},
+		AfterMaintenanceImage -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image file taken by an operator after completing defrosting the target.",
+			Category -> "Cleaning"
 		}
 	}
 }];

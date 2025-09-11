@@ -12,6 +12,7 @@ Error::PlotNephelometryObjectNotFound="Specified object `1` cannot be found in t
 Warning::PlotNephelometryNoAssociatedProtocol="Specified input `1` is not associated with a Protocol object. Please verify the input object `1`, or associate it with a Protocol object.";
 Error::PlotNephelometryNoData="Specified input `1` is not associated with a Data object and/or it does not have a valid Data field. Please verify the input object `1`, or associate it with a Data object.";
 Error::PlotNephelometryNoInputConc="There is no specified concentration, nor are there specified dilutions. As a result, the plot object cannot be constructed; specify either InputConcentration or Dilutions in the Data object and re-plot.";
+Error::NephelometryProtocolDataNotPlotted = "The data objects linked to the input protocol were not able to be plotted. The data objects may be missing field values that are required for plotting. Please inspect the data objects to ensure that they contain the data to be plotted, and call PlotNephelometry or PlotObject on an individual data object to identify the missing values.";
 
 
 DefineOptions[PlotNephelometry,
@@ -230,9 +231,9 @@ PlotNephelometry[
 
 (* Protocol object overload *)
 PlotNephelometry[
-	myInputs:ListableP[ObjectP[Object[Protocol,Nephelometry]]],
-	myOptions:OptionsPattern[PlotNephelometry]]:=
-	Module[{output,objectExistsQ,dataObjects},
+	myInputs: ObjectP[Object[Protocol, Nephelometry]],
+	myOptions: OptionsPattern[PlotNephelometry]] :=
+	Module[{output,objectExistsQ, originalOps, safeOps, data, previewPlot, plots, resolvedOptions, outputPlot, outputOptions, finalResult},
 
 		(* Check if the input exists in the database *)
 		objectExistsQ=DatabaseMemberQ[myInputs];
@@ -244,30 +245,76 @@ PlotNephelometry[
 		safeOps=SafeOptions[PlotNephelometry,originalOps];
 
 		(* Requested output, either a single value or list of Alternatives[Result,Options,Preview,Tests] *)
-		output=Lookup[safeOps,Output];
+		output = ToList[Lookup[safeOps, Output]];
 
 		(* If object doesn't exist, return $Failed with an error *)
 		If[
 			!objectExistsQ,
 			Module[{},
 				Message[Error::PlotNephelometryObjectNotFound,myInputs];
-				Return[output/.{Result->$Failed,Tests->{},Options->$Failed,Preview->Null}]
+				Return[$Failed]
 			]
 		];
+
+		(* Download the data from the input protocol *)
+		data = Download[myInputs, Data];
 
 		(* check if the protocols have associated data objects *)
 		If[
-			MatchQ[myInputs,ListableP[ObjectP[Object[Protocol,Nephelometry]]]]&&!MatchQ[Download[myInputs,Data],ListableP[ObjectP[Object[Data,Nephelometry]]]],
+			MatchQ[myInputs, ObjectP[Object[Protocol,Nephelometry]]] && !MatchQ[data, ListableP[ObjectP[Object[Data, Nephelometry]]]],
 			Module[{},
-				Message[Error::PlotNephelometryNoData,myInputs];
-				Return[output/.{Result->$Failed,Tests->{},Options->$Failed,Preview->Null}]
+				Message[Error::PlotNephelometryNoData, myInputs];
+				Return[$Failed]
 			]
 		];
 
-		(* download the data objects from the protocols *)
-		dataObjects = Flatten[Download[myInputs,Data]][Object];
+		(* If Preview is requested, return a plot with all of the data objects in the protocol overlaid in one plot *)
+		previewPlot = If[MemberQ[output, Preview],
+			PlotNephelometry[data, Sequence @@ ReplaceRule[safeOps, Output -> Preview]],
+			Null
+		];
 
-		(* send data objects to PlotNephelometry *)
-		PlotNephelometry[dataObjects,myOptions]
+		(* If either Result or Options are requested, map over the data objects. Remove anything that failed from the list of plots to be displayed*)
+		{plots, resolvedOptions} = If[MemberQ[output, (Result | Options)],
+			Transpose[
+				(PlotNephelometry[#, Sequence @@ ReplaceRule[safeOps, Output -> {Result, Options}]]& /@ data) /. $Failed -> Nothing
+			],
+			{{}, {}}
+		];
+
+		(* If all of the data objects failed to plot, return an error *)
+		If[MatchQ[plots, (ListableP[{}] | ListableP[Null])] && MatchQ[previewPlot, (Null | $Failed)],
+			Message[Error::NephelometryProtocolDataNotPlotted];
+			Return[$Failed],
+			Nothing
+		];
+
+		(* If Result was requested, output the plots in slide view, unless there is only one plot then we can just show it not in slide view. *)
+		outputPlot = If[MemberQ[output, Result],
+			If[Length[plots] > 1,
+				SlideView[plots],
+				First[plots]
+			]
+		];
+
+		(* If Options were requested, just take the first set of options since they are the same for all plots. Make it a List first just in case there is only one option set. *)
+		outputOptions = If[MemberQ[output, Options],
+			First[ToList[resolvedOptions]]
+		];
+
+		(* Prepare our final result *)
+		finalResult = output /. {
+			Result -> outputPlot,
+			Options -> outputOptions,
+			Preview -> previewPlot,
+			Tests -> {}
+		};
+
+		(* Return the result *)
+		If[
+			Length[finalResult] == 1,
+			First[finalResult],
+			finalResult
+		]
 
 	];

@@ -48,7 +48,8 @@ DefineOptions[PlotChromatographyMassSpectra,
 					ExtractedIonChromatogram,
 					TotalIonCurrent,
 					BasePeakChromatogram,
-					ReactionMonitoringMassChromatogram
+					ReactionMonitoringMassChromatogram,
+					IonMonitoringMassChromatogram
 				]
 			],
 			Category -> "LCMS Data"
@@ -218,14 +219,17 @@ DefineOptions[PlotChromatographyMassSpectra,
 (* ---------------------------- *)
 Error::DataFormat="The DownsampledDataFile in linked downsampling object `1` did not resolve to a SparseArray. Please re-run AnalyzeDownsampling on input object `2`.";
 Error::DownsampledDataNotFound="Input object `1` has no linked downsampled data in field DownsamplingAnalyses. Please run AnalyzeDownsampling on `1`, or if that is not possible, set DownsampledData to None to plot unprocessed data.";
+Warning::DownsampledDataNotPartOfDataObject="Input analysis object `1` for the DownsampledData option is not linked to `2` in the DownsamplingAnalyses field. Please select DownsampledData that is linked to `2`. Because of this, instead of `1`, the most recent downsampling object is used.";
 Error::DownsampledDataNotReady="Input object `2` was created recently and data is still being downsampled by the ECL. Please check back at `1`, or run AnalyzeDownsampling on input object `2` locally. Plotting cannot continue until data has been downsampled.";
 Error::InvalidDataDimensions="The dimensions of the downsampled data array `1` are incompatible with the dimensions of its sampling points `2`. Please verify that the input data object was downsampled correctly, and re-analyze the data with AnalyzeDownsampling if it was not.";
 Error::MissingLCTrace="No Absorbance Chromatogram could be found in the input data object. Please verify that the field \"Absorbance\" in the input object is not empty and contains a list of {x,y} data points.";
 Warning::WaterfallSidePlotMissing="The requested waterfall reference plot `1` could not be resolved from the input data. The waterfall plot will be generated with no reference.";
 Error::ReactionMonitoringDataNotFound="Input object `1` has no Reaction Monitoring Mass Chromatogram data. Please verify that the input data object is correct.";
+Error::IonMonitoringDataNotFound="Input object `1` has no Ion Monitoring Mass Chromatogram data. Please verify that the input data object is correct.";
 Error::InconsistentAcquisitionModes="Input objects `1` have inconsistent data acquisition modes. Please verify input data objects are correct.";
 Error::AmbiguousData = "Input objects `1` have multiple data acquisition modes. Consequently the plot cannot be automatically generated based on input data alone. Please verify input data objects are correct and specify plot type.";
-
+Error::NoChromatographyMassSpectraDataToPlot = "The protocol object does not contain any associated chromatography mass spectrometry data.";
+Error::ChromatographyMassSpectraProtocolDataNotPlotted = "The data objects linked to the input protocol were not able to be plotted. The data objects may be missing field values that are required for plotting. Please inspect the data objects to ensure that they contain the data to be plotted, and call PlotChromatographyMassSpectra or PlotObject on an individual data object to identify the missing values.";
 
 (* ::Subsection::Closed:: *)
 (*Overloads*)
@@ -299,6 +303,77 @@ plotChromatographyMassSpectra[
 	outputSpecification/.groupedOutputRules
 ];
 
+(* Protocol Overload *)
+PlotChromatographyMassSpectra[
+	obj: Alternatives[ObjectP[Object[Protocol, LCMS]], ObjectP[Object[Protocol, SupercriticalFluidChromatography]]],
+	ops: OptionsPattern[PlotChromatographyMassSpectra]
+] := Module[{safeOps, output, data, previewPlot, plots, resolvedOptions, finalResult, outputPlot, outputOptions},
+
+	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
+	safeOps=SafeOptions[PlotChromatographyMassSpectra, ToList[ops]];
+
+	(* Requested output, either a single value or list of Alternatives[Result,Options,Preview,Tests] *)
+	output = ToList[Lookup[safeOps, Output]];
+
+	(* Download the data from the input protocol *)
+	data = Download[obj, Data];
+
+	(* Return an error if there is no data or it is not the correct data type *)
+	If[!MatchQ[data, {ObjectP[Object[Data, ChromatographyMassSpectra]]..}],
+		Message[Error::NoChromatographyMassSpectraDataToPlot];
+		Return[$Failed]
+	];
+
+	(* If Preview is requested, return a plot with all of the data objects in the protocol overlaid in one plot *)
+	previewPlot = If[MemberQ[output, Preview],
+		PlotChromatographyMassSpectra[data, Sequence @@ ReplaceRule[safeOps, Output -> Preview]],
+		Null
+	];
+
+	(* If either Result or Options are requested, map over the data objects. Remove anything that failed from the list of plots to be displayed*)
+	{plots, resolvedOptions} = If[MemberQ[output, (Result | Options)],
+		Transpose[
+			(PlotChromatographyMassSpectra[#, Sequence @@ ReplaceRule[safeOps, Output -> {Result, Options}]]& /@ data) /. $Failed -> Nothing
+		],
+		{{}, {}}
+	];
+
+	(* If all of the data objects failed to plot, return an error *)
+	If[MatchQ[plots, (ListableP[{}] | ListableP[Null])] && MatchQ[previewPlot, (Null | $Failed)],
+		Message[Error::ChromatographyMassSpectraProtocolDataNotPlotted];
+		Return[$Failed],
+		Nothing
+	];
+
+	(* If Result was requested, output the plots in slide view, unless there is only one plot then we can just show it not in slide view. *)
+	outputPlot = If[MemberQ[output, Result],
+		If[Length[plots] > 1,
+			SlideView[plots],
+			First[plots]
+		]
+	];
+
+	(* If Options were requested, just take the first set of options since they are the same for all plots. Make it a List first just in case there is only one option set. *)
+	outputOptions = If[MemberQ[output, Options],
+		First[ToList[resolvedOptions]]
+	];
+
+	(* Prepare our final result *)
+	finalResult = output /. {
+		Result -> outputPlot,
+		Options -> outputOptions,
+		Preview -> previewPlot,
+		Tests -> {}
+	};
+
+	(* Return the result *)
+	If[
+		Length[finalResult] == 1,
+		First[finalResult],
+		finalResult
+	]
+];
+
 (* ---------------------------- *)
 (* --- NEW PRIMARY OVERLOAD --- *)
 (* ---------------------------- *)
@@ -306,13 +381,10 @@ plotChromatographyMassSpectra[
 PlotChromatographyMassSpectra[
 	dataObjects:ObjectP[Object[Data,ChromatographyMassSpectra]]|{ObjectP[Object[Data,ChromatographyMassSpectra]]..},
 	myOps:OptionsPattern[PlotChromatographyMassSpectra]
-]:=Module[{originalOps, output, plotType, singletonQ, dataPackets, acquisitionMode, resolvedAcquisitionMode },
+]:=Module[{originalOps, output, plotType, singletonQ, dataPackets, acquisitionMode, resolvedAcquisitionMode},
 
 	(* identify singleton input or list of input *)
-	singletonQ=Switch[Head[dataObjects],
-		Object,True,
-		List,False
-	];
+	singletonQ=Not[ListQ[dataObjects]];
 
 	(* convert original options into a list *)
 	originalOps=ToList[myOps];
@@ -346,17 +418,30 @@ PlotChromatographyMassSpectra[
 	];
 
 	(* call the correct plot function based on plot type or data acquisition mode *)
-	If[MatchQ[plotType,ReactionMonitoringMassChromatogram]||MatchQ[resolvedAcquisitionMode,MultipleReactionMonitoring],
-
+	Which[
+		(* ReactionMonitoringMassChromatogram *)
+		MatchQ[plotType,ReactionMonitoringMassChromatogram]||MatchQ[resolvedAcquisitionMode,MultipleReactionMonitoring],
 		(* a single download to get all data packets *)
 		dataPackets=Download[dataObjects,Packet[ReactionMonitoringMassChromatogram]];
-
 		(* pass valid data packet to MRM plot function, singleton case needs to be wrapped in {} *)
 		Which[
 			singletonQ, plotReactionMonitoringMassChromatogram[{dataPackets}, myOps],
 			Not[singletonQ], plotReactionMonitoringMassChromatogram[dataPackets, myOps]
 		],
 
+		(* IonMonitoringMassChromatogram *)
+		MatchQ[plotType,IonMonitoringMassChromatogram]||MatchQ[resolvedAcquisitionMode,SelectedIonMonitoring],
+		(* a single download to get all data packets *)
+		dataPackets=Download[dataObjects,Packet[IonMonitoringMassChromatogram]];
+
+		(* pass valid data packet to MRM plot function, singleton case needs to be wrapped in {} *)
+		Which[
+			singletonQ, plotIonMonitoringMassChromatogram[{dataPackets}, myOps],
+			Not[singletonQ], plotIonMonitoringMassChromatogram[dataPackets, myOps]
+		],
+
+		(* Else *)
+		True,
 		(* not MRM data, call original Chromatography mass spectra plot ==== *)
 		plotChromatographyMassSpectra[dataObjects, myOps]
 	]
@@ -394,8 +479,8 @@ plotChromatographyMassSpectra[
 ]:=Module[
 	{
 		originalOps,suppliedCache,safeOps,output,lcTrace,lcWavelength,lcPeaks,
-		downsamplePacket,downsampledDataObj,downsampledData,
-		peakPacket,peakOps,plotType,nonPlotOptions,
+		downsamplePacket,downsampleObject, allDownSamplingAnalyses,useDefaultDownsampledDataQ, downsampledDataObj,downsampledData,
+		peakPacket,peakOps,
 		expandedDownsamplePacket,plotData,partlyResolvedOps,plotFunc,plotOptions,plot,
 		finalPlot,mostlyResolvedOps,resolvedOps,nullOps,filteredMostlyResolvedOps
 	},
@@ -442,8 +527,23 @@ plotChromatographyMassSpectra[
 	(* The requested downsampling analysis of the input object to plot. Automatic will plot the most recent *)
 	downsampleObject=Lookup[safeOps,DownsampledData];
 
+	(*Get all the DownsamplingAnalyses objects to check if the specified objects in the DownsampledData option are part of the given data object*)
+	allDownSamplingAnalyses = Download[dataObject,DownsamplingAnalyses];
+
+	(*Compare the input DownsampledData with those of the data object*)
+	(*The default downsampled data should be used if DownsampledData is Automatic|None or if the specified object in for the option is not linked to the data i.e. it belongs to a different data object.*)
+	useDefaultDownsampledDataQ = If[MatchQ[downsampleObject,Automatic|None],
+		True,
+		(*If downsampleObject does match the linked analyses, useDefaultDownsampledDataQ should be False as we don't want to go to the default*)
+		If[MatchQ[downsampleObject,ObjectP[allDownSamplingAnalyses]],
+			False,
+			Message[Warning::DownsampledDataNotPartOfDataObject,downsampleObject,dataObject];
+			True
+		]
+		];
+
 	(* Download necessary fields from the downsampling packet *)
-	{lcTrace,lcWavelength,lcPeaks,downsamplePacket}=If[MatchQ[downsampleObject,Automatic|None],
+	{lcTrace,lcWavelength,lcPeaks,downsamplePacket}=If[useDefaultDownsampledDataQ,
 		(* Most recent downsampling analysis *)
 		Quiet@Download[dataObject,
 			{
@@ -490,10 +590,10 @@ plotChromatographyMassSpectra[
 	(* Main pathway - use downsampling data. Bypass if DownsampledData option is set to None *)
 	If[!MatchQ[Lookup[safeOps, DownsampledData], None],
 		(* Get the object reference of the cloud file in which the downsampled data is stored *)
-		downsampleDataObj=Lookup[downsamplePacket,DownsampledDataFile];
+		downsampledDataObj=Lookup[downsamplePacket,DownsampledDataFile];
 
 		(* Import the downsampled data .MX file into a sparse array, memoizing for performance. *)
-		downsampledData=ImportCloudFile[downsampleDataObj];
+		downsampledData=ImportCloudFile[downsampledDataObj];
 
 		(* If the field did not resolve to a sparse array, return an early fail state *)
 		If[!MatchQ[downsampledData,_SparseArray],
@@ -695,6 +795,92 @@ plotReactionMonitoringMassChromatogram[
 
 	(* need to add PlotType back to options *)
 	resolvedOptions=Join[{PlotType->ToExpression["ReactionMonitoringMassChromatogram"]},finalPlotOptions];
+
+	(* return the requested outputs *)
+	output/.{
+		Result->finalPlots,
+		Options->RemoveHiddenOptions[EmeraldListLinePlot,resolvedOptions],
+		Preview->finalPlots,
+		Tests->{}
+	}
+];
+
+(* overload for IonMonitoringMassChromatogram *)
+DefineOptions[plotIonMonitoringMassChromatogram,
+	SharedOptions :>
+			{
+				PlotChromatographyMassSpectra
+			}
+];
+
+plotIonMonitoringMassChromatogram[
+	dataPackets:PacketP[]|{PacketP[]..},
+	myOps:OptionsPattern[plotIonMonitoringMassChromatogram]
+]:=Module[
+	{
+		data, plotOptions, intensityData, numberOfObjects, numberOfFragments, fragments, dataIsEmpty,
+		output, finalPlotOptions, listedOptions, finalPlots, legends, safeOps, resolvedOptions
+	},
+
+	(* Convert options into a list *)
+	listedOptions=ToList[myOps];
+
+	plotOptions=KeyDrop[listedOptions,{PlotType,Output}]//Normal;
+
+	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
+	safeOps=SafeOptions[EmeraldListLinePlot, plotOptions];
+
+	(* Determine the requested function return value *)
+	output=OptionValue[Output];
+
+	(* get all MRM data*)
+	data = #[[Key[IonMonitoringMassChromatogram]]] & /@ dataPackets;
+
+	(* check if data field is empty *)
+	dataIsEmpty=If[MatchQ[Flatten[data],{}],True,False];
+
+	(*	 Return early fail state if there is no MRM data  *)
+	If[dataIsEmpty,
+		Message[Error::IonMonitoringDataNotFound,dataPackets[Object]];
+		Return[output/.{
+			Result->$Failed,
+			Options->$Failed,
+			Preview->Null,
+			Tests->{}
+		}]
+	];
+
+	(* get the total number of data objects *)
+	numberOfObjects=Length[dataPackets];
+
+	(* get total number of fragments monitored for each data object *)
+	numberOfFragments = First[Dimensions[#]]&/@data;
+
+	(* get MassSelection-to-FragmentMassSelection labels for each object *)
+	(* data is of the format: *)
+	(* object1 : {{fragment1, {data1...}}( for object 1 *)
+	(* object2 : {{fragment2, {data2...}}( for object 2 *)
+	(* ...  *)
+	fragments = Map[
+		Function[{dataNumber}, Array[(data[[1]][[#]][[;;2]][[1]] -> data[[1]][[#]][[;;2]][[2]]) &,
+			numberOfFragments[[dataNumber]]]],
+		Range[numberOfObjects]
+	];
+
+	(* convert fragments into legends. this is necessary because EmeraldListLine plot only takes text string as legends *)
+	legends = Table[
+		(ToString[Floor[#[[1,1]]]]<>" g/mol")&/@fragments[[i]],
+		{i, numberOfObjects}
+	];
+
+	(* get intensity data for all MS-MS, mapping over all fragments for each objects *)
+	intensityData = data[[#]][[1, 2]] & /@ Range[numberOfObjects];
+
+	finalPlotOptions=ReplaceRule[safeOps,{Legend->legends}];
+	finalPlots=EmeraldListLinePlot[intensityData,finalPlotOptions];
+
+	(* need to add PlotType back to options *)
+	resolvedOptions=Join[{PlotType->ToExpression["IonMonitoringMassChromatogram"]},finalPlotOptions];
 
 	(* return the requested outputs *)
 	output/.{

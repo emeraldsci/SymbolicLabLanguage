@@ -75,14 +75,23 @@ DefineTests[ExperimentMicrowaveDigestion,
 		(* ============= *)
 		(* == OPTIONS == *)
 		(* ============= *)
-
+		
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentMicrowaveDigestion[
+				Model[Sample, "Ammonium hydroxide"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True,
+				Mix -> True
+			],
+			ObjectP[Object[Protocol, MicrowaveDigestion]]
+		],
 		(* -- Aliquoting Options -- *)
 
 
 		Example[{Options, AliquotSampleLabel, "Set the AliquotSampleLabel option:"},
 			options = ExperimentMicrowaveDigestion[Object[Sample, "MicrowaveDigestion Test Liquid 1"<>$SessionUUID], Aliquot -> True,AliquotSampleLabel -> "Water Aliquot", Output -> Options];
 			Lookup[options, AliquotSampleLabel],
-			"Water Aliquot",
+			{"Water Aliquot"},
 			Variables :> {options}
 		],
 
@@ -1060,7 +1069,7 @@ DefineTests[ExperimentMicrowaveDigestion,
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options=ExperimentMicrowaveDigestion[Object[Sample, "MicrowaveDigestion Test Liquid 3"<>$SessionUUID], AliquotContainer -> Model[Container, Plate, "id:kEJ9mqR3XELE"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Plate, "id:kEJ9mqR3XELE"]]},
+			{{1, ObjectP[Model[Container, Plate, "id:kEJ9mqR3XELE"]]}},
 			Variables :> {options}
 		],
 		Example[{Options, ImageSample, "Indicates if any samples that are modified in the course of the experiment should be freshly imaged after running the experiment:"},
@@ -1123,7 +1132,7 @@ DefineTests[ExperimentMicrowaveDigestion,
 			Variables :> {options}
 		],
 		Example[{Options, TargetConcentrationAnalyte, "Set the TargetConcentrationAnalyte option:"},
-			options=ExperimentMicrowaveDigestion[Object[Sample, "MicrowaveDigestion Test Liquid 3"<>$SessionUUID], TargetConcentration -> 1 * Micromolar, TargetConcentrationAnalyte -> Model[Molecule, "Sodium Chloride"], AssayVolume -> 0.5 * Milliliter, Output -> Options];
+			options=ExperimentMicrowaveDigestion[Object[Sample, "MicrowaveDigestion Test Liquid 3"<>$SessionUUID], TargetConcentration -> 1 * Micromolar, TargetConcentrationAnalyte -> Model[Molecule, "Sodium Chloride"], AssayVolume -> 1 * Milliliter, Output -> Options];
 			Lookup[options, TargetConcentrationAnalyte],
 			ObjectP[Model[Molecule, "Sodium Chloride"]],
 			Variables :> {options}
@@ -1131,7 +1140,7 @@ DefineTests[ExperimentMicrowaveDigestion,
 		Example[{Options, DestinationWell, "Indicates the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentMicrowaveDigestion[Object[Sample, "MicrowaveDigestion Test Liquid 3"<>$SessionUUID], DestinationWell -> "A1", Output -> Options];
 			Lookup[options, DestinationWell],
-			"A1",
+			{"A1"},
 			Variables :> {options}
 		],
 		Example[{Options, SamplesOutStorageCondition, "Indicates how the output samples of the experiment should be stored:"},
@@ -1143,25 +1152,6 @@ DefineTests[ExperimentMicrowaveDigestion,
 
 		(* --- Sample Prep unit tests --- *)
 		(*TODO: add more here to include dissolvign samples*)
-		Example[{Options, PreparatoryPrimitives, "Specify prepared samples to be digested under microwave conditions:"},
-			options=ExperimentMicrowaveDigestion["test sample",
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "test sample",
-						Container -> Model[Container, Vessel, "id:bq9LA0dBGGR6"]
-					],
-					Transfer[
-						Source -> Object[Sample, "MicrowaveDigestion Test Liquid 3"<>$SessionUUID],
-						Amount -> 500 * Microliter,
-						Destination -> {"test sample", "A1"}
-					]
-				},
-				Output -> Options
-			];
-			Lookup[options, SampleType],
-			Organic,
-			Variables :> {options}
-		],
 		Example[{Options, PreparatoryUnitOperations, "Specify prepared samples to be digested under microwave conditions:"},
 			options=ExperimentMicrowaveDigestion["test container",
 				PreparatoryUnitOperations -> {
@@ -1181,7 +1171,30 @@ DefineTests[ExperimentMicrowaveDigestion,
 			Organic,
 			Variables :> {options}
 		],
-
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentMicrowaveDigestion[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Vessel, "id:bq9LA0dBGGR6"],
+				PreparedModelAmount -> 20 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Vessel, "id:bq9LA0dBGGR6"]]..},
+				{EqualP[20 Milliliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
 
 		(* ============== *)
 		(* == MESSAGES == *)
@@ -1190,7 +1203,80 @@ DefineTests[ExperimentMicrowaveDigestion,
 		(* -------------------------------- *)
 		(* -- Instrument Incompatibility -- *)
 		(* -------------------------------- *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentMicrowaveDigestion[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentMicrowaveDigestion[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentMicrowaveDigestion[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentMicrowaveDigestion[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container, Vessel, "id:bq9LA0dBGGR6"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 20 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
 
+				ExperimentMicrowaveDigestion[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container, Vessel, "id:bq9LA0dBGGR6"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 20 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentMicrowaveDigestion[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		(* -- wrong instrument type -- *)
 		Example[{Messages, "MicrowaveDigestionInvalidInstrument", "If the provided instrument cannot perform digestion, an error will be thrown:"},
 			ExperimentMicrowaveDigestion[
@@ -2014,7 +2100,7 @@ DefineTests[ExperimentMicrowaveDigestion,
 				},
 				SampleAmount -> 150 Milligram,
 				OutputAliquot -> All,
-				DilutionFactor -> 1000
+				DilutionFactor -> 200
 			],
 			$Failed,
 			Messages :> {Error::MicrowaveDigestionLargeVolumeDilution, Error::InvalidOption},
@@ -2568,17 +2654,17 @@ DefineTests[ExperimentMicrowaveDigestion,
 								<|
 									Object -> liquidSample3, Model -> Null,
 									Concentration -> 1 Millimolar,
-									Replace[Composition] -> {{1 Millimolar, Link[Model[Molecule, "Sodium Chloride"]]}, {99 MassPercent, Link[Model[Molecule, "Water"]]}}
+									Replace[Composition] -> {{1 Millimolar, Link[Model[Molecule, "Sodium Chloride"]], Now}, {99 MassPercent, Link[Model[Molecule, "Water"]], Now}}
 								|>,
 								<|
 									Object -> preparedLiquidSample,
 									Model -> Null,
-									Replace[Composition] -> {{2 Molar, Link[Model[Molecule, "Nitric Acid"]]}, {1 Molar, Link[Model[Molecule, "Phosphoric Acid"]]}}
+									Replace[Composition] -> {{2 Molar, Link[Model[Molecule, "Nitric Acid"]], Now}, {1 Molar, Link[Model[Molecule, "Phosphoric Acid"]], Now}}
 								|>,
 								<|
 									Object -> hfLiquidSample,
 									Model -> Null,
-									Replace[Composition] -> {{1 Molar, Link[Model[Molecule, "Hydrofluoric acid"]]}, {1 Molar, Link[Model[Molecule, "Phosphoric Acid"]]}}
+									Replace[Composition] -> {{1 Molar, Link[Model[Molecule, "Hydrofluoric acid"]], Now}, {1 Molar, Link[Model[Molecule, "Phosphoric Acid"]], Now}}
 								|>,
 								<|Object -> solidSample1, Model -> Null|>,
 								<|Object -> solidSample2, Model -> Null|>,
@@ -2916,7 +3002,7 @@ DefineTests[ExperimentMicrowaveDigestionOptions,
 								<|Object -> liquidSample2, Model -> Null|>,
 								<|
 									Object -> liquidSample3, Model -> Null,
-									Replace[Composition] -> {{90 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]]}, {Null, Null}, {0.1 Molar, Link[Model[Molecule, "Sodium Chloride"]]}}
+									Replace[Composition] -> {{90 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]], Now}, {Null, Null, Null}, {0.1 Molar, Link[Model[Molecule, "Sodium Chloride"]], Now}}
 								|>,
 								<|Object -> solidSample1, Model -> Null|>,
 								<|Object -> solidSample2, Model -> Null|>,
@@ -3261,7 +3347,7 @@ DefineTests[ValidExperimentMicrowaveDigestionQ,
 								<|Object -> liquidSample2, Model -> Null|>,
 								<|
 									Object -> liquidSample3, Model -> Null,
-									Replace[Composition] -> {{90 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]]}, {Null, Null}, {0.1 Molar, Link[Model[Molecule, "Sodium Chloride"]]}}
+									Replace[Composition] -> {{90 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]], Now}, {Null, Null, Null}, {0.1 Molar, Link[Model[Molecule, "Sodium Chloride"]], Now}}
 								|>,
 								<|Object -> solidSample1, Model -> Null|>,
 								<|Object -> solidSample2, Model -> Null|>,

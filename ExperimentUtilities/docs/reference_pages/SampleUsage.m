@@ -41,13 +41,6 @@ DefineUsage[SampleUsage,
 			"The final amount of each sample in the user's inventory is a predicted remaining amount if the provided manipulations were performed."
 		},
 		SeeAlso -> {
-			"ExperimentSampleManipulation",
-			"Define",
-			"Transfer",
-			"Aliquot",
-			"Consolidation",
-			"Resuspend",
-			"FillToVolume"
 		},
 		Author -> {"malav.desai", "waseem.vali", "varoth.lilascharoen"}
 	}

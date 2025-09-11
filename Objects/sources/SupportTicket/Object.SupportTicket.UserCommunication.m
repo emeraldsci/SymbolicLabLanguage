@@ -100,6 +100,13 @@ DefineObjectType[Object[SupportTicket, UserCommunication], {
 			],
 			Description -> "The list of operations tickets associated with this user communication.",
 			Category -> "Organizational Information"
+		},
+		UserResponseRequired -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if information is needed before this ticket can be resolved and any associated protocols can continue.",
+			Category -> "Organizational Information"
 		}
 	}
 }];

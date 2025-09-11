@@ -11,7 +11,6 @@ Guide[
 			{ExperimentSamplePreparation,"Generates a protocol that executes the specified manual or robotic unit operations of sample preparation."},
 			{ExperimentManualSamplePreparation,"Generates a protocol that allows for the incubation, mixing, centrifugation, filtration, volume and mass transfers as well as other manual preparation of samples."},
 			{ExperimentRoboticSamplePreparation,"Generates a protocol that uses a robotically integrated liquid handler to perform incubation, mixing, centrifugation, filtration, transfer of liquids and other general preparation of samples."},
-			{ImportSampleManipulation, "Returns a list of sample preparation unit operation for loading samples into a plate from an appropriately formatted Excel file inputted as a file path or an EmeraldCloudFile."},
 			{Aliquot, "A detailed set of parameters that describes moving a single source to multiple destinations."},
 			{Cover, "A detailed set of parameters that describes covering a sample container with a lid of a specified type."},
 			{FillToVolume, "A detailed set of parameters that describe transferring a source into a destination until a desired volume is reached."},
@@ -30,8 +29,7 @@ Guide[
 			{Wait, "A unit operation that describes a pause in a protocol."},
 			{VisualInspection, "A detailed set of parameters that describes how the sample should be inspected visually during a protocol."},
 			{Uncover, "A set of instructions that describes removing a lid from a plate."},
-			{OptimizePrimitives, "Transforms a set of primitives into a a format that can be executed most efficiently by a liquid handler."},
-			{Centrifuge, "A detailed set of instructions that describes spinning the smaple in a centrifuge at a specified intensity for a specified amount of time."}
+			{Centrifuge, "A detailed set of instructions that describes spinning the sample in a centrifuge at a specified intensity for a specified amount of time."}
 		},
 		"Synthesis" -> {
 			{Coupling, "Generates an solid phase synthesis primitive."},

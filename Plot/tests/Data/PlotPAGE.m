@@ -22,6 +22,10 @@ DefineTests[PlotPAGE,
 			PlotPAGE[Link[Object[Data, PAGE, "PlotPAGE test data object"],Protocol]],
 			_?ValidGraphicsQ
 		],
+		Example[{Basic,"Plot PAGE data linked to a protocol object input:"},
+			PlotPAGE[Object[Data, PAGE, "PlotPAGE test data object"][Protocol]],
+			SlideView[{ValidGraphicsP[]..}]
+		],
 		Example[{Basic,"Plot a lane along with its corresponding standard:"},
 			PlotPAGE[Object[Data, PAGE, "PlotPAGE test data object"]],
 			_?ValidGraphicsQ

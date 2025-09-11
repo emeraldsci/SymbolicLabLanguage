@@ -13,7 +13,7 @@
 
 
 (* ::Subsection::Closed:: *)
-(*Options*)
+(*Options and constants*)
 
 
 DefineOptions[
@@ -90,7 +90,18 @@ DefineOptions[
 				OptionName->ThawInstrument,
 				Default->Automatic,
 				AllowNull->True,
-				Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Instrument,HeatBlock],Object[Instrument,HeatBlock]}]],
+				Widget->Widget[
+					Type->Object,
+					Pattern:>ObjectP[{Model[Instrument,HeatBlock],Object[Instrument,HeatBlock]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Heating",
+							"Heat Blocks"
+						}
+					}
+				],
 				Description->"The instrument that will be used to thaw this sample.",
 				ResolutionDescription->"Automatically set to the first instrument in the list of compatible instruments found by IncubateDevices with the given SamplesIn and ThawTemperature, if Thaw->True.",
 				Category->"Protocol"
@@ -128,7 +139,14 @@ DefineOptions[
 				AllowNull -> True,
 				Widget -> Widget[
 					Type->Object,
-					Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]
+					Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Mixing Devices"
+						}
+					}
 				],
 				Description -> "The instrument used to perform the Mix and/or Incubation.",
 				ResolutionDescription -> "Automatically resolves based on the options Mix, Temperature, MixType and container of the sample.",
@@ -171,6 +189,36 @@ DefineOptions[
 				Category->"Protocol"
 			},
 			{
+				OptionName -> PreSonicationTime,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Quantity, Pattern :> RangeP[0 Minute,$MaxExperimentTime], Units->{1,{Hour,{Second,Minute,Hour}}}],
+				Description -> "Duration of time for which the sonicator water bath degases prior to loading sample.",
+				ResolutionDescription -> "Automatically set to 15 Minute for sonication over 1 hour, 0 Minute for sonication less than 1 hour. For MixType other than Sonicate, set to Null.",
+				Category->"Protocol"
+			},
+			{
+				OptionName -> AlternateInstruments,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Adder[
+					Widget[
+						Type->Object,
+						Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Instruments",
+								"Mixing Devices"
+							}
+						}
+					]
+				],
+				Description -> "The alternative instruments can be used to perform the Mix and/or Incubation. Currently, this is only used when mixing with Sonicator.",
+				ResolutionDescription -> "If mix type is Sonicate and Instrument is not specified, resolve to all the other instruments can be used except the resolved Instrument. Otherwise, resolve to Null.",
+				Category->"Hidden"
+			},
+			{
 				OptionName -> DutyCycle,
 				Default -> Automatic,
 				AllowNull -> True,
@@ -191,7 +239,7 @@ DefineOptions[
 					"Gravitational Acceleration (Acoustic Shaker Only)" -> Widget[Type -> Quantity, Pattern :> RangeP[0 GravitationalAcceleration, 100 GravitationalAcceleration], Units->GravitationalAcceleration]
 				],
 				Description -> "The frequency of rotation used by the mixing instrument to mix the samples.",
-				ResolutionDescription -> "Automatically set to 300 RPM for robotic preparation. For manual preparation, MixRate is set to the average of MinRotationRate and MaxRotationRate of the instrument.",
+				ResolutionDescription -> "Automatically set to 300 RPM for robotic preparation. For manual preparation, MixRate is set to 20% of the MaxRotationRate if MixType is Stir, or otherwise is set to the average of MinRotationRate and MaxRotationRate of the instrument.",
 				Category->"Protocol"
 			},
 			{
@@ -234,7 +282,7 @@ DefineOptions[
 				OptionName -> MixVolume,
 				Default -> Automatic,
 				AllowNull -> True,
-				Widget -> Widget[Type -> Quantity, Pattern :> RangeP[1 Microliter, 50 Milliliter],Units :> {1,{Milliliter,{Microliter,Milliliter}}}],
+				Widget -> Widget[Type -> Quantity, Pattern :> RangeP[0.5 Microliter, 50 Milliliter],Units :> {1,{Milliliter,{Microliter,Milliliter}}}],
 				Description -> "The volume of the sample that is pipetted up and down to mix if MixType->Pipette.",
 				ResolutionDescription->"For robotic preparation, automatically set to 970 Microliter or sample volume informed by the field Volume of the sample, whichever is smaller. For manual preparation, automatically set to 50 Milliliter or half of the sample volume informed by the field Volume of the sample, whichever is smaller.",
 				Category -> "Protocol"
@@ -469,7 +517,14 @@ DefineOptions[
 					Pattern:>ObjectP[{
 						Model[Item, Tips],
 						Object[Item, Tips]
-					}]
+					}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Labware",
+							"Pipette Tips"
+						}
+					}
 				],
 				Description->"The pipette tips used to aspirate and dispense the requested volume..",
 				Category-> "Protocol"
@@ -539,7 +594,7 @@ DefineOptions[
 				AllowNull->True,
 				Widget -> Widget[Type->Enumeration,Pattern:>BooleanP],
 				Description->"Indicates if the incubation and/or mixing should continue after Time/MaxTime has finished while waiting to progress to the next step in the protocol.",
-				ResolutionDescription->"Automatically set to True if Temperature is non-Ambient and the samples being incubated are TransportWarmed or TransportChilled.",
+				ResolutionDescription->"Automatically set to True if Temperature is non-Ambient and the samples being incubated have non-ambient TransportTemperature.",
 				Category->"Protocol"
 			},
 			{
@@ -581,6 +636,52 @@ DefineOptions[
 				Category->"Protocol",
 				Description -> "Indicates if the incubation position is brought to Temperature before exposing the Sample to it. This option can only be set if Preparation->Robotic.",
 				ResolutionDescription -> "Automatically set to False if Preparation->Robotic."
+			},
+			(* Transform-specific options *)
+			{
+				OptionName -> Transform,
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+				AllowNull -> True,
+				Default -> Automatic,
+				Category -> "Cell Transformation",
+				Description -> "Indicates whether the incubation is intended to heat-shock cells in order to disrupt the cell membrane and allow a plasmid to be taken up and incorporated into the cell.",
+				ResolutionDescription -> "Automatically set to True if any Transform-related options are specified. Otherwise, automatically set to Null if there are no cells detected in the input samples."
+			},
+			{
+				OptionName -> TransformHeatShockTemperature,
+				Widget -> Widget[Type -> Quantity, Pattern :> RangeP[37*Celsius, 47*Celsius], Units -> Celsius],
+				AllowNull -> True,
+				Default -> Automatic,
+				Category -> "Cell Transformation",
+				Description -> "The temperature at which the cells should be heat-shocked in order to disrupt the cell membrane and allow the plasmid to be taken up and incorporated into the cell.",
+				ResolutionDescription -> "Automatically set to 42 Celsius if Transform is True."
+			},
+			{
+				OptionName -> TransformHeatShockTime,
+				Widget -> Widget[Type -> Quantity, Pattern :> RangeP[0*Second, 120*Second], Units -> Second],
+				AllowNull -> True,
+				Default -> Automatic,
+				Category -> "Cell Transformation",
+				Description -> "The length of time for which the cells should be heat-shocked in order to disrupt the cell membrane and allow the plasmid to be taken up and incorporated into the cell.",
+				ResolutionDescription -> "Automatically set to 45 Second if Transform is True."
+			},
+			{
+				OptionName -> TransformPreHeatCoolingTime,
+				Widget -> Widget[Type -> Quantity, Pattern :> RangeP[0*Minute, 120*Minute], Units -> Minute],
+				AllowNull -> True,
+				Default -> Automatic,
+				Category -> "Cell Transformation",
+				Description -> "The length of time for which the cells should be cooled prior to heat shocking in order to disrupt the cell membrane and allow the plasmid to be taken up and incorporated into the cell.",
+				ResolutionDescription -> "Automatically set to 25 Minute if Transform is True."
+			},
+			{
+				OptionName -> TransformPostHeatCoolingTime,
+				Widget -> Widget[Type -> Quantity, Pattern :> RangeP[0*Minute, 60*Minute], Units -> Minute],
+				AllowNull -> True,
+				Default -> Automatic,
+				Category -> "Cell Transformation",
+				Description -> "The length of time for which the cells should be cooled after heat shocking in order to disrupt the cell membrane and allow the plasmid to be taken up and incorporated into the cell.",
+				ResolutionDescription -> "Automatically set to 2 Minute if Transform is True."
 			}
 		],
 		{
@@ -606,7 +707,7 @@ DefineOptions[
 		},
 
 		(* Shared Options *)
-		(* Note: Here we would usually just include FuntopiaSharedOptions, but since this is a sample prep *)
+		(* Note: Here we would usually just include NonBiologyFuntopiaSharedOptions, but since this is a sample prep *)
 		(* experiment, we have to exclude the Incubate/Mix prep options. *)
 		CentrifugePrepOptionsNew,
 		IndexMatching[
@@ -617,7 +718,17 @@ DefineOptions[
 				Description -> "The desired type of container that should be used to prepare and house the centrifuge samples which should be used in lieu of the SamplesIn for the experiment.",
 				AllowNull -> True,
 				Category->"Sample Preparation",
-				Widget -> Widget[Type->Object,Pattern:>ObjectP[Model[Container]],ObjectTypes->{Model[Container]}]
+				Widget -> Widget[
+					Type->Object,
+					Pattern:>ObjectP[Model[Container]],
+					ObjectTypes->{Model[Container]},
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers"
+						}
+					}
+				]
 			}
 		],
 		FilterPrepOptionsNew,
@@ -629,17 +740,38 @@ DefineOptions[
 				Description -> "The desired type of container that should be used to prepare and house the filter samples which should be used in lieu of the SamplesIn for the experiment.",
 				AllowNull -> True,
 				Category->"Sample Preparation",
-				Widget -> Widget[Type->Object,Pattern:>ObjectP[Model[Container]],ObjectTypes->{Model[Container]}]
+				Widget -> Widget[
+					Type->Object,
+					Pattern:>ObjectP[Model[Container]],
+					ObjectTypes->{Model[Container]},
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers"
+						}
+					}
+				]
 			}
 		],
 		AliquotOptions,
 		PreparatoryUnitOperationsOption,
-		PreparatoryPrimitivesOption,
+		(* For Model[Sample] input, since we use Incubate to thaw cell samples before ExperimentThawCells is online, we have to allow pick up the whole cell vial as default. *)
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelAmount,
+			{
+				ResolutionDescription -> "Automatically set to All."
+			}
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			OptionName -> PreparedModelContainer
+		],
 		ModifyOptions[
 			AliquotOptions,
 			AliquotContainer,
 			{Description->"The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired."}
-			],
+		],
 		ModifyOptions[
 			AliquotOptions,
 			Aliquot,
@@ -651,7 +783,7 @@ DefineOptions[
 		PreparationOption,
 		ProtocolOptions,
 		SimulationOption,
-		PostProcessingOptions,
+		NonBiologyPostProcessingOptions,
 		SamplesInStorageOption,
 
 		{
@@ -677,16 +809,30 @@ DefineOptions[
 	}
 ]&/@{ExperimentIncubate,ExperimentMix};
 
+$IncubateLiquidHandlerFootprints = Alternatives[Plate,MALDIPlate];
+
+$TransformInstruments = Alternatives[Model[Instrument, HeatBlock, "id:Z1lqpMrx4XW0"]]; (* "Cole-Parmer StableTemp Digital Utility Water Baths, 10 liters for Transform" *)
+$TransformContainerMaxHeight = 18*Centimeter;
+
+(* Model[Container, Rack, "2 mL Glass Vial Orbital Shaker Rack"] adapter which has 35 slots. *)
+$GlassVialOrbitalShakerRackPositions = 35;
+
+(* Sonicator Flask Ring parameters *)
+$MaxFlaskRingAperture = 70 Millimeter;
+$MinFlaskRingAperture = 19 Millimeter;
+$FlaskRingClearance = 5 Millimeter;
+
 
 (* ::Subsection::Closed:: *)
 (*ExperimentIncubate *)
 
 
 (* Container and Prepared Samples Overload *)
-ExperimentIncubate[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
-	{listedContainers,listedOptions,outputSpecification,output,gatherTests,containerToSampleResult,containerToSampleOutput,
-		samples,sampleOptions,containerToSampleTests,validSamplePreparationResult,mySamplesWithPreparedSamples,
-		myOptionsWithPreparedSamples,samplePreparationSimulation,containerToSampleSimulation
+ExperimentIncubate[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+	{
+		outputSpecification, output, gatherTests, listedContainers, listedOptions, validSamplePreparationResult, mySamplesWithPreparedSamples,
+		myOptionsWithPreparedSamples, samplePreparationSimulation, containerToSampleResult, containerToSampleOutput, containerToSampleTests,
+		containerToSampleSimulation, samples, sampleOptions
 	},
 
 	(* Determine the requested return value from the function *)
@@ -705,10 +851,11 @@ ExperimentIncubate[myContainers:ListableP[ObjectP[{Object[Container],Object[Samp
 		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentIncubate,
 			listedContainers,
-			listedOptions
+			listedOptions,
+			DefaultPreparedModelAmount -> All
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -774,7 +921,8 @@ ExperimentIncubate[myContainers:ListableP[ObjectP[{Object[Container],Object[Samp
 
 
 ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
-	{listedSamples,listedOptionsHumidity,listedOptions,outputSpecification,output,gatherTests,safeOps,safeOpsTests,validLengths,validLengthTests,
+	{
+		listedSamples,listedOptionsHumidity,listedOptions,outputSpecification,output,gatherTests,safeOps,safeOpsTests,validLengths,validLengthTests,
 		templatedOptions,templateTests,inheritedOptions,expandedSafeOps,cacheBall,resolvedOptionsResult,
 		resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,result,resourcePackets,resourcePacketTests,
 		instruments, groupedInstruments, vortexes,shakerModels,shakerObjects, bottleRollers, rollers,stirrerModels,stirrerObjects, sonicators, heatBlocks,
@@ -783,7 +931,8 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 		myOptionsWithPreparedSamples,samplePreparationSimulation,homogenizers,simulation,performSimulationQ,
 		simulatedProtocol,disruptors,nutators,environmentalChambers,mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed,
 		safeOpsNamed, optionsResolverOnly, returnEarlyBecauseOptionsResolverOnly, returnEarlyBecauseFailuresQ,
-		resolvedPreparation,postProcessingOptions,thermocyclers, manualStirBarObjects},
+		resolvedPreparation,resolvedWorkCell, postProcessingOptions,thermocyclers, manualStirBarObjects
+	},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=OptionValue[Output];
@@ -793,6 +942,7 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 	gatherTests=MemberQ[output,Tests];
 
 	(* Remove temporal links and named objects. *)
+	(* quieting because we could throw an ObjectDoesNotExist error here, but if we do we will already do that in a more robust way later so silence it for now *)
 	{listedSamples, listedOptionsHumidity} = removeLinks[ToList[myInputs], ToList[myOptions]];
 
 	(* MM converts % into Rational number instead of Real which breaks our upload pattern *)
@@ -821,7 +971,7 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 			listedOptions
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -838,13 +988,7 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 	];
 
 	(* change Named version of objects into ID version *)
-	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentIncubate,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentIncubate,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> samplePreparationSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -855,6 +999,12 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 			Preview -> Null,
 			Simulation -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentIncubate,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentIncubate,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -924,7 +1074,8 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 	stirrerModels=Flatten[Lookup[groupedInstruments,Model[Instrument,OverheadStirrer],{}]];
 	stirrerObjects=Flatten[Lookup[groupedInstruments,Object[Instrument,OverheadStirrer],{}]];
 	sonicators=Flatten[Lookup[groupedInstruments,{Model[Instrument,Sonicator],Object[Instrument,Sonicator]},{}]];
-	heatBlocks=Flatten[Lookup[groupedInstruments,{Model[Instrument,HeatBlock],Object[Instrument,HeatBlock]},{}]];
+	(*TODO: once it's no longer a developer object, remove the subsequent hardcode*)
+	heatBlocks=DeleteDuplicates@Flatten[{Lookup[groupedInstruments,{Model[Instrument,HeatBlock],Object[Instrument,HeatBlock]},{}],List@@$TransformInstruments}];
 	homogenizers=Flatten[Lookup[groupedInstruments,{Model[Instrument,Homogenizer],Object[Instrument,Homogenizer]},{}]];
 	disruptors=Flatten[Lookup[groupedInstruments,{Model[Instrument,Disruptor],Object[Instrument,Disruptor]},{}]];
 	nutators=Flatten[Lookup[groupedInstruments,{Model[Instrument,Nutator],Object[Instrument,Nutator]},{}]];
@@ -1000,20 +1151,21 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 			{Packet[Name, WettedMaterials, Positions, MaxRotationRate, MinRotationRate, Model, MinTemperature, MaxTemperature]},
 			(*shakerModels*)
 			{Packet[Name, WettedMaterials, Positions, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, Model, CompatibleAdapters, Objects, MaxForce, MinForce,IntegratedLiquidHandlers,ProgrammableTemperatureControl,
-				ProgrammableMixControl,MaxOscillationAngle,MinOscillationAngle, GripperDiameter],Packet[CompatibleAdapters[Positions]]},
+				ProgrammableMixControl,MaxOscillationAngle,MinOscillationAngle, GripperDiameter, MaxWeight],Packet[CompatibleAdapters[Positions, CompatibleVolumetricFlasks]]},
 			(*shakerObjects*)
 			{Packet[Name, WettedMaterials, Positions, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, Model, CompatibleAdapters, Objects,MaxForce, MinForce,IntegratedLiquidHandlers,ProgrammableTemperatureControl,
-				ProgrammableMixControl,MaxOscillationAngle,MinOscillationAngle, GripperDiameter]},
+				ProgrammableMixControl,MaxOscillationAngle,MinOscillationAngle, GripperDiameter, MaxWeight]},
 			(*bottleRollers*)
-			{Packet[Name, WettedMaterials, Positions, MaxRotationRate, MinRotationRate, RollerSpacing, Model]},
+			{Packet[Name, WettedMaterials, Positions, MaxRotationRate, MinRotationRate, RollerSpacing, Model, Objects]},
 			(*rollers*)
-			{Packet[Name, WettedMaterials, Positions, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, Model]},
+			{Packet[Name, WettedMaterials, Positions, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, Model, CompatibleRacks, Objects], Packet[CompatibleRacks[Positions]]},
 			(*stirrerModels*)
-			{Packet[Name,WettedMaterials,Positions,MaxRotationRate,MinRotationRate,MinTemperature,MaxTemperature,CompatibleImpellers,Model,MaxStirBarRotationRate,MinStirBarRotationRate],Packet[CompatibleImpellers[{StirrerLength,MaxDiameter,ImpellerDiameter,Name}]]},
+			{Packet[Name,WettedMaterials,Positions,MaxRotationRate,MinRotationRate,MinTemperature,MaxTemperature,CompatibleImpellers,Model,StirBarControl,MaxStirBarRotationRate,MinStirBarRotationRate],Packet[CompatibleImpellers[{StirrerLength,MaxDiameter,ImpellerDiameter,Name, WettedMaterials}]]},
 			(*stirrerObjects*)
 			{Packet[Name,WettedMaterials,Positions,MaxRotationRate,MinRotationRate,MinTemperature,MaxTemperature,CompatibleImpellers,Model,MaxStirBarRotationRate,MinStirBarRotationRate]},
 			(*sonicators*)
-			{Packet[Name, WettedMaterials, Positions, MinTemperature, MaxTemperature, Model]},
+			{Packet[Name, WettedMaterials, Positions, MinTemperature, MaxTemperature, Model, CompatibleSonicationAdapters],
+				Packet[CompatibleSonicationAdapters[Positions, Aperture]]},
 			(*heatBlocks*)
 			{Packet[Name, MinTemperature, MaxTemperature, InternalDimensions, Model]},
 			(*homogenizers*)
@@ -1051,7 +1203,7 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 	];
 
 	(* Lookup our resolved Preparation option. *)
-	resolvedPreparation = Lookup[listedOptions, Preparation];
+	{resolvedPreparation, resolvedWorkCell} = Lookup[resolvedOptions, {Preparation, WorkCell}];
 
 	(* lookup our OptionsResolverOnly option.  This will determine if we skip the resource packets and simulation functions *)
 	(* if Output contains Result or Simulation, then we can't do this *)
@@ -1069,8 +1221,7 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 
 	(* Figure out if we need to perform our simulation. If so, we can't return early even though we want to because we *)
 	(* need to return some type of simulation to our parent function that called us. *)
-	(* NOTE: For the sample preparation functions, we can't return an Object[Protocol, ManualSamplePreparation] if we are doing PreparatoryPrimitives. *)
-	performSimulationQ=MemberQ[output, Result|Simulation] && MatchQ[Lookup[resolvedOptions, PreparatoryPrimitives], Null|{}];
+	performSimulationQ=MemberQ[output, Result|Simulation];
 
 	(* If option resolution failed and we aren't asked for the simulation or output, return early. *)
 	If[!performSimulationQ && (returnEarlyBecauseFailuresQ || returnEarlyBecauseOptionsResolverOnly),
@@ -1107,7 +1258,7 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 			Simulation->samplePreparationSimulation,
 			ParentProtocol->Lookup[safeOps,ParentProtocol]
 		],
-		{Null, Null}
+		{Null, samplePreparationSimulation}
 	];
 
 	(* If Result does not exist in the output, return everything without uploading *)
@@ -1133,13 +1284,10 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 		}]
 	];
 
-	postProcessingOptions=Map[
-		If[
-			MatchQ[Lookup[safeOps,#],Except[Automatic]],
-			#->Lookup[safeOps,#],
-			Nothing
-		]&,
-		{ImageSample, MeasureVolume, MeasureWeight}
+	postProcessingOptions = resolvePostProcessingOptions[
+		ReplaceRule[safeOps, Preparation->resolvedPreparation],
+		Living -> MemberQ[Download[mySamplesWithPreparedSamples,Living,Cache->cacheBall],True],
+		Sterile -> MemberQ[Download[mySamplesWithPreparedSamples,Sterile,Cache->cacheBall],True]
 	];
 
 	(* Upload our protocol object, if asked to do so by the user. *)
@@ -1175,7 +1323,8 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 				(* Remove any hidden options before returning. *)
 				nonHiddenOptions=RemoveHiddenOptions[ExperimentIncubate,collapsedResolvedOptions];
 
-				experimentFunction = Lookup[$WorkCellToExperimentFunction, Lookup[resolvedOptions, WorkCell]];
+				(* pick the corresponding function from the association above *)
+				experimentFunction = Lookup[$WorkCellToExperimentFunction, resolvedWorkCell];
 
 				(* Memoize the value of ExperimentIncubate so the framework doesn't spend time resolving it again. *)
 				Internal`InheritedBlock[{ExperimentIncubate, $PrimitiveFrameworkResolverOutputCache},
@@ -1203,6 +1352,7 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 								Name->Lookup[safeOps,Name],
 								Upload->Lookup[safeOps,Upload],
 								Confirm->Lookup[safeOps,Confirm],
+								CanaryBranch->Lookup[safeOps,CanaryBranch],
 								ParentProtocol->Lookup[safeOps,ParentProtocol],
 								Priority->Lookup[safeOps,Priority],
 								StartDate->Lookup[safeOps,StartDate],
@@ -1220,14 +1370,13 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 		(* Object[Protocol, ManualSamplePreparation]. *)
 		And[
 			!MatchQ[Lookup[safeOps,ParentProtocol], ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation]}]],
-			MatchQ[Lookup[resolvedOptions, PreparatoryPrimitives], Null|{}],
 			MatchQ[Lookup[resolvedOptions, PreparatoryUnitOperations], Null|{}],
 			(* NOTE: No Incubate prep for Incubate. *)
 			MatchQ[Lookup[resolvedOptions, Centrifuge], {False..}],
 			MatchQ[Lookup[resolvedOptions, Filtration], {False..}],
 			MatchQ[Lookup[resolvedOptions, Aliquot], {False..}]
 		],
-		Module[{primitive, nonHiddenOptions},
+			Module[{primitive, nonHiddenOptions, experimentFunction},
 				(* Create our transfer primitive to feed into RoboticSamplePreparation. *)
 				primitive=Incubate@@Join[
 					{
@@ -1237,7 +1386,8 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 				];
 
 				(* Remove any hidden options before returning. *)
-				nonHiddenOptions=RemoveHiddenOptions[ExperimentIncubate,collapsedResolvedOptions];
+				(* We need to pass the resolved AlternateInstruments to incubate primitive *)
+				nonHiddenOptions=RemoveHiddenOptions[ExperimentIncubate,collapsedResolvedOptions, Exclude -> AlternateInstruments];
 
 				(* Memoize the value of ExperimentIncubate so the framework doesn't spend time resolving it again. *)
 				Internal`InheritedBlock[{ExperimentIncubate, $PrimitiveFrameworkResolverOutputCache},
@@ -1257,13 +1407,17 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 						}
 					];
 
-					ExperimentManualSamplePreparation[
+					(* Resolve the experiment function (MSP/MCP) to call using the shared helper function *)
+					experimentFunction = resolveManualFrameworkFunction[myInputs, nonHiddenOptions, Cache -> cacheBall, Simulation -> simulation, Output -> Function];
+
+					experimentFunction[
 						{primitive},
 						Join[
 							{
 								Name->Lookup[safeOps,Name],
 								Upload->Lookup[safeOps,Upload],
 								Confirm->Lookup[safeOps,Confirm],
+								CanaryBranch->Lookup[safeOps,CanaryBranch],
 								ParentProtocol->Lookup[safeOps,ParentProtocol],
 								Priority->Lookup[safeOps,Priority],
 								StartDate->Lookup[safeOps,StartDate],
@@ -1283,6 +1437,7 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 				resourcePackets[[1]], (* protocolPacket *)
 				Upload->Lookup[safeOps,Upload],
 				Confirm->Lookup[safeOps,Confirm],
+				CanaryBranch->Lookup[safeOps,CanaryBranch],
 				ParentProtocol->Lookup[safeOps,ParentProtocol],
 				Priority->Lookup[safeOps,Priority],
 				StartDate->Lookup[safeOps,StartDate],
@@ -1290,7 +1445,7 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 				QueuePosition->Lookup[safeOps,QueuePosition],
 				ConstellationMessage->{Object[Protocol,Incubate]},
 				Cache->cacheBall,
-				Simulation->samplePreparationSimulation
+				Simulation->simulation
 			]
 	];
 
@@ -1325,8 +1480,8 @@ Error::MixTypeVolume="The option value(s) for MixVolume can only be set when mix
 Error::MixUntilDissolvedMaxOptions="The MaxTime and MaxNumberOfMixes must be set if MixUntilDissolved is True and must not be set if MixUntilDissolved is False. The value of these options is currently `1` for input(s) `2`. Please change the value of MixUntilDissolved, MaxTime, and MaxNumberOfMixes for these input(s).";
 Error::MixTypeOptionsMismatch="The following mix type(s), `1`, do not have their required options filled out (non-Null), `2`, for the input(s), `3`. Please fix these Null options.";
 Error::MixIncubateOptionMismatch="The sample(s), `1`, have conflicting options related to Incubation. These sample(s) have AnnealingTime->`2`, and Temperature->`3`. In order for AnnealingTime to be set, its Temperature must be non-Null. Please fix the conflicting options for these sample(s).";
-Error::MixGeneralOptionMismatch="The sample(s), `1`, have the following options set, `2`, which imply that it should be mixed by Pipette/Inversion. However, the options, `3`, are also set which are not supported by Pipette/Inversion. Please change the value of these options to be copacetic.";
-Error::MixIncompatibleInstrument="The sample(s), `1`, have `2` set to `3`, which are incompatible with the supplied instrument(s) `3`. Make sure that the supplied instruments can support `2` and that the instruments are not deprecated.";
+Error::MixGeneralOptionMismatch="The sample(s), `1`, have the following options set, `2`, which imply that it should be mixed by Pipette/Inversion. However, the options, `3`, are also set which are not supported by Pipette/Inversion. Please change the value of these options to be compatible.";
+Error::MixIncompatibleInstrument="The sample(s), `1`, have `2` set to `3`, which are incompatible with the supplied instrument(s) `4`. Make sure that the supplied instruments can support `2` and that the instruments are not deprecated.";
 Warning::MixVolumeGreaterThanAvailable="The sample(s), `1`, do not have enough volume to be mixed by pipette with the following MixVolume(s) specified, `2`. When being mixed, these samples will be over-aspirated. If you do not want this to happen, please change the value of the MixVolume options.";
 Error::MixTypeIncorrectOptions="The sample(s), `1`, have resolved type(s), `2`. Based on this resolved type(s), the following options must be specified, `3`, and the following options cannot be specified, `4`. Please fix these option mismatches.";
 Error::InvalidMultiProbeHeadMix="The following sample(s), `1`, have DeviceChannel -> MultiProbeHead, but are not in a valid 96-channel mixing configuration. In order to use the MultiProbeHead, samples must fill all wells of a 96 well plate or an evenly spaced subdivision of a 384 well plate. Please specify samples in a valid configuration or let the DeviceChannel option be calculated automatically.";
@@ -1352,8 +1507,9 @@ Error::RollIncompatibleInstruments="The sample(s), `1`, are unable to fit on the
 Error::RollNoInstrument="The sample(s), `1`, have no rolling instruments that are compatible with the footprint of the sample nor are there any containers that we can aliquot this sample into that would be compatible with a rolling instrument. Please specify a different mix type. To see the instruments that are compatible with this sample, use the function MixDevices.";
 Error::ShakeIncompatibleInstruments="The sample(s), `1`, are unable to fit on the specified instrument(s), `2`, and are unable to be transferred into a container that is compatible with this instrument. Please specify a different instrument. To see the instruments that are compatible with this sample, use the function MixDevices.";
 Error::ShakeNoInstrument="The sample(s), `1`, have no shaker instruments that are compatible with the footprint of the sample nor are there any containers that we can aliquot this sample into that would be compatible with a shaker instrument. Please specify a different mix type. To see the instruments that are compatible with this sample, use the function MixDevices.";
+Error::StirNoStirBarOrImpeller = "The sample(s), `1`, are unable to be stirred by the specified instrument, `2`, because no compatible stir bar or impeller can be found. This may be because the selected instrument has StirBarControl set to False, and the sample's volume is too low or the sample to container max volume ratio is too low. Note that aliquoting into another container was considered unless Aliquot is explicitly set to False. Please specify a different instrument or mix type. To see the compatible instruments for this sample, use the MixDevices function.";
 Error::StirIncompatibleInstruments="The sample(s), `1`, are either 1) unable to fit on the specified instrument(s), `2`, or 2) are marked as Fuming->True and this instrument isn't in a Fume Hood. Please specify a different instrument. To see the instruments that are compatible with this sample, use the function MixDevices.";
-Error::StirNoInstrument="The sample(s), `1`, have no stirring instruments that are both compatible with the footprint of the sample nor are there any containers that we can aliquot this sample into that would be compatible with a stirring instrument. Please specify a different mix type. To see the instruments that are compatible with this sample, use the function MixDevices.";
+Error::StirNoInstrument="The sample(s), `1`, have no stirring instruments that are both compatible with the footprint of the sample nor are there any containers that we can aliquot this sample into that would be compatible with a stirring instrument. For stirring, it is required that the sample volume is no less than 20 Milliliter and the sample volume is also greater than 40% of the container's max volume. Please specify a different mix type. To see the instruments that are compatible with this sample, use the function MixDevices.";
 Error::SonicateIncompatibleInstruments="The sample(s), `1`, are unable to fit on the specified instrument(s), `2`, and are unable to be transferred into a container that is compatible with this instrument. Please specify a different instrument. To see the instruments that are compatible with this sample, use the function MixDevices.";
 Error::SonicateNoInstrument="The sample(s), `1`, have no sonication instruments that are compatible with the footprint of the sample nor are there any containers that we can aliquot this sample into that would be compatible with a sonication instrument. Please specify a different mix type. To see the instruments that are compatible with this sample, use the function MixDevices.";
 Error::HomogenizeIncompatibleInstruments="The sample(s), `1`, are unable to fit on the specified instrument(s), `2`, and are unable to be transferred into a container that is compatible with this instrument. Containers must be able to fit the sonication horn and must have at least 1 CM of clearance if MaxTemperature is specified (to fit the temperature probe). Please specify a different instrument. To see the instruments that are compatible with this sample, use the function MixDevices.";
@@ -1363,6 +1519,14 @@ Error::InvalidMixRateProfile="The sample(s), `1`, have invalid MixRateProfiles. 
 Error::ConflictingProfileResults="The sample(s), `1`, have both the option(s), `2`, set to `3`, and the option(s), `4`, set to `5`. The MixRateProfile option cannot be set if the MixRate option is set and the TemperatureProfile option cannot be set if the Temperature option or Time option is set. Please do not specify the MixRate/Temperature/Time option if you want to specify a MixRateProfile/TemperatureProfile.";
 Error::StirBarTooBig="The sample(s), `1`, are in containers that are not compatible with the provided StirBar(s), `2`. StirBar must be able to (1) fit into the container (according to the container Aperture and StirBarWidth) and (2) be able to stir freely at the bottom of the container (InternalDiameter and StirBarLength). Please let the StirBar option resolve automatically or set it to Null to automatically use a stirring impeller (the default stirring behavior).";
 Error::ConflictingLightExposureIntensity="The sample(s), `1`, have a specified LightExposure, `3`, that does not match the units of LightExposureIntensity, `2`. UVLight is specified in units of Watt/(Meter^2) and VisibleLight is specified in units of Lumen/(Meter^2). Please correct this mismatch to continue.";
+Error::TransformNonTransformOptionsConflict="For sample(s) `1`, the following specified non-Null or non-False Transform-specific option(s), `2`, conflict with the following specified non-Transform-specific options, `3`. Please let either all Transform-specific options or all non-Transform-specific options resolve automatically.";
+Error::TransformOptionsConflict="For sample(s) `1`, the following Transform-specific option(s), `2`, are set to Null or False, which conflicts with the specified non-Null and non-False Transform-specific options, `3`. Please ensure that Transform-specific options are all set to resolve automatically, all set to non-Null or non-False options, or all set to Null or False.";
+Error::TransformIncompatibleContainer="The sample(s), `1`, are in a container that is too large for a Transform-type incubation. Please transfer the sample(s) to a container whose height is less than 18 cm. A recommended container for Transform-type incubations is Model[Container, Vessel, \"Falcon Round-Bottom Polypropylene 14mL Test Tube With Cap\"]";
+Error::TransformIncompatibleInstrument="For sample(s) `1`, a Transform-type incubation is in conflict with the specified instrument, `2`. Transform-type incubations may only use the instrument Model[Instrument, HeatBlock, \"Cole-Parmer StableTemp Digital Utility	Water Baths, 10 liters for Transform\".]";
+Error::SafeMixRateMismatch="The sample(s), `1`, have mix rate set to be `2`, which exceeds the maximum mix rate that can be safely achieved for this sample. The maximum safe mix rate is `3`.";
+Error::SafeMixRateNotFound="The sample(s), `1`, cannot find MaxOverheadMixRate of its container model. Please check if the field is correctly populated. If the field is not populated, please consider aliquoting the sample or select a different mix type.";
+Error::VolumetricFlaskMixMismatch="The sample(s), `1`, is in volumetric flask, which conflicts with mix type (`2`). Volumetric flask can only be mixed using Swirl, Shake or Invert.";
+Error::VolumetricFlaskMixRateMismatch="The sample(s), `1`, is in volumetric flask, which conflicts with mix rate (`2`). The max mix rate that volumetric flask can reach is 250 RPM.";
 
 resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentIncubateNewOptions]]:=Module[
 	{
@@ -1379,8 +1543,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 	rollerInstrumentPackets,stirInstrumentImpellerPackets,sampleContainerModelCalibrationPackets,samplePipettingMethodPackets,allTipModelPackets,suppliedTipObjectPackets,
 	environmentalChamberInstrumentPackets,environmentalChambers,thermocyclers,thermocyclerInstrumentPackets,allSyringeModelPackets,
 	allPipetteModelPackets, allAspiratorModelPackets, allBalanceModelPackets, allWeighingContainerModelPackets, allGraduatedCylinderModelPackets,
-	allSpatulaModelPackets, allNeedleModelPackets, allTransportConditionPackets, allFumeHoodPackets, allGloveBoxPackets,
-	allBiosafetyCabinetPackets, allBenchPackets, allFunnelPackets, allRackModelPackets, allModelConsumablePackets, suppliedStirBarPackets,
+	allSpatulaModelPackets, allNeedleModelPackets, allTransportConditionPackets, allFumeHoodPackets, allGloveBoxPackets, allEnclosurePackets,
+	allBiosafetyCabinetPackets, allBenchPackets, allFunnelPackets, allRackModelPackets, allModelConsumablePackets, allGraduatedContainerModelPackets, allHandPumpPackets,allHandPumpAdapaterPackets,suppliedStirBarPackets,
+	allHandlingConditionModelPackets, allHandlingStationPackets,
 
 	(* Invalid input variables. *)
 	discardedSamplePackets,discardedInvalidInputs,discardedTest,flattenedMixDutyCycleOptions,typeAndInstrumentMismatches,typerAndInstrumentMismatchOptions,typeAndInstrumentMismatchInputs,
@@ -1392,7 +1557,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 	typeAndIncubationInvalidOptions,typeAndIncubationTest,incubateMismatches,incubateMismatchOptions,incubateMismatchInputs,incubateInvalidOptions,
 	incubateTest,generalOptionMismatches,generalMismatchOptions,generalMismatchInputs,generalInvalidOptions,generalTest,instrumentOptionMismatches,
 	instrumentMismatchOptions,instrumentMismatchInputs,instrumentInvalidOptions,instrumentTest,volumeOptionMismatches,volumeMismatchOptions,volumeMismatchInputs,
-	volumeTest,validNameQ,nameInvalidOptions,validNameTest,
+	volumeTest,validNameQ,nameInvalidOptions,validNameTest,maxSafeMixRatesMissingInvalidInputs, maxSafeMixRatesMissingTest,
 
 	(* Precision variables. *)
 	roundedMixOptions,precisionTests,
@@ -1417,9 +1582,17 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 	thawOptionMismatches,thawMismatchOptions,thawMismatchInputs,thawInvalidOptions,thawTest,
 
-	maxTemperatureMismatches,maxTemperatureOptions,maxTemperatureInputs,maxTemperatureInvalidOptions,maxTemperatureTest,
+	maxTemperatureMismatches,maxTemperatureOptions,maxTemperatureInputs,maxTemperatureInvalidOptions,maxTemperatureTest,transformSpecificOptions,
+		nonTransformSpecificOptions,transformNonTransformConflicts,transformNonTransformInvalidOptions, transformNonTransformTest,
+		transformConflicts, transformInvalidOptions, transformTest,
 
-	(* MapThread Variables. *)
+		maxSafeMixRates, safeMixRateMismatches, safeMixRateMismatchOptions,
+		safeMixRateMismatchInputs, safeMixRateInvalidOptions, safeMixRateTest,volumetricFlaskMixOptionsMismatches,
+		volumetricFlaskMixMismatchOptions, volumetricFlaskMixMismatchInputs,
+		volumetricFlaskMixInvalidOptions, volumetricFlaskMixTest, volumetricFlaskMixRateOptionsMismatches, volumetricFlaskMixRateMismatchOptions, volumetricFlaskMixRateMismatchInputs,
+		volumetricFlaskMixRateInvalidOptions, volumetricFlaskMixRateTest,
+
+		(* MapThread Variables. *)
 	mixPositions,mixPositionOffsets,mixFlowRates,correctionCurves,tipss,tipTypes,tipMaterials,
 	preResolvedSampleLabelRules,preResolvedSampleContainerLabelRules,residualTemperatures,residualMixes,residualMixRates,preheatList,workCell,sampleLabels,sampleContainerLabels,relativeHumidities, lightExposures, lightExposureIntensities,totalLightExposures,
 	mapThreadFriendlyOptions,mixTypes,mixUntilDissolvedList,instruments,times,maxTimes,rates,numberOfMixesList,maxNumberOfMixesList,volumes,resolvedPostProcessingOptions,measures,temperatures,
@@ -1430,21 +1603,26 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 	nutateAutomaticInstrumentContainerWarnings,nutateManualInstrumentContainerWarnings,nutateNoInstrumentErrors,nutateIncompatibleInstrumentErrors,
 	vortexIncompatibleInstrumentErrors,rollAutomaticInstrumentContainerWarnings,rollManualInstrumentContainerWarnings,rollNoInstrumentErrors,rollIncompatibleInstrumentErrors,
 	shakeAutomaticInstrumentContainerWarnings,shakeManualInstrumentContainerWarnings,shakeNoInstrumentErrors,shakeIncompatibleInstrumentErrors,stirAutomaticInstrumentContainerWarnings,
-	stirManualInstrumentContainerWarnings,stirNoInstrumentErrors,stirIncompatibleInstrumentErrors,sonicateAutomaticInstrumentContainerWarnings,sonicateManualInstrumentContainerWarnings,
+	stirManualInstrumentContainerWarnings,stirNoInstrumentErrors,stirIncompatibleInstrumentErrors,noImpellerOrStirBarErrors, sonicateAutomaticInstrumentContainerWarnings,sonicateManualInstrumentContainerWarnings,
 	sonicateNoInstrumentErrors,sonicateIncompatibleInstrumentErrors,homogenizeNoInstrumentErrors,homogenizeIncompatibleInstrumentErrors,
 	sterileMismatchWarnings,sterileContaminationWarnings,
 	monotonicCorrectionCurveWarnings,incompleteCorrectionCurveWarnings,invalidZeroCorrectionErrors,monotonicCorrectionCurveTest,incompleteCorrectionCurveTest,invalidZeroCorrectionOptions,invalidZeroCorrectionTest,
 	mixBooleans,residualIncubationList,invalidInputs,invalidOptions,stirBars,mixRateProfiles,temperatureProfiles,oscillationAngles,specifiedAliquotOptions,shortcircuitAliquotQ,numberSimulatedSamples,
 	resolvedRoboticOptionsWithoutMultichannelMixing,resolvedMultichannelMix,resolvedMultichannelMixName,resolvedDeviceChannel,
+		transforms, transformHeatShockTemperatures,
+		transformHeatShockTimes, transformPreHeatCoolingTimes, transformPostHeatCoolingTimes, preSonicationTimes, samplesAlternateInstruments,transformIncompatibleInstrumentErrors,
+		transformIncompatibleContainerErrors,
 
 	(* Post-MapThread Checks. *)
 	thawNoInstrumentInvalidOptions,thawIncompatibleInstrumentInvalidOptions,thawNoInstrumentTest,thawIncompatibleInstrumentTest,typeOptionMismatches,typeMismatchOptions,typeMismatchInputs,
 	residualIncubationOptionTuples,invalidResidualIncubationOptionTuples,residualIncubationIncompatibleInvalidOptions,residualIncubationIncompatibleTests,
 	typeTest,typeMismatchInvalidOptions,multiProbeHeadInvalidSamples,multiProbeHeadInvalidOptions,multiProbeHeadTest,resolvedRates,resolvedInstruments,instrumentRates,
-	resolvedAliquotOptions,aliquotTests,targetContainers,
+	resolvedAliquotOptions,aliquotTests,targetContainers, transformIncompatibleInstrumentOptions,	transformIncompatibleInstrumentTest,
+	transformIncompatibleContainerOptions, transformIncompatibleContainerTest,
+		stirNoStirBarOrImpellerInvalidOptions, stirNoStirBarOrImpellerTest,
 
-	(* Return Variables. *)
-	email,confirm,template,samplesInStorageCondition,fastTrack,operator,parentProtocol,upload,outputOption
+			(* Return Variables. *)
+	email,confirm,canaryBranch,template,samplesInStorageCondition,fastTrack,operator,parentProtocol,upload,outputOption
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -1461,7 +1639,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 	simulation=Lookup[ToList[myResolutionOptions],Simulation];
 	experimentFunction=Lookup[ToList[myOptions],ExperimentFunction];
 
-	(* Seperate out our Mix options from our Sample Prep options. *)
+	(* Separate out our Mix options from our Sample Prep options. *)
 	(* Note: Since we are dealing with a sample prep experiment, we have to manually *)
 	(* exclude the MixPrepOptions. This is because we cannot prep a Mix by mixing (conflicting options). *)
 	{mySamplePrepOptions,myIncubateOptions}=splitPrepOptions[myOptions,PrepOptionSets->{CentrifugePrepOptionsNew,FilterPrepOptionsNew,AliquotOptions}];
@@ -1507,7 +1685,8 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 	stirrerModels=Flatten[Lookup[groupedInstruments,Model[Instrument,OverheadStirrer],{}]];
 	stirrerObjects=Flatten[Lookup[groupedInstruments,Object[Instrument,OverheadStirrer],{}]];
 	sonicators=Flatten[Lookup[groupedInstruments,{Model[Instrument,Sonicator],Object[Instrument,Sonicator]},{}]];
-	heatBlocks=Flatten[Lookup[groupedInstruments,{Model[Instrument,HeatBlock],Object[Instrument,HeatBlock]},{}]];
+	(*TODO: once it's no longer a developer object, remove the subsequent hardcode*)
+	heatBlocks=DeleteDuplicates@Flatten[{Lookup[groupedInstruments,{Model[Instrument,HeatBlock],Object[Instrument,HeatBlock]},{}],List@@$TransformInstruments}];
 	homogenizers=Flatten[Lookup[groupedInstruments,{Model[Instrument,Homogenizer],Object[Instrument,Homogenizer]},{}]];
 	disruptors=Flatten[Lookup[groupedInstruments,{Model[Instrument,Disruptor],Object[Instrument,Disruptor]},{}]];
 	nutators=Flatten[Lookup[groupedInstruments,{Model[Instrument,Nutator],Object[Instrument,Nutator]},{}]];
@@ -1531,23 +1710,29 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 	(* Get the transfer model packets to get the tip models and pipette models. *)
 	{
-		allSyringeModelPackets,
-		allPipetteModelPackets,
-		allAspiratorModelPackets,
-		allBalanceModelPackets,
-		allWeighingContainerModelPackets,
-		allGraduatedCylinderModelPackets,
-		allSpatulaModelPackets,
-		allNeedleModelPackets,
-		allTipModelPackets,
-		allTransportConditionPackets,
-		allFumeHoodPackets,
-		allGloveBoxPackets,
-		allBiosafetyCabinetPackets,
-		allBenchPackets,
-		allFunnelPackets,
-		allRackModelPackets,
-		allModelConsumablePackets
+		(*1*)allSyringeModelPackets,
+		(*2*)allPipetteModelPackets,
+		(*3*)allAspiratorModelPackets,
+		(*4*)allBalanceModelPackets,
+		(*5*)allWeighingContainerModelPackets,
+		(*6*)allGraduatedCylinderModelPackets,
+		(*7*)allSpatulaModelPackets,
+		(*8*)allNeedleModelPackets,
+		(*9*)allTipModelPackets,
+		(*10*)allTransportConditionPackets,
+		(*11*)allFumeHoodPackets,
+		(*12*)allGloveBoxPackets,
+		(*13*)allBiosafetyCabinetPackets,
+		(*14*)allEnclosurePackets,
+		(*15*)allBenchPackets,
+		(*16*)allFunnelPackets,
+		(*17*)allRackModelPackets,
+		(*18*)allModelConsumablePackets,
+		(*19*)allGraduatedContainerModelPackets,
+		(*20*)allHandPumpPackets,
+		(*21*)allHandPumpAdapaterPackets,
+		(*22*)allHandlingConditionModelPackets,
+		(*23*)allHandlingStationPackets
 	}=transferModelPackets[ToList[myOptions]];
 
 	(* Extract the packets that we need from our downloaded cache. *)
@@ -1605,30 +1790,30 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 			]
 		},
 		{
-			{Packet[Name, LiquidHandlerIncompatible, MassConcentration, Concentration, Count, Volume, Mass, Status, Model, Position, Container, Sterile, StorageCondition, ThawTime, ThawTemperature, MaxThawTime, TransportWarmed, TransportChilled, ThawMixType, ThawMixRate, ThawMixTime, ThawNumberOfMixes]},
+			{Packet[Name, LiquidHandlerIncompatible, MassConcentration, Concentration, Count, Volume, Mass, Status, Model, Position, Container, Sterile, StorageCondition, ThawTime, ThawTemperature, MaxThawTime, TransportTemperature, ThawMixType, ThawMixRate, ThawMixTime, ThawNumberOfMixes]},
 			{Packet[Container[{Name, Status, Model, Contents, Sterile, TareWeight}]]},
-			{Packet[Container[Model][{Name,Deprecated,Sterile,AspectRatio,NumberOfWells,Footprint,Aperture,InternalDepth,SelfStanding,OpenContainer,MinVolume,MaxVolume,Dimensions,InternalDimensions,InternalDiameter,MaxTemperature,Positions}]]},
+			{Packet[Container[Model][{Name,Deprecated,Sterile,AspectRatio,NumberOfWells,Footprint,Aperture,InternalDepth,SelfStanding,OpenContainer,MinVolume,MaxVolume,Dimensions,InternalDimensions,InternalDiameter,MaxTemperature,Positions,MaxOverheadMixRate}]]},
 			{Packet[Container[Model][VolumeCalibrations][{CalibrationFunction, EmptyDistanceDistribution}]]},
 			{Packet[PipettingMethod[CorrectionCurve]]},
 			(*vortexes*)
 			{Packet[Name, WettedMaterials, Positions, MaxRotationRate, MinRotationRate, Model, MinTemperature, MaxTemperature]},
 			(*shakers*)
 			{Packet[Name, WettedMaterials, Positions, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, Model, CompatibleAdapters, Objects,MaxForce, MinForce,IntegratedLiquidHandlers,ProgrammableTemperatureControl,
-				ProgrammableMixControl,MaxOscillationAngle,MinOscillationAngle, GripperDiameter]},
+				ProgrammableMixControl,MaxOscillationAngle,MinOscillationAngle, GripperDiameter, MaxWeight]},
 			(*bottleRollers*)
-			{Packet[Name, WettedMaterials, Positions, MaxRotationRate, MinRotationRate, RollerSpacing, Model]},
-			{Packet[Name, WettedMaterials, Positions, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, Model]},
+			{Packet[Name, WettedMaterials, Positions, MaxRotationRate, MinRotationRate, RollerSpacing, Model, Objects]},
+			{Packet[Name, WettedMaterials, Positions, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, Model, CompatibleRacks, Objects]},
 			(*Join[stirrerModels,stirrerObjects]*)
-			{Packet[Name,WettedMaterials,Positions,MaxRotationRate,MinRotationRate,MinTemperature,MaxTemperature,CompatibleImpellers,Model,MaxStirBarRotationRate,MinStirBarRotationRate]},
-			{Packet[CompatibleImpellers[{StirrerLength,MaxDiameter,ImpellerDiameter,Name}]]},
-			{Packet[Name, WettedMaterials, Positions, MinTemperature, MaxTemperature, Model]},
+			{Packet[Name,WettedMaterials,Positions,MaxRotationRate,MinRotationRate,MinTemperature,MaxTemperature,CompatibleImpellers,Model,StirBarControl,MaxStirBarRotationRate,MinStirBarRotationRate]},
+			{Packet[CompatibleImpellers[{StirrerLength,MaxDiameter,ImpellerDiameter,Name, WettedMaterials}]]},
+			{Packet[Name, WettedMaterials, Positions, MinTemperature, MaxTemperature, Model, CompatibleSonicationAdapters]},
 			{Packet[Name, MinTemperature, MaxTemperature, InternalDimensions, Model]},
 			{Packet[Name, WettedMaterials, Positions, MinTemperature, MaxTemperature, CompatibleSonicationHorns, Model]},
 			{Packet[Name, WettedMaterials, Positions, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, Model]},
 			{Packet[Name, WettedMaterials, Positions, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, InternalDimensions, Model]},
 			{Packet[Name, WettedMaterials, Positions, EnvironmentalControls, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, InternalDimensions, Model,MinHumidity,MaxHumidity,MinUVLightIntensity,MaxUVLightIntensity, MinVisibleLightIntensity,MaxVisibleLightIntensity]},
 			{Packet[Name,MinTemperature,MaxTemperature,Model,WettedMaterials,Positions,EnvironmentalControls,InternalDimensions]},
-			{Packet[Name,Deprecated,Sterile,AspectRatio,NumberOfWells,Footprint,Aperture,InternalDepth,SelfStanding,OpenContainer,MinVolume,MaxVolume,Dimensions,InternalDimensions,InternalDiameter,MaxTemperature,Positions]},
+			{Packet[Name,Deprecated,Sterile,AspectRatio,NumberOfWells,Footprint,Aperture,InternalDepth,SelfStanding,OpenContainer,MinVolume,MaxVolume,Dimensions,InternalDimensions,InternalDiameter,MaxTemperature,Positions, MaxOverheadMixRate]},
 			{Packet[Model, Name], Packet[Model[{Object, Name, Sterile, RNaseFree, WideBore,Filtered,GelLoading,Aspirator, Material, AspirationDepth, TipConnectionType, MinVolume, MaxVolume, NumberOfTips}]]},
 			{Packet[Model,Name,Object,StirBarWidth,StirBarLength]}
 		},
@@ -1745,8 +1930,78 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 	(*-- OPTION PRECISION CHECKS --*)
 	{roundedMixOptions,precisionTests}=If[gatherTests,
-		RoundOptionPrecision[flattenedMixDutyCycleOptions,{Temperature,Time,MaxTime,MixVolume,MixRate,AnnealingTime,DutyCycle,OscillationAngle},{1 Celsius,1 Second,1 Second,1 Microliter,1 RPM,1 Second,10 Millisecond, 1 AngularDegree},AvoidZero->{False,False,False,True,True,False,True,False},Output->{Result,Tests}],
-		{RoundOptionPrecision[flattenedMixDutyCycleOptions,{Temperature,Time,MaxTime,MixVolume,MixRate,AnnealingTime,DutyCycle,OscillationAngle},{1 Celsius,1 Second,1 Second,1 Microliter,1 RPM,1 Second, 10 Millisecond, 1 AngularDegree},AvoidZero->{False,False,False,True,True,False,True,False}],Null}
+		RoundOptionPrecision[
+			flattenedMixDutyCycleOptions,
+			{
+				Temperature,
+				Time,
+				MaxTime,
+				MixVolume,
+				MixRate,
+				AnnealingTime,
+				DutyCycle,
+				OscillationAngle,
+				TransformHeatShockTemperature,
+				TransformHeatShockTime,
+				TransformPreHeatCoolingTime,
+				TransformPostHeatCoolingTime,
+				PreSonicationTime
+			},
+			{
+				1 Celsius,
+				1 Second,
+				1 Second,
+				(10^(-1)) Microliter,
+				1 RPM,
+				1 Second,
+				10 Millisecond,
+				1 AngularDegree,
+				1 Celsius,
+				1 Second,
+				1 Second,
+				1 Second,
+				1 Second
+			},
+			AvoidZero->{False,False,False,True,True,False,True,False,False,False,False,False,False},
+			Output->{Result,Tests}
+		],
+		{
+			RoundOptionPrecision[
+				flattenedMixDutyCycleOptions,
+				{
+					Temperature,
+					Time,
+					MaxTime,
+					MixVolume,
+					MixRate,
+					AnnealingTime,
+					DutyCycle,
+					OscillationAngle,
+					TransformHeatShockTemperature,
+					TransformHeatShockTime,
+					TransformPreHeatCoolingTime,
+					TransformPostHeatCoolingTime,
+					PreSonicationTime
+				},
+				{
+					1 Celsius,
+					1 Second,
+					1 Second,
+					(10^(-1))Microliter,
+					1 RPM,
+					1 Second,
+					10 Millisecond,
+					1 AngularDegree,
+					1 Celsius,
+					1 Second,
+					1 Second,
+					1 Second,
+					1 Second
+				},
+				AvoidZero->{False,False,False,True,True,False,True,False,False,False,False,False,False}
+			],
+			Null
+		}
 	];
 
 	(* Regroup our DutyCycle option, if we need to. *)
@@ -1759,7 +2014,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 	];
 
 	(*-- CONFLICTING OPTIONS CHECKS --*)
-	(* 1. MixType and Instrument are copacetic *)
+	(* 1. MixType and Instrument are compatible *)
 	typeAndInstrumentMismatches=MapThread[
 		Function[{mixType,instrument,sampleObject},
 			(* Based on our mix type, make sure that the mix instrument matches. *)
@@ -1878,7 +2133,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		{}
 	];
 
-	(* 2. MixType and MixRate are copacetic *)
+	(* 2. MixType and MixRate are compatible *)
 	typeAndRateMismatches=MapThread[
 		Function[{mixType,rate,sampleObject},
 			(* MixRate can only be set when MixType is Vortex, Shake, Roll, Stir, Nutate, Disrupt, or Automatic *)
@@ -1935,7 +2190,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		{}
 	];
 
-	(* 3. MixType and NumberOfMixes/MaxNumberOfMixes are copacetic *)
+	(* 3. MixType and NumberOfMixes/MaxNumberOfMixes are compatible *)
 	typeAndNumberOfMixesMismatches=MapThread[
 		Function[{mixType,numberOfMixes,maxNumberOfMixes,sampleObject},
 			(* NumberOfMixes/MaxNumberOfMixes can only be set when MixType is Invert, Pipette, Swirl, or Automatic *)
@@ -1992,7 +2247,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		{}
 	];
 
-	(* 4. MixType and MixVolume are copacetic *)
+	(* 4. MixType and MixVolume are compatible *)
 	typeAndVolumeMismatches=MapThread[
 		Function[{mixType,volume,sampleObject},
 			(* MixVolume can only be set when MixType is Pipette or Automatic. *)
@@ -2047,7 +2302,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		{}
 	];
 
-	(* 5. MixType and Temperature/AnnealingTime are copacetic. *)
+	(* 5. MixType and Temperature/AnnealingTime are compatible. *)
 	typeAndIncubationMismatches=MapThread[
 		Function[{mixType,instrument,temperature,annealingTime,sample},
 			(* Are any of the incubation related options set? *)
@@ -2302,7 +2557,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		{}
 	];
 
-	(* 8. The AnnealingTime option must be copacetic with the Temperature option. *)
+	(* 8. The AnnealingTime option must be compatible with the Temperature option. *)
 	incubateMismatches=MapThread[
 		Function[{annealingTime,temperature,sample},
 			(* Are any of the following incorrect situations hapening? *)
@@ -2637,7 +2892,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		Nothing
 	];
 
-	(* 14. Make sure that the Thaw options are copacetic. *)
+	(* 14. Make sure that the Thaw options are compatible. *)
 	(* If Thaw is set, the following options must be set - ThawTime, MaxThawTime, ThawTemperature. *)
 	(* If Thaw is not set, the following options must not be set - ThawTime, MaxThawTime, ThawTemperature. *)
 	thawOptionMismatches=MapThread[
@@ -2715,13 +2970,13 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["The following sample(s) have a copacetic set of Thaw options "<>ObjectToString[passingInputs,Cache->cacheBall]<>":",True,True],
+				Test["The following sample(s) have a compatible set of Thaw options "<>ObjectToString[passingInputs,Cache->cacheBall]<>":",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			nonPassingInputsTest=If[Length[thawMismatchInputs]>0,
-				Test["The following sample(s) have a copacetic set of Thaw options "<>ObjectToString[thawMismatchInputs,Cache->cacheBall]<>":",True,False],
+				Test["The following sample(s) have a compatible set of Thaw options "<>ObjectToString[thawMismatchInputs,Cache->cacheBall]<>":",True,False],
 				Nothing
 			];
 
@@ -2744,14 +2999,14 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 				(* Get the packet of our sample's container. *)
 				sampleContainerObject=Lookup[samplePacket,Container]/.{link_Link:>Download[link, Object]};
-				sampleContainerPacket=fetchPacketFromCache[sampleContainerObject,sampleContainerPackets];
+				sampleContainerPacket=fetchPacketFromCache[sampleContainerObject,sampleContainerPackets]/.{Null-><||>};
 
 				(* Get the packet of our sample's conatiner's model. *)
-				sampleContainerModelObject=Lookup[sampleContainerPacket,Model]/.{link_Link:>Download[link, Object]};
-				sampleContainerModelPacket=fetchPacketFromCache[sampleContainerModelObject,sampleContainerModelPackets];
+				sampleContainerModelObject=Lookup[sampleContainerPacket,Model,Null]/.{link_Link:>Download[link, Object]};
+				sampleContainerModelPacket=fetchPacketFromCache[sampleContainerModelObject,sampleContainerModelPackets]/.{Null-><||>};
 
 				(* Get the MaxTemperature of this container. *)
-				maxTemperature=Lookup[sampleContainerModelPacket,MaxTemperature];
+				maxTemperature=Lookup[sampleContainerModelPacket,MaxTemperature,Null];
 
 				(* Is this Temperature or ThawTemperature above maxTemperature? *)
 				If[(MatchQ[temperature,UnitsP[Celsius]]&&temperature>maxTemperature)||(MatchQ[thawTemperature,UnitsP[Celsius]]&&thawTemperature>maxTemperature),
@@ -2818,6 +3073,374 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		{}
 	];
 
+	(* 16. Transform and non-Transform options are compatible *)
+	(* First, establish what the Transform and non-Transform options are *)
+	transformSpecificOptions = {
+		Transform, TransformHeatShockTemperature, TransformHeatShockTime, TransformPreHeatCoolingTime, TransformPostHeatCoolingTime
+	};
+	nonTransformSpecificOptions = {
+		Thaw, ThawTime, MaxThawTime,	ThawTemperature, ThawInstrument, Mix, MixType, MixUntilDissolved,
+		StirBar, Time, MaxTime, DutyCycle, MixRate,	MixRateProfile, NumberOfMixes, MaxNumberOfMixes, MixVolume, Temperature,
+		TemperatureProfile, MaxTemperature, RelativeHumidity,	LightExposure, LightExposureIntensity, TotalLightExposure, OscillationAngle,
+		Amplitude, AnnealingTime, MixFlowRate, MixPosition,	MixPositionOffset, MixTiltAngle, CorrectionCurve, Tips, TipType,
+		TipMaterial, MultichannelMix, MultichannelMixName, DeviceChannel,	ResidualIncubation, ResidualTemperature, ResidualMix,
+		ResidualMixRate, Preheat, PreSonicationTime
+	};
+
+	(* Find any problematic option sets *)
+	transformNonTransformConflicts = MapThread[
+		Function[
+			{transformOptions, nonTransformOptions, sample},
+			If[
+
+				(* If there are non-Null/Automatic/False Transform options and non-Null/Automatic non-Transform options, we've got a problem *)
+				MemberQ[transformOptions, Except[Null|Automatic|False]] && MemberQ[nonTransformOptions, Except[Null|Automatic|False]],
+
+				(* We need the name of the problematic options, as well as the sample *)
+				{
+					sample,
+					PickList[transformSpecificOptions, MatchQ[#, Except[Null|Automatic|False]]&/@transformOptions],
+					PickList[nonTransformSpecificOptions, MatchQ[#, Except[Null|Automatic|False]]&/@nonTransformOptions]
+				},
+				Nothing
+			]
+		],
+		{
+			Transpose[Lookup[roundedMixOptions, transformSpecificOptions]],
+			Transpose[Lookup[roundedMixOptions, nonTransformSpecificOptions]],
+			mySimulatedSamples
+		}
+	];
+
+	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
+	transformNonTransformInvalidOptions=If[Length[transformNonTransformConflicts]>0&&!gatherTests,
+		Message[Error::TransformNonTransformOptionsConflict,
+			ObjectToString[transformNonTransformConflicts[[All,1]],Cache->cacheBall],
+			ObjectToString[transformNonTransformConflicts[[All,2]],Cache->cacheBall],
+			ObjectToString[transformNonTransformConflicts[[All,3]],Cache->cacheBall]
+		];
+
+		Flatten[{transformNonTransformConflicts[[All,2]],transformNonTransformConflicts[[All,3]]}],
+		Nothing
+	];
+
+	(* If we are gathering tests, create a test with the appropriate result. *)
+	transformNonTransformTest=If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{passingInputs,passingInputsTest,nonPassingInputsTest},
+			(* Get the inputs that pass this test. *)
+			passingInputs=Complement[mySimulatedSamples,transformNonTransformConflicts[[All,1]]];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest=If[Length[passingInputs]>0,
+				Test["The following sample(s) do not have conflicting Transform-specific and non-Transform-specific options "<>ObjectToString[passingInputs,Cache->cacheBall]<>":",True,True],
+				Nothing
+			];
+
+			(* Create a test for the non-passing inputs. *)
+			nonPassingInputsTest=If[Length[transformNonTransformConflicts[[All,1]]]>0,
+				Test["The following sample(s) do not have conflicting Transform-specific and non-Transform-specific options "<>ObjectToString[transformNonTransformConflicts[[All,1]],Cache->cacheBall]<>":",True,False],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				nonPassingInputsTest
+			}
+		],
+		(* We aren't gathering tests. No tests to create. *)
+		{}
+	];
+
+	(* 17. Transform options are internally compatible *)
+	transformConflicts = MapThread[
+		Function[
+			{
+				transformOptions, sample
+			},
+			If[
+
+				(* If all of these are Null/Automatic/False OR none is Null/False, we're fine *)
+				Or[
+					MatchQ[transformOptions,{(Null | Automatic | False)...}],
+					!MemberQ[transformOptions, Null|False]
+				],
+				Nothing,
+
+				(* Otherwise, we need to give back (1) the sample (2) Null/False options, (3) non-Null/False options *)
+				{
+					sample,
+					PickList[transformSpecificOptions, MatchQ[#, Null|False]&/@transformOptions],
+					PickList[transformSpecificOptions, MatchQ[#, Except[Null|Automatic|False]]&/@transformOptions]
+				}
+			]
+		],
+		{
+			Transpose[Lookup[roundedMixOptions, transformSpecificOptions]],
+			mySimulatedSamples
+		}
+	];
+
+	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
+	transformInvalidOptions=If[Length[transformConflicts]>0&&!gatherTests,
+		Message[Error::TransformOptionsConflict,
+			ObjectToString[transformConflicts[[All,1]],Cache->cacheBall],
+			ObjectToString[transformConflicts[[All,2]],Cache->cacheBall],
+			ObjectToString[transformConflicts[[All,3]],Cache->cacheBall]
+		];
+
+		Flatten[{transformConflicts[[All,2]],transformConflicts[[All,3]]}],
+		Nothing
+	];
+
+	(* If we are gathering tests, create a test with the appropriate result. *)
+	transformTest=If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{passingInputs,passingInputsTest,nonPassingInputsTest},
+			(* Get the inputs that pass this test. *)
+			passingInputs=Complement[mySimulatedSamples,transformConflicts[[All,1]]];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest=If[Length[passingInputs]>0,
+				Test["The following sample(s) do not have conflicting Transform-specific and non-Transform-specific options "<>ObjectToString[passingInputs,Cache->cacheBall]<>":",True,True],
+				Nothing
+			];
+
+			(* Create a test for the non-passing inputs. *)
+			nonPassingInputsTest=If[Length[transformConflicts[[All,1]]]>0,
+				Test["The following sample(s) do not have conflicting Transform-specific and non-Transform-specific options "<>ObjectToString[transformConflicts[[All,1]],Cache->cacheBall]<>":",True,False],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				nonPassingInputsTest
+			}
+		],
+		(* We aren't gathering tests. No tests to create. *)
+		{}
+	];
+	(* 18. If the specified mix type is Stir, the simulated sample container model must have MaxOverheadMixRate populated. *)
+	maxSafeMixRates = Lookup[sampleContainerModelPackets, MaxOverheadMixRate, Null];
+	maxSafeMixRatesMissingInvalidInputs = MapThread[
+		Function[{maxSafeMixRate,sample,mixType,stirBar},
+			(* If mix type is specified to be Stir, but we do not have MaxOverheadMixRate field populated for the simulated sample container, error out as the sample is invalid input *)
+			If[MatchQ[maxSafeMixRate, Null]&&MatchQ[mixType, Stir]&&MatchQ[stirBar, Null],
+				sample,
+				Nothing
+			]
+		],
+		{
+			maxSafeMixRates,
+			mySimulatedSamples,
+			Lookup[roundedMixOptions,MixType],
+			Lookup[roundedMixOptions,StirBar]
+		}
+	];
+	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
+	If[Length[maxSafeMixRatesMissingInvalidInputs]>0&&!gatherTests,
+		Message[Error::SafeMixRateNotFound,ObjectToString[maxSafeMixRatesMissingInvalidInputs,Cache->cacheBall]];
+	];
+	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
+	maxSafeMixRatesMissingTest=If[gatherTests,
+		Module[{failingTest,passingTest},
+			failingTest=If[Length[maxSafeMixRatesMissingInvalidInputs]==0,
+				Nothing,
+				Test["Our input samples "<>ObjectToString[maxSafeMixRatesMissingInvalidInputs,Cache->cacheBall]<>" do not have MaxOverheadMixRate field populated for the container:",True,False]
+			];
+
+			passingTest=If[Length[maxSafeMixRatesMissingInvalidInputs]==Length[mySimulatedSamples],
+				Nothing,
+				Test["Our input samples "<>ObjectToString[Complement[mySimulatedSamples,maxSafeMixRatesMissingInvalidInputs],Cache->cacheBall]<>" have MaxOverheadMixRate field populated for the container:",True,True]
+			];
+
+			{failingTest,passingTest}
+		],
+		Nothing
+	];
+
+	(* 19. The given MixRate can be reached with the sample container. *)
+	safeMixRateMismatches=MapThread[
+		Function[{maxSafeMixRate,mixRate,sample,mixType,stirBar},
+			(* If the provided mixRate is larger than the max safeMixRate we can reach *)
+			If[MatchQ[mixRate, Except[Automatic|Null]]&&MatchQ[maxSafeMixRate, Except[Null]]&&MatchQ[mixType, Stir]&&MatchQ[stirBar, Null],
+				If[!NullQ[maxSafeMixRate]&&maxSafeMixRate < mixRate,
+					{{mixRate, maxSafeMixRate},sample},
+					Nothing
+				],
+				Nothing
+			]
+		],
+		{
+			maxSafeMixRates,
+			Lookup[roundedMixOptions,MixRate],
+			mySimulatedSamples,
+			Lookup[roundedMixOptions,MixType],
+			Lookup[roundedMixOptions,StirBar]
+		}
+	];
+	(* Transpose our result if there were mismatches. *)
+	{safeMixRateMismatchOptions,safeMixRateMismatchInputs}=If[MatchQ[safeMixRateMismatches,{}],
+		{{},{}},
+		Transpose[safeMixRateMismatches]
+	];
+	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
+	safeMixRateInvalidOptions=If[Length[safeMixRateMismatchOptions]>0&&!gatherTests,
+		Message[Error::SafeMixRateMismatch,ObjectToString[safeMixRateMismatchInputs,Cache->cacheBall],safeMixRateMismatchOptions[[All, 1]], safeMixRateMismatchOptions[[All, 2]]];
+		{MixRate},
+		{}
+	];
+	(* If we are gathering tests, create a test with the appropriate result. *)
+	safeMixRateTest=If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{passingInputs,passingInputsTest,nonPassingInputsTest},
+			(* Get the inputs that pass this test. *)
+			passingInputs=Complement[mySimulatedSamples,safeMixRateMismatchInputs];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest=If[Length[passingInputs]>0,
+				Test["The following object(s) do not have conflicting mix rate and the maximumn safe mix rate they can reach "<>ObjectToString[passingInputs,Cache->cacheBall]<>":",True,True],
+				Nothing
+			];
+
+			(* Create a test for the non-passing inputs. *)
+			nonPassingInputsTest=If[Length[safeMixRateMismatchInputs]>0,
+				Test["The following object(s) do not have conflicting mix rate and the maximumn safe mix rate they can reach "<>ObjectToString[safeMixRateMismatchInputs,Cache->cacheBall]<>":",True,False],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				nonPassingInputsTest
+			}
+		],
+		(* We aren't gathering tests. No tests to create. *)
+		{}
+	];
+
+	(* 20. If the input container is a volumetric flask, we do not allow mix time or mix rate to be specified. *)
+	volumetricFlaskMixOptionsMismatches=MapThread[
+		Function[{sample,mixType,aliquot},
+			Module[{sampleContainerObject},
+				sampleContainerObject = cacheLookup[samplePackets, sample, Container];
+				If[MatchQ[sampleContainerObject, ObjectP[Object[Container,Vessel,VolumetricFlask]]]&&MatchQ[aliquot, False],
+					If[MatchQ[mixType, Except[Automatic|Null|Invert|Swirl|Shake|Sonicate]],
+						{mixType,sample},
+						Nothing
+					],
+					Nothing
+				]
+			]
+		],
+		{
+			mySimulatedSamples,
+			Lookup[roundedMixOptions,MixType],
+			Lookup[mySamplePrepOptions,Aliquot]
+		}
+	];
+	(* Transpose our result if there were mismatches. *)
+	{volumetricFlaskMixMismatchOptions,volumetricFlaskMixMismatchInputs}=If[MatchQ[volumetricFlaskMixOptionsMismatches,{}],
+		{{},{}},
+		Transpose[volumetricFlaskMixOptionsMismatches]
+	];
+	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
+	volumetricFlaskMixInvalidOptions=If[Length[volumetricFlaskMixMismatchOptions]>0&&!gatherTests,
+		Message[Error::VolumetricFlaskMixMismatch,ObjectToString[volumetricFlaskMixMismatchInputs,Cache->cacheBall],volumetricFlaskMixMismatchOptions];
+		{MixType},
+		{}
+	];
+	(* If we are gathering tests, create a test with the appropriate result. *)
+	volumetricFlaskMixTest=If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{passingInputs,passingInputsTest,nonPassingInputsTest},
+			(* Get the inputs that pass this test. *)
+			passingInputs=Complement[mySimulatedSamples,volumetricFlaskMixMismatchInputs];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest=If[Length[passingInputs]>0,
+				Test["The following object(s) do not have conflicting mix options and the sample container "<>ObjectToString[passingInputs,Cache->cacheBall]<>":",True,True],
+				Nothing
+			];
+
+			(* Create a test for the non-passing inputs. *)
+			nonPassingInputsTest=If[Length[volumetricFlaskMixMismatchInputs]>0,
+				Test["The following object(s) do not have conflicting mix options and the sample container "<>ObjectToString[volumetricFlaskMixMismatchInputs,Cache->cacheBall]<>":",True,False],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				nonPassingInputsTest
+			}
+		],
+		(* We aren't gathering tests. No tests to create. *)
+		{}
+	];
+
+	(* 21. If we are going to Mix a sample in VolumetricFlask, the max shaking rate is 250 RPM. *)
+	volumetricFlaskMixRateOptionsMismatches=MapThread[
+		Function[{sample, mixRate, aliquot},
+			Module[{sampleContainerObject},
+				sampleContainerObject = cacheLookup[samplePackets, sample, Container];
+				If[MatchQ[sampleContainerObject, ObjectP[Object[Container,Vessel,VolumetricFlask]]]&&MatchQ[aliquot, False],
+					If[MatchQ[mixRate, GreaterP[$MaxVolumetricFlaskShakeRate]],
+						{mixRate,sample},
+						Nothing
+					],
+					Nothing
+				]
+			]
+		],
+		{
+			mySimulatedSamples,
+			Lookup[roundedMixOptions,MixRate],
+			Lookup[mySamplePrepOptions,Aliquot]
+		}
+	];
+	(* Transpose our result if there were mismatches. *)
+	{volumetricFlaskMixRateMismatchOptions,volumetricFlaskMixRateMismatchInputs}=If[MatchQ[volumetricFlaskMixRateOptionsMismatches,{}],
+		{{},{}},
+		Transpose[volumetricFlaskMixRateOptionsMismatches]
+	];
+	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
+	volumetricFlaskMixRateInvalidOptions=If[Length[volumetricFlaskMixRateMismatchOptions]>0&&!gatherTests,
+		Message[Error::VolumetricFlaskMixRateMismatch,ObjectToString[volumetricFlaskMixRateMismatchInputs,Cache->cacheBall],volumetricFlaskMixRateMismatchOptions];
+		{MixRate},
+		{}
+	];
+	(* If we are gathering tests, create a test with the appropriate result. *)
+	volumetricFlaskMixRateTest=If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{passingInputs,passingInputsTest,nonPassingInputsTest},
+			(* Get the inputs that pass this test. *)
+			passingInputs=Complement[mySimulatedSamples,volumetricFlaskMixRateMismatchInputs];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest=If[Length[passingInputs]>0,
+				Test["The following object(s) do not have conflicting mix rate and the sample container "<>ObjectToString[passingInputs,Cache->cacheBall]<>":",True,True],
+				Nothing
+			];
+
+			(* Create a test for the non-passing inputs. *)
+			nonPassingInputsTest=If[Length[volumetricFlaskMixRateMismatchInputs]>0,
+				Test["The following object(s) do not have conflicting mix rate and the sample container "<>ObjectToString[volumetricFlaskMixRateMismatchInputs,Cache->cacheBall]<>":",True,False],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				nonPassingInputsTest
+			}
+		],
+		(* We aren't gathering tests. No tests to create. *)
+		{}
+	];
+
 	(*-- RESOLVE EXPERIMENT OPTIONS --*)
 	(* Convert our options into a MapThread friendly version. *)
 	mapThreadFriendlyOptions=OptionsHandling`Private`mapThreadOptions[ExperimentIncubate,roundedMixOptions];
@@ -2842,21 +3465,27 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		allowedPreparation
 	];
 
-	(* resolve work cell*)
-	workCell=If[
-		!MatchQ[Lookup[myOptions,WorkCell,Automatic],Automatic],
-		Lookup[myOptions,WorkCell],
+	workCell = Module[
+		{allowedWorkCells},
 
-		(* if it wasn't set, then resolve it based on whether this is robotic or manual*)
-		If[MatchQ[resolvedPreparation,Manual],
-			Null,
-			STAR
+		allowedWorkCells = If[MatchQ[resolvedPreparation, Manual],
+			{},
+			resolveExperimentIncubateWorkCell[mySimulatedSamples, ReplaceRule[myOptions, {Preparation -> resolvedPreparation, Cache -> cacheBall, Simulation -> updatedSimulation}]]
+		];
+
+		Which[
+			(* Choose user selected work cell if the user selected one *)
+			MatchQ[Lookup[myOptions, WorkCell], Except[Automatic]], Lookup[myOptions, WorkCell],
+			(* Set to Null if Manual *)
+			MatchQ[resolvedPreparation, Manual], Null,
+			(* Otherwise, resolve to the 1st potential work cell. *)
+			True, FirstOrDefault[allowedWorkCells]
 		]
 	];
 
 	(* get the samples without duplicates and make fake labels for them that might be used *)
 	preResolvedSampleLabelRules = Module[{samplesNoDupes, preResolvedSampleLabels},
-		samplesNoDupes = DeleteDuplicates[Download[mySamples, Object]];
+		samplesNoDupes = DeleteDuplicates[Download[mySimulatedSamples, Object]];
 		preResolvedSampleLabels = Table[CreateUniqueLabel["incubation sample"], Length[samplesNoDupes]];
 
 		MapThread[
@@ -2865,7 +3494,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		]
 	];
 	preResolvedSampleContainerLabelRules = Module[{sampleContainersNoDupes, preResolvedSampleContainerLabels},
-		sampleContainersNoDupes = DeleteDuplicates[(Download[Lookup[fetchPacketFromCache[#, cache], Container], Object]&)/@mySamples];
+		sampleContainersNoDupes = DeleteDuplicates[(Download[Lookup[fetchPacketFromCache[#, cacheBall], Container], Object]&)/@mySimulatedSamples];
 		preResolvedSampleContainerLabels = Table[CreateUniqueLabel["incubation container"], Length[sampleContainersNoDupes]];
 
 		MapThread[
@@ -2884,7 +3513,8 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 	temperatures,annealingTimes,amplitudes,maxTemperatures,dutyCycles,residualIncubationList,potentialAliquotContainersList,
 	stirBars,mixRateProfiles,temperatureProfiles,oscillationAngles,residualTemperatures,residualMixes,residualMixRates,preheatList,
 	mixPositions,mixPositionOffsets,mixFlowRates,correctionCurves,tipss,tipTypes,tipMaterials,sampleLabels,sampleContainerLabels,
-	relativeHumidities, lightExposures, lightExposureIntensities, totalLightExposures,
+	relativeHumidities, lightExposures, lightExposureIntensities, totalLightExposures, transforms, transformHeatShockTemperatures,
+		transformHeatShockTimes, transformPreHeatCoolingTimes, transformPostHeatCoolingTimes, preSonicationTimes, samplesAlternateInstruments,
 
 	mixTypeRateErrors,
 
@@ -2908,7 +3538,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 	shakeNoInstrumentErrors,shakeIncompatibleInstrumentErrors,
 
 	stirAutomaticInstrumentContainerWarnings,stirManualInstrumentContainerWarnings,
-	stirNoInstrumentErrors,stirIncompatibleInstrumentErrors,
+	stirNoInstrumentErrors,stirIncompatibleInstrumentErrors, noImpellerOrStirBarErrors,
 
 	sonicateAutomaticInstrumentContainerWarnings,sonicateManualInstrumentContainerWarnings,
 	sonicateNoInstrumentErrors,sonicateIncompatibleInstrumentErrors,
@@ -2917,7 +3547,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 	sterileMismatchWarnings,sterileContaminationWarnings,
 
-	monotonicCorrectionCurveWarnings,incompleteCorrectionCurveWarnings,invalidZeroCorrectionErrors
+	monotonicCorrectionCurveWarnings,incompleteCorrectionCurveWarnings,invalidZeroCorrectionErrors,
+
+	transformIncompatibleInstrumentErrors,transformIncompatibleContainerErrors
 	}=
 	Transpose[MapThread[Function[{mySample,myMapThreadOptions,sourceContainerModelPacket,aliquotQ},
 			Module[
@@ -2934,7 +3566,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 					rollNoInstrumentError,rollIncompatibleInstrumentError,
 					shakeAutomaticInstrumentContainerWarning,shakeManualInstrumentContainerWarning,
 					shakeNoInstrumentError,shakeIncompatibleInstrumentError,stirAutomaticInstrumentContainerWarning,
-					stirManualInstrumentContainerWarning,stirNoInstrumentError,stirIncompatibleInstrumentError,
+					stirManualInstrumentContainerWarning,stirNoInstrumentError,stirIncompatibleInstrumentError,noImpellerOrStirBarError,
 					sonicateAutomaticInstrumentContainerWarning,sonicateManualInstrumentContainerWarning,
 					sonicateNoInstrumentError,sonicateIncompatibleInstrumentError,
 					homogenizeNoInstrumentError,homogenizeIncompatibleInstrumentError,
@@ -2951,7 +3583,11 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 					instrumentModel, incubateIncompatibleInstrumentError, incubateNoInstrumentError, residualIncubation,
 					stirBar,mixRateProfile,temperatureProfile,oscillationAngle,residualTemperature,residualMix,residualMixRate,preheat,
 					mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,sampleLabel,sampleContainerLabel,
-					relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure},
+					relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure,transform,transformHeatShockTemperature,
+				transformHeatShockTime,transformPreHeatCoolingTime,transformPostHeatCoolingTime,specifiedTransformOptions,transformQ,
+					mainCellIdentityModel,
+				resolvedInstrumentModel,transformIncompatibleInstrumentError,sampleContainerHeight,transformIncompatibleContainerError,
+				sampleContainerCover, preSonicationTime, alternateInstruments},
 
 				(* Setup our error tracking variables *)
 				{
@@ -2977,7 +3613,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 				shakeNoInstrumentError,shakeIncompatibleInstrumentError,
 
 				stirAutomaticInstrumentContainerWarning,stirManualInstrumentContainerWarning,
-				stirNoInstrumentError,stirIncompatibleInstrumentError,
+				stirNoInstrumentError,stirIncompatibleInstrumentError, noImpellerOrStirBarError,
 
 				sonicateAutomaticInstrumentContainerWarning,sonicateManualInstrumentContainerWarning,
 				sonicateNoInstrumentError,sonicateIncompatibleInstrumentError,
@@ -2986,8 +3622,20 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 				sterileMismatchWarning,sterileContaminationWarning,
 
-				monotonicCorrectionCurveWarning,incompleteCorrectionCurveWarning,invalidZeroCorrectionError
-				}=ConstantArray[False,47];
+				monotonicCorrectionCurveWarning,incompleteCorrectionCurveWarning,invalidZeroCorrectionError,
+
+				transformIncompatibleInstrumentError, transformIncompatibleContainerError
+				}=ConstantArray[False,50];
+
+				(* Since the transform options essentially act as a mini-master switch, figure out whether any of them are actively set already *)
+				specifiedTransformOptions = Lookup[
+					myMapThreadOptions,
+					transformSpecificOptions
+				];
+				transformQ = MemberQ[specifiedTransformOptions, Except[Null|Automatic|False]];
+
+				(* Get the main cell objects in the composition; if this is a mixture it will pick the one with the highest concentration *)
+				mainCellIdentityModel = selectMainCellFromSample[mySample, Cache -> cacheBall, Simulation -> updatedSimulation];
 
 				(* We have multiple mix type branches so some of these options are not applicable. *)
 				(* Setup our option values to reasonable defaults. *)
@@ -3011,8 +3659,8 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 				(* If Thaw is Automatic, resolve it based on if any thaw related options are set. *)
 				thaw=If[MatchQ[Lookup[myMapThreadOptions,Thaw],Automatic],
 
-					(* if the preparation is robotic, then store Null, otherwise resolve Thaw*)
-					If[MatchQ[resolvedPreparation,Robotic],
+					(* if the preparation is robotic or we're transforming, then store Null, otherwise resolve Thaw*)
+					If[MatchQ[resolvedPreparation,Robotic] || transformQ,
 						Null,
 
 						(* If preparation is manual and one of the thaw related options is set to Null or if they're all Automatic, resolve Thaw to False. *)
@@ -3034,7 +3682,10 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 				samplesContainer=Lookup[samplePacket,Container,Null]/.{link_Link:>Download[link, Object]};
 
 				(* Get the model of this container object. *)
-				samplesContainerModel=Lookup[fetchPacketFromCache[samplesContainer,sampleContainerPackets],Model];
+				samplesContainerModel=If[NullQ[samplesContainer],
+					Null,
+					Lookup[fetchPacketFromCache[samplesContainer,sampleContainerPackets],Model]
+				];
 
 				(* Get the packet that corresponds to the model of the container object. *)
 				containerPacket=fetchPacketFromCache[samplesContainerModel,sampleContainerModelPackets];
@@ -3109,7 +3760,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 					(* Did the user supply an instrument? *)
 					If[KeyExistsQ[myMapThreadOptions,ThawInstrument]&&!MatchQ[Lookup[myMapThreadOptions,ThawInstrument],Automatic],
-						(* Get the given thaw insturment. *)
+						(* Get the given thaw instrument. *)
 						givenThawInstrument=Lookup[myMapThreadOptions,ThawInstrument];
 
 						(* Get the instrument model of the thaw instrument. (We may be given an object.) *)
@@ -3122,7 +3773,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 						thawIncompatibleInstrumentError=!MemberQ[compatibleThawInstruments,thawInstrumentModel];
 
 						givenThawInstrument,
-						(* User didn't give us a thaw insturment. *)
+						(* User didn't give us a thaw instrument. *)
 						(* Do we have any compatible thaw instruments? *)
 						If[Length[compatibleThawInstruments]>0,
 							(* Choose the first instrument. *)
@@ -3220,8 +3871,8 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 					(* MixType is specified by the user. Simply continue with the user specified value. *)
 					!MatchQ[Lookup[myMapThreadOptions,MixType],Automatic],
 						Lookup[myMapThreadOptions,MixType],
-					(* Is the Mix boolean set to False or Null? *)
-					MatchQ[mixBoolean,False|Null],
+					(* Is the Mix boolean set to False or Null, or are we doing a transform? *)
+					MatchQ[mixBoolean,False|Null] || transformQ,
 						Null,
 					(* Is the experiment Robotic?*)
 					MatchQ[resolvedPreparation,Robotic],
@@ -3297,6 +3948,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 					(* Is OscillationAngle set? This is only for the wrist action shaker. *)
 					MatchQ[Lookup[myMapThreadOptions,OscillationAngle],Except[Null|Automatic]],
 						Shake,
+					(* Is PreSonicationTime set? This is only for the sonicator. *)
+					MatchQ[Lookup[myMapThreadOptions,PreSonicationTime],Except[Null|Automatic]],
+						Sonicate,
 					(* Is MixRate or Time set to Null? *)
 					MatchQ[Lookup[myMapThreadOptions,MixRate],Null]||MatchQ[Lookup[myMapThreadOptions,Time],Null],
 						(* MixRate or Time was Null, resolve to Invert or Pipette. *)
@@ -3309,7 +3963,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 						],
 					(* Is MixRate set? *)
 					!MatchQ[Lookup[myMapThreadOptions,MixRate],Automatic|Null],
-						Module[{resolvedTemperature,footprintCompatibleInstruments,aliquotInstrumentResult},
+						Module[{resolvedTemperature,footprintCompatibleInstruments, footprintCompatibleInstrumentsNoStirBar, aliquotInstrumentResult},
 							(* Is Temperature set? *)
 							resolvedTemperature=If[MatchQ[Lookup[myMapThreadOptions,Temperature],Except[Automatic]],
 								(* User supplied temperature. *)
@@ -3322,14 +3976,28 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 							];
 
 							(* See if there are any instruments that are capible of mixing our sample, as is. *)
-							footprintCompatibleInstruments=MixDevices[
+							footprintCompatibleInstrumentsNoStirBar=MixDevices[
 								mySample,
 								Rate->Lookup[myMapThreadOptions,MixRate],
 								(* Is Temperature set? *)
 								Temperature->resolvedTemperature/.{Ambient|$AmbientTemperature->Null},
 								InstrumentSearch->instrumentSearch,
+								StirBar -> False,
 								Cache->cacheBall,
 								Simulation->updatedSimulation
+							];
+							(* we try to avoid using StirBar, but if there is no other compatible mix type we allow StirBar *)
+							footprintCompatibleInstruments = If[Length[footprintCompatibleInstrumentsNoStirBar]>0 || MatchQ[Lookup[myMapThreadOptions,StirBar], Null],
+								footprintCompatibleInstrumentsNoStirBar,
+								MixDevices[
+									mySample,
+									Rate->Lookup[myMapThreadOptions,MixRate],
+									(* Is Temperature set? *)
+									Temperature->resolvedTemperature/.{Ambient|$AmbientTemperature->Null},
+									InstrumentSearch->instrumentSearch,
+									Cache->cacheBall,
+									Simulation->updatedSimulation
+								]
 							];
 
 							(* If there are instruments that work, choose the first instrument. *)
@@ -3338,14 +4006,18 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								mixObjectToType[First[footprintCompatibleInstruments]],
 								(* ELSE: There are no instruments that currently can be used. *)
 								(* Compute the instruments that we can aliquot into. *)
-								aliquotInstrumentResult=MixDevices[
-									mySample,
-									Rate->Lookup[myMapThreadOptions,MixRate],
-									Temperature->resolvedTemperature/.{Ambient|$AmbientTemperature->Null},
-									Output->Containers,
-									InstrumentSearch->instrumentSearch,
-									Cache->cacheBall,
-									Simulation->updatedSimulation
+								aliquotInstrumentResult=If[MatchQ[aliquotQ, False],
+									{},
+									MixDevices[
+										mySample,
+										Rate->Lookup[myMapThreadOptions,MixRate],
+										Temperature->resolvedTemperature/.{Ambient|$AmbientTemperature->Null},
+										Output->Containers,
+										StirBar -> If[NullQ[Lookup[myMapThreadOptions,StirBar]], False, True],
+										InstrumentSearch->instrumentSearch,
+										Cache->cacheBall,
+										Simulation->updatedSimulation
+									]
 								];
 
 								(* Are there any instruments that can work after an aliquot? *)
@@ -3525,20 +4197,26 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 
 				(* If our temperature is non-Ambient (or 25 Celsius) and our sample's model is TransportWarmed/Chilled, resolve ResidualIncubation\[Rule]True. *)
+				(* Make an exception of Swirl/Invert/Pipette because they are not compatible with ResidualIncubation, and it's not necessary either because this should usually be quick *)
 				(* Leave this option alone if it isn't Automatic. *)
 				residualIncubation=Which[
 					MatchQ[Lookup[myMapThreadOptions, ResidualIncubation], Except[Automatic]],
-					Lookup[myMapThreadOptions, ResidualIncubation],
+						Lookup[myMapThreadOptions, ResidualIncubation],
+					transformQ,
+						False,
 					MatchQ[Lookup[myMapThreadOptions, ResidualTemperature], Except[(Automatic|Null)]] || MatchQ[Lookup[myMapThreadOptions, ResidualMixRate], Except[(Automatic|Null)]],
-					True,
+						True,
 					TrueQ[Lookup[myMapThreadOptions, ResidualMix]],
+						True,
+					MatchQ[mixType, (Swirl | Invert | Pipette)],
+						False,
+					(* On Robotic run, and we resolved to use shaker, cannot allow off-deck residual incubation as we have to move the container back for downstream processing. There is corresponding error-checking below, so we should not allow automatically resolving to an error-throwing situation.*)
+					MatchQ[mixType,Shake] && MatchQ[resolvedPreparation,Robotic],
+						False,
+					!MatchQ[Lookup[myMapThreadOptions, Temperature],(EqualP[$AmbientTemperature] | Null)]&&MatchQ[Lookup[samplePacket,TransportTemperature],TemperatureP],
+						True,
 					True,
-					MatchQ[Lookup[myMapThreadOptions, Temperature],LessP[$AmbientTemperature]]&&MatchQ[Lookup[samplePacket,TransportChilled],True],
-					True,
-					MatchQ[Lookup[myMapThreadOptions, Temperature],GreaterP[$AmbientTemperature]]&&MatchQ[Lookup[samplePacket,TransportWarmed],TemperatureP],
-					True,
-					True,
-					False
+						False
 				];
 
 				(* Independent options resolution *)
@@ -3636,7 +4314,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 							{mixUntilDissolved,instrument,time,maxTime,rate,numberOfMixes,maxNumberOfMixes,
 							volume,temperature,annealingTime,amplitude,maxTemperature,dutyCycle,stirBar,
 							mixRateProfile,temperatureProfile,oscillationAngle,potentialAliquotContainers,preheat,residualTemperature,residualMix,residualMixRate,
-								mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure}=Map[
+								mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure,preSonicationTime,alternateInstruments}=Map[
 								(
 									If[!MatchQ[Lookup[myMapThreadOptions,#[[1]],Automatic],Automatic],
 										Lookup[myMapThreadOptions,#[[1]]],
@@ -3676,7 +4354,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									{RelativeHumidity,Null},
 									{LightExposure,Null},
 									{LightExposureIntensity,Null},
-									{TotalLightExposure,Null}
+									{TotalLightExposure,Null},
+									{PreSonicationTime,Null},
+									{AlternateInstruments,Null}
 								}
 							]
 						],
@@ -3731,7 +4411,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 						{mixUntilDissolved,instrument,time,maxTime,rate,numberOfMixes,maxNumberOfMixes,
 							volume,temperature,annealingTime,amplitude,maxTemperature,dutyCycle,stirBar,
 							mixRateProfile,temperatureProfile,oscillationAngle,potentialAliquotContainers,preheat,residualTemperature,residualMix,residualMixRate,
-							mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure}=Map[
+							mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure, preSonicationTime,alternateInstruments}=Map[
 							(
 								If[!MatchQ[Lookup[myMapThreadOptions,#[[1]],Automatic],Automatic],
 									Lookup[myMapThreadOptions,#[[1]]],
@@ -3771,7 +4451,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								{RelativeHumidity,Null},
 								{LightExposure,Null},
 								{LightExposureIntensity,Null},
-								{TotalLightExposure,Null}
+								{TotalLightExposure,Null},
+								{PreSonicationTime,Null},
+								{AlternateInstruments,Null}
 							}
 						]
 					],
@@ -3921,7 +4603,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 											pipettingMethod=Lookup[samplePacket, PipettingMethod];
 
 											If[MatchQ[pipettingMethod, ObjectP[]] && !MatchQ[Lookup[fetchPacketFromCache[pipettingMethod, samplePipettingMethodPackets], CorrectionCurve], Null],
-												Lookup[fetchPacketFromCache[pipettingMethod, samplePipettingMethodPackets], CorrectionCurve],
+												Round[Lookup[fetchPacketFromCache[pipettingMethod, samplePipettingMethodPackets], CorrectionCurve],0.01 Microliter],
 												Null
 											]
 										]
@@ -4257,27 +4939,18 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								Null
 							];
 
-							(* Resolve ResidualTemperature. *)
-							residualTemperature=Which[
-								MatchQ[Lookup[myMapThreadOptions, ResidualTemperature], Except[Automatic]],
-								Lookup[myMapThreadOptions, ResidualTemperature],
-								MatchQ[Lookup[myMapThreadOptions, residualIncubation], True],
-								temperature,
-								True,
-								Null
-							];
-
 							(* Set the rest of the options to proper values, unless already set by the user. *)
 							{mixUntilDissolved,instrument,time,maxTime,rate,numberOfMixes,maxNumberOfMixes,
 							volume,temperature,annealingTime,amplitude,maxTemperature,dutyCycle,stirBar,
 							mixRateProfile,temperatureProfile,oscillationAngle,potentialAliquotContainers,preheat,residualTemperature,residualMix,residualMixRate,
-							mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure}=Map[
+							mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure,preSonicationTime,alternateInstruments}=Map[
 								(
 									If[!MatchQ[Lookup[myMapThreadOptions,#[[1]],Automatic],Automatic],
 										Lookup[myMapThreadOptions,#[[1]]],
 										#[[2]]
 									]
 								&),
+								(* Temperature and Time controls are not applicable for Pipette *)
 								{
 									{MixUntilDissolved, mixUntilDissolved},
 									{Instrument, instrument},
@@ -4287,7 +4960,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									{NumberOfMixes, numberOfMixes},
 									{MaxNumberOfMixes, maxNumberOfMixes},
 									{MixVolume, volume},
-									{Temperature, Ambient},
+									{Temperature, Null},
 									{AnnealingTime,Null},
 									{Amplitude, Null},
 									{MaxTemperature, Null},
@@ -4298,7 +4971,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									{OscillationAngle, Null},
 									{PotentialAliquotContainers, Null},
 									{Preheat,Null},
-									{ResidualTemperature,residualTemperature},
+									{ResidualTemperature,Null},
 									{ResidualMix,residualMix},
 									{ResidualMixRate,residualMixRate},
 									{MixPosition,mixPosition},
@@ -4311,13 +4984,15 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									{RelativeHumidity,Null},
 									{LightExposure,Null},
 									{LightExposureIntensity,Null},
-									{TotalLightExposure,Null}
+									{TotalLightExposure,Null},
+									{PreSonicationTime,Null},
+									{AlternateInstruments,Null}
 								}
 							]
 						],
 					(*-- VORTEX --*)
 					Vortex,
-						Module[{instrumentModel,vortexPacket,compatibleFootprintQ,aliquotContainers,potentialInstruments,potentialAliquotInstruments,preResolvedRate},
+						Module[{instrumentModel,vortexPacket,compatibleFootprintQ,aliquotContainers,potentialInstruments,potentialAliquotInstruments,preResolvedRate,preResolvedTemperature},
 							(* Did the user supply a instrument object? *)
 							If[MatchQ[Lookup[myMapThreadOptions,Instrument],ObjectP[{Object[Instrument,Vortex],Model[Instrument,Vortex]}]],
 								(* The user supplied a instrument object. *)
@@ -4393,6 +5068,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										Null
 									]
 								],
+
 								(* ELSE: The user did not supply a instrument. *)
 								(* We need to resolve the instruments. *)
 								(* Did the user supply a rate? *)
@@ -4409,6 +5085,17 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									(* MixRate isn't automatic. Go with the user supplied value (Null) *)
 									Lookup[myMapThreadOptions,MixRate]
 								];
+								(* Did the user supply a temperature? Note that heated vortex is not strictly prohibited, and this logic would need to mirror the mixtype resolver which might resolve to Vortex when given a non-ambient temperature. *)
+								preResolvedTemperature=If[MatchQ[Lookup[myMapThreadOptions,Temperature],Except[Automatic]],
+									(* User supplied temperature. *)
+									Lookup[myMapThreadOptions,Temperature],
+									(* Did the user specify any incubation related options? *)
+									If[MatchQ[Lookup[myMapThreadOptions,AnnealingTime],Except[Null|Automatic]],
+										40 Celsius,
+										Ambient
+									]
+								];
+
 								potentialInstruments=MixDevices[
 									mySample,
 									{
@@ -4417,6 +5104,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 											Rate->preResolvedRate,
 											Nothing
 										],
+										Temperature->preResolvedTemperature/.{Ambient|$AmbientTemperature->Null},
 										InstrumentSearch->instrumentSearch,
 										Cache -> cacheBall,
 										Simulation->updatedSimulation
@@ -4534,7 +5222,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 							{mixUntilDissolved,instrument,time,maxTime,rate,numberOfMixes,maxNumberOfMixes,
 							volume,temperature,annealingTime,amplitude,maxTemperature,dutyCycle,stirBar,
 							mixRateProfile,temperatureProfile,oscillationAngle,potentialAliquotContainers,preheat,residualTemperature,residualMix,residualMixRate,
-								mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure}=Map[
+								mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure, preSonicationTime,alternateInstruments}=Map[
 								(
 									If[!MatchQ[Lookup[myMapThreadOptions,#[[1]],Automatic],Automatic],
 										Lookup[myMapThreadOptions,#[[1]]],
@@ -4574,7 +5262,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									{RelativeHumidity,Null},
 									{LightExposure,Null},
 									{LightExposureIntensity,Null},
-									{TotalLightExposure,Null}
+									{TotalLightExposure,Null},
+									{PreSonicationTime,Null},
+									{AlternateInstruments,Null}
 								}
 							]
 						],
@@ -4838,7 +5528,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 							{mixUntilDissolved,instrument,time,maxTime,rate,numberOfMixes,maxNumberOfMixes,
 							volume,temperature,annealingTime,amplitude,maxTemperature,dutyCycle,stirBar,
 							mixRateProfile,temperatureProfile,oscillationAngle,potentialAliquotContainers,preheat,residualTemperature,residualMix,residualMixRate,
-								mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure}=Map[
+								mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure,preSonicationTime,alternateInstruments}=Map[
 								(
 									If[!MatchQ[Lookup[myMapThreadOptions,#[[1]],Automatic],Automatic],
 										Lookup[myMapThreadOptions,#[[1]]],
@@ -4878,7 +5568,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									{RelativeHumidity,Null},
 									{LightExposure,Null},
 									{LightExposureIntensity,Null},
-									{TotalLightExposure,Null}
+									{TotalLightExposure,Null},
+									{PreSonicationTime,Null},
+									{AlternateInstruments,Null}
 								}
 							]
 						],
@@ -5128,7 +5820,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 														TrueQ[thaw],
 														!NullQ[Lookup[samplePacket,ThawMixRate]]
 													],
-
+														Rate -> Lookup[samplePacket,ThawMixRate],
 													True,
 														Nothing
 												],
@@ -5345,11 +6037,11 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								If[Or[
 										(* Torrey Pines Orbital Shaker *)
 										MatchQ[instrument, ObjectP[Model[Instrument, Shaker, "id:N80DNj15vreD"]]],
-										MatchQ[instrument, ObjectP[Lookup[fetchPacketFromCache[Model[Instrument, Shaker, "id:N80DNj15vreD"], cache], Objects]]],
+										MatchQ[instrument, ObjectP[Lookup[fetchPacketFromCache[Model[Instrument, Shaker, "id:N80DNj15vreD"], cacheBall], Objects]]],
 
 										(* Wrist Action Shaker *)
 										MatchQ[instrument,ObjectP[Model[Instrument,Shaker,"id:Vrbp1jG80JAw"]]],
-										MatchQ[instrument,ObjectP[Lookup[fetchPacketFromCache[Model[Instrument,Shaker,"id:Vrbp1jG80JAw"],cache],Objects]]]
+										MatchQ[instrument,ObjectP[Lookup[fetchPacketFromCache[Model[Instrument,Shaker,"id:Vrbp1jG80JAw"],cacheBall],Objects]]]
 									],
 									(* 15 AngularDegree is our maximum angle of shaking. *)
 									15 AngularDegree,
@@ -5382,7 +6074,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 							{mixUntilDissolved,instrument,time,maxTime,rate,numberOfMixes,maxNumberOfMixes,
 							volume,temperature,annealingTime,amplitude,maxTemperature,dutyCycle,stirBar,
 							mixRateProfile,temperatureProfile,oscillationAngle,potentialAliquotContainers,preheat,residualTemperature,residualMix,residualMixRate,
-							mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure}=Map[
+							mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure,preSonicationTime,alternateInstruments}=Map[
 								(
 									If[!MatchQ[Lookup[myMapThreadOptions,#[[1]],Automatic],Automatic],
 										Lookup[myMapThreadOptions,#[[1]]],
@@ -5422,13 +6114,15 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									{RelativeHumidity,Null},
 									{LightExposure,Null},
 									{LightExposureIntensity,Null},
-									{TotalLightExposure,Null}
+									{TotalLightExposure,Null},
+									{PreSonicationTime,Null},
+									{AlternateInstruments,Null}
 								}
 							]
 						],
 					(*-- STIR --*)
 					Stir,
-						Module[{instrumentModel,stirPacket,compatibleFootprintQ,aliquotContainers,potentialInstruments,potentialAliquotInstruments,resolvedTemperature,resolvedAnnealingTime,preResolvedRate},
+						Module[{instrumentModel,stirPacket,compatibleFootprintQ,aliquotContainers,potentialInstruments,potentialAliquotInstruments,resolvedTemperature,resolvedAnnealingTime,preResolvedRate, exampleAliquotContainer, allPotentialImpelllers, containerSafeMixRate},
 							(* Did the user supply a instrument object? *)
 							If[MatchQ[Lookup[myMapThreadOptions,Instrument],ObjectP[{Object[Instrument,OverheadStirrer],Model[Instrument,OverheadStirrer]}]],
 								(* The user supplied a instrument object. *)
@@ -5442,6 +6136,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									Download[Lookup[fetchPacketFromCache[instrument,stirInstrumentPackets],Model,Null],Object]
 								];
 
+								(* We need this variable populated for stir bar resolver, since it is specified, it just contains the model of the supplied instrument *)
+								potentialAliquotInstruments = {instrumentModel -> Null};
+
 								(* Did the user supply a rate? *)
 								rate=If[MatchQ[Lookup[myMapThreadOptions,MixRate],Automatic],
 									If[
@@ -5450,11 +6147,17 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 											!NullQ[Lookup[samplePacket,ThawMixRate]]
 										],
 										Lookup[samplePacket,ThawMixRate],
-										(* Resolve to the average RPM of the set instrument. *)
+										(* Resolve to 20% of max RPM of the set instrument. *)
 										stirPacket=fetchPacketFromCache[instrumentModel,stirInstrumentPackets];
+										(* find out the containerSafeMixRate *)
+										containerSafeMixRate = Lookup[sourceContainerModelPacket, MaxOverheadMixRate, Null];
 
 										(* Round to the nearest RPM. *)
-										Round[Mean[Lookup[stirPacket,{MinRotationRate,MaxRotationRate},1RPM]],1RPM]
+										If[NullQ[containerSafeMixRate],
+											(* if we do not have MaxOverheadMixRate populated, we will try to use stir bar later *)
+											Round[0.2*Lookup[stirPacket,MaxStirBarRotationRate,1000RPM],1RPM],
+											Min[Round[0.2*Lookup[stirPacket,MaxRotationRate,1000RPM],1RPM], containerSafeMixRate]
+										]
 									],
 									(* MixRate isn't automatic. Go with the user supplied value. *)
 									Lookup[myMapThreadOptions,MixRate]
@@ -5510,6 +6213,11 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										(* Then return Null. *)
 										Null
 									]
+								];
+								exampleAliquotContainer = If[Length[potentialAliquotContainers]>0,
+									FirstCase[Flatten[Values[potentialAliquotContainers]],
+										ObjectP[Model[Container]]],
+									Null
 								],
 								(* ELSE: The user did not supply a instrument. *)
 								(* We need to resolve the instruments. *)
@@ -5550,11 +6258,30 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								instrument=If[Length[potentialInstruments]>0,
 									(* Resolve rate (if we have to) to be the average rate of our first instrument. *)
 									rate=If[MatchQ[preResolvedRate,Automatic],
-										(* Resolve to the average RPM of the set instrument. *)
+										(* Resolve to 20% of max RPM of the set instrument. *)
 										stirPacket=fetchPacketFromCache[First[potentialInstruments],stirInstrumentPackets];
-
 										(* Round to the nearest RPM. *)
-										Round[Mean[Lookup[stirPacket,{MinRotationRate,MaxRotationRate},{1RPM,1RPM}]],1RPM],
+										(* Include magnetic stir rates if instrument allows for it *)
+										If[
+											And[
+												(* StirBarControl can be Null or False, so need to use a MatchQ just in case *)
+												MatchQ[
+													Lookup[stirPacket, StirBarControl],
+													True
+												],
+												Or[
+													MatchQ[
+														compatibleImpeller[mySample, Lookup[stirPacket, Object], Cache->cacheBall, Simulation->simulation],
+														Null
+													],
+													NullQ[Lookup[fetchPacketFromCache[sourceContainerModelPacket, cacheBall], MaxOverheadMixRate, Null]]
+												]
+											],
+											Round[0.2 * Lookup[stirPacket, MaxStirBarRotationRate, 1000RPM], 1RPM],
+											(* Check for safe over head stir mix rate and take the smaller one *)
+											Min[Round[0.2*Lookup[stirPacket,MaxRotationRate,1000RPM],1RPM], Lookup[sourceContainerModelPacket, MaxOverheadMixRate]]
+
+										],
 										(* MixRate isn't automatic. Go with the user supplied value (Null) *)
 										preResolvedRate
 									];
@@ -5583,7 +6310,6 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 											Simulation->updatedSimulation
 										}
 									];
-
 									(* Did we get aliquot instruments? *)
 									potentialAliquotContainers=If[Length[potentialAliquotInstruments]>0,
 										(* We did get aliquot results. *)
@@ -5591,6 +6317,13 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										potentialAliquotInstruments,
 										(* We didn't get aliquot results. *)
 										stirNoInstrumentError=True;
+										Null
+									];
+
+									(* If we need to aliquot to new container, get a model from potential aliquot containers to resolve the stir bar downstream. Otherwise we might not be able to find a stir bar based on mySample, leading to a situation where we stir but no impeller or stir bar is resolved. *)
+									exampleAliquotContainer = If[Length[potentialAliquotContainers]>0,
+										FirstCase[Flatten[Values[potentialAliquotContainers]],
+											ObjectP[Model[Container]]],
 										Null
 									];
 
@@ -5605,8 +6338,15 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										Null
 									]
 								];
+								(* We need the instrument model for this branch as well *)
+								(* Get the model of the instrument. *)
+								instrumentModel=If[MatchQ[instrument,ObjectP[Model[Instrument,OverheadStirrer]]],
+									(* We already have the model. *)
+									instrument,
+									(* This branch we should not get any object, but it might remain Automatic *)
+									Null
+								];
 							];
-
 							(* Resolve Time and MaxTime *)
 							time = Which[
 								MatchQ[Lookup[myMapThreadOptions,TemperatureProfile], Except[Automatic|Null]],
@@ -5674,28 +6414,112 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									Null
 								}
 							];
+							(* If there's potential aliquot, get all potential impellers. This evaluation is used a couple times below *)
+							allPotentialImpelllers = If[MatchQ[exampleAliquotContainer, ObjectP[Model[Container]]],
+								compatibleImpeller[exampleAliquotContainer, #, Cache->cacheBall, Simulation->simulation]& /@ Keys[potentialAliquotInstruments],
+								{Null}
+							];
 
 							(* Resolve StirBar. *)
 							stirBar=If[MatchQ[Lookup[myMapThreadOptions,StirBar],Automatic],
-								(* Has the user set the rate to something that's only achievable by using a stir bar? *)
-								(* OR do we not have a compatible impeller? *)
-								(* Otherwise, do NOT use a stir bar. *)
-								If[Or[
-										MatchQ[rate, GreaterP[1000 RPM]],
-										MatchQ[compatibleImpeller[mySample,Model[Instrument,OverheadStirrer,"id:rea9jlRRmN05"],Cache->cacheBall,Simulation->simulation], Null]
+								(* Only use stir bar if the instrument is able to use it, the speed is achievable by a stir bar, *)
+								(* and there is not an impeller that can be used.  *)
+								Which[
+									And[
+										(* Do the following check only if we have a valid instrument *)
+										MatchQ[
+											instrument,
+											ObjectP[{Object[Instrument], Model[Instrument]}]
+										],
+										(* StirBarControl can be Null or False, so need to use a MatchQ just in case *)
+										MatchQ[
+											Lookup[fetchPacketFromCache[instrumentModel, stirInstrumentPackets], StirBarControl],
+											True
+										],
+										MatchQ[
+											rate,
+											GreaterP[Lookup[fetchPacketFromCache[instrumentModel, stirInstrumentPackets], MinStirBarRotationRate]]
+										],
+										(* Need to use stir bar if there's no compatibleImpeller, or there is impeller found but MaxOverheadMixRate is not populated for the container, or smaller than mix rate *)
+										Or[
+											MatchQ[
+												If[MatchQ[exampleAliquotContainer, ObjectP[Model[Container]]],
+													compatibleImpeller[exampleAliquotContainer, instrument, Cache->cacheBall, Simulation->simulation],
+													compatibleImpeller[mySample, instrument, Cache->cacheBall, Simulation->simulation]
+												],
+												Null
+											],
+											NullQ[
+												If[MatchQ[exampleAliquotContainer, ObjectP[Model[Container]]],
+													Lookup[fetchPacketFromCache[exampleAliquotContainer, cacheBall], MaxOverheadMixRate, Null],
+													Lookup[fetchPacketFromCache[sourceContainerModelPacket, cacheBall], MaxOverheadMixRate, Null]
+												]
+											],
+											If[MatchQ[exampleAliquotContainer, ObjectP[Model[Container]]],
+												rate > Lookup[fetchPacketFromCache[exampleAliquotContainer, cacheBall], MaxOverheadMixRate],
+												rate > Lookup[fetchPacketFromCache[sourceContainerModelPacket, cacheBall], MaxOverheadMixRate]
+											]
+										]
 									],
-									compatibleStirBar[mySample, Cache->cache, Simulation->simulation],
-									Null
+									(* call compatibleStirBar to resolve the stir bar, *)
+									(*input the sample if we are not aliquot, and input the aliquot container if we need to *)
+										If[MatchQ[exampleAliquotContainer, ObjectP[Model[Container]]],
+											compatibleStirBar[exampleAliquotContainer, Cache->cacheBall, Simulation->simulation],
+											compatibleStirBar[mySample, Cache->cacheBall, Simulation->simulation]
+										],
+									(* Or if we are aliquoting, using stir bar can encompass a wider selection of conditions in rate, temp etc. So if any of the potential aliquot instrument can use stir bar, we resolve a stir bar. *)
+									And[
+										MatchQ[exampleAliquotContainer, ObjectP[Model[Container]]],
+										MemberQ[
+											Lookup[fetchPacketFromCache[#, stirInstrumentPackets], StirBarControl]& /@ Keys[potentialAliquotInstruments],
+											True
+										],
+										(* but we want to prefer using impeller, so here we check we have no impeller *)
+										!MemberQ[allPotentialImpelllers, Except[ListableP[Null]]]
+									],
+										compatibleStirBar[exampleAliquotContainer, Cache->cacheBall, Simulation->simulation],
+									True,
+										Null
 								],
 								(* It's already user specified, use that value. *)
-								Lookup[myMapThreadOptions,MaxTime]
+								Lookup[myMapThreadOptions, StirBar]
+							];
+							(* If we ended up with a Null in stir bar, we need to double check if we are going to be able to use an impeller or not. If not, we have a problem. *)
+							noImpellerOrStirBarError = 	Which[
+								(* If we did not get a Null stir bar, we are good. *)
+								MatchQ[stirBar, ObjectP[]],
+									False,
+								(* All other conditions below we have Null stir bar, we need to check if we are okay with it. *)
+								(* 1. We are aliquoting, check if there is any impeller able to work with the potential aliquot container *)
+								MatchQ[exampleAliquotContainer, ObjectP[Model[Container]]],
+									Module[{allowedImpellers},
+										allowedImpellers = DeleteCases[
+											Flatten[allPotentialImpelllers],
+											Null];
+										If[Length[allowedImpellers] > 0,
+											False,
+											True
+										]
+									],
+								(* 2. No aliquot, as long as we can find an impeller, we are good *)
+								MatchQ[instrument,ObjectP[{Object[Instrument],Model[Instrument]}]] && !MatchQ[aliquotQ, True],
+									Module[{allowedImpellers},
+										allowedImpellers = compatibleImpeller[mySample, instrument, Cache->cacheBall, Simulation->simulation];
+										If[Length[allowedImpellers] > 0,
+											False,
+											True
+										]
+									],
+								(* 3. No aliquot, instrument is still Automatic, *)
+								True,
+									False
 							];
 
 							(* Set the rest of the options to proper values, unless already set by the user. *)
 							{mixUntilDissolved,instrument,time,maxTime,rate,numberOfMixes,maxNumberOfMixes,
 							volume,temperature,annealingTime,amplitude,maxTemperature,dutyCycle,stirBar,
 							mixRateProfile,temperatureProfile,oscillationAngle,potentialAliquotContainers,preheat,residualTemperature,residualMix,residualMixRate,
-								mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure}=Map[
+								mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure,preSonicationTime,alternateInstruments}=Map[
 								(
 									If[!MatchQ[Lookup[myMapThreadOptions,#[[1]],Automatic],Automatic],
 										Lookup[myMapThreadOptions,#[[1]]],
@@ -5735,7 +6559,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									{RelativeHumidity,Null},
 									{LightExposure,Null},
 									{LightExposureIntensity,Null},
-									{TotalLightExposure,Null}
+									{TotalLightExposure,Null},
+									{PreSonicationTime,Null},
+									{AlternateInstruments,Null}
 								}
 							]
 						],
@@ -5954,7 +6780,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								{mixUntilDissolved,instrument,time,maxTime,rate,numberOfMixes,maxNumberOfMixes,
 								volume,temperature,annealingTime,amplitude,maxTemperature,dutyCycle,stirBar,
 								mixRateProfile,temperatureProfile,oscillationAngle,potentialAliquotContainers,preheat,residualTemperature,residualMix,residualMixRate,
-									mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure}=Map[
+									mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure,preSonicationTime,alternateInstruments}=Map[
 									(
 										If[!MatchQ[Lookup[myMapThreadOptions,#[[1]],Automatic],Automatic],
 											Lookup[myMapThreadOptions,#[[1]]],
@@ -5994,7 +6820,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										{RelativeHumidity,Null},
 										{LightExposure,Null},
 										{LightExposureIntensity,Null},
-										{TotalLightExposure,Null}
+										{TotalLightExposure,Null},
+										{PreSonicationTime,Null},
+										{AlternateInstruments,Null}
 									}
 								]
 							],
@@ -6017,6 +6845,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 							If[MatchQ[Lookup[myMapThreadOptions,Instrument],ObjectP[{Object[Instrument,Sonicator],Model[Instrument,Sonicator]}]],
 								(* The user supplied a instrument object. *)
 								instrument=Lookup[myMapThreadOptions,Instrument];
+
+								(* if use specified instrument, alternate instrument is {} *)
+								alternateInstruments=Null;
 
 								(* Get the model of the instrument. *)
 								instrumentModel=If[MatchQ[instrument,ObjectP[Model[Instrument,Sonicator]]],
@@ -6129,6 +6960,11 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										Null
 									]
 								];
+								(* resolve alternate instruments based on potential instruments *)
+								alternateInstruments = If[Length[potentialInstruments]>1,
+									Rest[potentialInstruments],
+									Null
+								];
 							];
 
 							(* Resolve Time and MaxTime *)
@@ -6156,6 +6992,21 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									0 Minute
 							];
 
+							(* Resolve PreSonicationTime *)
+							preSonicationTime = Which[
+								(* It's already user specified, use that value. *)
+								MatchQ[Lookup[myMapThreadOptions,PreSonicationTime],Except[Automatic]],
+								Lookup[myMapThreadOptions,PreSonicationTime],
+
+								(* PreSonicationTime is not specified. Resolve to 15 minute if mix time is over 1 hour*)
+								MatchQ[time,GreaterEqualP[1 Hour]],
+								15 Minute,
+
+								(* mix time is less than 1 hour, resolves to 0 minute*)
+								True,
+								0 Minute
+							];
+
 							(* Do we have to resolve MaxTime? *)
 							maxTime=If[MatchQ[Lookup[myMapThreadOptions,MaxTime],Automatic],
 								(* What is the value of MixUntilDissolved? *)
@@ -6166,6 +7017,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								(* It's already user specified, use that value. *)
 								Lookup[myMapThreadOptions,MaxTime]
 							];
+
 
 							(* Resolve mixUntilDissolved. *)
 							mixUntilDissolved=Which[
@@ -6181,7 +7033,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 							{mixUntilDissolved,instrument,time,maxTime,rate,numberOfMixes,maxNumberOfMixes,
 							volume,temperature,annealingTime,amplitude,maxTemperature,dutyCycle,stirBar,
 								mixRateProfile,temperatureProfile,oscillationAngle,potentialAliquotContainers,preheat,residualTemperature,residualMix,residualMixRate,
-								mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure}=Map[
+								mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure, preSonicationTime,alternateInstruments}=Map[
 								(
 									If[!MatchQ[Lookup[myMapThreadOptions,#[[1]],Automatic],Automatic],
 										Lookup[myMapThreadOptions,#[[1]]],
@@ -6221,7 +7073,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									{RelativeHumidity,Null},
 									{LightExposure,Null},
 									{LightExposureIntensity,Null},
-									{TotalLightExposure,Null}
+									{TotalLightExposure,Null},
+									{PreSonicationTime, preSonicationTime},
+									{AlternateInstruments, alternateInstruments}
 								}
 							];
 						],
@@ -6466,7 +7320,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 						{mixUntilDissolved,instrument,time,maxTime,rate,numberOfMixes,maxNumberOfMixes,
 							volume,temperature,annealingTime,amplitude,maxTemperature,dutyCycle,stirBar,
 							mixRateProfile,temperatureProfile,oscillationAngle,potentialAliquotContainers,preheat,residualTemperature,residualMix,residualMixRate,
-							mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure}=Map[
+							mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure,preSonicationTime,alternateInstruments}=Map[
 							(
 								If[!MatchQ[Lookup[myMapThreadOptions,#[[1]],Automatic],Automatic],
 									Lookup[myMapThreadOptions,#[[1]]],
@@ -6506,7 +7360,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								{RelativeHumidity,Null},
 								{LightExposure,Null},
 								{LightExposureIntensity,Null},
-								{TotalLightExposure,Null}
+								{TotalLightExposure,Null},
+								{PreSonicationTime,Null},
+								{AlternateInstruments,Null}
 							}
 						]
 					],
@@ -6770,7 +7626,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 						{mixUntilDissolved,instrument,time,maxTime,rate,numberOfMixes,maxNumberOfMixes,
 							volume,temperature,annealingTime,amplitude,maxTemperature,dutyCycle,stirBar,
 							mixRateProfile,temperatureProfile,oscillationAngle,potentialAliquotContainers,preheat,residualTemperature, residualMix,residualMixRate,
-							mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure}=Map[
+							mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure,preSonicationTime,alternateInstruments}=Map[
 							(
 								If[!MatchQ[Lookup[myMapThreadOptions,#[[1]],Automatic],Automatic],
 									Lookup[myMapThreadOptions,#[[1]]],
@@ -6810,29 +7666,33 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								{RelativeHumidity,Null},
 								{LightExposure,Null},
 								{LightExposureIntensity,Null},
-								{TotalLightExposure,Null}
+								{TotalLightExposure,Null},
+								{PreSonicationTime,Null},
+								{AlternateInstruments,Null}
 							}
 						]
 					],
 					(* -- INCUBATE -- *)
 					Null,
 						Module[{resolvedTemperature, resolvedIncubateInstrument, resolvedRelativeHumidity, resolvedTotalLightExposure, resolvedTime, resolvedLightExposure, resolvedLightExposureIntensity},
-							(* Resolve our incubation temperature to 40 C (manual) or 25 C (robotic) if it's not set*)
+							(* Resolve our incubation temperature to 40 C (manual) or 25 C (robotic) or Null (transform) if it's not set*)
 							resolvedTemperature=Which[
 								MatchQ[temperature,Except[Automatic]],
-								temperature,
+									temperature,
+								transformQ,
+									Null,
 								MatchQ[temperatureProfile,_List]&&MatchQ[resolvedPreparation,Manual],
-								Null,
+									Null,
 								TrueQ[thaw]&&MatchQ[resolvedPreparation,Manual],
-								Null,
+									Null,
 								(* NOTE: If any of the light exposure options are set, default to 25C instead since the photostability chamber can't *)
 								(* heat up to 40 Celsius. *)
 								MatchQ[lightExposure, Except[Automatic|Null]]||MatchQ[lightExposureIntensity, Except[Automatic|Null]]||MatchQ[Lookup[myMapThreadOptions,LightExposureStandard], _List?(Length[#]>0&)],
-								25 Celsius,
+									25 Celsius,
 								MatchQ[resolvedPreparation,Manual],
-								40 Celsius,
+									40 Celsius,
 								MatchQ[resolvedPreparation,Robotic],
-								25 Celsius
+									25 Celsius
 							];
 
 							(* resolve the residual incubation if preparation is robotic *)
@@ -6913,10 +7773,12 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									Null
 							];
 
-							(* Resolve the time option. *)
+							(* Resolve the time option. (Null if Transform) *)
 							resolvedTime=Which[
 								MatchQ[Lookup[myMapThreadOptions,Time], Except[Automatic]],
 									Lookup[myMapThreadOptions,Time],
+								transformQ,
+									Null,
 								MatchQ[temperatureProfile, _List] && Length[temperatureProfile]>0,
 									Max[temperatureProfile[[All,1]]],
 								TrueQ[thaw],
@@ -6956,10 +7818,17 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 							];
 
 							(* Resolve our incubation instrument, if necessary. *)
-							resolvedIncubateInstrument=If[MatchQ[instrument,Except[Automatic]],
-								instrument,
+							resolvedIncubateInstrument=Which[
+								MatchQ[instrument,Except[Automatic]],
+									instrument,
+
+								(* If we're transforming, we absolutely have to do this in a transform-allowed instrument. *)
+								(* For now, just worry about the model; the appropriate container will come in the compiler *)
+								transformQ,
+									FirstOrDefault[$TransformInstruments],
+
 								(* ELSE: Get the instruments that are compatible with this sample. *)
-								If[MatchQ[resolvedPreparation,Robotic],
+								MatchQ[resolvedPreparation,Robotic],
 
 									(* Resolve if it is robotic *)
 									Module[{potentialInstruments},
@@ -7046,7 +7915,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 											]
 										]
 									],
-
+								True,
 									(* Resolve if it is manual *)
 									compatibleIncubateInstruments=IncubateDevices[
 										mySample,
@@ -7087,14 +7956,14 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 											Null
 										]
 									]
-								]
+
 							];
 
 							(* Set the rest of the options to proper values, unless already set by the user. *)
 							{mixUntilDissolved,instrument,time,maxTime,rate,numberOfMixes,maxNumberOfMixes,
 								volume,temperature,annealingTime,amplitude,maxTemperature,dutyCycle,stirBar,
 								mixRateProfile,temperatureProfile,oscillationAngle,potentialAliquotContainers,preheat,residualTemperature,residualMix,residualMixRate,
-								mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure}=Map[
+								mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure,preSonicationTime,alternateInstruments}=Map[
 								(
 									If[!MatchQ[Lookup[myMapThreadOptions,#[[1]],Automatic],Automatic],
 										Lookup[myMapThreadOptions,#[[1]]],
@@ -7115,12 +7984,15 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									{MixVolume, Null},
 									{
 										Temperature,
-										If[MatchQ[temperatureProfile, _List] && Length[temperatureProfile]>0,
-											Null,
-											If[TrueQ[thaw],
+										Which[
+											MatchQ[temperatureProfile, _List] && Length[temperatureProfile]>0,
 												Null,
+											transformQ,
+												Null,
+											TrueQ[thaw],
+												Null,
+											True,
 												40 Celsius
-											]
 										]
 									},
 									{AnnealingTime, Null},
@@ -7146,7 +8018,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									{RelativeHumidity,resolvedRelativeHumidity},
 									{LightExposure,resolvedLightExposure},
 									{LightExposureIntensity,resolvedLightExposureIntensity},
-									{TotalLightExposure, resolvedTotalLightExposure}
+									{TotalLightExposure, resolvedTotalLightExposure},
+									{PreSonicationTime,Null},
+									{AlternateInstruments,Null}
 								}
 							]
 						],
@@ -7159,25 +8033,135 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 					MatchQ[Lookup[myMapThreadOptions, SampleLabel], Except[Automatic]],
 					Lookup[myMapThreadOptions, SampleLabel],
 
-					MatchQ[resolvedPreparation,Robotic]&&MatchQ[simulation, SimulationP] && MatchQ[LookupObjectLabel[simulation, Download[mySample, Object]], _String],
-					LookupObjectLabel[simulation, Download[mySample, Object]],
+					MatchQ[simulation, SimulationP] && MatchQ[LookupObjectLabel[simulation, Download[mySample, Object]], _String],
+					LookupObjectLabel[simulation, Download[mySample, Object, Cache->cacheBall]],
 
 					True,
-					Lookup[preResolvedSampleLabelRules, Download[mySample, Object]]
+					Lookup[preResolvedSampleLabelRules, Download[mySample, Object, Cache->cacheBall]]
 				];
 
-				sampleContainerObject=Download[Lookup[fetchPacketFromCache[mySample, cache], Container], Object];
+				sampleContainerObject=Download[Lookup[fetchPacketFromCache[mySample, cacheBall], Container], Object];
 
 				sampleContainerLabel=Which[
 					MatchQ[Lookup[myMapThreadOptions, SampleContainerLabel], Except[Automatic]],
 					Lookup[myMapThreadOptions, SampleContainerLabel],
 
-					MatchQ[resolvedPreparation,Robotic]&&MatchQ[simulation, SimulationP] && MatchQ[LookupObjectLabel[simulation, Download[sampleContainerObject, Object]], _String],
+					MatchQ[simulation, SimulationP] && MatchQ[LookupObjectLabel[simulation, Download[sampleContainerObject, Object]], _String],
 					LookupObjectLabel[simulation, Download[sampleContainerObject, Object]],
 
 					True,
 					Lookup[preResolvedSampleContainerLabelRules, Download[sampleContainerObject, Object]]
 				];
+
+				(* Resolve transform options *)
+				transform = Which[
+
+					(* User specified Transform *)
+					MatchQ[Lookup[myMapThreadOptions, Transform], Except[Automatic]],
+						Lookup[myMapThreadOptions, Transform],
+
+					(* We're transforming, as figured out above *)
+					transformQ,
+						True,
+
+					(* If we have cells, but no other transform options set, default to False so we show up in command builder *)
+					MatchQ[mainCellIdentityModel,ListableP[ObjectP[Model[Cell]]]],
+						False,
+
+					(* Otherwise, we're not and don't want to show up in command builder *)
+					True,
+						Null
+				];
+
+				transformHeatShockTemperature = Which[
+
+					(* User specified TransformHeatShockTemperature *)
+					MatchQ[Lookup[myMapThreadOptions, TransformHeatShockTemperature], Except[Automatic]],
+					Lookup[myMapThreadOptions, TransformHeatShockTemperature],
+
+					(* We're transforming, as figured out above *)
+					transformQ,
+						42 Celsius,
+
+					(* Otherwise, we're not *)
+					True,
+						Null
+				];
+
+				transformHeatShockTime = Which[
+
+					(* User specified TransformHeatShockTemperature *)
+					MatchQ[Lookup[myMapThreadOptions, TransformHeatShockTime], Except[Automatic]],
+						Lookup[myMapThreadOptions, TransformHeatShockTime],
+
+					(* We're transforming, as figured out above *)
+					transformQ,
+						45 Second,
+
+					(* Otherwise, we're not *)
+					True,
+						Null
+				];
+
+				transformPreHeatCoolingTime = Which[
+
+					(* User specified TransformHeatShockTemperature *)
+					MatchQ[Lookup[myMapThreadOptions, TransformPreHeatCoolingTime], Except[Automatic]],
+					Lookup[myMapThreadOptions, TransformPreHeatCoolingTime],
+
+					(* We're transforming, as figured out above *)
+					transformQ,
+						25 Minute,
+
+					(* Otherwise, we're not *)
+					True,
+						Null
+				];
+
+				transformPostHeatCoolingTime = Which[
+
+					(* User specified TransformHeatShockTemperature *)
+					MatchQ[Lookup[myMapThreadOptions, TransformPostHeatCoolingTime], Except[Automatic]],
+						Lookup[myMapThreadOptions, TransformPostHeatCoolingTime],
+
+					(* We're transforming, as figured out above *)
+					transformQ,
+						2 Minute,
+
+					(* Otherwise, we're not *)
+					True,
+						Null
+				];
+
+				(* Some transform error checks *)
+				(* Do we have an incompatible instrument with transform? *)
+				resolvedInstrumentModel = Which[
+
+					(* The instrument is null because we're just mixing: this doesn't matter *)
+					NullQ[instrument],
+						Null,
+
+					(* The instrument is a specific object - get its model *)
+					MatchQ[instrument,ObjectP[Object[Instrument]]],
+						Lookup[fetchPacketFromCache[instrument,cacheBall],Model]/.{link_Link:>Download[link, Object]},
+
+					(* The instrument is a model - it's already what we want *)
+					True,
+						Lookup[fetchPacketFromCache[instrument,cacheBall],Object]
+				];
+				transformIncompatibleInstrumentError = transformQ && MatchQ[resolvedInstrumentModel, ObjectP[$TransformInstruments]];
+
+				(* Is our sample container too big? *)
+				sampleContainerHeight = Last[
+					Lookup[
+						fetchPacketFromCache[
+							Download[Lookup[fetchPacketFromCache[sampleContainerObject, cacheBall], Model], Object],
+							cacheBall
+						],
+						Dimensions
+					]
+				];
+				transformIncompatibleContainerError = transformQ && GreaterQ[sampleContainerHeight, $TransformContainerMaxHeight];
 
 				(* Gather MapThread results *)
 				{
@@ -7189,7 +8173,8 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 				volume,temperature,annealingTime,amplitude,maxTemperature,dutyCycle,residualIncubation,potentialAliquotContainers,
 				stirBar,mixRateProfile,temperatureProfile,oscillationAngle,residualTemperature,residualMix,residualMixRate,preheat,
 				mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial,sampleLabel,sampleContainerLabel,
-				relativeHumidity, lightExposure, lightExposureIntensity, totalLightExposure,
+				relativeHumidity, lightExposure, lightExposureIntensity, totalLightExposure, transform, transformHeatShockTemperature,
+				transformHeatShockTime, transformPreHeatCoolingTime, transformPostHeatCoolingTime, preSonicationTime, alternateInstruments,
 
 				mixTypeRateError,
 
@@ -7213,7 +8198,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 				shakeNoInstrumentError,shakeIncompatibleInstrumentError,
 
 				stirAutomaticInstrumentContainerWarning,stirManualInstrumentContainerWarning,
-				stirNoInstrumentError,stirIncompatibleInstrumentError,
+				stirNoInstrumentError,stirIncompatibleInstrumentError, noImpellerOrStirBarError,
 
 				sonicateAutomaticInstrumentContainerWarning,sonicateManualInstrumentContainerWarning,
 				sonicateNoInstrumentError,sonicateIncompatibleInstrumentError,
@@ -7222,7 +8207,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 				sterileMismatchWarning,sterileContaminationWarning,
 
-				monotonicCorrectionCurveWarning,incompleteCorrectionCurveWarning,invalidZeroCorrectionError
+				monotonicCorrectionCurveWarning,incompleteCorrectionCurveWarning,invalidZeroCorrectionError,
+
+				transformIncompatibleInstrumentError, transformIncompatibleContainerError
 				}
 			]
 		],
@@ -8383,6 +9370,54 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 	(*-- STIR CHECKS --*)
 
+	(* Check for no stir bar or impeller errors. *)
+	stirNoStirBarOrImpellerInvalidOptions=If[Or@@noImpellerOrStirBarErrors&&!gatherTests,
+		Module[{invalidSamples,correspondingInstruments},
+			(* Get the samples that correspond to this error. *)
+			invalidSamples=PickList[mySimulatedSamples,noImpellerOrStirBarErrors];
+			correspondingInstruments=PickList[instruments,noImpellerOrStirBarErrors];
+
+			(* Throw the corresponding error. *)
+			Message[Error::StirNoStirBarOrImpeller,ObjectToString[invalidSamples,Cache->cacheBall],ObjectToString[correspondingInstruments,Cache->cacheBall]];
+
+			(* Return the invalid options. *)
+			{Instrument, StirBar}
+		],
+		{}
+	];
+
+	(* Create the corresponding test for the vortex incompatible instrument error. *)
+	stirNoStirBarOrImpellerTest=If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{failingInputs,passingInputs,passingInputsTest,failingInputTest},
+			(* Get the inputs that fail this test. *)
+			failingInputs=PickList[mySimulatedSamples,noImpellerOrStirBarErrors];
+
+			(* Get the inputs that pass this test. *)
+			passingInputs=PickList[mySimulatedSamples,MapThread[(#1\[Xor]MatchQ[#2,Stir]&),{noImpellerOrStirBarErrors,mixTypes}]];
+
+			(* Create a test for the non-passing inputs. *)
+			failingInputTest=If[Length[failingInputs]>0,
+				Test["The following samples, "<>ObjectToString[failingInputs,Cache->cacheBall]<>" have compatible stir bar or impeller to stir, if specified.",True,False],
+				Nothing
+			];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest=If[Length[passingInputs]>0,
+				Test["The following samples, "<>ObjectToString[passingInputs,Cache->cacheBall]<>" have compatible stir bar or impeller to stir, if specified.",True,True],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				failingInputTest
+			}
+		],
+		(* We aren't gathering tests. No tests to create. *)
+		{}
+	];
+
 	(* Check for incompatible instrument errors. *)
 	stirIncompatibleInstrumentInvalidOptions=If[Or@@stirIncompatibleInstrumentErrors&&!gatherTests,
 		Module[{invalidSamples,correspondingInstruments},
@@ -8399,7 +9434,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		{}
 	];
 
-	(* Create the corresponding test for the vortex incompatible instrument error. *)
+	(* Create the corresponding test for the stir incompatible instrument error. *)
 	stirIncompatibleInstrumentTest=If[gatherTests,
 	(* We're gathering tests. Create the appropriate tests. *)
 		Module[{failingInputs,passingInputs,passingInputsTest,failingInputTest},
@@ -8411,13 +9446,13 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest=If[Length[failingInputs]>0,
-				Test["The following samples, "<>ObjectToString[failingInputs,Cache->cacheBall]<>" are compatible with their given shaker instrument, if specified.",True,False],
+				Test["The following samples, "<>ObjectToString[failingInputs,Cache->cacheBall]<>" are compatible with their given stir instrument, if specified.",True,False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["The following samples, "<>ObjectToString[passingInputs,Cache->cacheBall]<>" are compatible with their given shaker instrument, if specified.",True,True],
+				Test["The following samples, "<>ObjectToString[passingInputs,Cache->cacheBall]<>" are compatible with their given stir instrument, if specified.",True,True],
 				Nothing
 			];
 
@@ -8746,6 +9781,102 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		{}
 	];
 
+	(*---Transform Checks---*)
+	(* Check for instrument compatibility with Transform. *)
+	transformIncompatibleInstrumentOptions=If[Or@@transformIncompatibleInstrumentErrors&&!gatherTests,
+		Module[{invalidSamples,invalidInstruments},
+			(* Get the samples that correspond to this error. *)
+			invalidSamples=PickList[mySimulatedSamples,transformIncompatibleInstrumentErrors];
+			invalidInstruments=PickList[instruments,transformIncompatibleInstrumentErrors];
+
+			(* Throw the corresponding error. *)
+			Message[Error::TransformIncompatibleInstrument,ObjectToString[invalidSamples,Cache->cacheBall],ObjectToString[invalidInstruments,Cache->cacheBall]];
+
+			(* Return the invalid options. *)
+			{Instrument,Transform}
+		],
+		{}
+	];
+
+	(* Create the corresponding test for the transform-incompatible instrument error. *)
+	transformIncompatibleInstrumentTest=If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{failingInputs,passingInputs,passingInputsTest,failingInputTest},
+			(* Get the inputs that fail this test. *)
+			failingInputs=PickList[mySimulatedSamples,transformIncompatibleInstrumentErrors];
+
+			(* Get the inputs that pass this test. *)
+			passingInputs=PickList[mySimulatedSamples,MapThread[(#1\[Xor]MatchQ[#2,Disrupt]&),{transformIncompatibleInstrumentErrors,mixTypes}]];
+
+			(* Create a test for the non-passing inputs. *)
+			failingInputTest=If[Length[failingInputs]>0,
+				Test["The following samples, "<>ObjectToString[failingInputs,Cache->cacheBall]<>" have instruments compatible with Transform-type incubations.",True,False],
+				Nothing
+			];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest=If[Length[passingInputs]>0,
+				Test["The following samples, "<>ObjectToString[passingInputs,Cache->cacheBall]<>" have instruments compatible with Transform-type incubations.",True,True],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				failingInputTest
+			}
+		],
+		(* We aren't gathering tests. No tests to create. *)
+		{}
+	];
+
+	(* Check for container compatibility with Transform. *)
+	transformIncompatibleContainerOptions=If[Or@@transformIncompatibleContainerErrors&&!gatherTests,
+		Module[{invalidSamples},
+			(* Get the samples that correspond to this error. *)
+			invalidSamples=PickList[mySimulatedSamples,transformIncompatibleContainerErrors];
+			(* Throw the corresponding error. *)
+			Message[Error::TransformIncompatibleContainer,ObjectToString[invalidSamples,Cache->cacheBall]];
+
+			(* Return the invalid options. *)
+			{Transform}
+		],
+		{}
+	];
+
+	(* Create the corresponding test for the transform-incompatible container error. *)
+	transformIncompatibleContainerTest=If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{failingInputs,passingInputs,passingInputsTest,failingInputTest},
+			(* Get the inputs that fail this test. *)
+			failingInputs=PickList[mySimulatedSamples,transformIncompatibleContainerErrors];
+
+			(* Get the inputs that pass this test. *)
+			passingInputs=PickList[mySimulatedSamples,MapThread[(#1\[Xor]MatchQ[#2,Disrupt]&),{transformIncompatibleContainerErrors,mixTypes}]];
+
+			(* Create a test for the non-passing inputs. *)
+			failingInputTest=If[Length[failingInputs]>0,
+				Test["The following samples, "<>ObjectToString[failingInputs,Cache->cacheBall]<>" have containers compatible with Transform-type incubations.",True,False],
+				Nothing
+			];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest=If[Length[passingInputs]>0,
+				Test["The following samples, "<>ObjectToString[passingInputs,Cache->cacheBall]<>" have containers compatible with Transform-type incubations.",True,True],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				failingInputTest
+			}
+		],
+		(* We aren't gathering tests. No tests to create. *)
+		{}
+	];
+
+
 	(*-- CONTAINER GROUPING RESOLUTION --*)
 	(* Resolve TargetContainers and Instrument. *)
 	{targetContainers,resolvedInstruments,resolvedRates}=Module[{aliquotIndices,aliquotTypes,typesAndIndices,groupedTypesAndIndices,aliquotContainersAndInstruments,resolvedContainersAndInstruments,aliquotInformation},
@@ -8825,10 +9956,16 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									instrumentRates=Lookup[instrumentPacket,{MinRotationRate,MaxRotationRate},Null]/.$Failed->Null;
 
 									(* Does this instrument need a rate? *)
-									If[MatchQ[mixType,Sonicate],
-										Null,
+									Which[
+										MatchQ[mixType,Sonicate],
+											Null,
+										(* Are we stirring? *)
+										MatchQ[mixType,Stir],
+										(* Use 20% of its max stir rate*)
+											Round[0.2*(instrumentRates[[2]]/.Null->1000RPM),1RPM],
+										True,
 										(* Round to the nearest RPM. *)
-										Round[Mean[instrumentRates],1RPM]
+											Round[Mean[instrumentRates],1RPM]
 									],
 									(* MixRate isn't automatic. Go with the user supplied value. *)
 									rates[[index]]
@@ -8864,7 +10001,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 	];
 
 	specifiedAliquotOptions=Lookup[myOptions,{Aliquot,ConsolidateAliquots,AliquotPreparation,AliquotSampleLabel,AliquotAmount,TargetConcentration,TargetConcentrationAnalyte,AssayVolume,AliquotContainer,DestinationWell,ConcentratedBuffer,BufferDilutionFactor,BufferDiluent,AssayBuffer,AliquotSampleStorageCondition}];
-	shortcircuitAliquotQ=MatchQ[specifiedAliquotOptions,{{False..},(Null|Automatic),(Null|Automatic),{(Null|Automatic)..}..}];
+	shortcircuitAliquotQ=MatchQ[First[specifiedAliquotOptions], {False..}]&&MatchQ[Flatten[Rest[specifiedAliquotOptions]], {(Null|Automatic)..}];
 	numberSimulatedSamples=Length[mySimulatedSamples];
 
 
@@ -9235,11 +10372,15 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 	(* If given a stir bar, make sure that the stir bar can actually fit in the container that we have. *)
 	stirBarTooBigResult=MapThread[
-		Function[{sample, stirBar},
+		Function[{sample, targetContainer, stirBar},
 			If[MatchQ[stirBar, ObjectP[]],
 				Module[{compatibleStirBarModels, givenStirBarModel},
 					(* Get the compatible stir bar models. *)
-					compatibleStirBarModels=compatibleStirBars[sample, Cache->cacheBall];
+					compatibleStirBarModels= If[MatchQ[targetContainer,ObjectP[Model[Container]]],
+						(* If we are aliquoting to another container, use that container for compatibleStirBar*)
+						compatibleStirBars[targetContainer, Cache->cacheBall],
+						compatibleStirBars[sample, Cache->cacheBall]
+					];
 
 					(* If given an object, fetch the model. *)
 					givenStirBarModel=If[MatchQ[stirBar, ObjectP[Object[Part]]],
@@ -9258,6 +10399,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		],
 		{
 			mySimulatedSamples,
+			targetContainers,
 			stirBars
 		}
 	];
@@ -9364,49 +10506,53 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		{}
 	];
 
-	(* Final check to make sure everything is copacetic. *)
+	(* Final check to make sure everything is compatible. *)
 	(* Make sure that we don't have incorrect options set, based on the MixType. *)
 	typeOptionMismatches=MapThread[
-		Function[{type,mixUntilDissolved,instrument,time,maxTime,rate,numberOfMixes,maxNumberOfMixes,volume,temperature,annealingTime,residualIncubation,residualTemperature,residualMix,residualMixRate,amplitude,maxTemperature,dutyCycle,relativeHumidity,sample},
+		Function[{type,mixUntilDissolved,instrument,time,maxTime,rate,numberOfMixes,maxNumberOfMixes,volume,temperature,annealingTime,residualIncubation,residualTemperature,residualMix,residualMixRate,amplitude,maxTemperature,dutyCycle,relativeHumidity,transform,preSonicationTime,sample},
 			Module[{mustBeSpecifiedOptions,cannotBeSpecifiedOptions,specifiedOptionsBooleans,specifiedOptions,notSpecifiedOptions,incorrectlySpecifiedOptions},
 				(* Switch based on type. *)
 				{mustBeSpecifiedOptions,cannotBeSpecifiedOptions}=Switch[type,
 					Invert,
-						{{NumberOfMixes},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,TemperatureProfile,MixRateProfile,Instrument,Time,MaxTime,MixRate,MixVolume,Temperature,AnnealingTime,ResidualIncubation,ResidualTemperature,ResidualMix,ResidualMixRate,Amplitude,MaxTemperature,DutyCycle}},
+						{{NumberOfMixes},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,TemperatureProfile,MixRateProfile,Instrument,Time,MaxTime,MixRate,MixVolume,Temperature,AnnealingTime,ResidualIncubation,ResidualTemperature,ResidualMix,ResidualMixRate,Amplitude,MaxTemperature,DutyCycle,PreSonicationTime}},
 					Pipette,
-						{{MixVolume,NumberOfMixes},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,TemperatureProfile,MixRateProfile,Time,MaxTime,MixRate,Temperature,AnnealingTime,ResidualIncubation,ResidualTemperature,ResidualMix,ResidualMixRate,Amplitude,MaxTemperature,DutyCycle}},
+						{{MixVolume,NumberOfMixes},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,TemperatureProfile,MixRateProfile,Time,MaxTime,MixRate,Temperature,AnnealingTime,ResidualIncubation,ResidualTemperature,ResidualMix,ResidualMixRate,Amplitude,MaxTemperature,DutyCycle,PreSonicationTime}},
 					Swirl,
-						{{NumberOfMixes},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,TemperatureProfile,MixRateProfile,Instrument,Time,MaxTime,MixRate,MixVolume,Temperature,AnnealingTime,ResidualIncubation,ResidualTemperature,ResidualMix,ResidualMixRate,Amplitude,MaxTemperature,DutyCycle}},
+						{{NumberOfMixes},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,TemperatureProfile,MixRateProfile,Instrument,Time,MaxTime,MixRate,MixVolume,Temperature,AnnealingTime,ResidualIncubation,ResidualTemperature,ResidualMix,ResidualMixRate,Amplitude,MaxTemperature,DutyCycle,PreSonicationTime}},
 					Vortex,
-						{{MixRate,Time,Instrument},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,TemperatureProfile,MixRateProfile,MixVolume,NumberOfMixes,MaxNumberOfMixes,Amplitude,MaxTemperature,DutyCycle}},
+						{{MixRate,Time},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,TemperatureProfile,MixRateProfile,MixVolume,NumberOfMixes,MaxNumberOfMixes,Amplitude,MaxTemperature,DutyCycle,PreSonicationTime}},
 					Roll,
-						{{MixRate,Time,Instrument},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,TemperatureProfile,MixRateProfile,MixVolume,NumberOfMixes,MaxNumberOfMixes,Amplitude,MaxTemperature,DutyCycle}},
+						{{MixRate,Time},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,TemperatureProfile,MixRateProfile,MixVolume,NumberOfMixes,MaxNumberOfMixes,Amplitude,MaxTemperature,DutyCycle,PreSonicationTime}},
 					Shake,
-						{{Time,Instrument},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,MixVolume,NumberOfMixes,MaxNumberOfMixes,Amplitude,MaxTemperature,DutyCycle}},
+						{{Time},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,MixVolume,NumberOfMixes,MaxNumberOfMixes,Amplitude,MaxTemperature,DutyCycle,PreSonicationTime}},
 					Disrupt,
-						{{MixRate,Time,Instrument},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,TemperatureProfile,MixRateProfile,MixVolume,NumberOfMixes,MaxNumberOfMixes,Amplitude,MaxTemperature,DutyCycle}},
+						{{MixRate,Time},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,TemperatureProfile,MixRateProfile,MixVolume,NumberOfMixes,MaxNumberOfMixes,Amplitude,MaxTemperature,DutyCycle,PreSonicationTime}},
 					Nutate,
-						{{MixRate,Time,Instrument},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,TemperatureProfile,MixRateProfile,MixVolume,NumberOfMixes,MaxNumberOfMixes,Amplitude,MaxTemperature,DutyCycle}},
+						{{MixRate,Time},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,TemperatureProfile,MixRateProfile,MixVolume,NumberOfMixes,MaxNumberOfMixes,Amplitude,MaxTemperature,DutyCycle,PreSonicationTime}},
 					Stir,
-						{{MixRate,Time,Instrument},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,TemperatureProfile,MixRateProfile,MixVolume,NumberOfMixes,MaxNumberOfMixes,Amplitude,MaxTemperature,DutyCycle}},
+						{{MixRate,Time},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,TemperatureProfile,MixRateProfile,MixVolume,NumberOfMixes,MaxNumberOfMixes,Amplitude,MaxTemperature,DutyCycle,PreSonicationTime}},
 					Sonicate,
-						{{Time,Instrument},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,TemperatureProfile,MixRateProfile,MixRate,MixVolume,NumberOfMixes,MaxNumberOfMixes}},
+						{{Time,PreSonicationTime},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,TemperatureProfile,MixRateProfile,MixRate,MixVolume,NumberOfMixes,MaxNumberOfMixes}},
 					Homogenize,
-						{{Time,Instrument,Amplitude},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,TemperatureProfile,MixRateProfile,MixRate,MixVolume,NumberOfMixes,MaxNumberOfMixes}},
+						{{Time,Amplitude},{RelativeHumidity,LightExposure,LightExposureIntensity,TotalLightExposure,LightExposureStandard,StirBar,TemperatureProfile,MixRateProfile,MixRate,MixVolume,NumberOfMixes,MaxNumberOfMixes,PreSonicationTime}},
 					Null,
-						If[MatchQ[instrument, ObjectP[{Model[Instrument, EnvironmentalChamber], Object[Instrument, EnvironmentalChamber]}]],
-							{{Time,Instrument,RelativeHumidity},{StirBar,MixRateProfile,MixVolume,NumberOfMixes,MaxNumberOfMixes,MaxTime,MixUntilDissolved}},
-							{{Time,Instrument},{StirBar,MixRateProfile,MixVolume,NumberOfMixes,MaxNumberOfMixes,MaxTime,MixUntilDissolved}}
+						Which[
+							TrueQ[transform],
+								{{},{StirBar,MixRateProfile,MixVolume,NumberOfMixes,MaxNumberOfMixes,MaxTime,MixUntilDissolved,PreSonicationTime}},
+							MatchQ[instrument, ObjectP[{Model[Instrument, EnvironmentalChamber], Object[Instrument, EnvironmentalChamber]}]],
+								{{Time,Instrument,RelativeHumidity},{StirBar,MixRateProfile,MixVolume,NumberOfMixes,MaxNumberOfMixes,MaxTime,MixUntilDissolved,PreSonicationTime}},
+							True,
+								{{Time,Instrument},{StirBar,MixRateProfile,MixVolume,NumberOfMixes,MaxNumberOfMixes,MaxTime,MixUntilDissolved,PreSonicationTime}}
 						],
 					_,
 						{{},{}}
 				];
 
 				(* Create a filter mask for the options that were specified. *)
-				specifiedOptionsBooleans=(MatchQ[#,Except[Null|False|AmbientTemperatureP]]&)/@{type,mixUntilDissolved,instrument,time,maxTime,rate,numberOfMixes,maxNumberOfMixes,volume,temperature,annealingTime,residualIncubation,residualTemperature,residualMix,residualMixRate,amplitude,maxTemperature,dutyCycle,relativeHumidity};
+				specifiedOptionsBooleans=(MatchQ[#,Except[Null|False|AmbientTemperatureP]]&)/@{type,mixUntilDissolved,instrument,time,maxTime,rate,numberOfMixes,maxNumberOfMixes,volume,temperature,annealingTime,residualIncubation,residualTemperature,residualMix,residualMixRate,amplitude,maxTemperature,dutyCycle,relativeHumidity,preSonicationTime};
 
 				(* Filter our options based on this mask. *)
-				specifiedOptions=PickList[{MixType,MixUntilDissolved,Instrument,Time,MaxTime,MixRate,NumberOfMixes,MaxNumberOfMixes,MixVolume,Temperature,AnnealingTime,ResidualIncubation,ResidualTemperature,ResidualMix,ResidualMixRate,Amplitude,MaxTemperature,DutyCycle,RelativeHumidity},specifiedOptionsBooleans];
+				specifiedOptions=PickList[{MixType,MixUntilDissolved,Instrument,Time,MaxTime,MixRate,NumberOfMixes,MaxNumberOfMixes,MixVolume,Temperature,AnnealingTime,ResidualIncubation,ResidualTemperature,ResidualMix,ResidualMixRate,Amplitude,MaxTemperature,DutyCycle,RelativeHumidity, PreSonicationTime},specifiedOptionsBooleans];
 
 				(* Make sure that all of our must be specified options are actually specified. *)
 				notSpecifiedOptions=Complement[mustBeSpecifiedOptions,specifiedOptions];
@@ -9441,6 +10587,8 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 			maxTemperatures,
 			dutyCycles,
 			relativeHumidities,
+			transforms,
+			preSonicationTimes,
 			mySimulatedSamples
 		}
 	];
@@ -9575,23 +10723,24 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 	];
 
 	(* Get the rest of our options directly from SafeOptions. *)
-	{confirm, template, samplesInStorageCondition, samplePreparation, cache, fastTrack, operator, parentProtocol, upload, outputOption} = Lookup[myOptions, {Confirm, Template, SamplesInStorageCondition, PreparatoryUnitOperations, Cache, FastTrack, Operator, ParentProtocol, Upload, Output}];
+	{confirm, canaryBranch, template, samplesInStorageCondition, samplePreparation, cache, fastTrack, operator, parentProtocol, upload, outputOption} = Lookup[myOptions, {Confirm, CanaryBranch, Template, SamplesInStorageCondition, PreparatoryUnitOperations, Cache, FastTrack, Operator, ParentProtocol, Upload, Output}];
 
 	(* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
-	invalidInputs=DeleteDuplicates[Flatten[{discardedInvalidInputs}]];
+	invalidInputs=DeleteDuplicates[Flatten[{discardedInvalidInputs, maxSafeMixRatesMissingInvalidInputs}]];
 	invalidOptions=DeleteDuplicates[Flatten[
 		{
 			instrumentTypeInvalidOptions,rateTypeInvalidOptions,typeNumberOfMixesInvalidOptions,invertVolumeInvalidOptions,invertContainerInvalidOptions,
 			maxMixUntilDissolvedInvalidOptions,vortexIncompatibleInstrumentInvalidOptions,vortexNoInstrumentForRateInvalidOptions,vortexNoInstrumentInvalidOptions,
 			rollIncompatibleInstrumentInvalidOptions,rollNoInstrumentInvalidOptions,shakeIncompatibleInstrumentInvalidOptions,shakeNoInstrumentInvalidOptions,residualIncubationIncompatibleInvalidOptions,
-			stirIncompatibleInstrumentInvalidOptions,stirNoInstrumentInvalidOptions,sonicateIncompatibleInstrumentInvalidOptions,sonicateNoInstrumentInvalidOptions,
+			stirNoStirBarOrImpellerInvalidOptions, stirIncompatibleInstrumentInvalidOptions,stirNoInstrumentInvalidOptions,sonicateIncompatibleInstrumentInvalidOptions,sonicateNoInstrumentInvalidOptions,
 			typeAndIncubationInvalidOptions,incubateInvalidOptions,generalInvalidOptions,instrumentInvalidOptions,
 			nameInvalidOptions,typeMismatchInvalidOptions,multiProbeHeadInvalidOptions,thawInvalidOptions,thawNoInstrumentInvalidOptions,thawIncompatibleInstrumentInvalidOptions,
 			maxTemperatureInvalidOptions,homogenizeIncompatibleInstrumentInvalidOptions,homogenizeNoInstrumentInvalidOptions,
 			nutateNoInstrumentInvalidOptions, nutateIncompatibleInstrumentInvalidOptions, disruptNoInstrumentInvalidOptions, disruptNoInstrumentForRateInvalidOptions,
 			disruptIncompatibleInstrumentInvalidOptions, sonicationHornAmplitudeInvalidOptions, temperatureProfileInvalidOptions, mixRateProfileInvalidOptions,
 			conflictingProfileInvalidOptions, stirBarTooBigInvalidOptions, lightExposureIntensityInvalidOptions,
-			invalidZeroCorrectionOptions,
+			invalidZeroCorrectionOptions,transformNonTransformInvalidOptions,transformInvalidOptions,transformIncompatibleInstrumentOptions, safeMixRateInvalidOptions,
+			transformIncompatibleContainerOptions, volumetricFlaskMixInvalidOptions,volumetricFlaskMixRateInvalidOptions,
 			If[MatchQ[preparationResult, $Failed],
 				{Preparation},
 				Nothing
@@ -9662,12 +10811,19 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 					MultichannelMix->resolvedMultichannelMix,
 					MultichannelMixName->resolvedMultichannelMixName,
 					DeviceChannel->resolvedDeviceChannel,
+					Transform->transforms,
+					TransformHeatShockTemperature->transformHeatShockTemperatures,
+					TransformHeatShockTime->transformHeatShockTimes,
+					TransformPreHeatCoolingTime->transformPreHeatCoolingTimes,
+					TransformPostHeatCoolingTime->transformPostHeatCoolingTimes,
+					PreSonicationTime -> preSonicationTimes,
+					AlternateInstruments -> samplesAlternateInstruments,
 					Email->email,
 					Confirm->confirm,
+					CanaryBranch->canaryBranch,
 					Template->template,
 					SamplesInStorageCondition->samplesInStorageCondition,
 					PreparatoryUnitOperations->samplePreparation,
-					PreparatoryPrimitives->Lookup[myOptions, PreparatoryPrimitives],
 					Cache->cache,
 					Simulation->updatedSimulation,
 					FastTrack->fastTrack,
@@ -9686,12 +10842,13 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		Tests -> Flatten[{
 			samplePrepTests,discardedTest,mixTypeTest,precisionTests,rateTypeTest,typeNumberOfMixesTest,typeAndVolumeTest,invertVolumeTest,
 			invertContainerTest,pipetteMixNoVolumeTest,maxMixUntilDissolvedTest,vortexIncompatibleInstrumentTest,vortexNoInstrumentForRateTest,vortexNoInstrumentTest,
-			rollIncompatibleInstrumentTest,rollNoInstrumentTest,shakeIncompatibleInstrumentTest,shakeNoInstrumentTest,residualIncubationIncompatibleTests,stirIncompatibleInstrumentTest,stirNoInstrumentTest,
+			rollIncompatibleInstrumentTest,rollNoInstrumentTest,shakeIncompatibleInstrumentTest,shakeNoInstrumentTest,residualIncubationIncompatibleTests,stirNoStirBarOrImpellerTest, stirIncompatibleInstrumentTest,stirNoInstrumentTest,
 			sonicateIncompatibleInstrumentTest,sonicateNoInstrumentTest,typeAndIncubationTest,incubateTest,generalTest,homogenizeIncompatibleInstrumentTest,homogenizeNoInstrumentTest,
 			instrumentTest,volumeTest,typeTest,multiProbeHeadTest,validNameTest,thawTest,thawNoInstrumentTest,thawIncompatibleInstrumentTest,maxTemperatureTest,aliquotTests,
 			sonicationHornAmplitudeTest,disruptNoInstrumentTest,disruptNoInstrumentForRateTest,disruptIncompatibleInstrumentTest,
 			nutateNoInstrumentTest, nutateIncompatibleInstrumentTest,temperatureProfileTest,mixRateProfileTest,conflictingProfileTest, stirBarTooBigTest,
-			lightExposureIntensityTest,monotonicCorrectionCurveTest,incompleteCorrectionCurveTest,invalidZeroCorrectionTest
+			lightExposureIntensityTest,monotonicCorrectionCurveTest,incompleteCorrectionCurveTest,invalidZeroCorrectionTest,transformNonTransformTest,transformTest, safeMixRateTest,
+			transformIncompatibleInstrumentTest,transformIncompatibleContainerTest, maxSafeMixRatesMissingTest, volumetricFlaskMixTest, volumetricFlaskMixRateTest
 		}]
 	}
 ];
@@ -9713,8 +10870,8 @@ DefineOptions[incubateNewResourcePackets,
 incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{___Rule},myResolvedOptions:{___Rule},myCollapsedResolvedOptions:{___Rule},myOptions:OptionsPattern[]]:=Module[
 	{experimentFunction,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,cache,mySamplesNoName,simulatedSamples,mixTypes,mapThreadFriendlyOptions,originalSampleObjects,sampleObjects,groupedSamples,
 	protocolFields,mixType,samples,options,instrumentLocationResources,resourceToInstrumentIndexMap,instrumentLocationIndices,thawFields,thawParameters,
-	simulatedContainers,sampleGroupingIndices,sampleGroupingLengths,estimatedThawTime,estimatedMixTime,multiIncubateFields,result,tests,allResourceBlobs,
-	fulfillable,frqTests,messages,simulation,updatedSimulation,samplePackets,containerPackets,containerModelPackets,preparation,
+	simulatedContainers,sampleGroupingIndices,sampleGroupingLengths,estimatedThawTime,estimatedMixTime,multiIncubateFields,transformCoolerResource,
+		result,tests,allResourceBlobs,fulfillable,frqTests,messages,simulation,updatedSimulation,samplePackets,containerPackets,containerModelPackets,preparation,
 		sampleLabelResources,sampleContainerLabelResources,instrumentResources,tipResources,unitOperationPacket,unitOperationPacketWithLabeledObjects,mySamplePackets,
 	previewRule,optionsRule,testsRule,resultRule,rawResourceBlobs,resourcesWithoutName,resourceToNameReplaceRules,protocolPacket, unitOperationPackets},
 
@@ -9793,7 +10950,7 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 			samples=groupedMixSamples[[2]][[All,1]];
 			options=groupedMixSamples[[2]][[All,2]];
 
-			(* Switch based on mix type of these samples. *)
+			(* Switch based on mix type of these samples (or use transform escape hatch). *)
 			Switch[mixType,
 				Invert,
 					(* We have to invert our samples, by hand, one by one. *)
@@ -10145,18 +11302,21 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 							(* We have to make our primitives in the compiler since they point to our source sample. *)
 							disruptParameters=Flatten[MapThread[
 								Function[{sampleGroup,instrument,instrumentLocation,settings},
-									(<|
-										Sample->Null,
-										Instrument->Link[instrument],
-										Location->#,
-										Rate->Lookup[settings,MixRate],
-										Time->Lookup[settings,Time],
-										MaxTime->Lookup[settings,MaxTime],
-										MixUntilDissolved->Lookup[settings,MixUntilDissolved],
-										Temperature->Lookup[settings,Temperature],
-										AnnealingTime->Lookup[settings,AnnealingTime],
-										ResidualIncubation->Lookup[settings,ResidualIncubation]
-									|>&)/@instrumentLocation
+									MapThread[
+										<|
+											Sample->Link[#1],
+											Instrument->Link[instrument],
+											Location->#2,
+											Rate->Lookup[settings,MixRate],
+											Time->Lookup[settings,Time],
+											MaxTime->Lookup[settings,MaxTime],
+											MixUntilDissolved->Lookup[settings,MixUntilDissolved],
+											Temperature->Lookup[settings,Temperature],
+											AnnealingTime->Lookup[settings,AnnealingTime],
+											ResidualIncubation->Lookup[settings,ResidualIncubation]
+										|>&,
+										{sampleGroup, instrumentLocation}
+									]
 								],
 								{sampleGrouping,instrumentObjects,instrumentLocations,groupedSettings}
 							]];
@@ -10424,13 +11584,23 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 										{shakerPosition, shakerMaxWidth, groupedByShakerSettings, groupedSamples, settingGroups, transposedGroupInformation,
 											sampleContainers,sampleContainerModels,groupedByContainerModel,containerModelGroups,containerModelMaximalAxis,
 											numberOfContainers,partitionedSamples,sampleGrouping,instrumentInformation,additionalTime,shakeParameters,
-											sampleGroupingIndices,sampleGroupingLengths,groupedSamplesByContainerModel,instrumentSettingWithAdapter},
+											sampleGroupingIndices,sampleGroupingLengths,groupedSamplesByContainerModel,instrumentSettingWithAdapter, compatibleAdapters,compatibleVFs, flattenAdapters, VFToAdapterLookup, sampleContainerAdapterModels},
 
 										(* Get the position slot of the shaker. *)
-										shakerPosition=Lookup[fetchPacketFromCache[Model[Instrument,Shaker,"id:mnk9jORRwA7Z"],cache],Positions][[1]];
+										shakerPosition=cacheLookup[cache, Model[Instrument,Shaker,"id:mnk9jORRwA7Z"], Positions][[1]];
 
 										(* Get the width of the position. *)
 										shakerMaxWidth=Lookup[shakerPosition,MaxWidth];
+
+										(* Get the CompatibleAdapters of the shaker *)
+										compatibleAdapters= Download[cacheLookup[cache, Model[Instrument,Shaker,"id:mnk9jORRwA7Z"], CompatibleAdapters],Object];
+
+										(* For each of the adapter, find out the VF that can be used with this adapter *)
+										compatibleVFs = Download[cacheLookup[cache, #, CompatibleVolumetricFlasks], Object]&/@compatibleAdapters;
+
+										(* prepare flatten adapters for look up *)
+										flattenAdapters = Flatten[MapThread[ConstantArray[#1, Length[#2]]&, {compatibleAdapters, compatibleVFs}]];
+										VFToAdapterLookup = AssociationThread[Flatten[compatibleVFs], flattenAdapters];
 
 										(* Group our samples by their settings. *)
 										groupedByShakerSettings=Normal[GroupBy[ratchingBarIncubateInformation,(#[[2]]&)]];
@@ -10444,11 +11614,14 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 										transposedGroupInformation=MapThread[
 											Function[{sampleGroup,instrumentSetting},
 												(* Get the container models of the samples in this group. *)
-												sampleContainers=(Lookup[fetchPacketFromCache[#,cache],Container]&)/@sampleGroup;
-												sampleContainerModels=(Download[Lookup[fetchPacketFromCache[#,cache],Model],Object]&)/@sampleContainers;
+												sampleContainers=cacheLookup[cache, #, Container]&/@sampleGroup;
+												sampleContainerModels=(Download[cacheLookup[cache, #, Model],Object]&)/@sampleContainers;
+
+												(* Replace the vf container with its corresponding adapter *)
+												sampleContainerAdapterModels = sampleContainerModels/.VFToAdapterLookup;
 
 												(* Group our samples by their container models. *)
-												groupedByContainerModel=Normal[GroupBy[Transpose[{sampleGroup,sampleContainerModels}],(#[[2]]&)]];
+												groupedByContainerModel=Normal[GroupBy[Transpose[{sampleGroup,sampleContainerAdapterModels}],(#[[2]]&)]];
 
 												(* Get the samples and their containers. *)
 												groupedSamplesByContainerModel=(#[[All,1]]&)/@Values[groupedByContainerModel];
@@ -10457,14 +11630,27 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 												(* For each container model, figure out the maximal axis (width or length) then figure out how many of that container we can put on the shaker at the same time. *)
 												Sequence@@MapThread[
 													Function[{sampleGroupByContainerModel,containerModel},
-														(* Figure out the maximal axis. *)
-														containerModelMaximalAxis=Max[Lookup[fetchPacketFromCache[containerModel,cache],Dimensions][[1;;2]]];
+														(* at this moment, volumetric flask has been replaced as adapter racks *)
+														containerModelMaximalAxis=If[MatchQ[containerModel, ObjectP[Model[Container, Rack]]],
+															(* Do not need maximal axis if we are dealing with vf -- will be using its compatible adapters*)
+															Null,
+															(* Figure out the maximal axis if we are dealing with normal vessels or plates *)
+															Max[cacheLookup[cache, containerModel, Dimensions][[1;;2]]]
+														];
 
 														(* How many of these containers can we fit on the shaker? *)
-														(* If our containers is smaller than 0.017 Meter, then we'll be using the *)
-														(* Model[Container, Rack, "2 mL Glass Vial Orbital Shaker Rack"] adapter which has 35 slots. *)
-														numberOfContainers=If[MatchQ[containerModelMaximalAxis, LessP[0.017 Meter]],
-															35,
+														numberOfContainers=Which[
+															(* If we are dealing with vf, get the number of positions of the adapter *)
+															MatchQ[containerModel, ObjectP[compatibleAdapters]],
+															Length[cacheLookup[cache, containerModel, Positions]],
+
+															(* If our containers is smaller than 0.017 Meter, then we'll be using the *)
+															(* Model[Container, Rack, "2 mL Glass Vial Orbital Shaker Rack"] adapter which has 35 slots. *)
+															MatchQ[containerModelMaximalAxis, LessP[0.017 Meter]],
+															$GlassVialOrbitalShakerRackPositions,
+
+															(* Otherwise, calculate based on the dimension *)
+															True,
 															IntegerPart[shakerMaxWidth/containerModelMaximalAxis]
 														];
 
@@ -10472,8 +11658,17 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 														partitionedSamples=Partition[sampleGroupByContainerModel,UpTo[numberOfContainers]];
 
 														(* Add an adapter if necessary. *)
-														instrumentSettingWithAdapter=If[MatchQ[containerModelMaximalAxis, LessP[0.017 Meter]],
+														instrumentSettingWithAdapter=Which[
+															(* If we are dealing with vf, update the adapter *)
+															MatchQ[containerModel, ObjectP[compatibleAdapters]],
+															Append[instrumentSetting, ShakerAdapter->containerModel],
+
+															(* If our containers is smaller than 0.017 Meter, then we'll be using Model[Container, Rack, "2 mL Glass Vial Orbital Shaker Rack"] *)
+															MatchQ[containerModelMaximalAxis, LessP[0.017 Meter]],
 															Append[instrumentSetting, ShakerAdapter->Model[Container, Rack, "2 mL Glass Vial Orbital Shaker Rack"]],
+
+															(* otherwise, do not need adapter*)
+															True,
 															instrumentSetting
 														];
 
@@ -10493,14 +11688,15 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 											Transpose[transposedGroupInformation]
 										];
 
-										(* If MixUntilDissolved is true, compute the additional time that is needed for each sample group on the vortex. *)
+										(* If MixUntilDissolved is true, compute the additional time that is needed for each sample group on the shaker. *)
 										additionalTime=MapThread[(
 											(* Are we mixing until dissolved? *)
 											If[#1,
 												(#3-#2),
 												0 Minute
-											]
-													&),{Lookup[instrumentInformation,MixUntilDissolved],Lookup[instrumentInformation,Time],Lookup[instrumentInformation,MaxTime]}];
+											]&),
+											{Lookup[instrumentInformation,MixUntilDissolved],Lookup[instrumentInformation,Time],Lookup[instrumentInformation,MaxTime]}
+										];
 
 										(* We have to make our primitives in the compiler since they point to our source sample. *)
 										shakeParameters=Flatten[MapThread[
@@ -10593,7 +11789,11 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 													Function[{sampleGroupByContainerModel,containerModel},
 														(* How many of these containers can we fit in the adapter? *)
 														currentFootprint=Lookup[fetchPacketFromCache[containerModel, cache], Footprint];
-														numberOfContainers=Lookup[adapterFootprintToNumberOfPositions, currentFootprint];
+														(* If the model does not have a footprint but was otherwise determined to be compatible with the instrument/mixtype, use 1 to avoid breaking *)
+														numberOfContainers=If[NullQ[currentFootprint],
+															1,
+															Lookup[adapterFootprintToNumberOfPositions, currentFootprint]
+														];
 
 														(* Take up to these number of containers. *)
 														partitionedSamples=Partition[sampleGroupByContainerModel,UpTo[numberOfContainers]];
@@ -10755,10 +11955,17 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 									Module[
 										{instrumentPositions,groupedByShakerSettings, groupedSamples, settingGroups, transposedGroupInformation,
 											partitionedSamples,sampleGrouping,instrumentInformation,additionalTime,shakeParameters,
-											sampleGroupingIndices,sampleGroupingLengths,groupedSamplesByContainerModel},
+											sampleGroupingIndices,sampleGroupingLengths, compatibleAdapters, compatibleAdapterPackets, FootprintToAdapterLookup, sampleContainers, sampleContainerModels, sampleContainerModelAdapter, partitionedAdapters, adapterGrouping, sampleContainerAdapterResources},
 
-										(* Get the compatible adapter packets from the torrey pines shaker. *)
-										instrumentPositions=Lookup[fetchPacketFromCache[Model[Instrument, Shaker, "id:Vrbp1jG80JAw"], cache], Positions];
+										(* Get the compatible adapter packets from the incu shaker. *)
+										instrumentPositions=cacheLookup[cache, Model[Instrument, Shaker, "id:6V0npvmNnOrw"], Positions];
+										(* Get the CompatibleAdapters of the shaker *)
+										compatibleAdapters= Download[cacheLookup[cache, Model[Instrument, Shaker, "id:6V0npvmNnOrw"], CompatibleAdapters], Object];
+										compatibleAdapterPackets=(fetchPacketFromCache[#, cache]&)/@compatibleAdapters;
+
+										(* generate the footprint -> adapter lookup *)
+										(* Note: we only support VF on incu-shaker; each adapter only support one VF and each VF only have one adapter model *)
+										FootprintToAdapterLookup = AssociationThread[Lookup[Flatten[Lookup[compatibleAdapterPackets, Positions]], Footprint], compatibleAdapters];
 
 										(* Group our samples by their settings. *)
 										groupedByShakerSettings=Normal[GroupBy[magneticIncubateInformation,(#[[2]]&)]];
@@ -10774,48 +11981,65 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 												(* Take up to these number of containers that will fit on a shaker. *)
 												partitionedSamples=Partition[sampleGroup,UpTo[Length[instrumentPositions]]];
 
-												Sequence@@Transpose[{partitionedSamples,ConstantArray[instrumentSetting,Length[partitionedSamples]]}]
+												(* Fetch the adapter for the VF *)
+												sampleContainers=cacheLookup[cache, #, Container]&/@sampleGroup;
+												sampleContainerModels=(Download[cacheLookup[cache, #, Model],Object]&)/@sampleContainers;
+												sampleContainerModelAdapter = (cacheLookup[cache, #, Footprint]&/@sampleContainerModels)/.FootprintToAdapterLookup;
+
+												(* generate adapter resources *)
+												(* Note: Unlike other shakers which have at most one adapter per shaker, incu-shaker can have more than one adapters used on one instrument *)
+												sampleContainerAdapterResources = Resource[Sample -> #, Name -> CreateUUID[]]& /@ Cases[sampleContainerModelAdapter, ObjectP[]];
+
+												(* partition adapters in the same way as samples *)
+												partitionedAdapters = Unflatten[sampleContainerAdapterResources, partitionedSamples];
+
+												(* return samples, adapters and instrument settings *)
+												Sequence@@Transpose[{partitionedSamples,partitionedAdapters,ConstantArray[instrumentSetting,Length[partitionedSamples]]}]
 											],
 											{groupedSamples,settingGroups}
 										];
 
 										(* Transpose our result. *)
 										(* Note that the Instrument key is in the instrumentInformation variable. *)
-										{sampleGrouping,instrumentInformation}=If[Length[transposedGroupInformation]==0,
-											{{},{}},
+										{sampleGrouping,adapterGrouping,instrumentInformation}=If[Length[transposedGroupInformation]==0,
+											{{},{},{}},
 											Transpose[transposedGroupInformation]
 										];
 
-										(* If MixUntilDissolved is true, compute the additional time that is needed for each sample group on the vortex. *)
+										(* If MixUntilDissolved is true, compute the additional time that is needed for each sample group on the shaker. *)
 										additionalTime=MapThread[(
 											(* Are we mixing until dissolved? *)
 											If[#1,
 												(#3-#2),
 												0 Minute
-											]
-													&),{Lookup[instrumentInformation,MixUntilDissolved],Lookup[instrumentInformation,Time],Lookup[instrumentInformation,MaxTime]}];
+											]&),
+											{Lookup[instrumentInformation,MixUntilDissolved],Lookup[instrumentInformation,Time],Lookup[instrumentInformation,MaxTime]}
+										];
 
 										(* We have to make our primitives in the compiler since they point to our source sample. *)
 										shakeParameters=Flatten[MapThread[
-											Function[{sampleGroup,settings},
-												ConstantArray[<|
-													Sample->Null,
-													Instrument->Link[Download[Lookup[settings,Instrument], Object]],
-													Location->{"Adapter Slot",Link[Lookup[settings,Instrument]]},
-													Rate->Lookup[settings,MixRate],
-													Time->Lookup[settings,Time],
-													MaxTime->Lookup[settings,MaxTime],
-													Temperature->Lookup[settings,Temperature],
-													AnnealingTime->Lookup[settings,AnnealingTime],
-													MixUntilDissolved->Lookup[settings,MixUntilDissolved],
-													ResidualIncubation->Lookup[settings,ResidualIncubation],
-													MixRateProfile->Lookup[settings,MixRatePofile],
-													TemperatureProfile->Lookup[settings,TemperatureProfile],
-													OscillationAngle->Lookup[settings,OscillationAngle],
-													ShakerAdapter->Null
-												|>,Length[sampleGroup]]
+											Function[{adapterGroup,settings},
+												Map[
+													<|
+														Sample->Null,
+														Instrument->Link[Download[Lookup[settings,Instrument], Object]],
+														Location->{"Adapter Slot",Link[Lookup[settings,Instrument]]},
+														Rate->Lookup[settings,MixRate],
+														Time->Lookup[settings,Time],
+														MaxTime->Lookup[settings,MaxTime],
+														Temperature->Lookup[settings,Temperature],
+														AnnealingTime->Lookup[settings,AnnealingTime],
+														MixUntilDissolved->Lookup[settings,MixUntilDissolved],
+														ResidualIncubation->Lookup[settings,ResidualIncubation],
+														MixRateProfile->Lookup[settings,MixRateProfile],
+														TemperatureProfile->Lookup[settings,TemperatureProfile],
+														OscillationAngle->Lookup[settings,OscillationAngle],
+														ShakerAdapter -> Link[#]
+													|>&,
+													adapterGroup
+												]
 											],
-											{sampleGrouping,instrumentInformation}
+											{adapterGrouping, instrumentInformation}
 										]];
 
 										(* Get our indices of our sample groupings. *)
@@ -10972,8 +12196,7 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 				Roll,
 					(* We have to compute grouping orders of what samples we can put into a rollers. *)
 					Module[
-						{incubateInformation,incubateSamples,instrumentSettings,sampleGrouping,instruments,instrumentLocations,groupedSettings,instrumentObjects,instrumentModels,translatedRates,
-					instrumentPositions,time,maxTime,times,additionalTime,rollParameters},
+						{incubateInformation,incubateSamples,instrumentSettings, tubeRollerIncubateInformation, rollerParameters, rollerGroupingIndices, rollerGroupingLengths, bottleRollerIncubateInformation, bottleRollerParameters, bottleRollerGroupingIndices, bottleRollerGroupingLengths},
 
 						(* Get the instrument settings that matter. *)
 						incubateInformation=MapThread[
@@ -10989,7 +12212,8 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 											MixUntilDissolved->#5,
 											Temperature->#6,
 											AnnealingTime->#7,
-											ResidualIncubation->#8
+											ResidualIncubation->#8,
+											Instrument -> #9
 										}
 									},
 									Nothing
@@ -11003,7 +12227,8 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 								Lookup[options,MixUntilDissolved],
 								Lookup[options,Temperature],
 								Lookup[options,AnnealingTime],
-								Lookup[options,ResidualIncubation]
+								Lookup[options,ResidualIncubation],
+								Lookup[options,Instrument]
 							}
 						];
 
@@ -11016,60 +12241,227 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 						(* Don't return anything if we don't have any samples. *)
 						If[Length[incubateSamples]==0,
 							Nothing,
-							(* Compute our sample grouping. *)
-							{sampleGrouping,instruments,instrumentLocations,groupedSettings}=groupSamples[incubateSamples,Lookup[options,Instrument],instrumentSettings,Cache->cache];
+							(* Compute our sample grouping for Roller *)
+							tubeRollerIncubateInformation=Cases[
+								incubateInformation,
+								(* Model[Instrument, Roller, "Enviro-Genie"] *)
+								{_, KeyValuePattern[{Instrument->Model[Instrument, Roller, "id:Vrbp1jKKZw6z"]|Alternatives@@Download[Lookup[fetchPacketFromCache[Model[Instrument, Roller, "id:Vrbp1jKKZw6z"],cache],Objects],Object]}]}
+							];
+							{rollerParameters, rollerGroupingIndices, rollerGroupingLengths} = If[Length[tubeRollerIncubateInformation] > 0,
+								Module[{rollerRackGroupedSample, rollerRackSamplePositions, rollerRackInstrumentSettings, rollerRackModels, groupedByRollerSettings, groupedSamples, settingGroups, compatibleRacks, compatibleRackPackets, tubeFootprintToNumberOfPositions, tubeFootprintToRackModel, transposedGroupInformation,footprintInformation, rollerRackResources, rackToSampleLookups, rollerRackGrouping,instruments,instrumentLocations,groupedSettings, instrumentObjects, instrumentModels, translatedRates, additionalTime,rollParameters, batchedSamples, simulatedSampleIndices, batchedSampleIndices},
+									(* group samples to racks *)
+									(* Get the compatible rack packets from the roller Model[Instrument, Roller, "Enviro-Genie"] *)
+									compatibleRacks=Lookup[fetchPacketFromCache[Model[Instrument, Roller, "id:Vrbp1jKKZw6z"], cache], CompatibleRacks];
+									compatibleRackPackets=(fetchPacketFromCache[#, cache]&)/@compatibleRacks;
 
-							(* Get the objects for these instruments. *)
-							instrumentObjects=(Lookup[fetchPacketFromCache[#,cache],Object]&)/@instruments;
+									(* For each rack type, create a lookup between footprint and positions that rack will hold. *)
+									(* Note: each rack must only have one kind of rack positions *)
+									(* Ex. The 50mL rack holds 3 50mL tubes. *)
+									tubeFootprintToNumberOfPositions=(
+										Lookup[First[Lookup[#, Positions]], Footprint]->Length[Lookup[#, Positions]]
+												&)/@compatibleRackPackets;
+									tubeFootprintToRackModel=(
+										Lookup[First[Lookup[#, Positions]], Footprint]->Lookup[#, Object]
+												&)/@compatibleRackPackets;
 
-							(* Translate our rates into instrument specific settings. *)
-							(* Get the models of our objects. *)
-							instrumentModels=(If[MatchQ[#,ObjectP[Object[Instrument]]],
-								Lookup[fetchPacketFromCache[#,cache],Model],
-								Lookup[fetchPacketFromCache[#,cache],Object]
-							]/.link_Link:>Download[link, Object]&)/@instrumentObjects;
+									(* Group our samples by their settings. *)
+									groupedByRollerSettings=Normal[GroupBy[tubeRollerIncubateInformation,(#[[2]]&)]];
+									(* Get the samples and the settings. *)
+									groupedSamples=(#[[All,1]]&)/@Values[groupedByRollerSettings];
+									settingGroups=Keys[groupedByRollerSettings];
 
-							(* Translate from instrument model to setting. *)
-							translatedRates=MapThread[(instrumentInstrumentToSettingFunction[#1,cache][#2]&),{instrumentModels,UnitConvert[Lookup[groupedSettings,MixRate],RPM]}];
+									transposedGroupInformation=MapThread[
+										Function[{sampleGroup,instrumentSetting},
+											Module[{sampleContainers, sampleContainerModels, groupedByContainerModel, groupedSamplesByContainerModel, containerModelGroups},
+												(* Get the container models of the samples in this group. *)
+												sampleContainers=(Download[Lookup[fetchPacketFromCache[#,cache],Container],Object]&)/@sampleGroup;
+												sampleContainerModels=(Download[Lookup[fetchPacketFromCache[#,cache],Model],Object]&)/@sampleContainers;
 
-							(* If MixUntilDissolved is true, compute the additional time that is needed for each sample group on the vortex. *)
-							additionalTime=MapThread[(
-								(* Are we mixing until dissolved? *)
-								If[#1,
-									(#3-#2),
-									0 Minute
-								]
-							&),{Lookup[groupedSettings,MixUntilDissolved],Lookup[groupedSettings,Time],Lookup[groupedSettings,MaxTime]}];
+												(* Group our samples by their container models. *)
+												groupedByContainerModel=Normal[GroupBy[Transpose[{sampleGroup,sampleContainerModels}],(#[[2]]&)]];
 
-							(* We have to make our primitives in the compiler since they point to our source sample. *)
-							rollParameters=Flatten[MapThread[
-								Function[{sampleGroup,instrument,instrumentLocation,settings},
-									(<|
-										Sample->Null,
-										Instrument->Link[instrument],
-										Location->#,
-										Rate->Lookup[settings,MixRate],
-										Time->Lookup[settings,Time],
-										MaxTime->Lookup[settings,MaxTime],
-										Temperature->Lookup[settings,Temperature],
-										AnnealingTime->Lookup[settings,AnnealingTime],
-										MixUntilDissolved->Lookup[settings,MixUntilDissolved],
-										ResidualIncubation->Lookup[settings,ResidualIncubation]
-									|>&)/@instrumentLocation
+												(* Get the samples and their containers. *)
+												groupedSamplesByContainerModel=(#[[All,1]]&)/@Values[groupedByContainerModel];
+												containerModelGroups=Keys[groupedByContainerModel];
+
+												(* For each container model, figure out how many of that container we can put on the roller at the same time. *)
+												Sequence@@MapThread[
+													Function[{sampleGroupByContainerModel,containerModel},
+														Module[{currentFootprint, numberOfContainers, partitionedSamples},
+															(* How many of these containers can we fit in the rack? *)
+															currentFootprint=Lookup[fetchPacketFromCache[containerModel, cache], Footprint];
+															numberOfContainers=Lookup[tubeFootprintToNumberOfPositions, currentFootprint];
+
+															(* Take up to these number of containers. *)
+															partitionedSamples=Partition[sampleGroupByContainerModel,UpTo[numberOfContainers]];
+
+															(* Transpose this together with our instrument setting. Then return as a sequence. *)
+															Sequence@@Transpose[{
+																partitionedSamples,
+																ConstantArray[instrumentSetting,Length[partitionedSamples]],
+																ConstantArray[currentFootprint, Length[partitionedSamples]],
+																ConstantArray[currentFootprint, Length[partitionedSamples]]/.tubeFootprintToRackModel
+															}]
+														]
+													],
+													{groupedSamplesByContainerModel,containerModelGroups}
+												]
+											]
+										],
+										{groupedSamples,settingGroups}
+									];
+									(* Transpose our result. *)
+									{rollerRackGroupedSample,rollerRackInstrumentSettings,footprintInformation, rollerRackModels}=If[Length[transposedGroupInformation]==0,
+										{{},{},{},{}},
+										Transpose[transposedGroupInformation]
+									];
+									rollerRackSamplePositions = Range[Length[#]]&/@rollerRackGroupedSample;
+
+									(* Create resources of these rack models, so they have unique Name to be used in groupSamples *)
+									rollerRackResources = Resource[
+										Sample->#,
+										Name->CreateUUID[]
+									]&/@rollerRackModels;
+									(* create lookup for rack and its corresponding samples *)
+									rackToSampleLookups = AssociationThread[rollerRackResources, rollerRackGroupedSample];
+
+									(* apply groupSamples on rack resources since instrument only have footprint of racks *)
+									{rollerRackGrouping,instruments,instrumentLocations,groupedSettings}=groupSamples[rollerRackResources,Lookup[rollerRackInstrumentSettings, Instrument],rollerRackInstrumentSettings,Cache->cache];
+
+									(* Get the objects for these instruments. *)
+									instrumentObjects=(Lookup[fetchPacketFromCache[#,cache],Object]&)/@instruments;
+
+									(* Get the models of our objects. *)
+									instrumentModels=(If[MatchQ[#,ObjectP[Object[Instrument]]],
+										Download[Lookup[fetchPacketFromCache[#,cache],Model],Object],
+										Download[Lookup[fetchPacketFromCache[#,cache],Object],Object]
+									]&)/@instrumentObjects;
+
+									(* Translate from instrument model to setting. *)
+									translatedRates=MapThread[(instrumentInstrumentToSettingFunction[#1,cache][#2]&),{instrumentModels,UnitConvert[Lookup[groupedSettings,MixRate],RPM]}];
+
+									(* If MixUntilDissolved is true, compute the additional time that is needed for each sample group on the roller. *)
+									additionalTime=MapThread[(
+										(* Are we mixing until dissolved? *)
+										If[#1,
+											(#3-#2),
+											0 Minute
+										]&),{Lookup[groupedSettings,MixUntilDissolved],Lookup[groupedSettings,Time],Lookup[groupedSettings,MaxTime]}];
+
+									(* get the batched samples *)
+									batchedSamples = rollerRackGrouping/.rackToSampleLookups;
+									(* get the batchedSample indices *)
+									simulatedSampleIndices = (First[FirstPosition[simulatedSamples,#]]&)/@Flatten[batchedSamples];
+									(* unflatten the indices so it can record which sample(s) on each rack *)
+									batchedSampleIndices = Unflatten[simulatedSampleIndices, batchedSamples];
+
+									(* We have to make our primitives in the compiler since they point to our source sample. *)
+									(* Note: because roller positions footprint is rack, each roll parameter corresponding to one rack *)
+									rollParameters=Flatten[MapThread[
+										Function[{sampleGroup,instrument,instrumentLocation,settings, batchedSampleIndex},
+											MapThread[
+												<|
+													Sample->Null,
+													Instrument->Link[instrument],
+													Location->#1,
+													Rate->Lookup[settings,MixRate],
+													Time->Lookup[settings,Time],
+													MaxTime->Lookup[settings,MaxTime],
+													Temperature->Lookup[settings,Temperature],
+													AnnealingTime->Lookup[settings,AnnealingTime],
+													MixUntilDissolved->Lookup[settings,MixUntilDissolved],
+													ResidualIncubation->Lookup[settings,ResidualIncubation],
+													BatchedSampleIndices -> #2,
+													RollerRack -> Link[#3],
+													(* Placement will be populated in compile *)
+													SamplePlacements -> Null
+												|>&,
+												{instrumentLocation, batchedSampleIndex, sampleGroup}
+											]
+										],
+										{rollerRackGrouping,instrumentObjects,instrumentLocations,groupedSettings, batchedSampleIndices}
+									]];
+
+									(* Note: because roller positions footprint is rack, the indices and lengths here are both pointing to racks *)
+									(* Get our indices of our rack groupings. We are going to resource pick RollerParameters[[All, RollerRack]] so the order is consistent *)
+									sampleGroupingIndices = Range[Length[Flatten[rollerRackGrouping]]];
+									(* Get the lengths of our sample groupings. *)
+									sampleGroupingLengths=Length/@rollerRackGrouping;
+									{rollParameters, sampleGroupingIndices, sampleGroupingLengths}
 								],
-								{sampleGrouping,instrumentObjects,instrumentLocations,groupedSettings}
-							]];
+								{{}, {}, {}}
+							];
 
-							(* Get our indices of our sample groupings. *)
-							sampleGroupingIndices=(First[FirstPosition[simulatedSamples,#]]&)/@Flatten[sampleGrouping];
+							(* Compute our sample grouping for other roller instrument *)
+							bottleRollerIncubateInformation=Cases[
+								incubateInformation,
+								(* for cases of BottleRoller *)
+								{_, Except[KeyValuePattern[{Instrument->Model[Instrument, Roller, "id:Vrbp1jKKZw6z"]|Alternatives@@Download[Lookup[fetchPacketFromCache[Model[Instrument, Roller, "id:Vrbp1jKKZw6z"],cache],Objects],Object]}]]}
+							];
+							{bottleRollerParameters, bottleRollerGroupingIndices, bottleRollerGroupingLengths} = If[Length[bottleRollerIncubateInformation] > 0,
+								Module[{bottleRollerIncubateSamples,bottleRollerInstrumentSettings, sampleGrouping,instruments,instrumentLocations,groupedSettings, instrumentObjects, instrumentModels, translatedRates, additionalTime, rollParameters, sampleGroupingIndices, sampleGroupingLengths},
+									(* extract the sample and instrument information of bottle rollers *)
+									{bottleRollerIncubateSamples,bottleRollerInstrumentSettings}= Transpose[bottleRollerIncubateInformation];
 
-							(* Get the lengths of our sample groupings. *)
-							sampleGroupingLengths=Length/@sampleGrouping;
+                  {sampleGrouping,instruments,instrumentLocations,groupedSettings}=groupSamples[bottleRollerIncubateSamples,Lookup[bottleRollerInstrumentSettings,Instrument],bottleRollerInstrumentSettings,Cache->cache];
+
+									(* Get the objects for these instruments. *)
+									instrumentObjects=(Lookup[fetchPacketFromCache[#,cache],Object]&)/@instruments;
+
+									(* Translate our rates into instrument specific settings. *)
+									(* Get the models of our objects. *)
+									instrumentModels=(If[MatchQ[#,ObjectP[Object[Instrument]]],
+										Download[Lookup[fetchPacketFromCache[#,cache],Model],Object],
+										Download[Lookup[fetchPacketFromCache[#,cache],Object],Object]
+									]&)/@instrumentObjects;
+
+									(* Translate from instrument model to setting. *)
+									translatedRates=MapThread[(instrumentInstrumentToSettingFunction[#1,cache][#2]&),{instrumentModels,UnitConvert[Lookup[groupedSettings,MixRate],RPM]}];
+
+									(* If MixUntilDissolved is true, compute the additional time that is needed for each sample group on the roller. *)
+									additionalTime=MapThread[(
+										(* Are we mixing until dissolved? *)
+										If[#1,
+											(#3-#2),
+											0 Minute
+										]&),{Lookup[groupedSettings,MixUntilDissolved],Lookup[groupedSettings,Time],Lookup[groupedSettings,MaxTime]}];
+
+									(* We have to make our primitives in the compiler since they point to our source sample. *)
+									rollParameters=Flatten[MapThread[
+										Function[{sampleGroup,instrument,instrumentLocation,settings},
+											(<|
+												Sample->Null,
+												Instrument->Link[instrument],
+												Location->#,
+												Rate->Lookup[settings,MixRate],
+												Time->Lookup[settings,Time],
+												MaxTime->Lookup[settings,MaxTime],
+												Temperature->Lookup[settings,Temperature],
+												AnnealingTime->Lookup[settings,AnnealingTime],
+												MixUntilDissolved->Lookup[settings,MixUntilDissolved],
+												ResidualIncubation->Lookup[settings,ResidualIncubation],
+												BatchedSampleIndices -> Null,
+												RollerRack -> Null,
+												SamplePlacements -> Null
+											|>&)/@instrumentLocation
+										],
+										{sampleGrouping,instrumentObjects,instrumentLocations,groupedSettings}
+									]];
+
+									(* Get our indices of our sample groupings. *)
+									sampleGroupingIndices=(First[FirstPosition[simulatedSamples,#]]&)/@Flatten[sampleGrouping];
+
+									(* Get the lengths of our sample groupings. *)
+									sampleGroupingLengths=Length/@sampleGrouping;
+									{rollParameters, sampleGroupingIndices, sampleGroupingLengths}
+								],
+								{{}, {}, {}}
+							];
 
 							{
-								Replace[RollParameters]->rollParameters,
-								Replace[RollIndices]->sampleGroupingIndices,
-								Replace[RollBatchLength]->sampleGroupingLengths
+								Replace[RollParameters]-> Join[rollerParameters, bottleRollerParameters],
+								Replace[RollIndices]-> Join[rollerGroupingIndices, bottleRollerGroupingIndices],
+								Replace[RollBatchLength]->Join[rollerGroupingLengths, bottleRollerGroupingLengths]
 							}
 						]
 					],
@@ -11098,19 +12490,35 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 						&),{Lookup[options,MixUntilDissolved],Lookup[options,Time],Lookup[options,MaxTime]}];
 
 						(* Replace our impeller objects with resources. *)
-						(* Importantly, create a seperate resource for every impeller. *)
+						(* Importantly, create a separate resource for every impeller. *)
 						(* This is because impellers will be dishwashed after use so for every stir sample, we need a different impeller. *)
 						impellerResources=MapThread[
-							(If[MatchQ[#3, ObjectP[]],
-								Null,
-								Resource[
-									Sample->compatibleImpeller[#1,#2,Cache->cache,Simulation->updatedSimulation]
+							Function[{sample, instrument, stirBar, aliquotContainer},
+								Module[{impeller},
+									impeller = Which[
+										MatchQ[stirBar, ObjectP[]],
+											Null,
+										(* If we are aliquoting to an object container, find an impeller using the model *)
+										MatchQ[aliquotContainer, ObjectP[Object[Container]]],
+											compatibleImpeller[Lookup[fetchPacketFromCache[aliquotContainer,cache],Model],instrument,Cache->cache,Simulation->updatedSimulation],
+										(* If we are aliquoting to a model container, find an impeller using the model *)
+										MatchQ[aliquotContainer, ObjectP[Model[Container]]],
+											compatibleImpeller[aliquotContainer,instrument,Cache->cache,Simulation->updatedSimulation],
+										(* Otherwise we are not aliquoting, just use sample to find impeller *)
+										True,
+											compatibleImpeller[sample,instrument,Cache->cache,Simulation->updatedSimulation]
+									];
+									If[MatchQ[impeller, ObjectP[]],
+										Resource[Sample->impeller],
+										Null
+									]
 								]
-							]&),
+							],
 							{
 								samples,
 								instrumentModels,
-								Lookup[options,StirBar]
+								Lookup[options,StirBar],
+								Lookup[options,AliquotContainer]
 							}
 						];
 
@@ -11187,7 +12595,7 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 						];
 
 						(* Replace our impeller objects with resources. *)
-						(* Importantly, create a seperate resource for every impeller. *)
+						(* Importantly, create a separate resource for every impeller. *)
 						(* This is because impellers will be dishwashed after use so for every stir sample, we need a different impeller. *)
 						sonicationHornResources=(Resource[Sample->#1]&)/@sonicationHorns;
 
@@ -11235,7 +12643,7 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 				Sonicate,
 					(* Even though there is only one position for the sonication bath, we should allow mutliple samples to be placed in the sonication bath at the same time. *)
 					(* For example, when we have 10 2mL tubes, they should be allowed to be sonicated at the same time. *)
-					Module[{instrumentInformation,incubateSamples,instrumentSettings,instrumentObjects,sampleGrouping,instruments,groupedSettings,instrumentPositions,time,maxTime,times,additionalTime,sonicateParameters,sonicationBatchLengths},
+					Module[{incubateInformation, incubateSamples,instrumentSettings,instrumentObjects,sampleGrouping,instruments,groupedSettings,additionalTime,sonicateParameters,sonicationBatchLengths, adapterGrouping},
 
 						(* Get the instrument settings that matter. *)
 						incubateInformation=MapThread[
@@ -11251,7 +12659,9 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 											Temperature->#5,
 											ResidualIncubation->#6,
 											Amplitude->#7,
-											MaxTemperature->#8
+											MaxTemperature->#8,
+											PreSonicationTime -> #9,
+											AlternateInstruments -> #10
 										}
 									},
 									Nothing
@@ -11265,7 +12675,9 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 								Lookup[options,Temperature]/.{Null->$AmbientTemperature},
 								Lookup[options,ResidualIncubation],
 								Lookup[options,Amplitude],
-								Lookup[options,MaxTemperature]
+								Lookup[options,MaxTemperature],
+								Lookup[options,PreSonicationTime],
+								Lookup[options, AlternateInstruments]
 							}
 						];
 
@@ -11279,7 +12691,7 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 						If[Length[incubateSamples]==0,
 							Nothing,
 							(* Compute our sample grouping. *)
-							{sampleGrouping,instruments,groupedSettings}=groupSonicationSamples[incubateSamples,Download[Lookup[options,Instrument],Object],instrumentSettings,Cache->cache,Simulation->updatedSimulation];
+							{sampleGrouping,instruments,groupedSettings,adapterGrouping}=groupSonicationSamples[incubateSamples,Download[Lookup[options,Instrument],Object],instrumentSettings,Cache->cache,Simulation->updatedSimulation];
 
 							(* Get the objects for the instruments. *)
 							instrumentObjects=(Download[#,Object]&)/@instruments;
@@ -11295,7 +12707,7 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 
 							(* We have to make our primitives in the compiler since they point to our source sample. *)
 							sonicateParameters=Flatten[MapThread[
-								Function[{sampleGroup,instrument,settings},
+								Function[{sampleGroup,instrument,settings,adapter},
 									Sequence@@ConstantArray[<|
 										Sample->Null,
 										Instrument->Link[instrument],
@@ -11313,10 +12725,16 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 											Null
 										],
 										Amplitude->Lookup[settings,Amplitude],
-										MaxTemperature->Lookup[settings,MaxTemperature]
+										MaxTemperature->Lookup[settings,MaxTemperature],
+										PreSonicationTime-> Lookup[settings, PreSonicationTime],
+										SonicationAdapter -> If[MatchQ[adapter, ObjectP[]],
+											Link[Resource[Sample -> adapter, Name -> CreateUUID[]]],
+											Null
+										],
+										AlternateInstruments -> Lookup[settings, AlternateInstruments]
 									|>,Length[sampleGroup]]
 								],
-								{sampleGrouping,instrumentObjects,groupedSettings}
+								{sampleGrouping,instrumentObjects,groupedSettings,adapterGrouping}
 							]];
 
 							(* Get our indices of our sample groupings. *)
@@ -11345,8 +12763,8 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 						(* Get the necessary thaw information about all the samples that we're going to incubate. *)
 						incubateInformation=MapThread[
 							(
-								(* Only include groups over 0 Minute time. *)
-								If[MatchQ[#3,GreaterP[0Minute]],
+								(* Only include groups over 0 Minute time, or transforms. *)
+								If[MatchQ[#3,GreaterP[0Minute]] || #11,
 									{
 										#1,
 										{
@@ -11358,7 +12776,12 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 											RelativeHumidity->#7,
 											LightExposure->#8,
 											LightExposureIntensity->#9,
-											TotalLightExposure->#10
+											TotalLightExposure->#10,
+											Transform->#11,
+											TransformHeatShockTemperature->#12,
+											TransformHeatShockTime->#13,
+											TransformPreHeatCoolingTime->#14,
+											TransformPostHeatCoolingTime->#15
 										}
 									},
 									Nothing
@@ -11367,7 +12790,8 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 							{
 								samples,Lookup[options,Instrument],Lookup[options,Time],Lookup[options,Temperature],Lookup[options,AnnealingTime],
 								Lookup[options,TemperatureProfile], Lookup[options,RelativeHumidity],Lookup[options,LightExposure],
-								Lookup[options,LightExposureIntensity],Lookup[options,TotalLightExposure]
+								Lookup[options,LightExposureIntensity],Lookup[options,TotalLightExposure],Lookup[options,Transform],Lookup[options,TransformHeatShockTemperature],
+								Lookup[options,TransformHeatShockTime],Lookup[options,TransformPreHeatCoolingTime],Lookup[options,TransformPostHeatCoolingTime]
 							}
 						];
 
@@ -11386,8 +12810,13 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 						(* Get information for the non-thermocycler parameters. *)
 						{nonThermocyclerParameters,nonThermocyclerGroupingIndices,nonThermocyclerGroupingLengths}=If[Length[nonThermocyclerSamples]==0,
 							{{},{},{}},
-							Module[{sampleGroupingResult,incubateFieldResults,sampleGroupings, instruments, times, temperatures, annealingTimes,
-								instrumentObjects,parameters,groupingIndices,groupingLengths,relativeHumidites, lightExposures, lightExposureIntensities, totalLightExposures},
+							Module[
+								{
+									sampleGroupingResult,incubateFieldResults,sampleGroupings, instruments, times, temperatures, annealingTimes,
+									instrumentObjects,parameters,groupingIndices,groupingLengths,relativeHumidites, lightExposures, lightExposureIntensities,
+									totalLightExposures,transforms,transformHeatShockTemperatures,transformHeatShockTimes,transformPreHeatCoolingTimes,
+									transformPostHeatCoolingTimes
+								},
 								(* Compute our sample groupings for thawing. *)
 								(* This is in the format {{sampleGrouping,instrumentSettings}..}. *)
 								sampleGroupingResult=groupIncubateSamples[nonThermocyclerSamples,nonThermocyclerSamplesOptions,cache];
@@ -11406,7 +12835,12 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 										Lookup[settings,RelativeHumidity],
 										Lookup[settings,LightExposure],
 										Lookup[settings,LightExposureIntensity],
-										Lookup[settings,TotalLightExposure]
+										Lookup[settings,TotalLightExposure],
+										Lookup[settings,Transform],
+										Lookup[settings,TransformHeatShockTemperature],
+										Lookup[settings,TransformHeatShockTime],
+										Lookup[settings,TransformPreHeatCoolingTime],
+										Lookup[settings,TransformPostHeatCoolingTime]
 									}
 								]&)/@sampleGroupingResult;
 
@@ -11420,10 +12854,15 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 									relativeHumidites,
 									lightExposures,
 									lightExposureIntensities,
-									totalLightExposures
+									totalLightExposures,
+									transforms,
+									transformHeatShockTemperatures,
+									transformHeatShockTimes,
+									transformPreHeatCoolingTimes,
+									transformPostHeatCoolingTimes
 								}=If[Length[incubateFieldResults]>0,
 									Transpose[incubateFieldResults],
-									{{},{},{},{},{}}
+									ConstantArray[{},14]
 								];
 
 								(* Get the objects for these instruments. *)
@@ -11431,7 +12870,12 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 
 								(* We have to make our primitives in the compiler since they point to our source sample. *)
 								parameters=Flatten[MapThread[
-									Function[{sampleGroup,instrument,time,temperature,annealingTime,relativeHumidity,lightExposure,lightExposureIntensity,totalLightExposure},
+									Function[
+										{
+											sampleGroup,instrument,time,temperature,annealingTime,relativeHumidity,lightExposure,lightExposureIntensity,
+											totalLightExposure,transform,transformHeatShockTemperature,transformHeatShockTime,transformPreHeatCoolingTime,
+											transformPostHeatCoolingTime
+										},
 										ConstantArray[<|
 											Sample->Null,
 											Instrument->Link[instrument],
@@ -11443,10 +12887,19 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 											RelativeHumidity->relativeHumidity,
 											LightExposure->lightExposure,
 											LightExposureIntensity->lightExposureIntensity,
-											TotalLightExposure->totalLightExposure
+											TotalLightExposure->totalLightExposure,
+											Transform->transform,
+											TransformHeatShockTemperature->transformHeatShockTemperature,
+											TransformHeatShockTime->transformHeatShockTime,
+											TransformPreHeatCoolingTime->transformPreHeatCoolingTime,
+											TransformPostHeatCoolingTime->transformPostHeatCoolingTime
 										|>,Length[sampleGroup]]
 									],
-									{sampleGroupings,instrumentObjects,times,temperatures,annealingTimes,relativeHumidites,lightExposures,lightExposureIntensities,totalLightExposures}
+									{
+										sampleGroupings,instrumentObjects,times,temperatures,annealingTimes,relativeHumidites,lightExposures,lightExposureIntensities,
+										totalLightExposures,transforms,transformHeatShockTemperatures,transformHeatShockTimes,transformPreHeatCoolingTimes,
+										transformPostHeatCoolingTimes
+									}
 								]];
 
 								(* Get our indices of our sample groupings. *)
@@ -11544,7 +12997,12 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 											RelativeHumidity->Null,
 											LightExposure->Null,
 											LightExposureIntensity->Null,
-											TotalLightExposure->Null
+											TotalLightExposure->Null,
+											Transform->Null,
+											TransformHeatShockTemperature->Null,
+											TransformHeatShockTime->Null,
+											TransformPreHeatCoolingTime->Null,
+											TransformPostHeatCoolingTime->Null
 										|>
 									],
 									{thermocyclerSamples,thermocyclerSamplesOptions}
@@ -11769,9 +13227,12 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 				Length[Lookup[protocolFields,Replace[InvertSamples],{}]]*.5 Minute,
 				(* Pipetting is done via a subprotocol and will get its time added.*)
 				(* Add up all minimal times and assume that MixUntilDissolved will take 1/2 of the additional time. *)
-				(Lookup[Lookup[protocolFields,Replace[#],{}],Time,0Minute]&)/@{IncubateParameters,VortexParameters,ShakeParameters,RollParameters,StirParameters,SonicateParameters,HomogenizeParameters},
+				(Lookup[Lookup[protocolFields,Replace[#],{}],Time,0Minute]&)/@{IncubateParameters,VortexParameters,ShakeParameters,RollParameters,StirParameters,SonicateParameters,HomogenizeParameters}/.Null->0*Minute,
 				1/2*(Lookup[Lookup[protocolFields,Replace[#],{}],MaxTime,0Minute]/.Null->0&)/@{VortexParameters,ShakeParameters,RollParameters,StirParameters,SonicateParameters,HomogenizeParameters},
 				(Lookup[Lookup[protocolFields,Replace[#],{}],AnnealingTime,0Minute]/.Null->0&)/@{IncubateParameters,ShakeParameters,RollParameters,StirParameters,HomogenizeParameters},
+				(Lookup[Lookup[protocolFields,Replace[IncubateParameters],{}],TransformHeatShockTime,0Minute])/.Null->0*Minute,
+				(Lookup[Lookup[protocolFields,Replace[IncubateParameters],{}],TransformPreHeatCoolingTime,0Minute])/.Null->0*Minute,
+				(Lookup[Lookup[protocolFields,Replace[IncubateParameters],{}],TransformPostHeatCoolingTime,0Minute])/.Null->0*Minute,
 				0 Minute
 			}]
 		];
@@ -11803,6 +13264,14 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 			]
 		};
 
+		(* If we have any transforms, we need a portable (refrigerator) cooler that fits in our transform enclosure *)
+		transformCoolerResource = If[MemberQ[Lookup[myResolvedOptions, Transform], True],
+			Link[Resource[Instrument->{
+				Model[Instrument, PortableCooler, "id:R8e1PjpjnEPX"], (*"ICECO GO20 Portable Refrigerator"*)
+				Model[Instrument, PortableCooler, "id:eGakldJdO9le"] (*"ICECO GO12"*)
+			}]]
+		];
+
 		(* Create our final packet. *)
 		result=Join[
 			Association[protocolFields],
@@ -11814,11 +13283,11 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 				Replace[SamplesIn]->(Resource[Sample->#]&)/@originalSampleObjects,
 				Replace[ContainersIn]->(Link[Resource[Sample->#],Protocols]&)/@DeleteDuplicates[Download[Lookup[fetchPacketFromCache[#,cache],Container], Object]&/@originalSampleObjects],
 				Replace[Checkpoints]->{
-					{"Picking Resources",10 Minute,"Samples required to execute this protocol are gathered from storage.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10 Minute]},
-					{"Preparing Samples",0 Minute,"Preprocessing, such as thermal incubation/mixing, centrifugation, filteration, and aliquoting, is performed.", Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->0 Minute]},
-					{"Thawing",estimatedThawTime,"The containers/samples are thawed.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->30 Minute]},
-					{"Incubation",estimatedMixTime,"The containers/samples are mixed and/or incubated.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->1 Hour]},
-					{"Returning Materials",15 Minute,"Samples are returned to storage.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->15 Minute]}
+					{"Picking Resources",10 Minute,"Samples required to execute this protocol are gathered from storage.",Resource[Operator->$BaselineOperator,Time->10 Minute]},
+					{"Preparing Samples",0 Minute,"Preprocessing, such as incubation/mixing, centrifugation, filtration, and aliquoting, is performed.", Resource[Operator->$BaselineOperator,Time->0 Minute]},
+					{"Thawing",estimatedThawTime,"The containers/samples are thawed.",Resource[Operator->$BaselineOperator,Time->30 Minute]},
+					{"Incubation",estimatedMixTime,"The containers/samples are mixed and/or incubated.",Resource[Operator->$BaselineOperator,Time->1 Hour]},
+					{"Returning Materials",15 Minute,"Samples are returned to storage.",Resource[Operator->$BaselineOperator,Time->15 Minute]}
 				},
 				Replace[Thaw]->Lookup[myResolvedOptions, Thaw],
 				Replace[ThawTimes]->Lookup[myResolvedOptions, ThawTime],
@@ -11859,6 +13328,13 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 				Replace[ResidualMix]->Lookup[myResolvedOptions, ResidualMix],
 				Replace[ResidualMixRates]->Lookup[myResolvedOptions, ResidualMixRate],
 				Replace[Preheat]->Lookup[myResolvedOptions, Preheat],
+				Replace[Transform]->Lookup[myResolvedOptions, Transform],
+				Replace[TransformHeatShockTemperature]->Lookup[myResolvedOptions, TransformHeatShockTemperature],
+				Replace[TransformHeatShockTime]->Lookup[myResolvedOptions, TransformHeatShockTime],
+				Replace[TransformPreHeatCoolingTime]->Lookup[myResolvedOptions, TransformPreHeatCoolingTime],
+				Replace[TransformPostHeatCoolingTime]->Lookup[myResolvedOptions, TransformPostHeatCoolingTime],
+				Replace[TransformCooler]->transformCoolerResource,
+				Replace[AlternateInstruments]->Lookup[myResolvedOptions, AlternateInstruments],
 
 				ResolvedOptions->myCollapsedResolvedOptions,
 				UnresolvedOptions->myUnresolvedOptions
@@ -12079,34 +13555,56 @@ simulateExperimentIncubate[
 	myResolvedOptions:{_Rule...},
 	myResolutionOptions:OptionsPattern[simulateExperimentIncubate]
 ]:=Module[
-	{mapThreadFriendlyOptions,resolvedPreparation,cache, simulation, samplePackets, protocolObject, fulfillmentSimulation, simulationWithLabels},
+	{
+		mapThreadFriendlyOptions, resolvedPreparation, resolvedWorkCell, protocolType, cache, simulation, samplePackets,
+		sampleModelPackets, protocolObject, fulfillmentSimulation, currentSimulation, simulatedSampleStatePackets,
+		simulationWithLabels
+	},
 
 	(* Lookup our cache and simulation. *)
 	cache=Lookup[ToList[myResolutionOptions], Cache, {}];
 	simulation=Lookup[ToList[myResolutionOptions], Simulation, Null];
 
-	(* Download containers from our sample packets. *)
-	samplePackets=Download[
-		mySamples,
-		Packet[Container],
-		Cache->Lookup[ToList[myResolutionOptions], Cache, {}],
-		Simulation->Lookup[ToList[myResolutionOptions], Simulation, Null]
+	(* Download containers and related model info from cache and simulation *)
+	{
+		samplePackets,
+		sampleModelPackets
+	} = Quiet[
+		Download[
+			{
+				mySamples,
+				mySamples
+			},
+			{
+				{Evaluate[Packet[{Model, Container, Composition, MeltingPoint, State, Volume, Mass, Density}]]},
+				{Packet[Model[{MeltingPoint, Composition}]]}
+			},
+			Cache -> cache,
+			Simulation -> simulation
+		],
+		{Download::NotLinkField, Download::FieldDoesntExist, Download::MissingCacheField}
 	];
 
+	{samplePackets, sampleModelPackets} = Flatten /@ {samplePackets, sampleModelPackets};
+
 	(* Lookup our resolved preparation option. *)
-	resolvedPreparation=Lookup[myResolvedOptions, Preparation];
+	{resolvedPreparation, resolvedWorkCell} = Lookup[myResolvedOptions, {Preparation, WorkCell}];
+
+	(* If preparation is Robotic, determine the protocol type (RCP vs. RSP) that we want to create an ID for. *)
+	protocolType = If[MatchQ[resolvedPreparation, Robotic],
+		Module[{experimentFunction},
+			experimentFunction = Lookup[$WorkCellToExperimentFunction, resolvedWorkCell];
+			Object[Protocol, ToExpression@StringDelete[ToString[experimentFunction], "Experiment"]]
+		],
+		Object[Protocol,Incubate]
+	];
 
 	(* Get our protocol ID. This should already be in our protocol packet, unless the resource packets failed. *)
-	protocolObject=Which[
+	protocolObject = If[MatchQ[resolvedPreparation, Robotic] || MatchQ[myProtocolPacket, $Failed|Null],
 		(* NOTE: We never make a protocol object in the resource packets function when Preparation->Robotic. We have to *)
 		(* simulate an ID here in the simulation function in order to call SimulateResources. *)
-		MatchQ[resolvedPreparation, Robotic],
-			SimulateCreateID[Object[Protocol,RoboticSamplePreparation]],
-		(* NOTE: If myProtocolPacket is $Failed, we had a problem in the option resolver. *)
-		MatchQ[myProtocolPacket, $Failed],
-			SimulateCreateID[Object[Protocol,Incubate]],
-		True,
-			Lookup[myProtocolPacket, Object]
+		SimulateCreateID[protocolType],
+		Lookup[myProtocolPacket, Object]
 	];
 
 	(* Get our map thread friendly options. *)
@@ -12138,7 +13636,7 @@ simulateExperimentIncubate[
 					ResolvedOptions->{}
 				|>;
 
-				SimulateResources[protocolPacket, ToList[myUnitOperationPackets], ParentProtocol->Lookup[myResolvedOptions, ParentProtocol, Null], Simulation->Lookup[ToList[myResolutionOptions], Simulation, Null]]
+				SimulateResources[protocolPacket, ToList[myUnitOperationPackets], ParentProtocol->Lookup[myResolvedOptions, ParentProtocol, Null], Simulation->simulation]
 			],
 
 		(* Otherwise, if we have a $Failed for the protocol packet, that means that we had a problem in option resolving *)
@@ -12151,7 +13649,7 @@ simulateExperimentIncubate[
 					ResolvedOptions->myResolvedOptions
 				|>,
 				Cache->cache,
-				Simulation->Lookup[ToList[myResolutionOptions], Simulation, Null]
+				Simulation->simulation
 			],
 
 		(* Otherwise, our resource packets went fine and we have an Object[Protocol, Transfer]. *)
@@ -12159,9 +13657,69 @@ simulateExperimentIncubate[
 			SimulateResources[
 				myProtocolPacket,
 				Cache->cache,
-				Simulation->Lookup[ToList[myResolutionOptions], Simulation, Null]
+				Simulation->simulation
 			]
 	];
+
+	(* Update the simulation with the simulated resources. *)
+	currentSimulation = UpdateSimulation[simulation, fulfillmentSimulation];
+
+	(* If Thaw is set to True, update the state to Liquid in the simulation to the best of our knowledge (based on melting point, composition) *)
+	(* Note:also add Volume to the thawed sample and pass in simulation *)
+	simulatedSampleStatePackets = Flatten@MapThread[
+		Function[{sample, sampleOptions, samplePacket, sampleModelPacket},
+			If[!TrueQ[Lookup[sampleOptions, Thaw]],
+				Nothing,
+				Module[{thawTemperature, meltedQ, convertedAmountAsVolume},
+					(* Check resolved ThawTemperature, if not populated use Ambient *)
+					thawTemperature = Lookup[sampleOptions, ThawTemperature, 25 Celsius];
+					meltedQ = Which[
+						(* If input sample is already liquid, it is melted at the end of thaw *)
+						MatchQ[Lookup[samplePacket, State], Liquid],
+							True,
+						(* If the input sample has a melting temp lower than thaw temperature, it is melted *)
+						MatchQ[Lookup[samplePacket, MeltingPoint], TemperatureP] && LessQ[Lookup[samplePacket, MeltingPoint], thawTemperature],
+							True,
+						(* If the model of input sample has a melting temp lower than thaw temperature, it is melted *)
+						!NullQ[sampleModelPacket] && MatchQ[Lookup[sampleModelPacket, MeltingPoint], TemperatureP] && LessQ[Lookup[sampleModelPacket, MeltingPoint], thawTemperature],
+							True,
+						(* In case there is no melting point info, check composition for water molecule or cell *)
+						MemberQ[Lookup[samplePacket, Composition][[All, 2]], ObjectP[{Model[Molecule, "id:vXl9j57PmP5D"], Model[Cell]}]] && GreaterQ[thawTemperature, 0 Celsius],
+							True,
+						(* In case there is no melting point info, check composition for water molecule or cell in the model*)
+						!NullQ[sampleModelPacket] && MemberQ[Lookup[sampleModelPacket, Composition][[All, 2]], ObjectP[{Model[Molecule, "id:vXl9j57PmP5D"], Model[Cell]}]] && GreaterQ[thawTemperature, 0 Celsius],
+							True,
+						True,
+							False
+					];
+					(* If our amount is a mass, convert the mass to a volume. If we don't have a density, assume the density of water with a little buffer amount. *)
+					convertedAmountAsVolume = Which[
+						MatchQ[Lookup[samplePacket, Volume], VolumeP],
+							Lookup[samplePacket, Volume],
+							(* Otherwise, amount is represented by mass and we need to look up sample density to calculate volume *)
+						MatchQ[Lookup[samplePacket, Mass], MassP] && MatchQ[Lookup[samplePacket, Density], DensityP],
+							Lookup[samplePacket, Mass]/Lookup[samplePacket, Density],
+							(* Finally, if density is not available, use default value 0.7976 g/ml (75% of water) *)
+							(* This is the same logic we use in ExperimentTransfer *)
+						MatchQ[Lookup[samplePacket, Mass], MassP],
+							(Lookup[samplePacket, Mass]/Quantity[0.997`, ("Grams")/("Milliliters")]) * 1.25,
+						(* Otherwise, we have no way to determine volume. Do not update it *)
+						True,
+							Null
+					];
+					(* Check the composition, and compare melting point with thawing temperature *)
+					If[TrueQ[meltedQ],
+						<|Object -> sample, State -> Liquid, Volume -> convertedAmountAsVolume|> ,
+						Nothing
+					]
+				]
+			]
+		],
+		{mySamples, mapThreadFriendlyOptions, samplePackets, sampleModelPackets}
+	];
+
+	(* Update the simulation to reflect the outcome of the freezing process. *)
+	currentSimulation = UpdateSimulation[currentSimulation, Simulation[simulatedSampleStatePackets]];
 
 	(* We don't have any SamplesOut for our protocol object, so right now, just tell the simulation where to find the *)
 	(* SamplesIn field. *)
@@ -12191,7 +13749,7 @@ simulateExperimentIncubate[
 	(* Merge our packets with our labels. *)
 	{
 		protocolObject,
-		UpdateSimulation[fulfillmentSimulation, simulationWithLabels]
+		UpdateSimulation[currentSimulation, simulationWithLabels]
 	}
 ];
 
@@ -12217,10 +13775,7 @@ groupSonicationSamples[mySamples_List,myInstruments_List,myInstrumentSettings_Li
 	transposedGroupedSamples=Transpose/@groupedSamples;
 
 	(* Take those grouped samples and get batches. *)
-	Flatten[
-		Transpose[(groupSonicationSamples[#[[1]],First[#[[2]]],First[#[[3]]],myOptions]&)/@transposedGroupedSamples],
-		1
-	]
+	Flatten[#, 1]&/@Transpose[(groupSonicationSamples[#[[1]],First[#[[2]]],First[#[[3]]],myOptions]&)/@transposedGroupedSamples]
 ];
 
 
@@ -12229,10 +13784,10 @@ groupSonicationSamples[mySamples_List,myInstruments_List,myInstrumentSettings_Li
 (* 2) What instrument settings need to be set to mix the sample. *)
 (* 3) If there is enough space in the water bath to fit the samples, taking into account the dimensions of the sonication floats. *)
 groupSonicationSamples[mySamples_List,myInstrument:ObjectP[{Model[Instrument,Sonicator],Object[Instrument,Sonicator]}],myInstrumentSettings_List,myOptions:OptionsPattern[]]:=Module[
-	{cache,simulation,floatPackets,sampleContainerModels,numberOfPositionsMap,containerToFloatMap,containersInFloatsP,samplesAndContainerModels,
+	{cache,simulation,floatPackets,sampleContainerModels,samplesAndContainerModels,
 	samplesAndContainersInFloatsQ,samplesAndContainersInFloats,samplesAndContainersNotInFloats,samplesAndFloats,groupedSamplesAndFloats,
-	floatBatches,floatModel,numberOfPositions,samples,sampleBatches,validPositionsLength,newBatch,firstCounts,sampleCounts,finalBatches,
-	sampleContainerModelFootprint, containerToFloatMapRaw, containerToFloatMapFootprint},
+	floatBatches,floatModel,numberOfPositions,samples,sampleBatches,validPositionsLength,newBatch,firstCounts,sampleCounts,
+	sampleContainerModelFootprint, samplesNotInFloats, samplesFloatsLookup, instrumentSonicationAdapters, compatibleFloats, compatibleRings, compatibleFloatPackets,compatibleRingPackets, floatFootprintToNumberOfPositions, floatFootprintToAdapterModel, floatsFootprint, resolvedFlaskRings, groupedSamples, groupedInstruments, groupedInstrumentSettings, groupedAdapters},
 
 	(* Lookup our passed cache. *)
 	cache=Lookup[ToList[myOptions],Cache,{}];
@@ -12241,71 +13796,78 @@ groupSonicationSamples[mySamples_List,myInstrument:ObjectP[{Model[Instrument,Son
 	(* Download the information about our sonication floats from our cache. *)
 	sampleContainerModels=Download[mySamples,Container[Model],Cache->cache,Simulation->simulation];
 
-	sampleContainerModelFootprint = Download[sampleContainerModels, Footprint, Cache -> cache, Simulation -> simulation];
+	(* fetch footprint of sample container *)
+	sampleContainerModelFootprint = cacheLookup[cache, #, Footprint]&/@sampleContainerModels;
 
-	(* Store the number of positions for each sonication float. *)
-	numberOfPositionsMap={
-		Model[Container,Rack,"50mL Sonication Float"]->4,
-		Model[Container,Rack,"15mL Sonication Float"]->8,
-		Model[Container,Rack,"2mL Sonication Float"]->24,
-		Model[Container,Rack,"Microcentrifuge Tube Sonication Float"]->18,
-		Model[Container, Rack, "id:01G6nvwrwRnA"]->96
-	};
+	(* fetch all the sonication adapters *)
+	instrumentSonicationAdapters = Download[cacheLookup[cache, myInstrument, CompatibleSonicationAdapters],Object];
 
-	(* Map that goes from sonication float to vessel model. *)
-	containerToFloatMapRaw={
-		(* Manually tested smaller than 2mL tubes *)
-		Model[Container, Vessel, "id:dORYzZn0ooaG"]->Model[Container,Rack,"Microcentrifuge Tube Sonication Float"],
-		Model[Container, Vessel, "id:AEqRl954GGvv"]->Model[Container,Rack,"Microcentrifuge Tube Sonication Float"],
-		Model[Container, Vessel, "id:jLq9jXvxr6OZ"]->Model[Container,Rack,"Microcentrifuge Tube Sonication Float"],
-		Model[Container, Vessel, "id:4pO6dM5WvJKM"]->Model[Container,Rack,"Microcentrifuge Tube Sonication Float"],
+	(* split adapters by their type *)
+	compatibleFloats = Cases[instrumentSonicationAdapters, ObjectP[Model[Container, Rack]]];
+	compatibleRings = Cases[instrumentSonicationAdapters, ObjectP[Model[Part, FlaskRing]]];
 
-		(*2mL tube float*)
-		Model[Container, Vessel, "id:3em6Zv9NjjN8"]->Model[Container,Rack,"2mL Sonication Float"],
-		Model[Container, Vessel, "id:M8n3rx03Ykp9"]->Model[Container,Rack,"2mL Sonication Float"],
+	(* fetch packets of each adapter*)
+	compatibleFloatPackets=(fetchPacketFromCache[#, cache]&)/@compatibleFloats;
+	compatibleRingPackets=(fetchPacketFromCache[#, cache]&)/@compatibleRings;
 
-		(*15 mL tube float*)
-		Model[Container, Vessel, "id:xRO9n3vk11pw"]->Model[Container,Rack,"15mL Sonication Float"],
-		Model[Container, Vessel, "id:rea9jl1orrMp"]->Model[Container,Rack,"15mL Sonication Float"],
+	(* For each float type, create a lookup between footprint and positions that float will hold. *)
+	floatFootprintToNumberOfPositions=(Lookup[First[Lookup[#, Positions]], Footprint]->Length[Lookup[#, Positions]]&)/@compatibleFloatPackets;
+	floatFootprintToAdapterModel=(Lookup[First[Lookup[#, Positions]], Footprint]->Lookup[#, Object]&)/@compatibleFloatPackets;
 
-		(*50 mL tube float*)
-		Model[Container, Vessel, "id:bq9LA0dBGGR6"]->Model[Container,Rack,"50mL Sonication Float"],
-		Model[Container, Vessel, "id:bq9LA0dBGGrd"]->Model[Container,Rack,"50mL Sonication Float"],
-
-		(* Thermo matrix vial rack *)
-		Model[Container, Vessel, "id:pZx9jo8MaknP"]->Model[Container, Rack, "id:01G6nvwrwRnA"]
-	};
-
-	containerToFloatMapFootprint = DeleteDuplicates[MapThread[
-		Switch[#2,
-			MicrocentrifugeTube|CEVial, #1 -> Model[Container,Rack,"2mL Sonication Float"],
-			Conical15mLTube, #1 -> Model[Container,Rack,"15mL Sonication Float"],
-			Conical50mLTube, #1 -> Model[Container,Rack,"50mL Sonication Float"],
-			ThermoMatrixTube, #1 -> Model[Container, Rack, "id:01G6nvwrwRnA"],
-			_, Nothing
-		]&,
-		{Download[sampleContainerModels, Object], sampleContainerModelFootprint}
-	]];
-
-	containerToFloatMap = ReplaceRule[containerToFloatMapFootprint, containerToFloatMapRaw];
-
-	(* Create a pattern of all of the container models that will be put in floats. *)
-	containersInFloatsP=Alternatives@@containerToFloatMap[[All,1]];
+	(* extract the allowed footprints of floats *)
+	floatsFootprint = DeleteDuplicates[Keys[floatFootprintToAdapterModel]];
 
 	(* Thread together our samples and their container models. *)
-	samplesAndContainerModels=Transpose[{mySamples,Download[sampleContainerModels,Object]}];
+	samplesAndContainerModels=Transpose[{mySamples,Download[sampleContainerModels,Object], sampleContainerModelFootprint}];
 
 	(* We only have to worry about optimizing the samples that can be placed in floats together. *)
 	(* Get the samples that will be in floats. *)
-	samplesAndContainersInFloatsQ=MatchQ[#,{_,containersInFloatsP}]&/@samplesAndContainerModels;
+	samplesAndContainersInFloatsQ=MatchQ[#,{_,_,Alternatives@@floatsFootprint}]&/@samplesAndContainerModels;
 
 	(* Now that we have the boolean mask, get the {sample, container} information for the floats and non-floats. *)
 	samplesAndContainersInFloats=PickList[samplesAndContainerModels,samplesAndContainersInFloatsQ];
 	samplesAndContainersNotInFloats=PickList[samplesAndContainerModels,samplesAndContainersInFloatsQ,False];
 
+	(* === Samples without floats ===*)
+	(* For the samples that are not in floats, we check if we can find a flask ring. If no flask rings can be used, the container is large -- should be safe even without flask ring *)
+	resolvedFlaskRings = Map[
+		Function[{sample},
+			Module[{containerModel, containerModelAperture, containerModelInternalDiameter, filteredFlaskRingPackets, clearance, sortedFlaskRingPackets},
+				(* each element is in the format of {sampleID, containerModel, containerFootprint} *)
+				containerModel = sample[[2]];
+				(* set a clearance *)
+				clearance = $FlaskRingClearance;
+
+				(* fetch container information *)
+				containerModelAperture = cacheLookup[cache, containerModel, Aperture];
+				containerModelInternalDiameter = cacheLookup[cache, containerModel, InternalDiameter];
+
+				(* flask ring must have Apeture larger than container aperture and smaller than internal diameter *)
+				filteredFlaskRingPackets = Cases[compatibleRingPackets, KeyValuePattern[Aperture -> RangeP[containerModelAperture + clearance, containerModelInternalDiameter - clearance]]];
+				(* sort the filtered flask ring packets so we can pick the largest one if we have multiple rings *)
+				sortedFlaskRingPackets = Sort[filteredFlaskRingPackets, (Lookup[#1, Aperture] > Lookup[#2, Aperture])&];
+				If[sortedFlaskRingPackets == {},
+					(* should be safe without flask ring if we cannot find a ring *)
+					Null,
+					(* resolve to the largest ring if we have multiple rings to choose from *)
+					First[Lookup[sortedFlaskRingPackets, Object]]
+				]
+			]
+		],
+		samplesAndContainersNotInFloats
+	];
+
+
+	(* === Samples with floats ===*)
 	(* For the samples that are in floats, we really care about their sonication float, not their container model. *)
 	(* Map from {sample,container} to {sample,float}. *)
-	samplesAndFloats={#[[1]],Lookup[containerToFloatMap,#[[2]]]}&/@samplesAndContainersInFloats;
+	samplesAndFloats={#[[1]],Lookup[floatFootprintToAdapterModel,#[[3]]]}&/@samplesAndContainersInFloats;
+
+	(* Create Lookup for samples to floats *)
+	samplesFloatsLookup = If[Length[samplesAndFloats]>0,
+		AssociationThread[Transpose[samplesAndFloats][[1]], Transpose[samplesAndFloats][[2]]],
+		<||>
+	];
 
 	(* Group our samples by the floats that they're in. *)
 	groupedSamplesAndFloats=Values[GroupBy[samplesAndFloats,(#[[2]]&)]];
@@ -12319,7 +13881,7 @@ groupSonicationSamples[mySamples_List,myInstrument:ObjectP[{Model[Instrument,Son
 			floatModel=First[samplesAndFloatGroup][[2]];
 
 			(* Get the number of positions that this float has. *)
-			numberOfPositions=Lookup[numberOfPositionsMap,floatModel];
+			numberOfPositions=Length[cacheLookup[cache, floatModel, Positions]];
 
 			(* For the batch, get all of the samples. *)
 			samples=samplesAndFloatGroup[[All,1]];
@@ -12363,41 +13925,27 @@ groupSonicationSamples[mySamples_List,myInstrument:ObjectP[{Model[Instrument,Son
 		groupedSamplesAndFloats
 	];
 
-	(* Switch based off the type of sonicator we're using. *)
-	(* The new heated sonicator can hold two of any sonication float. The old sonicator can only hold one of any sonication float. *)
-	finalBatches=Switch[myInstrument,
-		(* Old sonicator *)
-		ObjectP[{Model[Instrument,Sonicator,"id:Vrbp1jG80Jqx"],Model[Instrument,Sonicator,"id:3em6Zv9NjwJo"]}],
-			(* Our batches are already one per float. Return our result. *)
-			floatBatches,
-		(* New sonicator *)
-		ObjectP[Model[Instrument,Sonicator,"id:XnlV5jKNn3DM"]],
-			(* Our batches are currently per one float. Our new sonicator can take two floats at a time. *)
-			(* Merge two groups of floats. *)
-			(Sequence@@#&)/@Partition[floatBatches,UpTo[2]],
-		(* Otherwise, just assume there's only room for one float. *)
-		_,
-			floatBatches
-	];
-
 	(* We've finished batching all of the samples that are in floats. Add the rest of the non-floated samples in their own groups. *)
 	samplesNotInFloats=PickList[mySamples,samplesAndContainersInFloatsQ,False];
 
+	(* prepare return values *)
+	groupedSamples = Join[floatBatches, {#}&/@samplesNotInFloats];
+	groupedInstruments = Join[
+		ConstantArray[myInstrument,Length[floatBatches]],
+		ConstantArray[myInstrument,Length[samplesNotInFloats]]
+	];
+	groupedInstrumentSettings = Join[
+		ConstantArray[myInstrumentSettings,Length[floatBatches]],
+		ConstantArray[myInstrumentSettings,Length[samplesNotInFloats]]
+	];
+	groupedAdapters = Join[
+		(* As for batched float samples, each batch share one float. Use the first sample to find out corresponding rack model through look up *)
+		If[Length[floatBatches]>0, floatBatches[[All, 1]]/.samplesFloatsLookup, {}],
+		resolvedFlaskRings
+	];
+
 	(* Return our result. *)
-	{
-		Join[
-			finalBatches,
-			{#}&/@samplesNotInFloats
-		],
-		Join[
-			ConstantArray[myInstrument,Length[finalBatches]],
-			ConstantArray[myInstrument,Length[samplesNotInFloats]]
-		],
-		Join[
-			ConstantArray[myInstrumentSettings,Length[finalBatches]],
-			ConstantArray[myInstrumentSettings,Length[samplesNotInFloats]]
-		]
-	}
+	{groupedSamples, groupedInstruments, groupedInstrumentSettings, groupedAdapters}
 ];
 
 
@@ -12409,7 +13957,7 @@ groupSonicationSamples[mySamples_List,myInstrument:ObjectP[{Model[Instrument,Son
 (* 1) What instrument needs to be used to mix the sample. *)
 (* 2) What instrument settings need to be set to mix the sample. *)
 (* 3) If there are enough positions open on the instrument to be used to mix the samples. *)
-Authors[groupSamples]:={"hanming.yang", "thomas"};
+Authors[groupSamples]:={"taylor.hochuli", "hanming.yang", "thomas"};
 
 groupSamples[mySamples_,myInstruments_,myInstrumentSettings_,myOptions:OptionsPattern[]]:=Module[
 	{cache,instrumentModels,instrumentObjects,sampleObjects,transposedInformation,groupedByInstrument,result,instrument,
@@ -12442,7 +13990,11 @@ groupSamples[mySamples_,myInstruments_,myInstrumentSettings_,myOptions:OptionsPa
 	]&)/@myInstruments;
 
 	(* Make sure that all of our samples are in object notation (not name as this will mess up keeping track of duplicate samples). *)
-	sampleObjects=Lookup[fetchPacketFromCache[#,cache]&/@mySamples,Object];
+	sampleObjects=If[MatchQ[#, _Resource],
+		(* if we are handling Roller samples, the sample objects are rack resources *)
+		#,
+		Lookup[fetchPacketFromCache[#,cache],Object]
+	]&/@mySamples;
 
 	(* Transpose our samples, instruments, and instrument settings together. *)
 	transposedInformation=Transpose[{sampleObjects,instrumentModels,myInstrumentSettings,instrumentObjects}];
@@ -12488,10 +14040,18 @@ groupSamples[mySamples_,myInstruments_,myInstrumentSettings_,myOptions:OptionsPa
 				samplePacket=fetchPacketFromCache[sample,cache];
 
 				(* Get the container object that our sample is in. *)
-				samplesContainer=Lookup[samplePacket,Container,Null]/.{link_Link:>Download[link, Object]};
+				samplesContainer=If[MatchQ[sample, _Resource],
+					(* if we are handling Roller samples, the sample objects are rack resources, which does not have container *)
+					sample,
+					Lookup[samplePacket,Container,Null]/.{link_Link:>Download[link, Object]}
+				];
 
 				(* Get the model of this container object. *)
-				samplesContainerModel=Lookup[fetchPacketFromCache[samplesContainer,cache],Model];
+				samplesContainerModel=If[MatchQ[sample, _Resource],
+					(* if we are handling Roller samples, the sample objects are rack resources, its Sample is the Container Model we need *)
+					sample[Sample],
+					Lookup[fetchPacketFromCache[samplesContainer,cache],Model]
+				];
 
 				(* Get the compatible positions for each of our samples. *)
 				CompatibleFootprintQ[
@@ -12504,9 +14064,16 @@ groupSamples[mySamples_,myInstruments_,myInstrumentSettings_,myOptions:OptionsPa
 						Null
 					],
 
-					(* Set ExactMatch\[Rule]False if we're dealing with a sonicator, bottle roller, shaker, nutator, or overhead stirrer. *)
-					ExactMatch->If[MatchQ[Lookup[instrumentPacket,Object],ObjectP[{Model[Instrument,Sonicator],Model[Instrument,BottleRoller],Model[Instrument,Shaker],Model[Instrument,Nutator],Model[Instrument,OverheadStirrer]}]],
+					ExactMatch->Which[
+						(* for torrey pine and incu shaker, we only want to use the container with exact footprint *)
+						MatchQ[Lookup[instrumentPacket,Object], ObjectP[{Model[Instrument, Shaker, "id:N80DNj15vreD"], Model[Instrument, Shaker, "id:6V0npvmNnOrw"]}]],
+						True,
+						(* Set ExactMatch\[Rule]False if we're dealing with a sonicator, bottle roller, shaker, nutator, or overhead stirrer. *)
+						(* for genie temp shaker, we allow it to use with or without adapter. *)
+						MatchQ[Lookup[instrumentPacket,Object],ObjectP[{Model[Instrument,Sonicator],Model[Instrument,BottleRoller],Model[Instrument,Shaker],Model[Instrument,Nutator],Model[Instrument,OverheadStirrer]}]],
 						False,
+						(* otherwise set to True *)
+						True,
 						True
 					],
 
@@ -12855,9 +14422,27 @@ compatibleStirBar[myContainer:ObjectReferenceP[Model[Container]],ops:OptionsPatt
 
 compatibleStirBar[mySample:ObjectP[Object[Sample]],ops:OptionsPattern[]]:=FirstOrDefault[compatibleStirBars[mySample,ops]];
 
+compatibleStirBars[myContainer:ObjectP[Model[Container]],ops:OptionsPattern[]]:=Module[{},
+	(* Fake a sample to pass into the main function. *)
+	compatibleStirBars[
+		<|Object->Object[Sample, "id:bxExiCVfgb3H"],Container->Link[Object[Container,"id:V8zjStew9qzQ"], Contents, 2]|>,
+		Cache->{
+			<|Object->Object[Container,"id:V8zjStew9qzQ"],Model->Link[myContainer, Objects]|>,
+			Quiet[
+				Download[
+					myContainer,
+					Packet[Aperture,InternalDepth,InternalDimensions,InternalDiameter],
+					Simulation->Lookup[ToList[ops], Simulation, Null]
+				]
+			]
+		},
+		ops
+	]
+];
+
 compatibleStirBars[mySample:ObjectP[Object[Sample]],ops:OptionsPattern[]]:=Module[
 	{cache,simulation,sampleContainerPacket,stirInstrumentPackets,impellerPackets,containerAperture,
-		containerInternalDiameter,allStirBarPackets,filteredStirBars},
+		containerInternalDiameter, allStirBarPackets,filteredStirBars},
 
 	(* Lookup our cache. *)
 	cache=Lookup[ToList[ops],Cache,{}];
@@ -12871,8 +14456,8 @@ compatibleStirBars[mySample:ObjectP[Object[Sample]],ops:OptionsPattern[]]:=Modul
 		Simulation->simulation
 	],{Download::FieldDoesntExist, Download::ObjectDoesNotExist}];
 
-	(* If the sample isn't in a Model[Container,Vessel], it can't be stirred. *)
-	If[!MatchQ[Lookup[sampleContainerPacket,Object],ObjectP[Model[Container,Vessel]]],
+	(* If the download failed or the sample isn't in a Model[Container,Vessel], it can't be stirred. *)
+	If[!MatchQ[sampleContainerPacket,PacketP[]]||!MatchQ[Lookup[sampleContainerPacket,Object],ObjectP[Model[Container,Vessel]]],
 		Return[Null];
 	];
 
@@ -12910,7 +14495,7 @@ DefineOptions[compatibleImpeller,
 compatibleImpeller[myContainer:ObjectReferenceP[Model[Container]],myStirInstrument:ObjectP[{Object[Instrument],Model[Instrument]}],ops:OptionsPattern[]]:=Module[{},
 	(* Fake a sample to pass into the main function. *)
 	compatibleImpeller[
-		<|Object->Object[Sample, "id:bxExiCVfgb3H"],Container->Link[Object[Container,"id:V8zjStew9qzQ"]]|>,
+		<|Object->Object[Sample, "id:bxExiCVfgb3H"],Container->Link[Object[Container,"id:V8zjStew9qzQ"]], IncompatibleMaterials-> {None}|>,
 		myStirInstrument,
 		Cache->{
 			<|Object->Object[Container,"id:V8zjStew9qzQ"],Model->Link[myContainer, Objects]|>,
@@ -12930,11 +14515,10 @@ compatibleImpeller[myContainer:ObjectReferenceP[Model[Container]],myStirInstrume
 (* 1) The impeller can fit in the aperture of the sample's container. *)
 (* 2) The impeller can reach the bottom of the sample's container. *)
 (* 3) The impeller is compatible with the stir instrument given. *)
-
 compatibleImpeller[mySample:ObjectP[Object[Sample]],myStirInstrument:ObjectP[{Object[Instrument],Model[Instrument]}],ops:OptionsPattern[]]:=Module[
-	{cache,simulation,clearence,sampleContainerPackets,stirInstrumentPackets,impellerPackets,containerInternalDepth,containerAperture,
+	{cache,simulation,clearence,sampleContainerPackets,stirInstrumentPackets,impellerPackets,containerInternalDepth,containerAperture, containerMaxVolume,
 	containerInternalDiameter,instrumentPacket,compatibleImpellers,compatibleImpellerPackets,impellerInformation,
-	filteredImpellers},
+	filteredImpellers, materialCompatibleImpellerPackets},
 
 	(* Lookup our cache. *)
 	cache=Lookup[ToList[ops],Cache,{}];
@@ -12942,12 +14526,11 @@ compatibleImpeller[mySample:ObjectP[Object[Sample]],myStirInstrument:ObjectP[{Ob
 	clearence=Lookup[ToList[ops],Clearance,1.5 Centimeter];
 
 	(* Download our necessary information. *)
+	(* CompatibleImpellers is a field of Model[Instrument] *)
 	{
-		{
-			sampleContainerPackets,
-			stirInstrumentPackets,
-			impellerPackets
-		}
+		sampleContainerPackets,
+		stirInstrumentPackets,
+		impellerPackets
 	}=Quiet[Flatten[Download[
 		{
 			{mySample},
@@ -12955,13 +14538,19 @@ compatibleImpeller[mySample:ObjectP[Object[Sample]],myStirInstrument:ObjectP[{Ob
 			{myStirInstrument}
 		},
 		{
-			{Packet[Container[Model][{Aperture,InternalDepth,InternalDimensions,InternalDiameter}]]},
-			{Packet[CompatibleImpellers]},
-			{Packet[CompatibleImpellers[{StirrerLength,MaxDiameter,ImpellerDiameter,Name}]]}
+			{Packet[Container[Model][{Aperture, InternalDepth, InternalDimensions, InternalDiameter}]]},
+			{
+				Packet[CompatibleImpellers],
+				Packet[Model[CompatibleImpellers]]
+			},
+			{
+				Packet[CompatibleImpellers[{StirrerLength,MaxDiameter,ImpellerDiameter,Name, WettedMaterials}]],
+				Packet[Model[CompatibleImpellers][{StirrerLength,MaxDiameter,ImpellerDiameter,Name, WettedMaterials}]]
+			}
 		},
 		Cache->cache,
 		Simulation->simulation
-	],{3}],{Download::FieldDoesntExist, Download::ObjectDoesNotExist}];
+	],1],{Download::FieldDoesntExist, Download::ObjectDoesNotExist}]/. {$Failed -> Null};
 
 	(* If the sample isn't in a Model[Container,Vessel], it can't be stirred. *)
 	If[!MatchQ[Lookup[First[Flatten[sampleContainerPackets]],Object],ObjectP[Model[Container,Vessel]]],
@@ -12969,7 +14558,7 @@ compatibleImpeller[mySample:ObjectP[Object[Sample]],myStirInstrument:ObjectP[{Ob
 	];
 
 	(* Get the information about the container that we need. *)
-	{containerInternalDepth,containerAperture}=Lookup[First[sampleContainerPackets],{InternalDepth,Aperture},Null];
+	{containerInternalDepth, containerAperture} = Lookup[First[sampleContainerPackets], {InternalDepth, Aperture}, Null];
 
 	(* Get the internal diameter of the conatiner. *)
 	containerInternalDiameter=If[MatchQ[Lookup[First[sampleContainerPackets],InternalDiameter,Null],Null],
@@ -12980,17 +14569,20 @@ compatibleImpeller[mySample:ObjectP[Object[Sample]],myStirInstrument:ObjectP[{Ob
 	(* Get the packet for this instrument. *)
 	instrumentPacket=fetchPacketFromCache[myStirInstrument,stirInstrumentPackets];
 
-	(* Get the compatible impellers for this instrument. *)
-	compatibleImpellers=Lookup[instrumentPacket,CompatibleImpellers,{}]/.{$Failed->{}};
+	(* Packet[CompatibleImpellers] is Null or Packet[Model[CompatibleImpellers]] is Null, depending on if given instrument is Object or Model *)
+	compatibleImpellers=Flatten[Lookup[DeleteCases[stirInstrumentPackets, Null],CompatibleImpellers,{}]];
 
 	(* For each compatible impeller, get the information we need about it. *)
-	compatibleImpellerPackets=fetchPacketFromCache[#,Flatten[impellerPackets]]&/@compatibleImpellers;
+	compatibleImpellerPackets=fetchPacketFromCache[#,DeleteCases[Flatten[impellerPackets], Null]]&/@compatibleImpellers;
+
+	(* Make sure the impellers we resolve are material compatible *)
+	materialCompatibleImpellerPackets =Quiet[Cases[compatibleImpellerPackets, _?(CompatibleMaterialsQ[#, mySample, Cache -> cache, Simulation -> simulation]&)], {Error::IncompatibleMaterials}];
 
 	(* Lookup StirrerLength and MaxDiameter from each packet. *)
-	impellerInformation=Lookup[Flatten[impellerPackets],{Object,StirrerLength,MaxDiameter,ImpellerDiameter},Null];
+	impellerInformation=Lookup[Flatten[materialCompatibleImpellerPackets],{Object,StirrerLength,MaxDiameter,ImpellerDiameter},Null];
 
-	(* Make sure that we have at least one impeller that can hit the bottom of the container, can fit in the aperture, and that there's at least 1 Centimeters of clearance between the impeller diameter and the internal diameter. *)
-	filteredImpellers=Cases[impellerInformation,{_,GreaterEqualP[containerInternalDepth],LessP[containerAperture],LessEqualP[containerInternalDiameter-clearence]}];
+	(* Make sure that we have at least one impeller that can hit the bottom of the container (but not too long to assemble), can fit in the aperture, and that there's at least 1 Centimeters of clearance between the impeller diameter and the internal diameter. *)
+	filteredImpellers=Cases[impellerInformation,{_,RangeP[containerInternalDepth, containerInternalDepth * 2.5],LessP[containerAperture],LessEqualP[containerInternalDiameter-clearence]}];
 
 	(* Did we find a compatible impeller? *)
 	If[Length[filteredImpellers]>0,
@@ -13258,11 +14850,10 @@ compatibleSonicationContainers[]:=compatibleSonicationContainers[]=Flatten@Searc
 		Or[
 			(* The vessel will fit in one of our tube floats *)
 			Footprint==(MicrocentrifugeTube|CEVial|GlassReactionVessel|Conical15mLTube|Conical50mLTube),
-			(* OR it can be weighed down by our weighted sonication collar. *)
+			(* OR it can be weighed down by our weighted sonication collar. Give it 5 Millimeter tolerance *)
 			And[
-				TareWeight < 400 Gram,
-				Aperture < 30 Millimeter,
-				Aperture > 25 Millimeter
+				Aperture < $MaxFlaskRingAperture - $FlaskRingClearance,
+				InternalDiameter > $MinFlaskRingAperture + $FlaskRingClearance
 			]
 		]
 	]
@@ -13375,6 +14966,13 @@ DefineOptions[MixDevices,
 			Description -> "Indicates a list of instruments available in the lab to avoid repeated searches when possible.",
 			Category -> "Hidden"
 		},
+		{
+			OptionName -> StirBar,
+			Default -> True,
+			AllowNull -> True,
+			Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+			Description -> "Indicates that if we want to allow StirBar usage when mix type is Stir."
+		},
 		CacheOption,
 		SimulationOption
 	}
@@ -13409,13 +15007,14 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,outputSpecification,output,safeOps,types,rate,temperature,amplitude,maxTemperature,cache,instrumentSearch,instruments,
 	groupedInstruments,vortexes,shakers,bottleRollers,rollers,stirrers,sonicators,homogenizers,
 	supportedSonicationContainers,preferredVessels,preferredVesselPackets,shakeAdpaterPackets,
-	samplePackets,sampleContainerPackets,vortexInstrumentPackets,shakeInstrumentPackets,
+	samplePackets,sampleContainerPackets,sampleSolventPackets,vortexInstrumentPackets,shakeInstrumentPackets,
 	bottleRollerInstrumentPackets,homogenizerInstrumentPackets,sonicationHornPackets,
 	rollInstrumentPackets,stirInstrumentPackets,impellerPackets,sonicationInstrumentPackets,sonicationContainerPackets,
-	cacheBall,sampleContainerModel,simulation,oscillationAngle,programmableTemperatureControl,programmableMixControl,
-	wiggleRoom,modelDimensions,sterile,lightSensitive,sampleVolume,devicesAndContainersResult,
+	cacheBall,sampleContainerModel,sampleContainerWeight,sampleContainerMaxVolume,simulation,oscillationAngle,programmableTemperatureControl,programmableMixControl,
+	wiggleRoom,modelDimensions,sterile,lightSensitive,sampleVolume,sampleMass,sampleDensity,solventDensity,
+	estimatedSampleDensity,estimatedSampleMass,estimatedTotalWeight,devicesAndContainersResult,
 	potentialAliquotContainers,instrumentResult,containerModelMaxVolume,disruptors,nutators,
-	disruptorInstrumentPackets, nutatorInstrumentPackets, integratedLiquidHandler},
+	disruptorInstrumentPackets, nutatorInstrumentPackets, integratedLiquidHandler, stirBar},
 
 	(* Make sure we're working with a list of options *)
 	listedOptions=ToList[myOptions];
@@ -13439,6 +15038,7 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 	programmableTemperatureControl=Lookup[safeOps,ProgrammableTemperatureControl];
 	programmableMixControl=Lookup[safeOps,ProgrammableMixControl];
 	integratedLiquidHandler=Lookup[safeOps,IntegratedLiquidHandler];
+	stirBar = Lookup[safeOps, StirBar];
 
 	(* Get instrument search results that were previously run *)
 	instrumentSearch=Lookup[safeOps,InstrumentSearch];
@@ -13474,7 +15074,7 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 		instrumentSearch
 	];
 
-	(* Seperate out these instruments by instrument type. *)
+	(* Separate out these instruments by instrument type. *)
 	groupedInstruments=GroupBy[instruments,#[Type]&];
 	vortexes=Lookup[groupedInstruments,Model[Instrument,Vortex],{}];
 	shakers=Lookup[groupedInstruments,Model[Instrument,Shaker],{}];
@@ -13495,7 +15095,8 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 		PreferredContainer[All,Sterile->True,LightSensitive->True,Type->Vessel],
 		PreferredContainer[All,Sterile->False,LightSensitive->True,Type->Vessel],
 		PreferredContainer[All,Sterile->True,LightSensitive->False,Type->Vessel],
-		Model[Container,Plate,"id:L8kPEjkmLbvW"] (* 96 deep-well plate *)
+		Model[Container,Plate,"id:L8kPEjkmLbvW"], (* 96 deep-well plate *)
+		Model[Container, Vessel, "id:xRO9n3vk11mz"] (* 50mL beaker *)
 	}]];
 
 	(* Extract the packets that we need from our downloaded cache. *)
@@ -13503,6 +15104,7 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 		{
 			samplePackets,
 			sampleContainerPackets,
+			sampleSolventPackets,
 			vortexInstrumentPackets,
 			shakeInstrumentPackets,
 			shakeAdpaterPackets,
@@ -13522,6 +15124,7 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 			(* Download {WettedMaterials, Positions, MaxRotationRate, MinRotationRate} from our instruments. *)
 			{mySample},
 			{mySample},
+			{mySample},
 			vortexes,
 			shakers,
 			shakers,
@@ -13537,21 +15140,22 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 			preferredVessels
 		},
 		{
-			{Packet[Object,Volume,Mass,Sterile,Container,Fuming]},
-			{Packet[Container[Model][{Aperture,InternalDepth,InternalDimensions,InternalDiameter,SelfStanding,OpenContainer,MinVolume,MaxVolume,Dimensions,Footprint}]]},
+			{Packet[Object,Volume,Mass,Sterile,Container,Fuming,Density,Solvent]},
+			{Packet[Container[Model][{Aperture,InternalDepth,InternalDimensions,InternalDiameter,SelfStanding,OpenContainer,MinVolume,MaxVolume,Dimensions,Footprint, SelfStanding, TareWeight, MaxOverheadMixRate}]]},
+			{Packet[Solvent[{Density}]]},
 			{Packet[WettedMaterials, Positions, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature]},
-			{Packet[IntegratedLiquidHandlers, ProgrammableTemperatureControl, ProgrammableMixControl, MaxOscillationAngle, MinOscillationAngle, WettedMaterials, Positions, MaxForce, MinForce, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, GripperDiameter, CompatibleAdapters]},
+			{Packet[IntegratedLiquidHandlers, ProgrammableTemperatureControl, ProgrammableMixControl, MaxOscillationAngle, MinOscillationAngle, WettedMaterials, Positions, MaxForce, MinForce, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, GripperDiameter, CompatibleAdapters, MaxWeight]},
 			{Packet[CompatibleAdapters[Positions]]},
-			{Packet[WettedMaterials, Positions, MaxRotationRate, MinRotationRate, RollerSpacing]},
-			{Packet[WettedMaterials, Positions, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature]},
-			{Packet[WettedMaterials, Positions, MaxStirBarRotationRate, MinStirBarRotationRate, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, CompatibleImpellers]},
-			{Packet[CompatibleImpellers[{StirrerLength,MaxDiameter,ImpellerDiameter,Name}]]},
-			{Packet[WettedMaterials, Positions, MinTemperature, MaxTemperature]},
+			{Packet[WettedMaterials, Positions, MaxRotationRate, MinRotationRate, RollerSpacing, Objects]},
+			{Packet[WettedMaterials, Positions, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, CompatibleRacks, Objects]},
+			{Packet[WettedMaterials, Positions, MaxStirBarRotationRate, StirBarControl, MinStirBarRotationRate, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, CompatibleImpellers]},
+			{Packet[CompatibleImpellers[{StirrerLength,MaxDiameter,ImpellerDiameter,Name, WettedMaterials}]]},
+			{Packet[WettedMaterials, Positions, MinTemperature, MaxTemperature, CompatibleSonicationAdapters]},
 			{Packet[WettedMaterials, Positions, MinTemperature, MaxTemperature, CompatibleSonicationHorns]},
 			{Packet[CompatibleSonicationHorns[{HornLength,HornDiameter}]]},
 			{Packet[WettedMaterials, Positions, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature]},
 			{Packet[WettedMaterials, Positions, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, InternalDimensions]},
-			{Packet[Aperture,InternalDepth,Footprint,InternalDiameter,InternalDimensions,SelfStanding,OpenContainer,MinVolume,MaxVolume,Dimensions]}
+			{Packet[Aperture,InternalDepth,Footprint,InternalDiameter,InternalDimensions,SelfStanding,OpenContainer,MinVolume,MaxVolume,Dimensions, MaxOverheadMixRate]}
 		},
 		Cache->cache,
 		Simulation->simulation
@@ -13562,12 +15166,59 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 
 	(* Get the sample's container's model. *)
 	sampleContainerModel=Lookup[First[Flatten[sampleContainerPackets]],Object];
+	(* Get the sample's container's weight *)
+	sampleContainerWeight=Lookup[First[Flatten[sampleContainerPackets]],TareWeight];
+	(* Get the sample's container's max volume *)
+	sampleContainerMaxVolume=Lookup[First[Flatten[sampleContainerPackets]],MaxVolume];
+	(* Get the sample's volume *)
+	sampleVolume = Lookup[fetchPacketFromCache[mySample, samplePackets], Volume, Null];
+	(* Get the sample's mass *)
+	sampleMass = Lookup[fetchPacketFromCache[mySample, samplePackets], Mass, Null];
+	(* Get the sample's density *)
+	sampleDensity = Lookup[fetchPacketFromCache[mySample, samplePackets], Density, Null];
+	(* Get the sample's solvent's density  *)
+	solventDensity = If[MatchQ[sampleSolventPackets,PacketP..],
+		Lookup[First[Flatten[sampleSolventPackets]], Density, Null],
+		Null
+	];
+
+	(* Get our best estimate of the sample's density *)
+	estimatedSampleDensity = Which[
+
+		(* If we know the sample's density, then use it *)
+		DensityQ[sampleDensity], sampleDensity,
+
+		(* If we know the sample's mass and volume, use them to calculate the density *)
+		MassQ[sampleMass] && VolumeQ[sampleVolume] && TrueQ[sampleVolume > 0 Liter], sampleMass / sampleVolume,
+
+		(* If we know the sample's solvent's density, then use it *)
+		DensityQ[solventDensity], solventDensity,
+
+		(* Otherwise, use a density slightly higher than that of water *)
+		True, 1.2 Gram / Milliliter
+	];
+
+	(* Get our best estimate of the sample's mass *)
+	estimatedSampleMass = Which[
+
+		(* If we know the sample's mass, then use it *)
+		MassQ[sampleMass], sampleMass,
+
+		(* If we know the sample's volume, then use it and the estimated density to calculate the mass *)
+		VolumeQ[sampleVolume], sampleVolume * estimatedSampleDensity,
+
+		(* Otherwise use the max volume of the container model and the estimated density *)
+		True, sampleContainerMaxVolume * estimatedSampleDensity
+	];
+
+	(* Get our best estimate for the total weight of container + sample *)
+	estimatedTotalWeight = sampleContainerWeight + estimatedSampleMass;
 
 	(* Compute the best mix devices (and transfer container, if applicable) for the specified mix types. *)
 	devicesAndContainersResult=Function[type,
 		Module[{oscillationAnglePattern,filterPattern,instrumentPackets,filteredInstrumentPackets,compatibleInstruments,filteredCompatibleInstruments,filteredContainers,compatibleFootprintsQ,containers,containerResult,containerRules},
 			(* Create a pattern to filter our instruments based on the given options. *)
-			filterPattern=Module[{ratePattern,temperaturePattern,programmableMixControlPattern,programmableTemperatureControlPattern},
+			filterPattern=Module[{ratePattern,temperaturePattern,weightPattern,programmableMixControlPattern,programmableTemperatureControlPattern},
 				(* Create a pattern for Rate. *)
 				ratePattern=Which[
 					MatchQ[rate,RPMP],
@@ -13624,13 +15275,22 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 					_
 				];
 
+				(* Create a pattern for MaxWeight. This field only exists for shakers. *)
+				weightPattern=If[MatchQ[type, Shake],
+					KeyValuePattern[{
+						MaxWeight->(Null|GreaterEqualP[estimatedTotalWeight])
+					}],
+					_
+				];
+
 				(* Combine to create our pattern. *)
 				PatternUnion[
 					ratePattern,
 					oscillationAnglePattern,
 					programmableMixControlPattern,
 					programmableTemperatureControlPattern,
-					temperaturePattern
+					temperaturePattern,
+					weightPattern
 				]
 			];
 
@@ -13665,27 +15325,50 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 				(* There are no filtered instruments. *)
 				Nothing,
 				(* There are filtered instruments. Do footprint checks. *)
-				compatibleFootprintsQ=CompatibleFootprintQ[
-					Lookup[filteredInstrumentPackets,Object],
-					sampleContainerModel,
-
-					(* Set MidWidth if we're dealing with a bottle roller. *)
-					MinWidth->(
-						If[MatchQ[Lookup[#,Object],ObjectP[Model[Instrument,BottleRoller]]],
-							Lookup[#,RollerSpacing],
-							Null
+				compatibleFootprintsQ=If[MatchQ[Lookup[#,Object], ObjectP[Model[Instrument, Roller]]],
+					(* If we are dealing with Roller, we need to check if the footprint of sample match with any of the compatible racks *)
+					Module[{compatibleRacks},
+						compatibleRacks = Lookup[#,CompatibleRacks];
+						(* if we can find one model rack that can fit the sample container, return Ture for this roller *)
+						Or@@Map[
+							Function[{rack},
+								CompatibleFootprintQ[
+									rack,
+									sampleContainerModel,
+									ExactMatch -> True,
+									Cache->cacheBall
+								]
+							],
+							compatibleRacks
 						]
-					&)/@filteredInstrumentPackets,
+					],
+					CompatibleFootprintQ[
+						Lookup[#,Object],
+						sampleContainerModel,
 
-					(* Set ExactMatch\[Rule]False if we're dealing with a sonicator, bottle roller, shaker, overhead stirrer, nutator, or homogenizer. *)
-					ExactMatch->(
-						If[MatchQ[Lookup[#,Object],ObjectP[{Model[Instrument,Sonicator],Model[Instrument,BottleRoller],Model[Instrument,Shaker],Model[Instrument,OverheadStirrer],Model[Instrument,Nutator],Model[Instrument,Homogenizer]}]],
+						(* Set MidWidth if we're dealing with a bottle roller. *)
+						MinWidth->(
+							If[MatchQ[Lookup[#,Object],ObjectP[Model[Instrument,BottleRoller]]],
+								Lookup[#,RollerSpacing],
+								Null
+							]),
+
+						ExactMatch->(
+							Which[
+							(* for torrey pine and incu shaker, we only want to use the container with exact footprint *)
+							MatchQ[Lookup[#,Object], ObjectP[{Model[Instrument, Shaker, "id:N80DNj15vreD"], Model[Instrument, Shaker, "id:6V0npvmNnOrw"]}]],
+							True,
+							(* Set ExactMatch\[Rule]False if we're dealing with a sonicator, bottle roller, shaker, nutator, homogenizer or overhead stirrer. *)
+							(* for genie temp shaker, we allow it to use with or without adapter. *)
+							MatchQ[Lookup[#,Object],ObjectP[{Model[Instrument,Sonicator],Model[Instrument,BottleRoller],Model[Instrument,Shaker],Model[Instrument,Nutator],Model[Instrument,OverheadStirrer], Model[Instrument,Homogenizer]}]],
 							False,
+							(* otherwise set to True *)
+							True,
 							True
-						]
-					&)/@filteredInstrumentPackets,
-					Cache->cacheBall
-				];
+						]),
+						Cache->cacheBall
+					]
+				]&/@filteredInstrumentPackets;
 
 				(* Filter our instruments based on compatible footprints. *)
 				compatibleInstruments=PickList[
@@ -13697,9 +15380,6 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 				filteredCompatibleInstruments=Switch[type,
 					Sonicate,
 					Which[
-						MatchQ[sampleContainerModel,ObjectP[Model[Container,Vessel,VolumetricFlask]]],
-							(* No Sonicate for VolumetricFlask! *)
-							{},
 						MatchQ[sampleContainerModel,ObjectP[Model[Container,Vessel]]],
 						(* If our vessel is self standing and can fit a self-standing weight, we don't need to put it in a float. *)
 							Which[
@@ -13719,7 +15399,7 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 									]
 								],
 									Cases[compatibleInstruments, Except[ObjectP[Model[Instrument, Sonicator, "id:6V0npvmZlEk6"]]]],
-								(* Otherwise, only allow approved sonication containers (for which we have specific floats for). *)
+								(* Otherwise, only allow approved sonication containers (for which we have specific floats or rings for). *)
 								MemberQ[supportedSonicationContainers,sampleContainerModel],
 									Cases[compatibleInstruments, Except[ObjectP[Model[Instrument, Sonicator, "id:6V0npvmZlEk6"]]]],
 								True,
@@ -13741,14 +15421,20 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 					Shake|Roll,
 						(* Are we only asking for hamilton compatible things? *)
 						If[MatchQ[integratedLiquidHandler, False],
-							(* Don't allow plates in the shakers or rollers. *)
 							Which[
 								MatchQ[sampleContainerModel,ObjectP[Model[Container,Plate]]],
 									(* NOTE: he torrey pines shaker and the LabRAM shaker is fine. *)
 									Cases[compatibleInstruments, ObjectP[{Model[Instrument, Shaker, "id:N80DNj15vreD"], Model[Instrument, Shaker, "id:bq9LA0JYrN66"]}]],
-								MatchQ[sampleContainerModel,ObjectP[Model[Container,Vessel,VolumetricFlask]]],
-									(* No Shake or Roll for volumetric flask *)
-									{},
+
+								(* Volumetric Flask can be shaked with genie-temp or incu-shaker *)
+								MatchQ[sampleContainerModel, ObjectP[Model[Container, Vessel, VolumetricFlask]]],
+									If[MatchQ[rate,RPMP] && rate > $MaxVolumetricFlaskShakeRate,
+										(* If we want to shake a VF, its mix rate cannot exceed $MaxVolumetricFlaskShakeRate--250 RPM *)
+										{},
+										(* Model[Instrument, Shaker, "Genie Temp-Shaker 300"] and Model[Instrument, Shaker, "Incu-Shaker 10L"] can be used for VF *)
+										Cases[compatibleInstruments, ObjectP[{Model[Instrument, Shaker, "id:mnk9jORRwA7Z"], Model[Instrument, Shaker, "id:6V0npvmNnOrw"]}]]
+									],
+
 								True,
 									(* For each instrument, if GripperDiameter is filled out, make sure the Aperture of the container can be gripped. *)
 									(* Also, only self standing containers can be put into the LabRAM. *)
@@ -13777,28 +15463,36 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 							compatibleInstruments
 						],
 					Stir,
-						If[MatchQ[sampleContainerModel,ObjectP[Model[Container,Vessel,VolumetricFlask]]],
-							(* No Stir for volumetric flask *)
+						Which[
+							(* If we are considering aliquot, we can loosen some container constraints, the only absolutely-no condition is our sample volume is too low *)
+							MemberQ[output,Containers] && LessQ[sampleVolume, 20*Milliliter],
 							{},
-							(* Make sure that for each compatible instrument, there is an impeller that is compatible with our container. *)
-							Module[{bestImpeller, bestStirBar},
-								Map[
-									Function[{instrument},
-										(* Get the best impeller for this sample and instrument. *)
-										bestImpeller=compatibleImpeller[mySample,instrument,Cache->cacheBall,Simulation->simulation];
-
-										(* Get the best stir bar for this sample. *)
-										bestStirBar=compatibleStirBar[mySample, Cache->cacheBall, Simulation->simulation];
-
-										(* Were we able to find an impeller OR a stir bar, if not, filter out this instrument. *)
-										If[MatchQ[bestImpeller,Null] && MatchQ[bestStirBar, Null],
-											Nothing,
-											instrument
-										]
-									],
-									compatibleInstruments
-								]
-							]
+							(* if we want the sample in the current container and does not want it to use StirBar *)
+							!MemberQ[output,Containers] && MatchQ[stirBar, False] && Or[
+								NullQ[Lookup[fetchPacketFromCache[sampleContainerModel, cacheBall], MaxOverheadMixRate, Null]],
+								rate > Lookup[fetchPacketFromCache[sampleContainerModel, cacheBall], MaxOverheadMixRate]
+							],
+							(* No Stir if the sample container is missing MaxOverheadMixRate *)
+							(* No Stir if the sample container is the mix rate is over MaxOverheadMixRate *)
+							{},
+							(* We just want to know if sample in the current container can be stirred or not*)
+							!MemberQ[output,Containers] && Or[
+								MatchQ[sampleContainerModel, ObjectP[Model[Container, Vessel, VolumetricFlask]]],
+								LessQ[sampleVolume, 20*Milliliter],
+								LessQ[FirstCase[
+									{
+										sampleVolume / Lookup[fetchPacketFromCache[sampleContainerModel, sampleContainerPackets], MaxVolume, Null],
+										0.39
+									}, NumericP
+								], 0.4]
+							],
+							(* No Stir for volumetric flask *)
+							(* No Stir for sample volume below 20mL *)
+							(* No Stir for sample to container max volume ratio below 40% *)
+							{},
+							True,
+							(* Assume that as long as we do not have the combination of no aliquot allowed and sample volume below 20mL, there is an either an impeller or stirbar that is compatible. *)
+							compatibleInstruments
 						],
 					Homogenize,
 						If[MatchQ[sampleContainerModel,ObjectP[Model[Container,Vessel,VolumetricFlask]]],
@@ -13809,7 +15503,6 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 								Map[
 									Function[{instrument},
 										(* Get the sample's volume and the container's max volume. *)
-										sampleVolume=Lookup[fetchPacketFromCache[mySample,cacheBall],Volume,Null];
 										containerModelMaxVolume=Lookup[fetchPacketFromCache[sampleContainerModel,sampleContainerPackets],MaxVolume,2 Milliliter];
 
 										(* Filter out the sample if it has a volume that's within 95% of the container's max volume. *)
@@ -13869,10 +15562,17 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 							]
 						&)/@filteredInstrumentPackets,
 
-						(* Set ExactMatch\[Rule]False if we're dealing with a sonicator, bottle roller, shaker, overhead stirrer, nutator, or homogenizer. *)
 						ExactMatch->(
-							If[MatchQ[Lookup[#,Object],ObjectP[{Model[Instrument,Sonicator],Model[Instrument,BottleRoller],Model[Instrument,Shaker],Model[Instrument,OverheadStirrer],Model[Instrument,Nutator],Model[Instrument,Homogenizer]}]],
+							Which[
+								(* for torrey pine and incu shaker, we only want to use the container with exact footprint *)
+								MatchQ[Lookup[#,Object], ObjectP[{Model[Instrument, Shaker, "id:N80DNj15vreD"], Model[Instrument, Shaker, "id:6V0npvmNnOrw"]}]],
+								True,
+								(* Set ExactMatch\[Rule]False if we're dealing with a sonicator, bottle roller, shaker, nutator, homogenizer or overhead stirrer. *)
+								(* for genie temp shaker, we allow it to use with or without adapter. *)
+								MatchQ[Lookup[#,Object],ObjectP[{Model[Instrument,Sonicator],Model[Instrument,BottleRoller],Model[Instrument,Shaker],Model[Instrument,Nutator],Model[Instrument,OverheadStirrer], Model[Instrument,Homogenizer]}]],
 								False,
+								(* otherwise set to True *)
+								True,
 								True
 							]
 						&)/@filteredInstrumentPackets,
@@ -13916,27 +15616,47 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 								{2}
 							],
 						Stir,
-							(* Only allow containers that have a compatible impeller or stir bar. *)
-							Map[
-								(* TODO: We only have one stirrer model now so this is okay. Will need to double map when we have multiple instrument models. *)
-								(
-									If[Or[
-										!MatchQ[compatibleImpeller[#,Model[Instrument,OverheadStirrer,"id:rea9jlRRmN05"],Cache->cacheBall,Simulation->simulation],Null],
-										!MatchQ[compatibleStirBar[#,Cache->cacheBall,Simulation->simulation],Null]
-									],
-									#,
-									Nothing
-								]&),
-								containerResult,
-								{2}
-							],
+						(* Only allow containers that have a compatible impeller or stir bar, when sampleVolume >= 20mL and  sample to container max volume ratio is no less than 40%*)
+						(* Among containers fulfilling our requirements, we prefer larger ones for stir to minimum spillage *)
+							ReverseSortBy[Lookup[fetchPacketFromCache[#, preferredVesselPackets], MaxVolume]&] /@
+								Map[
+									(If[GreaterEqualQ[sampleVolume,20*Milliliter] &&
+										GreaterEqualQ[FirstCase[
+											{
+												sampleVolume / Lookup[fetchPacketFromCache[#, preferredVesselPackets], MaxVolume, Null],
+												0.39
+											}, NumericP
+										], 0.4] &&
+										Or[
+											(* we can find a Impeller and the container has MaxOverheadMixRate over resolve rate *)
+											And[
+												Sequence @@ Map[
+													Function[{overheadStirrerModel},
+														!MatchQ[compatibleImpeller[#, overheadStirrerModel, Cache->cacheBall, Simulation -> simulation], Null]
+													],
+													Cases[Lookup[filteredInstrumentPackets, Object], ObjectP[Model[Instrument, OverheadStirrer]]]
+												],
+												!NullQ[Lookup[fetchPacketFromCache[#, cacheBall], MaxOverheadMixRate, Null]],
+												rate < Lookup[fetchPacketFromCache[#, cacheBall], MaxOverheadMixRate]
+											],
+											(* it can find a stir bar and we allow using stir bar*)
+											And[
+												MatchQ[stirBar, Except[False]],
+												!MatchQ[compatibleStirBar[#,Cache->cacheBall,Simulation->simulation],Null]
+											]
+										],
+										#,
+										Nothing
+									]&),
+									containerResult,
+									{2}
+								],
 						Homogenize,
 							(* Only allow containers that have a mixable container. If Amplitude is over 70 Percent, the sonication horn must be the large one. *)
 							Map[
 								(* TODO: We only have one homogenizer now so this is okay. Will need to double map when we have multiple instrument models. *)
 								Function[{container},
 									(* Get the sample's volume and the container's max volume. *)
-									sampleVolume=Lookup[fetchPacketFromCache[mySample,cacheBall],Volume,Null];
 									containerModelMaxVolume=Lookup[fetchPacketFromCache[container,cacheBall],MaxVolume,2 Milliliter];
 
 									(* Filter out the container if it has a volume that's within 95% of the container's max volume (with relation to the sample's volume). *)
@@ -14163,7 +15883,7 @@ IncubateDevices[mySample:NonSelfContainedSampleP,myOptions:OptionsPattern[Incuba
 			instrumentModels
 		},
 		{
-			{Packet[Container[Model][{Dimensions}]]},
+			{Packet[Container[Model][{Dimensions,Footprint}]]},
 			{Packet[InternalDimensions,MinTemperature,MaxTemperature,EnvironmentalControls,MinHumidity,MaxHumidity,MinUVLightIntensity,MaxUVLightIntensity,MinVisibleLightIntensity,MaxVisibleLightIntensity]}
 		},
 		Cache->cache,
@@ -14172,6 +15892,16 @@ IncubateDevices[mySample:NonSelfContainedSampleP,myOptions:OptionsPattern[Incuba
 
 	(* We only have one container model packet. *)
 	containerModelPacket=First[containerModelPackets];
+
+	(* If IntegratedLiquidHandler -> True, we can ONLY incubate containers with footprint Plate or MALDIPlate *)
+	(* If our container does not have either of these footprints, return early *)
+	If[
+		And[
+			TrueQ[integratedLiquidHandler],
+			MatchQ[Lookup[containerModelPacket,Footprint,Null],Except[$IncubateLiquidHandlerFootprints]]
+		],
+		Return[{}]
+	];
 
 	(* First, filter out our incubator packets by temperature, if one is specified. *)
 	filteredTemperatureIncubatorPackets=If[!MatchQ[temperature,Null],
@@ -14227,7 +15957,8 @@ IncubateDevices[mySample:NonSelfContainedSampleP,myOptions:OptionsPattern[Incuba
 
 	(* Next, filter out our incubator packets by dimensions. *)
 	(* Lookup the dimensions of the container *)
-	containerDimensions = Lookup[containerModelPacket,Dimensions];
+	(* If there is no container (discarded sample), use 0 meter as dimensions so we allow any device *)
+	containerDimensions = Lookup[containerModelPacket/.{Null-><||>},Dimensions,{0Meter,0Meter,0Meter}];
 
 	(* Get the incubators large enough to hold the container *)
 	incubatorPacketsInRange = Map[
@@ -14284,10 +16015,15 @@ DefineOptions[resolveIncubateMethod,
 (* MBS uses most of the incubate/mix options and therefore had to copy some of the logic from this method resolver *)
 (* NOTE: You should NOT throw messages in this function. Just return the methods by which you can perform your primitive with *)
 (* the given options. *)
-resolveIncubateMethod[myContainers:ListableP[Automatic|ObjectP[{Object[Container],Object[Sample]}]], myOptions:OptionsPattern[]]:=Module[
-	{safeOptions,outputSpecification,output,gatherTests,containerPackets, samplePackets,mySamplePackets, allPackets,allModelContainerPackets,allModelContainerPlatePackets,liquidHandlerIncompatibleContainers,
-		allModelContainerFootprints,manualRequirementStrings,roboticRequirementStrings,result,tests,indexMatchingModelContainerFootprints,
-		indexMatchingModelContainerPackets},
+resolveIncubateMethod[myContainers:ListableP[Automatic|ObjectP[{Object[Container],Object[Sample]}]|{LocationPositionP,ObjectP[Object[Container]]}], myOptions:OptionsPattern[]]:=Module[
+	{
+		safeOptions,outputSpecification,output,gatherTests,containers,samples,containerPackets, samplePackets,mySamplePackets,
+		allPackets,allModelContainerPackets,allModelContainerPlatePackets,liquidHandlerIncompatibleContainers,
+		experimentFunction,specifiedTemperatures,specifiedAnnealingTimes,specifiedResidualIncubations,
+		specifiedResidualTemperatures,indexMatchingIncubateBools, liquidHandlerIncubationIncompatibleContainerFootprints,
+		indexMatchingLiquidHandlerAdapterIncubateCompatibleBool, manualRequirementStrings, roboticRequirementStrings, result,tests,
+		indexMatchingModelContainerFootprints, indexMatchingModelContainerPackets,indexMatchingLiquidHandlerAdapterPackets
+	},
 
 	(* Get our safe options. *)
 	safeOptions=SafeOptions[resolveIncubateMethod, ToList[myOptions]];
@@ -14300,16 +16036,40 @@ resolveIncubateMethod[myContainers:ListableP[Automatic|ObjectP[{Object[Container
 	gatherTests=MemberQ[output,Tests];
 
 	(* Download information that we need from our inputs and/or options. *)
+	containers=Map[
+		Which[
+			(* Remove the sample *)
+			MatchQ[#,ObjectP[Object[Sample]]],Null,
+			(* Extract the container if we have a position + container. Incubate method resolution only cares about container. *)
+			MatchQ[#,{LocationPositionP,ObjectP[Object[Container]]}],#[[2]],
+			(* Remove Automatic *)
+			MatchQ[#,Automatic],Nothing,
+			(* Otherwise just keep the container *)
+			True,#
+		]&,
+		ToList[myContainers]
+	];
+	samples=Map[
+		Which[
+			(* Keep the sample only *)
+			MatchQ[#,ObjectP[Object[Sample]]],#,
+			(* Remove Automatic *)
+			MatchQ[#,Automatic],Nothing,
+			(* Otherwise Null it *)
+			True,Null
+		]&,
+		ToList[myContainers]
+	];
 	{containerPackets, samplePackets}=Quiet[
 		Download[
 			(* Note that we change Automatic to Nothing here because we may be called from Command Builder. In CB, we don't do simulation and we get inputs as Automatic. We can skip all later checks and no need trying to download here. *)
 			{
-				ToList[myContainers]/.{ObjectP[Object[Sample]] -> Null, Automatic -> Nothing},
-				ToList[myContainers]/.{ObjectP[Object[Container]] -> Null, Automatic -> Nothing}
+				containers,
+				samples
 			},
 			{
-				{Packet[Model[{Name, Footprint, LiquidHandlerAdapter, LiquidHandlerPrefix}]], Packet[Name, Model, Contents], Packet[Contents[[All,2]][{Name, LiquidHandlerIncompatible, Container, Position}]]},
-				{Packet[Name, LiquidHandlerIncompatible, Container, Position], Packet[Container[Model[{Name, Footprint, LiquidHandlerAdapter, LiquidHandlerPrefix}]]]}
+				{Packet[Model[{Name, Footprint, LiquidHandlerAdapter, LiquidHandlerPrefix}]], Packet[Name, Model, Contents], Packet[Contents[[All,2]][{Name, LiquidHandlerIncompatible, Container, Position}]], Packet[Model[LiquidHandlerAdapter[{Footprint,ContainerMaterials}]]]},
+				{Packet[Name, LiquidHandlerIncompatible, Container, Position], Packet[Container[Model[{Name, Footprint, LiquidHandlerAdapter, LiquidHandlerPrefix}]]], Packet[Container[Model[LiquidHandlerAdapter[{Footprint,ContainerMaterials}]]]]}
 			},
 			Cache->Lookup[ToList[myOptions], Cache, {}],
 			Simulation->Lookup[ToList[myOptions], Simulation, Null]
@@ -14318,18 +16078,55 @@ resolveIncubateMethod[myContainers:ListableP[Automatic|ObjectP[{Object[Container
 	];
 
 	(* separate out the sample packet *)
-	mySamplePackets=samplePackets[[All,1]];
+	mySamplePackets=Map[
+		If[NullQ[#],
+			<||>,
+			#[[1]]
+		]&,
+		samplePackets
+	];
 
 	(* Join all packets. *)
 	allPackets=Cases[Flatten[{containerPackets, samplePackets}], PacketP[]];
 
 	(* Get all of our Model[Container]s and look at their footprints. *)
 	(* NOTE: This is index matching to our inputs. *)
-	indexMatchingModelContainerPackets=(FirstCase[Flatten[#], PacketP[Model[Container]], Null]&)/@Transpose[{containerPackets, samplePackets}];
-	indexMatchingModelContainerFootprints=If[Length[indexMatchingModelContainerPackets]==0,
-		{},
-		(If[MatchQ[#, PacketP[]], Lookup[#, Footprint, Null], Null]&)/@indexMatchingModelContainerPackets
+	indexMatchingModelContainerPackets=MapThread[
+		Which[
+			(* Container input *)
+			!NullQ[#1]&&MatchQ[#1[[1]],PacketP[Model[Container]]],
+			#1[[1]],
+			(* Sample input *)
+			!NullQ[#2]&&MatchQ[#2[[2]],PacketP[Model[Container]]],
+			#2[[2]],
+			True,
+			Null
+		]&,
+		{containerPackets, samplePackets}
 	];
+	(* For containers with liquid handler adapters, consider the footprint of the liquid handler adapter instead *)
+	indexMatchingLiquidHandlerAdapterPackets=MapThread[
+		Which[
+			(* Container input *)
+			!NullQ[#1]&&MatchQ[#1[[-1]],PacketP[Model[Container]]],
+			#1[[-1]],
+			(* Sample input *)
+			!NullQ[#2]&&MatchQ[#2[[-1]],PacketP[Model[Container]]],
+			#2[[-1]],
+			True,
+			Null
+		]&,
+		{containerPackets, samplePackets}
+	];
+	indexMatchingModelContainerFootprints=MapThread[
+		Which[
+			MatchQ[#2, PacketP[]], Lookup[#2, Footprint, Null],
+			MatchQ[#1, PacketP[]], Lookup[#1, Footprint, Null],
+			True, Null
+		]&,
+		{indexMatchingModelContainerPackets,indexMatchingLiquidHandlerAdapterPackets}
+	];
+
 	allModelContainerPackets=Cases[indexMatchingModelContainerPackets, PacketP[]];
 	allModelContainerPlatePackets=Cases[allModelContainerPackets,PacketP[Model[Container,Plate]]];
 
@@ -14339,6 +16136,68 @@ resolveIncubateMethod[myContainers:ListableP[Automatic|ObjectP[{Object[Container
 			Lookup[Cases[allModelContainerPackets,KeyValuePattern[Footprint->Except[LiquidHandlerCompatibleFootprintP]]],Object,{}],
 			Lookup[Cases[allModelContainerPlatePackets,KeyValuePattern[LiquidHandlerPrefix->Null]],Object,{}]
 		]
+	];
+
+	(* Get the experiment function that was called *)
+	experimentFunction = Lookup[safeOptions,ExperimentFunction];
+
+	(* Get the temperature, annealing time, and residual incubation options. Also make sure that these lists of options are the *)
+	(* same length, in case any get passed in as singletons rather than lists of the correct length. *)
+	{
+		specifiedTemperatures,
+		specifiedAnnealingTimes,
+		specifiedResidualIncubations,
+		specifiedResidualTemperatures
+	} = Module[
+		{temps, annealingTimes, resIncubations, resTemps, inputsLength},
+		(* Get the values from safe options. *)
+		{temps, annealingTimes, resIncubations, resTemps} = ToList /@ Lookup[
+			safeOptions,
+			{Temperature, AnnealingTime, ResidualIncubation, ResidualTemperature}
+		];
+		(* Find the length from inputs. Our option length should match input. *)
+		inputsLength = Length[samplePackets];
+		(* If any of these options have the wrong length, pad them out so the MapThread below doesn't fail. *)
+		(* This also applies when the input is Automatic (from JSON handling in command builder) *)
+		If[!MatchQ[Length[#], inputsLength] && MatchQ[Length[#], 1],
+			ConstantArray[First[#], inputsLength],
+			#
+		] & /@ {temps, annealingTimes, resIncubations, resTemps}
+	];
+
+	(* Get the containers that are non liquid handler incubation compatible *)
+	(* Currently, we can only incubate SBS plates on the liquid handlers *)
+	indexMatchingIncubateBools = MapThread[
+		Function[{temperature,annealingTime,residualIncubation,residualTemperature},
+			(* If Temperature or AnnealingTime is specified, we are incubating *)
+			Or[
+				MatchQ[temperature,Except[Automatic|Ambient|Null]],
+				MatchQ[annealingTime,Except[Automatic|Null]],
+				MatchQ[residualIncubation,Except[Automatic|False|Null]],
+				MatchQ[residualTemperature,Except[Automatic|Ambient|Null]]
+			]
+		],
+		{
+			specifiedTemperatures,
+			specifiedAnnealingTimes,
+			specifiedResidualIncubations,
+			specifiedResidualTemperatures
+		}
+	];
+
+	liquidHandlerIncubationIncompatibleContainerFootprints = DeleteCases[DeleteDuplicates[PickList[indexMatchingModelContainerFootprints,indexMatchingIncubateBools]],$IncubateLiquidHandlerFootprints];
+
+	(* Check if the container's liquid handler adapters can be incubated. To make sure the rack can be used as heating/cooling adapters, they must be Metal material. *)
+	indexMatchingLiquidHandlerAdapterIncubateCompatibleBool = MapThread[
+		Which[
+			(* Incubate not required, set to True (compatible) *)
+			!TrueQ[#2],True,
+			(* No adapter, set to True (compatible) *)
+			!MatchQ[#1, PacketP[]],True,
+			(* Check if adapter is metal *)
+			True, MatchQ[Lookup[#1,ContainerMaterials],ListableP[MetalP]]
+		]&,
+		{indexMatchingLiquidHandlerAdapterPackets,indexMatchingIncubateBools}
 	];
 
 	(* Create a list of reasons why we need Preparation->Manual. *)
@@ -14352,7 +16211,11 @@ resolveIncubateMethod[myContainers:ListableP[Automatic|ObjectP[{Object[Container
 			Nothing
 		],
 		If[!MatchQ[indexMatchingModelContainerFootprints,{}]&&!MatchQ[Lookup[ToList[myOptions], MixType, {}],{}]&&MemberQ[Transpose[{indexMatchingModelContainerFootprints, Lookup[ToList[myOptions], MixType, {}]}], {Except[Plate], Shake}],
-			"the source/destination container footprints "<>ToString[Cases[Transpose[{indexMatchingModelContainerFootprints, Lookup[ToList[myOptions], MixType]}], {Except[Plate], Shake}][[All,1]]]<>" are not compatible with liquid handler Shake mixing (only plates are allowed)",
+			"the source/destination container footprints "<>ToString[Cases[Transpose[{indexMatchingModelContainerFootprints, Lookup[ToList[myOptions], MixType]}], {Except[Plate], Shake}][[All,1]]]<>" are not compatible with liquid handler Shake mixing (only plates and vessels with plate adapters are allowed)",
+			Nothing
+		],
+		If[!MatchQ[liquidHandlerIncubationIncompatibleContainerFootprints,{}],
+			"the sample container footprint(s) " <> ToString[liquidHandlerIncubationIncompatibleContainerFootprints] <> " are not compatible with liquid handler incubation (only plates and vessels with plate adapters are allowed)",
 			Nothing
 		],
 		Module[{manualInstrumentTypes},
@@ -14362,6 +16225,10 @@ resolveIncubateMethod[myContainers:ListableP[Automatic|ObjectP[{Object[Container
 				"the Instrument(s) "<>ToString[Cases[ToList[Lookup[ToList[myOptions], Instrument, {}]], ObjectP[manualInstrumentTypes]]]<>" can only be used manually",
 				Nothing
 			]
+		],
+		If[MemberQ[indexMatchingLiquidHandlerAdapterIncubateCompatibleBool,False],
+			"the sample containers' liquid handler adapter racks "<>ObjectToString/@(Lookup[PickList[indexMatchingLiquidHandlerAdapterPackets,indexMatchingLiquidHandlerAdapterIncubateCompatibleBool,False], Object, {}])<>" are not made of metal in order to be incubated robotically so the sample containers can only be incubated manually",
+			Nothing
 		],
 		Module[{manualOnlyOptions},
 			manualOnlyOptions=Select[
@@ -14385,8 +16252,7 @@ resolveIncubateMethod[myContainers:ListableP[Automatic|ObjectP[{Object[Container
 					RelativeHumidity,
 					LightExposure,
 					LightExposureIntensity,
-					LightExposureStandard,
-					PreparatoryPrimitives
+					LightExposureStandard
 				},
 				(!MatchQ[Lookup[ToList[myOptions], #, Null], ListableP[Null|Automatic]|{}]&)];
 
@@ -14414,10 +16280,6 @@ resolveIncubateMethod[myContainers:ListableP[Automatic|ObjectP[{Object[Container
 		],
 		If[MatchQ[Lookup[safeOptions, PreparatoryUnitOperations], Except[Null]],
 			"the PreparatoryUnitOperations option is set (Sample Preparation is only supported Manually)",
-			Nothing
-		],
-		If[MatchQ[Lookup[safeOptions, PreparatoryPrimitives], Except[Null]],
-			"the PreparatoryPrimitives option is set (Sample Preparation is only supported Manually)",
 			Nothing
 		],
 		If[MatchQ[Lookup[safeOptions, Preparation], Manual],
@@ -14484,26 +16346,25 @@ resolveIncubateMethod[myContainers:ListableP[Automatic|ObjectP[{Object[Container
 
 
 resolveExperimentIncubateWorkCell[
-	myListedSamples:ListableP[ObjectP[{Object[Sample], Object[Container]}]|{LocationPositionP,_String|ObjectP[Object[Container]]}],
+	myListedSamples:ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}]|{LocationPositionP,_String|ObjectP[Object[Container]]}],
 	myOptions:OptionsPattern[resolveExperimentIncubateWorkCell]
-]:=Module[
-	{workCell},
+] := Module[{cache, simulation, workCell, preparation},
 
-	workCell=Lookup[myOptions,WorkCell, Automatic];
+	{cache, simulation, workCell, preparation} = Lookup[myOptions, {Cache, Simulation, WorkCell, Preparation}];
 
 	(* Determine the WorkCell that can be used: *)
 	Which[
-		MatchQ[workCell,Except[Automatic]],
-			{workCell},
+		MatchQ[workCell, WorkCellP|Null],
+			{workCell}/.{Null} -> {},
 		(* The ThermoshakeAC and Inheco Incubator Shaker DWP are only available on the bioSTAR/microbioSTAR. *)
 		MemberQ[Lookup[myOptions, Instrument, {}], ObjectP[{Model[Instrument, Shaker, "id:pZx9jox97qNp"], Model[Instrument, Shaker, "id:eGakldJkWVnz"]}]],
 			{bioSTAR, microbioSTAR},
 		(* The Heater Shaker is only available on the STAR. *)
 		MemberQ[Lookup[myOptions, Instrument, {}], ObjectP[Model[Instrument, Shaker, "id:KBL5Dvw5Wz6x"]]],
 			{STAR},
-		(* All*)
+		(* Otherwise, use helper function to resolve potential work cells based on experiment options and sample properties *)
 		True,
-			{STAR,bioSTAR,microbioSTAR}
+			resolvePotentialWorkCells[myListedSamples, {Preparation -> preparation}, Cache -> cache, Simulation -> simulation]
 	]
 ];
 
@@ -14646,10 +16507,13 @@ TransportDevices[myModelSample:ObjectReferenceP[Model[Sample]], myTransportCondi
 		dimensionsNotFlat,storageConditionNotFlat,transportPositionsAndDimensionsNotFlat,
 		allPositionDimensions,allPositionDimensionsNoWarmed,warmedPositionDimensions,defaultStorageTemperature,transportTempLookup,
 		maxContainerTemperature,minContainerTemperature,flammable,pyrophoric,inputContainer,
-		instrumentToTransportFrozenSample,currentStorageConditionName,thawTemp,setTemp},
+		instrumentToTransportFrozenSample,currentStorageConditionName,thawTemp,setTemp, cleanedTransportCondition},
 
 	(* if TransportCondition is Ambient, return Null, no need for a transport device *)
-	If[MatchQ[myTransportCondition,Ambient],
+	(* Code of this function relies on the named object form of Model[TransportCondition] to function *)
+	(* TODO should fix that properly but now put a patch here *)
+	cleanedTransportCondition = NamedObject[myTransportCondition];
+	If[MatchQ[cleanedTransportCondition,Ambient],
 		Return[Null]
 	];
 
@@ -14761,23 +16625,23 @@ TransportDevices[myModelSample:ObjectReferenceP[Model[Sample]], myTransportCondi
 		Module[{chosenTransportInstrument,transportConditionName,instrumentMinTemp,instrumentMaxTemp},
 			chosenTransportInstrument=Which[
 
-				MatchQ[myTransportCondition,Model[TransportCodition,"LightBox"]],
+				MatchQ[cleanedTransportCondition,Model[TransportCondition,"LightBox"]],
 				Model[Container,LightBox,"id:Z1lqpMzDbjlz"],
 
-				MatchQ[myTransportCondition,Model[TransportCodition,"OvenDried"]],
+				MatchQ[cleanedTransportCondition,Model[TransportCondition,"OvenDried"]],
 				Model[Instrument,PortableHeater,"id:3em6ZvLv7bZv"],
 
-				MatchQ[myTransportCondition,Model[TransportCondition,"Chilled"]],
+				MatchQ[cleanedTransportCondition,Model[TransportCondition,"Chilled"]],
 				Model[Instrument,PortableCooler,"id:R8e1PjpjnEPX"],
 
-				MatchQ[myTransportCondition,Model[TransportCondition,"Minus 40"]],
+				MatchQ[cleanedTransportCondition,Model[TransportCondition,"Minus 40"]],
 				Model[Instrument,PortableCooler,"id:R8e1PjpjnEPK"],
 
-				MatchQ[myTransportCondition,Model[TransportCondition,"Minus 80"]],
+				MatchQ[cleanedTransportCondition,Model[TransportCondition,"Minus 80"]],
 				Model[Instrument,PortableCooler,"id:o1k9jAGAEpjr"]
 			];
 
-			transportConditionName = myTransportCondition[Name];
+			transportConditionName = cleanedTransportCondition[Name];
 
 			instrumentMinTemp = Lookup[transportTempLookup,transportConditionName][[1]];
 
@@ -14813,7 +16677,7 @@ TransportDevices[myModelSample:ObjectReferenceP[Model[Sample]], myTransportCondi
 
 	(* Since Volume is specified at this point, find the matching instrument with the transport condition and then see if dimensions of chosen container can fit *)
 	matchingInstrument=Which[
-		MatchQ[myTransportCondition,Model[TransportCondition,"LightBox"]],
+		MatchQ[cleanedTransportCondition,Model[TransportCondition,"LightBox"]],
 		(* input transportCondition is lightbox *)
 		(* check if Dimensions fit *)
 		If[CompatibleFootprintQ[Model[Container,LightBox,"id:Z1lqpMzDbjlz"],preferredTransferContainer,ExactMatch->False],
@@ -14839,7 +16703,7 @@ TransportDevices[myModelSample:ObjectReferenceP[Model[Sample]], myTransportCondi
 		],
 
 		(* input transportCondition is Warmed *)
-		MatchQ[myTransportCondition,Model[TransportCondition,"OvenDried"]],
+		MatchQ[cleanedTransportCondition,Model[TransportCondition,"OvenDried"]],
 		(* check if sample is flammable or pyrophoric *)
 		If[flammable || pyrophoric,
 			(* if it is, throw an error, as it's not supposed to be OvenDried *)
@@ -14869,7 +16733,7 @@ TransportDevices[myModelSample:ObjectReferenceP[Model[Sample]], myTransportCondi
 		],
 
 		(* input transportCondition is Chilled *)
-		MatchQ[myTransportCondition,Model[TransportCondition,"Chilled"]],
+		MatchQ[cleanedTransportCondition,Model[TransportCondition,"Chilled"]],
 		(* check if Dimensions fit *)
 		If[CompatibleFootprintQ[Model[Instrument,PortableCooler,"id:R8e1PjpjnEPX"],preferredTransferContainer,ExactMatch->False],
 			(*If they do, check if the temperatures are in range*)
@@ -14894,7 +16758,7 @@ TransportDevices[myModelSample:ObjectReferenceP[Model[Sample]], myTransportCondi
 		],
 
 		(* input transportCondition is Minus40 *)
-		MatchQ[myTransportCondition,Model[TransportCondition,"Minus 40"]],
+		MatchQ[cleanedTransportCondition,Model[TransportCondition,"Minus 40"]],
 		(* check if Dimensions fit *)
 		If[CompatibleFootprintQ[Model[Instrument,PortableCooler,"id:R8e1PjpjnEPK"],preferredTransferContainer,ExactMatch->False],
 			(*If they do, check if the temperatures are in range*)
@@ -14919,7 +16783,7 @@ TransportDevices[myModelSample:ObjectReferenceP[Model[Sample]], myTransportCondi
 		],
 
 		(* input transportCondition is Minus80 *)
-		MatchQ[myTransportCondition,Model[TransportCondition,"Minus 80"]],
+		MatchQ[cleanedTransportCondition,Model[TransportCondition,"Minus 80"]],
 		(* check if Dimensions fit *)
 		If[CompatibleFootprintQ[Model[Instrument,PortableCooler,"id:o1k9jAGAEpjr"],preferredTransferContainer,ExactMatch->False],
 			(*If they do, check if the temperatures are in range*)
@@ -14962,10 +16826,11 @@ TransportDevices[myObjectSample:ObjectReferenceP[Object[Sample]], myTransportCon
 		dimensionsNotFlat,storageConditionNotFlat,transportPositionsAndDimensionsNotFlat,
 		allPositionDimensions,allPositionDimensionsNoWarmed,warmedPositionDimensions,defaultStorageTemperature,transportTempLookup,
 		containerToTransfer,maxContainerTemperature,minContainerTemperature,flammable,pyrophoric,
-		currentStorageConditionName,thawTemp,instrumentToTransportFrozenSample,setTemp},
+		currentStorageConditionName,thawTemp,instrumentToTransportFrozenSample,setTemp, cleanedTransportCondition},
 
+	cleanedTransportCondition = NamedObject[myTransportCondition];
 	(* if TransportCondition is Ambient, return Null, no need for a transport device *)
-	If[MatchQ[myTransportCondition[Name],"Ambient"],
+	If[MatchQ[cleanedTransportCondition[Name],"Ambient"],
 		Return[Null]
 	];
 
@@ -15048,23 +16913,23 @@ TransportDevices[myObjectSample:ObjectReferenceP[Object[Sample]], myTransportCon
 		Module[{chosenTransportInstrument,transportConditionName,instrumentMinTemp,instrumentMaxTemp},
 			chosenTransportInstrument=Which[
 
-				MatchQ[myTransportCondition,Model[TransportCodition,"LightBox"]],
+				MatchQ[cleanedTransportCondition,Model[TransportCondition,"LightBox"]],
 				Model[Container,LightBox,"id:Z1lqpMzDbjlz"],
 
-				MatchQ[myTransportCondition,Model[TransportCodition,"OvenDried"]],
+				MatchQ[cleanedTransportCondition,Model[TransportCondition,"OvenDried"]],
 				Model[Instrument,PortableHeater,"id:3em6ZvLv7bZv"],
 
-				MatchQ[myTransportCondition,Model[TransportCondition,"Chilled"]],
+				MatchQ[cleanedTransportCondition,Model[TransportCondition,"Chilled"]],
 				Model[Instrument,PortableCooler,"id:R8e1PjpjnEPX"],
 
-				MatchQ[myTransportCondition,Model[TransportCondition,"Minus 40"]],
+				MatchQ[cleanedTransportCondition,Model[TransportCondition,"Minus 40"]],
 				Model[Instrument,PortableCooler,"id:R8e1PjpjnEPK"],
 
-				MatchQ[myTransportCondition,Model[TransportCondition,"Minus 80"]],
+				MatchQ[cleanedTransportCondition,Model[TransportCondition,"Minus 80"]],
 				Model[Instrument,PortableCooler,"id:o1k9jAGAEpjr"]
 			];
 
-			transportConditionName = myTransportCondition[Name];
+			transportConditionName = cleanedTransportCondition[Name];
 			instrumentMinTemp = Lookup[transportTempLookup,transportConditionName][[1]];
 			instrumentMaxTemp = Lookup[transportTempLookup,transportConditionName][[2]];
 			(* if it is in range, thenn return the instrument *)
@@ -15097,7 +16962,7 @@ TransportDevices[myObjectSample:ObjectReferenceP[Object[Sample]], myTransportCon
 
 	(* Since Volume is specified at this point, find the matching instrument with the transport condition and then see if dimensions of chosen container can fit *)
 	matchingInstrument=Which[
-		MatchQ[myTransportCondition,Model[TransportCondition,"LightBox"]],
+		MatchQ[cleanedTransportCondition,Model[TransportCondition,"LightBox"]],
 		(* input transportCondition is lightbox *)
 		(* check if Dimensions fit *)
 		If[CompatibleFootprintQ[Model[Container,LightBox,"id:Z1lqpMzDbjlz"],preferredTransferContainer,ExactMatch->False],
@@ -15123,7 +16988,7 @@ TransportDevices[myObjectSample:ObjectReferenceP[Object[Sample]], myTransportCon
 		],
 
 		(* input transportCondition is Warmed *)
-		MatchQ[myTransportCondition,Model[TransportCondition,"OvenDried"]],
+		MatchQ[cleanedTransportCondition,Model[TransportCondition,"OvenDried"]],
 		(* check if sample is flammable or pyrophoric *)
 		If[flammable || pyrophoric,
 			(* if it is, throw an error, as it's not supposed to be OvenDried *)
@@ -15153,7 +17018,7 @@ TransportDevices[myObjectSample:ObjectReferenceP[Object[Sample]], myTransportCon
 		],
 
 		(* input transportCondition is Chilled *)
-		MatchQ[myTransportCondition,Model[TransportCondition,"Chilled"]],
+		MatchQ[cleanedTransportCondition,Model[TransportCondition,"Chilled"]],
 		(* check if Dimensions fit *)
 		If[CompatibleFootprintQ[Model[Instrument,PortableCooler,"id:R8e1PjpjnEPX"],preferredTransferContainer,ExactMatch->False],
 			(*If they do, check if the temperatures are in range*)
@@ -15178,7 +17043,7 @@ TransportDevices[myObjectSample:ObjectReferenceP[Object[Sample]], myTransportCon
 		],
 
 		(* input transportCondition is Minus40 *)
-		MatchQ[myTransportCondition,Model[TransportCondition,"Minus 40"]],
+		MatchQ[cleanedTransportCondition,Model[TransportCondition,"Minus 40"]],
 		(* check if Dimensions fit *)
 		If[CompatibleFootprintQ[Model[Instrument,PortableCooler,"id:R8e1PjpjnEPK"],preferredTransferContainer,ExactMatch->False],
 			(*If they do, check if the temperatures are in range*)
@@ -15203,7 +17068,7 @@ TransportDevices[myObjectSample:ObjectReferenceP[Object[Sample]], myTransportCon
 		],
 
 		(* input transportCondition is Minus80 *)
-		MatchQ[myTransportCondition,Model[TransportCondition,"Minus 80"]],
+		MatchQ[cleanedTransportCondition,Model[TransportCondition,"Minus 80"]],
 		(* check if Dimensions fit *)
 		If[CompatibleFootprintQ[Model[Instrument,PortableCooler,"id:o1k9jAGAEpjr"],preferredTransferContainer,ExactMatch->False],
 			(*If they do, check if the temperatures are in range*)
@@ -15236,5 +17101,3 @@ TransportDevices[myObjectSample:ObjectReferenceP[Object[Sample]], myTransportCon
 
 
 ];
-
-

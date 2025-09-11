@@ -38,7 +38,7 @@ DefineUsage[PlotGelAnimation,
   SeeAlso -> {
     "PlotAgaroseElectrophoresis","PlotPAGE"
   },
-  Author -> {"SciComp"},
+  Author -> {"scicomp"},
   Preview->False
 }
 ];

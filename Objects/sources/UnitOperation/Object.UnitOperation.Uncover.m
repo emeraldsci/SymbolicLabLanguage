@@ -143,7 +143,11 @@ DefineObjectType[Object[UnitOperation, Uncover], {
 				Model[Instrument, Crimper],
 				Object[Instrument, Crimper],
 				Model[Part, CapPrier],
-				Object[Part, CapPrier]
+				Object[Part, CapPrier],
+				Model[Part, Decrimper],
+				Object[Part, Decrimper],
+				Model[Part, AmpouleOpener],
+				Object[Part, AmpouleOpener]
 			],
 			Description -> "For each member of SampleLink, the device used to remove the cover from the top of the container.",
 			Category -> "General",
@@ -202,6 +206,26 @@ DefineObjectType[Object[UnitOperation, Uncover], {
 			Description -> "For each member of SampleLink, the environment that should be used to perform the uncovering.",
 			Category -> "General",
 			IndexMatching -> SampleLink
+		},
+		InitialEnvironment -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Instrument],
+				Model[Container, Bench],
+				Model[Container, OperatorCart],
+
+
+				Object[Instrument],
+				Object[Container],
+				Object[Item],
+				Object[Part]
+			],
+			Description -> "For each member of SampleLink, the environment where the containers were initially prior to uncovering.  This is often (but not always) the same as Environment.",
+			Category -> "General",
+			IndexMatching -> SampleLink
 		}
+
 	}
 }];

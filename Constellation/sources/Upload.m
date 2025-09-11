@@ -50,7 +50,6 @@ Upload::ComputableField="The following field(s) `1` in type(s) `2` at indices `3
 Upload::ErasePattern="Part(s) `1` at indices `2` are not valid erase parts. Erase parts must be specified as a row, row-column pair, or nested list of rows.";
 Upload::EraseDimension="Erase specification(s) `1` at indices `2` contain rows and columns, but the field(s) `3` are 1 dimensional.";
 Upload::NoObject="Fields `1` in change packets at indices `2` are specified as Erase, but did not have Object specified. Cannot erase values from new objects.";
-Upload::ObjectsField="Change packets at indices `1` specify the Objects field. The Objects field of an Object[LaboratoryNotebook] cannot be modified directly via Upload.";
 Upload::NamedField="The following named field(s) `1` for objects `2` at indices `3` require associations.";
 Upload::NamedMultipleField="The following named field(s) `1` for objects `2` at indices `3` require associations or lists of associations.";
 Upload::BadTransfer="Attempted to Transfer to field(s) `1` to `2` in object(s) `3`. Can only Transfer to a Notebook with a link to the Objects field of a LaboratoryNotebook.";
@@ -107,6 +106,8 @@ OnLoad[
 			Unprotect[CloudSystem`$UserPre];
 			CloudSystem`$UserPre=setVerboseObjects;
 			$SummaryBoxDataSizeLimit=67108864;
+			Unprotect[$Pre];
+			$Pre=setVerboseObjects;
 		),
 		(
 			Unprotect[$Pre];
@@ -138,7 +139,6 @@ uploadArgumentOrder=<|
 	"EraseDimension" -> {"value", "position", "field"},
 	"NoObject" -> {"position", "field"},
 	"SingleEraseCases" -> {"field", "position"},
-	"ObjectsField" -> {"position"},
 	"NamedField" -> {"field", "object", "position"},
 	"NamedMultipleField" -> {"field", "object", "position"},
 	"BadTransfer" -> {"field", "value", "object"}
@@ -226,7 +226,7 @@ Upload[packets:{__Association}, ops:OptionsPattern[]]:=TraceExpression["Upload",
 
 	(* If we are in a simulation, merge our upload packets into the $CurrentSimulation instead. *)
 	If[MatchQ[$Simulation, True],
-		Return@Module[{packetsWithObjectIDs},
+		Return@Module[{packetsWithObjectIDs, objectIDs, newObjectIDs},
 			(* Add Object IDs to our packets if they don't have them. This is so that we know what new object IDs *)
 			(* to return after we merge our simulation. *)
 
@@ -240,6 +240,18 @@ Upload[packets:{__Association}, ops:OptionsPattern[]]:=TraceExpression["Upload",
 					]
 				],
 				withoutComputables
+			];
+
+			(* Populate $SimulatedCreatedObjects *)
+			(* First, pull all ObjectIDs out of packets *)
+			objectIDs = Cases[Lookup[packetsWithObjectIDs, Object], ObjectP[]];
+
+			(* Now take the ones that don't yet exist in the database, whether simulated or real *)
+			newObjectIDs = PickList[objectIDs, Not/@DatabaseMemberQ[objectIDs]];
+
+			$SimulatedCreatedObjects = If[ListQ[$SimulatedCreatedObjects],
+				Union[$SimulatedCreatedObjects, newObjectIDs],
+				newObjectIDs
 			];
 
 			(* Update our simulation. *)

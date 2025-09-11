@@ -163,7 +163,7 @@ fetchModelPacketFromCache[myObject_,myCachedPackets_]:=fetchPacketFromCache[Down
 (* Container and Prepared Samples Overload *)
 ExperimentThawCells[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
   {listedContainers,listedOptions,outputSpecification,output,gatherTests,containerToSampleResult,containerToSampleOutput,containerToSampleSimulation,
-    samples,sampleOptions,containerToSampleTests,updatedCache},
+    samples,sampleOptions,containerToSampleTests,updatedCache, simulation},
 
   (* Determine the requested return value from the function *)
   outputSpecification=Quiet[OptionValue[Output]];
@@ -173,7 +173,10 @@ ExperimentThawCells[myContainers:ListableP[ObjectP[{Object[Container],Object[Sam
   gatherTests=MemberQ[output,Tests];
 
   (* Remove temporal links and named objects. *)
-  {listedContainers, listedOptions}=sanitizeInputs[ToList[myContainers], ToList[myOptions]];
+  {listedContainers, listedOptions}={ToList[myContainers], ToList[myOptions]};
+
+  (* Lookup simulation option if it exists *)
+  simulation = Lookup[listedOptions,Simulation,Null];
 
   (* Convert our given containers into samples and sample index-matched options. *)
   containerToSampleResult=If[gatherTests,
@@ -184,7 +187,8 @@ ExperimentThawCells[myContainers:ListableP[ObjectP[{Object[Container],Object[Sam
       listedOptions,
       Output->{Result,Tests,Simulation},
       Simulation->Lookup[listedOptions, Simulation, Null],
-      EmptyContainers->MatchQ[$ECLApplication,Engine]
+      EmptyContainers->MatchQ[$ECLApplication,Engine],
+      Simulation->simulation
     ];
 
     (* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -204,7 +208,7 @@ ExperimentThawCells[myContainers:ListableP[ObjectP[{Object[Container],Object[Sam
         EmptyContainers->MatchQ[$ECLApplication,Engine]
       ],
       $Failed,
-      {Error::EmptyContainer}
+      {Download::ObjectDoesNotExist, Error::EmptyContainer}
     ]
   ];
 
@@ -229,10 +233,10 @@ ExperimentThawCells[myContainers:ListableP[ObjectP[{Object[Container],Object[Sam
 ];
 
 ExperimentThawCells[myInputs:ListableP[ObjectP[{Object[Sample], Model[Sample]}]],myOptions:OptionsPattern[]]:=Module[
-  {listedSamples,listedOptions,outputSpecification,output,gatherTests,safeOps,safeOpsTests,validLengths,validLengthTests,
+  {listedSamples,outputSpecification,output,gatherTests,safeOps,safeOpsTests,validLengths,validLengthTests,
     templatedOptions,templateTests,inheritedOptions,expandedSafeOps,resolvedOptionsResult,cache,messages,
     resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourceResult,resourcePacketTests,
-    simulation,returnEarlyQ,resolvedPreparation,performSimulationQ,simulatedProtocol},
+    simulation,returnEarlyQ,resolvedPreparation,performSimulationQ,simulatedProtocol,listedSamplesNamed,listedOptionsNamed,safeOpsNamed},
 
   (* Determine the requested return value from the function *)
   outputSpecification=OptionValue[Output];
@@ -245,20 +249,17 @@ ExperimentThawCells[myInputs:ListableP[ObjectP[{Object[Sample], Model[Sample]}]]
   (* Lookup our cache. *)
   cache=Lookup[ToList[myOptions], Cache, {}];
 
-  (* Remove temporal links and named objects. *)
-  {listedSamples, listedOptions}=sanitizeInputs[ToList[myInputs], ToList[myOptions]];
+  (* Remove temporal links. *)
+  {listedSamplesNamed, listedOptionsNamed}=removeLinks[ToList[myInputs], ToList[myOptions]];
 
   (* Call SafeOptions to make sure all options match pattern *)
-  {safeOps,safeOpsTests}=If[gatherTests,
-    SafeOptions[ExperimentThawCells,listedOptions,AutoCorrect->False,Output->{Result,Tests}],
-    {SafeOptions[ExperimentThawCells,listedOptions,AutoCorrect->False],{}}
+  {safeOpsNamed,safeOpsTests}=If[gatherTests,
+    SafeOptions[ExperimentThawCells,listedOptionsNamed,AutoCorrect->False,Output->{Result,Tests}],
+    {SafeOptions[ExperimentThawCells,listedOptionsNamed,AutoCorrect->False],{}}
   ];
 
-  (* Call ValidInputLengthsQ to make sure all options are the right length *)
-  {validLengths,validLengthTests}=If[gatherTests,
-    ValidInputLengthsQ[ExperimentThawCells,{listedSamples},listedOptions,Output->{Result,Tests}],
-    {ValidInputLengthsQ[ExperimentThawCells,{listedSamples},listedOptions],Null}
-  ];
+  (* replace all objects referenced by Name to ID *)
+  {listedSamples, safeOps} = sanitizeInputs[listedSamplesNamed, safeOpsNamed, Simulation->Lookup[safeOpsNamed, Simulation, Null]];
 
   (* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
   If[MatchQ[safeOps,$Failed],
@@ -269,6 +270,12 @@ ExperimentThawCells[myInputs:ListableP[ObjectP[{Object[Sample], Model[Sample]}]]
       Preview -> Null,
       Simulation -> Null
     }]
+  ];
+
+  (* Call ValidInputLengthsQ to make sure all options are the right length *)
+  {validLengths,validLengthTests}=If[gatherTests,
+    ValidInputLengthsQ[ExperimentThawCells,{listedSamples},safeOpsNamed,Output->{Result,Tests}],
+    {ValidInputLengthsQ[ExperimentThawCells,{listedSamples},safeOpsNamed],Null}
   ];
 
   (* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -284,8 +291,8 @@ ExperimentThawCells[myInputs:ListableP[ObjectP[{Object[Sample], Model[Sample]}]]
 
   (* Use any template options to get values for options not specified in myOptions *)
   {templatedOptions,templateTests}=If[gatherTests,
-    ApplyTemplateOptions[ExperimentThawCells,{listedSamples},listedOptions,Output->{Result,Tests}],
-    {ApplyTemplateOptions[ExperimentThawCells,{listedSamples},listedOptions],Null}
+    ApplyTemplateOptions[ExperimentThawCells,{listedSamples},safeOps,Output->{Result,Tests}],
+    {ApplyTemplateOptions[ExperimentThawCells,{listedSamples},safeOps],Null}
   ];
 
   (* Return early if the template cannot be used - will only occur if the template object does not exist. *)
@@ -335,7 +342,7 @@ ExperimentThawCells[myInputs:ListableP[ObjectP[{Object[Sample], Model[Sample]}]]
   ];
 
   (* Lookup our resolved Preparation option. *)
-  resolvedPreparation = Lookup[listedOptions, Preparation];
+  resolvedPreparation = Lookup[safeOps, Preparation];
 
   (* Figure out if we need to perform our simulation. If so, we can't return early even though we want to because we *)
   (* need to return some type of simulation to our parent function that called us. *)
@@ -379,7 +386,7 @@ ExperimentThawCells[myInputs:ListableP[ObjectP[{Object[Sample], Model[Sample]}]]
       Cache->cache,
       Simulation->Lookup[safeOps, Simulation]
     ],
-    {Null, Null}
+    {Null, Lookup[safeOps, Simulation]}
   ];
 
   (* If Result does not exist in the output, return everything without uploading *)
@@ -443,6 +450,7 @@ ExperimentThawCells[myInputs:ListableP[ObjectP[{Object[Sample], Model[Sample]}]]
             Name->Lookup[safeOps,Name],
             Upload->Lookup[safeOps,Upload],
             Confirm->Lookup[safeOps,Confirm],
+            CanaryBranch->Lookup[safeOps,CanaryBranch],
             ParentProtocol->Lookup[safeOps,ParentProtocol],
             Priority->Lookup[safeOps,Priority],
             StartDate->Lookup[safeOps,StartDate],
@@ -491,6 +499,7 @@ ExperimentThawCells[myInputs:ListableP[ObjectP[{Object[Sample], Model[Sample]}]]
             Name->Lookup[safeOps,Name],
             Upload->Lookup[safeOps,Upload],
             Confirm->Lookup[safeOps,Confirm],
+            CanaryBranch->Lookup[safeOps,CanaryBranch],
             ParentProtocol->Lookup[safeOps,ParentProtocol],
             Priority->Lookup[safeOps,Priority],
             StartDate->Lookup[safeOps,StartDate],
@@ -508,6 +517,7 @@ ExperimentThawCells[myInputs:ListableP[ObjectP[{Object[Sample], Model[Sample]}]]
         resourceResult[[2]], (* unitOperationPackets *)
         Upload->Lookup[safeOps,Upload],
         Confirm->Lookup[safeOps,Confirm],
+        CanaryBranch->Lookup[safeOps,CanaryBranch],
         ParentProtocol->Lookup[safeOps,ParentProtocol],
         Priority->Lookup[safeOps,Priority],
         StartDate->Lookup[safeOps,StartDate],
@@ -1365,7 +1375,23 @@ thawCellsResourcePackets[
 
   (* Create resources for our instruments. *)
   uniqueInstruments = DeleteDuplicates[Lookup[myResolvedOptions, Instrument]];
-  instrumentResourceReplaceRules = (# -> If[MatchQ[#, ObjectP[]], Resource[Instrument -> #, Time -> (5 Minute * Length[Cases[uniqueInstruments, #]]), Name->CreateUUID[]], Null]&)/@uniqueInstruments;
+  instrumentResourceReplaceRules = (# -> Which[
+    (* If we've got a generic Cole-Parmer heat bath, allow for transform-specific heat bath as well *)
+    MatchQ[#, ObjectP[Model[Instrument, HeatBlock, "id:eGakldJWknme"]]], (*"Cole-Parmer StableTemp Digital Utility Water Baths, 10 liters"*)
+      Resource[
+        Instrument -> {Model[Instrument, HeatBlock, "id:eGakldJWknme"], Model[Instrument, HeatBlock, "id:Z1lqpMrx4XW0"]}, (*"Cole-Parmer StableTemp Digital Utility Water Baths, 10 liters for Transform"*)
+        Time -> (5 Minute * Length[Cases[uniqueInstruments, #]]),
+        Name->CreateUUID[]
+      ],
+    MatchQ[#, ObjectP[]],
+      Resource[
+        Instrument -> #,
+        Time -> (5 Minute * Length[Cases[uniqueInstruments, #]]),
+        Name->CreateUUID[]
+      ],
+    True,
+      Null
+  ]&)/@uniqueInstruments;
   instrumentResources = Lookup[myResolvedOptions, Instrument] /. instrumentResourceReplaceRules;
 
   {protocolPacket, allUnitOperationPackets} = If[MatchQ[resolvedPreparation,Manual],

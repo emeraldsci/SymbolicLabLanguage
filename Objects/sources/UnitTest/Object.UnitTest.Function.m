@@ -19,7 +19,7 @@ DefineObjectType[Object[UnitTest, Function], {
     Function -> {
       Format -> Single,
       Class -> Expression,
-      Pattern :> _Symbol|_String|TypeP[],
+      Pattern :> Authors`Private`authoredCodeP,
       Description -> "The Symbolic Lab Language (SLL) function being tested for correctness by running through its unit tests by evaluating the expressions and comparing to the expected output.",
       Category -> "Organizational Information"
     },
@@ -118,6 +118,13 @@ DefineObjectType[Object[UnitTest, Function], {
       Pattern:> _String,
       Description->"The $SessionUUID used for this unit test.",
       Category->"Organizational Information"
+    },
+    FailureSource->{
+      Format-> Single,
+      Class-> String,
+      Pattern:> _String,
+      Description->"Automatically recognized error source for this unit test.",
+      Category->"Test Results"
     }
   }
 }]

@@ -51,7 +51,7 @@ DefineObjectType[Object[User], {
 				Download, Search, and Upload activity types refer to when the user interacts with the database in Command Center
 				but somehow those can't be categorized under any UI view listed below.
 				CommandBuilder, Documentation, Experiments, Favorites, Inventory, NotebookCC (including library view),
-				Notifications, ReloadKernel, Settings, Shipments acitivity types all refer to when the user interacts with Command Center in a specific UI view.",
+				Notifications, ReloadKernel, Settings, Shipments activity types all refer to when the user interacts with Command Center in a specific UI view.",
 			Headers -> {
 				ActivityDate -> "Activity Date",
 				ActivityType -> "Command Center Activity Type"
@@ -522,6 +522,38 @@ DefineObjectType[Object[User], {
 			Relation -> Object[LaboratoryNotebook],
 			Description -> "User preference in Command Center Desktop for the default laboratory notebook set by the user.",
 			Category -> "General"
+		},
+		ShowProtocolToolbar -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the protocol toolbar within a notebook is visible when notebooks are initially opened. This toolbar shows all protocols within the notebook and displays information about them.",
+			Category -> "General",
+			Developer -> True
+		},
+		HideCompletedProtocols -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if we should hide protocols in status of Completed within the protocols toolbar.",
+			Category -> "General",
+			Developer -> True
+		},
+		ShowFunctionToolbar -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the function toolbar within a notebook is visible when notebooks are initially opened. This toolbar allows users to reload the function(s) defined in the notebook as well as if it can autoload.",
+			Category -> "General",
+			Developer -> True
+		},
+		ShowScriptToolbar -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the script toolbar within a notebook is visible when notebooks are initially opened. This toolbar controls state of scripts via Run / Pause / Stop and will display exceptions that happen within script runs.",
+			Category -> "General",
+			Developer -> True
 		},
 		PageSaveType -> {
 			Format -> Single,

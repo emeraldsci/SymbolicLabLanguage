@@ -132,7 +132,7 @@ UploadOligomer[myStructures:ListableP[_?StructureQ | _?StrandQ], myTypes:Listabl
 ];
 
 
-InstallDefaultUploadFunction[UploadOligomer, Model[Molecule, Oligomer], resolveUploadNucleicAcidModelOptions];
+InstallDefaultUploadFunction[UploadOligomer, Model[Molecule, Oligomer], OptionResolver -> resolveUploadNucleicAcidModelOptions];
 InstallValidQFunction[UploadOligomer, Model[Molecule, Oligomer]];
 InstallOptionsFunction[UploadOligomer, Model[Molecule, Oligomer]];
 InstallIdentityModelTests[

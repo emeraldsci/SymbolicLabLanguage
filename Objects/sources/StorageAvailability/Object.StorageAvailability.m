@@ -157,7 +157,7 @@ DefineObjectType[Object[StorageAvailability], {
       Class -> {Real,Real},
       Pattern :> {GreaterP[0 Millimeter],GreaterP[0 Millimeter]},
       Units -> {Millimeter,Millimeter},
-      Description -> "The width and depth of an rectangle empty space in this position within which additional objects can be stored. This space is either perpendicular to area defined by AvailableSpaceDimensions or seperate from it.",
+      Description -> "The width and depth of an rectangle empty space in this position within which additional objects can be stored. This space is either perpendicular to area defined by AvailableSpaceDimensions or separate from it.",
       Category -> "Dimensions & Positions",
       Headers -> {"Width", "Depth"}
     },

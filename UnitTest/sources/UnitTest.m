@@ -99,19 +99,21 @@ DefineOptions[
 		{Platform->{"Windows","MacOSX","Unix"},{("Windows"|"MacOSX"|"Unix")..},"Which platforms these tests are OK to run on."},
 		{Skip->False,False|_String,"Flag these tests as to be skipped when running tests with a description of why."},
 		{Parallel->False,True|False,"Indicates that tests for this symbol can be run in parallel."},
-		{HardwareConfiguration->Standard,Alternatives[Standard,HighRAM],"If computing on the cloud (Manifold), the hardware which should be used to run computations."}
+		{HardwareConfiguration->Standard,Alternatives[Standard,HighRAM],"If computing on the cloud (Manifold), the hardware which should be used to run computations."},
+		{NumberOfParallelThreads->Automatic, (Automatic|Null|RangeP[1,10,1]),"The number of parallel child computation jobs to run."}
 	}
 ];
 
 SetAttributes[DefineTests,HoldAll];
 
 DefineTests[collection_Symbol, sym:_Symbol|_String|ECL`Object[__Symbol], tests_, ops:OptionsPattern[]]:=Module[
-	{package, file, options, testsWithOptions, platform, skip, parallel, hardwareConfiguration},
+	{package, file, options, platform, skip, parallel, hardwareConfiguration, numberOfParallelThreads},
 
 	platform = OptionDefault[OptionValue[Platform]];
 	skip = OptionDefault[OptionValue[Skip]];
 	parallel = OptionDefault[OptionValue[Parallel]];
 	hardwareConfiguration = OptionDefault[OptionValue[HardwareConfiguration]];
+	numberOfParallelThreads = OptionDefault[OptionValue[NumberOfParallelThreads]];
 
 	(*For symbols, store the context of that symbol, for strings store the context
 	that the tests were defined in.*)
@@ -143,7 +145,8 @@ DefineTests[collection_Symbol, sym:_Symbol|_String|ECL`Object[__Symbol], tests_,
 			"Platform"->platform,
 			"Skip"->skip,
 			"Parallel"->parallel,
-			"HardwareConfiguration"->hardwareConfiguration
+			"HardwareConfiguration"->hardwareConfiguration,
+			"NumberOfParallelThreads"->numberOfParallelThreads
 		]
 	];
 ];
@@ -256,7 +259,7 @@ SetAttributes[Warning,HoldRest];
 (* ::Subsubsection::Closed:: *)
 (*Error*)
 
-ECL`Authors[Error] := {"thomas"};
+ECL`Authors[Error] := {"steven"};
 
 (* Dummy function so that we can DefineTests[...] for it. *)
 (* These tests are used to track the Error::MyMessage messages in the command builder functions. *)
@@ -334,7 +337,7 @@ DefineOptions[
 		{SubCategory->All,_Symbol|_String|{(_Symbol|_String)..},"Filter the tests to be run based on their example subcategory, or \"Tests\"."},
 		{ShowExpression->True,True|False,"Whether or not to display expressions in SummaryNotebook."},
 		{Association->True,True|False,"Whether or not to return an Association of inputs->summaries. If False, only returns a list of summaries."},
-		{OutputFormat->TestSummary,SingleBoolean|Boolean|TestSummary,"Deterimes the format of the return value. Boolean returns a pass/fail for each entry. SingleBoolean returns a single pass/fail boolean for all the inputs. TestSummary returns the EmeraldTestSummary object for each input."},
+		{OutputFormat->TestSummary,SingleBoolean|Boolean|TestSummary,"Determines the format of the return value. Boolean returns a pass/fail for each entry. SingleBoolean returns a single pass/fail boolean for all the inputs. TestSummary returns the EmeraldTestSummary object for each input."},
 		{DisplayFunction->InputForm,_Symbol|_Function,"When Verbose->True|Failures, this function is applied to each element for printing the headers."},
 		{TestsToRun->All, IntegrationTests | Sandbox | All, "When TestsToRun->Sandbox, only run tests defined for Sandbox. When TestsToRun->IntegrationTests omit tests defined for Sandbox. Otherwise run all tests."}
 	}
@@ -349,7 +352,7 @@ RunUnitTest[inputs:{(_Symbol|Except[_String?filePathQ|_String?ContextQ,_String]|
 	(* RunUnitTest overloads actually used to run true unit tests are run with the Notebook permissions warning off *)
 	(* Ideally we would address all the cases where we default to a Notebook in tests instead *)
 	(* TODO This is a temporary fix ONLY for unit testing since multiple unit tests trying to write to the same *)
-	(* TODO Object[Laboratory,Notebook]'s Objects field slows down the tests drastically *)
+	(* TODO Object[LaboratoryNotebook]'s Objects field slows down the tests drastically *)
 	(* TODO The asana task that tracks the long term solution: https://app.asana.com/0/1150770667411537/1205972734124857/f *)
 	Block[{$AllowPublicObjects = True},
 		(*Throw Error if we are on Production but skip this if our inputs are empty since we are not going to run real tests on empty list anyway*)
@@ -393,7 +396,7 @@ RunUnitTest[inputs:{(_Symbol|Except[_String?filePathQ|_String?ContextQ,_String]|
 RunUnitTest[contextsOrFiles:{(_String?(Or[ContextQ[#],filePathQ[#]]&))...},ops:OptionsPattern[]]:=Module[
 	{defaultedOptions,results},
 	(* TODO This is a temporary fix ONLY for unit testing since multiple unit tests trying to write to the same *)
-	(* TODO Object[Laboratory,Notebook]'s Objects field slows down the tests drastically *)
+	(* TODO Object[LaboratoryNotebook]'s Objects field slows down the tests drastically *)
 	(* TODO The asana task that tracks the long term solution: https://app.asana.com/0/1150770667411537/1205972734124857/f *)
 	Block[{$AllowPublicObjects  = True},
 		defaultedOptions=OptionDefaults[RunUnitTest, ToList[ops]];
@@ -433,7 +436,7 @@ RunUnitTest[contextsOrFiles:{(_String?(Or[ContextQ[#],filePathQ[#]]&))...},ops:O
 RunUnitTest[contextOrFile_String?(Or[ContextQ[#],filePathQ[#]]&),ops:OptionsPattern[]]:=Module[
 	{defaultedOptions,results},
 	(* TODO This is a temporary fix ONLY for unit testing since multiple unit tests trying to write to the same *)
-	(* TODO Object[Laboratory,Notebook]'s Objects field slows down the tests drastically *)
+	(* TODO Object[LaboratoryNotebook]'s Objects field slows down the tests drastically *)
 	(* TODO The asana task that tracks the long term solution: https://app.asana.com/0/1150770667411537/1205972734124857/f *)
 	Block[{$AllowPublicObjects  = True},
 
@@ -472,7 +475,7 @@ Packager`OnLoad[
 RunUnitTest[identifier:_Symbol|Except[_String?filePathQ|_String?ContextQ,_String]|ECL`Object[__Symbol],ops:OptionsPattern[]]:=Module[
 	{defaultedOptions,result,package},
 	(* TODO This is a temporary fix ONLY for unit testing since multiple unit tests trying to write to the same *)
-	(* TODO Object[Laboratory,Notebook]'s Objects field slows down the tests drastically *)
+	(* TODO Object[LaboratoryNotebook]'s Objects field slows down the tests drastically *)
 	(* TODO The asana task that tracks the long term solution: https://app.asana.com/0/1150770667411537/1205972734124857/f *)
 	Block[{$AllowPublicObjects  = True},
 		defaultedOptions=OptionDefaults[RunUnitTest, ToList[ops]];
@@ -515,28 +518,34 @@ RunUnitTest[assoc_Association,ops:OptionsPattern[]]:=RunUnitTest[
 ];
 RunUnitTest[rules:{___Rule},ops:OptionsPattern[]]:=Module[
 	{defaultedOptions,results},
+	(* RunUnitTest overloads actually used to run true unit tests are run with the Notebook permissions warning off *)
+	(* Ideally we would address all the cases where we default to a Notebook in tests instead *)
+	(* TODO This is a temporary fix ONLY for unit testing since multiple unit tests trying to write to the same *)
+	(* TODO Object[LaboratoryNotebook]'s Objects field slows down the tests drastically *)
+	(* TODO The asana task that tracks the long term solution: https://app.asana.com/0/1150770667411537/1205972734124857/f *)
+	Block[{$AllowPublicObjects = True},
+		defaultedOptions=OptionDefaults[RunUnitTest, ToList[ops]];
 
-	defaultedOptions=OptionDefaults[RunUnitTest, ToList[ops]];
+		clearSummaryNotebook[defaultedOptions];
 
-	clearSummaryNotebook[defaultedOptions];
+		results=Association[
+			KeyValueMap[
+				#1 -> runIndividualTests[
+					#2,
+					#1,
+					Sequence@@defaultedOptions,
+					Sort->False
+				]&,
+				Association[rules]
+			]
+		];
 
-	results=Association[
-		KeyValueMap[
-			#1 -> runIndividualTests[
-				#2,
-				#1,
-				Sequence@@defaultedOptions,
-				Sort->False
-			]&,
-			Association[rules]
+		formatTestOutput[
+			rules,
+			results,
+			Lookup[defaultedOptions, "OutputFormat"],
+			Lookup[defaultedOptions, "Association"]
 		]
-	];
-
-	formatTestOutput[
-		rules,
-		results,
-		Lookup[defaultedOptions, "OutputFormat"],
-		Lookup[defaultedOptions, "Association"]
 	]
 ];
 
@@ -922,7 +931,7 @@ decrementCategoryCell[notebook_NotebookObject,name_String,category_String]:=With
 
 
 runTestsInline[testsByCategory_Association,identifier_, verbose:True|Failures, displayFunction:_Symbol|_Function]:=Module[
-	{symbolOptions, symbolSetUpMessages, reapedResults, symbolTearDownMessages, results, name, tests, currentCategory, runningTest,
+	{symbolOptions, symbolSetUpMessages, reapedResults, symbolTearDownMessages, results, name, tests, runningTest,
 	totalCount, testIndex, maxCategoryLength, tempCell, summary, percentCoverage, variables, definitions},
 
 	name=displayFunction[identifier];
@@ -977,10 +986,8 @@ runTestsInline[testsByCategory_Association,identifier_, verbose:True|Failures, d
 					(* Update testIndex. *)
 					testIndex=testIndex+1;
 
-					(* NOTE: We block ECL`$ManifoldRunTime so that Test[...]s inside of our top level test don't also echo. *)
-					result = Block[{ECL`$ManifoldRuntime=Null},
-						RunTest[test]
-					];
+					(* run the tests! *)
+					result = RunTest[test];
 
 					If[verbose || (verbose===Failures && !result[Passed]),
 						writeResult[category,maxCategoryLength,test[Description],result[Passed],!test[Warning]]
@@ -1508,10 +1515,7 @@ resultToNameCell[result : TestResultP, id_String] := Module[
 			"Success",
 				"TestSuccess"
 		],
-		CellTags->id,
-		CellEventActions -> {
-			"MouseDown" :> openCloseCellGroup[]
-		}
+		CellTags->id
 	]
 ];
 
@@ -1723,7 +1727,7 @@ holdCompositionList[f_,{helds___Hold}]:=Module[{joinedHelds},
 	(* Join the held heads. *)
 	joinedHelds=Join[helds];
 
-	(* Swap the outter most hold with f. Then hold the result. *)
+	(* Swap the outer most hold with f. Then hold the result. *)
 	With[{insertMe=joinedHelds},holdComposition[f,insertMe]]
 ];
 SetAttributes[holdCompositionList,HoldAll];
@@ -1801,11 +1805,11 @@ joinStubs[a : {(_Rule | _RuleDelayed) ...}, b : {(_Rule | _RuleDelayed) ...}] :=
 DefineOptions[
 	Tests,
 	Options:>{
-		{Output->{Test,Example},Test|Example|{Test,Example}|Hold,"Controls output filtering of TestP vs ExampleP. By default returns both but can be restricted to either one using Test|Example repectively."}
+		{Output->{Test,Example},Test|Example|{Test,Example}|Hold,"Controls output filtering of TestP vs ExampleP. By default returns both but can be restricted to either one using Test|Example respectively."}
 	}
 ];
 
-Tests[identifier:_Symbol|_String|ECL`Object[__Symbol],OptionsPattern[]]:=Module[
+Tests[identifier:_Symbol|_String|ECL`Object[__Symbol]|ECL`Model[__Symbol],OptionsPattern[]]:=Module[
 	{testsCache,heldTests,heldDefinition,testsAndExamples,filter,symbolOptions},
 
 	(* Try to figure out the package where this function is located. *)
@@ -2034,7 +2038,13 @@ OverloadSummaryHead[EmeraldTestSummary];
 (* ::Subsubsection::Closed:: *)
 (*TestFailureNotebook*)
 
-Authors[TestFailureNotebook]:={"james.kammert"};
+Authors[TestFailureNotebook]:={"yanzhe.zhu", "james.kammert"};
+
+(* overload for unit tests *)
+TestFailureNotebook[unitTestObject:ObjectP[Object[UnitTest,Function]],ops:OptionsPattern[TestFailureNotebook]]:=Module[{},
+	TestFailureNotebook[Get[DownloadCloudFile[unitTestObject[EmeraldTestSummary],$TemporaryDirectory]],ops]
+];
+
 TestFailureNotebook[mySummary_EmeraldTestSummary] := Module[
 	{contents, testsFor, passed, successes, resultFailures,
 		timeoutFailures, messageFailures, warningFailures, results,
@@ -2089,6 +2099,12 @@ DefineOptions[TestSummaryNotebook,
 		{Destination->Automatic,Automatic|Desktop|Cloud,"If Desktop, return a local notebook.  If Cloud, create a CloudObject.  If Automatic, create CloudObject if $CloudEvaluation is True."}
 	}
 ];
+
+(* overload for unit tests *)
+TestSummaryNotebook[unitTestObject:ObjectP[Object[UnitTest,Function]],ops:OptionsPattern[]]:=Module[{},
+	TestSummaryNotebook[Get[DownloadCloudFile[unitTestObject[EmeraldTestSummary],$TemporaryDirectory]],ops]
+];
+
 TestSummaryNotebook[summary_CloudObject,ops:OptionsPattern[]]:=Module[{ets},
 	ets = CloudGet[summary];
 	If[MatchQ[ets,_EmeraldTestSummary],
@@ -2099,7 +2115,7 @@ TestSummaryNotebook[summary_CloudObject,ops:OptionsPattern[]]:=Module[{ets},
 
 
 TestSummaryNotebook[summary_EmeraldTestSummary,ops:OptionsPattern[]]:=Module[
-	{safeOps, destination,notebook, name, cells, resultsByCategory},
+	{destination},
 	destination = OptionValue[Destination];
 	destination = Switch[destination,
 		Automatic, If[$CloudEvaluation, Cloud, Desktop],
@@ -2155,7 +2171,7 @@ testSummaryNotebookResultCells[results:{TestResultP...}] := Module[{resultsByCat
 ];
 
 testSummaryDesktopNotebook[summary_EmeraldTestSummary]:=Module[
-	{notebook, name, cells, resultsByCategory, sandboxResults, manifoldResults, sandboxCells, manifoldCells},
+	{notebook, name, sandboxResults, manifoldResults, sandboxCells, manifoldCells},
 
 	notebook = NotebookCreate[
 		StyleDefinitions->"TestSummary.nb",
@@ -2185,10 +2201,15 @@ testSummaryDesktopNotebook[summary_EmeraldTestSummary]:=Module[
 	sandboxCells = testSummaryNotebookResultCells[sandboxResults];
 	manifoldCells = testSummaryNotebookResultCells[manifoldResults];
 
-	NotebookWrite[notebook, Cell["Integration Test Results", "ResultSummary"]];
-	NotebookWrite[notebook, manifoldCells];
-	NotebookWrite[notebook, Cell["Sandbox Results", "ResultSummary"]];
-	NotebookWrite[notebook, sandboxCells]
+	If[Length[manifoldCells]>0,
+		NotebookWrite[notebook, Cell["Integration Test Results", "ResultSummary"]];
+		NotebookWrite[notebook, manifoldCells];
+	];
+
+	If[Length[sandboxCells]>0,
+		NotebookWrite[notebook, Cell["Sandbox Results", "ResultSummary"]];
+		NotebookWrite[notebook, sandboxCells];
+	];
 
 	SetOptions[notebook,Visible->True];
 	SetSelectedNotebook[notebook];
@@ -2320,7 +2341,7 @@ LoadTests[packages:{___String}]:=AssociationMap[
 (*Load all m-files in the tests directory for the given package.
 These files will define the unit tests for functions in the package.*)
 LoadTests[package_String]:=Module[
-	{metadata, directory, testFiles, privateContext},
+	{metadata, directory, testFiles},
 
 	(*Try and load metadata for the package, if not found return $Failed*)
 	metadata = PackageMetadata[package];
@@ -2330,18 +2351,19 @@ LoadTests[package_String]:=Module[
 
 	directory = Lookup[metadata,"Directory"];
 
-	(*Find all m-files which define usage rules*)
+	(*Find all m-files which define tests *)
 	testFiles = FileNames[
 		"*.m",
 		FileNameJoin[{directory,"tests"}],
 		Infinity
 	];
 
-	(*Load all dependencies for the package and load the usage definition files
+	(*Load all dependencies for the package and load the test files
 	in the `Private` context for the given package.*)
 	Block[{$ContextPath},
 		$ContextPath = {"System`","Packager`"};
 
+		(* Begin the context *)
 		Begin[package<>"Private`"];
 
 		(*Load dependencies*)
@@ -2353,6 +2375,7 @@ LoadTests[package_String]:=Module[
 			]
 		];
 
+		(* Load Tests *)
 		Scan[
 			loadTestFile,
 			testFiles

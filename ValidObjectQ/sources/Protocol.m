@@ -79,7 +79,7 @@ validProtocolQTests[packet:ObjectP[Object[Protocol]]]:={
 		Alternatives[
 			{InCart,_,_},
 			{Canceled,_,_},
-			{Processing, Alternatives[OperatorProcessing, InstrumentProcessing, OperatorReady, Troubleshooting], Except[Null]},
+			{Processing, Alternatives[OperatorProcessing, InstrumentProcessing, OperatorReady, ScientificSupport], Except[Null]},
 			(* a protocol is allowed to have DateStarted populated if in ShippingMaterials (or even Backlogged) (could have been started but then needed to wait) *)
 			{ShippingMaterials, _, _},
 			{Backlogged,_,_},
@@ -116,8 +116,8 @@ validProtocolQTests[packet:ObjectP[Object[Protocol]]]:={
 		]
 	],
 
-	Test["If not Null, DateCreated <= DateConfirmed <= DateEnqueued <= DateStarted <= DateCompleted:",
-		LessEqual@@DeleteCases[Lookup[packet,{DateCreated,DateConfirmed,DateEnqueued,DateStarted,DateCompleted}],Null],
+	Test["If not Null, DateConfirmed <= DateEnqueued <= DateStarted <= DateCompleted:",
+		LessEqual@@DeleteCases[Lookup[packet,{DateConfirmed,DateEnqueued,DateStarted,DateCompleted}],Null],
 		True
 	],
 
@@ -128,12 +128,12 @@ validProtocolQTests[packet:ObjectP[Object[Protocol]]]:={
 	],
 
 	(* CHILD/PARENT PROTOCOLS - TESTED FROM CHILD POV *)
-	Test["If the protocol is OperationStatus->Troubleshooting, its parent protocol must be OperationStatus->Troubleshooting as well:",
+	Test["If the protocol is OperationStatus->ScientificSupport, its parent protocol must be OperationStatus->ScientificSupport as well:",
 		{Lookup[packet, ParentProtocol], Download[Lookup[packet, ParentProtocol], OperationStatus], Lookup[packet, OperationStatus]},
 		Alternatives[
-			{ObjectP[], Troubleshooting ,Troubleshooting},
-			{Null, _ ,Troubleshooting},
-			{_, _, Except[Troubleshooting]}
+			{ObjectP[], ScientificSupport ,ScientificSupport},
+			{Null, _ ,ScientificSupport},
+			{_, _, Except[ScientificSupport]}
 		]
 	],
 
@@ -187,16 +187,16 @@ validProtocolQTests[packet:ObjectP[Object[Protocol]]]:={
 	],
 
 	(* OPERATION STATUS *)
-	Test["If the protocol Status is Processing, then OperationStatus is OperatorProcessing, InstrumentProcessing, OperatorReady, Troubleshooting. If the protocol Status is not running, OperationStatus must be Null or None:",
+	Test["If the protocol Status is Processing, then OperationStatus is OperatorProcessing, InstrumentProcessing, OperatorReady, ScientificSupport. If the protocol Status is not running, OperationStatus must be Null or None:",
 		Lookup[packet,{Status,OperationStatus}],
 		Alternatives[
-			{Processing,OperatorStart|OperatorProcessing|InstrumentProcessing|OperatorReady|Troubleshooting},
+			{Processing,OperatorStart|OperatorProcessing|InstrumentProcessing|OperatorReady|ScientificSupport},
 			{Except[Processing],NullP|None}
 		]
 	],
 
-	(* TROUBLESHOOTING *)
-	Test["Troubleshooting fields are not populated if a protocol is not currently executing or it has been started but is ShippingMaterials:",
+	(* ScientificSupport *)
+	Test["ScientificSupport fields are not populated if a protocol is not currently executing or it has been started but is ShippingMaterials:",
 		(* If the protocol is Processing or has started and is ShippingMaterials, it may have CartResources populated,
 		otherwise it should be empty *)
 		If[
@@ -248,7 +248,8 @@ validProtocolQTests[packet:ObjectP[Object[Protocol]]]:={
 	],
 
 	(* ENVIRONMENTAL DATA *)
-	RequiredWhenCompleted[packet,{EnvironmentalData}],
+	(* Temporarily remove EnvironmentalData from VOQ requirement since sometimes manifold jobs fail to upload EnvironmentalData. Once we get the manifold jobs to be more robust and reliable, we should add this back *)
+	(*RequiredWhenCompleted[packet,{EnvironmentalData}],*)
 
 	(* OWNERSHIP *)
 
@@ -274,10 +275,12 @@ validProtocolQTests[packet:ObjectP[Object[Protocol]]]:={
 	(* STORAGE CONDITIONS *)
 
 	(* SamplesInStorage field, if populated, needs to be index matching with PooledSamplesIn if that is populated; otherwise, index matching with SamplesIn *)
-	Test["If SamplesInStorage and PooledSamplesIn are populated, they are the same length as each other; if SamplesInStorage is populated but PooledSamplesIn is not, it is the same length as SamplesIn:",
-		With[{storage = Lookup[packet, SamplesInStorage], pooledSamplesIn = Lookup[packet, PooledSamplesIn], samplesIn = Lookup[packet, SamplesIn]},
+	(* We can also be populating NestedIndexMatchingSamplesIn instead of PooledSamplesIn, so check that *)
+	Test["If SamplesInStorage and PooledSamplesIn or NestedIndexMatchingSamplesIn are populated, they are the same length as each other; if SamplesInStorage is populated neither PooledSamplesIn nor NestedIndexMatchingSamplesIn are, it is the same length as SamplesIn:",
+		With[{storage = Lookup[packet, SamplesInStorage], pooledSamplesIn = Lookup[packet, PooledSamplesIn], nestedIndexMatchingSamplesIn = Lookup[packet, NestedIndexMatchingSamplesIn], samplesIn = Lookup[packet, SamplesIn]},
 			Which[
 				MatchQ[storage, {(SampleStorageTypeP|Disposal|Null)..}] && MatchQ[pooledSamplesIn, {{ObjectP[]..}..}], Length[storage] == Length[pooledSamplesIn],
+				MatchQ[storage, {(SampleStorageTypeP|Disposal|Null)..}] && MatchQ[nestedIndexMatchingSamplesIn, {{ObjectP[]..}..}], Length[storage] == Length[nestedIndexMatchingSamplesIn],
 				MatchQ[storage, {(SampleStorageTypeP|Disposal|Null)..}], Length[storage] == Length[samplesIn],
 				True, True
 			]
@@ -363,7 +366,7 @@ validProtocolAbsorbanceKineticsQTests[packet:PacketP[Object[Protocol,AbsorbanceK
 	(* Check groups of fields are all set or all null. Check field groups for temperature, mixing, moat and injections *)
 	RequiredTogetherTest[packet,{PlateReaderMixRate,PlateReaderMixTime,PlateReaderMixSchedule,PlateReaderMixMode}],
 	RequiredTogetherTest[packet,{MoatSize,MoatBuffer,MoatVolume}],
-	RequiredTogetherTest[packet,{PrimaryInjections,PrimaryInjectionFlowRate,InjectionSample,SolventWasteContainer,PrimaryPreppingSolvent,SecondaryPreppingSolvent,PrimaryFlushingSolvent,SecondaryFlushingSolvent}],
+	RequiredTogetherTest[packet,{PrimaryInjections,PrimaryInjectionFlowRate,InjectionSample,SolventWasteContainer,Line1PrimaryPurgingSolvent,Line1SecondaryPurgingSolvent}],
 
 	(* Instrument will be fulfilled after protocol has completed *)
 	ResolvedWhenCompleted[packet,{Instrument}],
@@ -853,7 +856,6 @@ validProtocolAgaroseGelElectrophoresisQTests[packet:PacketP[Object[Protocol,Agar
 		DataFilePath,
 		Data,
 		LoadingPlateManipulation,
-		LoadingPlateMix,
 		DataFile
 	}],
 
@@ -1216,6 +1218,39 @@ validProtocolCellFreezeQTests[packet:PacketP[Object[Protocol,CellFreeze]]]:={
 
 };
 
+(* ::Subsection::Closed:: *)
+(*validProtocolImageCellsQTests*)
+
+
+validProtocolImageCellsQTests[packet:PacketP[Object[Protocol,ImageCells]]]:={
+	(* shared null *)
+	NullFieldTest[packet,{
+		NitrogenPressureLog,
+		CO2PressureLog,
+		ArgonPressureLog,
+		InitialNitrogenPressure,
+		InitialArgonPressure,
+		InitialCO2Pressure
+	}],
+
+	NotNullFieldTest[packet, {
+		(* shared informed *)
+		SamplesIn,
+		ContainersIn,
+
+		(* protocol-specific *)
+		Instrument,
+		Temperature,
+		CarbonDioxide
+	}],
+
+	RequiredWhenCompleted[packet, {
+		Data,
+		RunTime,
+		LabwareDefinitionFilePath
+	}]
+
+};
 
 (* ::Subsection::Closed:: *)
 (*validProtocolCellMediaChangeQTests*)
@@ -1387,10 +1422,6 @@ samplesMatchContainersQ[packet:PacketP[Object[Protocol,Centrifuge]]] := Module[
 (* ::Subsection:: *)
 (*validProtocolCoulterCountQTests*)
 
-(* ::Subsubsection:: *)
-(*validProtocolCoulterCountQTests*)
-
-
 
 validProtocolCoulterCountQTests[packet:PacketP[Object[Protocol,CoulterCount]]]:={
 
@@ -1404,7 +1435,6 @@ validProtocolCoulterCountQTests[packet:PacketP[Object[Protocol,CoulterCount]]]:=
 		ApertureDiameter,
 		ElectrolyteSolution,
 		ElectrolyteSolutionVolume,
-		ElectrolyteSolutionFlushVolume,
 		FlushFlowRate,
 		FlushTime,
 		SampleAmounts,
@@ -1415,8 +1445,7 @@ validProtocolCoulterCountQTests[packet:PacketP[Object[Protocol,CoulterCount]]]:=
 		FlowRates,
 		MinParticleSizes,
 		EquilibrationTimes,
-		StopConditions,
-		ElectrolyteSolutionOutStorage
+		StopConditions
 	}],
 
 	(* fields that should be null *)
@@ -1438,15 +1467,15 @@ validProtocolCoulterCountQTests[packet:PacketP[Object[Protocol,CoulterCount]]]:=
 
 	(* Upon completion *)
 	RequiredWhenCompleted[packet,{
-		Data
+		Data,
+		BlankData
 	}],
 
 	(* if we are doing system suitability check, the corresponding index matched options should be populated; if no suitability check, the corresponding index matched fields should all be Null *)
-	indexMatchingRequiredTogetherTest[packet,{
+	RequiredTogetherTest[packet,{
 		SystemSuitabilityTolerance,
 		SuitabilitySizeStandards,
 		SuitabilityParticleSizes,
-		SuitabilityTargetConcentrations,
 		SuitabilitySampleAmounts,
 		SuitabilityElectrolyteSampleDilutionVolumes,
 		SuitabilityMeasurementContainers,
@@ -1462,120 +1491,24 @@ validProtocolCoulterCountQTests[packet:PacketP[Object[Protocol,CoulterCount]]]:=
 	(* TODO: make a MapThread version of RequiredTogetherTest for checking multiple fields - indexMatchingRequiredTogetherTest happen*)
 
 	(* if we are diluting for any samplesIn, the corresponding index matched Dilution options should be populated; if no dilution, the corresponding index matched fields should all be Null *)
-	indexMatchingRequiredTogetherTest[packet,{
+	RequiredTogetherIndexMatchingTest[packet,{
 		DilutionTypes,
 		DilutionStrategies,
 		NumberOfDilutions,
 		TargetAnalytes,
 		CumulativeDilutionFactors,
-		TargetAnalyteConcentrations,
 		TransferVolumes,
 		TotalDilutionVolumes,
 		FinalVolumes
 	}],
 
 	(* if incubating during dilution, the corresponding index matched incubate options should be populated; if no incubation, the corresponding index matched options should all be Null *)
-	indexMatchingRequiredTogetherTest[packet,{
+	RequiredTogetherIndexMatchingTest[packet,{
 		DilutionIncubationTimes,
 		DilutionIncubationInstruments,
 		DilutionIncubationTemperatures,
 		DilutionMixTypes
 	}]
-};
-
-
-(* ::Subsection::Closed:: *)
-(*validProtocolCOVID19TestQTests*)
-
-
-validProtocolCOVID19TestQTests[packet:PacketP[Object[Protocol,COVID19Test]]]:={
-	NotNullFieldTest[packet,{
-		(*Shared fields not Null*)
-		ContainersIn,
-
-		(*Specific fields not Null*)
-		(*===Reagent Preparation===*)
-		Disinfectant,
-		(*===RNA Extraction===*)
-		BiosafetyCabinet,
-		AliquotVessels,
-		CellLysisBuffer,
-		ViralLysisBuffer,
-		RNAExtractionColumns,
-		PrimaryCollectionVessels,
-		SecondaryCollectionVessels,
-		PrimaryWashSolution,
-		SecondaryWashSolution,
-		ElutionVessels,
-		ElutionSolution,
-		(*===RT-qPCR===*)
-		ReactionVolume,
-		NoTemplateControl,
-		ViralRNAControl,
-		TestContainers,
-		SampleVolume,
-		ForwardPrimers,
-		ForwardPrimerVolume,
-		ReversePrimers,
-		ReversePrimerVolume,
-		Probes,
-		ProbeVolume,
-		ProbeExcitationWavelength,
-		ProbeExcitationWavelength,
-		MasterMix,
-		MasterMixVolume,
-		ReactionBuffer,
-		ReactionBufferVolume,
-		Thermocycler,
-		ReverseTranscriptionRampRate,
-		ReverseTranscriptionTemperature,
-		ReverseTranscriptionTime,
-		ActivationRampRate,
-		ActivationTemperature,
-		ActivationTime,
-		DenaturationRampRate,
-		DenaturationTemperature,
-		DenaturationTime,
-		ExtensionRampRate,
-		ExtensionTemperature,
-		ExtensionTime,
-		NumberOfCycles
-	}],
-
-
-	(*Shared fields Null*)
-	NullFieldTest[packet,{
-		NitrogenPressureLog,
-		CO2PressureLog,
-		ArgonPressureLog,
-		InitialNitrogenPressure,
-		InitialCO2Pressure,
-		InitialArgonPressure
-	}],
-
-
-	(*Required together*)
-	RequiredTogetherTest[packet,{
-		ReagentPreparationPrimitives,
-		ReagentPreparationManipulation
-	}],
-
-
-	(*Required when completed*)
-	RequiredWhenCompleted[packet,{
-		RNAExtractionPrimitives,
-		RNAExtractionManipulation,
-		TestSamples,
-		AnalysisNotebook
-	}],
-
-
-	(*SamplesIn test*)
-	Test[
-		"Unless the protocol is doing preparatory primitives, Samples In should be Informed if the Protocol is not Canceled or Aborted:",
-		Lookup[packet,{SamplesIn,PreparatoryUnitOperations,Status}],
-		{{ObjectP[Object[Sample]]..},_,_}|{{(ObjectP[{Model[Sample],Object[Sample]}]|Null)..},{Except[Null]..},_}|{_,_,Canceled|Aborted}
-	]
 };
 
 
@@ -1947,7 +1880,7 @@ validProtocolDNASynthesisQTests[packet:PacketP[Object[Protocol,DNASynthesis]]]:=
 		If[MatchQ[Cases[(Lookup[packet,Cleavage]),True],{}],
 			AllTrue[
 				Lookup[packet, {Filters, CleavageMethods, CleavageSolutions, CleavageTimes,
-					CleavageTemperatures, CleavageSolutionVolumes, CleavageSolutionManipulation, FilterTransferManipulation,
+					CleavageTemperatures, CleavageSolutionVolumes, FilterTransferManipulation,
 					FilterWashManipulation, CleavageEvaporationProtocol,CleavageWashVolumes,CleavageWashSolutions}], MatchQ[#, {Null ...}] &],
 			True
 		],
@@ -1966,7 +1899,7 @@ validProtocolDNASynthesisQTests[packet:PacketP[Object[Protocol,DNASynthesis]]]:=
 	Test["If at least one strand will be cleaved and the protocol is complete, cleavage-related protocols must be populated:",
 		If[MatchQ[Lookup[packet,Status],Completed]&&Not[MatchQ[Cases[(Lookup[packet,Cleavage]),True],{}]],
 			NoneTrue[
-				Lookup[packet, {CleavageSolutionManipulation, FilterTransferManipulation,
+				Lookup[packet, {FilterTransferManipulation,
 					FilterWashManipulation, CleavageEvaporationProtocol}], MatchQ[#, {Null ...}] &],
 			True
 		],
@@ -2054,7 +1987,7 @@ validProtocolRNASynthesisQTests[packet:PacketP[Object[Protocol,RNASynthesis]]]:=
 		If[MatchQ[Cases[(Lookup[packet,Cleavage]),True],{}],
 			AllTrue[
 				Lookup[packet, {Filters, CleavageMethods, CleavageSolutions, CleavageTimes,
-					CleavageTemperatures, CleavageSolutionVolumes, CleavageSolutionManipulation, FilterTransferManipulation,
+					CleavageTemperatures, CleavageSolutionVolumes, FilterTransferManipulation,
 					FilterWashManipulation, CleavageEvaporationProtocol,CleavageWashVolumes,CleavageWashSolutions}], MatchQ[#, {Null ...}] &],
 			True
 		],
@@ -2073,7 +2006,7 @@ validProtocolRNASynthesisQTests[packet:PacketP[Object[Protocol,RNASynthesis]]]:=
 	Test["If at least one strand will be cleaved and the protocol is complete, cleavage-related protocols must be populated:",
 		If[MatchQ[Lookup[packet,Status],Completed]&&Not[MatchQ[Cases[(Lookup[packet,Cleavage]),True],{}]],
 			NoneTrue[
-				Lookup[packet, {CleavageSolutionManipulation, FilterTransferManipulation,
+				Lookup[packet, {FilterTransferManipulation,
 					FilterWashManipulation, CleavageEvaporationProtocol}], MatchQ[#, {Null ...}] &],
 			True
 		],
@@ -2095,14 +2028,13 @@ validProtocolRNASynthesisQTests[packet:PacketP[Object[Protocol,RNASynthesis]]]:=
 	Test["If at least one strand will be deprotected and the protocol is complete, deprotection-related protocols must be populated:",
 		If[MatchQ[Lookup[packet,Status],Completed]&&Not[MatchQ[Cases[(Lookup[packet,RNADeprotection]),True],{}]],
 			NoneTrue[
-				Lookup[packet, {RNADeprotectionResuspensionIncubations, RNADeprotectionResuspensionSolutionManipulations,
+				Lookup[packet, {RNADeprotectionResuspensionIncubations,
 					RNADeprotectionSolutionManipulations, RNADeprotectionQuenchingManipulations,
 					DeprotectionResuspensionManipulations, DeprotectionResuspensionTransfers}], MatchQ[#, {Null ...}] &],
 			True
 		],
 		True
 	],
-
 	Test["If at least one strand will be desalted after cleavage and the protocol is complete, post cleavage desalting-related protocols must be populated:",
 		If[MatchQ[Lookup[packet,Status],Completed]&&Not[MatchQ[Cases[(Lookup[packet,PostCleavageDesalting]),True],{}]],
 			NoneTrue[
@@ -2158,7 +2090,6 @@ validProtocolDynamicLightScatteringQTests[packet:PacketP[Object[Protocol,Dynamic
 		AssayFormFactor,
 		AssayType,
 		Instrument,
-		SampleLoadingPlate,
 		Temperature,
 		EquilibrationTime,
 		NumberOfAcquisitions,
@@ -2186,7 +2117,6 @@ validProtocolDynamicLightScatteringQTests[packet:PacketP[Object[Protocol,Dynamic
 
 	RequiredTogetherTest[packet,{
 		MeasurementDelayTime,
-		(IsothermalMeasurements|IsothermalRunTime),
 		IsothermalAttenuatorAdjustment
 	}],
 
@@ -2736,53 +2666,57 @@ validProtocolFPLCQTests[packet:PacketP[Object[Protocol,FPLC]]]:={
 
 validProtocolFreezeCellsQTests[packet:PacketP[Object[Protocol,FreezeCells]]]:={
 
-	(* Shared fields *)
-	NullFieldTest[packet,{
+	NullFieldTest[packet, {
 		CO2PressureLog,
 		ArgonPressureLog,
 		InitialArgonPressure,
 		InitialCO2Pressure
 	}],
 
-	(* Type specific fields *)
-	NotNullFieldTest[packet,{
-		Batches,
-		FreezingMethods,
-		Instruments,
-		TransportFreezers,
-		Tweezer
+	NotNullFieldTest[packet, {
+		CellTypes,
+		CultureAdhesions,
+		EstimatedProcessingTime,
+		CryogenicSampleContainers,
+		FreezingRacks,
+		Freezers,
+		SamplesOutStorage
 	}],
 
-	RequiredTogetherTest[packet,{
-		FreezingRates,
-		Durations,
-		ResidualTemperatures
+	RequiredWhenCompleted[packet, {
+		SamplesIn,
+		FreezerSensors
 	}],
 
-	RequiredTogetherTest[packet,{
-		FreezingContainers,
-		Coolants
-	}],
+	RequiredTogetherTest[packet, {CellPelletCentrifuges, CellPelletTimes, CellPelletIntensities, CellPelletSupernatantVolumes, FreezeCellsPelletUnitOperation}],
+	RequiredTogetherTest[packet, {CryoprotectantSolutions, CryoprotectantSolutionVolumes, CryoprotectantSolutionTemperature}],
+	RequiredTogetherTest[packet, {Coolants, CoolantVolumes, FreezeCellsCoolantTransferUnitOperation, InsulatedCoolerContainers, InsulatedCoolerFreezingConditions, InsulatedCoolerFreezingTime}],
 
-	RequiredTogetherTest[packet,{
-		ControlledRateFreezerBatches,
-		ControlledRateFreezerBatchLengths,
-		ControlledRateFreezerInstrument,
-		ControlledRateFreezerTransportCoolers,
-		ControlledRateFreezerTransportTemperatures,
-		ControlledRateFreezerStorageConditions,
-		RunTimes
-	}],
+	Test[
+		"If CryoprotectantSolutionTemperature is Chilled, CryoprotectantSolutionChillingTime must be informed:",
+		If[MatchQ[Lookup[packet, CryoprotectantSolutionTemperature], Chilled],
+			MatchQ[Lookup[packet, CryoprotectantSolutionChillingTime], TimeP],
+			True
+		],
+		True
+	],
+	Test[
+		"If the Freezers are controlled rate freezers, TemperatureProfile must be informed:",
+		If[MemberQ[Lookup[packet, Freezers], ObjectP[{Object[Instrument, ControlledRateFreezer], Model[Instrument, ControlledRateFreezer]}]],
+			!NullQ[Lookup[packet, TemperatureProfile]],
+			True
+		],
+		True
+	],
+	Test[
+		"If the Freezers are static temperature freezers, TemperatureProfile must not be informed:",
+		If[MemberQ[Lookup[packet, Freezers], ObjectP[{Object[Instrument, Freezer], Model[Instrument, Freezer]}]],
+			NullQ[Lookup[packet, TemperatureProfile]],
+			True
+		],
+		True
+	]
 
-	RequiredTogetherTest[packet,{InsulatedCoolerBatches,
-		InsulatedCoolerBatchLengths,
-		InsulatedCoolerFreezingContainers,
-		InsulatedCoolerCoolants,
-		InsulatedCoolerFreezingConditions,
-		InsulatedCoolerTransportCoolers,
-		InsulatedCoolerTransportTemperatures,
-		InsulatedCoolerStorageConditions
-	}]
 };
 
 
@@ -3178,11 +3112,9 @@ validProtocolGrindQTests[packet:PacketP[Object[Protocol, Grind]]]:={
 			(* required shared fields *)
 			SamplesIn,
 			Amounts,
-			ContainersOut,
 
 			(* required specific fields *)
 			BulkDensities,
-			CoolingTimes,
 			Finenesses,
 			GrinderTypes,
 			GrinderTypes,
@@ -3196,6 +3128,8 @@ validProtocolGrindQTests[packet:PacketP[Object[Protocol, Grind]]]:={
 		}
 	],
 
+	RequiredWhenCompleted[packet, {ContainersOut}],
+
 	NullFieldTest[packet, {
 		Data,
 		NitrogenPressureLog,
@@ -3205,6 +3139,16 @@ validProtocolGrindQTests[packet:PacketP[Object[Protocol, Grind]]]:={
 		InitialArgonPressure,
 		InitialCO2Pressure
 	}],
+
+	(* if NumbersOfGrindingSteps is greater than 1, CoolingTimes must be informed *)
+	Test["If NumbersOfGrindingSteps is greater than 1, CoolingTimes must be informed:",
+		MapThread[If[
+			GreaterQ[#1, 1],
+			!NullQ[#2],
+			True
+		]&, {Lookup[packet, NumbersOfGrindingSteps], Lookup[packet, CoolingTimes]}],
+		{True..}
+	],
 
 	(* required fields if GrinderType is BallMill *)
 	Test["If GrinderType is set to BallMill, GrindingBeads and NumbersOfGrindingBeads must be informed:",
@@ -3220,21 +3164,33 @@ validProtocolGrindQTests[packet:PacketP[Object[Protocol, Grind]]]:={
 	RequiredWhenCompleted[packet, {
 		(* required shared fields *)
 		SamplesOut
-	}],
-
-	Test["If the protocol is completed, GrindingVideos must be informed if GrinderType is set to MortarGrinder:",
-		If[
-			And[
-				MatchQ[Lookup[packet, Status], Completed],
-				MemberQ[Lookup[packet, GrinderTypes], MortarGrinder]
-			],
-			!MatchQ[Lookup[packet, GrindingVideos], NullP|{}],
-			True
-		],
-		True
-	]
+	}]
 };
 
+(* ::Subsection::Closed:: *)
+(*validProtocolGrowCrystalQTests*)
+
+
+validProtocolGrowCrystalQTests[packet:PacketP[Object[Protocol, GrowCrystal]]]:={
+
+	(* Required fields *)
+	NotNullFieldTest[packet,
+		{
+			(* required shared fields *)
+			SamplesIn,
+			(* required specific fields *)
+			ImagingInstrument,
+			CrystallizationPlate,
+			DropSamplesOut,
+			UVImaging,
+			CrossPolarizedImaging,
+			DropDestinations,
+			MaxCrystallizationTime
+		}
+	],
+
+	RequiredWhenCompleted[packet, {FormulatrixBarcode, FormulatrixPlateID, SamplesOutStorageCondition}]
+};
 
 (* ::Subsection::Closed:: *)
 (*validProtocolHPLCQTests*)
@@ -3279,7 +3235,6 @@ validProtocolHPLCQTests[packet:PacketP[Object[Protocol,HPLC]]]:={
 			Data,
 			SystemPrimeData,
 			SystemFlushData,
-			EnvironmentalData,
 			MinPressure,
 			MaxPressure,
 			AutosamplerDeckPlacements,
@@ -3955,6 +3910,35 @@ validProtocolHPLCQTests[packet:PacketP[Object[Protocol,HPLC]]]:={
 };
 
 
+(* ::Subsection:: *)
+(* validProtocolInoculateLiquidMediaQTests *)
+validProtocolInoculateLiquidMediaQTests[packet:PacketP[Object[Protocol,InoculateLiquidMedia]]] := Flatten[{
+
+	(* General Required fields *)
+	NotNullFieldTest[packet,{
+		InoculationSource,
+		TransferEnvironments
+	}],
+
+	(* Resuspension fields *)
+	RequiredTogetherTest[packet, {
+		ResuspensionMedia,
+		ResuspensionMediaVolumes,
+		ResuspensionMixTypes,
+		NumberOfResuspensionMixes,
+		ResuspensionMixVolumes
+	}],
+
+	(* BSC Waste Bin Fields *)
+	RequiredTogetherTest[packet, {
+		WasteBins,
+		WasteBags,
+		BiosafetyWasteBinPlacements,
+		BiosafetyWasteBagPlacements,
+		BiosafetyWasteBinTeardowns,
+		BiosafetyWasteBagTeardowns
+	}]
+}];
 (* ::Subsection::Closed:: *)
 (*validProtocolImageSampleQTests*)
 
@@ -4042,7 +4026,6 @@ validProtocolIonChromatographyQTests[packet:PacketP[Object[Protocol,IonChromatog
 			{
 				SamplesIn,
 				Data,
-				EnvironmentalData,
 				ChannelSelection,
 				AnionInitialPressureLowerLimit,
 				AnionInitialPressureUpperLimit,
@@ -4060,7 +4043,6 @@ validProtocolIonChromatographyQTests[packet:PacketP[Object[Protocol,IonChromatog
 			{
 				SamplesIn,
 				Data,
-				EnvironmentalData,
 				ChannelSelection,
 				CationInitialPressureLowerLimit,
 				CationInitialPressureUpperLimit,
@@ -4078,7 +4060,6 @@ validProtocolIonChromatographyQTests[packet:PacketP[Object[Protocol,IonChromatog
 			{
 				SamplesIn,
 				Data,
-				EnvironmentalData,
 				InitialPressureLowerLimit,
 				InitialPressureUpperLimit,
 				AutosamplerDeckPlacements,
@@ -4279,7 +4260,7 @@ validProtocolLCMSQTests[packet:PacketP[Object[Protocol,LCMS]]]:={
 		SampleVolumes,
 		GradientMethods,
 		Calibrant,
-		CalibrationMethods,
+		(*CalibrationMethods, is not always provided *)
 		MassAcquisitionMethods,
 		IonModes,
 		ESICapillaryVoltages,
@@ -4293,7 +4274,7 @@ validProtocolLCMSQTests[packet:PacketP[Object[Protocol,LCMS]]]:={
 		AcquisitionModes,
 		Fragmentations,
 		ScanTimes,
-		AbsorbanceSelection,
+		(*AbsorbanceSelection, is not always provided *)
 		MinAbsorbanceWavelengths,
 		MaxAbsorbanceWavelengths,
 		WavelengthResolutions,
@@ -4397,27 +4378,22 @@ validProtocolLCMSQTests[packet:PacketP[Object[Protocol,LCMS]]]:={
 	RequiredTogetherTest[packet,{ColumnPrimeGradientMethod, ColumnPrimeMassAcquisitionMethod, ColumnPrimeIonMode, ColumnPrimeESICapillaryVoltage, ColumnPrimeDesolvationTemperature, ColumnPrimeDesolvationGasFlow, ColumnPrimeSourceTemperature, ColumnPrimeDeclusteringVoltage, ColumnPrimeConeGasFlow, ColumnPrimeStepwaveVoltage, ColumnPrimeAcquisitionWindows, ColumnPrimeAcquisitionModes, ColumnPrimeFragmentations}],
 	RequiredTogetherTest[packet,{ColumnPrimeMinMasses, ColumnPrimeMaxMasses}],
 	RequiredTogetherTest[packet,{ColumnPrimeLowCollisionEnergies, ColumnPrimeHighCollisionEnergies}],
-	RequiredTogetherTest[packet,{ColumnPrimeInitialLowCollisionEnergies, ColumnPrimeInitialHighCollisionEnergies, ColumnPrimeFinalLowCollisionEnergies, ColumnPrimeFinalHighCollisionEnergies}],
-	UniquelyInformedTest[packet,{ColumnPrimeMinMasses,ColumnPrimeMassSelections}],
-	UniquelyInformedTest[packet,{ColumnPrimeCollisionEnergies, ColumnPrimeLowCollisionEnergies, ColumnPrimeInitialLowCollisionEnergies}],
-	If[MemberQ[Lookup[packet,ColumnPrimeAcquisitionModes],DataDependent],
-		NotNullFieldTest[packet,{ColumnPrimeAcquisitionSurveys}],
+	RequiredTogetherTest[packet,{ColumnPrimeLowCollisionEnergies, ColumnPrimeHighCollisionEnergies, ColumnPrimeFinalLowCollisionEnergies, ColumnPrimeFinalHighCollisionEnergies}],
+	UniquelyInformedTest[packet, {ColumnPrimeMinMasses, ColumnPrimeMassSelections}, (*where*) ColumnPrimeAcquisitionWindows, Alternatives[_Association]],
+	UniquelyInformedTest[packet, {ColumnPrimeCollisionEnergies, ColumnPrimeLowCollisionEnergies}, (*where*) ColumnPrimeAcquisitionModes, Alternatives[DataIndependent, DataDependent, MS1MS2ProductIonScan, SelectedIonMonitoring, NeutralIonLoss, PrecursorIonScan, MultipleReactionMonitoring]],
+	If[MemberQ[Lookup[packet,ColumnPrimeAcquisitionModes], DataDependent],
+		NullFieldTest[packet,{ColumnPrimeAcquisitionSurveys, ColumnPrimeMinimumThresholds, ColumnPrimeAcquisitionLimits, ColumnPrimeCycleTimeLimits, ColumnPrimeExclusionModes, ColumnPrimeExclusionMassSelections, ColumnPrimeFragmentScanTimes, ColumnPrimeInclusionModes, ColumnPrimeInclusionMassSelections,ColumnPrimeIsotopeExclusionModes}],
 		Nothing
 	],
-	If[!MemberQ[Lookup[packet,ColumnPrimeAcquisitionModes],DataDependent],
-		NullFieldTest[packet,{ColumnPrimeMinimumThresholds, ColumnPrimeAcquisitionLimits, ColumnPrimeCycleTimeLimits, ColumnPrimeExclusionModes, ColumnPrimeExclusionMassSelections, ColumnPrimeFragmentScanTimes, ColumnPrimeInclusionModes, ColumnPrimeInclusionMassSelections,ColumnPrimeIsotopeExclusionModes
-		}],
-		Nothing
-	],
-	If[!MemberQ[Lookup[packet,ColumnPrimeExclusionModes],TimeLimit],
+	If[MemberQ[Lookup[packet,ColumnPrimeExclusionModes],TimeLimit],
 		NullFieldTest[packet,{ColumnPrimeExclusionTimeLimits}],
 		Nothing
 	],
-	If[!MemberQ[Lookup[packet,ColumnPrimeIsotopeExclusionModes],ChargedState],
+	If[MemberQ[Lookup[packet,ColumnPrimeIsotopeExclusionModes],ChargedState],
 		NullFieldTest[packet,{ColumnPrimeChargeStateSelections, ColumnPrimeChargeStateLimits, ColumnPrimeChargeStateMassWindows}],
 		Nothing
 	],
-	If[!MemberQ[Lookup[packet,ColumnPrimeIsotopeExclusionModes],MassDifference],
+	If[MemberQ[Lookup[packet,ColumnPrimeIsotopeExclusionModes],MassDifference],
 		NullFieldTest[packet,{ColumnPrimeIsotopeMassDifferences, ColumnPrimeIsotopeRatios, ColumnPrimeIsotopeDetectionMinimums}],
 		Nothing
 	],
@@ -4466,27 +4442,23 @@ validProtocolLCMSQTests[packet:PacketP[Object[Protocol,LCMS]]]:={
 	RequiredTogetherTest[packet,{Standards,StandardSampleVolumes,StandardGradientMethods, StandardMassAcquisitionMethods, StandardIonModes, StandardESICapillaryVoltages, StandardDesolvationTemperatures, StandardDesolvationGasFlows, StandardSourceTemperatures, StandardDeclusteringVoltages, StandardConeGasFlows, StandardStepwaveVoltages, StandardAcquisitionWindows, StandardAcquisitionModes, StandardFragmentations}],
 	RequiredTogetherTest[packet,{StandardMinMasses, StandardMaxMasses}],
 	RequiredTogetherTest[packet,{StandardLowCollisionEnergies, StandardHighCollisionEnergies}],
-	RequiredTogetherTest[packet,{StandardInitialLowCollisionEnergies, StandardInitialHighCollisionEnergies, StandardFinalLowCollisionEnergies, StandardFinalHighCollisionEnergies}],
-	UniquelyInformedTest[packet,{StandardMinMasses,StandardMassSelections}],
-	UniquelyInformedTest[packet,{StandardCollisionEnergies, StandardLowCollisionEnergies, StandardInitialLowCollisionEnergies}],
+	RequiredTogetherTest[packet,{StandardLowCollisionEnergies, StandardHighCollisionEnergies, StandardFinalLowCollisionEnergies, StandardFinalHighCollisionEnergies}],
+	UniquelyInformedTest[packet, {StandardMinMasses,StandardMassSelections}, (*where*) StandardAcquisitionWindows, Alternatives[{_Quantity,_Quantity}]],
+	UniquelyInformedTest[packet,{StandardCollisionEnergies, StandardLowCollisionEnergies}, (*where*) StandardAcquisitionModes, Alternatives[DataIndependent, DataDependent, MS1MS2ProductIonScan, SelectedIonMonitoring, NeutralIonLoss, PrecursorIonScan, MultipleReactionMonitoring]],
 	If[MemberQ[Lookup[packet,StandardAcquisitionModes],DataDependent],
-		NotNullFieldTest[packet,{StandardAcquisitionSurveys}],
-		Nothing
-	],
-	If[!MemberQ[Lookup[packet,StandardAcquisitionModes],DataDependent],
-		NullFieldTest[packet,{StandardMinimumThresholds, StandardAcquisitionLimits, StandardCycleTimeLimits, StandardExclusionModes, StandardExclusionMassSelections, StandardFragmentScanTimes, StandardInclusionModes, StandardInclusionMassSelections, StandardIsotopeExclusionModes
+		NullFieldTest[packet,{StandardAcquisitionModes, StandardMinimumThresholds, StandardAcquisitionLimits, StandardCycleTimeLimits, StandardExclusionModes, StandardExclusionMassSelections, StandardFragmentScanTimes, StandardInclusionModes, StandardInclusionMassSelections, StandardIsotopeExclusionModes
 		}],
 		Nothing
 	],
-	If[!MemberQ[Lookup[packet,StandardExclusionModes],TimeLimit],
+	If[MemberQ[Lookup[packet,StandardExclusionModes],TimeLimit],
 		NullFieldTest[packet,{StandardExclusionTimeLimits}],
 		Nothing
 	],
-	If[!MemberQ[Lookup[packet,StandardIsotopeExclusionModes],ChargedState],
+	If[MemberQ[Lookup[packet,StandardIsotopeExclusionModes],ChargedState],
 		NullFieldTest[packet,{StandardChargeStateSelections, StandardChargeStateLimits, StandardChargeStateMassWindows}],
 		Nothing
 	],
-	If[!MemberQ[Lookup[packet,StandardIsotopeExclusionModes],MassDifference],
+	If[MemberQ[Lookup[packet,StandardIsotopeExclusionModes],MassDifference],
 		NullFieldTest[packet,{StandardIsotopeMassDifferences, StandardIsotopeRatios, StandardIsotopeDetectionMinimums}],
 		Nothing
 	],
@@ -4535,27 +4507,23 @@ validProtocolLCMSQTests[packet:PacketP[Object[Protocol,LCMS]]]:={
 	RequiredTogetherTest[packet,{Blanks,BlankSampleVolumes,BlankGradientMethods, BlankMassAcquisitionMethods, BlankIonModes, BlankESICapillaryVoltages, BlankDesolvationTemperatures, BlankDesolvationGasFlows, BlankSourceTemperatures, BlankDeclusteringVoltages, BlankConeGasFlows, BlankStepwaveVoltages, BlankAcquisitionWindows, BlankAcquisitionModes, BlankFragmentations}],
 	RequiredTogetherTest[packet,{BlankMinMasses, BlankMaxMasses}],
 	RequiredTogetherTest[packet,{BlankLowCollisionEnergies, BlankHighCollisionEnergies}],
-	RequiredTogetherTest[packet,{BlankInitialLowCollisionEnergies, BlankInitialHighCollisionEnergies, BlankFinalLowCollisionEnergies, BlankFinalHighCollisionEnergies}],
-	UniquelyInformedTest[packet,{BlankMinMasses,BlankMassSelections}],
-	UniquelyInformedTest[packet,{BlankCollisionEnergies, BlankLowCollisionEnergies, BlankInitialLowCollisionEnergies}],
+	RequiredTogetherTest[packet,{BlankLowCollisionEnergies, BlankHighCollisionEnergies, BlankFinalLowCollisionEnergies, BlankFinalHighCollisionEnergies}],
+	UniquelyInformedTest[packet, {BlankMinMasses, BlankMassSelections}, (*where*) BlankAcquisitionWindows, Alternatives[{_Quantity,_Quantity}]],
+	UniquelyInformedTest[packet,{BlankCollisionEnergies, BlankLowCollisionEnergies}, (*where*) BlankAcquisitonModes, Alternatives[DataIndependent, DataDependent, MS1MS2ProductIonScan, SelectedIonMonitoring, NeutralIonLoss, PrecursorIonScan, MultipleReactionMonitoring]],
 	If[MemberQ[Lookup[packet,BlankAcquisitionModes],DataDependent],
-		NotNullFieldTest[packet,{BlankAcquisitionSurveys}],
-		Nothing
-	],
-	If[!MemberQ[Lookup[packet,BlankAcquisitionModes],DataDependent],
-		NullFieldTest[packet,{BlankMinimumThresholds, BlankAcquisitionLimits, BlankCycleTimeLimits, BlankExclusionModes, BlankExclusionMassSelections, BlankFragmentScanTimes, BlankInclusionModes, BlankInclusionMassSelections, BlankIsotopeExclusionModes
+		NullFieldTest[packet,{BlankAcquisitionSurveys, BlankMinimumThresholds, BlankAcquisitionLimits, BlankCycleTimeLimits, BlankExclusionModes, BlankExclusionMassSelections, BlankFragmentScanTimes, BlankInclusionModes, BlankInclusionMassSelections, BlankIsotopeExclusionModes
 		}],
 		Nothing
 	],
-	If[!MemberQ[Lookup[packet,BlankExclusionModes],TimeLimit],
+	If[MemberQ[Lookup[packet,BlankExclusionModes],TimeLimit],
 		NullFieldTest[packet,{BlankExclusionTimeLimits}],
 		Nothing
 	],
-	If[!MemberQ[Lookup[packet,BlankIsotopeExclusionModes],ChargedState],
+	If[MemberQ[Lookup[packet,BlankIsotopeExclusionModes],ChargedState],
 		NullFieldTest[packet,{BlankChargeStateSelections, BlankChargeStateLimits, BlankChargeStateMassWindows}],
 		Nothing
 	],
-	If[!MemberQ[Lookup[packet,BlankIsotopeExclusionModes],MassDifference],
+	If[MemberQ[Lookup[packet,BlankIsotopeExclusionModes],MassDifference],
 		NullFieldTest[packet,{BlankIsotopeMassDifferences, BlankIsotopeRatios, BlankIsotopeDetectionMinimums}],
 		Nothing
 	],
@@ -4604,27 +4572,23 @@ validProtocolLCMSQTests[packet:PacketP[Object[Protocol,LCMS]]]:={
 	RequiredTogetherTest[packet,{ColumnFlushGradientMethod, ColumnFlushMassAcquisitionMethod, ColumnFlushIonMode, ColumnFlushESICapillaryVoltage, ColumnFlushDesolvationTemperature, ColumnFlushDesolvationGasFlow, ColumnFlushSourceTemperature, ColumnFlushDeclusteringVoltage, ColumnFlushConeGasFlow, ColumnFlushStepwaveVoltage, ColumnFlushAcquisitionWindows, ColumnFlushAcquisitionModes, ColumnFlushFragmentations}],
 	RequiredTogetherTest[packet,{ColumnFlushMinMasses, ColumnFlushMaxMasses}],
 	RequiredTogetherTest[packet,{ColumnFlushLowCollisionEnergies, ColumnFlushHighCollisionEnergies}],
-	RequiredTogetherTest[packet,{ColumnFlushInitialLowCollisionEnergies, ColumnFlushInitialHighCollisionEnergies, ColumnFlushFinalLowCollisionEnergies, ColumnFlushFinalHighCollisionEnergies}],
-	UniquelyInformedTest[packet,{ColumnFlushMinMasses,ColumnFlushMassSelections}],
-	UniquelyInformedTest[packet,{ColumnFlushCollisionEnergies, ColumnFlushLowCollisionEnergies, ColumnFlushInitialLowCollisionEnergies}],
+	RequiredTogetherTest[packet,{ColumnFlushLowCollisionEnergies, ColumnFlushHighCollisionEnergies, ColumnFlushFinalLowCollisionEnergies, ColumnFlushFinalHighCollisionEnergies}],
+	UniquelyInformedTest[packet, {ColumnFlushMinMasses, ColumnFlushMassSelections}, (*where*) ColumnFlushAcquisitionWindows, Alternatives[_Association]],
+	UniquelyInformedTest[packet, {ColumnFlushCollisionEnergies, ColumnFlushLowCollisionEnergies}, (*where*) ColumnFlushAcquisitionModes, Alternatives[DataIndependent, DataDependent, MS1MS2ProductIonScan, SelectedIonMonitoring, NeutralIonLoss, PrecursorIonScan, MultipleReactionMonitoring]],
 	If[MemberQ[Lookup[packet,ColumnFlushAcquisitionModes],DataDependent],
-		NotNullFieldTest[packet,{ColumnFlushAcquisitionSurveys}],
-		Nothing
-	],
-	If[!MemberQ[Lookup[packet,ColumnFlushAcquisitionModes],DataDependent],
-		NullFieldTest[packet,{ColumnFlushMinimumThresholds, ColumnFlushAcquisitionLimits, ColumnFlushCycleTimeLimits, ColumnFlushExclusionModes, ColumnFlushExclusionMassSelections, ColumnFlushFragmentScanTimes, ColumnFlushInclusionModes, ColumnFlushInclusionMassSelections, ColumnFlushIsotopeExclusionModes
+		NullFieldTest[packet,{ColumnFlushAcquisitionSurveys, ColumnFlushMinimumThresholds, ColumnFlushAcquisitionLimits, ColumnFlushCycleTimeLimits, ColumnFlushExclusionModes, ColumnFlushExclusionMassSelections, ColumnFlushFragmentScanTimes, ColumnFlushInclusionModes, ColumnFlushInclusionMassSelections, ColumnFlushIsotopeExclusionModes
 		}],
 		Nothing
 	],
-	If[!MemberQ[Lookup[packet,ColumnFlushExclusionModes],TimeLimit],
+	If[MemberQ[Lookup[packet,ColumnFlushExclusionModes],TimeLimit],
 		NullFieldTest[packet,{ColumnFlushExclusionTimeLimits}],
 		Nothing
 	],
-	If[!MemberQ[Lookup[packet,ColumnFlushIsotopeExclusionModes],ChargedState],
+	If[MemberQ[Lookup[packet,ColumnFlushIsotopeExclusionModes],ChargedState],
 		NullFieldTest[packet,{ColumnFlushChargeStateSelections, ColumnFlushChargeStateLimits, ColumnFlushChargeStateMassWindows}],
 		Nothing
 	],
-	If[!MemberQ[Lookup[packet,ColumnFlushIsotopeExclusionModes],MassDifference],
+	If[MemberQ[Lookup[packet,ColumnFlushIsotopeExclusionModes],MassDifference],
 		NullFieldTest[packet,{ColumnFlushIsotopeMassDifferences, ColumnFlushIsotopeRatios, ColumnFlushIsotopeDetectionMinimums}],
 		Nothing
 	],
@@ -4859,7 +4823,32 @@ validProtocolMagneticBeadSeparationQTests[packet:PacketP[Object[Protocol,Magneti
 (* ::Subsection::Closed:: *)
 (*validProtocolManualSamplePreparationQTests*)
 
-validProtocolManualSamplePreparationQTests[packet:PacketP[Object[Protocol, ManualSamplePreparation]]]:={};
+validProtocolManualSamplePreparationQTests[packet:PacketP[Object[Protocol, ManualSamplePreparation]]]:={
+	NotNullFieldTest[packet,{
+		InputUnitOperations,
+		OptimizedUnitOperations,
+		CalculatedUnitOperations,
+		BatchedUnitOperations
+	}],
+
+	RequiredTogetherTest[packet,{UnresolvedUnitOperationInputs,UnresolvedUnitOperationOptions}],
+	RequiredTogetherTest[packet,{ResolvedUnitOperationInputs,ResolvedUnitOperationOptions}]
+};
+
+(* ::Subsection::Closed:: *)
+(*validProtocolManualCellPreparationQTests*)
+
+validProtocolManualCellPreparationQTests[packet:PacketP[Object[Protocol, ManualCellPreparation]]]:={
+	NotNullFieldTest[packet,{
+		InputUnitOperations,
+		OptimizedUnitOperations,
+		CalculatedUnitOperations,
+		BatchedUnitOperations
+	}],
+
+	RequiredTogetherTest[packet,{UnresolvedUnitOperationInputs,UnresolvedUnitOperationOptions}],
+	RequiredTogetherTest[packet,{ResolvedUnitOperationInputs,ResolvedUnitOperationOptions}]
+};
 
 (* ::Subsection::Closed:: *)
 (*validProtocolMassSpectrometryQTests*)
@@ -4897,7 +4886,7 @@ validProtocolMassSpectrometryQTests[packet:PacketP[Object[Protocol,MassSpectrome
 		Nothing
 	],
 
-	UniquelyInformedTest[packet,{MinMasses,MassSelections}],
+	UniquelyInformedIndexTest[packet,{MinMasses,MassSelections}],
 	RequiredTogetherTest[packet, {MinMasses, MaxMasses}],
 	RequiredTogetherTest[packet, {FragmentMinMasses, FragmentMaxMasses}],
 
@@ -5482,14 +5471,14 @@ validProtocolMeasureCountQTests[packet:PacketP[Object[Protocol,MeasureCount]]]:=
 	}],
 
 	(*If there are samples whose tablets need to be parametrized, then*)
-	If[!MatchQ[Lookup[packet,TabletWeightParameterizations],{}],
+	If[!MatchQ[Lookup[packet,SolidUnitWeightParameterizations],{}],
 	(* length of fields should be same *)
 		Test["If there are samples to be parametrized, Balance, Weighboat, Tweezer, and TabletParametrizationReplicates needs to be populated:",
 			And[
 			!NullQ[Balance],
 			!NullQ[WeighBoat],
 			!NullQ[Tweezer],
-			!NullQ[TabletParameterizationReplicates]
+			!NullQ[SolidUnitParameterizationReplicates]
 			],
 			True
 		],
@@ -5499,11 +5488,11 @@ validProtocolMeasureCountQTests[packet:PacketP[Object[Protocol,MeasureCount]]]:=
 
 	If[MatchQ[Lookup[packet,Status],Completed],
 	(* length of fields should be same *)
-		Test["Length of TabletWeights/TabletWeightStandardDeviations/TabletWeightDistributions should equal TabletWeightParameterizations:",
+		Test["Length of SolidUnitWeights/SolidUnitWeightStandardDeviations/SolidUnitWeightDistributions should equal SolidUnitWeightParameterizations:",
 			And[
-			Length[Lookup[packet,TabletWeightParameterizations]] == Length[Lookup[packet,TabletWeights]],
-			Length[Lookup[packet,TabletWeightParameterizations]] == Length[Lookup[packet,TabletWeightStandardDeviations]],
-			Length[Lookup[packet,TabletWeightParameterizations]] == Length[Lookup[packet,TabletWeightDistributions]]
+			Length[Lookup[packet,SolidUnitWeightParameterizations]] == Length[Lookup[packet,SolidUnitWeights]],
+			Length[Lookup[packet,SolidUnitWeightParameterizations]] == Length[Lookup[packet,SolidUnitWeightStandardDeviations]],
+			Length[Lookup[packet,SolidUnitWeightParameterizations]] == Length[Lookup[packet,SolidUnitWeightDistributions]]
 			],
 			True
 		],
@@ -5551,7 +5540,7 @@ validProtocolMeasureDissolvedOxygenQTests[packet:PacketP[Object[Protocol,Measure
 (*validProtocolMeasureMeltingPointQTests*)
 
 
-validProtocolMeasureMeltingPointQTests[packet:PacketP[Object[Protocol,MeasureMeltingPoint]]]:={
+validProtocolMeasureMeltingPointQTests[packet:PacketP[Object[Protocol, MeasureMeltingPoint]]]:= {
 
 	(* shared fields not null *)
 	NotNullFieldTest[packet, {
@@ -5561,12 +5550,11 @@ validProtocolMeasureMeltingPointQTests[packet:PacketP[Object[Protocol,MeasureMel
 		Instrument,
 		Grind,
 		Desiccate,
-		MinTemperatures,
+		StartTemperatures,
 		EquilibrationTimes,
-		MaxTemperatures,
+		EndTemperatures,
 		TemperatureRampRates,
-		RampTimes,
-		DesiccantContainer
+		RampTimes
 	}],
 
 
@@ -5582,215 +5570,191 @@ validProtocolMeasureMeltingPointQTests[packet:PacketP[Object[Protocol,MeasureMel
 	],
 
 	Test["If both Grind and Desiccate are set to True, OrdersOfOperation must be informed:",
-		If[MatchQ[{Lookup[packet, Grind], Lookup[packet,Grind]},{True, True}],
-			!MatchQ[Lookup[packet, OrdersOfOperations],NullP|{}],
+		If[MatchQ[{Lookup[packet, Grind], Lookup[packet, Grind]}, {True, True}],
+			!MatchQ[Lookup[packet, OrdersOfOperations], NullP | {}],
 			True
 		],
 		True
 	],
 
-	FieldComparisonTest[packet, {MinTemperatures, MinTemperatures}, Less],
+	FieldComparisonTest[packet, {StartTemperatures, EndTemperatures}, Less],
 
-
-	RequiredTogetherTest[packet,{PestleRate,MortarRate}],
-
-
-	RequiredTogetherTest[packet,{PreparedSampleContainers,PreparedSampleStorageConditions}],
-
-
-	Test["If PreparedSampleContainers or PreparedSampleStorageConditions are informed, RecoupSample must be set to True:",
-		If[!MatchQ[Lookup[packet,PreparedSampleContainers],NullP|{}],
-			MatchQ[Lookup[packet,RecoupSample],True],
-			True
+	Test["If PreparedSampleStorageConditions is informed, Amounts must be informed:",
+		MapThread[
+			If[
+				!NullQ[#1],
+				MatchQ[#2, MassP],
+				True
+			]&,
+			{Lookup[packet, PreparedSampleStorageConditions], Lookup[packet, Amounts]}
 		],
-		True
+		{True..}
 	],
 
 
 	Test["If Grind is set to True, GrinderTypes must be informed:",
-		If[MatchQ[Lookup[packet,Grind],True],
-			!MatchQ[Lookup[packet,GrinderTypes],NullP|{}],
+		If[MatchQ[Lookup[packet, Grind], True],
+			!MatchQ[Lookup[packet, GrinderTypes], NullP | {}],
 			True
 		],
 		True
 	],
 
 	Test["The length of GrinderTypes matches the length of SamplesIn:",
-		Length[Lookup[packet,SamplesIn]],
-		Length[Lookup[packet,GrinderTypes]]
+		Length[Lookup[packet, SamplesIn]],
+		Length[Lookup[packet, GrinderTypes]]
 	],
 
 	Test["If Grind is set to True, Grinders must be informed:",
-		If[MatchQ[Lookup[packet,Grind],True],
-			!MatchQ[Lookup[packet,Grinders],NullP|{}],
+		If[MatchQ[Lookup[packet, Grind], True],
+			!MatchQ[Lookup[packet, Grinders], NullP | {}],
 			True
 		],
 		True
 	],
 
 	Test["The length of Grinders matches the length of SamplesIn:",
-		Length[Lookup[packet,SamplesIn]],
-		Length[Lookup[packet,Grinders]]
+		Length[Lookup[packet, SamplesIn]],
+		Length[Lookup[packet, Grinders]]
 	],
 
 	Test["If Grind is set to True, GrindingTime must be informed:",
-		If[MatchQ[Lookup[packet,Grind],True],
-			!MatchQ[Lookup[packet,GrindingTime],NullP|{}],
+		If[MatchQ[Lookup[packet, Grind], True],
+			!MatchQ[Lookup[packet, GrindingTime], NullP | {}],
 			True
 		],
 		True
 	],
 
 	Test["The length of Grind matches the length of SamplesIn:",
-		Length[Lookup[packet,SamplesIn]],
-		Length[Lookup[packet,Grind]]
+		Length[Lookup[packet, SamplesIn]],
+		Length[Lookup[packet, Grind]]
 	],
 
 	Test["If Grind is set to True, NumbersOfGrindingSteps must be informed:",
-		If[MatchQ[Lookup[packet,Grind],True],
-			!MatchQ[Lookup[packet,NumbersOfGrindingSteps],NullP|{}],
+		If[MatchQ[Lookup[packet, Grind], True],
+			!MatchQ[Lookup[packet, NumbersOfGrindingSteps], NullP | {}],
 			True
 		],
 		True
 	],
 
 	Test["The length of NumbersOfGrindingSteps matches the length of SamplesIn:",
-		Length[Lookup[packet,SamplesIn]],
-		Length[Lookup[packet,NumbersOfGrindingSteps]]
+		Length[Lookup[packet, SamplesIn]],
+		Length[Lookup[packet, NumbersOfGrindingSteps]]
 	],
 
 	Test["If Grind is set to True, GrindingProfiles must be informed:",
-		If[MatchQ[Lookup[packet,Grind],True],
-			!MatchQ[Lookup[packet,GrindingProfiles],NullP|{}],
+		If[MatchQ[Lookup[packet, Grind], True],
+			!MatchQ[Lookup[packet, GrindingProfiles], NullP | {}],
 			True
 		],
 		True
 	],
 
 	Test["The length of GrindingProfiles matches the length of SamplesIn:",
-		Length[Lookup[packet,SamplesIn]],
-		Length[Lookup[packet,GrindingProfiles]]
+		Length[Lookup[packet, SamplesIn]],
+		Length[Lookup[packet, GrindingProfiles]]
 	],
 
 
 	Test["If Desiccate is set to True, SampleContainer must be informed:",
-		If[MatchQ[Lookup[packet,Desiccate],True],
-			!MatchQ[Lookup[packet,SampleContainer],NullP|{}],
+		If[MatchQ[Lookup[packet, Desiccate], True],
+			!MatchQ[Lookup[packet, SampleContainer], NullP | {}],
 			True
 		],
 		True
 	],
 
 	Test["If Desiccate is set to True, DesiccationMethod must be informed:",
-		If[MatchQ[Lookup[packet,Desiccate],True],
-			!MatchQ[Lookup[packet,DesiccationMethod],NullP|{}],
+		If[MatchQ[Lookup[packet, Desiccate], True],
+			!MatchQ[Lookup[packet, DesiccationMethod], NullP | {}],
 			True
 		],
 		True
 	],
 
 	Test["If Desiccate is set to True, Desiccant must be informed:",
-		If[MatchQ[Lookup[packet,Desiccate],True],
-			!MatchQ[Lookup[packet,Desiccant],NullP|{}],
+		If[MatchQ[Lookup[packet, Desiccate], True],
+			!MatchQ[Lookup[packet, Desiccant], NullP | {}],
 			True
 		],
 		True
 	],
 
 	Test["If Desiccate is set to True, DesiccantPhase must be informed:",
-		If[MatchQ[Lookup[packet,Desiccate],True],
-			!MatchQ[Lookup[packet,DesiccantPhase],NullP|{}],
+		If[MatchQ[Lookup[packet, Desiccate], True],
+			!MatchQ[Lookup[packet, DesiccantPhase], NullP | {}],
 			True
 		],
 		True
 	],
 
 	Test["If Desiccate is set to True, DesiccantAmount must be informed:",
-		If[MatchQ[Lookup[packet,Desiccate],True],
-			!MatchQ[Lookup[packet,DesiccantAmount],NullP|{}],
+		If[MatchQ[Lookup[packet, Desiccate], True],
+			!MatchQ[Lookup[packet, DesiccantAmount], NullP | {}],
 			True
 		],
 		True
 	],
 
 	Test["If Desiccate is set to True, Desiccator must be informed:",
-		If[MatchQ[Lookup[packet,Desiccate],True],
-			!MatchQ[Lookup[packet,Desiccator],NullP|{}],
+		If[MatchQ[Lookup[packet, Desiccate], True],
+			!MatchQ[Lookup[packet, Desiccator], NullP | {}],
 			True
 		],
 		True
 	],
 
 	Test["If Desiccate is set to True, DesiccationTime must be informed:",
-		If[MatchQ[Lookup[packet,Desiccate],True],
-			!MatchQ[Lookup[packet,DesiccationTime],NullP|{}],
+		If[MatchQ[Lookup[packet, Desiccate], True],
+			!MatchQ[Lookup[packet, DesiccationTime], NullP | {}],
 			True
 		],
 		True
 	],
 
-	(*  Test["If DesiccantPhase is set to Liquid, DesiccantContainer must be informed:",
-      If[MatchQ[Lookup[packet,DesiccantPhase],Liquid],
-        !MatchQ[Lookup[packet,DesiccantContainer],NullP|{}],
-        True
-      ],
-      True
-    ],*)
-
 	Test["If DesiccantPhase is set to Liquid, DesiccantAmount must be in a unit of volume:",
-		If[MatchQ[Lookup[packet,DesiccantPhase],Liquid],
-			VolumeQ[Lookup[packet,DesiccantAmount]],
+		If[MatchQ[Lookup[packet, DesiccantPhase], Liquid],
+			VolumeQ[Lookup[packet, DesiccantAmount]],
 			True
 		],
 		True
 	],
 
 	Test["If DesiccantPhase is set to Solid, DesiccantAmount must be in a unit of mass:",
-		If[MatchQ[Lookup[packet,DesiccantPhase],Solid],
-			MassQ[Lookup[packet,DesiccantAmount]],
+		If[MatchQ[Lookup[packet, DesiccantPhase], Solid],
+			MassQ[Lookup[packet, DesiccantAmount]],
 			True
 		],
 		True
 	],
 
 	Test["If Desiccate is set to True, Cameras must be informed:",
-		If[MatchQ[Lookup[packet,Desiccate],True],
-			!MatchQ[Lookup[packet,Cameras],NullP|{}],
+		If[MatchQ[Lookup[packet, Desiccate], True],
+			!MatchQ[Lookup[packet, Cameras], NullP | {}],
 			True
 		],
 		True
 	],
 
 	(* UPON COMPLETION *)
-	RequiredWhenCompleted[packet,{
+	RequiredWhenCompleted[packet, {
 		Data
 	}],
 
 	Test["If the protocol is completed, the length of Data should be equal to the length of SamplesIn:",
-		{Status,Length[DeleteCases[Lookup[packet,Data],Null]]},
-		{Completed,Length[DeleteCases[Lookup[packet,SamplesIn],Null]]}|{Except[Completed],_}
-	],
-
-	Test["If the protocol is completed, GrindingVideos must be informed if Grind is set to True and GrinderType is set to MortarGrinder:",
-		If[
-			And[
-				MatchQ[Lookup[packet,Status],Completed],
-				MatchQ[Lookup[packet,Grind],True],
-				MatchQ[Lookup[packet,GrinderType], MortarGrinder]
-			],
-			!MatchQ[Lookup[packet,GrindingVideos],NullP|{}],
-			True
-		],
-		True
+		{Status, Length[DeleteCases[Lookup[packet, Data], Null]]},
+		{Completed, Length[DeleteCases[Lookup[packet, SamplesIn], Null]]} | {Except[Completed], _}
 	],
 
 	Test["If the protocol is completed, DesiccationVideo must be informed if Desiccate is True:",
 		If[
 			And[
-				MatchQ[Lookup[packet,Status],Completed],
-				MatchQ[Lookup[packet,Desiccate], True]
+				MatchQ[Lookup[packet, Status], Completed],
+				MatchQ[Lookup[packet, Desiccate], True]
 			],
-			!MatchQ[Lookup[packet,DesiccationVideo],NullP|{}],
+			!MatchQ[Lookup[packet, DesiccationVideo], NullP | {}],
 			True
 		],
 		True
@@ -5840,16 +5804,6 @@ validProtocolMeasurepHQTests[packet:PacketP[Object[Protocol,MeasurepH]]]:={
 			ProbeInstrumentsRelease,
 			ProbeNumberOfAcquisitions,
 			ProbeParameters
-		}
-	],
-
-	RequiredTogetherTest[
-		packet,
-		{
-			ProbeDirtyPipetteBulb,
-			ProbeDirtyWashSolution,
-			ProbeCleanPipetteBulb,
-			ProbeCleanWashSolution
 		}
 	],
 
@@ -6180,10 +6134,8 @@ validProtocolNephelometryQTests[packet:PacketP[Object[Protocol,Nephelometry]]]:=
 		PrimaryInjectionFlowRate,
 		PrimaryInjectionSample,
 		SolventWasteContainer,
-		PrimaryPreppingSolvent,
-		SecondaryPreppingSolvent,
-		PrimaryFlushingSolvent,
-		SecondaryFlushingSolvent
+		Line1PrimaryPurgingSolvent,
+		Line1SecondaryPurgingSolvent
 	}],
 
 	ResolvedWhenCompleted[packet,{
@@ -6243,10 +6195,8 @@ validProtocolNephelometryKineticsQTests[packet:PacketP[Object[Protocol,Nephelome
 		PrimaryInjectionFlowRate,
 		PrimaryInjectionSample,
 		SolventWasteContainer,
-		PrimaryPreppingSolvent,
-		SecondaryPreppingSolvent,
-		PrimaryFlushingSolvent,
-		SecondaryFlushingSolvent
+		Line1PrimaryPurgingSolvent,
+		Line1SecondaryPurgingSolvent
 	}],
 
 	(* Instrument will be fulfilled after protocol has completed *)
@@ -7036,101 +6986,156 @@ validProtocolRamanSpectroscopyQTests[packet:PacketP[Object[Protocol,RamanSpectro
 
 
 (* ::Subsection::Closed:: *)
-(*validProtocolRoboticCOVID19TestQTests*)
-
-
-validProtocolRoboticCOVID19TestQTests[packet:PacketP[Object[Protocol,RoboticCOVID19Test]]]:={
-	NotNullFieldTest[packet,{
-		(*Shared fields not Null*)
-		ContainersIn,
-
-		(*Specific fields not Null*)
-		(*===RNA Extraction===*)
-		BiosafetyCabinet,
-		Disinfectant,
-		RNAExtractionPlate,
-		LysisMasterMix,
-		MagneticBeads,
-		ProteaseSolution,
-		PrimaryWashSolution,
-		SecondaryWashSolution,
-		ElutionSolution,
-		ElutionPlate,
-		(*===RT-qPCR===*)
-		ReactionVolume,
-		NoTemplateControl,
-		ViralRNAControl,
-		SampleVolume,
-		ForwardPrimers,
-		ForwardPrimerVolume,
-		ReversePrimers,
-		ReversePrimerVolume,
-		Probes,
-		ProbeVolume,
-		ProbeExcitationWavelength,
-		ProbeExcitationWavelength,
-		MasterMix,
-		MasterMixVolume,
-		ReactionBuffer,
-		ReactionBufferVolume,
-		Thermocycler,
-		ReverseTranscriptionRampRate,
-		ReverseTranscriptionTemperature,
-		ReverseTranscriptionTime,
-		ActivationRampRate,
-		ActivationTemperature,
-		ActivationTime,
-		DenaturationRampRate,
-		DenaturationTemperature,
-		DenaturationTime,
-		ExtensionRampRate,
-		ExtensionTemperature,
-		ExtensionTime,
-		NumberOfCycles
-	}],
-
-
-	(*Shared fields Null*)
-	NullFieldTest[packet,{
-		NitrogenPressureLog,
-		CO2PressureLog,
-		ArgonPressureLog,
-		InitialNitrogenPressure,
-		InitialCO2Pressure,
-		InitialArgonPressure
-	}],
-
-
-	(*Required when completed*)
-	RequiredWhenCompleted[packet,{
-		LysisPrimitives,
-		LysisManipulation,
-		RNAExtractionPrimitives,
-		RNAExtractionManipulation,
-		TestSamples,
-		AnalysisNotebook
-	}],
-
-
-	(*SamplesIn test*)
-	Test[
-		"Unless the protocol is doing preparatory primitives, Samples In should be Informed if the Protocol is not Canceled or Aborted:",
-		Lookup[packet,{SamplesIn,PreparatoryUnitOperations,Status}],
-		{{ObjectP[Object[Sample]]..},_,_}|{{(ObjectP[{Model[Sample],Object[Sample]}]|Null)..},{Except[Null]..},_}|{_,_,Canceled|Aborted}
-	]
-};
-
-
-(* ::Subsection::Closed:: *)
 (*validProtocolRoboticSamplePreparationQTests*)
 
-validProtocolRoboticSamplePreparationQTests[packet:PacketP[Object[Protocol, RoboticSamplePreparation]]]:={};
+validProtocolRoboticSamplePreparationQTests[packet:PacketP[Object[Protocol, RoboticSamplePreparation]]]:={
+	RequiredTogetherTest[packet,{
+		InputUnitOperations,
+		OutputUnitOperations,
+		CalculatedUnitOperations,
+		OptimizedUnitOperations
+	}],
+
+	RequiredTogetherTest[packet,{
+			HamiltonDeckFiles,
+			HamiltonManipulationsFile
+	}],
+
+	RequiredWhenCompleted[packet,{
+		LiquidHandlingLogs,
+		InitializationStartTime
+	}],
+
+	RequiredTogetherTest[packet,{
+		SecondaryPlateReaderInjectionSample,
+		SecondaryPlateReaderSecondaryInjectionSample,
+		SecondaryPlateReaderInjectionPlacements,
+		SecondaryPlateReaderLine1PrimaryPurgingSolvent,
+		SecondaryPlateReaderLine1SecondaryPurgingSolvent,
+		SecondaryPlateReaderLine2PrimaryPurgingSolvent,
+		SecondaryPlateReaderLine2SecondaryPurgingSolvent,
+		SecondaryPlateReaderSolventWasteContainer,
+		SecondaryPlateReaderSecondarySolventWasteContainer,
+		SecondaryPlateReaderPreppingSolutionPlacements,
+		SecondaryPlateReaderFlushingSolutionPlacements,
+		SecondaryPlateReaderWasteContainerPlacements,
+		SecondaryPlateReaderPrimaryPurgingSolutionPlacements,
+		SecondaryPlateReaderSecondaryPurgingSolutionPlacements,
+		SecondaryPlateReaderPurgingTubingPlacements,
+		SecondaryPlateReaderStorageTubingPlacements,
+		SecondaryPlateReaderInjectionTubingPlacements,
+		SecondaryPlateReaderPumpPrimingFilePath,
+		SecondaryPlateReaderInjectorCleaningFilePath
+	}],
+
+	RequiredTogetherTest[packet,{
+		PrimaryPlateReaderInjectionSample,
+		PrimaryPlateReaderSecondaryInjectionSample,
+		PrimaryPlateReaderInjectionPlacements,
+		PrimaryPlateReaderLine1PrimaryPurgingSolvent,
+		PrimaryPlateReaderLine1SecondaryPurgingSolvent,
+		PrimaryPlateReaderLine2PrimaryPurgingSolvent,
+		PrimaryPlateReaderLine2SecondaryPurgingSolvent,
+		PrimaryPlateReaderSolventWasteContainer,
+		PrimaryPlateReaderSecondarySolventWasteContainer,
+		PrimaryPlateReaderPreppingSolutionPlacements,
+		PrimaryPlateReaderFlushingSolutionPlacements,
+		PrimaryPlateReaderWasteContainerPlacements,
+		PrimaryPlateReaderPrimaryPurgingSolutionPlacements,
+		PrimaryPlateReaderSecondaryPurgingSolutionPlacements,
+		PrimaryPlateReaderPurgingTubingPlacements,
+		PrimaryPlateReaderStorageTubingPlacements,
+		PrimaryPlateReaderInjectionTubingPlacements,
+		PrimaryPlateReaderPumpPrimingFilePath,
+		PrimaryPlateReaderInjectorCleaningFilePath
+	}],
+
+	RequiredTogetherTest[packet,{
+		PlateReaderMethodFilePaths,
+		MinCycleTime,
+		InjectionSample,
+		SecondaryInjectionSample,
+		InjectionPlacements,
+		Line1PrimaryPurgingSolvent,
+		Line1SecondaryPurgingSolvent,
+		Line2PrimaryPurgingSolvent,
+		Line2SecondaryPurgingSolvent,
+		SolventWasteContainer,
+		SecondarySolventWasteContainer,
+		PreppingSolutionPlacements,
+		FlushingSolutionPlacements,
+		WasteContainerPlacements,
+		PumpPrimingFilePath,
+		InjectorCleaningFilePath
+	}]
+};
 
 
 (* ::Subsection::Closed:: *)
 (*validProtocolRoboticCellPreparationQTests*)
 
 validProtocolRoboticCellPreparationQTests[packet:PacketP[Object[Protocol, RoboticCellPreparation]]]:={
+
+	RequiredTogetherTest[packet,{
+		InputUnitOperations,
+		OutputUnitOperations,
+		CalculatedUnitOperations,
+		OptimizedUnitOperations
+	}],
+
+	RequiredTogetherTest[packet,{
+		HamiltonDeckFiles,
+		HamiltonManipulationsFile
+	}],
+
+	If[!NullQ[Lookup[packet, LiquidHandler]],
+		RequiredWhenCompleted[packet, {LiquidHandlingLogs, InitializationStartTime}],
+		NullFieldTest[packet, {LiquidHandlingLogs, InitializationStartTime}]
+	],
+
+	RequiredTogetherTest[packet,{
+		SecondaryPlateReaderInjectionSample,
+		SecondaryPlateReaderSecondaryInjectionSample,
+		SecondaryPlateReaderInjectionPlacements,
+		SecondaryPlateReaderLine1PrimaryPurgingSolvent,
+		SecondaryPlateReaderLine1SecondaryPurgingSolvent,
+		SecondaryPlateReaderLine2PrimaryPurgingSolvent,
+		SecondaryPlateReaderLine2SecondaryPurgingSolvent,
+		SecondaryPlateReaderSolventWasteContainer,
+		SecondaryPlateReaderSecondarySolventWasteContainer,
+		SecondaryPlateReaderPreppingSolutionPlacements,
+		SecondaryPlateReaderFlushingSolutionPlacements,
+		SecondaryPlateReaderWasteContainerPlacements,
+		SecondaryPlateReaderPrimaryPurgingSolutionPlacements,
+		SecondaryPlateReaderSecondaryPurgingSolutionPlacements,
+		SecondaryPlateReaderPurgingTubingPlacements,
+		SecondaryPlateReaderStorageTubingPlacements,
+		SecondaryPlateReaderInjectionTubingPlacements,
+		SecondaryPlateReaderPumpPrimingFilePath,
+		SecondaryPlateReaderInjectorCleaningFilePath
+	}],
+
+	RequiredTogetherTest[packet,{
+		PrimaryPlateReaderInjectionSample,
+		PrimaryPlateReaderSecondaryInjectionSample,
+		PrimaryPlateReaderInjectionPlacements,
+		PrimaryPlateReaderLine1PrimaryPurgingSolvent,
+		PrimaryPlateReaderLine1SecondaryPurgingSolvent,
+		PrimaryPlateReaderLine2PrimaryPurgingSolvent,
+		PrimaryPlateReaderLine2SecondaryPurgingSolvent,
+		PrimaryPlateReaderSolventWasteContainer,
+		PrimaryPlateReaderSecondarySolventWasteContainer,
+		PrimaryPlateReaderPreppingSolutionPlacements,
+		PrimaryPlateReaderFlushingSolutionPlacements,
+		PrimaryPlateReaderWasteContainerPlacements,
+		PrimaryPlateReaderPrimaryPurgingSolutionPlacements,
+		PrimaryPlateReaderSecondaryPurgingSolutionPlacements,
+		PrimaryPlateReaderPurgingTubingPlacements,
+		PrimaryPlateReaderStorageTubingPlacements,
+		PrimaryPlateReaderInjectionTubingPlacements,
+		PrimaryPlateReaderPumpPrimingFilePath,
+		PrimaryPlateReaderInjectorCleaningFilePath
+	}],
 
 	(* XOr between ColonyHandler and LiquidHandler fields *)
 	Module[{colonyHandler,liquidHandler},
@@ -7313,6 +7318,48 @@ validProtocolqPCRQTests[packet:PacketP[Object[Protocol,qPCR]]]:={
 	]
 
 };
+
+
+(* ::Subsection:: *)
+(*validProtocolQuantifyCellsQTests*)
+
+
+validProtocolQuantifyCellsQTests[packet:PacketP[Object[Protocol, QuantifyCells]]] := {
+
+	NotNullFieldTest[packet, {
+		(* Shared fields *)
+		SamplesIn,
+		ContainersIn,
+		(* Unique fields *)
+		Methods,
+		Instruments,
+		MultiMethodAliquots,
+		QuantificationUnits,
+		QuantificationPrimitives
+	}],
+
+	(* Upon completion *)
+	RequiredWhenCompleted[packet,{
+		QuantificationProtocols,
+		Data
+	}],
+
+	(* absorbance fields should be populated simultaneously *)
+	RequiredTogetherTest[packet, {
+		NumberOfReadings,
+		AbsorbanceMethod,
+		Wavelengths
+	}],
+
+	(* nephelometry fields should be populated simultaneously *)
+	RequiredTogetherTest[packet, {
+		BeamAperture,
+		BeamIntensity,
+		IntegrationTime
+	}]
+};
+
+
 
 (* ::Subsection::Closed:: *)
 (*validProtocolDigitalPCRQTests*)
@@ -7568,6 +7615,35 @@ validProtocolSampleManipulationAliquotQTests[packet:PacketP[Object[Protocol,Samp
 (*validProtocolSampleManipulationDiluteQTests*)
 
 validProtocolSampleManipulationDiluteQTests[packet : PacketP[Object[Protocol, SampleManipulation, Dilute]]] := {};
+
+(* ::Subsection::Closed:: *)
+(*validProtocolTransferQTests*)
+
+validProtocolTransferQTests[packet : PacketP[Object[Protocol, Transfer]]] := {
+
+	RequiredTogetherTest[packet,{
+		QuantitativeTransferWashSolutions,
+		QuantitativeTransferWashVolumes,
+		QuantitativeTransferWashInstruments,
+		QuantitativeTransferWashTips
+	}],
+
+	RequiredTogetherTest[packet,{
+		BackfillGas,
+		BackfillNeedles
+	}],
+
+	RequiredTogetherTest[packet,{
+		MagnetizationRack,
+		MagnetizationTimes
+	}],
+
+	RequiredTogetherTest[packet,{
+		Tips,
+		TipTypes,
+		TipMaterials
+	}]
+};
 
 (* ::Subsection::Closed:: *)
 (*validProtocolSampleManipulationResuspendQTests*)
@@ -7831,6 +7907,27 @@ validProtocolSFCQTests[packet:PacketP[Object[Protocol,SupercriticalFluidChromato
 		{{ObjectP[Object[Sample]]..},_,_}|{{(ObjectP[{Model[Sample],Object[Sample]}]|Null)..},{Except[Null]..},_}|{_,_,Canceled|Aborted}
 	]
 
+
+};
+
+
+(* ::Subsection::Closed:: *)
+(*validProtocolThawCellsQTests*)
+
+
+validProtocolThawCellsQTests[packet:PacketP[Object[Protocol,ThawCells]]]:= {
+
+	NotNullFieldTest[packet,{
+		SamplesIn
+	}],
+
+	RequiredTogetherTest[packet, {
+		Times,
+		MaxTimes,
+		Temperatures,
+		HeatBlock,
+		InitialTemperature
+	}]
 
 };
 
@@ -8127,9 +8224,6 @@ validProtocolEvaporateQTests[packet:PacketP[Object[Protocol,Evaporate]]]:={
 		],
 			Except[NullP]
 	],
-
-	(* If one of these informed, they must both be populated *)
-	RequiredTogetherTest[packet,{RinseSolutions, RinseVolumes}],
 
 	Test[
 		"Unless the protocol is doing preparatory primitives, Samples In should be Informed if the Protocol is not Canceled or Aborted:",
@@ -8592,7 +8686,7 @@ validPlateReaderProtocolTests[packet:PacketP[{Object[Protocol,FluorescenceIntens
 		{Null,Null}|{Null,Except[Null]}|{Except[Null],Null}
 	],
 
-	RequiredTogetherTest[packet, {PrimaryInjections,PrimaryInjectionFlowRate,PrimaryFlushingSolvent,PrimaryPreppingSolvent}],
+	RequiredTogetherTest[packet, {PrimaryInjections,PrimaryInjectionFlowRate,Line1PrimaryPurgingSolvent}],
 	RequiredTogetherTest[packet, {MoatBuffer,MoatSize,MoatVolume}],
 
 
@@ -8778,13 +8872,7 @@ validProtocolCapillaryIsoelectricFocusingQTests[packet:PacketP[Object[Protocol,C
 (*validProtocolFragmentAnalysisQTests*)
 
 validProtocolFragmentAnalysisQTests[packet:PacketP[Object[Protocol,FragmentAnalysis]]]:={
-
-	(* Shared field shaping - Not Null *)
-	NotNullFieldTest[packet,{
-		SamplesIn,
-		ContainersIn
-	}],
-
+	
 	(* Shared field - Null *)
 	NullFieldTest[packet,{
 		NitrogenPressureLog,
@@ -8820,10 +8908,11 @@ validProtocolFragmentAnalysisQTests[packet:PacketP[Object[Protocol,FragmentAnaly
 		SeparationMethodFilePath,
 		SeparationFileName,
 		RawDataFilePath,
-		RawDataFileName,
 		ProcessedDataDirectoryFilePath,
 		ProcessedSizeDataDirectoryFilePath,
-		ProcessedTimeDataDirectoryFilePath
+		ProcessedTimeDataDirectoryFilePath,
+		SamplesIn,
+		ContainersIn
 	}],
 
 	RequiredTogetherTest[packet,{
@@ -9029,24 +9118,22 @@ validProtocolDegasQTests[packet:PacketP[Object[Protocol,Degas]]]:={
 (*validProtocolDesiccateQTests*)
 
 
-validProtocolDesiccateQTests[packet:PacketP[Object[Protocol,Desiccate]]]:={
+validProtocolDesiccateQTests[packet : PacketP[Object[Protocol, Desiccate]]] := {
 
 	(* shared fields not null *)
 	NotNullFieldTest[packet,
 		{
 			SamplesIn,
 			ContainersIn,
-			ContainersOut,
 			Amount,
-			Desiccant,
 			Desiccator,
-			Time,
-			ContainerOut,
-			SamplesOutStorageConditions
+			Time
 		}
 	],
 
-	NullFieldTest[packet,{
+	RequiredWhenCompleted[packet, {ContainersOut}],
+
+	NullFieldTest[packet, {
 		NitrogenPressureLog,
 		CO2PressureLog,
 		ArgonPressureLog,
@@ -9055,35 +9142,32 @@ validProtocolDesiccateQTests[packet:PacketP[Object[Protocol,Desiccate]]]:={
 		InitialCO2Pressure
 	}],
 
-
-	(*Required when completed*)
-
-	Test["If the protocol is completed, PressureLog must be informed if Method is set to Vacuum or DesiccantUnderVacuum and SampleType is set to Open:",
+	(* Desiccant must be informed if DesiccationMethod is StandardDesiccant or DesiccantUnderVacuum *)
+	Test["Desiccant must be informed if DesiccationMethod is StandardDesiccant or DesiccantUnderVacuum:",
 		If[
 			And[
-				MatchQ[Lookup[packet,Status],Completed],
-				MatchQ[Lookup[packet,Method], Or[Vacuum, DesiccantUnderVacuum]],
+				MatchQ[Lookup[packet, Method], Or[StandardDesiccant, DesiccantUnderVacuum]],
 				MatchQ[Lookup[packet, SampleType], Open]
 			],
-			!MatchQ[Lookup[packet,PressureLog],NullP|{}],
+			MatchQ[Lookup[packet, Desiccant], ObjectP[Object[Sample]]],
 			True
 		],
 		True
 	],
 
-
-	Test["If the protocol is completed, DesiccationVideo must be informed if SampleType is Open:",
+	(*Required when completed*)
+	Test["If the protocol is completed, PressureLog must be informed if Method is set to Vacuum or DesiccantUnderVacuum and SampleType is set to Open:",
 		If[
 			And[
-				MatchQ[Lookup[packet,Status],Completed],
-				MatchQ[Lookup[packet,SampleType], Open]
+				MatchQ[Lookup[packet, Status], Completed],
+				MatchQ[Lookup[packet, Method], Or[Vacuum, DesiccantUnderVacuum]],
+				MatchQ[Lookup[packet, SampleType], Open]
 			],
-			!MatchQ[Lookup[packet,DesiccationVideo],NullP|{}],
+			!MatchQ[Lookup[packet, PressureLog], NullP | {}],
 			True
 		],
 		True
 	]
-
 };
 
 
@@ -9628,7 +9712,10 @@ validProtocolDynamicFoamAnalysisQTests[packet:PacketP[Object[Protocol,DynamicFoa
 	}]
 };
 
+(* ::Subsection::Closed:: *)
+(*validProtocolUncoverQTests*)
 
+validProtocolUncoverQTests[packet:PacketP[Object[Protocol,Uncover]]]:={};
 
 
 (* ::Subsection::Closed:: *)
@@ -9681,6 +9768,78 @@ validProtocolICPMSQTests[packet:PacketP[Object[Protocol,ICPMS]]] := {
 	]
 };
 
+(* ::Subsection::Closed:: *)
+(*validProtocolQuantifyColoniesQTests*)
+validProtocolQuantifyColoniesQTests[packet:PacketP[Object[Protocol,QuantifyColonies]]] := {
+	NotNullFieldTest[packet, {
+		ContainersIn,
+		SamplesIn,
+		ImagingInstrument,
+		Incubator,
+		SpreaderInstrument,
+		Temperature,
+		ColonyIncubationTime,
+		SpreadVolumes,
+		SpreadPatternTypes,
+		ImagingChannels,
+		ExposureTimes,
+		Populations
+	}],
+
+	If[MatchQ[Lookup[packet, IncubateUntilCountable], True],
+		NotNullFieldTest[packet, {IncubationInterval, MaxColonyIncubationTime}],
+		Nothing
+	]
+};
+
+(* ::Subsection::Closed:: *)
+(*validProtocolPlateMediaTests*)
+
+
+validProtocolPlateMediaTests[packet:PacketP[Object[Protocol,PlateMedia]]]:={
+
+	(* shared fields, null *)
+	NullFieldTest[packet,{
+		CO2PressureLog,
+		InitialCO2Pressure
+	}],
+
+	(* PlateMedia-specific fields *)
+	NotNullFieldTest[packet, {
+		SamplesIn,
+		Instruments,
+		PlatingMethods,
+		Incubators,
+		Volumes,
+		DestinationWells,
+		Temperatures,
+		PrePlatingIncubationTimes,
+		MaxPrePlatingIncubationTimes,
+		SolidificationTimes,
+		PlatesOut,
+		NumbersOfPlates
+	}],
+
+	RequiredWhenCompleted[packet, {
+		PlatesOutGrouped,
+		PouringFailed,
+		FullyThawed
+	}],
+
+	RequiredTogetherTest[packet,{
+		Tips,
+		TransferEnvironment,
+		BiosafetyWasteBin,
+		BiosafetyWasteBag,
+		PlateBags
+	}],
+
+	RequiredTogetherTest[packet,{
+		MixRates,
+		PouringRates
+	}]
+};
+
 
 (* ::Subsection:: *)
 (*Test Registration *)
@@ -9708,7 +9867,6 @@ registerValidQTestFunction[Object[Protocol, CellMediaChange],validProtocolCellMe
 registerValidQTestFunction[Object[Protocol, CellSplit],validProtocolCellSplitQTests];
 registerValidQTestFunction[Object[Protocol, Centrifuge],validProtocolCentrifugeQTests];
 registerValidQTestFunction[Object[Protocol, CoulterCount],validProtocolCoulterCountQTests];
-registerValidQTestFunction[Object[Protocol, COVID19Test],validProtocolCOVID19TestQTests];
 registerValidQTestFunction[Object[Protocol, CrossFlowFiltration],validProtocolCrossFlowFiltrationQTests];
 registerValidQTestFunction[Object[Protocol, CyclicVoltammetry],validProtocolCyclicVoltammetryQTests];
 registerValidQTestFunction[Object[Protocol, Degas],validProtocolDegasQTests];
@@ -9738,8 +9896,10 @@ registerValidQTestFunction[Object[Protocol, FragmentAnalysis], validProtocolFrag
 registerValidQTestFunction[Object[Protocol, FlashChromatography],validProtocolFlashChromatographyQTests];
 registerValidQTestFunction[Object[Protocol, GasChromatography],validProtocolGasChromatographyQTests];
 registerValidQTestFunction[Object[Protocol, Grind],validProtocolGrindQTests];
+registerValidQTestFunction[Object[Protocol, GrowCrystal],validProtocolGrowCrystalQTests]
 registerValidQTestFunction[Object[Protocol, HPLC],validProtocolHPLCQTests];
 registerValidQTestFunction[Object[Protocol, ICPMS],validProtocolICPMSQTests];
+registerValidQTestFunction[Object[Protocol, ImageCells],validProtocolImageCellsQTests];
 registerValidQTestFunction[Object[Protocol, ImageSample],validProtocolImageSampleQTests];
 registerValidQTestFunction[Object[Protocol, IncubateCells],validProtocolIncubateCellsQTests];
 registerValidQTestFunction[Object[Protocol, IonChromatography],validProtocolIonChromatographyQTests];
@@ -9747,6 +9907,7 @@ registerValidQTestFunction[Object[Protocol, IRSpectroscopy],validProtocolIRSpect
 registerValidQTestFunction[Object[Protocol, LCMS],validProtocolLCMSQTests];
 registerValidQTestFunction[Object[Protocol, Lyophilize],validProtocolLyophilizeQTests];
 registerValidQTestFunction[Object[Protocol, MagneticBeadSeparation],validProtocolMagneticBeadSeparationQTests];
+registerValidQTestFunction[Object[Protocol, ManualCellPreparation],validProtocolManualCellPreparationQTests];
 registerValidQTestFunction[Object[Protocol, ManualSamplePreparation],validProtocolManualSamplePreparationQTests];
 registerValidQTestFunction[Object[Protocol, MassSpectrometry],validProtocolMassSpectrometryQTests];
 registerValidQTestFunction[Object[Protocol, MeasureConductivity],validProtocolMeasureConductivityQTests];
@@ -9771,15 +9932,17 @@ registerValidQTestFunction[Object[Protocol, NMR],validProtocolNMRQTests];
 registerValidQTestFunction[Object[Protocol, NMR2D],validProtocolNMR2DQTests];
 registerValidQTestFunction[Object[Protocol, PAGE],validProtocolPAGEQTests];
 registerValidQTestFunction[Object[Protocol, PCR],validProtocolPCRQTests];
+registerValidQTestFunction[Object[Protocol, PlateMedia],validProtocolPlateMediaTests];
 registerValidQTestFunction[Object[Protocol, PNASynthesis],validProtocolPNASynthesisQTests];
 registerValidQTestFunction[Object[Protocol, PrepareReferenceElectrode],validProtocolPrepareReferenceElectrodeQTests];
 registerValidQTestFunction[Object[Protocol, PowderXRD],validProtocolPowderXRDQTests];
 registerValidQTestFunction[Object[Protocol, ProteinPrep],validProtocolProteinPrepQTests];
 registerValidQTestFunction[Object[Protocol, qPCR],validProtocolqPCRQTests];
+registerValidQTestFunction[Object[Protocol, QuantifyCells],validProtocolQuantifyCellsQTests];
 registerValidQTestFunction[Object[Protocol, DigitalPCR],validProtocolDigitalPCRQTests];
+registerValidQTestFunction[Object[Protocol, QuantifyColonies],validProtocolQuantifyColoniesQTests];
 registerValidQTestFunction[Object[Protocol, RamanSpectroscopy], validProtocolRamanSpectroscopyQTests];
 registerValidQTestFunction[Object[Protocol, RNASynthesis],validProtocolRNASynthesisQTests];
-registerValidQTestFunction[Object[Protocol, RoboticCOVID19Test], validProtocolRoboticCOVID19TestQTests];
 registerValidQTestFunction[Object[Protocol, RoboticSamplePreparation], validProtocolRoboticSamplePreparationQTests];
 registerValidQTestFunction[Object[Protocol, RoboticCellPreparation], validProtocolRoboticCellPreparationQTests];
 registerValidQTestFunction[Object[Protocol, SampleManipulation],validProtocolSampleManipulationQTests];
@@ -9790,13 +9953,17 @@ registerValidQTestFunction[Object[Protocol, SolidPhaseExtraction],validProtocolS
 registerValidQTestFunction[Object[Protocol, StockSolution],validProtocolStockSolutionQTests];
 registerValidQTestFunction[Object[Protocol, SupercriticalFluidChromatography],validProtocolSFCQTests];
 registerValidQTestFunction[Object[Protocol, IncubateOld],validProtocolIncubateQTests];
+registerValidQTestFunction[Object[Protocol, ThawCells],validProtocolThawCellsQTests];
 registerValidQTestFunction[Object[Protocol, ThermalShift],validProtocolThermalShiftQTests];
 registerValidQTestFunction[Object[Protocol, TotalProteinDetection],validProtocolTotalProteinDetectionQTests];
 registerValidQTestFunction[Object[Protocol, TotalProteinQuantification],validProtocolTotalProteinQuantificationQTests];
 registerValidQTestFunction[Object[Protocol, Transfection],validProtocolTransfectionQTests];
+registerValidQTestFunction[Object[Protocol, Transfer],validProtocolTransferQTests];
 registerValidQTestFunction[Object[Protocol, Evaporate],validProtocolEvaporateQTests];
+registerValidQTestFunction[Object[Protocol, Uncover],validProtocolUncoverQTests];
 registerValidQTestFunction[Object[Protocol, Western],validProtocolWesternQTests];
 registerValidQTestFunction[Object[Protocol, CapillaryELISA],validProtocolCapillaryELISAQTests];
 registerValidQTestFunction[Object[Protocol, CircularDichroism],validProtocolCircularDichroismQTests];
 registerValidQTestFunction[Object[Protocol, CountLiquidParticles],validProtocolCountLiquidParticlesQTests];
+registerValidQTestFunction[Object[Protocol, InoculateLiquidMedia],validProtocolInoculateLiquidMediaQTests];
 

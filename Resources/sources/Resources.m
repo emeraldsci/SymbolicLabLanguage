@@ -30,8 +30,14 @@ installEmeraldResourceBlobs[] :=
 		resourceType[resourceSpec],
 		Sample,
 		With[
-			{object = resourceSpec[Sample], container = resourceSpec[Container], amount = resourceSpec[Amount],
-				exactAmount = resourceSpec[ExactAmount], tolerance = resourceSpec[Tolerance]},
+			{
+				object = resourceSpec[Sample],
+				container = resourceSpec[Container],
+				amount = resourceSpec[Amount],
+				exactAmount = resourceSpec[ExactAmount],
+				tolerance = resourceSpec[Tolerance],
+				sterile = resourceSpec[Sterile]
+			},
 
 			BoxForm`ArrangeSummaryBox[
 				Resource,
@@ -56,6 +62,10 @@ installEmeraldResourceBlobs[] :=
 					],
 					If[Not[MissingQ[tolerance]],
 						BoxForm`SummaryItem[{"Tolerance: ", tolerance}],
+						Nothing
+					],
+					If[Not[MissingQ[sterile]],
+						BoxForm`SummaryItem[{"Sterile: ", sterile}],
 						Nothing
 					]
 				},
@@ -238,7 +248,7 @@ SampleResourceP := KeyValuePattern[{
 	Type -> TypeP[Object[Resource, Sample]],
 	Name -> _String,
 	Sample -> ObjectP[{Object[Sample], Model[Sample], Object[Part], Object[Sensor], Model[Part], Model[Sensor], Model[Item], Model[Plumbing], Object[Plumbing], Model[Wiring], Object[Wiring], Object[Item], Object[Container], Model[Container]}],
-	Container -> Alternatives[ObjectP[Model[Container]], {ObjectP[Model[Container]]..}],
+	Container -> Alternatives[ObjectP[Model[Container]], {ObjectP[Model[Container]]..},ObjectP[Object[Container]],{ObjectP[Object[Container]]..}],
 	(* ContainerName and Well key pairs are used to indicate if different resources should be prepared in the same container within this protocol (requestor) *)
 	ContainerName -> _String,
 	Well -> WellP,
@@ -255,6 +265,7 @@ SampleResourceP := KeyValuePattern[{
 	NumberOfUses -> GreaterP[0,1],
 	VolumeOfUses -> GreaterP[0 Milliliter],
 	ThawRequired -> BooleanP,
+	Sterile -> BooleanP,
 	(* These are hidden options for primitive framework resource consolidation (only resources sharing the same keys can be consolidated into a single plate) *)
 	(* These keys are dropped in primitive framework and will not be populated into resource object *)
 	(* SourceTemperature converts Ambient to $AmbientTemperature so no need to put Ambient in pattern here *)
@@ -273,7 +284,8 @@ InstrumentResourceP := KeyValuePattern[{
 	Name -> _String,
 	Instrument -> Alternatives[ObjectP[{Object[Instrument], Model[Instrument]}], {ObjectP[Model[Instrument]]..}],
 	Time -> GreaterP[0 Minute],
-	DeckLayout -> ListableP[ObjectP[Model[DeckLayout]]]
+	DeckLayout -> ListableP[ObjectP[Model[DeckLayout]]],
+	UnusedIntegratedInstrument -> BooleanP
 }];
 Protect[InstrumentResourceP];
 
@@ -614,8 +626,12 @@ RequireResources::InvalidExistingContainerName = "The ContainerName `1` already 
 
 (* we can use some instruments interchangably, which helps reduce issues with site dependence of models*)
 (*Add more here as they are discovered*)
+(* Some instruments are fully interchangable, but some are one direction. Like one model's functionality is fully covered with the other one, but not on the opposite direction. Make sure we handle that as well *)
 $EquivalentInstrumentModelLookup = Map[
-	(ObjectP[#]-> #)&,
+	If[MatchQ[#,{_List,_List}],
+		(ObjectP[#[[1]]]-> #[[2]]),
+		(ObjectP[#]-> #)
+	]&,
 	{
 		(*Nutators*)
 		{
@@ -627,13 +643,77 @@ $EquivalentInstrumentModelLookup = Map[
 			Model[Instrument, PeristalticPump, "id:n0k9mG8KZlb6"], (*"VWR Peristaltic Variable Pump PP3400"*)
 			Model[Instrument, PeristalticPump, "id:n0k9mGkDOdAn"] (*"Masterflex L/S Precision Variable-Speed Console Drive"*)
 		},
-		(*balances*)
+		(*Balances*)
+		(*Note that Model[Instrument, Balance, "id:N80DNj1Gr5RD"] (Ohaus EX124) has a much larger MinWeight, and we won't include it as a possible alternative model for the others, but if EX124 is requested, we can select PA124/PA224 *)
 		{
 			Model[Instrument, Balance, "id:vXl9j5qEnav7"],(*Ohaus Pioneer PA124*)
-			Model[Instrument, Balance, "id:KBL5DvYl3zGN"] (*Ohaus Pioneer PA224*)
+			Model[Instrument, Balance, "id:KBL5DvYl3zGN"],(*Ohaus Pioneer PA224*)
+			Model[Instrument, Balance, "id:rea9jl5Vl1ae"] (*Ohaus EX225AD*)
+		},
+		{
+			{Model[Instrument, Balance, "id:N80DNj1Gr5RD"](*Ohaus EX124*)},
+			{
+				Model[Instrument, Balance, "id:N80DNj1Gr5RD"], (*Ohaus EX124*)
+				Model[Instrument, Balance, "id:vXl9j5qEnav7"], (*Ohaus Pioneer PA124*)
+				Model[Instrument, Balance, "id:KBL5DvYl3zGN"],(*Ohaus Pioneer PA224*)
+				Model[Instrument, Balance, "id:rea9jl5Vl1ae"] (*Ohaus EX225AD*)
+			}
+		},
+		{
+			Model[Instrument, Balance, "id:54n6evKx08XN"], (*Mettler Toledo XP6*)
+			Model[Instrument, Balance, "id:D8KAEvKJox0l"] (*Mettler Toledo XPR6U Ultra-Microbalance*)
+		},
+		(*WaterPurifier*)
+		{
+			Model[Instrument, WaterPurifier, "id:eGakld01zVXG"],(*"MilliQ Integral 3"*)
+			Model[Instrument, WaterPurifier, "id:AEqRl9qA8WZa"] (*Milli-Q IQ 7010 Type I Water Purifier*)
+		},
+		(*Sonicators without specific temperature control, these will heat to 70°C when powered on*)
+		{
+			Model[Instrument, Sonicator, "id:Vrbp1jG80Jqx"],(*Branson 1510*)
+			Model[Instrument, Sonicator, "id:3em6Zv9NjwJo"],(*Branson 1800*)
+			Model[Instrument, Sonicator, "id:O81aEBZ8YPGx"](*Branson MH 5800*)
+		},
+		(*Sonicators with specific temperature control*)
+		(* Only chilled Sonicator *)
+		{
+			Model[Instrument, Sonicator, "id:L8kPEjnJOm54"],(*Branson 1510 with Thermo Precision Incubator, -10°C to 70°C*)
+			Model[Instrument, Sonicator, "id:n0k9mGkDaon1"](*Branson MH 5800 with 566L Precision Low Temperature BOD Refrigerated Incubator, 4°C to 70°C*)
+		},
+		(*Sonicators with specific temperature control*)
+		(* CMU does not have the Branson CPXH 3800 , Branson MH 5800 can also go up to 70°C*)
+		{
+			Model[Instrument, Sonicator, "id:XnlV5jKNn3DM"],(*Branson CPXH 3800, ambient to 70°C*)
+			Model[Instrument, Sonicator, "id:n0k9mGkDaon1"](*Branson MH 5800 with 566L Precision Low Temperature BOD Refrigerated Incubator, 4°C to 70°C*)
+		},
+		(*ESI Triple-quadrapole mass spectrometer*)
+		{
+			Model[Instrument, MassSpectrometer, "id:N80DNj1aROOD"],(*QTRAP 6500*)
+			Model[Instrument, MassSpectrometer, "id:Y0lXejl8MeOa"](*QTRAP 6500 PLUS*)
+		},
+		(* Portable coolers *)
+		{
+			Model[Instrument, PortableCooler, "id:R8e1PjpjnEPX"], (* ICECO GO20 Portable Refrigerator *)
+			Model[Instrument, PortableCooler, "id:eGakldJdO9le"] (* ICECO GO12 *)
+		},
+		(* OverheadStirrer *)
+		{
+			Model[Instrument, OverheadStirrer, "id:rea9jlRRmN05"], (* MINISTAR 40 with C-MAG HS 10 Hot Plate *)
+			Model[Instrument, OverheadStirrer, "id:Z1lqpMzavMN9"] (* MINISTAR 40 with C-MAG HS 10 Hot Plate in Fume Hood *)
 		}
 	}
 ];
+
+
+(*$EquivalentModelLookup*)
+
+(* we can use some non-instruments interchangably, which helps reduce issues with site dependence of models*)
+(* This is similar to StockSolution's AlternativePreparations *)
+(* Add more here as they are discovered *)
+(* NOTE: Please use this very carefully, as this is supposed to affect ALL experiments *)
+(* Unline instruments, this replacement has to happen in ModelInstances search, which is at the resource picking time, as a single non-instrument resource CANNOT take more than 1 model in the resource *)
+(* Some objects are fully interchangable, but some are one direction. Like one model's functionality is fully covered with the other one, but not on the opposite direction. Make sure we handle that as well *)
+$EquivalentModelLookup = {};
 
 (* empty list case *)
 RequireResources[{}, ops : OptionsPattern[]] := {};
@@ -666,7 +746,7 @@ RequireResources[myPackets : {PacketP[{Object[Protocol], Object[Qualification], 
 		resourceIDs, updatedRequiredResourcesPackets, allPackets, cache, sampleResourcePackets, waterPrepContainerResourceIDs,
 		samplesToDownload, instrumentResourcePackets, instrumentsToDownload, instrumentModels, containerModelWellRules,containerModelNumWellRules,sampleResourcesWithModels,
 		waterPrepResourcePackets, waterPrepContainerResourcePackets, instrumentResourcesWithModels, specifiedSampleModels, containerModels, allDownloadValues,
-		invalidContainerWells,invalidContainerNames,
+		invalidContainerWells,invalidContainerNames, protocolResourcePackets,
 		sampleDownloadValues, instrumentDownloadValues, sampleModelsTuples, combinedModelSamplePackets, sampleResourcesWithRent, outstandingSampleResources,
 		sampleResourcesToNotCreate, outstandingInstrumentResources, instrumentResourcesToNotCreate,
 		allResourcePackets, resourcesToRemove, allNonDuplicateResourcePackets, allRequiredResources,
@@ -675,7 +755,7 @@ RequireResources[myPackets : {PacketP[{Object[Protocol], Object[Qualification], 
 		sampleRootProtocols, instrumentRootProtocols, operatorResourceRowsPerProtocol, allCheckpointsFields, allCheckpointNames,
 		operatorResourcesWithCheckpoint, waterPrepResourceRequestors, simulation, ignorePreparedSamples,
 		modelSamplePacketLists,transportInstrumentResourcePackets,sampleResourceRequestors, simulationMode,
-		updatesForSampleResourcePackets,modelsOrObjectSamples,protocolObjects,existingProtocolObjects,
+		updatesForSampleResourcePackets,modelsOrObjectSamples,protocolObjects, simulatedObjects,
 		allTransportConditions,containerModelPackets,existingResourcePackets,transportConditionsList,
 		transportInstrumentResourceIDs},
 
@@ -823,16 +903,24 @@ RequireResources[myPackets : {PacketP[{Object[Protocol], Object[Qualification], 
 			]
 		],sampleResourcePackets];
 
-	(* get a list of our protocol or other requestor objects so we can download the existing resources' ContainerName and Well *)
-	protocolObjects=DeleteCases[ToList@Lookup[Flatten[processedPackets],Object,Null],Null];
+	(* pull out the simulated objects from the simulation blob if we have one*)
+	simulatedObjects = If[MatchQ[simulation, _Simulation],
+		Lookup[simulation[[1]], SimulatedObjects, {}],
+		{}
+	];
 
-	(* if we are dealing with a new protocol, it may not exist yet *)
-	existingProtocolObjects=PickList[protocolObjects,DatabaseMemberQ[protocolObjects],True];
+	(* get a list of our protocol or other requestor objects so we can download the existing resources' ContainerName and Well *)
+	protocolObjects = DeleteCases[
+		ToList@Lookup[Flatten[processedPackets], Object, Null],
+		Alternatives[Null, Alternatives @@ simulatedObjects]
+	];
 
 	(* Download the model of specified samples and instruments + RentByDefault *)
 	allDownloadValues = Quiet[
 		Download[
-			{samplesToDownload, instrumentsToDownload, specifiedSampleModels,modelsOrObjectSamples, containerModels,existingProtocolObjects},
+			(* note that protocolObjects here might have some that do not exist.  It is faster to just try to Download from this variable and filter out the $Faileds than to call DatabaseMemberQ above though so doing that *)
+			(* Download::ObjectDoesNotExist is quieted here anyway *)
+			{samplesToDownload, instrumentsToDownload, specifiedSampleModels,modelsOrObjectSamples, containerModels, protocolObjects},
 			{
 				{Model[Object], Packet[Model[{RentByDefault,Name}]], Packet[RequestedResources[{Status, RootProtocol}]]},
 				{Model, Packet[RequestedResources[{Status, RootProtocol}]]},
@@ -849,8 +937,12 @@ RequireResources[myPackets : {PacketP[{Object[Protocol], Object[Qualification], 
 	];
 
 	(* split out our Download values *)
-	{sampleDownloadValues, instrumentDownloadValues, modelSamplePacketLists,allTransportConditions, containerModelPackets,existingResourcePackets} = allDownloadValues;
+	{sampleDownloadValues, instrumentDownloadValues, modelSamplePacketLists,allTransportConditions, containerModelPackets, protocolResourcePackets} = allDownloadValues;
 	transportConditionsList = Flatten[allTransportConditions];
+
+	(* now filter out the $Faileds *)
+	(* note that it was critical above to remove the simulated objects, because Download will return things and pretend they really exist and won't return $Failed here if we don't (because of the specified simulation) *)
+	existingResourcePackets = DeleteCases[protocolResourcePackets, {$Failed}];
 
 	(* Pull out the models and rent info from the sample and instrument Download values *)
 	sampleModelsTuples = Map[
@@ -976,8 +1068,19 @@ RequireResources[myPackets : {PacketP[{Object[Protocol], Object[Qualification], 
 	(* Resolve Rent and add it as needed, if it's already in our packet we don't want to change it *)
 	sampleResourcesWithRent = MapThread[
 		With[{object=Lookup[#1, Object], requestedModels=Lookup[#1,Replace[Models],{Null}]},
-			If[MatchQ[#2,BooleanP],
+			Switch[#2,
+				(* if we are specifying rent here already - no updates needed *)
+				True,
 				Nothing,
+				(* if the rent is set as False, set as Null so we don't show it in Inspect *)
+				False,
+				<|
+					Object -> object,
+					Rent -> Null
+				|>,
+
+				(* if we don't have it specified - inherit from RentByDefault *)
+				Null,
 				<|
 					Object -> object,
 					(* [[1]]] looks at the first model - we don't actually expect multiple models  *)
@@ -1912,7 +2015,7 @@ resourceToPacket[{}, ops : OptionsPattern[]] := {};
 (* singleton case *)
 resourceToPacket[myResource_Resource, ops : OptionsPattern[]] := resourceToPacket[{myResource}, ops];
 
-(* this function converts resource blobs into Object[Resource] packets that can be uploaded and stored in teh database *)
+(* this function converts resource blobs into Object[Resource] packets that can be uploaded and stored in the database *)
 (* inputs are a list of resource blobs (which have the Resource head) *)
 (* output is a list of Object[Resource] packets that can be uploaded to the database *)
 (* this function is shared by both RequireResources and fulfillableResourceQ *)
@@ -1925,7 +2028,7 @@ resourceToPacket[myResources : {__Resource}, ops : OptionsPattern[]] := Module[
 		blobToPacketReplaceRules, rootProtocol, freshBools, rentBools, rentContainerBools, untrackedBools, updateCountBools,
 		expandedRootProtocol, sampleRootProts, instrumentRootProts, operatorRootProts, specifiedSampleObjects,
 		samplesDensity, samplesState, cache, validSpecifiedSampleObjects, sampleNumberOfUses, simulation, tolerances,automaticDisposals,
-		sampleVolumeOfUses, simulationMode
+		sampleVolumeOfUses, simulationMode, steriles, unusedIntegratedInstrument
 	},
 
 	(* get the root protocol from the options *)
@@ -1976,7 +2079,7 @@ resourceToPacket[myResources : {__Resource}, ops : OptionsPattern[]] := Module[
 	(* get Object[Sample] and Model[Sample] that are being requested *)
 	specifiedSampleObjects = Map[
 		If[MatchQ[#, ObjectP[{Object[Sample], Model[Sample]}]],
-			Download[#, Object, Cache -> cache]
+			Download[#, Object]
 		]&,
 		specifiedSamples
 	];
@@ -2064,7 +2167,7 @@ resourceToPacket[myResources : {__Resource}, ops : OptionsPattern[]] := Module[
 		]&,
 		sampleResourceBlobs
 	];
-	
+
 	(* pull out the sample VolumeOfUses from the Sample resource blobs  *)
 	sampleVolumeOfUses = Map[
 		If[MissingQ[#[VolumeOfUses]],
@@ -2185,9 +2288,20 @@ resourceToPacket[myResources : {__Resource}, ops : OptionsPattern[]] := Module[
 		sampleResourceBlobs
 	];
 
+	(* pull out the Sterile key from the Sample resource blobs *)
+	(* If True then always get Sterile things.  If Null or False, don't have a preference one way or another *)
+	(* ideally we would look up the Sterile field value of the Sample, but for performance reasons we can't do a Download here so it is what it is for now and that logic can go into resource picking *)
+	steriles = Map[
+		If[MissingQ[#[Sterile]],
+			Null,
+			#[Sterile]
+		]&,
+		sampleResourceBlobs
+	];
+
 	(* generate the sample resource packets *)
 	sampleResourcePackets = MapThread[
-		Function[{resourceID, amount, numberOfUses, volumeOfUses, specifiedSample, container, containerName, well, root, fresh, rent, rentContainer, updateCount, untracked, thawRequired, exactAmount, tolerance, automaticDisposal},
+		Function[{resourceID, amount, numberOfUses, volumeOfUses, specifiedSample, container, containerName, well, root, fresh, rent, rentContainer, updateCount, untracked, thawRequired, exactAmount, tolerance, automaticDisposal, sterile},
 			Join[
 				<|
 					Object -> resourceID,
@@ -2209,9 +2323,7 @@ resourceToPacket[myResources : {__Resource}, ops : OptionsPattern[]] := Module[
 					ContainerName -> containerName,
 					Well -> well,
 					Fresh -> fresh,
-					(* use Null to mean false *)
-					(* specifically need the Null in case it is not True rather than not having anything here *)
-					Rent -> If[TrueQ[rent], True, Null],
+					Rent -> rent,
 					(* use Null to mean false *)
 					If[TrueQ[rentContainer],
 						RentContainer -> True,
@@ -2238,7 +2350,8 @@ resourceToPacket[myResources : {__Resource}, ops : OptionsPattern[]] := Module[
 						Nothing
 					],
 					Tolerance -> tolerance,
-					AutomaticDisposal -> automaticDisposal
+					AutomaticDisposal -> automaticDisposal,
+					Sterile -> sterile
 				|>,
 				(* if the specified sample is a model, then populate the Models field; if it is a Sample/Container/Model, populate Sample and Model *)
 				If[MatchQ[specifiedSample, ListableP[ObjectP[{Model[Sample], Model[Container], Model[Part], Model[Sensor], Model[Plumbing], Model[Wiring], Model[Item]}]]],
@@ -2252,7 +2365,7 @@ resourceToPacket[myResources : {__Resource}, ops : OptionsPattern[]] := Module[
 				]
 			]
 		],
-		{sampleResourceIDs, sampleAmounts, sampleNumberOfUses, sampleVolumeOfUses, specifiedSamples, sampleContainers, sampleContainerNames, sampleWells, sampleRootProts, freshBools, rentBools, rentContainerBools, updateCountBools, untrackedBools, thawRequiredBools, exactAmountBools, tolerances, automaticDisposals}
+		{sampleResourceIDs, sampleAmounts, sampleNumberOfUses, sampleVolumeOfUses, specifiedSamples, sampleContainers, sampleContainerNames, sampleWells, sampleRootProts, freshBools, rentBools, rentContainerBools, updateCountBools, untrackedBools, thawRequiredBools, exactAmountBools, tolerances, automaticDisposals, steriles}
 	];
 
 	(* get the Time fields from the instrument blobs *)
@@ -2273,6 +2386,15 @@ resourceToPacket[myResources : {__Resource}, ops : OptionsPattern[]] := Module[
 		instrumentResourceBlobs
 	];
 
+	(* get the UnusedIntegratedInstrument fields from the instrument blobs *)
+	unusedIntegratedInstrument = Map[
+		If[MissingQ[#[UnusedIntegratedInstrument]],
+			Null,
+			#[UnusedIntegratedInstrument]
+		]&,
+		instrumentResourceBlobs
+	];
+
 	(* generate the instrument resource packets *)
 	instrumentResourcePackets = MapThread[
 		Join[
@@ -2283,7 +2405,8 @@ resourceToPacket[myResources : {__Resource}, ops : OptionsPattern[]] := Module[
 				DateInCart -> Now,
 				RootProtocol -> Link[#5, SubprotocolRequiredResources],
 				EstimatedTime -> #3,
-				Replace[DeckLayouts] -> Link[#4]
+				Replace[DeckLayouts] -> Link[#4],
+				UnusedIntegratedInstrument -> #6
 			|>,
 			If[MatchQ[#2, ListableP[ObjectP[Model[Instrument]]]],
 				Module[{originalInstruments, expandedInstruments},
@@ -2302,7 +2425,7 @@ resourceToPacket[myResources : {__Resource}, ops : OptionsPattern[]] := Module[
 				|>
 			]
 		]&,
-		{instrumentResourceIDs, specifiedInstruments, estimatedInstrumentTime, instrumentDeckLayouts, instrumentRootProts}
+		{instrumentResourceIDs, specifiedInstruments, estimatedInstrumentTime, instrumentDeckLayouts, instrumentRootProts, unusedIntegratedInstrument}
 	];
 
 	(* get the operators *)
@@ -2373,6 +2496,7 @@ DefineOptions[
 		{Subprotocol -> False, ListableP[BooleanP], "Indicates if the protocol for which resources are being created is a child protocol."},
 		{Author :> $PersonID, ListableP[ObjectP[Object[User]]], "The user who authored the root protocol responsible for creating these resources.", IndexMatching -> Input},
 		{Site -> Automatic, Automatic|ObjectP[Object[Container,Site]], "If specified, this is the Site all resources must be fulfilled at."},
+		{SkipSampleMovementWarning -> {}, {} | ListableP[ObjectP[Object[Sample]]], "Specifies the sample(s) for which SamplesMustBeMoved warning should not be triggered."},
 		CacheOption,
 		SimulationOption,
 		FastTrackOption,
@@ -2390,16 +2514,17 @@ Warning::InsufficientVolume = "The experiment requests more volume/mass/count of
 Error::ResourceAlreadyReserved = "The experiment requests sample `1`, which is already reserved by a different resource.  Please check the availability of this sample using the RequestedResources field, or provide an alternative sample or model.";
 Error::NonScalableStockSolutionVolumeTooHigh = "The experiment requests `1` of model `2`, but this amount exceeds the maximum amount that can be prepared at once (`3`). Please prepare up to the maximum amount, or consider splitting this into multiple requests.";
 Error::NoAvailableSample = "The experiment requested `1` of model(s) `2`, but no such non-expired samples have that much mass/volume available, and cannot be reordered because no non-deprecated product exists for this quantity of these model(s).  Please check the availability of this sample, or provide an alternative sample, model, or amount.";
-Error::InsufficientTotalVolume = "The experiment requested `1` of model(s) `2`, but the requested amount exceeds the amount available in the lab, and cannot be reordered because no non-deprecated product exists for these model(s).  Please check the availability of this sample, or provide an alternative sample or model.";
-Error::NoAvailableModel = "The experiment request model(s) `1`, but there are no available instance(s) of these model(s), and cannot be reordered because no non-deprecated product exists for these model(s).  Please check the availability of these model(s), or provide an alternative sample or model.";
+Error::InsufficientTotalVolume = "The experiment requested `1` of model(s) `2`, but the requested amount exceeds the amount available in the lab, and cannot be reordered because no usable product exists for these model(s).  This can happen if the existing product is deprecated, or it is not sterile while the request requires a sterile sample, or if a product does not exist.  Please check the availability of this sample, or provide an alternative sample or model.";
+Error::NoAvailableModel = "The experiment request model(s) `1`, but there are no available instance(s) of these model(s), and cannot be reordered because no usable product exists for these model(s).  This can happen if the existing product is deprecated, or it is not sterile while the request requires a sterile sample, or if a product does not exist.  Please check the availability of these model(s), or provide an alternative sample or model.";
 Error::ContainerTooSmall = "The experiment requests volume `1` to be put in container model(s) `2`, but this exceeds the maximum volume of `3`.  Please check the MaxVolume field of the specified container model(s).";
 Error::ContainerNotAutoclaveCompatible = "The experiment requests the following sterile stock solutions, `1`, that must be autoclaved. However, the container(s) for these samples, `2`, are not autoclave compatible. The sample volume must not be over 3/4 of the container's MaxVolume and the container's MaxTemperature must be over 120 Celsius. Please specify a different container for these samples, or specify a non-sterile stock solution to be prepared.";
-Warning::SampleMustBeMoved = "The experiment requests sample `1` to be put in container model(s) `2``3`.  Because `1` is not currently `4`, this protocol will transfer the designated amount to a new container with this model(s).";
+Warning::SampleMustBeMoved = "Sample(s) `1` are not in the requested containers. Therefore, the designated amount(s) of `2`.";
 Error::MissingObjects = "Unable to find object(s) `1` in the database. Please check for errors in the object IDs or names.";
 Error::SamplesMarkedForDisposal = "The following object(s) specified are flagged for disposal: `1`.  If you don't wish to dispose of these samples, please run CancelDiscardSamples on them.";
 Warning::DeprecatedProduct = "The following model(s) that were requested have no non-deprecated products associated with them: `1`.  In the event that all is consumed before the protocol is run, ECL will not be able to order more and may abort this protocol.";
 Error::DeprecatedModels = "The following model object(s) specified are deprecated: `1`.  Please check the Deprecated field for the models in question, or provide samples with alternative, non-deprecated models.";
 Warning::ExpiredSamples = "The following input samples are marked expired: `1`, but we can continue with them anyway.  Please cancel the experiment if you would not like to use these samples marked as expired.";
+Error::InstrumentsNotOwned = "The following instrument(s) specified are not part a Notebook financed by one of the current financing teams: `1`.  Please check the Notebook field of these objects and the Financers field of that Notebook.";
 Error::RetiredInstrument = "The following specified instruments are retired: `1`.  Please check the Status of the instruments in question, or provide alternative, non-Retired instruments to use.";
 Error::DeprecatedInstrument = "The following specified instrument models are deprecated: `1`.  Please check the Deprecated field of the instrument models in question, or provide alternative, non-Deprecated instruments to use.";
 Error::DeckLayoutUnavailable = "The following instruments request deck layouts that are not available to the requested instrument's model: `1`.  Please check the AvailableLayouts field of the instrument models in these resources, and request deck layouts that are available for the desired instrument models.";
@@ -2416,6 +2541,8 @@ Error::UnableToDetermineResourceShipment="It could not be determined if the foll
 Error::SiteUnknown="The objects `1` don't have a recorded experiment site (or don't have objects with a site) and cannot be used. You can Search for objects with the Site field set to your desired experiment site to determine what's available.";
 Error::NoSuitableSite="None of your ECL facilities contain all the requested instruments for your protocol. Your financing team has access to the sites `1`, but the required instruments for your protocol, `2`, can only be found at the respective sites, `3`.";
 Warning::NoAvailableStoragePosition="The following instruments request storage inside of the instruments that have reached the maximum storage capacity: `1`. Please check the available positions of the instrument, or provide an alternative instrument or instrument model.";
+Error::InvalidSterileRequest="The following input model(s) or object(s) `1` do not have Sterile -> True, but the resource requesting them requires them to be sterile. Please check the sterility of these samples, or provide alternative sterile samples to use.";
+Error::ContainerNotSterile="The following container(s) `1` do not have Sterile -> True, but the resource requesting them requires them to be sterile.  Please check the sterility of the specified container, or provided alternative sterile containers to use.";
 
 (* empty list case *)
 fulfillableResourceQ[{}, ops : OptionsPattern[]] := Module[
@@ -2469,7 +2596,15 @@ fulfillableResourceQ[myResourceBlobs : {__Resource}, ops : OptionsPattern[]] := 
 	];
 
 	(* remove the object listed by Name because if our cache does not have Name in it, it will cost us time to get ID *)
-	myResourceBlobsObjects = Experiment`Private`sanitizeInputs[myResourceBlobs];
+	myResourceBlobsObjects = Experiment`Private`sanitizeInputs[myResourceBlobs, Simulation -> simulation];
+
+	(* return early if we have nonexistent objects *)
+	Which[
+		MatchQ[myResourceBlobsObjects, $Failed] && MatchQ[outputFormat, SingleBoolean], Return[False],
+		(* maybe this is overkill but whatever, still need to fail somehow and it's not trivial to figure out which one is True and False here *)
+		MatchQ[myResourceBlobsObjects, $Failed] && MatchQ[outputFormat, Boolean], Return[ConstantArray[False, Length[myResourceBlobs]]],
+		True, Null
+	];
 
 	(* pull out all of the object references from the resource blobs*)
 	objects = DeleteDuplicates[Cases[myResourceBlobsObjects, ObjectReferenceP[], Infinity]];
@@ -2549,13 +2684,15 @@ fulfillableResourceQ[myResource : ObjectP[Object[Resource]], ops : OptionsPatter
 
 (* CORE FUNCTION *)
 fulfillableResourceQ[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsPattern[]] := Module[
-	{safeOps, messageOption, cache, fastTrack, verbose, outputFormat, fulfillableResourceAssoc, allTestsAndBools, allTests,allBools,
+	{
+		safeOps, messageOption, cache, fastTrack, verbose, outputFormat, fulfillableResourceAssoc, allTestsAndBools, allTests,allBools,
 		outputSpecification, subprotocol, output, pairedObjsAndTests, result, indexMatchedResults, resultRule, testsRule, messages, author,
-		site, allBoolTests, pairedObjsAndBools, simulation},
+		site, allBoolTests, pairedObjsAndBools, simulation, noMovementWarningSamples
+	},
 
 	(* get the safe options, and pull out the specific option values from it; also make Output into a list if it isn't already *)
 	safeOps = SafeOptions[fulfillableResourceQ, ToList[ops]];
-	{messageOption, cache, fastTrack, verbose, outputFormat, outputSpecification, subprotocol, author, simulation, site} = Lookup[safeOps, {Messages, Cache, FastTrack, Verbose, OutputFormat, Output, Subprotocol, Author, Simulation, Site}];
+	{messageOption, cache, fastTrack, verbose, outputFormat, outputSpecification, subprotocol, author, simulation, site, noMovementWarningSamples} = Lookup[safeOps, {Messages, Cache, FastTrack, Verbose, OutputFormat, Output, Subprotocol, Author, Simulation, Site, SkipSampleMovementWarning}];
 	output = ToList[outputSpecification];
 
 	(* throw messages if Messages -> True and Output does not include Tests *)
@@ -2569,7 +2706,7 @@ fulfillableResourceQ[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	];
 
 	(* pass the resources to the core function, which groups all the resources by what is wrong with them *)
-	fulfillableResourceAssoc = fulfillableResources[myResources, Subprotocol -> subprotocol, Author -> author, Messages -> messages, Cache -> cache, FastTrack -> fastTrack, Simulation -> simulation, Site -> site];
+	fulfillableResourceAssoc = fulfillableResources[myResources, Subprotocol -> subprotocol, Author -> author, Messages -> messages, Cache -> cache, FastTrack -> fastTrack, Simulation -> simulation, Site -> site, SkipSampleMovementWarning -> noMovementWarningSamples];
 
 	(* if somehow we got $Failed, return $Failed (message thrown in fulfillableResources) *)
 	If[MatchQ[fulfillableResourceAssoc, $Failed],
@@ -2582,12 +2719,16 @@ fulfillableResourceQ[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	 When Verbose->False, Warnings are raised locally and return True. To accommodate both testing booleans locally and returning tests, we will also make dummy Warning tests that we can
 	  then pass to tests if asked. Its a big ugly, but does the work in less time. *)
 	{allTestsAndBools, allBools} = Transpose@Map[
-		Module[{objsExist, objsExistTest, disposalSample, discardedSample, deprecatedModel, enoughAmountSample,
-			enoughConsumableSample, modelEnoughVolume, enoughTotalModel, enoughConsumableModel, belowMaxVolume,
-			retiredInstruments, deprecatedInstruments, deckLayoutsUnavailable, ownedSample, samplesMustBeMoved,
-			expiredSamples, instrumentUndergoingMaintenance, samplesOutOfStock, deprecatedProduct, samplesInTransit,
-			samplesShippedToUser, rentedKits, enoughUsesSample, enoughVolumeUsesSample, uniqueVolumeUsesSample,
-			nonScalableStockSolutionVolumeTooHigh, possibleSite, noInstrumentForStorage},
+		Module[
+			{
+				objsExist, objsExistTest, disposalSample, discardedSample, deprecatedModel, enoughAmountSample,
+				enoughConsumableSample, modelEnoughVolume, enoughTotalModel, enoughConsumableModel, belowMaxVolume,
+				retiredInstruments, deprecatedInstruments, deckLayoutsUnavailable, ownedSample, samplesMustBeMoved,
+				expiredSamples, instrumentUndergoingMaintenance, samplesOutOfStock, deprecatedProduct, samplesInTransit,
+				samplesShippedToUser, rentedKits, enoughUsesSample, enoughVolumeUsesSample, uniqueVolumeUsesSample,
+				nonScalableStockSolutionVolumeTooHigh, possibleSite, noInstrumentForStorage, invalidSterileRequest,
+				containerNotSterile, ownedInstrument
+			},
 
 			(* if resource blobs were provided, do Sample/Models/Instrument/InstrumentModels exist? *)
 			objsExistTest = {Test, {
@@ -2684,6 +2825,13 @@ fulfillableResourceQ[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 				False
 			}};
 
+			(* if Instruments is specified, is that instrument owned by this notebook? *)
+			ownedInstrument = {Test, {
+				StringJoin["If a specific instrument was requested by resource ", ToString[#, InputForm], " that instrument is owned by your team:"],
+				MemberQ[Lookup[fulfillableResourceAssoc, InstrumentsNotOwned], ObjectP[#]],
+				False
+			}};
+
 			(* If Instruments were specified, are the instruments retired? *)
 			retiredInstruments = {Test, {
 				StringJoin["If an instrument was specified by resource ", ToString[#, InputForm], " it is not retired:"],
@@ -2759,7 +2907,7 @@ fulfillableResourceQ[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 				MemberQ[Lookup[fulfillableResourceAssoc, ExceedsMaxNumberOfUses], ObjectP[#]],
 				False
 			}};
-			
+
 			(* if Sample is specified, are there enough volume for the specified models that left on that sample? *)
 			enoughVolumeUsesSample = {Test, {
 				StringJoin["If a sample was provided directly by resource ", ToString[#, InputForm], ", that can only handle a specific amount of the liquid (e.g. Object[Item, Filter, MicrofluidicChip] can only filter about 300-milliliter sample), there are enough allowed amount volume for specified model left to fulfill the request:"],
@@ -2773,7 +2921,7 @@ fulfillableResourceQ[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 				MemberQ[Lookup[fulfillableResourceAssoc, ConflictingVolumeOfUses], ObjectP[#]],
 				False
 			}};
-			
+
 			(* If requesting a stock solution model that has VolumeIncrements populated, the requested amount does not exceed the maximum of VolumeIncrements * $MaxNumberOfFulfillmentPreps *)
 			nonScalableStockSolutionVolumeTooHigh = {Test, {
 				StringJoin["If a stock solution model that has VolumeIncrements populated was requested by resource ", ToString[#, InputForm], ", the requested amount does not exceed the maximum of VolumeIncrements * $MaxNumberOfFulfillmentPreps:"],
@@ -2798,22 +2946,97 @@ fulfillableResourceQ[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 				False
 			}};
 
+			(* If the resource requests Sterile -> True, are the specified models or samples Sterile -> True? *)
+			invalidSterileRequest = {Test, {
+				StringJoin["If Sterile -> True is set in the resource, the requested sample or model has Sterile -> True:"],
+				MemberQ[Lookup[fulfillableResourceAssoc, InvalidSterileRequest], ObjectP[#]],
+				False
+			}};
+
+			(* If the resource requests Sterile -> True, are the specified Containers Sterile -> True? *)
+			containerNotSterile = {Test, {
+				StringJoin["If Sterile -> True is set in the resource, the container(s) to hold the requested sample or model have Sterile -> True:"],
+				MemberQ[Lookup[fulfillableResourceAssoc, ContainerNotSterile], ObjectP[#]],
+				False
+			}};
+
 			(* return two outputs, one only booleans, and another full list of the object and all the test results for this input *)
 			{
 				(* verbose result, construct the tests and warnings to pass on. the type of test is specified in the first element of the tuple *)
 				{
-					objsExist,Flatten[Map[
-					(#[[1]]@@#[[2]])&,
-					{objsExistTest,disposalSample,discardedSample,deprecatedModel,deprecatedProduct,ownedSample,enoughAmountSample,enoughConsumableSample,modelEnoughVolume,enoughTotalModel,enoughConsumableModel,belowMaxVolume,retiredInstruments,deprecatedInstruments,deckLayoutsUnavailable,samplesMustBeMoved,expiredSamples,instrumentUndergoingMaintenance,samplesOutOfStock,samplesInTransit,samplesShippedToUser,rentedKits,enoughUsesSample,enoughVolumeUsesSample,uniqueVolumeUsesSample,nonScalableStockSolutionVolumeTooHigh,possibleSite,noInstrumentForStorage}]]
+					objsExist,
+					Flatten[Map[
+						(#[[1]]@@#[[2]])&,
+						{
+							objsExistTest,
+							disposalSample,
+							discardedSample,
+							deprecatedModel,
+							deprecatedProduct,
+							ownedSample,
+							enoughAmountSample,
+							enoughConsumableSample,
+							modelEnoughVolume,
+							enoughTotalModel,
+							enoughConsumableModel,
+							belowMaxVolume,
+							ownedInstrument,
+							retiredInstruments,
+							deprecatedInstruments,
+							deckLayoutsUnavailable,
+							samplesMustBeMoved,
+							expiredSamples,
+							instrumentUndergoingMaintenance,
+							samplesOutOfStock,
+							samplesInTransit,
+							samplesShippedToUser,
+							rentedKits,
+							enoughUsesSample,
+							enoughVolumeUsesSample,
+							uniqueVolumeUsesSample,
+							nonScalableStockSolutionVolumeTooHigh,
+							possibleSite,
+							noInstrumentForStorage,
+							invalidSterileRequest,
+							containerNotSterile
+						}
+					]]
 				},
 				(* If not verbose, locally run MatchQ to compare tests and their expected results. warnings are removed from these *)
 				{
-					objsExist,Flatten[Map[
-					(MatchQ[#[[2]][[2]],#[[2]][[3]]])&,
-					{objsExistTest,disposalSample,discardedSample,deprecatedModel,deprecatedProduct,ownedSample,enoughConsumableSample,modelEnoughVolume,enoughTotalModel,enoughConsumableModel,belowMaxVolume,retiredInstruments,deprecatedInstruments,deckLayoutsUnavailable,samplesShippedToUser,rentedKits,enoughUsesSample,enoughVolumeUsesSample,uniqueVolumeUsesSample,nonScalableStockSolutionVolumeTooHigh,possibleSite}]]
+					objsExist,
+					Flatten[Map[
+						(MatchQ[#[[2]][[2]],#[[2]][[3]]])&,
+						{
+							objsExistTest,
+							disposalSample,
+							discardedSample,
+							deprecatedModel,
+							deprecatedProduct,
+							ownedSample,
+							enoughConsumableSample,
+							modelEnoughVolume,
+							enoughTotalModel,
+							enoughConsumableModel,
+							belowMaxVolume,
+							ownedInstrument,
+							retiredInstruments,
+							deprecatedInstruments,
+							deckLayoutsUnavailable,
+							samplesShippedToUser,
+							rentedKits,
+							enoughUsesSample,
+							enoughVolumeUsesSample,
+							uniqueVolumeUsesSample,
+							nonScalableStockSolutionVolumeTooHigh,
+							possibleSite,
+							invalidSterileRequest,
+							containerNotSterile
+						}
+					]]
 				}
 			}
-			]&,
+		]&,
 		Download[myResources, Object]
 	];
 
@@ -2951,6 +3174,9 @@ fulfillableResourcesP = AssociationMatchP[
 		(* the list of all resources requesting expired samples *)
 		ExpiredSamples -> {ObjectP[Object[Resource]]...},
 
+		(* the list of all resources requesting instruments that are not part of a notebook financed by one of the current financing teams *)
+		InstrumentsNotOwned -> {ObjectP[Object[Resource]]...},
+
 		(* the list of all resources requesting a retired instrument *)
 		RetiredInstrument -> {ObjectP[Object[Resource]]...},
 
@@ -2986,7 +3212,7 @@ fulfillableResourcesP = AssociationMatchP[
 
 		(* the list of all resources requesting samples that exceed the maximum number of uses *)
 		ExceedsMaxNumberOfUses -> {ObjectP[Object[Resource]]...},
-		
+
 		(* the list of all resources requesting samples that exceed the maximum volume of uses *)
 		ExceedsMaxVolumeOfUses -> {ObjectP[Object[Resource]]...},
 
@@ -2996,8 +3222,15 @@ fulfillableResourcesP = AssociationMatchP[
 		(* the list of all resources requesting samples that exceed the maximum preparable volume of a stock solution *)
 		NonScalableStockSolutionVolumeTooHigh -> {ObjectP[Object[Resource]]...},
 
+		(* list of resources where Sterile -> True in the resource, but not in the requested sample or model *)
+		InvalidSterileRequest -> {ObjectP[Object[Resource]]...},
+
+		(* list of resources where Sterile -> True in the resource, but not in the specified container model *)
+		ContainerNotSterile -> {ObjectP[Object[Resource]]...},
+
 		(* the list of all resources requesting samples that are not on site and need to be shipped *)
 		SamplesOffSite -> {ObjectP[Object[Resource]]...},
+
 
 		(* the site that all resources must be fulfilled at *)
 		Site -> (Null|ObjectP[Object[Container, Site]])
@@ -3020,6 +3253,7 @@ DefineOptions[
 		{Subprotocol -> False, ListableP[BooleanP], "Indicates if the protocol for which resources are being created is a child protocol."},
 		{Author :> $PersonID, ListableP[ObjectP[Object[User]]], "The user who authored the root protocol responsible for creating these resources.", IndexMatching -> Input},
 		{Site -> Automatic, Automatic|ObjectP[Object[Container,Site]], "If specified, this is the Site all resources must be fulfilled at."},
+		{SkipSampleMovementWarning -> {}, {} | ListableP[ObjectP[Object[Sample]]], "Specifies the sample(s) for which Warning::SamplesMustBeMoved message should not be triggered."},
 		SimulationOption,
 		CacheOption,
 		FastTrackOption
@@ -3048,6 +3282,7 @@ fulfillableResources[{}, ops : OptionsPattern[]] := Module[{specifiedSite},
 		DeprecatedModels -> {},
 		DiscardedSamples -> {},
 		ExpiredSamples -> {},
+		InstrumentsNotOwned -> {},
 		RetiredInstrument -> {},
 		DeprecatedInstrument -> {},
 		DeckLayoutUnavailable -> {},
@@ -3063,6 +3298,8 @@ fulfillableResources[{}, ops : OptionsPattern[]] := Module[{specifiedSite},
 		ExceedsMaxVolumeOfUses -> {},
 		ConflictingVolumeOfUses -> {},
 		NonScalableStockSolutionVolumeTooHigh -> {},
+		InvalidSterileRequest -> {},
+		ContainerNotSterile -> {},
 		SamplesOffSite -> {},
 		Site -> If[MatchQ[specifiedSite, ObjectP[]], specifiedSite, $Site]
 	|>
@@ -3128,69 +3365,72 @@ fulfillableResources[myResource : ObjectP[Object[Resource]], ops : OptionsPatter
 (* core overload taking resource objects *)
 fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsPattern[]] := Module[
 	{
-		safeOps,cache,fastTrack,messages,allFields,allPackets,databaseMember,missingObjs,packetsFromSampleResources,
-		sampleResourcePackets,requestedSamplePackets,allRequestedResourceSamplePackets,enoughQuantityAvailAmount,
-		requestedAmount,enoughQuantityBool,allModelResourcePackets,allModelPackets,typesToSearchOver,modelSearchConditions,
-		modelObjectPackets,modelRequestedAmount,sampleResourcePacketsToSearch,modelAvailableAmount,resourcesToUse,
-		modelEnoughAmountBool,modelObjectCounts,modelEnoughAmountReplaceRules,finalModelEnoughAmountBool,searchedSampleResourcePackets,
-		requestedSearchedResourcePackets,reservedAmountAllSearchedSamples,availableAmountAllSearchedSamples,
-		modelEnoughVolumeBool,consumableModel,modelEnoughVolumeReplaceRules,finalModelEnoughVolumeBool,
-		samplesAndContainers,secondDownloadInputs,allSearchedSamplePackets,allContainerModelPackets,maxVolumes,
-		belowMaxVolumeBool,belowMaxVolumePackets,notEnoughModelAmountPackets,modelPacketsToSearch,badResources,
-		noModelEnoughVolumePackets,notEnoughQuantityPackets,allResourcePackets,consumableResources,newCache,fastAssoc,
-		consumableModelResources,otherConsumableModelResources,consumableModelAvailAmount,modelResourcePacketsToSearch,
-		consumableModelRequestedAmount,consumableModelEnoughBool,consumableModelEnoughReplaceRules,resourcesToTest,
-		finalConsumableModelEnoughBool,notEnoughConsumableModelPackets,consumable,consumableSampleResources,
-		allConsumableSampleResources,consumableSampleBool,consumableSampleReplaceRules,finalConsumableSampleBool,
-		notEnoughConsumablePackets,currentContainerModels,allInstrumentPackets,numResourcesTooBig,
-		instrumentResourcePackets,instrumentPackets,instrumentModelPackets,notDisposalBool,disposalSamples,
-		availInstrumentBool,objsToTest,requestedSampleTuples,requestedSamplesByContainer,movingRequiredContainers,
-		sampleMustBeMovedBool,samplesToBeMoved,samplesMustMovedWarnings,hermeticQs,hermeticQPerSamps,
-		undergoingMaintenancePackets,retiredInstrumentPackets,notDeprecatedInstrumentBool,deprecatedInstrumentPackets,
-		deckLayoutAvailableBool,unavailableDeckLayoutInstrumentPackets,disposalResources,availableBool,
-		samplesAndContainersReplaceRules,postSecondDownloadPackets,undergoingMaintenanceResourcePackets,
-		typesAndSearchConditions,typesAndSearchConditionsNoDupes,typesToSearchOverNoDupes,modelSearchConditionsNoDupes,
-		discardedSamples,discardedResources,expiredBooleans,expiredSamples,expiredResources,notDeprecatedBool,
-		deprecatedModels,deprecatedResources,allProductPackets,oneProductPerResource,consumableProdNotDeprecatedBool,
-		consumableResourceProdNotDeprecated,consumableProdsNotDeprecated,consumableNoProdBool,totalVolProdNotDeprecatedBool,
-		totalVolResourceProdNotDeprecated,totalVolProdsNotDeprecated,totalVolNoProdBool,modelVolProdNotDeprecatedBool,
-		modelVolResourceProdNotDeprecated,modelVolProdsNotDeprecated,modelVolNoProdBool,modelReservedPackets,
-		modelReservedAmount,availableAmountAllModels,consumablesAvailable,allResourceStatuses,canUseSpecificSample,
-		notOwnedSamples,notOwnedResources,shippingToECLBools,samplesShippingToECLResources,samplesShippingToECL,
-		requestedSampleNotebookPackets,resourcesToUseWithAuthor,nullNotebookQ,now,samplesAndContainersNoDupes,
-		samplesAndContainersRules,oneProductPerResourceToSearchNoDupes,modelPacketsToSearchNoDupes,
-		allPacketsWithNotebook,combinedNonFulfillableResources,hermeticQReplaceRules,modelHermeticQs,
-		fulfillable,subprotocol,subprotocolBooleans,subprotocolResources,consumableDeprecatedProdBool,
-		consumableDeprecatedProdResources,modelDeprecatedProdBool,modelDeprecatedProdResources,
-		oneProductPerResourceToSearch,modelDeprecatedProds,nonDeprecatedModelsWithDeprecatedProds,
-		consumableModelDeprecatedProds,nonDeprecatedConsumableModelsWithDeprecatedProds,samplesShippingToUserResources,
-		shippingToUserBools,samplesShippingToUser,allModels,modelsNoDuplicates,allModelResourcePacketsNoDupes,
-		modelResourcePacketReplaceRules,author,financerPackets,allAllowedNotebooks,expandedAuthor,
-		allAllowedNotebooksPerSampleResource,resourceToAuthorRules,authorToUse,modelObjectProducts,
-		modelObjectProductPackets,filterStockedModelObjectPackets,filterStockedSearchedSampleResourcePackets,
-		secondDownloadInputsTooBig,secondDownloadInputsTooBigBool,samplesWhereDownloadInputTooBig,secondDownloadFields,
-		allSecondDownloadValues,totalNumResourcesTooBig,numResourcesTooBigFakePackets,kitQs,
-		kitQsToSearch,rentQ,rentAndKitQ,rentedKitModels,rentedKitResources,deprecatedInstrumentModelPackets,
-		autoclaveCompatibleBools,notAutoclaveCompatiblePackets,notEnoughQuantityRequestedAmount,
-		notEnoughQuantityAvailAmount,reservedUsesAllSearchedSamples,availableUsesAllSearchedSamples,modelEnoughUsesBool,
-		modelEnoughUsesReplaceRules,finalModelEnoughUsesBool,requestedVolumes,enoughVolumesBool,resourceIDs,
-		noModelEnoughUsesPackets,requestedUses,enoughUsesBool,notEnoughUsesPackets,modelUsesProdNotDeprecatedBool,
-		modelUsesResourceProdNotDeprecated,modelUsesProdsNotDeprecated,notEnoughVolumesPackets,containerModels,
-		containerModelPositions,uniqueContainerModels,maxVolumesLookupTable,positionToVolume,maxVolumesFlattened,
-		simulation,updatedSimulation,prepareInResuspensionContainerQs,maxVolumeIncrement,nonScalableSolutionVolumeTooHighQs,
-		nonScalableStockSolutionResourcePackets,modelItemResourcePackets,twoUniqueVolumesPackets,notEnoughVolumesModelPackets,
-		combinedNameVolumeAssoc,uniqueVolumeBool,
-		shippableFulfillableResourceRequests,resourceToSamplesLookup,resourceModelToSamplesLookup,possibleFulfillingShippableSamples,
-		resolvedSite,sampleSitesPerResource,sitelessSampleResources,sitelessSampleResourcesAfterProductFilter,resourcesToBeShipped,
-		allowedSites,defaultSite,instrumentModelObjectsSites,missingSiteSamples,sitelessInstrumentResources,possibleSites,
-		specifiedSite,instrumentSites,instrumentModelObjectsCurrentCapacity,noCapacityInstrumentResources,
-		possibleFulfillingSamples,countsForConsumablesAvailable,totalsForConsumablesAvailable,countsRequestedPerRequestedConsumableModel,
-		totalCountRequestedPerRequestedConsumableModel,syncAmountToState,getSampleAmount
+		safeOps, cache, fastTrack, messages, allFields, allPackets, databaseMember, missingObjs, allSamplePackets,
+		sampleResourcePackets, requestedSamplePackets, allRequestedResourceSamplePackets, enoughQuantityAvailAmount,
+		requestedAmount, enoughQuantityBool, allModelResourcePackets, allModelPackets, typesToSearchOver, modelSearchConditions,
+		modelObjectPackets, modelRequestedAmount, sampleResourcePacketsToSearch, modelAvailableAmount, resourcesToUse,
+		modelEnoughAmountBool, modelObjectCounts, modelEnoughAmountReplaceRules, finalModelEnoughAmountBool, searchedSampleResourcePackets,
+		requestedSearchedResourcePackets, reservedAmountAllSearchedSamples, availableAmountAllSearchedSamples,
+		modelEnoughVolumeBool, consumableModel, modelEnoughVolumeReplaceRules, finalModelEnoughVolumeBool,
+		samplesAndContainers, secondDownloadInputs, allSearchedSamplePackets, allContainerModelPackets, maxVolumes,
+		belowMaxVolumeBool, belowMaxVolumePackets, notEnoughModelAmountPackets, modelPacketsToSearch, badResources,
+		noModelEnoughVolumePackets, notEnoughQuantityPackets, allResourcePackets, consumableResources, newCache, fastAssoc,
+		consumableModelResources, otherConsumableModelResources, consumableModelAvailAmount, modelResourcePacketsToSearch,
+		consumableModelRequestedAmount, consumableModelEnoughBool, consumableModelEnoughReplaceRules, resourcesToTest,
+		finalConsumableModelEnoughBool, notEnoughConsumableModelPackets, consumable, consumableSampleResources,
+		allConsumableSampleResources, consumableSampleBool, consumableSampleReplaceRules, finalConsumableSampleBool,
+		notEnoughConsumablePackets, currentContainerModels, allInstrumentPackets, allOperatorPackets, numResourcesTooBig,
+		instrumentResourcePackets, requestedInstrumentPackets, instrumentModelPackets, notDisposalBool, disposalSamples,
+		availInstrumentBool, objsToTest, requestedSampleTuples, requestedSamplesByContainer, movingRequiredContainers,
+		sampleMustBeMovedBool, samplesToBeMoved, samplesMustMovedWarnings, hermeticQs, hermeticQPerSamps,
+		undergoingMaintenancePackets, retiredInstrumentPackets, notDeprecatedInstrumentBool, deprecatedInstrumentPackets,
+		deckLayoutAvailableBool, unavailableDeckLayoutInstrumentPackets, disposalResources, availableBool,
+		samplesAndContainersReplaceRules, postSecondDownloadPackets, undergoingMaintenanceResourcePackets,
+		typesAndSearchConditions, typesAndSearchConditionsNoDupes, typesToSearchOverNoDupes, modelSearchConditionsNoDupes,
+		discardedSamples, discardedResources, expiredBooleans, expiredSamples, expiredResources, notDeprecatedBool,
+		deprecatedModels, deprecatedResources, allProductPackets, oneProductPerResource, consumableProdNotDeprecatedBool,
+		matchingSterileBool, sterileMismatchResources, sterileMismatchObjs, containerNotSterileResources, matchingSterileContainerBool,
+		containerNotSterileObjs, allAllowedNotebooksPerInstrumentResource, allInstrumentResourceStatuses,
+		requestedInstrumentNotebookPackets, canUseSpecificInstrumentQ, notOwnedInstrumentResources, notOwnedInstruments,
+		consumableResourceProdNotDeprecated, consumableProdsNotDeprecated, consumableNoProdBool, totalVolProdNotDeprecatedBool,
+		totalVolResourceProdNotDeprecated, totalVolProdsNotDeprecated, totalVolNoProdBool, modelVolProdNotDeprecatedBool,
+		modelVolResourceProdNotDeprecated, modelVolProdsNotDeprecated, modelVolNoProdBool, modelReservedPackets,
+		modelReservedAmount, availableAmountAllModels, consumablesAvailable, allResourceStatuses, canUseSpecificSample,
+		notOwnedSamples, notOwnedResources, shippingToECLBools, samplesShippingToECLResources, samplesShippingToECL,
+		requestedSampleNotebookPackets, resourcesToUseWithAuthor, nullNotebookQ, now, samplesAndContainersNoDupes,
+		samplesAndContainersRules, oneProductPerResourceToSearchNoDupes, modelPacketsToSearchNoDupes,
+		allPacketsWithNotebook, combinedNonFulfillableResources, hermeticQReplaceRules, modelHermeticQs,
+		fulfillable, subprotocol, subprotocolBooleans, subprotocolResources, consumableDeprecatedProdBool,
+		consumableDeprecatedProdResources, modelDeprecatedProdBool, modelDeprecatedProdResources,
+		oneProductPerResourceToSearch, modelDeprecatedProds, nonDeprecatedModelsWithDeprecatedProds,
+		consumableModelDeprecatedProds, nonDeprecatedConsumableModelsWithDeprecatedProds, samplesShippingToUserResources,
+		shippingToUserBools, samplesShippingToUser, allModels, modelsNoDuplicates, allModelResourcePacketsNoDupes,
+		modelResourcePacketReplaceRules, author, financerPackets, allAllowedNotebooks, expandedAuthor,
+		allAllowedNotebooksPerSampleResource, resourceToAuthorRules, authorToUse, modelObjectProducts,
+		modelObjectProductPackets, filterStockedModelObjectPackets, filterStockedSearchedSampleResourcePackets,
+		secondDownloadInputsTooBig, secondDownloadInputsTooBigBool, samplesWhereDownloadInputTooBig, secondDownloadFields,
+		allSecondDownloadValues, totalNumResourcesTooBig, numResourcesTooBigFakePackets, kitQs,
+		kitQsToSearch, rentQ, rentAndKitQ, rentedKitModels, rentedKitResources, deprecatedInstrumentModelPackets,
+		autoclaveCompatibleBools, notAutoclaveCompatiblePackets, notEnoughQuantityRequestedAmount,
+		notEnoughQuantityAvailAmount, reservedUsesAllSearchedSamples, availableUsesAllSearchedSamples, modelEnoughUsesBool,
+		modelEnoughUsesReplaceRules, finalModelEnoughUsesBool, requestedVolumes, enoughVolumesBool, resourceIDs,
+		noModelEnoughUsesPackets, requestedUses, enoughUsesBool, notEnoughUsesPackets, modelUsesProdNotDeprecatedBool,
+		modelUsesResourceProdNotDeprecated, modelUsesProdsNotDeprecated, notEnoughVolumesPackets, containerModels,
+		containerModelPositions, uniqueContainerModels, maxVolumesLookupTable, positionToVolume, maxVolumesFlattened,
+		simulation, updatedSimulation, prepareInResuspensionContainerQs, maxVolumeIncrement, nonScalableSolutionVolumeTooHighQs,
+		nonScalableStockSolutionResourcePackets, modelItemResourcePackets, twoUniqueVolumesPackets, notEnoughVolumesModelPackets,
+		combinedNameVolumeAssoc, uniqueVolumeBool, noMovementWarningSamples, shippableFulfillableResourceRequests,
+		resourceToSamplesLookup, resourceModelToSamplesLookup, possibleFulfillingShippableSamples, resolvedSite,
+		sampleSitesPerResource, sitelessSampleResources, sitelessSampleResourcesAfterProductFilter, resourcesToBeShipped, allowedSites,
+		defaultExperimentSitePackets, defaultExperimentSites, defaultSite, uniqueTeamsPackets, allDefaultSites, instrumentModelObjectsSites,
+		missingSiteSamples, sitelessInstrumentResources, possibleSites, specifiedSite, instrumentSites, instrumentModelObjectsCurrentCapacity,
+		noCapacityInstrumentResources, possibleFulfillingSamples, countsForConsumablesAvailable, totalsForConsumablesAvailable,
+		countsRequestedPerRequestedConsumableModel, totalCountRequestedPerRequestedConsumableModel, syncAmountToState, getSampleAmount
 	},
 
 	(* get the safe options, and pull out the specific option values from it *)
 	safeOps = SafeOptions[fulfillableResources, ToList[ops]];
-	{messages, cache, fastTrack, subprotocol, author, simulation, specifiedSite} = Lookup[safeOps, {Messages, Cache, FastTrack, Subprotocol, Author, Simulation, Site}];
+	{messages, cache, fastTrack, subprotocol, author, simulation, specifiedSite, noMovementWarningSamples} = Lookup[safeOps, {Messages, Cache, FastTrack, Subprotocol, Author, Simulation, Site, SkipSampleMovementWarning}];
 
 	(* expand the Author option *)
 	expandedAuthor = If[MatchQ[author, ObjectP[Object[User]]],
@@ -3285,40 +3525,45 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	allFields = Map[
 		Switch[#,
 			ObjectP[Object[Resource, Sample]],
-			{
-				Packet[Models, Sample, Amount, ContainerModels, ContainerName, Well, Status, Rent, NumberOfUses, VolumeOfUses],
-				Packet[Sample[{Volume, Mass, Count, Size, Model, Container, AwaitingDisposal, Status, ExpirationDate, Contents, RequestedResources, Notebook, Destination, NumberOfUses, VolumeOfUses, Site}]],
-				Packet[Sample[RequestedResources][{Status, Amount, NumberOfUses, VolumeOfUses, ExactAmount, Tolerance}]],
-				Packet[Models[{Reusability, CleaningMethod, Deprecated, Products, KitProducts, Autoclave, StorageBuffer, MaxNumberOfUses, MaxVolumeOfUses, RequestedResources, PrepareInResuspensionContainer, VolumeIncrements, StorageBuffer, Sterile, State, Density}]],
-				Packet[ContainerModels[{MaxVolume, Deprecated, MaxTemperature}]],
-				Packet[Sample[Container][{Contents}]],
-				Packet[Sample[Container][Model][{Reusability, CleaningMethod, Deprecated, Products, RequestedResources, Notebook, MaxTemperature, Sterile}]],
-				Packet[Models[Products][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price}]],
-				Packet[Models[KitProducts][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount}]],
-				Packet[Sample[Notebook][Financers]],
-				(* the following Download fields are specifically in the case where Models were not automatically included in the resource packets *)
-				Packet[Sample[Model][{Reusability, CleaningMethod, Deprecated, Products, KitProducts, Autoclave, StorageBuffer, MaxNumberOfUses, MaxVolumeOfUses, RequestedResources, PrepareInResuspensionContainer, VolumeIncrements, StorageBuffer, Sterile, State, Density}]],
-				Packet[Sample[Model][Products][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price}]],
-				Packet[Sample[Model][KitProducts][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount}]],
-				(* these fields are for if you have a resource for a container that holds the "main" sample in the protocol *)
-				Packet[Models[ProductsContained][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount}]],
-				Packet[Models[KitProductsContainers][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount}]],
-				Packet[Sample[Model][ProductsContained][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount}]],
-				Packet[Sample[Model][KitProductsContainers][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount}]]
-			},
+				{
+					Packet[Models, Sample, Amount, ContainerModels, ContainerName, Well, Status, Rent, NumberOfUses, VolumeOfUses, Sterile],
+					Packet[Sample[{Volume, Mass, Count, Size, Model, Container, AwaitingDisposal, Status, ExpirationDate, Contents, RequestedResources, Notebook, Destination, NumberOfUses, VolumeOfUses, Site, Sterile}]],
+					Packet[Sample[RequestedResources][{Status, Amount, NumberOfUses, VolumeOfUses, ExactAmount, Tolerance, Sterile, Rent}]],
+					Packet[Models[{Reusable, CleaningMethod, Deprecated, Products, KitProducts, Autoclave, StorageBuffer, MaxNumberOfUses, MaxVolumeOfUses, RequestedResources, PrepareInResuspensionContainer, VolumeIncrements, StorageBuffer, Sterile, State, Density, Notebook}]],
+					Packet[ContainerModels[{MaxVolume, Deprecated, MaxTemperature, Sterile}]],
+					Packet[Sample[Container][{Contents}]],
+					Packet[Sample[Container][Model][{Reusable, CleaningMethod, Deprecated, Products, RequestedResources, Notebook, MaxTemperature, Sterile}]],
+					Packet[Models[Products][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
+					Packet[Models[KitProducts][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
+					Packet[Sample[Notebook][Financers]],
+					Packet[RootProtocol[Notebook][Financers][DefaultExperimentSite][Object]],
+					(* the following Download fields are specifically in the case where Models were not automatically included in the resource packets *)
+					Packet[Sample[Model][{Reusable, CleaningMethod, Deprecated, Products, KitProducts, Autoclave, StorageBuffer, MaxNumberOfUses, MaxVolumeOfUses, RequestedResources, PrepareInResuspensionContainer, VolumeIncrements, StorageBuffer, Sterile, State, Density, Notebook}]],
+					Packet[Sample[Model][Products][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
+					Packet[Sample[Model][KitProducts][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
+					(* these fields are for if you have a resource for a container that holds the "main" sample in the protocol *)
+					Packet[Models[ProductsContained][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
+					Packet[Models[KitProductsContainers][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
+					Packet[Sample[Model][ProductsContained][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
+					Packet[Sample[Model][KitProductsContainers][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]]
+				},
 			ObjectP[Object[Resource, Instrument]],
-			{
-				Packet[Instrument, InstrumentModels, DeckLayouts],
-				Packet[Instrument[{Status, Site, Contents}]],
-				Packet[InstrumentModels[{Deprecated, AvailableLayouts, Capacity}]],
-				(* the following Download field is specifically in the case where Models were not automatically included in the resource packets *)
-				Packet[Instrument[Model][{Deprecated, AvailableLayouts, Capacity}]],
-				Packet[InstrumentModels[Objects][{Site, Status, Contents}]]
-			},
+				{
+					Packet[Instrument, InstrumentModels, DeckLayouts, Status],
+					Packet[Instrument[{Status, Site, Contents, Notebook}]],
+					Packet[InstrumentModels[{Deprecated, AvailableLayouts, Capacity, Notebook}]],
+					Packet[RootProtocol[Notebook][Financers][DefaultExperimentSite][Object]],
+					(* the following Download field is specifically in the case where Models were not automatically included in the resource packets *)
+					Packet[Instrument[Model][{Deprecated, AvailableLayouts, Capacity}]],
+					Packet[InstrumentModels[Objects][{Site, Status, Contents}]],
+					Packet[Instrument[Notebook][Financers]]
+				},
 			(* currently we don't need to Download anything from the operator or waste objects to tell if they are fulfillable, but in the future we might *)
-			ObjectP[{Object[Resource, Operator], Object[Resource, Waste]}], {Packet[]},
+			ObjectP[{Object[Resource, Operator], Object[Resource, Waste]}],
+				{Packet[RootProtocol[Notebook][Financers][DefaultExperimentSite][Object]]},
 			(* if we're getting a user, then Download the financers and the notebooks they came from *)
-			ObjectP[Object[User]], {Packet[FinancingTeams[{Notebooks, NotebooksFinanced, ExperimentSites, DefaultExperimentSite}]], Packet[SharingTeams[{Notebooks, NotebooksFinanced, ViewOnly}]]}
+			ObjectP[Object[User]],
+				{Packet[FinancingTeams[{Notebooks, NotebooksFinanced, ExperimentSites, DefaultExperimentSite}]], Packet[SharingTeams[{Notebooks, NotebooksFinanced, ViewOnly}]]}
 		]&,
 		resourcesToUseWithAuthor
 	];
@@ -3344,7 +3589,7 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	updatedSimulation = If[NullQ[simulation], Null, UpdateSimulation[simulation, Simulation[Cases[Flatten[allPacketsWithNotebook], PacketP[]]]]];
 
 	(* separate out the Notebook packet from the resource packets *)
-	{allPackets, financerPackets} = TakeDrop[allPacketsWithNotebook, Length[resourcesToUse]];
+	{allPackets, financerPackets} = TakeList[allPacketsWithNotebook, {Length[resourcesToUse], Length[authorToUse]}];
 
 	(* Get all the notebooks that the resources have access to when fulfilling samples *)
 	(* Need to separate the financing and sharing team packets into the first and second arguments for AllowedResourcePickingNotebooks - thus the ugly @@ *)
@@ -3359,20 +3604,23 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	(* pull out all the resource packets *)
 	allResourcePackets = allPackets[[All, 1]];
 
-	(* get the sample packets *)
-	packetsFromSampleResources = PickList[allPackets, resourcesToUse, ObjectP[Object[Resource, Sample]]];
+	(* get the sample, instrument, and operator packets *)
+	{allSamplePackets, allInstrumentPackets, allOperatorPackets} = Map[
+		PickList[allPackets, resourcesToUse, ObjectP[#]]&,
+		{Object[Resource, Sample], Object[Resource, Instrument], Object[Resource, Operator]}
+	];
 
 	(* get the resource sample packets *)
-	sampleResourcePackets = packetsFromSampleResources[[All, 1]];
+	sampleResourcePackets = allSamplePackets[[All, 1]];
 
 	(* get the packets for the Sample of the sample resource packets *)
-	requestedSamplePackets = packetsFromSampleResources[[All, 2]];
+	requestedSamplePackets = allSamplePackets[[All, 2]];
 
 	(* get the packets of all the resources that are requested on the Sample of all the sample resource packets *)
-	allRequestedResourceSamplePackets = packetsFromSampleResources[[All, 3]];
+	allRequestedResourceSamplePackets = allSamplePackets[[All, 3]];
 
 	(* get the packets for the Notebook of each of the requested samples *)
-	requestedSampleNotebookPackets = packetsFromSampleResources[[All, 10]];
+	requestedSampleNotebookPackets = allSamplePackets[[All, 10]];
 
 	(* --- Need to do some wonky stuff for getting the RequestedResources of all the Models since that often has a bunch of duplicates that can be sped up (and is otherwise super slow if we had only one Download above) --- *)
 
@@ -3381,11 +3629,11 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	allModels = MapIndexed[
 		If[MatchQ[Lookup[#1, Models], {} | $Failed],
 			(* It's possible that our Object[Sample] has the Model link severed. *)
-			If[MatchQ[packetsFromSampleResources[[First[#2], 11]], Null],
+			If[MatchQ[allSamplePackets[[First[#2], 12]], Null],
 				{},
-				Lookup[{packetsFromSampleResources[[First[#2], 11]]}, Object]
+				Lookup[{allSamplePackets[[First[#2], 12]]}, Object]
 			],
-			Download[Lookup[packetsFromSampleResources[[First[#2], 1]], Models], Object]
+			Download[Lookup[allSamplePackets[[First[#2], 1]], Models], Object]
 		]&,
 		sampleResourcePackets
 	];
@@ -3398,7 +3646,7 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	(* Download the requested resources from the models (and fields from it) *)
 	allModelResourcePacketsNoDupes = Quiet[Download[
 		modelsNoDuplicates,
-		Packet[RequestedResources[{Status, Amount, Preparation, NumberOfUses, Notebook}]],
+		Packet[RequestedResources[{Status, Amount, Preparation, NumberOfUses, Notebook, Sterile}]],
 		Date -> Now,
 		Simulation -> updatedSimulation
 	], {Download::FieldDoesntExist, Download::ObjectDoesNotExist, Download::NotLinkField, Download::MissingField}];
@@ -3418,17 +3666,17 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	(* if the Models field isn't populated in the resource packets, then take the models of the samples *)
 	allModelPackets = MapIndexed[
 		If[MatchQ[Lookup[#1, Models], {} | $Failed],
-			{packetsFromSampleResources[[First[#2], 11]]},
-			packetsFromSampleResources[[First[#2], 4]]
+			{allSamplePackets[[First[#2], 12]]},
+			allSamplePackets[[First[#2], 4]]
 		]&,
 		sampleResourcePackets
 	];
 
 	(* get all the packets of the container models of the resource samples *)
-	allContainerModelPackets = packetsFromSampleResources[[All, 5]];
+	allContainerModelPackets = allSamplePackets[[All, 5]];
 
 	(* get all the packets for the container models that the specified samples currently live in *)
-	currentContainerModels = packetsFromSampleResources[[All, 7]];
+	currentContainerModels = allSamplePackets[[All, 7]];
 
 	(* get all the packets for the products of the models that were specified *)
 	(* note that this picks between whether this is part of a kit or not (since we have the Products and KitProducts fields) *)
@@ -3437,8 +3685,8 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	(* need the Flatten call because the listy-ness of the output needs to be correct (i.e., needs to be a list of lists, not a list of list of lists) *)
 	allProductPackets = MapIndexed[
 		Flatten[If[MatchQ[Lookup[#1, Models], {} | $Failed],
-			{packetsFromSampleResources[[First[#2], {12, 13, 16, 17}]]},
-			packetsFromSampleResources[[First[#2], {8, 9, 14, 15}]]
+			{allSamplePackets[[First[#2], {13, 14, 17, 18}]]},
+			allSamplePackets[[First[#2], {8, 9, 15, 16}]]
 		]]&,
 		sampleResourcePackets
 	];
@@ -3470,18 +3718,22 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 		oneProductPerResource
 	];
 
-
-	(* get the instrument packets *)
-	allInstrumentPackets = PickList[allPackets, resourcesToUse, ObjectP[Object[Resource, Instrument]]];
-
 	(* get the instrument resource and object packets *)
 	instrumentResourcePackets = allInstrumentPackets[[All, 1]];
-	instrumentPackets = allInstrumentPackets[[All, 2]];
+
+	requestedInstrumentPackets = allInstrumentPackets[[All, 2]];
+
+	requestedInstrumentNotebookPackets = allInstrumentPackets[[All, 7]];
+
+	allInstrumentResourceStatuses = Lookup[instrumentResourcePackets, Status, {}];
+
+	allAllowedNotebooksPerInstrumentResource = PickList[allAllowedNotebooks, resourcesToUse, ObjectP[Object[Resource, Instrument]]];
+
 
 	(* get the instrument model packets; if the InstrumentModels field isn't populated in the resource packets, then take the models of the Instruments *)
 	instrumentModelPackets = MapIndexed[
 		If[MatchQ[Lookup[#1, InstrumentModels], {} | $Failed],
-			{allInstrumentPackets[[First[#2], 4]]},
+			{allInstrumentPackets[[First[#2], 5]]},
 			allInstrumentPackets[[First[#2], 3]]
 		]&,
 		instrumentResourcePackets
@@ -3489,8 +3741,26 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 
 	(* Strip out _Missing in case a sharing team was in financerPackets. Sharing teams do not have ExperimentSites *)
 	allowedSites = DeleteDuplicates[Download[Select[Flatten[Flatten[financerPackets][[All,Key[ExperimentSites]]]],!MatchQ[#,_Missing]&],Object]];
-	
-	defaultSite = FirstOrDefault[Download[Select[Flatten[financerPackets][[All,Key[DefaultExperimentSite]]],!MatchQ[#,_Missing]&],Object]];
+
+	(* get list of default experiment sites from all resource packets *)
+	defaultExperimentSitePackets = Join[
+		allSamplePackets[[All,11]],
+		allInstrumentPackets[[All,4]],
+		allOperatorPackets[[All,1]]
+	];
+	defaultExperimentSites = DeleteDuplicates[Lookup[DeleteCases[Flatten[defaultExperimentSitePackets], Null|$Failed], Object, {}]];
+
+	(* resolve default site to DefaultExperimentSite associated with the RootProtocol of the resources *)
+	defaultSite = If[
+		MemberQ[defaultExperimentSites, ObjectP[Object[Container, Site]]],
+		(* there should only be one RootProtocol across all the resources, so take the first one *)
+		FirstCase[defaultExperimentSites, ObjectP[Object[Container, Site]]],
+
+		(* otherwise, use the DefaultExperimentSite associated with the author(s) *)
+		uniqueTeamsPackets = DeleteDuplicates@DeleteCases[Flatten[financerPackets], Null];
+		allDefaultSites = Download[Cases[Lookup[uniqueTeamsPackets, DefaultExperimentSite], ObjectP[Object[Container, Site]]], Object];
+		FirstOrDefault[allDefaultSites]
+	];
 
 	(* Get all non-retired possible fulfilling instrument sites
 	In the case a specific instrument is requested, use that as site source
@@ -3504,7 +3774,7 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 		Map[
 			Flatten@If[MatchQ[Lookup[#[[1]], Instrument], ObjectP[]],
 				{#[[2]]},
-				#[[5]]
+				#[[6]]
 			]&,
 			allInstrumentPackets
 		]
@@ -3540,9 +3810,11 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 			Message[
 				Error::NoSuitableSite,
 				ECL`InternalUpload`ObjectToString[allowedSites],
-				(* NOTE: Either InstrumentModels or Instrument could be populated here. *)
-				ECL`InternalUpload`ObjectToString[
-					Map[
+				Module[
+					{instrumentModelsAndObjects, errorMessageIndices},
+
+					(* NOTE: Either InstrumentModels or Instrument could be populated here. *)
+					instrumentModelsAndObjects = Map[
 						Function[{instrumentResourcePacket},
 							If[MatchQ[Lookup[instrumentResourcePacket, InstrumentModels], {ObjectP[]..}],
 								FirstOrDefault[Lookup[instrumentResourcePacket, InstrumentModels]],
@@ -3550,16 +3822,85 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 							]
 						],
 						instrumentResourcePackets
-					]
-				],
-				ECL`InternalUpload`ObjectToString[(DeleteDuplicates/@instrumentSites)/.{Null->Nothing}]
+					];
+
+					(* Pull out the indices with the relevant info for the user, depending on whether they have access to multiple sites. *)
+					(* That is, if the user can only use one site, we will only mention the instrument objects/models which are not present *)
+					(* at that site in the error message so that it's very obvious what is causing the problem. *)
+					errorMessageIndices = If[
+						(* Simplify the error message if the user only has one accessible site. *)
+						SameQ[Length[allowedSites], 1],
+						Flatten @ Position[
+							Map[
+								MemberQ[#, Alternatives@@allowedSites]&,
+								instrumentSites
+							],
+							False
+						],
+						(* Otherwise, give them as much info as possible re: which site has which instruments. *)
+						All
+					];
+
+					(* Now add the relevant info for the error message. *)
+					Sequence @@ {
+						ECL`InternalUpload`ObjectToString[instrumentModelsAndObjects[[errorMessageIndices]]],
+						ECL`InternalUpload`ObjectToString[((DeleteDuplicates/@instrumentSites)/.{Null->Nothing})[[errorMessageIndices]]]
+					}
+				]
 			];
+	];
+
+	(* ---------------------------- *)
+	(* --- Instrument Ownership --- *)
+	(* ---------------------------- *)
+	(* check whether the notebook fo the specified instrument matches one of the notebooks of the author by doing the following: *)
+	(* 1. no specific instrument is requested by a root protocol *)
+	(* 2. the requested instrument is public *)
+	(* 3. the status of the resource is something besides Outstanding or InCart (if so, always True). This is important because once a model is resolved, the instrument field will be populated but the item not be owned by anyone *)
+	(* 4. FOR NOW, if $Notebook is Null, then we're going to say this is fulfillable since we are assuming you're in the public space *)
+	(* 5. the notebook of the requested instrument is one of the previously-determined allowed notebooks *)
+	canUseSpecificInstrumentQ = MapThread[
+		Function[{requestedInstrumentPacket, notebookPacket, resourceStatus, allowedNotebooks},
+			Or[
+				(* 1.) no specific instrument is requested by a root protocol *)
+				NullQ[requestedInstrumentPacket],
+
+				(* 2.) the requested instrument is public *)
+				NullQ[notebookPacket],
+
+				(* 3. the status of the resource is something besides Outstanding or InCart (if so, always True). This is important because once a model is resolved, the instrument field will be populated but the item not be owned by anyone *)
+				MatchQ[resourceStatus, Except[Outstanding | InCart]],
+
+				(* 4. FOR NOW, if $Notebook is Null, then we're going to say this is fulfillable since we are assuming you're in the public space *)
+				NullQ[$Notebook],
+
+				(* 5. the notebook of the requested instrument is one of the previously-determined allowed notebooks *)
+				MemberQ[allowedNotebooks, ObjectP[
+					If[MatchQ[notebookPacket, Null | $Failed],
+						{},
+						Lookup[notebookPacket, Object]
+					]
+				]]
+			]
+		],
+		{requestedInstrumentPackets, requestedInstrumentNotebookPackets, allInstrumentResourceStatuses, allAllowedNotebooksPerInstrumentResource}
+	];
+
+	(* get the instrument resources we don't own *)
+	notOwnedInstrumentResources = PickList[instrumentResourcePackets, canUseSpecificInstrumentQ, False];
+
+	(* get the specific samples we don't own *)
+	notOwnedInstruments = PickList[requestedInstrumentPackets, canUseSpecificInstrumentQ, False];
+
+	(* throw a message for specifically requested items that are not owned *)
+	If[messages && Not[MatchQ[notOwnedInstruments, {}]],
+		Message[Error::InstrumentsNotOwned, Lookup[notOwnedInstruments, Object]]
 	];
 
 	(* --- For all Object[Resource, Sample] objects, is the sample set for Disposal? *)
 
 	(* get the list of booleans indicating if a sample is not set for disposal, or if it is (True meaning it is NOT set for disposal) *)
-	(* if it is Null, then no worries; just go straight to True.  Also if it is InUse or Outstanding, then we dont' worry about this so it will also be True *)
+	(* if it is Null, then no worries; just go straight to True.  Also if it is InUse or Outstanding, then we don't worry about this so it will also be True *)
 	(* Skip this check if we're considering resources for a subprotocol since the user may enqueue root protocol and then mark samples for disposal
 		- if this check is present all the subs will throw errors when we try to do the experiment *)
 	notDisposalBool = MapThread[
@@ -3654,6 +3995,67 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 		Message[Error::DeprecatedModels, deprecatedModels]
 	];
 
+	(* --- For all Object[Resource, Sample] objects, if Sterile -> True, are the specified models or objects Sterile -> True? --- *)
+
+	(* get the list of booleans indicating if all the specified model(s) or the sample for a given resource is a sterile mismatch *)
+	(* if True, then that means everything is fine; if False, then that's not fulfillable *)
+	matchingSterileBool = MapThread[
+		Function[{resourcePacket, modelPackets, samplePacket},
+			Which[
+				(* if the resource didn't request sterile, then that's fine and we don't have to go further *)
+				Not[TrueQ[Lookup[resourcePacket, Sterile]]], True,
+				(* if the sample packet is Null, make sure all the requested models have Sterile -> True *)
+				NullQ[samplePacket], MatchQ[Lookup[modelPackets, Sterile], {True..}],
+				(* if the sample packet is specified, make sure it is Sterile -> True *)
+				True, TrueQ[Lookup[samplePacket, Sterile]]
+			]
+		],
+		{sampleResourcePackets, allModelPackets, requestedSamplePackets}
+	];
+
+	(* get the sterile mismatch resources, and then pull out he requested models/samples that were improperly _not_ sterile *)
+	sterileMismatchResources = PickList[sampleResourcePackets, matchingSterileBool, False];
+	sterileMismatchObjs = Flatten[MapThread[
+		Which[
+			TrueQ[#1], Nothing,
+			NullQ[#3], Lookup[#2, Object],
+			True, Lookup[#3, Object]
+		]&,
+		{matchingSterileBool, allModelPackets, requestedSamplePackets}
+	]];
+
+	(* throw a message for the sterile mismatch samples *)
+	If[messages && Not[MatchQ[sterileMismatchObjs, {}]],
+		Message[Error::InvalidSterileRequest, Download[sterileMismatchObjs, Object]]
+	];
+
+	(* --- For all Object[Resource, Sample] objects, if Sterile -> True, are the specified container models Sterile -> True? --- *)
+
+	(* get the list of booleans indicating if all the specified container model(s) for a given resource is a sterile mismatch *)
+	(* if True, then that means everything is fine; if False, then that's not fulfillable *)
+	matchingSterileContainerBool = MapThread[
+		Function[{resourcePacket, containerModelPackets},
+			Which[
+				(* if the resource didn't request sterile, then that's fine and we don't have to go further *)
+				Not[TrueQ[Lookup[resourcePacket, Sterile]]], True,
+				(* if we don't have ContainerModels specified, we're also fine *)
+				MatchQ[Lookup[resourcePacket, ContainerModels], {}], True,
+				(* if the ContainerModels is populated, they have to be sterile models *)
+				True, MatchQ[Lookup[containerModelPackets, Sterile], {True..}]
+			]
+		],
+		{sampleResourcePackets, allContainerModelPackets}
+	];
+
+	(* get the sterile mismatch resources, and then pull out he requested container models that were improperly _not_ sterile *)
+	containerNotSterileResources = PickList[sampleResourcePackets, matchingSterileContainerBool, False];
+	containerNotSterileObjs = Flatten[PickList[allContainerModelPackets, matchingSterileContainerBool, False]];
+
+	(* throw a message for the sterile container mismatch samples *)
+	If[messages && Not[MatchQ[containerNotSterileObjs, {}]],
+		Message[Error::ContainerNotSterile, Download[containerNotSterileObjs, Object]]
+	];
+
 	(* --- For all Object[Resource, Sample] objects, if a sample was specifically indicated, does that sample's notebook match a notebook owned by the requestor? --- *)
 
 	(* get the status of all the sample resources *)
@@ -3667,7 +4069,24 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	(* 5.) FOR NOW, if $Notebook is Null, then we're going to say this is fulfillable since we are assuming you're in the public space *)
 	canUseSpecificSample = MapThread[
 		Function[{samplePacket, notebookPacket, resourceStatus, resourcePacket, allowedNotebooks},
-			NullQ[samplePacket] || (NullQ[notebookPacket] && (MemberQ[subprotocolResources, Lookup[resourcePacket, Object]] || MatchQ[$ECLApplication,Engine])) || MatchQ[resourceStatus, Except[Outstanding | InCart]] || NullQ[$Notebook] || MemberQ[allowedNotebooks, ObjectP[If[MatchQ[notebookPacket, Null | $Failed], {}, Lookup[notebookPacket, Object]]]]
+			Or[
+				NullQ[samplePacket],
+				And[
+					NullQ[notebookPacket],
+					Or[
+						MemberQ[subprotocolResources, Lookup[resourcePacket, Object]],
+						MatchQ[$ECLApplication,Engine]
+					]
+				],
+				MatchQ[resourceStatus, Except[Outstanding | InCart]],
+				NullQ[$Notebook],
+				MemberQ[allowedNotebooks, ObjectP[
+					If[MatchQ[notebookPacket, Null | $Failed],
+						{},
+						Lookup[notebookPacket, Object]
+					]
+				]]
+			]
 		],
 		{requestedSamplePackets, requestedSampleNotebookPackets, allResourceStatuses, sampleResourcePackets, allAllowedNotebooksPerSampleResource}
 	];
@@ -3771,7 +4190,8 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 						availableAmount, enoughBool, currentAmountUnit},
 
 						(* isolate all the "other" outstanding resource packets for this sample (i.e. all but this one) *)
-						otherRequestedResourceSamplePackets = Select[allResourcePacketsForSample, MatchQ[Lookup[#, Status], Except[InCart | Shipping, ResourceStatusP]] && Not[MatchQ[#, ObjectP[Lookup[resourcePacket, Object]]]]&];
+						(* if the resource is rented we don't need to count it against our current amount since it's not actually being consumed *)
+						otherRequestedResourceSamplePackets = Select[allResourcePacketsForSample, MatchQ[Lookup[#, {Status,Rent}], {Except[InCart | Shipping, ResourceStatusP],False|Null}] && Not[MatchQ[#, ObjectP[Lookup[resourcePacket, Object]]]]&];
 
 						(* get the current amount of the sample itself (and get the units) *)
 						currentAmount = Which[
@@ -3885,7 +4305,7 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	movingRequiredContainers=KeyValueMap[
 		Module[
 			{containerPacket,containerName,contents,containerNameCount},
-			containerPacket=fetchPacketFromCache[#1[[1]],Flatten[packetsFromSampleResources]];
+			containerPacket=fetchPacketFromCache[#1[[1]],Flatten[allSamplePackets]];
 			contents=Lookup[containerPacket,Contents,{}]/.{x:ObjectP[]:>Download[x,Object]};
 			containerName=#1[[2]];
 			containerNameCount=Count[Lookup[sampleResourcePackets,ContainerName,{}],containerName];
@@ -3915,28 +4335,79 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 
 	(* if a sample must be moved, throw a warning *)
 	samplesMustMovedWarnings = MapThread[
-		If[#3 && Not[MatchQ[$ECLApplication, Engine]],
-			If[MatchQ[Lookup[#1, ContainerName], _String],
-				(* If we have a ContainerName and Well requirement, update the message to be more specific *)
-				{Download[Download[#1, Sample], Object], Download[#2, Object], Lookup[#1, ContainerName], Lookup[#1, Well]},
-				{Download[Download[#1, Sample], Object], Download[#2, Object], Null}
-			],
-			Nothing
+		With[{mySample = Download[Download[#1, Sample], Object]},
+			If[!MatchQ[mySample, ObjectP[noMovementWarningSamples]] && #3 && Not[MatchQ[$ECLApplication, Engine]],
+				If[MatchQ[Lookup[#1, ContainerName], _String],
+					(* If we have a ContainerName and Well requirement, update the message to be more specific *)
+					{mySample, Download[#2, Object], Lookup[#1, ContainerName], Lookup[#1, Well]},
+					{mySample, Download[#2, Object], Null}
+				],
+				Nothing
+			]
 		]&,
 		{sampleResourcePackets, allContainerModelPackets, sampleMustBeMovedBool}
 	];
 
 	If[Length[samplesMustMovedWarnings] > 0,
-		Module[{samplesWithContainerName, samplesWithoutContainerName},
+		Module[
+			{
+				samplesWithContainerName, samplesWithoutContainerName, warningMessage,
+				groupedSampleContainerTuples, groupedSamples, uniqueContainers, groupedContainerSampleAssociation,
+				sampleContainerTuples
+			},
+
 			(* Split out the warnings based on whether we know the container name *)
 			samplesWithContainerName = Select[samplesMustMovedWarnings, !NullQ[#[[3]]]&];
 			samplesWithoutContainerName = Select[samplesMustMovedWarnings, NullQ[#[[3]]]&];
+
 			If[Length[samplesWithContainerName] > 0,
-				Message[Warning::SampleMustBeMoved, samplesWithContainerName[[All, 1]], samplesWithContainerName[[All, 2]]," with ContainerName " <> ToString@samplesWithContainerName[[All, 3]] <>" and Well " <> ToString@samplesWithContainerName[[All, 4]] <> " required", "in a container meeting all the requirements"]
+				Message[
+					Warning::SampleMustBeMoved,
+					ECL`InternalUpload`ObjectToString[samplesWithContainerName[[All, 1]], Cache -> cache],
+					StringJoin[
+						" will be transferred into " <> ToString[samplesWithContainerName[[All, 2]]],
+						" with ContainerName " <> ToString@samplesWithContainerName[[All, 3]],
+						" and Well " <> ToString@samplesWithContainerName[[All, 4]]
+					]
+				]
 			];
+
 			If[Length[samplesWithoutContainerName] > 0,
-				Message[Warning::SampleMustBeMoved, samplesWithoutContainerName[[All, 1]], samplesWithoutContainerName[[All, 2]], "", "in a container with this model(s)"]
-			];
+				sampleContainerTuples = samplesWithoutContainerName[[All, 1;;2]];
+
+				(* reformat the message *)
+				(* group samples by similar destination container models *)
+				groupedContainerSampleAssociation = GroupBy[sampleContainerTuples, Last -> First];
+
+				(* unique containers for samples *)
+				uniqueContainers = ECL`InternalUpload`ObjectToString[#, Cache -> cache]& /@ Keys[groupedContainerSampleAssociation][[All, 1]];
+
+				(* grouped samples based on their destination container model *)
+				groupedSamples = ECL`InternalUpload`ObjectToString[#, Cache -> cache]& /@ Values[groupedContainerSampleAssociation];
+
+				(* created a {{samples, container}..} tuple *)
+				groupedSampleContainerTuples = Transpose[{groupedSamples, uniqueContainers}];
+
+				(* created the error message *)
+				warningMessage = If[
+					Length[groupedSampleContainerTuples] > 1,
+					StringJoin[
+						StringRiffle[StringRiffle[#, " will be transferred into "]& /@ groupedSampleContainerTuples[[1 ;; -2]], "; the designated amount(s) of "],
+
+						"; and the designated amount(s) of " <> groupedSampleContainerTuples[[-1, 1]] <> " will be transferred into " <> groupedSampleContainerTuples[[-1, 2]]
+					],
+
+					groupedSampleContainerTuples[[1, 1]] <> " will be transferred into " <> groupedSampleContainerTuples[[1, 2]]
+				];
+
+
+				(* throw the message *)
+				Message[
+					Warning::SampleMustBeMoved,
+					ECL`InternalUpload`ObjectToString[samplesWithoutContainerName[[All, 1]], Cache -> cache],
+					warningMessage
+				]
+			]
 		]
 	];
 
@@ -3944,16 +4415,21 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	samplesToBeMoved = PickList[sampleResourcePackets, sampleMustBeMovedBool, True];
 
 	(* --- For all Object[Resource, Sample] objects, if a sample was specifically indicated and the item is consumable, is there already a request out for this sample? --- *)
+	(* For consumable models (removed from inventory after use) we need to consider if we will have enough objects remaining in inventory for our resource requests in consideration *)
 
+	(* Note: this should sync up with SyncInventory's definition of a consumable *)
 	(* get whether a given resource request is of an item that is consumable or not, index matched to the resource requests on models *)
+	(* here anything that will get removed from inventory because it will be purchased, disposed or otherwise unusable for future model fulfillment is considered consumable *)
 	consumable = MapThread[
 		Which[
 			(* for Model[Item,Column], it is never a consumable *)
 			MatchQ[#1, {PacketP[{Model[Item,Column]}]..}], False,
-			(* for samples or items, if Reusability -> False, then assume this means the item is a consumable (assuming also the sample is SelfContained); if it is True, or the field doesn't exist, then we say this item is not a consumable *)
-			MatchQ[#1, {PacketP[Model[Item]]..}], MatchQ[Lookup[#1, Reusability], {(False | Null)..}] && MatchQ[#1, {SelfContainedSampleModelP..}],
-			(* for containers that either haven't requested a sample or have requested an empty sample, if Reusability is listed as False, or if Reusability is listed as True and CleaningMethod is a dishwash variant and Sterile is not True, we can assume the container is consumable *)
-			MatchQ[#1, {PacketP[Model[Container]]..}] && (NullQ[#2] || MatchQ[Lookup[#2, Contents], {}]), MatchQ[Lookup[#1, Reusability], {(False | Null)..}] || MatchQ[Lookup[#1, {Reusability, CleaningMethod, Sterile}], {{True, DishwashIntensive | DishwashPlastic | DishwashPlateSeals, Except[True]}..}],
+			(* for samples or items, if Reusable -> False, then assume this means the item is a consumable (assuming also the sample is SelfContained); if it is True, or the field doesn't exist, then we say this item is not a consumable *)
+			MatchQ[#1, {PacketP[Model[Item]]..}], MatchQ[Lookup[#1, Reusable], {(False | Null)..}] && MatchQ[#1, {SelfContainedSampleModelP..}],
+			(* empty container request: any container models that will get liquid stored in them will effectively get consumed since once they have sample in them they can't be used for other things *)
+			MatchQ[#1, {PacketP[FluidContainerModelTypes]..}] && (NullQ[#2] || MatchQ[Lookup[#2, Contents], {}]), True,
+			(* for all other container requests check reusability *)
+			MatchQ[#1, {PacketP[Model[Container]]..}] && (NullQ[#2] || MatchQ[Lookup[#2, Contents], {}]), MatchQ[Lookup[#1, Reusable], {(False | Null)..}],
 			(* for containers that have contents, we assume that this is _never_ consumable because we are worrying about the thing inside it instead and several reservations on the same item won't hurt anything*)
 			MatchQ[#1, {PacketP[Model[Container]]..}] && MatchQ[Lookup[#2, Contents], Except[{}]], False,
 			(* for parts/plumbing/wiring, nothing is a consumable *)
@@ -4068,7 +4544,7 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	];
 
 	(* --- for all  Object[Resource, Sample] object requesting a specific sample with NumberOfUses-> GreaterP[0,1], does NumberOfUses (current value) + NumberOfUses (resource request) + NumberOfUses (other resource requests) > MaxNumberOfUses *)
-	
+
 	(* get the amount that is being requested *)
 	requestedUses = Lookup[sampleResourcePackets, NumberOfUses, {}];
 
@@ -4110,9 +4586,9 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	If[MemberQ[enoughUsesBool, False] && messages && Not[MatchQ[$ECLApplication, Engine]],
 		Message[Error::ExceedsMaxNumberOfUses, ECL`InternalUpload`ObjectToString[Download[Lookup[notEnoughUsesPackets, Sample, {}], Object]], ToString[Lookup[notEnoughUsesPackets, NumberOfUses]]];
 	];
-	
+
 	(* --- for all  Object[Resource, Sample] object requesting a specific sample with VolumeOfUses-> GreaterP[0 Milliliter], does VolumeOfUses  > MaxVolumeOfUses *)
-	
+
 	(* For all Model[Item] resources, since the amount will not be specified, it will only controlled by name we collect all resources with the same ID *)
 	modelItemResourcePackets= Select[sampleResourcePackets, And[NullQ[Lookup[#, Sample]], MatchQ[Download[Lookup[#, Models],Object], {ObjectReferenceP[Model[Item]] ..}]]&];
 
@@ -4168,7 +4644,7 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	If[MemberQ[uniqueVolumeBool, False] && messages && Not[MatchQ[$ECLApplication, Engine]],
 		Message[Error::TwoVolumeOfUsesSpecifiedForOneResource, ToString[Lookup[twoUniqueVolumesPackets, Object, {}]], ToString[Lookup[twoUniqueVolumesPackets, VolumeOfUses]]];
 	];
-	
+
 	(* get all the model packets that correspond to the samples we will be searching over *)
 	(* exclude cases where the model is Milli-Q water, where we don't want to look for it because we'll just get some from the purifier *)
 	(* need to use the ID for water rather than the Name because otherwise matching with ObjectP will require it to go to the database to Download the ID to match against *)
@@ -4203,130 +4679,161 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	(* generate the Search conditions for getting the models *)
 	(* for want to get all the samples/containers/parts of a given set of models that are Stocked, Available, or InUse *)
 	(* for containers, also need to be empty, unless the status is Stocked and the model comes with a storage buffer (then it's allowed to not be empty) *)
-	modelSearchConditions=MapThread[Function[{modelPacket, productPacket, resourcePacket},
-		With[{
-			modelClause=Model == (Alternatives @@ Lookup[modelPacket, Object]),
-			(*we explicitly forbid reuse of InUse covers so we don't steal covers from other containers while we are fulfilling a Model resource*)
-			(*we also forbid a non-reusable container to be picked as Available, just in case they were used in another protocol with no sample uploaded to it due to it being used as intermediate container or some other bug *)
-			statusClause=Which[
-				MatchQ[Lookup[modelPacket, Object], {ObjectP[Join[Patterns`Private`coveringTypesModels,{Model[Item, Stopper], Model[Item, Septum]}]]..}],
-					Status == (Available | Stocked),
-				MatchQ[Lookup[modelPacket, Object], {ObjectP[FluidContainerModelTypes]..}]&&MatchQ[Lookup[modelPacket, Reusability], {Except[True]..}],
-					Status == Stocked,
-				True,
-					Status == (Available | Stocked | InUse)
-			],
-			(*the only time we care about this is when we are looking for public samples*)
-			notebookClause=If[nullNotebookQ,
-				Notebook == Null,
-				True
-			],
-			maxNumUsesClause=Which[
-				MatchQ[modelPacket, ListableP[ObjectP[Model[Item]]]],
-				If[NullQ[Lookup[resourcePacket, NumberOfUses]],
-					True,
-					NumberOfUses <= Sequence @@ (First[Cases[Lookup[modelPacket, MaxNumberOfUses],Except[Null]]] - Lookup[resourcePacket, NumberOfUses])
-				],
-
-				MatchQ[modelPacket, ListableP[ObjectP[Model[Container, ProteinCapillaryElectrophoresisCartridge]]]],
-				If[!MemberQ[Lookup[modelPacket, MaxNumberOfUses], _Integer],
-					True,
-					If[NullQ[Lookup[resourcePacket, NumberOfUses]],
+	modelSearchConditions=MapThread[
+		Function[{modelPacket, productPacket, resourcePacket},
+			With[
+				{
+					modelClause = Model == (Alternatives @@ Lookup[modelPacket, Object]),
+					(*we explicitly forbid reuse of InUse covers so we don't steal covers from other containers while we are fulfilling a Model resource*)
+					(*we also forbid a non-reusable container to be picked as Available, just in case they were used in another protocol with no sample uploaded to it due to it being used as intermediate container or some other bug *)
+					statusClause = Which[
+						MatchQ[Lookup[modelPacket, Object], {ObjectP[Join[CoverModelTypes, {Model[Item, Stopper], Model[Item, Septum]}]]..}],
+						Status == (Available | Stocked),
+						MatchQ[Lookup[modelPacket, Object], {ObjectP[FluidContainerModelTypes]..}] && MatchQ[Lookup[modelPacket, Reusable], {Except[True]..}],
+						Status == Stocked,
 						True,
-						NumberOfUses <= Sequence @@ (First[Cases[Lookup[modelPacket, MaxNumberOfUses],Except[Null]]] - Lookup[resourcePacket, NumberOfUses])
-					]
-				],
+						Status == (Available | Stocked | InUse)
+					],
+					(*the only time we care about this is when we are looking for public samples*)
+					notebookClause = If[nullNotebookQ,
+						Notebook == Null,
+						True
+					],
+					maxNumUsesClause = Which[
+						MatchQ[modelPacket, ListableP[ObjectP[Model[Item]]]],
+						If[NullQ[Lookup[resourcePacket, NumberOfUses]],
+							True,
+							NumberOfUses <= Sequence @@ (First[Cases[Lookup[modelPacket, MaxNumberOfUses], Except[Null]]] - Lookup[resourcePacket, NumberOfUses])
+						],
 
-				True,
-				If[!MemberQ[Lookup[modelPacket, MaxNumberOfUses], _Integer],
-					True,
-					Or[
-						NumberOfUses == Null,
-						NumberOfUses < First[Cases[Lookup[modelPacket, MaxNumberOfUses],Except[Null]]]
+						MatchQ[modelPacket, ListableP[ObjectP[Model[Container, ProteinCapillaryElectrophoresisCartridge]]]],
+						If[!MemberQ[Lookup[modelPacket, MaxNumberOfUses], _Integer],
+							True,
+							If[NullQ[Lookup[resourcePacket, NumberOfUses]],
+								True,
+								NumberOfUses <= Sequence @@ (First[Cases[Lookup[modelPacket, MaxNumberOfUses], Except[Null]]] - Lookup[resourcePacket, NumberOfUses])
+							]
+						],
+
+						True,
+						If[!MemberQ[Lookup[modelPacket, MaxNumberOfUses], _Integer],
+							True,
+							Or[
+								NumberOfUses == Null,
+								NumberOfUses < First[Cases[Lookup[modelPacket, MaxNumberOfUses], Except[Null]]]
+							]
+						]
+
+					],
+					maxVolumeUsesClause = Which[
+						MatchQ[modelPacket, ListableP[ObjectP[Model[Item, Filter, MicrofluidicChip]]]],
+						If[NullQ[Lookup[resourcePacket, VolumeOfUses]],
+							True,
+							VolumeOfUses <= Sequence @@ (Lookup[modelPacket, MaxVolumeOfUses] - Lookup[resourcePacket, VolumeOfUses])
+						],
+						True,
+						If[!MemberQ[Lookup[modelPacket, MaxVolumeOfUses], GreaterP[0Milliliter]],
+							True,
+							Or[
+								VolumeOfUses == Null,
+								VolumeOfUses < Lookup[First[modelPacket], MaxVolumeOfUses]
+							]
+						]
+
+					],
+					maxNumHoursClause = If[!MemberQ[Lookup[modelPacket, MaxNumberOfHours], TimeP],
+						True,
+						NumberOfHours == Null || NumberOfHours < Lookup[First[modelPacket], MaxNumberOfHours]
+					],
+					coveredContainerClause = If[MatchQ[modelPacket, {ObjectP[Join[CoverModelTypes, {Model[Item, Stopper], Model[Item, Septum]}]]..}],
+						CoveredContainer == Null,
+						True
+					],
+					contentsClause = Which[
+						Or[
+							(* Model[Container, Bag, "Plastic Bag For NMR Sealed Inserts"] *)
+							MatchQ[modelPacket, ListableP[ObjectP[{Model[Container, ProteinCapillaryElectrophoresisCartridge], Model[Container, Bag, "id:O81aEB1LOw0j"]}]]],
+							(* if StorageBuffer is True then it doesn't have to be empty *)
+							MatchQ[Lookup[modelPacket, StorageBuffer], {True..}]
+						],
+						True,
+						And[
+							MatchQ[modelPacket, ListableP[ObjectP[Model[Container]]]],
+							(* If our container is not holding a StorageBuffer, it must be empty to pick *)
+							!MemberQ[Lookup[modelPacket, StorageBuffer], True]
+						],
+						Contents == Null,
+
+						(* If our container is holding a StorageBuffer, it can be empty or Stocked since we are going to remove the StorageBuffer before real use *)
+						MatchQ[modelPacket, ListableP[ObjectP[Model[Container]]]],
+						Or[
+							Status == Stocked,
+							Contents == Null
+						],
+
+						True,
+						True
+					],
+					sizeClause = If[
+						And[
+							MatchQ[modelPacket, ListableP[ObjectP[Model[Plumbing, Tubing]]]],
+							MatchQ[Lookup[resourcePacket, Amount], DistanceP]
+						],
+						Size >= Lookup[resourcePacket, Amount],
+						True
+					],
+					countClause = If[
+						And[
+							MatchQ[productPacket, ObjectP[Object[Product]]],
+							Not[NullQ[Lookup[productPacket, CountPerSample]]],
+							MemberQ[Fields[Object @@ Lookup[First[modelPacket], Type], Output -> Short], Count],
+							Not[NullQ[Lookup[resourcePacket, Amount]]]
+						],
+						Count >= Unitless[Lookup[resourcePacket, Amount], Unit],
+						True
+					],
+					(* We can request Object[Item], Object[Container], Object[Sample] and all of them have ExpirationDate field*)
+					expirationDateClause = Or[
+						ExpirationDate == Null,
+						ExpirationDate > now
+					],
+					restrictedClause = And[
+						Restricted != True,
+						Missing != True,
+						AwaitingDisposal != True
+					],
+					(* here we're saying look for sterile samples only if:*)
+					(* 1.) The resource is asking for something Sterile *)
+					(* 2.) The type being requested has the Sterile field *)
+					(* 3.) We haven't already determined that we can't actually get sterile things from this resource because the thing being requested is intrinsically _not_ sterile *)
+					(* this third one is a little weird, but we are doing this to avoid having a message thrown because we can't actually get sterile versions of what is requested, AND a message saying that the sample is out of stock (because obviously the sterile search will turn up nothing) *)
+					sterileClause = If[
+						And[
+							TrueQ[Lookup[resourcePacket, Sterile]],
+							MemberQ[Fields[Lookup[First[modelPacket], Type], Output -> Short], Sterile],
+							Not[MemberQ[Lookup[sterileMismatchResources, Object, {}], Lookup[resourcePacket, Object]]]
+						],
+						Sterile == True,
+						True
 					]
+				},
+				And[
+					modelClause,
+					statusClause,
+					notebookClause,
+					maxNumHoursClause,
+					maxNumUsesClause,
+					maxVolumeUsesClause,
+					coveredContainerClause,
+					contentsClause,
+					expirationDateClause,
+					sizeClause,
+					countClause,
+					restrictedClause,
+					sterileClause
 				]
-
-			],
-			maxVolumeUsesClause=Which[
-				MatchQ[modelPacket, ListableP[ObjectP[Model[Item, Filter, MicrofluidicChip]]]],
-				If[NullQ[Lookup[resourcePacket, VolumeOfUses]],
-					True,
-					VolumeOfUses <= Sequence @@ (Lookup[modelPacket, MaxVolumeOfUses] - Lookup[resourcePacket, VolumeOfUses])
-				],
-				True,
-				If[!MemberQ[Lookup[modelPacket, MaxVolumeOfUses], GreaterP[0Milliliter]],
-					True,
-					Or[
-						VolumeOfUses == Null,
-						VolumeOfUses < Lookup[First[modelPacket], MaxVolumeOfUses]
-					]
-				]
-			
-			],
-			maxNumHoursClause=If[!MemberQ[Lookup[modelPacket, MaxNumberOfHours], TimeP],
-				True,
-				NumberOfHours == Null || NumberOfHours < Lookup[First[modelPacket], MaxNumberOfHours]
-			],
-			coveredContainerClause=If[MatchQ[modelPacket, {ObjectP[Join[Patterns`Private`coveringTypesModels,{Model[Item, Stopper], Model[Item, Septum]}]]..}],
-				CoveredContainer == Null,
-				True
-			],
-			contentsClause=Which[
-				Or[
-					(* Model[Container, Bag, "2 x 3 Inch Plastic Bag For NMR Sealed Inserts"] *)
-					MatchQ[modelPacket, ListableP[ObjectP[{Model[Container, ProteinCapillaryElectrophoresisCartridge],Model[Container, Bag, "id:O81aEB1LOw0j"]}]]],
-					(* if StorageBuffer is True then it doesn't have to be empty *)
-					MatchQ[Lookup[modelPacket, StorageBuffer], {True..}]
-				],
-					True,
-				And[
-					MatchQ[modelPacket, ListableP[ObjectP[Model[Container]]]],
-					(* If our container is not holding a StorageBuffer, it must be empty to pick *)
-					!MemberQ[Lookup[modelPacket, StorageBuffer], True]
-				],
-				Contents == Null,
-
-				(* If our container is holding a StorageBuffer, it can be empty or Stocked since we are going to remove the StorageBuffer before real use *)
-				MatchQ[modelPacket, ListableP[ObjectP[Model[Container]]]],
-				Or[
-					Status == Stocked,
-					Contents == Null
-				],
-
-				True,
-				True
-			],
-			sizeClause = If[
-				And[
-					MatchQ[modelPacket, ListableP[ObjectP[Model[Plumbing,Tubing]]]],
-					MatchQ[Lookup[resourcePacket, Amount],DistanceP]
-				],
-				Size >= Lookup[resourcePacket, Amount],
-				True
-			],
-			countClause=If[
-				And[
-					MatchQ[productPacket, ObjectP[Object[Product]]],
-					Not[NullQ[Lookup[productPacket, CountPerSample]]],
-					MemberQ[Fields[Object @@ Lookup[First[modelPacket], Type], Output -> Short], Count],
-					Not[NullQ[Lookup[resourcePacket, Amount]]]
-				],
-				Count >= Unitless[Lookup[resourcePacket, Amount],Unit],
-				True
-			],
-			(* We can request Object[Item], Object[Container], Object[Sample] and all of them have ExpirationDate field*)
-			expirationDateClause=Or[
-				ExpirationDate == Null,
-				ExpirationDate > now
-			],
-			restrictedClause=And[
-				Restricted!=True,
-				Missing!=True,
-				AwaitingDisposal!=True
 			]
-		},
-			And[modelClause, statusClause, notebookClause, maxNumHoursClause, maxNumUsesClause, maxVolumeUsesClause, coveredContainerClause, contentsClause, expirationDateClause, sizeClause, countClause, restrictedClause]
-		]],
+		],
 		{modelPacketsToSearch, oneProductPerResourceToSearch, sampleResourcePacketsToSearch}
 	];
 
@@ -4343,7 +4850,7 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	samplesAndContainersRules = AssociationThread[typesAndSearchConditionsNoDupes, samplesAndContainersNoDupes];
 	samplesAndContainers = typesAndSearchConditions /. samplesAndContainersRules;
 
-	(* about to do some hacky wonky shit to make this Download not take for fucking ever *)
+	(* about to do some hacky wonky stuff to make this Download not take foreverrrrrrr *)
 	(* basically, if you fulfill the following criteria, we are going to fudge it because it just is prohibitively slow otherwise: *)
 	(* 1.) There are more than 200 samples that fulfill the criteria above *)
 	(* 2.) The samples are SelfContainedSamples *)
@@ -4362,10 +4869,10 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	(* for the things we're Downloading a fair amount of stuff from, get a lot of information; for things for which there are just a ton of things then only get a little bit of information (i.e., how many resources are requesting these specific samples; this should almost never matter so we are leaving ourselves open to a protocol being blocked when you have a ton of InCart resources that aren't really reserving anything). *)
 	secondDownloadFields = Join[
 		ConstantArray[{
-			Packet[Volume, Mass, Count, Size, Status, Product, NumberOfUses, Model, Notebook, Site, Destination],
+			Packet[Volume, Mass, Count, Size, Status, Product, NumberOfUses, Model, Notebook, Site, Destination, Sterile],
 			Model[State],
 			Model[Density],
-			Packet[RequestedResources[{Amount, Status, Preparation, Models, Notebook}]],
+			Packet[RequestedResources[{Amount, Status, Preparation, Models, Notebook, Sterile}]],
 			Field[Product[DefaultContainerModel][Hermetic]]
 		}, Length[secondDownloadInputs]],
 		ConstantArray[{Field[Length[RequestedResources]]}, Length[secondDownloadInputsTooBig]]
@@ -4405,6 +4912,8 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 						Mass -> Null,
 						Size -> Null,
 						Count -> Lookup[prod, CountPerSample, Null],
+						(* we're assuming they're sterile if the product is sterile *)
+						Sterile -> Lookup[prod, Sterile, Null],
 						(* yes we are assuming they are all Available but that is okay since presumably we have so many here that the approximation doesn't hurt us that much *)
 						Status -> Available,
 						Product -> Link[prod]
@@ -4426,10 +4935,10 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 					],
 					{}
 				}&,
-				(* This is kinda weird but it takes fucking forever to build these "fake" packets when
+				(* This is kinda weird but it takes forever to build these "fake" packets when
 				the number of samples gets really large (for example, we have 30k 2ml tube caps in the lab
 				and this block of code takes like 10 minutes to generate a packet for all 30k). So, we assume
-				at MAX we need the same number as the total number of resources we're asking for. This should 
+				at MAX we need the same number as the total number of resources we're asking for. This should
 				be safe since worst case all resources are asking for the same thing. *)
 				Take[sampleObjs,UpTo[Length[myResources]]]
 			]
@@ -4451,7 +4960,7 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	postSecondDownloadPackets = Replace[samplesAndContainers, samplesAndContainersReplaceRules, 1];
 
 	(* Parse out the second Download packets for the Samples: the packets of the samples themselves, their outstanding resources, and whether they're in a hermetic container *)
-	(* need to do some wonky shit to get the State field into the sample packets since it's normally a computable field so I can't just directly download this without expecting it to be even slower than it already is *)
+	(* need to do some wonky stuff to get the State field into the sample packets since it's normally a computable field so I can't just directly download this without expecting it to be even slower than it already is *)
 	(* if we Downloaded nothing from the things we searched over, then just default to {} for that entry *)
 	modelObjectPackets = Map[
 		Function[{downloadValue},
@@ -4674,11 +5183,24 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	(* get whether the model enough quantity things are hermetic *)
 	modelHermeticQs = Replace[sampleResourcePackets, hermeticQReplaceRules, 1];
 
-	(* check to see if 1.) the total volume is insufficient for a given model request, 2.) a product exists, 3.) if it's in a hermetic container, the amount requested isn't greater than the amount included in the kit *)
-	(* if all three of these are True, then that entry will be False; otherwise it will be True. *)
+	(* check to see if
+	 	1.) the total volume is insufficient for a given model request
+		2.) a product exists
+		3.) if it's in a hermetic container, the amount requested isn't greater than the amount included in the kit
+		4.) if the resource asked for it to be sterile and the product is properly sterile *)
+	(* if all four of these are True, then that entry will be False; otherwise it will be True. *)
 	modelVolProdNotDeprecatedBool = MapThread[
 		Function[{enoughVolumeBool, product, resourcePacket, hermeticQ},
-			If[Not[enoughVolumeBool] && MatchQ[product, ObjectP[Object[Product]]] && (Not[hermeticQ] || (hermeticQ && Lookup[product, Amount] >= Lookup[resourcePacket, Amount])),
+			If[
+				And[
+					Not[enoughVolumeBool],
+					MatchQ[product, ObjectP[Object[Product]]],
+					(Not[hermeticQ] || (hermeticQ && Lookup[product, Amount] >= Lookup[resourcePacket, Amount])),
+					Or[
+						TrueQ[Lookup[resourcePacket, Sterile]] && TrueQ[Lookup[product, Sterile]],
+						Not[TrueQ[Lookup[resourcePacket, Sterile]]]
+					]
+				],
 				False,
 				True
 			]
@@ -4698,10 +5220,23 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 		Message[Warning::SamplesOutOfStock, Download[Lookup[modelVolResourceProdNotDeprecated, Models], Object], Lookup[modelVolProdsNotDeprecated, EstimatedLeadTime]]
 	];
 
-	(* get the models where there is no available total volume AND no non-deprecated product exists (or, in the kit or hermetic case, no non-deprecated product exists with a high enough amount) *)
+	(* get the models where there is:
+		1.) no available total volume
+	  	2.) one fo the following are True:
+	  	2a.) no non-deprecated product exists
+	 	2b.) in the kit or hermetic case, no non-deprecated product exists with a high enough amount
+	 	2c.) the existing product is not sterile when the resource needs it to be sterile *)
 	modelVolNoProdBool = MapThread[
 		Function[{enoughBool, prod, resource, hermeticQ},
-			If[Not[enoughBool] && (NullQ[prod] || (hermeticQ && Lookup[prod, Amount] < Lookup[resource, Amount])),
+			If[
+				And[
+					Not[enoughBool],
+					Or[
+						NullQ[prod],
+						hermeticQ && Lookup[prod, Amount] < Lookup[resource, Amount],
+						TrueQ[Lookup[resource, Sterile]] && Not[TrueQ[Lookup[prod, Sterile]]]
+					]
+				],
 				False,
 				True
 			]
@@ -4748,8 +5283,14 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	(* pick all the packets of resources that have this model that are reserved *)
 	(* need to DeleteDuplicates because we don't want to double-count the same resource, and we could get that if we are reserving more than one model *)
 	(* need to do the weird DeleteCases because we don't want the record of this reservation itself to count against it being fulfilled *)
+	(* exclude Rented resources which won't actually get consumed *)
 	modelReservedPackets = MapThread[
-		DeleteDuplicates[Select[DeleteCases[#1, ObjectP[Lookup[#2, Object]]], MatchQ[Lookup[#, Status], Except[InCart | Shipping, ResourceStatusP]]&]]&,
+		DeleteDuplicates[
+			Select[
+				DeleteCases[#1, ObjectP[Lookup[#2, Object]]],
+				MatchQ[Lookup[#, {Status,Rent}], {Except[InCart | Shipping, ResourceStatusP],False|Null}]&
+			]
+		]&,
 		{modelResourcePacketsToSearch, sampleResourcePacketsToSearch}
 	];
 
@@ -4800,16 +5341,18 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	(* get the total amount that is currently available in the objects *)
 	(* need the empty list overload of Lookup in case there is truly nothing existing of a given model *)
 	(* we are forcibly converting available amounts into what we think the state should be for the request based on the Amount *)
-	availableAmountAllModels = MapThread[Module[{sampleModelPacket,density},
-		sampleModelPacket=FirstCase[#1,PacketP[],<||>];
-		density=Lookup[sampleModelPacket,Density,Null];
-		Switch[Lookup[#2, Amount],
-			MassP, Total@getSampleAmount[#1,Solid],
-			VolumeP, Total@getSampleAmount[#1,Liquid],
-			DistanceP, Total[DeleteCases[Lookup[#1, Size, {}], Null]],
-			UnitsP[Unit], Total[DeleteCases[Lookup[#1, Count, {}], Null]],
-			_, Null
-		]]&,
+	availableAmountAllModels = MapThread[
+		Module[{sampleModelPacket,density},
+			sampleModelPacket=FirstCase[#1,PacketP[],<||>];
+			density=Lookup[sampleModelPacket,Density,Null];
+			Switch[Lookup[#2, Amount],
+				MassP, Total@getSampleAmount[#1,Solid],
+				VolumeP, Total@getSampleAmount[#1,Liquid],
+				DistanceP, Total[DeleteCases[Lookup[#1, Size, {}], Null]],
+				UnitsP[Unit], Total[DeleteCases[Lookup[#1, Count, {}], Null]],
+				_, Null
+			]
+		]&,
 		{filterStockedModelObjectPackets, sampleResourcePacketsToSearch}
 	];
 
@@ -4858,14 +5401,29 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	(* get the model enough quantity Boolean index matched with all sample resource objects *)
 	finalModelEnoughAmountBool = Replace[sampleResourcePackets, modelEnoughAmountReplaceRules, 1];
 
-	(* check to see if 1.) the total volume is insufficient for a given model request, 2.) a product exists, and 3.) a product exists that is not deprecated *)
+	(* check to see if *)
+	(* 1.) the total volume is insufficient for a given model request *)
+	(* 2.) a product exists *)
+	(* 3.) a product exists that is not deprecated *)
+	(* 4.) If the resource asked for it to be sterile and the product is properly sterile *)
 	(* if all three of these are True, then that entry will be False; otherwise it will be True. *)
 	totalVolProdNotDeprecatedBool = MapThread[
-		If[Not[#1] && MatchQ[#2, ObjectP[Object[Product]]],
-			False,
-			True
-		]&,
-		{finalModelEnoughAmountBool, oneProductPerResource}
+		Function[{enoughBool, prodPacket, resourcePacket},
+			If[
+				And[
+					Not[enoughBool],
+					MatchQ[prodPacket, ObjectP[Object[Product]]],
+					Not[TrueQ[Lookup[prodPacket, Deprecated]]],
+					Or[
+						TrueQ[Lookup[resourcePacket, Sterile]] && TrueQ[Lookup[prodPacket, Sterile]],
+						Not[TrueQ[Lookup[resourcePacket, Sterile]]]
+					]
+				],
+				False,
+				True
+			]
+		],
+		{finalModelEnoughAmountBool, oneProductPerResource, sampleResourcePackets}
 	];
 
 	(* get the resources in question where totalVolProdNotDeprecatedBool is False *)
@@ -4879,13 +5437,22 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 		Message[Warning::SamplesOutOfStock, Download[Lookup[totalVolResourceProdNotDeprecated, Models], Object], Lookup[totalVolProdsNotDeprecated, EstimatedLeadTime]]
 	];
 
-	(* get the models where there is no available total volume AND no non-deprecated product exists *)
+	(* get the models where there is no available total volume AND no non-deprecated product exists (or if one exists, it is not sterile when the resource needsit to be sterile) *)
 	totalVolNoProdBool = MapThread[
-		If[Not[#1] && NullQ[#2],
-			False,
-			True
-		]&,
-		{finalModelEnoughAmountBool, oneProductPerResource}
+		Function[{enoughBool, prodPacket, resourcePacket},
+			If[
+				And[
+					Not[enoughBool],
+					Or[
+						NullQ[prodPacket],
+						TrueQ[Lookup[resourcePacket, Sterile]] && Not[TrueQ[Lookup[prodPacket, Sterile]]]
+					]
+				],
+				False,
+				True
+			]
+		],
+		{finalModelEnoughAmountBool, oneProductPerResource, sampleResourcePackets}
 	];
 
 	(* get the resources that have no product *)
@@ -4901,11 +5468,11 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	(* get whether a given resource request is of an item that is consumable or not, index matched to the resource requests on models *)
 	consumableModel = Map[
 		Switch[Lookup[#, Object, {}],
-			(* for samples, if Reusability -> False, then assume this means the item is a consumable.*)
+			(* for samples, if Reusable -> False, then assume this means the item is a consumable.*)
 			(* Note that NonSelfContainedSamples are definitely consumable, but this test is not worrying about those cases since checking whether there is enough of those samples is tested above *)
-			{SelfContainedSampleModelP..}, MatchQ[Lookup[#, Reusability], {False..}],
-			(* for containers, if Reusability is listed as False, or if Reusability is listed as True and CleaningMethod is Null (TEMP: not sure if this is the right call but will prevent additional ordering) *)
-			{ObjectP[Model[Container]]..}, MatchQ[Lookup[#, Reusability], {False..}] || TrueQ[Lookup[#, Reusability]],
+			{SelfContainedSampleModelP..}, MatchQ[Lookup[#, Reusable], {False..}],
+			(* for containers, if Reusable is listed as False, or if Reusable is listed as True and CleaningMethod is Null (TEMP: not sure if this is the right call but will prevent additional ordering) *)
+			{ObjectP[Model[Container]]..}, MatchQ[Lookup[#, Reusable], {False..}] || TrueQ[Lookup[#, Reusable]],
 			_, False
 		]&,
 		modelPacketsToSearch
@@ -5382,11 +5949,11 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 			True,
 			False
 		]&,
-		instrumentPackets
+		requestedInstrumentPackets
 	];
 
 	(* get the packets that are instruments that are currently undergoing maintenance *)
-	undergoingMaintenancePackets = Select[instrumentPackets, Not[NullQ[#]] && messages && MatchQ[Lookup[#, Status], UndergoingMaintenance]&];
+	undergoingMaintenancePackets = Select[requestedInstrumentPackets, Not[NullQ[#]] && messages && MatchQ[Lookup[#, Status], UndergoingMaintenance]&];
 
 	(* get the resource packets that are instruments that are currently undergoing maintenance *)
 	undergoingMaintenanceResourcePackets = MapThread[
@@ -5394,7 +5961,7 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 			#1,
 			Nothing
 		]&,
-		{instrumentResourcePackets, instrumentPackets}
+		{instrumentResourcePackets, requestedInstrumentPackets}
 	];
 
 	(* throw a warning if there are packets that are undergoing maintenance *)
@@ -5473,12 +6040,12 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 				MatchQ[possibleSites, {}],
 					{},
 				MatchQ[Lookup[instrumentPackets[[1]], Instrument], ObjectP[Object[Instrument, CrystalIncubator]]],
-					{Lookup[instrumentPackets[[4]], Capacity, 182]- Length[Cases[Lookup[instrumentPackets[[2]], Contents][[All, 2]], ObjectP[Object[Container, Plate, Irregular]]]]},
-				MemberQ[Lookup[instrumentPackets[[1]], InstrumentModels], ObjectP[Model[Instrument, CrystalIncubator]]] && !MatchQ[instrumentPackets[[5]], {{}}],
+					{Lookup[instrumentPackets[[5]], Capacity, 182]- Length[Cases[Lookup[instrumentPackets[[2]], Contents][[All, 2]], ObjectP[Object[Container, Plate, Irregular]]]]},
+				MemberQ[Lookup[instrumentPackets[[1]], InstrumentModels], ObjectP[Model[Instrument, CrystalIncubator]]] && !MatchQ[instrumentPackets[[6]], {{}}],
 				(* For instrument only model is specified, we check the current capacity. *)
 					MapThread[
 						(Lookup[#2, Capacity, 182] - Length[Cases[Flatten@Lookup[#1, Contents], ObjectP[Object[Container, Plate, Irregular]]]])&,
-						{instrumentPackets[[5]], instrumentPackets[[3]]}
+						{instrumentPackets[[6]], instrumentPackets[[3]]}
 					],
 				(*If no CrystalIncubator is required, return empty list*)
 				True,
@@ -5516,6 +6083,7 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 			disposalResources,
 			deprecatedResources,
 			discardedResources,
+			notOwnedInstrumentResources,
 			retiredInstrumentPackets,
 			deprecatedInstrumentPackets,
 			unavailableDeckLayoutInstrumentPackets,
@@ -5526,7 +6094,9 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 			twoUniqueVolumesPackets,
 			nonScalableStockSolutionResourcePackets,
 			sitelessSampleResourcesAfterProductFilter,
-			sitelessInstrumentResources
+			sitelessInstrumentResources,
+			sterileMismatchResources,
+			containerNotSterileResources
 		}
 	]];
 
@@ -5556,20 +6126,24 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 
 			(* Determine if we should ship the resource. Shipped resources are removed from ordered resources, so this will effectively apply the logic here to orders *)
 			Which[
-				(* 0. If the resource does not have shippable instances, dont try to ship it (this resource is not fulfillable at all) *)
+				(* 0. If the resource does not have shippable instances, don't try to ship it (this resource is not fulfillable at all) *)
 				MemberQ[combinedNonFulfillableResources, ObjectP[#1]], Nothing,
 
 				(* 1. If the requested thing is a specific sample, we have to ship that *)
 				MatchQ[Lookup[#1, Sample], ObjectP[]], #1,
 
-				(* 2. If the resource is water, dont ship it *)
+				(* 2. If the resource is water, don't ship it *)
 				MatchQ[Download[Lookup[#1,Models],Object],{WaterModelP..}], Nothing,
+
+				(* If it is a public model, don't ship *)
+				(* "We're assuming any public model should be available at both labs. It's not sustainable to ship shared resources back and forth." - Hayley *)
+				MatchQ[#3[[All,Key[Notebook]]],{Null..}], Nothing,
 
 				(* 3. If the resource has no product and cannot be prepared, ship it *)
 				MatchQ[{preparable, purchasable}, {False, False}], #1,
 
 				(* -- Preparable -- *)
-				(* 4. If the resource can be prepared, dont ship it. We will make it regardless of cost. *)
+				(* 4. If the resource can be prepared, don't ship it. We will make it regardless of cost. *)
 				(*NOTE: if we end up charging customers a lot more to remake stock solutions, we should split this into cheap and expensive products. Its hard to say how this will play out
 				currently because some things may be cheap to make but expensive to purchase. There is also a speed consideration. *)
 				MatchQ[preparable, True], Nothing,
@@ -5585,7 +6159,7 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 				True, Message[Error::UnableToDetermineResourceShipment, Lookup[#1, Object]];Return[$Failed]
 			]
 		]&,
-		{sampleResourcePackets,oneProductPerResource}
+		{sampleResourcePackets,oneProductPerResource,allModelPackets}
 	];
 
 	(* Generate a list of the samples that can fulfill the shippable resource requests *)
@@ -5598,21 +6172,28 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	];
 
 	(* Resolve the site at which most samples are and all instruments are *)
-	resolvedSite = If[MatchQ[specifiedSite,ObjectP[]],
+	resolvedSite = If[MatchQ[specifiedSite, ObjectP[]],
 		specifiedSite,
 		Module[
 			{uniqueSitesPerResource,scorePerSite,allPossibleSites,sortedSiteTuples,bestSite},
 
-			uniqueSitesPerResource =Map[Function[{potentialSamplePackets},Module[{sitePerSample,destinationPerSample,realSitePerSample},
-				sitePerSample=Lookup[potentialSamplePackets,Key[Site],{}];
-				destinationPerSample=Lookup[potentialSamplePackets,Key[Destination],{}];
-				(* if the sample has Destination populated, we use that instead of the Site in order to properly find where things will be when we can start the experiment *)
-				realSitePerSample=MapThread[If[MatchQ[#1,LinkP[]],#1,#2]&,{destinationPerSample,sitePerSample}];
-				DeleteDuplicates[Download[DeleteCases[realSitePerSample,_Missing],Object]]
-			]],
-				possibleFulfillingShippableSamples];
+			uniqueSitesPerResource = Map[
+				Function[{potentialSamplePackets},
+					Module[{sitePerSample, destinationPerSample, realSitePerSample},
+						sitePerSample = Lookup[potentialSamplePackets, Key[Site], {}];
+						destinationPerSample = Lookup[potentialSamplePackets, Key[Destination],{}];
+						(* if the sample has Destination populated, we use that instead of the Site in order to properly find where things will be when we can start the experiment *)
+						realSitePerSample = MapThread[
+							If[MatchQ[#1, LinkP[]], #1, #2]&,
+							{destinationPerSample, sitePerSample}
+						];
+						DeleteDuplicates[Download[DeleteCases[realSitePerSample, _Missing], Object]]
+					]],
+				possibleFulfillingShippableSamples
+			];
 
-			allPossibleSites = If[MatchQ[possibleSites,All],
+			(* Check if uniqueSitesPerResource for sample include possibleSites for instrument *)
+			allPossibleSites = If[MatchQ[possibleSites, All],
 				DeleteDuplicates[Flatten@uniqueSitesPerResource],
 				possibleSites
 			];
@@ -5630,9 +6211,9 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 				],
 				allPossibleSites
 			];
-			
+
 			sortedSiteTuples = ReverseSortBy[Transpose[{allPossibleSites,scorePerSite}],#[[2]]&];
-			
+
 			bestSite = If[
 				And[
 					Length[sortedSiteTuples]>1,
@@ -5697,6 +6278,7 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 		DeprecatedModels -> deprecatedResources,
 		DiscardedSamples -> discardedResources,
 		ExpiredSamples -> expiredResources,
+		InstrumentsNotOwned -> notOwnedInstrumentResources,
 		RetiredInstrument -> retiredInstrumentPackets,
 		DeprecatedInstrument -> deprecatedInstrumentPackets,
 		DeckLayoutUnavailable -> unavailableDeckLayoutInstrumentPackets,
@@ -5716,6 +6298,8 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 		ExceedsMaxVolumeOfUses -> notEnoughVolumesPackets,
 		ConflictingVolumeOfUses -> twoUniqueVolumesPackets,
 		NonScalableStockSolutionVolumeTooHigh -> nonScalableStockSolutionResourcePackets,
+		InvalidSterileRequest -> sterileMismatchResources,
+		ContainerNotSterile -> containerNotSterileResources,
 		SamplesOffSite -> resourcesToBeShipped,
 		Site -> resolvedSite
 	|>
@@ -5750,24 +6334,24 @@ AllowedResourcePickingNotebooks[ops:OptionsPattern[]]:=Module[
 	initialFastAssoc = Experiment`Private`makeFastAssocFromCache[cache];
 
 	(* get the user financing teams and sharing teams from the $PersonID if they exist *)
-	existingUserFinancingTeamPackets = Experiment`Private`fastAssocPacketLookup[initialFastAssoc, $PersonID, FinancingTeams];
-	existingUserSharingTeamPackets = Experiment`Private`fastAssocPacketLookup[initialFastAssoc, $PersonID, SharingTeams];
+	existingUserFinancingTeamPackets = ToList[Experiment`Private`fastAssocPacketLookup[initialFastAssoc, $PersonID, FinancingTeams]];
+	existingUserSharingTeamPackets = ToList[Experiment`Private`fastAssocPacketLookup[initialFastAssoc, $PersonID, SharingTeams]];
 
 	existingRecursiveParentProtocols = If[MatchQ[protocol, ObjectP[]],
 		Experiment`Private`repeatedFastAssocLookup[initialFastAssoc, protocol, ParentProtocol],
 		{}
 	];
-	existingParentProtocolFinancingTeamsPackets = Experiment`Private`fastAssocPacketLookup[initialFastAssoc, #, {Author, FinancingTeams}]& /@ Cases[Flatten[{protocol, existingRecursiveParentProtocols}], ObjectP[]];
-	existingParentProtocolSharingTeamsPackets = Experiment`Private`fastAssocPacketLookup[initialFastAssoc, #, {Author, SharingTeams}]& /@ Cases[Flatten[{protocol, existingRecursiveParentProtocols}], ObjectP[]];
+	existingParentProtocolFinancingTeamsPackets = ToList[Experiment`Private`fastAssocPacketLookup[initialFastAssoc, #, {Author, FinancingTeams}]& /@ Cases[Flatten[{protocol, existingRecursiveParentProtocols}], ObjectP[]]];
+	existingParentProtocolSharingTeamsPackets = ToList[Experiment`Private`fastAssocPacketLookup[initialFastAssoc, #, {Author, SharingTeams}]& /@ Cases[Flatten[{protocol, existingRecursiveParentProtocols}], ObjectP[]]];
 
 	(* Download! *)
 	{protocolFinancingTeams,protocolSharingTeams,userFinancingTeams,userSharingTeams}=Quiet[
 		Download[
 			{
-				If[MatchQ[Flatten[existingParentProtocolFinancingTeamsPackets], {}|Null|$Failed], {protocol}, {}],
-				If[MatchQ[Flatten[existingParentProtocolSharingTeamsPackets], {}|Null|$Failed], {protocol}, {}],
-				If[MatchQ[existingUserFinancingTeamPackets, {}|Null|$Failed], {$PersonID}, {}],
-				If[MatchQ[existingUserSharingTeamPackets, {}|Null|$Failed], {$PersonID}, {}]
+				If[MatchQ[Flatten[existingParentProtocolFinancingTeamsPackets], {}|{Null}|{$Failed}], {protocol}, {}],
+				If[MatchQ[Flatten[existingParentProtocolSharingTeamsPackets], {}|{Null}|{$Failed}], {protocol}, {}],
+				If[MatchQ[existingUserFinancingTeamPackets, {}|{Null}|{$Failed}], {$PersonID}, {}],
+				If[MatchQ[existingUserSharingTeamPackets, {}|{Null}|{$Failed}], {$PersonID}, {}]
 			},
 			{
 				{
@@ -5783,7 +6367,7 @@ AllowedResourcePickingNotebooks[ops:OptionsPattern[]]:=Module[
 			},
 			Cache->cache
 		],
-		Download::FieldDoesntExist
+		{Download::FieldDoesntExist,Download::MissingCacheField}
 	];
 
 	(* get a list of all Notebooks Author can use resources from *)
@@ -5876,18 +6460,114 @@ ModelObjectType[type:TypeP[Model]]:=Apply[
 ModelObjectType[type:TypeP[Object]]:=$Failed;
 ModelObjectType[_]:=$Failed;
 
-DefineOptions[ModelInstances,
-	Options:>{
-		{PickInstalled->False,BooleanP,"Indicates if only items with a Status of Installed can be picked."},
-		{MaxNumberOfUses->Null,Null|GreaterP[0],"Indicate the relevant model's maximum number of uses"},
-		{MaxVolumeOfUses->Null,Null|GreaterP[0Milliliter],"Indicate the relevant model's maximum number of uses"},
-		{MaxNumberOfHours->Null,Null|GreaterP[0],"Indicate the relevant model's maximum number of hours"},
-		{UsesRequired->Null,Null|GreaterP[0],"Indicate the number of required uses in the relevant resource"},
-		{VolumeOfUsesRequired->Null,Null|GreaterP[0Milliliter],"Indicate the amount of volume that the specified item can handle (e.g. a filter can filter 300 mL liquid before being disposed) uses in the relevant resource"},
-		{ExactAmount->False,BooleanP,"Indicates if the exact amount (taking into account Tolerance, if specified) if required to fulfill a sample."},
-		{Tolerance->Null,MassP|VolumeP|CountP|Null,"The amount of Volume/Mass/Count that can deviate from the requested Amount if ExactAmount->True and still have the Object[Sample] count as fulfillable."},
-		{Well->Null,WellPositionP|Null,"The position in which the instance should reside."},
-		{OutputFormat->Items,Items|Objects|Table,"Indicates how the items should be displayed."}
+
+DefineOptions[
+	ModelInstances,
+	Options :> {
+		{
+			OptionName -> PickInstalled,
+			Default -> False,
+			AllowNull -> False,
+			Description -> "Indicates if only items with a Status of Installed can be picked.",
+			Pattern :> BooleanP
+		},
+		{
+			OptionName -> MaxNumberOfUses,
+			Default -> Null,
+			AllowNull -> True,
+			Description -> "Indicate the relevant model's maximum number of uses.",
+			Pattern :> Null | GreaterP[0]
+		},
+		{
+			OptionName -> MaxVolumeOfUses,
+			Default -> Null,
+			AllowNull -> True,
+			Description -> "Indicate the relevant model's maximum number of uses",
+			Pattern :> Null | GreaterP[0Milliliter]
+		},
+		{
+			OptionName -> MaxNumberOfHours,
+			Default -> Null,
+			AllowNull -> True,
+			Description -> "Indicate the relevant model's maximum number of hours",
+			Pattern :> Null | GreaterP[0]
+		},
+		{
+			OptionName -> UsesRequired,
+			Default -> Null,
+			AllowNull -> True,
+			Description -> "Indicate the number of required uses in the relevant resource",
+			Pattern :> Null | GreaterP[0]
+		},
+		{
+			OptionName -> VolumeOfUsesRequired,
+			Default -> Null,
+			AllowNull -> True,
+			Description -> "Indicate the amount of volume that the specified item can handle (e.g. a filter can filter 300 mL liquid before being disposed) uses in the relevant resource",
+			Pattern :> Null | GreaterP[0Milliliter]
+		},
+		IndexMatching[
+			{
+				OptionName -> ExactAmount,
+				Default -> False,
+				AllowNull -> False,
+				Description -> "Indicates if the exact amount (taking into account Tolerance, if specified) if required to fulfill a sample.",
+				(* we use widget here so the pattern can be auto calculated *)
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				]
+			},
+			{
+				OptionName -> Tolerance,
+				Default -> Null,
+				AllowNull -> True,
+				Description -> "The amount of Volume/Mass/Count that can deviate from the requested Amount if ExactAmount->True and still have the Object[Sample] count as fulfillable.",
+				(* we use widget here so the pattern can be auto calculated *)
+				Widget -> Widget[
+					Type -> Expression,
+					Pattern :> MassP | VolumeP | CountP | Null,
+					Size -> Line
+				]
+
+			},
+			{
+				OptionName -> Hermetic,
+				Default -> Null,
+				AllowNull -> True,
+				Description -> "Indicates if samples that are in hermetic containers are counted as fulfillable. Setting this to Null indicates Hermeticity of the container can be ignored when searching for potential instances.",
+				(* we use widget here so the pattern can be auto calculated *)
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				]
+			},
+			{
+				OptionName -> Sterile,
+				Default -> Null,
+				AllowNull -> True,
+				Description -> "Indicates if only items with Sterile -> True can be picked.",
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				]
+			},
+			IndexMatchingInput -> "fulfillment models"
+		],
+		{
+			OptionName -> Well,
+			Default -> Null,
+			AllowNull -> True,
+			Description -> "The position in which the instance should reside.",
+			Pattern :> WellPositionP | Null
+		},
+		{
+			OptionName -> OutputFormat,
+			Default -> Items,
+			AllowNull -> False,
+			Description -> "Indicates how the items should be displayed.",
+			Pattern :> Items | Objects | Table
+		}
 	}
 ];
 
@@ -5895,15 +6575,24 @@ DefineOptions[ModelInstances,
 $ResourcePickingToleranceMultiplier=0.99;
 
 (* Single resource overload, resource info must be downloaded - for use in notebook calls *)
-ModelInstances[resource:ObjectP[Object[Resource,Sample]],currentProtocol:ObjectP[ProtocolTypes[]],ops:OptionsPattern[ModelInstances]]:=Module[
-	{model,maxNumberOfUses,maxNumberOfHours,amount,containerModels,exactAmount,tolerance,root,allowedNotebooks},
+ModelInstances[resource:ObjectP[Object[Resource,Sample]],currentProtocol:ObjectP[ProtocolTypes[Output -> Short]],ops:OptionsPattern[ModelInstances]]:=Module[
+	{model,maxNumberOfUses,maxNumberOfHours,amount,containerModels,exactAmount,tolerance,root,allowedNotebooks, sterile},
 
 	(* Get info from our resource object *)
-	{model,maxNumberOfUses,maxNumberOfHours,amount,containerModels,exactAmount,tolerance}=Quiet[
-		Download[resource,{
-			Models[[1]],Models[[1]][MaxNumberOfUses],Models[[1]][MaxNumberOfHours],
-			Amount,ContainerModels,ExactAmount,Tolerance
-		}],
+	{model, maxNumberOfUses, maxNumberOfHours, amount, containerModels, exactAmount, tolerance, sterile} = Quiet[
+		Download[
+			resource,
+			{
+				Models[[1]],
+				Models[[1]][MaxNumberOfUses],
+				Models[[1]][MaxNumberOfHours],
+				Amount,
+				ContainerModels,
+				ExactAmount,
+				Tolerance,
+				Sterile
+			}
+		],
 		{Download::FieldDoesntExist}
 	];
 
@@ -5924,10 +6613,11 @@ ModelInstances[resource:ObjectP[Object[Resource,Sample]],currentProtocol:ObjectP
 		(* Send options over using user supplied values over calculated values *)
 		ReplaceRule[
 			{
-				ExactAmount->(exactAmount/.Null->False),
-				Tolerance->tolerance,
-				MaxNumberOfUses->(maxNumberOfUses/.$Failed->Null),
-				MaxNumberOfHours->(maxNumberOfHours/.$Failed->Null)
+				ExactAmount -> (exactAmount /. Null -> False),
+				Tolerance -> tolerance,
+				MaxNumberOfUses -> (maxNumberOfUses /. $Failed -> Null),
+				MaxNumberOfHours -> (maxNumberOfHours /. $Failed -> Null),
+				Sterile -> (sterile /. $Failed -> Null)
 			},
 			ToList[ops]
 		]
@@ -5945,16 +6635,22 @@ ModelInstances[myRequestedModel:ObjectP[{Model[Sample],Model[Item]}],myRequiredA
 ];
 
 
-ModelInstances[myRequestedModels:{ObjectP[{Model[Sample],Model[Item]}]..},myRequiredAmounts:{(Null|MassP|VolumeP|NumericP|UnitsP[Unit])..},myAllowedContainerModelLists:{{ObjectP[Model[Container]]...}..},myAllowedNotebooks:{ObjectP[Object[LaboratoryNotebook]]...},myRootProtocol:Null|ObjectP[ProtocolTypes[]], myCurrentProtocol:Null|ObjectP[ProtocolTypes[]],ops:OptionsPattern[]]:=Module[
-	{safeOptions,allContainerModels,downloadValues,requestedModelPackets,allowedContainerModelLists,currentProtObj,sampleTypes,site,sampleSearchCriteria,baseQueries,nullNotebookQueries,rawUserAvailableSampleLists,
+ModelInstances[myRequestedModels:{ObjectP[{Model[Sample],Model[Item]}]..},myRequiredAmounts:{(Null|MassP|VolumeP|NumericP|UnitsP[Unit])..},myAllowedContainerModelLists:{{ObjectP[Model[Container]]...}..},myAllowedNotebooks:{ObjectP[Object[LaboratoryNotebook]]...},myRootProtocol:Null|ObjectP[ProtocolTypes[Output -> Short]], myCurrentProtocol:Null|ObjectP[ProtocolTypes[Output -> Short]],ops:OptionsPattern[]]:=TraceExpression["ModelInstances",Module[
+	{safeOptions,expandedOptions,mapThreadFriendlyOptions,allContainerModels,downloadValues,requestedModelPackets,allowedContainerModelLists,currentProtObj,sampleTypes,site,sampleSearchCriteria,baseQueries,nullNotebookQueries,rawUserAvailableSampleLists,
 		rawPublicAvailableSampleLists,allUnfilteredSamples,containerModels,containerModelLookup,availableSampleLists,allAvailableSamples,
 		allAvailableSamplesDownload,sampleContainerLookup,sampleBarcodeLookup,itemLists},
-	
+
 	safeOptions=SafeOptions[ModelInstances,ToList[ops]];
+
+	(* expand the options so all things are index matched, set definition number to 2 indicating we are using the second definition defined in DefineUsage call of ModelInstances *)
+	expandedOptions = Last[ExpandIndexMatchedInputs[ModelInstances, {myRequestedModels, myRequiredAmounts, myAllowedContainerModelLists, myAllowedNotebooks, myRootProtocol, myCurrentProtocol}, safeOptions, 2]];
+
+	(* make a mapthread friendly option *)
+	mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ModelInstances, expandedOptions];
 
 	(* Get info from the requested model and container model objects *)
 	allContainerModels=Flatten[myAllowedContainerModelLists];
-	
+
 	downloadValues = Quiet[
 		Download[
 			{myRequestedModels,allContainerModels},
@@ -5980,106 +6676,115 @@ ModelInstances[myRequestedModels:{ObjectP[{Model[Sample],Model[Item]}]..},myRequ
 	];
 
 	sampleSearchCriteria = MapThread[
-		Function[{requestedModelPacket,sampleType,myAllowedContainerModels,myRequiredAmount},
+		Function[{requestedModelPacket,sampleType,myAllowedContainerModels,myRequiredAmount,options},
 			Module[{models,containerTypes,maxNumberOfUses,maxNumberOfHours,usesRequired,exactAmount,volumeOfUsesRequired,
 				tolerance,well,usesAvailable,amountField,amountSearchClause,containerQuery,hoursQuery,usesQuery,coveredContainerQuery,
-				statusQuery,positionQuery,baseQuery,nullNotebookQuery,maxVolumeOfUses,volumeUsesAvailable,volumeUsesQuery},
+				statusQuery,positionQuery,baseQuery,nullNotebookQuery,maxVolumeOfUses,volumeUsesAvailable,volumeUsesQuery,
+				sterile, sterileQuery},
 
 				(* get all the alternative preparations if we were passed in a stock solution packet *)
 				(* this will come in the form of an alternatives construct for the Search below if it's more than one, or just the thing itself if it is not *)
-				models = If[MatchQ[requestedModelPacket, PacketP[{Model[Sample,StockSolution],Model[Sample,Media],Model[Sample,Matrix]}]],
+				models = If[MatchQ[requestedModelPacket, PacketP[{Model[Sample, StockSolution], Model[Sample, Media], Model[Sample, Matrix]}]],
 					Alternatives @@ Download[Flatten[{requestedModelPacket, Lookup[requestedModelPacket, AlternativePreparations]}], Object],
-					Lookup[requestedModelPacket,Object]
+					(* Consider $EquivalentModelLookup if needed *)
+					Module[
+						{equivalentModels},
+						equivalentModels=Lookup[requestedModelPacket, Object]/.$EquivalentModelLookup;
+						If[MatchQ[equivalentModels,Lookup[requestedModelPacket, Object]],
+							Lookup[requestedModelPacket, Object],
+							Alternatives @@ (DeleteDuplicates[Download[Flatten[{Lookup[requestedModelPacket, Object],equivalentModels}],Object]])
+						]
+					]
 				];
 
-				containerTypes=DeleteDuplicates[ModelObjectType/@myAllowedContainerModels];
+				containerTypes = DeleteDuplicates[ModelObjectType /@ myAllowedContainerModels];
 
 				(* Grab number of uses/hours from options and query as needed *)
-				maxNumberOfUses=Lookup[safeOptions,MaxNumberOfUses,Null];
-				maxNumberOfHours=Lookup[safeOptions,MaxNumberOfHours,Null];
-				maxVolumeOfUses=Lookup[safeOptions,MaxVolumeOfUses,Null];
-				usesRequired=Lookup[safeOptions,UsesRequired];
-				volumeOfUsesRequired=Lookup[safeOptions,VolumeOfUsesRequired];
-				exactAmount=Lookup[safeOptions,ExactAmount];
-				tolerance=Lookup[safeOptions,Tolerance];
-				well=Lookup[safeOptions,Well,Null];
-				usesAvailable=maxNumberOfUses-usesRequired;
-				volumeUsesAvailable=maxVolumeOfUses-volumeOfUsesRequired;
-				
+				maxNumberOfUses = Lookup[options, MaxNumberOfUses, Null];
+				maxNumberOfHours = Lookup[options, MaxNumberOfHours, Null];
+				maxVolumeOfUses = Lookup[options, MaxVolumeOfUses, Null];
+				usesRequired = Lookup[options, UsesRequired];
+				volumeOfUsesRequired = Lookup[options, VolumeOfUsesRequired];
+				exactAmount = Lookup[options, ExactAmount];
+				tolerance = Lookup[options, Tolerance];
+				well = Lookup[options, Well, Null];
+				sterile = Lookup[options, Sterile, Null];
+				usesAvailable = maxNumberOfUses - usesRequired;
+				volumeUsesAvailable = maxVolumeOfUses - volumeOfUsesRequired;
+
 				(* define an amount search clause depending on whether we are trying to find a sample with a specific amount *)
-				amountField=Switch[myRequiredAmount,
+				amountField = Switch[myRequiredAmount,
 					VolumeP, Volume,
 					MassP, Mass,
 					NumberP | UnitsP[Unit], Count,
 					_, Null
 				];
 
-				amountSearchClause=Which[
+				amountSearchClause = Which[
 					(* assuming that we're going to intelligently have a tolerance of exactly an integer quantity of number or units if we're using count *)
-					MatchQ[exactAmount,True]&&MatchQ[tolerance,Except[Null]]&&!MatchQ[amountField, Null],
-					And[
-						amountField>=((myRequiredAmount-tolerance)),
-						amountField<=((myRequiredAmount+tolerance))
-					],
-					MatchQ[exactAmount,True]&&!MatchQ[amountField, Null|Count],
-					And[
-						amountField>=($ResourcePickingToleranceMultiplier*myRequiredAmount),
-						amountField<=((1 - $ResourcePickingToleranceMultiplier + 1)*myRequiredAmount)
-					],
+					MatchQ[exactAmount, True] && MatchQ[tolerance, Except[Null]] && !MatchQ[amountField, Null],
+						And[
+							amountField >= ((myRequiredAmount - tolerance)),
+							amountField <= ((myRequiredAmount + tolerance))
+						],
+					MatchQ[exactAmount, True] && !MatchQ[amountField, Null | Count],
+						And[
+							amountField >= ($ResourcePickingToleranceMultiplier * myRequiredAmount),
+							amountField <= ((1 - $ResourcePickingToleranceMultiplier + 1) * myRequiredAmount)
+						],
 					(* treat Count specially *)
-					MatchQ[exactAmount,True]&&MatchQ[amountField, Count],
-					amountField==(myRequiredAmount),
-					!MatchQ[amountField, Null|Count],
-					amountField>=($ResourcePickingToleranceMultiplier*myRequiredAmount),
+					MatchQ[exactAmount, True] && MatchQ[amountField, Count],
+						amountField == (myRequiredAmount),
+					!MatchQ[amountField, Null | Count],
+						amountField >= ($ResourcePickingToleranceMultiplier * myRequiredAmount),
 					MatchQ[amountField, Count],
-					amountField>=(myRequiredAmount),
-					True,
-					True
+						amountField >= (myRequiredAmount),
+					True, True
 				];
 
-				containerQuery=If[MatchQ[myAllowedContainerModels,{}],
-					Container!=Null,
+				containerQuery = If[MatchQ[myAllowedContainerModels, {}],
+					Container != Null,
 					(* NOTE: Not using search through links here. *)
 					True
 				];
 
-				hoursQuery=If[MatchQ[maxNumberOfHours,Null],
+				hoursQuery = If[MatchQ[maxNumberOfHours, Null],
 					True,
-					NumberOfHours<maxNumberOfHours
+					NumberOfHours < maxNumberOfHours
 				];
 
-				usesQuery=If[Or[MatchQ[maxNumberOfUses,Null],MatchQ[usesRequired,Null]],
+				usesQuery = If[Or[MatchQ[maxNumberOfUses, Null], MatchQ[usesRequired, Null]],
 					True,
-					NumberOfUses<=usesAvailable
+					NumberOfUses <= usesAvailable
 				];
 
-				volumeUsesQuery=If[And[Or[MatchQ[maxVolumeOfUses,Null],MatchQ[volumeOfUsesRequired,Null]]],
+				volumeUsesQuery = If[And[Or[MatchQ[maxVolumeOfUses, Null], MatchQ[volumeOfUsesRequired, Null]]],
 					True,
 					If[
-						GreaterQ[volumeUsesAvailable,0 Milliliter],
-						Or[VolumeOfUses == Null,VolumeOfUses<=volumeUsesAvailable],
-						VolumeOfUses<=volumeUsesAvailable
+						GreaterQ[volumeUsesAvailable, 0 Milliliter],
+						Or[VolumeOfUses == Null, VolumeOfUses <= volumeUsesAvailable],
+						VolumeOfUses <= volumeUsesAvailable
 					]
 				];
 
-				coveredContainerQuery=If[MatchQ[requestedModelPacket,ObjectP[Join[Patterns`Private`coveringTypesModels,{Model[Item, Stopper], Model[Item, Septum]}]]],
-					CoveredContainer==Null,
+				coveredContainerQuery = If[MatchQ[requestedModelPacket, ObjectP[Join[CoverModelTypes, {Model[Item, Stopper], Model[Item, Septum]}]]],
+					CoveredContainer == Null,
 					True
 				];
 
 				(*we explicitly forbid reuse of InUse covers so we don't steal covers from other containers while we are fulfilling a Model resource*)
-				statusQuery=If[MatchQ[sampleType,ObjectP[Join[Patterns`Private`coveringTypesObjects,{Object[Item, Stopper], Object[Item, Septum]}]]],
+				statusQuery = If[MatchQ[sampleType, ObjectP[Join[CoverObjectTypes, {Object[Item, Stopper], Object[Item, Septum]}]]],
 					And[
-						Status == (Available|Stocked),
+						Status == (Available | Stocked),
 						CurrentProtocol == Null
 					],
 					Or[
 						And[
-							Status == (Available|Stocked),
+							Status == (Available | Stocked),
 							CurrentProtocol == Null
 						],
 						(* rootProtocol may be Null if we're calling this from ExperimentTransfer in which case we only want the Available|Stocked criteria above *)
-						If[MatchQ[myRootProtocol,Null],
+						If[MatchQ[myRootProtocol, Null],
 							False,
 							And[
 								Status == InUse,
@@ -6092,34 +6797,41 @@ ModelInstances[myRequestedModels:{ObjectP[{Model[Sample],Model[Item]}]..},myRequ
 				(* Position query - for resource with ContainerName and Well *)
 				positionQuery = If[NullQ[well],
 					True,
-					(Position==well)
+					(Position == well)
+				];
+
+				(* if the resource is asking for Sterile, the thing we find must be Sterile *)
+				sterileQuery = If[TrueQ[sterile],
+					Sterile == True,
+					True
 				];
 
 				baseQuery = And[
-					Model==models,
-					Restricted!=True,
+					Model == models,
+					Restricted != True,
 					AwaitingDisposal != True,
 					Site == site,
 					statusQuery,
 					amountSearchClause,
 					Or[
-						ExpirationDate==Null,
-						ExpirationDate>=Now
+						ExpirationDate == Null,
+						ExpirationDate >= Now
 					],
 					containerQuery,
 					hoursQuery,
 					usesQuery,
 					volumeUsesQuery,
 					coveredContainerQuery,
-					positionQuery
+					positionQuery,
+					sterileQuery
 				];
 
-				nullNotebookQuery=Append[baseQuery,Notebook==Null];
+				nullNotebookQuery = Append[baseQuery, Notebook == Null];
 
-				{baseQuery,nullNotebookQuery}
+				{baseQuery, nullNotebookQuery}
 			]
 		],
-		{requestedModelPackets,sampleTypes,allowedContainerModelLists,myRequiredAmounts}
+		{requestedModelPackets,sampleTypes,allowedContainerModelLists,myRequiredAmounts,mapThreadFriendlyOptions}
 	];
 
 	baseQueries=sampleSearchCriteria[[All,1]];
@@ -6137,7 +6849,7 @@ ModelInstances[myRequestedModels:{ObjectP[{Model[Sample],Model[Item]}]..},myRequ
 	(* You can't have an Object[Container, Vessel, Filter] have its model be a Model[Container, Vessel]. Same for instruments. *)
 	(* For Samples, it is the opposite. You can have a model of an Object[Sample] be Model[Sample, StockSolution]. *)
 	(* In this case, the invariant is that Object[Sample] is the only type for sample objects at all and that there are no subtypes. *)
-	{rawUserAvailableSampleLists, rawPublicAvailableSampleLists}=TraceExpression["resource-search",(
+	{rawUserAvailableSampleLists, rawPublicAvailableSampleLists}=TraceExpression["resource-search",Block[{},
 		TagTrace["resource-search.type",ToString[sampleTypes]];
 		TagTrace["resource-search.model",ToString[myRequestedModels]];
 
@@ -6165,7 +6877,7 @@ ModelInstances[myRequestedModels:{ObjectP[{Model[Sample],Model[Item]}]..},myRequ
 				]
 			}
 		]
-	)];
+	]];
 
 	(* Get the container models of all our options *)
 	allUnfilteredSamples=Flatten[{rawUserAvailableSampleLists, rawPublicAvailableSampleLists},2];
@@ -6201,24 +6913,33 @@ ModelInstances[myRequestedModels:{ObjectP[{Model[Sample],Model[Item]}]..},myRequ
 	sampleBarcodeLookup=AssociationThread[allAvailableSamples,allAvailableSamplesDownload[[All,2]]];
 
 	itemLists=MapThread[
-		modelInstanceItems[#1[[1]],#1[[2]],#2,sampleContainerLookup,sampleBarcodeLookup,myCurrentProtocol,myRootProtocol]&,
-		{availableSampleLists,myRequiredAmounts}
+		modelInstanceItems[#1[[1]],#1[[2]],#2,sampleContainerLookup,sampleBarcodeLookup,#3,myCurrentProtocol,myRootProtocol]&,
+		{availableSampleLists,myRequiredAmounts,Lookup[expandedOptions,Hermetic]}
 	];
 
-	Switch[Lookup[safeOptions,OutputFormat],
+	Switch[Lookup[expandedOptions,OutputFormat],
 		Items,itemLists,
 		Objects, Lookup[#,"Value"]&/@itemLists,
 		Table, resourceOptionsTable[Lookup[#,"Value"]]&/@itemLists
 	]
-];
+]];
 
-modelInstanceItems[userAvailableSamples:{ObjectP[]...},publicAvailableSamples:{ObjectP[]...},myRequiredAmount:(Null|MassP|VolumeP|NumericP|UnitsP[Unit]),containerLookup_Association,barcodeLookup_Association,myCurrentProtocol:Null|ObjectP[ProtocolTypes[]],myRootProtocol:Null|ObjectP[ProtocolTypes[]]]:=Module[{
+modelInstanceItems[
+	userAvailableSamples:{ObjectP[]...},
+	publicAvailableSamples:{ObjectP[]...},
+	myRequiredAmount:(Null|MassP|VolumeP|NumericP|UnitsP[Unit]),
+	containerLookup_Association,
+	barcodeLookup_Association,
+	hermetic:(Null|BooleanP),
+	myCurrentProtocol:Null|ObjectP[ProtocolTypes[Output -> Short]],
+	myRootProtocol:Null|ObjectP[ProtocolTypes[Output -> Short]]
+]:=Module[{
 	userContainers,publicContainers,capModelPacketPrivate,capModelPacketsPublic,requestedType,availableSampleDownloadTuples,
 	rootProtValues,samplePackets,resourcePacketsBySample,requestorPacketsBySample,cartResourcesFieldObjs,rootProtInUseObjs,rootProtInUseContainerObjs,
 	resourcePreparationSamplesOut,inVLMResources,onCartResources,allRequestorObjectsBySample,allRequestorPacketsBySampleWithProgs,
 	allRequestorPacketsBySample,resourceRootProtocols,requestorObjectPerSample,requestorStatusPerSample,pickableSamplePackets,pickableSamplePacketPositions,
 	resourcePacketsByPickableSample,requestorStatusesByPickableSample,reservedAmountResourcePacketsBySample,amountsReserved,currentAmounts,amountsAvailable,
-	samplePacketsWithEnough,instanceAssociations,fullRootProtocolTree},
+	samplePacketsWithEnough,instanceAssociations,fullRootProtocolTree,amountsFulfillableQs,sampleInHermeticContainerQs},
 
 	(* Pull out info about the samples from our look-up. We're consolidating downloads here *)
 	userContainers=Lookup[containerLookup,userAvailableSamples];
@@ -6238,7 +6959,7 @@ modelInstanceItems[userAvailableSamples:{ObjectP[]...},publicAvailableSamples:{O
 	(* create the instance associations and return 'em, indicating if each sample is user owned or not *)
 
 	(* - Early return: Cap case  *)
-	If[MatchQ[requestedType,TypeP[Object[Item,Cap]]]&&NullQ[myRequiredAmount],
+	If[MatchQ[requestedType,TypeP[{Object[Item,Cap], Object[Item,Septum]}]]&&NullQ[myRequiredAmount],
 		Return[
 			Join[
 				MapThread[
@@ -6303,7 +7024,9 @@ modelInstanceItems[userAvailableSamples:{ObjectP[]...},publicAvailableSamples:{O
 					Packet[Container, Notebook, Mass, Volume, Count, Status, KitComponents],
 					Packet[RequestedResources[{Sample, Status, Amount, RootProtocol, Requestor}]],
 					Packet[RequestedResources[Requestor][{Status, Protocol}]],
-					Packet[RequestedResources[Requestor][Protocol][Status]]
+					Packet[RequestedResources[Requestor][Protocol][Status]],
+					Container[Hermetic],
+					Container[Model][Hermetic]
 				},
 				{
 					ParentProtocol..[Object],
@@ -6323,6 +7046,12 @@ modelInstanceItems[userAvailableSamples:{ObjectP[]...},publicAvailableSamples:{O
 	samplePackets=availableSampleDownloadTuples[[All,1]];
 	resourcePacketsBySample=availableSampleDownloadTuples[[All,2]];
 	requestorPacketsBySample=availableSampleDownloadTuples[[All, 3;;4]];
+
+	(* see if each sample is in hermetic container or not, if hermetic is not populated, we still treat it as a non-hermetic container *)
+	sampleInHermeticContainerQs = MapThread[
+		MemberQ[Flatten[{#1, #2}], True]&,
+		{availableSampleDownloadTuples[[All,5]], availableSampleDownloadTuples[[All,6]]}
+	];
 
 	(* If we're calling this from ExperimentTransfer we won't always have a root protocol *)
 	{
@@ -6369,7 +7098,7 @@ modelInstanceItems[userAvailableSamples:{ObjectP[]...},publicAvailableSamples:{O
 	(* this includes the CartResources field, which includes things that _should_ be on the cart but are currently not because of a processing or troubleshooting stage *)
 	onCartResources = Flatten[{
 		cartResourcesFieldObjs,
-		ResourcesOnCart[Flatten[rootProtInUseObjs]],
+		ResourcesOnCart[Flatten[{rootProtInUseObjs, rootProtInUseContainerObjs}], IncludePortableCooler -> True, IncludePortableHeater -> True],
 		inVLMResources
 	}];
 
@@ -6455,11 +7184,14 @@ modelInstanceItems[userAvailableSamples:{ObjectP[]...},publicAvailableSamples:{O
 
 	(* remove from the Sample packets those items that are InUse by the root protocol but whose requestor is not already completed (or aborted or canceled; that shouldn't come up much but the item is certainly allowed to be picked if that is true)*)
 	pickableSamplePackets = MapThread[
-		Function[{samplePacket, requestorObjs},
+		Function[{samplePacket, requestorObjs, sampleInHermeticContainerQ},
 			Which[
+				(* if hermetic requirement is specified, and sample does not satisfy it, dont use these samples *)
+				BooleanQ[hermetic] && (hermetic =!= sampleInHermeticContainerQ),
+					Nothing,
 				(* if it's Available or Stocked, that's totally fine *)
 				MatchQ[Lookup[samplePacket, Status], Available|Stocked],
-				samplePacket,
+					samplePacket,
 				(* if it's InUse, we need to make sure:
 				 all the requestors for this item are not the same as the current protocol
 				 the item is on the cart
@@ -6474,12 +7206,13 @@ modelInstanceItems[userAvailableSamples:{ObjectP[]...},publicAvailableSamples:{O
 					],
 					Not[MemberQ[resourcePreparationSamplesOut,Lookup[samplePacket,Object]]]
 				],
-				samplePacket,
+					samplePacket,
 				(* otherwise, don't use these samples *)
-				True, Nothing
+				True,
+					Nothing
 			]
 		],
-		{samplePackets, requestorObjectPerSample}
+		{samplePackets, requestorObjectPerSample, sampleInHermeticContainerQs}
 	];
 
 	(* get the position in the samplePackets list that are actually pickable *)
@@ -6550,23 +7283,26 @@ modelInstanceItems[userAvailableSamples:{ObjectP[]...},publicAvailableSamples:{O
 		{currentAmounts,amountsReserved}
 	];
 
+	(* booleans indicating if the amount available can fulfill the required amount *)
+	amountsFulfillableQs = GreaterEqualQ[#, myRequiredAmount*$ResourcePickingToleranceMultiplier]& /@ amountsAvailable;
+
 	(* filter the available sample packets based on whether the amount available is greater than the required amount *)
-	samplePacketsWithEnough=PickList[pickableSamplePackets,amountsAvailable,GreaterEqualP[myRequiredAmount*$ResourcePickingToleranceMultiplier]];
+	samplePacketsWithEnough=PickList[pickableSamplePackets,amountsFulfillableQs];
 
 	(* generate picking associations for each of the available samples; ScanValue is always the container since these are all fluid samples at this point *)
 	instanceAssociations=MapThread[
-		Function[{sample,container,notebook,kitComponents},
+		Function[{sample,container,notebook,kitComponents,amountAvailable},
 			If[MatchQ[sample,ObjectP[Object[Sample]]],
-				<|"Value"->sample,"Container"->container,"ScanValue"->container,"UserOwned"->!NullQ[notebook],"KitComponents"->kitComponents|>,
+				<|"Value"->sample,"Container"->container,"ScanValue"->container,"UserOwned"->!NullQ[notebook],"KitComponents"->kitComponents,"AvailableAmount"->amountAvailable|>,
 
 				(* Container shouldn't be an autoclave bag at this point, but if it is, scan the autoclave bag *)
 				If[MatchQ[container,ObjectP[Object[Container,Bag,Autoclave]]],
-					<|"Value"->sample,"Container"->container,"ScanValue"->container,"UserOwned"->!NullQ[notebook],"KitComponents"->kitComponents|>,
-					<|"Value"->sample,"Container"->Null,"ScanValue"->sample,"UserOwned"->!NullQ[notebook],"KitComponents"->kitComponents|>
+					<|"Value"->sample,"Container"->container,"ScanValue"->container,"UserOwned"->!NullQ[notebook],"KitComponents"->kitComponents,"AvailableAmount"->amountAvailable|>,
+					<|"Value"->sample,"Container"->Null,"ScanValue"->sample,"UserOwned"->!NullQ[notebook],"KitComponents"->kitComponents,"AvailableAmount"->amountAvailable|>
 				]
 			]
 		],
-		{Lookup[samplePacketsWithEnough,Object,{}],Download[Lookup[samplePacketsWithEnough,Container,{}],Object],Download[Lookup[samplePacketsWithEnough,Notebook,{}],Object],Download[Lookup[samplePacketsWithEnough,KitComponents,{}],Object]}
+		{Lookup[samplePacketsWithEnough,Object,{}],Download[Lookup[samplePacketsWithEnough,Container,{}],Object],Download[Lookup[samplePacketsWithEnough,Notebook,{}],Object],Download[Lookup[samplePacketsWithEnough,KitComponents,{}],Object],PickList[amountsAvailable,amountsFulfillableQs]}
 	];
 
 	(* If scan value is the same, only show one of the instances from that container *)
@@ -6579,11 +7315,14 @@ ScanValue[object:SelfContainedSampleP,cont_,modelPacket:PacketP[]]:=If[
 	Or[
 		(* If we have a Cap, see if it doesn't have a barcode. If this is the case, then scan the container instead. *)
 		And[
-			MatchQ[object,ObjectP[Object[Item,Cap]]],
+			MatchQ[object,ObjectP[{Object[Item,Cap], Object[Item, Septum]}]],
 			MatchQ[Lookup[modelPacket,Barcode],False]
 		],
 		(* Or if the container is an autoclave bag, scan the container *)
-		MatchQ[cont,ObjectP[Object[Container,Bag,Autoclave]]]
+		MatchQ[cont,ObjectP[Object[Container,Bag,Autoclave]]],
+
+		(* One more reason to scan the container: The item is in an AsepticTransportContainer *)
+		MatchQ[cont, ObjectP[Object[Container,Bag, Aseptic]]]
 	],
 	cont,
 	object
@@ -6599,21 +7338,30 @@ ScanValue[object:SelfContainedSampleP,cont_]:=If[
 			MatchQ[Download[object,Model[Barcode]],False]
 		],
 		(* Or if the container is an autoclave bag, scan the container *)
-		MatchQ[cont,ObjectP[Object[Container,Bag,Autoclave]]]
+		MatchQ[cont,ObjectP[Object[Container,Bag,Autoclave]]],
+
+		(* One more reason to scan the container: The item is in an AsepticTransportContainer *)
+		MatchQ[cont, ObjectP[Object[Container, Bag, Aseptic]]]
 	],
 	cont,
 	object
 ];
-(* return the container if it is not a capillary, otherwise return the container of the capillary *)
+(* return the container except in two instances: *)
+(* 1. If it is a capillary, return the container of the capillary *)
+(* 2. If sample's container is in an objectified aseptic container, return the container of the container *)
 ScanValue[object:ObjectP[Object[Sample]],cont:FluidContainerP]:=If[
-	!MatchQ[cont, ObjectP[Object[Container, Capillary]]],
-	cont,
-	Download[cont, Container[Object]]
+	Or[
+		MatchQ[cont, ObjectP[Object[Container, Capillary]]],
+		MatchQ[Download[cont, Container[Object]], ObjectP[Object[Container, Bag, Aseptic]]]
+	],
+	Download[cont, Container[Object]],
+	cont
 ];
 
 (* If the container is an autoclave bag, scan the container *)
 (* Or if the object is an Object[Part,OpticalFilter] and the container is an Object[Container,Envelope], scan the container *)
 (* Or if the object is Object[Container, Capillary], scan the container *)
+(* One more reason to scan the container: The item is in an AsepticTransportContainer *)
 ScanValue[object:ObjectP[],cont_]:=If[
 	Or[
 		MatchQ[cont,ObjectP[Object[Container,Bag,Autoclave]]],
@@ -6621,22 +7369,47 @@ ScanValue[object:ObjectP[],cont_]:=If[
 			MatchQ[object, ObjectP[Object[Part,OpticalFilter]]],
 			MatchQ[cont, ObjectP[Object[Container,Envelope]]]
 		],
-		MatchQ[object, ObjectP[Object[Container, Capillary]]]
+		MatchQ[object, ObjectP[Object[Container, Capillary]]],
+		MatchQ[cont, ObjectP[Object[Container, Bag, Aseptic]]]
 	],
 	cont,
 	object
 ];
 
 
-RootProtocol[object:ObjectP[]]:=FirstOrDefault[Reverse[Flatten[Download[object, {Object, Repeated[ParentProtocol][Object]}]]], object];
+RootProtocol[object:ObjectP[]]:=Module[
+	{rootProtocol},
+	
+	rootProtocol = Download[object, RootProtocol[Object]];
+	(* If the root protocol is a Link, then we need to download the object that it points to *)
+	If[MatchQ[rootProtocol,Null],
+		Download[object,Object],
+		rootProtocol
+	]
+];
 
 
 (* Filters the list of 'pickedObjects' and returns only self-contained samples, parts, containers, plumbing, and wiring objects that are on the cart at any level *)
 (* Warning: This assumes 'pickedObjects' contains both samples and their containers *)
-ResourcesOnCart[pickedObjects:{}]:={};
-ResourcesOnCart[pickedObjects:{ObjectP[]..}]:=Module[
-	{selfContainedResources,resourceContainers, coveredContainers, onCartObjects, nonCoverObjects,
-	stackedBelow,mobileChecks,nonCoverObjectsStackedBelow,bottomMostObjects,mobileObjects},
+DefineOptions[ResourcesOnCart, Options :> {
+	{IncludePortableCooler -> False, BooleanP, "Whether we include resources in portable cooler that may or may not be on cart."},
+	{IncludePortableHeater -> False, BooleanP, "Whether we include resources in portable heater that may or may not be on cart."}
+}];
+
+ResourcesOnCart[pickedObjects:{}, ops:OptionsPattern[]]:={};
+ResourcesOnCart[pickedObjects:{ObjectP[]..}, ops:OptionsPattern[]]:=Module[
+	{
+		selfContainedResources,resourceContainers, coveredContainers, onCartObjects, nonCoverObjects,
+		stackedBelow,mobileChecks,nonCoverObjectsStackedBelow,bottomMostObjects,mobileObjects, safeOps,
+		includePortableCooler, includePortableHeater,
+		containerPatternsToExclude, containerPatternsToInclude
+	},
+
+	safeOps = SafeOptions[ResourcesOnCart, ToList[ops]];
+
+	{includePortableCooler, includePortableHeater} = Lookup[safeOps,
+		{IncludePortableCooler, IncludePortableHeater}
+	];
 
 	(* only need to check the self-contained samples to see if they're directly on the cart *)
 	(* assumes that the containers of any non-self-contained samples are in the resource list *)
@@ -6668,10 +7441,35 @@ ResourcesOnCart[pickedObjects:{ObjectP[]..}]:=Module[
 
 	(* check for ANY operator cart because we want to store all resources, even though they should be located on the ActiveCart *)
 	(* need to do the MemberQ and recursive download because sticky racks could cause issues *)
+
+	(* Find the container patterns that should be excluded *)
+	containerPatternsToExclude = Switch[{includePortableHeater, includePortableCooler},
+		{True, True},
+		(* When we include on-cart cooler and heater, don't exclude anything. Put a dummy pattern here so that nothing matches *)
+			1,
+		{True, _},
+			ObjectP[Object[Instrument,PortableCooler]],
+		{_, True},
+			ObjectP[Object[Instrument,PortableHeater]],
+		_,
+			ObjectP[{Object[Instrument,PortableCooler],Object[Instrument,PortableHeater]}]
+	];
+
+	containerPatternsToInclude = Switch[{includePortableHeater, includePortableCooler},
+		{True, True},
+			ObjectP[{Object[Instrument,PortableCooler], Object[Instrument,PortableHeater], Object[Container,OperatorCart]}],
+		{True, _},
+			ObjectP[{Object[Instrument,PortableHeater], Object[Container,OperatorCart]}],
+		{_, True},
+			ObjectP[{Object[Instrument,PortableCooler], Object[Container,OperatorCart]}],
+		_,
+			ObjectP[Object[Container,OperatorCart]]
+	];
+
 	onCartObjects = PickList[
 		selfContainedResources,
 		resourceContainers,
-		Except[_?(MemberQ[#,ObjectP[{Object[Instrument,PortableCooler],Object[Instrument,PortableHeater]}]]&),_?(MemberQ[#,ObjectP[Object[Container,OperatorCart]]]&)]
+		Except[_?(MemberQ[#, containerPatternsToExclude]&),_?(MemberQ[#, containerPatternsToInclude]&)]
 	];
 
 	(* Any cover items that are on a container should not be included here as they are moved as a single item *)
@@ -6680,13 +7478,13 @@ ResourcesOnCart[pickedObjects:{ObjectP[]..}]:=Module[
 		coveredContainers,
 		(Null|$Failed)
 	];
-	
+
 	nonCoverObjectsStackedBelow = PickList[
 		stackedBelow,
 		coveredContainers,
 		(Null|$Failed)
 	];
-	
+
 	bottomMostObjects = PickList[
 		nonCoverObjects,
 		nonCoverObjectsStackedBelow,
@@ -6740,3 +7538,155 @@ resourceOptionsTable[pickingOptions:{ObjectP[]..}]:=If[MatchQ[pickingOptions,{Ob
 (* Authors definition for Resources`Private`blobLookup *)
 Authors[Resources`Private`blobLookup]:={"hayley"};
 
+(* ::Subsubsection:: *)
+(*ConsolidationInstances*)
+
+
+DefineOptions[ConsolidationInstances,
+	Options :> {
+		IndexMatching[
+			{
+				OptionName -> Sterile,
+				Default -> Null,
+				AllowNull -> True,
+				Description -> "Indicates if only items with Sterile -> True can be picked.",
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				]
+			},
+			IndexMatchingInput -> "fulfillment models"
+		]
+	}
+];
+
+(* singleton overload *)
+ConsolidationInstances[
+	myRequestedModel:ObjectP[{Model[Sample], Model[Item]}],
+	myRequiredAmount:(Null | MassP | VolumeP | NumericP | UnitsP[Unit]),
+	myAllowedNotebooks:{ObjectP[Object[LaboratoryNotebook]]...},
+	myRootProtocol:Null | ObjectP[{Object[Protocol], Object[Qualification], Object[Maintenance]}],
+	myCurrentProtocol:Null | ObjectP[{Object[Protocol], Object[Qualification], Object[Maintenance]}],
+	ops:OptionsPattern[ConsolidationInstances]
+] := First[ConsolidationInstances[
+	{myRequestedModel},
+	{myRequiredAmount},
+	myAllowedNotebooks,
+	myRootProtocol,
+	myCurrentProtocol,
+	ops
+], {}];
+
+(* --- finding a sample set that can fulfill a request for a sample model via consolidation ---  *)
+(* listed overload *)
+ConsolidationInstances[
+	myRequestedModels:{ObjectP[{Model[Sample], Model[Item]}]..},
+	myRequiredAmounts:{(Null | MassP | VolumeP | NumericP | UnitsP[Unit])..},
+	myAllowedNotebooks:{ObjectP[Object[LaboratoryNotebook]]...},
+	myRootProtocol:Null | ObjectP[{Object[Protocol], Object[Qualification], Object[Maintenance]}],
+	myCurrentProtocol:Null | ObjectP[{Object[Protocol], Object[Qualification], Object[Maintenance]}],
+	ops:OptionsPattern[ConsolidationInstances]
+] := Module[
+	{
+		amountsAvailable, candidateSampleAmounts, safeOps, expandedOptions, modelAmountTuples,
+		incompatibleModelPositions, modelAmountTuplesFiltered, availableInstancesLookup, availableInstancesLookupWithIncompatibleModels
+	},
+
+	safeOps = SafeOptions[ConsolidationInstances, ToList[ops]];
+	expandedOptions = Last[ExpandIndexMatchedInputs[ConsolidationInstances, {myRequestedModels, myRequiredAmounts, myAllowedNotebooks, myRootProtocol, myCurrentProtocol}, safeOps]];
+
+	(* assem the model, amount, and sterile information as tuples *)
+	modelAmountTuples = Transpose[{
+		myRequestedModels,
+		myRequiredAmounts,
+		Lookup[expandedOptions, Sterile]
+	}];
+
+	(* get the position of self-contained or counted samples, we wont even try to consolidate them b/c SP framework does not really support it now *)
+	incompatibleModelPositions = Position[
+		modelAmountTuples,
+		Alternatives[
+			{SelfContainedSampleModelP, NullP, _},
+			{_, NumberP | UnitsP[Unit], _}
+		]
+	];
+
+	(* filter them about temporarily *)
+	modelAmountTuplesFiltered = Delete[
+		modelAmountTuples,
+		incompatibleModelPositions
+	];
+
+	(* return early if we have nothing to proceed after filtering *)
+	If[MatchQ[modelAmountTuplesFiltered, {}],
+		Return[ConstantArray[{}, Length[myRequestedModels]], Module]
+	];
+
+	(* call ModelInstances which returns available instances with keys including <|"Value"->sample,"Container"->container,"ScanValue"->container,"UserOwned"->!NullQ[notebook],"KitComponents"->kitComponents,"AvailableAmount"->amountAvailable|> *)
+	(* NOTE: ModelInstances already does a filter and calculations of the samples considering if they are used by the root protocol etc, we will share the logic there, i.e.:
+		if a sample is available or stock, can use it
+		if a sample is in use by the same root protocol, make sure:
+			all the requestors for this sample are not the same as the current protocol
+			the sample is on the cart
+			the sample is not a prepared resource for some other resources of our protocol
+	*)
+	(* also ModelInstances already does the calculation of reserved amount, available amount etc so we really only need to pull things out here *)
+	availableInstancesLookup = ModelInstances[
+		modelAmountTuplesFiltered[[All, 1]],
+		(* define the amount, apply the cut off so to avoid pipetting/transferring tiny amounts when we could be consolidating medium amounts together  *)
+		modelAmountTuplesFiltered[[All, 2]] * $ConsolidationCutOff,
+		(* allow any container model for sure *)
+		ConstantArray[{}, Length[modelAmountTuplesFiltered]],
+		myAllowedNotebooks,
+		myRootProtocol,
+		myCurrentProtocol,
+		(* keep up with sterile requirement *)
+		Sterile -> modelAmountTuplesFiltered[[All, 3]],
+		(* exclude samples that are in hermetic containers b/c if they are in hermetic containers that means they are intended for being taken out and use immediately, not to be transferred to an intermediate container *)
+		Hermetic -> False
+	];
+	
+	(* thread {} back into the list so everything is now index matched to input MyRequestedModels *)
+	availableInstancesLookupWithIncompatibleModels = Fold[Insert[#1, {}, #2[[1]]] &, availableInstancesLookup, incompatibleModelPositions];
+
+	MapThread[
+		Function[{availableInstancesInfo, requiredAmount, requestedModel},
+			Module[{finalInstancesInfo},
+				(* do an additional filter to get rid of samples with volumes larger than the required amount *)
+				(* NOTE: we really should not be searching for consolidations when we do have samples of enough volumes, so if finalInstancesInfo is _not_ the same as availableInstancesInfo, something might have gone wrong in the pickingAssociation branching logic or your resource specification *)
+				finalInstancesInfo = PickList[
+					availableInstancesInfo,
+					Lookup[availableInstancesInfo, "AvailableAmount", {}],
+					LessEqualP[(1 - $ResourcePickingToleranceMultiplier + 1) * requiredAmount]
+				];
+
+				(* if not 2 or more samples were found that fulfill the search criteria, we can return {} here *)
+				(* when 1 sample is found, this should be picked up by the ResourceTransfer pick type *)
+				If[Length[finalInstancesInfo] < 2, Return[{}, Module]];
+
+				(* get the amount available for each available instanes, ModelInstances have already considered the reserved amount by requested resources *)
+				amountsAvailable = Lookup[finalInstancesInfo, "AvailableAmount", {}];
+
+				(* get the largest amounts from the sample packets (but no more than $MaxConsolidationNumber). We do not want to do consolidation if we need more to avoid giving customers a bunch of low-volume dregs *)
+				candidateSampleAmounts = If[Length[amountsAvailable] < $MaxConsolidationNumber,
+					amountsAvailable,
+					Take[Sort[amountsAvailable], -$MaxConsolidationNumber;;-1]
+				];
+
+				(* If there are no single sample packets with sufficient amount (or we have sufficient but we would need more than $MaxConsolidationNumber samples), we need to return {} here.*)
+				(* Otherwise generate consolidation associations with the possible samples and their amounts *)
+				If[(MatchQ[finalInstancesInfo, {}] || Total[candidateSampleAmounts] < requiredAmount),
+					Return[{}, Module],
+					<|
+						"PossibleSamples" -> Lookup[finalInstancesInfo, "Value"],
+						"SamplesAmounts" -> Lookup[finalInstancesInfo, "AvailableAmount"],
+						"UserOwned" -> Lookup[finalInstancesInfo, "UserOwned"],
+						"RequestedModel" -> requestedModel
+					|>
+				]
+			]
+		],
+		{availableInstancesLookupWithIncompatibleModels, myRequiredAmounts, myRequestedModels}
+	]
+
+];

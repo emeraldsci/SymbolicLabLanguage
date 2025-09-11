@@ -2512,12 +2512,14 @@ DefineOptions[ExperimentELISA,
 			]
 		},
 		(* ================Shared options================ *)
+		ModelInputOptions,
 		QueuePositionOption,
 		PriorityOption,
 		HoldOrderOption,
 		StartDateOption,
-		FuntopiaSharedOptions,
-		SamplesInStorageOptions
+		NonBiologyFuntopiaSharedOptions,
+		SamplesInStorageOptions,
+		SimulationOption
 		(*No SampleOut*)
 	}
 ];
@@ -2543,12 +2545,12 @@ Warning::ELISANoStandardForExperiment="Typically standard is needed for a quanti
 Warning::ELISANoBlankForExperiment="Typically blank is needed for a quantitative ELISA experiment but the current value is Null. If desired, please specify one or more Model[Sample] or Object[Sample] as Blank.";
 Warning::CoatingButNoBlocking="Coating is True but Blocking is False. We recommend setting Blocking to True for the best ELISA result.";
 Error::PrimaryAntibodyPipettingVolumeTooLow="After combining all the same primary antibodies with the same dilution rate. Primary antibodies with dilution factors `1` still require pipetting volumes of less than 1 Microliter, which cannot be performed accurately. We recommend performing an intermediate dilution on your antibodies using ExperimentSamplePreparation or increase the working concentration of the antibodies.";
-Error::SecondaryAntibodyPipettingVolumeTooLow="After combining all the same secondary antibodies with the same dilution rate. Secondary antibodies with dilution factors `1` still require pipetting volumes of less than 1 Microliter, which cannot be performed accurately. We recommend performing an intermediate dilution on your antibodies using ExperimentSampleManipulation or increase the working concentration of the antibodies.";
-Error::CoatingAntibodyPipettingVolumeTooLow="After combining all the same coating antibodies with the same dilution rate. Coating antibodies with dilution factors `1` still require pipetting volumes of less than 1 Microliter, which cannot be performed accurately. We recommend performing an intermediate dilution on your antibodies using ExperimentSampleManipulation or increase the working concentration of the antibodies.";
-Error::CaptureAntibodyPipettingVolumeTooLow="After combining all the same capture antibodies with the same dilution rate. Capture antibodies with dilution factors `1` still require pipetting volumes of less than 1 Microliter, which cannot be performed accurately. We recommend performing an intermediate dilution on your antibodies using ExperimentSampleManipulation or increase the working concentration of the antibodies.";
-Error::ReferenceAntigenPipettingVolumeTooLow="After combining all the same reference antigens with the same dilution rate. Reference antigens with dilution factors `1` still require pipetting volumes of less than 1 Microliter, which cannot be performed accurately. We recommend performing an intermediate dilution on your antigens using ExperimentSampleManipulation or increase the working concentration of the antigens.";
-Error::DilutionCurvesPipettingVolumeTooLow="The dilution curves corresponding to `1` at dilution `2` require pipetting volumes of less than 1 Microliter, which cannot be performed accurately. We recommend performing an intermediate dilution on your antibodies using ExperimentSampleManipulation or increase the working concentration of the antibodies.";
-Error::SpikePipettingVolumeTooLow="The pipetting volume(s) of the spike sample(s) `1` is less than 1 Microliter, which cannot be performed accurately. We recommend performing an intermediate dilution on the spike sample(s) using ExperimentSampleManipulation.";
+Error::SecondaryAntibodyPipettingVolumeTooLow="After combining all the same secondary antibodies with the same dilution rate. Secondary antibodies with dilution factors `1` still require pipetting volumes of less than 1 Microliter, which cannot be performed accurately. We recommend performing an intermediate dilution on your antibodies using ExperimentSamplePreparation or increase the working concentration of the antibodies.";
+Error::CoatingAntibodyPipettingVolumeTooLow="After combining all the same coating antibodies with the same dilution rate. Coating antibodies with dilution factors `1` still require pipetting volumes of less than 1 Microliter, which cannot be performed accurately. We recommend performing an intermediate dilution on your antibodies using ExperimentSamplePreparation or increase the working concentration of the antibodies.";
+Error::CaptureAntibodyPipettingVolumeTooLow="After combining all the same capture antibodies with the same dilution rate. Capture antibodies with dilution factors `1` still require pipetting volumes of less than 1 Microliter, which cannot be performed accurately. We recommend performing an intermediate dilution on your antibodies using ExperimentSamplePreparation or increase the working concentration of the antibodies.";
+Error::ReferenceAntigenPipettingVolumeTooLow="After combining all the same reference antigens with the same dilution rate. Reference antigens with dilution factors `1` still require pipetting volumes of less than 1 Microliter, which cannot be performed accurately. We recommend performing an intermediate dilution on your antigens using ExperimentSamplePreparation or increase the working concentration of the antigens.";
+Error::DilutionCurvesPipettingVolumeTooLow="The dilution curves corresponding to `1` at dilution `2` require pipetting volumes of less than 1 Microliter, which cannot be performed accurately. We recommend performing an intermediate dilution on your antibodies using ExperimentSamplePreparation or increase the working concentration of the antibodies.";
+Error::SpikePipettingVolumeTooLow="The pipetting volume(s) of the spike sample(s) `1` is less than 1 Microliter, which cannot be performed accurately. We recommend performing an intermediate dilution on the spike sample(s) using ExperimentSamplePreparation.";
 Error::PlateAssignmentExceedsAvailableWells="The `1` exceeds the number of wells available in this plate (96). Please note that the plate assignment will be expanded to include the number of replicates and dilution curves. Reduce the number of samples or number of replicates or consider submitting an additional protocol.";
 Error::PlateAssignmentDoesNotMatchOptions="The `1` does not match the options given for each object.";
 Error::PlateAssignmentIsNotColumnWise="The ELISAPlateAssignment and SecondaryELISAPlateAssignment do not follow an column-wise order, which is mandatory when samples are pre-coated onto the ELISA plate(s).";
@@ -2573,7 +2575,16 @@ Warning::Measure620WithCorrection="620 Nanometer is specified in AbsorbanceWavel
 (*ExperimentELISA Main Function Samples as Object[Sample]*)
 
 ExperimentELISA[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[ExperimentELISA]]:=Module[
-	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,safeOps,safeOpsTests,validLengths,validLengthTests,templatedOptions,templateTests,inheritedOptions,expandedSafeOps,cacheBall,resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests,suppliedStandard,suppliedBlank,listedStandard,listedBlank,processedListedOptions,listedIndexMatchingParentOptions,objectSampleFields,modelSampleFields,analyteFields,antibodyFields,objectSampleAllFields,modelSampleAllFields,optionsWithObjects,allObjects,userSpecifiedObjects,simulatedSampleQ,objectsExistQs,objectsExistTests,moleculeObjects,sampleObjects,modelSampleObjects,modelContainerFields,objectContainerFields,allOptionObjects,modelContainerObjects,objectContainerObjects,allOptical96WellMicroplates,modelMoleculeAllFields,modelContainerAllFields,objectContainerAllFields,stockedItems,allLHCompatibleOptical96WellMicroplates,resolverPassDownAssociation,listedSamples,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed},
+	{
+		listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
+		updatedSimulation,safeOps,safeOpsTests,validLengths,validLengthTests,templatedOptions,templateTests,inheritedOptions,expandedSafeOps,cacheBall,
+		resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests,suppliedStandard,
+		suppliedBlank,listedStandard,listedBlank,processedListedOptions,listedIndexMatchingParentOptions,objectSampleFields,modelSampleFields,analyteFields,
+		antibodyFields,objectSampleAllFields,modelSampleAllFields,optionsWithObjects,allObjects,moleculeObjects,sampleObjects,modelSampleObjects,
+		modelContainerFields,objectContainerFields,allOptionObjects,modelContainerObjects,objectContainerObjects,allOptical96WellMicroplates,
+		modelMoleculeAllFields,modelContainerAllFields,objectContainerAllFields,stockedItems,allLHCompatibleOptical96WellMicroplates,resolverPassDownAssociation,
+		listedSamples,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed, cache
+	},
 
 	(* Make sure we're working with a list of options *)
 	{listedSamples,listedOptions}=removeLinks[ToList[mySamples],ToList[myOptions]];
@@ -2587,7 +2598,7 @@ ExperimentELISA[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPa
 	(* Add a special step here to make sure we are working on a list of Standard because they are index matching parents in ExperimentELISA. If they are not in a list, the ValidInputLengthsQ may not be able to catch the length conflict in the options. Also the ExpandIndexMatchedInputs cannot successfully expand the options into a list either.
 For example, if we have Standard->Model[Sample,"Milli-Q water"],StandardResuspension->{True,False}, ValidInputLengthsQ cannot recognize the issue.
 Another example, if we have Standard->Model[Sample,"Milli-Q water"],StandardResuspension->True, we are not getting a list after ExpandIndexMatchedInputs. If we do Standard->{Model[Sample,"Milli-Q water"]},StandardResuspension->True, we will automatically get StandardResuspension->{True}. Then we don't need to worry about working with an option that is not a list.
-We do not worry about input samples because our option is from myOptionsWithPreparedSamples and our function simulateSamplePreparationPackets takes in ToList[mySamples].
+We do not worry about input samples because our option is from myOptionsWithPreparedSamples and our function simulateSamplePreparationPacketsNew takes in ToList[mySamples].
 
  Note that we have kept Standard as Null if they are specified as so. We check in our resolver that when they are Null, the options that are index matched to these options must also be Null. We don't check them here.*)
 
@@ -2599,26 +2610,23 @@ We do not worry about input samples because our option is from myOptionsWithPrep
 
 	processedListedOptions=Normal[Join[Association[listedOptions],Association[listedIndexMatchingParentOptions]]];
 
-
-
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentELISA,
 			listedSamples,
 			processedListedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -2627,13 +2635,7 @@ We do not worry about input samples because our option is from myOptionsWithPrep
 		{SafeOptions[ExperimentELISA,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],{}}
 	];
 
-	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentELISA,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentELISA,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],{}}
-	];
+	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -2643,6 +2645,12 @@ We do not worry about input samples because our option is from myOptionsWithPrep
 			Options->$Failed,
 			Preview->Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentELISA,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentELISA,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],{}}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -2679,6 +2687,7 @@ We do not worry about input samples because our option is from myOptionsWithPrep
 	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentELISA,{ToList[mySamplesWithPreparedSamples]},
 		inheritedOptions]];
 
+	cache = Lookup[expandedSafeOps,Cache,{}];
 
 
 
@@ -2818,65 +2827,6 @@ We do not worry about input samples because our option is from myOptionsWithPrep
 		]
 	];
 
-	(* Extract any objects that the user has explicitly specified *)
-	userSpecifiedObjects=DeleteDuplicates[
-		Cases[
-			Flatten@Join[
-				listedSamples,
-				(* All options that could have an object *)
-				Lookup[expandedSafeOps,optionsWithObjects]
-			],
-			ObjectP[]
-		]
-	];
-
-	(* Check that the specified objects exist or are visible to the current user *)
-	simulatedSampleQ=Map[
-		Lookup[
-			(*Quiet extra errors when sample does not exist, which we will scream about later*)
-			Quiet[fetchPacketFromCache[#,samplePreparationCache]],
-			Simulated,
-			False
-		]&,
-		userSpecifiedObjects
-	];
-	objectsExistQs=DatabaseMemberQ[
-		PickList[userSpecifiedObjects,simulatedSampleQ,False]
-	];
-
-	(* Build tests for object existence *)
-	objectsExistTests=If[gatherTests,
-		Module[{failingTest,passingTest},
-
-			failingTest=If[!MemberQ[objectsExistQs,False],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]<>" exist in the database:",True,False]
-			];
-
-			passingTest=If[!MemberQ[objectsExistQs,True],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,True]]<>" exist in the database:",True,True]
-			];
-
-			{failingTest,passingTest}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]
-		];
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->Join[safeOpsTests,validLengthTests,templateTests,objectsExistTests],
-			Options->$Failed,
-			Preview->Null
-		}]
-	];
-
 
 	(* Isolate objects of particular types so we can build an indexed-download call *)
 	moleculeObjects=Cases[allObjects,ObjectP[Model[Molecule]]];
@@ -2885,13 +2835,11 @@ We do not worry about input samples because our option is from myOptionsWithPrep
 	modelContainerObjects=Cases[allObjects,ObjectP[Model[Container,Plate]]];
 	objectContainerObjects=Cases[allObjects,ObjectP[Object[Container,Plate]]];
 
-
-
 	(* Make one download for all possible parameters needed *)
 	cacheBall=Quiet[
 		FlattenCachePackets[
 			{
-				samplePreparationCache,
+				cache,
 				Download[
 					{
 						moleculeObjects,
@@ -2907,7 +2855,8 @@ We do not worry about input samples because our option is from myOptionsWithPrep
 						modelContainerAllFields,
 						objectContainerAllFields
 					},
-					Cache->Flatten[{Lookup[expandedSafeOps,Cache,{}],samplePreparationCache}],
+					Cache->cache,
+					Simulation -> updatedSimulation,
 					Date->Now
 				]
 			}
@@ -2918,7 +2867,7 @@ We do not worry about input samples because our option is from myOptionsWithPrep
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{{resolvedOptions,resolvedOptionsTests},resolverPassDownAssociation}=resolveExperimentELISAOptions[listedSamples,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{{resolvedOptions,resolvedOptionsTests},resolverPassDownAssociation}=resolveExperimentELISAOptions[listedSamples,expandedSafeOps,Cache->cacheBall,Simulation -> updatedSimulation, Output->{Result,Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -2928,7 +2877,7 @@ We do not worry about input samples because our option is from myOptionsWithPrep
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolverPassDownAssociation,resolvedOptionsTests}=Append[resolveExperimentELISAOptions[listedSamples,expandedSafeOps,Cache->cacheBall],{}],
+			{resolvedOptions,resolverPassDownAssociation,resolvedOptionsTests}=Append[resolveExperimentELISAOptions[listedSamples,expandedSafeOps,Cache->cacheBall,Simulation -> updatedSimulation],{}],
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -2955,8 +2904,8 @@ We do not worry about input samples because our option is from myOptionsWithPrep
 
 	(* Build packets with resources *)
 	{resourcePackets,resourcePacketTests} = If[gatherTests,
-		elisaResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,resolverPassDownAssociation,Cache->cacheBall,Output->{Result,Tests}],
-		{elisaResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,resolverPassDownAssociation,Cache->cacheBall],{}}
+		elisaResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,resolverPassDownAssociation,Cache->cacheBall, Simulation -> updatedSimulation, Output->{Result,Tests}],
+		{elisaResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,resolverPassDownAssociation,Cache->cacheBall, Simulation -> updatedSimulation],{}}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -2975,13 +2924,15 @@ We do not worry about input samples because our option is from myOptionsWithPrep
 			resourcePackets,
 			Upload->Lookup[resolvedOptions,Upload],
 			Confirm->Lookup[resolvedOptions,Confirm],
+			CanaryBranch->Lookup[resolvedOptions,CanaryBranch],
 			ParentProtocol->Lookup[resolvedOptions,ParentProtocol],
 			Priority->Lookup[resolvedOptions,Priority],
 			StartDate->Lookup[resolvedOptions,StartDate],
 			HoldOrder->Lookup[resolvedOptions,HoldOrder],
 			QueuePosition->Lookup[resolvedOptions,QueuePosition],
 			ConstellationMessage->Object[Protocol,ELISA],
-			Cache->cacheBall
+			Cache->cacheBall,
+			Simulation -> updatedSimulation
 		],
 		$Failed
 	];
@@ -3000,12 +2951,11 @@ We do not worry about input samples because our option is from myOptionsWithPrep
 (* ::Subsubsection::Closed:: *)
 (*Experiment function overload that takes container as input*)
 (* Note: The container overload should come after the sample overload. *)
-ExperimentELISA[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,objectsExistQs,objectsExistTests,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-		samplePreparationCache,containerToSampleResult,containerToSampleOutput,updatedCache,sampleCache,samples,sampleOptions,containerToSampleTests,listedContainers},
+ExperimentELISA[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,containerToSampleResult,containerToSampleOutput,sampleCache,samples,sampleOptions,containerToSampleTests,listedContainers, updatedSimulation, containerToSampleSimulation},
 
 	(* Make sure we're working with a list of options *)
-	{listedContainers, listedOptions}=removeLinks[ToList[myContainers], ToList[myOptions]];
+	{listedContainers, listedOptions}= {ToList[myContainers], ToList[myOptions]};
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -3017,69 +2967,31 @@ ExperimentELISA[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentELISA,
 			listedContainers,
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
-	];
-
-
-	(* Before we turn containers into samples, we want to check that all containers exist in the database. We don't check any other option objects as they will be checked in our main Sample overload. We don't want random result to be returned from containerToSample function *)
-	objectsExistQs=DatabaseMemberQ[ToList[myContainers]];
-
-	(* Build tests for object existence *)
-	objectsExistTests=If[gatherTests,
-		Module[{failingTest,passingTest},
-
-			failingTest=If[!MemberQ[objectsExistQs,False],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[ToList[myContainers],objectsExistQs,False]]<>" exist in the database:",True,False]
-			];
-
-			passingTest=If[!MemberQ[objectsExistQs,True],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[ToList[myContainers],objectsExistQs,True]]<>" exist in the database:",True,True]
-			];
-
-			{failingTest,passingTest}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[ToList[myContainers],objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[ToList[myContainers],objectsExistQs,False]]
-		];
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->objectsExistTests,
-			Options->$Failed,
-			Preview->Null
-		}]
+		Return[$Failed]
 	];
 
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests, containerToSampleSimulation}=containerToSampleOptions[
 			ExperimentELISA,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests, Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -3090,24 +3002,17 @@ ExperimentELISA[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput, containerToSampleSimulation}=containerToSampleOptions[
 				ExperimentELISA,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output->{Result, Simulation},
+				Simulation -> updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
-
-	(* Update our cache with our new simulated values. *)
-	(* It is important the sample preparation cache appears first in the cache ball. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
 
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToSampleResult,$Failed],
@@ -3119,10 +3024,10 @@ ExperimentELISA[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]
 			Preview->Null
 		},
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions, sampleCache}=containerToSampleOutput;
+		{samples,sampleOptions}=containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentELISA[samples,ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache,sampleCache}]]]
+		ExperimentELISA[samples,ReplaceRule[sampleOptions,Simulation -> containerToSampleSimulation]]
 	]
 ];
 
@@ -3138,7 +3043,7 @@ ExperimentELISA[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]
 
 DefineOptions[
 	resolveExperimentELISAOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption, SimulationOption}
 ];
 
 resolveExperimentELISAOptions[
@@ -3295,7 +3200,7 @@ resolveExperimentELISAOptions[
 		originalStandardDilutionCurve,originalStandardSerialDilutionCurve,originalSampleSerialDilutionCurve,originalSampleDilutionCurve,roundedOriginalStandardDilutionCurve,
 		roundedOriginalStandardSerialDilutionCurve,roundedOriginalSampleSerialDilutionCurve,roundedOriginalSampleDilutionCurve,roundedTransformedStandardDilutionCurve,
 		roundedTransformedStandardSerialDilutionCurve,roundedTransformedSampleSerialDilutionCurve,roundedTransformedSampleDilutionCurve,allOptionNames,allOptions,
-		allTests,resolvableOptionList,allOptionsRounded,simulatedCache,pipettingError,emptyStandardQ,emptyBlankQ,joinedSamples,samplePrimaryAntibodyDilutionFactors,
+		allTests,resolvableOptionList,allOptionsRounded,updatedSimulation,pipettingError,emptyStandardQ,emptyBlankQ,joinedSamples,samplePrimaryAntibodyDilutionFactors,
 		samplePrimaryAntibodyAssayVolumes,samplePrimaryAntibodyVolumes,samplePrimaryAntibodies,standardPrimaryAntibodyDilutionFactors,standardPrimaryAntibodyAssayVolumes,
 		standardPrimaryAntibodyVolumes,standardPrimaryAntibodies,blankPrimaryAntibodyDilutionFactors,blankPrimaryAntibodyAssayVolumes,blankPrimaryAntibodyVolumes,
 		blankPrimaryAntibodies,joinedPrimaryAntibodyDilutionFactors,joinedPrimaryAntibodyAssayVolumes,joinedPrimaryAntibodyVolumes,joinedPrimaryAntibodies,
@@ -3307,7 +3212,7 @@ resolveExperimentELISAOptions[
 		joinedSecondaryAntibodyDilutionFactors,joinedSecondaryAntibodyAssayVolumes,joinedSecondaryAntibodyVolumes,joinedSecondaryAntibodies,combinedSecondaryAntibodyVolumes,
 		combinedSecondaryAntibodyFactors,combinedSecondaryAntibodyWithFactors,combinedSecondaryAntibodyWithFactorsDeDuplications,totalSecondaryAntibodyVolumes,insufficientSecondaryAntibodyVolumes,secondaryAntibodyErrorIdentifier,secondaryAntibodyIntermediateDilutionRates,afterDilutionSecondaryAntibodyVolumes,sampleCoatingAntibodyDilutionFactors,sampleCoatingAntibodyAssayVolumes,sampleCoatingAntibodyVolumes,sampleCoatingAntibodies,standardCoatingAntibodyDilutionFactors,standardCoatingAntibodyAssayVolumes,standardCoatingAntibodyVolumes,standardCoatingAntibodies,blankCoatingAntibodyDilutionFactors,blankCoatingAntibodyAssayVolumes,blankCoatingAntibodyVolumes,blankCoatingAntibodies,joinedCoatingAntibodyDilutionFactors,joinedCoatingAntibodyAssayVolumes,joinedCoatingAntibodyVolumes,joinedCoatingAntibodies,combinedCoatingAntibodyVolumes,combinedCoatingAntibodyFactors,combinedCoatingAntibodyWithFactors,combinedCoatingAntibodyWithFactorsDeDuplications,totalCoatingAntibodyVolumes,insufficientCoatingAntibodyVolumes,coatingAntibodyErrorIdentifier,coatingAntibodyIntermediateDilutionRates,afterDilutionCoatingAntibodyVolumes,sampleCaptureAntibodyDilutionFactors,sampleCaptureAntibodyAssayVolumes,sampleCaptureAntibodyVolumes,sampleCaptureAntibodies,standardCaptureAntibodyDilutionFactors,standardCaptureAntibodyAssayVolumes,standardCaptureAntibodyVolumes,standardCaptureAntibodies,blankCaptureAntibodyDilutionFactors,blankCaptureAntibodyAssayVolumes,blankCaptureAntibodyVolumes,blankCaptureAntibodies,joinedCaptureAntibodyDilutionFactors,joinedCaptureAntibodyAssayVolumes,joinedCaptureAntibodyVolumes,joinedCaptureAntibodies,combinedCaptureAntibodyVolumes,combinedCaptureAntibodyFactors,combinedCaptureAntibodyWithFactors,combinedCaptureAntibodyWithFactorsDeDuplications,insufficientCaptureAntibodyVolumes,captureAntibodyErrorIdentifier,captureAntibodyIntermediateDilutionRates,afterDilutionCaptureAntibodyVolumes,totalCaptureAntibodyVolumes,sampleReferenceAntigenDilutionFactors,sampleReferenceAntigenAssayVolumes,sampleReferenceAntigenVolumes,sampleReferenceAntigens,standardReferenceAntigenDilutionFactors,standardReferenceAntigenAssayVolumes,standardReferenceAntigenVolumes,standardReferenceAntigens,blankReferenceAntigenDilutionFactors,blankReferenceAntigenAssayVolumes,blankReferenceAntigenVolumes,blankReferenceAntigens,joinedReferenceAntigenDilutionFactors,joinedReferenceAntigenAssayVolumes,joinedReferenceAntigenVolumes,joinedReferenceAntigens,combinedReferenceAntigenVolumes,combinedReferenceAntigenFactors,combinedReferenceAntigenWithFactors,combinedReferenceAntigenWithFactorsDeDuplications,totalReferenceAntigenVolumes,insufficientReferenceAntigenVolumes,referenceAntigenErrorIdentifier,referenceAntigenIntermediateDilutionRates,afterDilutionReferenceAntigenVolumes,sampleVolumes,spikeVolumes,insufficientSpikeVolumes,spikeErrorIdentifier,spikeIntermediateDilutionRates,afterDilutionSpikeVolumes,dilutionCurveSufficientPipettingVolumesTests,joinedCombinedDilutionCurvesReplicatedErrored,curvesSufficientVolumeBooleans,insufficientVolumeCurves,insufficientVolumePositions,joinedSampleAndStandard,samplesAndStandardsWithInsufficientVolumes,samplesAndStandardsWithSufficientVolumes,elisaMasterSwitch,elisaSameNullIndexedOptions,elisaEitherOr,elisaNotMoreThanOne,singleDilutionCurveTransformation,elisaSetAuto,elisaMakeMapThreadFriends,resolvedEmail,resolvedELISAPlate,recommendedELISAPlates,resolverPassDowns,resolverAllOptical96WellMicroplates,allLHCompatibleOptical96WellMicroplates,resolverAllRecommendedMicroplates,suppliedSpikeStorageCondition,spikeSameNullConflictingOptions,spikeSameNullConflictingTest,resolvedSpikeDilutionFactor,resolvedSpikeStorageCondition,primaryAntibodyPipettingConflictOptions,primaryAntibodySufficientPipettingVolumesTest,secondaryAntibodyPipettingConflictOptions,secondaryAntibodySufficientPipettingVolumesTest,coatingAntibodyPipettingConflictOptions,coatingAntibodySufficientPipettingVolumesTest,captureAntibodyPipettingConflictOptions,captureAntibodySufficientPipettingVolumesTest,referenceAntigenPipettingConflictOptions,referenceAntigenSufficientPipettingVolumesTest,spikePipettingConflictOptions,spikeSufficientPipettingVolumesTest,dilutionCurvesConflictingOptions,resolvedNumberOfReplicatesNullToOne,joinedAssignmentTable,assignmentSamples,assignmentSpikes,assignmentSpikeDilutionFactors,assignmentCoatingAntibodies,assignmentCoatingAntibodyDilutionFactors,assignmentCaptureAntibodies,assignmentCaptureAntibodyDilutionFactors,assignmentReferenceAntigens,assignmentReferenceAntigenDilutionFactors,assignmentPrimaryAntibodies,assignmentPrimaryAntibodyDilutionFactors,assignmentSecondaryAntibodies,assignmentSecondaryAntibodyDilutionFactors,assignmentCoatingVolume,assignmentBlockingVolume,assignmentSampleAntibodyComplexImmunosorbentVolume,assignmentSampleImmunosorbentVolume,assignmentPrimaryAntibodyImmunosorbentVolume,assignmentSecondaryAntibodyImmunosorbentVolume,assignmentSubstrate,assignmentSubstrateVolume,assignmentStop,assignmentStopVolume,standardObjectNumber,blankObjectNumber,totalObjectNumber,elisaWellCounter,joinedAssignmentTableCounts,joinedAssignmentTableLessEqual96Q,primaryPlateExceeds96Q,secondaryPlateExceeds96Q,wellNumberConflictOptions,numberWellsTest,sortedJoinedResolvedAssignments,sortedJoinedAssignmentTable,assignmentTableMatchQ,assignmentMatchingConflictOptions,assginmentMatchesTest,resolvedOptions,resolvedPrimaryAssignmentTableCounts,	resolvedSecondaryAssignmentTableCounts,suppliedBlockingMixRate,precisions,suppliedSampleAntibodyComplexImmunosorbentMixRate,assignmentDilutionFactors,joinedFixedDilutionCurves,joinedSerialDilutionCurves,assignmentTypesRaw,assignmentTypesSpiked,sampleCurveExpansionParams,standardCurveExpansionParams,joinedCurveExpansionParams,curveExpandedJoinedSamples,numberOfSamples,numberOfCurveExpandedSamples,curveExpandedJoinedPrimaryAntibodyDilutionFactors,curveExpandedJoinedPrimaryAntibodyAssayVolumes,curveExpandedJoinedPrimaryAntibodyVolumes,curveExpandedJoinedPrimaryAntibodies,curveExpandedCombinedPrimaryAntibodyVolumes,curveExpandedCombinedPrimaryAntibodyFactors,curveExpandedCombinedPrimaryAntibodyWithFactors,curveExpandedJoinedSecondaryAntibodyDilutionFactors,curveExpandedJoinedSecondaryAntibodyAssayVolumes,curveExpandedJoinedSecondaryAntibodyVolumes,curveExpandedJoinedSecondaryAntibodies,curveExpandedCombinedSecondaryAntibodyVolumes,curveExpandedCombinedSecondaryAntibodyFactors,curveExpandedCombinedSecondaryAntibodyWithFactors,curveExpandedJoinedCoatingAntibodyDilutionFactors,curveExpandedJoinedCoatingAntibodyAssayVolumes,curveExpandedJoinedCoatingAntibodyVolumes,curveExpandedJoinedCoatingAntibodies,curveExpandedCombinedCoatingAntibodyVolumes,curveExpandedCombinedCoatingAntibodyFactors,curveExpandedCombinedCoatingAntibodyWithFactors,curveExpandedJoinedCaptureAntibodyDilutionFactors,curveExpandedJoinedCaptureAntibodyAssayVolumes,curveExpandedJoinedCaptureAntibodyVolumes,curveExpandedJoinedCaptureAntibodies,curveExpandedCombinedCaptureAntibodyVolumes,curveExpandedCombinedCaptureAntibodyFactors,curveExpandedCombinedCaptureAntibodyWithFactors,curveExpandedJoinedReferenceAntigenDilutionFactors,curveExpandedJoinedReferenceAntigenAssayVolumes,curveExpandedJoinedReferenceAntigenVolumes,curveExpandedJoinedReferenceAntigens,curveExpandedCombinedReferenceAntigenVolumes,curveExpandedCombinedReferenceAntigenFactors,curveExpandedCombinedReferenceAntigenWithFactors,suppliedBlankStorageCondition,resolvedBlankStorageCondition,optionNamesToString,volumePerSamplesIn,coatingIndexedOptions,elisaResolveIndexMatchedSampleOptions,elisaResolveIndexMatchedStandardOptions,elisaResolveIndexMatchedBlankOptions,resolvedNumberOfReplicates,sampleLengthNull,sampleLengthFalse,resolvedAliquotAmount,resolvedTargetConcentration,resolvedTargetConcentrationAnalyte,resolvedAssayVolume,resolvedAliquotContainer,resolvedDestinationWell,resolvedConcentratedBuffer,resolvedBufferDilutionFactor,resolvedBufferDiluent,resolvedAssayBuffer,resolvedAliquotSampleStorageCondition,resolvedAliquot,resolvedConsolidateAliquots,resolvedAliquotPreparation,suppliedAliquotAmount,suppliedTargetConcentration,suppliedTargetConcentrationAnalyte,suppliedAssayVolume,suppliedAliquotContainer,suppliedDestinationWell,suppliedConcentratedBuffer,suppliedBufferDilutionFactor,suppliedBufferDiluent,suppliedAssayBuffer,suppliedAliquotSampleStorageCondition,suppliedAliquot,suppliedConsolidateAliquots,suppliedAliquotPreparation,preCoatedSampleConflictingAliquotOptions,allPrecoatedPlates,plateContentsRaw,secondaryPlateContentRaw,primaryPlateContentRaw,primaryPlateIndexConverted,secondaryPlateIndexConverted,primaryPlateContentSorted,secondaryPlateContentSorted,primaryPlateSortedSamples,secondaryPlateSortedSamples,resolvedPrimaryAntibodyDilutionFactor,spikeDilutionCurveConformingBooleans,spikeDilutionCurveConflictingQ,spikeDilutionCurveConflictingOption,spikedSampleDilutionCurveConflictingTest,volumeTooLargeOptions,columnwiseELISAPlateAssignment,columnwiseSecondaryELISAPlateAssignment,joinedResolvedAssignments,joinedColumnwiseAssignment,coatedAssignmentTableMatchQ,coatedAssignmentMatchingConflictOptions,coatedAssignmentMatchesTest,containerlessSamplePackets,containerlessInvalidInputs,containerlessTests,noVolumeSamplePackets,noVolumeInvalidInputs,noVolumeTests,sampleReagentTable,sampleTargetAntigenToReagentLookupTable,defaultLookup,standardBlankReagentSampleSublistConflictingOptions,sampleReagenObjectedDoubled,standardBlankReagentObjected,reagentTableOptionNames,unresolvableStandardBlankReagentsQ,standardBlankReagentSampleSublistConflictingTests,reagentsObjected,reagentsObjectedFlattened,reagentsStorageConditionFlattened,reagentStoragePairsDeDup,reagentsDeDupped,objectTally,sampleStorageConflictingObjects,sampleStorageConflictingOptionsBoolean,sampleStorageConflictingOptions,sampleStorageConflictingTests,incompatibleContainerSamples,allSampleContainers,allSampleContainersDeDup,allSampleContainerModels,incompatibleContainerBooleans,precoatedSamplesIncompatibleContainersTests,allReagents,allReagentsOptionNames,findModelObjectDuplicates,ojbectModelMutualExclusiveConflictingObjects,objectModelMutualExclusiveConflictingOptions,ojbectModelMutualExclusiveConflictingTests,
 		suppliedPrereadBeforeStop, suppliedPrereadTimepoints, suppliedPrereadAbsorbanceWavelength, resolvedPrereadBeforeStop, resolvedPrereadTimepoints,
-		resolvedPrereadAbsorbanceWavelength, invalidPreparedTimepoints, invalidPreparedTimepointsOptions,invalidPreparedTimepointTests,invalidPrereadOptions,invalidPreparedTests,measure620Q,signalCorrectionQ
+		resolvedPrereadAbsorbanceWavelength, invalidPreparedTimepoints, invalidPreparedTimepointsOptions,invalidPreparedTimepointTests,invalidPrereadOptions,invalidPreparedTests,measure620Q,signalCorrectionQ, simulation, simulatedCache, allDownloadValues, modelSampleFields, objectSampleFields, analyteFields, antibodyFields, modelContainerFields,objectContainerFields,  objectSampleAllFields
 	},
 
 	(*==================================================*)
@@ -3657,23 +3562,62 @@ resolveExperimentELISAOptions[
 	gatherTests = MemberQ[output,Tests];
 	messages = !gatherTests;
 
-	(* Fetch our cache from the parent function. *)
+	(* Fetch our cache and simulation from the parent function. *)
 	cache=Lookup[ToList[myResolutionOptions],Cache,{}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
-	(* Seperate out our elisa options from our Sample Prep options. *)
+	(* Separate out our elisa options from our Sample Prep options. *)
 	{samplePrepOptions,elisaOptions}=splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-		resolveSamplePrepOptions[ExperimentELISA,mySamples,samplePrepOptions,Cache->cache,Output->{Result,Tests}],
-		{resolveSamplePrepOptions[ExperimentELISA,mySamples,samplePrepOptions,Cache->cache,Output->Result],{}}
+	{{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentELISA,mySamples,samplePrepOptions,Cache->cache,Simulation -> simulation, Output->{Result,Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentELISA,mySamples,samplePrepOptions,Cache->cache,Simulation -> simulation, Output->Result],{}}
 	];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
 	elisaOptionsAssociation = Association[elisaOptions];
 
+
+	(* we need to update the cache to be the simulated cache *)
+	(* Fields to download from all samples - include mySamples, Standard samples, Spike samples, Antibody samples and other reagents *)
+	(* Define all the fields that we want *)
+	modelSampleFields=SamplePreparationCacheFields[Model[Sample]];
+	objectSampleFields=Join[SamplePreparationCacheFields[Object[Sample]],{RequestedResources}];
+	analyteFields={Name,Object,Antibodies,DefaultSampleModel,State,MolecularWeight};
+	antibodyFields={Name,Object,Targets,Organism,SecondaryAntibody,DefaultSampleModel,State,AffinityLabels,DetectionLabels,MolecularWeight};
+	modelContainerFields=SamplePreparationCacheFields[Model[Container]];
+	objectContainerFields=SamplePreparationCacheFields[Object[Container]];
+
+	(* Fields to download for all sample objects*)
+	objectSampleAllFields={
+		Packet[Sequence@@objectSampleFields],
+		Packet[Container[objectContainerFields]],
+		Packet[Analytes[analyteFields]],
+		Packet[Analytes[DefaultSampleModel][modelSampleFields]],
+		Packet[Analytes[Antibodies][antibodyFields]],
+		Packet[Analytes[Antibodies][DefaultSampleModel][modelSampleFields]],
+		Packet[Container[objectContainerFields]],
+		Packet[Container[Model][modelContainerFields]],
+		Packet[Analytes[Antibodies][AffinityLabels][Antibodies][antibodyFields]],
+		Packet[Analytes[Antibodies][AffinityLabels][analyteFields]],
+		Packet[Analytes[Antibodies][AffinityLabels][Antibodies][DefaultSampleModel][modelSampleFields]]
+
+	};
+	(* Download some values that we'll need below *)
+	allDownloadValues = Quiet[Download[
+		DeleteDuplicates[Join[mySamples, simulatedSamples]],
+		objectSampleAllFields,
+		Cache -> cache,
+		Simulation -> updatedSimulation
+	], {Download::FieldDoesntExist}];
+
+	(* having a simulatedCache here helps with ObjectToString below *)
+	simulatedCache = FlattenCachePackets[{cache, allDownloadValues}];
+
+
 	(* Extract the packets that we need from our downloaded cache. *)
-	(* Remember to download from simulatedSamples, using our simulatedCache *)
+	(* Remember to download from simulatedSamples, using our updatedSimulation *)
 	(* Quiet[Download[...],Download::FieldDoesntExist]. An alternative method to Download from Cache - fetchPacketFromCache function - in shared Experiment Framework - to get information from cache *)
 	(* Fetch simulated samples *)
 	simulatedSamplePackets=Experiment`Private`fetchPacketFromCache[#,simulatedCache]&/@simulatedSamples;
@@ -3681,7 +3625,7 @@ resolveExperimentELISAOptions[
 	(* Get information about the containers of the simulated samples *)
 	simulatedSampleContainers=Lookup[simulatedSamplePackets,Container];
 	(* original code mapping Download: simulatedSampleContainerModels=Download[#,Model[Object],Cache->simulatedCache]&/@simulatedSampleContainers;*)
-	simulatedSampleContainerModels=Download[simulatedSampleContainers,Model[Object],Cache->simulatedCache];
+	simulatedSampleContainerModels=Download[simulatedSampleContainers,Model[Object],Simulation -> updatedSimulation, Cache->simulatedCache];
 
 	(* Extract downloaded mySamples packets *)
 	samplePackets=Experiment`Private`fetchPacketFromCache[#,cache]&/@mySamples;
@@ -3701,7 +3645,7 @@ resolveExperimentELISAOptions[
 	];
 	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs]>0&&!gatherTests,
-		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -3709,11 +3653,11 @@ resolveExperimentELISAOptions[
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[discardedInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" are not discarded:",True,False]
+				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Simulation->updatedSimulation]<>" are not discarded:",True,False]
 			];
 			passingTest=If[Length[discardedInvalidInputs]==Length[mySamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[mySamples,discardedInvalidInputs],Cache->simulatedCache]<>" are not discarded:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[mySamples,discardedInvalidInputs],Simulation->updatedSimulation]<>" are not discarded:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -3760,7 +3704,7 @@ resolveExperimentELISAOptions[
 
 	(* If there are invalid inputs and we are throwing messages,do so *)
 	If[Length[nonLiquidSampleInvalidInputs]>0&&messages,
-		Message[Error::ELISANoneLiquidSample,ObjectToString[nonLiquidSampleInvalidInputs,Cache->simulatedCache]];
+		Message[Error::ELISANoneLiquidSample,ObjectToString[nonLiquidSampleInvalidInputs,Simulation->updatedSimulation]];
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -3768,11 +3712,11 @@ resolveExperimentELISAOptions[
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[nonLiquidSampleInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[nonLiquidSampleInvalidInputs,Cache->simulatedCache]<>" are not in solid state:",True,False]
+				Test["Our input samples "<>ObjectToString[nonLiquidSampleInvalidInputs,Simulation->updatedSimulation]<>" are not in solid state:",True,False]
 			];
 			passingTest=If[Length[nonLiquidSampleInvalidInputs]==Length[mySamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[mySamples,nonLiquidSampleInvalidInputs],Cache->simulatedCache]<>" are not in solid state:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[mySamples,nonLiquidSampleInvalidInputs],Simulation->updatedSimulation]<>" are not in solid state:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -3790,7 +3734,7 @@ resolveExperimentELISAOptions[
 	];
 	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[containerlessInvalidInputs]>0&&!gatherTests,
-		Message[Error::containerlessSamples,ObjectToString[containerlessInvalidInputs,Cache->simulatedCache]]
+		Message[Error::containerlessSamples,ObjectToString[containerlessInvalidInputs,Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -3798,11 +3742,11 @@ resolveExperimentELISAOptions[
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[containerlessInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[containerlessInvalidInputs,Cache->simulatedCache]<>" are containerless:",True,False]
+				Test["Our input samples "<>ObjectToString[containerlessInvalidInputs,Simulation->updatedSimulation]<>" are containerless:",True,False]
 			];
 			passingTest=If[Length[containerlessInvalidInputs]==Length[mySamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[mySamples,containerlessInvalidInputs],Cache->simulatedCache]<>" arecontainerless:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[mySamples,containerlessInvalidInputs],Simulation->updatedSimulation]<>" arecontainerless:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -3823,7 +3767,7 @@ resolveExperimentELISAOptions[
 	];
 	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[noVolumeInvalidInputs]>0&&!gatherTests,
-		Message[Error::SamplesWithoutVolume,ObjectToString[noVolumeInvalidInputs,Cache->simulatedCache]]
+		Message[Error::SamplesWithoutVolume,ObjectToString[noVolumeInvalidInputs,Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -3831,11 +3775,11 @@ resolveExperimentELISAOptions[
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[noVolumeInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[noVolumeInvalidInputs,Cache->simulatedCache]<>" have volumes specified:",True,False]
+				Test["Our input samples "<>ObjectToString[noVolumeInvalidInputs,Simulation->updatedSimulation]<>" have volumes specified:",True,False]
 			];
 			passingTest=If[Length[noVolumeInvalidInputs]==Length[mySamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[mySamples,noVolumeInvalidInputs],Cache->simulatedCache]<>" do not have volumes specified:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[mySamples,noVolumeInvalidInputs],Simulation->updatedSimulation]<>" do not have volumes specified:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -3876,7 +3820,7 @@ resolveExperimentELISAOptions[
 	If[Length[incompatibleContainerSamples]>0&&!gatherTests,
 		Message[
 			Error::PreCoatedSamplesIncompatiblePlates,
-			ObjectToString[incompatibleContainerSamples,Cache->simulatedCache]
+			ObjectToString[incompatibleContainerSamples,Simulation->updatedSimulation]
 		]
 	];
 
@@ -3885,11 +3829,11 @@ resolveExperimentELISAOptions[
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[incompatibleContainerSamples]==0,
 				Nothing,
-				Test["Our pre-coated input samples "<>ObjectToString[incompatibleContainerSamples,Cache->simulatedCache]<>" are in compatible containers:",True,False]
+				Test["Our pre-coated input samples "<>ObjectToString[incompatibleContainerSamples,Simulation->updatedSimulation]<>" are in compatible containers:",True,False]
 			];
 			passingTest=If[Length[incompatibleContainerSamples]==Length[mySamples],
 				Nothing,
-				Test["Our pre-coated input samples "<>ObjectToString[Complement[mySamples,incompatibleContainerSamples],Cache->simulatedCache]<>" are in compatible containers:",True,True]
+				Test["Our pre-coated input samples "<>ObjectToString[Complement[mySamples,incompatibleContainerSamples],Simulation->updatedSimulation]<>" are in compatible containers:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -8055,8 +7999,8 @@ resolveExperimentELISAOptions[
 
 	If[Length[sampleStorageConflictingOptions]>0&&messages,
 		Message[Error::SameSampleDifferentSorage,
-			ObjectToString[sampleStorageConflictingObjects],
-			ObjectToString[sampleStorageConflictingOptions]
+			ObjectToString[sampleStorageConflictingObjects,Simulation->updatedSimulation],
+			ObjectToString[sampleStorageConflictingOptions,Simulation->updatedSimulation]
 		]
 	];
 
@@ -8145,10 +8089,10 @@ resolveExperimentELISAOptions[
 
 	If[messages&&Or[sampleSerialDilutionCurveOverflowQ,sampleDilutionCurveOverflowQ,standardSerialDilutionCurveOverflowQ,standardDilutionCurveOverflowQ],
 		Message[Error::DilutionCurveOptionsTotalVolumeTooLarge,
-			ObjectToString[serialDilutionCurveOverflowSamples],
-			ObjectToString[dilutionCurveOverflowSamples],
-			ObjectToString[serialDilutionCurveOverflowStandards],
-			ObjectToString[dilutionCurveOverflowStandards]
+			ObjectToString[serialDilutionCurveOverflowSamples,Simulation->updatedSimulation],
+			ObjectToString[dilutionCurveOverflowSamples,Simulation->updatedSimulation],
+			ObjectToString[serialDilutionCurveOverflowStandards,Simulation->updatedSimulation],
+			ObjectToString[dilutionCurveOverflowStandards,Simulation->updatedSimulation]
 		]
 	];
 
@@ -8315,7 +8259,7 @@ resolveExperimentELISAOptions[
 	];
 	If[messages&&Length[primaryAntibodyPipettingConflictOptions]>0,
 		Message[Error::PrimaryAntibodyPipettingVolumeTooLow,
-			ObjectToString[primaryAntibodyErrorIdentifier](*,
+			ObjectToString[primaryAntibodyErrorIdentifier,Simulation->updatedSimulation](*,
 					ToString[primaryAntibodyIntermediateDilutionRates],
 					ToString[afterDilutionPrimaryAntibodyVolumes]*)
 		]
@@ -8414,7 +8358,7 @@ resolveExperimentELISAOptions[
 		secondaryAntibodyPipettingConflictOptions={SecondaryAntibodyVolume,SecondaryAntibodyDilutionFactor,StandardSecondaryAntibodyVolume,StandardSecondaryAntibodyDilutionFactor,BlankSecondaryAntibodyVolume,BlankSecondaryAntibodyDilutionFactor};
 		If[messages,
 			Message[Error::SecondaryAntibodyPipettingVolumeTooLow,
-				ObjectToString[secondaryAntibodyErrorIdentifier](*,
+				ObjectToString[secondaryAntibodyErrorIdentifier,Simulation->updatedSimulation](*,
 					ToString[secondaryAntibodyIntermediateDilutionRates],
 					ToString[afterDilutionSecondaryAntibodyVolumes]*)
 			]
@@ -8516,7 +8460,7 @@ resolveExperimentELISAOptions[
 		coatingAntibodyPipettingConflictOptions={CoatingAntibodyVolume,CoatingAntibodyDilutionFactor,StandardCoatingAntibodyVolume,StandardCoatingAntibodyDilutionFactor,BlankCoatingAntibodyVolume,BlankCoatingAntibodyDilutionFactor};
 		If[messages,
 			Message[Error::CoatingAntibodyPipettingVolumeTooLow,
-				ObjectToString[coatingAntibodyErrorIdentifier](*,
+				ObjectToString[coatingAntibodyErrorIdentifier,Simulation->updatedSimulation](*,
 					ToString[coatingAntibodyIntermediateDilutionRates],
 					ToString[afterDilutionCoatingAntibodyVolumes]*)
 			]
@@ -8664,7 +8608,7 @@ resolveExperimentELISAOptions[
 
 	If[messages&&Length[captureAntibodyPipettingConflictOptions]>0,
 		Message[Error::CaptureAntibodyPipettingVolumeTooLow,
-			ObjectToString[captureAntibodyErrorIdentifier](*,
+			ObjectToString[captureAntibodyErrorIdentifier,Simulation->updatedSimulation](*,
 						ToString[captureAntibodyIntermediateDilutionRates],
 						ToString[afterDilutionCaptureAntibodyVolumes]*)
 		]
@@ -8762,7 +8706,7 @@ resolveExperimentELISAOptions[
 		referenceAntigenPipettingConflictOptions={ReferenceAntigenVolume,ReferenceAntigenDilutionFactor,StandardReferenceAntigenVolume,StandardReferenceAntigenDilutionFactor,BlankReferenceAntigenVolume,BlankReferenceAntigenDilutionFactor};
 		If[messages,
 			Message[Error::ReferenceAntigenPipettingVolumeTooLow,
-				ObjectToString[referenceAntigenErrorIdentifier](*,
+				ObjectToString[referenceAntigenErrorIdentifier,Simulation->updatedSimulation](*,
 					ToString[referenceAntigenIntermediateDilutionRates],
 					ToString[afterDilutionReferenceAntigenVolumes]*)
 			]
@@ -8798,7 +8742,7 @@ resolveExperimentELISAOptions[
 			spikePipettingConflictOptions={SpikeDilutionFactor};
 			If[messages,
 				Message[Error::SpikePipettingVolumeTooLow,
-					ObjectToString[referenceAntigenErrorIdentifier](*,
+					ObjectToString[referenceAntigenErrorIdentifier,Simulation->updatedSimulation](*,
 					ToString[spikeIntermediateDilutionRates],
 					ToString[afterDilutionReferenceAntigenVolumes]*)
 				]
@@ -8827,12 +8771,15 @@ resolveExperimentELISAOptions[
 	blankObjectNumber=Length[DeleteCases[resolvedBlank//ToList, Null]];
 	totalObjectNumber=Length[simulatedSamples]+standardObjectNumber+blankObjectNumber;
 
-
-	(* assignmentSamples is different from joinedSamples. To make sure we don't have conflict between our coated sample and simulated sample - which is a conflict that is dealt with PrecoatedSamplesCannotBeAliquoted later - when Coating->False, we use mySamples instead of simulatedSamples *)
+	(* assignmentSamples is different from joinedSamples. To make sure we don't have conflict between our coated sample and simulated sample - which is a conflict that is dealt with PrecoatedSamplesCannotBeAliquoted later - when Coating->False, we use mySamples instead of simulatedSamples
 	assignmentSamples=If[MatchQ[{suppliedMethod,suppliedCoating},{(DirectELISA|IndirectELISA),False}],
 		DeleteCases[Join[mySamples,ToList[resolvedStandard],ToList[resolvedBlank]],(Null|{Null..}|{})],
 		DeleteCases[Join[simulatedSamples,ToList[resolvedStandard],ToList[resolvedBlank]],(Null|{Null..}|{})]
 	];
+	*)
+
+	(* we have to use mySamples instead of simulatedSamples, otherwise it won't be successfully replaced in rescource packets -- will have different ID fromsamplesInResources *)
+	assignmentSamples = DeleteCases[Join[mySamples,ToList[resolvedStandard],ToList[resolvedBlank]],(Null|{Null..}|{})];
 
 	assignmentSpikes={
 		suppliedSpike,ConstantArray[Null,standardObjectNumber],ConstantArray[Null,blankObjectNumber]
@@ -9337,7 +9284,7 @@ resolveExperimentELISAOptions[
 			dilutionCurvesConflictingOptions={SampleDilutionCurve,SampleSerialDilutionCurve,StandardDilutionCurve,StandardSerialDilutionCurve};
 			If[messages,
 				Message[Error::DilutionCurvesPipettingVolumeTooLow,
-					ObjectToString[samplesAndStandardsWithInsufficientVolumes],
+					ObjectToString[samplesAndStandardsWithInsufficientVolumes,Simulation->updatedSimulation],
 					ToString[insufficientVolumePositions]
 				]
 			],
@@ -9351,7 +9298,7 @@ resolveExperimentELISAOptions[
 		Module[{passingTest,failingTest},
 			passingTest=If[Length[samplesAndStandardsWithSufficientVolumes]>0,
 				Test["DilutionCurves or SerialDilutionCurves for "
-					<>ObjectToString[samplesAndStandardsWithSufficientVolumes]
+					<>ObjectToString[samplesAndStandardsWithSufficientVolumes,Simulation->updatedSimulation]
 					<>" do not require pipetting a volume smaller than 1 microliter.",
 					True,True
 				],
@@ -9359,7 +9306,7 @@ resolveExperimentELISAOptions[
 			];
 			failingTest=If[Length[samplesAndStandardsWithInsufficientVolumes]>0,
 				Test["DilutionCurves or SerialDilutionCurves for "
-					<>ObjectToString[samplesAndStandardsWithInsufficientVolumes]
+					<>ObjectToString[samplesAndStandardsWithInsufficientVolumes,Simulation->updatedSimulation]
 					<>" do not require pipetting a volume smaller than 1 microliter.",
 					True,False
 				],
@@ -9443,19 +9390,26 @@ resolveExperimentELISAOptions[
 		];
 
 		(*Here we calculate, PER ONE REPLICATION,how much of each SamplesIn is needed. resolveAliquotOptions will time this number by the number of replication.*)
-		volumePerSamplesIn=MapThread[Which[
-			(*IF fixed dilution, then take the first of every dilution tuple and add them together*)
-			MatchQ[#1,Except[Null|{}|{Null..}]],
-			Plus@@(ToList[#1][[All,1]]),
-			(*IF serial dilution, then take the first of the first dilution tuple*)
-			MatchQ[#2,Except[Null|{}|{Null..}]],
-			#2[[1,1]],
-			(*ELSE, take the assay volume*)
-			MatchQ[#3,Except[Null]],
-			#3,
-			(* In case we are given Null volume, an error should have been thrown for the specific option. Use our default value here for aliquot option resolving *)
-			True,200Microliter
-		]*pipettingError&,
+		volumePerSamplesIn=MapThread[
+			Function[{roundedDilutionCurve, roundedSerialDilutionCurve, assayVolume},
+				Module[{volumePerSampleIn, correctedVolumePerSampleIn},
+					volumePerSampleIn = Which[
+						(*IF fixed dilution, then take the first of every dilution tuple and add them together*)
+						MatchQ[roundedDilutionCurve, Except[Null | {} | {Null..}]],
+						Plus @@ (ToList[roundedDilutionCurve][[All, 1]]),
+						(*IF serial dilution, then take the first of the first dilution tuple*)
+						MatchQ[roundedSerialDilutionCurve, Except[Null | {} | {Null..}]],
+						roundedSerialDilutionCurve[[1, 1]],
+						(*ELSE, take the assay volume*)
+						MatchQ[assayVolume, Except[Null]],
+						assayVolume,
+						(* In case we are given Null volume, an error should have been thrown for the specific option. Use our default value here for aliquot option resolving *)
+						True, 200Microliter
+					];
+					(* Correct with pipetting error and round to precision required by ExperimentAliquot *)
+					correctedVolumePerSampleIn = SafeRound[volumePerSampleIn * pipettingError, 10^-1 Microliter]
+				]
+			],
 			{roundedTransformedSampleDilutionCurve,roundedTransformedSampleSerialDilutionCurve,assayVolumeList}
 		];
 
@@ -9515,8 +9469,8 @@ resolveExperimentELISAOptions[
 		(* Resolve Aliquot Options *)
 		{resolvedAliquotOptions,aliquotTests}=If[gatherTests,
 			(* We are allowing solid sample here because of coated samples. We have a separate solid sample check.*)
-			resolveAliquotOptions[ExperimentELISA,mySamples,simulatedSamples,ReplaceRule[myOptions,Flatten[{resolvedSamplePrepOptions,NumberOfReplicates->resolvedNumberOfReplicates}]],Cache->simulatedCache,RequiredAliquotContainers->targetContainers,RequiredAliquotAmounts->volumePerSamplesIn,Output->{Result,Tests},AllowSolids->True],
-			{resolveAliquotOptions[ExperimentELISA,mySamples,simulatedSamples,ReplaceRule[myOptions,Flatten[{resolvedSamplePrepOptions,NumberOfReplicates->resolvedNumberOfReplicates}]],Cache->simulatedCache,RequiredAliquotContainers->targetContainers,RequiredAliquotAmounts->volumePerSamplesIn,Output->{Result},AllowSolids->True],{}}
+			resolveAliquotOptions[ExperimentELISA,mySamples,simulatedSamples,ReplaceRule[myOptions,Flatten[{resolvedSamplePrepOptions,NumberOfReplicates->resolvedNumberOfReplicates}]],Cache->simulatedCache,Simulation->updatedSimulation,RequiredAliquotContainers->targetContainers,RequiredAliquotAmounts->volumePerSamplesIn,Output->{Result,Tests},AllowSolids->True],
+			{resolveAliquotOptions[ExperimentELISA,mySamples,simulatedSamples,ReplaceRule[myOptions,Flatten[{resolvedSamplePrepOptions,NumberOfReplicates->resolvedNumberOfReplicates}]],Cache->simulatedCache,Simulation->updatedSimulation,RequiredAliquotContainers->targetContainers,RequiredAliquotAmounts->volumePerSamplesIn,Output->{Result},AllowSolids->True],{}}
 		];
 
 		preCoatedSampleConflictingAliquotOptions={}
@@ -9533,7 +9487,7 @@ resolveExperimentELISAOptions[
 	aliquotPrecisions = {10^-1 Microliter,10^-1 Microliter};
 
 	(* Round the aliquot options *)
-	roundedAliquotOptions = Normal[RoundOptionPrecision[Association@First@resolvedAliquotOptions,aliquotOptionsToBeRounded,aliquotPrecisions],Association];
+	roundedAliquotOptions = Normal[RoundOptionPrecision[Association@resolvedAliquotOptions,aliquotOptionsToBeRounded,aliquotPrecisions],Association];
 	
 	(*---Resolve Preread Options ---*)
 
@@ -9708,7 +9662,7 @@ resolveExperimentELISAOptions[
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTests,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Simulation->updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -9716,187 +9670,195 @@ resolveExperimentELISAOptions[
 		Message[Error::InvalidOption,invalidOptions]
 	];
 
+	(*--------Gather options and tests-------------*)
 
 	(* Return resolved options and/or tests. *)
-	resolvedOptions = {
-		Method->suppliedMethod,
-		TargetAntigen->resolvedTargetAntigen,
-		NumberOfReplicates->resolvedNumberOfReplicates,
-		WashingBuffer->suppliedWashingBuffer,
-		Spike->suppliedSpike,
-		SpikeDilutionFactor->resolvedSpikeDilutionFactor,
-		SpikeStorageCondition->resolvedSpikeStorageCondition,
-		SampleSerialDilutionCurve->resolvedSampleSerialDilutionCurve,
-		SampleDilutionCurve->resolvedSampleDilutionCurve,
-		SampleDiluent->resolvedSampleDiluent,
-		CoatingAntibody->resolvedCoatingAntibody,
-		CoatingAntibodyDilutionFactor->resolvedCoatingAntibodyDilutionFactor,
-		CoatingAntibodyVolume->suppliedCoatingAntibodyVolume,
-		CoatingAntibodyDiluent->resolvedCoatingAntibodyDiluent,
-		CoatingAntibodyStorageCondition->resolvedCoatingAntibodyStorageCondition,
-		CaptureAntibody->resolvedCaptureAntibody,
-		CaptureAntibodyDilutionFactor->resolvedCaptureAntibodyDilutionFactor,
-		CaptureAntibodyVolume->suppliedCaptureAntibodyVolume,
-		CaptureAntibodyDiluent->resolvedCaptureAntibodyDiluent,
-		CaptureAntibodyStorageCondition->resolvedCaptureAntibodyStorageCondition,
-		ReferenceAntigen->resolvedReferenceAntigen,
-		ReferenceAntigenDilutionFactor->resolvedReferenceAntigenDilutionFactor,
-		ReferenceAntigenVolume->suppliedReferenceAntigenVolume,
-		ReferenceAntigenDiluent->resolvedReferenceAntigenDiluent,
-		ReferenceAntigenStorageCondition->resolvedReferenceAntigenStorageCondition,
-		PrimaryAntibody->resolvedPrimaryAntibody,
-		PrimaryAntibodyDilutionFactor->resolvedPrimaryAntibodyDilutionFactor,
-		PrimaryAntibodyVolume->suppliedPrimaryAntibodyVolume,
-		PrimaryAntibodyDiluent->resolvedPrimaryAntibodyDiluent,
-		PrimaryAntibodyStorageCondition->suppliedPrimaryAntibodyStorageCondition,
-		SecondaryAntibody->resolvedSecondaryAntibody,
-		SecondaryAntibodyDilutionFactor->resolvedSecondaryAntibodyDilutionFactor,
-		SecondaryAntibodyVolume->suppliedSecondaryAntibodyVolume,
-		SecondaryAntibodyDiluent->resolvedSecondaryAntibodyDiluent,
-		SecondaryAntibodyStorageCondition->resolvedSecondaryAntibodyStorageCondition,
-		SampleAntibodyComplexIncubation->resolvedSampleAntibodyComplexIncubation,
-		SampleAntibodyComplexIncubationTime->resolvedSampleAntibodyComplexIncubationTime,
-		SampleAntibodyComplexIncubationTemperature->resolvedSampleAntibodyComplexIncubationTemperature,
-		Coating->suppliedCoating,
-		SampleCoatingVolume->resolvedSampleCoatingVolume,
-		CoatingAntibodyCoatingVolume->resolvedCoatingAntibodyCoatingVolume,
-		ReferenceAntigenCoatingVolume->resolvedReferenceAntigenCoatingVolume,
-		CaptureAntibodyCoatingVolume->resolvedCaptureAntibodyCoatingVolume,
-		CoatingTemperature->resolvedCoatingTemperature,
-		CoatingTime->resolvedCoatingTime,
-		CoatingWashVolume->resolvedCoatingWashVolume,
-		CoatingNumberOfWashes->resolvedCoatingNumberOfWashes,
-		Blocking->suppliedBlocking,
-		BlockingBuffer->resolvedBlockingBuffer,
-		BlockingVolume->resolvedBlockingVolume,
-		BlockingTemperature->resolvedBlockingTemperature,
-		BlockingTime->resolvedBlockingTime,
-		BlockingMixRate->suppliedBlockingMixRate,
-		BlockingWashVolume->resolvedBlockingWashVolume,
-		BlockingNumberOfWashes->resolvedBlockingNumberOfWashes,
-		SampleAntibodyComplexImmunosorbentVolume->resolvedSampleAntibodyComplexImmunosorbentVolume,
-		SampleAntibodyComplexImmunosorbentTime->resolvedSampleAntibodyComplexImmunosorbentTime,
-		SampleAntibodyComplexImmunosorbentTemperature->resolvedSampleAntibodyComplexImmunosorbentTemperature,
-		SampleAntibodyComplexImmunosorbentMixRate->suppliedSampleAntibodyComplexImmunosorbentMixRate,
-		SampleAntibodyComplexImmunosorbentWashVolume->resolvedSampleAntibodyComplexImmunosorbentWashVolume,
-		SampleAntibodyComplexImmunosorbentNumberOfWashes->resolvedSampleAntibodyComplexImmunosorbentNumberOfWashes,
-		SampleImmunosorbentVolume->resolvedSampleImmunosorbentVolume,
-		SampleImmunosorbentTime->resolvedSampleImmunosorbentTime,
-		SampleImmunosorbentTemperature->resolvedSampleImmunosorbentTemperature,
-		SampleImmunosorbentMixRate->suppliedSampleImmunosorbentMixRate,
-		SampleImmunosorbentWashVolume->resolvedSampleImmunosorbentWashVolume,
-		SampleImmunosorbentNumberOfWashes->resolvedSampleImmunosorbentNumberOfWashes,
-		PrimaryAntibodyImmunosorbentVolume->resolvedPrimaryAntibodyImmunosorbentVolume,
-		PrimaryAntibodyImmunosorbentTime->resolvedPrimaryAntibodyImmunosorbentTime,
-		PrimaryAntibodyImmunosorbentTemperature->resolvedPrimaryAntibodyImmunosorbentTemperature,
-		PrimaryAntibodyImmunosorbentMixRate->suppliedPrimaryAntibodyImmunosorbentMixRate,
-		PrimaryAntibodyImmunosorbentWashVolume->resolvedPrimaryAntibodyImmunosorbentWashVolume,
-		PrimaryAntibodyImmunosorbentNumberOfWashes->resolvedPrimaryAntibodyImmunosorbentNumberOfWashes,
-		SecondaryAntibodyImmunosorbentVolume->resolvedSecondaryAntibodyImmunosorbentVolume,
-		SecondaryAntibodyImmunosorbentTime->resolvedSecondaryAntibodyImmunosorbentTime,
-		SecondaryAntibodyImmunosorbentTemperature->resolvedSecondaryAntibodyImmunosorbentTemperature,
-		SecondaryAntibodyImmunosorbentMixRate->suppliedSecondaryAntibodyImmunosorbentMixRate,
-		SecondaryAntibodyImmunosorbentWashVolume->resolvedSecondaryAntibodyImmunosorbentWashVolume,
-		SecondaryAntibodyImmunosorbentNumberOfWashes->resolvedSecondaryAntibodyImmunosorbentNumberOfWashes,
-		SubstrateSolution->resolvedSubstrateSolution,
-		StopSolution->resolvedStopSolution,
-		SubstrateSolutionVolume->resolvedSubstrateSolutionVolume,
-		StopSolutionVolume->resolvedStopSolutionVolume,
-		SubstrateIncubationTime->suppliedSubstrateIncubationTime,
-		SubstrateIncubationTemperature->suppliedSubstrateIncubationTemperature,
-		SubstrateIncubationMixRate->suppliedSubstrateIncubationMixRate,
-		PrereadBeforeStop->resolvedPrereadBeforeStop,
-		PrereadTimepoints->resolvedPrereadTimepoints,
-		PrereadAbsorbanceWavelength->resolvedPrereadAbsorbanceWavelength,
-		AbsorbanceWavelength->suppliedAbsorbanceWavelength,
-		SignalCorrection->suppliedSignalCorrection,
-		Standard->resolvedStandard,
-		StandardTargetAntigen->resolvedStandardTargetAntigen,
-		StandardSerialDilutionCurve->resolvedStandardSerialDilutionCurve,
-		StandardDilutionCurve->resolvedStandardDilutionCurve,
-		StandardDiluent->resolvedStandardDiluent,
-		StandardStorageCondition->resolvedStandardStorageCondition,
-		StandardCoatingAntibody->resolvedStandardCoatingAntibody,
-		StandardCoatingAntibodyDilutionFactor->resolvedStandardCoatingAntibodyDilutionFactor,
-		StandardCoatingAntibodyVolume->suppliedStandardCoatingAntibodyVolume,
-		StandardCaptureAntibody->resolvedStandardCaptureAntibody,
-		StandardCaptureAntibodyDilutionFactor->resolvedStandardCaptureAntibodyDilutionFactor,
-		StandardCaptureAntibodyVolume->suppliedStandardCaptureAntibodyVolume,
-		StandardReferenceAntigen->resolvedStandardReferenceAntigen,
-		StandardReferenceAntigenDilutionFactor->resolvedStandardReferenceAntigenDilutionFactor,
-		StandardReferenceAntigenVolume->suppliedStandardReferenceAntigenVolume,
-		StandardPrimaryAntibody->resolvedStandardPrimaryAntibody,
-		StandardPrimaryAntibodyDilutionFactor->resolvedStandardPrimaryAntibodyDilutionFactor,
-		StandardPrimaryAntibodyVolume->suppliedStandardPrimaryAntibodyVolume,
-		StandardSecondaryAntibody->resolvedStandardSecondaryAntibody,
-		StandardSecondaryAntibodyDilutionFactor->resolvedStandardSecondaryAntibodyDilutionFactor,
-		StandardSecondaryAntibodyVolume->suppliedStandardSecondaryAntibodyVolume,
-		StandardCoatingVolume->resolvedStandardCoatingVolume,
-		StandardReferenceAntigenCoatingVolume->resolvedStandardReferenceAntigenCoatingVolume,
-		StandardCoatingAntibodyCoatingVolume->resolvedStandardCoatingAntibodyCoatingVolume,
-		StandardCaptureAntibodyCoatingVolume->resolvedStandardCaptureAntibodyCoatingVolume,
-		StandardBlockingVolume->resolvedStandardBlockingVolume,
-		StandardAntibodyComplexImmunosorbentVolume->resolvedStandardAntibodyComplexImmunosorbentVolume,
-		StandardImmunosorbentVolume->resolvedStandardImmunosorbentVolume,
-		StandardPrimaryAntibodyImmunosorbentVolume->resolvedStandardPrimaryAntibodyImmunosorbentVolume,
-		StandardSecondaryAntibodyImmunosorbentVolume->resolvedStandardSecondaryAntibodyImmunosorbentVolume,
-		StandardSubstrateSolution->resolvedStandardSubstrateSolution,
-		StandardStopSolution->resolvedStandardStopSolution,
-		StandardSubstrateSolutionVolume->resolvedStandardSubstrateSolutionVolume,
-		StandardStopSolutionVolume->resolvedStandardStopSolutionVolume,
-		Blank->resolvedBlank,
-		BlankTargetAntigen->resolvedBlankTargetAntigen,
-		BlankStorageCondition->resolvedBlankStorageCondition,
-		BlankCoatingAntibody->resolvedBlankCoatingAntibody,
-		BlankCoatingAntibodyDilutionFactor->resolvedBlankCoatingAntibodyDilutionFactor,
-		BlankCoatingAntibodyVolume->suppliedBlankCoatingAntibodyVolume,
-		BlankCaptureAntibody->resolvedBlankCaptureAntibody,
-		BlankCaptureAntibodyDilutionFactor->resolvedBlankCaptureAntibodyDilutionFactor,
-		BlankCaptureAntibodyVolume->suppliedBlankCaptureAntibodyVolume,
-		BlankReferenceAntigen->resolvedBlankReferenceAntigen,
-		BlankReferenceAntigenDilutionFactor->resolvedBlankReferenceAntigenDilutionFactor,
-		BlankReferenceAntigenVolume->suppliedBlankReferenceAntigenVolume,
-		BlankPrimaryAntibody->resolvedBlankPrimaryAntibody,
-		BlankPrimaryAntibodyDilutionFactor->resolvedBlankPrimaryAntibodyDilutionFactor,
-		BlankPrimaryAntibodyVolume->suppliedBlankPrimaryAntibodyVolume,
-		BlankSecondaryAntibody->resolvedBlankSecondaryAntibody,
-		BlankSecondaryAntibodyDilutionFactor->resolvedBlankSecondaryAntibodyDilutionFactor,
-		BlankSecondaryAntibodyVolume->suppliedBlankSecondaryAntibodyVolume,
-		BlankCoatingVolume->resolvedBlankCoatingVolume,
-		BlankReferenceAntigenCoatingVolume->resolvedBlankReferenceAntigenCoatingVolume,
-		BlankCoatingAntibodyCoatingVolume->resolvedBlankCoatingAntibodyCoatingVolume,
-		BlankCaptureAntibodyCoatingVolume->resolvedBlankCaptureAntibodyCoatingVolume,
-		BlankBlockingVolume->resolvedBlankBlockingVolume,
-		BlankAntibodyComplexImmunosorbentVolume->resolvedBlankAntibodyComplexImmunosorbentVolume,
-		BlankImmunosorbentVolume->resolvedBlankImmunosorbentVolume,
-		BlankPrimaryAntibodyImmunosorbentVolume->resolvedBlankPrimaryAntibodyImmunosorbentVolume,
-		BlankSecondaryAntibodyImmunosorbentVolume->resolvedBlankSecondaryAntibodyImmunosorbentVolume,
-		BlankSubstrateSolution->resolvedBlankSubstrateSolution,
-		BlankStopSolution->resolvedBlankStopSolution,
-		BlankSubstrateSolutionVolume->resolvedBlankSubstrateSolutionVolume,
-		BlankStopSolutionVolume->resolvedBlankStopSolutionVolume,
-		ELISAPlate->resolvedELISAPlate,
-		SecondaryELISAPlate->resolvedSecondaryELISAPlate,
-		ELISAPlateAssignment->resolvedELISAPlateAssignment,
-		SecondaryELISAPlateAssignment->resolvedSecondaryELISAPlateAssignment/.{}->Null,
-		SamplesInStorageCondition->Lookup[allOptionsRoundedAssociation,SamplesInStorageCondition],
-		Cache->Lookup[allOptionsRoundedAssociation,Cache],
-		FastTrack->Lookup[allOptionsRoundedAssociation,FastTrack],
-		Template->Lookup[allOptionsRoundedAssociation,Template],
-		ParentProtocol->Lookup[allOptionsRoundedAssociation,ParentProtocol],
-		Operator->Lookup[allOptionsRoundedAssociation,Operator],
-		Confirm->Lookup[allOptionsRoundedAssociation,Confirm],
-		Name->Lookup[allOptionsRoundedAssociation,Name],
-		Upload->Lookup[allOptionsRoundedAssociation,Upload],
-		Output->Lookup[allOptionsRoundedAssociation,Output],
-		ParentProtocol->Lookup[allOptionsRoundedAssociation,ParentProtocol],
-		Priority->Lookup[allOptionsRoundedAssociation,Priority],
-		StartDate->Lookup[allOptionsRoundedAssociation,StartDate],
-		HoldOrder->Lookup[allOptionsRoundedAssociation,HoldOrder],
-		QueuePosition->Lookup[allOptionsRoundedAssociation,QueuePosition],
-		PreparatoryUnitOperations->Lookup[allOptionsRoundedAssociation,PreparatoryUnitOperations],
-		Email->resolvedEmail
-	};
+	resolvedOptions = ReplaceRule[
+		myOptions,
+		Flatten[{
+			Method->suppliedMethod,
+			TargetAntigen->resolvedTargetAntigen,
+			NumberOfReplicates->resolvedNumberOfReplicates,
+			WashingBuffer->suppliedWashingBuffer,
+			Spike->suppliedSpike,
+			SpikeDilutionFactor->resolvedSpikeDilutionFactor,
+			SpikeStorageCondition->resolvedSpikeStorageCondition,
+			SampleSerialDilutionCurve->resolvedSampleSerialDilutionCurve,
+			SampleDilutionCurve->resolvedSampleDilutionCurve,
+			SampleDiluent->resolvedSampleDiluent,
+			CoatingAntibody->resolvedCoatingAntibody,
+			CoatingAntibodyDilutionFactor->resolvedCoatingAntibodyDilutionFactor,
+			CoatingAntibodyVolume->suppliedCoatingAntibodyVolume,
+			CoatingAntibodyDiluent->resolvedCoatingAntibodyDiluent,
+			CoatingAntibodyStorageCondition->resolvedCoatingAntibodyStorageCondition,
+			CaptureAntibody->resolvedCaptureAntibody,
+			CaptureAntibodyDilutionFactor->resolvedCaptureAntibodyDilutionFactor,
+			CaptureAntibodyVolume->suppliedCaptureAntibodyVolume,
+			CaptureAntibodyDiluent->resolvedCaptureAntibodyDiluent,
+			CaptureAntibodyStorageCondition->resolvedCaptureAntibodyStorageCondition,
+			ReferenceAntigen->resolvedReferenceAntigen,
+			ReferenceAntigenDilutionFactor->resolvedReferenceAntigenDilutionFactor,
+			ReferenceAntigenVolume->suppliedReferenceAntigenVolume,
+			ReferenceAntigenDiluent->resolvedReferenceAntigenDiluent,
+			ReferenceAntigenStorageCondition->resolvedReferenceAntigenStorageCondition,
+			PrimaryAntibody->resolvedPrimaryAntibody,
+			PrimaryAntibodyDilutionFactor->resolvedPrimaryAntibodyDilutionFactor,
+			PrimaryAntibodyVolume->suppliedPrimaryAntibodyVolume,
+			PrimaryAntibodyDiluent->resolvedPrimaryAntibodyDiluent,
+			PrimaryAntibodyStorageCondition->suppliedPrimaryAntibodyStorageCondition,
+			SecondaryAntibody->resolvedSecondaryAntibody,
+			SecondaryAntibodyDilutionFactor->resolvedSecondaryAntibodyDilutionFactor,
+			SecondaryAntibodyVolume->suppliedSecondaryAntibodyVolume,
+			SecondaryAntibodyDiluent->resolvedSecondaryAntibodyDiluent,
+			SecondaryAntibodyStorageCondition->resolvedSecondaryAntibodyStorageCondition,
+			SampleAntibodyComplexIncubation->resolvedSampleAntibodyComplexIncubation,
+			SampleAntibodyComplexIncubationTime->resolvedSampleAntibodyComplexIncubationTime,
+			SampleAntibodyComplexIncubationTemperature->resolvedSampleAntibodyComplexIncubationTemperature,
+			Coating->suppliedCoating,
+			SampleCoatingVolume->resolvedSampleCoatingVolume,
+			CoatingAntibodyCoatingVolume->resolvedCoatingAntibodyCoatingVolume,
+			ReferenceAntigenCoatingVolume->resolvedReferenceAntigenCoatingVolume,
+			CaptureAntibodyCoatingVolume->resolvedCaptureAntibodyCoatingVolume,
+			CoatingTemperature->resolvedCoatingTemperature,
+			CoatingTime->resolvedCoatingTime,
+			CoatingWashVolume->resolvedCoatingWashVolume,
+			CoatingNumberOfWashes->resolvedCoatingNumberOfWashes,
+			Blocking->suppliedBlocking,
+			BlockingBuffer->resolvedBlockingBuffer,
+			BlockingVolume->resolvedBlockingVolume,
+			BlockingTemperature->resolvedBlockingTemperature,
+			BlockingTime->resolvedBlockingTime,
+			BlockingMixRate->suppliedBlockingMixRate,
+			BlockingWashVolume->resolvedBlockingWashVolume,
+			BlockingNumberOfWashes->resolvedBlockingNumberOfWashes,
+			SampleAntibodyComplexImmunosorbentVolume->resolvedSampleAntibodyComplexImmunosorbentVolume,
+			SampleAntibodyComplexImmunosorbentTime->resolvedSampleAntibodyComplexImmunosorbentTime,
+			SampleAntibodyComplexImmunosorbentTemperature->resolvedSampleAntibodyComplexImmunosorbentTemperature,
+			SampleAntibodyComplexImmunosorbentMixRate->suppliedSampleAntibodyComplexImmunosorbentMixRate,
+			SampleAntibodyComplexImmunosorbentWashVolume->resolvedSampleAntibodyComplexImmunosorbentWashVolume,
+			SampleAntibodyComplexImmunosorbentNumberOfWashes->resolvedSampleAntibodyComplexImmunosorbentNumberOfWashes,
+			SampleImmunosorbentVolume->resolvedSampleImmunosorbentVolume,
+			SampleImmunosorbentTime->resolvedSampleImmunosorbentTime,
+			SampleImmunosorbentTemperature->resolvedSampleImmunosorbentTemperature,
+			SampleImmunosorbentMixRate->suppliedSampleImmunosorbentMixRate,
+			SampleImmunosorbentWashVolume->resolvedSampleImmunosorbentWashVolume,
+			SampleImmunosorbentNumberOfWashes->resolvedSampleImmunosorbentNumberOfWashes,
+			PrimaryAntibodyImmunosorbentVolume->resolvedPrimaryAntibodyImmunosorbentVolume,
+			PrimaryAntibodyImmunosorbentTime->resolvedPrimaryAntibodyImmunosorbentTime,
+			PrimaryAntibodyImmunosorbentTemperature->resolvedPrimaryAntibodyImmunosorbentTemperature,
+			PrimaryAntibodyImmunosorbentMixRate->suppliedPrimaryAntibodyImmunosorbentMixRate,
+			PrimaryAntibodyImmunosorbentWashVolume->resolvedPrimaryAntibodyImmunosorbentWashVolume,
+			PrimaryAntibodyImmunosorbentNumberOfWashes->resolvedPrimaryAntibodyImmunosorbentNumberOfWashes,
+			SecondaryAntibodyImmunosorbentVolume->resolvedSecondaryAntibodyImmunosorbentVolume,
+			SecondaryAntibodyImmunosorbentTime->resolvedSecondaryAntibodyImmunosorbentTime,
+			SecondaryAntibodyImmunosorbentTemperature->resolvedSecondaryAntibodyImmunosorbentTemperature,
+			SecondaryAntibodyImmunosorbentMixRate->suppliedSecondaryAntibodyImmunosorbentMixRate,
+			SecondaryAntibodyImmunosorbentWashVolume->resolvedSecondaryAntibodyImmunosorbentWashVolume,
+			SecondaryAntibodyImmunosorbentNumberOfWashes->resolvedSecondaryAntibodyImmunosorbentNumberOfWashes,
+			SubstrateSolution->resolvedSubstrateSolution,
+			StopSolution->resolvedStopSolution,
+			SubstrateSolutionVolume->resolvedSubstrateSolutionVolume,
+			StopSolutionVolume->resolvedStopSolutionVolume,
+			SubstrateIncubationTime->suppliedSubstrateIncubationTime,
+			SubstrateIncubationTemperature->suppliedSubstrateIncubationTemperature,
+			SubstrateIncubationMixRate->suppliedSubstrateIncubationMixRate,
+			PrereadBeforeStop->resolvedPrereadBeforeStop,
+			PrereadTimepoints->resolvedPrereadTimepoints,
+			PrereadAbsorbanceWavelength->resolvedPrereadAbsorbanceWavelength,
+			AbsorbanceWavelength->suppliedAbsorbanceWavelength,
+			SignalCorrection->suppliedSignalCorrection,
+			Standard->resolvedStandard,
+			StandardTargetAntigen->resolvedStandardTargetAntigen,
+			StandardSerialDilutionCurve->resolvedStandardSerialDilutionCurve,
+			StandardDilutionCurve->resolvedStandardDilutionCurve,
+			StandardDiluent->resolvedStandardDiluent,
+			StandardStorageCondition->resolvedStandardStorageCondition,
+			StandardCoatingAntibody->resolvedStandardCoatingAntibody,
+			StandardCoatingAntibodyDilutionFactor->resolvedStandardCoatingAntibodyDilutionFactor,
+			StandardCoatingAntibodyVolume->suppliedStandardCoatingAntibodyVolume,
+			StandardCaptureAntibody->resolvedStandardCaptureAntibody,
+			StandardCaptureAntibodyDilutionFactor->resolvedStandardCaptureAntibodyDilutionFactor,
+			StandardCaptureAntibodyVolume->suppliedStandardCaptureAntibodyVolume,
+			StandardReferenceAntigen->resolvedStandardReferenceAntigen,
+			StandardReferenceAntigenDilutionFactor->resolvedStandardReferenceAntigenDilutionFactor,
+			StandardReferenceAntigenVolume->suppliedStandardReferenceAntigenVolume,
+			StandardPrimaryAntibody->resolvedStandardPrimaryAntibody,
+			StandardPrimaryAntibodyDilutionFactor->resolvedStandardPrimaryAntibodyDilutionFactor,
+			StandardPrimaryAntibodyVolume->suppliedStandardPrimaryAntibodyVolume,
+			StandardSecondaryAntibody->resolvedStandardSecondaryAntibody,
+			StandardSecondaryAntibodyDilutionFactor->resolvedStandardSecondaryAntibodyDilutionFactor,
+			StandardSecondaryAntibodyVolume->suppliedStandardSecondaryAntibodyVolume,
+			StandardCoatingVolume->resolvedStandardCoatingVolume,
+			StandardReferenceAntigenCoatingVolume->resolvedStandardReferenceAntigenCoatingVolume,
+			StandardCoatingAntibodyCoatingVolume->resolvedStandardCoatingAntibodyCoatingVolume,
+			StandardCaptureAntibodyCoatingVolume->resolvedStandardCaptureAntibodyCoatingVolume,
+			StandardBlockingVolume->resolvedStandardBlockingVolume,
+			StandardAntibodyComplexImmunosorbentVolume->resolvedStandardAntibodyComplexImmunosorbentVolume,
+			StandardImmunosorbentVolume->resolvedStandardImmunosorbentVolume,
+			StandardPrimaryAntibodyImmunosorbentVolume->resolvedStandardPrimaryAntibodyImmunosorbentVolume,
+			StandardSecondaryAntibodyImmunosorbentVolume->resolvedStandardSecondaryAntibodyImmunosorbentVolume,
+			StandardSubstrateSolution->resolvedStandardSubstrateSolution,
+			StandardStopSolution->resolvedStandardStopSolution,
+			StandardSubstrateSolutionVolume->resolvedStandardSubstrateSolutionVolume,
+			StandardStopSolutionVolume->resolvedStandardStopSolutionVolume,
+			Blank->resolvedBlank,
+			BlankTargetAntigen->resolvedBlankTargetAntigen,
+			BlankStorageCondition->resolvedBlankStorageCondition,
+			BlankCoatingAntibody->resolvedBlankCoatingAntibody,
+			BlankCoatingAntibodyDilutionFactor->resolvedBlankCoatingAntibodyDilutionFactor,
+			BlankCoatingAntibodyVolume->suppliedBlankCoatingAntibodyVolume,
+			BlankCaptureAntibody->resolvedBlankCaptureAntibody,
+			BlankCaptureAntibodyDilutionFactor->resolvedBlankCaptureAntibodyDilutionFactor,
+			BlankCaptureAntibodyVolume->suppliedBlankCaptureAntibodyVolume,
+			BlankReferenceAntigen->resolvedBlankReferenceAntigen,
+			BlankReferenceAntigenDilutionFactor->resolvedBlankReferenceAntigenDilutionFactor,
+			BlankReferenceAntigenVolume->suppliedBlankReferenceAntigenVolume,
+			BlankPrimaryAntibody->resolvedBlankPrimaryAntibody,
+			BlankPrimaryAntibodyDilutionFactor->resolvedBlankPrimaryAntibodyDilutionFactor,
+			BlankPrimaryAntibodyVolume->suppliedBlankPrimaryAntibodyVolume,
+			BlankSecondaryAntibody->resolvedBlankSecondaryAntibody,
+			BlankSecondaryAntibodyDilutionFactor->resolvedBlankSecondaryAntibodyDilutionFactor,
+			BlankSecondaryAntibodyVolume->suppliedBlankSecondaryAntibodyVolume,
+			BlankCoatingVolume->resolvedBlankCoatingVolume,
+			BlankReferenceAntigenCoatingVolume->resolvedBlankReferenceAntigenCoatingVolume,
+			BlankCoatingAntibodyCoatingVolume->resolvedBlankCoatingAntibodyCoatingVolume,
+			BlankCaptureAntibodyCoatingVolume->resolvedBlankCaptureAntibodyCoatingVolume,
+			BlankBlockingVolume->resolvedBlankBlockingVolume,
+			BlankAntibodyComplexImmunosorbentVolume->resolvedBlankAntibodyComplexImmunosorbentVolume,
+			BlankImmunosorbentVolume->resolvedBlankImmunosorbentVolume,
+			BlankPrimaryAntibodyImmunosorbentVolume->resolvedBlankPrimaryAntibodyImmunosorbentVolume,
+			BlankSecondaryAntibodyImmunosorbentVolume->resolvedBlankSecondaryAntibodyImmunosorbentVolume,
+			BlankSubstrateSolution->resolvedBlankSubstrateSolution,
+			BlankStopSolution->resolvedBlankStopSolution,
+			BlankSubstrateSolutionVolume->resolvedBlankSubstrateSolutionVolume,
+			BlankStopSolutionVolume->resolvedBlankStopSolutionVolume,
+			ELISAPlate->resolvedELISAPlate,
+			SecondaryELISAPlate->resolvedSecondaryELISAPlate,
+			ELISAPlateAssignment->resolvedELISAPlateAssignment,
+			SecondaryELISAPlateAssignment->resolvedSecondaryELISAPlateAssignment/.{}->Null,
+			SamplesInStorageCondition->Lookup[allOptionsRoundedAssociation,SamplesInStorageCondition],
+			Cache->Lookup[allOptionsRoundedAssociation,Cache],
+			FastTrack->Lookup[allOptionsRoundedAssociation,FastTrack],
+			Template->Lookup[allOptionsRoundedAssociation,Template],
+			ParentProtocol->Lookup[allOptionsRoundedAssociation,ParentProtocol],
+			Operator->Lookup[allOptionsRoundedAssociation,Operator],
+			Confirm->Lookup[allOptionsRoundedAssociation,Confirm],
+			CanaryBranch->Lookup[allOptionsRoundedAssociation,CanaryBranch],
+			Name->Lookup[allOptionsRoundedAssociation,Name],
+			Upload->Lookup[allOptionsRoundedAssociation,Upload],
+			Output->Lookup[allOptionsRoundedAssociation,Output],
+			ParentProtocol->Lookup[allOptionsRoundedAssociation,ParentProtocol],
+			Priority->Lookup[allOptionsRoundedAssociation,Priority],
+			StartDate->Lookup[allOptionsRoundedAssociation,StartDate],
+			HoldOrder->Lookup[allOptionsRoundedAssociation,HoldOrder],
+			QueuePosition->Lookup[allOptionsRoundedAssociation,QueuePosition],
+			PreparatoryUnitOperations->Lookup[allOptionsRoundedAssociation,PreparatoryUnitOperations],
+			Email->resolvedEmail,
+			resolvedSamplePrepOptions,
+			roundedAliquotOptions,
+			resolvedPostProcessingOptions
+		}]
+	];
 
 
 
@@ -9936,9 +9898,6 @@ resolveExperimentELISAOptions[
 		"passDownJoinedCurveExpansionParams"->joinedCurveExpansionParams
 	];
 
-	(*--------Gather options and tests-------------*)
-
-	allOptions=Flatten[Join[resolvedOptions,resolvedSamplePrepOptions,{roundedAliquotOptions},resolvedPostProcessingOptions]];
 
 	allTests=DeleteCases[
 		Flatten[
@@ -9994,7 +9953,7 @@ resolveExperimentELISAOptions[
 	];
 
 	{
-		outputSpecification/.{Result->allOptions,Tests->allTests},
+		outputSpecification/.{Result->resolvedOptions,Tests->allTests},
 		resolverPassDowns
 	}
 ];
@@ -10007,14 +9966,14 @@ resolveExperimentELISAOptions[
 (* ::Subsubsection::Closed:: *)
 DefineOptions[
 	elisaResourcePackets,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 elisaResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{___Rule}, myResolvedOptions:{___Rule},resolverPassDowns_Association,ops:OptionsPattern[]]:=Module[
 	{
-	expandedInputs, expandedResolvedOptions,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,messages,inheritedCache,resolvedMethod,resolvedTargetAntigen,resolvedNumberOfReplicates,resolvedWashingBuffer,resolvedCoatingAntibody,resolvedCoatingAntibodyDilutionFactor,resolvedCoatingAntibodyVolume,resolvedCoatingAntibodyDiluent,resolvedCoatingAntibodyStorageCondition,resolvedCaptureAntibody,resolvedCaptureAntibodyDilutionFactor,resolvedCaptureAntibodyVolume,resolvedCaptureAntibodyDiluent,resolvedCaptureAntibodyStorageCondition,resolvedReferenceAntigen,resolvedReferenceAntigenDilutionFactor,resolvedReferenceAntigenVolume,resolvedReferenceAntigenDiluent,resolvedReferenceAntigenStorageCondition,resolvedPrimaryAntibody,resolvedPrimaryAntibodyDilutionFactor,resolvedPrimaryAntibodyVolume,resolvedPrimaryAntibodyDiluent,resolvedPrimaryAntibodyStorageCondition,resolvedSecondaryAntibody,resolvedSecondaryAntibodyDilutionFactor,resolvedSecondaryAntibodyVolume,resolvedSecondaryAntibodyDiluent,resolvedSecondaryAntibodyStorageCondition,resolvedSampleAntibodyComplexIncubation,resolvedSampleAntibodyComplexIncubationTime,resolvedSampleAntibodyComplexIncubationTemperature,resolvedCoating,resolvedSampleCoatingVolume,resolvedCoatingAntibodyCoatingVolume,resolvedReferenceAntigenCoatingVolume,resolvedCaptureAntibodyCoatingVolume,resolvedCoatingTemperature,resolvedCoatingTime,resolvedCoatingWashVolume,resolvedCoatingNumberOfWashes,resolvedBlocking,resolvedBlockingBuffer,resolvedBlockingVolume,resolvedBlockingTemperature,resolvedBlockingTime,resolvedBlockingWashVolume,resolvedBlockingNumberOfWashes,resolvedSampleAntibodyComplexImmunosorbentVolume,resolvedSampleAntibodyComplexImmunosorbentTime,resolvedSampleAntibodyComplexImmunosorbentTemperature,resolvedSampleAntibodyComplexImmunosorbentWashVolume,resolvedSampleAntibodyComplexImmunosorbentNumberOfWashes,resolvedSampleImmunosorbentVolume,resolvedSampleImmunosorbentTime,resolvedSampleImmunosorbentTemperature,resolvedSampleImmunosorbentMixRate,resolvedSampleImmunosorbentWashVolume,resolvedSampleImmunosorbentNumberOfWashes,resolvedPrimaryAntibodyImmunosorbentVolume,resolvedPrimaryAntibodyImmunosorbentTime,resolvedPrimaryAntibodyImmunosorbentTemperature,resolvedPrimaryAntibodyImmunosorbentMixRate,resolvedPrimaryAntibodyImmunosorbentWashVolume,resolvedPrimaryAntibodyImmunosorbentNumberOfWashes,resolvedSecondaryAntibodyImmunosorbentVolume,resolvedSecondaryAntibodyImmunosorbentTime,resolvedSecondaryAntibodyImmunosorbentTemperature,resolvedSecondaryAntibodyImmunosorbentMixRate,resolvedSecondaryAntibodyImmunosorbentWashVolume,resolvedSecondaryAntibodyImmunosorbentNumberOfWashes,resolvedSubstrateSolution,resolvedStopSolution,resolvedSubstrateSolutionVolume,resolvedStopSolutionVolume,resolvedSubstrateIncubationTime,resolvedSubstrateIncubationTemperature,resolvedSubstrateIncubationMixRate,resolvedAbsorbanceWavelength,resolvedSignalCorrection,resolvedStandard,resolvedStandardTargetAntigen,resolvedStandardDilutionCurve,resolvedStandardSerialDilutionCurve,resolvedStandardDiluent,resolvedStandardStorageCondition,resolvedStandardCoatingAntibody,resolvedStandardCoatingAntibodyDilutionFactor,resolvedStandardCoatingAntibodyVolume,resolvedStandardCaptureAntibody,resolvedStandardCaptureAntibodyDilutionFactor,resolvedStandardCaptureAntibodyVolume,resolvedStandardReferenceAntigen,resolvedStandardReferenceAntigenDilutionFactor,resolvedStandardReferenceAntigenVolume,resolvedStandardPrimaryAntibody,resolvedStandardPrimaryAntibodyDilutionFactor,resolvedStandardPrimaryAntibodyVolume,resolvedStandardSecondaryAntibody,resolvedStandardSecondaryAntibodyDilutionFactor,resolvedStandardSecondaryAntibodyVolume,resolvedStandardCoatingVolume,resolvedStandardReferenceAntigenCoatingVolume,resolvedStandardCoatingAntibodyCoatingVolume,resolvedStandardCaptureAntibodyCoatingVolume,resolvedStandardBlockingVolume,resolvedStandardAntibodyComplexImmunosorbentVolume,resolvedStandardImmunosorbentVolume,resolvedStandardPrimaryAntibodyImmunosorbentVolume,resolvedStandardSecondaryAntibodyImmunosorbentVolume,resolvedStandardSubstrateSolution,resolvedStandardStopSolution,resolvedStandardSubstrateSolutionVolume,resolvedStandardStopSolutionVolume,resolvedBlank,resolvedBlankTargetAntigen,resolvedBlankCoatingAntibody,resolvedBlankCoatingAntibodyDilutionFactor,resolvedBlankCoatingAntibodyVolume,resolvedBlankCaptureAntibody,resolvedBlankCaptureAntibodyDilutionFactor,resolvedBlankCaptureAntibodyVolume,resolvedBlankReferenceAntigen,resolvedBlankReferenceAntigenDilutionFactor,resolvedBlankReferenceAntigenVolume,resolvedBlankPrimaryAntibody,resolvedBlankPrimaryAntibodyDilutionFactor,resolvedBlankPrimaryAntibodyVolume,resolvedBlankSecondaryAntibody,resolvedBlankSecondaryAntibodyDilutionFactor,resolvedBlankSecondaryAntibodyVolume,resolvedBlankCoatingVolume,resolvedBlankReferenceAntigenCoatingVolume,resolvedBlankCoatingAntibodyCoatingVolume,resolvedBlankCaptureAntibodyCoatingVolume,resolvedBlankBlockingVolume,resolvedBlankAntibodyComplexImmunosorbentVolume,resolvedBlankImmunosorbentVolume,resolvedBlankPrimaryAntibodyImmunosorbentVolume,resolvedBlankSecondaryAntibodyImmunosorbentVolume,resolvedBlankSubstrateSolution,resolvedBlankStopSolution,resolvedBlankSubstrateSolutionVolume,resolvedBlankStopSolutionVolume,resolvedSpike,resolvedSpikeDilutionFactor,resolvedSampleDilutionCurve,resolvedSampleSerialDilutionCurve,resolvedSampleDiluent,resolvedELISAPlate,resolvedSecondaryELISAPlate,resolvedELISAPlateAssignment,resolvedSecondaryELISAPlateAssignment,resolverPipettingError,resolverRoundedTransformedStandardDilutionCurve,resolverRoundedTransformedStandardSerialDilutionCurve,resolverRoundedTransformedSampleDilutionCurve,resolverRoundedTransformedSampleSerialDilutionCurve,resolverSpikeVolumes,resolverAllPrimaryAntibodies,resolverAllPrimaryAntibodyAssayVolumes,resolverAllPrimaryAntibodyVolumes,resolverAllSecondaryAntibodies,resolverAllSecondaryAntibodyAssayVolumes,resolverAllSecondaryAntibodyVolumes,resolverAllCoatingAntibodies,resolverAllCoatingAntibodyAssayVolumes,resolverAllCoatingAntibodyVolumes,resolverAllCaptureAntibodies,resolverAllCaptureAntibodyAssayVolumes,resolverAllCaptureAntibodyVolumes,resolverAllReferenceAntigens,resolverAllReferenceAntigenAssayVolumes,resolverAllReferenceAntigenVolumes,volumeLarger,sampleDiluentResource,sampleDiluentVolumeList,sampleDiluentVolume,spikeVolumesCombined,spikesDeDuplicates,spikeResources,standardResources,standardVolumeList,standardVolumesCombined,standardsDeDuplicates,standardDiluentResource,standardDiluentVolume,primaryAntibodyVolumesCombined,primaryAntibodyDeDuplicates,primaryAntibodyResources,primaryAntibodyDiluentResource,primaryAntibodyDiluentVolumeCombined,secondaryAntibodyVolumesCombined,secondaryAntibodyDeDuplicates,secondaryAntibodyResources,secondaryAntibodyDiluentVolumeCombined,secondaryAntibodyDiluentResource,captureAntibodyVolumesCombined,captureAntibodyDeDuplicates,captureAntibodyResources,captureAntibodyDiluentResource,captureAntibodyDiluentVolumeCombined,coatingAntibodyVolumesCombined,coatingAntibodyDeDuplicates,coatingAntibodyResources,coatingAntibodyDiluentResource,coatingAntibodyDiluentVolumeCombined,referenceAntigenVolumesCombined,referenceAntigenDeDuplicates,referenceAntigenResources,referenceAntigenDiluentResource,referenceAntigenDiluentVolumeCombined,blockingBufferResource,totalBlockingVolume,washVolumeList,TotalWashVolume,washingBufferResource,joinedDeNulledSubstrate,substrateVolumesCombined,substrateDeDuplicates,substrateResources,joinedDeNulledStopVolumes,joinedDeNulledStop,stopVolumesCombined,stopResources,stopDeDuplicates,elisaPlateResource,secondaryELISAPlateResource,sampleAssemblyQ,numAssemblyPlate,sampleAssemblyContainerResource,sampleAssemblyPlate,elisaListMerge,resolvedAliquotAmount,blankVolumes,blankResources,blankPrimaryAntibodyVolumes,blankCaptureAntibodyVolumes,standardDiluentVolumeList,joinedDeNulledSubstrateVolumes,resolverRequiredAliquotAmount,elisaContainerPicker,primaryAntibodyDilutionContainerResources,primaryAntibodyAssayVolumeCombined,primaryAntibodyAssayVolumeCombinedUndilutionToNull,secondaryAntibodyAssayVolumeCombined,secondaryAntibodyAssayVolumeCombinedUndilutionToNull,secondaryAntibodyDilutionContainerResources,captureAntibodyAssayVolumeCombined,captureAntibodyAssayVolumeCombinedUndilutionToNull,captureAntibodyDilutionContainerResources,coatingAntibodyAssayVolumeCombined,coatingAntibodyAssayVolumeCombinedUndilutionToNull,coatingAntibodyDilutionContainerResources,referenceAntigenAssayVolumeCombined,referenceAntigenAssayVolumeCombinedUndilutionToNull,referenceAntigenDilutionContainerResources,primaryAntibodyWorkingResources,secondaryAntibodyWorkingResources,captureAntibodyWorkingResources,coatingAntibodyWorkingResources,referenceAntigenWorkingResources,resolvedNumberOfReplicatesNullToOne,secondarySampleAssemblyContainerResource,runTime,resolverAllPrimaryAntibodiesWithFactors,resolverAllSecondaryAntibodiesWithFactors,resolverAllCoatingAntibodiesWithFactors,resolverAllCaptureAntibodiesWithFactors,resolverAllReferenceAntigensWithFactors,primaryAntibodiesWithFactorsDeDuplicates,primaryAntibodyWithFactorToWorkingResourceLookupTable,secondaryAntibodiesWithFactorsDeDuplicates,secondaryAntibodyWithFactorToWorkingResourceLookupTable,captureAntibodiesWithFactorsDeDuplicates,captureAntibodyWithFactorToWorkingResourceLookupTable,referenceAntigensWithFactorsDeDuplicates,referenceAntigenWithFactorToWorkingResourceLookupTable,elisaExtractResources,primaryAntibodyWorkingResourcesSampleIndexed,secondaryAntibodyWorkingResourcesSampleIndexed,coatingAntibodyWorkingResourcesSampleIndexed,captureAntibodyWorkingResourcesSampleIndexed,referenceAntigenWorkingResourcesSampleIndexed,primaryAntibodyWorkingResourcesStandardIndexed,secondaryAntibodyWorkingResourcesStandardIndexed,coatingAntibodyWorkingResourcesStandardIndexed,captureAntibodyWorkingResourcesStandardIndexed,referenceAntigenWorkingResourcesStandardIndexed,primaryAntibodyWorkingResourcesBlankIndexed,secondaryAntibodyWorkingResourcesBlankIndexed,coatingAntibodyWorkingResourcesBlankIndexed,captureAntibodyWorkingResourcesBlankIndexed,referenceAntigenWorkingResourcesBlankIndexed,sampleNumber,standardNumber,blankNumber,sampleRange,standardRange,blankRange,primaryAntibodyResourcesSampleIndexed,primaryAntibodyResourcesStandardIndexed,primaryAntibodyResourcesBlankIndexed,primaryAntibodyWorkingResourcesAllIndexed,secondaryAntibodyResourcesSampleIndexed,secondaryAntibodyResourcesStandardIndexed,secondaryAntibodyResourcesBlankIndexed,secondaryAntibodyWorkingResourcesAllIndexed,captureAntibodyResourcesSampleIndexed,captureAntibodyResourcesStandardIndexed,captureAntibodyResourcesBlankIndexed,captureAntibodyWorkingResourcesAllIndexed,coatingAntibodyResourcesSampleIndexed,coatingAntibodyResourcesStandardIndexed,coatingAntibodyResourcesBlankIndexed,referenceAntigenResourcesSampleIndexed,referenceAntigenResourcesStandardIndexed,referenceAntigenResourcesBlankIndexed,referenceAntigenWorkingResourcesAllIndexed,resolverPrimaryAssignmentTableCounts,resolverSecondaryAssignmentTableCounts,resolverAutoJoinedAssignmentTable,spikeResourcesSampleIndexed,joinedSamples,joinedAssayVolumes,joinedSpikeDilutionFactors,joinedSpikeVolumes,combinedDilutionCurves,serialDilutionQ,joinedSampleAssemblyVolumes,expandingParams,expanededJoinedAssayVolumes,expandedJoinedSamples,expandedJoinedDiluents,expandedJoinedSpikes,expandedJoinedSampleAssemblyVolumes,erroredExpandedJoinedSampleAssemblyVolumes,joinedAssignment,joinedAssemblyPositions,experimentPositionsLookupTable,joinedSampleAssemblyPositionsExpanded,joinedAssayPlatePositionsExpanded,serialQExpandingParams,expandedSerialQ,joinedPrimaryAntibodyWorkingResources,expandedPrimaryAntibodyWorkingResources,joinedSecondaryAntibodyWorkingResources,expandedSecondaryAntibodyWorkingResources,joinedCaptureAntibodyWorkingResources,expandedCaptureAntibodyWorkingResources,joinedCoatingAntibodyWorkingResources,expandedCoatingAntibodyWorkingResources,joinedReferenceAntigenWorkingResources,expandedReferenceAntigenWorkingResources,joinedSampleCoatingVolumes,expandedSampleCoatingVolumes,joinedCoatingAntibodyCoatingVolumes,expandedCoatingAntibodyCoatingVolumes,joinedReferenceAntigenCoatingVolumes,expandedReferenceAntigenCoatingVolumes,joinedSampleImmunosorbentVolumes,expandedSampleImmunosorbentVolumes,joinedSampleAntibodyComplexImmunosorbentVolumes,expandedSampleAntibodyComplexImmunosorbentVolumes,joinedPrimaryAntibodyImmunosorbentVolumes,expandedPrimaryAntibodyImmunosorbentVolumes,joinedSecondaryAntibodyImmunosorbentVolumes,expandedSecondaryAntibodyImmunosorbentVolumes,joinedSubstrates,expandedSubstrates,joinedStops,expandedStops,joinedSubstrateVolumes,expandedSubstrateVolumes,joinedStopVolumes,expandedStopVolumes,joinedBlockVolumes,expandedBlockVolumes,antibodyAntigenDilutionQ,substrateResourcesSampleIndexed,substrateResourcesStandardIndexed,substrateResourcesBlankIndexed,stopResourcesSampleIndexed,stopResourcesStandardIndexed,stopResourcesBlankIndexed,stopResourcesStandardIndexedEmptyNull,stopResourcesBlankIndexedEmptyNull,elisaExpand,stopVolumesStandardIndexedEmptyNull,stopVolumesBlankIndexedEmptyNull,coatingAntibodiesWithFactorsDeDuplicates,coatingAntibodyWithFactorToWorkingResourceLookupTable,coatingAntibodyWorkingResourcesAllIndexed,primaryAssemblyPlatePositions,primaryPlateSampleStartCounts,primaryPlateSameSampleRanges,primaryPlateSamplePositions,secondaryPlateSamplePositions,secondaryAssemblyPlatePositions,secondaryPlateSampleStartCounts,secondaryPlateSameSampleRanges,resolvedSampleAntibodyComplexImmunosorbentMixRate,resolvedBlockingMixRate,assignTypes,assignSamples,assignSpikes,assignSpikeDilutionFactors,assignSampleDilutionFactors,assignCoatingAntibodies,assignCoatingAntibodyDilutionFactors,assignCaptureAntibodies,assignCaptureAntibodyDilutionFactors,assignReferenceAntigens,assignReferenceAntigenDilutionFactors,assignPrimaryAntibodies,assignPrimaryAntibodyDilutionFactors,assignSecondaryAntibodies,assignSecondaryAntibodyDilutionFactors,assignCoatingVolumes,assignBlockingVolumes,assignSampleAntibodyComplexImmunosorbentVolumes,assignSampleImmunosorbentVolumes,assignPrimaryAntibodyImmunosorbentVolumes,assignSecondaryAntibodyImmunosorbentVolumes,assignSubstrateSolutions,assignStopSolutions,assignSubstrateSolutionVolumes,assignStopSolutionVolumes,assignSpikesResourcesLinked,assignCoatingAntibodiesResourcesLinked,assignCaptureAntibodiesResourcesLinked,assignReferenceAntigensResourcesLinked,assignPrimaryAntibodiesResourcesLinked,assignSecondaryAntibodiesResourcesLinked,assignSubstrateSolutionsResourcesLinked,assignStopSolutionsResourcesLinked,assignTypesExpanded,assignSamplesExpanded,assignSpikesExpanded,assignSpikeDilutionFactorsExpanded,assignSampleDilutionFactorsExpanded,assignCoatingAntibodiesExpanded,assignCoatingAntibodyDilutionFactorsExpanded,assignCaptureAntibodiesExpanded,assignCaptureAntibodyDilutionFactorsExpanded,assignReferenceAntigensExpanded,assignReferenceAntigenDilutionFactorsExpanded,assignPrimaryAntibodiesExpanded,assignPrimaryAntibodyDilutionFactorsExpanded,assignSecondaryAntibodiesExpanded,assignSecondaryAntibodyDilutionFactorsExpanded,assignCoatingVolumesExpanded,assignBlockingVolumesExpanded,assignSampleAntibodyComplexImmunosorbentVolumesExpanded,assignSampleImmunosorbentVolumesExpanded,assignPrimaryAntibodyImmunosorbentVolumesExpanded,assignSecondaryAntibodyImmunosorbentVolumesExpanded,assignSubstrateSolutionsExpanded,assignStopSolutionsExpanded,assignSubstrateSolutionVolumesExpanded,assignStopSolutionVolumesExpanded,assignDataExpanded,processedELISAPlateAssignment,elisaExpandByNoR,secAssignTypes,secAssignSamples,secAssignSpikes,secAssignSpikeDilutionFactors,secAssignSampleDilutionFactors,secAssignCoatingAntibodies,secAssignCoatingAntibodyDilutionFactors,secAssignCaptureAntibodies,secAssignCaptureAntibodyDilutionFactors,secAssignReferenceAntigens,secAssignReferenceAntigenDilutionFactors,secAssignPrimaryAntibodies,secAssignPrimaryAntibodyDilutionFactors,secAssignSecondaryAntibodies,secAssignSecondaryAntibodyDilutionFactors,secAssignCoatingVolumes,secAssignBlockingVolumes,secAssignSampleAntibodyComplexImmunosorbentVolumes,secAssignSampleImmunosorbentVolumes,secAssignPrimaryAntibodyImmunosorbentVolumes,secAssignSecondaryAntibodyImmunosorbentVolumes,secAssignSubstrateSolutions,secAssignStopSolutions,secAssignSubstrateSolutionVolumes,secAssignStopSolutionVolumes,secAssignSpikesResourcesLinked,secAssignCoatingAntibodiesResourcesLinked,secAssignCaptureAntibodiesResourcesLinked,secAssignReferenceAntigensResourcesLinked,secAssignPrimaryAntibodiesResourcesLinked,secAssignSecondaryAntibodiesResourcesLinked,secAssignSubstrateSolutionsResourcesLinked,secAssignStopSolutionsResourcesLinked,secAssignTypesExpanded,secAssignSamplesExpanded,secAssignSpikesExpanded,secAssignSpikeDilutionFactorsExpanded,secAssignSampleDilutionFactorsExpanded,secAssignCoatingAntibodiesExpanded,secAssignCoatingAntibodyDilutionFactorsExpanded,secAssignCaptureAntibodiesExpanded,secAssignCaptureAntibodyDilutionFactorsExpanded,secAssignReferenceAntigensExpanded,secAssignReferenceAntigenDilutionFactorsExpanded,secAssignPrimaryAntibodiesExpanded,secAssignPrimaryAntibodyDilutionFactorsExpanded,secAssignSecondaryAntibodiesExpanded,secAssignSecondaryAntibodyDilutionFactorsExpanded,secAssignCoatingVolumesExpanded,secAssignBlockingVolumesExpanded,secAssignSampleAntibodyComplexImmunosorbentVolumesExpanded,secAssignSampleImmunosorbentVolumesExpanded,secAssignPrimaryAntibodyImmunosorbentVolumesExpanded,secAssignSecondaryAntibodyImmunosorbentVolumesExpanded,secAssignSubstrateSolutionsExpanded,secAssignStopSolutionsExpanded,secAssignSubstrateSolutionVolumesExpanded,secAssignStopSolutionVolumesExpanded,associatedELISAPlateAssignment,secAssignDataExpanded,joinedSampleResources,assignSampleResourcesLinked,secAssignSampleResourcesLinked,processedSecondaryELISAPlateAssignment,associatedSecondaryELISAPlateAssignment,samplesInResources,instrumentTime,instrumentResource,protocolPacket,sharedFieldPacket,finalizedPacket,allResourceBlobs,fulfillable, frqTests,testsRule,resultRule,joinedSerialDilutionCurve,joinedDilutionCurve,elisaExpandOrShrink,standardResourcesStandardIndexMatched,resolverJoinedCurveExpansionParams,curveExpandedJoinedSubstrate,curveExpandedJoinedSubstrateVolumes,curveExpandedJoinedStop,curveExpandedJoinedStopVolumes,paddedSpikeVolumes,flattenedCombinedDilutionCurves,joinedSpikes,paddedSpikes,joinedCaptureAntibodyCoatingVolumes,expandedCaptureAntibodyCoatingVolumes,numWellsToWash,numberOfWells,numberOfBlocking,numberOfStopping,methodSteps,tipNumber,tipResource,protocolID,protocolKey,primaryAntibodiesToDilute,primaryAntibodyDilutionVolumes,primaryAntibodyDiluentDilutionVolumes,primaryAntibodyDilutionContainers,secondaryAntibodiesToDilute,secondaryAntibodyDilutionVolumes,secondaryAntibodyDiluentDilutionVolumes,secondaryAntibodyDilutionContainers,captureAntibodiesToDilute,captureAntibodyDilutionVolumes,captureAntibodyDiluentDilutionVolumes,captureAntibodyDilutionContainers,coatingAntibodiesToDilute,coatingAntibodyDilutionVolumes,coatingAntibodyDiluentDilutionVolumes,coatingAntibodyDilutionContainers,referenceAntigensToDilute,referenceAntigenDilutionVolumes,referenceAntigenDiluentDilutionVolumes,referenceAntigenDilutionContainers,elisaExtractDilutionParams,coatingAntibodiesToDiluteStorage,captureAntibodiesToDiluteStorage,referenceAntigensToDiluteStorage,primaryAntibodiesToDiluteStorage,secondaryAntibodiesToDiluteStorage,resolvedBlankStorageCondition,primaryAntibodyDiluentVolumeForEachDilution,secondaryAntibodyDiluentVolumeForEachDilution,captureAntibodyDiluentVolumeForEachDilution,coatingAntibodyDiluentVolumeForEachDilution,referenceAntigenDiluentVolumeForEachDilution,resolvedSpikeStorageCondition,primaryAntibodyStorageConditionCombined,secondaryAntibodyStorageConditionCombined,captureAntibodyStorageConditionCombined,coatingAntibodyStorageConditionCombined,referenceAntigenStorageConditionCombined,primaryAntibodyVolumeForEachDilution,secondaryAntibodyVolumeForEachDilution,captureAntibodyVolumeForEachDilution,coatingAntibodyVolumeForEachDilution,referenceAntigenVolumeForEachDilution,primaryAntibodyConcentrateResources,secondaryAntibodyConcentrateResources,captureAntibodyConcentrateResources,coatingAntibodyConcentrateResources,referenceAntigenConcentrateResources,blankResourcesBlankIndexMatched,blanksDeDup,blankVolumesCombined,
+	expandedInputs, expandedResolvedOptions,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,messages,inheritedCache,simulation, resolvedMethod,resolvedTargetAntigen,resolvedNumberOfReplicates,resolvedWashingBuffer,resolvedCoatingAntibody,resolvedCoatingAntibodyDilutionFactor,resolvedCoatingAntibodyVolume,resolvedCoatingAntibodyDiluent,resolvedCoatingAntibodyStorageCondition,resolvedCaptureAntibody,resolvedCaptureAntibodyDilutionFactor,resolvedCaptureAntibodyVolume,resolvedCaptureAntibodyDiluent,resolvedCaptureAntibodyStorageCondition,resolvedReferenceAntigen,resolvedReferenceAntigenDilutionFactor,resolvedReferenceAntigenVolume,resolvedReferenceAntigenDiluent,resolvedReferenceAntigenStorageCondition,resolvedPrimaryAntibody,resolvedPrimaryAntibodyDilutionFactor,resolvedPrimaryAntibodyVolume,resolvedPrimaryAntibodyDiluent,resolvedPrimaryAntibodyStorageCondition,resolvedSecondaryAntibody,resolvedSecondaryAntibodyDilutionFactor,resolvedSecondaryAntibodyVolume,resolvedSecondaryAntibodyDiluent,resolvedSecondaryAntibodyStorageCondition,resolvedSampleAntibodyComplexIncubation,resolvedSampleAntibodyComplexIncubationTime,resolvedSampleAntibodyComplexIncubationTemperature,resolvedCoating,resolvedSampleCoatingVolume,resolvedCoatingAntibodyCoatingVolume,resolvedReferenceAntigenCoatingVolume,resolvedCaptureAntibodyCoatingVolume,resolvedCoatingTemperature,resolvedCoatingTime,resolvedCoatingWashVolume,resolvedCoatingNumberOfWashes,resolvedBlocking,resolvedBlockingBuffer,resolvedBlockingVolume,resolvedBlockingTemperature,resolvedBlockingTime,resolvedBlockingWashVolume,resolvedBlockingNumberOfWashes,resolvedSampleAntibodyComplexImmunosorbentVolume,resolvedSampleAntibodyComplexImmunosorbentTime,resolvedSampleAntibodyComplexImmunosorbentTemperature,resolvedSampleAntibodyComplexImmunosorbentWashVolume,resolvedSampleAntibodyComplexImmunosorbentNumberOfWashes,resolvedSampleImmunosorbentVolume,resolvedSampleImmunosorbentTime,resolvedSampleImmunosorbentTemperature,resolvedSampleImmunosorbentMixRate,resolvedSampleImmunosorbentWashVolume,resolvedSampleImmunosorbentNumberOfWashes,resolvedPrimaryAntibodyImmunosorbentVolume,resolvedPrimaryAntibodyImmunosorbentTime,resolvedPrimaryAntibodyImmunosorbentTemperature,resolvedPrimaryAntibodyImmunosorbentMixRate,resolvedPrimaryAntibodyImmunosorbentWashVolume,resolvedPrimaryAntibodyImmunosorbentNumberOfWashes,resolvedSecondaryAntibodyImmunosorbentVolume,resolvedSecondaryAntibodyImmunosorbentTime,resolvedSecondaryAntibodyImmunosorbentTemperature,resolvedSecondaryAntibodyImmunosorbentMixRate,resolvedSecondaryAntibodyImmunosorbentWashVolume,resolvedSecondaryAntibodyImmunosorbentNumberOfWashes,resolvedSubstrateSolution,resolvedStopSolution,resolvedSubstrateSolutionVolume,resolvedStopSolutionVolume,resolvedSubstrateIncubationTime,resolvedSubstrateIncubationTemperature,resolvedSubstrateIncubationMixRate,resolvedAbsorbanceWavelength,resolvedSignalCorrection,resolvedStandard,resolvedStandardTargetAntigen,resolvedStandardDilutionCurve,resolvedStandardSerialDilutionCurve,resolvedStandardDiluent,resolvedStandardStorageCondition,resolvedStandardCoatingAntibody,resolvedStandardCoatingAntibodyDilutionFactor,resolvedStandardCoatingAntibodyVolume,resolvedStandardCaptureAntibody,resolvedStandardCaptureAntibodyDilutionFactor,resolvedStandardCaptureAntibodyVolume,resolvedStandardReferenceAntigen,resolvedStandardReferenceAntigenDilutionFactor,resolvedStandardReferenceAntigenVolume,resolvedStandardPrimaryAntibody,resolvedStandardPrimaryAntibodyDilutionFactor,resolvedStandardPrimaryAntibodyVolume,resolvedStandardSecondaryAntibody,resolvedStandardSecondaryAntibodyDilutionFactor,resolvedStandardSecondaryAntibodyVolume,resolvedStandardCoatingVolume,resolvedStandardReferenceAntigenCoatingVolume,resolvedStandardCoatingAntibodyCoatingVolume,resolvedStandardCaptureAntibodyCoatingVolume,resolvedStandardBlockingVolume,resolvedStandardAntibodyComplexImmunosorbentVolume,resolvedStandardImmunosorbentVolume,resolvedStandardPrimaryAntibodyImmunosorbentVolume,resolvedStandardSecondaryAntibodyImmunosorbentVolume,resolvedStandardSubstrateSolution,resolvedStandardStopSolution,resolvedStandardSubstrateSolutionVolume,resolvedStandardStopSolutionVolume,resolvedBlank,resolvedBlankTargetAntigen,resolvedBlankCoatingAntibody,resolvedBlankCoatingAntibodyDilutionFactor,resolvedBlankCoatingAntibodyVolume,resolvedBlankCaptureAntibody,resolvedBlankCaptureAntibodyDilutionFactor,resolvedBlankCaptureAntibodyVolume,resolvedBlankReferenceAntigen,resolvedBlankReferenceAntigenDilutionFactor,resolvedBlankReferenceAntigenVolume,resolvedBlankPrimaryAntibody,resolvedBlankPrimaryAntibodyDilutionFactor,resolvedBlankPrimaryAntibodyVolume,resolvedBlankSecondaryAntibody,resolvedBlankSecondaryAntibodyDilutionFactor,resolvedBlankSecondaryAntibodyVolume,resolvedBlankCoatingVolume,resolvedBlankReferenceAntigenCoatingVolume,resolvedBlankCoatingAntibodyCoatingVolume,resolvedBlankCaptureAntibodyCoatingVolume,resolvedBlankBlockingVolume,resolvedBlankAntibodyComplexImmunosorbentVolume,resolvedBlankImmunosorbentVolume,resolvedBlankPrimaryAntibodyImmunosorbentVolume,resolvedBlankSecondaryAntibodyImmunosorbentVolume,resolvedBlankSubstrateSolution,resolvedBlankStopSolution,resolvedBlankSubstrateSolutionVolume,resolvedBlankStopSolutionVolume,resolvedSpike,resolvedSpikeDilutionFactor,resolvedSampleDilutionCurve,resolvedSampleSerialDilutionCurve,resolvedSampleDiluent,resolvedELISAPlate,resolvedSecondaryELISAPlate,resolvedELISAPlateAssignment,resolvedSecondaryELISAPlateAssignment,resolverPipettingError,resolverRoundedTransformedStandardDilutionCurve,resolverRoundedTransformedStandardSerialDilutionCurve,resolverRoundedTransformedSampleDilutionCurve,resolverRoundedTransformedSampleSerialDilutionCurve,resolverSpikeVolumes,resolverAllPrimaryAntibodies,resolverAllPrimaryAntibodyAssayVolumes,resolverAllPrimaryAntibodyVolumes,resolverAllSecondaryAntibodies,resolverAllSecondaryAntibodyAssayVolumes,resolverAllSecondaryAntibodyVolumes,resolverAllCoatingAntibodies,resolverAllCoatingAntibodyAssayVolumes,resolverAllCoatingAntibodyVolumes,resolverAllCaptureAntibodies,resolverAllCaptureAntibodyAssayVolumes,resolverAllCaptureAntibodyVolumes,resolverAllReferenceAntigens,resolverAllReferenceAntigenAssayVolumes,resolverAllReferenceAntigenVolumes,volumeLarger,sampleDiluentResource,sampleDiluentVolumeList,sampleDiluentVolume,spikeVolumesCombined,spikesDeDuplicates,spikeResources,standardResources,standardVolumeList,standardVolumesCombined,standardsDeDuplicates,standardDiluentResource,standardDiluentVolume,primaryAntibodyVolumesCombined,primaryAntibodyDeDuplicates,primaryAntibodyResources,primaryAntibodyDiluentResource,primaryAntibodyDiluentVolumeCombined,secondaryAntibodyVolumesCombined,secondaryAntibodyDeDuplicates,secondaryAntibodyResources,secondaryAntibodyDiluentVolumeCombined,secondaryAntibodyDiluentResource,captureAntibodyVolumesCombined,captureAntibodyDeDuplicates,captureAntibodyResources,captureAntibodyDiluentResource,captureAntibodyDiluentVolumeCombined,coatingAntibodyVolumesCombined,coatingAntibodyDeDuplicates,coatingAntibodyResources,coatingAntibodyDiluentResource,coatingAntibodyDiluentVolumeCombined,referenceAntigenVolumesCombined,referenceAntigenDeDuplicates,referenceAntigenResources,referenceAntigenDiluentResource,referenceAntigenDiluentVolumeCombined,blockingBufferResource,totalBlockingVolume,washVolumeList,TotalWashVolume,washingBufferResource,joinedDeNulledSubstrate,substrateVolumesCombined,substrateDeDuplicates,substrateResources,joinedDeNulledStopVolumes,joinedDeNulledStop,stopVolumesCombined,stopResources,stopDeDuplicates,elisaPlateResource,secondaryELISAPlateResource,sampleAssemblyQ,numAssemblyPlate,sampleAssemblyContainerResource,sampleAssemblyPlate,elisaListMerge,resolvedAliquotAmount,blankVolumes,blankResources,blankPrimaryAntibodyVolumes,blankCaptureAntibodyVolumes,standardDiluentVolumeList,joinedDeNulledSubstrateVolumes,resolverRequiredAliquotAmount,elisaContainerPicker,primaryAntibodyDilutionContainerResources,primaryAntibodyAssayVolumeCombined,primaryAntibodyAssayVolumeCombinedUndilutionToNull,secondaryAntibodyAssayVolumeCombined,secondaryAntibodyAssayVolumeCombinedUndilutionToNull,secondaryAntibodyDilutionContainerResources,captureAntibodyAssayVolumeCombined,captureAntibodyAssayVolumeCombinedUndilutionToNull,captureAntibodyDilutionContainerResources,coatingAntibodyAssayVolumeCombined,coatingAntibodyAssayVolumeCombinedUndilutionToNull,coatingAntibodyDilutionContainerResources,referenceAntigenAssayVolumeCombined,referenceAntigenAssayVolumeCombinedUndilutionToNull,referenceAntigenDilutionContainerResources,primaryAntibodyWorkingResources,secondaryAntibodyWorkingResources,captureAntibodyWorkingResources,coatingAntibodyWorkingResources,referenceAntigenWorkingResources,resolvedNumberOfReplicatesNullToOne,secondarySampleAssemblyContainerResource,runTime,resolverAllPrimaryAntibodiesWithFactors,resolverAllSecondaryAntibodiesWithFactors,resolverAllCoatingAntibodiesWithFactors,resolverAllCaptureAntibodiesWithFactors,resolverAllReferenceAntigensWithFactors,primaryAntibodiesWithFactorsDeDuplicates,primaryAntibodyWithFactorToWorkingResourceLookupTable,secondaryAntibodiesWithFactorsDeDuplicates,secondaryAntibodyWithFactorToWorkingResourceLookupTable,captureAntibodiesWithFactorsDeDuplicates,captureAntibodyWithFactorToWorkingResourceLookupTable,referenceAntigensWithFactorsDeDuplicates,referenceAntigenWithFactorToWorkingResourceLookupTable,elisaExtractResources,primaryAntibodyWorkingResourcesSampleIndexed,secondaryAntibodyWorkingResourcesSampleIndexed,coatingAntibodyWorkingResourcesSampleIndexed,captureAntibodyWorkingResourcesSampleIndexed,referenceAntigenWorkingResourcesSampleIndexed,primaryAntibodyWorkingResourcesStandardIndexed,secondaryAntibodyWorkingResourcesStandardIndexed,coatingAntibodyWorkingResourcesStandardIndexed,captureAntibodyWorkingResourcesStandardIndexed,referenceAntigenWorkingResourcesStandardIndexed,primaryAntibodyWorkingResourcesBlankIndexed,secondaryAntibodyWorkingResourcesBlankIndexed,coatingAntibodyWorkingResourcesBlankIndexed,captureAntibodyWorkingResourcesBlankIndexed,referenceAntigenWorkingResourcesBlankIndexed,sampleNumber,standardNumber,blankNumber,sampleRange,standardRange,blankRange,primaryAntibodyResourcesSampleIndexed,primaryAntibodyResourcesStandardIndexed,primaryAntibodyResourcesBlankIndexed,primaryAntibodyWorkingResourcesAllIndexed,secondaryAntibodyResourcesSampleIndexed,secondaryAntibodyResourcesStandardIndexed,secondaryAntibodyResourcesBlankIndexed,secondaryAntibodyWorkingResourcesAllIndexed,captureAntibodyResourcesSampleIndexed,captureAntibodyResourcesStandardIndexed,captureAntibodyResourcesBlankIndexed,captureAntibodyWorkingResourcesAllIndexed,coatingAntibodyResourcesSampleIndexed,coatingAntibodyResourcesStandardIndexed,coatingAntibodyResourcesBlankIndexed,referenceAntigenResourcesSampleIndexed,referenceAntigenResourcesStandardIndexed,referenceAntigenResourcesBlankIndexed,referenceAntigenWorkingResourcesAllIndexed,resolverPrimaryAssignmentTableCounts,resolverSecondaryAssignmentTableCounts,resolverAutoJoinedAssignmentTable,spikeResourcesSampleIndexed,joinedSamples,joinedAssayVolumes,joinedSpikeDilutionFactors,joinedSpikeVolumes,combinedDilutionCurves,serialDilutionQ,joinedSampleAssemblyVolumes,expandingParams,expanededJoinedAssayVolumes,expandedJoinedSamples,expandedJoinedDiluents,expandedJoinedSpikes,expandedJoinedSampleAssemblyVolumes,erroredExpandedJoinedSampleAssemblyVolumes,joinedAssignment,joinedAssemblyPositions,experimentPositionsLookupTable,joinedSampleAssemblyPositionsExpanded,joinedAssayPlatePositionsExpanded,serialQExpandingParams,expandedSerialQ,joinedPrimaryAntibodyWorkingResources,expandedPrimaryAntibodyWorkingResources,joinedSecondaryAntibodyWorkingResources,expandedSecondaryAntibodyWorkingResources,joinedCaptureAntibodyWorkingResources,expandedCaptureAntibodyWorkingResources,joinedCoatingAntibodyWorkingResources,expandedCoatingAntibodyWorkingResources,joinedReferenceAntigenWorkingResources,expandedReferenceAntigenWorkingResources,joinedSampleCoatingVolumes,expandedSampleCoatingVolumes,joinedCoatingAntibodyCoatingVolumes,expandedCoatingAntibodyCoatingVolumes,joinedReferenceAntigenCoatingVolumes,expandedReferenceAntigenCoatingVolumes,joinedSampleImmunosorbentVolumes,expandedSampleImmunosorbentVolumes,joinedSampleAntibodyComplexImmunosorbentVolumes,expandedSampleAntibodyComplexImmunosorbentVolumes,joinedPrimaryAntibodyImmunosorbentVolumes,expandedPrimaryAntibodyImmunosorbentVolumes,joinedSecondaryAntibodyImmunosorbentVolumes,expandedSecondaryAntibodyImmunosorbentVolumes,joinedSubstrates,expandedSubstrates,joinedStops,expandedStops,joinedSubstrateVolumes,expandedSubstrateVolumes,joinedStopVolumes,expandedStopVolumes,joinedBlockVolumes,expandedBlockVolumes,antibodyAntigenDilutionQ,substrateResourcesSampleIndexed,substrateResourcesStandardIndexed,substrateResourcesBlankIndexed,stopResourcesSampleIndexed,stopResourcesStandardIndexed,stopResourcesBlankIndexed,stopResourcesStandardIndexedEmptyNull,stopResourcesBlankIndexedEmptyNull,elisaExpand,stopVolumesStandardIndexedEmptyNull,stopVolumesBlankIndexedEmptyNull,coatingAntibodiesWithFactorsDeDuplicates,coatingAntibodyWithFactorToWorkingResourceLookupTable,coatingAntibodyWorkingResourcesAllIndexed,primaryAssemblyPlatePositions,primaryPlateSampleStartCounts,primaryPlateSameSampleRanges,primaryPlateSamplePositions,secondaryPlateSamplePositions,secondaryAssemblyPlatePositions,secondaryPlateSampleStartCounts,secondaryPlateSameSampleRanges,resolvedSampleAntibodyComplexImmunosorbentMixRate,resolvedBlockingMixRate,assignTypes,assignSamples,assignSpikes,assignSpikeDilutionFactors,assignSampleDilutionFactors,assignCoatingAntibodies,assignCoatingAntibodyDilutionFactors,assignCaptureAntibodies,assignCaptureAntibodyDilutionFactors,assignReferenceAntigens,assignReferenceAntigenDilutionFactors,assignPrimaryAntibodies,assignPrimaryAntibodyDilutionFactors,assignSecondaryAntibodies,assignSecondaryAntibodyDilutionFactors,assignCoatingVolumes,assignBlockingVolumes,assignSampleAntibodyComplexImmunosorbentVolumes,assignSampleImmunosorbentVolumes,assignPrimaryAntibodyImmunosorbentVolumes,assignSecondaryAntibodyImmunosorbentVolumes,assignSubstrateSolutions,assignStopSolutions,assignSubstrateSolutionVolumes,assignStopSolutionVolumes,assignSpikesResourcesLinked,assignCoatingAntibodiesResourcesLinked,assignCaptureAntibodiesResourcesLinked,assignReferenceAntigensResourcesLinked,assignPrimaryAntibodiesResourcesLinked,assignSecondaryAntibodiesResourcesLinked,assignSubstrateSolutionsResourcesLinked,assignStopSolutionsResourcesLinked,assignTypesExpanded,assignSamplesExpanded,assignSpikesExpanded,assignSpikeDilutionFactorsExpanded,assignSampleDilutionFactorsExpanded,assignCoatingAntibodiesExpanded,assignCoatingAntibodyDilutionFactorsExpanded,assignCaptureAntibodiesExpanded,assignCaptureAntibodyDilutionFactorsExpanded,assignReferenceAntigensExpanded,assignReferenceAntigenDilutionFactorsExpanded,assignPrimaryAntibodiesExpanded,assignPrimaryAntibodyDilutionFactorsExpanded,assignSecondaryAntibodiesExpanded,assignSecondaryAntibodyDilutionFactorsExpanded,assignCoatingVolumesExpanded,assignBlockingVolumesExpanded,assignSampleAntibodyComplexImmunosorbentVolumesExpanded,assignSampleImmunosorbentVolumesExpanded,assignPrimaryAntibodyImmunosorbentVolumesExpanded,assignSecondaryAntibodyImmunosorbentVolumesExpanded,assignSubstrateSolutionsExpanded,assignStopSolutionsExpanded,assignSubstrateSolutionVolumesExpanded,assignStopSolutionVolumesExpanded,assignDataExpanded,processedELISAPlateAssignment,elisaExpandByNoR,secAssignTypes,secAssignSamples,secAssignSpikes,secAssignSpikeDilutionFactors,secAssignSampleDilutionFactors,secAssignCoatingAntibodies,secAssignCoatingAntibodyDilutionFactors,secAssignCaptureAntibodies,secAssignCaptureAntibodyDilutionFactors,secAssignReferenceAntigens,secAssignReferenceAntigenDilutionFactors,secAssignPrimaryAntibodies,secAssignPrimaryAntibodyDilutionFactors,secAssignSecondaryAntibodies,secAssignSecondaryAntibodyDilutionFactors,secAssignCoatingVolumes,secAssignBlockingVolumes,secAssignSampleAntibodyComplexImmunosorbentVolumes,secAssignSampleImmunosorbentVolumes,secAssignPrimaryAntibodyImmunosorbentVolumes,secAssignSecondaryAntibodyImmunosorbentVolumes,secAssignSubstrateSolutions,secAssignStopSolutions,secAssignSubstrateSolutionVolumes,secAssignStopSolutionVolumes,secAssignSpikesResourcesLinked,secAssignCoatingAntibodiesResourcesLinked,secAssignCaptureAntibodiesResourcesLinked,secAssignReferenceAntigensResourcesLinked,secAssignPrimaryAntibodiesResourcesLinked,secAssignSecondaryAntibodiesResourcesLinked,secAssignSubstrateSolutionsResourcesLinked,secAssignStopSolutionsResourcesLinked,secAssignTypesExpanded,secAssignSamplesExpanded,secAssignSpikesExpanded,secAssignSpikeDilutionFactorsExpanded,secAssignSampleDilutionFactorsExpanded,secAssignCoatingAntibodiesExpanded,secAssignCoatingAntibodyDilutionFactorsExpanded,secAssignCaptureAntibodiesExpanded,secAssignCaptureAntibodyDilutionFactorsExpanded,secAssignReferenceAntigensExpanded,secAssignReferenceAntigenDilutionFactorsExpanded,secAssignPrimaryAntibodiesExpanded,secAssignPrimaryAntibodyDilutionFactorsExpanded,secAssignSecondaryAntibodiesExpanded,secAssignSecondaryAntibodyDilutionFactorsExpanded,secAssignCoatingVolumesExpanded,secAssignBlockingVolumesExpanded,secAssignSampleAntibodyComplexImmunosorbentVolumesExpanded,secAssignSampleImmunosorbentVolumesExpanded,secAssignPrimaryAntibodyImmunosorbentVolumesExpanded,secAssignSecondaryAntibodyImmunosorbentVolumesExpanded,secAssignSubstrateSolutionsExpanded,secAssignStopSolutionsExpanded,secAssignSubstrateSolutionVolumesExpanded,secAssignStopSolutionVolumesExpanded,associatedELISAPlateAssignment,secAssignDataExpanded,joinedSampleResources,assignSampleResourcesLinked,secAssignSampleResourcesLinked,processedSecondaryELISAPlateAssignment,associatedSecondaryELISAPlateAssignment,samplesInResources,instrumentTime,instrumentResource,protocolPacket,sharedFieldPacket,finalizedPacket,allResourceBlobs,fulfillable, frqTests,testsRule,resultRule,joinedSerialDilutionCurve,joinedDilutionCurve,elisaExpandOrShrink,standardResourcesStandardIndexMatched,resolverJoinedCurveExpansionParams,curveExpandedJoinedSubstrate,curveExpandedJoinedSubstrateVolumes,curveExpandedJoinedStop,curveExpandedJoinedStopVolumes,paddedSpikeVolumes,flattenedCombinedDilutionCurves,joinedSpikes,paddedSpikes,joinedCaptureAntibodyCoatingVolumes,expandedCaptureAntibodyCoatingVolumes,numWellsToWash,numberOfWells,numberOfBlocking,numberOfStopping,methodSteps,tipNumber,tipResource,protocolID,protocolKey,primaryAntibodiesToDilute,primaryAntibodyDilutionVolumes,primaryAntibodyDiluentDilutionVolumes,primaryAntibodyDilutionContainers,secondaryAntibodiesToDilute,secondaryAntibodyDilutionVolumes,secondaryAntibodyDiluentDilutionVolumes,secondaryAntibodyDilutionContainers,captureAntibodiesToDilute,captureAntibodyDilutionVolumes,captureAntibodyDiluentDilutionVolumes,captureAntibodyDilutionContainers,coatingAntibodiesToDilute,coatingAntibodyDilutionVolumes,coatingAntibodyDiluentDilutionVolumes,coatingAntibodyDilutionContainers,referenceAntigensToDilute,referenceAntigenDilutionVolumes,referenceAntigenDiluentDilutionVolumes,referenceAntigenDilutionContainers,elisaExtractDilutionParams,coatingAntibodiesToDiluteStorage,captureAntibodiesToDiluteStorage,referenceAntigensToDiluteStorage,primaryAntibodiesToDiluteStorage,secondaryAntibodiesToDiluteStorage,resolvedBlankStorageCondition,primaryAntibodyDiluentVolumeForEachDilution,secondaryAntibodyDiluentVolumeForEachDilution,captureAntibodyDiluentVolumeForEachDilution,coatingAntibodyDiluentVolumeForEachDilution,referenceAntigenDiluentVolumeForEachDilution,resolvedSpikeStorageCondition,primaryAntibodyStorageConditionCombined,secondaryAntibodyStorageConditionCombined,captureAntibodyStorageConditionCombined,coatingAntibodyStorageConditionCombined,referenceAntigenStorageConditionCombined,primaryAntibodyVolumeForEachDilution,secondaryAntibodyVolumeForEachDilution,captureAntibodyVolumeForEachDilution,coatingAntibodyVolumeForEachDilution,referenceAntigenVolumeForEachDilution,primaryAntibodyConcentrateResources,secondaryAntibodyConcentrateResources,captureAntibodyConcentrateResources,coatingAntibodyConcentrateResources,referenceAntigenConcentrateResources,blankResourcesBlankIndexMatched,blanksDeDup,blankVolumesCombined,
 		joinedSampleStandardDiluents,joinedSampleStandardDiluentVolumes,sampleStandardDiluentDeDup,sampleStandardVolumesDedup,sampleStandardDiluentResources,joinedAntibodyDiluents,joinedAntibodyDiluentVolumes,antibodyDiluentsDeDup,antibodyDiluentVolumesDeDup,antibodyDiluentResources,
-		blockingVolumeList,expandedBlockingVolumeList,curveGroupParams,curveGroupPartitionHeads,curveGroupPartitionTails,curveGroupPartitionRanges,groupedSampleAssemblyVolumes,wholeStackNumber,partialStackTipNumber,wholeStackTipResources,partialStackTipResource,expandedConcentrateVolumes,expandedDiluentVolumes,expandedSpikeVolumes,expandedPrimaryAntibodySampleMixingVolumes,expandedCaptureAntibodySampleMixingVolumes,containersInResources,pipettingTime,numberOfSamplesPrimaryPlate,numberOfSamplesSecondaryPlate,tooLargeVolumeQ,allDeckResources,allDeckResourceContainer,tooMany2mLTubeQ,tooMany50mLTubeQ,tooManyContainersTests,resolvedSecondaryELISAPlateAssignmentNullToEmpty,lookupAndDelete,initalLookupTableWithPlaceholderValue,valuesWithFoldedLookupTable,negativediluentVolume,sampleVolumeList
+		blockingVolumeList,expandedBlockingVolumeList,curveGroupParams,curveGroupPartitionHeads,curveGroupPartitionTails,curveGroupPartitionRanges,groupedSampleAssemblyVolumes,wholeStackNumber,partialStackTipNumber,wholeStackTipResources,partialStackTipResource,expandedConcentrateVolumes,expandedDiluentVolumes,expandedSpikeVolumes,expandedPrimaryAntibodySampleMixingVolumes,expandedCaptureAntibodySampleMixingVolumes,containersInResources,pipettingTime,numberOfSamplesPrimaryPlate,numberOfSamplesSecondaryPlate,tooLargeVolumeQ,allDeckResources,allDeckResourceContainer,tooMany2mLTubeQ,tooMany50mLTubeQ,tooManyContainersTests,resolvedSecondaryELISAPlateAssignmentNullToEmpty,lookupAndDelete,initalLookupTableWithPlaceholderValue,valuesWithFoldedLookupTable,negativediluentVolume,sampleVolumeList,groupedSpikes
 	},
 	(* expand the resolved options if they weren't expanded already *)
 	{expandedInputs, expandedResolvedOptions} = ExpandIndexMatchedInputs[ExperimentELISA, {mySamples}, myResolvedOptions];
@@ -10037,6 +9996,7 @@ elisaResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:
 
 	(* Get the inherited cache *)
 	inheritedCache = Lookup[ToList[ops],Cache];
+	simulation = Lookup[ToList[ops], Simulation, Simulation[]];
 
 	(* Set error tracking boolean to False *)
 	tooLargeVolumeQ = False;
@@ -10881,8 +10841,8 @@ elisaResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:
 		expandedDiluentVolumes=erroredExpandedJoinedSampleAssemblyVolumes[[All,2]];
 		expandedSpikeVolumes=erroredExpandedJoinedSampleAssemblyVolumes[[All,3]];
 		(*We are converting the priamry antibody and capture antibody sample mixing volumes to empty lists here when they are not mixed with sample. This is redundant though since we also discuss the situations in the Engine function.*)
-		expandedPrimaryAntibodySampleMixingVolumes=If[MatchQ[resolveMethod,(DirectCompetitiveELISA|IndirectCompetitiveELISA|FastELISA)],erroredExpandedJoinedSampleAssemblyVolumes[[All,4]],{}];
-		expandedCaptureAntibodySampleMixingVolumes=If[MatchQ[resolveMethod,FastELISA],erroredExpandedJoinedSampleAssemblyVolumes[[All,5]],{}];
+		expandedPrimaryAntibodySampleMixingVolumes=If[MatchQ[resolvedMethod,(DirectCompetitiveELISA|IndirectCompetitiveELISA|FastELISA)],erroredExpandedJoinedSampleAssemblyVolumes[[All,4]],{}];
+		expandedCaptureAntibodySampleMixingVolumes=If[MatchQ[resolvedMethod,FastELISA],erroredExpandedJoinedSampleAssemblyVolumes[[All,5]],{}];
 
 		(*Expand joinedAssayVolumes*)
 		expanededJoinedAssayVolumes=MapThread[ConstantArray[#1,#2]&,{joinedAssayVolumes,expandingParams}]//Flatten;
@@ -10895,7 +10855,9 @@ elisaResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:
 		(*Expand spikes: Spike is only added to the original sample. So it needs to be padded with Nulls*)
 		joinedSpikes=Flatten[{spikeResourcesSampleIndexed,ConstantArray[Null,standardNumber+blankNumber]}];
 		paddedSpikes=MapThread[Prepend[ConstantArray[Null,#1-1],#2]&,{resolverJoinedCurveExpansionParams,joinedSpikes}]//Flatten;
-		expandedJoinedSpikes=ConstantArray[paddedSpikes,resolvedNumberOfReplicatesNullToOne]//Transpose//Flatten;
+		(*We do the same grouping as how we do it for SpikeVolumes above to make sure the same dilution curve is placed next to each other. For this we have to first group the same dilution curve together, expand them by number of replicates, and then flatten it back again.*)
+		groupedSpikes=Take[paddedSpikes,#]&/@curveGroupPartitionRanges;
+		expandedJoinedSpikes=ConstantArray[groupedSpikes,resolvedNumberOfReplicatesNullToOne]//Transpose//Flatten;
 
 		(*PrimaryAntibody and CaptureAntibody expansions appears later.*)
 
@@ -11427,14 +11389,14 @@ elisaResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:
 			 ResolvedOptions->myResolvedOptions,
 			 Instrument->instrumentResource,
 			 Replace[Checkpoints]->{
-				 {"Picking Resources",15 Minute,"Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"], Time->15 Minute]]},
-				 {"Preparing Samples",10 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"], Time->10 Minute]]},
-				 {"Antibodies and Antigens dilution",10 Minute,"The dilution of antibodies and reference antigens using their diluents.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->30Minute]]},
-				 {"Sample Dilution and Mixing",10 Minute,"Mixing samples, standards and blanks with diluents,spikes and antibodies.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->30Minute]]},
-				 {"Coating",10 Minute+(resolvedCoatingTime/.Null->0Minute),"Adding coating reagents to ELISA plates and incubate.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10Minute]]},
-				 {"ELISA Run",runTime,"The blocking, immunosorbence, and detection steps.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10Minute]]},
-				 {"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"], Time->1Hour]]},
-				 {"Returning Materials",10 Minute,"Samples are returned to storage.", Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"], Time->10Minute]]}
+				 {"Picking Resources",15 Minute,"Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator->$BaselineOperator, Time->15 Minute]]},
+				 {"Preparing Samples",10 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->$BaselineOperator, Time->10 Minute]]},
+				 {"Antibodies and Antigens dilution",10 Minute,"The dilution of antibodies and reference antigens using their diluents.",Link[Resource[Operator->$BaselineOperator,Time->30Minute]]},
+				 {"Sample Dilution and Mixing",10 Minute,"Mixing samples, standards and blanks with diluents,spikes and antibodies.",Link[Resource[Operator->$BaselineOperator,Time->30Minute]]},
+				 {"Coating",10 Minute+(resolvedCoatingTime/.Null->0Minute),"Adding coating reagents to ELISA plates and incubate.",Link[Resource[Operator->$BaselineOperator,Time->10Minute]]},
+				 {"ELISA Run",runTime,"The blocking, immunosorbence, and detection steps.",Link[Resource[Operator->$BaselineOperator,Time->10Minute]]},
+				 {"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator->$BaselineOperator, Time->1Hour]]},
+				 {"Returning Materials",10 Minute,"Samples are returned to storage.", Link[Resource[Operator->$BaselineOperator, Time->10Minute]]}
 			 },
 			 Method->resolvedMethod,
 			 Replace[TargetAntigens]->elisaExpandOrShrink[Link[resolvedTargetAntigen]],
@@ -11673,7 +11635,7 @@ elisaResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:
 		 |>;
 
 		 (* generate a packet with the shared fields *)
-		 sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions,Cache->inheritedCache];
+		 sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions, Simulation -> simulation];
 
 		 (* Merge the shared fields with the specific fields *)
 		 finalizedPacket = Join[sharedFieldPacket, protocolPacket];
@@ -11685,8 +11647,8 @@ elisaResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:
 		 (* call fulfillableResourceQ on all the resources we created *)
 		 {fulfillable, frqTests} = Which[
 			 MatchQ[$ECLApplication, Engine], {True, {}},
-			 gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output->{Result, Tests}, FastTrack->Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache->inheritedCache],
-			 True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack->Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages->messages, Cache->inheritedCache], {}}
+			 gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output->{Result, Tests}, FastTrack->Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache->inheritedCache, Simulation -> simulation],
+			 True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack->Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages->messages, Cache->inheritedCache, Simulation -> simulation], {}}
 		 ];
 
 		 (* generate the tests rule *)

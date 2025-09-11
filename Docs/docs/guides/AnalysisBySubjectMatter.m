@@ -49,11 +49,14 @@ Guide[
 		},
 		"Microscopy" -> {
 			{AnalyzeCellCount, "Counts the apparent number of cells in the provided microscope image data."},
+			{AnalyzeColonies, "Counts the cell colonies or plaques on solid media in the provided microscope image data."},
 			{AnalyzeMicroscopeOverlay, "Generates an analytical combination of different composite fluorescent images for use in co-localization analysis."},
 			{PlotMicroscopeOverlay, "Generates a combined false color image of two or more microscope images taken with different filters from the provided microscope overlay analysis object."},
 			{PlotCellCount, "Generates an image of the microscope data with the putative cell areas indicated from the provided cell counting image analysis highlighted."},
 			{PlotCellCountSummary, "Generates an image of the microscope data with the putative cell areas highlighted, along with a pie cart of relative areas of cell groupings from the provided cell counting image analysis highlighted."},
 			{CombineFluorescentImages, "Generates a false color RGB image of the provided composite fluorescent data."},
+			{PlotImage, "Given an image file or data objects containing images, provides a visualization of these images that includes a measurement of absolute size scales when possible."},
+			{AnalyzeImageExposure, "Identify image with optimal exposure time from the provided image data."},
 			{ImageMask, "Replaces all the pixels in the input image that are outside of a given color range."},
 			{ImageOverlay, "Overlays the pixel information from two images to combine them into one."},
 			{ImageIntensity, "Computes the average intensity of the pixels as a function of the vertical pixel position in the image."}

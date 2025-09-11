@@ -712,18 +712,18 @@ validAnalysisLadderQTests[packet:PacketP[Object[Analysis,Ladder]]] := {
 (*validAnalysisMeltingPointQTests *)
 
 
-validAnalysisMeltingPointQTests[packet:PacketP[Object[Analysis,MeltingPoint]]] := {
+validAnalysisMeltingPointQTests[packet : PacketP[Object[Analysis, MeltingPoint]]] := {
 	(* Shared fields - Null *)
-	NullFieldTest[packet,ReferenceField],
+	NullFieldTest[packet, ReferenceField],
 	(* Shared fields - Not null *)
-	NotNullFieldTest[packet, {MeltingTemperature}],
+	UniquelyInformedTest[packet, {MeltingTemperatures, ThermodynamicMeltingTemperature, PharmacopeiaStartPointTemperature}],
 
-	RequiredTogetherTest[packet,{TopBaseline,BottomBaseline}],
-	RequiredTogetherTest[packet,{MeltingTemperatureStandardDeviation,MeltingTemperatureDistribution}],
+	RequiredTogetherTest[packet, {TopBaseline, BottomBaseline}],
+	RequiredTogetherTest[packet, {MeltingTemperatureStandardDeviation, MeltingTemperatureDistribution}],
 
 	Test[
-		"At least one of CoolingCurveFractionBound, MeltingCurveFractionBound, SecondaryCoolingCurveFractionBound, SecondaryMeltingCurveFractionBound,TertiaryCoolingCurveFractionBound, or TertiaryMeltingCurveFractionBound is informed",
-	 	Or @@ (Not /@ (NullQ /@ Lookup[packet, {CoolingCurveFractionBound, MeltingCurveFractionBound, SecondaryCoolingCurveFractionBound, SecondaryMeltingCurveFractionBound,TertiaryCoolingCurveFractionBound, TertiaryMeltingCurveFractionBound,MeltingCurveSmoothedDataPoints,AggregationCurveSmoothedDataPoints,SecondaryAggregationCurveSmoothedDataPoints}])),
+		"At least one of MeltingCurve, CoolingCurveFractionBound, MeltingCurveFractionBound, SecondaryCoolingCurveFractionBound, SecondaryMeltingCurveFractionBound,TertiaryCoolingCurveFractionBound, or TertiaryMeltingCurveFractionBound is informed",
+		Or @@ (Not /@ (NullQ /@ Lookup[packet, {MeltingCurve, CoolingCurveFractionBound, MeltingCurveFractionBound, SecondaryCoolingCurveFractionBound, SecondaryMeltingCurveFractionBound, TertiaryCoolingCurveFractionBound, TertiaryMeltingCurveFractionBound, MeltingCurveSmoothedDataPoints, AggregationCurveSmoothedDataPoints, SecondaryAggregationCurveSmoothedDataPoints}])),
 		True
 	]
 };

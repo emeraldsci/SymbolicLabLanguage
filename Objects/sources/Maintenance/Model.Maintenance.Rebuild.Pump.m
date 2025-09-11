@@ -89,6 +89,14 @@ DefineObjectType[Model[Maintenance, Rebuild, Pump], {
 			Description -> "The composition of solvents over time used to purge the instrument lines at the end.",
 			Category -> "General",
 			Developer -> True
+		},
+		WasteBeaker -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Container, Vessel],
+			Description -> "The beakers used to drain liquid waste from the pump.",
+			Category -> "General"
 		}
 	}
 }];

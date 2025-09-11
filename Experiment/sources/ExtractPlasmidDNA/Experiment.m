@@ -595,7 +595,7 @@ DefineOptions[ExperimentExtractPlasmidDNA,
     RoboticPreparationOption,
     ProtocolOptions,
     SimulationOption,
-    PostProcessingOptions,
+    BiologyPostProcessingOptions,
     SubprotocolDescriptionOption,
     SamplesInStorageOptions,
     SamplesOutStorageOptions,
@@ -690,11 +690,11 @@ ExperimentExtractPlasmidDNA[myContainers : ListableP[ObjectP[{Object[Container],
   gatherTests = MemberQ[output, Tests];
 
   (* Remove temporal links and named objects. *)
-  {listedContainers, listedOptions} = removeLinks[ToList[myContainers], ToList[myOptions]];
+  {listedContainers, listedOptions} = {ToList[myContainers], ToList[myOptions]};
 
   (* Fetch the cache from listedOptions. *)
   cache = ToList[Lookup[listedOptions, Cache, {}]];
-  simulation = ToList[Lookup[listedOptions, Simulation, {}]];
+  simulation = Lookup[listedOptions, Simulation, Null];
 
   (* Convert our given containers into samples and sample index-matched options. *)
   containerToSampleResult = If[gatherTests,
@@ -723,7 +723,7 @@ ExperimentExtractPlasmidDNA[myContainers : ListableP[ObjectP[{Object[Container],
         Simulation -> simulation
       ],
       $Failed,
-      {Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
+      {Download::ObjectDoesNotExist,Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
     ]
   ];
 
@@ -750,7 +750,7 @@ ExperimentExtractPlasmidDNA[myContainers : ListableP[ObjectP[{Object[Container],
 
 ExperimentExtractPlasmidDNA[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : OptionsPattern[]] := Module[
   {
-    cache, cacheBall, collapsedResolvedOptions, allDownloadValues, samplePacketFields, sampleModelPacketFields, methodPacketFields, containerObjectFields, containerObjectPacketFields, containerModelPacketFields, sampleFields, sampleModelFields, containerModelFields, expandedSafeOps, gatherTests, inheritedOptions, expandedSafeOpsWithoutPurification, expandedSafeOpsWithoutSolventAdditions, listedOptions, listedSamples, messages, output,outputSpecification, performSimulationQ, protocolObject, preResolvedOptions, resolvedOptionsResult, preResolvedOptionsTests, resourceResult, resourcePacketTests, returnEarlyPostResourcePacketsQ, returnEarlyQ, safeOps, safeOptions, safeOptionTests, templatedOptions, templateTests, resolvedPreparation, simulatedProtocol, roboticSimulation, runTime, resolvedOptions, inheritedSimulation, userSpecifiedObjects, objectsExistQs, objectsExistTests, validLengths, validLengthTests, simulation, listedSanitizedSamples, listedSanitizedOptions, containerModelObjects, containerObjects
+    cache, cacheBall, collapsedResolvedOptions, allDownloadValues, samplePacketFields, sampleModelPacketFields, methodPacketFields, containerObjectFields, containerObjectPacketFields, containerModelPacketFields, sampleFields, sampleModelFields, containerModelFields, expandedSafeOps, gatherTests, inheritedOptions, expandedSafeOpsWithoutPurification, expandedSafeOpsWithoutSolventAdditions, listedOptions, listedSamples, messages, output,outputSpecification, performSimulationQ, protocolObject, preResolvedOptions, resolvedOptionsResult, preResolvedOptionsTests, resourceResult, resourcePacketTests, returnEarlyPostResourcePacketsQ, returnEarlyQ, safeOps, safeOptions, safeOptionTests, templatedOptions, templateTests, resolvedPreparation, simulatedProtocol, roboticSimulation, runTime, resolvedOptions, inheritedSimulation, validLengths, validLengthTests, simulation, inputSimulation, listedSanitizedSamples, listedSanitizedOptions, rawListedOptions, containerModelObjects, containerObjects
   },
 
   (* Determine the requested return value from the function (Result, Options, Tests, or multiple). *)
@@ -762,7 +762,12 @@ ExperimentExtractPlasmidDNA[mySamples : ListableP[ObjectP[Object[Sample]]], myOp
   messages = !gatherTests;
 
   (* Remove links and temporal links (turn them into just objects). *)
-  {listedSamples, listedOptions} = removeLinks[ToList[mySamples], ToList[myOptions]];
+  {listedSamples, rawListedOptions} = removeLinks[ToList[mySamples], ToList[myOptions]];
+
+  (* SafeRound TargetCellCount and TargetCellConcentration to integers before SafeOptions call *)
+  (* For these 2 options that might involve calculating big numbers, we cannot use RoundOptionPrecision to risk throwing a non-sense warning due to how MM store numbers. E.g. 2.3*10^5 is 229999.99999...7*)
+  (* So we define the widgets to allow only increment of 1 and here we are sure the overly precise numbers are not what user gives us *)
+  listedOptions = preProcessOptionPrecision[rawListedOptions, {TargetCellConcentration, TargetCellCount}, {1 EmeraldCell/Milliliter, 1 EmeraldCell}];
 
   (* Call SafeOptions to make sure all options match the option patterns. *)
   {safeOptions, safeOptionTests} = If[gatherTests,
@@ -770,14 +775,10 @@ ExperimentExtractPlasmidDNA[mySamples : ListableP[ObjectP[Object[Sample]]], myOp
     {SafeOptions[ExperimentExtractPlasmidDNA, listedOptions, AutoCorrect -> False], {}}
   ];
 
-  (* Call sanitize-inputs to clean any named objects (all object Names to object IDs). *)
-  {listedSanitizedSamples, safeOps, listedSanitizedOptions} = sanitizeInputs[listedSamples, safeOptions, listedOptions];
+  inputSimulation = Lookup[safeOptions, Simulation];
 
-  (* Call ValidInputLengthsQ to make sure all options are the right length *)
-  {validLengths, validLengthTests} = If[gatherTests,
-    ValidInputLengthsQ[ExperimentExtractPlasmidDNA, {listedSanitizedSamples}, listedSanitizedOptions, Output -> {Result, Tests}],
-    {ValidInputLengthsQ[ExperimentExtractPlasmidDNA, {listedSanitizedSamples}, listedSanitizedOptions], Null}
-  ];
+  (* Call sanitize-inputs to clean any named objects (all object Names to object IDs). *)
+  {listedSanitizedSamples, safeOps, listedSanitizedOptions} = sanitizeInputs[listedSamples, safeOptions, listedOptions,Simulation->inputSimulation];
 
   (* If the specified options don't match their patterns return $Failed *)
   If[MatchQ[safeOps, $Failed],
@@ -788,6 +789,12 @@ ExperimentExtractPlasmidDNA[mySamples : ListableP[ObjectP[Object[Sample]]], myOp
       Preview -> Null,
       Simulation -> Null
     }]
+  ];
+
+  (* Call ValidInputLengthsQ to make sure all options are the right length *)
+  {validLengths, validLengthTests} = If[gatherTests,
+    ValidInputLengthsQ[ExperimentExtractPlasmidDNA, {listedSanitizedSamples}, listedSanitizedOptions, Output -> {Result, Tests}],
+    {ValidInputLengthsQ[ExperimentExtractPlasmidDNA, {listedSanitizedSamples}, listedSanitizedOptions], Null}
   ];
 
   (* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -847,36 +854,6 @@ ExperimentExtractPlasmidDNA[mySamples : ListableP[ObjectP[Object[Sample]]], myOp
     }]
   ];
 
-  (* Make sure that all of our objects exist. *)
-  userSpecifiedObjects = DeleteDuplicates@Cases[
-    Flatten[{ToList[mySamples], ToList[myOptions]}],
-    ObjectReferenceP[]
-  ];
-
-  objectsExistQs = DatabaseMemberQ[userSpecifiedObjects, Simulation -> inheritedSimulation];
-
-  (* Build tests for object existence *)
-  objectsExistTests = If[gatherTests,
-    MapThread[
-      Test[StringTemplate["Specified object `1` exists in the database:"][#1], #2, True]&,
-      {userSpecifiedObjects, objectsExistQs}
-    ],
-    {}
-  ];
-
-  (* If objects do not exist, return failure *)
-  If[!(And @@ objectsExistQs),
-    If[!gatherTests,
-      Message[Error::ObjectDoesNotExist, PickList[userSpecifiedObjects, objectsExistQs, False]];
-      Message[Error::InvalidInput, PickList[userSpecifiedObjects, objectsExistQs, False]]
-    ];
-    Return[outputSpecification /. {
-      Result -> $Failed,
-      Tests -> Join[safeOptionTests, validLengthTests, templateTests, objectsExistTests],
-      Options -> $Failed,
-      Preview -> Null
-    }]
-  ];
 
   (*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
 
@@ -1090,7 +1067,7 @@ ExperimentExtractPlasmidDNA[mySamples : ListableP[ObjectP[Object[Sample]]], myOp
       Simulation -> roboticSimulation,
       ParentProtocol -> Lookup[safeOps, ParentProtocol]
     ],
-    {Null, Null}
+    {Null, roboticSimulation}
   ];
 
   (* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -1157,6 +1134,7 @@ ExperimentExtractPlasmidDNA[mySamples : ListableP[ObjectP[Object[Sample]]], myOp
             Name -> Lookup[safeOps, Name],
             Upload -> Lookup[safeOps, Upload],
             Confirm -> Lookup[safeOps, Confirm],
+            CanaryBranch -> Lookup[safeOps, CanaryBranch],
             ParentProtocol -> Lookup[safeOps, ParentProtocol],
             Priority -> Lookup[safeOps, Priority],
             StartDate -> Lookup[safeOps, StartDate],
@@ -3310,10 +3288,10 @@ resolveExperimentExtractPlasmidDNAOptions[mySamples : {ObjectP[Object[Sample]]..
   };
 
   (* Pre-resolve purification options in the general biology purification option pre-resolver. *)
-  preResolvedPurificationOptions = preResolvePurificationSharedOptions[mySamples, Normal[preResolvedRoundedExperimentOptions, Association], preResolvedMapThreadFriendlyOptions, TargetCellularComponent -> ConstantArray[PlasmidDNA, Length[mySamples]]];
+  preResolvedPurificationOptions = preResolvePurificationSharedOptions[mySamples, Normal[preResolvedRoundedExperimentOptions, Association], preResolvedMapThreadFriendlyOptions, TargetCellularComponent -> ConstantArray[PlasmidDNA, Length[mySamples]],Simulation->currentSimulation];
 
   (* Resolve Post Processing Options *)
-  resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions];
+  resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions,Sterile->True];
 
   (* Overwrite our rounded options with our resolved options.*)
   preResolvedOptions = ReplaceRule[
@@ -3736,7 +3714,9 @@ extractPlasmidDNAResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]],
             TargetPhase -> Liquid,
             NumberOfWashes -> 0,
             Sterile -> True,
-            UnprecipitatedSampleLabel -> PickList[neutralizedSamples, neutralizeBools]
+            UnprecipitatedSampleLabel -> PickList[neutralizedSamples, neutralizeBools],
+            WorkCell -> Lookup[myResolvedOptions, WorkCell],
+            Preparation -> Robotic
           |>;
 
           neutralizationOptions = removeConflictingNonAutomaticOptions[Precipitate, Normal[preFilteredNeutralizationOptions, Association]];
@@ -3778,23 +3758,28 @@ extractPlasmidDNAResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]],
     $PlasmidDNAOperations = primitives;
 
     (* Get our robotic unit operation packets. *)
-    {{roboticUnitOperationPackets, roboticRunTime}, roboticSimulation} = ExperimentRoboticCellPreparation[
-      primitives,
-      UnitOperationPackets -> True,
-      Output -> {Result, Simulation},
-      FastTrack -> Lookup[expandedResolvedOptions, FastTrack],
-      ParentProtocol -> Lookup[expandedResolvedOptions, ParentProtocol],
-      Name -> Lookup[expandedResolvedOptions, Name],
-      Simulation -> currentSimulation,
-      Upload -> False,
-      ImageSample -> Lookup[expandedResolvedOptions, ImageSample],
-      MeasureVolume -> Lookup[expandedResolvedOptions, MeasureVolume],
-      MeasureWeight -> Lookup[expandedResolvedOptions, MeasureWeight],
-      Priority -> Lookup[expandedResolvedOptions, Priority],
-      StartDate -> Lookup[expandedResolvedOptions, StartDate],
-      HoldOrder -> Lookup[expandedResolvedOptions, HoldOrder],
-      QueuePosition -> Lookup[expandedResolvedOptions, QueuePosition],
-      CoverAtEnd -> False
+    (* quieting the warning about sterile transferring because LLE will likely not contaminate things when extracting RNA, but will cause the warning to get thrown *)
+    (* there is no way around this because the phase separators are not sterile and we can't get a sterile one in hand.  For this case, we're deciding that that is ok *)
+    {{roboticUnitOperationPackets, roboticRunTime}, roboticSimulation} = Quiet[
+      ExperimentRoboticCellPreparation[
+        primitives,
+        UnitOperationPackets -> True,
+        Output -> {Result, Simulation},
+        FastTrack -> Lookup[expandedResolvedOptions, FastTrack],
+        ParentProtocol -> Lookup[expandedResolvedOptions, ParentProtocol],
+        Name -> Lookup[expandedResolvedOptions, Name],
+        Simulation -> currentSimulation,
+        Upload -> False,
+        ImageSample -> Lookup[expandedResolvedOptions, ImageSample],
+        MeasureVolume -> Lookup[expandedResolvedOptions, MeasureVolume],
+        MeasureWeight -> Lookup[expandedResolvedOptions, MeasureWeight],
+        Priority -> Lookup[expandedResolvedOptions, Priority],
+        StartDate -> Lookup[expandedResolvedOptions, StartDate],
+        HoldOrder -> Lookup[expandedResolvedOptions, HoldOrder],
+        QueuePosition -> Lookup[expandedResolvedOptions, QueuePosition],
+        CoverAtEnd -> False
+      ],
+      Warning::ConflictingSourceAndDestinationAsepticHandling
     ];
 
     (* Create our own output unit operation packet, linking up the "sub" robotic unit operation objects. *)
@@ -3824,6 +3809,12 @@ extractPlasmidDNAResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]],
     roboticSimulation = UpdateSimulation[
       roboticSimulation,
       Simulation[<|Object -> Lookup[outputUnitOperationPacket, Object], Sample -> (Link /@ mySamples)|>]
+    ];
+
+    (* since we are putting this UO inside RSP, we should re-do the LabelFields so they link via RoboticUnitOperations *)
+    roboticSimulation=If[Length[roboticUnitOperationPackets]==0,
+      roboticSimulation,
+      updateLabelFieldReferences[roboticSimulation,RoboticUnitOperations]
     ];
 
     (* Return back our packets and simulation. *)

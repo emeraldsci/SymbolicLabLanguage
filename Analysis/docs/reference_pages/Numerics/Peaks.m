@@ -26,7 +26,8 @@ DefineUsage[AnalyzePeaks,
 								Object[Data,FluorescenceSpectroscopy],Object[Data,LuminescenceSpectroscopy],Object[Data,XRayDiffraction],
 								Object[Data,IRSpectroscopy],Object[Data,AgaroseGelElectrophoresis],
 								Object[Data,DifferentialScanningCalorimetry],Object[Data,MeltingCurve],
-								Object[Data,CircularDichroism],Object[Data,DynamicLightScattering],Object[Data,CapillaryGelElectrophoresisSDS]
+								Object[Data,CircularDichroism],Object[Data,DynamicLightScattering],Object[Data,CapillaryGelElectrophoresisSDS],Object[Data,CoulterCount],
+								Object[Data,CapillaryIsoelectricFocusing],Object[Data,FragmentAnalysis]
 							}
 						]]
 					},
@@ -66,26 +67,11 @@ DefineUsage[AnalyzePeaks,
 							Object[Protocol,IRSpectroscopy],
 							Object[Protocol,DifferentialScanningCalorimetry],
 							Object[Protocol,SupercriticalFluidChromatography],
-							Object[Protocol,CapillaryGelElectrophoresisSDS]
-						}],
-						Dereference -> {
-							Object[Protocol,HPLC] -> Field[Data],
-							Object[Protocol,FPLC] -> Field[Data],
-							Object[Protocol,AbsorbanceSpectroscopy] -> Field[Data],
-							Object[Protocol,AgaroseGelElectrophoresis] -> Field[Data],
-							Object[Protocol,MassSpectrometry] -> Field[Data],
-							Object[Protocol,PAGE] -> Field[Data],
-							Object[Protocol,Western] -> Field[Data],
-							Object[Protocol,FluorescenceSpectroscopy] -> Field[Data],
-							Object[Protocol,LCMS] -> Field[Data],
-							Object[Protocol,LuminescenceSpectroscopy] -> Field[Data],
-							Object[Protocol,NMR] -> Field[Data],
-							Object[Protocol,PowderXRD] -> Field[Data],
-							Object[Protocol,IRSpectroscopy] -> Field[Data],
-							Object[Protocol,DifferentialScanningCalorimetry] -> Field[Data],
-							Object[Protocol,SupercriticalFluidChromatography] -> Field[Data],
-							Object[Protocol,CapillaryGelElectrophoresisSDS] -> Field[Data]
-						}
+							Object[Protocol,CapillaryGelElectrophoresisSDS],
+							Object[Protocol,CoulterCount],
+							Object[Protocol,CapillaryIsoelectricFocusing],
+							Object[Protocol,FragmentAnalysis]
+						}]
 					]
 				}
 			},
@@ -131,13 +117,7 @@ DefineUsage[AnalyzePeaks,
 		"PlotPeaks",
 		"PeakPurity"
 	},
-	Author -> {
-		"kevin.hou",
-		"david.hattery",
-		"qian",
-		"alice",
-		"brad"
-	},
+	Author -> {"malav.desai", "kevin.hou", "david.hattery", "qian", "alice", "brad"},
 	Preview->True,
 	PreviewOptions -> {"PeakLabels","PeakAssignments"}
 }];
@@ -165,7 +145,8 @@ DefineUsage[AnalyzePeaksOptions,
 								Object[Data,FluorescenceSpectroscopy],Object[Data,LuminescenceSpectroscopy],Object[Data,XRayDiffraction],
 								Object[Data,IRSpectroscopy],Object[Data,AgaroseGelElectrophoresis],
 								Object[Data,DifferentialScanningCalorimetry],Object[Data,MeltingCurve],
-								Object[Data,CircularDichroism],Object[Data,DynamicLightScattering],Object[Data,CapillaryGelElectrophoresisSDS]
+								Object[Data,CircularDichroism],Object[Data,DynamicLightScattering],Object[Data,CapillaryGelElectrophoresisSDS],Object[Data,CoulterCount],
+								Object[Data, CapillaryIsoelectricFocusing],Object[Data,FragmentAnalysis]
 							}
 						]]
 					},
@@ -205,26 +186,10 @@ DefineUsage[AnalyzePeaksOptions,
 							Object[Protocol,IRSpectroscopy],
 							Object[Protocol,DifferentialScanningCalorimetry],
 							Object[Protocol,SupercriticalFluidChromatography],
-							Object[Protocol,CapillaryGelElectrophoresisSDS]
-						}],
-						Dereference -> {
-							Object[Protocol,HPLC] -> Field[Data],
-							Object[Protocol,FPLC] -> Field[Data],
-							Object[Protocol,AbsorbanceSpectroscopy] -> Field[Data],
-							Object[Protocol,AgaroseGelElectrophoresis] -> Field[Data],
-							Object[Protocol,MassSpectrometry] -> Field[Data],
-							Object[Protocol,PAGE] -> Field[Data],
-							Object[Protocol,Western] -> Field[Data],
-							Object[Protocol,FluorescenceSpectroscopy] -> Field[Data],
-							Object[Protocol,LCMS] -> Field[Data],
-							Object[Protocol,LuminescenceSpectroscopy] -> Field[Data],
-							Object[Protocol,NMR] -> Field[Data],
-							Object[Protocol,PowderXRD] -> Field[Data],
-							Object[Protocol,IRSpectroscopy] -> Field[Data],
-							Object[Protocol,DifferentialScanningCalorimetry] -> Field[Data],
-							Object[Protocol,SupercriticalFluidChromatography] -> Field[Data],
-							Object[Protocol,CapillaryGelElectrophoresisSDS] -> Field[Data]
-						}
+							Object[Protocol,CapillaryGelElectrophoresisSDS],
+							Object[Protocol,CoulterCount],
+							Object[Protocol,CapillaryIsoelectricFocusing]
+						}]
 					]
 				}
 			},
@@ -260,12 +225,7 @@ DefineUsage[AnalyzePeaksOptions,
 		"AnalyzePeaksPreview",
 		"ValidAnalyzePeaksQ"
 	},
-	Author -> {
-		"david.hattery",
-		"qian",
-		"alice",
-		"brad"
-	}
+	Author -> {"malav.desai", "david.hattery", "qian", "alice", "brad"}
 }];
 
 
@@ -291,7 +251,8 @@ DefineUsage[AnalyzePeaksPreview,
 								Object[Data,FluorescenceSpectroscopy],Object[Data,LuminescenceSpectroscopy],Object[Data,XRayDiffraction],
 								Object[Data,IRSpectroscopy],Object[Data,AgaroseGelElectrophoresis],
 								Object[Data,DifferentialScanningCalorimetry],Object[Data,MeltingCurve],
-								Object[Data,CircularDichroism],Object[Data,DynamicLightScattering],Object[Data,CapillaryGelElectrophoresisSDS]
+								Object[Data,CircularDichroism],Object[Data,DynamicLightScattering],Object[Data,CapillaryGelElectrophoresisSDS],Object[Data,CoulterCount],
+								Object[Data, CapillaryIsoelectricFocusing],Object[Data,FragmentAnalysis]
 							}
 						]]
 					},
@@ -331,26 +292,10 @@ DefineUsage[AnalyzePeaksPreview,
 							Object[Protocol,IRSpectroscopy],
 							Object[Protocol,DifferentialScanningCalorimetry],
 							Object[Protocol,SupercriticalFluidChromatography],
-							Object[Protocol,CapillaryGelElectrophoresisSDS]
-						}],
-						Dereference -> {
-							Object[Protocol,HPLC] -> Field[Data],
-							Object[Protocol,FPLC] -> Field[Data],
-							Object[Protocol,AbsorbanceSpectroscopy] -> Field[Data],
-							Object[Protocol,AgaroseGelElectrophoresis] -> Field[Data],
-							Object[Protocol,MassSpectrometry] -> Field[Data],
-							Object[Protocol,PAGE] -> Field[Data],
-							Object[Protocol,Western] -> Field[Data],
-							Object[Protocol,FluorescenceSpectroscopy] -> Field[Data],
-							Object[Protocol,LCMS] -> Field[Data],
-							Object[Protocol,LuminescenceSpectroscopy] -> Field[Data],
-							Object[Protocol,NMR] -> Field[Data],
-							Object[Protocol,PowderXRD] -> Field[Data],
-							Object[Protocol,IRSpectroscopy] -> Field[Data],
-							Object[Protocol,DifferentialScanningCalorimetry] -> Field[Data],
-							Object[Protocol,SupercriticalFluidChromatography] -> Field[Data],
-							Object[Protocol,CapillaryGelElectrophoresisSDS] -> Field[Data]
-						}
+							Object[Protocol,CapillaryGelElectrophoresisSDS],
+							Object[Protocol,CoulterCount],
+							Object[Protocol,CapillaryIsoelectricFocusing]
+						}]
 					]
 				}
 			},
@@ -386,13 +331,7 @@ DefineUsage[AnalyzePeaksPreview,
 		"AnalyzePeaksOptions",
 		"ValidAnalyzePeaksQ"
 	},
-	Author -> {
-		"kevin.hou",
-		"david.hattery",
-		"qian",
-		"alice",
-		"brad"
-	}
+	Author -> {"malav.desai", "kevin.hou", "david.hattery", "qian", "alice", "brad"}
 }];
 
 
@@ -418,7 +357,8 @@ DefineUsage[ValidAnalyzePeaksQ,
 								Object[Data,FluorescenceSpectroscopy],Object[Data,LuminescenceSpectroscopy],Object[Data,XRayDiffraction],
 								Object[Data,IRSpectroscopy],Object[Data,AgaroseGelElectrophoresis],
 								Object[Data,DifferentialScanningCalorimetry],Object[Data,MeltingCurve],
-								Object[Data,CircularDichroism],Object[Data,DynamicLightScattering],Object[Data,CapillaryGelElectrophoresisSDS]
+								Object[Data,CircularDichroism],Object[Data,DynamicLightScattering],Object[Data,CapillaryGelElectrophoresisSDS],Object[Data,CoulterCount],
+								Object[Data, CapillaryIsoelectricFocusing],Object[Data,FragmentAnalysis]
 							}
 						]]
 					},
@@ -458,26 +398,10 @@ DefineUsage[ValidAnalyzePeaksQ,
 							Object[Protocol,IRSpectroscopy],
 							Object[Protocol,DifferentialScanningCalorimetry],
 							Object[Protocol,SupercriticalFluidChromatography],
-							Object[Protocol,CapillaryGelElectrophoresisSDS]
-						}],
-						Dereference -> {
-							Object[Protocol,HPLC] -> Field[Data],
-							Object[Protocol,FPLC] -> Field[Data],
-							Object[Protocol,AbsorbanceSpectroscopy] -> Field[Data],
-							Object[Protocol,AgaroseGelElectrophoresis] -> Field[Data],
-							Object[Protocol,MassSpectrometry] -> Field[Data],
-							Object[Protocol,PAGE] -> Field[Data],
-							Object[Protocol,Western] -> Field[Data],
-							Object[Protocol,FluorescenceSpectroscopy] -> Field[Data],
-							Object[Protocol,LCMS] -> Field[Data],
-							Object[Protocol,LuminescenceSpectroscopy] -> Field[Data],
-							Object[Protocol,NMR] -> Field[Data],
-							Object[Protocol,PowderXRD] -> Field[Data],
-							Object[Protocol,IRSpectroscopy] -> Field[Data],
-							Object[Protocol,DifferentialScanningCalorimetry] -> Field[Data],
-							Object[Protocol,SupercriticalFluidChromatography] -> Field[Data],
-							Object[Protocol,CapillaryGelElectrophoresisSDS] -> Field[Data]
-						}
+							Object[Protocol,CapillaryGelElectrophoresisSDS],
+							Object[Protocol,CoulterCount],
+							Object[Protocol,CapillaryIsoelectricFocusing]
+						}]
 					]
 				}
 			},
@@ -513,12 +437,7 @@ DefineUsage[ValidAnalyzePeaksQ,
 		"AnalyzePeaksOptions",
 		"AnalyzePeaksPreview"
 	},
-	Author -> {
-		"david.hattery",
-		"qian",
-		"alice",
-		"brad"
-	}
+	Author -> {"malav.desai", "david.hattery", "qian", "alice", "brad"}
 }];
 
 

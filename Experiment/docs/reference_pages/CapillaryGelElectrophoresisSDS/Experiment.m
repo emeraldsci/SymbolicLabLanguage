@@ -39,7 +39,12 @@ DefineUsage[ExperimentCapillaryGelElectrophoresisSDS,{
 									Type -> Object,
 									Pattern :> ObjectP[{Object[Container]}]
 								]
-							}
+							},
+							"Model Sample"->Widget[
+								Type -> Object,
+								Pattern :> ObjectP[Model[Sample]],
+								ObjectTypes -> {Model[Sample]}
+							]
 						],
 						Expandable->False
 					},
@@ -69,9 +74,7 @@ DefineUsage[ExperimentCapillaryGelElectrophoresisSDS,{
 	Tutorials->{
 		"Sample Preparation"
 	},
-	Author->{
-		"gil.sharon"
-	}
+	Author->{"xu.yi", "gil.sharon"}
 }];
 
 
@@ -89,13 +92,21 @@ DefineUsage[ExperimentCapillaryGelElectrophoresisSDSOptions,
 					IndexMatching[
 						{
 							InputName->"Samples",
-							Description->"The samples to be analyzed using Capillary Gel Electrophoresis SDS for the separation and detection of proteins by molecular weight.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Description->"The samples to be electrophorated through a separating matrix. The recommended final protein concentration (reduced or non-reduced) per sample is 0.2-1.5 mg/mL in 50-200 \[Mu]L (total of 10 \[Mu]g - 300 \[Mu]g protein) for input with less than 50 mM salt.",
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -119,9 +130,7 @@ DefineUsage[ExperimentCapillaryGelElectrophoresisSDSOptions,
 			"ValidExperimentCapillaryGelElectrophoresisSDSQ",
 			"PlotCapillaryGelElectrophoresisSDS"
 		},
-		Author->{
-			"gil.sharon"
-		}
+		Author->{"xu.yi", "gil.sharon"}
 	}
 ];
 
@@ -141,13 +150,21 @@ DefineUsage[ValidExperimentCapillaryGelElectrophoresisSDSQ,
 					IndexMatching[
 						{
 							InputName->"Samples",
-							Description->"The samples to be analyzed using Capillary Gel Electrophoresis SDS experiment for the separation and detection of proteins by molecular weight.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Description->"The samples to be electrophorated through a separating matrix. The recommended final protein concentration (reduced or non-reduced) per sample is 0.2-1.5 mg/mL in 50-200 \[Mu]L (total of 10 \[Mu]g - 300 \[Mu]g protein) for input with less than 50 mM salt.",
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -168,9 +185,7 @@ DefineUsage[ValidExperimentCapillaryGelElectrophoresisSDSQ,
 			"ExperimentCapillaryGelElectrophoresisSDSOptions",
 			"PlotCapillaryGelElectrophoresisSDS"
 		},
-		Author->{
-			"gil.sharon"
-		}
+		Author->{"xu.yi", "gil.sharon"}
 	}
 ];
 
@@ -186,13 +201,21 @@ DefineUsage[ExperimentCapillaryGelElectrophoresisSDSPreview,
 					IndexMatching[
 						{
 							InputName->"Samples",
-							Description->"The samples to be analyzed using Capillary Gel Electrophoresis SDS experiment for the separation and detection of proteins by molecular weight.",
-							Widget->Widget[
-								Type->Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Description->"The samples to be electrophorated through a separating matrix. The recommended final protein concentration (reduced or non-reduced) per sample is 0.2-1.5 mg/mL in 50-200 \[Mu]L (total of 10 \[Mu]g - 300 \[Mu]g protein) for input with less than 50 mM salt.",
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -217,8 +240,6 @@ DefineUsage[ExperimentCapillaryGelElectrophoresisSDSPreview,
 			"ValidExperimentCapillaryGelElectrophoresisSDSQ",
 			"PlotCapillaryGelElectrophoresisSDS"
 		},
-		Author->{
-			"gil.sharon"
-		}
+		Author->{"xu.yi", "gil.sharon"}
 	}
 ];

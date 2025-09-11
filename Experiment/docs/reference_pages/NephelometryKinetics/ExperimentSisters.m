@@ -13,7 +13,7 @@ DefineUsage[ValidExperimentNephelometryKineticsQ,
 							InputName -> "Samples",
 							Description -> "The samples to be measured.",
 							Widget -> Alternatives[
-								"Sample or Container"->Widget[
+								"Sample or Container" -> Widget[
 									Type -> Object,
 									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
 									ObjectTypes -> {Object[Sample], Object[Container]},
@@ -21,7 +21,7 @@ DefineUsage[ValidExperimentNephelometryKineticsQ,
 										Object[Container] -> Field[Contents[[All, 2]]]
 									}
 								],
-								"Container with Well Position"->{
+								"Container with Well Position" -> {
 									"Well Position" -> Alternatives[
 										"A1 to P24" -> Widget[
 											Type -> Enumeration,
@@ -39,7 +39,12 @@ DefineUsage[ValidExperimentNephelometryKineticsQ,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -84,7 +89,7 @@ DefineUsage[ExperimentNephelometryKineticsOptions,
 							InputName -> "Samples",
 							Description -> "The samples to be measured.",
 							Widget -> Alternatives[
-								"Sample or Container"->Widget[
+								"Sample or Container" -> Widget[
 									Type -> Object,
 									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
 									ObjectTypes -> {Object[Sample], Object[Container]},
@@ -92,7 +97,7 @@ DefineUsage[ExperimentNephelometryKineticsOptions,
 										Object[Container] -> Field[Contents[[All, 2]]]
 									}
 								],
-								"Container with Well Position"->{
+								"Container with Well Position" -> {
 									"Well Position" -> Alternatives[
 										"A1 to P24" -> Widget[
 											Type -> Enumeration,
@@ -110,7 +115,12 @@ DefineUsage[ExperimentNephelometryKineticsOptions,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -154,7 +164,7 @@ DefineUsage[ExperimentNephelometryKineticsPreview,
 							InputName -> "Samples",
 							Description -> "The samples to be measured.",
 							Widget -> Alternatives[
-								"Sample or Container"->Widget[
+								"Sample or Container" -> Widget[
 									Type -> Object,
 									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
 									ObjectTypes -> {Object[Sample], Object[Container]},
@@ -162,7 +172,7 @@ DefineUsage[ExperimentNephelometryKineticsPreview,
 										Object[Container] -> Field[Contents[[All, 2]]]
 									}
 								],
-								"Container with Well Position"->{
+								"Container with Well Position" -> {
 									"Well Position" -> Alternatives[
 										"A1 to P24" -> Widget[
 											Type -> Enumeration,
@@ -180,7 +190,12 @@ DefineUsage[ExperimentNephelometryKineticsPreview,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},

@@ -266,3 +266,11 @@ EraseFavoriteFolder[folders:ListableP[ObjectP[Object[Favorite, Folder]]]]:=Modul
 	EraseObject[PickList[folders, DatabaseMemberQ[folders]], Force -> True, Verbose -> False];
 
 ];
+
+(* Authors definition for ConstellationViewers`Private`formatTypesForJSON *)
+Authors[ConstellationViewers`Private`formatTypesForJSON]:={"xu.yi"};
+
+
+(* Authors definition for ConstellationViewers`Private`formatTypes *)
+Authors[ConstellationViewers`Private`formatTypes]:={"xu.yi"};
+

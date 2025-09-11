@@ -23,6 +23,22 @@ DefineObjectType[Model[Item, Spatula], {
 			Units -> Milliliter,
 			Description -> "The volume that this spatula will transfer with one scoop.",
 			Category -> "Physical Properties"
+		},
+		WideEndWidth -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Millimeter],
+			Units -> Millimeter,
+			Description -> "The width of the end section of the spatula that is wider, often with spoon shape, and is used to compare with container aperture to determine if it is suitable for use.",
+			Category -> "Physical Properties"
+		},
+		NarrowEndWidth -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Millimeter],
+			Units -> Millimeter,
+			Description -> "The width of the end section of the spatula that is narrower, often with micro-tip shape, and is used to compare with container aperture to determine if it is suitable for use.",
+			Category -> "Physical Properties"
 		}
 	}
 }];

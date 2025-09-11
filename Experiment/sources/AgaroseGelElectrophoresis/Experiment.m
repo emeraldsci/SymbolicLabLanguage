@@ -304,10 +304,12 @@ DefineOptions[ExperimentAgaroseGelElectrophoresis,
 				Units->Microliter
 			]
 		},
-		FuntopiaSharedOptions,
+		SimulationOption,
+		NonBiologyFuntopiaSharedOptions,
 		SubprotocolDescriptionOption,
 		SamplesInStorageOption,
-		SamplesOutStorageOption
+		SamplesOutStorageOption,
+		ModelInputOptions
 	}
 ];
 
@@ -335,7 +337,7 @@ Error::ConflictingAgaroseCollectionRangeScaleOptions="The following input sample
 Error::AgaroseCollectionSizeAndRangeBothNull="The following input samples, `1`, have AutomaticPeakDetection set to False, and both the CollectionSize and CollectionRange options set to Null. If AutomaticPeakDetection is False, either the CollectionSize or the CollectionRange must not be Null. For these inputs, please either set AutomaticPeakDetection to True, set the CollectionSize or CollectionRange to a non-Null value, or consider letting these options automatically resolve.";
 Error::AgaroseSampleLoadingVolumeScaleMismatch="The Scale option, `1`, and the SampleLoadingVolume option, `2`, are in conflict. If Scale is Analytical, the SampleLoadingVolume must be no greater than 8 uL. If the Scale is Preparative, the SampleLoadingVolume must be no greater than 50 uL. Please lower the SampleLoadingVolume.";
 Error::AgaroseLoadingDilutionBufferMismatch="The following input samples, `1`, have LoadingDilutionBuffer and LoadingDilutionBufferVolume options, `2`, that are in conflict. If LoadingDilutionBuffer is Null, the associated LoadingDilutionBufferVolume must be 0 uL. If LoadingDilutionBufferVolume is not 0 uL, the LoadingDilutionBuffer cannot be Null. Please consider allowing these options to automatically resolve.";
-Error::AgaroseExtractionVolumeScaleMismatch="The Scale option, `1`, and the ExtractionVolume option, `2`, are in conflict. If the Scale is Analytical, the ExtractionVolume must be Null. If the Scale is Preparative, the ExtractionVolume cannot be Null. Please consider letting these otpions automatically resolve.";
+Error::AgaroseExtractionVolumeScaleMismatch="The Scale option, `1`, and the ExtractionVolume option, `2`, are in conflict. If the Scale is Analytical, the ExtractionVolume must be Null. If the Scale is Preparative, the ExtractionVolume cannot be Null. Please consider letting these options automatically resolve.";
 Error::AgaroseGelOptionsMismatch="The Gel option, `1`, either has a GelMaterial that is not Agarose, and/or is in conflict with Scale option, `2`, or the AgarosePercentage option, `3`. The GelPercentage of the Gel must match the AgarosePercentage option, and the NumberOfLanes of the Gel must be 12 if Scale is Preparative, or 24 if Scale is Analytical. Please correct any mismatched options, or consider letting the Gel option resolve automatically.";
 Error::InvalidAgaroseLadder="The Scale option, `1`, and the Ladder option, `2`, are in conflict. The Ladder must be Null if the Scale is Preparative, and must not be Null if the Scale is Analytical. Please consider letting these options automatically resolve.";
 Error::InvalidAgaroseLadderFrequency="The Scale option, `1`, and the LadderFrequency option, `2`, are in conflict. The LadderFrequency must be Null if the Scale is Preparative, and must not be Null if the Scale is Analytical. Please consider letting these options automatically resolve.";
@@ -347,12 +349,12 @@ Warning::OverwriteLadderStorageCondition="A Ladder is not used in this experimen
 (* ::Subsubsection:: *)
 (*ExperimentAgaroseGelElectrophoresis*)
 
-(* Container and PreparatoryPrimitives overload *)
-ExperimentAgaroseGelElectrophoresis[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+(* Container overload *)
+ExperimentAgaroseGelElectrophoresis[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{
 		listedOptions, outputSpecification, output, gatherTests, containerToSampleResult,containerToSampleOutput,
 		containerToSampleTests, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
-		samplePreparationCache, updatedCache,samples,sampleOptions,sampleCache
+		updatedSimulation, containerToSampleSimulation, samples, sampleOptions
 	},
 
 	(* make sure we're working with a list of options *)
@@ -362,37 +364,37 @@ ExperimentAgaroseGelElectrophoresis[myContainers:ListableP[ObjectP[{Object[Conta
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]], OptionValue::nodef];
 	output = ToList[outputSpecification];
 
-	(* deterimine if we should keep a running list of tests; if True, then silence messages *)
+	(* determine if we should keep a running list of tests; if True, then silence messages *)
 	gatherTests = MemberQ[output, Tests];
 
 	(* First, simulate our sample preparation. *)
-	validSamplePreparationResult=Check[
+	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentAgaroseGelElectrophoresis,
 			ToList[myContainers],
 			ToList[myOptions]
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput, containerToSampleTests, containerToSampleSimulation} = containerToSampleOptions[
 			ExperimentAgaroseGelElectrophoresis,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output -> {Result, Tests},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -403,23 +405,17 @@ ExperimentAgaroseGelElectrophoresis[myContainers:ListableP[ObjectP[{Object[Conta
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput, containerToSampleSimulation} = containerToSampleOptions[
 				ExperimentAgaroseGelElectrophoresis,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output->{Result, Simulation},
+				Simulation -> updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
-
-	(* Update our cache with our new simulated values. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
 
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToSampleResult,$Failed],
@@ -431,10 +427,10 @@ ExperimentAgaroseGelElectrophoresis[myContainers:ListableP[ObjectP[{Object[Conta
 			Preview -> Null
 		},
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions,sampleCache}=containerToSampleOutput;
+		{samples, sampleOptions} = containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentAgaroseGelElectrophoresis[samples,ReplaceRule[sampleOptions,Cache->Flatten[updatedCache,sampleCache]]]
+		ExperimentAgaroseGelElectrophoresis[samples, ReplaceRule[sampleOptions, Simulation -> containerToSampleSimulation]]
 	]
 ];
 
@@ -445,21 +441,20 @@ ExperimentAgaroseGelElectrophoresis[mySamples:ListableP[ObjectP[Object[Sample]]]
 		listedOptions, listedSamples, outputSpecification, output, gatherTests, messages, safeOptions, safeOptionTests,validLengths, validLengthTests,templatedOptions,templateTests, inheritedOptions,
 		expandedSafeOps,agaroseOptionsAssociation,suppliedInstrument,suppliedGel,suppliedLoadingDye,
 		instrumentDownloadOption,instrumentDownloadFields,gelDownloadOption,gelDownloadFields,loadingDyesNoAutomatic,uniqueObjectLoadingDyes,uniqueModelLoadingDyes,objectSamplePacketFields,
-		modelSamplePacketFields,objectContainerFields,modelContainerFields,modelContainerPacketFields,
-		optionsWithObjects,userSpecifiedObjects,simulatedSampleQ,objectsExistQs,objectsExistTests,liquidHandlerContainers,
+		modelSamplePacketFields,objectContainerFields,modelContainerFields,modelContainerPacketFields, liquidHandlerContainers,
 		listedSampleContainerPackets,instrumentPacket,gelPacket,inputsInOrder,listedLoadingDyeObjectPackets,listedLoadingDyeModelPackets,
 		liquidHandlerContainerPackets,cacheBall,inputObjects,
-		resolvedOptions,
+		resolvedOptions, updatedSimulation,
 		resolvedOptionsTests,resolvedOptionsResult,collapsedResolvedOptions,resourcePackets,resourcePacketTests,protocolObject,
-		validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationCache,
-		mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed, samplePreparationCacheNamed
+		validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
+		mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed
 	},
 
 	(* determine the requested return value from the function *)
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]], OptionValue::nodef];
 	output = ToList[outputSpecification];
 
-	(* deterimine if we should keep a running list of tests; if True, then silence messages *)
+	(* determine if we should keep a running list of tests; if True, then silence messages *)
 	gatherTests = MemberQ[output, Tests];
 	messages = Not[gatherTests];
 
@@ -469,13 +464,13 @@ ExperimentAgaroseGelElectrophoresis[mySamples:ListableP[ObjectP[Object[Sample]]]
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, samplePreparationCacheNamed} = simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentAgaroseGelElectrophoresis,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -492,7 +487,7 @@ ExperimentAgaroseGelElectrophoresis[mySamples:ListableP[ObjectP[Object[Sample]]]
 	];
 
 	(* replace all objects referenced by Name to ID *)
-	{mySamplesWithPreparedSamples, {safeOptions, myOptionsWithPreparedSamples, samplePreparationCache}} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, {safeOptionsNamed, myOptionsWithPreparedSamplesNamed, samplePreparationCacheNamed}];
+	{mySamplesWithPreparedSamples, safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if the option lengths are invalid, return $Failed*)
 	If[MatchQ[safeOptions,$Failed],
@@ -628,51 +623,6 @@ ExperimentAgaroseGelElectrophoresis[mySamples:ListableP[ObjectP[Object[Sample]]]
 	modelContainerFields=SamplePreparationCacheFields[Model[Container]];
 	modelContainerPacketFields=Packet@@Flatten[{Object,SamplePreparationCacheFields[Model[Container]]}];
 
-	(* - Throw an error and return failed if any of the specified Objects are not members of the database - *)
-	(* Any options whose values _could_ be an object *)
-	optionsWithObjects = {
-		Instrument,
-		Ladder,
-		Gel,
-		LoadingDye,
-		LoadingDilutionBuffer
-	};
-
-	(* Extract any objects that the user has explicitly specified *)
-	userSpecifiedObjects = DeleteDuplicates@Cases[
-		Flatten@Join[ToList[mySamples],Lookup[ToList[myOptions],optionsWithObjects,Null]],
-		ObjectP[]
-	];
-
-	(* Check that the specified objects exist or are visible to the current user *)
-	 (*Quiet: throws extra errors when sample does not exist, which we will scream about later*)
-	simulatedSampleQ = Lookup[Quiet[fetchPacketFromCache[#,samplePreparationCache]],Simulated,False]&/@userSpecifiedObjects;
-	objectsExistQs = DatabaseMemberQ[PickList[userSpecifiedObjects,simulatedSampleQ,False]];
-
-	(* Build tests for object existence *)
-	objectsExistTests = If[gatherTests,
-		MapThread[
-			Test[StringTemplate["Specified object `1` exists in the database:"][#1],#2,True]&,
-			{PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]
-		];
-
-		Return[outputSpecification/.{
-			Result -> $Failed,
-			Tests -> Join[safeOptionTests,validLengthTests,templateTests,objectsExistTests],
-			Options -> $Failed,
-			Preview -> Null
-		}]
-	];
-
 	(* - All liquid handler compatible containers (for resources and Aliquot) - *)
 	liquidHandlerContainers=hamiltonAliquotContainers["Memoization"];
 
@@ -709,22 +659,21 @@ ExperimentAgaroseGelElectrophoresis[mySamples:ListableP[ObjectP[Object[Sample]]]
 				{Packet[]},
 				{modelContainerPacketFields}
 			},
-			Cache->Flatten[{Lookup[expandedSafeOps,Cache,{}],samplePreparationCache}],
+			Cache -> Lookup[expandedSafeOps,Cache,{}],
+			Simulation -> updatedSimulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist}
 	];
 
-
 	(* Combine our downloaded and simulated cache. *)
 	(* It is important that the sample preparation cache is added first to the cache ball, before the main download. *)
 	cacheBall=FlattenCachePackets[
 		{
-			samplePreparationCache,listedSampleContainerPackets,instrumentPacket,gelPacket,listedLoadingDyeObjectPackets,
-			listedLoadingDyeModelPackets,liquidHandlerContainerPackets
+			listedSampleContainerPackets, instrumentPacket, gelPacket, listedLoadingDyeObjectPackets,
+			listedLoadingDyeModelPackets, liquidHandlerContainerPackets
 		}
 	];
-
 
 	(* Get a list of the inputs by ID *)
 	inputObjects=Lookup[Flatten[inputsInOrder],Object];
@@ -734,7 +683,7 @@ ExperimentAgaroseGelElectrophoresis[mySamples:ListableP[ObjectP[Object[Sample]]]
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveAgaroseGelElectrophoresisOptions[inputObjects,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests} = resolveAgaroseGelElectrophoresisOptions[inputObjects, expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -744,7 +693,7 @@ ExperimentAgaroseGelElectrophoresis[mySamples:ListableP[ObjectP[Object[Sample]]]
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveAgaroseGelElectrophoresisOptions[inputObjects,expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions,resolvedOptionsTests} = {resolveAgaroseGelElectrophoresisOptions[inputObjects, expandedSafeOps, Cache->cacheBall, Simulation -> updatedSimulation],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -770,8 +719,8 @@ ExperimentAgaroseGelElectrophoresis[mySamples:ListableP[ObjectP[Object[Sample]]]
 
 	(* Build packets with resources *)
 	{resourcePackets,resourcePacketTests} = If[gatherTests,
-		agaroseGelElectrophoresisResourcePackets[inputObjects,templatedOptions,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{agaroseGelElectrophoresisResourcePackets[inputObjects,templatedOptions,resolvedOptions,Cache->cacheBall],{}}
+		agaroseGelElectrophoresisResourcePackets[inputObjects, templatedOptions, resolvedOptions, Cache->cacheBall, Simulation -> updatedSimulation, Output -> {Result,Tests}],
+		{agaroseGelElectrophoresisResourcePackets[inputObjects, templatedOptions, resolvedOptions, Cache->cacheBall, Simulation -> updatedSimulation],{}}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -791,13 +740,14 @@ ExperimentAgaroseGelElectrophoresis[mySamples:ListableP[ObjectP[Object[Sample]]]
         resourcePackets,
         Upload->Lookup[safeOptions,Upload],
         Confirm->Lookup[safeOptions,Confirm],
+				CanaryBranch->Lookup[safeOptions,CanaryBranch],
         ParentProtocol->Lookup[safeOptions,ParentProtocol],
 				Priority->Lookup[safeOptions,Priority],
 				StartDate->Lookup[safeOptions,StartDate],
 				HoldOrder->Lookup[safeOptions,HoldOrder],
 				QueuePosition->Lookup[safeOptions,QueuePosition],
         ConstellationMessage->Object[Protocol,AgaroseGelElectrophoresis],
-        Cache->samplePreparationCache
+        Simulation -> updatedSimulation
       ],
       $Failed
     ];
@@ -817,12 +767,12 @@ ExperimentAgaroseGelElectrophoresis[mySamples:ListableP[ObjectP[Object[Sample]]]
 
 
 DefineOptions[resolveAgaroseGelElectrophoresisOptions,
-	Options :> {HelperOutputOption, CacheOption}
+	Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
 resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, myResolutionOptions:OptionsPattern[resolveAgaroseGelElectrophoresisOptions]]:=Module[
 	{
-		outputSpecification, output, gatherTests, messages, notInEngine, cache,samplePrepOptions,experimentOptions,simulatedSamples,resolvedSamplePrepOptions,simulatedCache,experimentOptionsAssociation,
+		outputSpecification, output, gatherTests, messages, notInEngine, cache,samplePrepOptions,experimentOptions,simulatedSamples,resolvedSamplePrepOptions,experimentOptionsAssociation,
 		instrument,suppliedScale,suppliedAgarosePercentage,suppliedGel,suppliedLadder,suppliedLadderFrequency,numberOfReplicates,suppliedLoadingDye,suppliedLoadingDilutionBuffer,suppliedName,suppliedAutomaticPeakDetection,suppliedPeakDetectionRange,
 		instrumentDownloadOption,instrumentDownloadFields,gelDownloadOption,gelDownloadFields,loadingDyesNoAutomatic,uniqueObjectLoadingDyes,uniqueModelLoadingDyes,listedSampleContainerPackets,instrumentPacket,gelPacket,
 		listedLoadingDyeObjectPackets,listedLoadingDyeModelPackets,liquidHandlerContainerPackets,
@@ -884,7 +834,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 		loadingDyeObjectModels,unnecessaryLadderStorageConditionQ,ladderStorageConditionTest,specifiedSampleStorageCondition,validSampleStorageConditionQ,invalidStorageConditionOptions,invalidStorageConditionTest,
 		invalidInputs,invalidOptions,requiredAliquotAmounts,liquidHandlerContainerModels,liquidHandlerContainerMaxVolumes,
 		potentialAliquotContainers,simulatedSamplesContainerModels,requiredAliquotContainers,resolvedAliquotOptions,aliquotTests,
-		resolvedPostProcessingOptions,email,resolvedOptions
+		resolvedPostProcessingOptions,email,resolvedOptions, simulation, updatedSimulation, samplePrepTests
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -901,12 +851,16 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Fetch our cache from the parent function. *)
 	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
 	(* Separate out our <Type> options from our Sample Prep options. *)
 	{samplePrepOptions,experimentOptions}=splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{simulatedSamples,resolvedSamplePrepOptions,simulatedCache}=resolveSamplePrepOptions[ExperimentAgaroseGelElectrophoresis,mySamples,samplePrepOptions,Cache->cache];
+	{{simulatedSamples, resolvedSamplePrepOptions, updatedSimulation}, samplePrepTests} = If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentAgaroseGelElectrophoresis, mySamples, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> {Result, Test}],
+		{resolveSamplePrepOptionsNew[ExperimentAgaroseGelElectrophoresis, mySamples, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> Result], {}}
+	];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
 	experimentOptionsAssociation = Association[experimentOptions];
@@ -1029,7 +983,8 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 				{modelContainerPacketFields}
 
 			},
-			Cache->simulatedCache,
+			Cache -> cache,
+			Simulation -> updatedSimulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist}
@@ -1067,7 +1022,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* If there are discarded invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs]>0&&messages,
-		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1075,12 +1030,12 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[discardedInvalidInputs]==0,
 				Nothing,
-				Test["The input samples "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" are not discarded:",True,False]
+				Test["The input samples " <> ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation] <> " are not discarded:", True, False]
 			];
 
 			passingTest=If[Length[discardedInvalidInputs]==Length[simulatedSamples],
 				Nothing,
-				Test["The input samples "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs],Cache->simulatedCache]<>" are not discarded:",True,True]
+				Test["The input samples " <> ObjectToString[Complement[simulatedSamples, discardedInvalidInputs], Simulation -> updatedSimulation] <> " are not discarded:", True, True]
 			];
 
 			{failingTest,passingTest}
@@ -1172,7 +1127,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 	(* Make a list of the unique LoadingDyes that are either Models or Objects with Models *)
 	loadingDyesWithModels=PickList[allUniqueLoadingDyes,allUniqueLoadingDyeDownloads,Except[Null]];
 
-	(* Create a list of the loadign dye download packets index matched to loadingDyesWithModels *)
+	(* Create a list of the loading dye download packets index matched to loadingDyesWithModels *)
 	allUniqueLoadingDyePackets=Cases[allUniqueLoadingDyeDownloads,Except[Null]];
 
 	(* From the list of loadingDyesWithModels, the valid ones are those whose corresponding Packet has an Object that is one of the acceptable loading dye models *)
@@ -1192,7 +1147,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* If there are any invalidLoadingDyes and we are throwing Messages, throw an Error *)
 	If[Length[invalidLoadingDyeModelOptions]>0&&messages,
-		Message[Error::InvalidAgaroseLoadingDye, ObjectToString[invalidLoadingDyes,Cache->simulatedCache]]
+		Message[Error::InvalidAgaroseLoadingDye, ObjectToString[invalidLoadingDyes, Simulation -> updatedSimulation]]
 	];
 
 	(* Define the tests the user will see for the above message *)
@@ -1200,11 +1155,11 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[invalidLoadingDyes]==0,
 				Nothing,
-				Test["The following user-specified LoadingDyes, "<>ObjectToString[invalidLoadingDyes,Cache->simulatedCache]<>", are either Objects with no Model, or are not of an acceptable LoadingDye Model for ExperimentAgaroseGelElectrophoresis. Please consult the documentation for a list of acceptable LoadingDye Models, or consider letting the LoadingDye option resolve automatically:",True,False]
+				Test["The following user-specified LoadingDyes, " <> ObjectToString[invalidLoadingDyes, Simulation -> updatedSimulation] <> ", are either Objects with no Model, or are not of an acceptable LoadingDye Model for ExperimentAgaroseGelElectrophoresis. Please consult the documentation for a list of acceptable LoadingDye Models, or consider letting the LoadingDye option resolve automatically:", True, False]
 			];
 			passingTest=If[Length[validModelLoadingDyes]==0,
 				Nothing,
-				Test["The following user-specified LoadingDyes, "<>ObjectToString[validModelLoadingDyes,Cache->simulatedCache]<>", are of an acceptable Model for ExperiemntAgaroseGelElectrophoresis:",True,True]
+				Test["The following user-specified LoadingDyes, " <> ObjectToString[validModelLoadingDyes, Simulation -> updatedSimulation] <> ", are of an acceptable Model for ExperimentAgaroseGelElectrophoresis:", True, True]
 			];
 
 			{failingTest,passingTest}
@@ -1373,7 +1328,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 			1*Percent,
 
 		(* - Cases where both the AgarosePercentage and the Gel are Automatic - Resolve based on the averageTargetStrandLength - *)
-		(* Generally we want to resolve to the lower-percentage gel when possible ranges are overalpping, because we want the target band to run closer to the smaller marker than the larger (to make the run not excessively long) - *)
+		(* Generally we want to resolve to the lower-percentage gel when possible ranges are overlapping, because we want the target band to run closer to the smaller marker than the larger (to make the run not excessively long) - *)
 		{Automatic,Automatic,RangeP[1,199]},
 			3*Percent,
 		{Automatic,Automatic,RangeP[200,399]},
@@ -1658,7 +1613,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 				(* Define a variable that is the sum of the SampleVolume and the LoadingDyeVolume *)
 				preLoadingDilutionBufferVolume=(sampleVolume+(loadingDyeVolume*2));
 
-				(* Set a variable that is the target minimum total volume of sample and loading dyes for each scale (determines if we need LoadingdilutionBuffer or not) *)
+				(* Set a variable that is the target minimum total volume of sample and loading dyes for each scale (determines if we need LoadingDilutionBuffer or not) *)
 				minTargetVolume=If[
 					MatchQ[resolvedScale,Analytical],
 					10*Microliter,
@@ -1906,9 +1861,9 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* --- UNRESOLVABLE OPTION CHECKS ---*)
 	(* -- Call CompatibleMaterialsQ to determine if the samples are chemically compatible with the instrument -- *)
-	{compatibleMaterialsBool,compatibleMaterialsTests}=If[gatherTests,
-		CompatibleMaterialsQ[instrument,simulatedSamples,Cache->simulatedCache,Output->{Result,Tests}],
-		{CompatibleMaterialsQ[instrument,simulatedSamples,Cache->simulatedCache,Messages->messages],{}}
+	{compatibleMaterialsBool, compatibleMaterialsTests} = If[gatherTests,
+		CompatibleMaterialsQ[instrument, simulatedSamples, Cache -> cache, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+		{CompatibleMaterialsQ[instrument, simulatedSamples, Cache -> cache, Simulation -> updatedSimulation, Messages -> messages],{}}
 	];
 
 	(* - Check to ensure that we do not have too many input samples for the Scale and NumberOfReplicates - *)
@@ -1989,7 +1944,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* If the Gel option was given as a list of Objects, and they are not all the same Model, throw an error *)
 	If[gelListQ&&Length[invalidMultipleGelObjectModelOptions]>0&&messages,
-		Message[Error::MoreThanOneAgaroseGelModel,ObjectToString[resolvedGel,Cache->simulatedCache],ObjectToString[gelOptionModels,Cache->simulatedCache]]
+		Message[Error::MoreThanOneAgaroseGelModel, ObjectToString[resolvedGel, Simulation -> updatedSimulation], ObjectToString[gelOptionModels, Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2027,7 +1982,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* If the Gel option was given as a list of Objects, and there are any duplicates, throw an error *)
 	If[gelListQ&&Length[invalidDuplicateGelOptions]>0&&messages,
-		Message[Error::DuplicateAgaroseGelObjects,ObjectToString[resolvedGel,Cache->simulatedCache]]
+		Message[Error::DuplicateAgaroseGelObjects, ObjectToString[resolvedGel, Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2091,7 +2046,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 		}
 	];
 
-	(* Set an invalid option variable if the number of samples isn't copacetic with the Gel option *)
+	(* Set an invalid option variable if the number of samples isn't compatible with the Gel option *)
 	invalidNumberOfGelsOptions=Which[
 
 		(* Case where the Gel is Model, no need to check *)
@@ -2109,7 +2064,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* If the Gel option was given as an Object or list of Objects, and there aren't the right number of Samples throw an error *)
 	If[objectGelQ&&Length[invalidNumberOfGelsOptions]>0&&messages,
-		Message[Error::InvalidNumberOfAgaroseGels,totalNumberOfSamples,ObjectToString[resolvedGel,Cache->simulatedCache],minimumSampleLanes,maximumSampleLanes]
+		Message[Error::InvalidNumberOfAgaroseGels, totalNumberOfSamples, ObjectToString[resolvedGel, Simulation -> updatedSimulation], minimumSampleLanes, maximumSampleLanes]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2146,18 +2101,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw an error message if we are throwing messages, and there are some input samples that caused moreThanTwoLoadingDyesErrors to be set to True *)
 	If[moreThanTwoLoadingDyesErrorQ&&messages,
-		Message[Error::TooManyAgaroseLoadingDyes,ObjectToString[failingMoreThanTwoLoadingDyesErrorSamples,Cache->simulatedCache]]
+		Message[Error::TooManyAgaroseLoadingDyes,ObjectToString[failingMoreThanTwoLoadingDyesErrorSamples, Simulation -> updatedSimulation]]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	moreThanTwoLoadingDyesTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[moreThanTwoLoadingDyesErrorQ,
-				Test["There are more than two associated LoadingDyes specified for the following samples, "<>ObjectToString[failingMoreThanTwoLoadingDyesErrorSamples,Cache->simulatedCache]<>":",True,False],
+				Test["There are more than two associated LoadingDyes specified for the following samples, " <> ObjectToString[failingMoreThanTwoLoadingDyesErrorSamples, Simulation -> updatedSimulation] <> ":", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingMoreThanTwoLoadingDyesErrorSamples]>0,
-				Test["There at most two associated LoadingDyes specified for the following samples, "<>ObjectToString[passingMoreThanTwoLoadingDyesErrorSamples,Cache->simulatedCache]<>":",True,True],
+				Test["There at most two associated LoadingDyes specified for the following samples, " <> ObjectToString[passingMoreThanTwoLoadingDyesErrorSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -2175,18 +2130,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw a warning message if we are throwing messages, and there are some input samples that caused moreThanTwoLoadingDyesWarnings to be set to True *)
 	If[onlyOneLoadingDyeWarningQ&&messages&&notInEngine,
-		Message[Warning::OnlyOneAgaroseLoadingDye,ObjectToString[failingOnlyOneLoadingDyeWarningSamples,Cache->simulatedCache]]
+		Message[Warning::OnlyOneAgaroseLoadingDye, ObjectToString[failingOnlyOneLoadingDyeWarningSamples, Simulation -> updatedSimulation]]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	onlyOneLoadingDyeTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[onlyOneLoadingDyeWarningQ,
-				Warning["There is only one LoadingDye specified for the following samples, "<>ObjectToString[failingOnlyOneLoadingDyeWarningSamples,Cache->simulatedCache]<>". Sizing is most accurate when each SampleIn has two associated LoadingDyes whose oligomer lengths flank the target strand of interest:",True,False],
+				Warning["There is only one LoadingDye specified for the following samples, " <> ObjectToString[failingOnlyOneLoadingDyeWarningSamples, Simulation -> updatedSimulation] <> ". Sizing is most accurate when each SampleIn has two associated LoadingDyes whose oligomer lengths flank the target strand of interest:", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingOnlyOneLoadingDyeWarningSamples]>0,
-				Warning["There are more than one LoadingDyes specified for the following samples, "<>ObjectToString[passingOnlyOneLoadingDyeWarningSamples,Cache->simulatedCache]<>":",True,True],
+				Warning["There are more than one LoadingDyes specified for the following samples, " <> ObjectToString[passingOnlyOneLoadingDyeWarningSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -2216,18 +2171,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw an Error if we are throwing messages, and there are some input samples that caused sampleLoadingVolumeTooLargeErrors to be set to True *)
 	If[sampleLoadingVolumeTooLargeErrorQ&&messages,
-		Message[Error::NotEnoughAgaroseSampleToLoad,failingSampleLoadingVolumeTooLargeVolumes,resolvedSampleLoadingVolume,ObjectToString[failingSampleLoadingVolumeTooLargeSamples,Cache->simulatedCache]]
+		Message[Error::NotEnoughAgaroseSampleToLoad, failingSampleLoadingVolumeTooLargeVolumes, resolvedSampleLoadingVolume, ObjectToString[failingSampleLoadingVolumeTooLargeSamples, Simulation -> updatedSimulation]]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	sampleLoadingVolumeTooLargeTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[sampleLoadingVolumeTooLargeErrorQ,
-				Test["For the following input samples, "<>ObjectToString[failingSampleLoadingVolumeTooLargeSamples,Cache->simulatedCache]<>", the sum of the SampleVolume, LoadingDyeVolume, and LoadingDilutionBufferVolume, "<>ToString[failingSampleLoadingVolumeTooLargeVolumes]<>", is smaller than the SampleLoadingVolume, "<>ToString[resolvedSampleLoadingVolume]<>":",True,False],
+				Test["For the following input samples, " <> ObjectToString[failingSampleLoadingVolumeTooLargeSamples, Simulation -> updatedSimulation] <> ", the sum of the SampleVolume, LoadingDyeVolume, and LoadingDilutionBufferVolume, " <> ToString[failingSampleLoadingVolumeTooLargeVolumes] <> ", is smaller than the SampleLoadingVolume, " <> ToString[resolvedSampleLoadingVolume] <> ":", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingSampleLoadingVolumeTooLargeSamples]>0,
-				Test["The sum of the SampleVolume, LoadingDyeVolume, and LoadingDilutionBufferVolume is larger than the SampleLoadingVolume for the following input samples, "<>ObjectToString[passingSampleLoadingVolumeTooLargeSamples,Cache->simulatedCache]<>":",True,True],
+				Test["The sum of the SampleVolume, LoadingDyeVolume, and LoadingDilutionBufferVolume is larger than the SampleLoadingVolume for the following input samples, "<>ObjectToString[passingSampleLoadingVolumeTooLargeSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -2254,18 +2209,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw an Error if we are throwing messages, and there are some input samples that caused collectionScaleMismatchErrors to be set to True *)
 	If[collectionScaleMismatchErrorQ&&messages,
-		Message[Error::ConflictingAgaroseCollectionSizeScaleOptions,ObjectToString[failingCollectionScaleMismatchSamples,Cache->simulatedCache],failingCollectionSizes,resolvedScale]
+		Message[Error::ConflictingAgaroseCollectionSizeScaleOptions, ObjectToString[failingCollectionScaleMismatchSamples, Simulation -> updatedSimulation], failingCollectionSizes, resolvedScale]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	collectionScaleMismatchTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[collectionScaleMismatchErrorQ,
-				Test["The following samples, "<>ObjectToString[failingCollectionScaleMismatchSamples,Cache->simulatedCache]<>", have CollectionSize options, "<>ToString[failingCollectionSizes]<>", which are in conflict with the Scale option, "<>ToString[resolvedScale]<>". If the Scale is Preparative, the CollectionSize must be set, if the Scale is Analytical, these options must be Null:",True,False],
+				Test["The following samples, " <> ObjectToString[failingCollectionScaleMismatchSamples, Simulation -> updatedSimulation] <> ", have CollectionSize options, " <> ToString[failingCollectionSizes] <> ", which are in conflict with the Scale option, " <> ToString[resolvedScale] <> ". If the Scale is Preparative, the CollectionSize must be set, if the Scale is Analytical, these options must be Null:", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingCollectionScaleMismatchSamples]>0,
-				Test["The following samples have CollectionSize options which are not in conflict with the Scale option, "<>ObjectToString[passingCollectionScaleMismatchSamples,Cache->simulatedCache]<>":",True,True],
+				Test["The following samples have CollectionSize options which are not in conflict with the Scale option, " <> ObjectToString[passingCollectionScaleMismatchSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -2289,18 +2244,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw an Error if we are throwing messages, and there are some input samples that caused unableToDetermineCollectionSizeErrors to be set to True *)
 	If[unableToDetermineCollectionSizeErrorQ&&messages,
-		Message[Error::UnableToDetermineAgaroseCollectionSize,ObjectToString[failingUnableToDetermineCollectionSizeSamples,Cache->simulatedCache]]
+		Message[Error::UnableToDetermineAgaroseCollectionSize, ObjectToString[failingUnableToDetermineCollectionSizeSamples, Simulation -> updatedSimulation]]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	unableToDetermineCollectionSizeTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[unableToDetermineCollectionSizeErrorQ,
-				Test["The CollectionSize cannot be determined for the following input samples, "<>ObjectToString[failingUnableToDetermineCollectionSizeSamples,Cache->simulatedCache]<>":",True,False],
+				Test["The CollectionSize cannot be determined for the following input samples, " <> ObjectToString[failingUnableToDetermineCollectionSizeSamples, Simulation -> updatedSimulation] <> ":", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingUnableToDetermineCollectionSizeSamples]>0,
-				Test["The CollectionSize can be determined for the following input samples, "<>ObjectToString[passingUnableToDetermineCollectionSizeSamples,Cache->simulatedCache]<>":",True,True],
+				Test["The CollectionSize can be determined for the following input samples, " <> ObjectToString[passingUnableToDetermineCollectionSizeSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -2324,18 +2279,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw an Error if we are throwing messages, and there are some input samples that caused unableToDeterminePeakDetectionRangeErrors to be set to True *)
 	If[unableToDeterminePeakDetectionRangeErrorQ&&messages,
-		Message[Error::UnableToDetermineAgarosePeakDetectionRange,ObjectToString[failingUnableToDeterminePeakDetectionRangeSamples,Cache->simulatedCache]]
+		Message[Error::UnableToDetermineAgarosePeakDetectionRange, ObjectToString[failingUnableToDeterminePeakDetectionRangeSamples, Simulation -> updatedSimulation]]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	unableToDeterminePeakDetectionRangeTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[unableToDeterminePeakDetectionRangeErrorQ,
-				Test["The PeakDetectionRange cannot be determined for the following input samples, "<>ObjectToString[failingUnableToDeterminePeakDetectionRangeSamples,Cache->simulatedCache]<>":",True,False],
+				Test["The PeakDetectionRange cannot be determined for the following input samples, " <> ObjectToString[failingUnableToDeterminePeakDetectionRangeSamples, Simulation -> updatedSimulation] <> ":", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingUnableToDeterminePeakDetectionRangeSamples]>0,
-				Test["The PeakDetectionRange can be determined for the following input samples, "<>ObjectToString[passingUnableToDeterminePeakDetectionRangeSamples,Cache->simulatedCache]<>":",True,True],
+				Test["The PeakDetectionRange can be determined for the following input samples, " <> ObjectToString[passingUnableToDeterminePeakDetectionRangeSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -2359,18 +2314,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw an Error if we are throwing messages, and there are some input samples that caused unableToDeterminePeakDetectionRangeErrors to be set to True *)
 	If[unableToDetermineCollectionRangeErrorQ&&messages,
-		Message[Error::UnableToDetermineAgaroseCollectionRange,ObjectToString[failingUnableToDetermineCollectionRangeSamples,Cache->simulatedCache]]
+		Message[Error::UnableToDetermineAgaroseCollectionRange, ObjectToString[failingUnableToDetermineCollectionRangeSamples, Simulation -> updatedSimulation]]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	unableToDetermineCollectionRangeTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[unableToDetermineCollectionRangeErrorQ,
-				Test["The CollectionRange cannot be determined for the following input samples, "<>ObjectToString[failingUnableToDetermineCollectionRangeSamples,Cache->simulatedCache]<>":",True,False],
+				Test["The CollectionRange cannot be determined for the following input samples, " <> ObjectToString[failingUnableToDetermineCollectionRangeSamples, Simulation -> updatedSimulation] <> ":", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingUnableToDeterminePeakDetectionRangeSamples]>0,
-				Test["The CollectionRange can be determined for the following input samples, "<>ObjectToString[passingUnableToDetermineCollectionRangeSamples,Cache->simulatedCache]<>":",True,True],
+				Test["The CollectionRange can be determined for the following input samples, " <> ObjectToString[passingUnableToDetermineCollectionRangeSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -2397,18 +2352,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw an Error if we are throwing messages, and there are some input samples that caused automaticPeakDetectionScaleMismatchErrors to be set to True *)
 	If[automaticPeakDetectionScaleMismatchErrorQ&&messages,
-		Message[Error::ConflictingAgaroseAutomaticPeakDetectionScaleOptions,ObjectToString[failingAutomaticPeakDetectionScaleSamples,Cache->simulatedCache],failingScaleMismatchAutomaticPeakDetections,resolvedScale]
+		Message[Error::ConflictingAgaroseAutomaticPeakDetectionScaleOptions, ObjectToString[failingAutomaticPeakDetectionScaleSamples, Simulation -> updatedSimulation], failingScaleMismatchAutomaticPeakDetections, resolvedScale]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	automaticPeakDetectionScaleMismatchTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[automaticPeakDetectionScaleMismatchErrorQ,
-				Test["The following samples, "<>ObjectToString[failingAutomaticPeakDetectionScaleSamples,Cache->simulatedCache]<>", have AutomaticPeakDetection options, "<>ToString[failingScaleMismatchAutomaticPeakDetections]<>", which are in conflict with the Scale option, "<>ToString[resolvedScale]<>". If the Scale is Analytical, the AutomaticPeakDetection must be Null. If the Scale is Preparative, the AutomaticPeakDetection must be True or False:",True,False],
+				Test["The following samples, "<>ObjectToString[failingAutomaticPeakDetectionScaleSamples, Simulation -> updatedSimulation] <> ", have AutomaticPeakDetection options, " <> ToString[failingScaleMismatchAutomaticPeakDetections] <> ", which are in conflict with the Scale option, " <> ToString[resolvedScale] <> ". If the Scale is Analytical, the AutomaticPeakDetection must be Null. If the Scale is Preparative, the AutomaticPeakDetection must be True or False:", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingAutomaticPeakDetectionScaleSamples]>0,
-				Test["The following samples have AutomaticPeakDetection options which are not in conflict with the Scale option, "<>ObjectToString[passingAutomaticPeakDetectionScaleSamples,Cache->simulatedCache]<>":",True,True],
+				Test["The following samples have AutomaticPeakDetection options which are not in conflict with the Scale option, " <> ObjectToString[passingAutomaticPeakDetectionScaleSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -2436,18 +2391,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw an Error if we are throwing messages, and there are some input samples that caused automaticPeakDetectionScaleMismatchErrors to be set to True *)
 	If[automaticPeakDetectionRangeMismatchErrorQ&&messages,
-		Message[Error::ConflictingAgaroseAutomaticPeakDetectionRangeOptions,ObjectToString[failingAutomaticPeakDetectionRangeSamples,Cache->simulatedCache],failingPeakDetectionRangeMismatchAutomaticPeakDetections,failingAutomaticPeakDetectionMismatchDetectionWidths]
+		Message[Error::ConflictingAgaroseAutomaticPeakDetectionRangeOptions, ObjectToString[failingAutomaticPeakDetectionRangeSamples, Simulation -> updatedSimulation], failingPeakDetectionRangeMismatchAutomaticPeakDetections, failingAutomaticPeakDetectionMismatchDetectionWidths]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	automaticPeakDetectionRangeMismatchTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[automaticPeakDetectionRangeMismatchErrorQ,
-				Test["The following samples, "<>ObjectToString[failingAutomaticPeakDetectionRangeSamples,Cache->simulatedCache]<>", have AutomaticPeakDetection options, "<>ToString[failingPeakDetectionRangeMismatchAutomaticPeakDetections]<>", which are in conflict with their PeakDetectionRange options, "<>ToString[failingAutomaticPeakDetectionMismatchDetectionWidths]<>". If AutomaticPeakDetection is True, the PeakDetectionRange cannot be Null. If AutomaticPeakDetection is False, the PeakDetectionRange must be Null:",True,False],
+				Test["The following samples, " <> ObjectToString[failingAutomaticPeakDetectionRangeSamples, Simulation -> updatedSimulation] <> ", have AutomaticPeakDetection options, " <> ToString[failingPeakDetectionRangeMismatchAutomaticPeakDetections] <> ", which are in conflict with their PeakDetectionRange options, " <> ToString[failingAutomaticPeakDetectionMismatchDetectionWidths] <> ". If AutomaticPeakDetection is True, the PeakDetectionRange cannot be Null. If AutomaticPeakDetection is False, the PeakDetectionRange must be Null:", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingAutomaticPeakDetectionRangeSamples]>0,
-				Test["The following samples have AutomaticPeakDetection options which are not in conflict with the PeakDetectionRange option, "<>ObjectToString[passingAutomaticPeakDetectionRangeSamples,Cache->simulatedCache]<>":",True,True],
+				Test["The following samples have AutomaticPeakDetection options which are not in conflict with the PeakDetectionRange option, " <> ObjectToString[passingAutomaticPeakDetectionRangeSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -2475,18 +2430,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw an Error if we are throwing messages, and there are some input samples that caused automaticPeakDetectionCollectionRangeMismatchErrors to be set to True *)
 	If[automaticPeakDetectionCollectionRangeMismatchErrorQ&&messages,
-		Message[Error::ConflictingAgaroseAutomaticPeakDetectionCollectionRangeOptions,ObjectToString[failingAutomaticPeakDetectionCollectionSamples,Cache->simulatedCache],failingCollectionRangeMismatchAutomaticPeakDetections,failingAutomaticPeakDetectionMismatchCollectionRanges]
+		Message[Error::ConflictingAgaroseAutomaticPeakDetectionCollectionRangeOptions, ObjectToString[failingAutomaticPeakDetectionCollectionSamples, Simulation -> updatedSimulation], failingCollectionRangeMismatchAutomaticPeakDetections, failingAutomaticPeakDetectionMismatchCollectionRanges]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	automaticPeakDetectionCollectionRangeMismatchTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[automaticPeakDetectionCollectionRangeMismatchErrorQ,
-				Test["The following samples, "<>ObjectToString[failingAutomaticPeakDetectionCollectionSamples,Cache->simulatedCache]<>", have AutomaticPeakDetection options, "<>ToString[failingCollectionRangeMismatchAutomaticPeakDetections]<>", which are in conflict with their CollectionRange options, "<>ToString[failingAutomaticPeakDetectionMismatchCollectionRanges]<>". If AutomaticPeakDetection is True, the CollectionRange must be Null:",True,False],
+				Test["The following samples, "<>ObjectToString[failingAutomaticPeakDetectionCollectionSamples, Simulation -> updatedSimulation] <> ", have AutomaticPeakDetection options, " <> ToString[failingCollectionRangeMismatchAutomaticPeakDetections] <> ", which are in conflict with their CollectionRange options, " <> ToString[failingAutomaticPeakDetectionMismatchCollectionRanges] <> ". If AutomaticPeakDetection is True, the CollectionRange must be Null:", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingAutomaticPeakDetectionCollectionSamples]>0,
-				Test["The following samples have AutomaticPeakDetection options which are not in conflict with the CollectionRange option, "<>ObjectToString[passingAutomaticPeakDetectionCollectionSamples,Cache->simulatedCache]<>":",True,True],
+				Test["The following samples have AutomaticPeakDetection options which are not in conflict with the CollectionRange option, " <> ObjectToString[passingAutomaticPeakDetectionCollectionSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -2514,18 +2469,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw an Error if we are throwing messages, and there are some input samples that caused automaticPeakDetectionCollectionSizeMismatchErrors to be set to True *)
 	If[automaticPeakDetectionCollectionSizeMismatchErrorQ&&messages,
-		Message[Error::ConflictingAgaroseAutomaticPeakDetectionCollectionSizeOptions,ObjectToString[failingAutomaticPeakDetectionCollectionSizeSamples,Cache->simulatedCache],failingCollectionSizeMismatchAutomaticPeakDetections,failingAutomaticPeakDetectionMismatchCollectionSizes]
+		Message[Error::ConflictingAgaroseAutomaticPeakDetectionCollectionSizeOptions, ObjectToString[failingAutomaticPeakDetectionCollectionSizeSamples, Simulation -> updatedSimulation], failingCollectionSizeMismatchAutomaticPeakDetections, failingAutomaticPeakDetectionMismatchCollectionSizes]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	automaticPeakDetectionCollectionSizeMismatchTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[automaticPeakDetectionCollectionSizeMismatchErrorQ,
-				Test["The following samples, "<>ObjectToString[failingAutomaticPeakDetectionCollectionSizeSamples,Cache->simulatedCache]<>", have AutomaticPeakDetection options, "<>ToString[failingCollectionSizeMismatchAutomaticPeakDetections]<>", which are in conflict with their CollectionSize options, "<>ToString[failingAutomaticPeakDetectionMismatchCollectionSizes]<>". If AutomaticPeakDetection is True, the CollectionSize must be Null:",True,False],
+				Test["The following samples, " <> ObjectToString[failingAutomaticPeakDetectionCollectionSizeSamples, Simulation -> updatedSimulation] <> ", have AutomaticPeakDetection options, " <> ToString[failingCollectionSizeMismatchAutomaticPeakDetections] <> ", which are in conflict with their CollectionSize options, " <> ToString[failingAutomaticPeakDetectionMismatchCollectionSizes] <> ". If AutomaticPeakDetection is True, the CollectionSize must be Null:", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingAutomaticPeakDetectionCollectionSizeSamples]>0,
-				Test["The following samples have AutomaticPeakDetection options which are not in conflict with the CollectionSize option, "<>ObjectToString[passingAutomaticPeakDetectionCollectionSizeSamples,Cache->simulatedCache]<>":",True,True],
+				Test["The following samples have AutomaticPeakDetection options which are not in conflict with the CollectionSize option, " <> ObjectToString[passingAutomaticPeakDetectionCollectionSizeSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -2554,18 +2509,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw an Error if we are throwing messages, and there are some input samples that caused automaticPeakDetectionCollectionSizeMismatchErrors to be set to True *)
 	If[collectionSizeCollectionRangeMismatchErrorQ&&messages,
-		Message[Error::ConflictingAgaroseCollectionSizeAndRangeOptions,ObjectToString[failingCollectionSizeCollectionRangeSamples,Cache->simulatedCache],failingCollectionRangeMisMatchCollectionSizes,failingCollectionSizeMismatchCollectionRanges]
+		Message[Error::ConflictingAgaroseCollectionSizeAndRangeOptions, ObjectToString[failingCollectionSizeCollectionRangeSamples, Simulation -> updatedSimulation], failingCollectionRangeMisMatchCollectionSizes, failingCollectionSizeMismatchCollectionRanges]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	collectionSizeCollectionRangeMismatchTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[collectionSizeCollectionRangeMismatchErrorQ,
-				Test["The following samples, "<>ObjectToString[failingCollectionSizeCollectionRangeSamples,Cache->simulatedCache]<>", have CollectionSize options, "<>ToString[failingCollectionRangeMisMatchCollectionSizes]<>", which are in conflict with their CollectionRange options, "<>ToString[failingCollectionSizeMismatchCollectionRanges]<>". If the CollectionSize is specified as a non-Null value, The CollectionRange option must be Null:",True,False],
+				Test["The following samples, " <> ObjectToString[failingCollectionSizeCollectionRangeSamples, Simulation -> updatedSimulation] <> ", have CollectionSize options, " <> ToString[failingCollectionRangeMisMatchCollectionSizes] <> ", which are in conflict with their CollectionRange options, " <> ToString[failingCollectionSizeMismatchCollectionRanges] <> ". If the CollectionSize is specified as a non-Null value, The CollectionRange option must be Null:", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingCollectionSizeCollectionRangeSamples]>0,
-				Test["The following samples have CollectionSize options which are not in conflict with the CollectionRange option, "<>ObjectToString[passingCollectionSizeCollectionRangeSamples,Cache->simulatedCache]<>":",True,True],
+				Test["The following samples have CollectionSize options which are not in conflict with the CollectionRange option, " <> ObjectToString[passingCollectionSizeCollectionRangeSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -2593,18 +2548,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw an Error if we are throwing messages, and there are some input samples that caused automaticPeakDetectionCollectionRangeMismatchErrors to be set to True *)
 	If[peakDetectionRangeScaleMismatchErrorQ&&messages,
-		Message[Error::ConflictingAgarosePeakDetectionRangeScaleOptions,ObjectToString[failingPeakDetectionRangeScaleSamples,Cache->simulatedCache],failingScaleMismatchPeakDetectionRanges,resolvedScale]
+		Message[Error::ConflictingAgarosePeakDetectionRangeScaleOptions, ObjectToString[failingPeakDetectionRangeScaleSamples, Simulation -> updatedSimulation], failingScaleMismatchPeakDetectionRanges, resolvedScale]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	peakDetectionRangeScaleMismatchTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[peakDetectionRangeScaleMismatchErrorQ,
-				Test["The following samples, "<>ObjectToString[failingPeakDetectionRangeScaleSamples,Cache->simulatedCache]<>", have PeakDetectionRange options, "<>ToString[failingScaleMismatchPeakDetectionRanges]<>", which are in conflict with the Scale Option, "<>ToString[resolvedScale]<>". If Scale is Analytical, the PeakDetectionRange must be Null:",True,False],
+				Test["The following samples, "<>ObjectToString[failingPeakDetectionRangeScaleSamples, Simulation -> updatedSimulation] <> ", have PeakDetectionRange options, " <> ToString[failingScaleMismatchPeakDetectionRanges] <> ", which are in conflict with the Scale Option, " <> ToString[resolvedScale] <> ". If Scale is Analytical, the PeakDetectionRange must be Null:", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingPeakDetectionRangeScaleSamples]>0,
-				Test["The following samples have PeakDetectionRange options which are not in conflict with the Scale option, "<>ObjectToString[passingPeakDetectionRangeScaleSamples,Cache->simulatedCache]<>":",True,True],
+				Test["The following samples have PeakDetectionRange options which are not in conflict with the Scale option, " <> ObjectToString[passingPeakDetectionRangeScaleSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -2632,18 +2587,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw an Error if we are throwing messages, and there are some input samples that caused peakDetectionRangeCollectionRangeMismatchErrors to be set to True *)
 	If[peakDetectionRangeCollectionRangeMismatchErrorQ&&messages,
-		Message[Error::ConflictingAgarosePeakDetectionRangeCollectionRangeOptions,ObjectToString[failingPeakDetectionRangeCollectionRangeSamples,Cache->simulatedCache],failingCollectionRangeMismatchPeakDetectionRanges,failingPeakDetectionRangeMismatchCollectionRanges]
+		Message[Error::ConflictingAgarosePeakDetectionRangeCollectionRangeOptions, ObjectToString[failingPeakDetectionRangeCollectionRangeSamples, Simulation -> updatedSimulation], failingCollectionRangeMismatchPeakDetectionRanges, failingPeakDetectionRangeMismatchCollectionRanges]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	peakDetectionRangeCollectionRangeMismatchTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[peakDetectionRangeCollectionRangeMismatchErrorQ,
-				Test["The following samples, "<>ObjectToString[failingPeakDetectionRangeCollectionRangeSamples,Cache->simulatedCache]<>", have PeakDetectionRange options, "<>ToString[failingCollectionRangeMismatchPeakDetectionRanges]<>", which are in conflict with their CollectionRange options, "<>ToString[failingPeakDetectionRangeMismatchCollectionRanges]<>". If the PeakDetectionRange is specified, the CollectionRange must be Null:",True,False],
+				Test["The following samples, " <> ObjectToString[failingPeakDetectionRangeCollectionRangeSamples, Simulation -> updatedSimulation] <> ", have PeakDetectionRange options, " <> ToString[failingCollectionRangeMismatchPeakDetectionRanges] <> ", which are in conflict with their CollectionRange options, " <> ToString[failingPeakDetectionRangeMismatchCollectionRanges] <> ". If the PeakDetectionRange is specified, the CollectionRange must be Null:", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingPeakDetectionRangeCollectionRangeSamples]>0,
-				Test["The following samples have PeakDetectionRange options which are not in conflict with the CollectionRange option, "<>ObjectToString[passingPeakDetectionRangeCollectionRangeSamples,Cache->simulatedCache]<>":",True,True],
+				Test["The following samples have PeakDetectionRange options which are not in conflict with the CollectionRange option, " <> ObjectToString[passingPeakDetectionRangeCollectionRangeSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -2670,18 +2625,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw an Error if we are throwing messages, and there are some input samples that caused collectionRangeScaleMismatchErrors to be set to True *)
 	If[collectionRangeScaleMismatchErrorQ&&messages,
-		Message[Error::ConflictingAgaroseCollectionRangeScaleOptions,ObjectToString[failingCollectionRangeScaleMismatchSamples,Cache->simulatedCache],failingScaleMismatchCollectionRanges,resolvedScale]
+		Message[Error::ConflictingAgaroseCollectionRangeScaleOptions, ObjectToString[failingCollectionRangeScaleMismatchSamples, Simulation -> updatedSimulation], failingScaleMismatchCollectionRanges, resolvedScale]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	collectionRangeScaleMismatchTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[collectionRangeScaleMismatchErrorQ,
-				Test["The following samples, "<>ObjectToString[failingCollectionRangeScaleMismatchSamples,Cache->simulatedCache]<>", have CollectionRange options, "<>ToString[failingScaleMismatchCollectionRanges]<>", which are in conflict with the Scale Option, "<>ToString[resolvedScale]<>". If Scale is Analytical, the CollectionRange must be Null:",True,False],
+				Test["The following samples, " <> ObjectToString[failingCollectionRangeScaleMismatchSamples, Simulation -> updatedSimulation] <> ", have CollectionRange options, " <> ToString[failingScaleMismatchCollectionRanges] <> ", which are in conflict with the Scale Option, " <> ToString[resolvedScale] <> ". If Scale is Analytical, the CollectionRange must be Null:", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingCollectionRangeScaleMismatchSamples]>0,
-				Test["The following samples have CollectionRange options which are not in conflict with the Scale option, "<>ObjectToString[passingCollectionRangeScaleMismatchSamples,Cache->simulatedCache]<>":",True,True],
+				Test["The following samples have CollectionRange options which are not in conflict with the Scale option, " <> ObjectToString[passingCollectionRangeScaleMismatchSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -2705,18 +2660,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw an Error if we are throwing messages, and there are some input samples that caused collectionSizeAndRangeBothNullError to be set to True *)
 	If[collectionSizeAndRangeBothNullErrorQ&&messages,
-		Message[Error::AgaroseCollectionSizeAndRangeBothNull,ObjectToString[failingCollectionSizeAndRangeBothNullSamples,Cache->simulatedCache]]
+		Message[Error::AgaroseCollectionSizeAndRangeBothNull, ObjectToString[failingCollectionSizeAndRangeBothNullSamples, Simulation -> updatedSimulation]]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	collectionSizeAndRangeBothNullTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[collectionSizeAndRangeBothNullErrorQ,
-				Test["The following samples, "<>ObjectToString[failingCollectionSizeAndRangeBothNullSamples,Cache->simulatedCache]<>", have AutomaticPeakDetection option set to False, and both the CollectionSize and CollectionRange options set to Null. If AutomaticPeakDetection is False, either the CollectionSize or the CollectionRange must not be Null:",True,False],
+				Test["The following samples, " <> ObjectToString[failingCollectionSizeAndRangeBothNullSamples, Simulation -> updatedSimulation] <> ", have AutomaticPeakDetection option set to False, and both the CollectionSize and CollectionRange options set to Null. If AutomaticPeakDetection is False, either the CollectionSize or the CollectionRange must not be Null:", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingCollectionSizeAndRangeBothNullSamples]>0,
-				Test["The following samples have AutomaticPeakDetection, CollectionSize, and CollectionRange options which are not in conflict due to CollectionSize and CollectionRange both being set to Null when AutomaticPeakDetection is False "<>ObjectToString[passingAutomaticPeakDetectionScaleSamples,Cache->simulatedCache]<>":",True,True],
+				Test["The following samples have AutomaticPeakDetection, CollectionSize, and CollectionRange options which are not in conflict due to CollectionSize and CollectionRange both being set to Null when AutomaticPeakDetection is False " <> ObjectToString[passingAutomaticPeakDetectionScaleSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -2762,7 +2717,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 		Nothing
 	];
 
-	(* - Check to make sure the LoadingDilutionBuffer and LoadingDilutionBufferVolume options are copacetic (not set with Volume of 0 uL) - *)
+	(* - Check to make sure the LoadingDilutionBuffer and LoadingDilutionBufferVolume options are compatible (not set with Volume of 0 uL) - *)
 	(* Make a list of option tuples index matched to the SamplesIn *)
 	loadingDilutionBufferOptionTuples=MapThread[
 		{#1,#2}&,
@@ -2784,7 +2739,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw an Error if we are throwing messages, and there are any invalidLoadingDilutionBufferOptions *)
 	If[Length[invalidLoadingDilutionBufferOptions]>0&&messages,
-		Message[Error::AgaroseLoadingDilutionBufferMismatch,ObjectToString[failingLoadingDilutionBufferOptionSamples,Cache->simulatedCache],failingLoadingDilutionBufferOptionTuples]
+		Message[Error::AgaroseLoadingDilutionBufferMismatch, ObjectToString[failingLoadingDilutionBufferOptionSamples, Simulation -> updatedSimulation], failingLoadingDilutionBufferOptionTuples]
 	];
 
 	(* Define the tests the user will see for the above message *)
@@ -2792,11 +2747,11 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[invalidLoadingDilutionBufferOptions]==0,
 				Nothing,
-				Test["For the following input samples, "<>ObjectToString[failingLoadingDilutionBufferOptionSamples,Cache->simulatedCache]<>", the LoadingDilutionBuffer and LoadingDilutionBufferVolume options, "<>ToString[failingLoadingDilutionBufferOptionTuples]<>", are in conflict. If LoadingDilutionBuffer is Null, the associated LoadingDilutionBufferVolume must be 0 uL. If LoadingDilutionBufferVolume is not 0 uL, the LoadingDilutionBuffer cannot be Null:",True,False]
+				Test["For the following input samples, " <> ObjectToString[failingLoadingDilutionBufferOptionSamples, Simulation -> updatedSimulation] <> ", the LoadingDilutionBuffer and LoadingDilutionBufferVolume options, " <> ToString[failingLoadingDilutionBufferOptionTuples] <> ", are in conflict. If LoadingDilutionBuffer is Null, the associated LoadingDilutionBufferVolume must be 0 uL. If LoadingDilutionBufferVolume is not 0 uL, the LoadingDilutionBuffer cannot be Null:", True, False]
 			];
 			passingTest=If[Length[passingLoadingDilutionBufferOptionSamples]==0,
 				Nothing,
-				Test["For the following input samples, "<>ObjectToString[passingLoadingDilutionBufferOptionSamples,Cache->simulatedCache]<>", the LoadingDilutionBuffer and LoadingDilutionBufferVolume options are not in conflict:",True,True]
+				Test["For the following input samples, " <> ObjectToString[passingLoadingDilutionBufferOptionSamples, Simulation -> updatedSimulation] <> ", the LoadingDilutionBuffer and LoadingDilutionBufferVolume options are not in conflict:", True, True]
 			];
 
 			{failingTest,passingTest}
@@ -2804,7 +2759,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 		Nothing
 	];
 
-	(* - Check to make sure the ExtractionVolume and Scale options are copacetic - *)
+	(* - Check to make sure the ExtractionVolume and Scale options are compatible - *)
 	invalidExtractionScaleMismatchOptions=Switch[{resolvedScale,resolvedExtractionVolume},
 
 		(* Case when Scale is Preparative and ExtractionVolume is Null *)
@@ -2897,7 +2852,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[invalidGelOptionMismatchOptions]==0,
 				Nothing,
-				Test["The Gel option, "<>ObjectToString[resolvedGel,Cache->simulatedCache]<>", either has a GelMaterial that is not Agarose, and/or is in conflict with the Scale option, "<>ToString[resolvedScale]<>", or the AgarosePercentage option, "<>ToString[resolvedAgarosePercentage]<>". The GelPercentage of the Gel must match the AgarosePercentage option, and the NumberOfLanes of the Gel must be 12 if Scale is Preparative, or 24 if Scale is Analytical:",True,False]
+				Test["The Gel option, " <> ObjectToString[resolvedGel, Simulation -> updatedSimulation] <> ", either has a GelMaterial that is not Agarose, and/or is in conflict with the Scale option, " <> ToString[resolvedScale] <> ", or the AgarosePercentage option, " <> ToString[resolvedAgarosePercentage] <> ". The GelPercentage of the Gel must match the AgarosePercentage option, and the NumberOfLanes of the Gel must be 12 if Scale is Preparative, or 24 if Scale is Analytical:", True, False]
 			];
 			passingTest=If[Length[invalidGelOptionMismatchOptions]!=0,
 				Nothing,
@@ -2935,7 +2890,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[invalidLadderOptions]==0,
 				Nothing,
-				Test["The Scale option, "<>ToString[resolvedScale]<>", and the Ladder option, "<>ObjectToString[resolvedLadder,Cache->simulatedCache]<>", are in conflict.  The Ladder must be Null if the Scale is Preparative, and must not be Null if the Scale is Analytical. Please consider letting these options automatically resolve:",True,False]
+				Test["The Scale option, " <> ToString[resolvedScale] <> ", and the Ladder option, " <> ObjectToString[resolvedLadder, Simulation -> updatedSimulation] <> ", are in conflict.  The Ladder must be Null if the Scale is Preparative, and must not be Null if the Scale is Analytical. Please consider letting these options automatically resolve:", True, False]
 			];
 			passingTest=If[Length[invalidLadderOptions]!=0,
 				Nothing,
@@ -2973,7 +2928,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[invalidLadderFrequencyOptions]==0,
 				Nothing,
-				Test["The Scale option, "<>ToString[resolvedScale]<>", and the LadderFrequency option, "<>ObjectToString[resolvedLadderFrequency,Cache->simulatedCache]<>", are in conflict.  The LadderFrequency must be Null if the Scale is Preparative, and must not be Null if the Scale is Analytical. Please consider letting these options automatically resolve:",True,False]
+				Test["The Scale option, " <> ToString[resolvedScale] <> ", and the LadderFrequency option, " <> ObjectToString[resolvedLadderFrequency, Simulation -> updatedSimulation] <> ", are in conflict.  The LadderFrequency must be Null if the Scale is Preparative, and must not be Null if the Scale is Analytical. Please consider letting these options automatically resolve:", True, False]
 			];
 			passingTest=If[Length[invalidLadderFrequencyOptions]!=0,
 				Nothing,
@@ -3011,18 +2966,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw an Error if we are throwing messages, and there are any invalidLoadingDilutionBufferOptions *)
 	If[Length[failingPatternPeakDetectionRanges]>0&&messages,
-		Message[Error::InvalidAgarosePeakDetectionRange,ObjectToString[failingPatternPeakDetectionRangeSamples,Cache->simulatedCache],failingPatternPeakDetectionRanges]
+		Message[Error::InvalidAgarosePeakDetectionRange, ObjectToString[failingPatternPeakDetectionRangeSamples, Simulation -> updatedSimulation], failingPatternPeakDetectionRanges]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	peakDetectionRangePatternTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[failingPatternPeakDetectionRanges]>0,
-				Test["The following samples, "<>ObjectToString[failingPatternPeakDetectionRangeSamples,Cache->simulatedCache]<>", have PeakDetectionRange options, "<>ToString[failingPatternPeakDetectionRanges]<>", which are invalid. The PeakDetectionRange cannot have the same value listed as the start and the end of the range. Please consider setting the CollectionSize option instead, or letting the PeakDetectionRange automatically resolve:",True,False],
+				Test["The following samples, " <> ObjectToString[failingPatternPeakDetectionRangeSamples, Simulation -> updatedSimulation] <> ", have PeakDetectionRange options, " <> ToString[failingPatternPeakDetectionRanges] <> ", which are invalid. The PeakDetectionRange cannot have the same value listed as the start and the end of the range. Please consider setting the CollectionSize option instead, or letting the PeakDetectionRange automatically resolve:", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingPatternPeakDetectionRanges]>0,
-				Test["The following samples have PeakDetectionRange options which are valid, "<>ObjectToString[passingPatternPeakDetectionRangeSamples,Cache->simulatedCache]<>":",True,True],
+				Test["The following samples have PeakDetectionRange options which are valid, " <> ObjectToString[passingPatternPeakDetectionRangeSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -3057,18 +3012,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(* Throw an Error if we are throwing messages, and there are any invalidLoadingDilutionBufferOptions *)
 	If[Length[failingPatternCollectionRanges]>0&&messages,
-		Message[Error::InvalidAgaroseCollectionRange,ObjectToString[failingPatternCollectionRangeSamples,Cache->simulatedCache],failingPatternCollectionRanges]
+		Message[Error::InvalidAgaroseCollectionRange, ObjectToString[failingPatternCollectionRangeSamples, Simulation -> updatedSimulation], failingPatternCollectionRanges]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	collectionRangeRangePatternTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[failingPatternCollectionRanges]>0,
-				Test["The following samples, "<>ObjectToString[failingPatternCollectionRangeSamples,Cache->simulatedCache]<>", have CollectionRange options, "<>ToString[failingPatternCollectionRanges]<>", which are invalid. The CollectionRange cannot have the same value listed as the start and the end of the range. Please consider setting the CollectionSize option instead, or letting the CollectionRange automatically resolve:",True,False],
+				Test["The following samples, " <> ObjectToString[failingPatternCollectionRangeSamples, Simulation -> updatedSimulation] <> ", have CollectionRange options, " <> ToString[failingPatternCollectionRanges] <> ", which are invalid. The CollectionRange cannot have the same value listed as the start and the end of the range. Please consider setting the CollectionSize option instead, or letting the CollectionRange automatically resolve:", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingPatternCollectionRanges]>0,
-				Test["The following samples have CollectionRange options which are valid, "<>ObjectToString[passingPatternCollectionRangeSamples,Cache->simulatedCache]<>":",True,True],
+				Test["The following samples have CollectionRange options which are valid, " <> ObjectToString[passingPatternCollectionRangeSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -3076,7 +3031,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 		Nothing
 	];
 
-	(* -- Throw Warnings if the CollectionSize, or no part of the PeakDetectionRange or CollecitonRange are within the LoadingDye size range only for Preparative -- *)
+	(* -- Throw Warnings if the CollectionSize, or no part of the PeakDetectionRange or CollectionRange are within the LoadingDye size range only for Preparative -- *)
 	(* We are going to create two ReplaceRule lists. one to turn all of the resolvedLoadingDyes into Models by ID, and another to the Length of those Models *)
 	(* - First, we need to figure out which Model any loading dyes that were specified are - *)
 	(* Find the Models of all unique Objects that have been input as LoadingDyes *)
@@ -3237,18 +3192,18 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 	(* - Whew, after all of that, throw a Warning if there are any failing Samples / OptionNames / OptionValues - *)
 	(* Throw a warning message if we are throwing messages, and there are some input samples that caused moreThanTwoLoadingDyesWarnings to be set to True *)
 	If[Length[failingLoadingDyeCollectionMismatchSamples]>0&&messages&&notInEngine,
-		Message[Warning::AgaroseLoadingDyeRangeCollectionOptionMismatch,ObjectToString[failingLoadingDyeCollectionMismatchSamples,Cache->simulatedCache],failingLoadingDyeCollectionMismatchOptionNames,failingLoadingDyeCollectionMismatchOptionValues,ObjectToString[failingLoadingDyeCollectionMismatchLoadingDyes,Cache->simulatedCache]]
+		Message[Warning::AgaroseLoadingDyeRangeCollectionOptionMismatch, ObjectToString[failingLoadingDyeCollectionMismatchSamples, Simulation -> updatedSimulation], failingLoadingDyeCollectionMismatchOptionNames, failingLoadingDyeCollectionMismatchOptionValues, ObjectToString[failingLoadingDyeCollectionMismatchLoadingDyes, Simulation -> updatedSimulation]]
 	];
 
 	(* Define the tests the user will see for the above message *)
 	loadingDyeCollectionMisMatchTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[failingLoadingDyeCollectionMismatchSamples]>0,
-				Warning["For the following input samples, "<>ObjectToString[failingLoadingDyeCollectionMismatchSamples,Cache->simulatedCache]<>", The corresponding collection-related Options, "<>ToString[failingLoadingDyeCollectionMismatchOptionNames]<>", have values, "<>ToString[failingLoadingDyeCollectionMismatchOptionValues]<>", which are outside of the range of Oligomer sizes present in the corresponding LoadingDye options, "<>ObjectToString[failingLoadingDyeCollectionMismatchLoadingDyes,Cache->simulatedCache]<>". Most accurate sizing and collection is achieved when the target of interest is between the size of the two LoadingDyes:",True,False],
+				Warning["For the following input samples, " <> ObjectToString[failingLoadingDyeCollectionMismatchSamples, Simulation -> updatedSimulation] <> ", The corresponding collection-related Options, " <> ToString[failingLoadingDyeCollectionMismatchOptionNames] <> ", have values, " <> ToString[failingLoadingDyeCollectionMismatchOptionValues] <> ", which are outside of the range of Oligomer sizes present in the corresponding LoadingDye options, " <> ObjectToString[failingLoadingDyeCollectionMismatchLoadingDyes, Simulation -> updatedSimulation] <> ". Most accurate sizing and collection is achieved when the target of interest is between the size of the two LoadingDyes:", True, False],
 				Nothing
 			];
 			passingTest=If[Length[passingLoadingDyeCollectionMismatchSamples]>0,
-				Warning["The collection-related options are within the size range of the specified LoadingDyes for the following input samples, "<>ObjectToString[passingLoadingDyeCollectionMismatchSamples,Cache->simulatedCache]<>":",True,True],
+				Warning["The collection-related options are within the size range of the specified LoadingDyes for the following input samples, " <> ObjectToString[passingLoadingDyeCollectionMismatchSamples, Simulation -> updatedSimulation] <> ":", True, True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -3292,7 +3247,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 	(*  Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTests,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput, ObjectToString[invalidInputs, Simulation -> updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -3341,9 +3296,10 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 			mySamples,
 			simulatedSamples,
 			ReplaceRule[allOptionsRounded,resolvedSamplePrepOptions],
-			Cache->simulatedCache,
+			Cache -> cache,
 			RequiredAliquotContainers->requiredAliquotContainers,
 			RequiredAliquotAmounts->requiredAliquotAmounts,
+			Simulation -> updatedSimulation,
 			AliquotWarningMessage->"because the input samples need to be in containers that are compatible with the robotic liquid handlers.",
 			Output->{Result,Tests}
 		],
@@ -3355,9 +3311,10 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 				mySamples,
 				simulatedSamples,
 				ReplaceRule[allOptionsRounded,resolvedSamplePrepOptions],
-				Cache->simulatedCache,
+				Cache -> cache,
 				RequiredAliquotContainers->requiredAliquotContainers,
 				RequiredAliquotAmounts->requiredAliquotAmounts,
+				Simulation -> updatedSimulation,
 				AliquotWarningMessage->"because the input samples need to be in containers that are compatible with the robotic liquid handlers.",
 				Output->Result
 			],{}
@@ -3414,7 +3371,7 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 		Tests -> Cases[
 			Flatten[
 				{
-					optionPrecisionTests,discardedTests,validNameTest,invalidLoadingDyeTests,compatibleMaterialsTests,tooManyInputsTests,moreThanTwoLoadingDyesTests,onlyOneLoadingDyeTests,sampleLoadingVolumeTooLargeTests,collectionScaleMismatchTests,
+					samplePrepTests,optionPrecisionTests,discardedTests,validNameTest,invalidLoadingDyeTests,compatibleMaterialsTests,tooManyInputsTests,moreThanTwoLoadingDyesTests,onlyOneLoadingDyeTests,sampleLoadingVolumeTooLargeTests,collectionScaleMismatchTests,
 					unableToDetermineCollectionSizeTests,loadingVolumeScaleMismatchTests,loadingDilutionBufferMismatchTests,extractionScaleMismatchTests,gelOptionMismatchTests,ladderScaleMismatchTests,
 					ladderFrequencyScaleMismatchTests,automaticPeakDetectionScaleMismatchTests,automaticPeakDetectionRangeMismatchTests,automaticPeakDetectionCollectionRangeMismatchTests,peakDetectionRangeScaleMismatchTests,
 					peakDetectionRangeCollectionRangeMismatchTests,collectionRangeScaleMismatchTests,automaticPeakDetectionCollectionSizeMismatchTests,unableToDeterminePeakDetectionRangeTests,invalidStorageConditionTest,
@@ -3433,14 +3390,14 @@ resolveAgaroseGelElectrophoresisOptions[mySamples:{ObjectP[Object[Sample]]..}, m
 
 DefineOptions[
 	agaroseGelElectrophoresisResourcePackets,
-	Options:>{HelperOutputOption,CacheOption}
+	Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
 
 (* create the protocol packet with resource blobs included *)
 agaroseGelElectrophoresisResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplatedOptions:{(_Rule|_RuleDelayed)...},myResolvedOptions:{(_Rule|_RuleDelayed)..},ops:OptionsPattern[]]:=Module[
 	{
-		expandedInputs, expandedResolvedOptions, resolvedOptionsNoHidden, outputSpecification, output, gatherTests, messages,inheritedCache,protocolID,liquidHandlerContainers,
+		expandedInputs, expandedResolvedOptions, resolvedOptionsNoHidden, outputSpecification, output, gatherTests, messages,inheritedCache,simulation,protocolID,liquidHandlerContainers,
 		numberOfReplicates,instrument,name,scale,agarosePercentage,gel,ladder,ladderFrequency,sampleVolume,loadingDye,loadingDyeVolume,loadingDilutionBuffer,loadingDilutionBufferVolume,automaticPeakDetections,peakDetectionRanges,
 		collectionSizes,collectionRanges,samplesOutStorageCondition,sampleLoadingVolume,separationTime,dutyCycle,extractionVolume,parentProtocol,gelDownloadFields,
 		listedSampleContainers,liquidHandlerContainerDownload,gelDownload,gelPacket,sampleContainersIn,liquidHandlerContainerMaxVolumes,samplesWithReplicates,optionsWithReplicates,
@@ -3451,7 +3408,7 @@ agaroseGelElectrophoresisResourcePackets[mySamples:ListableP[ObjectP[Object[Samp
 		uniqueObjectResourceReplaceRules,samplesInResources,loadingDilutionBufferResources,ladderResource,
 		noSingleLoadingDyes,flattenedExpandedLoadingDyeVolumes,loadingDyeVolumeRules,primaryLoadingDyes,secondaryLoadingDyes,ladderLoadingDyes,ladderLoadingDyeVolume,ladderLoadingDyeVolumeRules,
 		allLoadingDyeVolumeRules,uniqueLoadingDyeObjectsAndVolumesAssociation,uniqueLoadingDyeResources,uniqueLoadingDyeObjects,uniqueLoadingDyeObjectResourceReplaceRules,ladderLoadingDyeResources,
-		primaryLoadingDyeResources,secondaryLoadingDyeResources,instrumentResource,gelMaterial,gelPercentage,gelModel,destinationPlateResource,primaryPipettteTipsResource,secondaryPipetteTipsResource,
+		primaryLoadingDyeResources,secondaryLoadingDyeResources,instrumentResource,gelMaterial,gelPercentage,gelModel,destinationPlateResource,primaryPipetteTipsResource,secondaryPipetteTipsResource,
 		electrophoresisTimeEstimate,minPeakDetectionSizes,maxPeakDetectionSizes,minCollectionRangeSizes,maxCollectionRangeSizes,
 		protocolPacket,prepPacket,finalizedPacket,allResourceBlobs,resourcesOk,resourceTests,previewRule,optionsRule,testsRule,resultRule
 	},
@@ -3477,6 +3434,9 @@ agaroseGelElectrophoresisResourcePackets[mySamples:ListableP[ObjectP[Object[Samp
 
 	(* get the inherited cache *)
 	inheritedCache = Lookup[ToList[ops],Cache];
+
+	(* Get the simulation *)
+	simulation = Lookup[ToList[ops],Simulation];
 
 	(* Generate an ID for the new protocol *)
 	protocolID=CreateID[Object[Protocol,AgaroseGelElectrophoresis]];
@@ -3525,6 +3485,7 @@ agaroseGelElectrophoresisResourcePackets[mySamples:ListableP[ObjectP[Object[Samp
 				{gelDownloadFields}
 			},
 			Cache->inheritedCache,
+			Simulation->simulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist}
@@ -3850,7 +3811,7 @@ agaroseGelElectrophoresisResourcePackets[mySamples:ListableP[ObjectP[Object[Samp
 	];
 
 	(* Make resources for the pipette tips - making two separate resources so that users don't ALWAYS buy tips for the Ranger if none are needed *)
-	primaryPipettteTipsResource=Link[Resource[
+	primaryPipetteTipsResource=Link[Resource[
 		Sample -> Model[Item,Tips,"50 uL Hamilton barrier tips, sterile"],
 		Amount->96
 	]];
@@ -3948,7 +3909,7 @@ agaroseGelElectrophoresisResourcePackets[mySamples:ListableP[ObjectP[Object[Samp
 		Replace[LoadingDilutionBuffers]->(Link[#]&/@loadingDilutionBufferResources),
 		Replace[LoadingDilutionBufferVolumes]->expandedLoadingDilutionBufferVolume,
 		SampleLoadingVolume->sampleLoadingVolume,
-		PrimaryPipetteTips->primaryPipettteTipsResource,
+		PrimaryPipetteTips->primaryPipetteTipsResource,
 		SecondaryPipetteTips->secondaryPipetteTipsResource,
 		Ladder->Link[ladderResource],
 		LadderFrequency->ladderFrequency,
@@ -3985,12 +3946,12 @@ agaroseGelElectrophoresisResourcePackets[mySamples:ListableP[ObjectP[Object[Samp
 		Replace[SamplesInStorage]->expandedSamplesInStorage,
 		Replace[SamplesOutStorage]->samplesOutStorageCondition,
 		Replace[Checkpoints]->{
-			{"Preparing Samples",15*Minute,"Preprocessing, such as incubation, centrifugation, filtration, and aliquotting, is performed.",Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->15 Minute]]},
-			{"Picking Resources",45*Minute,"Samples, plates, and gels required to execute this protocol are gathered from storage.",Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->45 Minute]]},
-			{"Preparing Loading Plate",30*Minute,"The LoadingPlate is loaded with the specified reagents.",Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->30 Minute]]},
-			{"Preparing Instrumentation",45*Minute,"The instrument is configured for the protocol.",Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->45 Minute]]},
-			{"Electrophoresis",(separationTime+2*Hour),"Samples are separated according to their electrophoretic mobility.",Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->(separationTime+2*Hour)]]},
-			{"Returning Materials",30*Minute,"Samples are returned to storage.",Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->30 Minute]]}
+			{"Preparing Samples",15*Minute,"Preprocessing, such as incubation, centrifugation, filtration, and aliquotting, is performed.",Link[Resource[Operator->$BaselineOperator,Time->15 Minute]]},
+			{"Picking Resources",45*Minute,"Samples, plates, and gels required to execute this protocol are gathered from storage.",Link[Resource[Operator->$BaselineOperator,Time->45 Minute]]},
+			{"Preparing Loading Plate",30*Minute,"The LoadingPlate is loaded with the specified reagents.",Link[Resource[Operator->$BaselineOperator,Time->30 Minute]]},
+			{"Preparing Instrumentation",45*Minute,"The instrument is configured for the protocol.",Link[Resource[Operator->$BaselineOperator,Time->45 Minute]]},
+			{"Electrophoresis",(separationTime+2*Hour),"Samples are separated according to their electrophoretic mobility.",Link[Resource[Operator->$BaselineOperator,Time->(separationTime+2*Hour)]]},
+			{"Returning Materials",30*Minute,"Samples are returned to storage.",Link[Resource[Operator->$BaselineOperator,Time->30 Minute]]}
 		}
 	|>;
 
@@ -4008,9 +3969,9 @@ agaroseGelElectrophoresisResourcePackets[mySamples:ListableP[ObjectP[Object[Samp
 		MatchQ[$ECLApplication,Engine],
 			{True,{}},
 		gatherTests,
-			Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache],
+			Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache,Simulation -> Simulation[inheritedCache]],
 		True,
-			{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->inheritedCache],Null}
+			{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->inheritedCache, Simulation -> Simulation[inheritedCache]],Null}
 	];
 
 	(* --- Output --- *)

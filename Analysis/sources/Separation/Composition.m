@@ -664,14 +664,16 @@ Warning::NoAnalytesFoundInStandards="The analyte `1` could not be matched to a n
 
 analyzeCompositionPackets[myProtocol:ObjectP[Object[Protocol,HPLC]],origOptions_List,myOptions_List,myResolutionOptions:OptionsPattern[analyzeCompositionPackets]]:=Module[
 	{
-		cache,excludeStandards,name,samplesIn,aliquotSamples,standards,protocolStartDate,samplesInAliquotSamplePreparation,standardAnalysisModels,standardPositions,standardAreas,
-		samplesInAnalysisModels,samplesInPositions,samplesInAreas,standardHeights,samplesInHeights,includedStandardIndices,filteredStandards,filteredStandardAnalysisModels,
-		filteredStandardModels,filteredStandardAreas,standardInformation,samplesInModels,uniqueSamplesInModels,fitObjects,
-		concentrationsAndAreas,concentrationUnit,transposedData,analysisRules,samplesInAliquotInformation,samplePeakInformation,predictedConcentration,
-		aliquotRatio,sampleData,standardData,resolvedAliquotSamples,analysisPacket,packet,filteredExpandedStandards,aliquotVolumes,assayVolumes,standardTailings,
+		cache,excludeStandards,name,samplesIn,aliquotSamples,standards,protocolStartDate,samplesInAliquotSamplePreparation,
+		standardAnalysisModels,standardPositions,standardAreas,samplesInAnalysisModels,samplesInPositions,samplesInAreas,
+		standardHeights,samplesInHeights,includedStandardIndices,filteredStandards,formattedStandardModels,filteredStandardAnalysisModels,
+		formattedAliquotRatios,formattedStandardCompositions,formattedSampleCompositions,formattedAliquotCompositions,filteredStandardModels,
+		filteredStandardAreas,standardInformation,samplesInModels,uniqueSamplesInModels,fitObjects,concentrationsAndAreas,concentrationUnit,
+		transposedData,analysisRules,samplesInAliquotInformation,samplePeakInformation,predictedConcentration,aliquotRatio,sampleData,
+		standardData,resolvedAliquotSamples,analysisPacket,packet,filteredExpandedStandards,aliquotVolumes,assayVolumes,standardTailings,
 		standardLabels,samplesInTailings,samplesInLabels,standardAdjacentResolutions,samplesInAdjacentResolutions,preferredConcentrationType,
-		filteredStandardModelPackets,standardCompositions,standardCompositionMapping,standardCompositionLookup,standardMasses,standardVolumes,
-		standardConcentrations,standardInformationRaw,filteredStandardData,filteredExpandedStandardData
+		filteredStandardModelPackets,standardCompositions,standardCompositionsNoTime,standardCompositionMapping,standardCompositionLookup,
+		standardMasses,standardVolumes,standardConcentrations,standardInformationRaw,filteredStandardData,filteredExpandedStandardData
 	},
 
 	(* Lookup our cache. *)
@@ -764,12 +766,18 @@ analyzeCompositionPackets[myProtocol:ObjectP[Object[Protocol,HPLC]],origOptions_
 		Cache->cache
 	];
 
+	(* Note: since the time in Composition is not used, we remove them here *)
+	standardCompositionsNoTime = Map[
+		(#[[All, {1, 2}]]/.{object:ObjectP[]:>Download[object,Object]})&,
+		standardCompositions
+	];
+
 	(* Given linked objects in the Standard field of the protocol, map the object references to their compositions *)
 	standardCompositionMapping=DeleteDuplicates@MapThread[
 		(#1->{#2,Mass->#3,Volume->#4})&,
 		{
 			Download[standards,Object],
-			standardCompositions/.{object:ObjectP[]:>Download[object,Object]},
+			standardCompositionsNoTime,
 			standardMasses,
 			standardVolumes
 		}
@@ -1080,7 +1088,7 @@ analyzeCompositionPackets[myProtocol:ObjectP[Object[Protocol,HPLC]],origOptions_
 	];
 
 	(* Massage things into the old format. *)
-	(* The old format just has everything as a GOD DAMN EXPRESSION. *)
+	(* The old format just has everything as an EXPRESSION. *)
 	analysisPacket=<|
 		Author->Link[$PersonID],
 		UnresolvedOptions->origOptions,
@@ -1108,9 +1116,7 @@ analyzeCompositionPackets[myProtocol:ObjectP[Object[Protocol,HPLC]],origOptions_
 		Replace[StandardCurveFitAnalyses]->(
 			If[MatchQ[#,Null],
 				Nothing,
-				myObject=Lookup[#,Object];
-
-				Link[myObject,Reference]
+				Link[Lookup[#,Object],Reference]
 			]
 		&)/@fitObjects,
 		Replace[StandardCurveFitFunctions]->(
@@ -1140,7 +1146,7 @@ DefineOptions[generateUpdatePackets,Options:>{CacheOption}];
 (* Generate packet updates to update the composition in the *)
 generateUpdatePackets[compPacket:PacketP[Object[Analysis,Composition]],updateOps:OptionsPattern[generateUpdatePackets]]:=Module[
 	{
-		cache,assayResults,samples,dilutions,sampleData,analytesPerSample,resultsLookup,trimmedResultsLookup,
+		cache,samples,analytesPerSample,resultsLookup,trimmedResultsLookup,
 		groupedResults,newCompositions,oldCompositions,validUploadUnits,invalidIndices,invalidObjects
 	},
 
@@ -1177,11 +1183,11 @@ generateUpdatePackets[compPacket:PacketP[Object[Analysis,Composition]],updateOps
 		DeleteDuplicates[samples[Object]],
 		Packet[Composition],
 		Cache->cache
-	]/.{{Null,Null}->Nothing};
+	]/.{{Null,Null,_}->Nothing};
 
 	(* New composition packets *)
 	newCompositions=Map[
-		Module[{obj,comp,analyteConcs,untrackedComps,appendedComps,newComps},
+		Module[{obj,comp,analyteConcs,untrackedComps,timeCutOff,appendedComps,newComps},
 			(* Pull the object and composition out of the old composition packets *)
 			{obj,comp}=Lookup[#,{Object,Composition}];
 
@@ -1191,23 +1197,29 @@ generateUpdatePackets[compPacket:PacketP[Object[Analysis,Composition]],updateOps
 			(* Objects that a composition was computed for which are not present in Composition already *)
 			untrackedComps=Complement[
 				First/@analyteConcs,
-				Part[comp,All,-1][Object]
+				Download[comp[[All, 2]], Object]
+			];
+
+			(* Record current time as time associated with untrackedComps *)
+			timeCutOff = If[MatchQ[Lookup[Cases[cache, PacketP[Object[Protocol, HPLC]]], DateStarted], {_DateObject..}],
+				FirstOrDefault@Lookup[Cases[cache, PacketP[Object[Protocol, HPLC]]], DateStarted],
+				Now
 			];
 
 			(* Append any compositions to the field which were not already there *)
 			appendedComps=Join[
 				comp,
-				{Null,#}&/@untrackedComps
+				{Null,#, timeCutOff}&/@untrackedComps
 			]/.{l:_Link:>l[Object]};
 
 			(* Update the compositions *)
 			newComps=Map[
 				Function[{compPair},
-					If[MatchQ[Lookup[analyteConcs,Last[compPair],Null],Except[Null]],
+					If[MatchQ[Lookup[analyteConcs,compPair[[2]],Null],Except[Null]],
 						(* Update with the new value *)
-						{Lookup[analyteConcs,Last[compPair],Null],Link@Last[compPair]},
+						{Lookup[analyteConcs,compPair[[2]],Null],Link[compPair[[2]]], compPair[[3]]},
 						(* Return unchanged if not found *)
-						{First[compPair],Link@Last[compPair]}
+						{First[compPair],Link[compPair[[2]]],compPair[[3]]}
 					]
 				],
 				appendedComps

@@ -283,10 +283,21 @@ DefineOptions[ExperimentMeasureOsmolality,
 				]
 			}
 		],
-
 		(* Shared options *)
-		FuntopiaSharedOptions,
-		SamplesInStorageOptions
+		ModifyOptions[
+			ModelInputOptions,
+			OptionName -> PreparedModelContainer
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelAmount,
+			{
+				ResolutionDescription -> "Automatically set to 100 Microliter."
+			}
+		],
+		NonBiologyFuntopiaSharedOptions,
+		SamplesInStorageOptions,
+		SimulationOption
 	}
 ];
 
@@ -321,12 +332,12 @@ Error::OsmolalityControlConflict="The options - `1` - are in conflict with the C
 
 ExperimentMeasureOsmolality[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
 	{listedSamples,listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-		samplePreparationCache,safeOps,safeOpsTests,validLengths,validLengthTests,templatedOptions,templateTests,inheritedOptions,expandedSafeOps,
+		updatedSimulation,safeOps,safeOpsTests,validLengths,validLengthTests,templatedOptions,templateTests,inheritedOptions,expandedSafeOps,
 		cacheBall,resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,
 		allSamplePackets,instrumentModelPacket,instrumentObjectPacket,calibrantsObjects,cacheOption,specifiedInstrumentObjects,osmometerInstrumentModels,allInstrumentModels,
 		specifiedInstrumentModels,osmolalityStandardsList,inoculationPapersList,calibrantsModels,cleaningSolutionModels,allCalibrantModels,
 		mySamplesWithPreparedSamplesFields,mySamplesWithPreparedSamplesModelFields,mySamplesWithPreparedSamplesContainerFields,mySamplesWithPreparedSamplesContainerModelFields,
-		optionsWithObjects,userSpecifiedObjects,simulatedSampleQ,objectsExistQs,objectsExistTests,safeOptionsNamed,
+		optionsWithObjects,userSpecifiedObjects,safeOptionsNamed,
 		inoculationPapersPacket,calibrantObjectsPacket,calibrantModelsPacket,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,
 		cleaningSolutionModelsPacket,allTipModelPacket,allPipetteModelPacket,resourcePackets,resourcePacketTests,
 		controlsObjects,controlsModels,controlsObjectsPacket},
@@ -338,8 +349,8 @@ ExperimentMeasureOsmolality[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 	(* Determine if we should keep a running list of tests *)
 	gatherTests=MemberQ[output,Tests];
 
-	(* Remove temporal links and named objects. *)
-	{listedSamples,listedOptions}=removeLinks[ToList[mySamples],ToList[myOptions]];
+	(* Make sure we're working with a list of options and samples, and remove all temporal links *)
+	{listedSamples, listedOptions} = removeLinks[ToList[mySamples], ToList[myOptions]];
 
 	(* Make sure we're working with a list of options *)
 	cacheOption=ToList[Lookup[listedOptions,Cache,{}]];
@@ -347,20 +358,19 @@ ExperimentMeasureOsmolality[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentMeasureOsmolality,
 			ToList[listedSamples],
 			ToList[listedOptions]
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -370,15 +380,9 @@ ExperimentMeasureOsmolality[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 	];
 
 	(*change all Names to objects *)
-	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed,myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed,myOptionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
 
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentMeasureOsmolality,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentMeasureOsmolality,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
-
-	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
+	(* If the specified options don't match their patterns return $Failed *)
 	If[MatchQ[safeOps,$Failed],
 		Return[outputSpecification/.{
 			Result->$Failed,
@@ -386,6 +390,12 @@ ExperimentMeasureOsmolality[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 			Options->$Failed,
 			Preview->Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentMeasureOsmolality,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentMeasureOsmolality,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -436,52 +446,6 @@ ExperimentMeasureOsmolality[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 		]
 	];
 
-	(* Check that the specified objects exist or are visible to the current user *)
-	simulatedSampleQ=Map[
-		Lookup[
-			fetchPacketFromCache[#,samplePreparationCache],
-			Simulated,
-			False
-		]&,
-		userSpecifiedObjects
-	];
-	objectsExistQs=DatabaseMemberQ[
-		PickList[userSpecifiedObjects,simulatedSampleQ,False]
-	];
-
-	(* Build tests for object existence *)
-	objectsExistTests=If[gatherTests,
-		Module[{failingTest,passingTest},
-
-			failingTest=If[!MemberQ[objectsExistQs,False],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]<>" exist in the database:",True,False]
-			];
-
-			passingTest=If[!MemberQ[objectsExistQs,True],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,True]]<>" exist in the database:",True,True]
-			];
-
-			{failingTest,passingTest}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]
-		];
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->Join[safeOpsTests,validLengthTests,templateTests,objectsExistTests],
-			Options->$Failed,
-			Preview->Null
-		}]
-	];
-
 
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
 
@@ -519,7 +483,7 @@ ExperimentMeasureOsmolality[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 
 	(* Download the required fields from our objects *)
 
-	(* ContainerMatierals in SamplePreparationCacheFileds is a computable field that should be removed once SamplePreparationCacheFields are updated *)
+	(* ContainerMaterials in SamplePreparationCacheFields is a computable field that should be removed once SamplePreparationCacheFields are updated *)
 	mySamplesWithPreparedSamplesFields=Packet[
 		(* For sample prep *)
 		Sequence@@SamplePreparationCacheFields[Object[Sample]],
@@ -535,7 +499,7 @@ ExperimentMeasureOsmolality[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 		(* For Experiment *)
 		Viscosity,Notebook,IncompatibleMaterials,Composition,Name,Solvent,State,Deprecated,Sterile,Products,Dimensions,
 		(* Transport *)
-		TransportChilled,TransportWarmed
+		TransportTemperature
 	}]];
 
 	mySamplesWithPreparedSamplesContainerFields=Packet[Container[{
@@ -641,8 +605,9 @@ ExperimentMeasureOsmolality[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 					Packet[TipConnectionType,MinVolume,MaxVolume,CultureHandling,Resolution]
 				}
 			},
-			Cache->Flatten[{samplePreparationCache,cacheOption}],
-			Date->Now
+			Cache -> cacheOption,
+			Simulation -> updatedSimulation,
+			Date -> Now
 		],
 		{Download::FieldDoesntExist,Download::NotLinkField,Download::MissingCacheField}
 	];
@@ -651,13 +616,19 @@ ExperimentMeasureOsmolality[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 	(* It is important that the sample preparation cache is added first to the cache ball, before the main download. *)
 
 	cacheBall=FlattenCachePackets[{
-		samplePreparationCache,allSamplePackets,instrumentObjectPacket,instrumentModelPacket,calibrantObjectsPacket,controlsObjectsPacket,calibrantModelsPacket,inoculationPapersPacket,cleaningSolutionModelsPacket,allTipModelPacket,allPipetteModelPacket
+		allSamplePackets,instrumentObjectPacket,instrumentModelPacket,calibrantObjectsPacket,controlsObjectsPacket,calibrantModelsPacket,inoculationPapersPacket,cleaningSolutionModelsPacket,allTipModelPacket,allPipetteModelPacket
 	}];
 
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentMeasureOsmolalityOptions[ToList[mySamples],expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions, resolvedOptionsTests} = resolveExperimentMeasureOsmolalityOptions[
+			mySamplesWithPreparedSamples,
+			expandedSafeOps,
+			Cache -> cacheBall,
+			Simulation -> updatedSimulation,
+			Output -> {Result, Tests}
+		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -667,7 +638,15 @@ ExperimentMeasureOsmolality[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentMeasureOsmolalityOptions[ToList[mySamples],expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions, resolvedOptionsTests} = {
+				resolveExperimentMeasureOsmolalityOptions[
+					mySamplesWithPreparedSamples,
+					expandedSafeOps,
+					Cache -> cacheBall,
+					Simulation -> updatedSimulation
+			],
+				{}
+			},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -685,7 +664,7 @@ ExperimentMeasureOsmolality[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 	If[MatchQ[resolvedOptionsResult,$Failed],
 		Return[outputSpecification/.{
 			Result->$Failed,
-			Tests->Join[safeOpsTests,validLengthTests,templateTests,objectsExistTests,resolvedOptionsTests],
+			Tests->Join[safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests],
 			Options->RemoveHiddenOptions[ExperimentMeasureOsmolality,collapsedResolvedOptions],
 			Preview->Null
 		}]
@@ -694,15 +673,31 @@ ExperimentMeasureOsmolality[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 
 	(* Build packets with resources *)
 	{resourcePackets,resourcePacketTests}=If[gatherTests,
-		experimentMeasureOsmolalityResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{experimentMeasureOsmolalityResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall],{}}
+		experimentMeasureOsmolalityResourcePackets[
+			ToList[mySamplesWithPreparedSamples],
+			expandedSafeOps,
+			resolvedOptions,
+			Cache -> cacheBall,
+			Simulation -> updatedSimulation,
+			Output -> {Result, Tests}
+		],
+		{
+			experimentMeasureOsmolalityResourcePackets[
+				ToList[mySamplesWithPreparedSamples],
+				expandedSafeOps,
+				resolvedOptions,
+				Cache -> cacheBall,
+				Simulation -> updatedSimulation
+			],
+			{}
+		}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
 	If[!MemberQ[output,Result],
 		Return[outputSpecification/.{
 			Result->Null,
-			Tests->Flatten[{safeOpsTests,validLengthTests,templateTests,objectsExistTests,resolvedOptionsTests,resourcePacketTests}],
+			Tests->Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
 			Options->RemoveHiddenOptions[ExperimentMeasureOsmolality,collapsedResolvedOptions],
 			Preview->Null
 		}]
@@ -712,15 +707,17 @@ ExperimentMeasureOsmolality[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 	protocolObject=If[!MatchQ[resourcePackets,$Failed]&&!MatchQ[resolvedOptionsResult,$Failed],
 		UploadProtocol[
 			resourcePackets,
-			Upload->Lookup[safeOps,Upload],
-			Confirm->Lookup[safeOps,Confirm],
-			ParentProtocol->Lookup[safeOps,ParentProtocol],
-			Priority->Lookup[safeOps,Priority],
-			StartDate->Lookup[safeOps,StartDate],
-			HoldOrder->Lookup[safeOps,HoldOrder],
-			QueuePosition->Lookup[safeOps,QueuePosition],
-			ConstellationMessage->Object[Protocol,MeasureOsmolality],
-			Cache->samplePreparationCache
+			Upload -> Lookup[safeOps,Upload],
+			Confirm -> Lookup[safeOps,Confirm],
+			CanaryBranch -> Lookup[safeOps,CanaryBranch],
+			ParentProtocol -> Lookup[safeOps,ParentProtocol],
+			Priority -> Lookup[safeOps,Priority],
+			StartDate -> Lookup[safeOps,StartDate],
+			HoldOrder -> Lookup[safeOps,HoldOrder],
+			QueuePosition -> Lookup[safeOps,QueuePosition],
+			ConstellationMessage -> Object[Protocol,MeasureOsmolality],
+			Cache -> cacheBall,
+			Simulation -> updatedSimulation
 		],
 		$Failed
 	];
@@ -728,17 +725,17 @@ ExperimentMeasureOsmolality[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 	(* Return requested output *)
 	outputSpecification/.{
 		Result->protocolObject,
-		Tests->Flatten[{safeOpsTests,validLengthTests,templateTests,objectsExistTests,resolvedOptionsTests(*,resourcePacketTests*)}],(*TODO: why is this commented? *)
+		Tests->Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests(*,resourcePacketTests*)}],(*TODO: why is this commented? *)
 		Options->RemoveHiddenOptions[ExperimentMeasureOsmolality,collapsedResolvedOptions],
 		Preview->Null
 	}
 ];
 
 (* Note: The container overload should come after the sample overload. *)
-ExperimentMeasureOsmolality[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+ExperimentMeasureOsmolality[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{listedContainers,listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,
-		myOptionsWithPreparedSamples,objectsExistQs,objectsExistTests,sampleCache,
-		samplePreparationCache,containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,containerToSampleTests},
+		myOptionsWithPreparedSamples, containerToSampleSimulation,
+		updatedSimulation,containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -748,72 +745,36 @@ ExperimentMeasureOsmolality[myContainers:ListableP[ObjectP[{Object[Container],Ob
 	gatherTests=MemberQ[output,Tests];
 
 	(* Remove temporal links and named objects. *)
-	{listedContainers,listedOptions}=removeLinks[ToList[myContainers],ToList[myOptions]];
+	{listedContainers,listedOptions}= {ToList[myContainers],ToList[myOptions]};
 
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentMeasureOsmolality,
-			ToList[listedContainers],
-			ToList[listedOptions]
+			listedContainers,
+			listedOptions,
+			DefaultPreparedModelAmount -> 100 Microliter
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
-	];
-
-	(* Before we turn containers into samples, we want to check that all containers exist in the database. We don't check any other option objects as they will be checked in our main Sample overload. We don't want random result to be returned from containerToSample function *)
-	objectsExistQs=DatabaseMemberQ[ToList[myContainers]];
-
-	(* Build tests for object existence *)
-	objectsExistTests=If[gatherTests,
-		Module[{failingTest,passingTest},
-
-			failingTest=If[!MemberQ[objectsExistQs,False],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[ToList[myContainers],objectsExistQs,False]]<>" exist in the database:",True,False]
-			];
-
-			passingTest=If[!MemberQ[objectsExistQs,True],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[ToList[myContainers],objectsExistQs,True]]<>" exist in the database:",True,True]
-			];
-
-			{failingTest,passingTest}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[ToList[myContainers],objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[ToList[myContainers],objectsExistQs,False]]
-		];
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->objectsExistTests,
-			Options->$Failed,
-			Preview->Null
-		}]
+		Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
-	containerToSampleResult=If[gatherTests,
+	containerToSampleResult = If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput, containerToSampleTests, containerToSampleSimulation} = containerToSampleOptions[
 			ExperimentMeasureOsmolality,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output -> {Result, Tests, Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -824,50 +785,43 @@ ExperimentMeasureOsmolality[myContainers:ListableP[ObjectP[{Object[Container],Ob
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput, containerToSampleSimulation} = containerToSampleOptions[
 				ExperimentMeasureOsmolality,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output -> {Result, Simulation},
+				Simulation -> updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
 
-	(* Update our cache with our new simulated values. *)
-	(* It is important the sample preparation cache appears first in the cache ball. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
-
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToSampleResult,$Failed],
 		(* containerToSampleOptions failed - return $Failed *)
 		outputSpecification/.{
 			Result->$Failed,
-			Tests->Join[objectsExistTests,containerToSampleTests],
+			Tests->containerToSampleTests,
 			Options->$Failed,
 			Preview->Null
 		},
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions, sampleCache}=containerToSampleOutput;
+		{samples, sampleOptions} = containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentMeasureOsmolality[samples,ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache,sampleCache}]]]
+		ExperimentMeasureOsmolality[samples, ReplaceRule[sampleOptions, Simulation -> containerToSampleSimulation]]
 	]
 ];
 
 
 DefineOptions[
 	resolveExperimentMeasureOsmolalityOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentMeasureOsmolalityOptions]]:=Module[{
-	outputSpecification,output,gatherTests,cache,samplePrepOptions,MeasureOsmolalityOptions,simulatedSamples,resolvedSamplePrepOptions,simulatedCache,samplePrepTests,
+	outputSpecification,output,gatherTests,cache,simulation,samplePrepOptions,measureOsmolalityOptions,simulatedSamples,resolvedSamplePrepOptions,updatedSimulation,samplePrepTests,
 	measureOsmolalityOptionsAssociation,invalidInputs,invalidOptions,resolvedAliquotOptions,aliquotTests,incompatibleInputs,
 	(* Download *)
 	instrumentDownloadFields,listedSampleContainerPackets,instrumentPacket,calibrantsPackets,
@@ -931,7 +885,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 	controlOsmolalityDeviationWarningTests,controlOsmolalityUnknownWarningTests,controlToleranceWarningTests,
 
 	(* Misc options *)
-	allTests,emailOption,uploadOption,nameOption,confirmOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageCondition,samplesOutStorageCondition,operator,imageSample,measureWeight,measureVolume,
+	allTests,emailOption,uploadOption,nameOption,confirmOption,canaryBranchOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageCondition,samplesOutStorageCondition,operator,imageSample,measureWeight,measureVolume,
 	validSampleStorageConditionQ,validSampleStorageTests,invalidStorageConditionOptions,maxNumberOfCalibrations,
 
 	(* Finishing up *)
@@ -950,20 +904,21 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 	(* Determine if we should keep a running list of tests to return to the user. *)
 	gatherTests=MemberQ[output,Tests];
 
-	(* Fetch our cache from the parent function. *)
-	cache=Lookup[ToList[myResolutionOptions],Cache,{}];
+	(* Fetch our cache and simulation from the parent function. *)
+	cache=Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation=Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
 	(* Separate out our MeasureOsmolality options from our Sample Prep options. *)
-	{samplePrepOptions,MeasureOsmolalityOptions}=splitPrepOptions[myOptions];
+	{samplePrepOptions,measureOsmolalityOptions}=splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-		resolveSamplePrepOptions[ExperimentMeasureOsmolality,mySamples,samplePrepOptions,Cache->cache,Output->{Result,Tests}],
-		{resolveSamplePrepOptions[ExperimentMeasureOsmolality,mySamples,samplePrepOptions,Cache->cache,Output->Result],{}}
+	{{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentMeasureOsmolality,mySamples,samplePrepOptions,Cache->cache,Simulation -> simulation,Output->{Result,Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentMeasureOsmolality,mySamples,samplePrepOptions,Cache->cache,Simulation -> simulation,Output->Result],{}}
 	];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
-	measureOsmolalityOptionsAssociation=Association[MeasureOsmolalityOptions];
+	measureOsmolalityOptionsAssociation=Association[measureOsmolalityOptions];
 
 	(* Set options variables *)
 	{instrument,calibrants,rawControls,name,rawControlOsmolalities,rawControlVolumes,rawControlTolerances,maxNumberOfCalibrations,rawNumberOfControlReplicates}=Lookup[measureOsmolalityOptionsAssociation,{Instrument,Calibrant,Control,Name,ControlOsmolality,ControlVolume,ControlTolerance,MaxNumberOfCalibrations,NumberOfControlReplicates}];
@@ -993,7 +948,6 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 	};
 
 	(* Extract the packets that we need from our downloaded cache. *)
-	(* Download from simulatedSamples, using our simulatedCache *)
 
 	{
 		listedSampleContainerPackets,
@@ -1035,7 +989,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 				Packet[Object,Name,Composition,IncompatibleMaterials,Solvent,Density,DefaultStorageCondition]
 			}
 		},
-		Cache->simulatedCache,
+		Simulation -> updatedSimulation,
 		Date->Now
 	],
 		{Download::FieldDoesntExist,Download::NotLinkField}
@@ -1084,7 +1038,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs]>0&&!gatherTests,
-		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->simulatedCache]];
+		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation]];
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1092,12 +1046,12 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[discardedInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" are not discarded:",True,False]
+				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Simulation -> updatedSimulation]<>" are not discarded:",True,False]
 			];
 
 			passingTest=If[Length[discardedInvalidInputs]==Length[simulatedSamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs,SameTest->(MatchQ[#1,ObjectP[#2]]&)],Cache->simulatedCache]<>" are not discarded:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs,SameTest->(MatchQ[#1,ObjectP[#2]]&)],Simulation -> updatedSimulation]<>" are not discarded:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -1115,7 +1069,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[containerlessInvalidInputs]>0&&!gatherTests,
-		Message[Error::ContainerlessSamples,ObjectToString[containerlessInvalidInputs,Cache->simulatedCache]];
+		Message[Error::ContainerlessSamples,ObjectToString[containerlessInvalidInputs,Simulation -> updatedSimulation]];
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1123,12 +1077,12 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[containerlessInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[containerlessInvalidInputs,Cache->simulatedCache]<>" are located in a container:",True,False]
+				Test["Our input samples "<>ObjectToString[containerlessInvalidInputs,Simulation -> updatedSimulation]<>" are located in a container:",True,False]
 			];
 
 			passingTest=If[Length[containerlessInvalidInputs]==Length[simulatedSamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,containerlessInvalidInputs,SameTest->(MatchQ[#1,ObjectP[#2]]&)],Cache->simulatedCache]<>" are located in a container:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,containerlessInvalidInputs,SameTest->(MatchQ[#1,ObjectP[#2]]&)],Simulation -> updatedSimulation]<>" are located in a container:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -1161,7 +1115,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[noVolumeInvalidInputs]>0&&!gatherTests,
-		Message[Error::OsmolalityNoVolume,ObjectToString[noVolumeInvalidInputs,Cache->simulatedCache]];
+		Message[Error::OsmolalityNoVolume,ObjectToString[noVolumeInvalidInputs,Simulation -> updatedSimulation]];
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1169,12 +1123,12 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[noVolumeInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[noVolumeInvalidInputs,Cache->simulatedCache]<>" have volume populated:",True,False]
+				Test["Our input samples "<>ObjectToString[noVolumeInvalidInputs,Simulation -> updatedSimulation]<>" have volume populated:",True,False]
 			];
 
 			passingTest=If[Length[noVolumeInvalidInputs]==Length[simulatedSamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,noVolumeInvalidInputs,SameTest->(MatchQ[#1,ObjectP[#2]]&)],Cache->simulatedCache]<>" have volume populated.",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,noVolumeInvalidInputs,SameTest->(MatchQ[#1,ObjectP[#2]]&)],Simulation -> updatedSimulation]<>" have volume populated.",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -1292,7 +1246,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* If there are invalid options and we are throwing error, throw an error *)
 	If[Length[calibrantIncompatibleConflictOptions]>0&&!gatherTests,
-		Message[Error::OsmolalityCalibrantIncompatible,ObjectToString[#,Cache->simulatedCache]&/@calibrantIncompatibleConflictOptions,ObjectToString[Lookup[allOptionsRounded,Instrument],Cache->simulatedCache],ObjectToString[Download[First@Lookup[instrumentPacket,ManufacturerCalibrants],Object],Cache->simulatedCache],First@Lookup[instrumentPacket,ManufacturerCalibrantOsmolalities]]
+		Message[Error::OsmolalityCalibrantIncompatible,ObjectToString[#,Simulation -> updatedSimulation]&/@calibrantIncompatibleConflictOptions,ObjectToString[Lookup[allOptionsRounded,Instrument],Simulation -> updatedSimulation],ObjectToString[Download[First@Lookup[instrumentPacket,ManufacturerCalibrants],Object],Simulation -> updatedSimulation],First@Lookup[instrumentPacket,ManufacturerCalibrantOsmolalities]]
 	];
 
 	(* Build a test for whether the calibrants specified are compatible with the instrument *)
@@ -1329,7 +1283,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* If there are invalid options and we are throwing error, throw an error *)
 	If[Length[calibrantOrderingConflictOptions]>0&&!gatherTests,
-		Message[Error::OsmolalityCalibrantsMisordered,{ObjectToString[First[#],Cache->simulatedCache],Last[#]}&/@calibrantOrderingConflictOptions,ObjectToString[Lookup[allOptionsRounded,Instrument],Cache->simulatedCache],ObjectToString[Download[First@Lookup[instrumentPacket,ManufacturerCalibrants],Object],Cache->simulatedCache]]
+		Message[Error::OsmolalityCalibrantsMisordered,{ObjectToString[First[#],Simulation -> updatedSimulation],Last[#]}&/@calibrantOrderingConflictOptions,ObjectToString[Lookup[allOptionsRounded,Instrument],Simulation -> updatedSimulation],ObjectToString[Download[First@Lookup[instrumentPacket,ManufacturerCalibrants],Object],Simulation -> updatedSimulation]]
 	];
 
 	(* Build a test for whether the calibrants specified are compatible with the instrument *)
@@ -1404,7 +1358,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* If there are invalid options and we are throwing error, throw an error *)
 	If[Length[calibrantOsmolalityIncompatibleConflictOptions]>0&&!gatherTests,
-		Message[Error::OsmolalityCalibrantOsmolalitiesIncompatible,calibrantOsmolalityIncompatibleConflictOptions,ObjectToString[Lookup[allOptionsRounded,Instrument],Cache->simulatedCache],ObjectToString[Download[First@Lookup[instrumentPacket,ManufacturerCalibrants],Object],Cache->simulatedCache],First@Lookup[instrumentPacket,ManufacturerCalibrantOsmolalities]]
+		Message[Error::OsmolalityCalibrantOsmolalitiesIncompatible,calibrantOsmolalityIncompatibleConflictOptions,ObjectToString[Lookup[allOptionsRounded,Instrument],Simulation -> updatedSimulation],ObjectToString[Download[First@Lookup[instrumentPacket,ManufacturerCalibrants],Object],Simulation -> updatedSimulation],First@Lookup[instrumentPacket,ManufacturerCalibrantOsmolalities]]
 	];
 
 	(* Build a test for whether the calibrants specified are compatible with the instrument *)
@@ -1441,7 +1395,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* If there are invalid options and we are throwing error, throw an error *)
 	If[Length[calibrantOsmolalityOrderingConflictOptions]>0&&!gatherTests,
-		Message[Error::OsmolalityCalibrantOsmolalitiesMisordered,calibrantOsmolalityOrderingConflictOptions,ObjectToString[Lookup[allOptionsRounded,Instrument],Cache->simulatedCache],First@Lookup[instrumentPacket,ManufacturerCalibrantOsmolalities]]
+		Message[Error::OsmolalityCalibrantOsmolalitiesMisordered,calibrantOsmolalityOrderingConflictOptions,ObjectToString[Lookup[allOptionsRounded,Instrument],Simulation -> updatedSimulation],First@Lookup[instrumentPacket,ManufacturerCalibrantOsmolalities]]
 	];
 
 	(* Build a test for whether the calibrants specified are compatible with the instrument *)
@@ -1561,7 +1515,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* If there are invalid options and we are throwing error, throw an error *)
 	If[Length[lowSampleVolumeWarningConflictOptions]>0&&!gatherTests&&Not[MatchQ[$ECLApplication,Engine]],
-		Message[Warning::OsmolalityLowSampleVolume,lowSampleVolumeWarningConflictOptions,ObjectToString[Lookup[allOptionsRounded,Instrument],Cache->simulatedCache],First[Lookup[instrumentPacket,MinSampleVolume]]]
+		Message[Warning::OsmolalityLowSampleVolume,lowSampleVolumeWarningConflictOptions,ObjectToString[Lookup[allOptionsRounded,Instrument],Simulation -> updatedSimulation],First[Lookup[instrumentPacket,MinSampleVolume]]]
 	];
 
 	(* Build a test for whether the sample volumes are above the minimum recommended for the instrument *)
@@ -1601,7 +1555,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* If there are invalid options and we are throwing error, throw an error *)
 	If[Length[lowControlVolumeWarningConflictOptions]>0&&!gatherTests&&Not[MatchQ[$ECLApplication,Engine]],
-		Message[Warning::OsmolalityLowControlVolume,lowControlVolumeWarningConflictOptions,ObjectToString[Lookup[allOptionsRounded,Instrument],Cache->simulatedCache],First[Lookup[instrumentPacket,MinSampleVolume]]]
+		Message[Warning::OsmolalityLowControlVolume,lowControlVolumeWarningConflictOptions,ObjectToString[Lookup[allOptionsRounded,Instrument],Simulation -> updatedSimulation],First[Lookup[instrumentPacket,MinSampleVolume]]]
 	];
 
 	(* Build a test for whether the sample volumes are above the minimum recommended for the instrument *)
@@ -1652,7 +1606,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* If there are invalid options and we are throwing error, throw an error *)
 	If[Length[readingsExceedsMaximumConflictOptions]>0&&!gatherTests,
-		Message[Error::OsmolalityReadingsExceedsMaximum,ObjectToString[readingsExceedsMaximumConflictInputs,Cache->simulatedCache],readingsExceedsMaximumConflictOptions,ObjectToString[Lookup[allOptionsRounded,Instrument],Cache->simulatedCache],32]
+		Message[Error::OsmolalityReadingsExceedsMaximum,ObjectToString[readingsExceedsMaximumConflictInputs,Simulation -> updatedSimulation],readingsExceedsMaximumConflictOptions,ObjectToString[Lookup[allOptionsRounded,Instrument],Simulation -> updatedSimulation],32]
 	];
 
 	(* Build a test for whether the sample volumes are above the minimum recommended for the instrument *)
@@ -1704,7 +1658,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* If there are invalid options and we are throwing error, throw an error *)
 	If[Length[equilibrationTimeReadingsConflictOptions]>0&&!gatherTests,
-		Message[Error::OsmolalityEquilibrationTimeReadings,ObjectToString[equilibrationTimeReadingsConflictInputs,Cache->simulatedCache],equilibrationTimeReadingsConflictOptions,ObjectToString[Lookup[allOptionsRounded,Instrument],Cache->simulatedCache]]
+		Message[Error::OsmolalityEquilibrationTimeReadings,ObjectToString[equilibrationTimeReadingsConflictInputs,Simulation -> updatedSimulation],equilibrationTimeReadingsConflictOptions,ObjectToString[Lookup[allOptionsRounded,Instrument],Simulation -> updatedSimulation]]
 	];
 
 	(* Build a test for whether the sample volumes are above the minimum recommended for the instrument *)
@@ -1747,7 +1701,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 	(* Options to be resolved outside of Map Thread *)
 	(* Resolve the cleaning solution *)
 	resolvedCleaningSolution=If[MatchQ[cleaningSolution,Automatic],
-		Download[First[Lookup[instrumentPacket,ManufacturerCleaningSolution]],Object,Cache->simulatedCache],
+		Download[First[Lookup[instrumentPacket,ManufacturerCleaningSolution]],Object,Simulation -> updatedSimulation],
 		cleaningSolution
 	];
 
@@ -1909,7 +1863,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 	];
 
 	(* Resolve the number of control replicates *)
-	resolvedNumberOfControlReplicates=If[MatchQ[resolvedControls,{}|{Null}],{},numberOfControlReplicates/.Automatic->1];
+	resolvedNumberOfControlReplicates=If[MatchQ[resolvedControls,{}|{Null}],Null,numberOfControlReplicates/.Automatic->1];
 
 	(* Error check and resolve the control tolerances *)
 	{
@@ -2341,7 +2295,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* 1 Unknown viscosity warning *)
 	If[MemberQ[unknownViscosityWarnings,True]&&!gatherTests&&Not[MatchQ[$ECLApplication,Engine]],
-		Message[Warning::OsmolalityUnknownViscosity,ObjectToString[failingUnknownViscosityInputs,Cache->simulatedCache]]
+		Message[Warning::OsmolalityUnknownViscosity,ObjectToString[failingUnknownViscosityInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* Generate the tests *)
@@ -2358,7 +2312,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", if viscous loading is not specified, the viscosity field ("<>ObjectToString[failingViscosities,Cache->simulatedCache]<>") is populated:",
+				Test["For the provided samples "<>ObjectToString[failingSamples,Simulation -> updatedSimulation]<>", if viscous loading is not specified, the viscosity field ("<>ObjectToString[failingViscosities,Simulation -> updatedSimulation]<>") is populated:",
 					True,
 					False
 				],
@@ -2367,7 +2321,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the passing inputs *)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", if viscous loading is not specified, the viscosity field ("<>ObjectToString[passingViscosities,Cache->simulatedCache]<>") is populated:",
+				Test["For the provided samples "<>ObjectToString[passingSamples,Simulation -> updatedSimulation]<>", if viscous loading is not specified, the viscosity field ("<>ObjectToString[passingViscosities,Simulation -> updatedSimulation]<>") is populated:",
 					True,
 					True
 				],
@@ -2388,7 +2342,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* 2 Transfer high viscosity error *)
 	If[MemberQ[transferHighViscosityErrors,True]&&!gatherTests,
-		Message[Error::OsmolalityTransferHighViscosity,ObjectToString[failingTransferHighViscosityInputs,Cache->simulatedCache]]
+		Message[Error::OsmolalityTransferHighViscosity,ObjectToString[failingTransferHighViscosityInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* Generate the tests *)
@@ -2407,7 +2361,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the value for viscous loading, "<>ObjectToString[failingViscousLoadings,Cache->simulatedCache]<>", is True if the sample is high viscosity ("<>ObjectToString[failingViscosities,Cache->simulatedCache]<>"):",
+				Test["For the provided samples "<>ObjectToString[failingSamples,Simulation -> updatedSimulation]<>", the value for viscous loading, "<>ObjectToString[failingViscousLoadings,Simulation -> updatedSimulation]<>", is True if the sample is high viscosity ("<>ObjectToString[failingViscosities,Simulation -> updatedSimulation]<>"):",
 					True,
 					False
 				],
@@ -2416,7 +2370,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the passing inputs *)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the value for viscous loading, "<>ObjectToString[passingViscousLoadings,Cache->simulatedCache]<>", is True if the sample is high viscosity ("<>ObjectToString[passingViscosities,Cache->simulatedCache]<>"):",
+				Test["For the provided samples "<>ObjectToString[passingSamples,Simulation -> updatedSimulation]<>", the value for viscous loading, "<>ObjectToString[passingViscousLoadings,Simulation -> updatedSimulation]<>", is True if the sample is high viscosity ("<>ObjectToString[passingViscosities,Simulation -> updatedSimulation]<>"):",
 					True,
 					True
 				],
@@ -2437,7 +2391,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* 3 Sample carry over warning *)
 	If[MemberQ[sampleCarryOverWarnings,True]&&!gatherTests&&Not[MatchQ[$ECLApplication,Engine]],
-		Message[Warning::OsmolalitySampleCarryOver,ObjectToString[failingSampleCarryOverInputs,Cache->simulatedCache]]
+		Message[Warning::OsmolalitySampleCarryOver,ObjectToString[failingSampleCarryOverInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* Generate the tests *)
@@ -2456,7 +2410,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the value for viscous loading, "<>ObjectToString[failingViscousLoadings,Cache->simulatedCache]<>", is False if the sample viscosity "<>ObjectToString[failingViscosities,Cache->simulatedCache]<>" is False:",
+				Test["For the provided samples "<>ObjectToString[failingSamples,Simulation -> updatedSimulation]<>", the value for viscous loading, "<>ObjectToString[failingViscousLoadings,Simulation -> updatedSimulation]<>", is False if the sample viscosity "<>ObjectToString[failingViscosities,Simulation -> updatedSimulation]<>" is False:",
 					True,
 					False
 				],
@@ -2465,7 +2419,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the passing inputs *)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the value for viscous loading, "<>ObjectToString[passingViscousLoadings,Cache->simulatedCache]<>", is False if the sample viscosity "<>ObjectToString[passingViscosities,Cache->simulatedCache]<>" is False:",
+				Test["For the provided samples "<>ObjectToString[passingSamples,Simulation -> updatedSimulation]<>", the value for viscous loading, "<>ObjectToString[passingViscousLoadings,Simulation -> updatedSimulation]<>", is False if the sample viscosity "<>ObjectToString[passingViscosities,Simulation -> updatedSimulation]<>" is False:",
 					True,
 					True
 				],
@@ -2486,7 +2440,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* 4 No inoculation paper warning *)
 	If[MemberQ[noInoculationPaperWarnings,True]&&!gatherTests&&Not[MatchQ[$ECLApplication,Engine]],
-		Message[Warning::OsmolalityNoInoculationPaper,ObjectToString[failingNoInoculationPaperInputs,Cache->simulatedCache]]
+		Message[Warning::OsmolalityNoInoculationPaper,ObjectToString[failingNoInoculationPaperInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* Generate the tests *)
@@ -2505,7 +2459,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the value for inoculation paper, "<>ObjectToString[failingInoculationPapers,Cache->simulatedCache]<>" is not Null if viscous loading "<>ObjectToString[failingViscousLoadings,Cache->simulatedCache]<>" is False:",
+				Test["For the provided samples "<>ObjectToString[failingSamples,Simulation -> updatedSimulation]<>", the value for inoculation paper, "<>ObjectToString[failingInoculationPapers,Simulation -> updatedSimulation]<>" is not Null if viscous loading "<>ObjectToString[failingViscousLoadings,Simulation -> updatedSimulation]<>" is False:",
 					True,
 					False
 				],
@@ -2514,7 +2468,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the passing inputs *)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the value for inoculation paper, "<>ObjectToString[passingInoculationPapers,Cache->simulatedCache]<>" is not Null if viscous loading "<>ObjectToString[passingViscousLoadings,Cache->simulatedCache]<>" is False:",
+				Test["For the provided samples "<>ObjectToString[passingSamples,Simulation -> updatedSimulation]<>", the value for inoculation paper, "<>ObjectToString[passingInoculationPapers,Simulation -> updatedSimulation]<>" is not Null if viscous loading "<>ObjectToString[passingViscousLoadings,Simulation -> updatedSimulation]<>" is False:",
 					True,
 					True
 				],
@@ -2535,7 +2489,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* 5 viscous loading, low sample volume warning *)
 	If[MemberQ[viscousTransferMinimumVolumeWarnings,True]&&!gatherTests&&Not[MatchQ[$ECLApplication,Engine]],
-		Message[Warning::OsmolalityViscousTransferMinimumVolume,ObjectToString[failingViscousTransferMinimumVolumeInputs,Cache->simulatedCache],First/@failingViscousTransferMinimumVolumeOptions]
+		Message[Warning::OsmolalityViscousTransferMinimumVolume,ObjectToString[failingViscousTransferMinimumVolumeInputs,Simulation -> updatedSimulation],First/@failingViscousTransferMinimumVolumeOptions]
 	];
 
 	(* Generate the tests *)
@@ -2554,7 +2508,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the sample volume, "<>ObjectToString[failingSampleVolumes,Cache->simulatedCache]<>" is greater or equal to 10 uL if viscous loading "<>ObjectToString[failingViscousLoadings,Cache->simulatedCache]<>" is True:",
+				Test["For the provided samples "<>ObjectToString[failingSamples,Simulation -> updatedSimulation]<>", the sample volume, "<>ObjectToString[failingSampleVolumes,Simulation -> updatedSimulation]<>" is greater or equal to 10 uL if viscous loading "<>ObjectToString[failingViscousLoadings,Simulation -> updatedSimulation]<>" is True:",
 					True,
 					False
 				],
@@ -2563,7 +2517,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the passing inputs *)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the sample volume, "<>ObjectToString[passingSampleVolumes,Cache->simulatedCache]<>" is greater or equal to 10 uL if viscous loading "<>ObjectToString[passingViscousLoadings,Cache->simulatedCache]<>" is True:",
+				Test["For the provided samples "<>ObjectToString[passingSamples,Simulation -> updatedSimulation]<>", the sample volume, "<>ObjectToString[passingSampleVolumes,Simulation -> updatedSimulation]<>" is greater or equal to 10 uL if viscous loading "<>ObjectToString[passingViscousLoadings,Simulation -> updatedSimulation]<>" is True:",
 					True,
 					True
 				],
@@ -2584,7 +2538,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* 6 inoculation paper high viscosity warning *)
 	If[MemberQ[inoculationPaperHighViscosityWarnings,True]&&!gatherTests&&Not[MatchQ[$ECLApplication,Engine]],
-		Message[Warning::OsmolalityInoculationPaperHighViscosity,ObjectToString[failingInoculationPaperHighViscosityInputs,Cache->simulatedCache]]
+		Message[Warning::OsmolalityInoculationPaperHighViscosity,ObjectToString[failingInoculationPaperHighViscosityInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* Generate the tests *)
@@ -2603,7 +2557,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the value for inoculation paper, "<>ObjectToString[failingInoculationPapers,Cache->simulatedCache]<>" is Null if viscous loading "<>ObjectToString[failingViscousLoadings,Cache->simulatedCache]<>" is True:",
+				Test["For the provided samples "<>ObjectToString[failingSamples,Simulation -> updatedSimulation]<>", the value for inoculation paper, "<>ObjectToString[failingInoculationPapers,Simulation -> updatedSimulation]<>" is Null if viscous loading "<>ObjectToString[failingViscousLoadings,Simulation -> updatedSimulation]<>" is True:",
 					True,
 					False
 				],
@@ -2612,7 +2566,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the passing inputs *)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the value for inoculation paper, "<>ObjectToString[passingInoculationPapers,Cache->simulatedCache]<>" is Null if viscous loading "<>ObjectToString[passingViscousLoadings,Cache->simulatedCache]<>" is True:",
+				Test["For the provided samples "<>ObjectToString[passingSamples,Simulation -> updatedSimulation]<>", the value for inoculation paper, "<>ObjectToString[passingInoculationPapers,Simulation -> updatedSimulation]<>" is Null if viscous loading "<>ObjectToString[passingViscousLoadings,Simulation -> updatedSimulation]<>" is True:",
 					True,
 					True
 				],
@@ -2635,7 +2589,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 	If[MemberQ[shortEquilibrationTimeWarnings,True]&&!gatherTests&&Not[MatchQ[$ECLApplication,Engine]],
 		(* Reorganize failing options *)
 		{failingShortEquilibrationTimeInstruments,failingShortEquilibrationTimeTimes}=Transpose[failingShortEquilibrationTimeOptions];
-		Message[Warning::OsmolalityShortEquilibrationTime,ObjectToString[failingShortEquilibrationTimeInputs,Cache->simulatedCache],ObjectToString[Lookup[allOptionsRounded,Instrument],Cache->simulatedCache],failingShortEquilibrationTimeTimes]
+		Message[Warning::OsmolalityShortEquilibrationTime,ObjectToString[failingShortEquilibrationTimeInputs,Simulation -> updatedSimulation],ObjectToString[Lookup[allOptionsRounded,Instrument],Simulation -> updatedSimulation],failingShortEquilibrationTimeTimes]
 	];
 
 	(* Generate the tests *)
@@ -2652,7 +2606,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the value for equilibration time, "<>ObjectToString[failingEquilibrationTimes,Cache->simulatedCache]<>" is more than 10 seconds when the instrument is "<>ObjectToString[instrument,Cache->simulatedCache],
+				Test["For the provided samples "<>ObjectToString[failingSamples,Simulation -> updatedSimulation]<>", the value for equilibration time, "<>ObjectToString[failingEquilibrationTimes,Simulation -> updatedSimulation]<>" is more than 10 seconds when the instrument is "<>ObjectToString[instrument,Simulation -> updatedSimulation],
 					True,
 					False
 				],
@@ -2661,7 +2615,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the passing inputs *)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the value for equilibration time, "<>ObjectToString[passingEquilibrationTimes,Cache->simulatedCache]<>" is more than 10 seconds when the instrument is "<>ObjectToString[instrument,Cache->simulatedCache],
+				Test["For the provided samples "<>ObjectToString[passingSamples,Simulation -> updatedSimulation]<>", the value for equilibration time, "<>ObjectToString[passingEquilibrationTimes,Simulation -> updatedSimulation]<>" is more than 10 seconds when the instrument is "<>ObjectToString[instrument,Simulation -> updatedSimulation],
 					True,
 					True
 				],
@@ -2683,7 +2637,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* 8 Warn that the target osmolality given for a control differs from the db value *)
 	If[MemberQ[controlOsmolalityDeviationWarnings,True]&&!gatherTests&&Not[MatchQ[$ECLApplication,Engine]],
-		Message[Warning::OsmolalityControlOsmolalityDeviation,ObjectToString[failingControlOsmolalityDeviationInputs,Cache->simulatedCache],First/@failingControlOsmolalityDeviationOptions,Last/@failingControlOsmolalityDeviationOptions]
+		Message[Warning::OsmolalityControlOsmolalityDeviation,ObjectToString[failingControlOsmolalityDeviationInputs,Simulation -> updatedSimulation],First/@failingControlOsmolalityDeviationOptions,Last/@failingControlOsmolalityDeviationOptions]
 	];
 
 	(* Generate the tests *)
@@ -2700,7 +2654,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the non-passing inputs *)
 			failingControlTests=If[Length[failingControls]>0,
-				Test["For the provided controls "<>ObjectToString[failingControls,Cache->simulatedCache]<>", the provided control osmolalities ("<>ToString[failingOsmolalities]<>") agree with database values:",
+				Test["For the provided controls "<>ObjectToString[failingControls,Simulation -> updatedSimulation]<>", the provided control osmolalities ("<>ToString[failingOsmolalities]<>") agree with database values:",
 					True,
 					False
 				],
@@ -2709,7 +2663,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the passing inputs *)
 			passingControlTests=If[Length[passingControls]>0,
-				Test["For the provided controls "<>ObjectToString[passingControls,Cache->simulatedCache]<>", the provided control osmolalities ("<>ToString[passingOsmolalities]<>") agree with database values:",
+				Test["For the provided controls "<>ObjectToString[passingControls,Simulation -> updatedSimulation]<>", the provided control osmolalities ("<>ToString[passingOsmolalities]<>") agree with database values:",
 					True,
 					True
 				],
@@ -2730,7 +2684,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 	
 	(* 9 Warn that the target osmolality given for a control differs from the db value *)
 	If[MemberQ[controlOsmolalityUnknownErrors,True]&&!gatherTests&&Not[MatchQ[$ECLApplication,Engine]],
-		Message[Error::OsmolalityControlOsmolalityUnknown,ObjectToString[failingControlOsmolalityUnknownInputs,Cache->simulatedCache],First/@failingControlOsmolalityUnknownOptions]
+		Message[Error::OsmolalityControlOsmolalityUnknown,ObjectToString[failingControlOsmolalityUnknownInputs,Simulation -> updatedSimulation],First/@failingControlOsmolalityUnknownOptions]
 	];
 
 	(* Generate the tests *)
@@ -2747,7 +2701,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the non-passing inputs *)
 			failingControlTests=If[Length[failingControls]>0,
-				Test["For the provided controls "<>ObjectToString[failingControls,Cache->simulatedCache]<>", the control osmolalities ("<>ToString[failingOsmolalities]<>") could be resolved:",
+				Test["For the provided controls "<>ObjectToString[failingControls,Simulation -> updatedSimulation]<>", the control osmolalities ("<>ToString[failingOsmolalities]<>") could be resolved:",
 					True,
 					False
 				],
@@ -2756,7 +2710,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the passing inputs *)
 			passingControlTests=If[Length[passingControls]>0,
-				Test["For the provided controls "<>ObjectToString[passingControls,Cache->simulatedCache]<>", the control osmolalities ("<>ToString[passingOsmolalities]<>") could be resolved:",
+				Test["For the provided controls "<>ObjectToString[passingControls,Simulation -> updatedSimulation]<>", the control osmolalities ("<>ToString[passingOsmolalities]<>") could be resolved:",
 					True,
 					True
 				],
@@ -2777,7 +2731,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* 10 Warn that the specified control tolerance is below the repeatability of the instrument and tolerances of the standards *)
 	If[MemberQ[controlToleranceWarnings,True]&&!gatherTests&&Not[MatchQ[$ECLApplication,Engine]],
-		Message[Warning::OsmolalityControlTolerance,ObjectToString[failingControlToleranceInputs,Cache->simulatedCache],#[[1]]&/@failingControlToleranceOptions,SafeRound[#[[2]],0.1]&/@failingControlToleranceOptions,#[[3]]&/@failingControlToleranceOptions,#[[4]]&/@failingControlToleranceOptions,#[[5]]&/@failingControlToleranceOptions]
+		Message[Warning::OsmolalityControlTolerance,ObjectToString[failingControlToleranceInputs,Simulation -> updatedSimulation],#[[1]]&/@failingControlToleranceOptions,SafeRound[#[[2]],0.1]&/@failingControlToleranceOptions,#[[3]]&/@failingControlToleranceOptions,#[[4]]&/@failingControlToleranceOptions,#[[5]]&/@failingControlToleranceOptions]
 	];
 
 	(* Generate the tests *)
@@ -2794,7 +2748,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the non-passing inputs *)
 			failingControlTests=If[Length[failingControls]>0,
-				Test["For the provided controls "<>ObjectToString[failingControls,Cache->simulatedCache]<>", the provided control tolerances ("<>ToString[failingTolerances]<>") do not exceed the manufacturing standard of the calibrants and the repeatability of the instrument:",
+				Test["For the provided controls "<>ObjectToString[failingControls,Simulation -> updatedSimulation]<>", the provided control tolerances ("<>ToString[failingTolerances]<>") do not exceed the manufacturing standard of the calibrants and the repeatability of the instrument:",
 					True,
 					False
 				],
@@ -2803,7 +2757,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 			(* create a test for the passing inputs *)
 			passingControlTests=If[Length[passingControls]>0,
-				Test["For the provided controls "<>ObjectToString[passingControls,Cache->simulatedCache]<>", the provided control tolerances ("<>ToString[passingTolerances]<>") do not exceed the manufacturing standard of the calibrants and the repeatability of the instrument:",
+				Test["For the provided controls "<>ObjectToString[passingControls,Simulation -> updatedSimulation]<>", the provided control tolerances ("<>ToString[passingTolerances]<>") do not exceed the manufacturing standard of the calibrants and the repeatability of the instrument:",
 					True,
 					True
 				],
@@ -2823,15 +2777,15 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 
 	(* Pull out Miscellaneous options *)
-	{emailOption,uploadOption,nameOption,confirmOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageCondition,samplesOutStorageCondition,operator,imageSample,measureWeight,measureVolume}=
+	{emailOption,uploadOption,nameOption,confirmOption,canaryBranchOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageCondition,samplesOutStorageCondition,operator,imageSample,measureWeight,measureVolume}=
 		Lookup[allOptionsRounded,
-			{Email,Upload,Name,Confirm,ParentProtocol,FastTrack,Template,SamplesInStorageCondition,SamplesOutStorageCondition,Operator,ImageSample,MeasureWeight,MeasureVolume}
+			{Email,Upload,Name,Confirm,CanaryBranch,ParentProtocol,FastTrack,Template,SamplesInStorageCondition,SamplesOutStorageCondition,Operator,ImageSample,MeasureWeight,MeasureVolume}
 		];
 
 	(* check if the provided sampleStorageCondtion is valid*)
 	{validSampleStorageConditionQ,validSampleStorageTests}=If[gatherTests,
-		ValidContainerStorageConditionQ[simulatedSamples,samplesInStorageCondition,Cache->simulatedCache,Output->{Result,Tests}],
-		{ValidContainerStorageConditionQ[simulatedSamples,samplesInStorageCondition,Cache->simulatedCache,Output->Result],{}}
+		ValidContainerStorageConditionQ[simulatedSamples,samplesInStorageCondition,Cache->cache,Simulation -> updatedSimulation,Output->{Result,Tests}],
+		{ValidContainerStorageConditionQ[simulatedSamples,samplesInStorageCondition,Cache->cache,Simulation -> updatedSimulation,Output->Result],{}}
 	];
 
 	(* if the test above passes, there's no invalid option, otherwise, SamplesInStorageCondition will be an invalid option *)
@@ -2842,8 +2796,8 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* CompatibleMaterialsQ. Verify that the samples are compatible with the instrument *)
 	{compatibleMaterialsBool,compatibleMaterialsTests}=If[gatherTests,
-		CompatibleMaterialsQ[First[Lookup[instrumentPacket,Object],{}],simulatedSamples,Cache->simulatedCache,Output->{Result,Tests}],
-		{CompatibleMaterialsQ[First[Lookup[instrumentPacket,Object],{}],simulatedSamples,Cache->simulatedCache,Messages->!gatherTests],{}}
+		CompatibleMaterialsQ[First[Lookup[instrumentPacket,Object],{}],simulatedSamples,Cache->cache,Simulation -> updatedSimulation,Output->{Result,Tests}],
+		{CompatibleMaterialsQ[First[Lookup[instrumentPacket,Object],{}],simulatedSamples,Cache->cache,Simulation -> updatedSimulation,Messages->!gatherTests],{}}
 	];
 
 	(*Get all the incompatible samples*)
@@ -2854,7 +2808,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* If there are incompatible inputs and we are throwing messages, throw an error message .*)
 	If[Length[incompatibleInputs]>0&&!gatherTests,
-		Message[Error::OsmolalityIncompatibleSample,ObjectToString[incompatibleInputs,Cache->simulatedCache]]
+		Message[Error::OsmolalityIncompatibleSample,ObjectToString[incompatibleInputs,Simulation -> updatedSimulation]]
 	];
 
 	(*-- UNRESOLVABLE OPTION CHECKS --*)
@@ -2887,7 +2841,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTests,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -2912,20 +2866,22 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 			mySamples,
 			simulatedSamples,
 			ReplaceRule[myOptions,resolvedSamplePrepOptions],
-			Cache->simulatedCache,
-			RequiredAliquotContainers->simulatedSampleContainerModels,
-			RequiredAliquotAmounts->Null,
-			Output->{Result,Tests}
+			Cache -> cache,
+			Simulation -> updatedSimulation,
+			RequiredAliquotContainers  -> simulatedSampleContainerModels,
+			RequiredAliquotAmounts -> Null,
+			Output -> {Result, Tests}
 		],
 		{resolveAliquotOptions[
 			ExperimentMeasureOsmolality,
 			mySamples,
 			simulatedSamples,
 			ReplaceRule[myOptions,resolvedSamplePrepOptions],
-			Cache->simulatedCache,
-			RequiredAliquotContainers->simulatedSampleContainerModels,
-			RequiredAliquotAmounts->Null,
-			Output->Result],
+			Cache -> cache,
+			Simulation -> updatedSimulation,
+			RequiredAliquotContainers -> simulatedSampleContainerModels,
+			RequiredAliquotAmounts -> Null,
+			Output -> Result],
 			{}
 		}
 	];
@@ -2958,19 +2914,20 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 				PreClean->preClean,
 				NumberOfReplicates->numberOfReplicates,
 				CleaningSolution->resolvedCleaningSolution,
-				Calibrant->resolvedCalibrants,
-				CalibrantOsmolality->resolvedCalibrantOsmolalities,
-				CalibrantVolume->calibrantVolume,
-				Control->resolvedControls,
-				ControlOsmolality->resolvedControlOsmolalities,
-				ControlVolume->resolvedControlVolumes,
-				ControlTolerance->resolvedControlTolerances,
+				Calibrant->resolvedCalibrants/.{}->Null,
+				CalibrantOsmolality->resolvedCalibrantOsmolalities/.{}->Null,
+				CalibrantVolume->calibrantVolume/.{}->Null,
+				Control->resolvedControls/.{}->Null,
+				ControlOsmolality->resolvedControlOsmolalities/.{}->Null,
+				ControlVolume->resolvedControlVolumes/.{}->Null,
+				ControlTolerance->resolvedControlTolerances/.{}->Null,
 				ViscousLoading->resolvedViscousLoadings,
 				InoculationPaper->resolvedInoculationPapers,
 				SampleVolume->sampleVolume,
 				NumberOfReadings->numberOfReadings,
 				EquilibrationTime->resolvedEquilibrationTimes,
 				Confirm->confirmOption,
+				CanaryBranch->canaryBranchOption,
 				Name->name,
 				Template->templateOption,
 				Cache->cache,
@@ -3007,13 +2964,13 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 
 DefineOptions[
 	experimentMeasureOsmolalityResourcePackets,
-	Options:>{OutputOption,CacheOption}
+	Options:>{OutputOption,CacheOption,SimulationOption}
 ];
 
 
 experimentMeasureOsmolalityResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{___Rule},myResolvedOptions:{___Rule},ops:OptionsPattern[]]:=Module[
 	{
-		expandedInputs,expandedResolvedOptions,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,messages,inheritedCache,
+		expandedInputs,expandedResolvedOptions,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,messages,inheritedCache, simulation,
 		samplePackets,expandedAliquotVolume,pairedSamplesInAndVolumes,
 		sampleResourceReplaceRules,instrument,instrumentTime,instrumentResource,protocolPacket,sharedFieldPacket,finalizedPacket,
 		allResourceBlobs,fulfillable,frqTests,testsRule,resultRule,
@@ -3072,7 +3029,8 @@ experimentMeasureOsmolalityResourcePackets[mySamples:{ObjectP[Object[Sample]]..}
 	messages=Not[gatherTests];
 
 	(* Get the inherited cache *)
-	inheritedCache=Lookup[ToList[ops],Cache];
+	inheritedCache = Lookup[ToList[ops], Cache, {}];
+	simulation = Lookup[ToList[ops], Simulation, {}];
 
 	(* Get rid of links in mySamples *)
 	samplesWithoutLinks=mySamples/.{link_Link:>Download[link,Object]};
@@ -3102,8 +3060,9 @@ experimentMeasureOsmolalityResourcePackets[mySamples:{ObjectP[Object[Sample]]..}
 				Packet[MeasurementTime]
 			}
 		},
-		Cache->inheritedCache,
-		Date->Now
+		Cache -> inheritedCache,
+		Simulation -> simulation,
+		Date -> Now
 	],
 		Download::FieldDoesntExist
 	];
@@ -3245,6 +3204,7 @@ experimentMeasureOsmolalityResourcePackets[mySamples:{ObjectP[Object[Sample]]..}
 
 	(* Expand the controls by the NumberOfControlReplicates *)
 	expandControlReplicates[field_List]:=MapThread[Sequence@@ConstantArray[#1,#2]&,{field,numberOfControlReplicates}];
+	expandControlReplicates[Null]:={};
 
 	controlsReplicates=expandControlReplicates[controls];
 	controlVolumesReplicates=expandControlReplicates[controlVolumes];
@@ -3669,19 +3629,19 @@ experimentMeasureOsmolalityResourcePackets[mySamples:{ObjectP[Object[Sample]]..}
 		Replace[WasteGenerated]->{wasteAssociation},
 
 		Replace[Checkpoints]->{
-			{"Desiccant Cartridge Check",3 Minute,"Visually check whether the desiccant cartridge of the osmometer is exhausted and needs replacing.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->1 Minute]]},
-			{"Picking Resources",15 Minute,"Samples, solutions and equipment required to execute this protocol are gathered from storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10 Minute]]},
-			{"Preparing Samples",5 Minute,"Preprocessing, such as incubation, mixing, centrifugation, filtration, and aliquotting, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->1 Minute]]},
-			{"Prepare Instrumentation",instrumentSetupTime,"The instrument is configured for the protocol and internal tests are performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->instrumentSetupTime]]},
-			{"Calibration and Control",totalCalibrationTime,"Osmolality measurements to calibrate and verify the calibration of the instrument.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->totalCalibrationTime]]},
-			{"Measuring Osmolality",totalMeasurementTime,"Measure the osmolality of the SamplesIn.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->totalMeasurementTime]},
-			{"Sample Post-Processing",1 Hour,"Data parsing and any measuring of volume, weight, or sample imaging post experiment is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->1*Hour]]},
-			{"Returning Materials",10 Minute,"Samples are returned to storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10*Minute]]}
+			{"Desiccant Cartridge Check",3 Minute,"Visually check whether the desiccant cartridge of the osmometer is exhausted and needs replacing.",Link[Resource[Operator->$BaselineOperator,Time->1 Minute]]},
+			{"Picking Resources",15 Minute,"Samples, solutions and equipment required to execute this protocol are gathered from storage.",Link[Resource[Operator->$BaselineOperator,Time->10 Minute]]},
+			{"Preparing Samples",5 Minute,"Preprocessing, such as incubation, mixing, centrifugation, filtration, and aliquotting, is performed.",Link[Resource[Operator->$BaselineOperator,Time->1 Minute]]},
+			{"Prepare Instrumentation",instrumentSetupTime,"The instrument is configured for the protocol and internal tests are performed.",Link[Resource[Operator->$BaselineOperator,Time->instrumentSetupTime]]},
+			{"Calibration and Control",totalCalibrationTime,"Osmolality measurements to calibrate and verify the calibration of the instrument.",Link[Resource[Operator->$BaselineOperator,Time->totalCalibrationTime]]},
+			{"Measuring Osmolality",totalMeasurementTime,"Measure the osmolality of the SamplesIn.",Resource[Operator->$BaselineOperator,Time->totalMeasurementTime]},
+			{"Sample Post-Processing",1 Hour,"Data parsing and any measuring of volume, weight, or sample imaging post experiment is performed.",Link[Resource[Operator->$BaselineOperator,Time->1*Hour]]},
+			{"Returning Materials",10 Minute,"Samples are returned to storage.",Link[Resource[Operator->$BaselineOperator,Time->10*Minute]]}
 		}
 	|>;
 
 	(* generate a packet with the shared fields *)
-	sharedFieldPacket=populateSamplePrepFields[mySamples,myResolvedOptions,Cache->inheritedCache];
+	sharedFieldPacket=populateSamplePrepFields[mySamples,myResolvedOptions,Simulation -> simulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket=Join[sharedFieldPacket,protocolPacket];
@@ -3693,8 +3653,8 @@ experimentMeasureOsmolalityResourcePackets[mySamples:{ObjectP[Object[Sample]]..}
 	(* call fulfillableResourceQ on all the resources we created *)
 	{fulfillable,frqTests}=Which[
 		MatchQ[$ECLApplication,Engine],{True,{}},
-		gatherTests,Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache],
-		True,{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->inheritedCache],Null}
+		gatherTests,Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache,Simulation->simulation],
+		True,{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->inheritedCache,Simulation->simulation],Null}
 	];
 
 	(* --- Output --- *)
@@ -3750,7 +3710,7 @@ DefineOptions[ExperimentMeasureOsmolalityOptions,
 	SharedOptions:>{ExperimentMeasureOsmolality}
 ];
 
-ExperimentMeasureOsmolalityOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentMeasureOsmolalityOptions]]:=Module[
+ExperimentMeasureOsmolalityOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentMeasureOsmolalityOptions]]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -3778,7 +3738,7 @@ DefineOptions[ExperimentMeasureOsmolalityPreview,
 	SharedOptions:>{ExperimentMeasureOsmolality}
 ];
 
-ExperimentMeasureOsmolalityPreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentMeasureOsmolalityPreview]]:=Module[
+ExperimentMeasureOsmolalityPreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentMeasureOsmolalityPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -3799,7 +3759,7 @@ DefineOptions[ValidExperimentMeasureOsmolalityQ,
 	SharedOptions:>{ExperimentMeasureOsmolality}
 ];
 
-ValidExperimentMeasureOsmolalityQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ValidExperimentMeasureOsmolalityQ]]:=Module[
+ValidExperimentMeasureOsmolalityQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentMeasureOsmolalityQ]]:=Module[
 	{listedInput,listedOptions,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat,result},
 
 	listedInput=ToList[myInput];

@@ -45,7 +45,12 @@ DefineUsage[ExperimentCrossFlowFiltration,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -84,15 +89,22 @@ DefineUsage[ValidExperimentCrossFlowFiltrationQ,
 					IndexMatching[
 						{
 							InputName -> "Samples",
-							Description -> "The sample or container whose contents are to be filtered during the protocol.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-								Dereference -> {
-									Object[Container] -> Field[Contents[[All, 2]]]
-								}
+							Description-> "The sample or container whose contents are to be filtered during the protocol.",
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
-							Expandable -> False
+							Expandable->False
 						},
 						IndexName->"experiment samples"
 					]
@@ -127,14 +139,21 @@ DefineUsage[ExperimentCrossFlowFiltrationOptions,
 				Inputs:>{
 					IndexMatching[
 						{
-							InputName->"Samples",
-							Description->"The sample or container whose contents are to be filtered during the protocol.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							InputName -> "Samples",
+							Description-> "The sample or container whose contents are to be filtered during the protocol.",
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -172,14 +191,21 @@ DefineUsage[ExperimentCrossFlowFiltrationPreview,
 				Inputs:>{
 					IndexMatching[
 						{
-							InputName->"Samples",
-							Description->"The sample or container whose contents are to be filtered during the protocol.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							InputName -> "Samples",
+							Description-> "The sample or container whose contents are to be filtered during the protocol.",
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},

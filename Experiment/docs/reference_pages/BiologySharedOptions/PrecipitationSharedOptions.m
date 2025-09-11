@@ -94,7 +94,7 @@ DefineUsage[preResolvePrecipitationSharedOptions,
               Description->"The map thread version of the experiment options of the parent function (the function calling preResolvePrecipitationSharedOptions) that contains the precipitation shared options.",
               Widget->Widget[
                 Type -> Expression,
-                Pattern :> {_Rule..},
+                Pattern :> {_Association..},
                 Size -> Line
               ],
               Expandable->False
@@ -119,6 +119,6 @@ DefineUsage[preResolvePrecipitationSharedOptions,
       "preResolveExtractionSolidPhaseSharedOptions",
       "preResolveMagneticBeadSeparationSharedOptions"
     },
-    Author -> {"tim.pierpont"}
+    Author -> {"taylor.hochuli", "tim.pierpont"}
   }
 ];

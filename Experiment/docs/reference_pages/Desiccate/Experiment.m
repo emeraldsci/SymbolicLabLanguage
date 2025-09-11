@@ -24,9 +24,15 @@ DefineUsage[ExperimentDesiccate,
 							Description -> "The input samples that are dried in the desiccator via removing their lid and moving them into a bell jar with desiccant and/or vacuum for drying.",
 							Widget -> Widget[
 								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes -> {Object[Sample], Object[Container]},
-								Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+								Pattern :> ObjectP[{Object[Sample],Object[Container],Model[Sample]}],
+								ObjectTypes -> {Object[Sample], Object[Container], Model[Sample]},
+								Dereference -> {Object[Container]->Field[Contents[[All,2]]]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Materials"
+									}
+								}
 							],
 							Expandable -> False
 						},
@@ -73,11 +79,39 @@ DefineUsage[ValidExperimentDesiccateQ,
 						{
 							InputName -> "Samples",
 							Description -> "The input samples that are dried in the desiccator via losing water molecules to desiccant.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes -> {Object[Sample], Object[Container]},
-								Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Container with Well Position" -> {
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size -> Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -125,11 +159,39 @@ DefineUsage[ExperimentDesiccateOptions,
 						{
 							InputName -> "Samples",
 							Description -> "The input samples that are dried in the desiccator via losing water molecules to desiccant.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes -> {Object[Sample], Object[Container]},
-								Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Container with Well Position" -> {
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size -> Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -176,11 +238,39 @@ DefineUsage[ExperimentDesiccatePreview,
 						{
 							InputName -> "Samples",
 							Description -> "The input samples that are dried in the desiccator via losing water molecules to desiccant.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes -> {Object[Sample], Object[Container]},
-								Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Container with Well Position" -> {
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size -> Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},

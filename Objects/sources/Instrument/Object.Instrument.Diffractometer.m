@@ -17,7 +17,17 @@ DefineObjectType[Object[Instrument, Diffractometer], {
 				Object[Part,Chiller][Instrument],
 				Object[Instrument,HeatExchanger][IntegratedInstrument]
 			],
-			Description -> "The recirculating water chiller used to cool this diffractometer .",
+			Description -> "The recirculating water chiller used to cool this diffractometer.",
+			Category -> "Instrument Specifications"
+		},
+		DetectorShield -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Part]
+			],
+			Description -> "A protective cover for the detector module of the instrument. The detector module is responsible for recording high energy photon counts or intensities. The cover is removed when acquiring data.",
 			Category -> "Instrument Specifications"
 		},
 		RadiationType -> {
@@ -48,6 +58,13 @@ DefineObjectType[Object[Instrument, Diffractometer], {
 			Description -> "The type of detector available to measure the diffraction pattern.",
 			Category -> "Instrument Specifications"
 		},
+		SystemInterfaceVersion -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> Alternatives["DC8 PRO2", "DC8 MK2"], (*Add to this is we ever get a diffractometer with a different interface versions*)
+			Description -> "The system interface version of this instrument's hardware. Used for distinguishing between different hardware procedures.",
+			Category -> "Instrument Specifications"
+		},
 		DetectorPixelSize -> {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model], DetectorPixelSize]],
@@ -67,7 +84,7 @@ DefineObjectType[Object[Instrument, Diffractometer], {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model], ExperimentTypes]],
 			Pattern :> {XRDExperimentTypeP..},
-			Description -> "Indicates the types of x-ray experiments that may be performed on this experiment.",
+			Description -> "Indicates the types of X-ray experiments that may be performed on this experiment.",
 			Category -> "Instrument Specifications"
 		},
 

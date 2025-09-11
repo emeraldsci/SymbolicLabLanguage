@@ -1,3 +1,755 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1728bf6d1260f62533c3fbc53d542e42bada394b81017ae22980c271eaebab4b
-size 28884
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     27970,        747]
+NotebookOptionsPosition[     24906,        681]
+NotebookOutlinePosition[     25369,        699]
+CellTagsIndexPosition[     25326,        696]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Item Type", "Title",
+ CellChangeTimes->{{3.7431761257995944`*^9, 3.7431761287425995`*^9}, {
+   3.743176677894207*^9, 3.7431766858152113`*^9}, {3.7615058433791003`*^9, 
+   3.7615058454991007`*^9}, {3.7619737899672313`*^9, 
+   3.7619737909602313`*^9}, {3.774706546318407*^9, 3.7747065512764072`*^9}, 
+   3.774719750455084*^9},ExpressionUUID->"63b3884b-b63e-4951-b146-\
+4cdc347e4496"],
+
+Cell["\<\
+We\[CloseCurlyQuote]ve introduced a set of types, Object[Item] and \
+Model[Item]. These types describe subsidiary objects used to support the \
+daily running of experiments. They also remove the confusion caused by using \
+Object[Sample] and Model[Sample] to represent everything from antibodies to \
+pipette tips.
+
+The following types have been converted to the new Object[Item] type:\
+\>", "Text",
+ CellChangeTimes->{{3.7747076451782384`*^9, 3.774707653162037*^9}, {
+   3.7747101695042562`*^9, 3.7747102137306786`*^9}, 3.7747105506291914`*^9, 
+   3.7747105936431913`*^9},ExpressionUUID->"f9c8c520-5ac9-4a6b-8103-\
+df828ce8a3e8"],
+
+Cell[BoxData[
+ PaneBox[
+  TagBox[GridBox[{
+     {
+      TagBox[
+       TooltipBox[
+        ButtonBox[
+         StyleBox["\<\"Previous Type\"\>",
+          StripOnInput->False,
+          TextAlignment->Left,
+          
+          LineColor->RGBColor[
+           0.2901960784313726, 0.2901960784313726, 0.2901960784313726],
+          
+          FrontFaceColor->RGBColor[
+           0.2901960784313726, 0.2901960784313726, 0.2901960784313726],
+          
+          BackFaceColor->RGBColor[
+           0.2901960784313726, 0.2901960784313726, 0.2901960784313726],
+          
+          GraphicsColor->RGBColor[
+           0.2901960784313726, 0.2901960784313726, 0.2901960784313726],
+          FontFamily->"Helvetica",
+          FontSize->11,
+          FontWeight->Bold,
+          
+          FontColor->RGBColor[
+           0.2901960784313726, 0.2901960784313726, 0.2901960784313726]],
+         Appearance->None,
+         ButtonFunction:>CopyToClipboard[{
+            ECL`Object[ECL`Sample, Cap], 
+            ECL`Object[ECL`Sample, ECL`Cartridge], 
+            ECL`Object[ECL`Sample, Column], 
+            ECL`Object[ECL`Sample, ECL`Consumable], 
+            ECL`Object[ECL`Sample, ECL`Filter], 
+            ECL`Object[ECL`Sample, ECL`Gel], 
+            ECL`Object[ECL`Sample, ECL`Needle], 
+            ECL`Object[ECL`Sample, ECL`Tips]}],
+         Evaluator->Automatic,
+         Method->"Queued"],
+        "\"Copy list to clipboard\"",
+        TooltipStyle->"TextStyling"],
+       Annotation[#, "Copy list to clipboard", "Tooltip"]& ], 
+      TagBox[
+       TooltipBox[
+        ButtonBox[
+         StyleBox["\<\"New Type\"\>",
+          StripOnInput->False,
+          TextAlignment->Left,
+          
+          LineColor->RGBColor[
+           0.2901960784313726, 0.2901960784313726, 0.2901960784313726],
+          
+          FrontFaceColor->RGBColor[
+           0.2901960784313726, 0.2901960784313726, 0.2901960784313726],
+          
+          BackFaceColor->RGBColor[
+           0.2901960784313726, 0.2901960784313726, 0.2901960784313726],
+          GraphicsColor->RGBColor[
+           0.2901960784313726, 0.2901960784313726, 0.2901960784313726],
+          FontFamily->"Helvetica",
+          FontSize->11,
+          FontWeight->Bold,
+          
+          FontColor->RGBColor[
+           0.2901960784313726, 0.2901960784313726, 0.2901960784313726]],
+         Appearance->None,
+         ButtonFunction:>CopyToClipboard[{
+            ECL`Object[Item, Cap], 
+            ECL`Object[Item, ECL`Cartridge], 
+            ECL`Object[Item, Column], 
+            ECL`Object[Item, ECL`Consumable], 
+            ECL`Object[Item, ECL`Filter], 
+            ECL`Object[Item, ECL`Gel], 
+            ECL`Object[Item, ECL`Needle], 
+            ECL`Object[Item, ECL`Tips]}],
+         Evaluator->Automatic,
+         Method->"Queued"],
+        "\"Copy list to clipboard\"",
+        TooltipStyle->"TextStyling"],
+       Annotation[#, "Copy list to clipboard", "Tooltip"]& ]},
+     {
+      TagBox[
+       TooltipBox[
+        ButtonBox[
+         StyleBox[
+          RowBox[{"Object", "[", 
+           RowBox[{"Sample", ",", "Cap"}], "]"}],
+          StripOnInput->False,
+          FontSize->11],
+         Appearance->None,
+         ButtonFunction:>CopyToClipboard[
+           ECL`Object[ECL`Sample, Cap]],
+         Evaluator->Automatic,
+         Method->"Queued"],
+        "\"Copy value clipboard\"",
+        TooltipStyle->"TextStyling"],
+       Annotation[#, "Copy value clipboard", "Tooltip"]& ], 
+      TagBox[
+       TooltipBox[
+        ButtonBox[
+         StyleBox[
+          RowBox[{"Object", "[", 
+           RowBox[{"Item", ",", "Cap"}], "]"}],
+          StripOnInput->False,
+          FontSize->11],
+         Appearance->None,
+         ButtonFunction:>CopyToClipboard[
+           ECL`Object[Item, Cap]],
+         Evaluator->Automatic,
+         Method->"Queued"],
+        "\"Copy value clipboard\"",
+        TooltipStyle->"TextStyling"],
+       Annotation[#, "Copy value clipboard", "Tooltip"]& ]},
+     {
+      TagBox[
+       TooltipBox[
+        ButtonBox[
+         StyleBox[
+          RowBox[{"Object", "[", 
+           RowBox[{"Sample", ",", "Cartridge"}], "]"}],
+          StripOnInput->False,
+          FontSize->11],
+         Appearance->None,
+         ButtonFunction:>CopyToClipboard[
+           ECL`Object[ECL`Sample, ECL`Cartridge]],
+         Evaluator->Automatic,
+         Method->"Queued"],
+        "\"Copy value clipboard\"",
+        TooltipStyle->"TextStyling"],
+       Annotation[#, "Copy value clipboard", "Tooltip"]& ], 
+      TagBox[
+       TooltipBox[
+        ButtonBox[
+         StyleBox[
+          RowBox[{"Object", "[", 
+           RowBox[{"Item", ",", "Cartridge"}], "]"}],
+          StripOnInput->False,
+          FontSize->11],
+         Appearance->None,
+         ButtonFunction:>CopyToClipboard[
+           ECL`Object[Item, ECL`Cartridge]],
+         Evaluator->Automatic,
+         Method->"Queued"],
+        "\"Copy value clipboard\"",
+        TooltipStyle->"TextStyling"],
+       Annotation[#, "Copy value clipboard", "Tooltip"]& ]},
+     {
+      TagBox[
+       TooltipBox[
+        ButtonBox[
+         StyleBox[
+          RowBox[{"Object", "[", 
+           RowBox[{"Sample", ",", "Column"}], "]"}],
+          StripOnInput->False,
+          FontSize->11],
+         Appearance->None,
+         ButtonFunction:>CopyToClipboard[
+           ECL`Object[ECL`Sample, Column]],
+         Evaluator->Automatic,
+         Method->"Queued"],
+        "\"Copy value clipboard\"",
+        TooltipStyle->"TextStyling"],
+       Annotation[#, "Copy value clipboard", "Tooltip"]& ], 
+      TagBox[
+       TooltipBox[
+        ButtonBox[
+         StyleBox[
+          RowBox[{"Object", "[", 
+           RowBox[{"Item", ",", "Column"}], "]"}],
+          StripOnInput->False,
+          FontSize->11],
+         Appearance->None,
+         ButtonFunction:>CopyToClipboard[
+           ECL`Object[Item, Column]],
+         Evaluator->Automatic,
+         Method->"Queued"],
+        "\"Copy value clipboard\"",
+        TooltipStyle->"TextStyling"],
+       Annotation[#, "Copy value clipboard", "Tooltip"]& ]},
+     {
+      TagBox[
+       TooltipBox[
+        ButtonBox[
+         StyleBox[
+          RowBox[{"Object", "[", 
+           RowBox[{"Sample", ",", "Consumable"}], "]"}],
+          StripOnInput->False,
+          FontSize->11],
+         Appearance->None,
+         ButtonFunction:>CopyToClipboard[
+           ECL`Object[ECL`Sample, ECL`Consumable]],
+         Evaluator->Automatic,
+         Method->"Queued"],
+        "\"Copy value clipboard\"",
+        TooltipStyle->"TextStyling"],
+       Annotation[#, "Copy value clipboard", "Tooltip"]& ], 
+      TagBox[
+       TooltipBox[
+        ButtonBox[
+         StyleBox[
+          RowBox[{"Object", "[", 
+           RowBox[{"Item", ",", "Consumable"}], "]"}],
+          StripOnInput->False,
+          FontSize->11],
+         Appearance->None,
+         ButtonFunction:>CopyToClipboard[
+           ECL`Object[Item, ECL`Consumable]],
+         Evaluator->Automatic,
+         Method->"Queued"],
+        "\"Copy value clipboard\"",
+        TooltipStyle->"TextStyling"],
+       Annotation[#, "Copy value clipboard", "Tooltip"]& ]},
+     {
+      TagBox[
+       TooltipBox[
+        ButtonBox[
+         StyleBox[
+          RowBox[{"Object", "[", 
+           RowBox[{"Sample", ",", "Filter"}], "]"}],
+          StripOnInput->False,
+          FontSize->11],
+         Appearance->None,
+         ButtonFunction:>CopyToClipboard[
+           ECL`Object[ECL`Sample, ECL`Filter]],
+         Evaluator->Automatic,
+         Method->"Queued"],
+        "\"Copy value clipboard\"",
+        TooltipStyle->"TextStyling"],
+       Annotation[#, "Copy value clipboard", "Tooltip"]& ], 
+      TagBox[
+       TooltipBox[
+        ButtonBox[
+         StyleBox[
+          RowBox[{"Object", "[", 
+           RowBox[{"Item", ",", "Filter"}], "]"}],
+          StripOnInput->False,
+          FontSize->11],
+         Appearance->None,
+         ButtonFunction:>CopyToClipboard[
+           ECL`Object[Item, ECL`Filter]],
+         Evaluator->Automatic,
+         Method->"Queued"],
+        "\"Copy value clipboard\"",
+        TooltipStyle->"TextStyling"],
+       Annotation[#, "Copy value clipboard", "Tooltip"]& ]},
+     {
+      TagBox[
+       TooltipBox[
+        ButtonBox[
+         StyleBox[
+          RowBox[{"Object", "[", 
+           RowBox[{"Sample", ",", "Gel"}], "]"}],
+          StripOnInput->False,
+          FontSize->11],
+         Appearance->None,
+         ButtonFunction:>CopyToClipboard[
+           ECL`Object[ECL`Sample, ECL`Gel]],
+         Evaluator->Automatic,
+         Method->"Queued"],
+        "\"Copy value clipboard\"",
+        TooltipStyle->"TextStyling"],
+       Annotation[#, "Copy value clipboard", "Tooltip"]& ], 
+      TagBox[
+       TooltipBox[
+        ButtonBox[
+         StyleBox[
+          RowBox[{"Object", "[", 
+           RowBox[{"Item", ",", "Gel"}], "]"}],
+          StripOnInput->False,
+          FontSize->11],
+         Appearance->None,
+         ButtonFunction:>CopyToClipboard[
+           ECL`Object[Item, ECL`Gel]],
+         Evaluator->Automatic,
+         Method->"Queued"],
+        "\"Copy value clipboard\"",
+        TooltipStyle->"TextStyling"],
+       Annotation[#, "Copy value clipboard", "Tooltip"]& ]},
+     {
+      TagBox[
+       TooltipBox[
+        ButtonBox[
+         StyleBox[
+          RowBox[{"Object", "[", 
+           RowBox[{"Sample", ",", "Needle"}], "]"}],
+          StripOnInput->False,
+          FontSize->11],
+         Appearance->None,
+         ButtonFunction:>CopyToClipboard[
+           ECL`Object[ECL`Sample, ECL`Needle]],
+         Evaluator->Automatic,
+         Method->"Queued"],
+        "\"Copy value clipboard\"",
+        TooltipStyle->"TextStyling"],
+       Annotation[#, "Copy value clipboard", "Tooltip"]& ], 
+      TagBox[
+       TooltipBox[
+        ButtonBox[
+         StyleBox[
+          RowBox[{"Object", "[", 
+           RowBox[{"Item", ",", "Needle"}], "]"}],
+          StripOnInput->False,
+          FontSize->11],
+         Appearance->None,
+         ButtonFunction:>CopyToClipboard[
+           ECL`Object[Item, ECL`Needle]],
+         Evaluator->Automatic,
+         Method->"Queued"],
+        "\"Copy value clipboard\"",
+        TooltipStyle->"TextStyling"],
+       Annotation[#, "Copy value clipboard", "Tooltip"]& ]},
+     {
+      TagBox[
+       TooltipBox[
+        ButtonBox[
+         StyleBox[
+          RowBox[{"Object", "[", 
+           RowBox[{"Sample", ",", "Tips"}], "]"}],
+          StripOnInput->False,
+          FontSize->11],
+         Appearance->None,
+         ButtonFunction:>CopyToClipboard[
+           ECL`Object[ECL`Sample, ECL`Tips]],
+         Evaluator->Automatic,
+         Method->"Queued"],
+        "\"Copy value clipboard\"",
+        TooltipStyle->"TextStyling"],
+       Annotation[#, "Copy value clipboard", "Tooltip"]& ], 
+      TagBox[
+       TooltipBox[
+        ButtonBox[
+         StyleBox[
+          RowBox[{"Object", "[", 
+           RowBox[{"Item", ",", "Tips"}], "]"}],
+          StripOnInput->False,
+          FontSize->11],
+         Appearance->None,
+         ButtonFunction:>CopyToClipboard[
+           ECL`Object[Item, ECL`Tips]],
+         Evaluator->Automatic,
+         Method->"Queued"],
+        "\"Copy value clipboard\"",
+        TooltipStyle->"TextStyling"],
+       Annotation[#, "Copy value clipboard", "Tooltip"]& ]}
+    },
+    AllowScriptLevelChange->True,
+    AllowedDimensions->Automatic,
+    AutoDelete->False,
+    BaseStyle->{},
+    BaselinePosition->Automatic,
+    DefaultBaseStyle->"Grid",
+    FrameStyle->Automatic,
+    GridBoxAlignment->{
+     "Columns" -> {{Left}}, "Rows" -> {{Center}}, "ItemsIndexed" -> {
+        Join[{{1, 1} -> {Center, Center}, {1, 2} -> {Center, Center}}, 
+         Nothing]}},
+    GridBoxBackground->{"Columns" -> {{None}}, "Rows" -> {{
+         RGBColor[0.8862745098039215, 0.8862745098039215, 0.8862745098039215],
+          None}}},
+    GridBoxDividers->{"Columns" -> {{
+         Directive[
+          RGBColor[0.796078431372549, 0.796078431372549, 0.796078431372549], 
+          Thickness[1]]}}, "ColumnsIndexed" -> {1 -> Directive[
+          RGBColor[
+          0.5568627450980392, 0.5568627450980392, 0.5568627450980392], 
+          Thickness[1]], -1 -> Directive[
+          RGBColor[
+          0.5568627450980392, 0.5568627450980392, 0.5568627450980392], 
+          Thickness[1]]}, "Rows" -> {{
+         Directive[
+          RGBColor[0.796078431372549, 0.796078431372549, 0.796078431372549], 
+          Thickness[1]]}}, "RowsIndexed" -> {1 -> Directive[
+          RGBColor[
+          0.5568627450980392, 0.5568627450980392, 0.5568627450980392], 
+          Thickness[1]], -1 -> Directive[
+          RGBColor[
+          0.5568627450980392, 0.5568627450980392, 0.5568627450980392], 
+          Thickness[1]], 2 -> Directive[
+          RGBColor[
+          0.5568627450980392, 0.5568627450980392, 0.5568627450980392], 
+          Thickness[1]]}},
+    GridBoxFrame->{"ColumnsIndexed" -> {{{1, -1}, {1, -1}} -> Directive[
+          RGBColor[
+          0.5568627450980392, 0.5568627450980392, 0.5568627450980392], 
+          Thickness[1]]}},
+    GridBoxItemSize->{"Columns" -> {All, All}},
+    GridBoxItemStyle->{"Columns" -> {{None}}, "Rows" -> {{None}}},
+    GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{1}}},
+    GridDefaultElement->"\[Placeholder]"],
+   "Grid"],
+  ImageSize->{
+    UpTo[
+     Scaled[1]]},
+  Scrollbars->{False, False}]], "Output",
+ CellChangeTimes->{
+  3.774706923131041*^9, {3.7747070985755835`*^9, 3.7747071078055067`*^9}, 
+   3.7747076717408943`*^9, {3.774707734593179*^9, 3.774707746264346*^9}, 
+   3.774710330149191*^9},
+ TextAlignment->Center,ExpressionUUID->"00467683-a208-4bf1-97c3-e2e1c4144b8d"],
+
+Cell[CellGroupData[{
+
+Cell["Required Notebook Updates", "Subtitle",
+ CellChangeTimes->{{3.7431761257995944`*^9, 3.7431761287425995`*^9}, {
+  3.743176677894207*^9, 3.7431766858152113`*^9}, {3.7615058433791003`*^9, 
+  3.7615058454991007`*^9}, {3.7619737899672313`*^9, 3.7619737909602313`*^9}, {
+  3.774706546318407*^9, 3.7747065512764072`*^9}, {3.7747073826369867`*^9, 
+  3.774707387117435*^9}},ExpressionUUID->"b3f51dc6-3434-4d5f-a458-\
+ff037679e23d"],
+
+Cell["\<\
+In order to re-evaluate old calls referencing Object[Sample]s which have been \
+converted to Object[Items], you simply need to replace \
+\[OpenCurlyQuote]Sample\[CloseCurlyQuote] with \[OpenCurlyQuote]Item\
+\[CloseCurlyQuote]. Some examples are shown below.\
+\>", "Text",
+ CellChangeTimes->{{3.7747076451782384`*^9, 3.774707653162037*^9}, {
+  3.774707776645384*^9, 3.7747077781985393`*^9}, {3.774708336087322*^9, 
+  3.774708435931196*^9}, {3.7747089694041967`*^9, 3.774708977124196*^9}, {
+  3.77470973450076*^9, 3.7747097464219522`*^9}, {3.774709799039213*^9, 
+  3.7747098100243115`*^9}, {3.7747102729886036`*^9, 
+  3.774710274700775*^9}},ExpressionUUID->"69c34c79-bf4a-44aa-ae8e-\
+5419f59513f5"],
+
+Cell[CellGroupData[{
+
+Cell["Using Items in Experiments", "Subsubsubsection",
+ CellChangeTimes->{{3.7431761257995944`*^9, 3.7431761287425995`*^9}, {
+  3.743176677894207*^9, 3.7431766858152113`*^9}, {3.7615058433791003`*^9, 
+  3.7615058454991007`*^9}, {3.7619737899672313`*^9, 3.7619737909602313`*^9}, {
+  3.774706546318407*^9, 3.7747065512764072`*^9}, {3.7747073826369867`*^9, 
+  3.774707387117435*^9}, {3.7747074672414465`*^9, 3.7747074769284153`*^9}, {
+  3.774707831824901*^9, 
+  3.774707835064225*^9}},ExpressionUUID->"6ad3fdba-47fb-427b-9ec6-\
+b71bab690f8b"],
+
+Cell[CellGroupData[{
+
+Cell["Original Call", "Subsubsubsubsection",
+ CellChangeTimes->{{3.7431761257995944`*^9, 3.7431761287425995`*^9}, {
+  3.743176677894207*^9, 3.7431766858152113`*^9}, {3.7615058433791003`*^9, 
+  3.7615058454991007`*^9}, {3.7619737899672313`*^9, 3.7619737909602313`*^9}, {
+  3.774706546318407*^9, 3.7747065512764072`*^9}, {3.7747073826369867`*^9, 
+  3.774707387117435*^9}, {3.7747074672414465`*^9, 
+  3.7747074769284153`*^9}},ExpressionUUID->"2ce4d93c-4318-4179-b369-\
+4aa93c6c126e"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"ExperimentHPLC", "[", "\n", "\t", 
+  RowBox[{"mySamples", ",", "\n", "\t", 
+   RowBox[{"Column", "\[Rule]", 
+    RowBox[{"Model", "[", 
+     RowBox[{
+     "Sample", ",", "Column", ",", "\"\<DNAPac PA200 4x250mm Column\>\""}], 
+     "]"}]}]}], "\n", "]"}]], "Code",
+ CellChangeTimes->{{3.774707389748698*^9, 3.7747074541301355`*^9}},
+ CellLabel->"In[3]:=",ExpressionUUID->"6493c174-e310-473d-8e35-84b330f98f78"],
+
+Cell[BoxData[
+ RowBox[{"ExperimentHPLC", "[", 
+  RowBox[{"mySamples", ",", 
+   RowBox[{"Column", "\[Rule]", 
+    RowBox[{"Model", "[", 
+     RowBox[{
+     "Sample", ",", "Column", ",", "\<\"DNAPac PA200 4x250mm Column\"\>"}], 
+     "]"}]}]}], "]"}]], "Output",
+ CellChangeTimes->{3.774709715007811*^9},
+ CellLabel->"Out[3]=",ExpressionUUID->"e31ec5c4-bb46-479b-8f5b-33d9d19ee528"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["New Call", "Subsubsubsubsection",
+ CellChangeTimes->{{3.7431761257995944`*^9, 3.7431761287425995`*^9}, {
+  3.743176677894207*^9, 3.7431766858152113`*^9}, {3.7615058433791003`*^9, 
+  3.7615058454991007`*^9}, {3.7619737899672313`*^9, 3.7619737909602313`*^9}, {
+  3.774706546318407*^9, 3.7747065512764072`*^9}, {3.7747073826369867`*^9, 
+  3.774707387117435*^9}, {3.7747074672414465`*^9, 
+  3.7747074952822504`*^9}},ExpressionUUID->"9981b51a-5701-44d4-8da7-\
+eeb7a54af036"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"ExperimentHPLC", "[", "\n", "\t", 
+  RowBox[{"mySamples", ",", "\n", "\t", 
+   RowBox[{"Column", "\[Rule]", 
+    RowBox[{"Model", "[", 
+     RowBox[{
+     "Item", ",", "Column", ",", "\"\<DNAPac PA200 4x250mm Column\>\""}], 
+     "]"}]}]}], "\n", "]"}]], "Code",
+ CellChangeTimes->{{3.7747074588566084`*^9, 3.774707461463869*^9}},
+ CellLabel->"In[4]:=",ExpressionUUID->"2e67f935-fe91-4584-8f5a-75eb90d77a17"],
+
+Cell[BoxData[
+ RowBox[{"ExperimentHPLC", "[", 
+  RowBox[{"mySamples", ",", 
+   RowBox[{"Column", "\[Rule]", 
+    RowBox[{"Model", "[", 
+     RowBox[{
+     "Item", ",", "Column", ",", "\<\"DNAPac PA200 4x250mm Column\"\>"}], 
+     "]"}]}]}], "]"}]], "Output",
+ CellChangeTimes->{3.7747097151248226`*^9},
+ CellLabel->"Out[4]=",ExpressionUUID->"12eb1e0c-e00e-474d-8077-345afc2be947"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Inspecting Items", "Subsubsubsection",
+ CellChangeTimes->{{3.7431761257995944`*^9, 3.7431761287425995`*^9}, {
+  3.743176677894207*^9, 3.7431766858152113`*^9}, {3.7615058433791003`*^9, 
+  3.7615058454991007`*^9}, {3.7619737899672313`*^9, 3.7619737909602313`*^9}, {
+  3.774706546318407*^9, 3.7747065512764072`*^9}, {3.7747073826369867`*^9, 
+  3.774707387117435*^9}, {3.7747074672414465`*^9, 3.7747074769284153`*^9}, {
+  3.774707831824901*^9, 
+  3.7747078427929983`*^9}},ExpressionUUID->"77729b13-8651-4136-b0ea-\
+333bb6f24c4a"],
+
+Cell[CellGroupData[{
+
+Cell["Original Call", "Subsubsubsubsection",
+ CellChangeTimes->{{3.7431761257995944`*^9, 3.7431761287425995`*^9}, {
+  3.743176677894207*^9, 3.7431766858152113`*^9}, {3.7615058433791003`*^9, 
+  3.7615058454991007`*^9}, {3.7619737899672313`*^9, 3.7619737909602313`*^9}, {
+  3.774706546318407*^9, 3.7747065512764072`*^9}, {3.7747073826369867`*^9, 
+  3.774707387117435*^9}, {3.7747074672414465`*^9, 
+  3.7747074769284153`*^9}},ExpressionUUID->"8f8410f8-fa22-41f9-a13c-\
+2edcb1c77dd9"],
+
+Cell[BoxData[
+ RowBox[{"Inspect", "[", 
+  RowBox[{"Object", "[", 
+   RowBox[{"Sample", ",", "Tips", ",", "\"\<id:1ZA60vLxlb9D\>\""}], "]"}], 
+  "]"}]], "Code",
+ CellChangeTimes->{{3.774707389748698*^9, 3.7747074541301355`*^9}, {
+  3.7747084447621965`*^9, 3.7747084502501965`*^9}, {3.7747084919981966`*^9, 
+  3.7747084943121967`*^9}},
+ CellLabel->"In[5]:=",ExpressionUUID->"cf47eaa3-1955-414f-b2e9-5fdcd3aa3b2b"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["New Call", "Subsubsubsubsection",
+ CellChangeTimes->{{3.7431761257995944`*^9, 3.7431761287425995`*^9}, {
+  3.743176677894207*^9, 3.7431766858152113`*^9}, {3.7615058433791003`*^9, 
+  3.7615058454991007`*^9}, {3.7619737899672313`*^9, 3.7619737909602313`*^9}, {
+  3.774706546318407*^9, 3.7747065512764072`*^9}, {3.7747073826369867`*^9, 
+  3.774707387117435*^9}, {3.7747074672414465`*^9, 
+  3.7747074952822504`*^9}},ExpressionUUID->"8cc58b77-83a1-4dfa-9363-\
+0ffa1f8b9eb1"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Inspect", "[", 
+  RowBox[{"Object", "[", 
+   RowBox[{"Item", ",", "Tips", ",", "\"\<id:1ZA60vLxlb9D\>\""}], "]"}], 
+  "]"}]], "Code",
+ CellChangeTimes->{{3.7747074588566084`*^9, 3.774707461463869*^9}, 
+   3.7747084543221965`*^9, 3.7747084910851965`*^9},
+ CellLabel->"In[6]:=",ExpressionUUID->"7884a3c4-dae9-4d7a-9da7-f7d01086da12"],
+
+Cell[BoxData[
+ RowBox[{"Inspect", "[", 
+  RowBox[{"Object", "[", 
+   RowBox[{"Item", ",", "Tips", ",", "\<\"id:1ZA60vLxlb9D\"\>"}], "]"}], 
+  "]"}]], "Output",
+ CellChangeTimes->{3.7747097166679773`*^9},
+ CellLabel->"Out[6]=",ExpressionUUID->"e4ab54f0-466b-49b6-9a19-6b0017f4edfa"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Downloading Items", "Subsubsubsection",
+ CellChangeTimes->{{3.7431761257995944`*^9, 3.7431761287425995`*^9}, {
+  3.743176677894207*^9, 3.7431766858152113`*^9}, {3.7615058433791003`*^9, 
+  3.7615058454991007`*^9}, {3.7619737899672313`*^9, 3.7619737909602313`*^9}, {
+  3.774706546318407*^9, 3.7747065512764072`*^9}, {3.7747073826369867`*^9, 
+  3.774707387117435*^9}, {3.7747074672414465`*^9, 3.7747074769284153`*^9}, {
+  3.774707831824901*^9, 
+  3.77470785051377*^9}},ExpressionUUID->"7cef056d-73cd-4095-8124-\
+39431f780d1e"],
+
+Cell[CellGroupData[{
+
+Cell["Original Call", "Subsubsubsubsection",
+ CellChangeTimes->{{3.7431761257995944`*^9, 3.7431761287425995`*^9}, {
+  3.743176677894207*^9, 3.7431766858152113`*^9}, {3.7615058433791003`*^9, 
+  3.7615058454991007`*^9}, {3.7619737899672313`*^9, 3.7619737909602313`*^9}, {
+  3.774706546318407*^9, 3.7747065512764072`*^9}, {3.7747073826369867`*^9, 
+  3.774707387117435*^9}, {3.7747074672414465`*^9, 
+  3.7747074769284153`*^9}},ExpressionUUID->"dc642cf7-cc58-415d-8942-\
+9a043a1150da"],
+
+Cell[BoxData[
+ RowBox[{"Inspect", "[", 
+  RowBox[{"Model", "[", 
+   RowBox[{"Sample", ",", "Filter"}], "]"}], "]"}]], "Code",
+ CellChangeTimes->{{3.774707389748698*^9, 3.7747074541301355`*^9}, {
+  3.7747084447621965`*^9, 3.7747084502501965`*^9}, {3.7747084919981966`*^9, 
+  3.7747084943121967`*^9}, {3.774708887162196*^9, 3.7747088935761967`*^9}, {
+  3.7747090543221965`*^9, 3.7747090565031967`*^9}},
+ CellLabel->"",ExpressionUUID->"ccd4fa53-95eb-460e-8aaf-bb79aabcb3de"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["New Call", "Subsubsubsubsection",
+ CellChangeTimes->{{3.7431761257995944`*^9, 3.7431761287425995`*^9}, {
+  3.743176677894207*^9, 3.7431766858152113`*^9}, {3.7615058433791003`*^9, 
+  3.7615058454991007`*^9}, {3.7619737899672313`*^9, 3.7619737909602313`*^9}, {
+  3.774706546318407*^9, 3.7747065512764072`*^9}, {3.7747073826369867`*^9, 
+  3.774707387117435*^9}, {3.7747074672414465`*^9, 
+  3.7747074952822504`*^9}},ExpressionUUID->"7a3c15a9-b2ea-4401-9bd2-\
+d424a5d6f772"],
+
+Cell[BoxData[
+ RowBox[{"Inspect", "[", 
+  RowBox[{"Model", "[", 
+   RowBox[{"Item", ",", "Filter"}], "]"}], "]"}]], "Code",
+ CellChangeTimes->{{3.7747074588566084`*^9, 3.774707461463869*^9}, 
+   3.7747084543221965`*^9, 3.7747084910851965`*^9, 3.7747088950081964`*^9, 
+   3.7747090547811966`*^9},
+ CellLabel->"",ExpressionUUID->"b862c38e-61eb-4659-a9ce-74b69cb740dd"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{833, 829},
+WindowMargins->{{Automatic, 95}, {42, Automatic}},
+TaggingRules->{
+ "SearchTextTranslated" -> "", "Metadata" -> {"WorkflowDockedCell" -> ""}, 
+  "LinkTrails" -> ""},
+FrontEndVersion->"12.0 for Microsoft Windows (64-bit) (April 8, 2019)",
+StyleDefinitions->"CommandCenter.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 387, 6, 68, "Title",ExpressionUUID->"63b3884b-b63e-4951-b146-4cdc347e4496"],
+Cell[970, 30, 640, 12, 107, "Text",ExpressionUUID->"f9c8c520-5ac9-4a6b-8103-df828ce8a3e8"],
+Cell[1613, 44, 13667, 399, 258, "Output",ExpressionUUID->"00467683-a208-4bf1-97c3-e2e1c4144b8d"],
+Cell[CellGroupData[{
+Cell[15305, 447, 428, 6, 41, "Subtitle",ExpressionUUID->"b3f51dc6-3434-4d5f-a458-ff037679e23d"],
+Cell[15736, 455, 706, 12, 50, "Text",ExpressionUUID->"69c34c79-bf4a-44aa-ae8e-5419f59513f5"],
+Cell[CellGroupData[{
+Cell[16467, 471, 539, 8, 39, "Subsubsubsection",ExpressionUUID->"6ad3fdba-47fb-427b-9ec6-b71bab690f8b"],
+Cell[CellGroupData[{
+Cell[17031, 483, 480, 7, 38, "Subsubsubsubsection",ExpressionUUID->"2ce4d93c-4318-4179-b369-4aa93c6c126e"],
+Cell[CellGroupData[{
+Cell[17536, 494, 434, 9, 120, "Code",ExpressionUUID->"6493c174-e310-473d-8e35-84b330f98f78"],
+Cell[17973, 505, 380, 9, 34, "Output",ExpressionUUID->"e31ec5c4-bb46-479b-8f5b-33d9d19ee528"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[18402, 520, 475, 7, 38, "Subsubsubsubsection",ExpressionUUID->"9981b51a-5701-44d4-8da7-eeb7a54af036"],
+Cell[CellGroupData[{
+Cell[18902, 531, 432, 9, 120, "Code",ExpressionUUID->"2e67f935-fe91-4584-8f5a-75eb90d77a17"],
+Cell[19337, 542, 380, 9, 34, "Output",ExpressionUUID->"12eb1e0c-e00e-474d-8077-345afc2be947"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[19778, 558, 531, 8, 39, "Subsubsubsection",ExpressionUUID->"77729b13-8651-4136-b0ea-333bb6f24c4a"],
+Cell[CellGroupData[{
+Cell[20334, 570, 480, 7, 38, "Subsubsubsubsection",ExpressionUUID->"8f8410f8-fa22-41f9-a13c-2edcb1c77dd9"],
+Cell[20817, 579, 411, 8, 53, "Code",ExpressionUUID->"cf47eaa3-1955-414f-b2e9-5fdcd3aa3b2b"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[21265, 592, 475, 7, 38, "Subsubsubsubsection",ExpressionUUID->"8cc58b77-83a1-4dfa-9363-0ffa1f8b9eb1"],
+Cell[CellGroupData[{
+Cell[21765, 603, 355, 7, 53, "Code",ExpressionUUID->"7884a3c4-dae9-4d7a-9da7-f7d01086da12"],
+Cell[22123, 612, 281, 6, 34, "Output",ExpressionUUID->"e4ab54f0-466b-49b6-9a19-6b0017f4edfa"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[22465, 625, 529, 8, 39, "Subsubsubsection",ExpressionUUID->"7cef056d-73cd-4095-8124-39431f780d1e"],
+Cell[CellGroupData[{
+Cell[23019, 637, 480, 7, 38, "Subsubsubsubsection",ExpressionUUID->"dc642cf7-cc58-415d-8942-9a043a1150da"],
+Cell[23502, 646, 471, 8, 53, "Code",ExpressionUUID->"ccd4fa53-95eb-460e-8aaf-bb79aabcb3de"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[24010, 659, 475, 7, 38, "Subsubsubsubsection",ExpressionUUID->"7a3c15a9-b2ea-4401-9bd2-d424a5d6f772"],
+Cell[24488, 668, 366, 7, 53, "Code",ExpressionUUID->"b862c38e-61eb-4659-a9ce-74b69cb740dd"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+

@@ -39,7 +39,12 @@ DefineUsage[ExperimentCapillaryIsoelectricFocusing,{
 									Type -> Object,
 									Pattern :> ObjectP[{Object[Container]}]
 								]
-							}
+							},
+							"Model Sample"->Widget[
+								Type -> Object,
+								Pattern :> ObjectP[Model[Sample]],
+								ObjectTypes -> {Model[Sample]}
+							]
 						],
 						Expandable->False
 					},
@@ -69,9 +74,7 @@ DefineUsage[ExperimentCapillaryIsoelectricFocusing,{
 	Tutorials->{
 		"Sample Preparation"
 	},
-	Author->{
-		"gil.sharon"
-	}
+	Author->{"xu.yi", "gil.sharon"}
 }];
 
 
@@ -90,13 +93,21 @@ DefineUsage[ExperimentCapillaryIsoelectricFocusingOptions,
 					IndexMatching[
 						{
 							InputName->"Samples",
-							Description->"The samples to be analyzed using Capillary Isoelectric Focusing for the separation of proteins by charge.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Description->"The samples to be analyzed by capillary Isoelectric Focusing (cIEF). The recommended final protein concentration per sample is ~0.2 mg/mL in 50-200 \[Mu]L (total of 10 \[Mu]g - 40 \[Mu]g protein) for input with less than 15 mM salt.",
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -121,9 +132,7 @@ DefineUsage[ExperimentCapillaryIsoelectricFocusingOptions,
 			"PlotCapillaryIsoelectricFocusing",
 			"PlotCapillaryIsoelectricFocusingEvolution"
 		},
-		Author->{
-			"gil.sharon"
-		}
+		Author->{"xu.yi", "gil.sharon"}
 	}
 ];
 
@@ -143,13 +152,21 @@ DefineUsage[ValidExperimentCapillaryIsoelectricFocusingQ,
 					IndexMatching[
 						{
 							InputName->"Samples",
-							Description->"The samples to be analyzed using Capillary Isoelectric Focusing experiment for the separation of proteins by charge.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Description->"The samples to be analyzed by capillary Isoelectric Focusing (cIEF). The recommended final protein concentration per sample is ~0.2 mg/mL in 50-200 \[Mu]L (total of 10 \[Mu]g - 40 \[Mu]g protein) for input with less than 15 mM salt.",
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -171,9 +188,7 @@ DefineUsage[ValidExperimentCapillaryIsoelectricFocusingQ,
 			"PlotCapillaryIsoelectricFocusing",
 			"PlotCapillaryIsoelectricFocusingEvolution"
 		},
-		Author->{
-			"gil.sharon"
-		}
+		Author->{"xu.yi", "gil.sharon"}
 	}
 ];
 
@@ -189,13 +204,21 @@ DefineUsage[ExperimentCapillaryIsoelectricFocusingPreview,
 					IndexMatching[
 						{
 							InputName->"Samples",
-							Description->"The samples to be analyzed using Capillary Isoelectric Focusing experiment for the separation of proteins by charge.",
-							Widget->Widget[
-								Type->Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Description->"The samples to be analyzed by capillary Isoelectric Focusing (cIEF). The recommended final protein concentration per sample is ~0.2 mg/mL in 50-200 \[Mu]L (total of 10 \[Mu]g - 40 \[Mu]g protein) for input with less than 15 mM salt.",
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -221,8 +244,6 @@ DefineUsage[ExperimentCapillaryIsoelectricFocusingPreview,
 			"PlotCapillaryIsoelectricFocusing",
 			"PlotCapillaryIsoelectricFocusingEvolution"
 		},
-		Author->{
-			"gil.sharon"
-		}
+		Author->{"xu.yi", "gil.sharon"}
 	}
 ];

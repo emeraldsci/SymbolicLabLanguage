@@ -49,6 +49,22 @@ DefineObjectType[Model[Item,MagnetizationRack],{
 			Description -> "A list of internal rectangular cross sections describing the empty space at the bottom of an item that can be placed on the liquid handler deck.",
 			Headers -> {"X dimension","Y dimension","Z height"},
 			Category -> "Dimensions & Positions"
+		},
+		WellDiameter -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Milli*Meter],
+			Units -> Meter Milli,
+			Description -> "Diameter of each round position.",
+			Category -> "Dimensions & Positions"
+		},
+		Weight -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Gram],
+			Units -> Gram,
+			Description -> "The mean weight of empty magnetization rack of this model.",
+			Category -> "Item Specifications"
 		}
 	}
 }];

@@ -191,7 +191,7 @@ DefineTests[
 				];
 
 				(* Target Antigens Model molecules*)
-				targetantigen1=UploadProtein[
+				{targetantigen1}=UploadProtein[
 					{"ExperimentELISAPreview test target antigen model molecule 1" <> $SessionUUID},
 					State->Solid,
 					BiosafetyLevel->"BSL-1",
@@ -394,19 +394,19 @@ DefineTests[
 					|>,
 					<|Object->testSample1,Status->Available,State->Liquid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}}
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}}
 					|>,
 					<|Object->testSample2,Status->Available,State->Liquid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}}
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}}
 					|>,
 					<|Object->testSample3,Status->Discarded,State->Liquid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}}
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}}
 					|>,
 					<|Object->testSample4,Status->Available,State->Solid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}},
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}},
 						Volume->Null
 					|>,
 					<|Object->testAntigenSample1,
@@ -717,7 +717,7 @@ DefineTests[
 				];
 
 				(* Target Antigens Model molecules*)
-				targetantigen1=UploadProtein[
+				{targetantigen1}=UploadProtein[
 					{"ExperimentELISAOptions test target antigen model molecule 1" <> $SessionUUID},
 					State->Solid,
 					BiosafetyLevel->"BSL-1",
@@ -920,19 +920,19 @@ DefineTests[
 					|>,
 					<|Object->testSample1,Status->Available,State->Liquid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}}
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}}
 					|>,
 					<|Object->testSample2,Status->Available,State->Liquid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}}
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}}
 					|>,
 					<|Object->testSample3,Status->Discarded,State->Liquid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}}
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}}
 					|>,
 					<|Object->testSample4,Status->Available,State->Solid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}},
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}},
 						Volume->Null
 					|>,
 					<|Object->testAntigenSample1,
@@ -1241,7 +1241,7 @@ DefineTests[
 				];
 
 				(* Target Antigens Model molecules*)
-				targetantigen1=UploadProtein[
+				{targetantigen1}=UploadProtein[
 					{"ValidExperimentELISAQ test target antigen model molecule 1" <> $SessionUUID},
 					State->Solid,
 					BiosafetyLevel->"BSL-1",
@@ -1444,19 +1444,19 @@ DefineTests[
 					|>,
 					<|Object->testSample1,Status->Available,State->Liquid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}}
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}}
 					|>,
 					<|Object->testSample2,Status->Available,State->Liquid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}}
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}}
 					|>,
 					<|Object->testSample3,Status->Discarded,State->Liquid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}}
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}}
 					|>,
 					<|Object->testSample4,Status->Available,State->Solid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}},
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}},
 						Volume->Null
 					|>,
 					<|Object->testAntigenSample1,

@@ -144,6 +144,45 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 			Description -> "Objects that are required for this protocol. This includes both labeled and non-labeled objects.",
 			Category -> "General",
 			Developer -> True
+		},RequiredUnbaggingObjects -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Sample],
+				Object[Container],
+				Object[Item],
+				Object[Part],
+				Object[Plumbing]
+			],
+			Description -> "RequiredObjects that are currently in an aseptic barrier and required unbagging inside of biosafety cabinet for this protocol.",
+			Category -> "General",
+			Developer -> True
+		},
+		RequiredCoveringObjects -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container]
+			],
+			Description -> "RequiredUnbaggingObjects that are currently without any cover and required covering inside of biosafety cabinet for this protocol.",
+			Category -> "General",
+			Developer -> True
+		},
+		UnbaggingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Instrument, BiosafetyCabinet],
+				Object[Instrument, BiosafetyCabinet],
+				Object[Instrument, HandlingStation, BiosafetyCabinet],
+				Model[Instrument, HandlingStation, BiosafetyCabinet]
+			],
+			Description -> "The environment (Biosafety Cabinet) in which unbagging of RequiredUnbaggingObjects will be performed. RequiredObjects contained in aseptic barriers will first be moved into the UnbaggingEnvironment, taken out of aseptic barriers, put cover on if uncovered, before both the RequiredObjects and the aseptic barrier bags moved back onto the operator cart.",
+			Category -> "General",
+			Abstract -> True
 		},
 		RequiredTips -> {
 			Format -> Multiple,
@@ -208,6 +247,51 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 		},
 
 		(* -- DEVELOPER FIELDS FOR ENGINE DECK PLACEMENTS -- *)
+		(* Fields to unbag sterile required objects in the biosafety cabinet *)
+		BiosafetyCabinetPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {
+				Alternatives[
+					Object[Container],
+					Model[Container],
+					Object[Sample],
+					Model[Sample],
+					Object[Instrument],
+					Model[Instrument],
+					Object[Item],
+					Model[Item]
+				],
+				Alternatives[
+					Object[Instrument, BiosafetyCabinet],
+					Model[Instrument, BiosafetyCabinet],
+					Object[Instrument, HandlingStation, BiosafetyCabinet],
+					Model[Instrument, HandlingStation, BiosafetyCabinet],
+					Object[Container, WasteBin],
+					Model[Container, WasteBin]
+				],
+				Null
+			},
+			Headers -> {"Objects to move", "BSC to move to", "Position to move to"},
+			Description -> "The specific positions into which RequiredUnbaggingObjects are moved into the UnbaggingEnvironment.",
+			Category -> "Placements",
+			Developer -> True
+		},
+		CollectionObjects -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Object[Item],
+				Object[Sample],
+				Object[Instrument]
+			],
+			Description -> "The objects to remove from the UnbaggingEnvironment's work surface when before it is released.",
+			Category -> "General",
+			Developer -> True
+		},
 		TaredContainers -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -287,7 +371,7 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 			Pattern :> {_Link, _Link, LocationPositionP},
 			Relation -> {
 				(Object[Container,PlateSealMagazine]|Model[Container,PlateSealMagazine]),
-				(Object[Container,MagazineParkPosition]|Model[Container,MagazineParkPosition]),
+				(Object[Container,MagazineRack]|Model[Container,MagazineRack]),
 				Null
 			},
 			Description -> "A list of off-deck placements used to place loaded plate seal magazines on magazine parking position.",
@@ -337,6 +421,15 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 			Pattern :> _Link,
 			Relation -> Model[Item,PlateSeal]|Object[Item,PlateSeal],
 			Description -> "The additional Hamilton clear plate seals need to pick for current repick step.",
+			Category -> "General",
+			Developer -> True
+		},
+		AdditionalLidResources -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Item,Lid]|Object[Item,Lid],
+			Description -> "The additional sterile universal clear Lid need to cover RequiredUnbaggingObjects during unbagging task.",
 			Category -> "General",
 			Developer -> True
 		},
@@ -454,7 +547,7 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The sample to be injected first into any ReadPlate primitive assay plates.",
+			Description -> "The sample to be injected first into any ReadPlate primitive assay plates on PrimaryPlateReader.",
 			Category -> "Injection"
 		},
 		PrimaryPlateReaderSecondaryInjectionSample -> {
@@ -465,7 +558,7 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The sample to be injected in any subsequent injections into any ReadPlate primitive assay plates.",
+			Description -> "The sample to be injected in any subsequent injections into any ReadPlate primitive assay plates on PrimaryPlateReader.",
 			Category -> "Injection"
 		},
 		PrimaryPlateReaderInjectionPlacements -> {
@@ -473,11 +566,11 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 			Class -> {Link, Link, String},
 			Pattern :> {_Link, _Link, LocationPositionP},
 			Relation -> {Model[Container]| Object[Container] | Object[Sample] | Model[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
-			Description -> "A list of placements used to move the injection containers into position.",
+			Description -> "A list of placements used to move the injection containers into position on PrimaryPlateReader.",
 			Headers -> {"Object to Place", "Destination Object","Destination Position"},
 			Category -> "Injection"
 		},
-		PrimaryPlateReaderPrimaryPreppingSolvent -> {
+		PrimaryPlateReaderLine1PrimaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -485,10 +578,10 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The primary solvent with which to wash the injectors prior to running the experiment.",
+			Description -> "The primary solvent with which the line 1 injector is washed before and after running the experiment on PrimaryPlateReader.",
 			Category -> "Injection"
 		},
-		PrimaryPlateReaderSecondaryPreppingSolvent -> {
+		PrimaryPlateReaderLine1SecondaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -496,10 +589,10 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The secondary solvent with which to wash the injectors prior to running the experiment.",
+			Description -> "The secondary solvent with which the line 1 injector is washed before and after running the experiment on PrimaryPlateReader.",
 			Category -> "Injection"
 		},
-		PrimaryPlateReaderPrimaryFlushingSolvent -> {
+		PrimaryPlateReaderLine2PrimaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -507,10 +600,10 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The primary solvent with which to wash the injectors after running the experiment.",
+			Description -> "The primary solvent with which the line 2 injector is washed before and after running the experiment on PrimaryPlateReader.",
 			Category -> "Injection"
 		},
-		PrimaryPlateReaderSecondaryFlushingSolvent -> {
+		PrimaryPlateReaderLine2SecondaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -518,7 +611,7 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The secondary solvent with which to wash the injectors after running the experiment.",
+			Description -> "The secondary solvent with which the line 2 injector is washed before and after running the experiment on PrimaryPlateReader.",
 			Category -> "Injection"
 		},
 		PrimaryPlateReaderSolventWasteContainer -> {
@@ -529,7 +622,7 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Object[Container],
 				Model[Container]
 			],
-			Description -> "The container used to collect waste during injector cleaning.",
+			Description -> "The container used to collect waste during injector cleaning on PrimaryPlateReader.",
 			Category -> "Injection"
 		},
 		PrimaryPlateReaderSecondarySolventWasteContainer -> {
@@ -540,7 +633,7 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Object[Container],
 				Model[Container]
 			],
-			Description -> "An additional container used to collect overflow waste during injector cleaning.",
+			Description -> "An additional container used to collect overflow waste during injector cleaning on PrimaryPlateReader.",
 			Category -> "Injection"
 		},
 		PrimaryPlateReaderPreppingSolutionPlacements -> {
@@ -548,7 +641,7 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 			Class -> {Link, Link, String},
 			Pattern :> {_Link, _Link, LocationPositionP},
 			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
-			Description -> "A list of placements used to move cleaning solvents into position prior to running the experiment.",
+			Description -> "A list of placements used to move cleaning solvents into position prior to running the experiment on PrimaryPlateReader.",
 			Headers -> {"Object to Place", "Destination Object","Destination Position"},
 			Category -> "Injection"
 		},
@@ -557,7 +650,7 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 			Class -> {Link, Link, String},
 			Pattern :> {_Link, _Link, LocationPositionP},
 			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
-			Description -> "A list of placements used to move cleaning solvents into position after running the experiment.",
+			Description -> "A list of placements used to move cleaning solvents into position after running the experiment on PrimaryPlateReader.",
 			Headers -> {"Object to Place", "Destination Object","Destination Position"},
 			Category -> "Injection"
 		},
@@ -566,22 +659,72 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 			Class -> {Link, Expression},
 			Pattern :> {_Link, {LocationPositionP..}},
 			Relation -> {Model[Container] | Object[Container], Null},
-			Description -> "A list of placements used to move the waste container(s) into position.",
+			Description -> "A list of placements used to move the waste container(s) into position on PrimaryPlateReader.",
 			Headers -> {"Object to Place", "Placement Tree"},
 			Category -> "Injection"
+		},
+		PrimaryPlateReaderPrimaryPurgingSolutionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move primary purging solvents into position for cleaning before and after running the experiment on PrimaryPlateReader.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		PrimaryPlateReaderSecondaryPurgingSolutionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move secondary purging solvents into position for cleaning before and after running the experiment on PrimaryPlateReader.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		PrimaryPlateReaderPurgingTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for cleaning before and after running the experiment on PrimaryPlateReader.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		PrimaryPlateReaderStorageTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for storage when experiment is not running on PrimaryPlateReader.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		PrimaryPlateReaderInjectionTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for sample injection when running the experiment on PrimaryPlateReader.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
 		},
 		PrimaryPlateReaderPumpPrimingFilePath -> {
 			Format -> Single,
 			Class -> String,
 			Pattern :> FilePathP,
-			Description -> "The file which performs the pump priming of the PlateReader pumps when executed.",
+			Description -> "The file which performs the pump priming of the PlateReader pumps when executed on PrimaryPlateReader.",
 			Category -> "Injection"
 		},
 		PrimaryPlateReaderInjectorCleaningFilePath -> {
 			Format -> Single,
 			Class -> String,
 			Pattern :> FilePathP,
-			Description -> "The file which includes instructions to turn the syringe pumps on and off as needed and to run the cleaning solvents through the PlateReader injectors.",
+			Description -> "The file which includes instructions to turn the syringe pumps on and off as needed and to run the cleaning solvents through the PlateReader injectors on PrimaryPlateReader.",
 			Category -> "Injection"
 		},
 
@@ -606,7 +749,7 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The sample to be injected first into any ReadPlate primitive assay plates.",
+			Description -> "The sample to be injected first into any ReadPlate primitive assay plates on SecondaryPlateReader.",
 			Category -> "Injection"
 		},
 		SecondaryPlateReaderSecondaryInjectionSample -> {
@@ -617,7 +760,7 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The sample to be injected in any subsequent injections into any ReadPlate primitive assay plates.",
+			Description -> "The sample to be injected in any subsequent injections into any ReadPlate primitive assay plates on SecondaryPlateReader.",
 			Category -> "Injection"
 		},
 		SecondaryPlateReaderInjectionPlacements -> {
@@ -625,11 +768,11 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 			Class -> {Link, Link, String},
 			Pattern :> {_Link, _Link, LocationPositionP},
 			Relation -> {Model[Container]| Object[Container] | Object[Sample] | Model[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
-			Description -> "A list of placements used to move the injection containers into position.",
+			Description -> "A list of placements used to move the injection containers into position on SecondaryPlateReader.",
 			Headers -> {"Object to Place", "Destination Object","Destination Position"},
 			Category -> "Injection"
 		},
-		SecondaryPlateReaderPrimaryPreppingSolvent -> {
+		SecondaryPlateReaderLine1PrimaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -637,10 +780,10 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The primary solvent with which to wash the injectors prior to running the experiment.",
+			Description -> "The primary solvent with which the line 1 injector is washed before and after running the experiment on SecondaryPlateReader.",
 			Category -> "Injection"
 		},
-		SecondaryPlateReaderSecondaryPreppingSolvent -> {
+		SecondaryPlateReaderLine1SecondaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -648,10 +791,10 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The secondary solvent with which to wash the injectors prior to running the experiment.",
+			Description -> "The secondary solvent with which the line 1 injector is washed before and after running the experiment on SecondaryPlateReader.",
 			Category -> "Injection"
 		},
-		SecondaryPlateReaderPrimaryFlushingSolvent -> {
+		SecondaryPlateReaderLine2PrimaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -659,10 +802,10 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The primary solvent with which to wash the injectors after running the experiment.",
+			Description -> "The primary solvent with which the line 2 injector is washed before and after running the experiment on SecondaryPlateReader.",
 			Category -> "Injection"
 		},
-		SecondaryPlateReaderSecondaryFlushingSolvent -> {
+		SecondaryPlateReaderLine2SecondaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -670,7 +813,7 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The secondary solvent with which to wash the injectors after running the experiment.",
+			Description -> "The secondary solvent with which the line 2 injector is washed before and after running the experiment on SecondaryPlateReader.",
 			Category -> "Injection"
 		},
 		SecondaryPlateReaderSolventWasteContainer -> {
@@ -681,7 +824,7 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Object[Container],
 				Model[Container]
 			],
-			Description -> "The container used to collect waste during injector cleaning.",
+			Description -> "The container used to collect waste during injector cleaning on SecondaryPlateReader.",
 			Category -> "Injection"
 		},
 		SecondaryPlateReaderSecondarySolventWasteContainer -> {
@@ -692,7 +835,7 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Object[Container],
 				Model[Container]
 			],
-			Description -> "An additional container used to collect overflow waste during injector cleaning.",
+			Description -> "An additional container used to collect overflow waste during injector cleaning on SecondaryPlateReader.",
 			Category -> "Injection"
 		},
 		SecondaryPlateReaderPreppingSolutionPlacements -> {
@@ -700,7 +843,7 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 			Class -> {Link, Link, String},
 			Pattern :> {_Link, _Link, LocationPositionP},
 			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
-			Description -> "A list of placements used to move cleaning solvents into position prior to running the experiment.",
+			Description -> "A list of placements used to move cleaning solvents into position prior to running the experiment on SecondaryPlateReader.",
 			Headers -> {"Object to Place", "Destination Object","Destination Position"},
 			Category -> "Injection"
 		},
@@ -709,7 +852,7 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 			Class -> {Link, Link, String},
 			Pattern :> {_Link, _Link, LocationPositionP},
 			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
-			Description -> "A list of placements used to move cleaning solvents into position after running the experiment.",
+			Description -> "A list of placements used to move cleaning solvents into position after running the experiment on SecondaryPlateReader.",
 			Headers -> {"Object to Place", "Destination Object","Destination Position"},
 			Category -> "Injection"
 		},
@@ -718,22 +861,72 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 			Class -> {Link, Expression},
 			Pattern :> {_Link, {LocationPositionP..}},
 			Relation -> {Model[Container] | Object[Container], Null},
-			Description -> "A list of placements used to move the waste container(s) into position.",
+			Description -> "A list of placements used to move the waste container(s) into position on SecondaryPlateReader.",
 			Headers -> {"Object to Place", "Placement Tree"},
 			Category -> "Injection"
+		},
+		SecondaryPlateReaderPrimaryPurgingSolutionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move primary purging solvents into position for cleaning before and after running the experiment on SecondaryPlateReader.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		SecondaryPlateReaderSecondaryPurgingSolutionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move secondary purging solvents into position for cleaning before and after running the experiment on SecondaryPlateReader.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		SecondaryPlateReaderPurgingTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for cleaning before and after running the experiment on SecondaryPlateReader.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		SecondaryPlateReaderStorageTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for storage when experiment is not running on SecondaryPlateReader.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		SecondaryPlateReaderInjectionTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for sample injection when running the experiment on SecondaryPlateReader.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
 		},
 		SecondaryPlateReaderPumpPrimingFilePath -> {
 			Format -> Single,
 			Class -> String,
 			Pattern :> FilePathP,
-			Description -> "The file which performs the pump priming of the PlateReader pumps when executed.",
+			Description -> "The file which performs the pump priming of the PlateReader pumps when executed on SecondaryPlateReader.",
 			Category -> "Injection"
 		},
 		SecondaryPlateReaderInjectorCleaningFilePath -> {
 			Format -> Single,
 			Class -> String,
 			Pattern :> FilePathP,
-			Description -> "The file which includes instructions to turn the syringe pumps on and off as needed and to run the cleaning solvents through the PlateReader injectors.",
+			Description -> "The file which includes instructions to turn the syringe pumps on and off as needed and to run the cleaning solvents through the PlateReader injectors on SecondaryPlateReader.",
 			Category -> "Injection"
 		},
 
@@ -808,7 +1001,7 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 			Category -> "Injection",
 			Developer -> True
 		},
-		PrimaryPreppingSolvent -> {
+		Line1PrimaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -816,11 +1009,11 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The primary solvent with which to wash the injectors prior to running the experiment.",
+			Description -> "The primary solvent with which the line 1 injector is washed before and after running the experiment.",
 			Category -> "Injection",
 			Developer -> True
 		},
-		SecondaryPreppingSolvent -> {
+		Line1SecondaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -828,11 +1021,11 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The secondary solvent with which to wash the injectors prior to running the experiment.",
+			Description -> "The secondary solvent with which the line 1 injector is washed before and after running the experiment.",
 			Category -> "Injection",
 			Developer -> True
 		},
-		PrimaryFlushingSolvent -> {
+		Line2PrimaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -840,11 +1033,11 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The primary solvent with which to wash the injectors after running the experiment.",
+			Description -> "The primary solvent with which the line 2 injector is washed before and after running the experiment.",
 			Category -> "Injection",
 			Developer -> True
 		},
-		SecondaryFlushingSolvent -> {
+		Line2SecondaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -852,7 +1045,7 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The secondary solvent with which to wash the injectors after running the experiment.",
+			Description -> "The secondary solvent with which the line 2 injector is washed before and after running the experiment.",
 			Category -> "Injection",
 			Developer -> True
 		},
@@ -926,7 +1119,56 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 			Category -> "Injection",
 			Developer -> True
 		},
-
+		PrimaryPurgingSolutionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move primary purging solvents into position for cleaning before and after running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		SecondaryPurgingSolutionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move secondary purging solvents into position for cleaning before and after running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		PurgingTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for cleaning before and after running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		StorageTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for storage when experiment is not running.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		InjectionTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for sample injection when running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
 		ProtocolKey -> {
 			Format -> Single,
 			Class -> String,
@@ -990,6 +1232,14 @@ DefineObjectType[Object[Protocol, RoboticSamplePreparation], {
 			Description -> "Containers without any cell contents in there, that could be enqueued for regular post-processing process(MeasureWeight, MeasureVolume, ImageSample).",
 			Developer->True,
 			Category -> "Sample Post-Processing"
+		},
+		OrdersFulfilled -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Transaction, Order][Fulfillment],
+			Description -> "Automatic inventory orders fulfilled by samples generated by this protocol.",
+			Category -> "Inventory"
 		},
 		PreparedResources -> {
 			Format -> Multiple,

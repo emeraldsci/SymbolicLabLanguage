@@ -21,7 +21,7 @@ DefineObjectType[Object[Method, SupercriticalFluidGradient], {
 		FlowRate -> {
 			Format -> Single,
 			Class -> Expression,
-			Pattern :> ({{GreaterEqualP[0 Minute],GreaterEqualP[(Liter Milli)/Minute]}...}|GreaterEqualP[(Liter Milli)/Minute]),
+			Pattern :> ({{GreaterEqualP[0 Minute],GreaterEqualP[0 Milliliter/Minute]}...}|GreaterEqualP[0 Milliliter/Minute]),
 			Description -> "The flow rate at which the gradient is run.",
 			Category -> "General"
 		},

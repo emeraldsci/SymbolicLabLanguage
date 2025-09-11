@@ -684,7 +684,7 @@ Error::IntersectingInputAndOptionNames="The input and option names, `1`, for the
 (* This is the current version of DefineUsage that deals with Widgets. This function parses the input fields, and stashes the correct information in Usage[...]. *)
 defineUsageCurrent[function_Symbol, usageFields_Association]:=Module[
 	{validKeys,invalidKeys,requiredKeys,missingKeys,parsedOutputs,allOptionNames,allInputNames,
-	basicDefinitionsAssociation,seperatedInputsAndOutputs,seperatedInputs,seperatedOutputs,documentationAssociation,protectedSymbol},
+	basicDefinitionsAssociation,separatedInputsAndOutputs,separatedInputs,separatedOutputs,documentationAssociation,protectedSymbol},
 
 	(* IMPORTANT: *)
 	(* In order to use Widgets with DefineUsage in yourPackage, you must set Widgets` as a dependency of yourPackage. *)
@@ -731,7 +731,7 @@ defineUsageCurrent[function_Symbol, usageFields_Association]:=Module[
 	(* We now have to pull out the {Input, Output} fields from the BasicDefinitions field. *)
 	(* We do this to comply with the format that SyncDocumentation currently uses. *)
 
-	seperatedInputsAndOutputs=Function[myBasicDefinition,
+	separatedInputsAndOutputs=Function[myBasicDefinition,
 		{
 			myBasicDefinition["Inputs"],
 			myBasicDefinition["Outputs"]
@@ -739,14 +739,14 @@ defineUsageCurrent[function_Symbol, usageFields_Association]:=Module[
 	 ]/@basicDefinitionsAssociation;
 
 	 (* Gather up all of the inputs and outputs. *)
-	 {seperatedInputs, seperatedOutputs}=Transpose[seperatedInputsAndOutputs];
+	 {separatedInputs, separatedOutputs}=Transpose[separatedInputsAndOutputs];
 
 	 (* Create an association in the correct format that ValidDocumentationQ and SyncDocumentation want. *)
 	 documentationAssociation=<|
 		 "AdditionalDefinitions"->Lookup[usageFields,Key[AdditionalDefinitions],{}],
 		 "MoreInformation"->Lookup[usageFields,Key[MoreInformation],{}],
-		 "Input"->DeleteDuplicates[Flatten[seperatedInputs]],
-		 "Output"->DeleteDuplicates[Flatten[seperatedOutputs]],
+		 "Input"->DeleteDuplicates[Flatten[separatedInputs]],
+		 "Output"->DeleteDuplicates[Flatten[separatedOutputs]],
 		 "Behaviors"->{}, (* We're sunsetting this key. *)
 		 "Guides"->Lookup[usageFields,Key[Guides],{}],
 		 "Tutorials"->Lookup[usageFields,Key[Tutorials],{}],

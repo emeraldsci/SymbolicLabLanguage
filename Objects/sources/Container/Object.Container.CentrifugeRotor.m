@@ -43,7 +43,7 @@ DefineObjectType[Object[Container, CentrifugeRotor], {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model], MaxForce]],
 			Pattern :> GreaterEqualP[0*GravitationalAcceleration],
-			Description -> "The maxiumum relative centrifugal force this rotor is capable of.",
+			Description -> "The maximum relative centrifugal force this rotor is capable of.",
 			Category -> "Operating Limits"
 		},
 		MaxRotationRate -> {

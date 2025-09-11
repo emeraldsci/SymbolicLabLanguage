@@ -87,7 +87,7 @@ Guide[
 		},
 		"Crystallography" -> {
 			{ExperimentGrowCrystalOptions, "Returns a list of resolved options when preparing crystallization samples."},
-			{ExperimentPowderXRDOptions, "Returns a list of resolved options when measuring the diffraction of x-ray radiation on given powder samples."}
+			{ExperimentPowderXRDOptions, "Returns a list of resolved options when measuring the diffraction of X-ray radiation on given powder samples."}
 		},
 		"Sample Preparation" -> {
 			{ExperimentDiluteOptions, "Returns a list of resolved options when adding a specified amount of solvent to specified samples."},
@@ -107,7 +107,7 @@ Guide[
 			{ExperimentLyophilizeOptions, "Returns a list of resolved options when removing solvents from the provided samples via controlled freezing and sublimation under high vacuum."},
 			{ExperimentPelletOptions, "Returns a list of resolved options when precipitating solids that are present in a solution, optionally aspirates off the supernatant, and resuspends the resulting pellet."},
 			{ExperimentFillToVolumeOptions, "Returns a list of resolved options when adding sample to the a container until its volume reaches the desired value."},
-			{ExperimentAcousticLiquidHandlingOptions, "Returns a list of resolved options when trasnferring liquid samples with sound waves in nanoliter increments."},
+			{ExperimentAcousticLiquidHandlingOptions, "Returns a list of resolved options when transferring liquid samples with sound waves in nanoliter increments."},
 			{ExperimentAdjustpHOptions, "Returns a list of resolved options when adding acid or base titrant to change the pH of the given sample to the desired value.'"},
 			{ExperimentResuspendOptions,"Returns a list of resolved options when dissolving the specified solid samples with some amount of solvent."},
 			{ExperimentMagneticBeadSeparationOptions, "Returns a list of resolved options when isolating targets from specified sample via magnetic bead separation, which uses a magnetic field to separate superparamagnetic particles from suspensions."},

@@ -94,6 +94,61 @@ DefineTests[ExperimentHPLC,
 			],
 			{EqualP[35.1 Percent]}
 		],
+		Example[{Additional,"Resolves to the Agilent 1260 Infinity II Semi-Preparative HPLC instruments if the samples are at CMU:"},
+			Module[
+				{protocol,instrumentResource,instrumentModels},
+				protocol=ExperimentHPLC[
+					{
+						Object[Sample,"Test Sample CMU-1 for ExperimentHPLC tests" <> $SessionUUID],
+						Object[Sample,"Test Sample CMU-2 for ExperimentHPLC tests" <> $SessionUUID],
+						Object[Sample,"Test Sample CMU-3 for ExperimentHPLC tests" <> $SessionUUID]
+					},
+					Scale->SemiPreparative
+				];
+				instrumentResource=FirstCase[
+					Download[protocol,RequiredResources],
+					{_, Instrument, ___}
+				][[1]];
+				instrumentModels=Download[instrumentResource,InstrumentModels[Object]]
+			],
+			(*
+				{
+					"Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array Detector",
+					"Agilent 1260 Infinity II Semi-Preparative HPLC with MALS-DLS-RI Detector",
+					"Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors"
+				}
+			*)
+			{
+				Model[Instrument, HPLC, "id:dORYzZRWJlDD"],
+				Model[Instrument, HPLC, "id:dORYzZRWmDn5"],
+				Model[Instrument, HPLC, "id:lYq9jRqD8OpV"]
+			}
+		],
+		Example[
+			{Additional,"Supports different types of HPLC vials:"},
+			(
+				packet = ExperimentHPLC[
+					ConstantArray[Object[Sample,"Test Sample 6 for ExperimentHPLC tests (50mL Tube)" <> $SessionUUID],5],
+					(* Use AliquotContainer option to require different type of supported containers. They are all accepted on HPLC and no error/warning should be thrown *)
+					AliquotContainer->{Model[Container, Vessel, "HPLC vial (high recovery)"], Model[Container, Vessel, "1mL HPLC Vial (total recovery)"], Model[Container, Vessel, "Amber HPLC vial (high recovery)"], Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"], Model[Container, Vessel, "HPLC vial (high recovery) - Deactivated Clear Glass"]},
+					Upload->False][[1]];
+				{
+					Lookup[packet, Scale],
+					Lookup[Lookup[packet, Replace[AliquotSamplePreparation]], AliquotContainer][[All,2]]
+				}
+			),
+			{
+				Analytical,
+				{
+					Model[Container, Vessel, "id:jLq9jXvxr6OZ"],
+					Model[Container, Vessel, "id:1ZA60vL48X85"],
+					Model[Container, Vessel, "id:GmzlKjznOxmE"],
+					Model[Container, Vessel, "id:3em6ZvL8x4p8"],
+					Model[Container, Vessel, "id:aXRlGnRE6A8m"]
+				}
+			},
+			Variables:>{packet}
+		],
 
 		(* === Test === *)
 		Test[
@@ -107,7 +162,8 @@ DefineTests[ExperimentHPLC,
 				Template->Object[Protocol,HPLC,"I am not real"],
 				Output->{Result,Options,Tests}
 			],
-			{$Failed,$Failed,{_EmeraldTest..}}
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
 		],
 		Test["Populate SystemPrime fields for a Dionex protocol:",
 			Lookup[
@@ -163,15 +219,50 @@ DefineTests[ExperimentHPLC,
 			Join[
 				If[NullQ[#],
 					Null,
-					LinkP[#]
+					Alternatives@@(LinkP[#]&/@#)
 				]&/@Download[
 					Model[Instrument,HPLC,"Waters Acquity UPLC H-Class PDA"],
 					{
-						SystemPrimeGradient[BufferA][Object],
-						SystemPrimeGradient[BufferB][Object],
-						SystemPrimeGradient[BufferC][Object],
-						SystemPrimeGradient[BufferD][Object],
-						SystemPrimeGradient[Object]
+						SystemPrimeGradients[[All,2]][BufferA][Object],
+						SystemPrimeGradients[[All,2]][BufferB][Object],
+						SystemPrimeGradients[[All,2]][BufferC][Object],
+						SystemPrimeGradients[[All,2]][BufferD][Object],
+						SystemPrimeGradients[[All,2]][Object]
+					}
+				],
+				{
+					{{LinkP[],{_String..}}..}
+				}
+			]
+		],
+		Test["Populate SystemPrime fields for a semi-preparative Agilent protocol at CMU:",
+			Lookup[
+				ExperimentHPLC[
+					Object[Sample,"Test Sample CMU-1 for ExperimentHPLC tests" <> $SessionUUID],
+					Instrument -> Model[Instrument, HPLC, "Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array Detector"],
+					Upload -> False
+				][[1]],
+				{
+					SystemPrimeBufferA,
+					SystemPrimeBufferB,
+					SystemPrimeBufferC,
+					SystemPrimeBufferD,
+					SystemPrimeGradient,
+					Replace[SystemPrimeBufferContainerPlacements]
+				}
+			],
+			Join[
+				If[NullQ[#],
+					Null,
+					Alternatives@@(LinkP[#]&/@#)
+				]&/@Download[
+					Model[Instrument, HPLC, "Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array Detector"],
+					{
+						SystemPrimeGradients[[All,2]][BufferA][Object],
+						SystemPrimeGradients[[All,2]][BufferB][Object],
+						SystemPrimeGradients[[All,2]][BufferC][Object],
+						SystemPrimeGradients[[All,2]][BufferD][Object],
+						SystemPrimeGradients[[All,2]][Object]
 					}
 				],
 				{
@@ -198,7 +289,7 @@ DefineTests[ExperimentHPLC,
 			Join[
 				If[NullQ[#],
 					Null,
-					Alternatives@@(LinkP[#]&/@#)
+					LinkP[#]
 				]&/@Download[
 					Model[Instrument,HPLC,"UltiMate 3000"],
 					{
@@ -231,11 +322,40 @@ DefineTests[ExperimentHPLC,
 				}
 			],
 			Join[
-				If[NullQ[#],
-					Null,
-					Alternatives@@(LinkP[#]&/@#)
-				]&/@Download[
+				LinkP[#]&/@Download[
 					Model[Instrument,HPLC,"Waters Acquity UPLC H-Class PDA"],
+					{
+						SystemFlushGradients[[All,2]][BufferA][Object],
+						SystemFlushGradients[[All,2]][BufferB][Object],
+						SystemFlushGradients[[All,2]][BufferC][Object],
+						SystemFlushGradients[[All,2]][BufferD][Object],
+						SystemFlushGradients[[All,2]][Object]
+					}
+				],
+				{
+					{{LinkP[],{_String..}}..}
+				}
+			]
+		],
+		Test["Populate SystemFlush fields for a semi-preparative Agilent protocol at CMU:",
+			Lookup[
+				ExperimentHPLC[
+					Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
+					Instrument -> Model[Instrument, HPLC, "Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors"],
+					Upload -> False
+				][[1]],
+				{
+					SystemFlushBufferA,
+					SystemFlushBufferB,
+					SystemFlushBufferC,
+					SystemFlushBufferD,
+					SystemFlushGradient,
+					Replace[SystemFlushBufferContainerPlacements]
+				}
+			],
+			Join[
+				LinkP[#]&/@Download[
+					Model[Instrument, HPLC, "Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors"],
 					{
 						SystemFlushGradients[[All,2]][BufferA][Object],
 						SystemFlushGradients[[All,2]][BufferB][Object],
@@ -733,7 +853,7 @@ DefineTests[ExperimentHPLC,
 		],
 		Example[
 			{Options,ColumnStorageBuffer,"Sets the solvent in which the selected column should be stored in for long term storage after removing from the instrument (can be different for multiple column sets in the column selector):"},
-			options=ExperimentHPLC[
+			protocol=ExperimentHPLC[
 				{Object[Sample,"Test Sample 6 for ExperimentHPLC tests (50mL Tube)" <> $SessionUUID],Object[Sample,"Test Sample 7 for ExperimentHPLC tests (50mL Tube)" <> $SessionUUID]},
 				ColumnSelection->True,
 				ColumnSelector -> {
@@ -742,12 +862,11 @@ DefineTests[ExperimentHPLC,
 				},
 				BufferA->Model[Sample, "Milli-Q water"],
 				BufferB->Model[Sample, StockSolution, "20% Methanol in MilliQ Water"],
-				ColumnStorageBuffer->{Model[Sample, "Milli-Q water"],Model[Sample, StockSolution, "20% Methanol in MilliQ Water"]},
-				Output->Options
+				ColumnStorageBuffer->{Model[Sample, "Milli-Q water"],Model[Sample, StockSolution, "20% Methanol in MilliQ Water"]}
 			];
 			{
-				Lookup[options,ColumnStorageBuffer],
-				Lookup[options,ColumnFlushGradient][[All,-1,2;;5]]
+				Lookup[Download[protocol,ResolvedOptions],ColumnStorageBuffer],
+				Download[protocol,ColumnFlushGradients[Gradient]][[All,-1,2;;5]]
 			},
 			{
 				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]],ObjectP[Model[Sample, StockSolution, "id:Z1lqpMzmp5MO"]]},
@@ -756,7 +875,17 @@ DefineTests[ExperimentHPLC,
 					{EqualP[0Percent],EqualP[100Percent],EqualP[0Percent],EqualP[0Percent]}
 				}
 			},
-			Variables:>{options}
+			Variables:>{protocol}
+		],
+		Example[
+			{Options,ColumnStorageBuffer,"Sets the gradient in which the selected column should be stored in for long term storage after removing from the instrument (used to decide ColumnFlushGradient):"},
+			protocol=ExperimentHPLC[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				ColumnStorageBuffer->{50Percent,10Percent,15Percent,25Percent}
+			];
+			Download[protocol,ColumnFlushGradients[Gradient]][[1,-1,2;;5]],
+			{EqualP[50Percent],EqualP[10Percent],EqualP[15Percent],EqualP[25Percent]},
+			Variables:>{protocol}
 		],
 		Example[
 			{Options,IncubateColumn,"Specifies that the columns should be placed in the column oven compartment during the HPLC run:"},
@@ -1068,6 +1197,28 @@ DefineTests[ExperimentHPLC,
 			{100 Microliter,100 Microliter,100 Microliter},
 			Variables:>{packet}
 		],
+		Example[
+			{Options,InjectionVolume,"Resolve the injection volume for semi-prep scale experiment:"},
+			(
+				protocol1 = ExperimentHPLC[
+					Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
+					Scale->SemiPreparative,
+					Output->Options
+				];
+				protocol2 = ExperimentHPLC[
+					Object[Sample, "Test Sample CMU-1 for ExperimentHPLC tests" <> $SessionUUID],
+					Scale->SemiPreparative,
+					Output->Options
+				];
+				Lookup[
+					{protocol1,protocol2},
+					InjectionVolume
+				]
+			),
+			{460 Microliter,460 Microliter},
+			EquivalenceFunction -> Equal,
+			Variables:>{protocol1,protocol2}
+		],
 		Example[{Options,NeedleWashSolution,"Specify the solvent used to wash the injection needle:"},
 			options=ExperimentHPLC[
 				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
@@ -1297,6 +1448,17 @@ DefineTests[ExperimentHPLC,
 			Variables:>{packet}
 		],
 		Example[
+			{Options,AbsorbanceWavelength,"A PhotoDiodeArray Detector is automatically selected when AbsorbanceWavelength is set to All:"},
+			(
+				packet = ExperimentHPLC[
+					{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+					Upload->False,AbsorbanceWavelength -> All][[1]];
+				Lookup[packet,Replace[Detectors]]
+			),
+			{___,PhotoDiodeArray,___},
+			Variables:>{packet}
+		],
+		Example[
 			{Options,AbsorbanceWavelength,"Resolves the AbsorbanceWavelength based on the sample's ExtinctionCoefficients:"},
 			(
 				protocol = ExperimentHPLC[
@@ -1336,6 +1498,64 @@ DefineTests[ExperimentHPLC,
 			Lookup[options,AbsorbanceSamplingRate],
 			20*1/Second,
 			Variables:>{options}
+		],
+		Example[
+			{Options,AbsorbanceSamplingRate,"Specify how frequently to conduct absorbance sampling measurements on Dionex instruments:"},
+			options = ExperimentHPLCOptions[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				Instrument->Model[Instrument, HPLC, "UltiMate 3000"],
+				Detector->UVVis,AbsorbanceSamplingRate->58.8/Second, OutputFormat -> List];
+			Lookup[options,AbsorbanceSamplingRate],
+			EqualP[58.8/Second],
+			Variables:>{options}
+		],
+		Example[
+			{Options,SmoothingTimeConstant,"Specify time window used on the instrument software for data filtering in absorbance collection:"},
+			options = ExperimentHPLCOptions[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				SmoothingTimeConstant->4Second, OutputFormat -> List];
+			{
+				Lookup[options, SmoothingTimeConstant],
+				(* Enumeration SmoothingTimeConstant resolves to Waters instruments *)
+				MemberQ[Lookup[options, Instrument],ObjectP[Model[Instrument, HPLC, "UltiMate 3000"]]]
+			},
+			{EqualP[4Second],True},
+			Variables:>{options}
+		],
+		Example[
+			{Options,SmoothingTimeConstant,"Specify time window used on the instrument software for data filtering in absorbance collection as an enumeration value:"},
+			options = ExperimentHPLCOptions[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				SmoothingTimeConstant->Medium, OutputFormat -> List];
+			{
+				Lookup[options, SmoothingTimeConstant],
+				(* Enumeration SmoothingTimeConstant resolves to Waters instruments *)
+				MemberQ[Lookup[options, Instrument],ObjectP[Model[Instrument, HPLC, "UltiMate 3000"]]]
+			},
+			{Medium,False},
+			Variables:>{options}
+		],
+		Example[
+			{Options,SmoothingTimeConstant,"Resolves AbsorbanceSamplingRate based on the specified SmoothingTimeConstant option:"},
+			options = ExperimentHPLCOptions[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				Instrument -> Model[Instrument, HPLC, "Waters Acquity UPLC H-Class PDA"],
+				SmoothingTimeConstant->0.0125Second, OutputFormat -> List];
+			Lookup[options, {SmoothingTimeConstant,AbsorbanceSamplingRate}],
+			{EqualP[0.0125Second],EqualP[80/Second]},
+			Variables:>{options}
+		],
+		Example[
+			{Options,SmoothingTimeConstant,"Convert the enumeration SmoothingTimeConstant to numeric value for upload:"},
+			protocol = ExperimentHPLC[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				Instrument -> Model[Instrument, HPLC, "Waters Acquity UPLC H-Class PDA"],
+				AbsorbanceSamplingRate -> 40 /Second,
+				SmoothingTimeConstant -> Large
+			];
+			Download[protocol, {SmoothingTimeConstants,ColumnPrimeSmoothingTimeConstants}],
+			{{EqualP[0.1Second], EqualP[0.1Second], EqualP[0.1Second]},{EqualP[0.1Second]}},
+			Variables:>{protocol}
 		],
 		Example[
 			{Options,ExcitationWavelength,"Specify the specific wavelength (a single tuple) that is used to excite fluorescence in the samples in the Fluorescence detector:"},
@@ -1938,6 +2158,78 @@ DefineTests[ExperimentHPLC,
 			Variables:>{packet}
 		],
 		Example[
+			{Options,FractionCollectionContainer,"Resolve FractionCollectionContainer based on Site and Scale and Instrument (1):"},
+			options = ExperimentHPLC[
+				{
+					Object[Sample, "Test Sample CMU-1 for ExperimentHPLC tests" <> $SessionUUID],
+					Object[Sample, "Test Sample CMU-2 for ExperimentHPLC tests" <> $SessionUUID],
+					Object[Sample, "Test Sample CMU-3 for ExperimentHPLC tests" <> $SessionUUID]
+				},
+				Scale -> SemiPreparative,
+				Output->Options
+			];
+			Lookup[options, {Instrument,FractionCollectionContainer}],
+			{
+				(*
+					{
+						"Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array Detector",
+						"Agilent 1260 Infinity II Semi-Preparative HPLC with MALS-DLS-RI Detector",
+						"Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors"
+					}
+				*)
+				{
+					Model[Instrument, HPLC, "id:dORYzZRWJlDD"],
+					Model[Instrument, HPLC, "id:dORYzZRWmDn5"],
+					Model[Instrument, HPLC, "id:lYq9jRqD8OpV"]
+				},
+				(* Model[Container, Plate, "96-well 2mL Deep Well Plate"] *)
+				ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]
+			},
+			Variables:>{options}
+		],
+		Example[
+			{Options,FractionCollectionContainer,"Resolve FractionCollectionContainer based on Site and Scale and Instrument (2):"},
+			options = ExperimentHPLC[
+				{
+					Object[Sample, "Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
+					Object[Sample, "Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],
+					Object[Sample, "Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]
+				},
+				Scale -> SemiPreparative,
+				Output->Options
+			];
+			Lookup[options, {Instrument,FractionCollectionContainer}],
+			{
+				(*
+					{"UltiMate 3000", "UltiMate 3000 with MALS-DLS-RI Detector", "UltiMate 3000 with FLR Detector"}
+				*)
+				{
+					Model[Instrument, HPLC, "id:N80DNjlYwwJq"],
+					Model[Instrument, HPLC, "id:M8n3rx098xbO"],
+					Model[Instrument, HPLC, "id:wqW9BP7BzwAG"]
+				},
+				(* Model[Container, Plate, "96-well 2mL Deep Well Plate"] *)
+				ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]
+			},
+			Variables:>{options}
+		],
+		Example[
+			{Options,FractionCollectionContainer,"Resolve FractionCollectionContainer based on Site and Scale and Instrument (3):"},
+			options = ExperimentHPLC[
+				{Object[Sample,"Test Sample 6 for ExperimentHPLC tests (50mL Tube)" <> $SessionUUID],Object[Sample,"Test Sample 7 for ExperimentHPLC tests (50mL Tube)" <> $SessionUUID]},
+				Scale -> Preparative,
+				Output -> Options
+			];
+			Lookup[options, {Instrument,FractionCollectionContainer}],
+			{
+				(* "Agilent 1290 Infinity II LC System" *)
+				{Model[Instrument, HPLC, "id:R8e1Pjp1md8p"]},
+				(* Model[Container, Vessel, "50mL Tube"] *)
+				ObjectP[Model[Container, Vessel, "id:bq9LA0dBGGR6"]]
+			},
+			Variables:>{options}
+		],
+		Example[
 			{Options,FractionCollectionContainer,"Specify the container in which the fractions are collected on the selected instrument's fraction collector:"},
 			options = ExperimentHPLC[
 				{Object[Sample,"Test Sample 6 for ExperimentHPLC tests (50mL Tube)" <> $SessionUUID],Object[Sample,"Test Sample 7 for ExperimentHPLC tests (50mL Tube)" <> $SessionUUID]},
@@ -2310,6 +2602,15 @@ DefineTests[ExperimentHPLC,
 				Standard -> Model[Sample, StockSolution, Standard, "id:N80DNj1rWzaq"],StandardAbsorbanceSamplingRate->20*1/Second, OutputFormat -> List];
 			Lookup[options,StandardAbsorbanceSamplingRate],
 			20*1/Second,
+			Variables:>{options}
+		],
+		Example[
+			{Options,StandardSmoothingTimeConstant,"For Standard samples, specify time window used on the instrument software for data filtering in absorbance collection:"},
+			options = ExperimentHPLCOptions[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				Standard -> Model[Sample, StockSolution, Standard, "id:N80DNj1rWzaq"],StandardSmoothingTimeConstant->1Second, OutputFormat -> List];
+			Lookup[options,StandardSmoothingTimeConstant],
+			EqualP[1Second],
 			Variables:>{options}
 		],
 		Example[
@@ -2988,6 +3289,21 @@ DefineTests[ExperimentHPLC,
 			EquivalenceFunction -> Equal
 		],
 		Example[
+			{Options,BlankSmoothingTimeConstant,"For Blank samples, specify time window used on the instrument software for data filtering in absorbance collection:"},
+			protocol = ExperimentHPLC[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				Blank -> {
+					Model[Sample, StockSolution, "Reverse phase buffer A 0.05% HFBA"],
+					Model[Sample, StockSolution, "Reverse phase buffer B 0.05% HFBA"]
+				},
+				BlankFrequency->FirstAndLast,
+				BlankSmoothingTimeConstant->Small
+			];
+			Download[protocol,BlankSmoothingTimeConstants],
+			{EqualP[0.05Second],EqualP[0.05Second],EqualP[0.05Second],EqualP[0.05Second]},
+			Variables:>{protocol}
+		],
+		Example[
 			{Options,BlankExcitationWavelength,"Specify the specific wavelength (a single tuple) that is used to excite fluorescence in the Blank samples in the Fluorescence detector:"},
 			options = ExperimentHPLCOptions[
 				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
@@ -3511,6 +3827,16 @@ DefineTests[ExperimentHPLC,
 			Variables:>{options}
 		],
 		Example[
+			{Options,ColumnPrimeSmoothingTimeConstant,"For column prime(s), specify time window used on the instrument software for data filtering in absorbance collection:"},
+			protocol = ExperimentHPLC[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				ColumnPrimeSmoothingTimeConstant->2.5Second
+			];
+			Download[protocol,ColumnPrimeSmoothingTimeConstants],
+			{EqualP[2.5Second]},
+			Variables:>{protocol}
+		],
+		Example[
 			{Options,ColumnPrimeExcitationWavelength,"Specify the specific wavelength (a single tuple) that is used to excite fluorescence during column prime in the Fluorescence detector:"},
 			options = ExperimentHPLCOptions[
 				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
@@ -3925,6 +4251,18 @@ DefineTests[ExperimentHPLC,
 				ColumnFlushAbsorbanceSamplingRate->20*1/Second, OutputFormat -> List];
 			Lookup[options,ColumnFlushAbsorbanceSamplingRate],
 			20*1/Second,
+			Variables:>{options}
+		],
+		Example[
+			{Options,ColumnFlushSmoothingTimeConstant,"For column flush(es), specify time window used on the instrument software for data filtering in absorbance collection:"},
+			options = ExperimentHPLCOptions[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				ColumnFlushAbsorbanceSamplingRate -> 5 /Second,
+				ColumnFlushSmoothingTimeConstant->Small,
+				OutputFormat -> List
+			];
+			Lookup[options,ColumnFlushSmoothingTimeConstant],
+			Small,
 			Variables:>{options}
 		],
 		Example[
@@ -4480,7 +4818,7 @@ DefineTests[ExperimentHPLC,
 		Example[{Options,Aliquot,"If input samples are not in a supported container, force aliquotting in correct container type:"},
 			options=ExperimentHPLC[Object[Sample,"Test sample for invalid container for ExperimentHPLC tests" <> $SessionUUID],InjectionVolume -> 100 Microliter,Output -> Options];
 			Lookup[options,{Aliquot,AliquotAmount,AliquotContainer}],
-			{True, 140.0 Microliter, {1, ObjectReferenceP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}},
+			{True, EqualP[140.0 Microliter], {{1, ObjectReferenceP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}}},
 			Variables :> {options},
 			Messages:>{Warning::AliquotRequired}
 		],
@@ -4494,7 +4832,7 @@ DefineTests[ExperimentHPLC,
 		Example[{Options,AliquotSampleLabel, "Set name labels for aliquots taken from the input samples:"},
 			options = ExperimentHPLC[Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID], Aliquot -> True, AliquotSampleLabel -> "Sample 1 aliquot", Output -> Options];
 			Lookup[options, AliquotSampleLabel],
-			"Sample 1 aliquot",
+			{"Sample 1 aliquot"},
 			Variables :> {options}
 		],
 		Example[{Options,AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
@@ -4564,13 +4902,13 @@ DefineTests[ExperimentHPLC,
 		Example[{Options,AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentHPLC[Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID], AliquotContainer -> Model[Container,Plate,"96-well 2mL Deep Well Plate"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1,ObjectP[Model[Container,Plate,"96-well 2mL Deep Well Plate"]]},
+			{{1, ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}},
 			Variables :> {options}
 		],
 		Example[{Options,DestinationWell, "Indicates how the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options = ExperimentHPLC[Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID], DestinationWell -> "A1", Output -> Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 
@@ -4668,29 +5006,42 @@ DefineTests[ExperimentHPLC,
 		],
 
 		(* === Shared Options - PreparatoryUnitOperations === *)
-		Example[
-			{Options,PreparatoryPrimitives,"Describe the preparation of a buffer before using it in an HPLC protocol:"},
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Use the PreparatoryUnitOperations option to prepare samples from models before the experiment is run:"},
+			options = ExperimentHPLC[
+				(* 20 mg/l Caffeine Standard Solution for HPLC System Qualification *)
+				{Model[Sample, "id:L8kPEjn8pBbG"], Model[Sample, "id:L8kPEjn8pBbG"]},
+				PreparedModelAmount -> 1 Milliliter,
+				(* 96-well 2mL Deep Well Plate *)
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				(* 20 mg/l Caffeine Standard Solution for HPLC System Qualification *)
+				{ObjectP[Model[Sample, "id:L8kPEjn8pBbG"]]..},
+				(* 96-well 2mL Deep Well Plate *)
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
 			ExperimentHPLC[
-				Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
-				BufferA -> "My Buffer",
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My Buffer",
-						Sample -> {Model[Container,Vessel,"Amber Glass Bottle 4 L"],"A1"}
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Destination -> "My Buffer",
-						Amount -> 1999 Milliliter
-					],
-					Transfer[
-						Source -> Model[Sample, "Heptafluorobutyric acid"],
-						Destination -> "My Buffer",
-						Amount -> 1 Milliliter
-					]
-				}
+				Model[Sample, "Caffeine"],
+				PreparedModelAmount -> 5 Milligram,
+				MixType -> Vortex, IncubationTime -> 10 Minute,
+				AssayBuffer -> Model[Sample, "Milli-Q water"]
 			],
-			ObjectP[Object[Protocol,HPLC]]
+			ObjectP[Object[Protocol, HPLC]]
 		],
 		Example[
 			{Options,PreparatoryUnitOperations,"Describe the preparation of a buffer before using it in an HPLC protocol:"},
@@ -4719,7 +5070,8 @@ DefineTests[ExperimentHPLC,
 				}
 			],
 			ObjectP[Object[Protocol,HPLC]],
-			Messages :> {Warning::RoundedTransferAmount}
+			Messages :> {Warning::RoundedTransferAmount},
+			TimeConstraint -> 3000
 		],
 		Example[{Options,InjectionSampleVolumeMeasurement,"InjectionSampleVolumeMeasurement can be set to True when volume measurements of the prepared samples are desired before the HPLC run is started:"},
 			ExperimentHPLC[
@@ -4748,18 +5100,31 @@ DefineTests[ExperimentHPLC,
 				InjectionSampleVolumeMeasurement -> True
 			],
 			ObjectP[Object[Protocol,HPLC]],
-			Messages :> {Warning::RoundedTransferAmount}
+			Messages :> {Warning::RoundedTransferAmount},
+			TimeConstraint -> 3000
 		],
 
 
 		(* === Messages - General Error Messages === *)
-		Example[{Messages,"ObjectDoesNotExist","Error if specified object does not exist in SLL:"},
-			ExperimentHPLC[
-				Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
-				Column -> Object[Item,Column,CreateUUID[]]
-			],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentHPLC[Object[Sample, "Nonexistent sample"]],
 			$Failed,
-			Messages:>{Error::ObjectDoesNotExist,Error::InvalidInput}
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentHPLC[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentHPLC[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentHPLC[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
 		],
 		Example[{Messages,"DiscardedSamples","Error if input samples are discarded:"},
 			ExperimentHPLC[discardedSample],
@@ -4962,16 +5327,6 @@ DefineTests[ExperimentHPLC,
 			],
 			$Failed,
 			Messages:>{Error::InvalidOption,Error::SampleTemperatureConflict}
-		],
-		Example[{Messages,"FractionCollectionDetectorConflict","Error if fraction collection parameters are specified but the specified Detector is not compatible with an instrument that can collect fractions:"},
-			ExperimentHPLC[
-				Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
-				CollectFractions -> True,
-				Detector -> PhotoDiodeArray,
-				Aliquot -> False
-			],
-			$Failed,
-			Messages:>{Error::InvalidOption,Error::FractionCollectionDetectorConflict}
 		],
 		Example[{Messages,"UnsupportedSampleTemperature","Error if SampleTemperature is specified while the specified Instrument does not support autosampler incubation:"},
 			ExperimentHPLC[
@@ -5239,6 +5594,15 @@ DefineTests[ExperimentHPLC,
 				Error::InvalidOption
 			}
 		],
+		Example[{Messages,"NotApplicableHPLCPeakFractionCollectionOptions","PeakSlopeDuration and PeakEndSlope fraction collection options are only supported on the UltiMate 3000 HPLC instruments:"},
+			ExperimentHPLC[
+				Object[Sample,"Test Sample 6 for ExperimentHPLC tests (50mL Tube)" <> $SessionUUID],
+				Instrument->Model[Instrument, HPLC, "Agilent 1290 Infinity II LC System"],
+				PeakSlopeDuration->2Second
+			],
+			$Failed,
+			Messages:>{Error::NotApplicableHPLCPeakFractionCollectionOptions,Error::InvalidOption}
+		],
 		Example[
 			{Messages,"StandardFrequencyNoStandards","StandardFrequency must be Automatic, Null, or None when there are no Standard samples:"},
 			(
@@ -5359,6 +5723,15 @@ DefineTests[ExperimentHPLC,
 			],
 			$Failed,
 			Messages:>{Error::InvalidOption,Error::InvalidFractionCollectionEndTime}
+		],
+		Example[{Messages, "ConflictScaleAndCollectFractions", "If Scale->Analytical and CollectionFractions->True, throw an error:"},
+			ExperimentHPLC[
+				Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
+				CollectFractions -> True,
+				Scale -> Analytical
+			],
+			$Failed,
+			Messages :> {Error::ConflictScaleAndCollectFractions,Error::InvalidOption}
 		],
 		Example[{Messages,"ConflictFractionOptionSpecification","If the resolution leads to no fraction collection, but fraction collection options were specified, a warning is thrown:"},
 			ExperimentHPLC[
@@ -5500,6 +5873,17 @@ DefineTests[ExperimentHPLC,
 			Messages:>{Warning::IncompatibleColumnType}
 		],
 		Example[
+			{Messages,"RedundantGuardColumn","Error is thrown if primary column is already a guard column but guard column is also specified:"},
+			ExperimentHPLC[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				Column -> Model[Item, Column, "id:1ZA60vzvMob8"],(*"InfinityLab Poroshell HPH-C18, 3.0 mm, 2.7 µm, UHPLC guard"*)
+				GuardColumn -> Model[Item, Column, "id:1ZA60vzvMob8"],
+				FlowRate -> 0.2 Milliliter/Minute
+			],
+			$Failed,
+			Messages:>{Error::RedundantGuardColumn, Error::InvalidOption}
+		],
+		Example[
 			{Messages,"VariableColumnTypes","If multiple columns are specified and SeparationMode resolves automatically, SeparationMode is resolved based on just the first column:"},
 			Download[ExperimentHPLC[
 				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
@@ -5556,7 +5940,7 @@ DefineTests[ExperimentHPLC,
 		Example[{Messages,"IncompatibleHPLCColumnTemperature","Error if the selected instrument is not available to meet the specified column temperature inside the column temperature options (or no instrument can meet the requirements):"},
 			ExperimentHPLC[
 				Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
-				ColumnTemperature->10Celsius,
+				ColumnTemperature->9Celsius,
 				Instrument->Model[Instrument, HPLC, "id:1ZA60vw8X5eD"]
 			],
 			$Failed,
@@ -5566,7 +5950,7 @@ DefineTests[ExperimentHPLC,
 			(
 				customInjectionTable={
 					{ColumnPrime, Null, Automatic, Automatic, Ambient, Automatic},
-					{Sample, Object[Sample, "Test Sample 1 for ExperimentHPLC tests"<>$SessionUUID], Automatic, Automatic, 10 Celsius, Automatic},
+					{Sample, Object[Sample, "Test Sample 1 for ExperimentHPLC tests"<>$SessionUUID], Automatic, Automatic, 9 Celsius, Automatic},
 					{ColumnFlush, Null, Automatic, Automatic, Ambient, Automatic}
 				};
 
@@ -6145,6 +6529,73 @@ DefineTests[ExperimentHPLC,
 			$Failed,
 			Messages:>{Error::InvalidOption,Error::NonBinaryHPLC,Warning::HPLCGradientNotReequilibrated}
 		],
+		Example[
+			{Messages,"ConflictColumnStorageBuffer","The specified ColumnStorageBuffer should match one of the specified buffers:"},
+			ExperimentHPLC[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				BufferA -> Model[Sample, StockSolution, "Reverse phase buffer A 0.05% HFBA"],
+				BufferB -> Model[Sample, StockSolution, "Reverse phase buffer B 0.05% HFBA"],
+				BufferC -> Model[Sample, "Acetonitrile, HPLC Grade"],
+				BufferD -> Model[Sample, "Milli-Q water"],
+				ColumnStorageBuffer -> Model[Sample, StockSolution, "20% Methanol in MilliQ Water"]
+			],
+			$Failed,
+			Messages:>{Error::InvalidOption,Error::ConflictColumnStorageBuffer}
+		],
+		Example[
+			{Messages,"ConflictColumnStorageBufferFlushGradient","The specified ColumnStorageBuffer gradient must match the end gradient of the specified ColumnFlushGradient:"},
+			ExperimentHPLC[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				ColumnFlushGradient->{
+					{
+						Quantity[0., "Minutes"],
+						Quantity[75., "Percent"],
+						Quantity[0., "Percent"],
+						Quantity[25., "Percent"],
+						Quantity[0., "Percent"],
+						Quantity[0.4, "Milliliters"/"Minutes"],
+						None
+					},
+					{
+						Quantity[4., "Minutes"],
+						Quantity[75., "Percent"],
+						Quantity[0., "Percent"],
+						Quantity[25., "Percent"],
+						Quantity[0., "Percent"],
+						Quantity[0.4, "Milliliters"/"Minutes"],
+						None
+					}
+				},
+				ColumnStorageBuffer->{50Percent,10Percent,15Percent,25Percent}
+			],
+			$Failed,
+			Messages:>{Error::InvalidOption,Error::ConflictColumnStorageBufferFlushGradient}
+		],
+		Example[
+			{Messages,"InvalidGradientColumnStorageBuffer","The specified ColumnStorageBuffer gradient must sum to 100%:"},
+			ExperimentHPLC[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				ColumnStorageBuffer->{80Percent,10Percent,15Percent,25Percent}
+			],
+			$Failed,
+			Messages:>{Error::InvalidOption,Error::InvalidGradientColumnStorageBuffer}
+		],
+		Example[
+			{Messages,"IncompatibleModelColumnStorageBuffer","Non-binary gradients are not supported on HPLC with binary pump:"},
+			options=ExperimentHPLC[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				BufferA -> Model[Sample, StockSolution, "Reverse phase buffer A 0.05% HFBA"],
+				BufferB -> Model[Sample, StockSolution, "Reverse phase buffer B 0.05% HFBA"],
+				BufferC -> Model[Sample, "Acetonitrile, HPLC Grade"],
+				BufferD -> Model[Sample, "Milli-Q water"],
+				Column -> Model[Item, Column, "Test storage buffer column model for ExperimentHPLC" <> $SessionUUID],
+				Output->Options
+			];
+			Lookup[options,ColumnStorageBuffer],
+			{EqualP[90Percent],EqualP[10Percent],EqualP[0Percent],EqualP[0Percent]},
+			Messages:>{Warning::IncompatibleModelColumnStorageBuffer},
+			Variables:>{options}
+		],
 
 		(* === Messages - Detectors === *)
 		Example[{Messages,"WavelengthOutOfRange","Error if a detection wavelength is specified that is outside the specified Instrument's compatible range:"},
@@ -6152,6 +6603,24 @@ DefineTests[ExperimentHPLC,
 				Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
 				Instrument -> Model[Instrument,HPLC,"Waters Acquity UPLC H-Class PDA"],
 				AbsorbanceWavelength -> 800 Nanometer
+			],
+			$Failed,
+			Messages:>{Error::WavelengthOutOfRange,Error::InvalidOption}
+		],
+		Example[{Messages,"WavelengthOutOfRange","Error if an excitation wavelength is specified that is outside the specified Instrument's compatible range:"},
+			ExperimentHPLC[
+				Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
+				Instrument -> Model[Instrument, HPLC, "UltiMate 3000 with FLR Detector"],
+				ExcitationWavelength -> 1100 Nanometer
+			],
+			$Failed,
+			Messages:>{Error::WavelengthOutOfRange,Error::InvalidOption}
+		],
+		Example[{Messages,"WavelengthOutOfRange","Error if an excitation wavelength is specified that is outside the specified Instrument's compatible range:"},
+			ExperimentHPLC[
+				Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
+				Instrument -> Model[Instrument, HPLC, "Waters Acquity UPLC H-Class FLR"],
+				EmissionWavelength -> 1100 Nanometer
 			],
 			$Failed,
 			Messages:>{Error::WavelengthOutOfRange,Error::InvalidOption}
@@ -6251,12 +6720,30 @@ DefineTests[ExperimentHPLC,
 				Error::MissingHPLCDetectorOptions
 			}
 		],
-		Example[{Messages,"IncompatibleDetectionWavelength","Error if the specified Detector is not compatible with any instrument that supports the detection wavelength(s) specified:"},
+		Example[{Messages,"IncompatibleDetectionWavelength","Error if the specified UVVis Detector is not compatible with any instrument that supports the absorbance detection wavelength(s) specified:"},
 			ExperimentHPLC[
 				Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
 				Detector -> PhotoDiodeArray,
 				AbsorbanceWavelength -> 600 Nanometer,
 				Aliquot->False
+			],
+			$Failed,
+			Messages:>{Error::InvalidOption,Error::IncompatibleDetectionWavelength}
+		],
+		Example[{Messages,"IncompatibleDetectionWavelength","Error if the specified Fluorescence Detector is not compatible with any instrument that supports the excitation wavelength(s) specified:"},
+			ExperimentHPLC[
+				Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
+				Detector -> Fluorescence,
+				ExcitationWavelength -> 890 Nanometer,
+				CollectFractions ->True
+			],
+			$Failed,
+			Messages:>{Error::InvalidOption,Error::IncompatibleDetectionWavelength}
+		],
+		Example[{Messages,"IncompatibleDetectionWavelength","Error if the specified Fluorescence Detector is not compatible with any instrument that supports the emission wavelength(s) specified:"},
+			ExperimentHPLC[
+				Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],
+				EmissionWavelength -> 1000 Nanometer
 			],
 			$Failed,
 			Messages:>{Error::InvalidOption,Error::IncompatibleDetectionWavelength}
@@ -6408,9 +6895,10 @@ DefineTests[ExperimentHPLC,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages,"AbsorbanceRateAdjusted","Return an warning if the specified AbsorbanceSamplingRate option is not an achievable value:"},
+		Example[{Messages,"AbsorbanceRateAdjusted","Return a warning if the specified AbsorbanceSamplingRate option is not an achievable value:"},
 			packet=ExperimentHPLC[
 				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				Instrument -> Model[Instrument,HPLC,"Waters Acquity UPLC H-Class PDA"],
 				AbsorbanceSamplingRate->13/Second,
 				Upload->False
 			][[1]];
@@ -6421,6 +6909,64 @@ DefineTests[ExperimentHPLC,
 				Warning::AbsorbanceRateAdjusted
 			},
 			Variables:>{packet}
+		],
+		Example[{Messages,"AbsorbanceRateAdjusted","Return a warning if the specified AbsorbanceSamplingRate option is rounded (Dionex):"},
+			packet=ExperimentHPLC[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				Instrument -> Model[Instrument,HPLC,"UltiMate 3000"],
+				AbsorbanceSamplingRate-> {58.65872/Second,96.562/Second,110/Second},
+				Upload->False
+			][[1]];
+			Lookup[packet,Replace[AbsorbanceSamplingRate]],
+			{58.7/Second,96.6/Second,100/Second},
+			EquivalenceFunction -> Equal,
+			Messages:>{
+				Warning::AbsorbanceRateAdjusted
+			},
+			Variables:>{packet}
+		],
+		Example[{Messages,"InvalidAbsorbanceSmoothingTimeConstant","Return an error if enumeration SmoothingTimeConstant is provided for non-Waters instruments:"},
+			ExperimentHPLC[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				SmoothingTimeConstant->Medium,
+				Instrument -> Model[Instrument,HPLC,"UltiMate 3000"]
+			],
+			$Failed,
+			Messages:>{
+				Error::InvalidAbsorbanceSmoothingTimeConstant,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages,"AbsorbanceSmoothingTimeConstantAdjusted","Return a warning if the specified SmoothingTimeConstant option is not an achievable value:"},
+			packet=ExperimentHPLC[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				Instrument -> Model[Instrument,HPLC,"Waters Acquity UPLC H-Class PDA"],
+				AbsorbanceSamplingRate->20/Second,
+				SmoothingTimeConstant-> {0.256Second,0.28Second,0.6Second},
+				Upload->False
+			][[1]];
+			Lookup[packet,Replace[SmoothingTimeConstants]],
+			{0.25Second,0.3Second,0.5Second},
+			EquivalenceFunction -> Equal,
+			Messages:>{
+				Warning::AbsorbanceSmoothingTimeConstantAdjusted
+			},
+			Variables:>{packet}
+		],
+		Example[{Messages,"AbsorbanceSmoothingTimeConstantAdjusted","Return a warning if the specified SmoothingTimeConstant option is rounded (Dionex):"},
+			options=ExperimentHPLC[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				Instrument -> Model[Instrument,HPLC,"UltiMate 3000"],
+				SmoothingTimeConstant-> {0.256Second,2.25663Second,4.6Second},
+				Output->Options
+			];
+			Lookup[options,SmoothingTimeConstant],
+			{0.26Second,2.26Second,4.55Second},
+			EquivalenceFunction -> Equal,
+			Messages:>{
+				Warning::AbsorbanceSmoothingTimeConstantAdjusted
+			},
+			Variables:>{options}
 		],
 		Example[{Messages,"WavelengthResolutionAdjusted","Return an warning if the specified WavelengthResolution option is not an achievable value:"},
 			packet=ExperimentHPLC[
@@ -6437,11 +6983,12 @@ DefineTests[ExperimentHPLC,
 			Variables:>{packet}
 		],
 		Example[
-			{Messages,"UVVisOptionsNotApplicable","If AbsorbanceSamplingRate or UVFilter are specified, but the instrument doesn't have those options:"},
+			{Messages,"UVVisOptionsNotApplicable","If UVFilter is specified, but the instrument doesn't have those options, throw a warning:"},
 			options=ExperimentHPLCOptions[
 				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
 				Instrument->Model[Instrument, HPLC, "UltiMate 3000"],
-				AbsorbanceSamplingRate->5*1/Second, OutputFormat -> List
+				UVFilter->True,
+				OutputFormat -> List
 			];
 			Lookup[options,Instrument],
 			ObjectP[Model[Instrument, HPLC, "UltiMate 3000"]],
@@ -6456,7 +7003,6 @@ DefineTests[ExperimentHPLC,
 				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
 				Detector->EvaporativeLightScattering,BlankNebulizerGasPressure->35*PSI,BlankNebulizerGas->Null],
 			$Failed,
-			Variables:>{options},
 			Messages:>{
 				Error::ConflictHPLCDetectorOptions,
 				Error::GasPressureRequiresNebulizer,
@@ -6511,6 +7057,27 @@ DefineTests[ExperimentHPLC,
 			Messages:>{Error::InvalidOption,Error::HPLCEmissionExcitationTooNarrow}
 		],
 		Example[
+			{Messages,"HPLCEmissionExcitationTooNarrow","If semi-prep Agilent Fluorescence HPLC is required, excitation wavelength should not be within 10 nm of emission wavelength (1):"},
+			ExperimentHPLC[
+				{Object[Sample,"Test Sample CMU-1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample CMU-2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample CMU-3 for ExperimentHPLC tests" <> $SessionUUID]},
+				Instrument->Model[Instrument, HPLC, "Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors"],
+				ExcitationWavelength->555Nanometer,
+				EmissionWavelength->564Nanometer
+			],
+			$Failed,
+			Messages:>{Error::InvalidOption,Error::HPLCEmissionExcitationTooNarrow}
+		],
+		Example[
+			{Messages,"HPLCEmissionExcitationTooNarrow","If semi-prep Agilent Fluorescence HPLC is required, excitation wavelength must be 10 nm larger than emission wavelength (2):"},
+			ExperimentHPLC[
+				{Object[Sample,"Test Sample CMU-1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample CMU-2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample CMU-3 for ExperimentHPLC tests" <> $SessionUUID]},
+				Instrument->Model[Instrument, HPLC, "Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors"],
+				ExcitationWavelength->555Nanometer,
+				EmissionWavelength->566Nanometer
+			],
+			ObjectP[Object[Protocol,HPLC]]
+		],
+		Example[
 			{Messages,"ConflictHPLCFluorescenceOptionsLengths","If any of the specified fluorescence emission wavelengths are less than the excitation wavelengths, throw error:"},
 			ExperimentHPLC[
 				Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
@@ -6524,12 +7091,23 @@ DefineTests[ExperimentHPLC,
 			Messages:>{Error::InvalidOption,Error::ConflictHPLCFluorescenceOptionsLengths}
 		],
 		Example[
-			{Messages,"HPLCFluorescenceWavelengthLimit","If too many fluorescence wavelengths are specified for measurement, throw error:"},
+			{Messages,"HPLCFluorescenceWavelengthLimit","If too many fluorescence wavelengths are specified for measurement, throw error (limit 4 for Waters and Dionex instruments):"},
 			ExperimentHPLC[
 				Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
 				Detector->Fluorescence,
 				ExcitationWavelength->{340Nanometer,395Nanometer,450Nanometer,495Nanometer,540Nanometer,590Nanometer},
 				EmissionWavelength->{425Nanometer,455Nanometer,465Nanometer,520Nanometer,590Nanometer,625Nanometer}
+			],
+			$Failed,
+			Messages:>{Error::InvalidOption,Error::HPLCFluorescenceWavelengthLimit}
+		],
+		Example[
+			{Messages,"HPLCFluorescenceWavelengthLimit","If too many fluorescence wavelengths are specified for measurement, throw error:"},
+			ExperimentHPLC[
+				Object[Sample,"Test Sample CMU-1 for ExperimentHPLC tests" <> $SessionUUID],
+				Instrument -> Model[Instrument, HPLC, "Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors"],
+				ExcitationWavelength->{540Nanometer,590Nanometer},
+				EmissionWavelength->{590Nanometer,625Nanometer}
 			],
 			$Failed,
 			Messages:>{Error::InvalidOption,Error::HPLCFluorescenceWavelengthLimit}
@@ -6699,7 +7277,7 @@ DefineTests[ExperimentHPLC,
 				Aliquot -> False
 			],
 			$Failed,
-			Messages:>{Error::InvalidOption,Error::AliquotOptionConflict}
+			Messages:>{Error::InvalidOption,Error::AliquotOptionMismatch}
 		],
 		Test["When instrument are not specified and total of 3 buffers are used, function should be able to resolve an instrument that supports Ternary gradients:",
 			(* How this test works: Setting FlowRate -> 3.5 ml/min would rule out most HPLC, only 2 left are Model[Instrument, HPLC, "UltiMate 3000"] and Model[Instrument, HPLC, "id:GmzlKjY5EOAM"] *)
@@ -6720,8 +7298,81 @@ DefineTests[ExperimentHPLC,
 				Object[Sample, "Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID], Gradient -> Object[Method, Gradient, "id:M8n3rxYAonm5"],
 				Output -> Options], InjectionTable], {Sample, ___}][[1,5]],
 			Download[Object[Method, Gradient, "id:M8n3rxYAonm5"], Temperature]
+		],
+		Test["When running a Fluorescence detector protocol at CMU, resolve to the correct instruments that can fulfill the specified options - Agilent instrument model is excluded if there are more than 1 pair of Excitation/Emission wavelengths:",
+			Module[
+				{protocol,instrumentResource,instrumentModels},
+				protocol=ExperimentHPLC[
+					{
+						Object[Sample,"Test Sample CMU-1 for ExperimentHPLC tests" <> $SessionUUID],
+						Object[Sample,"Test Sample CMU-2 for ExperimentHPLC tests" <> $SessionUUID],
+						Object[Sample,"Test Sample CMU-3 for ExperimentHPLC tests" <> $SessionUUID]
+					},
+					ExcitationWavelength -> {540 Nanometer, 590 Nanometer},
+					EmissionWavelength -> {590 Nanometer, 625 Nanometer}
+				];
+				instrumentResource=FirstCase[
+					Download[protocol,RequiredResources],
+					{_, Instrument, ___}
+				][[1]];
+				instrumentModels=Download[instrumentResource,InstrumentModels[Object]]
+			],
+			{Model[Instrument, HPLC, "id:1ZA60vw8X5eD"]}
+		],
+		Test["When running a Fluorescence detector protocol at CMU, resolve to the correct instruments that can fulfill the specified options - Agilent instrument model is excluded if the difference between Excitation wavelength and Emission wavelength are less than 10 nm:",
+			Module[
+				{protocol,instrumentResource,instrumentModels},
+				protocol=ExperimentHPLC[
+					{
+						Object[Sample,"Test Sample CMU-1 for ExperimentHPLC tests" <> $SessionUUID],
+						Object[Sample,"Test Sample CMU-2 for ExperimentHPLC tests" <> $SessionUUID],
+						Object[Sample,"Test Sample CMU-3 for ExperimentHPLC tests" <> $SessionUUID]
+					},
+					ExcitationWavelength -> 540 Nanometer,
+					EmissionWavelength -> 548 Nanometer
+				];
+				instrumentResource=FirstCase[
+					Download[protocol,RequiredResources],
+					{_, Instrument, ___}
+				][[1]];
+				instrumentModels=Download[instrumentResource,InstrumentModels[Object]]
+			],
+			{Model[Instrument, HPLC, "id:1ZA60vw8X5eD"]}
+		],
+		Test["When a detector is only available at one site (pH), resolve to that instrument model even if the samples are at a different site (samples are shipped):",
+			Module[
+				{protocol,instrumentResource,instrumentModels},
+				protocol=ExperimentHPLC[
+					{
+						Object[Sample, "Test Sample CMU-1 for ExperimentHPLC tests" <> $SessionUUID],
+						Object[Sample, "Test Sample CMU-2 for ExperimentHPLC tests" <> $SessionUUID],
+						Object[Sample, "Test Sample CMU-3 for ExperimentHPLC tests" <> $SessionUUID]
+					},
+					Detector -> pH
+				];
+				instrumentResource=FirstCase[
+					Download[protocol,RequiredResources],
+					{_, Instrument, ___}
+				][[1]];
+				instrumentModels=Download[instrumentResource,InstrumentModels[Object]]
+			],
+			(* Model[Instrument, HPLC, "UltiMate 3000 with PCM Detector"] *)
+			{Model[Instrument, HPLC, "id:P5ZnEjdExnnn"]}
+		],
+		Test["Allows instrument at a different site since samples can be shipped between sites:",
+			ExperimentHPLC[
+				{
+					Object[Sample, "Test Sample CMU-1 for ExperimentHPLC tests" <> $SessionUUID],
+					Object[Sample, "Test Sample CMU-2 for ExperimentHPLC tests" <> $SessionUUID],
+					Object[Sample, "Test Sample CMU-3 for ExperimentHPLC tests" <> $SessionUUID]
+				},
+				Instrument -> Model[Instrument, HPLC, "UltiMate 3000"]
+			],
+			ObjectP[Object[Protocol,HPLC]]
 		]
 	},
+	(* without this, telescope crashes and the test fails *)
+	HardwareConfiguration->HighRAM,
 	SetUp:>(ClearMemoization[];ClearDownload[];$CreatedObjects = {}),
 	TearDown:>(EraseObject[$CreatedObjects,Force->True]),
 	SymbolSetUp:>(
@@ -6745,8 +7396,12 @@ DefineTests[ExperimentHPLC,
 					Object[Sample,"Test sample for invalid container for ExperimentHPLC tests" <> $SessionUUID],
 					Object[Sample,"Test low volume sample for ExperimentHPLC tests" <> $SessionUUID],
 					Object[Sample,"Test invalid sample (solid sample) for ExperimentHPLC tests" <> $SessionUUID],
+					Object[Sample,"Test Sample CMU-1 for ExperimentHPLC tests" <> $SessionUUID],
+					Object[Sample,"Test Sample CMU-2 for ExperimentHPLC tests" <> $SessionUUID],
+					Object[Sample,"Test Sample CMU-3 for ExperimentHPLC tests" <> $SessionUUID],
 
 					Object[Container,Plate,"Test plate 1 for ExperimentHPLC tests" <> $SessionUUID],
+					Object[Container,Plate,"Test plate CMU-1 for ExperimentHPLC tests" <> $SessionUUID],
 					Object[Container, Vessel, "Test large container 1 for ExperimentHPLC tests" <> $SessionUUID],
 					Object[Container, Vessel, "Test invalid container 1 for ExperimentHPLC tests" <> $SessionUUID],
 					Object[Container, Vessel, "Test 50mL Tube 1 for ExperimentHPLC tests" <> $SessionUUID],
@@ -6761,6 +7416,7 @@ DefineTests[ExperimentHPLC,
 					Object[Protocol,HPLC,"Test Template Protocol for ExperimentHPLC" <> $SessionUUID],
 					Object[Protocol, HPLC, "My special HPLC New protocol name" <> $SessionUUID],
 
+					Model[Item, Column, "Test storage buffer column model for ExperimentHPLC" <> $SessionUUID],
 					Model[Item, Column, "Test cartridge-protected column model for ExperimentHPLC" <> $SessionUUID],
 					Model[Item, Column, "Test cartridge-protected column model for ExperimentHPLC (2)" <> $SessionUUID],
 					Object[Item, Column, "Test cartridge-protected column object for ExperimentHPLC" <> $SessionUUID],
@@ -6783,8 +7439,8 @@ DefineTests[ExperimentHPLC,
 		];
 		Off[Warning::SamplesOutOfStock];
 		Off[Warning::InstrumentUndergoingMaintenance];
-		Off[Warning::IncompatibleMaterials];
-		Module[{firstSetUpload, samples, plate, largeContainer, plate2, tube, plate3, existingNamedProtocol, columnThingy, largeColumn, highFlowRateColumn, gradientMethod,
+		Off[Error::IncompatibleMaterials];
+		Module[{firstSetUpload, samples, plate, plateCMU, largeContainer, plate2, tube, plate3, existingNamedProtocol, storageBufferColumn, cartridgeColumn, largeColumn, highFlowRateColumn, gradientMethod,
 			 parentColumnObject, parentColumnObject2, guardColumnModel, guardColumnObject, guardCartridgeModel,
 			guardCartridgeObject, templateHPLCProtocol, plate4, highRecoveryVial, column2, tube50mL1,tube50mL2,tube15mL1,tube15mL2},
 
@@ -6795,6 +7451,13 @@ DefineTests[ExperimentHPLC,
 					Site -> Link[$Site],
 					DeveloperObject->True,
 					Name -> "Test plate 1 for ExperimentHPLC tests" <> $SessionUUID
+				],
+				Association[
+					Type -> Object[Container, Plate],
+					Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"], Objects],
+					Site -> Link[Object[Container,Site,"ECL-CMU"]],
+					DeveloperObject->True,
+					Name -> "Test plate CMU-1 for ExperimentHPLC tests" <> $SessionUUID
 				],
 				Association[
 					Type -> Object[Container, Plate],
@@ -6872,6 +7535,34 @@ DefineTests[ExperimentHPLC,
 				],
 				<|
 					DeveloperObject -> True,
+					Name -> "Test storage buffer column model for ExperimentHPLC" <> $SessionUUID,
+					ChromatographyType -> HPLC,
+					SeparationMode -> ReversePhase,
+					ColumnType -> Analytical,
+					Diameter -> Quantity[4.5`, "Millimeters"],
+					Dimensions -> {Quantity[0.195`, "Meters"], Quantity[0.01`, "Meters"], Quantity[0.01`, "Meters"]},
+					Expires -> True,
+					FunctionalGroup -> C18,
+					MaxFlowRate -> Quantity[2.`, ("Milliliters") / ("Minutes")],
+					MaxNumberOfUses -> 10000,
+					MaxpH -> 9.`,
+					MaxPressure -> Quantity[8700.`, ("PoundsForce") / ("Inches")^2],
+					MaxTemperature -> Quantity[90.`, "DegreesCelsius"],
+					MinFlowRate -> Quantity[1.`, ("Milliliters") / ("Minutes")],
+					MinpH -> 1.5`,
+					MinPressure -> Quantity[0.`, ("PoundsForce") / ("Inches")^2],
+					NominalFlowRate -> Quantity[1.`, ("Milliliters") / ("Minutes")],
+					PackingMaterial -> AerisCoreShell,
+					PackingType -> Prepacked,
+					ParticleSize -> Quantity[3.6`, "Micrometers"],
+					PoreSize -> Quantity[100.`, "Angstroms"],
+					Reusable -> True,
+					Type -> Model[Item, Column],
+					Replace[WettedMaterials] -> {AerisCoreShell},
+					StorageBuffer -> Link[Model[Sample, StockSolution, "20% Methanol in MilliQ Water"]]
+				|>,
+				<|
+					DeveloperObject -> True,
 					Name -> "Test cartridge-protected column model for ExperimentHPLC" <> $SessionUUID,
 					ChromatographyType -> HPLC,
 					SeparationMode -> ReversePhase,
@@ -6893,7 +7584,7 @@ DefineTests[ExperimentHPLC,
 					PackingType -> Prepacked,
 					ParticleSize -> Quantity[3.6`, "Micrometers"],
 					PoreSize -> Quantity[100.`, "Angstroms"],
-					Reusability -> True,
+					Reusable -> True,
 					Type -> Model[Item, Column],
 					Replace[WettedMaterials] -> {AerisCoreShell}
 				|>,
@@ -6920,7 +7611,7 @@ DefineTests[ExperimentHPLC,
 					PackingType -> Prepacked,
 					ParticleSize -> Quantity[3.6`, "Micrometers"],
 					PoreSize -> Quantity[100.`, "Angstroms"],
-					Reusability -> True,
+					Reusable -> True,
 					Type -> Model[Item, Column],
 					Replace[WettedMaterials] -> {AerisCoreShell}
 				|>,
@@ -6947,7 +7638,7 @@ DefineTests[ExperimentHPLC,
 					PackingType -> Prepacked,
 					ParticleSize -> Quantity[3.6`, "Micrometers"],
 					PoreSize -> Quantity[100.`, "Angstroms"],
-					Reusability -> True,
+					Reusable -> True,
 					Type -> Model[Item, Column],
 					Replace[WettedMaterials] -> {AerisCoreShell}
 				|>,
@@ -6974,7 +7665,7 @@ DefineTests[ExperimentHPLC,
 					PackingType -> Prepacked,
 					ParticleSize -> Quantity[3.6`, "Micrometers"],
 					PoreSize -> Quantity[100.`, "Angstroms"],
-					Reusability -> True,
+					Reusable -> True,
 					Type -> Model[Item, Column],
 					Replace[WettedMaterials] -> {AerisCoreShell}
 				|>,
@@ -7032,10 +7723,13 @@ DefineTests[ExperimentHPLC,
 				|>
 			];
 
-			{plate,plate2,largeContainer,tube,highRecoveryVial,tube50mL1,tube50mL2,tube15mL1,tube15mL2,existingNamedProtocol,plate3,plate4,columnThingy,column2,largeColumn,highFlowRateColumn,gradientMethod}=Upload[firstSetUpload];
+			{plate,plateCMU,plate2,largeContainer,tube,highRecoveryVial,tube50mL1,tube50mL2,tube15mL1,tube15mL2,existingNamedProtocol,plate3,plate4,storageBufferColumn,cartridgeColumn,column2,largeColumn,highFlowRateColumn,gradientMethod}=Upload[firstSetUpload];
 
 			samples = UploadSample[
 				{
+					Model[Sample, StockSolution, Standard, "Small Molecule HPLC Standard Mix"],
+					Model[Sample, StockSolution, Standard, "Small Molecule HPLC Standard Mix"],
+					Model[Sample, StockSolution, Standard, "Small Molecule HPLC Standard Mix"],
 					Model[Sample, StockSolution, Standard, "Small Molecule HPLC Standard Mix"],
 					Model[Sample, StockSolution, Standard, "Small Molecule HPLC Standard Mix"],
 					Model[Sample, StockSolution, Standard, "Small Molecule HPLC Standard Mix"],
@@ -7054,6 +7748,9 @@ DefineTests[ExperimentHPLC,
 					{"A1", plate},
 					{"A2", plate},
 					{"A3", plate},
+					{"A1", plateCMU},
+					{"A2", plateCMU},
+					{"A3", plateCMU},
 					{"A1", largeContainer},
 					{"A1", tube},
 					{"A1", highRecoveryVial},
@@ -7066,6 +7763,9 @@ DefineTests[ExperimentHPLC,
 					{"A1", tube15mL2}
 				},
 				InitialAmount -> {
+					500 Microliter,
+					500 Microliter,
+					500 Microliter,
 					500 Microliter,
 					500 Microliter,
 					500 Microliter,
@@ -7084,6 +7784,9 @@ DefineTests[ExperimentHPLC,
 					"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID,
 					"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID,
 					"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID,
+					"Test Sample CMU-1 for ExperimentHPLC tests" <> $SessionUUID,
+					"Test Sample CMU-2 for ExperimentHPLC tests" <> $SessionUUID,
+					"Test Sample CMU-3 for ExperimentHPLC tests" <> $SessionUUID,
 					"Large Container Sample for ExperimentHPLC" <> $SessionUUID,
 					"Test sample for invalid container for ExperimentHPLC tests" <> $SessionUUID,
 					"Test Sample 5 for ExperimentHPLC tests (high recovery vial)" <> $SessionUUID,
@@ -7105,8 +7808,8 @@ DefineTests[ExperimentHPLC,
 						Object -> Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
 						DeveloperObject-> True,
 						Replace[Composition] -> {
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]},
-							{50 Micromolar, Link[Model[Molecule, "Uracil"]]}
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now},
+							{50 Micromolar, Link[Model[Molecule, "Uracil"]], Now}
 						}
 					],
 					Association[
@@ -7150,7 +7853,7 @@ DefineTests[ExperimentHPLC,
 
 						ParticleSize -> Quantity[3.`, "Micrometers"],
 						Replace[ProtectedColumns] -> {Link[Model[Item, Column, "Test cartridge-protected column model for ExperimentHPLC" <> $SessionUUID], PreferredGuardColumn]},
-						Reusability -> True,
+						Reusable -> True,
 						Type -> Model[Item, Column]
 					|>,
 					<|
@@ -7164,7 +7867,7 @@ DefineTests[ExperimentHPLC,
 						Expires -> True,
 						FunctionalGroup -> C18,
 						MaxNumberOfUses -> 100,
-						Reusability -> True,
+						Reusable -> True,
 						Type -> Model[Item, Cartridge, Column]
 					|>,
 					<|
@@ -7178,7 +7881,7 @@ DefineTests[ExperimentHPLC,
 						Expires -> True,
 						FunctionalGroup -> C18,
 						MaxNumberOfUses -> 100,
-						Reusability -> True,
+						Reusable -> True,
 						Type -> Model[Item, Cartridge, Column]
 					|>
 				}
@@ -7240,7 +7943,7 @@ DefineTests[ExperimentHPLC,
 	SymbolTearDown:>(
 		On[Warning::SamplesOutOfStock];
 		On[Warning::InstrumentUndergoingMaintenance];
-		On[Warning::IncompatibleMaterials];
+		On[Error::IncompatibleMaterials];
 		Module[{objs, existingObjs},
 			objs = Quiet[Cases[
 				Flatten[{
@@ -7257,8 +7960,12 @@ DefineTests[ExperimentHPLC,
 					Object[Sample,"Test sample for invalid container for ExperimentHPLC tests" <> $SessionUUID],
 					Object[Sample,"Test low volume sample for ExperimentHPLC tests" <> $SessionUUID],
 					Object[Sample,"Test invalid sample (solid sample) for ExperimentHPLC tests" <> $SessionUUID],
+					Object[Sample,"Test Sample CMU-1 for ExperimentHPLC tests" <> $SessionUUID],
+					Object[Sample,"Test Sample CMU-2 for ExperimentHPLC tests" <> $SessionUUID],
+					Object[Sample,"Test Sample CMU-3 for ExperimentHPLC tests" <> $SessionUUID],
 
 					Object[Container,Plate,"Test plate 1 for ExperimentHPLC tests" <> $SessionUUID],
+					Object[Container,Plate,"Test plate CMU-1 for ExperimentHPLC tests" <> $SessionUUID],
 					Object[Container, Vessel, "Test large container 1 for ExperimentHPLC tests" <> $SessionUUID],
 					Object[Container, Vessel, "Test invalid container 1 for ExperimentHPLC tests" <> $SessionUUID],
 					Object[Container, Vessel, "Test 50mL Tube 1 for ExperimentHPLC tests" <> $SessionUUID],
@@ -7273,6 +7980,7 @@ DefineTests[ExperimentHPLC,
 					Object[Protocol,HPLC,"Test Template Protocol for ExperimentHPLC" <> $SessionUUID],
 					Object[Protocol, HPLC, "My special HPLC New protocol name" <> $SessionUUID],
 
+					Model[Item, Column, "Test storage buffer column model for ExperimentHPLC" <> $SessionUUID],
 					Model[Item, Column, "Test cartridge-protected column model for ExperimentHPLC" <> $SessionUUID],
 					Model[Item, Column, "Test cartridge-protected column model for ExperimentHPLC (2)" <> $SessionUUID],
 					Object[Item, Column, "Test cartridge-protected column object for ExperimentHPLC" <> $SessionUUID],
@@ -7400,7 +8108,7 @@ DefineTests[ExperimentHPLCOptions,
 			]
 
 		];
-		Off[Warning::IncompatibleMaterials];
+		Off[Error::IncompatibleMaterials];
 	),
 	SymbolTearDown:>(
 		On[Warning::SamplesOutOfStock];
@@ -7419,7 +8127,7 @@ DefineTests[ExperimentHPLCOptions,
 			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
 			EraseObject[existingObjs, Force -> True, Verbose -> False]
 		];
-		On[Warning::IncompatibleMaterials];
+		On[Error::IncompatibleMaterials];
 	)
 ];
 
@@ -7497,7 +8205,7 @@ DefineTests[ExperimentHPLCPreview,
 			]
 
 		];
-		Off[Warning::IncompatibleMaterials];
+		Off[Error::IncompatibleMaterials];
 	),
 	SymbolTearDown:>(
 		On[Warning::SamplesOutOfStock];
@@ -7516,7 +8224,7 @@ DefineTests[ExperimentHPLCPreview,
 			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
 			EraseObject[existingObjs, Force -> True, Verbose -> False]
 		];
-		On[Warning::IncompatibleMaterials];
+		On[Error::IncompatibleMaterials];
 	)
 ];
 
@@ -7604,7 +8312,7 @@ DefineTests[ValidExperimentHPLCQ,
 			]
 
 		];
-		Off[Warning::IncompatibleMaterials];
+		Off[Error::IncompatibleMaterials];
 	),
 	SymbolTearDown:>(
 		On[Warning::SamplesOutOfStock];
@@ -7623,7 +8331,7 @@ DefineTests[ValidExperimentHPLCQ,
 			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
 			EraseObject[existingObjs, Force -> True, Verbose -> False]
 		];
-		On[Warning::IncompatibleMaterials];
+		On[Error::IncompatibleMaterials];
 	)
 ];
 

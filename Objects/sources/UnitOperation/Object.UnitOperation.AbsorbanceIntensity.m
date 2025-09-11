@@ -83,6 +83,30 @@ $ObjectUnitOperationPlateReaderBaseFields = {
 		Description->"The length of time for which the samples incubate at the requested temperature prior to measuring the absorbance.",
 		Category -> "Sample Handling"
 	},
+	TargetCarbonDioxideLevel -> {
+		Format -> Single,
+		Class -> Real,
+		Pattern :> GreaterEqualP[0 * Percent],
+		Units -> Percent,
+		Description -> "The target amount of carbon dioxide in the atmosphere in the plate reader chamber.",
+		Category -> "Sample Handling"
+	},
+	TargetOxygenLevel -> {
+		Format -> Single,
+		Class -> Real,
+		Pattern :> GreaterEqualP[0 * Percent],
+		Units -> Percent,
+		Description -> "The target amount of oxygen in the atmosphere in the plate reader chamber. If specified, nitrogen gas is pumped into the chamber to force oxygen in ambient air out of the chamber until the desired level is reached.",
+		Category -> "Sample Handling"
+	},
+	AtmosphereEquilibrationTime -> {
+		Format -> Single,
+		Class -> Real,
+		Pattern :> GreaterEqualP[0 * Minute],
+		Units -> Minute,
+		Description -> "The length of time for which the samples equilibrate at the requested oxygen and carbon dioxide level before being read.",
+		Category -> "Sample Handling"
+	},
 	ReadDirection -> {
 		Format -> Single,
 		Class -> Expression,
@@ -172,7 +196,7 @@ $ObjectUnitOperationPlateReaderBaseFields = {
 		Description -> "The speed at which samples are transferred from the injection containers into the assay plate during the first round of injection.",
 		Category -> "Injections"
 	},
-	PrimaryPreppingSolvent -> {
+	Line1PrimaryPurgingSolvent -> {
 		Format -> Single,
 		Class -> Link,
 		Pattern :> _Link,
@@ -180,10 +204,10 @@ $ObjectUnitOperationPlateReaderBaseFields = {
 			Model[Sample],
 			Object[Sample]
 		],
-		Description -> "The primary solvent with which the injectors are washed prior to running the experiment.",
+		Description ->"The primary solvent with which the line 1 injector is washed before and after running the experiment.",
 		Category -> "Injector Cleaning"
 	},
-	SecondaryPreppingSolvent -> {
+	Line1SecondaryPurgingSolvent -> {
 		Format -> Single,
 		Class -> Link,
 		Pattern :> _Link,
@@ -191,10 +215,10 @@ $ObjectUnitOperationPlateReaderBaseFields = {
 			Model[Sample],
 			Object[Sample]
 		],
-		Description -> "The secondary solvent with which the injectors are washed prior to running the experiment.",
+		Description -> "The secondary solvent with which the line 1 injector is washed before and after running the experiment.",
 		Category -> "Injector Cleaning"
 	},
-	PrimaryFlushingSolvent -> {
+	Line2PrimaryPurgingSolvent -> {
 		Format -> Single,
 		Class -> Link,
 		Pattern :> _Link,
@@ -202,10 +226,10 @@ $ObjectUnitOperationPlateReaderBaseFields = {
 			Model[Sample],
 			Object[Sample]
 		],
-		Description -> "The primary solvent with which to wash the injectors after running the experiment.",
+		Description -> "The primary solvent with which the line 2 injector is washed before and after running the experiment.",
 		Category -> "Injector Cleaning"
 	},
-	SecondaryFlushingSolvent -> {
+	Line2SecondaryPurgingSolvent -> {
 		Format -> Single,
 		Class -> Link,
 		Pattern :> _Link,
@@ -213,7 +237,7 @@ $ObjectUnitOperationPlateReaderBaseFields = {
 			Model[Sample],
 			Object[Sample]
 		],
-		Description -> "The secondary solvent with which to wash the injectors after running the experiment.",
+		Description -> "The secondary solvent with which the line 2 injector is washed before and after running the experiment.",
 		Category -> "Injector Cleaning"
 	},
 
@@ -814,23 +838,6 @@ $ObjectUnitOperationNephelometryFields = {
 		Description->"For each member of SampleLink, the sample that is used to dilute the sample to a concentration series.",
 		IndexMatching -> SampleLink,
 		Category->"Sample Preparation"
-	},
-
-	TargetCarbonDioxideLevel -> {
-		Format -> Single,
-		Class -> Real,
-		Pattern :> GreaterEqualP[0 * Percent],
-		Units -> Percent,
-		Description -> "The target amount of carbon dioxide in the atmosphere in the plate reader chamber.",
-		Category -> "Measurement"
-	},
-	TargetOxygenLevel -> {
-		Format -> Single,
-		Class -> Real,
-		Pattern :> GreaterEqualP[0 * Percent],
-		Units -> Percent,
-		Description -> "The target amount of oxygen in the atmosphere in the plate reader chamber. If specified, nitrogen gas is pumped into the chamber to force oxygen in ambient air out of the chamber until the desired level is reached.",
-		Category -> "Measurement"
 	},
 
 	MoatSize -> {

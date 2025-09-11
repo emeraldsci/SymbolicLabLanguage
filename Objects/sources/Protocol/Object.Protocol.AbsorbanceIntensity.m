@@ -24,6 +24,39 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Description -> "The length of time for which the plates are incubated in a heat block at the read temperature before being read in the plate reader.",
 			Category -> "Sample Preparation"
 		},
+		TargetCarbonDioxideLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Percent],
+			Units -> Percent,
+			Description -> "The target amount of carbon dioxide in the atmosphere in the plate reader chamber.",
+			Category -> "Sample Preparation"
+		},
+		TargetOxygenLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Percent],
+			Units -> Percent,
+			Description -> "The target amount of oxygen in the atmosphere in the plate reader chamber. If specified, nitrogen gas is pumped into the chamber to force oxygen in ambient air out of the chamber until the desired level is reached.",
+			Category -> "Sample Preparation"
+		},
+		AtmosphereEquilibrationTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Minute],
+			Units -> Minute,
+			Description -> "The length of time for which the samples equilibrate at the requested oxygen and carbon dioxide level before being read.",
+			Category -> "Sample Preparation"
+		},
+		EstimatedACUEquilibrationTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Minute],
+			Units -> Minute,
+			Description -> "The estimated length of time for the gas level inside the chamber to reach the TargetOxygenLevel and TargetCarbonDioxideLevel.",
+			Developer -> True,
+			Category -> "Sample Preparation"
+		},
 		MoatSize -> {
 			Format -> Single,
 			Class -> Integer,
@@ -205,12 +238,28 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Category -> "Blanking",
 			Developer -> True
 		},
+		SampleAbsorbanceRequiredRetries -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data][Protocol],
+			Description -> "The absorbance measured for the samples that are repeated due to instrument's unsuccessful absorbance measurement in the protocol. The successful repeated data are stored in the Data field. The data objects in this field are for tracking purposes only.",
+			Category -> "Experimental Results"
+		},
 		BlankAbsorbance -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Data][Protocol],
 			Description -> "The absorbance data collected from the well with buffer alone.",
+			Category -> "Experimental Results"
+		},
+		BlankAbsorbanceRequiredRetries -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data][Protocol],
+			Description -> "The absorbance data collected from the container with buffer alone that are repeated due to instrument's unsuccessful absorbance measurement in the protocol and thus not used in adjusting the absorbance measurement to account for any background signal. The successful repeated data are stored in the BlankAbsorbance field. The data objects in this field are for tracking purposes only.",
 			Category -> "Experimental Results"
 		},
 		QuantifyConcentration -> {
@@ -404,6 +453,14 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Pattern :> _Link,
 			Relation -> Object[Analysis, AbsorbanceQuantification][Protocol],
 			Description -> "Analyses performed to determine the concentration of samples in this protocol.",
+			Category -> "Analysis & Reports"
+		},
+		QuantificationUpdated -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			IndexMatching -> SamplesIn,
+			Description -> "For each member of SamplesIn, indicate whether the analyte concentration has been successfully updated in AbsorbanceQuantification analyses. When QuantifyConcentrations is set to True, the concentration update is skipped if UnavailableData is True or if the absorbance at the QuantificationWavelengths is saturated.",
 			Category -> "Analysis & Reports"
 		},
 		ScriptCommand -> {
@@ -625,10 +682,9 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Format -> Multiple,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "For each member of Data, indicates whether the MeasuredAbsorbance is Null.",
+			Description -> "For each member of Data, indicates whether the measured Absorbance is Null. This occurs when the absorbance reading is oversaturated and cannot be detected by the instrument. It can also happen in Lunatic measurements if the instrument fails to measure absorbance due to issues with microfluidic chip cuvette loading.",
 			Category -> "General",
-			IndexMatching -> Data,
-			Developer -> True
+			IndexMatching -> Data
 		},
 		DataFileName -> {
 			Format -> Single,
@@ -665,7 +721,7 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 		MicrofluidicChipPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> Alternatives[SampleManipulationP, SamplePreparationP],
 			Description -> "A set of instructions specifying the transfers of samples into the microfluidic chips used to house sample for absorbance measurement.",
 			Category -> "General",
 			Developer -> True
@@ -674,7 +730,7 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation],
+			Relation -> Alternatives[Object[Protocol, SampleManipulation], Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualSamplePreparation]],
 			Description -> "A sample manipulation protocol used to transfer samples into the microfluidic chips used to house sample for absorbance measurement.",
 			Category -> "General"
 		},
@@ -704,18 +760,18 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 		BlankContainerPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the transfers of blanks into the plates used to house sample for absorbance measurement.",
-			Category -> "General",
+			Category -> "Absorbance Measurement",
 			Developer -> True
 		},
 		BlankContainerManipulation -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
-			Description -> "A sample manipulation protocol used to transfer blanks into the plates used to house sample for absorbance measurement.",
-			Category -> "General"
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, ManualSamplePreparation] | Object[Protocol, RoboticSamplePreparation] | Object[Notebook, Script]  | Object[Protocol, RoboticCellPreparation] | Object[Protocol, ManualCellPreparation],
+			Description -> "A sample preparation protocol used to transfer blanks into the plates used to house sample for absorbance measurement.",
+			Category -> "Absorbance Measurement"
 		},
 		Blanks -> {
 			Format -> Multiple,
@@ -726,6 +782,14 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 				Object[Sample]
 			],
 			Description -> "For each member of SamplesIn, the model or sample used to generate a blank sample whose absorbance will be subtracted as background.",
+			Category -> "Absorbance Measurement",
+			IndexMatching -> SamplesIn
+		},
+		BlankLabels -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "For each member of SamplesIn, the label of the object or source used to generate a blank sample (i.e. buffer only, water only, etc.) whose absorbance is subtracted as background from the absorbance readings of the SamplesIn.",
 			Category -> "Absorbance Measurement",
 			IndexMatching -> SamplesIn
 		},
@@ -749,7 +813,7 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 		StoragePrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer of the samples from the cuvettes into the ContainersOut for storage after the experiment.",
 			Category -> "Sample Storage",
 			Developer -> True
@@ -758,8 +822,8 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
-			Description -> "The sample manipulation protocol used to transfer the samples from the cuvettes into the ContainersOut for storage after the experiment.",
+			Relation -> Object[Protocol,SampleManipulation] | Object[Protocol, ManualSamplePreparation] | Object[Protocol, RoboticSamplePreparation] | Object[Notebook, Script],
+			Description -> "The sample preparation protocol used to transfer the samples from the cuvettes into the ContainersOut for storage after the experiment.",
 			Category -> "Sample Storage",
 			Developer -> True
 		},
@@ -794,7 +858,7 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 		MoatPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the aliquoting of MoatBuffer into MoatWells in order to create the moat to slow evaporation of inner assay samples.",
 			Category -> "General",
 			Developer -> True
@@ -803,8 +867,8 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
-			Description -> "The sample manipulations protocol used to transfer buffer into the moat wells.",
+			Relation -> Alternatives[Object[Protocol, SampleManipulation], Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticSamplePreparation], Object[Notebook, Script]],
+			Description -> "The sample preparation protocol used to transfer buffer into the moat wells.",
 			Category -> "General"
 		},
 		PlateReaderMix -> {
@@ -871,7 +935,7 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Category -> "Injector Cleaning",
 			Developer -> True
 		},
-		PrimaryPreppingSolvent -> {
+		Line1PrimaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -879,10 +943,10 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The primary solvent with which the injectors are washed prior to running the experiment.",
+			Description ->"The primary solvent with which the line 1 injector is washed before and after running the experiment.",
 			Category -> "Injector Cleaning"
 		},
-		SecondaryPreppingSolvent -> {
+		Line1SecondaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -890,7 +954,7 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The secondary solvent with which the injectors are washed prior to running the experiment.",
+			Description -> "The secondary solvent with which the line 1 injector is washed before and after running the experiment.",
 			Category -> "Injector Cleaning"
 		},
 		PreppingSolutionPlacements -> {
@@ -903,7 +967,7 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Category -> "Injector Cleaning",
 			Developer -> True
 		},
-		PrimaryFlushingSolvent -> {
+		Line2PrimaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -911,10 +975,10 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The primary solvent with which to wash the injectors after running the experiment.",
+			Description -> "The primary solvent with which the line 2 injector is washed before and after running the experiment.",
 			Category -> "Injector Cleaning"
 		},
-		SecondaryFlushingSolvent -> {
+		Line2SecondaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -922,7 +986,7 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The secondary solvent with which to wash the injectors after running the experiment.",
+			Description -> "The secondary solvent with which the line 2 injector is washed before and after running the experiment.",
 			Category -> "Injector Cleaning"
 		},
 		FlushingSolutionPlacements -> {
@@ -975,6 +1039,56 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Category -> "Placements",
 			Developer -> True
 		},
+		PrimaryPurgingSolutionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move primary purging solvents into position for cleaning before and after running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		SecondaryPurgingSolutionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move secondary purging solvents into position for cleaning before and after running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		PurgingTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for cleaning before and after running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		StorageTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for storage when experiment is not running.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		InjectionTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for sample injection when running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
 		InjectionRack -> {
 			Format -> Single,
 			Class -> Link,
@@ -986,6 +1100,14 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 		},
 		
 		(* -- Retry Logic -- *)
+		ContinueRetry -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Whether to continue retrying data acquisition when all data for all input samples are either missing or encountering single cuvette read failure after max number of retries.",
+			Category -> "General",
+			Developer -> True
+		},
 		RetryState->{
 			Format->Single,
 			Class->Expression,
@@ -1029,7 +1151,7 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 		RetryMicrofluidicChipPrimitives->{
 			Format->Multiple,
 			Class->Expression,
-			Pattern:>{SampleManipulationP..},
+			Pattern:>{(SampleManipulationP|SamplePreparationP)..},
 			Description->"A set of instructions specifying the transfers of samples into the microfluidic chips for each retry step.",
 			Category->"General",
 			Developer->True
@@ -1052,11 +1174,6 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 						Position->LocationPositionP}
 				]..
 			}..},
-			Relation->{{
-				Sample->Object[Sample],
-				MicrofluidicChipRack->Object[Container],
-				Position->Null
-			}},
 			Description->"A list of placement for each sample on the microfluidic chip rack for each retry step.",
 			Category->"General",
 			Developer->True
@@ -1095,6 +1212,15 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Description->"The file name used for the data file containing raw, unblanked data generated at the conclusion of the experiment.",
 			Category->"General",
 			Developer->True
+		},
+		EstimatedProcessingTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Second],
+			Units -> Second,
+			Description -> "The predicted total time to complete readings of all samples based on requested run times, injections and mixing times.",
+			Developer -> True,
+			Category -> "General"
 		}
 	}
 }];

@@ -272,6 +272,16 @@ DefineObjectType[Object[Item], {
       Category -> "Dimensions & Positions"
     },
 
+    (* --- Quality Assurance --- *)
+    Certificates -> {
+      Format->Multiple,
+      Class->Link,
+      Pattern:>_Link,
+      Relation->Object[Report, Certificate][ItemCertified],
+      Description->"The quality assurance documentation and data for this item.",
+      Category->"Quality Assurance"
+    },
+
     (* --- Physical Properties --- *)
     AppearanceLog -> {
       Format -> Multiple,
@@ -575,6 +585,13 @@ DefineObjectType[Object[Item], {
       Headers -> {"Date","Awaiting Disposal","Responsible Party"},
       Category -> "Storage & Handling"
     },
+    BiohazardDisposal -> {
+      Format -> Single,
+      Class -> Boolean,
+      Pattern :> BooleanP,
+      Description -> "Indicates whether the item should be disposed of as biohazardous waste if disposed of, though it is not necessarily designated for disposal at this time.",
+      Category -> "Storage & Handling"
+    },
     Expires -> {
       Format -> Single,
       Class -> Expression,
@@ -601,19 +618,19 @@ DefineObjectType[Object[Item], {
       Category -> "Storage & Handling",
       Abstract -> True
     },
-    TransportChilled -> {
-      Format -> Single,
-      Class -> Expression,
-      Pattern :> BooleanP,
-      Description -> "Indicates if this item should be refrigerated while transported between instruments during experimentation.",
-      Category -> "Storage & Handling"
-    },
-    TransportWarmed -> {
+    TransportTemperature -> {
       Format -> Single,
       Class -> Real,
       Pattern :> GreaterP[0*Kelvin],
       Units -> Celsius,
       Description -> "The temperature at which the item should be incubated while transported between instruments during experimentation.",
+      Category -> "Storage & Handling"
+    },
+    AsepticTransportContainerType -> {
+      Format -> Single,
+      Class -> Expression,
+      Pattern :> AsepticTransportContainerTypeP,
+      Description -> "Indicates how this item is contained in an aseptic barrier and if it needs to be decanted before being used in a protocol, maintenance, or qualification.",
       Category -> "Storage & Handling"
     },
     ThawTemperature -> {
@@ -685,6 +702,16 @@ DefineObjectType[Object[Item], {
       Description -> "The plumbing connection history of this item.",
       Category -> "Plumbing Information",
       Headers -> {"Date","Change Type","Connector Name","Connected Object", "Object Connector Name","Responsible Party"}
+    },
+    ConnectorGrips -> {
+      Format -> Multiple,
+      Class -> {String, Expression, Real, Real, Real},
+      Pattern :> {ConnectorNameP, ConnectorGripTypeP, GreaterP[0 Inch], GreaterEqualP[0 Newton*Meter], GreaterP[0 Newton*Meter]},
+      Units -> {None, None, Inch, Newton*Meter, Newton*Meter},
+      Description -> "For each member of Connectors, specifications for a region on this item that may be used in concert with tools or fingers to assist in establishing a Connection to the Connector. Connector Name denotes the Connector to which a grip corresponds. Grip Type indicates the form the grip takes. Options include Flats or Knurled. Flats are parallel faces on the body of an object designed interface with the mouth of a wrench. Knurled denotes that a pattern is etched into the body of an object to increase roughness. Grip Size is the distance across flats or the diameter of the grip. Min torque is the lower bound energetic work required to make a leak-proof seal via rotational force. Max torque is the upper bound after which the fitting may be irreparably distorted or damaged.",
+      Category -> "Plumbing Information",
+      Headers -> {"Connector Name", "Grip Type", "Grip Size", "Min Torque", "Max Torque"},
+      IndexMatching -> Connectors
     },
     Ferrules -> {
       Format -> Multiple,
@@ -934,7 +961,7 @@ DefineObjectType[Object[Item], {
       Format -> Single,
       Class -> Expression,
       Pattern :> BooleanP,
-      Description -> "Indicates that this item is presently considered sterile.",
+      Description -> "Indicates that this item is presently considered free of both microbial contamination and any microbial cell samples. To preserve this sterile state, the item is handled with aseptic techniques during experimentation and storage.",
       Category -> "Health & Safety"
     },
     NucleaseFree -> {

@@ -1,7 +1,7 @@
 (* ::Package:: *)
  
 (* ::Text:: *)
-(*\[Copyright] 2011-2022 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2024 Emerald Cloud Lab, Inc.*)
 
 
 (* ::Section:: *)
@@ -154,7 +154,13 @@ DefineOptions[ExperimentLiquidLiquidExtraction,
           ],
           "New Container" -> Widget[
             Type -> Object,
-            Pattern :> ObjectP[Model[Container]]
+            Pattern :> ObjectP[Model[Container]],
+            OpenPaths -> {
+              {
+                Object[Catalog, "Root"],
+                "Containers"
+              }
+            }
           ],
           "New Container with Index" -> {
             "Index" -> Widget[
@@ -163,7 +169,13 @@ DefineOptions[ExperimentLiquidLiquidExtraction,
             ],
             "Container" -> Widget[
               Type -> Object,
-              Pattern :> ObjectP[{Model[Container]}]
+              Pattern :> ObjectP[{Model[Container]}],
+              OpenPaths -> {
+                {
+                  Object[Catalog, "Root"],
+                  "Containers"
+                }
+              }
             ]
           }
         ],
@@ -306,7 +318,7 @@ DefineOptions[ExperimentLiquidLiquidExtraction,
           Type -> Number,
           Pattern :> GreaterP[0]
         ],
-        Description -> "The ratio of the sample volume to the volume of orgnanic solvent that is added to the sample.",
+        Description -> "The ratio of the sample volume to the volume of organic solvent that is added to the sample.",
         ResolutionDescription -> "If OrganicSolventVolume is set, OrganicSolventRatio is calculated by dividing the sample volume by OrganicSolventVolume. Otherwise, if OrganicSolvent is set, set to 5.",
         Category -> "Phase Mixing"
       },
@@ -540,7 +552,27 @@ DefineOptions[ExperimentLiquidLiquidExtraction,
         AllowNull -> True,
         Widget -> Widget[
           Type -> Object,
-          Pattern :> ObjectP[{Model[Instrument, Centrifuge], Object[Instrument, Centrifuge]}]
+          Pattern :> ObjectP[{Model[Instrument, Centrifuge], Object[Instrument, Centrifuge]}],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Centrifugation",
+              "Centrifuges"
+            },
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Centrifugation",
+              "Microcentrifuges"
+            },
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Centrifugation",
+              "Robotic Compatible Microcentrifuges"
+            }
+          }
         ],
         Category -> "Settling",
         Description -> "The centrifuge that is used to spin the samples to help separate the aqueous and organic layers, after the addition of solvent/demulsifier, mixing, and setting time has elapsed.",
@@ -612,7 +644,13 @@ DefineOptions[ExperimentLiquidLiquidExtraction,
           ],
           "New Container" -> Widget[
             Type -> Object,
-            Pattern :> ObjectP[Model[Container]]
+            Pattern :> ObjectP[Model[Container]],
+            OpenPaths -> {
+              {
+                Object[Catalog, "Root"],
+                "Containers"
+              }
+            }
           ],
           "New Container with Index" -> {
             "Index" -> Widget[
@@ -623,7 +661,13 @@ DefineOptions[ExperimentLiquidLiquidExtraction,
               Type -> Object,
               Pattern :> ObjectP[{Model[Container]}],
               PreparedSample -> False,
-              PreparedContainer -> False
+              PreparedContainer -> False,
+              OpenPaths -> {
+                {
+                  Object[Catalog, "Root"],
+                  "Containers"
+                }
+              }
             ]
           }
         ],
@@ -655,7 +699,13 @@ DefineOptions[ExperimentLiquidLiquidExtraction,
           ],
           "New Container" -> Widget[
             Type -> Object,
-            Pattern :> ObjectP[Model[Container]]
+            Pattern :> ObjectP[Model[Container]],
+            OpenPaths -> {
+              {
+                Object[Catalog, "Root"],
+                "Containers"
+              }
+            }
           ],
           "New Container with Index" -> {
             "Index" -> Widget[
@@ -666,7 +716,13 @@ DefineOptions[ExperimentLiquidLiquidExtraction,
               Type -> Object,
               Pattern :> ObjectP[{Model[Container]}],
               PreparedSample -> False,
-              PreparedContainer -> False
+              PreparedContainer -> False,
+              OpenPaths -> {
+                {
+                  Object[Catalog, "Root"],
+                  "Containers"
+                }
+              }
             ]
           }
         ],
@@ -698,7 +754,13 @@ DefineOptions[ExperimentLiquidLiquidExtraction,
           ],
           "Storage Object" -> Widget[
             Type -> Object,
-            Pattern :> ObjectP[Model[StorageCondition]]
+            Pattern :> ObjectP[Model[StorageCondition]],
+            OpenPaths -> {
+              {
+                Object[Catalog, "Root"],
+                "Storage Conditions"
+              }
+            }
           ]
         ],
         Description -> "The condition under which the target sample is stored after the protocol is completed. If left unset, the target sample will be stored under the same condition as the source sample that it originates from.",
@@ -715,7 +777,13 @@ DefineOptions[ExperimentLiquidLiquidExtraction,
           ],
           "Storage Object" -> Widget[
             Type -> Object,
-            Pattern :> ObjectP[Model[StorageCondition]]
+            Pattern :> ObjectP[Model[StorageCondition]],
+            OpenPaths -> {
+              {
+                Object[Catalog, "Root"],
+                "Storage Conditions"
+              }
+            }
           ]
         ],
         Description -> "The conditions under which the waste layer samples will be stored after the protocol is completed. If left unset, the waste sample will be stored under the same condition as the source sample that it originates from.",
@@ -842,10 +910,12 @@ DefineOptions[ExperimentLiquidLiquidExtraction,
     RoboticPreparationOption,
     ProtocolOptions,
     SimulationOption,
-    PostProcessingOptions,
+    NonBiologyPostProcessingOptions,
     SubprotocolDescriptionOption,
     SamplesInStorageOptions,
-    WorkCellOption
+    WorkCellOption,
+    PreparatoryUnitOperationsOption,
+    ModelInputOptions
   }
 ];
 
@@ -854,7 +924,7 @@ DefineOptions[ExperimentLiquidLiquidExtraction,
 (* ::Subsubsection::Closed:: *)
 (*Messages*)
 
-(* This is the threshold above/below which we say that the target molecule has a strong affinitiy for either the *)
+(* This is the threshold above/below which we say that the target molecule has a strong affinity for either the *)
 (* Aqueous or Organic layer. When LogP is between these values, the target molecule has a very weak affinity for the *)
 (* Aqueous or Organic layer. *)
 $AqueousLogPThreshold = -0.5;
@@ -880,10 +950,12 @@ Error::ConflictingCentrifugeParametersForLLE="The sample(s), `1`, at indices, `6
 
 (* - Container to Sample Overload - *)
 
-ExperimentLiquidLiquidExtraction[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
-  {cache, listedOptions,listedContainers,outputSpecification,output,gatherTests,containerToSampleResult,
-    containerToSampleOutput,samples,sampleOptions,containerToSampleTests,simulation,
-    containerToSampleSimulation},
+ExperimentLiquidLiquidExtraction[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+  {
+    cache, listedOptions,listedContainers,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
+    containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests,samplePreparationSimulation,containerToSampleSimulation
+  },
+
 
   (* Determine the requested return value from the function *)
   outputSpecification=Quiet[OptionValue[Output]];
@@ -892,22 +964,40 @@ ExperimentLiquidLiquidExtraction[myContainers:ListableP[ObjectP[{Object[Containe
   (* Determine if we should keep a running list of tests *)
   gatherTests=MemberQ[output,Tests];
 
-  (* Remove temporal links and named objects. *)
-  {listedContainers, listedOptions} = removeLinks[ToList[myContainers], ToList[myOptions]];
+  (* Get the containers and options as lists. *)
+  {listedContainers, listedOptions} = {ToList[myContainers], ToList[myOptions]};
 
-  (* Fetch the cache from listedOptions. *)
-  cache=Lookup[listedOptions, Cache, {}];
-  simulation=Lookup[listedOptions, Simulation];
+  (* Fetch teh cache from listedOptions *)
+  cache=ToList[Lookup[listedOptions, Cache, {}]];
+
+  (* First, simulate our sample preparation. *)
+  validSamplePreparationResult=Check[
+    (* Simulate sample preparation. *)
+    {mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationSimulation}=simulateSamplePreparationPacketsNew[
+      ExperimentLiquidLiquidExtraction,
+      listedContainers,
+      listedOptions
+    ],
+    $Failed,
+    {Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+  ];
+
+  (* If we are given an invalid define name, return early. *)
+  If[MatchQ[validSamplePreparationResult,$Failed],
+    (* Return early. *)
+    (* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
+    ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+  ];
 
   (* Convert our given containers into samples and sample index-matched options. *)
   containerToSampleResult=If[gatherTests,
     (* We are gathering tests. This silences any messages being thrown. *)
     {containerToSampleOutput,containerToSampleTests,containerToSampleSimulation}=containerToSampleOptions[
       ExperimentLiquidLiquidExtraction,
-      listedContainers,
-      listedOptions,
+      mySamplesWithPreparedSamples,
+      myOptionsWithPreparedSamples,
       Output->{Result,Tests,Simulation},
-      Simulation->simulation
+      Simulation->samplePreparationSimulation
     ];
 
     (* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -920,10 +1010,10 @@ ExperimentLiquidLiquidExtraction[myContainers:ListableP[ObjectP[{Object[Containe
     Check[
       {containerToSampleOutput,containerToSampleSimulation}=containerToSampleOptions[
         ExperimentLiquidLiquidExtraction,
-        listedContainers,
-        listedOptions,
+        mySamplesWithPreparedSamples,
+        myOptionsWithPreparedSamples,
         Output-> {Result,Simulation},
-        Simulation->simulation
+        Simulation->samplePreparationSimulation
       ],
       $Failed,
       {Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
@@ -944,19 +1034,22 @@ ExperimentLiquidLiquidExtraction[myContainers:ListableP[ObjectP[{Object[Containe
     {samples,sampleOptions}=containerToSampleOutput;
 
     (* Call our main function with our samples and converted options. *)
-    ExperimentLiquidLiquidExtraction[samples,ReplaceRule[sampleOptions,Simulation->containerToSampleSimulation]]
+    ExperimentLiquidLiquidExtraction[samples,ReplaceRule[sampleOptions,Simulation->samplePreparationSimulation]]
   ]
 ];
 
 (* -- Main Overload --*)
 ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
   {
-    cache, cacheBall, collapsedResolvedOptions, downloadFields, expandedSafeOpsExceptSolventAdditions, expandedSafeOps, gatherTests, inheritedOptions, listedOptions,
-    listedSamples, messages, output, outputSpecification, liquidLiquidExtractionCache, performSimulationQ, resultQ,
-    protocolObject, resolvedOptions, resolvedOptionsResult, resolvedOptionsTests, resourceResult, resourcePacketTests,
-    returnEarlyQ, safeOps, safeOptions, safeOptionTests, templatedOptions, templateTests, resolvedPreparation, roboticSimulation, runTime,
-    inheritedSimulation, validLengths, validLengthTests, simulation, listedSanitizedSamples,
-    listedSanitizedOptions, userSpecifiedObjects, objectsExistQs, objectsExistTests
+    cache,cacheBall,collapsedResolvedOptions,downloadFields,expandedSafeOps,
+    gatherTests,inheritedOptions,listedOptions,
+    listedSamples,messages,output,outputSpecification,liquidLiquidExtractionCache,performSimulationQ,resultQ,
+    protocolObject,resolvedOptions,resolvedOptionsResult,resolvedOptionsTests,resourceResult,resourcePacketTests,
+    returnEarlyQ,safeOps,templatedOptions,templateTests,resolvedPreparation,roboticSimulation,runTime,
+    inheritedSimulation,validLengths,validLengthTests,simulation,listedSanitizedSamples,
+    validSamplePreparationResult,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,
+    samplePreparationSimulation,safeOpsNamed,safeOpsTests,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
+    currentSimulation
   },
 
   (* Determine the requested return value from the function *)
@@ -970,37 +1063,56 @@ ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],my
   (* Remove temporal links *)
   {listedSamples, listedOptions}=removeLinks[ToList[mySamples], ToList[myOptions]];
 
+  (* Simulate our sample preparation. *)
+  validSamplePreparationResult=Check[
+    (* Simulate sample preparation. *)
+    {mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationSimulation}=simulateSamplePreparationPacketsNew[
+      ExperimentPellet,
+      listedSamples,
+      listedOptions
+    ],
+    $Failed,
+    {Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+  ];
+
+  (* If we are given an invalid define name, return early. *)
+  If[MatchQ[validSamplePreparationResult,$Failed],
+    (* Return early. *)
+    (* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
+    ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+  ];
+
   (* Call SafeOptions to make sure all options match pattern *)
-  {safeOptions, safeOptionTests}=If[gatherTests,
-    SafeOptions[ExperimentLiquidLiquidExtraction,listedOptions,AutoCorrect->False,Output->{Result,Tests}],
-    {SafeOptions[ExperimentLiquidLiquidExtraction,listedOptions,AutoCorrect->False],{}}
+  {safeOpsNamed,safeOpsTests}=If[gatherTests,
+    SafeOptions[ExperimentLiquidLiquidExtraction,myOptionsWithPreparedSamplesNamed,AutoCorrect->False,Output->{Result,Tests}],
+    {SafeOptions[ExperimentLiquidLiquidExtraction,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],{}}
   ];
 
   (* Call sanitize-inputs to clean any named objects *)
-  {listedSanitizedSamples, safeOps, listedSanitizedOptions} = sanitizeInputs[listedSamples, safeOptions, listedOptions];
-
-  (* Call ValidInputLengthsQ to make sure all options are the right length *)
-  {validLengths,validLengthTests}=If[gatherTests,
-    ValidInputLengthsQ[ExperimentLiquidLiquidExtraction,{listedSanitizedSamples},listedSanitizedOptions,Output->{Result,Tests}],
-    {ValidInputLengthsQ[ExperimentLiquidLiquidExtraction,{listedSanitizedSamples},listedSanitizedOptions],Null}
-  ];
+  {mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> samplePreparationSimulation];
 
   (* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
   If[MatchQ[safeOps,$Failed],
     Return[outputSpecification/.{
       Result -> $Failed,
-      Tests -> safeOptionTests,
+      Tests -> safeOpsTests,
       Options -> $Failed,
       Preview -> Null,
       Simulation -> Null
     }]
   ];
 
+  (* Call ValidInputLengthsQ to make sure all options are the right length *)
+  {validLengths,validLengthTests}=If[gatherTests,
+    ValidInputLengthsQ[ExperimentLiquidLiquidExtraction,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+    {ValidInputLengthsQ[ExperimentLiquidLiquidExtraction,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
+  ];
+
   (* If option lengths are invalid return $Failed (or the tests up to this point) *)
   If[!validLengths,
     Return[outputSpecification/.{
       Result -> $Failed,
-      Tests -> Join[safeOptionTests,validLengthTests],
+      Tests -> Join[safeOpsTests,validLengthTests],
       Options -> $Failed,
       Preview -> Null,
       Simulation -> Null
@@ -1009,15 +1121,15 @@ ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],my
 
   (* Use any template options to get values for options not specified in myOptions *)
   {templatedOptions,templateTests}=If[gatherTests,
-    ApplyTemplateOptions[ExperimentLiquidLiquidExtraction,{listedSanitizedSamples},listedSanitizedOptions,Output->{Result,Tests}],
-    {ApplyTemplateOptions[ExperimentLiquidLiquidExtraction,{listedSanitizedSamples},listedSanitizedOptions],Null}
+    ApplyTemplateOptions[ExperimentLiquidLiquidExtraction,{ToList[mySamplesWithPreparedSamples]},ToList[myOptionsWithPreparedSamples],Output->{Result,Tests}],
+    {ApplyTemplateOptions[ExperimentLiquidLiquidExtraction,{ToList[mySamplesWithPreparedSamples]},ToList[myOptionsWithPreparedSamples]],Null}
   ];
 
   (* Return early if the template cannot be used - will only occur if the template object does not exist. *)
   If[MatchQ[templatedOptions,$Failed],
     Return[outputSpecification/.{
       Result -> $Failed,
-      Tests -> Join[safeOptionTests,validLengthTests,templateTests],
+      Tests -> Join[safeOpsTests,validLengthTests,templateTests],
       Options -> $Failed,
       Preview -> Null,
       Simulation -> Null
@@ -1028,41 +1140,7 @@ ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],my
   inheritedOptions=ReplaceRule[safeOps,templatedOptions];
 
   (* Expand index-matching options *)
-  expandedSafeOpsExceptSolventAdditions=Last[ExpandIndexMatchedInputs[ExperimentLiquidLiquidExtraction,{listedSanitizedSamples},inheritedOptions]];
-
-  (* Correct expansion of SolventAdditions if not Automatic. *)
-  (* NOTE:This is needed because SolventAdditions is not correctly expanded by ExpandIndexMatchedInputs. *)
-  expandedSafeOps = If[
-    MatchQ[Lookup[inheritedOptions, SolventAdditions],Except[ListableP[Automatic]]],
-    Which[
-      (* Correct input from LLE primitive (resolved, but put into extra list). *)
-      And[
-        MatchQ[Length[Lookup[inheritedOptions, SolventAdditions]], 1],
-        MatchQ[Length[Lookup[inheritedOptions, SolventAdditions][[1]]], Length[ToList[mySamples]]],
-        MatchQ[Map[Length, Lookup[inheritedOptions, SolventAdditions][[1]]], Lookup[inheritedOptions, NumberOfExtractions]]
-      ],
-        ReplaceRule[
-          expandedSafeOpsExceptSolventAdditions,
-          SolventAdditions -> Lookup[inheritedOptions, SolventAdditions][[1]]
-        ],
-      (* If the length of SolventAdditions matches the number of samples, then it is correctly index matched and is used as-is. *)
-      MatchQ[Length[Lookup[inheritedOptions, SolventAdditions]], Length[ToList[mySamples]]] && MatchQ[Lookup[inheritedOptions, SolventAdditions], {Except[ObjectP[]]..}],
-        ReplaceRule[
-          expandedSafeOpsExceptSolventAdditions,
-          SolventAdditions -> Lookup[inheritedOptions, SolventAdditions]
-        ],
-      (* If the length of SolventAdditions matches the NumberOfExtractions, then it is expanded to match the number of samples. *)
-      MatchQ[Length[Lookup[inheritedOptions, SolventAdditions]], Lookup[inheritedOptions, NumberOfExtractions]],
-        ReplaceRule[
-          expandedSafeOpsExceptSolventAdditions,
-          SolventAdditions -> ConstantArray[Lookup[inheritedOptions, SolventAdditions], Length[ToList[mySamples]]]
-        ],
-      (* Otherwise, the option is used as-is. *)
-      True,
-        expandedSafeOpsExceptSolventAdditions
-    ],
-    expandedSafeOpsExceptSolventAdditions
-  ];
+  expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentLiquidLiquidExtraction,{ToList[mySamplesWithPreparedSamples]},inheritedOptions]];
 
   (* Correct expansion of SolventAdditions if not Automatic. *)
   (* NOTE:This is needed because SolventAdditions is not correctly expanded by ExpandIndexMatchedInputs. *)
@@ -1093,7 +1171,7 @@ ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],my
         ],
       (* Otherwise, the option is used as-is. *)
       True,
-        expandedSafeOps
+      expandedSafeOps
     ],
     expandedSafeOps
   ];
@@ -1101,6 +1179,10 @@ ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],my
   (* Fetch the Cache and Simulation options. *)
   cache=Lookup[expandedSafeOps, Cache, {}];
   inheritedSimulation=Lookup[expandedSafeOps, Simulation, Null];
+  currentSimulation = If[NullQ[inheritedSimulation],
+    samplePreparationSimulation,
+    UpdateSimulation[inheritedSimulation,samplePreparationSimulation]
+  ];
 
   (* Disallow Upload->False and Confirm->True. *)
   (* Not making a test here because Upload is a hidden option and we don't currently make tests for hidden options. *)
@@ -1108,38 +1190,7 @@ ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],my
     Message[Error::ConfirmUploadConflict];
     Return[outputSpecification/.{
       Result -> $Failed,
-      Tests -> Flatten[{safeOptionTests,validLengthTests}],
-      Options -> $Failed,
-      Preview -> Null
-    }]
-  ];
-
-  (* Make sure that all of our objects exist. *)
-  userSpecifiedObjects = DeleteDuplicates@Cases[
-    Flatten[{ToList[mySamples],ToList[myOptions]}],
-    ObjectReferenceP[]
-  ];
-
-  objectsExistQs = DatabaseMemberQ[userSpecifiedObjects, Simulation->inheritedSimulation];
-
-  (* Build tests for object existence *)
-  objectsExistTests = If[gatherTests,
-    MapThread[
-      Test[StringTemplate["Specified object `1` exists in the database:"][#1],#2,True]&,
-      {userSpecifiedObjects,objectsExistQs}
-    ],
-    {}
-  ];
-
-  (* If objects do not exist, return failure *)
-  If[!(And@@objectsExistQs),
-    If[!gatherTests,
-      Message[Error::ObjectDoesNotExist,PickList[userSpecifiedObjects,objectsExistQs,False]];
-      Message[Error::InvalidInput,PickList[userSpecifiedObjects,objectsExistQs,False]]
-    ];
-    Return[outputSpecification/.{
-      Result -> $Failed,
-      Tests -> Join[safeOptionTests,validLengthTests,templateTests,objectsExistTests],
+      Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests}],
       Options -> $Failed,
       Preview -> Null
     }]
@@ -1161,7 +1212,7 @@ ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],my
       listedSanitizedSamples,
       Evaluate@downloadFields,
       Cache->cache,
-      Simulation ->inheritedSimulation
+      Simulation->currentSimulation
     ],
     {Download::FieldDoesntExist,Download::NotLinkField}
   ];
@@ -1177,7 +1228,7 @@ ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],my
       ToList[Download[mySamples,Object]],
       expandedSafeOps,
       Cache->cacheBall,
-      Simulation->inheritedSimulation,
+      Simulation->currentSimulation,
       Output->{Result,Tests}
     ];
 
@@ -1194,7 +1245,7 @@ ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],my
           ToList[Download[mySamples,Object]],
           expandedSafeOps,
           Cache->cacheBall,
-          Simulation->inheritedSimulation
+          Simulation->currentSimulation
         ],
         {}
       },
@@ -1236,7 +1287,7 @@ ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],my
   If[returnEarlyQ && !performSimulationQ,
     Return[outputSpecification/.{
       Result -> $Failed,
-      Tests->Join[safeOptionTests,validLengthTests,templateTests,resolvedOptionsTests],
+      Tests->Join[safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests],
       Options->RemoveHiddenOptions[ExperimentLiquidLiquidExtraction,collapsedResolvedOptions],
       Preview->Null,
       Simulation -> Simulation[]
@@ -1255,7 +1306,7 @@ ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],my
         templatedOptions,
         resolvedOptions,
         Cache->cacheBall,
-        Simulation -> inheritedSimulation,
+        Simulation -> currentSimulation,
         Output->{Result,Tests}
       ],
     True,
@@ -1265,7 +1316,7 @@ ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],my
           templatedOptions,
           resolvedOptions,
           Cache->cacheBall,
-          Simulation -> inheritedSimulation
+          Simulation -> currentSimulation
         ],
         {}
       }
@@ -1285,7 +1336,7 @@ ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],my
   If[!MemberQ[output,Result],
     Return[outputSpecification/.{
       Result -> Null,
-      Tests -> Flatten[{safeOptionTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
+      Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
       Options -> RemoveHiddenOptions[ExperimentLiquidLiquidExtraction,collapsedResolvedOptions],
       Preview -> Null,
       Simulation -> simulation,
@@ -1299,18 +1350,30 @@ ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],my
     MatchQ[resourceResult,$Failed],
       $Failed,
 
-    (* If we're doing Preparation->Robotic, return our unit operations packets back without RequireResources called if *)
+    (* If we're doing Preparation->Robotic (and currently we ONLY support Robotic for this experiment), return our unit operations packets back without RequireResources called if *)
     (* Upload->False. *)
     MatchQ[resolvedPreparation, Robotic] && MatchQ[Lookup[safeOps,Upload], False],
       Rest[resourceResult], (* unitOperationPackets *)
 
     (* If we're doing Preparation->Robotic and Upload->True, call ExperimentRoboticSamplePreparation with our primitive. *)
     True,
-      Module[{primitive, nonHiddenOptions, experimentFunction},
+      Module[{primitive,nonHiddenOptions,experimentFunction,samplesMaybeWithModels},
+        (* convert the samples to models if we had model inputs originally *)
+        (* if we don't have a simulation or a single prep unit op, then we know we didn't have a model input *)
+        (* NOTE: this is important. Need to use samplePreparationSimulation here and not simulation. This is because mySamples needs to get converted to model via the simulation _before_ SimulateResources is called in simulateExperimentPellet *)
+        (* otherwise, the same label will point at two different IDs, and that's going to cause problems *)
+        samplesMaybeWithModels=If[NullQ[samplePreparationSimulation] || Not[MatchQ[Lookup[resolvedOptions,PreparatoryUnitOperations],{_[_LabelSample]}]],
+          mySamples,
+          simulatedSamplesToModels[
+            Lookup[resolvedOptions,PreparatoryUnitOperations][[1,1]],
+            samplePreparationSimulation,
+            mySamples
+          ]
+        ];
         (* Create our primitive to feed into RoboticSamplePreparation. *)
         primitive=LiquidLiquidExtraction@@Join[
           {
-            Sample->Download[ToList[mySamples], Object]
+            Sample->samplesMaybeWithModels
           },
           RemoveHiddenPrimitiveOptions[LiquidLiquidExtraction,ToList[myOptions]]
         ];
@@ -1345,6 +1408,7 @@ ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],my
             Name->Lookup[safeOps,Name],
             Upload->Lookup[safeOps,Upload],
             Confirm->Lookup[safeOps,Confirm],
+            CanaryBranch->Lookup[safeOps,CanaryBranch],
             ParentProtocol->Lookup[safeOps,ParentProtocol],
             Priority->Lookup[safeOps,Priority],
             StartDate->Lookup[safeOps,StartDate],
@@ -1359,7 +1423,7 @@ ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],my
   (* Return requested output *)
   outputSpecification/.{
     Result -> protocolObject,
-    Tests -> Flatten[{safeOptionTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
+    Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
     Options -> RemoveHiddenOptions[ExperimentLiquidLiquidExtraction,collapsedResolvedOptions],
     Preview -> Null,
     Simulation -> simulation,
@@ -1381,7 +1445,7 @@ DefineOptions[resolveLiquidLiquidExtractionWorkCell,
 ];
 
 resolveLiquidLiquidExtractionWorkCell[
-  myContainersAndSamples:ListableP[Automatic|ObjectP[{Object[Sample], Object[Container]}]],
+  myContainersAndSamples:ListableP[Automatic|ObjectP[{Object[Sample], Object[Container], Model[Sample]}]],
   myOptions:OptionsPattern[]
 ]:=Which[
   (* The STAR can achieve mix rates higher and lower than the bioSTAR ($MinRoboticMixRate / $MaxRoboticMixRate). *)
@@ -1694,9 +1758,9 @@ resolveExperimentLiquidLiquidExtractionOptions[mySamples:{ObjectP[Object[Sample]
         Length[Lookup[samplePacket, Analytes]] > 0,
           {FirstOrDefault[Download[Lookup[samplePacket, Analytes], Object]], Length[Lookup[samplePacket, Analytes]] > 1},
         (* Use the first member of composition that's in concentration or mass concentration (solvent molecules like water should stay in volume percent). *)
-        MemberQ[Lookup[samplePacket, Composition], {GreaterP[0 Molar], ObjectP[]}],
+        MemberQ[Lookup[samplePacket, Composition], {GreaterP[0 Molar], ObjectP[], _}],
           Module[{potentialMolecules},
-            potentialMolecules = Cases[Lookup[samplePacket, Composition], {ConcentrationP | MassConcentrationP, molecule:ObjectP[]}:>molecule];
+            potentialMolecules = Cases[Lookup[samplePacket, Composition], {ConcentrationP | MassConcentrationP, molecule:ObjectP[], Null|_?DateObjectQ}:>molecule];
 
             {
               FirstOrDefault[Download[potentialMolecules, Object]],
@@ -2279,7 +2343,7 @@ resolveExperimentLiquidLiquidExtractionOptions[mySamples:{ObjectP[Object[Sample]
             (* The input sample is in Organic or Unknown solvent so we need Aqueous Solvent during the first round. *)
             MatchQ[samplePhase, Organic|Unknown],
               True,
-            (* Tnput sample is Aqueous or Biphasic so we don't need Aqueous Solvent during the first round. *)
+            (* Input sample is Aqueous or Biphasic so we don't need Aqueous Solvent during the first round. *)
             MatchQ[samplePhase, Aqueous|Biphasic],
               False,
             (* Catch All. *)
@@ -2369,7 +2433,7 @@ resolveExperimentLiquidLiquidExtractionOptions[mySamples:{ObjectP[Object[Sample]
             (* The input sample is in Aqueous or Unknown solvent so we need Organic Solvent during the first round. *)
             MatchQ[samplePhase, Aqueous|Unknown],
               True,
-            (* Tnput sample is Organic or Biphasic so we don't need Organic Solvent during the first round. *)
+            (* Input sample is Organic or Biphasic so we don't need Organic Solvent during the first round. *)
             MatchQ[samplePhase, Organic|Biphasic],
               False,
             (* Catch All. *)
@@ -2796,82 +2860,93 @@ resolveExperimentLiquidLiquidExtractionOptions[mySamples:{ObjectP[Object[Sample]
             firstExtractionWorkingSampleVolumePlusAdditives, nextExtractionWorkingSampleVolumesPlusAdditives
           },
 
-          firstAqueousLayerVolume = Total[{
-            (* If the user told us that the sample was Aqueous, believe them. *)
-            If[MatchQ[samplePhase, Aqueous],
-              Lookup[samplePacket, Volume],
-              Lookup[predictedSamplePhaseVolumes, Aqueous]
-            ],
-            If[MatchQ[addAqueousSolvent, First|All] && MatchQ[aqueousSolventVolume, VolumeP],
-              aqueousSolventVolume,
-              0 Microliter
-            ],
-            If[MatchQ[demulsifierAdditions, {ObjectP[], ___}] && MatchQ[demulsifierAmount, VolumeP],
-              demulsifierAmount,
-              0 Microliter
-            ]
-          }];
+          firstAqueousLayerVolume = SafeRound[
+            Total[{
+              (* If the user told us that the sample was Aqueous, believe them. *)
+              If[MatchQ[samplePhase, Aqueous],
+              workingSampleVolume,
+                Lookup[predictedSamplePhaseVolumes, Aqueous]
+              ],
+              If[MatchQ[addAqueousSolvent, First|All] && MatchQ[aqueousSolventVolume, VolumeP],
+                aqueousSolventVolume,
+                0 Microliter
+              ],
+              If[MatchQ[demulsifierAdditions, {ObjectP[], ___}] && MatchQ[demulsifierAmount, VolumeP],
+                demulsifierAmount,
+                0 Microliter
+              ]
+            }],
+            1 Microliter
+          ];
 
           restAqueousLayerVolumes = Map[
             Function[{extractionRound},
-              Total[{
-                (* The phase that will be inputted into the next extraction round will be Aqueous. Assume perfect phase separation. *)
-                If[Or[
-                    MatchQ[targetPhase, Organic] && MatchQ[selectionStrategy, Positive],
-                    MatchQ[targetPhase, Aqueous] && MatchQ[selectionStrategy, Negative]
-                  ],
-                  firstAqueousLayerVolume,
-                  0 Microliter
-                ],
-                If[MatchQ[addAqueousSolvent, Rest|All] && MatchQ[aqueousSolventVolume, VolumeP],
-                  aqueousSolventVolume,
-                  0 Microliter
-                ],
-                (* We assume that the demulsifier will end up in the Aqueous layer and will be transferred out along with *)
-                (* the Aqueous layer. *)
-                If[And[
-                    MatchQ[demulsifierAmount, VolumeP],
-                    Or[
+              SafeRound[
+                Total[{
+                  (* The phase that will be inputted into the next extraction round will be Aqueous. Assume perfect phase separation. *)
+                  If[Or[
                       MatchQ[targetPhase, Organic] && MatchQ[selectionStrategy, Positive],
                       MatchQ[targetPhase, Aqueous] && MatchQ[selectionStrategy, Negative]
-                    ]
+                    ],
+                    firstAqueousLayerVolume,
+                    0 Microliter
                   ],
-                  demulsifierAmount * Length[Cases[demulsifierAdditions[[1;;extractionRound]], ObjectP[]]],
-                  0 Microliter
-                ]
-              }]
+                  If[MatchQ[addAqueousSolvent, Rest|All] && MatchQ[aqueousSolventVolume, VolumeP],
+                    aqueousSolventVolume,
+                    0 Microliter
+                  ],
+                  (* We assume that the demulsifier will end up in the Aqueous layer and will be transferred out along with *)
+                  (* the Aqueous layer. *)
+                  If[And[
+                      MatchQ[demulsifierAmount, VolumeP],
+                      Or[
+                        MatchQ[targetPhase, Organic] && MatchQ[selectionStrategy, Positive],
+                        MatchQ[targetPhase, Aqueous] && MatchQ[selectionStrategy, Negative]
+                      ]
+                    ],
+                    demulsifierAmount * Length[Cases[demulsifierAdditions[[1;;extractionRound]], ObjectP[]]],
+                    0 Microliter
+                  ]
+                }],
+                1 Microliter
+              ]
             ],
             Rest[Range[Lookup[options, NumberOfExtractions]]]
           ];
 
-          firstOrganicLayerVolume = Total[{
-            (* If the user told us that the sample was Organic, believe them. *)
-            If[MatchQ[samplePhase, Organic],
-              Lookup[samplePacket, Volume],
-              Lookup[predictedSamplePhaseVolumes, Organic]
-            ],
-            If[MatchQ[addOrganicSolvent, First|All] && MatchQ[organicSolventVolume, VolumeP],
-              organicSolventVolume,
-              0 Microliter
-            ]
-          }];
-
+          firstOrganicLayerVolume = SafeRound[
+            Total[{
+              (* If the user told us that the sample was Organic, believe them. *)
+              If[MatchQ[samplePhase, Organic],
+                Lookup[samplePacket, Volume],
+                Lookup[predictedSamplePhaseVolumes, Organic]
+              ],
+              If[MatchQ[addOrganicSolvent, First|All] && MatchQ[organicSolventVolume, VolumeP],
+                organicSolventVolume,
+                0 Microliter
+              ]
+            }],
+            1 Microliter
+          ];
           restOrganicLayerVolumes = Map[
             Function[{extractionRound},
-              Total[{
-                (* The phase that will be inputted into the next extraction round will be Organic. Assume perfect phase separation. *)
-                If[Or[
-                    MatchQ[targetPhase, Aqueous] && MatchQ[selectionStrategy, Positive],
-                    MatchQ[targetPhase, Organic] && MatchQ[selectionStrategy, Negative]
+              SafeRound[
+                Total[{
+                  (* The phase that will be inputted into the next extraction round will be Organic. Assume perfect phase separation. *)
+                  If[Or[
+                      MatchQ[targetPhase, Aqueous] && MatchQ[selectionStrategy, Positive],
+                      MatchQ[targetPhase, Organic] && MatchQ[selectionStrategy, Negative]
+                    ],
+                    firstOrganicLayerVolume,
+                    0 Microliter
                   ],
-                  firstOrganicLayerVolume,
-                  0 Microliter
-                ],
-                If[MatchQ[addOrganicSolvent, Rest|All] && MatchQ[organicSolventVolume, VolumeP],
-                  organicSolventVolume,
-                  0 Microliter
-                ]
-              }]
+                  If[MatchQ[addOrganicSolvent, Rest|All] && MatchQ[organicSolventVolume, VolumeP],
+                    organicSolventVolume,
+                    0 Microliter
+                  ]
+                }],
+                1 Microliter
+              ]
             ],
             Rest[Range[Lookup[options, NumberOfExtractions]]]
           ];
@@ -3638,7 +3713,10 @@ resolveExperimentLiquidLiquidExtractionOptions[mySamples:{ObjectP[Object[Sample]
                     organicLayerVolumes[[extractionRound]]
                   ];
 
-                  Min[{tenPercentOfExtractedLayer, fiveMMBoundaryVolume}]
+                  SafeRound[
+                    Min[{tenPercentOfExtractedLayer, fiveMMBoundaryVolume}],
+                    1 Microliter
+                  ]
                 ]
               ]
             ],
@@ -4441,7 +4519,7 @@ resolveBoundaryVolume[
     (Pi * (diameter / 2)^2 * myBoundaryLayerHeight)
   ],
   Module[
-    {containerHeight, calibrationQuantityFunction,rawCalibrationFunction,inverseFunction,inputUnit,outputUnit,
+    {containerHeight, calibrationQuantityFunction,rawCalibrationFunction,inputUnit,outputUnit,
       distanceDerivedFromCalibration, boundaryLayerAndBottomLayerVolume},
 
     (* What is the maximum height of the container? Look for InternalDepth first; if not available, use Z-dimension which is external height as estimate. *)
@@ -4463,40 +4541,29 @@ resolveBoundaryVolume[
     inputUnit=FirstCase[calibrationQuantityFunction[[2]], DistanceP];
     outputUnit=calibrationQuantityFunction[[3]];
 
-    (* Attempt to invert the function. If we didn't get another function out, then InverseFunction didn't work. *)
-    inverseFunction=Quiet[InverseFunction[rawCalibrationFunction]];
-
     (* Convert to the input unit, strip off the unit, then tack on the output unit. *)
     (* NOTE: Include a little buffer in the amount that we're aspirating to be safe. *)
     (* NOTE: The calibration function used to give us the distance from the volume sensor, which is at the top of the container. *)
     (* However, this is no longer true. Calibrations now return the height from the inside of the container bottom so the below has been updated. *)
-    (* NOTE: InverseFunction does not work on piecewise functions so we need to solve analytically if we have a piecewise. *)
-    distanceDerivedFromCalibration=If[MatchQ[inverseFunction, Verbatim[InverseFunction][___]],
-      (* Solve analytically. *)
-      Module[{uniqueVariable},
-        uniqueVariable=Unique[t];
-
-        Lookup[
-          FirstCase[
-            Quiet@Solve[
-              (* volume = calibrationFunction (with #1 subbed with t so we can solve for t). *)
-              Unitless[UnitConvert[Max[{1 Microliter, myBottomLayerVolume}], outputUnit]]==(rawCalibrationFunction[[1]]/.{#->uniqueVariable}),
-              uniqueVariable,
-              Reals
-            ],
-            (* get the first solution that returns a non-negative value *)
-            {uniqueVariable->GreaterEqualP[0]},
-            (* If there is no analytical solution, assume the bottle is empty (so it's all the way at the bottom). Set the uniqueVariable as either containerHeight or 0 depending on the characteristic of volume calibration function. *)
-            {uniqueVariable->If[rawCalibrationFunction[2]<rawCalibrationFunction[1],Unitless[containerHeight],0]},
-            (* don't remove the levelspec or this function will error out *)
-            {1}
+    (* NOTE: We used to use InverseFunction if it is able to generate one. However, there might be multiple inverse functions for our CalibrationFunction so that InverseFunction might generate a false one that will produce negative volume evaluation. We need to solve analytically. *)
+    distanceDerivedFromCalibration=Module[{uniqueVariable},
+      uniqueVariable=Unique[t];
+      Lookup[
+        FirstCase[
+          Quiet@Solve[
+            (* volume = calibrationFunction (with #1 subbed with t so we can solve for t). *)
+            Unitless[UnitConvert[Max[{1 Microliter, myBottomLayerVolume}], outputUnit]]==(rawCalibrationFunction[[1]]/.{#->uniqueVariable}),
+            uniqueVariable,
+            Reals
           ],
-          uniqueVariable
-        ] * inputUnit
-      ],
-      (* Use our symbolic function. *)
-      inverseFunction[
-        Unitless[UnitConvert[Max[{1 Microliter, myBottomLayerVolume}], outputUnit]]
+          (* get the first solution that returns a non-negative value *)
+          {uniqueVariable->GreaterEqualP[0]},
+          (* If there is no analytical solution, assume the bottle is empty (so it's all the way at the bottom). Set the uniqueVariable as either containerHeight or 0 depending on the characteristic of volume calibration function. *)
+          {uniqueVariable->If[rawCalibrationFunction[2]<rawCalibrationFunction[1],Unitless[containerHeight],0]},
+          (* don't remove the levelspec or this function will error out *)
+          {1}
+        ],
+        uniqueVariable
       ] * inputUnit
     ];
 
@@ -4522,11 +4589,12 @@ DefineOptions[
 
 liquidLiquidExtractionResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplatedOptions:{(_Rule|_RuleDelayed)...},myResolvedOptions:{(_Rule|_RuleDelayed)..},ops:OptionsPattern[]]:=Module[
   {
-    expandedInputs, expandedResolvedOptionsExceptSolventAdditions, expandedResolvedOptions, resolvedOptionsNoHidden, outputSpecification, output, gatherTests,
-    messages, inheritedCache, samplePackets, uniqueSamplesInResources, resolvedPreparation, mapThreadFriendlyOptionsExceptSolventAdditions, mapThreadFriendlyOptions,
-    samplesInResources, sampleContainersIn, uniqueSampleContainersInResources, containersInResources,
-    protocolPacket,allResourceBlobs,resourcesOk,resourceTests,previewRule, optionsRule,testsRule,resultRule,
-    allUnitOperationPackets, currentSimulation, userSpecifiedLabels, runTime
+    expandedInputs,expandedResolvedOptionsExceptSolventAdditions,expandedResolvedOptions,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,
+    messages,inheritedCache,samplePackets,uniqueSamplesInResources,resolvedPreparation,mapThreadFriendlyOptionsExceptSolventAdditions,mapThreadFriendlyOptions,
+    samplesInResources,sampleContainersIn,uniqueSampleContainersInResources,containersInResources,
+    protocolPacket,allResourceBlobs,resourcesOk,resourceTests,previewRule,optionsRule,testsRule,resultRule,
+    allUnitOperationPackets,currentSimulation,userSpecifiedLabels,runTime,resolvedPrepUOs,modelInputQ,
+    labelSampleUOFromPreparedModels,oldSampleToLabelRules,oldSampleToModelRules
   },
 
   (* get the inherited cache *)
@@ -4653,6 +4721,54 @@ liquidLiquidExtractionResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]
   ];
 
   (* --- Create the protocol packet --- *)
+
+  (* if we have a model input LabelSample here and we're on the robot, set this bool to True and use it below *)
+  resolvedPrepUOs = Lookup[myResolvedOptions, PreparatoryUnitOperations];
+  modelInputQ = MatchQ[resolvedPreparation, Robotic] && MatchQ[resolvedPrepUOs, {_[_LabelSample]}];
+
+  (* make the LabelSample unit operation; importantly here, we do NOT have resources; we just have models and labels *)
+  (* also make rules converting model input samples to labels, and also those same model input samples back to their models *)
+  {labelSampleUOFromPreparedModels, oldSampleToLabelRules, oldSampleToModelRules} = If[modelInputQ,
+    Module[{resolvedUO, simLabelRules, labelToSampleRules, sampleToModelRules},
+      resolvedUO = resolvedPrepUOs[[1, 1]];
+      simLabelRules = currentSimulation[[1]][Labels];
+      labelToSampleRules = Flatten[Map[
+        Function[{label},
+          SelectFirst[simLabelRules, MatchQ[label, #[[1]]]&, {}]
+        ],
+        Flatten[{resolvedUO[Label], resolvedUO[ContainerLabel]}]
+      ]];
+
+      sampleToModelRules = MapThread[
+        (#1 /. labelToSampleRules) -> #2 &,
+        {
+          Join[resolvedUO[Label], resolvedUO[ContainerLabel]],
+          Join[resolvedUO[Sample], resolvedUO[Container]]
+        }
+      ];
+
+      {
+        resolvedUO,
+        Reverse /@ labelToSampleRules,
+        sampleToModelRules
+      }
+    ],
+    {Null, {}, {}}
+  ];
+
+  (* update the simulation to _not_ have the labels that we are adding above *)
+  currentSimulation = If[NullQ[currentSimulation],
+    Null,
+    With[{oldLabelRules = Lookup[First[currentSimulation], Labels], labelsToRemove = Values[oldSampleToLabelRules]},
+      Simulation[
+        Append[
+          First[currentSimulation],
+          Labels -> Select[oldLabelRules, Not[MemberQ[labelsToRemove, #[[1]]]]&]
+        ]
+      ]
+    ]
+  ];
+
   (* make unit operation packets for the UOs we just made here *)
   {protocolPacket, allUnitOperationPackets, currentSimulation, runTime} = Module[
     {extractionContainerLabels, extractionContainers, targetContainerLabels, impurityContainerLabels,
@@ -4812,13 +4928,13 @@ liquidLiquidExtractionResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]
       (* Sample Labels *)
       LabelSample[
         Label -> Lookup[myResolvedOptions, SampleLabel],
-        Sample -> mySamples
+        Sample -> Download[mySamples,Object]
       ],
 
       (* Sample Container Labels *)
       LabelContainer[
         Label -> DeleteDuplicates[Transpose[{Lookup[samplePackets, Container], sampleContainerLabels}]][[All,2]],
-        Container -> DeleteDuplicates[Transpose[{Lookup[samplePackets, Container], sampleContainerLabels}]][[All,1]]
+        Container -> Download[DeleteDuplicates[Transpose[{Lookup[samplePackets, Container], sampleContainerLabels}]][[All,1]],Object]
       ],
 
       (* Extraction Container Labels. *)
@@ -4987,7 +5103,8 @@ liquidLiquidExtractionResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]
                       Transfer[
                         Source->Lookup[options, AqueousSolvent],
                         Destination->{workingSampleContainerWell, workingSampleContainerLabel},
-                        Amount->Lookup[options, AqueousSolventVolume]
+                        Amount->Lookup[options, AqueousSolventVolume],
+                        KeepSourceCovered->True
                       ],
                       Nothing
                     ],
@@ -5005,15 +5122,17 @@ liquidLiquidExtractionResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]
                       Transfer[
                         Source->Lookup[options, OrganicSolvent],
                         Destination->{workingSampleContainerWell, workingSampleContainerLabel},
-                        Amount->Lookup[options, OrganicSolventVolume]
+                        Amount->Lookup[options, OrganicSolventVolume],
+                        KeepSourceCovered->True
                       ],
                       Nothing
                     ],
-                    If[MatchQ[Length[Lookup[options, demulsifierAdditions]], GreaterEqualP[extractionRound]] && MatchQ[Lookup[options, demulsifierAdditions][[extractionRound]], ObjectP[]],
+                    If[MatchQ[Length[Lookup[options, DemulsifierAdditions]], GreaterEqualP[extractionRound]] && MatchQ[Lookup[options, DemulsifierAdditions][[extractionRound]], ObjectP[]],
                       Transfer[
                         Source->Lookup[options, Demulsifier],
                         Destination->{workingSampleContainerWell, workingSampleContainerLabel},
-                        Amount->Lookup[options, DemulsifierAmount]
+                        Amount->Lookup[options, DemulsifierAmount],
+                        KeepSourceCovered->True
                       ],
                       Nothing
                     ]
@@ -5085,6 +5204,7 @@ liquidLiquidExtractionResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]
                           ];
 
                           (* Load the first empty well and remove it from the empty well list. *)
+                          (* Note: phase separator plate is not Sterile but we should use SterileTechnique *)
                           wellToLoad=First[currentPhaseSeparatorWells];
                           currentPhaseSeparatorWells=Rest[currentPhaseSeparatorWells];
 
@@ -5093,7 +5213,8 @@ liquidLiquidExtractionResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]
                             Destination->{wellToLoad, currentPhaseSeparatorLabel},
                             Amount->loadingVolume,
                             CollectionContainer->currentCollectionPlateLabel,
-                            CollectionTime->Lookup[options, SettlingTime]
+                            CollectionTime->Lookup[options, SettlingTime],
+                            KeepSourceCovered->True
                           ]
                         ]
                       ],
@@ -5132,7 +5253,8 @@ liquidLiquidExtractionResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]
                           {phaseSeparatorWellAndContainer[[1]], collectionContainer}
                         ],
                         Destination->{Lookup[options, TargetContainerOutWell], Lookup[options, TargetContainerLabel]},
-                        Amount->phaseSeparatorVolume
+                        Amount->phaseSeparatorVolume,
+                        KeepSourceCovered->True
                       ]
                     ],
                     {phaseSeparatorWellAndContainers, collectionContainers, phaseSeparatorVolumes}
@@ -5162,7 +5284,8 @@ liquidLiquidExtractionResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]
                           {phaseSeparatorWellAndContainer[[1]], collectionContainer}
                         ],
                         Destination->{Lookup[options, ImpurityContainerOutWell], Lookup[options, ImpurityContainerLabel]},
-                        Amount->phaseSeparatorVolume
+                        Amount->phaseSeparatorVolume,
+                        KeepSourceCovered->True
                       ]
                     ],
                     {phaseSeparatorWellAndContainers, collectionContainers, phaseSeparatorVolumes}
@@ -5207,7 +5330,7 @@ liquidLiquidExtractionResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]
         ],
         LabelContainer[
           Label->allCollectionContainerLabels,
-          Container->Model[Container, Plate, "96-well 2mL Deep Well Plate"] (* Model[Container, Plate, "96-well 2mL Deep Well Plate"] *)
+          Container->Model[Container, Plate, "id:L8kPEjkmLbvW"](* 96-well 2mL Deep Well Plate *)
         ]
       },
       {}
@@ -5579,6 +5702,7 @@ liquidLiquidExtractionResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]
 
     (* Combine to together *)
     primitives=Flatten[{
+      If[NullQ[labelSampleUOFromPreparedModels], Nothing, labelSampleUOFromPreparedModels],
       labelSampleAndContainerUnitOperations,
       phaseSeparatorAndCollectionContainerLabelUnitOperations,
       aliquotUnitOperations,
@@ -5586,7 +5710,7 @@ liquidLiquidExtractionResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]
       phaseSeparatorUnitOperations,
       pipetteUnitOperations,
       labelSampleUnitOperation
-    }];
+    }] /. oldSampleToLabelRules;
 
     (* Set this internal variable to unit test the unit operations that are created by this function. *)
     $LLEUnitOperations=primitives;
@@ -5616,7 +5740,7 @@ liquidLiquidExtractionResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]
       ],
       (* NOTE: We quiet this because when transferring from the phase separator, we're actually not sure how much volume *)
       (* will be in the top/bottom so we just go with the max volume to make sure that we get both of the phases. *)
-      {Warning::OveraspiratedTransfer}
+      {Warning::OveraspiratedTransfer, Warning::ConflictingSourceAndDestinationAsepticHandling}
     ];
 
     (* Create our own output unit operation packet, linking up the "sub" robotic unit operation objects. *)
@@ -5646,6 +5770,12 @@ liquidLiquidExtractionResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]
     roboticSimulation=UpdateSimulation[
       roboticSimulation,
       Simulation[<|Object->Lookup[outputUnitOperationPacket, Object], Sample->(Link/@mySamples)|>]
+    ];
+
+    (* since we are putting this UO inside RSP, we should re-do the LabelFields so they link via RoboticUnitOperations *)
+    roboticSimulation=If[Length[roboticUnitOperationPackets]==0,
+      roboticSimulation,
+      updateLabelFieldReferences[roboticSimulation,RoboticUnitOperations]
     ];
 
     (* Return back our packets and simulation. *)

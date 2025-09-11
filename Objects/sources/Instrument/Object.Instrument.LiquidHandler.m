@@ -18,6 +18,13 @@ DefineObjectType[Object[Instrument, LiquidHandler], {
 			Category -> "Instrument Specifications",
 			Abstract -> True
 		},
+		CORE2Upgrade->{
+			Format->Single,
+			Class->Boolean,
+			Pattern:>BooleanP,
+			Description->"Indicates whether this Hamilton liquid handler has been upgraded to have Compression O-Ring Expansion II (CO-RE II) style tip pickup. If True, the Hamilton can only use CO-RE II tips. If False or Null, it can use either CO-RE or CO-RE II tips.",
+			Category->"Instrument Specifications"
+		},
 		LiquidHandlerType -> {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model],LiquidHandlerType]],
@@ -68,6 +75,14 @@ DefineObjectType[Object[Instrument, LiquidHandler], {
 			Pattern :> FilePathP,
 			Description -> "File path on network where Log files are stored.",
 			Category -> "Instrument Specifications"
+		},
+		HEPAHoodFanController->{
+			Format -> Single,
+			Class -> String,
+			Pattern:>_String,
+			Description->"Indicated the Part Number of the HEPA/UV module used on this instrument. This is critical because the instructions on how to use HEPA and UV heavily depend on which version of the HEPA/UV module we have.",
+			Category->"Instrument Specifications",
+			Developer->True
 		},
 		WashLineVessel -> {
 			Format -> Single,
@@ -170,6 +185,15 @@ DefineObjectType[Object[Instrument, LiquidHandler], {
 			Description -> "The shakers that are connected to this liquid handler such that samples may be passed between the two instruments robotically.",
 			Category -> "Integrations"
 		},
+		OffDeckHeaterShakers->{
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Instrument, Shaker],
+			Description -> "The off deck shakers that are connected to this liquid handler such that samples may be passed between the two instruments robotically. This is a subset of IntegratedShakers.",
+			Category -> "Integrations",
+			Developer->True
+		},
 		IntegratedHeatBlocks -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -206,7 +230,7 @@ DefineObjectType[Object[Instrument, LiquidHandler], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Container, MagazineParkPosition][IntegratedLiquidHandler],
+			Relation -> Object[Container, MagazineRack][IntegratedLiquidHandler],
 			Description -> "The park positions for plate sealer magazines loaded or to load optically clear plate seals that are connected to this liquid handler.",
 			Category -> "Integrations"
 		},
@@ -222,7 +246,7 @@ DefineObjectType[Object[Instrument, LiquidHandler], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Container, MagazineParkPosition][IntegratedLiquidHandler],
+			Relation -> Object[Container, MagazineRack][IntegratedLiquidHandler],
 			Description -> "The park positions for plate sealer magazines loaded or to load aluminum plate seals that are connected to this liquid handler.",
 			Category -> "Integrations"
 		},
@@ -287,7 +311,7 @@ DefineObjectType[Object[Instrument, LiquidHandler], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Part, Lamp][IntegratedLiquidHandler],
-			Description -> "The UV lamp that is connected to this liquid handler such that samples may be passed between the two instruments robotically.",
+			Description -> "The UV lamp(s) that are connected to this liquid handler to illuminate the integrated enclosure.",
 			Category -> "Integrations"
 		},
 		IntegratedHEPAFilters -> {
@@ -295,7 +319,7 @@ DefineObjectType[Object[Instrument, LiquidHandler], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Part, FanFilterUnit][IntegratedLiquidHandler],
-			Description -> "The UV lamp that is connected to this liquid handler such that samples may be passed between the two instruments robotically.",
+			Description -> "The HEPA filter modules connected to this liquid handler and used to provide air flow to the integrated enclosure.",
 			Category -> "Integrations"
 		},
 		IntegratedMassSpectrometer -> {

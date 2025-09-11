@@ -8,6 +8,13 @@ DefineObjectType[Model[Qualification,CapillaryELISA],{
 	CreatePrivileges->None,
 	Cache->Session,
 	Fields->{
-
+		Cartridge -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Container, Plate, Irregular, CapillaryELISA],
+			Description -> "The model of the capillary ELISA cartridge plate that is used in the instrument qualification to perform ELISA experiments and quantify the analytes (such as peptides, proteins, antibodies and hormones) in the samples by ELISA.",
+			Category -> "General"
+		}
 	}
 }];

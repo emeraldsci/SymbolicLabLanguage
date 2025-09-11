@@ -55,6 +55,44 @@ DefineObjectType[Model[Sample, StockSolution, Standard], {
 			IndexMatching -> StandardComponents,
 			Category -> "Formula"
 		},
+		(* Physical Properties *)
+		StandardDifferentialRefractiveIndex -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[(0*Milliliter)/Gram],
+			Units -> Milliliter/Gram,
+			Description -> "For each member of StandardComponents, the manufacturer provided or literature value of the analyte's change in refractive index with respect to concentration (dn/dc) in this solvent. This value can be measured experimentally by a differential refractometer.",
+			IndexMatching -> StandardComponents,
+			Category -> "Physical Properties"
+		},
+		StandardHydrodynamicRadius -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0*Nanometer],
+			Units -> Nanometer,
+			Description -> "For each member of StandardComponents, the manufacturer provided or literature value of the expected average hydrodynamic radius of the analyte in its native state.",
+			IndexMatching -> StandardComponents,
+			Category -> "Physical Properties"
+		},
+		StandardIntrinsicViscosity -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[(0*Milliliter)/Gram],
+			Units -> Milliliter/Gram,
+			Description -> "For each member of StandardComponents, the manufacturer provided or literature value of the intrinsic viscosity of the analyte at infinite dilution.",
+			IndexMatching -> StandardComponents,
+			Category -> "Physical Properties"
+		},
+		StandardColloidalStabilityA2 -> {
+			Format -> Multiple,
+			Class ->{Solvent -> Link, ColloidalStabilityA2 -> Real},
+			Pattern :> {
+				Solvent -> (LinkP[Model[Sample]]|LinkP[Model[Sample,StockSolution]]),
+				ColloidalStabilityA2 -> UnitsP[0*(Mole*Milliliter/Gram^2)]
+			},
+			Description -> "The manufacturer provided or literature colloidal stability A2 value(s) of the primary analyte in a specific solvent(s).",
+			Category -> "Physical Properties"
+		},
 		(* Experimental Results *)
 		ReferenceNMR -> {
 			Format -> Multiple,

@@ -23,6 +23,7 @@ $SampleHistoryCardKeys=<|
 	Degassed->{Date,Protocol,InstrumentModel,DegasType,FreezeTime,PumpTime,ThawTime,NumberOfCycles,VacuumTime,VacuumSonicate,ThawTemperature,SpargingGas,SpargingTime},
 	Desiccated->{Date,Protocol,InstrumentModel,Method},
 	Filtered->{Date,InstrumentModel,Type,PoreSize,MembraneMaterial,Temperature,Time},
+	Ground->{Date,Protocol,Instrument, Fineness, GrindingRate, Time, NumberOfGrindingSteps},
 	Restricted->{Date,ResponsibleParty},
 	Unrestricted->{Date,ResponsibleParty},
 	SetStorageCondition->{Date,ResponsibleParty,StorageCondition},
@@ -39,7 +40,8 @@ $SampleHistoryCardKeys=<|
 	},
 	Washed->{
 		Date,Protocol,WashSolution, ResuspensionMedia, CellIsolationTime, WashIsolationTime, WashMixTime, ResuspensionMixTime, WashSolutionEquilibrationTime, ResuspensionMediaEquilibrationTime, WashSolutionTemperature, WashTemperature, ResuspensionMediaTemperature, ResuspensionTemperature
-	}
+	},
+	CellsFrozen->{Date,Protocol,FreezingStrategy,TemperatureProfile,Coolant,InsulatedCoolerFreezingTime,InsulatedCoolerFreezingConditions,CryoprotectantSolution,CryoprotectantSolutionTemperature}
 |>;
 
 (* Map of Sample History Card to their icons. *)
@@ -54,6 +56,7 @@ $SampleHistoryCardIcons=<|
 	Degassed->"Experiment",
 	Desiccated->"Experiment",
 	Filtered->"Filtered",
+	Ground -> "Experiment",
 	Restricted->"Restrict",
 	Unrestricted->"Restrict",
 	SetStorageCondition->"StorageCondition",
@@ -65,7 +68,8 @@ $SampleHistoryCardIcons=<|
 	Shipped->"Shipped",
 	DefinedComposition->"Analysis",
 	Lysed->"LyseCells",
-	Washed->"WashCells"
+	Washed->"WashCells",
+	CellsFrozen->"FreezeCells"
 |>;
 
 

@@ -467,14 +467,14 @@ DefineTests[UploadCountLiquidParticlesMethod,
 					Object[Sample,"Test 15 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
 					Object[Sample,"Test 20 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID]
 				},
-				SamplingHeight->35Millimeter
+				SamplingHeight->20Millimeter
 			];
 			Download[methods,SamplingHeight],
 			{
-				35Millimeter,
-				35Millimeter,
-				35Millimeter,
-				35Millimeter
+				20Millimeter,
+				20Millimeter,
+				20Millimeter,
+				20Millimeter
 			},
 			Variables:>{methods},
 			EquivalenceFunction -> Equal
@@ -914,9 +914,10 @@ DefineTests[UploadCountLiquidParticlesMethod,
 		$PersonID=Object[User,"Test user for notebook-less test protocols"]
 	},
 	SymbolSetUp:>(
+		Off[Warning::AliquotRequired];
 		CleanMemoization[];
 		CleanDownload[];
-		
+
 		$CreatedObjects={};
 		
 		(* Clean up test objects *)
@@ -1032,6 +1033,7 @@ DefineTests[UploadCountLiquidParticlesMethod,
 		]
 	),
 	SymbolTearDown:> (
+		On[Warning::AliquotRequired];
 		EraseObject[$CreatedObjects,Force->True,Verbose->False];
 		uploadCountLiquidParticlesMethodCleanUp[];
 	)
@@ -1119,6 +1121,7 @@ DefineTests[
 	},
 	SymbolSetUp:>(
 		Off[Warning::SamplesOutOfStock];
+		Off[Warning::AliquotRequired];
 		CleanMemoization[];
 		CleanDownload[];
 		
@@ -1184,9 +1187,9 @@ DefineTests[
 					{"A1",emptyContainer3}
 				},
 				InitialAmount->{
-					18 Milliliter,
-					18 Milliliter,
-					18 Milliliter
+					50 Milliliter,
+					50 Milliliter,
+					50 Milliliter
 				},
 				Name->{
 					"Test water sample 1 for UploadCountLiquidParticlesMethodPreview"<> $SessionUUID,
@@ -1213,6 +1216,7 @@ DefineTests[
 	),
 	SymbolTearDown:>Module[{},
 		On[Warning::SamplesOutOfStock];
+		On[Warning::AliquotRequired];
 		EraseObject[$CreatedObjects,Force->True,Verbose->False];
 		uploadCountLiquidParticlesMethodPreviewTestObjectsCleanup[];
 		Unset[$CreatedObjects]
@@ -1295,6 +1299,7 @@ DefineTests[
 	
 	SymbolSetUp:>(
 		Off[Warning::SamplesOutOfStock];
+		Off[Warning::AliquotRequired];
 		CleanMemoization[];
 		CleanDownload[];
 		
@@ -1360,9 +1365,9 @@ DefineTests[
 					{"A1",emptyContainer3}
 				},
 				InitialAmount->{
-					18 Milliliter,
-					18 Milliliter,
-					18 Milliliter
+					50 Milliliter,
+					50 Milliliter,
+					50 Milliliter
 				},
 				Name->{
 					"Test water sample 1 for UploadCountLiquidParticlesMethodOptions"<> $SessionUUID,
@@ -1389,6 +1394,7 @@ DefineTests[
 	),
 	SymbolTearDown:>Module[{},
 		On[Warning::SamplesOutOfStock];
+		On[Warning::AliquotRequired];
 		EraseObject[$CreatedObjects,Force->True,Verbose->False];
 		uploadCountLiquidParticlesMethodOptionsCleanUp[];
 		Unset[$CreatedObjects]
@@ -1480,6 +1486,7 @@ DefineTests[
 	},
 	SymbolSetUp:>(
 		Off[Warning::SamplesOutOfStock];
+		Off[Warning::AliquotRequired];
 		CleanMemoization[];
 		CleanDownload[];
 		
@@ -1545,9 +1552,9 @@ DefineTests[
 					{"A1",emptyContainer3}
 				},
 				InitialAmount->{
-					18 Milliliter,
-					18 Milliliter,
-					18 Milliliter
+					50 Milliliter,
+					50 Milliliter,
+					50 Milliliter
 				},
 				Name->{
 					"Test water sample 1 for ValidUploadCountLiquidParticlesMethodQ"<> $SessionUUID,
@@ -1574,6 +1581,7 @@ DefineTests[
 	),
 	SymbolTearDown:>Module[{},
 		On[Warning::SamplesOutOfStock];
+		On[Warning::AliquotRequired];
 		EraseObject[$CreatedObjects,Force->True,Verbose->False];
 		validUploadCountLiquidParticlesMethodQCleanUp[];
 		Unset[$CreatedObjects]

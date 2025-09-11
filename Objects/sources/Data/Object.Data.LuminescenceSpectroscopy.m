@@ -45,7 +45,7 @@ DefineObjectType[Object[Data, LuminescenceSpectroscopy], {
 		FocalHeight -> {
 			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0*Meter*Milli],
+			Pattern :> DistanceP,
 			Units -> Meter Milli,
 			Description -> "The distance from the bottom of the plate carrier to the focal point.",
 			Category -> "General"
@@ -72,6 +72,24 @@ DefineObjectType[Object[Data, LuminescenceSpectroscopy], {
 			Units -> Celsius,
 			Description -> "The desired temperature of the sample chamber during the experimental run.",
 			Category -> "General"
+		},
+		NominalOxygenLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Percent],
+			Units -> Percent,
+			Description -> "The target oxygen level in the atmosphere inside the instrument set by the protocol.",
+			Category -> "General",
+			Abstract -> True
+		},
+		NominalCarbonDioxideLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Percent],
+			Units -> Percent,
+			Description -> "The target carbon dioxide level in the atmosphere inside the instrument set by the protocol.",
+			Category -> "General",
+			Abstract -> True
 		},
 		Well -> {
 			Format -> Single,
@@ -123,6 +141,22 @@ DefineObjectType[Object[Data, LuminescenceSpectroscopy], {
 			Pattern :> GreaterP[0*Kelvin],
 			Units -> Celsius,
 			Description -> "The average temperature inside the sample chamber during spectrum acquisition.",
+			Category -> "Experimental Results"
+		},
+		OxygenLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Percent],
+			Units -> Percent,
+			Description -> "The average oxygen level inside the sample chamber during spectrum acquisition.",
+			Category -> "Experimental Results"
+		},
+		CarbonDioxideLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Percent],
+			Units -> Percent,
+			Description -> "The average carbon dioxide level inside the sample chamber during spectrum acquisition.",
 			Category -> "Experimental Results"
 		},
 		(* -- Analysis & Reports -- *)

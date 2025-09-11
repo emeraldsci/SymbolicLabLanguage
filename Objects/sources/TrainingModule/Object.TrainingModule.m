@@ -9,6 +9,30 @@ DefineObjectType[Object[TrainingModule], {
 	CreatePrivileges->None,
 	Cache->Session,
 	Fields->{
+		Status -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> TrainingStatusP,
+			Description -> "Indicates the user's progress through the training module.",
+			Category -> "General",
+			Abstract -> True
+		},
+		DateCompleted -> {
+			Format -> Single,
+			Class -> Date,
+			Pattern :> _?DateObjectQ,
+			Description -> "The date on which the last quiz or practical required for this module was completed and marked as passed.",
+			Category -> "General",
+			Abstract -> True
+		},
+		TrainingType->{
+			Format->Single,
+			Class->Expression,
+			Pattern:>TrainingTypeP,
+			Description->"Indicates the high level goal of this training, such as recertification or to reinforce concepts.",
+			Category->"Organizational Information",
+			Developer->True
+		},
 		DeveloperObject->{
 			Format->Single,
 			Class->Expression,
@@ -48,6 +72,13 @@ DefineObjectType[Object[TrainingModule], {
 			Relation->Object[TrainingMaterial],
 			Description->"A list of training materials that the operator has reviewed.",
 			Category->"General"
+		},
+		QuizOnly -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this training module was enqueued without a practical for higher-frequency concept reinforcement.",
+			Category -> "Operations Information"
 		}
 	}
 }];

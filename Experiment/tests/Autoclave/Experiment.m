@@ -15,8 +15,7 @@
 (* ::Subsubsection:: *)
 (*ExperimentAutoclave*)
 
-DefineTests[
-	ExperimentAutoclave,
+DefineTests[ExperimentAutoclave,
 	{
 		(* Basic *)
 		Example[{Basic, "Accepts a sample object:"},
@@ -41,6 +40,26 @@ DefineTests[
 			ObjectP[Object[Protocol, Autoclave]]
 		],
 		(* Messages *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentAutoclave[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentAutoclave[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentAutoclave[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentAutoclave[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
 		Example[{Messages,"InvalidAutoclaveContainer","If the input is a sample, it has to be in an Object[Container,Vessel]:"},
 			ExperimentAutoclave[Object[Sample,"Available test 50 uL water sample in a plate for ExperimentAutoclave" <> $SessionUUID]],
 			$Failed,
@@ -262,6 +281,11 @@ DefineTests[
 			Download[ExperimentAutoclave[Object[Sample,"Available test 500 mL water sample in a 2 L glass bottle for ExperimentAutoclave" <> $SessionUUID],Confirm->True],Status],
 			Processing|ShippingMaterials|Backlogged
 		],
+		Example[{Options,CanaryBranch,"Specify the CanaryBranch on which the protocol is run:"},
+			Download[ExperimentAutoclave[Object[Sample,"Available test 500 mL water sample in a 2 L glass bottle for ExperimentAutoclave" <> $SessionUUID],CanaryBranch -> "d1cacc5a-948b-4843-aa46-97406bbfc368"],CanaryBranch],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Stubs:>{GitBranchExistsQ[___] = True, InternalUpload`Private`sllDistroExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
+		],
 		Example[{Options,Name,"Name the protocol for Autoclave:"},
 			options=ExperimentAutoclave[Object[Sample,"Available test 500 mL water sample in a 2 L glass bottle for ExperimentAutoclave" <> $SessionUUID],Output->Options,Name->"Super cool test protocol"];
 			Lookup[options,Name],
@@ -308,44 +332,6 @@ DefineTests[
 					],
 					Transfer[
 						Source->Model[Sample, "LB Broth Miller"],
-						Amount->10*Gram,
-						Destination->"LB Sample Container 2"
-					],
-					Transfer[
-						Source->Model[Sample, "Milli-Q water"],
-						Amount->500*Milliliter,
-						Destination->"LB Sample Container 2"
-					]
-				},
-				Output->Options
-			];
-			Lookup[options,AutoclaveProgram],
-			Liquid,
-			Variables :> {options}
-		],
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples to be autoclaved:"},
-			options=ExperimentAutoclave[{"LB Sample Container 1","LB Sample Container 2"},
-				PreparatoryPrimitives->{
-					Define[
-						Name->"LB Sample Container 1",
-						Container->Model[Container, Vessel, "2L Glass Bottle"]
-					],
-					Define[
-						Name->"LB Sample Container 2",
-						Container->Model[Container, Vessel, "1L Glass Bottle"]
-					],
-					Transfer[
-						Source->Model[Sample, "LB Broth Miller"],
-						Amount->20*Gram,
-						Destination->"LB Sample Container 1"
-					],
-					Transfer[
-						Source->Model[Sample, "Milli-Q water"],
-						Amount->1*Liter,
-						Destination->"LB Sample Container 1"
-					],
-					Transfer[
-						Source->Model[Sample, "LB Broth"],
 						Amount->10*Gram,
 						Destination->"LB Sample Container 2"
 					],
@@ -611,7 +597,7 @@ DefineTests[
 				Output->Options
 			];
 			Lookup[options,AliquotSampleLabel],
-			"mySample1",
+			{"mySample1"},
 			Variables:>{options}
 		],
 		Example[{Options, AliquotAmount, "The amount of each sample that should be transferred from the SamplesIn into the AliquotSamples which should be used in lieu of the SamplesIn for the experiment:"},
@@ -693,19 +679,21 @@ DefineTests[
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentAutoclave[Object[Sample,"Available test 500 mL water sample in a 2 L glass bottle for ExperimentAutoclave" <> $SessionUUID], AliquotContainer -> Model[Container, Vessel, "2L Glass Bottle"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Vessel, "2L Glass Bottle"]]},
+			{{1, ObjectP[Model[Container, Vessel, "2L Glass Bottle"]]}},
 			Variables :> {options}
 		],
 		Example[{Options, ImageSample, "Indicates if any samples that are modified in the course of the experiment should be freshly imaged after running the experiment:"},
 			options = ExperimentAutoclave[Object[Sample,"Available test 500 mL water sample in a 2 L glass bottle for ExperimentAutoclave" <> $SessionUUID], ImageSample -> True, Output -> Options];
 			Lookup[options, ImageSample],
 			True,
+			Messages :> {Warning::PostProcessingSterileSamples},
 			Variables :> {options}
 		],
 		Example[{Options, MeasureVolume, "Indicates if any samples that are modified in the course of the experiment should have their volumes measured after running the experiment:"},
 			options = ExperimentAutoclave[Object[Sample,"Available test 500 mL water sample in a 2 L glass bottle for ExperimentAutoclave" <> $SessionUUID], MeasureVolume -> True, Output -> Options];
 			Lookup[options, MeasureVolume],
 			True,
+			Messages :> {Warning::PostProcessingSterileSamples},
 			Variables :> {options}
 		],
 		Example[{Options, MeasureWeight, "Indicates if any samples that are modified in the course of the experiment should have their weights measured after running the experiment:"},
@@ -735,7 +723,7 @@ DefineTests[
 		Example[{Options,DestinationWell,"Indicates the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentAutoclave[Object[Sample,"Available test 500 mL water sample in a 2 L glass bottle for ExperimentAutoclave" <> $SessionUUID],DestinationWell -> "A1",AliquotContainer->Model[Container, Vessel, "2L Glass Bottle"], Output -> Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables :> {options}
 		],
 		Example[{Options,SterilizationBag,"An input Item can be assigned to be placed into an autoclave bag using the SterilizationBag Option:"},
@@ -762,7 +750,42 @@ DefineTests[
 				Null
 			},
 			Variables :> {options}
-		]
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentAutoclave[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Vessel, "id:J8AY5jwzPPR7"](* 250mL Glass Bottle *),
+				PreparedModelAmount -> 10 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Vessel, "id:J8AY5jwzPPR7"]]..},
+				{EqualP[10 Milliliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentAutoclave[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Vessel, "id:J8AY5jwzPPR7"](*250mL Glass Bottle*),
+				PreparedModelAmount -> 10 Milliliter,
+				Aliquot -> True,
+				(* Had to include this as the default AliquotContainer was not Autoclave safe. *)
+				AliquotContainer -> Model[Container, Vessel, "id:J8AY5jwzPPR7"],
+				Mix -> True
+			],
+			ObjectP[Object[Protocol, Autoclave]]]
 	},
 	SetUp :> ($CreatedObjects = {}),
 	TearDown :> (
@@ -1102,6 +1125,7 @@ DefineTests[
 					Type->Model[Container,Bag,Autoclave],
 					Name->"Test Incompatible Autoclave Bag Model for ExperimentAutoclave" <> $SessionUUID,
 					Dimensions->{13.3 Centimeter,25.4 Centimeter,1 Millimeter},
+					Replace[Positions] -> {<|Name -> "A1", Footprint -> Open, MaxWidth -> 13.3 Centimeter, MaxDepth -> 25.4 Centimeter, MaxHeight -> 1 Millimeter|>},
 					Replace[SterilizationMethods]->{EthyleneOxide,HydrogenPeroxide},
 					DeveloperObject->True
 				|>

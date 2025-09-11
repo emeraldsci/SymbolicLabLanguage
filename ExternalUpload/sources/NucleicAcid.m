@@ -12,6 +12,22 @@
 (*resolveUploadNucleicAcidModelOptions*)
 
 
+(* Takes in a list of inputs and a list of options, return a list of resolved options. *)
+(* This is a basic legacy resolver that doesn't throw messages, so can just map over all the inputs *)
+resolveUploadNucleicAcidModelOptions[myType_, myInput:{___}, myOptions_, rawOptions_] := Module[
+	{result},
+
+	(* Map over the singleton function - this is legacy code *)
+	result = MapThread[resolveUploadNucleicAcidModelOptions[myType, #1, #2, #3] &, {myInput, myOptions, rawOptions}];
+
+	(* Return the output in the expected format *)
+	<|
+		Result -> result,
+		InvalidInputs -> {},
+		InvalidOptions -> {}
+	|>
+];
+
 (* Helper function to resolve the options to our function. *)
 (* Takes in a list of inputs and a list of options, return a list of resolved options. *)
 resolveUploadNucleicAcidModelOptions[myType_, myName_String, myOptions_, rawOptions_]:=Module[

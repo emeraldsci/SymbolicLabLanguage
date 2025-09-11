@@ -36,6 +36,22 @@ DefineObjectType[Object[Maintenance, Clean, Freezer], {
 			Description -> "Indicates the rubber mallet used to strike a surface.",
 			Category -> "Cleaning",
 			Developer->True
+		},
+		BeforeMaintenanceImage -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image file taken by an operator before cleaning the target.",
+			Category -> "Cleaning"
+		},
+		AfterMaintenanceImage -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image file taken by an operator after completing cleaning the target.",
+			Category -> "Cleaning"
 		}
 	}
 }];

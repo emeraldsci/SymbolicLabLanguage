@@ -19,7 +19,7 @@ DefineUsage[ExperimentNephelometryKinetics,
 							InputName->"Samples",
 							Description->"The samples for which to measure scattered light.",
 							Widget -> Alternatives[
-								"Sample or Container"->Widget[
+								"Sample or Container" -> Widget[
 									Type -> Object,
 									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
 									ObjectTypes -> {Object[Sample], Object[Container]},
@@ -27,7 +27,7 @@ DefineUsage[ExperimentNephelometryKinetics,
 										Object[Container] -> Field[Contents[[All, 2]]]
 									}
 								],
-								"Container with Well Position"->{
+								"Container with Well Position" -> {
 									"Well Position" -> Alternatives[
 										"A1 to P24" -> Widget[
 											Type -> Enumeration,
@@ -45,7 +45,12 @@ DefineUsage[ExperimentNephelometryKinetics,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -69,11 +74,7 @@ DefineUsage[ExperimentNephelometryKinetics,
 			"ExperimentNephelometryKineticsPreview",
 			"ExperimentNephelometry"
 		},
-		Author->{
-			"clayton.schwarz",
-			"hailey.hibbard"
-		}
+		Author->{"yanzhe.zhu", "clayton.schwarz", "hailey.hibbard"}
 	}
 ];
-
 

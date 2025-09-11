@@ -269,7 +269,19 @@ DefineOptionSet[NephelometrySharedOptions :> {
 		],
 		Category->"Measurement"
 	},
-
+	{
+		OptionName->AtmosphereEquilibrationTime,
+		Default->Automatic,
+		Description->"The length of time for which the samples equilibrate at the requested oxygen and carbon dioxide level before being read.",
+		ResolutionDescription->"Automatically set to 5 Minute if TargetCarbonDioxideLevel or TargetOxygenLevel is specified. Otherwise, set to Null.",
+		AllowNull->True,
+		Widget->Widget[
+			Type->Quantity,
+			Pattern:>RangeP[0 Second, 24 Hour],
+			Units:>{1,{Minute,{Second,Minute,Hour}}}
+		],
+		Category->"Sample Handling"
+	},
 	(* Mixing *)
 	{
 		OptionName->PlateReaderMix,
@@ -505,12 +517,26 @@ DefineOptionSet[NephelometrySharedOptions :> {
 	},
 
 	
-	FuntopiaSharedOptions,
+	NonBiologyFuntopiaSharedOptions,
 	SimulationOption,
 	SamplesInStorageOptions,
 	PreparationOption,
 	WorkCellOption,
 	BlankLabelOptions,
+	ModifyOptions[
+		ModelInputOptions,
+		PreparedModelAmount,
+		{
+			ResolutionDescription -> "Automatically set to 100 Microliter."
+		}
+	],
+	ModifyOptions[
+		ModelInputOptions,
+		PreparedModelContainer,
+		{
+			ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Plate, \"96-well UV-Star Plate\"]."
+		}
+	],
 	{
 		OptionName -> NumberOfReplicates,
 		Default -> Automatic,

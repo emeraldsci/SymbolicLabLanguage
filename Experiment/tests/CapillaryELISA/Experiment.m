@@ -136,6 +136,31 @@ DefineTests[ExperimentCapillaryELISA,
 		],
 
 		(* ===Options=== *)
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentCapillaryELISA[
+				{Model[Sample, "ExperimentCapillaryELISA test  sample model 2 without pre-loaded analyte" <> $SessionUUID], Model[Sample, "ExperimentCapillaryELISA test  sample model 2 without pre-loaded analyte" <> $SessionUUID]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "ExperimentCapillaryELISA test  sample model 2 without pre-loaded analyte" <> $SessionUUID]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs},
+			Messages :> {Warning::AliquotRequired}
+		],
 
 		(* Instrument *)
 		Example[{Options, Instrument, "The Instrument option defaults to Model[Instrument,CapillaryELISA,\"Ella\"]:"},
@@ -2622,29 +2647,6 @@ DefineTests[ExperimentCapillaryELISA,
 				Search[Object[ManufacturingSpecification, CapillaryELISACartridge]] = {}
 			}
 		],
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples to be run on a capillary ELISA experiment:"},
-			options=ExperimentCapillaryELISA["Test Sample Container",
-				PreparatoryPrimitives->{
-					Define[
-						Name->"Test Sample Container",
-						Container->Model[Container,Vessel,"2mL Tube"]
-					],
-					Transfer[
-						Source->Object[Sample,"ExperimentCapillaryELISA test  sample 2 without pre-loaded analyte" <> $SessionUUID],
-						Amount->50Microliter,
-						Destination->{"Test Sample Container","A1"}
-					]
-				},
-				Output->Options
-			];
-			Lookup[options,CartridgeType],
-			Customizable,
-			Variables:>{options},
-			Stubs:>{
-				Search[Object[ManufacturingSpecification,CapillaryELISACartridge]]={}
-			},
-			TimeConstraint -> 600
-		],
 
 		(* ExperimentIncubate tests. *)
 		Example[{Options, Incubate, "Indicates if the SamplesIn should be incubated at a fixed temperature prior to starting the experiment or any aliquoting. Incubate->True indicates that all SamplesIn should be incubated. Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified):"},
@@ -3192,7 +3194,7 @@ DefineTests[ExperimentCapillaryELISA,
 				Object[Sample, "ExperimentCapillaryELISA test  sample 2 without pre-loaded analyte" <> $SessionUUID],
 				AliquotContainer -> Model[Container, Vessel, "2mL Tube"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]}},
 			Variables :> {options},
 			Stubs :> {
 				Search[Object[ManufacturingSpecification, CapillaryELISACartridge]] = {}
@@ -3242,7 +3244,7 @@ DefineTests[ExperimentCapillaryELISA,
 				Object[Sample, "ExperimentCapillaryELISA test  sample 2 without pre-loaded analyte" <> $SessionUUID],
 				DestinationWell -> "A1", Output -> Options];
 			Lookup[options, DestinationWell],
-			"A1",
+			{"A1"},
 			Variables :> {options},
 			Stubs :> {
 				Search[Object[ManufacturingSpecification, CapillaryELISACartridge]] = {}
@@ -3544,6 +3546,93 @@ DefineTests[ExperimentCapillaryELISA,
 			{(0 | 3)..},
 			Variables :> {protocol, indexMatchedFields}
 		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentCapillaryELISA[
+				Model[Sample, "ExperimentCapillaryELISA test  sample model 1 with pre-loaded analyte" <> $SessionUUID],
+				PreparedModelAmount -> 1.8 Milliliter,
+				Aliquot -> True,
+				Mix -> True,
+				Cartridge->Object[Container, Plate, Irregular, CapillaryELISA, "ExperimentCapillaryELISA SinglePlex72X1 test pre-loaded cartridge for pre-loaded analyte 1" <> $SessionUUID]
+			],
+			ObjectP[Object[Protocol, CapillaryELISA]]
+		],
+		(* == Messages == *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentCapillaryELISA[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentCapillaryELISA[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentCapillaryELISA[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentCapillaryELISA[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentCapillaryELISA[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule},
+			Messages :> {Error::MustSpecifyCaptureAntibody,Error::MustSpecifyDetectionAntibody,Error::InvalidOption,Warning::AliquotRequired}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentCapillaryELISA[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule},
+			Messages :> {Error::MustSpecifyCaptureAntibody,Error::MustSpecifyDetectionAntibody,Error::InvalidOption,Warning::AliquotRequired}
+		],
 
 		Example[{Messages, "DuplicateName", "If the Name option is specified, it cannot be identical to an existing Object[Protocol,CapillaryELISA] Name:"},
 			ExperimentCapillaryELISA[
@@ -3578,6 +3667,7 @@ DefineTests[ExperimentCapillaryELISA,
 			$Failed,
 			Messages :> {
 				Error::RetiredCapillaryELISAInstrument,
+				Error::DeprecatedCapillaryELISAInstrumentModel,
 				Error::InvalidOption
 			},
 			Stubs :> {
@@ -6334,7 +6424,10 @@ DefineTests[ExperimentCapillaryELISA,
 						Object[Container, Plate, Irregular, CapillaryELISA, "ExperimentCapillaryELISA MultiAnalyte32X4 test pre-loaded cartridge for pre-loaded analytes 1, 2, 3 and 4" <> $SessionUUID],
 
 						(* Test Protocol *)
-						Object[Protocol, CapillaryELISA, "Test CapillaryELISA Instrument option template protocol" <> $SessionUUID]
+						Object[Protocol, CapillaryELISA, "Test CapillaryELISA Instrument option template protocol" <> $SessionUUID],
+
+						(* Test Product *)
+						Object[Product,"Test Product for CapELISA Sample model 1 " <> $SessionUUID]
 					}
 				],
 				ObjectP[]
@@ -6352,7 +6445,7 @@ DefineTests[ExperimentCapillaryELISA,
 		Off[Warning::SamplesOutOfStock];
 		Off[Warning::DeprecatedProduct];
 
-		Block[{$AllowSystemsProtocols = True, $DeveloperUpload = True},
+		Block[{$AllowSystemsProtocols = True, $DeveloperUpload = True, $AllowPublicObjects = True},
 			Module[
 				{
 					testBench,
@@ -6368,7 +6461,7 @@ DefineTests[ExperimentCapillaryELISA,
 					analyteStandardSample1, analyteStandardSample2, antibodySample1, antibodySample2, antibodySample3, antibodySample4, antibodySample5,
 					antibodySample6,	antibodyMoleculePacket1,
 					antibodyMoleculePacket2, antibodyMoleculePacket3, antibodyMoleculePacket4, antibodyMoleculePacket5, antibodyMoleculePacket6,
-					testSampleModelPacket1, testSampleModelPacket2, testSampleModelPacket3, testSampleModelPacket4, testSampleModelPacket5,
+					testSampleModelPacket1, testSampleModelPacket2, testSampleModelPacket3, testSampleModelPacket4, testSampleModelPacket5, testProduct1,
 					allDeveloperObjects
 				},
 
@@ -7076,6 +7169,23 @@ DefineTests[ExperimentCapillaryELISA,
 					InitialAmount -> {1.8Milliliter, 1.8Milliliter, 1.8Milliliter, 1.8Milliliter, 1.8Milliliter, 1.8Milliliter, 1.8Milliliter, 1.8Milliliter, 1Liter, 20Milliliter, 40Milliliter, 1Gram, 1.8Milliliter, 1Gram, 1.8Milliliter, 1.8Milliliter, 1.8Milliliter, 1.8Milliliter, 500Microgram, 500Microgram}
 				];
 
+				(* Create a test product for model input testing *)
+				testProduct1 = UploadProduct[
+					Name->"Test Product for CapELISA Sample model 1 " <> $SessionUUID,
+					ProductModel->Model[Sample, "ExperimentCapillaryELISA test  sample model 1 with pre-loaded analyte" <> $SessionUUID],
+					CatalogDescription -> "Test Description",
+					(* Just say were from VWR so we don't also have to make a test supplier *)
+					Supplier->Object[Company,Supplier,"id:kEJ9mqaVz5Op"],
+					CatalogNumber->"1",
+					Packaging->Single,
+					NumberOfItems->1,
+					ProductURL->"www.testURL.com",
+					SampleType->Vial,
+					DefaultContainerModel->Model[Container,Vessel,"2mL Tube"],
+					Amount->2Milliliter,
+					Price->1USD
+				];
+
 				(* make these objects Non-Developer *)
 				Upload[<|Object -> #, DeveloperObject -> Null|>& /@ {analyteStandardSample1, analyteStandardSample2, testSample2, testSample8, testSample9, testSample10, antibodySample1, antibodySample2, antibodySample3, antibodySample4, antibodySample5, antibodySample6}];
 
@@ -7236,7 +7346,10 @@ DefineTests[ExperimentCapillaryELISA,
 						Object[Container, Plate, Irregular, CapillaryELISA, "ExperimentCapillaryELISA MultiAnalyte32X4 test pre-loaded cartridge for pre-loaded analytes 1, 2, 3 and 4" <> $SessionUUID],
 
 						(* Test Protocol *)
-						Object[Protocol, CapillaryELISA, "Test CapillaryELISA Instrument option template protocol" <> $SessionUUID]
+						Object[Protocol, CapillaryELISA, "Test CapillaryELISA Instrument option template protocol" <> $SessionUUID],
+
+						(* Test Product *)
+						Object[Product,"Test Product for CapELISA Sample model 1 " <> $SessionUUID]
 					}
 				],
 				ObjectP[]
@@ -8270,7 +8383,7 @@ DefineTests[
 				$RequiredSearchName = "ExperimentCapillaryELISAPreview"
 			}
 		],
-		Example[{Basic, "Return Null for mulitple samples:"},
+		Example[{Basic, "Return Null for multiple samples:"},
 			ExperimentCapillaryELISAPreview[{Object[Sample, "ExperimentCapillaryELISAPreview test sample 2 without pre-loaded analyte" <> $SessionUUID], Object[Sample, "ExperimentCapillaryELISAPreview test sample 3 without pre-loaded analyte" <> $SessionUUID]}],
 			Null
 		],

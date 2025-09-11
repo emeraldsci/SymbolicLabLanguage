@@ -239,7 +239,11 @@ validModelMaintenanceCalibrateLightScatteringQTests[packet:PacketP[Model[Mainten
 	NotNullFieldTest[packet,{
 		Targets,
 		CalibrationStandard,
-		CapillaryLoading
+		(*Skip CapillaryLoading if of the subtype Model[Maintenance,CalibrateLightScattering,Plate]*)
+		If[!MatchQ[packet,PacketP[Model[Maintenance,CalibrateLightScattering,Plate]]],
+			CapillaryLoading,
+			Nothing
+		]
 	}]
 };
 
@@ -285,6 +289,13 @@ validModelMaintenanceCalibratepHQTests[packet:PacketP[Model[Maintenance,Calibrat
 	NotNullFieldTest[packet,Targets]
 };
 
+(* ::Subsection::Closed:: *)
+(*validModelMaintenanceCalibratePlateReaderQTests*)
+
+
+validModelMaintenanceCalibratePlateReaderQTests[packet:PacketP[Model[Maintenance,CalibratePlateReader]]]:={
+	NotNullFieldTest[packet,Targets]
+};
 
 (* ::Subsection::Closed:: *)
 (*validModelMaintenanceCalibratePressureQTests*)
@@ -381,27 +392,6 @@ validModelMaintenanceCalibrateWeightQTests[packet:PacketP[Model[Maintenance,Cali
 
 
 (* ::Subsection::Closed:: *)
-(*validModelMaintenanceCellBleachQTests*)
-
-
-validModelMaintenanceCellBleachQTests[packet:PacketP[Model[Maintenance,CellBleach]]]:={
-	(* Shared field shaping *)
-	NullFieldTest[packet,Targets],
-
-	(* Unique fields *)
-	NotNullFieldTest[packet,
-		{
-			LiquidHandler,
-			Bleach,
-			BleachVolumeFraction,
-			BleachTime
-		}
-	]
-
-};
-
-
-(* ::Subsection::Closed:: *)
 (*validModelMaintenanceCleanQTests*)
 
 
@@ -409,6 +399,19 @@ validModelMaintenanceCleanQTests[packet:PacketP[Model[Maintenance,Clean]]]:={
 
 	NotNullFieldTest[packet,Targets]
 
+};
+
+(* ::Subsection::Closed:: *)
+(*validModelMaintenanceCleanViscometerQTests*)
+
+
+validModelMaintenanceCleanViscometerQTests[packet:PacketP[Model[Maintenance,Clean,Viscometer]]]:={
+	
+	NotNullFieldTest[packet,{
+		PistonCleaningSolution,
+		PistonCleaningWipes
+	}]
+	
 };
 
 
@@ -554,14 +557,6 @@ validModelMaintenanceCleanPlateWasherQTests[packet:PacketP[Model[Maintenance,Cle
 		}
 	]
 };
-(* ::Subsection::Closed:: *)
-(*validModelMaintenanceCreateHamiltonLabwareQTests*)
-
-
-validModelMaintenanceCreateHamiltonLabwareQTests[packet:PacketP[Model[Maintenance,CreateHamiltonLabware]]]:={
-
-};
-
 
 (* ::Subsection::Closed:: *)
 (*validModelMaintenanceHandwashQTests*)
@@ -649,11 +644,23 @@ validModelMaintenanceDecontaminateIncubatorQTests[packet:PacketP[Model[Maintenan
 
 
 validModelMaintenanceDecontaminateLiquidHandlerQTests[packet:PacketP[Model[Maintenance,Decontaminate, LiquidHandler]]]:={
-	(* Fields that should be filled in *)
-	NotNullFieldTest[packet,Targets]
-
 };
 
+(* ::Subsection::Closed:: *)
+(*validModelMaintenanceDecontaminateWaterPurifierQTests*)
+
+
+validModelMaintenanceDecontaminateWaterPurifierQTests[packet:PacketP[Model[Maintenance,Decontaminate, WaterPurifier]]]:={
+	(* Fields that should be filled in *)
+	NotNullFieldTest[packet,
+		{
+			MembraneCleaningSlot,
+			DecontaminatingReagent,
+			Tweezers
+		}
+	]
+
+};
 
 (* ::Subsection::Closed:: *)
 (*validModelMaintenanceDefrostQTests*)
@@ -811,7 +818,9 @@ validModelMaintenanceRefillReservoirHPLCQTests[packet:PacketP[Model[Maintenance,
 			FillContainerModel,
 			ReservoirDeck,
 			ReservoirDeckName,
-			ReservoirDeckSlotName
+			ReservoirDeckSlotName,
+			ReservoirCover,
+			ReservoirInlet
 		}
 	]
 };
@@ -872,7 +881,10 @@ validModelMaintenanceRefillReservoirpHMeterQTests[packet:PacketP[Model[Maintenan
 			FillLiquidModel,
 			FillContainerModel,
 			ReservoirDeckSlotNames,
-			ReservoirContainers
+			ReservoirContainers,
+			ProbeStorageContainers,
+			FillVolumes,
+			ProbeStorageContainerFillVolumes
 		}
 	]
 };
@@ -1036,6 +1048,29 @@ validModelMaintenanceReplaceVacuumPumpQTests[packet:PacketP[Model[Maintenance,Re
 	}]
 };
 
+(* ::Subsection::Closed:: *)
+(*validModelMaintenanceReplaceWasteContainerQTests*)
+
+
+validModelMaintenanceReplaceWasteContainerQTests[packet : PacketP[Model[Maintenance, Replace, WasteContainer]]] := {
+	NotNullFieldTest[packet, {
+		Targets,
+		PercentFull,
+		WasteModel,
+		WasteContainerModel,
+		ReplacementContainerModel,
+		MaxWasteAccumulationTime,
+		WasteLabel,
+		WasteLabelFilePath,
+		Printer,
+		EmptiedContainerCabinet,
+		FullContainerCabinets,
+		HazardousWasteLabel,
+		WasteRoomSuppliesCabinet,
+		Funnel
+	}]
+};
+
 
 (* ::Subsection::Closed:: *)
 (*validModelMaintenanceReplaceGasFilterQTests*)
@@ -1077,6 +1112,19 @@ validModelMaintenanceCalibrateMeltingPointApparatusQTests[packet:PacketP[Model[M
 	Test[
 		"Samples in MeltingPointStandards are not duplicates:",
 		DuplicateFreeQ[Download[Lookup[packet, MeltingPointStandards], Object]],
+		True
+	],
+
+	Test[
+		"DesiccationMethod is Null if Desiccate is False; or DesiccationMethod is informed if Desiccate is True.",
+		Which[
+			MatchQ[Lookup[packet, Desiccate], False],
+				NullQ[Lookup[packet, DesiccationMethod]],
+			MatchQ[Lookup[packet, Desiccate], True],
+				!NullQ[Lookup[packet, DesiccationMethod]],
+			True,
+				False
+		],
 		True
 	]
 };
@@ -1141,7 +1189,7 @@ validModelMaintenanceCalibrateDNASynthesizerQTests[packet:PacketP[Model[Maintena
 		True
 	],
 
-	(* DispenseTimes innner list is same length as Valves *)
+	(* DispenseTimes inner list is same length as Valves *)
 	Test[
 		"The length of each DispenseTimes element matches DispensePoints:",
 		MatchQ[Map[Length[#] &, Lookup[packet, DispenseTimes]], {Lookup[packet, DispensePoints]..}],
@@ -1149,6 +1197,26 @@ validModelMaintenanceCalibrateDNASynthesizerQTests[packet:PacketP[Model[Maintena
 	],
 
 	NotNullFieldTest[packet,{MinRSquared}]
+};
+
+(* ::Subsection::Closed:: *)
+(*validModelMaintenanceTreatWasteQTests*)
+
+
+validModelMaintenanceTreatWasteQTests[packet:PacketP[Model[Maintenance,TreatWaste]]]:={
+
+	(* fields not null *)
+	NotNullFieldTest[packet,
+		{
+			CleaningType
+		}
+	],
+	(* BleachTime is populated when CleaningType is Bleach *)
+	Test[
+		"BleachTime is populated when CleaningType is Bleach:",
+		If[MatchQ[Lookup[packet, CleaningType], Bleach], TimeQ[Lookup[packet, BleachTime]], True],
+		True
+	]
 };
 
 
@@ -1191,13 +1259,14 @@ registerValidQTestFunction[Model[Maintenance, CalibrateNMRShim],validModelMainte
 registerValidQTestFunction[Model[Maintenance, CalibrateMicroscope],validModelMaintenanceCalibrateMicroscopeQTests];
 registerValidQTestFunction[Model[Maintenance, CalibratePathLength],validModelMaintenanceCalibratePathLengthQTests];
 registerValidQTestFunction[Model[Maintenance, CalibratepH],validModelMaintenanceCalibratepHQTests];
+registerValidQTestFunction[Model[Maintenance, CalibratePlateReader],validModelMaintenanceCalibratePlateReaderQTests];
 registerValidQTestFunction[Model[Maintenance, CalibratePressure],validModelMaintenanceCalibratePressureQTests];
 registerValidQTestFunction[Model[Maintenance, CalibrateRelativeHumidity],validModelMaintenanceCalibrateRelativeHumidityQTests];
 registerValidQTestFunction[Model[Maintenance, CalibrateTemperature],validModelMaintenanceCalibrateTemperatureQTests];
 registerValidQTestFunction[Model[Maintenance, CalibrateVolume],validModelMaintenanceCalibrateVolumeQTests];
 registerValidQTestFunction[Model[Maintenance, CalibrateWeight],validModelMaintenanceCalibrateWeightQTests];
-registerValidQTestFunction[Model[Maintenance, CellBleach],validModelMaintenanceCellBleachQTests];
 registerValidQTestFunction[Model[Maintenance, Clean],validModelMaintenanceCleanQTests];
+registerValidQTestFunction[Model[Maintenance, Clean,Viscometer],validModelMaintenanceCleanViscometerQTests];
 registerValidQTestFunction[Model[Maintenance, Clean, DifferentialScanningCalorimeter],validModelMaintenanceCleanDSCQTests];
 registerValidQTestFunction[Model[Maintenance, Clean, Dispenser],validModelMaintenanceCleanDispenserQTests];
 registerValidQTestFunction[Model[Maintenance, Clean, ESISource],validModelMaintenanceCleanESISourceQTests];
@@ -1206,11 +1275,11 @@ registerValidQTestFunction[Model[Maintenance, Clean, OperatorCart],validModelMai
 registerValidQTestFunction[Model[Maintenance, Clean, PeptideSynthesizer],validModelMaintenanceCleanPeptideSynthesizerQTests];
 registerValidQTestFunction[Model[Maintenance, Clean, pHDetector],validModelMaintenanceCleanpHDetectorQTests];
 registerValidQTestFunction[Model[Maintenance, Clean, PlateWasher],validModelMaintenanceCleanPlateWasherQTests];
-registerValidQTestFunction[Model[Maintenance, CreateHamiltonLabware],validModelMaintenanceCreateHamiltonLabwareQTests];
 registerValidQTestFunction[Model[Maintenance, Decontaminate],validModelMaintenanceDecontaminateQTests];
 registerValidQTestFunction[Model[Maintenance, Decontaminate, HPLC],validModelMaintenanceDecontaminateHPLCQTests];
 registerValidQTestFunction[Model[Maintenance, Decontaminate, Incubator],validModelMaintenanceDecontaminateIncubatorQTests];
 registerValidQTestFunction[Model[Maintenance, Decontaminate, LiquidHandler],validModelMaintenanceDecontaminateLiquidHandlerQTests];
+registerValidQTestFunction[Model[Maintenance, Decontaminate, WaterPurifier],validModelMaintenanceDecontaminateWaterPurifierQTests];
 registerValidQTestFunction[Model[Maintenance, Defrost],validModelMaintenanceDefrostQTests];
 registerValidQTestFunction[Model[Maintenance, Dishwash],validModelMaintenanceDishwashQTests];
 registerValidQTestFunction[Model[Maintenance, Flush],validModelMaintenanceFlushQTests];
@@ -1238,9 +1307,11 @@ registerValidQTestFunction[Model[Maintenance, Replace, Seals],validModelMaintena
 registerValidQTestFunction[Model[Maintenance, Replace, Sensor],validModelMaintenanceReplaceSensorQTests];
 registerValidQTestFunction[Model[Maintenance, Replace, GasFilter],validModelMaintenanceReplaceGasFilterQTests];
 registerValidQTestFunction[Model[Maintenance, Replace, VacuumPump],validModelMaintenanceReplaceVacuumPumpQTests];
+registerValidQTestFunction[Model[Maintenance, Replace, WasteContainer], validModelMaintenanceReplaceWasteContainerQTests];
 registerValidQTestFunction[Model[Maintenance, StorageUpdate],validModelMaintenanceStorageUpdateQTests];
 registerValidQTestFunction[Model[Maintenance, Shipping],validModelMaintenanceShippingQTests];
 registerValidQTestFunction[Model[Maintenance, TrainInternalRobotArm],validModelMaintenanceTrainInternalRobotArmPositionQTests];
+registerValidQTestFunction[Model[Maintenance,TreatWaste],validModelMaintenanceTreatWasteQTests];
 registerValidQTestFunction[Model[Maintenance, UpdateLiquidHandlerDeckAccuracy],validModelMaintenanceUpdateLiquidHandlerDeckAccuracyQTests];
 registerValidQTestFunction[Model[Maintenance, AuditGasCylinders],validModelMaintenanceAuditGasCylindersQTests];
 

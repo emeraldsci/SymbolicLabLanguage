@@ -5,7 +5,7 @@
 
 
 DefineObjectType[Object[Qualification,Training,Decanting], {
-	Description->"A protocol that verifies an operator's ability to seperate liquid from solid by pouring.",
+	Description->"A protocol that verifies an operator's ability to separate liquid from solid by pouring.",
 	CreatePrivileges->None,
 	Cache->Session,
 	Fields -> {

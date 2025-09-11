@@ -41,7 +41,18 @@ DefineUsage[ExperimentLCMS,{
                 Type -> Object,
                 Pattern :> ObjectP[{Object[Container]}]
               ]
-            }
+            },
+            "Model Sample"->Widget[
+              Type -> Object,
+              Pattern :> ObjectP[Model[Sample]],
+              ObjectTypes -> {Model[Sample]},
+              OpenPaths -> {
+                {
+                  Object[Catalog, "Root"],
+                  "Materials"
+                }
+              }
+            ]
           ]
         },
         IndexName -> "experiment samples"
@@ -73,7 +84,7 @@ DefineUsage[ExperimentLCMS,{
   Tutorials->{
     "Sample Preparation"
   },
-  Author -> {"mohamad.zandian", "jireh.sacramento", "weiran.wang"}
+  Author -> {"ryan.bisbey", "jireh.sacramento", "weiran.wang"}
 }];
 
 
@@ -113,7 +124,12 @@ DefineUsage[ExperimentLCMSPreview,{
                 Type -> Object,
                 Pattern :> ObjectP[{Object[Container]}]
               ]
-            }
+            },
+            "Model Sample"->Widget[
+              Type -> Object,
+              Pattern :> ObjectP[Model[Sample]],
+              ObjectTypes -> {Model[Sample]}
+            ]
           ]
         },
         IndexName -> "experiment samples"
@@ -138,7 +154,7 @@ DefineUsage[ExperimentLCMSPreview,{
   Tutorials->{
     "Sample Preparation"
   },
-  Author -> {"mohamad.zandian", "jireh.sacramento", "weiran.wang"}
+  Author -> {"ryan.bisbey", "jireh.sacramento", "weiran.wang"}
 }];
 
 
@@ -178,7 +194,12 @@ DefineUsage[ExperimentLCMSOptions,{
                 Type -> Object,
                 Pattern :> ObjectP[{Object[Container]}]
               ]
-            }
+            },
+            "Model Sample"->Widget[
+              Type -> Object,
+              Pattern :> ObjectP[Model[Sample]],
+              ObjectTypes -> {Model[Sample]}
+            ]
           ]
         },
         IndexName -> "experiment samples"
@@ -203,7 +224,7 @@ DefineUsage[ExperimentLCMSOptions,{
   Tutorials->{
     "Sample Preparation"
   },
-  Author -> {"mohamad.zandian", "jireh.sacramento", "weiran.wang"}
+  Author -> {"ryan.bisbey", "jireh.sacramento", "weiran.wang"}
 }];
 
 
@@ -243,7 +264,12 @@ DefineUsage[ValidExperimentLCMSQ,{
                 Type -> Object,
                 Pattern :> ObjectP[{Object[Container]}]
               ]
-            }
+            },
+            "Model Sample"->Widget[
+              Type -> Object,
+              Pattern :> ObjectP[Model[Sample]],
+              ObjectTypes -> {Model[Sample]}
+            ]
           ]
         },
         IndexName -> "experiment samples"
@@ -268,5 +294,5 @@ DefineUsage[ValidExperimentLCMSQ,{
   Tutorials->{
     "Sample Preparation"
   },
-  Author -> {"mohamad.zandian", "jireh.sacramento", "weiran.wang"}
+  Author -> {"ryan.bisbey", "jireh.sacramento", "weiran.wang"}
 }];

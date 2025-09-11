@@ -101,8 +101,23 @@ DefineOptions[
 			Widget->Widget[Type->Number,Pattern:>GreaterEqualP[2,1]],
 			Category->"General"
 		},
-		FuntopiaSharedOptions,
-		SamplesInStorageOption
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelAmount,
+			{
+				ResolutionDescription -> "Automatically set to 35 Milliliter."
+			}
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Vessel, \"50mL Tube\"]."
+			}
+		],
+		NonBiologyFuntopiaSharedOptions,
+		SamplesInStorageOption,
+		SimulationOption
 	}
 ];
 
@@ -122,9 +137,9 @@ Error::ConfictingZeroOxygenCalibrant="The DissolvedOxygenCalibrationType is `1` 
 
 
 (*container overload function*)
-ExperimentMeasureDissolvedOxygen[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,sampleCache,
-	samplePreparationCache,containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests,updatedCache},
+ExperimentMeasureDissolvedOxygen[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
+		updatedSimulation,containerToSampleResult,containerToSampleOutput,containerToSampleSimulation,samples,sampleOptions,containerToSampleTests},
 	(* Make sure we're working with a list of options *)
 	listedOptions=ToList[myOptions];
 
@@ -138,31 +153,33 @@ ExperimentMeasureDissolvedOxygen[myContainers:ListableP[ObjectP[{Object[Containe
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentMeasureDissolvedOxygen,
 			ToList[myContainers],
-			ToList[myOptions]
+			ToList[myOptions],
+			DefaultPreparedModelAmount -> 35 Milliliter,
+			DefaultPreparedModelContainer -> Model[Container, Vessel, "50mL Tube"]
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests,containerToSampleSimulation}=containerToSampleOptions[
 			ExperimentMeasureDissolvedOxygen,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests,Simulation},
+			Simulation->updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -173,23 +190,17 @@ ExperimentMeasureDissolvedOxygen[myContainers:ListableP[ObjectP[{Object[Containe
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput,containerToSampleSimulation}=containerToSampleOptions[
 				ExperimentMeasureDissolvedOxygen,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output->{Result,Simulation},
+				Simulation->updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
-
-	(* Update our cache with our new simulated values. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
 
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToSampleResult,$Failed],
@@ -201,10 +212,10 @@ ExperimentMeasureDissolvedOxygen[myContainers:ListableP[ObjectP[{Object[Containe
 			Preview -> Null
 		},
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions, sampleCache}=containerToSampleOutput;
+		{samples,sampleOptions}=containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentMeasureDissolvedOxygen[samples,ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache,sampleCache}]]]
+		ExperimentMeasureDissolvedOxygen[samples,ReplaceRule[sampleOptions,Simulation->containerToSampleSimulation]]
 	]
 ];
 
@@ -217,15 +228,14 @@ ExperimentMeasureDissolvedOxygen[myContainers:ListableP[ObjectP[{Object[Containe
 (*main function*)
 ExperimentMeasureDissolvedOxygen[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,
-		myOptionsWithPreparedSamples,samplePreparationCache,safeOps,safeOpsTests,validLengths,validLengthTests,
+		myOptionsWithPreparedSamples,updatedSimulation,safeOps,safeOpsTests,validLengths,validLengthTests,
 		templatedOptions,templateTests,inheritedOptions,expandedSafeOps,cacheBall,resolvedOptionsResult,specifiedInstrumentModels,
 		resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests,objectSamplePacketFields,
 		(*Everything needed for downloading*)
 		mySamplesList,instrumentLookup,specifiedInstrumentObjects,potentialContainers,aliquotContainerLookup,
 		potentialContainersWAliquot,referenceBuffers, listedSamples,modelSamplePacketFields, allObjects, objectContainerFields, modelContainerFields,
-		optionsWithObjects,containerObjects, modelContainerObjects, modelSampleObjects, sampleObjects,
-		mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed,simulatedSampleQ,
-		objectsExistQs,objectsExistTests,userSpecifiedObjects
+		optionsWithObjects, userSpecifiedObjects, containerObjects, modelContainerObjects, modelSampleObjects, sampleObjects,
+		mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed
 	},
 
 	(* Determine the requested return value from the function *)
@@ -235,25 +245,26 @@ ExperimentMeasureDissolvedOxygen[mySamples:ListableP[ObjectP[Object[Sample]]],my
 	(* Determine if we should keep a running list of tests *)
 	gatherTests=MemberQ[output,Tests];
 
-	{listedSamples, listedOptions}=sanitizeInputs[ToList[mySamples], ToList[myOptions]];
+	(* Make sure we're working with a list of options and samples, and remove all temporal links *)
+	{listedSamples, listedOptions} = removeLinks[ToList[mySamples], ToList[myOptions]];
 
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentMeasureDissolvedOxygen,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -263,15 +274,9 @@ ExperimentMeasureDissolvedOxygen[mySamples:ListableP[ObjectP[Object[Sample]]],my
 	];
 
 	(* Call sanitize-inputs to clean any named objects *)
-	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentMeasureDissolvedOxygen,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentMeasureDissolvedOxygen,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
-
-	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
+	(* If the specified options don't match their patterns return $Failed *)
 	If[MatchQ[safeOps,$Failed],
 		Return[outputSpecification/.{
 			Result -> $Failed,
@@ -279,6 +284,12 @@ ExperimentMeasureDissolvedOxygen[mySamples:ListableP[ObjectP[Object[Sample]]],my
 			Options -> $Failed,
 			Preview -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentMeasureDissolvedOxygen,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentMeasureDissolvedOxygen,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -346,34 +357,6 @@ ExperimentMeasureDissolvedOxygen[mySamples:ListableP[ObjectP[Object[Sample]]],my
 		ObjectP[]
 	];
 
-	(* Check that the specified objects exist or are visible to the current user *)
-	simulatedSampleQ = Lookup[fetchPacketFromCache[#,samplePreparationCache],Simulated,False]&/@userSpecifiedObjects;
-	objectsExistQs = DatabaseMemberQ[PickList[userSpecifiedObjects,simulatedSampleQ,False]];
-
-	(* Build tests for object existence *)
-	objectsExistTests = If[gatherTests,
-		MapThread[
-			Test[StringTemplate["Specified object `1` exists in the database:"][#1],#2,True]&,
-			{PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]
-		];
-		Return[outputSpecification/.{
-			Result -> $Failed,
-			Tests -> Join[safeOpsTests,validLengthTests,templateTests,objectsExistTests],
-			Options -> $Failed,
-			Preview -> Null
-		}]
-	];
-
-
 	allObjects = DeleteDuplicates@Download[
 		Cases[
 			Flatten@Join[
@@ -401,7 +384,7 @@ ExperimentMeasureDissolvedOxygen[mySamples:ListableP[ObjectP[Object[Sample]]],my
 	objectContainerFields=Join[SamplePreparationCacheFields[Object[Container]], {VacuumCentrifugeCompatibility}];
 	modelContainerFields=Join[SamplePreparationCacheFields[Model[Container]], {VacuumCentrifugeCompatibility,Name,VolumeCalibrations,MaxVolume,Aperture,Dimensions,Sterile,Deprecated,Footprint}];
 
-	(*seperate the objects to download specific fields*)
+	(*separate the objects to download specific fields*)
 	containerObjects= Cases[allObjects,ObjectP[Object[Container]]];
 	modelContainerObjects= Cases[allObjects,ObjectP[Model[Container]]];
 	modelSampleObjects=Cases[allObjects,ObjectP[Model[Sample]]];
@@ -410,7 +393,7 @@ ExperimentMeasureDissolvedOxygen[mySamples:ListableP[ObjectP[Object[Sample]]],my
 
 	(* Download our information. *)
 	cacheBall=FlattenCachePackets[{
-		samplePreparationCache,
+		Lookup[safeOps,Cache,{}],
 		Quiet[Download[
 			{
 				mySamplesList,
@@ -446,18 +429,19 @@ ExperimentMeasureDissolvedOxygen[mySamples:ListableP[ObjectP[Object[Sample]]],my
 					modelSamplePacketFields
 				}
 			},
-			Cache->Flatten[{samplePreparationCache,Lookup[safeOps,Cache,{}]}],
+			Cache -> Lookup[safeOps, Cache, {}],
+			Simulation -> updatedSimulation,
 			Date -> Now
 			(*some containers don't have a link to VolumeCalibrations. Need to silence those.*)
 		],
-		{Download::FieldDoesntExist,Download::NotLinkField}]
+		{Download::FieldDoesntExist, Download::NotLinkField}]
 	}];
 
 
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 	(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentMeasureDissolvedOxygenOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveExperimentMeasureDissolvedOxygenOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -467,7 +451,7 @@ ExperimentMeasureDissolvedOxygen[mySamples:ListableP[ObjectP[Object[Sample]]],my
 
 	(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentMeasureDissolvedOxygenOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveExperimentMeasureDissolvedOxygenOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall,Simulation->updatedSimulation],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -493,8 +477,8 @@ ExperimentMeasureDissolvedOxygen[mySamples:ListableP[ObjectP[Object[Sample]]],my
 
 	(* Build packets with resources *)
 	{resourcePackets,resourcePacketTests}=If[gatherTests,
-		measureDissolvedOxygenResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,collapsedResolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{measureDissolvedOxygenResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,collapsedResolvedOptions,Cache->cacheBall],{}}
+		measureDissolvedOxygenResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,collapsedResolvedOptions,Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}],
+		{measureDissolvedOxygenResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,collapsedResolvedOptions,Cache->cacheBall,Simulation->updatedSimulation],{}}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -513,13 +497,14 @@ ExperimentMeasureDissolvedOxygen[mySamples:ListableP[ObjectP[Object[Sample]]],my
 			resourcePackets,
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			Priority->Lookup[safeOps,Priority],
  			StartDate->Lookup[safeOps,StartDate],
  			HoldOrder->Lookup[safeOps,HoldOrder],
  			QueuePosition->Lookup[safeOps,QueuePosition],
 			ConstellationMessage->Object[Protocol,MeasureDissolvedOxygen],
-			Cache->samplePreparationCache
+			Simulation->updatedSimulation
 		],
 		$Failed
 	];
@@ -540,48 +525,44 @@ ExperimentMeasureDissolvedOxygen[mySamples:ListableP[ObjectP[Object[Sample]]],my
 
 DefineOptions[
 	resolveExperimentMeasureDissolvedOxygenOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentMeasureDissolvedOxygenOptions]]:=Module[
-	{outputSpecification,output,gatherTests,cache,samplePrepOptions,measureDissolvedOxygenOptions,simulatedSamples,consolidateAliquots,
-	resolvedSamplePrepOptions,simulatedCache,measureDissolvedOxygenOptionsAssociation,invalidInputs,invalidOptions,acquisitionTimeLookup,objectSamplePacketFields,
+	{
+		outputSpecification,output,gatherTests,cache,simulation,samplePrepOptions,measureDissolvedOxygenOptions,simulatedSamples,
+		consolidateAliquots,resolvedSamplePrepOptions,updatedSimulation,measureDissolvedOxygenOptionsAssociation,invalidInputs,
+		invalidOptions,acquisitionTimeLookup,objectSamplePacketFields,
 
 		(*download variables*)
-		cacheFailedRemoved,
-		specifiedInstrumentObjects,potentialContainers,potentialContainersWAliquot,referenceBuffers,
-		samplePackets,containerModelPackets,allDownloadValues,allSampleDownloadValues,allInstrumentObjDownloadValues,allInstrumentModelDownloadValues,potentialContainerDownloadValues,
-		referenceObjectDownloadValues,referenceModelDownloadValues,
-		instrumentObjectPackets,volumeCalibrationPackets,latestVolumeCalibrationPacket,combinedContainerPackets,instrumentModelPackets,potentialContainerPackets,
-		potentialContainerModelPackets,firstPotentialCalibration,combinedPotentialContainerPackets,fastTrack,samplePreparation,simulatedContainers,
+		cacheFailedRemoved,specifiedInstrumentObjects,potentialContainers,potentialContainersWAliquot,referenceBuffers,
+		samplePackets,containerModelPackets,allDownloadValues,allSampleDownloadValues,allInstrumentObjDownloadValues,
+		allInstrumentModelDownloadValues,potentialContainerDownloadValues,referenceObjectDownloadValues,referenceModelDownloadValues,
+		instrumentObjectPackets,volumeCalibrationPackets,latestVolumeCalibrationPacket,combinedContainerPackets,instrumentModelPackets,
+		potentialContainerPackets,potentialContainerModelPackets,firstPotentialCalibration,combinedPotentialContainerPackets,
+		fastTrack,samplePreparation,simulatedContainers,
 
 		(*Input validation variables*)
 		lowestVolume,lowVolumeBool,lowVolumePackets,lowVolumeInvalidInputs,lowVolumeInputsTests,lowVolumeOptionBool,
-		lowVolumeOptionPackets,lowVolumeOptionInvalidInputs,lowVolumeOptionInputsTests,discardedSampleBool,discardedSamplePackets,discardedInvalidInputs,discardedTests,
-		instrumentLookup,volumeMeasuredBool,noVolumePackets,noVolumeInputs,noVolumeInputsTests,
-		aliquotLookup,aliquotBool,aliquotVolumeLookup, instruments,
-		dissolvedOxygenInstrumentsModels,aliquotOptionNames, aliquotTuples, deprecatedInstrumentQ, deprecatedInstrumentOptions, deprecatedInstrumentTest,
-		missingZeroOxygenCalibrantOptions, minReach,
-		missingZeroOxygenCalibrantInvalidOptions, missingZeroOxygenCalibrantTests, conflictingZeroOxygenCalibrantionOptions, conflictingZeroOxygenCalibrantionTests,
-		smallestAperture, stirWidth, solidSamplePackets,solidInvalidInputs,solidTest,referencePackets,
-		solidOptionPackets,solidInvalidOptions,solidOptionTest, conflictingZeroOxygenCalibrantionInvalidOptions,
-
+		lowVolumeOptionPackets,lowVolumeOptionInvalidInputs,lowVolumeOptionInputsTests,discardedSampleBool,discardedSamplePackets,
+		discardedInvalidInputs,discardedTests,instrumentLookup,volumeMeasuredBool,noVolumePackets,noVolumeInputs,noVolumeInputsTests,
+		aliquotLookup,aliquotBool,aliquotVolumeLookup, instruments,dissolvedOxygenInstrumentsModels,aliquotOptionNames,
+		aliquotTuples,deprecatedInstrumentQ,deprecatedInstrumentOptions,deprecatedInstrumentTest,missingZeroOxygenCalibrantOptions,
+		minReach,missingZeroOxygenCalibrantInvalidOptions, missingZeroOxygenCalibrantTests, conflictingZeroOxygenCalibrantionOptions,
+		conflictingZeroOxygenCalibrantionTests,smallestAperture, stirWidth, solidSamplePackets,solidInvalidInputs,solidTest,
+		referencePackets,solidOptionPackets,solidInvalidOptions,solidOptionTest, conflictingZeroOxygenCalibrantionInvalidOptions,
 
 		(*for the resolving*)
-		mapThreadFriendlyOptions,resolvedzeroOxygenCalibrant,
-		aliquotContainerLookup,aliquotVolumeList,potentialAliquotContainersList,
-		minDepth,minVol,
-		instrument,
-		oxygenSaturatedCalibrant, numberOfReadings, stir, sampleConductivities,modelConductivityPackets, resolveddissolvedOxygenCalibrationType,
-
-		targetContainers,resolvedAliquotOptions,alreadyInTargetContainerBools,
+		mapThreadFriendlyOptions,resolvedzeroOxygenCalibrant,aliquotContainerLookup,aliquotVolumeList,potentialAliquotContainersList,
+		minDepth,minVol,instrument,oxygenSaturatedCalibrant, numberOfReadings, stir, sampleConductivities,modelConductivityPackets,
+		resolveddissolvedOxygenCalibrationType, targetContainers,resolvedAliquotOptions,alreadyInTargetContainerBools,
 
 		(*for final resolution*)
-		requiredAliquotAmounts,
-		name, confirm, template, samplesInStorageCondition, originalCache, operator, parentProtocol, upload, outputOption, email, imageSample,resolvedEmail,resolvedImageSample,
-		 numberOfReplicates,allTests,testsRule,resolvedOptions,resultRule,resolvedPostProcessingOptions,
-		compatibleMaterialsBool, compatibleMaterialsTests,
-		compatibleMaterialsInvalidOption,validContainerStorageConditionBool, validContainerStorageConditionTests,validContainerStoragConditionInvalidOptions
+		requiredAliquotAmounts,name,confirm,canaryBranch,template,samplesInStorageCondition,originalCache,operator,parentProtocol,
+		upload,outputOption,email,imageSample,resolvedEmail,resolvedImageSample,numberOfReplicates,allTests,testsRule,
+		resolvedOptions,resultRule,resolvedPostProcessingOptions,compatibleMaterialsBool, compatibleMaterialsTests,
+		compatibleMaterialsInvalidOption,validContainerStorageConditionBool,validContainerStorageConditionTests,
+		validContainerStoragConditionInvalidOptions
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -595,15 +576,16 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 
 	(* Fetch our cache from the parent function. *)
 	cache=Lookup[ToList[myResolutionOptions],Cache,{}];
+	simulation=Lookup[ToList[myResolutionOptions],Simulation,{}];
 
 	(*There is a chance that the container has no volume calibration. Remove such and check if we can resolve SamplePrepOptions*)
 	cacheFailedRemoved = Cases[cache,Except[$Failed]];
 
-	(* Seperate out our MeasureDissolvedOxygen options from our Sample Prep options. *)
+	(* Separate out our MeasureDissolvedOxygen options from our Sample Prep options. *)
 	{samplePrepOptions,measureDissolvedOxygenOptions}=splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{simulatedSamples,resolvedSamplePrepOptions,simulatedCache}=resolveSamplePrepOptions[ExperimentMeasureDissolvedOxygen,mySamples,samplePrepOptions,Cache->cacheFailedRemoved];
+	{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation}=resolveSamplePrepOptionsNew[ExperimentMeasureDissolvedOxygen,mySamples,samplePrepOptions,Cache->cacheFailedRemoved,Simulation->simulation];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
 	measureDissolvedOxygenOptionsAssociation = Association[measureDissolvedOxygenOptions];
@@ -641,44 +623,47 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 	objectSamplePacketFields=Packet@@Union[Flatten[{Conductivity,IncompatibleMaterials,SamplePreparationCacheFields[Object[Sample]]}]];
 
 	(* Extract the packets that we need from our downloaded cache. *)
-	allDownloadValues=Replace[Quiet[
+	allDownloadValues=Replace[
+		Quiet[
 			Download[
-			{
-				simulatedSamples,
-				dissolvedOxygenInstrumentsModels,
-				specifiedInstrumentObjects,
-				potentialContainersWAliquot,
-				Cases[referenceBuffers,ObjectP[Object[Sample]]],
-				Cases[referenceBuffers,ObjectP[Model[Sample]]]
-			},
-			{
 				{
-					objectSamplePacketFields,
-					Packet[Container[Model][{Name,VolumeCalibrations,MaxVolume, Aperture, Dimensions}]],
-					Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,CalibrationFunction,DateCreated}]],
-					Packet[Model[{Conductivity}]]
+					simulatedSamples,
+					dissolvedOxygenInstrumentsModels,
+					specifiedInstrumentObjects,
+					potentialContainersWAliquot,
+					Cases[referenceBuffers,ObjectP[Object[Sample]]],
+					Cases[referenceBuffers,ObjectP[Model[Sample]]]
 				},
 				{
-					Packet[Name,Object,Dimensions],
-					Packet[AssociatedAccessories[[All, 1]][{Object,WettedMaterials}]]
+					{
+						objectSamplePacketFields,
+						Packet[Container[Model][{Name,VolumeCalibrations,MaxVolume, Aperture, Dimensions}]],
+						Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,CalibrationFunction,DateCreated}]],
+						Packet[Model[{Conductivity}]]
+					},
+					{
+						Packet[Name,Object,Dimensions],
+						Packet[AssociatedAccessories[[All, 1]][{Object,WettedMaterials}]]
+					},
+					{
+						Packet[Name,Model]
+					},
+					{
+						Packet[Name, MaxVolume, Aperture, Dimensions],
+						Packet[VolumeCalibrations[{LiquidLevelDetectorModel,CalibrationFunction,DateCreated}]]
+					},
+					{
+						objectSamplePacketFields
+					},
+					{
+						Packet[TransportTemperature,Name,Deprecated,Sterile,LiquidHandlerIncompatible,Tablet,SolidUnitWeight,State]
+					}
 				},
-				{
-					Packet[Name,Model]
-				},
-				{
-					Packet[Name, MaxVolume, Aperture, Dimensions],
-					Packet[VolumeCalibrations[{LiquidLevelDetectorModel,CalibrationFunction,DateCreated}]]
-				},
-				{
-					objectSamplePacketFields
-				},
-				{
-					Packet[TransportWarmed,Name,Deprecated,Sterile,LiquidHandlerIncompatible,Tablet,TabletWeight,State]
-				}
-			},
-			Cache->simulatedCache
-		]
-	],$Failed->Nothing,1];
+				Cache->cacheFailedRemoved,
+				Simulation->updatedSimulation
+			]
+		],
+		$Failed->Nothing,1];
 	(*split the download packet based on object type*)
 	{
 		allSampleDownloadValues,
@@ -764,8 +749,9 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 		If[NullQ[#],
 			False,
 			MatchQ[#,KeyValuePattern[Status->Discarded]]
-		]
-				&,samplePackets];
+		]&,
+		samplePackets
+	];
 
 	(* Get the sample packets that are discarded. *)
 	discardedSamplePackets=PickList[samplePackets,discardedSampleBool,True];
@@ -779,7 +765,7 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[discardedInvalidInputs]>0&&!gatherTests,
-		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -789,13 +775,13 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 			(* when not a single sample is discarded, we know we don't need to throw any failing test *)
 				Nothing,
 			(* otherwise, we throw one failing test for all discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" is/are not discarded:",True,False]
+				Test["The input sample(s) "<>ObjectToString[discardedInvalidInputs,Simulation -> updatedSimulation]<>" is/are not discarded:",True,False]
 			];
 			passingTest=If[Length[discardedInvalidInputs]==Length[simulatedSamples],
 			(* when ALL samples are discarded, we know we don't need to throw any passing test *)
 				Nothing,
 			(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs],Cache->simulatedCache]<>" is/are not discarded:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs],Simulation -> updatedSimulation]<>" is/are not discarded:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -816,7 +802,7 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 
 	(*If there are invalid inputs and we are throwing messages (not gathering tests), throw an error message and keep track of the invalid inputs*)
 	If[Length[solidSamplePackets]>0&&!gatherTests,
-		Message[Error::SolidSamplesUnsupported,ObjectToString[solidInvalidInputs,Cache->simulatedCache],ExperimentMeasureDissolvedOxygen]
+		Message[Error::SolidSamplesUnsupported,ObjectToString[solidInvalidInputs,Simulation -> updatedSimulation],ExperimentMeasureDissolvedOxygen]
 	];
 
 	(*If we are gathering tests, create a passing and/or failing test with the appropriate result*)
@@ -824,11 +810,11 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[solidInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[solidInvalidInputs,Cache->simulatedCache]<>" are not solid:",True,False]
+				Test["Our input samples "<>ObjectToString[solidInvalidInputs,Simulation -> updatedSimulation]<>" are not solid:",True,False]
 			];
-			passingTest=If[Length[solidInvalidInputs]==Length[flatSimulatedSamples],
+			passingTest=If[Length[solidInvalidInputs]==Length[Flatten[ToList@simulatedSamples]],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[flatSimulatedSamples,solidInvalidInputs],Cache->simulatedCache]<>" are not solid:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[Flatten[ToList@simulatedSamples],solidInvalidInputs],Simulation -> updatedSimulation]<>" are not solid:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -848,7 +834,7 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 
 	(*If there are invalid inputs and we are throwing messages (not gathering tests), throw an error message and keep track of the invalid inputs*)
 	If[Length[solidOptionPackets]>0&&!gatherTests,
-		Message[Error::SolidSamplesUnsupported,ObjectToString[solidInvalidOptions,Cache->simulatedCache],ExperimentMeasureDissolvedOxygen]
+		Message[Error::SolidSamplesUnsupported,ObjectToString[solidInvalidOptions,Simulation -> updatedSimulation],ExperimentMeasureDissolvedOxygen]
 	];
 
 	(*If we are gathering tests, create a passing and/or failing test with the appropriate result*)
@@ -856,11 +842,11 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[solidInvalidOptions]==0,
 				Nothing,
-				Test["Our calibrants "<>ObjectToString[solidInvalidOptions,Cache->simulatedCache]<>" are not solid:",True,False]
+				Test["Our calibrants "<>ObjectToString[solidInvalidOptions,Simulation -> updatedSimulation]<>" are not solid:",True,False]
 			];
 			passingTest=If[Length[solidInvalidInputs]!=0,
 				Nothing,
-				Test["Our calibrants "<>ObjectToString[Complement[solidInvalidOptions,solidInvalidInputs],Cache->simulatedCache]<>" are not solid:",True,True]
+				Test["Our calibrants "<>ObjectToString[Complement[solidInvalidOptions,solidInvalidInputs],Simulation -> updatedSimulation]<>" are not solid:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -876,7 +862,7 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[deprecatedInstrumentQ&&!gatherTests,
-		Message[Error::DeprecatedInstrumentModel,ObjectToString[instrumentLookup,Cache->simulatedCache]]
+		Message[Error::DeprecatedInstrumentModel,ObjectToString[instrumentLookup,Simulation -> updatedSimulation]]
 	];
 
 	deprecatedInstrumentOptions=If[deprecatedInstrumentQ,{Instrument},{}];
@@ -911,13 +897,13 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 				(* when not a single sample is chemically incompatible, we know we don't need to throw any failing test *)
 				Nothing,
 				(* otherwise, we throw one failing test for all discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[noVolumeInputs,Cache->simulatedCache]<>" have an associated volume value:",True,False]
+				Test["The input sample(s) "<>ObjectToString[noVolumeInputs,Simulation -> updatedSimulation]<>" have an associated volume value:",True,False]
 			];
 			passingTest=If[Length[noVolumeInputs]==Length[simulatedSamples],
 				(* when ALL samples are chemically incompatible, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,noVolumeInputs],Cache->simulatedCache]<>" have an associated volume value:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,noVolumeInputs],Simulation -> updatedSimulation]<>" have an associated volume value:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -927,7 +913,7 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 
 	(*throw the error if we're not gathering tests*)
 	If[Length[noVolumeInputs]>0&&!gatherTests,
-		Message[Error::NoVolume,ObjectToString[noVolumeInputs,Cache->simulatedCache]]
+		Message[Error::NoVolume,ObjectToString[noVolumeInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* 4. LOW VOLUME SAMPLES *)
@@ -959,7 +945,7 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 
 	(* If there are low volumes and we are throwing messages, throw an error message *)
 	If[Length[lowVolumeOptionInvalidInputs]>0&&!gatherTests,
-		Message[Error::InsufficientVolume,ObjectToString[lowVolumeOptionInvalidInputs,Cache->simulatedCache],ObjectToString[lowestVolume]]
+		Message[Error::InsufficientVolume,ObjectToString[lowVolumeOptionInvalidInputs,Simulation -> updatedSimulation],ObjectToString[lowestVolume]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1010,13 +996,14 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 	];
 
 	(*Look up the AliquotAmount or take the Assay Volume if that's specified instead*)
-	aliquotVolumeLookup= MapThread[
-	Function[{assayVolume,aliquotAmount},
-	  If[MatchQ[assayVolume,GreaterP[0*Milliliter]],
-		assayVolume,
-		aliquotAmount
-	  ]
-	],Lookup[samplePrepOptions, {AssayVolume, AliquotAmount}]
+	aliquotVolumeLookup = MapThread[
+		Function[{assayVolume,aliquotAmount},
+			If[MatchQ[assayVolume,GreaterP[0*Milliliter]],
+			assayVolume,
+			aliquotAmount
+			]
+		],
+		Lookup[samplePrepOptions, {AssayVolume, AliquotAmount}]
 	];
 
 	(*-- CONFLICTING OPTIONS CHECKS --*)
@@ -1089,7 +1076,7 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 
 	conflictingZeroOxygenCalibrantionInvalidOptions =If[
 		Length[conflictingZeroOxygenCalibrantionOptions]>0&&!gatherTests,
-		Message[Error::ConfictingZeroOxygenCalibrant,First[conflictingZeroOxygenCalibrantionOptions],ObjectToString[Last[conflictingZeroOxygenCalibrantionOptions],Cache->simulatedCache]];
+		Message[Error::ConfictingZeroOxygenCalibrant,First[conflictingZeroOxygenCalibrantionOptions],ObjectToString[Last[conflictingZeroOxygenCalibrantionOptions],Simulation -> updatedSimulation]];
 		{DissolvedOxygenCalibrationType,ZeroOxygenCalibrant},
 		{}
 	];
@@ -1174,12 +1161,10 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 		Function[
 			{
 				samplePacket,
-				myMapThreadOptions,
 				sampleContainerPacket,
 				aliquotVolume,
 				aliquotOption,
 				aliquotContainer,
-				sampleConductivity,
 				stir
 			},
 			Module[{resolvedAliquotVolume,resolvedAliquotContainer},
@@ -1199,7 +1184,7 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 
 						(*if only the container specified, or if nothing is specified, find the volume based on the calibration function, if it exists*)
 						{False, _},
-						Module[{containerPacket, calibrationFunction, bestVolume, containerHeight, minLiquidHeight},
+						Module[{containerPacket, bestVolume},
 							(*extract the packet *)
 							(* if no container was specified, send in our lowest volume so we get our smallest standard container *)
 							containerPacket = If[MatchQ[aliquotContainer,ObjectP[]],
@@ -1240,12 +1225,10 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 		(*Everything needed to resolve our experimental options.*)
 		{
 			samplePackets,
-			mapThreadFriendlyOptions,
 			combinedContainerPackets,
 			aliquotVolumeLookup,
 			aliquotBool,
 			aliquotContainerLookup,
-			sampleConductivities,
 			stir
 		}
 	]];
@@ -1255,8 +1238,8 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 	(* --- Call CompatibleMaterialsQ to determine if the samples are chemically compatible with the instrument --- *)
 	(* call CompatibleMaterialsQ and figure out if materials are compatible *)
 	{compatibleMaterialsBool, compatibleMaterialsTests} = If[gatherTests,
-		CompatibleMaterialsQ[instrument, DeleteCases[Join[simulatedSamples,{oxygenSaturatedCalibrant,resolvedzeroOxygenCalibrant}],Null|Air], Output -> {Result, Tests}, Cache -> simulatedCache],
-		{CompatibleMaterialsQ[instrument,DeleteCases[Join[simulatedSamples,{oxygenSaturatedCalibrant,resolvedzeroOxygenCalibrant}],Null|Air], Messages -> Not[gatherTests], Cache -> simulatedCache], {}}
+		CompatibleMaterialsQ[instrument, DeleteCases[Join[simulatedSamples,{oxygenSaturatedCalibrant,resolvedzeroOxygenCalibrant}],Null|Air], Output -> {Result, Tests}, Simulation -> updatedSimulation, Cache -> cacheFailedRemoved],
+		{CompatibleMaterialsQ[instrument,DeleteCases[Join[simulatedSamples,{oxygenSaturatedCalibrant,resolvedzeroOxygenCalibrant}],Null|Air], Messages -> Not[gatherTests], Simulation -> updatedSimulation, Cache -> cacheFailedRemoved], {}}
 	];
 
 	(* if the materials are incompatible, then the Instrument is invalid *)
@@ -1271,8 +1254,8 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 
 	(* Check whether the samples are ok *)
 	{validContainerStorageConditionBool, validContainerStorageConditionTests} = If[gatherTests,
-		ValidContainerStorageConditionQ[simulatedSamples, simulatedContainers, samplesInStorageCondition, Output -> {Result, Tests}, Cache -> simulatedCache],
-		{ValidContainerStorageConditionQ[simulatedSamples, simulatedContainers,samplesInStorageCondition, Output -> Result, Cache ->simulatedCache], {}}
+		ValidContainerStorageConditionQ[simulatedSamples, simulatedContainers, samplesInStorageCondition, Output -> {Result, Tests}, Simulation -> updatedSimulation, Cache -> cacheFailedRemoved],
+		{ValidContainerStorageConditionQ[simulatedSamples, simulatedContainers,samplesInStorageCondition, Output -> Result, Simulation -> updatedSimulation, Cache -> cacheFailedRemoved], {}}
 	];
 
 	validContainerStoragConditionInvalidOptions = If[MemberQ[validContainerStorageConditionBool, False], SamplesInStorageCondition, Nothing];
@@ -1298,7 +1281,8 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 		mySamples,
 		simulatedSamples,
 		ReplaceRule[myOptions, resolvedSamplePrepOptions],
-		Cache->simulatedCache,
+		Cache->cacheFailedRemoved,
+		Simulation -> updatedSimulation,
 		AllowSolids -> False,
 		RequiredAliquotContainers->potentialAliquotContainersList,
 		RequiredAliquotAmounts->(Quiet[AchievableResolution[#],{Error::MinimumAmount,Warning::AmountRounded}]&/@requiredAliquotAmounts)
@@ -1327,7 +1311,7 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 
 	(* If there are low volumes and we are throwing messages, throw an error message *)
 	If[Length[lowVolumeInvalidInputs]>0&&!gatherTests,
-		Message[Error::InsufficientVolume,ObjectToString[lowVolumeInvalidInputs,Cache->simulatedCache],ObjectToString[lowestVolume]]
+		Message[Error::InsufficientVolume,ObjectToString[lowVolumeInvalidInputs,Simulation -> updatedSimulation],ObjectToString[lowestVolume]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1337,13 +1321,13 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 				(* when not a single sample is chemically incompatible, we know we don't need to throw any failing test *)
 				Nothing,
 				(* otherwise, we throw one failing test for all discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[lowVolumeInvalidInputs,Cache->simulatedCache]<>" do have sufficient volume for measurement:",True,False]
+				Test["The input sample(s) "<>ObjectToString[lowVolumeInvalidInputs,Simulation -> updatedSimulation]<>" do have sufficient volume for measurement:",True,False]
 			];
 			passingTest=If[Length[noVolumeInputs]==Length[simulatedSamples],
 				(* when ALL samples are chemically incompatible, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,lowVolumeInvalidInputs],Cache->simulatedCache]<>" do have sufficient volume for measurement:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,lowVolumeInvalidInputs],Simulation -> updatedSimulation]<>" do have sufficient volume for measurement:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -1371,7 +1355,7 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTests,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -1380,7 +1364,7 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 	];
 
 	(* pull out all the shared options from the input options *)
-	{name, confirm, template, originalCache, operator, parentProtocol, upload, outputOption, email, imageSample,samplePreparation(*), inSitu*)} = Lookup[myOptions, {Name, Confirm, Template, Cache, Operator, ParentProtocol, Upload, Output, Email, ImageSample,PreparatoryUnitOperations(*), InSitu*)}];
+	{name, confirm, canaryBranch, template, originalCache, operator, parentProtocol, upload, outputOption, email, imageSample,samplePreparation(*), inSitu*)} = Lookup[myOptions, {Name, Confirm, CanaryBranch, Template, Cache, Operator, ParentProtocol, Upload, Output, Email, ImageSample,PreparatoryUnitOperations(*), InSitu*)}];
 
 	(* resolve the Email option if Automatic *)
 	resolvedEmail = If[!MatchQ[email, Automatic],
@@ -1412,6 +1396,7 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 		Stir -> stir,
 		NumberOfReplicates -> numberOfReplicates,
 		Confirm -> confirm,
+		CanaryBranch -> canaryBranch,
 		ImageSample -> resolvedImageSample,
 		Name -> name,
 		Template -> template,
@@ -1426,8 +1411,7 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 		resolvedAliquotOptions,
 		resolvedPostProcessingOptions,
 		FastTrack -> fastTrack,
-		PreparatoryUnitOperations->samplePreparation,
-		PreparatoryPrimitives->Lookup[myOptions,PreparatoryPrimitives]
+		PreparatoryUnitOperations->samplePreparation
 	}];
 
 	(* combine all the tests together. Make sure we only have tests in the final lists (no Nulls etc) *)
@@ -1471,22 +1455,18 @@ resolveExperimentMeasureDissolvedOxygenOptions[mySamples:{ObjectP[Object[Sample]
 DefineOptions[measureDissolvedOxygenResourcePackets,
 	Options:>{
 		CacheOption,
+		SimulationOption,
 		HelperOutputOption
 	}
 ];
 
 
 measureDissolvedOxygenResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{___Rule},myResolvedOptions:{___Rule},myCollapsedResolvedOptions:{___Rule},myOptions:OptionsPattern[]]:=Module[
-	{outputSpecification, output, gatherTests, cache, samplesWithoutLinks, probeTypes, instrument, instrumentObjects,
-		probePositions, aquisitionTimes, dropletPositions, probeSamples, dropletSamples, probeInstruments, dropletInstruments, groupedProbeResult, groupedProbeSamples, probeNumberOfAcquisitions,
-		groupedProbeInstruments, groupedProbePositions, probeResult, batchSamples, batchLengths, uuid, id, instrumentResource, optionsWithReplicates, instrumentResources, probeBatchLengths,
-		probeInstrumentResources, groupedDropletResult, groupedDropletSamples, groupedDropletInstruments, groupedDropletPositions, dropletResult, dropletBatchLengths,
-		dropletInstrumentResources, insitu, lowCalibrationBufferProbe, mediumCalibrationBufferProbe, highCalibrationBufferProbe, lowCalibrationBufferDroplet, mediumCalibrationBufferDroplet,
-		highCalibrationBufferDroplet, protocolPacket, probeRecoupSample, dropletRecoupSample, recoupSample, numberOfReplicates, samplesWithReplicates, washSolution, probeDirtyWashSolution,
-		probeCleanWashSolution, dropletWashSolution, probeDirtyPipetteBulb, probeCleanPipetteBulb, dropletRelease, resourceIndices, dropletSelect, probeRelease, probeSelect, allResourceBlobs,
-		fulfillable, frqTests, resultRule, testsRule, probes, temperatureCorrections, probeSampleNames, probeObjects, groupedProbes, probesForUpload, probeForGroup,
-		probeMeasurementOrder, orderedProbeSamples,oxygenSaturatedCalibrant,zeroOxygenCalibrant,saturatedCalibrantObject,zeroOxygenCalibrantObject,saturatedCalibrantResource,
-		zeroOxygenCalibrantResource,washSolutionResource,washContainerResource,aquisitionTime
+	{
+		outputSpecification, output, gatherTests, cache, simulation, samplesWithoutLinks, instrument, instrumentObjects,
+		instrumentResource, optionsWithReplicates, protocolPacket, numberOfReplicates, samplesWithReplicates, allResourceBlobs,
+		fulfillable, frqTests, resultRule, testsRule, oxygenSaturatedCalibrant, zeroOxygenCalibrant, saturatedCalibrantObject,
+		zeroOxygenCalibrantObject, saturatedCalibrantResource, zeroOxygenCalibrantResource, washContainerResource, aquisitionTime
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -1499,6 +1479,7 @@ measureDissolvedOxygenResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUn
 
 	(* Fetch our cache from the parent function. *)
 	cache=Lookup[ToList[myOptions],Cache];
+	simulation=Lookup[ToList[myOptions],Simulation];
 
 	(* Get rid of the links in mySamples. *)
 	samplesWithoutLinks=mySamples/.{link_Link:>Download[link, Object]};
@@ -1559,15 +1540,15 @@ measureDissolvedOxygenResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUn
 			Replace[Stir]->Lookup[optionsWithReplicates,Stir],
 
 			Replace[Checkpoints]->{
-				{"Picking Resources",10 Minute,"Samples required to execute this protocol are gathered from storage.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10 Minute]},
-				{"Preparing Samples",0 Minute,"Preprocessing, such as thermal incubation/mixing, centrifugation, filteration, and aliquoting, is performed.", Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->0 Minute]},
-				{"Measuring Dissolved Oxygen",aquisitionTime,"The dissolved oxygen of the requested samples is measured.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->aquisitionTime]},
-				{"Sample Postprocessing",0 Minute,"The samples are imaged and volumes are measured.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->0 Minute]}
+				{"Picking Resources",10 Minute,"Samples required to execute this protocol are gathered from storage.",Resource[Operator->$BaselineOperator,Time->10 Minute]},
+				{"Preparing Samples",0 Minute,"Preprocessing, such as incubation/mixing, centrifugation, filtration, and aliquoting, is performed.", Resource[Operator->$BaselineOperator,Time->0 Minute]},
+				{"Measuring Dissolved Oxygen",aquisitionTime,"The dissolved oxygen of the requested samples is measured.",Resource[Operator->$BaselineOperator,Time->aquisitionTime]},
+				{"Sample Postprocessing",0 Minute,"The samples are imaged and volumes are measured.",Resource[Operator->$BaselineOperator,Time->0 Minute]}
 			},
 			ResolvedOptions->myCollapsedResolvedOptions,
 			UnresolvedOptions->myUnresolvedOptions
 		|>,
-		populateSamplePrepFields[mySamples,myResolvedOptions,Cache->cache]
+		populateSamplePrepFields[mySamples,myResolvedOptions,Cache->cache,Simulation->simulation]
 	];
 
 	(* get all the resource "symbolic representations" *)
@@ -1579,9 +1560,9 @@ measureDissolvedOxygenResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUn
 		MatchQ[$ECLApplication,Engine],
 			{True,{}},
 		gatherTests,
-			Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cache],
+			Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cache,Simulation->simulation],
 		True,
-			{Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->Not[gatherTests],Cache->cache],Null}
+			{Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->Not[gatherTests],Cache->cache,Simulation->simulation],Null}
 	];
 
 	(* generate the tests rule *)
@@ -1679,13 +1660,13 @@ DefineOptions[ExperimentMeasureDissolvedOxygenOptions,
 ];
 
 
-ExperimentMeasureDissolvedOxygenOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ExperimentMeasureDissolvedOxygenOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,noOutputOptions,options},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	(* get only the options *)
@@ -1703,7 +1684,7 @@ ExperimentMeasureDissolvedOxygenOptions[myInputs:ListableP[ObjectP[{Object[Conta
 (* ::Subsection::Closed:: *)
 (*ExperimentMeasureDissolvedOxygenPreview*)
 
-ExperimentMeasureDissolvedOxygenPreview[myInput:ListableP[ObjectP[{Object[Container]}]] | ListableP[ObjectP[Object[Sample]]|_String],myOptions:OptionsPattern[ExperimentMeasureDissolvedOxygen]]:=
+ExperimentMeasureDissolvedOxygenPreview[myInput:ListableP[ObjectP[{Object[Container],Model[Sample]}]] | ListableP[ObjectP[Object[Sample]]|_String],myOptions:OptionsPattern[ExperimentMeasureDissolvedOxygen]]:=
 		ExperimentMeasureDissolvedOxygen[myInput,Append[ToList[myOptions],Output->Preview]];
 
 
@@ -1717,14 +1698,14 @@ DefineOptions[ValidExperimentMeasureDissolvedOxygenQ,
 ];
 
 (* currently we only accept either a list of containers, or a list of samples *)
-ValidExperimentMeasureDissolvedOxygenQ[myInput:ListableP[ObjectP[{Object[Container]}]] | ListableP[ObjectP[Object[Sample]]|_String],myOptions:OptionsPattern[ValidExperimentMeasureDissolvedOxygenQ]]:=Module[
+ValidExperimentMeasureDissolvedOxygenQ[myInput:ListableP[ObjectP[{Object[Container],Model[Sample]}]] | ListableP[ObjectP[Object[Sample]]|_String],myOptions:OptionsPattern[ValidExperimentMeasureDissolvedOxygenQ]]:=Module[
 	{listedOptions, listedInput, preparedOptions, filterTests, initialTestDescription, allTests, verbose, outputFormat},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 	listedInput = ToList[myInput];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentMeasureDissolvedOxygen *)

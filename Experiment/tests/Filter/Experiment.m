@@ -10,195 +10,174 @@
 
 DefineTests[ExperimentFilter,
 	{
-
 		(* ===Basic===*)
-		Example[
-			{Basic,"Sample with volumes larger than 50mL will be filtered using a peristaltic pump and a filter housing:"},
+		Example[{Basic, "Sample with volumes larger than 50mL will be filtered using a peristaltic pump and a filter housing:"},
 			Lookup[
-				ExperimentFilter[Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],Output->Options],
-				{Instrument,FiltrationType}
+				ExperimentFilter[Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID], Output -> Options],
+				{Instrument, FiltrationType}
 			],
-			{ObjectP[Model[Instrument,PeristalticPump]],PeristalticPump}
+			{ObjectP[Model[Instrument, PeristalticPump]], PeristalticPump}
 		],
-		Test["Samples with volumes larger than 50mL will be filtered using a peristaltic pump and a filter housing:",
+		Test["Samples with volumes larger than 50mL will be filtered using a peristaltic pump and a filter housing:", 
 			Download[
 				ExperimentFilter[
 					Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
-					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 				],
-				{Instruments,FiltrationTypes}
+				{Instruments, FiltrationTypes}
 			],
-			{{ObjectP[Model[Instrument,PeristalticPump]]},{PeristalticPump}}
+			{{ObjectP[Model[Instrument, PeristalticPump]]}, {PeristalticPump}}
 		],
-
-		Example[
-			{Basic,"Sample with volumes between 50mL and 4L will be filtered using vacuum pump and a bottle top vacuum cap if Sterile has been specified True:"},
+		Example[{Basic, "Sample with volumes between 50mL and 4L will be filtered using vacuum pump and a bottle top vacuum cap if Sterile has been specified True:"},
 			Lookup[
-				ExperimentFilter[Object[Sample, "Filter Test Sample with 2L" <> $SessionUUID],Sterile->True,Output->Options],
-				{Instrument,FiltrationType}
+				ExperimentFilter[Object[Sample, "Filter Test Sample with 2L" <> $SessionUUID], Sterile -> True, Output -> Options],
+				{Instrument, FiltrationType}
 			],
-			{ObjectP[Model[Instrument,VacuumPump]],Vacuum}
+			{ObjectP[Model[Instrument, VacuumPump]], Vacuum}
 		],
-		Example[
-			{Additional,"Input {Position,Container}:"},
-			ExperimentFilter[{"A1",Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID]}],
-			ObjectP[Object[Protocol, ManualSamplePreparation]]
-		],
-		Example[
-			{Additional,"Input a mixture of {Position,Container} and Samples"},
-			ExperimentFilter[{{"A1", Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID]},Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID]}],
-			ObjectP[Object[Protocol, ManualSamplePreparation]]
-		],
-		Test["Sample with volumes between 50mL and 4L will be filtered using vacuum pump and a bottle top vacuum cap if Sterile has been specified True:",
+		Test["Sample with volumes between 50mL and 4L will be filtered using vacuum pump and a bottle top vacuum cap if Sterile has been specified True:", 
 			Download[
 				ExperimentFilter[
 					Object[Sample, "Filter Test Sample with 2L" <> $SessionUUID],
-					Sterile->True,
-					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+					Sterile -> True,
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 				],
-				{Instruments,FiltrationTypes}
+				{Instruments, FiltrationTypes}
 			],
-			{{ObjectP[Model[Instrument,VacuumPump]]},{Vacuum}}
+			{{ObjectP[Model[Instrument, VacuumPump]]}, {Vacuum}}
 		],
-
-		Example[
-			{Basic,"Samples with volumes between 2 and 50 milliliters will be filtered using a syringe and syringe filter:"},
+		Example[{Basic, "Samples with volumes between 2 and 50 milliliters will be filtered using a syringe and syringe filter:"},
 			Lookup[
-				ExperimentFilter[Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],Output->Options],
-				{Instrument,FiltrationType}
+				ExperimentFilter[Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID], Output -> Options],
+				{Instrument, FiltrationType}
 			],
 			{ObjectP[Model[Instrument, SyringePump]], Syringe}
 		],
 		Test[
-			"Samples with volumes between 2 and 50 milliliters will be filtered using a syringe and syringe filter:",
+			"Samples with volumes between 2 and 50 milliliters will be filtered using a syringe and syringe filter:", 
 			Download[
 				ExperimentFilter[
 					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
-					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 				],
-				{Instruments,FiltrationTypes}
+				{Instruments, FiltrationTypes}
 			],
-			{{ObjectP[Model[Instrument, SyringePump]]},{Syringe}}
+			{{ObjectP[Model[Instrument, SyringePump]]}, {Syringe}}
 		],
-
-		Example[
-			{Basic,"Sample with volumes smaller than 2mL will be filtered using a centrifuge and a centrifuge filter:"},
+		Example[{Basic, "Sample with volumes smaller than 2mL will be filtered using a centrifuge and a centrifuge filter:"},
 			Lookup[
-				ExperimentFilter[Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],Output->Options],
-				{Instrument,FiltrationType}
+				ExperimentFilter[Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Output -> Options],
+				{Instrument, FiltrationType}
 			],
-			{ObjectP[Model[Instrument,Centrifuge]], Centrifuge}
+			{ObjectP[Model[Instrument, Centrifuge]], Centrifuge}
 		],
 		Test[
-			"A sample less than 2mL will be filtered using a centrifuge and a centrifuge filter:",
+			"A sample less than 2mL will be filtered using a centrifuge and a centrifuge filter:", 
 			Download[
-				ExperimentFilter[Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]],
-				{Instruments,FiltrationTypes}
+				ExperimentFilter[Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]],
+				{Instruments, FiltrationTypes}
 			],
-			{{ObjectP[Model[Instrument,Centrifuge]]},{Centrifuge}}
+			{{ObjectP[Model[Instrument, Centrifuge]]}, {Centrifuge}}
 		],
-
-
-		(* ===Additional=== *)
-		Example[
-			{Basic,"Sample with no model can be filtered:"},
+		Example[{Basic, "Sample with no model can be filtered:"},
 			ExperimentFilter[Object[Sample, "Filter Test Sample with 3L (no model) (III)" <> $SessionUUID]],
 			ObjectP[Object[Protocol]]
 		],
-		Example[
-			{Additional,"Samples with small volumes (as dictated by the MaxVolume of the filter being used) can also be filtered using a filter block:"},
+		Example[{Basic, "If given a Model[Sample] as the input, populate PreparatoryUnitOperations to create it and use it in this experiment:"},
+			ExperimentFilter[Model[Sample, "Milli-Q water"]],
+			ObjectP[Object[Protocol]]
+		],
+		(* ===Additional=== *)
+		Example[{Additional, "Input {Position, Container}:"},
+			ExperimentFilter[{"A1", Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID]}],
+			ObjectP[Object[Protocol, ManualSamplePreparation]]
+		],
+		Example[{Additional, "Input a mixture of {Position, Container} and Samples"},
+			ExperimentFilter[{{"A1", Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID]}, Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID]}],
+			ObjectP[Object[Protocol, ManualSamplePreparation]]
+		],
+		Example[{Additional, "Samples with small volumes (as dictated by the MaxVolume of the filter being used) can also be filtered using a filter block:"},
 			Lookup[
-				ExperimentFilter[Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],FiltrationType->Vacuum,Output->Options],
+				ExperimentFilter[Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],FiltrationType->Vacuum, Output -> Options],
 				{Instrument, FilterHousing, FiltrationType}
 			],
 			{ObjectP[Model[Instrument, VacuumPump]], ObjectP[Model[Instrument, FilterBlock]], Vacuum}
 		],
-
-		Example[
-			{Additional,"Filtering with BottleTop filters with a collection vessel already in place:"},
-			protocol=ExperimentFilter[
+		Example[{Additional, "Filtering with BottleTop filters with a collection vessel already in place:"},
+			protocol = ExperimentFilter[
 				Object[Sample, "Filter Test Sample with 500 mL" <> $SessionUUID],
 				Filter -> Model[Container, Vessel, Filter, "id:KBL5DvYOxMWa"],
-				ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
-			]; (*filter with a Desintation container and kitted*)
-			{containersOut,requiredResource}=Download[protocol,{ContainersOut, RequiredResources}];
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+			]; (*filter with a Destination container and kitted*)
+			{containersOut, requiredResource} = Download[protocol, {ContainersOut, RequiredResources}];
 			(*make sure that we're NOT updating the ContainersOut in RequiredResources. This will be done later by an execute task in the procedure*)
-			{First@containersOut,Length[Cases[requiredResource, {_,  ContainersOut, _, _}]]},
-			{ObjectP[Model[Container,Vessel]], 0},
-			Variables:>{protocol,containersOut,requiredResource}
+			{First@containersOut, Length[Cases[requiredResource, {_, ContainersOut, _, _}]]},
+			{ObjectP[Model[Container, Vessel]], 0},
+			Variables :> {protocol, containersOut, requiredResource}
 		],
 		(*the following example is for the Sample Manipulation filter primitives.*)
-		Example[
-			{Additional,"Filtering with BottleTop filters but with the sample already within the top of the two-part filter:"},
-			protocol=ExperimentFilter[
+		Example[{Additional, "Filtering with BottleTop filters but with the sample already within the top of the two-part filter:"},
+			protocol = ExperimentFilter[
 				Object[Sample, "Filter Test Sample with 500 mL (II)" <> $SessionUUID],
 				FiltrationType -> Vacuum,
-				ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 			];
-
 			(*make sure that the container out is the bottom receptacle container*)
-			First@Download[protocol,ContainersOut],
+			First@Download[protocol, ContainersOut],
 			ObjectP[Object[Container, Vessel, "Filter Test two-part filter (bottom portion)" <> $SessionUUID]],
-			Variables:>{protocol,containersOut}
+			Variables :> {protocol}
 		],
-		Example[
-			{Additional,"Filtering with BottleTop filters with a collection vessel already in place but specify a different container out:"},
-			protocol=ExperimentFilter[
+		Example[{Additional, "Filtering with BottleTop filters with a collection vessel already in place but specify a different container out:"},
+			protocol = ExperimentFilter[
 				Object[Sample, "Filter Test Sample with 500 mL" <> $SessionUUID],
 				Filter -> Model[Container, Vessel, Filter, "id:KBL5DvYOxMWa"],
-				FiltrateContainerOut->Model[Container, Vessel, "id:aXRlGnZmOONB"],
-				ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
-			]; (*filter with a Desintation container*)
-			{containersOut,requiredResource}=Download[protocol,{ContainersOut, RequiredResources}];
-			{First@containersOut,Length[Cases[requiredResource, {_,  ContainersOut, _, _}]]},
-			{ObjectP[Model[Container,Vessel]], 1},
-			Variables:>{protocol,containersOut,requiredResource}
+				FiltrateContainerOut-> Model[Container, Vessel, "id:aXRlGnZmOONB"],
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+			]; (*filter with a Destination container*)
+			{containersOut, requiredResource} = Download[protocol, {ContainersOut, RequiredResources}];
+			{First@containersOut, Length[Cases[requiredResource, {_, ContainersOut, _, _}]]},
+			{ObjectP[Model[Container, Vessel]], 1},
+			Variables :> {protocol, containersOut, requiredResource}
 		],
-		Example[
-			{Additional,"Filtering with filters that are part of a kit but not BottleTop filters works properly:"},
-			Module[{protocol,containersOut,requiredResource},
-				protocol=ExperimentFilter[
-					Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
-					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID],
-					Filter -> Model[Container, Vessel, Filter, "id:Vrbp1jKOVYkO"],
-					AliquotAmount -> 0.5 Milliliter
-				];
-
-				{containersOut,requiredResource}=Download[protocol,{ContainersOut, RequiredResources}];
-
-				{First@containersOut,Length[Cases[requiredResource, {_,  ContainersOut, _, _}]]}
-			],
-			{ObjectP[Model[Container,Vessel]], 0}
+		Example[{Additional, "Filtering with filters that are part of a kit but not BottleTop filters works properly:"},
+			protocol = ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID],
+				Filter -> Model[Container, Vessel, Filter, "id:Vrbp1jKOVYkO"],
+				AliquotAmount -> 0.5 Milliliter
+			];
+			{containersOut, requiredResource} = Download[protocol, {ContainersOut, RequiredResources}];
+			{First@containersOut, Length[Cases[requiredResource, {_, ContainersOut, _, _}]]},
+			{ObjectP[Model[Container, Vessel]], 0},
+			Variables :> {protocol, containersOut, requiredResource}
 		],
-		Example[
-			{Additional,"Filtering with BottleTop filters WITHOUT a collection vessel already in place:"},
-			protocol=ExperimentFilter[Object[Sample, "Filter Test Sample with 500 mL" <> $SessionUUID],ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID],Filter -> Model[Container, Vessel, Filter, "id:AEqRl9KmXnad"]]; (*filter without a destination container*)
-			{containersOut,requiredResource}=Download[protocol,{ContainersOut, RequiredResources}];
-			{First@containersOut,Length[Cases[requiredResource, {_,  ContainersOut, _, _}]]},
-			{ObjectP[Model[Container,Vessel]], 1},
-			Variables:>{protocol,containersOut,requiredResource}
+		Example[{Additional, "Filtering with BottleTop filters WITHOUT a collection vessel already in place:"},
+			protocol = ExperimentFilter[Object[Sample, "Filter Test Sample with 500 mL" <> $SessionUUID], ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID], Filter -> Model[Container, Vessel, Filter, "id:AEqRl9KmXnad"]]; (*filter without a destination container*)
+			{containersOut, requiredResource} = Download[protocol, {ContainersOut, RequiredResources}];
+			{First@containersOut, Length[Cases[requiredResource, {_, ContainersOut, _, _}]]},
+			{ObjectP[Model[Container, Vessel]], 1},
+			Variables :> {protocol, containersOut, requiredResource}
 		],
-		Example[
-			{Additional,"Filtering with BottleTop filters WITHOUT a collection vessel already in place (sterile):"},
-			protocol=ExperimentFilter[Object[Sample, "Filter Test Sample with 500 mL" <> $SessionUUID],ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID],Filter -> Model[Container, Vessel, Filter, "id:AEqRl9KmXnad"],Sterile->True];
-			{containersOut,requiredResource}=Download[protocol,{ContainersOut, RequiredResources}];
-			{First@containersOut,Length[Cases[requiredResource, {_,  ContainersOut, _, _}]]},
-			{ObjectP[Model[Container,Vessel]], 1},
-			Variables:>{protocol,containersOut,requiredResource}
+		Example[{Additional, "Filtering with BottleTop filters WITHOUT a collection vessel already in place (sterile):"},
+			protocol = ExperimentFilter[Object[Sample, "Filter Test Sample with 500 mL" <> $SessionUUID],ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID],Filter -> Model[Container, Vessel, Filter, "id:AEqRl9KmXnad"],Sterile -> True];
+			{containersOut, requiredResource} = Download[protocol, {ContainersOut, RequiredResources}];
+			{First@containersOut,Length[Cases[requiredResource, {_, ContainersOut, _, _}]]},
+			{ObjectP[Model[Container, Vessel]], 1},
+			Variables :> {protocol, containersOut, requiredResource}
 		],
 		Example[{Additional, "Filtering with vessels that have a top and bottom piece and the bottom piece is also the FiltrateContainerOut, but not a BottleTop kit:"},
-			protocol=ExperimentFilter[
+			protocol = ExperimentFilter[
 				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
-				ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID],
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID],
 				Filter -> Model[Container, Vessel, Filter, "Zeba Spin Desalting Columns, 7K MWCO, 2 mL"]
 			];
-			{containersOut,requiredResource}=Download[protocol,{ContainersOut, RequiredResources}];
-			{First@containersOut,Length[Cases[requiredResource, {_,  ContainersOut, _, _}]]},
-			{ObjectP[Model[Container,Vessel]], 1},
-			Variables:>{protocol,containersOut,requiredResource}
+			{containersOut, requiredResource} = Download[protocol, {ContainersOut, RequiredResources}];
+			{First@containersOut,Length[Cases[requiredResource, {_, ContainersOut, _, _}]]},
+			{ObjectP[Model[Container, Vessel]], 1},
+			Variables :> {protocol, containersOut, requiredResource}
 		],
 		Example[{Additional, "Filtering with Buchner funnels popualtes relevant fields with it:"},
-			protocol = ExperimentFilter[Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID], ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID], Filter -> Model[Item, Filter, "Whatman Grade 5 Filter Paper, Cellulose, 2.5um, 42.5mm"], FiltrationType -> Vacuum];
+			protocol = ExperimentFilter[Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID], ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID], Filter -> Model[Item, Filter, "Whatman Grade 5 Filter Paper, Cellulose, 2.5um, 42.5mm"], FiltrationType -> Vacuum];
 			Download[protocol, BatchedUnitOperations[[1]][{BuchnerFunnel, FilterAdapter, VacuumTubing, SchlenkLine}]],
 			{
 				{ObjectP[Model[Part, Funnel]]},
@@ -208,16 +187,25 @@ DefineTests[ExperimentFilter,
 			},
 			Variables :> {protocol}
 		],
-		Example[{Additional,"Make sure that we can produce a protocol with Preparation->Robotic:"},
+		Example[{Additional, "Make sure that we can produce a protocol with Preparation->Robotic with Centrifuge:"},
 			ExperimentFilter[
-				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID]},
+				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
+				Volume -> 300 Microliter,
 				Preparation -> Robotic
 			],
 			ObjectP[Object[Protocol]]
 		],
-		Test["We can produce an RSP filter protocol using VSpin:",
+		Example[{Additional, "Make sure that we can produce a protocol with Preparation->Robotic with AirPressure:"},
+			ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
+				Preparation -> Robotic
+			],
+			ObjectP[Object[Protocol]]
+		],
+		Test["We can produce an RSP filter protocol using VSpin:", 
 			Download[
 				ExperimentFilter[{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID]},
+					Volume -> 300 Microliter,
 					Preparation -> Robotic,
 					FiltrationType -> Centrifuge
 				],
@@ -230,12 +218,11 @@ DefineTests[ExperimentFilter,
 				ObjectP[Object[Protocol, RoboticSamplePreparation]],
 				{{LinkP[Model[Instrument, Centrifuge, "VSpin"]]},__}
 			}
-
-
 		],
-		Test["We can produce an RCP filter protocol using HiG:",
+		Test["We can produce an RCP filter protocol using HiG:", 
 			Download[
 				ExperimentFilter[{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID]},
+					Volume -> 300 Microliter,
 					Preparation -> Robotic,
 					FiltrationType -> Centrifuge,
 					WorkCell -> bioSTAR
@@ -251,38 +238,38 @@ DefineTests[ExperimentFilter,
 			}
 
 		],
-		Test["Choosing plates that will result in a too-tall filter stack does not work with Preparation->Robotic:",
+		Test["Choosing plates that will result in a too-tall filter stack does not work with Preparation->Robotic:", 
 			ExperimentFilter[
 				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID]},
-				Filter ->Model[Container, Plate, Filter, "Filter test filter model that is too tall with DWP"<>$SessionUUID],
-				CollectionContainer ->Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+				Filter -> Model[Container, Plate, Filter, "Plate Filter, GlassFiber, 30.0um, 2mL"],
+				CollectionContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 				Preparation -> Robotic,
 				FiltrationType -> Centrifuge,
 				WorkCell -> bioSTAR
 			],
 			$Failed,
-			Messages:>{Error::NoUsableCentrifuge,Error::InvalidOption, Warning::SterileContainerRecommended},
-			Stubs:>{$DeveloperSearch=False}
-
+			Messages :> {Error::NoUsableCentrifuge, Error::InvalidOption, Warning::SterileContainerRecommended},
+			Stubs :> {$DeveloperSearch = False}
 		],
-		Test["Choosing plates that will result in a too-tall filter stack does not work with Preparation->Robotic, even if the centrifuge is specified:",
+		Test["Choosing plates that will result in a too-tall filter stack does not work with Preparation->Robotic, even if the centrifuge is specified:", 
 			ExperimentFilter[
 				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID]},
-				Filter ->Model[Container, Plate, Filter, "Filter test filter model that is too tall with DWP"<>$SessionUUID],
-				CollectionContainer ->Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+				Filter -> Model[Container, Plate, Filter, "Plate Filter, GlassFiber, 30.0um, 2mL"],
+				CollectionContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 				Preparation -> Robotic,
 				FiltrationType -> Centrifuge,
-				Instrument->Model[Instrument, Centrifuge, "id:kEJ9mqaVPAXe"],
+				Instrument-> Model[Instrument, Centrifuge, "id:kEJ9mqaVPAXe"],
 				WorkCell -> bioSTAR
 			],
 			$Failed,
-			Messages:>{Error::NoUsableCentrifuge,Error::UnusableCentrifuge,Error::InvalidOption, Warning::SterileContainerRecommended},
-			Stubs:>{$DeveloperSearch=False}
+			Messages :> {Error::NoUsableCentrifuge, Error::UnusableCentrifuge, Error::InvalidOption, Warning::SterileContainerRecommended},
+			Stubs :> {$DeveloperSearch = False}
 		],
-		Test["Choosing filters that just barely work with the HiG's stack height works on HiG:",
+		Test["Choosing filters that just barely work with the HiG's stack height works on HiG:", 
 			Download[
 				ExperimentFilter[{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID]},
-					Filter -> Model[Container, Plate, Filter, "Filter test filter model that is fairly short" <> $SessionUUID],
+					Filter -> Model[Container, Plate, Filter, "Plate Filter, PES, 0.22um, 0.3mL"],
+					Volume -> 0.3 Milliliter,
 					CollectionContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 					Preparation -> Robotic,
 					FiltrationType -> Centrifuge,
@@ -295,10 +282,11 @@ DefineTests[ExperimentFilter,
 			Messages :> {Warning::SterileContainerRecommended}
 
 		],
-		Test["Choosing collection container without TareWeight yields an error:",
+		Test["Choosing collection container without TareWeight yields an error:", 
 			Download[
 				ExperimentFilter[{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID]},
-					Filter -> Model[Container, Plate, Filter, "Filter test filter model that is fairly short" <> $SessionUUID],
+					Filter -> Model[Container, Plate, Filter, "Plate Filter, PES, 0.22um, 0.3mL"],
+					Volume -> 0.3 Milliliter,
 					CollectionContainer -> Model[Container, Plate, "Filter Test plate model without TareWeight"<>$SessionUUID],
 					Preparation -> Robotic,
 					FiltrationType -> Centrifuge,
@@ -308,79 +296,69 @@ DefineTests[ExperimentFilter,
 			],
 			$Failed,
 			Stubs :> {$DeveloperSearch = False},
-			Messages :> {Warning::SterileContainerRecommended,Error::CollectionContainerNoCounterweights,Error::CollectionContainerPlateMismatch,Error::InvalidOption}
-
+			Messages :> {Warning::SterileContainerRecommended, Error::CollectionContainerNoCounterweights, Error::CollectionContainerPlateMismatch, Error::InvalidOption}
 		],
-
-
 		(* ===Options=== *)
-		Example[
-			{Options, Upload, "Indicates if the protocols generated should be placed InCart after execution to be confirmed at a later time:"},
+		Example[{Options, Upload, "Indicates if the protocols generated should be placed InCart after execution to be confirmed at a later time:"},
 			ExperimentFilter[
 				Object[Sample, "Filter Test Sample with 2L" <> $SessionUUID],
-				Upload->False
+				Upload -> False
 			],
 			{_?(ValidUploadQ[#]&)..}
 		],
-		Example[
-			{Options, ImageSample, "Indicates if any samples that are modified in the course of the experiment should be freshly imaged after running the experiment:"},
+		Example[{Options, ImageSample, "Indicates if any samples that are modified in the course of the experiment should be freshly imaged after running the experiment:"},
 			Lookup[
 				ExperimentFilter[
 					Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
-					ImageSample->False,
-					Output->Options
+					ImageSample -> False,
+					Output -> Options
 				],
 				ImageSample
 			],
 			False
 		],
-		Example[{Options,MeasureVolume,"Indicate if any samples that are modified in the course of the experiment should have their volumes measured after running the experiment:"},
+		Example[{Options, MeasureVolume, "Indicate if any samples that are modified in the course of the experiment should have their volumes measured after running the experiment:"},
 			Download[
-				ExperimentFilter[Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID],MeasureVolume->False],
+				ExperimentFilter[Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID], ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID], MeasureVolume -> False],
 				MeasureVolume
 			],
 			False
 		],
-		Example[{Options,MeasureWeight,"Indicate if any samples that are modified in the course of the experiment should have their weights measured after running the experiment:"},
+		Example[{Options, MeasureWeight, "Indicate if any samples that are modified in the course of the experiment should have their weights measured after running the experiment:"},
 			Download[
-				ExperimentFilter[Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID],MeasureWeight->False],
+				ExperimentFilter[Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID], ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID], MeasureWeight -> False],
 				MeasureWeight
 			],
 			False
 		],
-		Example[
-			{Options, Name, "An object name which should be used to refer to the output object in lieu of an automatically generated ID number:"},
+		Example[{Options, Name, "An object name which should be used to refer to the output object in lieu of an automatically generated ID number:"},
 			Lookup[
 				ExperimentFilter[
 					Object[Sample, "Filter Test Sample with 2L" <> $SessionUUID],
-					Name -> "My Favorite Filter Test Protocol",
-					Output->Options
+					Name -> "My Favorite Filter Test Protocol", 
+					Output -> Options
 				],
 				Name
 			],
 			"My Favorite Filter Test Protocol"
 		],
-
-		Example[
-			{Options,FiltrationType,"FiltrationType option allows specification of type of filtration to be performed:"},
+		Example[{Options, FiltrationType, "FiltrationType option allows specification of type of filtration to be performed:"},
 			Lookup[
 				ExperimentFilter[
 					Object[Sample, "Filter Test Sample with 500 mL" <> $SessionUUID],
 					FiltrationType -> Vacuum,
-					Output->Options
+					Output -> Options
 				],
 				FiltrationType
 			],
 			Vacuum
 		],
-
-		Example[
-			{Options,PreparatoryPrimitives,"Specify prepared samples for measurement:"},
+		Example[{Options, PreparatoryUnitOperations, "Specify prepared samples for measurement:"},
 			ExperimentFilter[
-				"Container",
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "Container",
+				"Container", 
+				PreparatoryUnitOperations -> {
+					LabelContainer[
+						Label -> "Container", 
 						Container -> Model[Container, Vessel, "1L Glass Bottle"]
 					],
 					Transfer[
@@ -392,30 +370,12 @@ DefineTests[ExperimentFilter,
 			],
 			{_Rule..}
 		],
-		Example[
-			{Options,PreparatoryUnitOperations,"Specify prepared samples for measurement:"},
+		Example[{Options, PreparatoryUnitOperations, "Specify prepared samples for measurement that has an MSP parent:"},
 			ExperimentFilter[
-				"Container",
+				"Container", 
 				PreparatoryUnitOperations -> {
 					LabelContainer[
-						Label -> "Container",
-						Container -> Model[Container, Vessel, "1L Glass Bottle"]
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Amount -> 750 Milliliter,
-						Destination -> "Container"
-					]
-				}, Output -> Options
-			],
-			{_Rule..}
-		],
-		Example[{Options,PreparatoryUnitOperations,"Specify prepared samples for measurement that has an MSP parent:"},
-			ExperimentFilter[
-				"Container",
-				PreparatoryUnitOperations -> {
-					LabelContainer[
-						Label -> "Container",
+						Label -> "Container", 
 						Container -> Model[Container, Vessel, "1L Glass Bottle"]
 					],
 					Transfer[
@@ -428,31 +388,72 @@ DefineTests[ExperimentFilter,
 			],
 			ObjectP[Object[Protocol, Filter]]
 		],
-		Test["Samples with small volumes (as dictated by the MaxVolume of the Model[Container,Vessel,Filter] being used) can also be filtered using a centrifuge:",
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentFilter[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared, even if Preparation -> Robotic:"},
+			protocol = ExperimentFilter[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Preparation -> Robotic
+			];
+			Download[protocol, OutputUnitOperations[[1]][{SampleLink, ContainerLink, AmountVariableUnit, Well, ContainerLabel}]],
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {protocol}
+		],
+		Test["Samples with small volumes (as dictated by the MaxVolume of the Model[Container, Vessel, Filter] being used) can also be filtered using a centrifuge:", 
 			Download[
-				ExperimentFilter[Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], FiltrationType -> Vacuum, ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]],
+				ExperimentFilter[Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], FiltrationType -> Vacuum, ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]],
 				{Instruments, FilterHousings, FiltrationTypes}
 			],
 			{{ObjectP[Model[Instrument, VacuumPump]]}, {ObjectP[Model[Instrument, FilterBlock]]}, {Vacuum}}
 		],
-		Test["If the CollectionContainer and FiltrateContainerOut are the same model, then they will just be the same resource:",
-			protocol = ExperimentFilter[Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], FiltrationType -> Vacuum, ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]];
+		Test["If the CollectionContainer and FiltrateContainerOut are the same model, then they will just be the same resource:", 
+			protocol = ExperimentFilter[Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], FiltrationType -> Vacuum, ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]];
 			requiredResources = Download[protocol, RequiredResources];
 			relevantResources = Cases[requiredResources, {_, CollectionContainers | FiltrateContainersOut, _, _}][[All, 1]];
 			SameObjectQ @@ relevantResources,
 			True,
 			Variables :> {protocol, requiredResources, relevantResources}
 		],
-		Test["If the CollectionContainer and FiltrateContainerOut are the same model, but we're washing retentate and the wash flow through containers are different, the collection container and filtrate container are also different:",
-			protocol = ExperimentFilter[Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], FiltrationType -> Vacuum, AliquotAmount -> 0.5 Milliliter, WashRetentate -> True, FiltrateContainerLabel -> "test container 1", WashFlowThroughContainerLabel -> {{"test container2", "test container 3"}}, ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]];
+		Test["If the CollectionContainer and FiltrateContainerOut are the same model, but we're washing retentate and the wash flow through containers are different, the collection container and filtrate container are also different:", 
+			protocol = ExperimentFilter[Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], FiltrationType -> Vacuum, AliquotAmount -> 0.5 Milliliter, WashRetentate -> True, FiltrateContainerLabel -> "test container 1", WashFlowThroughContainerLabel -> {{"test container2", "test container 3"}}, ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]];
 			requiredResources = Download[protocol, RequiredResources];
 			relevantResources = Cases[requiredResources, {_, CollectionContainers | FiltrateContainersOut, _, _}][[All, 1]];
 			SameObjectQ @@ relevantResources,
 			False,
 			Variables :> {protocol, requiredResources, relevantResources}
 		],
-		Test["The CollectionContainer resources in the protocol object are the same as the resources in the unit operations:",
-			protocol = ExperimentFilter[Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], FiltrationType -> Vacuum, ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]];
+		Test["The CollectionContainer resources in the protocol object are the same as the resources in the unit operations:", 
+			protocol = ExperimentFilter[Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], FiltrationType -> Vacuum, ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]];
 			protocolRequiredResources = Download[protocol, RequiredResources];
 			relevantProtocolResources = Cases[protocolRequiredResources, {_, CollectionContainers, _, _}][[All, 1]];
 			unitOperationRequiredResources = Download[protocol, BatchedUnitOperations[[1]][RequiredResources]];
@@ -461,7 +462,7 @@ DefineTests[ExperimentFilter,
 			True,
 			Variables :> {protocol, protocolRequiredResources, relevantProtocolResources, unitOperationRequiredResources, relevantUOResources}
 		],
-		Test["If the CollectionContainer is an object and we're Centrifuge filtering, make the FiltrateContainerOut resolve to the same value as long as there's enough room:",
+		Test["If the CollectionContainer is an object and we're Centrifuge filtering, make the FiltrateContainerOut resolve to the same value as long as there's enough room:", 
 			options = ExperimentFilter[
 				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
 				FiltrationType -> Centrifuge,
@@ -482,7 +483,7 @@ DefineTests[ExperimentFilter,
 				ExperimentFilter[
 					{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID]},
 					SampleLabel -> {"Test Label 1", Automatic},
-					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 				],
 				BatchedUnitOperations[SampleLabel]
 			],
@@ -493,7 +494,7 @@ DefineTests[ExperimentFilter,
 				ExperimentFilter[
 					{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID]},
 					SampleContainerLabel -> {"Test Label 2", Automatic},
-					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 				],
 				BatchedUnitOperations[SampleContainerLabel]
 			],
@@ -506,7 +507,7 @@ DefineTests[ExperimentFilter,
 					FiltrateLabel -> {"Test Label 1", Automatic, Automatic},
 					SampleOutLabel -> {Automatic, "SampleOut Label 1", "SampleOut Label 2"},
 					Target -> {Filtrate, Filtrate, Retentate},
-					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 				],
 				BatchedUnitOperations[FiltrateLabel]
 			],
@@ -519,7 +520,7 @@ DefineTests[ExperimentFilter,
 					FiltrateContainerLabel -> {"Test Label 2", Automatic, Automatic},
 					ContainerOutLabel -> {Automatic, "ContainerOut Label 1", "ContainerOut Label 2"},
 					Target -> {Filtrate, Filtrate, Retentate},
-					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 				],
 				BatchedUnitOperations[FiltrateContainerLabel]
 			],
@@ -552,13 +553,13 @@ DefineTests[ExperimentFilter,
 			],
 			"ContainerOut Label 1"
 		],
-		Test["If multiple filters must be used, the collection container and filtrate container labels must not be resolved to the same values:",
+		Test["If multiple filters must be used, the collection container and filtrate container labels must not be resolved to the same values:", 
 			(* need to do this tally nonsense because we can't systematically know what the numbers CreateUniqueLabel is going to choose will be since this test could be run in isolation or with other tests in the same evaluation *)
 			(* Tally ensures that we have two of one and one of the other *)
 			Tally /@ Lookup[
 				ExperimentFilter[
 					{
-						Object[Sample,"Filter Test Sample with 1mL" <> $SessionUUID],
+						Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
 						Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
 						Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID]
 					},
@@ -581,7 +582,7 @@ DefineTests[ExperimentFilter,
 				{{_?(StringMatchQ[#, "filtrate container" ~~ __]&), 2}, {_?(StringMatchQ[#, "filtrate container" ~~ __]&), 1}}
 			}
 		],
-		Test["If FiltrateContainerOut is set to a Model[Container, Vessel] and DestinationWell is set to A1 and two samples are sharing the same filter plate, this does NOT mean they should share the same FiltrateContainerOut:",
+		Test["If FiltrateContainerOut is set to a Model[Container, Vessel] and DestinationWell is set to A1 and two samples are sharing the same filter plate, this does NOT mean they should share the same FiltrateContainerOut:", 
 			Lookup[
 				ExperimentFilter[
 					{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},
@@ -604,7 +605,7 @@ DefineTests[ExperimentFilter,
 					SampleOutLabel -> {Automatic, "SampleOut Label 1", "SampleOut Label 2", "SampleOut Label 3"},
 					Target -> {Filtrate, Filtrate, Retentate, Filtrate},
 					CollectRetentate -> {True, False, True, True},
-					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 				],
 				BatchedUnitOperations[RetentateLabel]
 			],
@@ -618,7 +619,7 @@ DefineTests[ExperimentFilter,
 					ContainerOutLabel -> {Automatic, "ContainerOut Label 1", "ContainerOut Label 2", "ContainerOut Label 3"},
 					Target -> {Filtrate, Filtrate, Retentate, Filtrate},
 					CollectRetentate -> {True, False, True, True},
-					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 				],
 				BatchedUnitOperations[RetentateContainerLabel]
 			],
@@ -646,7 +647,7 @@ DefineTests[ExperimentFilter,
 					FiltrateLabel -> {"Test Filtrate Label 1", Automatic, Automatic, Automatic},
 					Target -> {Filtrate, Filtrate, Retentate, Filtrate},
 					CollectRetentate -> {True, False, True, True},
-					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 				],
 				BatchedUnitOperations[SampleOutLabel]
 			],
@@ -661,7 +662,7 @@ DefineTests[ExperimentFilter,
 					FiltrateContainerLabel -> {"Test Filtrate Label 1", Automatic, Automatic, Automatic},
 					Target -> {Filtrate, Filtrate, Retentate, Filtrate},
 					CollectRetentate -> {True, False, True, True},
-					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 				],
 				BatchedUnitOperations[ContainerOutLabel]
 			],
@@ -674,7 +675,7 @@ DefineTests[ExperimentFilter,
 					FiltrateLabel -> {"Test Label 1", Automatic, Automatic},
 					SampleOutLabel -> {Automatic, "SampleOut Label 1", "SampleOut Label 2"},
 					Target -> {Filtrate, Filtrate, Retentate},
-					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 				],
 				Target
 			],
@@ -688,13 +689,12 @@ DefineTests[ExperimentFilter,
 					SampleOutLabel -> {Automatic, "SampleOut Label 1", "SampleOut Label 2"},
 					Target -> {Filtrate, Filtrate, Retentate},
 					CollectRetentate -> {True, False, True},
-					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 				],
 				BatchedUnitOperations[CollectRetentate]
 			],
 			{{True}, {False, True}}
 		],
-		(* TODO add tests for all the retentate wash options *)
 		Example[{Options, WashRetentate, "WashRetentate option indicates if additional buffer should be sent through the filter to wash the solid that has been retained:"},
 			options = ExperimentFilter[
 				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},
@@ -740,7 +740,7 @@ DefineTests[ExperimentFilter,
 						Model[Sample, "Milli-Q water"]
 					}
 				},
-				ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 			];
 			Download[protocol, BatchedUnitOperations[[1]][{WashRetentate, RetentateWashBufferResources, RetentateWashBatchLengths}]],
 			{
@@ -770,7 +770,7 @@ DefineTests[ExperimentFilter,
 						Model[Sample, "Milli-Q water"]
 					}
 				},
-				ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 			];
 			Download[protocol, BatchedUnitOperations[[1]][{WashRetentate, RetentateWashBufferResources, RetentateWashBatchLengths}]],
 			{
@@ -900,7 +900,7 @@ DefineTests[ExperimentFilter,
 			},
 			Variables :> {options}
 		],
-		Example[{Options, NumberOfRetentateWashes, "Manual retentate washing works with multiple retentate washes:"},
+		Example[{Options, NumberOfRetentateWashes, "Manual retentate washing works with multiple retentate washes for one sample:"},
 			ExperimentFilter[
 				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
 				FiltrationType -> Centrifuge,
@@ -922,9 +922,9 @@ DefineTests[ExperimentFilter,
 			],
 			ObjectP[Object[Protocol, Filter]]
 		],
-		Example[{Options, NumberOfRetentateWashes, "Manual retentate washing works with multiple retentate washes:"},
+		Example[{Options, NumberOfRetentateWashes, "Manual retentate washing works with multiple retentate washes for multiple samples:"},
 			ExperimentFilter[
-				{Object[Sample,"Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample,"Filter Test Sample with 1mL" <> $SessionUUID]},
+				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID]},
 				AliquotAmount -> {0.2 Milliliter, 0.2 Milliliter},
 				Preparation -> Manual,
 				FiltrationType -> Centrifuge,
@@ -957,13 +957,13 @@ DefineTests[ExperimentFilter,
 					}
 				},
 				FiltrateLabel -> {
-					"filtrate sample 1",
+					"filtrate sample 1", 
 					"filtrate sample 2"
 				},
 				WashFlowThroughLabel -> {
 					Automatic,
 					{
-						"wash flow through 1",
+						"wash flow through 1", 
 						"wash flow through 2"
 					}
 				},
@@ -972,9 +972,9 @@ DefineTests[ExperimentFilter,
 			ObjectP[Object[Protocol, Filter]],
 			TimeConstraint -> 300
 		],
-		Example[{Options, NumberOfRetentateWashes, "Robotic retentate washing works with multiple retentate washes:"},
+		Example[{Options, NumberOfRetentateWashes, "Robotic retentate washing works with multiple retentate washes for multiple samples:"},
 			ExperimentFilter[
-				{Object[Sample,"Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample,"Filter Test Sample with 1mL" <> $SessionUUID]},
+				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID]},
 				Volume -> {0.2 Milliliter, 0.2 Milliliter},
 				Preparation -> Robotic,
 				FiltrationType -> Centrifuge,
@@ -1007,13 +1007,13 @@ DefineTests[ExperimentFilter,
 					}
 				},
 				FiltrateLabel -> {
-					"filtrate sample 1",
+					"filtrate sample 1", 
 					"filtrate sample 2"
 				},
 				WashFlowThroughLabel -> {
 					Automatic,
 					{
-						"wash flow through 1",
+						"wash flow through 1", 
 						"wash flow through 2"
 					}
 				},
@@ -1022,7 +1022,7 @@ DefineTests[ExperimentFilter,
 			ObjectP[Object[Protocol, RoboticSamplePreparation]],
 			TimeConstraint -> 450
 		],
-		Example[{Options, NumberOfRetentateWashes, "Robotic retentate washing works with multiple retentate washes:"},
+		Example[{Options, NumberOfRetentateWashes, "Robotic retentate washing works with multiple retentate washes for one sample:"},
 			ExperimentFilter[
 				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
 				FiltrationType -> Centrifuge,
@@ -1044,7 +1044,7 @@ DefineTests[ExperimentFilter,
 			],
 			ObjectP[Object[Protocol, RoboticSamplePreparation]]
 		],
-		Test["Populate the NumberOfResuspensionTADMCurves, NumberOfLoadingTADMCurves, and NumberOfRetentateWashTADMCurves fields in the OutputUnitOperations:",
+		Test["Populate the NumberOfResuspensionTADMCurves, NumberOfLoadingTADMCurves, and NumberOfRetentateWashTADMCurves fields in the OutputUnitOperations:", 
 			protocol = ExperimentFilter[
 				{
 					Object[Sample, "Filter Sample 1 in filter plate 2" <> $SessionUUID],
@@ -1084,15 +1084,15 @@ DefineTests[ExperimentFilter,
 					{Model[Container, Plate, "96-well 2mL Deep Well Plate"]}
 				},
 				FilterLabel -> {
-					"filter 1",
-					"filter 1",
-					"filter 2",
+					"filter 1", 
+					"filter 1", 
+					"filter 2", 
 					"filter 2"
 				},
 				CollectionContainerLabel -> {
-					"collection container 1",
-					"collection container 1",
-					"collection container 2",
+					"collection container 1", 
+					"collection container 1", 
+					"collection container 2", 
 					"collection container 2"
 				},
 				WashFlowThroughContainerLabel -> {
@@ -1111,7 +1111,7 @@ DefineTests[ExperimentFilter,
 			},
 			Variables :> {protocol}
 		],
-		Test["Populate the correct number of tips in the output unit operations:",
+		Test["Populate the correct number of tips in the output unit operations:", 
 			protocol = ExperimentFilter[
 				{
 					Object[Sample, "Filter Sample 1 in filter plate 2" <> $SessionUUID],
@@ -1157,15 +1157,15 @@ DefineTests[ExperimentFilter,
 					Model[Container, Plate, Filter, "Plate Filter, PTFE, 0.22um, 1.5mL"]
 				},
 				FilterLabel -> {
-					"filter 1",
-					"filter 1",
-					"filter 2",
+					"filter 1", 
+					"filter 1", 
+					"filter 2", 
 					"filter 2"
 				},
 				CollectionContainerLabel -> {
-					"collection container 1",
-					"collection container 1",
-					"collection container 2",
+					"collection container 1", 
+					"collection container 1", 
+					"collection container 2", 
 					"collection container 2"
 				},
 				WashFlowThroughContainerLabel -> {
@@ -1325,12 +1325,12 @@ DefineTests[ExperimentFilter,
 				RetentateWashBuffer -> Model[Sample, "Milli-Q water"],
 				RetentateWashVolume -> 0.1 Milliliter,
 				RetentateCollectionMethod -> Resuspend,
-				RetentateDestinationWell -> "A3",
+				RetentateDestinationWell -> "A3", 
 				RetentateContainerOut -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 				Output -> Options
 			];
 			Lookup[options, RetentateDestinationWell],
-			"A3",
+			"A3", 
 			Variables :> {options}
 		],
 		Example[{Options, RetentateCollectionMethod, "RetentateCollectionMethod option indicates how to recover the retentate after filtering:"},
@@ -1373,7 +1373,7 @@ DefineTests[ExperimentFilter,
 				Filter -> Object[Container, Vessel, Filter, "Filter Test Invertable Centrifuge Filter" <> $SessionUUID],
 				CollectRetentate -> True,
 				AliquotAmount -> 0.5 Milliliter,
-				ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 			];
 			Download[protocol, BatchedUnitOperations[RetentateCollectionContainerLink]],
 			{{ObjectP[Model[Container, Vessel]]}},
@@ -1414,36 +1414,11 @@ DefineTests[ExperimentFilter,
 				Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
 				FiltrationType -> Vacuum,
 				RetentateCollectionMethod -> Transfer,
-				ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 			];
 			Download[protocol, BatchedUnitOperations[Spatula]],
 			{ObjectP[Model[Item, Spatula]]},
 			Variables :> {protocol}
-		],
-		Example[{Messages, "OccludingRetentateMismatch", "If CollectOccludingRetentate is set to False, then OccludingRetentateContainer, OccludingRetentateDestinationWell, and OccludingRetentateContainerLabel must not be specified:"},
-			ExperimentFilter[
-				Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
-				FiltrationType -> Syringe,
-				CollectOccludingRetentate -> False,
-				OccludingRetentateContainer -> Model[Container, Vessel, "50mL Tube"]
-			],
-			$Failed,
-			Messages :> {
-				Error::OccludingRetentateMismatch,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "OccludingRetentateNotSupported", "If FiltrationType is not set to Syringe, then CollectOccludingRetentate cannot be True:"},
-			ExperimentFilter[
-				Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
-				FiltrationType -> Vacuum,
-				CollectOccludingRetentate -> True
-			],
-			$Failed,
-			Messages :> {
-				Error::OccludingRetentateNotSupported,
-				Error::InvalidOption
-			}
 		],
 		Example[{Options, CollectOccludingRetentate, "Indicate that if the filter becomes clogged or occluded such that nothing further can be passed through, the occluding retentate should be collected in a separate container:"},
 			protocol = ExperimentFilter[
@@ -1497,7 +1472,6 @@ DefineTests[ExperimentFilter,
 			},
 			Variables :> {protocol}
 		],
-		(* TODO tests for occluding filter options *)
 		Example[{Options, WashFlowThroughLabel, "WashFlowThroughLabel option indicates the label of the samples prepared from retentate washes.  If not specified, it will resolve to the same value as FiltrateLabel:"},
 			protocol = ExperimentFilter[
 				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},
@@ -1531,13 +1505,13 @@ DefineTests[ExperimentFilter,
 					}
 				},
 				FiltrateLabel -> {
-					"filtrate sample 1",
+					"filtrate sample 1", 
 					"filtrate sample 2"
 				},
 				WashFlowThroughLabel -> {
 					Automatic,
 					{
-						"wash flow through 1",
+						"wash flow through 1", 
 						"wash flow through 2"
 					}
 				},
@@ -1546,11 +1520,11 @@ DefineTests[ExperimentFilter,
 			Download[protocol, BatchedUnitOperations[WashFlowThroughLabel]],
 			{
 				{
-					"filtrate sample 1",
+					"filtrate sample 1", 
 					"filtrate sample 1"
 				},
 				{
-					"wash flow through 1",
+					"wash flow through 1", 
 					"wash flow through 2"
 				}
 			},
@@ -1590,13 +1564,13 @@ DefineTests[ExperimentFilter,
 					}
 				},
 				FiltrateContainerLabel -> {
-					"filtrate container sample 1",
+					"filtrate container sample 1", 
 					"filtrate container sample 2"
 				},
 				WashFlowThroughContainerLabel -> {
 					Automatic,
 					{
-						"wash flow through container 1",
+						"wash flow through container 1", 
 						"wash flow through container 2"
 					}
 				}
@@ -1604,11 +1578,11 @@ DefineTests[ExperimentFilter,
 			Download[protocol, BatchedUnitOperations[WashFlowThroughContainerLabel]],
 			{
 				{
-					"filtrate container sample 1",
+					"filtrate container sample 1", 
 					"filtrate container sample 1"
 				},
 				{
-					"wash flow through container 1",
+					"wash flow through container 1", 
 					"wash flow through container 2"
 				}
 			},
@@ -1733,7 +1707,7 @@ DefineTests[ExperimentFilter,
 					}
 				},
 				WashFlowThroughDestinationWell -> {
-					"A2",
+					"A2", 
 					{
 						Automatic,
 						Automatic
@@ -1750,11 +1724,11 @@ DefineTests[ExperimentFilter,
 			Download[protocol, BatchedUnitOperations[WashFlowThroughDestinationWell]],
 			{
 				{
-					"A2",
+					"A2", 
 					"A2"
 				},
 				{
-					"A3",
+					"A3", 
 					"A4"
 				}
 			},
@@ -1787,7 +1761,7 @@ DefineTests[ExperimentFilter,
 					}
 				},
 				WashFlowThroughDestinationWell -> {
-					"A2",
+					"A2", 
 					{
 						Automatic,
 						Automatic
@@ -2059,7 +2033,7 @@ DefineTests[ExperimentFilter,
 				ExperimentFilter[
 					Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
 					PrewetFilterBuffer -> Model[Sample, "Methanol"],
-					PrewetFilterBufferLabel -> "prewet filter buffer label 1",
+					PrewetFilterBufferLabel -> "prewet filter buffer label 1", 
 					Output -> Options
 				],
 				PrewetFilterBufferLabel
@@ -2088,38 +2062,18 @@ DefineTests[ExperimentFilter,
 			],
 			_String
 		],
-		Example[{Messages, "PrewetFilterMismatch", "Throw an error if PrewetFilter is set to False but a prewetting option is specified:"},
-			ExperimentFilter[
-				Object[Sample, "Filter Test Sample with 500 mL" <> $SessionUUID],
-				PrewetFilter -> False,
-				PrewetFilterBuffer -> Model[Sample, "Methanol"]
-			],
-			$Failed,
-			Messages :> {Error::PrewetFilterMismatch, Error::InvalidOption}
-		],
-		Example[{Messages, "PrewetFilterCentrifugeIntensityTypeMismatch", "Throw an error if PrewetFilterCentrifugeIntensity is specified but FiltrationType is not Centrifuge:"},
-			ExperimentFilter[
-				Object[Sample, "Filter Test Sample with 500 mL" <> $SessionUUID],
-				PrewetFilterCentrifugeIntensity -> 1000 RPM
-			],
-			$Failed,
-			Messages :> {Error::PrewetFilterCentrifugeIntensityTypeMismatch, Error::InvalidOption}
-		],
-		(* TODO error forbidding Prewetting for Robotic *)
-		Example[
-			{Options, Instrument, "Instrument option allows specification of instrument to use for filtration:"},
+		Example[{Options, Instrument, "Instrument option allows specification of instrument to use for filtration:"},
 			Lookup[
 				ExperimentFilter[
 					Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
 					Instrument -> Model[Instrument, PeristalticPump, "VWR Peristaltic Variable Pump PP3400"],
-					Output->Options
+					Output -> Options
 				],
 				Instrument
 			],
 			ObjectP[Model[Instrument, PeristalticPump, "VWR Peristaltic Variable Pump PP3400"]]
 		],
-		Example[
-			{Options, Instrument, "Instrument option will implicitly result in the filtration type being resolved to one appropriate to the instrument selected:"},
+		Example[{Options, Instrument, "Instrument option will implicitly result in the filtration type being resolved to one appropriate to the instrument selected:"},
 			Lookup[
 				ExperimentFilter[
 					{
@@ -2142,86 +2096,71 @@ DefineTests[ExperimentFilter,
 				{PeristalticPump, Vacuum}
 			}
 		],
-		Example[
-			{Messages, "FiltrationTypeAndInstrumentMismatch", "A mismatch between an instrument and filtration type will product an error message:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
-					Instrument -> Model[Instrument, PeristalticPump, "VWR Peristaltic Variable Pump PP3400"],
-					FiltrationType->Vacuum,
-					Output->Options
-				],
-				{FiltrationType,Instrument}
-			],
-			{Vacuum,ObjectP[Model[Instrument, PeristalticPump, "VWR Peristaltic Variable Pump PP3400"]]},
-			Messages:>{Error::FiltrationTypeAndInstrumentMismatch, Error::InvalidOption}
-		],
-
-
-		Example[
-			{Options, FilterHousing, "FilterHousing option allows specification of filtration housing to use:"},
+		Example[{Options, FilterHousing, "FilterHousing option allows specification of filtration housing to use:"},
 			Lookup[
 				ExperimentFilter[
 					Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
 					FilterHousing->Object[Instrument, FilterHousing, "Battlestar Galactica"],
-					Output->Options
+					Output -> Options
 				],
 				FilterHousing
 			],
 			ObjectP[Object[Instrument, FilterHousing, "Battlestar Galactica"]]
 		],
-		Example[
-			{Options, FilterHousing, "If FilterHousing is specified but FiltrationType is not, resolve the FiltrationType based on that value:"},
+		Example[{Options, FilterHousing, "If FilterHousing is specified but FiltrationType is not, resolve the FiltrationType based on that value:"},
 			Lookup[
 				ExperimentFilter[
 					Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
-					FilterHousing->Model[Instrument, FilterBlock, "Filter Block"],
-					Output->Options
+					FilterHousing-> Model[Instrument, FilterBlock, "Filter Block"],
+					Output -> Options
 				],
 				FiltrationType
 			],
 			Vacuum
 		],
-		Example[
-			{Messages, "FiltrationTypeAndFilterHousingMismatch", "FilterHousing option cannot be set to Null for PeristalticPump filtrations:"},
+		Example[{Options, Filter, "Filter option allows specification of type of filter to use:"},
 			Lookup[
 				ExperimentFilter[
 					Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
-					FiltrationType -> PeristalticPump,
-					FilterHousing -> Null,
+					Filter -> Model[Item, Filter, "id:lYq9jRxnrKxY"],
 					Output -> Options
-				],
-				FilterHousing
-			],
-			Null,
-			Messages :> {Error::FiltrationTypeAndFilterHousingMismatch, Error::InvalidOption}
-		],
-		Example[
-			{Messages, "FiltrationTypeAndFilterHousingMismatch", "FilterHousing option only needs to be provided to PeristalticPump, Vacuum, or Gravity filtrations (and they have to have the correct type):"},
-			Lookup[
-				ExperimentFilter[
-					Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
-					FilterHousing -> Object[Instrument, FilterHousing, "Battlestar Galactica"],
-					FiltrationType -> Vacuum,
-					Output -> Options
-				],
-				FilterHousing
-			],
-			ObjectP[Object[Instrument, FilterHousing, "Battlestar Galactica"]],
-			Messages :> {Error::FiltrationTypeAndFilterHousingMismatch, Error::InvalidOption}
-		],
-
-		Example[
-			{Options, Filter, "Filter option allows specification of type of filter to use:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
-					Filter -> Model[Item,Filter,"id:lYq9jRxnrKxY"],
-					Output->Options
 				],
 				Filter
 			],
-			ObjectP[Model[Item,Filter,"id:lYq9jRxnrKxY"]]
+			ObjectP[Model[Item, Filter, "id:lYq9jRxnrKxY"]]
+		],
+		Example[{Options, Filter, "Filter option allows resolving to the same container if samples are already in a filter plate:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Container, Plate, Filter, "Filter plate 2" <> $SessionUUID],
+					Filter -> Model[Container, Plate, Filter, "Plate Filter, PES, 0.22um, 0.3mL"],
+					Output -> Options
+				],
+				Filter
+			],
+			ObjectP[Object[Container, Plate, Filter, "Filter plate 2" <> $SessionUUID]]
+		],
+		Example[{Options, Filter, "Filter option allows resolving to a new filter if samples are in a different filter model:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Container, Plate, Filter, "Filter plate 2" <> $SessionUUID],
+					Filter -> Model[Container, Plate, Filter, "Slit Cut 96 Well-Plate Filter Plate"],
+					Output -> Options
+				],
+				Filter
+			],
+			ObjectP[Model[Container, Plate, Filter, "Slit Cut 96 Well-Plate Filter Plate"]]
+		],
+		Example[{Options, Filter, "Filter option allows resolving to the same filter vessel tube:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 500 mL (II)" <> $SessionUUID],
+					Filter -> Object[Container, Vessel, Filter, "Filter Test two-part filter (top portion)" <> $SessionUUID],
+					Output -> Options
+				],
+				Filter
+			],
+			ObjectP[Object[Container, Vessel, Filter, "Filter Test two-part filter (top portion)" <> $SessionUUID]]
 		],
 		Example[{Options, FilterPosition, "FilterPosition option allows specification of specific positions in the in which to load the sample:"},
 			protocol = ExperimentFilter[
@@ -2285,89 +2224,12 @@ DefineTests[ExperimentFilter,
 			{"A2", "A3"},
 			Variables :> {protocol}
 		],
-		Example[{Messages, "FilterPositionDoesNotExist", "An error is thrown if FilterPosition is set to a position that does not exist in the indicated filter:"},
-			ExperimentFilter[
-				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID]},
-				AliquotAmount -> 0.2 Milliliter,
-				Filter -> Model[Container, Plate, Filter, "Plate Filter, PES, 0.22um, 0.3mL"],
-				FilterPosition -> {"H13", "A2"}
-			],
-			$Failed,
-			Messages :> {
-				Error::FilterPositionDoesNotExist,
-				Error::DestinationWellDoesntExist,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "FilterPositionInvalid", "An error is thrown if the sample is already in the specified Filter and the FilterPosition is set to a position besides the position the sample is currently in:"},
-			protocol = ExperimentFilter[
-				{Object[Sample, "Filter Sample 1 in filter plate 2" <> $SessionUUID], Object[Sample, "Filter Sample 2 in filter plate 2" <> $SessionUUID]},
-				Preparation -> Robotic,
-				FilterPosition -> {"D4", "D5"}
-			],
-			$Failed,
-			Messages :> {
-				Error::FilterPositionInvalid,
-				Error::FilterPositionDestinationWellConflict,
-				Error::InvalidOption
-			}
-		],
-		Test["If using the same model of plate filter but have different filtering parameters (Intensity and Time), make different resources for these filters and populate the FilterPositions field properly in the manipulations:",
-			protocol = ExperimentFilter[
-				{Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID], Object[Sample, "Filter Test Sample with 3L (II)" <> $SessionUUID], Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},
-				AliquotAmount -> 0.5 Milliliter,
-				Filter -> Model[Container, Plate, Filter, "id:6V0npvK7MMW1"],
-				FiltrationType -> Centrifuge,
-				Time -> {5 Minute, 5 Minute, 7 Minute},
-				WashRetentate -> True,
-				ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
-			];
-			requiredResources = Download[protocol, RequiredResources];
-			{
-				Download[protocol, BatchedUnitOperations[FilterPosition]],
-				DeleteDuplicates[Cases[requiredResources, {resource_, Filters, _, _} :> Download[resource, Object]]]
-			},
-			{
-				{{"A1", "A2", "A1"}},
-				{ObjectP[Object[Resource, Sample]], ObjectP[Object[Resource, Sample]]}
-			},
-			Variables :> {protocol, requiredResources}
-		],
-		Test["If using the same model of plate filter when centrifuging and everything is going into the same collection container plate, make sure the collection container shares the same resource both in the protocol object and in the unit operation:",
-			protocol = ExperimentFilter[
-				{Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID], Object[Sample, "Filter Test Sample with 3L (II)" <> $SessionUUID], Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},
-				AliquotAmount -> 0.5 Milliliter,
-				Filter -> Model[Container, Plate, Filter, "id:6V0npvK7MMW1"],
-				FiltrationType -> Centrifuge,
-				ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
-			];
-			{protRequiredResources, unitOpRequiredResources} = Download[protocol, {RequiredResources, BatchedUnitOperations[[1]][RequiredResources]}];
-			{
-				collectionContainerResources,
-				unitOpCollectionContainerResources
-			} = {
-				Cases[protRequiredResources, {resource:ObjectP[], CollectionContainers, _, _} :> Download[resource, Object]],
-				Cases[unitOpRequiredResources, {resource:ObjectP[], CollectionContainerLink, _, _} :> Download[resource, Object]]
-			};
-			Length[DeleteDuplicates[collectionContainerResources]] == 1 && Length[DeleteDuplicates[unitOpCollectionContainerResources]] == 1 && collectionContainerResources === unitOpCollectionContainerResources,
-			True,
-			Variables :> {protocol, protRequiredResources, unitOpRequiredResources, collectionContainerResources, unitOpCollectionContainerResources}
-		],
-		Example[{Messages, "CentrifugeFilterDestinationRequired", "If Filter is set to a centrifuge filter where DestinationContainerModel is not populated, then an error is thrown:"},
-			ExperimentFilter[
-				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
-				Filter -> Model[Container, Vessel, Filter, "Filter Test Container without CollectionContainerModel" <> $SessionUUID]
-			],
-			$Failed,
-			Messages :> {Error::CentrifugeFilterDestinationRequired, Error::NoFilterAvailable, Error::InvalidOption}
-		],
-		Example[
-			{Options, Syringe, "Syringe option allows specification of model of syringe to be used to use:"},
+		Example[{Options, Syringe, "Syringe option allows specification of model of syringe to be used to use:"},
 			Lookup[
 				ExperimentFilter[
 					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
 					Syringe -> Model[Container, Syringe, "id:AEqRl9Kz1VD1"],
-					Output->Options
+					Output -> Options
 				],
 				Syringe
 			],
@@ -2377,7 +2239,7 @@ DefineTests[ExperimentFilter,
 			protocol = ExperimentFilter[
 				Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
 				Syringe -> Model[Container, Syringe, "id:AEqRl9Kz1VD1"],
-				ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 			];
 			Download[protocol, BatchedUnitOperations[[1]][DestinationRack]],
 			{ObjectP[Model[Container, Rack]]},
@@ -2399,7 +2261,7 @@ DefineTests[ExperimentFilter,
 			protocol = ExperimentFilter[
 				{Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID]},
 				Syringe -> {Model[Container, Syringe, "id:AEqRl9Kz1VD1"], Automatic},
-				ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 			];
 			Download[protocol, BatchedUnitOperations[FlowRate]],
 			{
@@ -2408,170 +2270,17 @@ DefineTests[ExperimentFilter,
 			},
 			Variables :> {protocol}
 		],
-		Example[{Messages, "FiltrationTypeMismatch", "An error will be thrown if FlowRate is specified but not doing syringe filtering:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
-					FiltrationType->Vacuum,
-					FlowRate -> 3 Milliliter / Minute,
-					FiltrateContainerOut -> Model[Container, Vessel, "50mL Tube"],
-					Output->Options
-				],
-				FlowRate
-			],
-			EqualP[3 Milliliter / Minute],
-			Messages:>{Error::FiltrationTypeMismatch,Error::InvalidOption}
-		],
-		Example[{Messages, "FiltrationTypeAndSyringeMismatch", "An error will be shown if a syringe is specified, but non-syringe filtration type is selected:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
-					FiltrationType->Vacuum,
-					Syringe -> Model[Container, Syringe, "id:AEqRl9Kz1VD1"],
-					FiltrateContainerOut -> Model[Container, Vessel, "50mL Tube"],
-					Output->Options
-				],
-				Syringe
-			],
-			ObjectP[Model[Container, Syringe, "id:AEqRl9Kz1VD1"]],
-			Messages:>{Error::FiltrationTypeAndSyringeMismatch,Error::InvalidOption}
-		],
-		Example[{Messages, "FilterMaxVolume", "An error will be shown if a filter is specified with a MaxVolume smaller then the volume of the sample:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
-					Filter->Model[Item,Filter,"Filter Test Membrane Filter" <> $SessionUUID],
-					Output->Options
-				],
-				Filter
-			],
-			ObjectP[Model[Item,Filter,"Filter Test Membrane Filter" <> $SessionUUID]],
-			Messages:>{Error::FilterMaxVolume,Error::InvalidOption}
-		],
-		Example[
-			{Messages, "FilterOptionMismatch", "An error will be shown if a filter and filter physical characteristics are specified that are in conflict:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Sample, "Filter Test Sample with 2L" <> $SessionUUID],
-					Filter->Model[Item,Filter,"Filter Test Membrane Filter" <> $SessionUUID],
-					MembraneMaterial->PTFE,
-					Output->Options
-				],
-				Filter
-			],
-			ObjectP[Model[Item,Filter,"Filter Test Membrane Filter" <> $SessionUUID]],
-			Messages:>{Error::FilterOptionMismatch,Error::InvalidOption}
-		],
-		Example[
-			{Messages, "FilterInletConnectionType", "An error will be shown if a filter and filter physical characteristics are specified that are in conflict:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
-					Filter->Model[Item,Filter,"Filter Test Membrane Filter with LuerSlip" <> $SessionUUID],
-					Output->Options
-				],
-				Filter
-			],
-			ObjectP[Model[Item,Filter,"Filter Test Membrane Filter with LuerSlip" <> $SessionUUID]],
-			Messages:>{Error::FilterInletConnectionType,Error::InvalidOption}
-		],
-		Example[
-			{Messages, "SterileOptionMismatch", "Instrument option allows specification of instrument to use for filtration:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
-					Instrument -> Model[Instrument, PeristalticPump, "VWR Peristaltic Variable Pump PP3400"],
-					Sterile->True,
-					Output->Options
-				],
-				Instrument
-			],
-			ObjectP[Model[Instrument, PeristalticPump, "VWR Peristaltic Variable Pump PP3400"]],
-			Messages:>{Error::SterileOptionMismatch,Error::InvalidOption}
-		],
-		Example[{Messages, "TargetLabelMismatch", "If Target -> Retentate, then RetentateLabel and SampleOutLabel must be the same value; if Target -> Filtrate, then FiltrateLabel and SampleOutLabel must be the same value:"},
-			ExperimentFilter[
-				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},
-				RetentateLabel -> {"Test Label 1", Automatic},
-				SampleOutLabel -> {"Test Label Not 1", "Test Label Not 2"},
-				FiltrateLabel -> {Automatic, "Test Label 2"},
-				Target -> {Retentate, Filtrate},
-				CollectRetentate -> {True, False}
-			],
-			$Failed,
-			Messages:>{
-				Message[Error::TargetLabelMismatch, SampleOutLabel, RetentateLabel, FiltrateLabel, "{Object[Sample, \"Filter Test Sample with 1mL"<>$SessionUUID<>"\"], Object[Sample, \"Filter Test Sample with 15mL"<>$SessionUUID<>"\"]}"],
-				Error::InvalidOption
-			}
-		],
-
-		Example[{Messages, "TargetLabelMismatch", "If Target -> Retentate, then RetentateContainerLabel and ContainerOutLabel must be the same value; if Target -> Filtrate, then FiltrateContainerLabel and ContainerOutLabel must be the same value:"},
-			ExperimentFilter[
-				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},
-				RetentateContainerLabel -> {"Test Label 1", Automatic},
-				ContainerOutLabel -> {"Test Label Not 1", "Test Label Not 2"},
-				FiltrateContainerLabel -> {Automatic, "Test Label 2"},
-				Target -> {Retentate, Filtrate},
-				CollectRetentate -> {True, False}
-			],
-			$Failed,
-			Messages:>{
-				(* doing this and not just Error::TargetLabelMismatch because I want both objects to be caught by this *)
-				Message[Error::TargetLabelMismatch, ContainerOutLabel, RetentateContainerLabel, FiltrateContainerLabel, "{Object[Sample, \"Filter Test Sample with 1mL"<>$SessionUUID<>"\"], Object[Sample, \"Filter Test Sample with 15mL"<>$SessionUUID<>"\"]}"],
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "LabelContainerOutIndexMismatch", "For all values of RetentateContainerLabel that are replicated, the corresponding integer indices in RetentateContainerOut are also be replicated in the same positions:"},
-			ExperimentFilter[
-				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},
-				RetentateContainerLabel -> {"Test Label 1", "Test Label 1"},
-				RetentateContainerOut -> {{1, Model[Container, Vessel, "50mL Tube"]}, {2, Model[Container, Vessel, "50mL Tube"]}},
-				CollectRetentate -> {True, True}
-			],
-			$Failed,
-			Messages:>{
-				Error::LabelContainerOutIndexMismatch,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "LabelContainerOutIndexMismatch", "For all values of FiltrateContainerLabel that are replicated, the corresponding integer indices in FiltrateContainerOut are also be replicated in the same positions:"},
-			ExperimentFilter[
-				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},
-				FiltrateContainerLabel -> {"Test Label 1", "Test Label 1"},
-				FiltrateContainerOut -> {{1, Automatic}, {2, Automatic}},
-				CollectRetentate -> {True, True}
-			],
-			$Failed,
-			Messages:>{
-				Error::LabelContainerOutIndexMismatch,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "FilterPositionDestinationWellConflict", "If FilterPosition and FiltrateDestinationWell are not the same but the FiltrateContainerOut and CollectionContainer are the same, an error is thrown:"},
-			ExperimentFilter[
-				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
-				FilterPosition -> "A4",
-				FiltrateDestinationWell -> "A1",
-				Filter -> Model[Container, Plate, Filter, "Plate Filter, PTFE, 0.22um, 1.5mL"],
-				Preparation -> Robotic
-			],
-			$Failed,
-			Messages:>{
-				Error::FilterPositionDestinationWellConflict,
-				Error::InvalidOption
-			}
-		],
 		Example[
 			{Options, FiltrateContainerOut, "FiltrateContainerOut option allows specification of the model of the destination container to be used:"},
 			Lookup[
 				ExperimentFilter[
 					Object[Sample, "Filter Test Sample with 2L" <> $SessionUUID],
 					FiltrateContainerOut -> Model[Container, Vessel, "Filter Test Container with 4L Max Volume" <> $SessionUUID],
-					Output->Options
+					Output -> Options
 				],
 				FiltrateContainerOut
 			],
-			{1,ObjectP[Model[Container, Vessel, "Filter Test Container with 4L Max Volume" <> $SessionUUID]]}
+			{1, ObjectP[Model[Container, Vessel, "Filter Test Container with 4L Max Volume" <> $SessionUUID]]}
 		],
 		Example[
 			{Options, FiltrateContainerOut, "If the FiltrateContainerOut is resolved automatically during Centrifuge filtration, the samples will remain in the collection portion of the filter:"},
@@ -2604,7 +2313,7 @@ DefineTests[ExperimentFilter,
 					Object[Sample, "Filter Test Sample with 2L" <> $SessionUUID],
 					FiltrateContainerOut -> Model[Container, Vessel, "Filter Test Container with 4L Max Volume" <> $SessionUUID],
 					FiltrateDestinationWell -> "A1",
-					Output->Options
+					Output -> Options
 				],
 				FiltrateDestinationWell
 			],
@@ -2626,7 +2335,7 @@ DefineTests[ExperimentFilter,
 				ExperimentFilter[
 					Object[Sample, "Filter Test Sample with 2L" <> $SessionUUID],
 					MembraneMaterial -> PES,
-					Output->Options
+					Output -> Options
 				],
 				{MembraneMaterial}
 			],
@@ -2639,305 +2348,66 @@ DefineTests[ExperimentFilter,
 					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
 					MembraneMaterial -> PTFE,
 					PrefilterMembraneMaterial -> GxF,
-					Output->Options
+					Output -> Options
 				],
 				{PrefilterMembraneMaterial}
 			],
 			{GxF}
 		],
-
-
-		Example[
-			{Options,PoreSize,"An appropriate filter will be selected when the pore size is specified:"},
+		Example[{Options, PoreSize, "An appropriate filter will be selected when the pore size is specified:"},
 			Download[Lookup[
 				ExperimentFilter[
 					Object[Sample, "Filter Test Sample with 2L" <> $SessionUUID],
 					PoreSize -> .22 Micron,
-					Output->Options
-				],Filter
-			],PoreSize
+					Output -> Options
+				], Filter
+			], PoreSize
 			],
 			.22 Micron
 		],
-		Example[
-			{Options,PrefilterPoreSize,"An appropriate filter will be selected when the prefilter pore size is specified:"},
+		Example[{Options, PrefilterPoreSize, "An appropriate filter will be selected when the prefilter pore size is specified:"},
 			Download[Lookup[
 				ExperimentFilter[
 					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
 					MembraneMaterial->PTFE,
 					PrefilterPoreSize-> 1. Micron,
-					Output->Options
-				],Filter
-			],{PrefilterPoreSize,PrefilterMembraneMaterial}
+					Output -> Options
+				], Filter
+			], {PrefilterPoreSize, PrefilterMembraneMaterial}
 			],
 			{1. Micron, GxF}
 		],
 
-		Example[
-			{Options,MolecularWeightCutoff,"An appropriate filter will be selected when the molecular weight cutoff is specified:"},
+		Example[{Options, MolecularWeightCutoff, "An appropriate filter will be selected when the molecular weight cutoff is specified:"},
 			Lookup[
 				ExperimentFilter[
 					Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID],
 					MolecularWeightCutoff -> 100 Kilo Dalton,
-					Output->Options
-				],{PoreSize,MolecularWeightCutoff}
+					Output -> Options
+				], {PoreSize, MolecularWeightCutoff}
 			],
-			{Null,EqualP[100 Kilodalton]}
+			{Null, EqualP[100 Kilodalton]}
 		],
-		Example[
-			{Options,MolecularWeightCutoff,"Specifying a filter with a molecular weight cutoff will automatically resolve the MolecularWeightCutoff option to that value:"},
+		Example[{Options, MolecularWeightCutoff, "Specifying a filter with a molecular weight cutoff will automatically resolve the MolecularWeightCutoff option to that value:"},
 			Lookup[
 				ExperimentFilter[
 					Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID],
 					Filter -> Model[Container, Vessel, Filter, "Centrifuge Filter, PES, 100K MWCO, 20mL filter"],
-					Output->Options
-				],{PoreSize,MolecularWeightCutoff}
-			],
-			{Null,100. Kilo Dalton}
-		],
-		Example[{Messages, "PoreSizeAndMolecularWeightCutoff", "PoreSize and MolecularWeightCutoff cannot be both specified for the same filtration:"},
-			Quiet[Lookup[
-				ExperimentFilter[
-					Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID],
-					MolecularWeightCutoff -> 100 Kilo Dalton,
-					PoreSize -> .22 Micron,
-					FiltrateContainerOut -> Model[Container, Vessel, "2mL Tube"],
 					Output -> Options
-				],
-				{PoreSize, MolecularWeightCutoff}
-			], {Error::FilterOptionMismatch, Error::NoFilterAvailable}],
-			{.22 Micron, 100 Kilo Dalton},
-			EquivalenceFunction -> Equal,
-			Messages :> {Error::PoreSizeAndMolecularWeightCutoff, Error::InvalidOption}
-		],
-		Example[{Messages, "PoreSizeAndMolecularWeightCutoff", "PoreSize and MolecularWeightCutoff cannot be both specified as Null:"},
-			Quiet[Lookup[
-				ExperimentFilter[
-					Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID],
-					MolecularWeightCutoff -> Null,
-					PoreSize -> Null,
-					FiltrateContainerOut -> Model[Container, Vessel, "2mL Tube"],
-					Output -> Options
-				],
-				{PoreSize, MolecularWeightCutoff}
-			], {Error::FilterOptionMismatch, Error::NoFilterAvailable}],
-			{Null, Null},
-			Messages :> {Error::PoreSizeAndMolecularWeightCutoff, Error::InvalidOption}
-		],
-		Example[{Messages, "PoreSizeAndMolecularWeightCutoff", "PoreSize and MolecularWeightCutoff can be both Null if a filter is specified:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID],
-					Filter -> Model[Container, Plate, Filter, "id:8qZ1VWZeAw8p"] (*HisPur Ni-NTA Spin Plates*),
-					MolecularWeightCutoff -> Null,
-					PoreSize -> Null,
-					FiltrateContainerOut -> Model[Container, Vessel, "2mL Tube"],
-					Output -> Options
-				],
-				{PoreSize, MolecularWeightCutoff}
+				],{PoreSize, MolecularWeightCutoff}
 			],
-			{Null, Null}
+			{Null, 100. Kilo Dalton}
 		],
-		Example[{Messages,"NoFilterAvailable","An error will be returned if there is currently no filter in stock capable of performing the filtration requested:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID],
-					MolecularWeightCutoff -> 100 Kilo Dalton,
-					PoreSize-> 100. Micron,
-					Output->Options
-				],
-				{PoreSize,MolecularWeightCutoff}
-			],
-			{EqualP[100. Micron],EqualP[100 Kilo Dalton]},
-			Messages:>{
-				Error::PoreSizeAndMolecularWeightCutoff,
-				Error::FilterOptionMismatch,
-				Error::NoFilterAvailable,
-				Error::InvalidOption
-			}
-		],
-		Example[
-			{Messages,"FilterPlateDimensionsExceeded","An error will be thrown if the filter plate exceeds the size limit of the Filter Plate Slot on the AirPressure filtration instrument:"},
-			ExperimentFilter[
-				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID]},
-				Filter -> Model[Container, Plate, Filter, "Filter Test Large Plate Filter Model" <> $SessionUUID],
-				Preparation -> Robotic
-			],
-			$Failed,
-			Messages:>{Error::FilterPlateDimensionsExceeded,Error::NoFilterAvailable,Error::InvalidOption}
-		],
-		Example[
-			{Messages,"FilterPlateDimensionsExceeded","An error will be thrown in RSP if the filter plate exceeds the size limit of the Filter Plate Slot on the AirPressure filtration instrument:"},
-			ExperimentRoboticSamplePreparation[
-				{
-					LabelContainer[Label->"myPlate",Container->Model[Container, Plate, Filter, "Filter Test Large Plate Filter Model" <> $SessionUUID]],
-					Transfer[Source->Model[Sample,"Milli-Q water"],Destination->{{"A1","myPlate"}},Amount->200Microliter],
-					Filter[Sample->"myPlate",Time->2Minute,Pressure ->200PSI]
-				}
-			],
-			$Failed,
-			Messages:>{Error::NoAvailableModel,Error::FilterPlateDimensionsExceeded,Error::InvalidInput}
-		],
-		Example[
-			{Messages,"NoUsableCentrifuge","An error will be thrown if no centrifuge is available to perform the specified filtration:"},
+		Example[{Options, Intensity, "The intensity at which the samples should be spun when using centrifuge filtration:"},
 			Lookup[ExperimentFilter[
 				{
 					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
 					Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID]
 				},
-				FiltrationType->Centrifuge,
-				Intensity->{200000 GravitationalAcceleration, 100000 RPM},
-				Output->Options
-			],Intensity],
-			{200000 GravitationalAcceleration, 100000 RPM},
-			Messages:>{Error::NoUsableCentrifuge,Error::InvalidOption}
-		],
-		Example[
-			{Messages,"UnusableCentrifuge","An error will be thrown if the specified centrifuge is not capable of performing the filtration:"},
-			Lookup[ExperimentFilter[
-				{
-					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
-					Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID]
-				},
-				Instrument->Model[Instrument, Centrifuge, "id:jLq9jXY4kGJx"],
-				Output->Options
-			],Instrument],
-			ObjectP[Model[Instrument, Centrifuge, "id:jLq9jXY4kGJx"]],
-			Messages:>{Error::UnusableCentrifuge,Error::InvalidOption}
-		],
-		Example[{Messages,"FiltrationTypeMismatch","An error will be thrown if the filtration type is Centrifuge but the Intensity is Null:"},
-			Lookup[ExperimentFilter[
-				{
-					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
-					Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID]
-				},
-				FiltrationType->Centrifuge,
-				Output->Options,
-				Intensity->Null
-			],Intensity],
-			Null,
-			Messages:>{Error::FiltrationTypeMismatch,Error::InvalidOption}
-		],
-		Example[{Messages, "FiltrationTypeMismatch", "An error will be thrown if the filtration type is anything but Syringe or Centrifuge but the Temperature is specified:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
-					FiltrationType -> Vacuum,
-					Output -> Options,
-					Temperature -> 30 Celsius
-				],
-				Temperature
-			],
-			30 Celsius,
-			Messages :> {Error::FiltrationTypeMismatch, Error::InvalidOption}
-		],
-		Example[{Messages, "FilterUntilDrainedIncompatibleWithFilterType", "An error will be thrown if the filtration type is incompatible with the FilterUntilDrained options:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
-					FilterUntilDrained -> True,
-					FiltrationType -> Centrifuge,
-					Output -> Options
-				],
-				FilterUntilDrained
-			],
-			True,
-			Messages :> {Error::FilterUntilDrainedIncompatibleWithFilterType, Error::InvalidOption}
-		],
-		Example[{Messages, "IncompatibleFilterTimes", "An error will be thrown if the Time, MaxTime, and FilterUntilDrained options are in conflict with each other:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
-					FiltrationType -> Vacuum,
-					Time -> 5 Minute,
-					FilterUntilDrained -> True,
-					MaxTime -> Null,
-					Output -> Options
-				],
-				Time
-			],
-			5 Minute,
-			Messages :> {Error::IncompatibleFilterTimes, Error::InvalidOption}
-		],
-		Example[{Messages, "RetentateWashCentrifugeIntensityTypeMismatch", "An error will be thrown if RetentateWashCentrifugeIntensity is specified but FiltrationType is not Centrifuge:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
-					FiltrationType -> Vacuum,
-					RetentateWashCentrifugeIntensity -> 500 RPM,
-					Output -> Options
-				],
-				RetentateWashCentrifugeIntensity
-			],
-			{500 RPM},
-			Messages :> {Error::RetentateWashCentrifugeIntensityTypeMismatch, Error::InvalidOption}
-		],
-		Example[{Messages, "RetentateWashCentrifugeIntensityTypeMismatch", "An error will be thrown if RetentateWashCentrifugeIntensity is specified but FiltrationType is not Centrifuge:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
-					FiltrationType -> Syringe,
-					WashRetentate -> True,
-					Output -> Options
-				],
-				WashRetentate
-			],
-			True,
-			Messages :> {Error::WashRetentateTypeMismatch, Error::InvalidOption}
-		],
-		Example[{Messages, "RetentateWashCentrifugeIntensityTypeMismatch", "An error will be thrown if RetentateWashMix is False but the other RetentateWashMix options are specified:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
-					FiltrationType -> Vacuum,
-					WashRetentate -> True,
-					RetentateWashMix -> False,
-					NumberOfRetentateWashMixes -> 4,
-					Output -> Options
-				],
-				WashRetentate
-			],
-			True,
-			Messages :> {Error::RetentateWashMixMismatch, Error::InvalidOption}
-		],
-		Example[{Messages, "WashRetentateMismatch", "An error will be thrown if WashRetentate is False but the other retentate washing options are specified:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
-					FiltrationType -> Vacuum,
-					WashRetentate -> False,
-					NumberOfRetentateWashes -> 4,
-					Output -> Options
-				],
-				WashRetentate
-			],
-			False,
-			Messages :> {Error::WashRetentateMismatch, Error::InvalidOption}
-		],
-		Example[{Messages, "ResuspensionVolumeTooHigh", "An error will be thrown if ResuspensionVolume is greater than the MaxVolume of the filter:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
-					Filter -> Model[Container, Vessel, Filter, "Centrifuge Filter, PES, 100K MWCO, 20mL filter"],
-					ResuspensionVolume -> 40 Milliliter,
-					Output -> Options
-				],
-				ResuspensionVolume
-			],
-			40 Milliliter,
-			Messages :> {Error::ResuspensionVolumeTooHigh, Error::InvalidOption}
-		],
-		Example[
-			{Options,Intensity,"The intensity at which the samples should be spun when using centrifuge filtration:"},
-			Lookup[ExperimentFilter[
-				{
-					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
-					Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID]
-				},
-				FiltrationType->Centrifuge,
-				Intensity->{2000 GravitationalAcceleration, 1000 RPM},
-				Output->Options
-			],Intensity],
+				FiltrationType -> Centrifuge,
+				Intensity -> {2000 GravitationalAcceleration, 1000 RPM},
+				Output -> Options
+			], Intensity],
 			{2000 GravitationalAcceleration, 1000 RPM}
 		],
 		Example[{Options, Counterweight, "Specify the label for the counterweight, and resolve to a counterweight model:"},
@@ -2958,15 +2428,13 @@ DefineTests[ExperimentFilter,
 			Variables :> {options},
 			Messages :> {Warning::SterileContainerRecommended}
 		],
-
-		Example[
-			{Options,Time,"The time for which the samples should be spun when using centrifuge filtration:"},
+		Example[{Options, Time, "The time for which the samples should be spun when using centrifuge filtration:"},
 			Lookup[ExperimentFilter[
 				Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
-				FiltrationType->Centrifuge,
-				Time->10 Minute,
-				Output->Options
-			],Time],
+				FiltrationType -> Centrifuge,
+				Time -> 10 Minute,
+				Output -> Options
+			], Time],
 			10 Minute
 		],
 		Example[{Options, FilterUntilDrained, "Indicates if the sample should be filtered until all sample has been drained through:"},
@@ -2990,17 +2458,27 @@ DefineTests[ExperimentFilter,
 			], MaxTime],
 			EqualP[30 Minute]
 		],
-		Example[
-			{Options,Temperature,"The temperature at which the samples should be spun when using centrifuge filtration:"},
+		Example[{Options, Temperature, "The temperature at which the samples should be spun when using centrifuge filtration:"},
 			Lookup[ExperimentFilter[
 				Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
-				FiltrationType->Centrifuge,
-				Temperature->12 Celsius,
-				Output->Options
-			],Temperature],
+				FiltrationType -> Centrifuge,
+				Temperature -> 12 Celsius,
+				Output -> Options
+			], Temperature],
 			12 Celsius
 		],
-
+		Example[{Options, Sterile, "An appropriate instrument will be selected when the Sterile option is used:"},
+			Download[Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
+					FiltrationType-> Vacuum,
+					Sterile -> True,
+					Output -> Options
+				],Instrument
+			],Name
+			],
+			"Rocker 300 for Filtration, Sterile"
+		],
 		Example[{Options, ResuspensionVolume, "ResuspensionVolume option indicates the amount of liquid to resuspend retentate before transferring it to a new container:"},
 			Lookup[
 				ExperimentFilter[
@@ -3071,198 +2549,67 @@ DefineTests[ExperimentFilter,
 			],
 			{"Resuspension Buffer Container 1", _String}
 		],
-		Example[{Options,FilterStorageCondition,"The storage condition at which the filter should be stored after the end of the protocol:"},
+		Example[{Options, FilterStorageCondition, "The storage condition at which the filter should be stored after the end of the protocol:"},
 			Lookup[
 				ExperimentFilter[
 					{
 						Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
 						Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID]
 					},
-					FiltrationType->Centrifuge,
-					Output->Options,
+					FiltrationType -> Centrifuge,
+					Output -> Options,
 					FilterStorageCondition -> {Disposal, Refrigerator}
 				],
 				FilterStorageCondition
 			],
 			{Disposal, Refrigerator}
 		],
-		Example[
-			{Options,SamplesOutStorageCondition,"The storage condition at which the samples should be stored after the end of the protocol:"},
+		Example[{Options, SamplesOutStorageCondition, "The storage condition at which the samples should be stored after the end of the protocol:"},
 			Lookup[ExperimentFilter[
 				{
 					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
 					Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID]
 				},
-				FiltrationType->Centrifuge,
-				Output->Options,
-				SamplesOutStorageCondition->{AmbientStorage,Refrigerator}
-			],SamplesOutStorageCondition],
-			{AmbientStorage,Refrigerator}
+				FiltrationType -> Centrifuge,
+				Output -> Options,
+				SamplesOutStorageCondition -> {AmbientStorage, Refrigerator}
+			], SamplesOutStorageCondition],
+			{AmbientStorage, Refrigerator}
 		],
+		Example[{Options, Template, "A template protocol whose methodology should be reproduced in running this experiment. Option values will be inherited from the template protocol, but can be individually overridden by directly specifying values for those options to this Experiment function:"},
+			(* Create an initial protocol *)
+			templateFilterProtocol = ExperimentFilter[
+				Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
+				FiltrationType -> Centrifuge,Time->23 Minute,
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID],
+				Name -> "Filter Test Template Protocol" <> $SessionUUID
+			];
 
-		Example[
-			{Options,Template,"A template protocol whose methodology should be reproduced in running this experiment. Option values will be inherited from the template protocol, but can be individually overridden by directly specifying values for those options to this Experiment function:"},
-			Module[{templateFilterProtocol,repeatProtocol},
-				(* Create an initial protocol *)
-				templateFilterProtocol=ExperimentFilter[
-					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
-					FiltrationType->Centrifuge,Time->23 Minute,
-					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID],
-					Name->"Filter Test Template Protocol" <> $SessionUUID
-				];
+			(* Create another protocol which will exactly repeat the first *)
+			repeatProtocol = ExperimentFilter[
+				Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
+				Template->templateFilterProtocol,
+				Intensity->2200 GravitationalAcceleration,
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+			];
 
-				(* Create another protocol which will exactly repeat the first *)
-				repeatProtocol=ExperimentFilter[
-					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
-					Template->templateFilterProtocol,
-					Intensity->2200 GravitationalAcceleration,
-					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
-				];
-
-				Download[
-					{templateFilterProtocol,repeatProtocol},
-					{Intensity,Times,Temperatures}
-				]
+			Download[
+				{templateFilterProtocol,repeatProtocol},
+				{Intensity,Times,Temperatures}
 			],
 			{
 				{
 					{RPMP},
-					{EqualP[Quantity[23.`,"Minutes"]]},
+					{EqualP[Quantity[23.`, "Minutes"]]},
 					{EqualP[$AmbientTemperature]}
 				},
 				{
 					{EqualP[Quantity[2200.`, "StandardAccelerationOfGravity"]]},
-					{EqualP[Quantity[23.`,"Minutes"]]},
+					{EqualP[Quantity[23.`, "Minutes"]]},
 					{EqualP[$AmbientTemperature]}
 				}
-			}
-		],
-
-		Example[
-			{Messages,"PrefilterOptionsMismatch","If a prefilter is being requested, than neither PrefilterPoreSize nor PrefilterMembraneMaterial can be specified as Null:"},
-			ExperimentFilter[
-				{Object[Sample,"Filter Test Sample with 1mL" <> $SessionUUID],Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},
-				MembraneMaterial->PTFE,
-				PrefilterPoreSize-> {1. Micron,Null},
-				PrefilterMembraneMaterial->{Null,GxF},
-				FiltrateContainerOut -> {Model[Container, Vessel, "2mL Tube"], Model[Container, Vessel, "50mL Tube"]},
-				Output->Options
-			],
-			{__Rule},
-			Messages:>{Error::PrefilterOptionsMismatch, Error::NoFilterAvailable, Error::InvalidOption, Error::FilterOptionMismatch}
-		],
-
-		Example[
-			{Options, Sterile, "An appropriate instrument will be selected when the Sterile option is used:"},
-			Download[Lookup[
-				ExperimentFilter[
-					Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
-					FiltrationType-> Vacuum,
-					Sterile -> True,
-					Output->Options
-				],Instrument
-			],Name
-			],
-			"Rocker 300 for Filtration, Sterile"
-		],
-
-		Example[{Messages,"CollectionContainerPlateMismatch","If Filter and CollectionContainer are specified, if one is a plate and one is not, an error is thrown:"},
-			ExperimentFilter[
-				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
-				Filter -> Model[Container, Plate, Filter, "id:6V0npvK7MMW1"],
-				CollectionContainer -> Model[Container, Vessel, "2mL Tube"]
-			],
-			$Failed,
-			Messages:>{Error::CollectionContainerPlateMismatch,Error::NoUsableCentrifuge, Error::InvalidOption}
-		],
-		(* NOTE: Error messages *)
-
-		Example[{Messages, "SterileContainerRecommended", "If the provided FiltrateContainerOut option was for a non-sterile container, but sterile filtration was requested, the container will still be used but a message will be shown:"},
-			Lookup[
-				ExperimentFilter[
-					Object[Container, Vessel, "Filter Test Container for 500 mL sample" <> $SessionUUID],
-					FiltrateContainerOut -> Model[Container, Vessel, "1L Glass Bottle"],
-					Sterile -> True,
-					Output -> Options
-				],
-				{
-					FiltrateContainerOut,
-					Sterile
-				}
-			],
-			{
-				{1, ObjectP[Model[Container, Vessel, "id:zGj91aR3ddXJ"]]},
-				True
 			},
-			Messages :> {Warning::SterileContainerRecommended}
-		],
-
-		Example[{Messages, "VolumeTooLargeForContainerOut", "If the provided FiltrateContainerOut option was for a container which MaxVolume is less then the volume of the sample, then an appropriate container will be picked and a message will be shown:"},
-			ExperimentFilter[
-				Object[Container, Vessel, "Filter Test Container for 3L sample (I)" <> $SessionUUID],
-				FiltrateContainerOut->Model[Container, Vessel, "500mL Glass Bottle"],
-				Output->Options
-			],
-			_,
-			Messages:>{Error::VolumeTooLargeForContainerOut,Error::InvalidOption}
-		],
-		Example[{Messages, "VolumeTooLargeForContainerOut", "If the volume of the sample + the retentate washes is too large for the collection container, don't throw an error because we'll just move the liquid to a different container between cycles so it can fit:"},
-			ExperimentFilter[
-				Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
-				Filter -> Model[Container, Vessel, Filter, "Centrifuge Filter, PES, 100K MWCO, 20mL filter"],
-				RetentateWashBuffer -> Model[Sample, "Milli-Q water"],
-				RetentateWashVolume -> 10 Milliliter,
-				NumberOfRetentateWashes -> 3,
-				Output -> Options
-			],
-			{__Rule}
-		],
-
-		Example[{Messages, "MissingVolumeInformation", "If the sample to be filtered does not have its Volume populated, the MaxVolume of the container it is in will be used to determine the type of filtration method possible:"},
-			ExperimentFilter[
-				Object[Sample, "Filter Test Sample without volume" <> $SessionUUID],
-				Output -> Options
-			],
-			_,
-			Messages :> {Warning::MissingVolumeInformation}
-		],
-
-		Example[{Messages, "VolumeTooLargeForSyringe", "The MaxVolume of a specified syringe has to be greater then the volume of the sample to be filtered:"},
-			ExperimentFilter[
-				Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
-				Syringe -> Model[Container, Syringe, "10mL Syringe with Luer-Lok\[RegisteredTrademark] Tip"],
-				Output -> Options
-			],
-			_,
-			Messages :> {Error::VolumeTooLargeForSyringe, Error::InvalidOption}
-		],
-
-		Example[{Messages, "IncorrectSyringeConnection", "The ConnectionType of a specified syringe has to be a LeurLock:"},
-			ExperimentFilter[
-				Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
-				Syringe -> Model[Container, Syringe, "50mL All-Plastic Disposable Luer-Slip Syringe"],
-				Output -> Options
-			],
-			_,
-			Messages :> {Error::IncorrectSyringeConnection, Error::InvalidOption}
-		],
-		Example[{Messages, "NumberOfFilterPrewettingsTooHigh", "NumberOfFilterPrewettings cannot be greater than 1 for PeristalticPump or BottleTop filters:"},
-			ExperimentFilter[
-				Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
-				FiltrationType -> PeristalticPump,
-				NumberOfFilterPrewettings -> 3
-			],
-			$Failed,
-			Messages :> {Error::NumberOfFilterPrewettingsTooHigh, Error::InvalidOption}
-		],
-		Example[{Messages, "PrewetFilterIncompatibleWithFilterType", "Cannot perform filter prewetting for syringe or filter block filters:"},
-			ExperimentFilter[
-				Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
-				FiltrationType -> Syringe,
-				PrewetFilter -> True
-			],
-			$Failed,
-			Messages :> {Error::PrewetFilterIncompatibleWithFilterType, Error::InvalidOption}
+			Variables :> {templateFilterProtocol, repeatProtocol}
 		],
 		(* ExperimentIncubate tests. *)
 		Example[{Options, Incubate, "Indicates if the SamplesIn should be incubated at a fixed temperature prior to starting the experiment or aliquoting. Incubate->True indicates that all SamplesIn should be incubated. Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified):"},
@@ -3437,7 +2784,7 @@ DefineTests[ExperimentFilter,
 			Variables :> {options}
 		],
 		Example[{Options, ConcentratedBuffer, "The concentrated buffer which should be diluted by the BufferDilutionFactor with the BufferDiluent; the diluted version of the ConcentratedBuffer will then be added to any aliquot samples that require dilution, where the volume of this buffer added is the difference between the AliquotAmount and the total AssayVolume:"},
-			options = ExperimentFilter[Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID], AssayVolume -> 5 Milliliter, AliquotAmount-> 2 Milliliter,ConcentratedBuffer -> Model[Sample, StockSolution, "10x UV buffer"], Output -> Options];
+			options = ExperimentFilter[Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID], AssayVolume -> 5 Milliliter, AliquotAmount-> 2 Milliliter, ConcentratedBuffer -> Model[Sample, StockSolution, "10x UV buffer"], Output -> Options];
 			Lookup[options, ConcentratedBuffer],
 			ObjectP[Model[Sample, StockSolution, "10x UV buffer"]],
 			Variables :> {options}
@@ -3482,7 +2829,7 @@ DefineTests[ExperimentFilter,
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentFilter[Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID], AliquotContainer -> Model[Container, Plate, "In Situ-1 Crystallization Plate"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1,ObjectP[Model[Container, Plate, "In Situ-1 Crystallization Plate"]]},
+			{{1, ObjectP[Model[Container, Plate, "In Situ-1 Crystallization Plate"]]}},
 			Variables :> {options}
 		],
 		Example[{Options, DestinationWell, "The desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
@@ -3493,7 +2840,7 @@ DefineTests[ExperimentFilter,
 				Output -> Options
 			];
 			Lookup[options, DestinationWell],
-			"A2",
+			{"A2"},
 			Variables :> {options}
 		],
 		Example[{Options, ImageSample, "Indicates if any samples that are modified in the course of the experiment should be freshly imaged after running the experiment:"},
@@ -3542,8 +2889,753 @@ DefineTests[ExperimentFilter,
 		Test["ExperimentFilter returns a simulation blob if Output -> Simulation:",
 			ExperimentFilter[Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID], Output -> Simulation],
 			SimulationP
-		]
+		],
+		(*== Messages ==*)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentFilter[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentFilter[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentFilter[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentFilter[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
 
+				ExperimentFilter[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentFilter[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "OccludingRetentateMismatch", "If CollectOccludingRetentate is set to False, then OccludingRetentateContainer, OccludingRetentateDestinationWell, and OccludingRetentateContainerLabel must not be specified:"},
+			ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+				FiltrationType -> Syringe,
+				CollectOccludingRetentate -> False,
+				OccludingRetentateContainer -> Model[Container, Vessel, "50mL Tube"]
+			],
+			$Failed,
+			Messages :> {
+				Error::OccludingRetentateMismatch,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "OccludingRetentateNotSupported", "If FiltrationType is not set to Syringe, then CollectOccludingRetentate cannot be True:"},
+			ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+				FiltrationType -> Vacuum,
+				CollectOccludingRetentate -> True
+			],
+			$Failed,
+			Messages :> {
+				Error::OccludingRetentateNotSupported,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "PrewetFilterMismatch", "Throw an error if PrewetFilter is set to False but a prewetting option is specified:"},
+			ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 500 mL" <> $SessionUUID],
+				PrewetFilter -> False,
+				PrewetFilterBuffer -> Model[Sample, "Methanol"]
+			],
+			$Failed,
+			Messages :> {Error::PrewetFilterMismatch, Error::InvalidOption}
+		],
+		Example[{Messages, "PrewetFilterCentrifugeIntensityTypeMismatch", "Throw an error if PrewetFilterCentrifugeIntensity is specified but FiltrationType is not Centrifuge:"},
+			ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 500 mL" <> $SessionUUID],
+				PrewetFilterCentrifugeIntensity -> 1000 RPM
+			],
+			$Failed,
+			Messages :> {Error::PrewetFilterCentrifugeIntensityTypeMismatch, Error::InvalidOption}
+		],
+		Example[{Messages, "FiltrationTypeAndInstrumentMismatch", "A mismatch between an instrument and filtration type will product an error message:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
+					Instrument -> Model[Instrument, PeristalticPump, "VWR Peristaltic Variable Pump PP3400"],
+					FiltrationType->Vacuum,
+					Output -> Options
+				],
+				{FiltrationType,Instrument}
+			],
+			{Vacuum, ObjectP[Model[Instrument, PeristalticPump, "VWR Peristaltic Variable Pump PP3400"]]},
+			Messages :> {Error::FiltrationTypeAndInstrumentMismatch, Error::InvalidOption}
+		],
+		Example[{Messages, "FiltrationTypeAndFilterHousingMismatch", "FilterHousing option cannot be set to Null for PeristalticPump filtrations:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
+					FiltrationType -> PeristalticPump,
+					FilterHousing -> Null,
+					Output -> Options
+				],
+				FilterHousing
+			],
+			Null,
+			Messages :> {Error::FiltrationTypeAndFilterHousingMismatch, Error::InvalidOption}
+		],
+		Example[{Messages, "FiltrationTypeAndFilterHousingMismatch", "FilterHousing option only needs to be provided to PeristalticPump, Vacuum, or Gravity filtrations (and they have to have the correct type):"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
+					FilterHousing -> Object[Instrument, FilterHousing, "Battlestar Galactica"],
+					FiltrationType -> Vacuum,
+					Output -> Options
+				],
+				FilterHousing
+			],
+			ObjectP[Object[Instrument, FilterHousing, "Battlestar Galactica"]],
+			Messages :> {Error::FiltrationTypeAndFilterHousingMismatch, Error::InvalidOption}
+		],
+		Example[{Messages, "FilterPositionDoesNotExist", "An error is thrown if FilterPosition is set to a position that does not exist in the indicated filter:"},
+			ExperimentFilter[
+				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID]},
+				AliquotAmount -> 0.2 Milliliter,
+				Filter -> Model[Container, Plate, Filter, "Plate Filter, PES, 0.22um, 0.3mL"],
+				FilterPosition -> {"H13", "A2"}
+			],
+			$Failed,
+			Messages :> {
+				Error::FilterPositionDoesNotExist,
+				Error::DestinationWellDoesntExist,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "FilterPositionInvalid", "An error is thrown if the sample is already in the specified Filter and the FilterPosition is set to a position besides the position the sample is currently in:"},
+			ExperimentFilter[
+				{Object[Sample, "Filter Sample 1 in filter plate 2" <> $SessionUUID], Object[Sample, "Filter Sample 2 in filter plate 2" <> $SessionUUID]},
+				Preparation -> Robotic,
+				FilterPosition -> {"D4", "D5"}
+			],
+			$Failed,
+			Messages :> {
+				Error::FilterPositionInvalid,
+				Error::FilterPositionDestinationWellConflict,
+				Error::InvalidOption
+			}
+		],
+		Test["Generate an Object[Protocol, ManualCellPreparation] if Preparation -> Manual and a cell-containing sample is used:",
+			ExperimentFilter[
+				{Object[Sample, "Filter Test cell sample 1 " <> $SessionUUID]},
+				Preparation -> Manual,
+				ImageSample -> False,
+				FiltrationType -> Vacuum,
+				MeasureVolume -> False,
+				MeasureWeight -> False
+			],
+			ObjectP[Object[Protocol, ManualCellPreparation]]
+		],
+		Test["Generate an Object[Protocol, RoboticCellPreparation] if Preparation -> Robotic and a cell-containing sample is used:",
+			ExperimentFilter[
+				{Object[Sample, "Filter Test cell sample 1 " <> $SessionUUID]},
+				Preparation -> Robotic,
+				ImageSample -> False,
+				MeasureVolume -> False,
+				MeasureWeight -> False
+			],
+			ObjectP[Object[Protocol, RoboticCellPreparation]]
+		],
+		Test["If using the same model of plate filter but have different filtering parameters (Intensity and Time), make different resources for these filters and populate the FilterPositions field properly in the manipulations:", 
+			protocol = ExperimentFilter[
+				{Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID], Object[Sample, "Filter Test Sample with 3L (II)" <> $SessionUUID], Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},
+				AliquotAmount -> 0.5 Milliliter,
+				Filter -> Model[Container, Plate, Filter, "id:6V0npvK7MMW1"],
+				FiltrationType -> Centrifuge,
+				Time -> {5 Minute, 5 Minute, 7 Minute},
+				WashRetentate -> True,
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+			];
+			requiredResources = Download[protocol, RequiredResources];
+			{
+				Download[protocol, BatchedUnitOperations[FilterPosition]],
+				DeleteDuplicates[Cases[requiredResources, {resource_, Filters, _, _} :> Download[resource, Object]]]
+			},
+			{
+				{{"A1", "A2", "A1"}},
+				{ObjectP[Object[Resource, Sample]], ObjectP[Object[Resource, Sample]]}
+			},
+			Variables :> {protocol, requiredResources}
+		],
+		Test["If using the same model of plate filter when centrifuging and everything is going into the same collection container plate, make sure the collection container shares the same resource both in the protocol object and in the unit operation:", 
+			protocol = ExperimentFilter[
+				{Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID], Object[Sample, "Filter Test Sample with 3L (II)" <> $SessionUUID], Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},
+				AliquotAmount -> 0.5 Milliliter,
+				Filter -> Model[Container, Plate, Filter, "id:6V0npvK7MMW1"],
+				FiltrationType -> Centrifuge,
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+			];
+			{protRequiredResources, unitOpRequiredResources} = Download[protocol, {RequiredResources, BatchedUnitOperations[[1]][RequiredResources]}];
+			{
+				collectionContainerResources,
+				unitOpCollectionContainerResources
+			} = {
+				Cases[protRequiredResources, {resource:ObjectP[], CollectionContainers, _, _} :> Download[resource, Object]],
+				Cases[unitOpRequiredResources, {resource:ObjectP[], CollectionContainerLink, _, _} :> Download[resource, Object]]
+			};
+			Length[DeleteDuplicates[collectionContainerResources]] == 1 && Length[DeleteDuplicates[unitOpCollectionContainerResources]] == 1 && collectionContainerResources === unitOpCollectionContainerResources,
+			True,
+			Variables :> {protocol, protRequiredResources, unitOpRequiredResources, collectionContainerResources, unitOpCollectionContainerResources}
+		],
+		Example[{Messages, "CentrifugeFilterDestinationRequired", "If Filter is set to a centrifuge filter where DestinationContainerModel is not populated, then an error is thrown:"},
+			ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
+				(* importantly, this filter is supposed to not have DestinationContainerModel populated; if it gets it ever, then this test will fail*)
+				Filter -> Model[Container,Vessel,Filter,"Centrifuge Filter, PES, 0.22um, 20mL"]
+			],
+			$Failed,
+			Messages :> {Error::CentrifugeFilterDestinationRequired, Error::InvalidOption}
+		],
+		Example[{Messages, "FiltrationTypeMismatch", "An error will be thrown if FlowRate is specified but not doing syringe filtering:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FiltrationType->Vacuum,
+					FlowRate -> 3 Milliliter / Minute,
+					FiltrateContainerOut -> Model[Container, Vessel, "50mL Tube"],
+					Output -> Options
+				],
+				FlowRate
+			],
+			EqualP[3 Milliliter / Minute],
+			Messages :> {Error::FiltrationTypeMismatch, Error::InvalidOption}
+		],
+		Example[{Messages, "FiltrationTypeAndSyringeMismatch", "An error will be shown if a syringe is specified, but non-syringe filtration type is selected:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FiltrationType->Vacuum,
+					Syringe -> Model[Container, Syringe, "id:AEqRl9Kz1VD1"],
+					FiltrateContainerOut -> Model[Container, Vessel, "50mL Tube"],
+					Output -> Options
+				],
+				Syringe
+			],
+			ObjectP[Model[Container, Syringe, "id:AEqRl9Kz1VD1"]],
+			Messages :> {Error::FiltrationTypeAndSyringeMismatch, Error::InvalidOption}
+		],
+		Example[{Messages, "FilterMaxVolume", "An error will be shown if a filter is specified with a MaxVolume smaller then the volume of the sample:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
+					Filter-> Model[Item,Filter, "Filter Test Membrane Filter" <> $SessionUUID],
+					Output -> Options
+				],
+				Filter
+			],
+			ObjectP[Model[Item,Filter, "Filter Test Membrane Filter" <> $SessionUUID]],
+			Messages :> {Error::FilterMaxVolume, Error::InvalidOption}
+		],
+		Example[{Messages, "FilterOptionMismatch", "An error will be shown if a filter and filter physical characteristics are specified that are in conflict:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 2L" <> $SessionUUID],
+					Filter-> Model[Item,Filter, "Filter Test Membrane Filter" <> $SessionUUID],
+					MembraneMaterial->PTFE,
+					Output -> Options
+				],
+				Filter
+			],
+			ObjectP[Model[Item,Filter, "Filter Test Membrane Filter" <> $SessionUUID]],
+			Messages :> {Error::FilterOptionMismatch, Error::InvalidOption}
+		],
+		Example[{Messages, "FilterInletConnectionType", "An error will be shown if a filter and filter physical characteristics are specified that are in conflict:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					Filter-> Model[Item,Filter, "Filter Test Membrane Filter with LuerSlip" <> $SessionUUID],
+					Output -> Options
+				],
+				Filter
+			],
+			ObjectP[Model[Item,Filter, "Filter Test Membrane Filter with LuerSlip" <> $SessionUUID]],
+			Messages :> {Error::FilterInletConnectionType, Error::InvalidOption}
+		],
+		Example[{Messages, "SterileOptionMismatch", "Instrument option allows specification of instrument to use for filtration:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
+					Instrument -> Model[Instrument, PeristalticPump, "VWR Peristaltic Variable Pump PP3400"],
+					Sterile -> True,
+					Output -> Options
+				],
+				Instrument
+			],
+			ObjectP[Model[Instrument, PeristalticPump, "VWR Peristaltic Variable Pump PP3400"]],
+			Messages :> {Error::SterileOptionMismatch, Error::InvalidOption}
+		],
+		Example[{Messages, "TargetLabelMismatch", "If Target -> Retentate, then RetentateLabel and SampleOutLabel must be the same value; if Target -> Filtrate, then FiltrateLabel and SampleOutLabel must be the same value:"},
+			ExperimentFilter[
+				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},
+				RetentateLabel -> {"Test Label 1", Automatic},
+				SampleOutLabel -> {"Test Label Not 1", "Test Label Not 2"},
+				FiltrateLabel -> {Automatic, "Test Label 2"},
+				Target -> {Retentate, Filtrate},
+				CollectRetentate -> {True, False}
+			],
+			$Failed,
+			Messages :> {
+				Message[Error::TargetLabelMismatch, SampleOutLabel, RetentateLabel, FiltrateLabel, "{Object[Sample, \"Filter Test Sample with 1mL"<>$SessionUUID<>"\"], Object[Sample, \"Filter Test Sample with 15mL"<>$SessionUUID<>"\"]}"],
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "TargetLabelMismatch", "If Target -> Retentate, then RetentateContainerLabel and ContainerOutLabel must be the same value; if Target -> Filtrate, then FiltrateContainerLabel and ContainerOutLabel must be the same value:"},
+			ExperimentFilter[
+				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},
+				RetentateContainerLabel -> {"Test Label 1", Automatic},
+				ContainerOutLabel -> {"Test Label Not 1", "Test Label Not 2"},
+				FiltrateContainerLabel -> {Automatic, "Test Label 2"},
+				Target -> {Retentate, Filtrate},
+				CollectRetentate -> {True, False}
+			],
+			$Failed,
+			Messages :> {
+				(* doing this and not just Error::TargetLabelMismatch because I want both objects to be caught by this *)
+				Message[Error::TargetLabelMismatch, ContainerOutLabel, RetentateContainerLabel, FiltrateContainerLabel, "{Object[Sample, \"Filter Test Sample with 1mL"<>$SessionUUID<>"\"], Object[Sample, \"Filter Test Sample with 15mL"<>$SessionUUID<>"\"]}"],
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "LabelContainerOutIndexMismatch", "For all values of RetentateContainerLabel that are replicated, the corresponding integer indices in RetentateContainerOut are also be replicated in the same positions:"},
+			ExperimentFilter[
+				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},
+				RetentateContainerLabel -> {"Test Label 1", "Test Label 1"},
+				RetentateContainerOut -> {{1, Model[Container, Vessel, "50mL Tube"]}, {2, Model[Container, Vessel, "50mL Tube"]}},
+				CollectRetentate -> {True, True}
+			],
+			$Failed,
+			Messages :> {
+				Error::LabelContainerOutIndexMismatch,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "LabelContainerOutIndexMismatch", "For all values of FiltrateContainerLabel that are replicated, the corresponding integer indices in FiltrateContainerOut are also be replicated in the same positions:"},
+			ExperimentFilter[
+				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},
+				FiltrateContainerLabel -> {"Test Label 1", "Test Label 1"},
+				FiltrateContainerOut -> {{1, Automatic}, {2, Automatic}},
+				CollectRetentate -> {True, True}
+			],
+			$Failed,
+			Messages :> {
+				Error::LabelContainerOutIndexMismatch,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "FilterPositionDestinationWellConflict", "If FilterPosition and FiltrateDestinationWell are not the same but the FiltrateContainerOut and CollectionContainer are the same, an error is thrown:"},
+			ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
+				FilterPosition -> "A4", 
+				FiltrateDestinationWell -> "A1", 
+				Filter -> Model[Container, Plate, Filter, "Plate Filter, PTFE, 0.22um, 1.5mL"],
+				Preparation -> Robotic
+			],
+			$Failed,
+			Messages :> {
+				Error::FilterPositionDestinationWellConflict,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "PoreSizeAndMolecularWeightCutoff", "PoreSize and MolecularWeightCutoff cannot be both specified for the same filtration:"},
+			Quiet[Lookup[
+				ExperimentFilter[
+					Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID],
+					MolecularWeightCutoff -> 100 Kilo Dalton,
+					PoreSize -> .22 Micron,
+					FiltrateContainerOut -> Model[Container, Vessel, "2mL Tube"],
+					Output -> Options
+				],
+				{PoreSize, MolecularWeightCutoff}
+			], {Error::FilterOptionMismatch, Error::NoFilterAvailable}],
+			{.22 Micron, 100 Kilo Dalton},
+			EquivalenceFunction -> Equal,
+			Messages :> {Error::PoreSizeAndMolecularWeightCutoff, Error::InvalidOption}
+		],
+		Example[{Messages, "PoreSizeAndMolecularWeightCutoff", "PoreSize and MolecularWeightCutoff cannot be both specified as Null:"},
+			Quiet[Lookup[
+				ExperimentFilter[
+					Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID],
+					MolecularWeightCutoff -> Null,
+					PoreSize -> Null,
+					FiltrateContainerOut -> Model[Container, Vessel, "2mL Tube"],
+					Output -> Options
+				],
+				{PoreSize, MolecularWeightCutoff}
+			], {Error::FilterOptionMismatch, Error::NoFilterAvailable}],
+			{Null, Null},
+			Messages :> {Error::PoreSizeAndMolecularWeightCutoff, Error::InvalidOption}
+		],
+		Example[{Messages, "PoreSizeAndMolecularWeightCutoff", "PoreSize and MolecularWeightCutoff can be both Null if a filter is specified:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID],
+					Filter -> Model[Container, Plate, Filter, "id:8qZ1VWZeAw8p"] (*HisPur Ni-NTA Spin Plates*),
+					MolecularWeightCutoff -> Null,
+					PoreSize -> Null,
+					FiltrateContainerOut -> Model[Container, Vessel, "2mL Tube"],
+					Output -> Options
+				],
+				{PoreSize, MolecularWeightCutoff}
+			],
+			{Null, Null}
+		],
+		Example[{Messages, "NoFilterAvailable", "An error will be returned if there is currently no filter in stock capable of performing the filtration requested:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID],
+					MolecularWeightCutoff -> 100 Kilo Dalton,
+					PoreSize-> 100. Micron,
+					Output -> Options
+				],
+				{PoreSize,MolecularWeightCutoff}
+			],
+			{EqualP[100. Micron], EqualP[100 Kilo Dalton]},
+			Messages :> {
+				Error::PoreSizeAndMolecularWeightCutoff,
+				Error::NoFilterAvailable,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "FilterPlateDimensionsExceeded", "An error will be thrown if the filter plate exceeds the size limit of the Filter Plate Slot on the AirPressure filtration instrument:"},
+			ExperimentFilter[
+				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID]},
+				Filter -> Model[Container, Plate, Filter, "Filter Test Large Plate Filter Model" <> $SessionUUID],
+				Preparation -> Robotic
+			],
+			$Failed,
+			Messages :> {Error::FilterPlateDimensionsExceeded, Error::NoFilterAvailable, Error::InvalidOption}
+		],
+		Example[{Messages, "FilterPlateDimensionsExceeded", "An error will be thrown in RSP if the filter plate exceeds the size limit of the Filter Plate Slot on the AirPressure filtration instrument:"},
+			ExperimentRoboticSamplePreparation[
+				{
+					LabelContainer[Label -> "myPlate", Container -> Model[Container, Plate, Filter, "Filter Test Large Plate Filter Model" <> $SessionUUID]],
+					Transfer[Source -> Model[Sample, "Milli-Q water"], Destination -> {{"A1", "myPlate"}}, Amount -> 200 Microliter],
+					Filter[Sample -> "myPlate", Time -> 2 Minute, Pressure -> 200 PSI]
+				}
+			],
+			$Failed,
+			Messages :> {Error::NoAvailableModel, Error::FilterPlateDimensionsExceeded, Error::InvalidInput}
+		],
+		Example[{Messages, "NoUsableCentrifuge", "An error will be thrown if no centrifuge is available to perform the specified filtration:"},
+			Lookup[ExperimentFilter[
+				{
+					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
+					Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID]
+				},
+				FiltrationType -> Centrifuge,
+				Intensity -> {200000 GravitationalAcceleration, 100000 RPM},
+				Output -> Options
+			], Intensity],
+			{200000 GravitationalAcceleration, 100000 RPM},
+			Messages :> {Error::NoUsableCentrifuge, Error::InvalidOption}
+		],
+		Example[{Messages, "UnusableCentrifuge", "An error will be thrown if the specified centrifuge is not capable of performing the filtration:"},
+			Lookup[ExperimentFilter[
+				{
+					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
+					Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID]
+				},
+				Instrument-> Model[Instrument, Centrifuge, "id:jLq9jXY4kGJx"],
+				Output -> Options
+			],Instrument],
+			ObjectP[Model[Instrument, Centrifuge, "id:jLq9jXY4kGJx"]],
+			Messages :> {Error::UnusableCentrifuge, Error::InvalidOption}
+		],
+		Example[{Messages, "FiltrationTypeMismatch", "An error will be thrown if the filtration type is Centrifuge but the Intensity is Null:"},
+			Lookup[ExperimentFilter[
+				{
+					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
+					Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID]
+				},
+				FiltrationType -> Centrifuge,
+				Output -> Options,
+				Intensity->Null
+			],Intensity],
+			Null,
+			Messages :> {Error::FiltrationTypeMismatch, Error::InvalidOption}
+		],
+		Example[{Messages, "FiltrationTypeMismatch", "An error will be thrown if the filtration type is anything but Syringe or Centrifuge but the Temperature is specified:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
+					FiltrationType -> Vacuum,
+					Output -> Options,
+					Temperature -> 30 Celsius
+				],
+				Temperature
+			],
+			30 Celsius,
+			Messages :> {Error::FiltrationTypeMismatch, Error::InvalidOption}
+		],
+		Example[{Messages, "FilterUntilDrainedIncompatibleWithFilterType", "An error will be thrown if the filtration type is incompatible with the FilterUntilDrained options:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
+					FilterUntilDrained -> True,
+					FiltrationType -> Centrifuge,
+					Output -> Options
+				],
+				FilterUntilDrained
+			],
+			True,
+			Messages :> {Error::FilterUntilDrainedIncompatibleWithFilterType, Error::InvalidOption}
+		],
+		Example[{Messages, "IncompatibleFilterTimes", "An error will be thrown if the Time, MaxTime, and FilterUntilDrained options are in conflict with each other:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
+					FiltrationType -> Vacuum,
+					Time -> 5 Minute,
+					FilterUntilDrained -> True,
+					MaxTime -> Null,
+					Output -> Options
+				],
+				Time
+			],
+			5 Minute,
+			Messages :> {Error::IncompatibleFilterTimes, Error::InvalidOption}
+		],
+		Example[{Messages, "RetentateWashCentrifugeIntensityTypeMismatch", "An error will be thrown if RetentateWashCentrifugeIntensity is specified but FiltrationType is not Centrifuge:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
+					FiltrationType -> Vacuum,
+					RetentateWashCentrifugeIntensity -> 500 RPM,
+					Output -> Options
+				],
+				RetentateWashCentrifugeIntensity
+			],
+			{500 RPM},
+			Messages :> {Error::RetentateWashCentrifugeIntensityTypeMismatch, Error::InvalidOption}
+		],
+		Example[{Messages, "RetentateWashCentrifugeIntensityTypeMismatch", "An error will be thrown if RetentateWashCentrifugeIntensity is specified but FiltrationType is not Centrifuge:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
+					FiltrationType -> Syringe,
+					WashRetentate -> True,
+					Output -> Options
+				],
+				WashRetentate
+			],
+			True,
+			Messages :> {Error::WashRetentateTypeMismatch, Error::InvalidOption}
+		],
+		Example[{Messages, "RetentateWashCentrifugeIntensityTypeMismatch", "An error will be thrown if RetentateWashMix is False but the other RetentateWashMix options are specified:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
+					FiltrationType -> Vacuum,
+					WashRetentate -> True,
+					RetentateWashMix -> False,
+					NumberOfRetentateWashMixes -> 4,
+					Output -> Options
+				],
+				WashRetentate
+			],
+			True,
+			Messages :> {Error::RetentateWashMixMismatch, Error::InvalidOption}
+		],
+		Example[{Messages, "WashRetentateMismatch", "An error will be thrown if WashRetentate is False but the other retentate washing options are specified:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
+					FiltrationType -> Vacuum,
+					WashRetentate -> False,
+					NumberOfRetentateWashes -> 4,
+					Output -> Options
+				],
+				WashRetentate
+			],
+			False,
+			Messages :> {Error::WashRetentateMismatch, Error::InvalidOption}
+		],
+		Example[{Messages, "ResuspensionVolumeTooHigh", "An error will be thrown if ResuspensionVolume is greater than the MaxVolume of the filter:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
+					Filter -> Model[Container, Vessel, Filter, "Centrifuge Filter, PES, 100K MWCO, 20mL filter"],
+					ResuspensionVolume -> 40 Milliliter,
+					Output -> Options
+				],
+				ResuspensionVolume
+			],
+			40 Milliliter,
+			Messages :> {Error::ResuspensionVolumeTooHigh, Error::InvalidOption}
+		],
+		Example[{Messages, "PrefilterOptionsMismatch", "If a prefilter is being requested, than neither PrefilterPoreSize nor PrefilterMembraneMaterial can be specified as Null:"},
+			ExperimentFilter[
+				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},
+				MembraneMaterial -> PTFE,
+				PrefilterPoreSize-> {1. Micron,Null},
+				PrefilterMembraneMaterial->{Null,GxF},
+				FiltrateContainerOut -> {Model[Container, Vessel, "2mL Tube"], Model[Container, Vessel, "50mL Tube"]},
+				Output -> Options
+			],
+			{__Rule},
+			Messages :> {Error::PrefilterOptionsMismatch, Error::NoFilterAvailable, Error::InvalidOption}
+		],
+
+
+		Example[{Messages, "CollectionContainerPlateMismatch", "If Filter and CollectionContainer are specified, if one is a plate and one is not, an error is thrown:"},
+			ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
+				Filter -> Model[Container, Plate, Filter, "id:6V0npvK7MMW1"],
+				CollectionContainer -> Model[Container, Vessel, "2mL Tube"]
+			],
+			$Failed,
+			Messages :> {Error::CollectionContainerPlateMismatch, Error::NoUsableCentrifuge, Error::InvalidOption}
+		],
+		(* NOTE: Error messages *)
+		Example[{Messages, "SterileContainerRecommended", "If the provided FiltrateContainerOut option was for a non-sterile container, but sterile filtration was requested, the container will still be used but a message will be shown:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Container, Vessel, "Filter Test Container for 500 mL sample" <> $SessionUUID],
+					FiltrateContainerOut -> Model[Container, Vessel, "1L Glass Bottle"],
+					Sterile -> True,
+					Output -> Options
+				],
+				{
+					FiltrateContainerOut,
+					Sterile
+				}
+			],
+			{
+				{1, ObjectP[Model[Container, Vessel, "id:zGj91aR3ddXJ"]]},
+				True
+			},
+			Messages :> {Warning::SterileContainerRecommended}
+		],
+		Example[{Messages, "VolumeTooLargeForContainerOut", "If the provided FiltrateContainerOut option was for a container which MaxVolume is less then the volume of the sample, then an appropriate container will be picked and a message will be shown:"},
+			ExperimentFilter[
+				Object[Container, Vessel, "Filter Test Container for 3L sample (I)" <> $SessionUUID],
+				FiltrateContainerOut-> Model[Container, Vessel, "500mL Glass Bottle"],
+				Output -> Options
+			],
+			_,
+			Messages :> {Error::VolumeTooLargeForContainerOut, Error::InvalidOption}
+		],
+		Example[{Messages, "VolumeTooLargeForCollectionContainer", "If the provided CollectionContainer option was for a container which MaxVolume is less then the volume of the sample, then an appropriate container will be picked and a message will be shown:"},
+			ExperimentFilter[
+				Object[Container, Vessel, "Filter Test Container for 3L sample (I)" <> $SessionUUID],
+				CollectionContainer-> Model[Container, Vessel, "500mL Glass Bottle"],
+				Output -> Options
+			],
+			_,
+			Messages :> {Error::VolumeTooLargeForCollectionContainer, Error::InvalidOption}
+		],
+		Example[{Messages, "VolumeTooLargeForContainerOut", "If the volume of the sample + the retentate washes is too large for the collection container, don't throw an error because we'll just move the liquid to a different container between cycles so it can fit:"},
+			ExperimentFilter[
+				Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
+				Filter -> Model[Container, Vessel, Filter, "Centrifuge Filter, PES, 100K MWCO, 20mL filter"],
+				RetentateWashBuffer -> Model[Sample, "Milli-Q water"],
+				RetentateWashVolume -> 10 Milliliter,
+				NumberOfRetentateWashes -> 3,
+				Output -> Options
+			],
+			{__Rule}
+		],
+		Example[{Messages, "MissingVolumeInformation", "If the sample to be filtered does not have its Volume populated, the MaxVolume of the container it is in will be used to determine the type of filtration method possible:"},
+			ExperimentFilter[
+				Object[Sample, "Filter Test Sample without volume" <> $SessionUUID],
+				Output -> Options
+			],
+			_,
+			Messages :> {Warning::MissingVolumeInformation}
+		],
+		Example[{Messages, "VolumeTooLargeForSyringe", "The MaxVolume of a specified syringe has to be greater then the volume of the sample to be filtered:"},
+			ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+				Syringe -> Model[Container, Syringe, "10mL Syringe with Luer-Lok\[RegisteredTrademark] Tip"],
+				Output -> Options
+			],
+			_,
+			Messages :> {Error::VolumeTooLargeForSyringe, Error::InvalidOption}
+		],
+		Example[{Messages, "IncorrectSyringeConnection", "The ConnectionType of a specified syringe has to be a LeurLock:"},
+			ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+				Syringe -> Model[Container, Syringe, "50mL All-Plastic Disposable Luer-Slip Syringe"],
+				Output -> Options
+			],
+			_,
+			Messages :> {Error::IncorrectSyringeConnection, Error::InvalidOption}
+		],
+		Example[{Messages, "NumberOfFilterPrewettingsTooHigh", "NumberOfFilterPrewettings cannot be greater than 1 for PeristalticPump or BottleTop filters:"},
+			ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 3L (I)" <> $SessionUUID],
+				FiltrationType -> PeristalticPump,
+				NumberOfFilterPrewettings -> 3
+			],
+			$Failed,
+			Messages :> {Error::NumberOfFilterPrewettingsTooHigh, Error::InvalidOption}
+		],
+		Example[{Messages, "PrewetFilterIncompatibleWithFilterType", "Cannot perform filter prewetting for syringe or filter block filters:"},
+			ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+				FiltrationType -> Syringe,
+				PrewetFilter -> True
+			],
+			$Failed,
+			Messages :> {Error::PrewetFilterIncompatibleWithFilterType, Error::InvalidOption}
+		]
 	},
 	Parallel -> True,
 	SetUp :> (
@@ -3597,7 +3689,6 @@ DefineTests[ExperimentFilter,
 
 				Model[Instrument, PeristalticPump, "Filter Test Peristaltic Pump" <> $SessionUUID],
 				Model[Container, Vessel, "Filter Test Container with 4L Max Volume" <> $SessionUUID],
-				Model[Container, Vessel, Filter, "Filter Test Container without CollectionContainerModel" <> $SessionUUID],
 				Model[Item, Filter, "Filter Test Membrane Filter" <> $SessionUUID],
 				Model[Item, Filter, "Filter Test Membrane Filter with LuerSlip" <> $SessionUUID],
 				Model[Container, Plate, Filter, "Filter Test Large Plate Filter Model" <> $SessionUUID],
@@ -3614,20 +3705,18 @@ DefineTests[ExperimentFilter,
 				Object[Sample, "Filter Sample 2 in filter plate 2" <> $SessionUUID],
 				Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID],
 
-				Model[Container,Plate,Filter,"Filter test filter model that is fairly short"<>$SessionUUID],
-				Model[Container,Plate,Filter,"Filter test filter model that is too tall with DWP"<>$SessionUUID],
+				Model[Container, Plate, "Filter Test plate model without counterweights"<>$SessionUUID],
+				Model[Container, Plate, "Filter Test plate model without TareWeight"<>$SessionUUID],
+				Model[Container, Plate, "Filter Test tall plate model"<>$SessionUUID],
+				Model[Container, Plate, "Filter Test heavy plate model"<>$SessionUUID],
 
-				Object[Container,Plate,Filter,"Filter test filter that is fairly short"<>$SessionUUID],
-				Object[Container,Plate,Filter,"Filter test filter that is too tall with DWP"<>$SessionUUID],
-				Model[Container,Plate,"Filter Test plate model without counterweights"<>$SessionUUID],
-				Model[Container,Plate,"Filter Test plate model without TareWeight"<>$SessionUUID],
-				Model[Container,Plate,"Filter Test tall plate model"<>$SessionUUID],
-				Model[Container,Plate,"Filter Test heavy plate model"<>$SessionUUID],
+				Object[Container, Plate, "Filter Test plate without counterweights"<>$SessionUUID],
+				Object[Container, Plate, "Filter Test plate without TareWeight"<>$SessionUUID],
+				Object[Container, Plate, "Filter Test tall plate"<>$SessionUUID],
+				Object[Container, Plate, "Filter Test heavy plate"<>$SessionUUID],
 
-				Object[Container,Plate,"Filter Test plate without counterweights"<>$SessionUUID],
-				Object[Container,Plate,"Filter Test plate without TareWeight"<>$SessionUUID],
-				Object[Container,Plate,"Filter Test tall plate"<>$SessionUUID],
-				Object[Container,Plate,"Filter Test heavy plate"<>$SessionUUID]
+				Object[Container, Vessel, "Filter Test tube with cell sample " <> $SessionUUID],
+				Object[Sample, "Filter Test cell sample 1 " <> $SessionUUID]
 			};
 
 			(* Check whether the names we want to give below already exist in the database *)
@@ -3720,61 +3809,9 @@ DefineTests[ExperimentFilter,
 						Replace[Positions] -> {<|Name -> "A1", Footprint -> Null, MaxWidth -> Quantity[0.06985, "Meters"], MaxDepth -> Quantity[0.06985, "Meters"], MaxHeight -> Null|>}
 					],
 					Association[
-						<|
-							Type -> Model[Container, Vessel, Filter],
-							Name -> "Filter Test Container without CollectionContainerModel" <> $SessionUUID,
-							Aperture -> Quantity[26.91, "Millimeters"],
-							Replace[Counterweights] -> {
-								Link[Model[Item, Counterweight, "id:pZx9jonGJEz5"], Counterweights],
-								Link[Model[Item, Counterweight, "id:Vrbp1jG80JDo"], Counterweights],
-								Link[Model[Item, Counterweight, "id:qdkmxz0A8Yo0"], Counterweights],
-								Link[Model[Item, Counterweight, "id:O81aEB4kJY51"], Counterweights],
-								Link[Model[Item, Counterweight, "id:wqW9BP4Y0wkO"], Counterweights],
-								Link[Model[Item, Counterweight, "id:8qZ1VWNmdKMn"], Counterweights],
-								Link[Model[Item, Counterweight, "id:kEJ9mqRaGoE3"], Counterweights],
-								Link[Model[Item, Counterweight, "id:vXl9j57oGjO7"], Counterweights],
-								Link[Model[Item, Counterweight, "id:Z1lqpMzbJZWV"], Counterweights],
-								Link[Model[Item, Counterweight, "id:dORYzZJk6Gw5"], Counterweights],
-								Link[Model[Item, Counterweight, "id:eGakldJn9Amo"], Counterweights],
-								Link[Model[Item, Counterweight, "id:n0k9mG8Xe1Ek"], Counterweights]
-							},
-							Replace[PositionPlotting] -> {
-								<|Name -> "A1", XOffset -> Quantity[0.0142875, "Meters"], YOffset -> Quantity[0.0142875, "Meters"], ZOffset -> Quantity[0.001397, "Meters"], CrossSectionalShape -> Circle, Rotation -> 0.|>
-							},
-							Replace[Positions] -> {
-								<|Name -> "A1", Footprint -> Null, MaxWidth -> Quantity[0.028575, "Meters"], MaxDepth -> Quantity[0.028575, "Meters"], MaxHeight -> Quantity[0.1143, "Meters"]|>
-							},
-							Replace[CoverFootprints] -> {CapScrewTube35x13},
-							Replace[CoverTypes] -> {Screw},
-							CrossSectionalShape -> Circle,
-							Dimensions -> {Quantity[0.028575, "Meters"], Quantity[0.028575, "Meters"], Quantity[0.1143, "Meters"]},
-							FilterType -> Centrifuge,
-							Footprint -> Conical50mLTube,
-							InternalBottomShape -> VBottom,
-							InternalConicalDepth -> Quantity[14.29, "Millimeters"],
-							InternalDepth -> Quantity[125., "Millimeters"],
-							InternalDiameter -> Quantity[30., "Millimeters"],
-							Replace[InternalDiameter3D] -> {
-								{Quantity[1.5, "Millimeters"], Quantity[6.8, "Millimeters"]},
-								{Quantity[15., "Millimeters"], Quantity[26.36, "Millimeters"]},
-								{Quantity[114.36, "Millimeters"], Quantity[26.36, "Millimeters"]}
-							},
-							MaxTemperature -> Quantity[60., "DegreesCelsius"],
-							MaxVolume -> Quantity[25., "Milliliters"],
-							MembraneMaterial -> Nylon,
-							MinTemperature -> Quantity[-4., "DegreesCelsius"],
-							MinVolume -> Quantity[0.5, "Milliliters"],
-							Opaque -> False,
-							(* This is a crazy number to make sure our unit test is not going to find a real model *)
-							PoreSize -> Quantity[1000, "Micrometers"],
-							Sterile -> False,
-							DeveloperObject -> True
-						|>
-					],
-					Association[
 						Type -> Model[Instrument, PeristalticPump],
 						Name -> "Filter Test Peristaltic Pump" <> $SessionUUID,
-						Replace[SampleHandlingCategories] -> {Standard},
+						AsepticHandling -> False,
 						DeveloperObject -> True
 					],
 					Association[
@@ -3864,27 +3901,35 @@ DefineTests[ExperimentFilter,
 					],
 					Association[
 						DeveloperObject->True,
-						Type->Model[Container,Plate],
-						Name->"Filter Test plate model without counterweights"<>$SessionUUID,
+						Type->Object[Container, Vessel],
+						Model->Link[Model[Container, Vessel, "2mL Tube"], Objects],
+						Name -> "Filter Test tube with cell sample "<>$SessionUUID,
+						DeveloperObject -> True,
+						Site -> Link[$Site]
+					],
+					Association[
+						DeveloperObject->True,
+						Type-> Model[Container, Plate],
+						Name -> "Filter Test plate model without counterweights"<>$SessionUUID,
 						NumberOfWells->6,
 						AspectRatio->3/2,
 						Footprint->Plate,
-						Dimensions->{Quantity[0.12776`,"Meters"],Quantity[0.08548`,"Meters"],Quantity[0.016059999999999998`,"Meters"]},
+						Dimensions->{Quantity[0.12776`, "Meters"],Quantity[0.08548`, "Meters"],Quantity[0.016059999999999998`, "Meters"]},
 						Replace[Positions]->{
-							<|Name->"A1",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"A2",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"A3",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"B1",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"B2",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"B3",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>
+							<|Name -> "A1", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "A2", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "A3", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "B1", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "B2", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "B3", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>
 						},
 						Replace[PositionPlotting]->{
-							<|Name->"A1",XOffset->0.024765 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"A2",XOffset->0.063885 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"A3",XOffset->0.103005 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"B1",XOffset->0.024765 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"B2",XOffset->0.063885 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"B3",XOffset->0.103005 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>
+							<|Name -> "A1", XOffset->0.024765 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "A2", XOffset->0.063885 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "A3", XOffset->0.103005 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "B1", XOffset->0.024765 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "B2", XOffset->0.063885 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "B3", XOffset->0.103005 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>
 						},
 						WellDiameter->35.1 Millimeter,
 						WellDepth->13 Millimeter,
@@ -3900,27 +3945,27 @@ DefineTests[ExperimentFilter,
 					],
 					Association[
 						DeveloperObject->True,
-						Type->Model[Container,Plate],
-						Name->"Filter Test plate model without TareWeight"<>$SessionUUID,
+						Type-> Model[Container, Plate],
+						Name -> "Filter Test plate model without TareWeight"<>$SessionUUID,
 						NumberOfWells->6,
 						AspectRatio->3/2,
 						Footprint->Plate,
-						Dimensions->{Quantity[0.12776`,"Meters"],Quantity[0.08548`,"Meters"],Quantity[0.016059999999999998`,"Meters"]},
+						Dimensions->{Quantity[0.12776`, "Meters"],Quantity[0.08548`, "Meters"],Quantity[0.016059999999999998`, "Meters"]},
 						Replace[Positions]->{
-							<|Name->"A1",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"A2",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"A3",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"B1",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"B2",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"B3",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>
+							<|Name -> "A1", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "A2", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "A3", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "B1", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "B2", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "B3", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>
 						},
 						Replace[PositionPlotting]->{
-							<|Name->"A1",XOffset->0.024765 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"A2",XOffset->0.063885 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"A3",XOffset->0.103005 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"B1",XOffset->0.024765 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"B2",XOffset->0.063885 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"B3",XOffset->0.103005 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>
+							<|Name -> "A1", XOffset->0.024765 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "A2", XOffset->0.063885 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "A3", XOffset->0.103005 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "B1", XOffset->0.024765 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "B2", XOffset->0.063885 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "B3", XOffset->0.103005 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>
 						},
 						MaxVolume->2 Milliliter,
 						WellDiameter->35.1 Millimeter,
@@ -3930,34 +3975,34 @@ DefineTests[ExperimentFilter,
 						HorizontalPitch->39.12 Millimeter,
 						MaxCentrifugationForce->10000 GravitationalAcceleration,
 						Rows->2,
-						LiquidHandlerPrefix->"withoutTare1",
+						LiquidHandlerPrefix-> "withoutTare1", 
 						VerticalMargin->5.445 Millimeter,
 						VerticalPitch->39.12 Millimeter,
 						DepthMargin->1.27 Millimeter
 					],
 					Association[
 						DeveloperObject->True,
-						Type->Model[Container,Plate],
-						Name->"Filter Test tall plate model"<>$SessionUUID,
+						Type-> Model[Container, Plate],
+						Name -> "Filter Test tall plate model"<>$SessionUUID,
 						NumberOfWells->6,
 						AspectRatio->3/2,
 						Footprint->Plate,
-						Dimensions->{Quantity[0.12776`,"Meters"],Quantity[0.08548`,"Meters"],Quantity[50`,"Millimeters"]},
+						Dimensions->{Quantity[0.12776`, "Meters"],Quantity[0.08548`, "Meters"],Quantity[50`, "Millimeters"]},
 						Replace[Positions]->{
-							<|Name->"A1",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"A2",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"A3",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"B1",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"B2",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"B3",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>
+							<|Name -> "A1", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "A2", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "A3", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "B1", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "B2", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "B3", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>
 						},
 						Replace[PositionPlotting]->{
-							<|Name->"A1",XOffset->0.024765 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"A2",XOffset->0.063885 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"A3",XOffset->0.103005 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"B1",XOffset->0.024765 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"B2",XOffset->0.063885 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"B3",XOffset->0.103005 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>
+							<|Name -> "A1", XOffset->0.024765 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "A2", XOffset->0.063885 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "A3", XOffset->0.103005 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "B1", XOffset->0.024765 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "B2", XOffset->0.063885 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "B3", XOffset->0.103005 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>
 						},
 						WellDiameter->35.1 Millimeter,
 						WellDepth->13 Millimeter,
@@ -3973,27 +4018,27 @@ DefineTests[ExperimentFilter,
 					],
 					Association[
 						DeveloperObject->True,
-						Type->Model[Container,Plate],
-						Name->"Filter Test heavy plate model"<>$SessionUUID,
+						Type-> Model[Container, Plate],
+						Name -> "Filter Test heavy plate model"<>$SessionUUID,
 						NumberOfWells->6,
 						AspectRatio->3/2,
 						Footprint->Plate,
-						Dimensions->{Quantity[0.12776`,"Meters"],Quantity[0.08548`,"Meters"],Quantity[0.016059999999999998`,"Meters"]},
+						Dimensions->{Quantity[0.12776`, "Meters"],Quantity[0.08548`, "Meters"],Quantity[0.016059999999999998`, "Meters"]},
 						Replace[Positions]->{
-							<|Name->"A1",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"A2",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"A3",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"B1",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"B2",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
-							<|Name->"B3",Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>
+							<|Name -> "A1", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "A2", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "A3", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "B1", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "B2", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>,
+							<|Name -> "B3", Footprint->Null,MaxWidth->0.03543 Meter,MaxDepth->0.03543 Meter,MaxHeight->0.0174 Meter|>
 						},
 						Replace[PositionPlotting]->{
-							<|Name->"A1",XOffset->0.024765 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"A2",XOffset->0.063885 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"A3",XOffset->0.103005 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"B1",XOffset->0.024765 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"B2",XOffset->0.063885 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>,
-							<|Name->"B3",XOffset->0.103005 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter,CrossSectionalShape->Circle,Rotation->0.|>
+							<|Name -> "A1", XOffset->0.024765 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "A2", XOffset->0.063885 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "A3", XOffset->0.103005 Meter,YOffset->0.062295 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "B1", XOffset->0.024765 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "B2", XOffset->0.063885 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name -> "B3", XOffset->0.103005 Meter,YOffset->0.023175 Meter,ZOffset->0.00254 Meter, CrossSectionalShape->Circle,Rotation->0.|>
 						},
 						WellDiameter->35.1 Millimeter,
 						WellDepth->13 Millimeter,
@@ -4003,636 +4048,6 @@ DefineTests[ExperimentFilter,
 						MaxCentrifugationForce->10000 GravitationalAcceleration,
 						TareWeight->320 Gram,
 						Rows->2,
-						VerticalMargin->5.445 Millimeter,
-						VerticalPitch->39.12 Millimeter,
-						DepthMargin->1.27 Millimeter
-					],
-					Association[
-						DeveloperObject->True,
-						Type->Model[Container,Plate,Filter],
-						Name->"Filter test filter model that is fairly short"<>$SessionUUID,
-						MaxVolume->1.3 Milliliter,
-						PoreSize->6. Micron,
-						MembraneMaterial->PES,
-						NumberOfWells->96,
-						AspectRatio->3/2,
-						Footprint->Plate,
-						Dimensions->{Quantity[0.12776`,"Meters"],Quantity[0.08548`,"Meters"],Quantity[0.0145`,"Meters"]},
-						Replace[Positions]->{
-							<|Name -> "A1", Footprint -> Null,
-							MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A2",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A3",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A4",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A5",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A6",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A7",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A8",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A9",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A10",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A11",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A12",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B1",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B2",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B3",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B4",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B5",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B6",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B7",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B8",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B9",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B10",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B11",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B12",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C1",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C2",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C3",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C4",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C5",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C6",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C7",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C8",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C9",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C10",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C11",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C12",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D1",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D2",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D3",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D4",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D5",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D6",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D7",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D8",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D9",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D10",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D11",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D12",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E1",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E2",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E3",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E4",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E5",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E6",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E7",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E8",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E9",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E10",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E11",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E12",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F1",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F2",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F3",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F4",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F5",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F6",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F7",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F8",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F9",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F10",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F11",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F12",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G1",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G2",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G3",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G4",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G5",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G6",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G7",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G8",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G9",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G10",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G11",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G12",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H1",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H2",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H3",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H4",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H5",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H6",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H7",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H8",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H9",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H10",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H11",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H12",
-							Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-							MaxDepth -> Quantity[0.00825, "Meters"],
-							MaxHeight -> Quantity[0.0436, "Meters"]|>
-						},
-						WellDiameter->35.1 Millimeter,
-						WellDepth->13 Millimeter,
-						Columns->12,
-						HorizontalMargin->7.045 Millimeter,
-						HorizontalPitch->39.12 Millimeter,
-						MaxCentrifugationForce->10000 GravitationalAcceleration,
-						TareWeight->33.19 Gram,
-						LiquidHandlerPrefix->"AcroPrep_300uL",
-						Rows->8,
-						VerticalMargin->5.445 Millimeter,
-						VerticalPitch->39.12 Millimeter,
-						DepthMargin->1.27 Millimeter
-					],
-					Association[
-						DeveloperObject->True,
-						Type->Model[Container,Plate,Filter],
-						Name->"Filter test filter model that is too tall with DWP"<>$SessionUUID,
-						MaxVolume->1.3 Milliliter,
-						PoreSize->6. Micron,
-						MembraneMaterial->PES,
-						NumberOfWells->96,
-						AspectRatio->3/2,
-						Footprint->Plate,
-						Dimensions->{Quantity[0.12776`,"Meters"],Quantity[0.08548`,"Meters"],Quantity[0.060`,"Meters"]},
-						Replace[Positions]->{
-							<|Name -> "A1", Footprint -> Null,
-								MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A2",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A3",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A4",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A5",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A6",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A7",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A8",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A9",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A10",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A11",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "A12",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B1",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B2",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B3",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B4",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B5",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B6",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B7",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B8",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B9",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B10",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B11",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "B12",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C1",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C2",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C3",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C4",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C5",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C6",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C7",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C8",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C9",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C10",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C11",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "C12",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D1",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D2",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D3",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D4",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D5",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D6",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D7",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D8",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D9",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D10",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D11",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "D12",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E1",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E2",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E3",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E4",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E5",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E6",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E7",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E8",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E9",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E10",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E11",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "E12",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F1",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F2",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F3",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F4",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F5",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F6",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F7",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F8",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F9",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F10",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F11",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "F12",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G1",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G2",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G3",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G4",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G5",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G6",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G7",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G8",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G9",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G10",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G11",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "G12",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H1",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H2",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H3",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H4",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H5",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H6",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H7",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H8",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H9",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H10",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H11",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>, <|Name -> "H12",
-								Footprint -> Null, MaxWidth -> Quantity[0.00825, "Meters"],
-								MaxDepth -> Quantity[0.00825, "Meters"],
-								MaxHeight -> Quantity[0.0436, "Meters"]|>
-						},
-						WellDiameter->35.1 Millimeter,
-						WellDepth->13 Millimeter,
-						Columns->12,
-						HorizontalMargin->7.045 Millimeter,
-						HorizontalPitch->39.12 Millimeter,
-						MaxCentrifugationForce->10000 GravitationalAcceleration,
-						TareWeight->33.19 Gram,
-						LiquidHandlerPrefix->"AcroPrep_300uL",
-						Rows->8,
 						VerticalMargin->5.445 Millimeter,
 						VerticalPitch->39.12 Millimeter,
 						DepthMargin->1.27 Millimeter
@@ -4650,7 +4065,7 @@ DefineTests[ExperimentFilter,
 						HorizontalMargin -> Quantity[10.75, "Millimeters"],
 						HorizontalOffset -> Quantity[0., "Millimeters"],
 						HorizontalPitch -> Quantity[8.96727, "Millimeters"],
-						LiquidHandlerPrefix -> "AcroPrep_1mL",
+						LiquidHandlerPrefix -> "AcroPrep_1mL", 
 						MaxTemperature -> Quantity[40., "DegreesCelsius"],
 						MaxVolume -> Quantity[1., "Milliliters"],
 						MembraneMaterial -> PES,
@@ -4662,7 +4077,7 @@ DefineTests[ExperimentFilter,
 						(* Avoid finding a real filter. Use a random PoreSize *)
 						PoreSize -> Quantity[0.987654, "Micrometers"],
 						RecommendedFillVolume -> Quantity[900., "Microliters"],
-						Reusability -> False,
+						Reusable -> False,
 						Rows -> 8,
 						SkirtHeight -> Quantity[35., "Millimeters"],
 						Treatment -> PolyethersulfoneFilter,
@@ -4696,7 +4111,8 @@ DefineTests[ExperimentFilter,
 					Model[Sample, "Milli-Q water"],
 					Model[Sample, "Milli-Q water"],
 					Model[Sample, "Milli-Q water"],
-					Model[Sample, "Milli-Q water"]
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "E.coli MG1655"]
 				},
 				{
 					{"A1", Object[Container, Vessel, "Filter Test Container for 3L sample (I)" <> $SessionUUID]},
@@ -4710,7 +4126,8 @@ DefineTests[ExperimentFilter,
 					{"A1", Object[Container, Plate, Filter, "Filter plate 1" <> $SessionUUID]},
 					{"A2", Object[Container, Plate, Filter, "Filter plate 2" <> $SessionUUID]},
 					{"A3", Object[Container, Plate, Filter, "Filter plate 2" <> $SessionUUID]},
-					{"A1", Object[Container, Vessel, Filter, "Filter Test two-part filter (top portion)" <> $SessionUUID]}
+					{"A1", Object[Container, Vessel, Filter, "Filter Test two-part filter (top portion)" <> $SessionUUID]},
+					{"A1", Object[Container, Vessel, "Filter Test tube with cell sample " <> $SessionUUID]}
 				},
 				InitialAmount -> {
 					3 Liter,
@@ -4724,7 +4141,8 @@ DefineTests[ExperimentFilter,
 					0.2 Milliliter,
 					0.2 Milliliter,
 					0.2 Milliliter,
-					0.5 Liter
+					0.5 Liter,
+					1 Milliliter
 				},
 				Name -> {
 					"Filter Test Sample with 3L (I)" <> $SessionUUID,
@@ -4738,7 +4156,8 @@ DefineTests[ExperimentFilter,
 					"Filter Sample in filter plate 1" <> $SessionUUID,
 					"Filter Sample 1 in filter plate 2" <> $SessionUUID,
 					"Filter Sample 2 in filter plate 2" <> $SessionUUID,
-					"Filter Test Sample with 500 mL (II)" <> $SessionUUID
+					"Filter Test Sample with 500 mL (II)" <> $SessionUUID,
+					"Filter Test cell sample 1 " <> $SessionUUID
 				}
 			];
 
@@ -4747,8 +4166,8 @@ DefineTests[ExperimentFilter,
 					Association[
 						Object -> Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
 						Replace[Composition] -> {
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]},
-							{5 Millimolar, Link[Model[Molecule, "Uracil"]]}
+							{100 VolumePercent, Link[Model[Molecule, "Water"]],Now},
+							{5 Millimolar, Link[Model[Molecule, "Uracil"]],Now}
 						},
 						DeveloperObject -> True
 					],
@@ -4758,41 +4177,28 @@ DefineTests[ExperimentFilter,
 					Association[Object -> Object[Sample, "Filter Test Sample with 3L (no model) (III)" <> $SessionUUID], Model -> Null, DeveloperObject -> True],
 					Association[
 						DeveloperObject->True,
-						Type->Object[Container,Plate],
-						Model->Link[Model[Container,Plate,"Filter Test plate model without counterweights"<>$SessionUUID],Objects],
-						Name->"Filter Test plate without counterweights"<>$SessionUUID
+						Type->Object[Container, Plate],
+						Model->Link[Model[Container, Plate, "Filter Test plate model without counterweights"<>$SessionUUID], Objects],
+						Name -> "Filter Test plate without counterweights"<>$SessionUUID
 					],
 					Association[
 						DeveloperObject->True,
-						Type->Object[Container,Plate],
-						Model->Link[Model[Container,Plate,"Filter Test plate model without TareWeight"<>$SessionUUID],Objects],
-						Name->"Filter Test plate without TareWeight"<>$SessionUUID
+						Type->Object[Container, Plate],
+						Model->Link[Model[Container, Plate, "Filter Test plate model without TareWeight"<>$SessionUUID], Objects],
+						Name -> "Filter Test plate without TareWeight"<>$SessionUUID
 					],
 					Association[
 						DeveloperObject->True,
-						Type->Object[Container,Plate],
-						Model->Link[Model[Container,Plate,"Filter Test tall plate model"<>$SessionUUID],Objects],
-						Name->"Filter Test tall plate"<>$SessionUUID
+						Type->Object[Container, Plate],
+						Model->Link[Model[Container, Plate, "Filter Test tall plate model"<>$SessionUUID], Objects],
+						Name -> "Filter Test tall plate"<>$SessionUUID
 					],
 					Association[
 						DeveloperObject->True,
-						Type->Object[Container,Plate],
-						Model->Link[Model[Container,Plate,"Filter Test heavy plate model"<>$SessionUUID],Objects],
-						Name->"Filter Test heavy plate"<>$SessionUUID
-					],
-					Association[
-						DeveloperObject->True,
-						Type->Object[Container,Plate,Filter],
-						Model->Link[Model[Container,Plate,Filter,"Filter test filter model that is fairly short"<>$SessionUUID],Objects],
-						Name->"Filter test filter that is fairly short"<>$SessionUUID
-					],
-					Association[
-						DeveloperObject->True,
-						Type->Object[Container,Plate,Filter],
-						Model->Link[Model[Container,Plate,Filter,"Filter test filter model that is too tall with DWP"<>$SessionUUID],Objects],
-						Name->"Filter test filter that is too tall with DWP"<>$SessionUUID
+						Type->Object[Container, Plate],
+						Model->Link[Model[Container, Plate, "Filter Test heavy plate model"<>$SessionUUID], Objects],
+						Name -> "Filter Test heavy plate"<>$SessionUUID
 					]
-
 				}
 			];
 		];
@@ -4800,9 +4206,9 @@ DefineTests[ExperimentFilter,
 		(* make an MSP protocol to use as a ParentProtocol so we can interrogate the actual Object[Protocol, Filter]. *)
 		ExperimentManualSamplePreparation[
 			{
-				LabelSample[Label->"cool sample",Sample->Model[Sample,"Milli-Q water"], Amount->1 Milliliter, Container->Model[Container, Vessel, "50mL Tube"]]
+				LabelSample[Label -> "cool sample", Sample-> Model[Sample, "Milli-Q water"], Amount -> 1 Milliliter, Container -> Model[Container, Vessel, "50mL Tube"]]
 			},
-			Name->"Test MSP for ExperimentFilter unit tests" <> $SessionUUID
+			Name -> "Test MSP for ExperimentFilter unit tests" <> $SessionUUID
 		]
 	),
 	SymbolTearDown :> Module[{objects, existsFilter},
@@ -4839,7 +4245,6 @@ DefineTests[ExperimentFilter,
 
 			Model[Instrument, PeristalticPump, "Filter Test Peristaltic Pump" <> $SessionUUID],
 			Model[Container, Vessel, "Filter Test Container with 4L Max Volume" <> $SessionUUID],
-			Model[Container, Vessel, Filter, "Filter Test Container without CollectionContainerModel" <> $SessionUUID],
 			Model[Item, Filter, "Filter Test Membrane Filter" <> $SessionUUID],
 			Model[Item, Filter, "Filter Test Membrane Filter with LuerSlip" <> $SessionUUID],
 			Model[Container, Plate, Filter, "Filter Test Large Plate Filter Model" <> $SessionUUID],
@@ -4854,7 +4259,10 @@ DefineTests[ExperimentFilter,
 			Object[Sample, "Filter Sample in filter plate 1" <> $SessionUUID],
 			Object[Sample, "Filter Sample 1 in filter plate 2" <> $SessionUUID],
 			Object[Sample, "Filter Sample 2 in filter plate 2" <> $SessionUUID],
-			Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+			Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID],
+
+			Object[Container, Vessel, "Filter Test tube with cell sample " <> $SessionUUID],
+			Object[Sample, "Filter Test cell sample 1 " <> $SessionUUID]
 		};
 
 		(* Check whether the names we want to give below already exist in the database *)
@@ -4874,18 +4282,15 @@ DefineTests[
 	ExperimentFilterOptions,
 	{
 	(* --- Basic Examples --- *)
-		Example[
-			{Basic, "Generate a table of resolved options for an ExperimentFilter call to filter a single sample:"},
+		Example[{Basic, "Generate a table of resolved options for an ExperimentFilter call to filter a single sample:"},
 			ExperimentFilterOptions[Object[Sample, "Filter Test Sample for ExperimentFilterOptions (I)"]],
 			_Grid
 		],
-		Example[
-			{Basic, "Generate a table of resolved options for an ExperimentFilter call to filter a single container:"},
+		Example[{Basic, "Generate a table of resolved options for an ExperimentFilter call to filter a single container:"},
 			ExperimentFilterOptions[Object[Container, Vessel, "Filter Test Container for ExperimentFilterOptions (I)"]],
 			_Grid
 		],
-		Example[
-			{Basic, "Generate a table of resolved options for an ExperimentFilter call to filter a sample and a container the same time:"},
+		Example[{Basic, "Generate a table of resolved options for an ExperimentFilter call to filter a sample and a container the same time:"},
 			ExperimentFilterOptions[{
 				Object[Sample, "Filter Test Sample for ExperimentFilterOptions (I)"],
 				Object[Container, Vessel, "Filter Test Container for ExperimentFilterOptions (II)"]
@@ -4895,8 +4300,7 @@ DefineTests[
 
 
 	(* --- Options Examples --- *)
-		Example[
-			{Options, OutputFormat, "Generate a resolved list of options for an ExperimentFilter call to filter a single container:"},
+		Example[{Options, OutputFormat, "Generate a resolved list of options for an ExperimentFilter call to filter a single container:"},
 			ExperimentFilterOptions[Object[Sample, "Filter Test Sample for ExperimentFilterOptions (I)"], OutputFormat->List],
 			_?(MatchQ[
 				Check[SafeOptions[ExperimentFilter, #], $Failed, {Error::Pattern}],
@@ -4904,67 +4308,66 @@ DefineTests[
 			]&)
 		]
 	},
-	SymbolSetUp :>(
+	SymbolSetUp :> (
 		(* Turn off warnings related to the state of the lab - is okay if we're using a model with no current instances *)
 		Off[Warning::SamplesOutOfStock];
 		Off[Warning::InstrumentUndergoingMaintenance];
 
 		$CreatedObjects = {};
-
-		(* list of test objects*)
-		objects = {
-			Object[Sample, "Filter Test Sample for ExperimentFilterOptions (I)"],
-			Object[Container, Vessel, "Filter Test Container for ExperimentFilterOptions (I)"],
-			Object[Sample, "Filter Test Sample for ExperimentFilterOptions (II)"],
-			Object[Container, Vessel, "Filter Test Container for ExperimentFilterOptions (II)"]
-		};
-
-		(* Check whether the names we want to give below already exist in the database *)
-		existsFilter = DatabaseMemberQ[objects];
-
-		(* Erase any objects that we failed to erase in the last unit test. *)
-		Quiet[EraseObject[PickList[objects, existsFilter], Force->True, Verbose->False]];
-		Upload[
-			{
-				Association[
-					Type->Object[Container, Vessel],
-					Model->Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name->"Filter Test Container for ExperimentFilterOptions (I)",
-					DeveloperObject->True,
-					Site -> Link[$Site]
-				],
-				Association[
-					Type->Object[Container, Vessel],
-					Model->Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name->"Filter Test Container for ExperimentFilterOptions (II)",
-					DeveloperObject->True,
-					Site -> Link[$Site]
-				]
-			}
-		];
-
-		ECL`InternalUpload`UploadSample[
-			{
-				Model[Sample, "Milli-Q water"],
-				Model[Sample, "Milli-Q water"]
-			},
-			{
-				{"A1", Object[Container, Vessel, "Filter Test Container for ExperimentFilterOptions (I)"]},
-				{"A1", Object[Container, Vessel, "Filter Test Container for ExperimentFilterOptions (II)"]}
-			},
-			InitialAmount->15 Milliliter,
-			Name->{
-				"Filter Test Sample for ExperimentFilterOptions (I)",
-				"Filter Test Sample for ExperimentFilterOptions (II)"
-			}
+		Module[{objects, existsFilter},
+			(* list of test objects*)
+			objects = {
+				Object[Sample, "Filter Test Sample for ExperimentFilterOptions (I)"],
+				Object[Container, Vessel, "Filter Test Container for ExperimentFilterOptions (I)"],
+				Object[Sample, "Filter Test Sample for ExperimentFilterOptions (II)"],
+				Object[Container, Vessel, "Filter Test Container for ExperimentFilterOptions (II)"]
+			};
+	
+			(* Check whether the names we want to give below already exist in the database *)
+			existsFilter = DatabaseMemberQ[objects];
+	
+			(* Erase any objects that we failed to erase in the last unit test. *)
+			Quiet[EraseObject[PickList[objects, existsFilter], Force->True, Verbose-> False]];
+			Upload[
+				{
+					Association[
+						Type->Object[Container, Vessel],
+						Model->Link[Model[Container, Vessel, "50mL Tube"], Objects],
+						Name -> "Filter Test Container for ExperimentFilterOptions (I)", 
+						DeveloperObject->True,
+						Site -> Link[$Site]
+					],
+					Association[
+						Type->Object[Container, Vessel],
+						Model->Link[Model[Container, Vessel, "50mL Tube"], Objects],
+						Name -> "Filter Test Container for ExperimentFilterOptions (II)", 
+						DeveloperObject->True,
+						Site -> Link[$Site]
+					]
+				}
+			];
+	
+			ECL`InternalUpload`UploadSample[
+				{
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"]
+				},
+				{
+					{"A1", Object[Container, Vessel, "Filter Test Container for ExperimentFilterOptions (I)"]},
+					{"A1", Object[Container, Vessel, "Filter Test Container for ExperimentFilterOptions (II)"]}
+				},
+				InitialAmount -> 15 Milliliter,
+				Name -> {
+					"Filter Test Sample for ExperimentFilterOptions (I)", 
+					"Filter Test Sample for ExperimentFilterOptions (II)"
+				}
+			]
 		]
-
-		(* upload needed objects *)
 	),
-	SymbolTearDown:>(
+	SymbolTearDown :> (
 		On[Warning::SamplesOutOfStock];
 		On[Warning::InstrumentUndergoingMaintenance];
-		EraseObject[$CreatedObjects, Force->True, Verbose->False];
+		EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
 	)
 ];
 
@@ -4978,86 +4381,82 @@ DefineTests[
 	ExperimentFilterPreview,
 	{
 	(* --- Basic Examples --- *)
-		Example[
-			{Basic, "Generate a preview for an ExperimentFilter call to filter a single container (will always be Null:"},
+		Example[{Basic, "Generate a preview for an ExperimentFilter call to filter a single container (will always be Null:"},
 			ExperimentFilterPreview[Object[Container, Vessel, "Filter Test Container for ExperimentFilterPreview (I)"]],
 			Null
 		],
-		Example[
-			{Basic, "Generate a preview for an ExperimentFilter call to filter two containers at the same time:"},
+		Example[{Basic, "Generate a preview for an ExperimentFilter call to filter two containers at the same time:"},
 			ExperimentFilterPreview[{
 				Object[Sample, "Filter Test Sample for ExperimentFilterPreview (I)"],
 				Object[Container, Vessel, "Filter Test Container for ExperimentFilterPreview (II)"]
 			}],
 			Null
 		],
-		Example[
-			{Basic, "Generate a preview for an ExperimentFilter call to filter a single sample:"},
+		Example[{Basic, "Generate a preview for an ExperimentFilter call to filter a single sample:"},
 			ExperimentFilterPreview[Object[Sample, "Filter Test Sample for ExperimentFilterPreview (I)"]],
 			Null
 		]
 	},
-	SymbolSetUp :>(
+	SymbolSetUp :> (
 		(* Turn off warnings related to the state of the lab - is okay if we're using a model with no current instances *)
 		Off[Warning::SamplesOutOfStock];
 		Off[Warning::InstrumentUndergoingMaintenance];
 
 		$CreatedObjects = {};
+    Module[{objects , existsFilter},
+			(* list of test objects*)
+			objects = {
+				Object[Sample, "Filter Test Sample for ExperimentFilterPreview (I)"],
+				Object[Container, Vessel, "Filter Test Container for ExperimentFilterPreview (I)"],
+				Object[Sample, "Filter Test Sample for ExperimentFilterPreview (II)"],
+				Object[Container, Vessel, "Filter Test Container for ExperimentFilterPreview (II)"]
+			};
 
-		(* list of test objects*)
-		objects = {
-			Object[Sample, "Filter Test Sample for ExperimentFilterPreview (I)"],
-			Object[Container, Vessel, "Filter Test Container for ExperimentFilterPreview (I)"],
-			Object[Sample, "Filter Test Sample for ExperimentFilterPreview (II)"],
-			Object[Container, Vessel, "Filter Test Container for ExperimentFilterPreview (II)"]
-		};
+			(* Check whether the names we want to give below already exist in the database *)
+			existsFilter = DatabaseMemberQ[objects];
 
-		(* Check whether the names we want to give below already exist in the database *)
-		existsFilter = DatabaseMemberQ[objects];
+			(* Erase any objects that we failed to erase in the last unit test. *)
+			Quiet[EraseObject[PickList[objects, existsFilter], Force->True, Verbose-> False]];
+			Upload[
+				{
+					Association[
+						Type -> Object[Container, Vessel],
+						Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+						Name -> "Filter Test Container for ExperimentFilterPreview (I)",
+						DeveloperObject -> True,
+						Site -> Link[$Site]
+					],
+					Association[
+						Type->Object[Container, Vessel],
+						Model->Link[Model[Container, Vessel, "50mL Tube"], Objects],
+						Name -> "Filter Test Container for ExperimentFilterPreview (II)",
+						DeveloperObject->True,
+						Site -> Link[$Site]
+					]
+				}
+			];
 
-		(* Erase any objects that we failed to erase in the last unit test. *)
-		Quiet[EraseObject[PickList[objects, existsFilter], Force->True, Verbose->False]];
-		Upload[
-			{
-				Association[
-					Type->Object[Container, Vessel],
-					Model->Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name->"Filter Test Container for ExperimentFilterPreview (I)",
-					DeveloperObject->True,
-					Site -> Link[$Site]
-				],
-				Association[
-					Type->Object[Container, Vessel],
-					Model->Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name->"Filter Test Container for ExperimentFilterPreview (II)",
-					DeveloperObject->True,
-					Site -> Link[$Site]
-				]
-			}
-		];
-
-		ECL`InternalUpload`UploadSample[
-			{
-				Model[Sample, "Milli-Q water"],
-				Model[Sample, "Milli-Q water"]
-			},
-			{
-				{"A1", Object[Container, Vessel, "Filter Test Container for ExperimentFilterPreview (I)"]},
-				{"A1", Object[Container, Vessel, "Filter Test Container for ExperimentFilterPreview (II)"]}
-			},
-			InitialAmount->15 Milliliter,
-			Name->{
-				"Filter Test Sample for ExperimentFilterPreview (I)",
-				"Filter Test Sample for ExperimentFilterPreview (II)"
-			}
+			ECL`InternalUpload`UploadSample[
+				{
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"]
+				},
+				{
+					{"A1", Object[Container, Vessel, "Filter Test Container for ExperimentFilterPreview (I)"]},
+					{"A1", Object[Container, Vessel, "Filter Test Container for ExperimentFilterPreview (II)"]}
+				},
+				InitialAmount->15 Milliliter,
+				Name -> {
+					"Filter Test Sample for ExperimentFilterPreview (I)",
+					"Filter Test Sample for ExperimentFilterPreview (II)"
+				}
+			]
 		]
-
-		(* upload needed objects *)
 	),
-	SymbolTearDown:>(
+	SymbolTearDown :> (
 		On[Warning::SamplesOutOfStock];
 		On[Warning::InstrumentUndergoingMaintenance];
-		EraseObject[$CreatedObjects, Force->True, Verbose->False];
+		EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
 	)
 ];
 
@@ -5070,98 +4469,92 @@ DefineTests[
 	ValidExperimentFilterQ,
 	{
 	(* --- Basic Examples --- *)
-		Example[
-			{Basic, "Validate an ExperimentFilter call to filter a single container:"},
-			ValidExperimentFilterQ[Object[Container, Vessel, "Filter Test Container for ExperimentValidExperimentFilterQ (I)"]],
+		Example[{Basic, "Validate an ExperimentFilter call to filter a single container:"},
+			ValidExperimentFilterQ[Object[Container, Vessel, "Filter Test Container for ExperimentValidExperimentFilterQ (I)" <> $SessionUUID]],
 			True
 		],
-		Example[
-			{Basic, "Validate an ExperimentFilter call to filter two containers at the same time:"},
+		Example[{Basic, "Validate an ExperimentFilter call to filter two containers at the same time:"},
 			ValidExperimentFilterQ[{
-				Object[Sample, "Filter Test Sample for ExperimentValidExperimentFilterQ (I)"],
-				Object[Container, Vessel, "Filter Test Container for ExperimentValidExperimentFilterQ (II)"]
+				Object[Sample, "Filter Test Sample for ExperimentValidExperimentFilterQ (I)" <> $SessionUUID],
+				Object[Container, Vessel, "Filter Test Container for ExperimentValidExperimentFilterQ (II)" <> $SessionUUID]
 			}],
 			True
 		],
-		Example[
-			{Basic, "Validate an ExperimentFilter call to filter a single sample:"},
-			ValidExperimentFilterQ[Object[Sample, "Filter Test Sample for ExperimentValidExperimentFilterQ (I)"]],
+		Example[{Basic, "Validate an ExperimentFilter call to filter a single sample:"},
+			ValidExperimentFilterQ[Object[Sample, "Filter Test Sample for ExperimentValidExperimentFilterQ (I)" <> $SessionUUID]],
 			True
 		],
 
 	(* --- Options Examples --- *)
-		Example[
-			{Options, OutputFormat, "Validate an ExperimentFilter call to filter a single container, returning an ECL Test Summary:"},
-			ValidExperimentFilterQ[Object[Container, Vessel, "Filter Test Container for ExperimentValidExperimentFilterQ (I)"], OutputFormat->TestSummary],
+		Example[{Options, OutputFormat, "Validate an ExperimentFilter call to filter a single container, returning an ECL Test Summary:"},
+			ValidExperimentFilterQ[Object[Container, Vessel, "Filter Test Container for ExperimentValidExperimentFilterQ (I)" <> $SessionUUID], OutputFormat -> TestSummary],
 			_EmeraldTestSummary
 		],
-		Example[
-			{Options, Verbose, "Validate an ExperimentFilter call to filter a single container, printing a verbose summary of tests as they are run:"},
-			ValidExperimentFilterQ[Object[Container, Vessel, "Filter Test Container for ExperimentValidExperimentFilterQ (I)"], Verbose->True],
+		Example[{Options, Verbose, "Validate an ExperimentFilter call to filter a single container, printing a verbose summary of tests as they are run:"},
+			ValidExperimentFilterQ[Object[Container, Vessel, "Filter Test Container for ExperimentValidExperimentFilterQ (I)" <> $SessionUUID], Verbose -> True],
 			True
 		]
 	},
-	SymbolSetUp :>(
+	SymbolSetUp :> (
 		(* Turn off warnings related to the state of the lab - is okay if we're using a model with no current instances *)
 		Off[Warning::SamplesOutOfStock];
 		Off[Warning::InstrumentUndergoingMaintenance];
 
 		$CreatedObjects = {};
+    Module[{objects, existsFilter},
+			(* list of test objects*)
+			objects = {
+				Object[Sample, "Filter Test Sample for ExperimentValidExperimentFilterQ (I)" <> $SessionUUID],
+				Object[Container, Vessel, "Filter Test Container for ExperimentValidExperimentFilterQ (I)" <> $SessionUUID],
+				Object[Sample, "Filter Test Sample for ExperimentValidExperimentFilterQ (II)" <> $SessionUUID],
+				Object[Container, Vessel, "Filter Test Container for ExperimentValidExperimentFilterQ (II)" <> $SessionUUID]
+			};
 
-		(* list of test objects*)
-		objects = {
-			Object[Sample, "Filter Test Sample for ExperimentValidExperimentFilterQ (I)"],
-			Object[Container, Vessel, "Filter Test Container for ExperimentValidExperimentFilterQ (I)"],
-			Object[Sample, "Filter Test Sample for ExperimentValidExperimentFilterQ (II)"],
-			Object[Container, Vessel, "Filter Test Container for ExperimentValidExperimentFilterQ (II)"]
-		};
+			(* Check whether the names we want to give below already exist in the database *)
+			existsFilter = DatabaseMemberQ[objects];
 
-		(* Check whether the names we want to give below already exist in the database *)
-		existsFilter = DatabaseMemberQ[objects];
+			(* Erase any objects that we failed to erase in the last unit test. *)
+			Quiet[EraseObject[PickList[objects, existsFilter], Force->True, Verbose-> False]];
+			Upload[
+				{
+					Association[
+						Type->Object[Container, Vessel],
+						Model->Link[Model[Container, Vessel, "50mL Tube"], Objects],
+						Name -> "Filter Test Container for ExperimentValidExperimentFilterQ (I)" <> $SessionUUID,
+						DeveloperObject->True,
+						Site -> Link[$Site]
+					],
+					Association[
+						Type->Object[Container, Vessel],
+						Model->Link[Model[Container, Vessel, "50mL Tube"], Objects],
+						Name -> "Filter Test Container for ExperimentValidExperimentFilterQ (II)" <> $SessionUUID,
+						DeveloperObject->True,
+						Site -> Link[$Site]
+					]
+				}
+			];
 
-		(* Erase any objects that we failed to erase in the last unit test. *)
-		Quiet[EraseObject[PickList[objects, existsFilter], Force->True, Verbose->False]];
-		Upload[
-			{
-				Association[
-					Type->Object[Container, Vessel],
-					Model->Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name->"Filter Test Container for ExperimentValidExperimentFilterQ (I)",
-					DeveloperObject->True,
-					Site -> Link[$Site]
-				],
-				Association[
-					Type->Object[Container, Vessel],
-					Model->Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name->"Filter Test Container for ExperimentValidExperimentFilterQ (II)",
-					DeveloperObject->True,
-					Site -> Link[$Site]
-				]
-			}
-		];
-
-		ECL`InternalUpload`UploadSample[
-			{
-				Model[Sample, "Milli-Q water"],
-				Model[Sample, "Milli-Q water"]
-			},
-			{
-				{"A1", Object[Container, Vessel, "Filter Test Container for ExperimentValidExperimentFilterQ (I)"]},
-				{"A1", Object[Container, Vessel, "Filter Test Container for ExperimentValidExperimentFilterQ (II)"]}
-			},
-			InitialAmount->15 Milliliter,
-			Name->{
-				"Filter Test Sample for ExperimentValidExperimentFilterQ (I)",
-				"Filter Test Sample for ExperimentValidExperimentFilterQ (II)"
-			}
+			ECL`InternalUpload`UploadSample[
+				{
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"]
+				},
+				{
+					{"A1", Object[Container, Vessel, "Filter Test Container for ExperimentValidExperimentFilterQ (I)" <> $SessionUUID]},
+					{"A1", Object[Container, Vessel, "Filter Test Container for ExperimentValidExperimentFilterQ (II)" <> $SessionUUID]}
+				},
+				InitialAmount -> 15 Milliliter,
+				Name -> {
+					"Filter Test Sample for ExperimentValidExperimentFilterQ (I)" <> $SessionUUID,
+					"Filter Test Sample for ExperimentValidExperimentFilterQ (II)" <> $SessionUUID
+				}
+			]
 		]
-
-		(* upload needed objects *)
 	),
-	SymbolTearDown:>(
+	SymbolTearDown :> (
 		On[Warning::SamplesOutOfStock];
 		On[Warning::InstrumentUndergoingMaintenance];
-		EraseObject[$CreatedObjects, Force->True, Verbose->False];
+		EraseObject[$CreatedObjects, Force->True, Verbose-> False];
 	)
 ];
 
@@ -5171,36 +4564,40 @@ DefineTests[
 
 DefineTests[resolveFilterMethod,
 	{
-		Test["If everything is normal, then allow robotic and manaul sample preparations:",
-			resolveFilterMethod[{Object[Sample, "resolveFilterMethod Normal Sample 1"], Object[Sample, "resolveFilterMethod Normal Sample 2"]}],
+		Test["If everything is normal, then allow robotic and manual sample preparations:",
+			resolveFilterMethod[{Object[Sample, "resolveFilterMethod Normal Sample 1" <> $SessionUUID], Object[Sample, "resolveFilterMethod Normal Sample 2" <> $SessionUUID]}],
 			{Manual, Robotic}
 		],
-		Test["Do not allow robotic preparation if the input sample does not have a liquid handler compatible footprint:",
-			resolveFilterMethod[Object[Sample, "resolveFilterMethod Sample in Non-LiquidHandler-Compatible Container 1"]],
+		Test["Properly resolves if input is {Automatic} (when function is called inside ValidateUnitOperationsJSON for Command Builder or during pre-resolution of Unit Operation inputs):",
+			resolveFilterMethod[{Automatic}],
+			{Manual, Robotic}
+		],
+		Test["Do not allow robotic preparation if the input sample does not have a liquid handler compatible footprint:", 
+			resolveFilterMethod[Object[Sample, "resolveFilterMethod Sample in Non-LiquidHandler-Compatible Container 1" <> $SessionUUID]],
 			Manual
 		],
-		Test["Do not allow robotic preparation if a sample in the options (in this case, ResuspensionBuffer) does not have a liquid handler compatible footprint:",
-			resolveFilterMethod[Object[Sample, "resolveFilterMethod Normal Sample 1"], ResuspensionBuffer -> Object[Sample, "resolveFilterMethod Sample in Non-LiquidHandler-Compatible Container 2"]],
+		Test["Do not allow robotic preparation if a sample in the options (in this case, ResuspensionBuffer) does not have a liquid handler compatible footprint:", 
+			resolveFilterMethod[Object[Sample, "resolveFilterMethod Normal Sample 1" <> $SessionUUID], ResuspensionBuffer -> Object[Sample, "resolveFilterMethod Sample in Non-LiquidHandler-Compatible Container 2" <> $SessionUUID]],
 			Manual
 		],
-		Test["Do not allow RoboticSamplePreparation if a sample needs too much volume transferred:",
-			resolveFilterMethod[Object[Sample, "resolveFilterMethod Sample With High Volume (40 mL)"]],
+		Test["Do not allow RoboticSamplePreparation if a sample needs too much volume transferred:", 
+			resolveFilterMethod[Object[Sample, "resolveFilterMethod Sample With High Volume (40 mL)" <> $SessionUUID]],
 			Manual
 		],
-		Test["Do not allow RoboticSamplePreparation if a sample is itself liquid handler incompatible:",
-			resolveFilterMethod[Object[Sample, "resolveFilterMethod Sample that is LiquidHandler-Incompatible 1"]],
+		Test["Do not allow RoboticSamplePreparation if a sample is itself liquid handler incompatible:", 
+			resolveFilterMethod[Object[Sample, "resolveFilterMethod Sample that is LiquidHandler-Incompatible 1" <> $SessionUUID]],
 			Manual
 		],
-		Test["Properly resolves if taking in a plate and a sample (in this case a plate has a liquid handler incompatible sample in it):",
-			resolveFilterMethod[{Object[Container, Plate, "resolveFilterMethod Plate 1"], Object[Sample, "resolveFilterMethod Normal Sample 1"]}],
+		Test["Properly resolves if taking in a plate and a sample (in this case a plate has a liquid handler incompatible sample in it):", 
+			resolveFilterMethod[{Object[Container, Plate, "resolveFilterMethod Plate 1" <> $SessionUUID], Object[Sample, "resolveFilterMethod Normal Sample 1" <> $SessionUUID]}],
 			Manual
 		],
-		Test["If FiltrationType is only supported by manual preparation (in this case, PeristalticPump), then only allow manaul sample preparations:",
-			resolveFilterMethod[{Object[Sample, "resolveFilterMethod Normal Sample 1"], Object[Sample, "resolveFilterMethod Normal Sample 2"]},FiltrationType->PeristalticPump],
+		Test["If FiltrationType is only supported by manual preparation (in this case, PeristalticPump), then only allow manaul sample preparations:", 
+			resolveFilterMethod[{Object[Sample, "resolveFilterMethod Normal Sample 1" <> $SessionUUID], Object[Sample, "resolveFilterMethod Normal Sample 2" <> $SessionUUID]},FiltrationType->PeristalticPump],
 			Manual
 		],
-		Test["If FiltrationType is only supported by robotic preparation (in this case, AirPressure), then only allow robotic sample preparations:",
-			resolveFilterMethod[{Object[Sample, "resolveFilterMethod Normal Sample 1"], Object[Sample, "resolveFilterMethod Normal Sample 2"]},FiltrationType->AirPressure],
+		Test["If FiltrationType is only supported by robotic preparation (in this case, AirPressure), then only allow robotic sample preparations:", 
+			resolveFilterMethod[{Object[Sample, "resolveFilterMethod Normal Sample 1" <> $SessionUUID], Object[Sample, "resolveFilterMethod Normal Sample 2" <> $SessionUUID]},FiltrationType->AirPressure],
 			Robotic
 		]
 		
@@ -5210,21 +4607,21 @@ DefineTests[resolveFilterMethod,
 	SymbolSetUp :> (
 		Module[{objects, existsFilter},
 			objects = {
-				Object[Sample, "resolveFilterMethod Normal Sample 1"],
-				Object[Sample, "resolveFilterMethod Normal Sample 2"],
-				Object[Sample, "resolveFilterMethod Normal Sample 3"],
-				Object[Sample, "resolveFilterMethod Sample in Non-LiquidHandler-Compatible Container 1"],
-				Object[Sample, "resolveFilterMethod Sample in Non-LiquidHandler-Compatible Container 2"],
-				Object[Sample, "resolveFilterMethod Sample With High Volume (40 mL)"],
-				Object[Sample, "resolveFilterMethod Sample that is LiquidHandler-Incompatible 1"],
+				Object[Sample, "resolveFilterMethod Normal Sample 1" <> $SessionUUID],
+				Object[Sample, "resolveFilterMethod Normal Sample 2" <> $SessionUUID],
+				Object[Sample, "resolveFilterMethod Normal Sample 3" <> $SessionUUID],
+				Object[Sample, "resolveFilterMethod Sample in Non-LiquidHandler-Compatible Container 1" <> $SessionUUID],
+				Object[Sample, "resolveFilterMethod Sample in Non-LiquidHandler-Compatible Container 2" <> $SessionUUID],
+				Object[Sample, "resolveFilterMethod Sample With High Volume (40 mL)" <> $SessionUUID],
+				Object[Sample, "resolveFilterMethod Sample that is LiquidHandler-Incompatible 1" <> $SessionUUID],
 				
-				Object[Container, Vessel, "resolveFilterMethod Vessel 1"],
-				Object[Container, Vessel, "resolveFilterMethod Vessel 2"],
-				Object[Container, Vessel, "resolveFilterMethod Vessel 3 (LiquidHandler-Incompatible)"],
-				Object[Container, Vessel, "resolveFilterMethod Vessel 4 (LiquidHandler-Incompatible)"],
-				Object[Container, Vessel, "resolveFilterMethod Vessel 5"],
+				Object[Container, Vessel, "resolveFilterMethod Vessel 1" <> $SessionUUID],
+				Object[Container, Vessel, "resolveFilterMethod Vessel 2" <> $SessionUUID],
+				Object[Container, Vessel, "resolveFilterMethod Vessel 3 (LiquidHandler-Incompatible)" <> $SessionUUID],
+				Object[Container, Vessel, "resolveFilterMethod Vessel 4 (LiquidHandler-Incompatible)" <> $SessionUUID],
+				Object[Container, Vessel, "resolveFilterMethod Vessel 5" <> $SessionUUID],
 				
-				Object[Container, Plate, "resolveFilterMethod Plate 1"]
+				Object[Container, Plate, "resolveFilterMethod Plate 1" <> $SessionUUID]
 			};
 			
 			(* Check whether the names we want to give below already exist in the database *)
@@ -5246,42 +4643,42 @@ DefineTests[resolveFilterMethod,
 				<|
 					Type -> Object[Container, Vessel],
 					Model -> Link[Model[Container, Vessel, "2mL Tube"], Objects],
-					Name -> "resolveFilterMethod Vessel 1",
+					Name -> "resolveFilterMethod Vessel 1" <> $SessionUUID, 
 					DeveloperObject -> True,
 					Site -> Link[$Site]
 				|>,
 				<|
 					Type -> Object[Container, Vessel],
 					Model -> Link[Model[Container, Vessel, "2mL Tube"], Objects],
-					Name -> "resolveFilterMethod Vessel 2",
+					Name -> "resolveFilterMethod Vessel 2" <> $SessionUUID, 
 					DeveloperObject -> True,
 					Site -> Link[$Site]
 				|>,
 				<|
 					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "1.2mL Cryogenic Vial"], Objects],
-					Name -> "resolveFilterMethod Vessel 3 (LiquidHandler-Incompatible)",
+					Model -> Link[Model[Container, Vessel, "1mL clear glass ampule"], Objects],
+					Name -> "resolveFilterMethod Vessel 3 (LiquidHandler-Incompatible)" <> $SessionUUID, 
 					DeveloperObject -> True,
 					Site -> Link[$Site]
 				|>,
 				<|
 					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "1.2mL Cryogenic Vial"], Objects],
-					Name -> "resolveFilterMethod Vessel 4 (LiquidHandler-Incompatible)",
+					Model -> Link[Model[Container, Vessel, "1mL clear glass ampule"], Objects],
+					Name -> "resolveFilterMethod Vessel 4 (LiquidHandler-Incompatible)" <> $SessionUUID, 
 					DeveloperObject -> True,
 					Site -> Link[$Site]
 				|>,
 				<|
 					Type -> Object[Container, Vessel],
 					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name -> "resolveFilterMethod Vessel 5",
+					Name -> "resolveFilterMethod Vessel 5" <> $SessionUUID, 
 					DeveloperObject -> True,
 					Site -> Link[$Site]
 				|>,
 				<|
 					Type -> Object[Container, Plate],
 					Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"], Objects],
-					Name -> "resolveFilterMethod Plate 1",
+					Name -> "resolveFilterMethod Plate 1" <> $SessionUUID, 
 					DeveloperObject -> True,
 					Site -> Link[$Site]
 				|>
@@ -5324,13 +4721,13 @@ DefineTests[resolveFilterMethod,
 					1 Milliliter
 				},
 				Name -> {
-					"resolveFilterMethod Normal Sample 1",
-					"resolveFilterMethod Normal Sample 2",
-					"resolveFilterMethod Normal Sample 3",
-					"resolveFilterMethod Sample in Non-LiquidHandler-Compatible Container 1",
-					"resolveFilterMethod Sample in Non-LiquidHandler-Compatible Container 2",
-					"resolveFilterMethod Sample With High Volume (40 mL)",
-					"resolveFilterMethod Sample that is LiquidHandler-Incompatible 1"
+					"resolveFilterMethod Normal Sample 1" <> $SessionUUID, 
+					"resolveFilterMethod Normal Sample 2" <> $SessionUUID, 
+					"resolveFilterMethod Normal Sample 3" <> $SessionUUID, 
+					"resolveFilterMethod Sample in Non-LiquidHandler-Compatible Container 1" <> $SessionUUID, 
+					"resolveFilterMethod Sample in Non-LiquidHandler-Compatible Container 2" <> $SessionUUID, 
+					"resolveFilterMethod Sample With High Volume (40 mL)" <> $SessionUUID, 
+					"resolveFilterMethod Sample that is LiquidHandler-Incompatible 1" <> $SessionUUID
 				},
 				FastTrack -> True
 			];
@@ -5342,21 +4739,21 @@ DefineTests[resolveFilterMethod,
 	SymbolTearDown :> (
 		Module[{objects, existsFilter},
 			objects = {
-				Object[Sample, "resolveFilterMethod Normal Sample 1"],
-				Object[Sample, "resolveFilterMethod Normal Sample 2"],
-				Object[Sample, "resolveFilterMethod Normal Sample 3"],
-				Object[Sample, "resolveFilterMethod Sample in Non-LiquidHandler-Compatible Container 1"],
-				Object[Sample, "resolveFilterMethod Sample in Non-LiquidHandler-Compatible Container 2"],
-				Object[Sample, "resolveFilterMethod Sample With High Volume (40 mL)"],
-				Object[Sample, "resolveFilterMethod Sample that is LiquidHandler-Incompatible 1"],
+				Object[Sample, "resolveFilterMethod Normal Sample 1" <> $SessionUUID],
+				Object[Sample, "resolveFilterMethod Normal Sample 2" <> $SessionUUID],
+				Object[Sample, "resolveFilterMethod Normal Sample 3" <> $SessionUUID],
+				Object[Sample, "resolveFilterMethod Sample in Non-LiquidHandler-Compatible Container 1" <> $SessionUUID],
+				Object[Sample, "resolveFilterMethod Sample in Non-LiquidHandler-Compatible Container 2" <> $SessionUUID],
+				Object[Sample, "resolveFilterMethod Sample With High Volume (40 mL)" <> $SessionUUID],
+				Object[Sample, "resolveFilterMethod Sample that is LiquidHandler-Incompatible 1" <> $SessionUUID],
 				
-				Object[Container, Vessel, "resolveFilterMethod Vessel 1"],
-				Object[Container, Vessel, "resolveFilterMethod Vessel 2"],
-				Object[Container, Vessel, "resolveFilterMethod Vessel 3 (LiquidHandler-Incompatible)"],
-				Object[Container, Vessel, "resolveFilterMethod Vessel 4 (LiquidHandler-Incompatible)"],
-				Object[Container, Vessel, "resolveFilterMethod Vessel 5"],
+				Object[Container, Vessel, "resolveFilterMethod Vessel 1" <> $SessionUUID],
+				Object[Container, Vessel, "resolveFilterMethod Vessel 2" <> $SessionUUID],
+				Object[Container, Vessel, "resolveFilterMethod Vessel 3 (LiquidHandler-Incompatible)" <> $SessionUUID],
+				Object[Container, Vessel, "resolveFilterMethod Vessel 4 (LiquidHandler-Incompatible)" <> $SessionUUID],
+				Object[Container, Vessel, "resolveFilterMethod Vessel 5" <> $SessionUUID],
 				
-				Object[Container, Plate, "resolveFilterMethod Plate 1"]
+				Object[Container, Plate, "resolveFilterMethod Plate 1" <> $SessionUUID]
 			};
 			
 			(* Check whether the names we want to give below already exist in the database *)
@@ -5368,6 +4765,96 @@ DefineTests[resolveFilterMethod,
 		]
 	)
 ];
+
+
+
+(* ::Subsection::Closed:: *)
+(*Filter*)
+
+
+DefineTests[
+	Filter,
+	{
+	(* --- Basic Examples --- *)
+		Example[{Basic, "Filter a single sample:"},
+			ExperimentManualSamplePreparation[{Filter[Sample -> Object[Sample, "Filter Test Sample for Filter (I)"<>$SessionUUID]]}],
+			ObjectP[Object[Protocol]]
+		],
+		Example[{Basic, "Filter a single container:"},
+			ExperimentManualSamplePreparation[{Filter[Sample -> Object[Container, Vessel, "Filter Test Container for Filter (I)"<>$SessionUUID]]}],
+			ObjectP[Object[Protocol]]
+		],
+		Example[{Basic, "Filter a sample and a container the same time:"},
+			ExperimentManualSamplePreparation[{Filter[Sample -> {
+				Object[Sample, "Filter Test Sample for Filter (I)"<>$SessionUUID],
+				Object[Container, Vessel, "Filter Test Container for Filter (II)"<>$SessionUUID]
+			}]}],
+			ObjectP[Object[Protocol]]
+		]
+	},
+	SymbolSetUp :> (
+		(* Turn off warnings related to the state of the lab - is okay if we're using a model with no current instances *)
+		Off[Warning::SamplesOutOfStock];
+		Off[Warning::InstrumentUndergoingMaintenance];
+
+		$CreatedObjects = {};
+		Module[{objects, existsFilter},
+			(* list of test objects*)
+			objects = {
+				Object[Sample, "Filter Test Sample for Filter (I)"<>$SessionUUID],
+				Object[Container, Vessel, "Filter Test Container for Filter (I)"<>$SessionUUID],
+				Object[Sample, "Filter Test Sample for Filter (II)"<>$SessionUUID],
+				Object[Container, Vessel, "Filter Test Container for Filter (II)"<>$SessionUUID]
+			};
+
+			(* Check whether the names we want to give below already exist in the database *)
+			existsFilter = DatabaseMemberQ[objects];
+
+			(* Erase any objects that we failed to erase in the last unit test. *)
+			Quiet[EraseObject[PickList[objects, existsFilter], Force->True, Verbose-> False]];
+			Upload[
+				{
+					Association[
+						Type->Object[Container, Vessel],
+						Model->Link[Model[Container, Vessel, "50mL Tube"], Objects],
+						Name -> "Filter Test Container for Filter (I)"<>$SessionUUID,
+						DeveloperObject->True,
+						Site -> Link[$Site]
+					],
+					Association[
+						Type->Object[Container, Vessel],
+						Model->Link[Model[Container, Vessel, "50mL Tube"], Objects],
+						Name -> "Filter Test Container for Filter (II)"<>$SessionUUID,
+						DeveloperObject->True,
+						Site -> Link[$Site]
+					]
+				}
+			];
+
+			ECL`InternalUpload`UploadSample[
+				{
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"]
+				},
+				{
+					{"A1", Object[Container, Vessel, "Filter Test Container for Filter (I)"<>$SessionUUID]},
+					{"A1", Object[Container, Vessel, "Filter Test Container for Filter (II)"<>$SessionUUID]}
+				},
+				InitialAmount -> 15 Milliliter,
+				Name -> {
+					"Filter Test Sample for Filter (I)"<>$SessionUUID,
+					"Filter Test Sample for Filter (II)"<>$SessionUUID
+				}
+			]
+		]
+	),
+	SymbolTearDown :> (
+		On[Warning::SamplesOutOfStock];
+		On[Warning::InstrumentUndergoingMaintenance];
+		EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
+	)
+];
+
 
 
 

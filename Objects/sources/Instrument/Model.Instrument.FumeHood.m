@@ -33,13 +33,36 @@ DefineObjectType[Model[Instrument, FumeHood], {
 			Description -> "Whether or not a flow meter is connected to the hood.",
 			Category -> "Instrument Specifications"
 		},
-		FlowRate -> {
+		MinVolumetricFlowRate -> {
 			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterP[(0*Liter)/Second],
+			Pattern :> GreaterEqualP[(0*Liter)/Second],
 			Units -> Liter/Second,
-			Description -> "The recommended face velocity at the sash opening to ensure vapors do not escape.",
-			Category -> "Instrument Specifications"
+			Description -> "The minimum amount of air, per unit time, pulled through the instrument when the sash is at its working position. This rate generally determines how quickly vapors are removed from the instrument and is often a function of the building's HVAC configuration.",
+			Category-> "Instrument Specifications"
+		},
+		MinFlowSpeed -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[(0*Meter)/Second],
+			Units -> Meter/Second,
+			Description -> "The minimum distance per unit time traveled by air that is pulled through the open face of the sample handling environment when the sash is at its working position. This value determines how quickly vapors at the entrance of the instrument are sucked into the work area. This speed is usually determined by the MinVolumetricFlowRate divided by the area of the open entrance door.",
+			Category-> "Instrument Specifications"
+		},
+		MinLaminarFlowSpeed -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[(0*Meter)/Second],
+			Units -> Meter/Second,
+			Description -> "The minimum distance per unit time traveled by non-turbid air that is smoothly blown in the LaminarFlowDirection.",
+			Category-> "Instrument Specifications"
+		},
+		LaminarFlowDirection -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> (Horizontal | Vertical),
+			Description -> "Indicates if smooth, non-turbid flow is present and which way it is oriented. Horizontal refers to uniform flow into or away from the handling environment through the door. Vertical refers to uniform flow up or down within the handling environment. As examples, some BiosafetyCabinets supply Vertical laminar flow down to the work surface while CleanBenches supply Horizontal laminar flow across the work surface towards the operator.",
+			Category -> "Model Information"
 		},
 		InternalDimensions -> {
 			Format -> Single,

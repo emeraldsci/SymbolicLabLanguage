@@ -33,6 +33,26 @@ DefineUsage[PlotFluorescenceSpectroscopy,
 			}
 		},
 		{
+			Definition -> {"PlotFluorescenceSpectroscopy[protocol]", "plot"},
+			Description -> "displays fluorescence intensity vs wavelength 'plot' for the data objects found in the Data field of 'protocol'.",
+			Inputs :> {
+				{
+					InputName -> "protocol",
+					Description -> "The protocol object containing fluorescence spectroscopy data objects.",
+					Widget -> Alternatives[
+						Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, FluorescenceSpectroscopy]]]
+					]
+				}
+			},
+			Outputs :> {
+				{
+					OutputName -> "plot",
+					Description -> "The figure generated from data found in the fluorescence spectroscopy protocol.",
+					Pattern :> ValidGraphicsP[]
+				}
+			}
+		},
+		{
 			Definition->{"PlotFluorescenceSpectroscopy[spectra]", "plot"},
 			Description->"displays fluorescence intensity vs wavelength 'plot' when given a 'spectra' as a raw data trace.",
 			Inputs:>{

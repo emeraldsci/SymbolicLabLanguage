@@ -12,7 +12,7 @@ DefineTests[PlotTable,{
 
 	Example[{Basic,"Create a table containing information about the samples from a protocol:"},
 		PlotTable[
-			Object[Protocol,SampleManipulation,"id:Vrbp1jGnklYE"][SamplesIn],
+			Object[Protocol, Incubate, "id:54n6evKY3Mn7"][SamplesIn],
 			{ModelName,Status,Volume,Container}
 		],
 		_Pane
@@ -132,7 +132,22 @@ DefineTests[PlotTable,{
 			TableHeadings -> {{"A", "B", "C", "D", "E"}, None}],
 		_Pane
 	],
-
+	Example[{Options,HeaderCopy,"If HeaderCopy is specified as Contents, clicking on the header of a row will copy the contents of the row:"},
+		PlotTable[
+			Download[{Object[Sample,"id:pZx9jon410JM"],Object[Sample,"id:n0k9mGz54Ne3"],Object[Sample,"id:D8KAEvdeYOYL"]}],
+			{ModelName,Volume,Concentration,Status},
+			HeaderCopy -> Contents
+		],
+	    _Pane
+	],
+	Example[{Options,HeaderCopy,"If HeaderCopy is specified as Header, clicking on the header of a row will copy the object in the header of the row:"},
+		PlotTable[
+			Download[{Object[Sample,"id:pZx9jon410JM"],Object[Sample,"id:n0k9mGz54Ne3"],Object[Sample,"id:D8KAEvdeYOYL"]}],
+			{ModelName,Volume,Concentration,Status},
+			HeaderCopy -> Header
+		],
+		_Pane
+	],
 	Example[{Options,SecondaryTableHeadings,"Specify secondary row and column headings:"},
 		PlotTable[
 			Download[{Object[Sample,"id:pZx9jon410JM"],Object[Sample,"id:n0k9mGz54Ne3"],Object[Sample,"id:D8KAEvdeYOYL"]}],
@@ -366,7 +381,7 @@ DefineTests[PlotTable,{
 		Messages:>PlotTable::TooManySecondaryLabels
 	],
 	Example[{Attributes,HoldRest,"The subsequent arguments will be passed unevaluated:"},
-		PlotTable[Object[Protocol,SampleManipulation,"id:Vrbp1jGnklYE"][SamplesIn],Type],
+		PlotTable[Object[Protocol, Incubate, "id:54n6evKY3Mn7"][SamplesIn],Type],
 		_Pane
 	]
 }
@@ -395,15 +410,11 @@ DefineTests[PlotTableOptions, {
 		{TableHeadings -> {{"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""},
 		   {"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""}}, SecondaryTableHeadings -> {None, None}, UnitForm -> True,
 		 Round -> False, ShowNamedObjects -> True, HeaderTextAlignment -> Left, Title -> None, Caption -> None, HorizontalScrollBar -> Automatic, Tooltips -> True,
-		 Dividers -> {{Directive[RGBColor[0.796078431372549, 0.796078431372549, 0.796078431372549], Thickness[1]],
-		    {1 -> Directive[RGBColor[0.5568627450980392, 0.5568627450980392, 0.5568627450980392], Thickness[1]],
-		     -1 -> Directive[RGBColor[0.5568627450980392, 0.5568627450980392, 0.5568627450980392], Thickness[1]]}},
-		   {Directive[RGBColor[0.796078431372549, 0.796078431372549, 0.796078431372549], Thickness[1]],
-		    {1 -> Directive[RGBColor[0.5568627450980392, 0.5568627450980392, 0.5568627450980392], Thickness[1]],
-		     -1 -> Directive[RGBColor[0.5568627450980392, 0.5568627450980392, 0.5568627450980392], Thickness[1]]}}}, FrameStyle -> Automatic,
+			HeaderCopy -> Contents,
+		 Dividers -> Automatic, FrameStyle -> Automatic,
 		 Frame -> Directive[RGBColor[0.5568627450980392, 0.5568627450980392, 0.5568627450980392], Thickness[1]],
-		 Alignment -> {Left, Center, Join[Nothing, Nothing]}, AutoDelete -> False,
-		 Background -> {None, {{RGBColor[0.8862745098039215, 0.8862745098039215, 0.8862745098039215], None}}}, BaseStyle -> {},
+		 Alignment -> {Left, Center}, AutoDelete -> False,
+		 Background -> {None, {{RGBColor[0.8862745098039215, 0.8862745098039215, 0.8862745098039215], None}}}, BaseStyle -> GrayLevel[1],
 		 DefaultElement -> "\[Placeholder]", ItemSize -> {{All, All}}, ItemStyle -> None, Spacings -> {Automatic, 1}}
 	]
 }
@@ -420,7 +431,7 @@ DefineTests[PlotTablePreview, {
 		_Pane
 	],
 	Example[{Basic,"Preview an object:"},
-		PlotTablePreview[Object[Protocol,SampleManipulation,"id:Vrbp1jGnklYE"][SamplesIn],{ModelName,Status,Volume,Container}],
+		PlotTablePreview[Object[Protocol, Incubate, "id:54n6evKY3Mn7"][SamplesIn],{ModelName,Status,Volume,Container}],
 		_Pane
 	],
 	Example[{Basic,"Preview an object with headings specified:"},

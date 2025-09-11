@@ -234,8 +234,20 @@ DefineOptions[ExperimentIRSpectroscopy,
 				Category->"Absorbance Parameters"
 			}
 		],
-		FuntopiaSharedOptions,
-		SamplesInStorageOptions
+		NonBiologyFuntopiaSharedOptions,
+		SamplesInStorageOptions,
+		SimulationOption,
+		ModifyOptions[
+			ModelInputOptions,
+			OptionName -> PreparedModelContainer
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelAmount,
+			{
+				ResolutionDescription -> "Automatically set to 0.5 Milliliter."
+			}
+		]
 	}
 ];
 
@@ -282,18 +294,19 @@ Warning::DryNoPressureBlanks="Pressure application was not requested for the fol
 Warning::SuspensionSolutionResolved="Suspension solutions of `1` were resolved for the samples `2`. The aliquot of sample used for measurement will be mixed with this solution and additional peaks may be observed in the spectrum.";
 
 ExperimentIRSpectroscopy[mySamples:ListableP[NonSelfContainedSampleP],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,
+	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
 		mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed,
 		safeOps,safeOpsTests,validLengths,validLengthTests,
-		templatedOptions,templateTests,inheritedOptions,expandedSafeOps,cacheBall,resolvedOptionsResult,
+		templatedOptions,templateTests,inheritedOptions,expandedSafeOps,
+		inheritedCache, cacheBall,resolvedOptionsResult,
 		resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests,
-		optionsWithObjects,userSpecifiedObjects,simulatedSampleQ,objectsExistQs,objectsExistTests,
+		optionsWithObjects,
 
 		(*Needed for the download*)
 		allSpectrometerModels, potentialContainers,samplesAsList,blanksLookup,blanksModels,suspensionSolutionLookup,
 		blanksObjects,suspensionSolutionModels,suspensionSolutionObjects, objectSampleFields, objectModelFields, objectModelContainerFields,
 		modelBlankFields,blankSampleFields,blankModelFields,suspensionSampleFields,suspensionModelFields,potentialContainersFields,
-		listedSamples
+		listedSamples, updatedSimulation
 	},
 
 	(* Determine the requested return value from the function *)
@@ -303,25 +316,25 @@ ExperimentIRSpectroscopy[mySamples:ListableP[NonSelfContainedSampleP],myOptions:
 	(* Determine if we should keep a running list of tests *)
 	gatherTests=MemberQ[output,Tests];
 
-	{listedSamples, listedOptions}=removeLinks[ToList[mySamples], ToList[myOptions]];
+	{listedSamples, listedOptions} = removeLinks[ToList[mySamples], ToList[myOptions]];
 
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentIRSpectroscopy,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -331,7 +344,7 @@ ExperimentIRSpectroscopy[mySamples:ListableP[NonSelfContainedSampleP],myOptions:
 	];
 
 	(* Sanitize Inputs *)
-	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* Call ValidInputLengthsQ to make sure all options are the right length *)
 	{validLengths,validLengthTests}=If[gatherTests,
@@ -430,67 +443,10 @@ ExperimentIRSpectroscopy[mySamples:ListableP[NonSelfContainedSampleP],myOptions:
 	(* Create list of options that can take objects *)
 	optionsWithObjects={Instrument,SuspensionSolution,Blanks};
 
-	(* Extract any objects that the user has explicitly specified *)
-	userSpecifiedObjects=DeleteDuplicates[
-		Cases[
-			Flatten@Join[
-				mySamplesWithPreparedSamples,
-				(* All options that could have an object *)
-				Lookup[expandedSafeOps,optionsWithObjects]
-			],
-			ObjectP[]
-		]
-	];
-
-	(* Check that the specified objects exist or are visible to the current user *)
-	simulatedSampleQ=Map[
-		Lookup[
-			fetchPacketFromCache[#,samplePreparationCache],
-			Simulated,
-			False
-		]&,
-		userSpecifiedObjects
-	];
-
-	objectsExistQs=DatabaseMemberQ[
-		PickList[userSpecifiedObjects,simulatedSampleQ,False]
-	];
-
-	(* Build tests for object existence *)
-	objectsExistTests=If[gatherTests,
-		Module[{failingTest,passingTest},
-
-			failingTest=If[!MemberQ[objectsExistQs,False],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]<>" exist in the database:",True,False]
-			];
-
-			passingTest=If[!MemberQ[objectsExistQs,True],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,True]]<>" exist in the database:",True,True]
-			];
-
-			{failingTest,passingTest}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]
-		];
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->Join[safeOpsTests,validLengthTests,templateTests,objectsExistTests],
-			Options->$Failed,
-			Preview->Null
-		}]
-	];
+	inheritedCache = Lookup[safeOps, Cache, {}];
 
 	cacheBall=Cases[FlattenCachePackets[{
-		samplePreparationCache,
+		inheritedCache,
 		Quiet[Download[
 			{
 				samplesAsList,
@@ -531,27 +487,28 @@ ExperimentIRSpectroscopy[mySamples:ListableP[NonSelfContainedSampleP],myOptions:
 					potentialContainersFields
 				}
 			},
-			Cache->samplePreparationCache,
+			Cache -> inheritedCache,
+			Simulation -> updatedSimulation,
 			Date -> Now
 		],{Download::FieldDoesntExist,Download::NotLinkField}]
 	}],_Association]; (* Quiet[Download[...],Download::FieldDoesntExist] *)
 
 	(* Build the resolved options *)
-	resolvedOptionsResult=If[gatherTests,
-	(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentIRSpectroscopyOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+	resolvedOptionsResult = If[gatherTests,
+		(* We are gathering tests. This silences any messages being thrown. *)
+		{resolvedOptions, resolvedOptionsTests} = resolveExperimentIRSpectroscopyOptions[mySamplesWithPreparedSamples, expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
-		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
-			{resolvedOptions,resolvedOptionsTests},
+		If[RunUnitTest[<|"Tests" -> resolvedOptionsTests|>, OutputFormat -> SingleBoolean, Verbose -> False],
+			{resolvedOptions, resolvedOptionsTests},
 			$Failed
 		],
 
-	(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
+		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentIRSpectroscopyOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions, resolvedOptionsTests} = {resolveExperimentIRSpectroscopyOptions[mySamplesWithPreparedSamples, expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation], {}},
 			$Failed,
-			{Error::InvalidInput,Error::InvalidOption}
+			{Error::InvalidInput, Error::InvalidOption}
 		]
 	];
 
@@ -574,9 +531,9 @@ ExperimentIRSpectroscopy[mySamples:ListableP[NonSelfContainedSampleP],myOptions:
 	];
 
 	(* Build packets with resources *)
-	{resourcePackets,resourcePacketTests} = If[gatherTests,
-		irSpectroscopyResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,collapsedResolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{irSpectroscopyResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,collapsedResolvedOptions,Cache->cacheBall],{}}
+	{resourcePackets, resourcePacketTests} = If[gatherTests,
+		irSpectroscopyResourcePackets[mySamplesWithPreparedSamples, templatedOptions, resolvedOptions, collapsedResolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+		{irSpectroscopyResourcePackets[mySamplesWithPreparedSamples, templatedOptions, resolvedOptions, collapsedResolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation], {}}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -595,13 +552,15 @@ ExperimentIRSpectroscopy[mySamples:ListableP[NonSelfContainedSampleP],myOptions:
 			resourcePackets,
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			Priority->Lookup[safeOps,Priority],
 			StartDate->Lookup[safeOps,StartDate],
 			HoldOrder->Lookup[safeOps,HoldOrder],
 			QueuePosition->Lookup[safeOps,QueuePosition],
 			ConstellationMessage->Object[Protocol,IRSpectroscopy],
-			Cache->samplePreparationCache
+			Cache -> cacheBall,
+			Simulation -> updatedSimulation
 	],
 	$Failed
 	];
@@ -615,10 +574,10 @@ ExperimentIRSpectroscopy[mySamples:ListableP[NonSelfContainedSampleP],myOptions:
 	}
 ];
 
-ExperimentIRSpectroscopy[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-	samplePreparationCache,containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests,updatedCache,sampleCache,
-		listedContainers,objectsExistQs,objectsExistTests},
+ExperimentIRSpectroscopy[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+	{outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
+	containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests,updatedCache,sampleCache, updatedSimulation, containerToSampleSimulation
+	},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -627,72 +586,35 @@ ExperimentIRSpectroscopy[myContainers:ListableP[ObjectP[{Object[Container],Objec
 	(* Determine if we should keep a running list of tests *)
 	gatherTests=MemberQ[output,Tests];
 
-	{listedContainers, listedOptions}=removeLinks[ToList[myContainers], ToList[myOptions]];
-
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentIRSpectroscopy,
-			ToList[listedContainers],
-			ToList[myOptions]
+			ToList[myContainers],
+			ToList[myOptions],
+			DefaultPreparedModelAmount -> 0.5 Milliliter
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
-	];
-
-	(* Before we turn containers into samples, we want to check that all containers exist in the database. We don't check any other option objects as they will be checked in our main Sample overload. We don't want random result to be returned from containerToSample function *)
-	objectsExistQs=DatabaseMemberQ[ToList[myContainers]];
-
-	(* Build tests for object existence *)
-	objectsExistTests=If[gatherTests,
-		Module[{failingTest,passingTest},
-
-			failingTest=If[!MemberQ[objectsExistQs,False],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[ToList[myContainers],objectsExistQs,False]]<>" exist in the database:",True,False]
-			];
-
-			passingTest=If[!MemberQ[objectsExistQs,True],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[ToList[myContainers],objectsExistQs,True]]<>" exist in the database:",True,True]
-			];
-
-			{failingTest,passingTest}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[ToList[myContainers],objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[ToList[myContainers],objectsExistQs,False]]
-		];
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->objectsExistTests,
-			Options->$Failed,
-			Preview->Null
-		}]
+		ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
 	(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests, containerToSampleSimulation}=containerToSampleOptions[
 			ExperimentIRSpectroscopy,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output -> {Result, Tests, Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -703,23 +625,17 @@ ExperimentIRSpectroscopy[myContainers:ListableP[ObjectP[{Object[Container],Objec
 
 	(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput, containerToSampleSimulation}=containerToSampleOptions[
 				ExperimentIRSpectroscopy,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output -> {Result, Simulation},
+				Simulation -> updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
-
-	(* Update our cache with our new simulated values. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
 
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToSampleResult,$Failed],
@@ -730,11 +646,11 @@ ExperimentIRSpectroscopy[myContainers:ListableP[ObjectP[{Object[Container],Objec
 			Options -> $Failed,
 			Preview -> Null
 		},
-	(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions, sampleCache}=containerToSampleOutput;
+		(* Split up our containerToSample result into the samples and sampleOptions. *)
+		{samples,sampleOptions} = containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentIRSpectroscopy[samples,ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache,sampleCache}]]]
+		ExperimentIRSpectroscopy[samples,ReplaceRule[sampleOptions,Simulation -> containerToSampleSimulation]]
 	]
 ];
 
@@ -745,12 +661,12 @@ ExperimentIRSpectroscopy[myContainers:ListableP[ObjectP[{Object[Container],Objec
 
 DefineOptions[
 	resolveExperimentIRSpectroscopyOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
 resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentIRSpectroscopyOptions]]:=Module[
 	{outputSpecification,output,gatherTests,cache,cacheFailedRemoved,samplePrepOptions,irSpectroscopyOptions,simulatedSamples,
-		resolvedSamplePrepOptions,simulatedCache,irSpectroscopyOptionsAssociation,allSpectrometerModels,
+		resolvedSamplePrepOptions,irSpectroscopyOptionsAssociation,allSpectrometerModels,
 		instrumentLookup,infraredInstrumentModelPackets,
 		invalidInputs,invalidOptions,
 		allDownloadValues,allSampleDownloadValues,instrumentDownloadValues,blankModelDownloadValues,blankObjectDownloadValues,suspensionSolutionModelDownloadValues,suspensionSolutionObjectDownloadValues,
@@ -808,8 +724,10 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 		(*final resolution*)
 		sampleVolumes,sampleMasses,bestAliquotAmount,
-		name, confirm, template, samplesInStorageCondition, originalCache, operator, parentProtocol, upload, outputOption, email, imageSample,recoupSample,
-		resolvedImageSample,resolvedEmail,resolvedPostProcessingOptions,numberOfReplicates,resultRule,testsRule},
+		name, confirm, canaryBranch, template, samplesInStorageCondition, originalCache, operator, parentProtocol, upload, outputOption, email, imageSample,recoupSample,
+		resolvedImageSample,resolvedEmail,resolvedPostProcessingOptions,numberOfReplicates,resultRule,testsRule,
+		samplePrepTests, cacheBall, simulation, updatedSimulation
+	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
 
@@ -820,8 +738,9 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	(* Determine if we should keep a running list of tests to return to the user. *)
 	gatherTests=MemberQ[output,Tests];
 
-	(* Fetch our cache from the parent function. *)
-	cache=Lookup[ToList[myResolutionOptions],Cache,{}];
+	(* Fetch our cache and simulation from the parent function. *)
+	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
 	(*There is a chance that the container has no solvent packet. Remove such and check if we can resolve SamplePrepOptions*)
 	cacheFailedRemoved=Cases[cache,Except[$Failed]];
@@ -830,7 +749,10 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	{samplePrepOptions,irSpectroscopyOptions}=splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{simulatedSamples,resolvedSamplePrepOptions,simulatedCache}=resolveSamplePrepOptions[ExperimentIRSpectroscopy,mySamples,samplePrepOptions,Cache->cacheFailedRemoved];
+	{{simulatedSamples, resolvedSamplePrepOptions, updatedSimulation}, samplePrepTests} = If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentIRSpectroscopy, mySamples, samplePrepOptions, Cache -> cacheFailedRemoved, Simulation -> simulation, Output -> {Result, Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentIRSpectroscopy, mySamples, samplePrepOptions, Cache -> cacheFailedRemoved, Simulation -> simulation, Output -> Result], {}}
+	];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
 	irSpectroscopyOptionsAssociation=Association[irSpectroscopyOptions];
@@ -910,9 +832,16 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 					Packet[Model[suspensionModelFields]]
 				}
 			},
-			Cache->simulatedCache
+			Cache -> cacheFailedRemoved,
+			Simulation -> updatedSimulation
 		]
 	],$Failed->Nothing,1];
+
+	(* Combine the cache together *)
+	cacheBall = FlattenCachePackets[{
+		cacheFailedRemoved,
+		allDownloadValues
+	}];
 
 	(*split the download packet based on object type*)
 	{allSampleDownloadValues,instrumentDownloadValues,blankModelDownloadValues,blankObjectDownloadValues,suspensionSolutionModelDownloadValues,suspensionSolutionObjectDownloadValues}=allDownloadValues;
@@ -964,7 +893,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[discardedInvalidInputs]>0&&!gatherTests,
-		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->cacheBall]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -974,13 +903,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				(* when not a single sample is discarded, we know we don't need to throw any failing test *)
 				Nothing,
 				(* otherwise, we throw one failing test for all discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" is/are not discarded:",True,False]
+				Test["The input sample(s) "<>ObjectToString[discardedInvalidInputs,Cache->cacheBall]<>" is/are not discarded:",True,False]
 			];
 			passingTest=If[Length[discardedInvalidInputs]==Length[simulatedSamples],
 				(* when ALL samples are discarded, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs],Cache->simulatedCache]<>" is/are not discarded:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs],Cache->cacheBall]<>" is/are not discarded:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -1004,7 +933,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[quantityNotDefinedInputs]>0&&!gatherTests,
-		Message[Error::SampleHasNoQuantity,ObjectToString[quantityNotDefinedInputs,Cache->simulatedCache]]
+		Message[Error::SampleHasNoQuantity,ObjectToString[quantityNotDefinedInputs,Cache->cacheBall]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1014,13 +943,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				(* when not a single sample is discarded, we know we don't need to throw any failing test *)
 				Nothing,
 				(* otherwise, we throw one failing test for all discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[quantityNotDefinedInputs,Cache->simulatedCache]<>" have a quantity informed (Mass or Volume):",True,False]
+				Test["The input sample(s) "<>ObjectToString[quantityNotDefinedInputs,Cache->cacheBall]<>" have a quantity informed (Mass or Volume):",True,False]
 			];
 			passingTest=If[Length[quantityNotDefinedInputs]==Length[simulatedSamples],
 				(* when ALL samples are discarded, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,quantityNotDefinedInputs],Cache->simulatedCache]<>" have a quantity informed (Mass or Volume):",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,quantityNotDefinedInputs],Cache->cacheBall]<>" have a quantity informed (Mass or Volume):",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -1046,7 +975,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	blankQuantityNotDefinedOptions=If[Length[blankQuantityNotDefinedBlanks]>0&&!gatherTests,
-		Message[Error::BlankHasNoQuantity,ObjectToString[blankQuantityNotDefinedBlanks,Cache->simulatedCache]];
+		Message[Error::BlankHasNoQuantity,ObjectToString[blankQuantityNotDefinedBlanks,Cache->cacheBall]];
 		{Blanks},
 		{}
 	];
@@ -1058,13 +987,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			(* when not a single sample is discarded, we know we don't need to throw any failing test *)
 				Nothing,
 			(* otherwise, we throw one failing test for all discarded samples *)
-				Test["The input Blanks(s) "<>ObjectToString[blankQuantityNotDefinedBlanks,Cache->simulatedCache]<>" have a Blanks informed (Mass or Volume):",True,False]
+				Test["The input Blanks(s) "<>ObjectToString[blankQuantityNotDefinedBlanks,Cache->cacheBall]<>" have a Blanks informed (Mass or Volume):",True,False]
 			];
 			passingTest=If[Length[blankQuantityNotDefinedBlanks]==Length[simulatedSamples],
 			(* when ALL samples are discarded, we know we don't need to throw any passing test *)
 				Nothing,
 			(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The input Blanks(s) "<>ObjectToString[Complement[blanksLookup,blankQuantityNotDefinedBlanks],Cache->simulatedCache]<>" have a Blanks quantity informed (Mass or Volume):",True,True]
+				Test["The input Blanks(s) "<>ObjectToString[Complement[blanksLookup,blankQuantityNotDefinedBlanks],Cache->cacheBall]<>" have a Blanks quantity informed (Mass or Volume):",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -1091,7 +1020,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[incompatibleUnitSampleAmountInputs]>0&&!gatherTests,
-		Message[Error::ImproperSampleAmount,ObjectToString[incompatibleUnitSampleAmountInputs,Cache->simulatedCache]]
+		Message[Error::ImproperSampleAmount,ObjectToString[incompatibleUnitSampleAmountInputs,Cache->cacheBall]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1101,13 +1030,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				(* when not a single sample is discarded, we know we don't need to throw any failing test *)
 				Nothing,
 				(* otherwise, we throw one failing test for all discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[incompatibleUnitSampleAmountInputs,Cache->simulatedCache]<>" have a quantity informed (Mass or Volume) compatible with the defined SampleAmount:",True,False]
+				Test["The input sample(s) "<>ObjectToString[incompatibleUnitSampleAmountInputs,Cache->cacheBall]<>" have a quantity informed (Mass or Volume) compatible with the defined SampleAmount:",True,False]
 			];
 			passingTest=If[Length[incompatibleUnitSampleAmountInputs]==Length[simulatedSamples],
 				(* when ALL samples are discarded, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,incompatibleUnitSampleAmountInputs],Cache->simulatedCache]<>" have a quantity informed (Mass or Volume) compatible with the defined SampleAmount:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,incompatibleUnitSampleAmountInputs],Cache->cacheBall]<>" have a quantity informed (Mass or Volume) compatible with the defined SampleAmount:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -1138,7 +1067,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	incompatibleBlankAmountOptions=If[Length[incompatibleBlankAmountInputs]>0&&!gatherTests,
-		Message[Error::ImproperBlankAmount,ObjectToString[incompatibleBlankAmountInputs,Cache->simulatedCache]];
+		Message[Error::ImproperBlankAmount,ObjectToString[incompatibleBlankAmountInputs,Cache->cacheBall]];
 		{Blanks,BlankAmounts},
 		{}
 	];
@@ -1150,13 +1079,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			(* when not a single sample is discarded, we know we don't need to throw any failing test *)
 				Nothing,
 			(* otherwise, we throw one failing test for all discarded samples *)
-				Test["The input Blanks "<>ObjectToString[incompatibleBlankAmountInputs,Cache->simulatedCache]<>" have a quantity informed (Mass or Volume) compatible with the defined BlankAmounts:",True,False]
+				Test["The input Blanks "<>ObjectToString[incompatibleBlankAmountInputs,Cache->cacheBall]<>" have a quantity informed (Mass or Volume) compatible with the defined BlankAmounts:",True,False]
 			];
 			passingTest=If[Length[incompatibleBlankAmountInputs]==Length[simulatedSamples],
 			(* when ALL samples are discarded, we know we don't need to throw any passing test *)
 				Nothing,
 			(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The input Blanks "<>ObjectToString[Complement[simulatedSamples,incompatibleBlankAmountInputs],Cache->simulatedCache]<>" have a quantity informed (Mass or Volume) compatible with the defined BlankAmounts:",True,True]
+				Test["The input Blanks "<>ObjectToString[Complement[simulatedSamples,incompatibleBlankAmountInputs],Cache->cacheBall]<>" have a quantity informed (Mass or Volume) compatible with the defined BlankAmounts:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -1195,7 +1124,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[lowSampleAmountInputs]>0&&!gatherTests,
-		Message[Error::NotEnoughSample,ObjectToString[lowSampleAmountInputs,Cache->simulatedCache]]
+		Message[Error::NotEnoughSample,ObjectToString[lowSampleAmountInputs,Cache->cacheBall]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1206,13 +1135,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				(* when not a single sample is low volume, we know we don't need to throw any failing test *)
 				Nothing,
 				(* otherwise, we throw one failing test for all low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[lowSampleAmountInputs,Cache->simulatedCache]<>" have enough quantity for measurement:",True,False]
+				Test["The input sample(s) "<>ObjectToString[lowSampleAmountInputs,Cache->cacheBall]<>" have enough quantity for measurement:",True,False]
 			];
 			passingTest=If[Length[lowSampleAmountInputs]==Length[simulatedSamples],
 				(* when ALL samples are low volume, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,lowSampleAmountInputs],Cache->simulatedCache]<>" have enough quantity for measurement:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,lowSampleAmountInputs],Cache->cacheBall]<>" have enough quantity for measurement:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -1231,7 +1160,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	sampleInstrumentCombinations=Tuples[{infraredInstrumentModelPackets,samplePackets}];
 
 	(*get boolean for which sample/instrument combinations are incompatible (based on material). *)
-	incompatibleBool=Map[Not[Quiet[CompatibleMaterialsQ[First[#],Last[#],Cache->simulatedCache]]]&,sampleInstrumentCombinations];
+	incompatibleBool=Map[Not[Quiet[CompatibleMaterialsQ[First[#],Last[#],Cache->cacheBall]]]&,sampleInstrumentCombinations];
 
 	(*arrange into matrix where each column is the sample and the rows are the instruments*)
 	incompatibleBoolMatrix=Partition[incompatibleBool,Length[samplePackets]];
@@ -1244,7 +1173,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are incompatible samples and we are throwing messages, throw an error message *)
 	If[Length[incompatibleInputsAnyInstrument]>0&&!gatherTests,
-		Message[Error::IncompatibleSample,ObjectToString[incompatibleInputsAnyInstrument,Cache->simulatedCache]]
+		Message[Error::IncompatibleSample,ObjectToString[incompatibleInputsAnyInstrument,Cache->cacheBall]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1254,13 +1183,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				(* when not a single sample is chemically incompatible, we know we don't need to throw any failing test *)
 				Nothing,
 			 (* otherwise, we throw one failing test for all discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[incompatibleInputsAnyInstrument,Cache->simulatedCache]<>" is/are chemically compatible with an available pH Meter:",True,False]
+				Test["The input sample(s) "<>ObjectToString[incompatibleInputsAnyInstrument,Cache->cacheBall]<>" is/are chemically compatible with an available pH Meter:",True,False]
 			];
 			passingTest=If[Length[incompatibleInputsAnyInstrument]==Length[simulatedSamples],
 				(* when ALL samples are chemically incompatible, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,incompatibleInputsAnyInstrument],Cache->simulatedCache]<>" is/are chemically compatible with an available pH Meter:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,incompatibleInputsAnyInstrument],Cache->cacheBall]<>" is/are chemically compatible with an available pH Meter:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -1288,7 +1217,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	(*get boolean for which blank/instrument combinations are incompatible (based on material). *)
 	incompatibleBlankBool=Map[If[MatchQ[Last[#],ObjectP[]],
 		(*if we have an object packet for the blank, then we check compatibility *)
-		Not[Quiet[CompatibleMaterialsQ[First[#],Last[#],Cache->simulatedCache]]],
+		Not[Quiet[CompatibleMaterialsQ[First[#],Last[#],Cache->cacheBall]]],
 		(*otherwise, this is False automatically *)
 		False
 	]&,	blankInstrumentCombinations];
@@ -1307,7 +1236,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are incompatible samples and we are throwing messages, throw an error message *)
 	incompatibleBlanksOptionsAnyInstrument=If[Length[incompatibleBlanksInputsAnyInstrument]>0&&!gatherTests,
-		Message[Error::IncompatibleBlanks,ObjectToString[incompatibleBlanksInputsAnyInstrument,Cache->simulatedCache],ObjectToString[incompatibleBlanksAnyInstrument,Cache->Flatten[allDownloadValues]]];
+		Message[Error::IncompatibleBlanks,ObjectToString[incompatibleBlanksInputsAnyInstrument,Cache->cacheBall],ObjectToString[incompatibleBlanksAnyInstrument,Cache->Flatten[allDownloadValues]]];
 		{Blanks},
 		{}
 	];
@@ -1319,13 +1248,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			(* when not a single sample is chemically incompatible, we know we don't need to throw any failing test *)
 				Nothing,
 			(* otherwise, we throw one failing test for all discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[incompatibleBlanksInputsAnyInstrument,Cache->simulatedCache]<>", if have a Blank specified, then Blank is chemically compatible with the instruments:",True,False]
+				Test["The input sample(s) "<>ObjectToString[incompatibleBlanksInputsAnyInstrument,Cache->cacheBall]<>", if have a Blank specified, then Blank is chemically compatible with the instruments:",True,False]
 			];
 			passingTest=If[Length[incompatibleBlanksInputsAnyInstrument]==Length[simulatedSamples],
 			(* when ALL samples are chemically incompatible, we know we don't need to throw any passing test *)
 				Nothing,
 			(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,incompatibleBlanksInputsAnyInstrument],Cache->simulatedCache]<>", if have a Blank specified, then Blank is chemically compatible with the instruments:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,incompatibleBlanksInputsAnyInstrument],Cache->cacheBall]<>", if have a Blank specified, then Blank is chemically compatible with the instruments:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -1353,7 +1282,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	(*get boolean for which blank/instrument combinations are incompatible (based on material). *)
 	incompatibleSuspensionSolutionBool=Map[If[MatchQ[Last[#],ObjectP[]],
 	(*if we have an object packet for the blank, then we check compatibility *)
-		Not[Quiet[CompatibleMaterialsQ[First[#],Last[#],Cache->simulatedCache]]],
+		Not[Quiet[CompatibleMaterialsQ[First[#],Last[#],Cache->cacheBall]]],
 	(*otherwise, this is False automatically *)
 		False
 	]&,	suspensionSolutionInstrumentCombinations];
@@ -1372,7 +1301,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are incompatible samples and we are throwing messages, throw an error message *)
 	incompatibleSuspensionSolutionOptionsAnyInstrument=If[Length[incompatibleSuspensionSolutionInputsAnyInstrument]>0&&!gatherTests,
-		Message[Error::IncompatibleSuspensionSolution,ObjectToString[incompatibleSuspensionSolutionInputsAnyInstrument,Cache->simulatedCache],ObjectToString[incompatibleSuspensionSolutionsAnyInstrument,Cache->simulatedCache]];
+		Message[Error::IncompatibleSuspensionSolution,ObjectToString[incompatibleSuspensionSolutionInputsAnyInstrument,Cache->cacheBall],ObjectToString[incompatibleSuspensionSolutionsAnyInstrument,Cache->cacheBall]];
 		{SuspensionSolution},
 		{}
 	];
@@ -1384,13 +1313,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			(* when not a single sample is chemically incompatible, we know we don't need to throw any failing test *)
 				Nothing,
 			(* otherwise, we throw one failing test for all discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[incompatibleSuspensionSolutionInputsAnyInstrument,Cache->simulatedCache]<>", if have a SuspensionSolution specified, then SuspensionSolution is chemically compatible with the instruments:",True,False]
+				Test["The input sample(s) "<>ObjectToString[incompatibleSuspensionSolutionInputsAnyInstrument,Cache->cacheBall]<>", if have a SuspensionSolution specified, then SuspensionSolution is chemically compatible with the instruments:",True,False]
 			];
 			passingTest=If[Length[incompatibleSuspensionSolutionInputsAnyInstrument]==Length[simulatedSamples],
 			(* when ALL samples are chemically incompatible, we know we don't need to throw any passing test *)
 				Nothing,
 			(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,incompatibleSuspensionSolutionInputsAnyInstrument],Cache->simulatedCache]<>", if have a SuspensionSolution specified, then SuspensionSolution is chemically compatible with the instruments:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,incompatibleSuspensionSolutionInputsAnyInstrument],Cache->cacheBall]<>", if have a SuspensionSolution specified, then SuspensionSolution is chemically compatible with the instruments:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -1419,7 +1348,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid options and we are throwing messages, throw an error message *)
 	instrumentIncapableOptions=If[instrumentIncapableBool&&!gatherTests,
-		Message[Error::UnsuitableInstrument,ObjectToString[instrumentLookup,Cache->simulatedCache]];
+		Message[Error::UnsuitableInstrument,ObjectToString[instrumentLookup,Cache->cacheBall]];
 		{Instrument},
 		{}
 	];
@@ -1500,7 +1429,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(*throw errors if we are*)
 	nullSpecifiedBlankOptions=If[Length[nullSpecifiedBlanks]>0&&!gatherTests,
-		Message[Error::BlankIndexSpecifiedNull,ObjectToString[nullSpecifiedBlanks,Cache->simulatedCache]];
+		Message[Error::BlankIndexSpecifiedNull,ObjectToString[nullSpecifiedBlanks,Cache->cacheBall]];
 		{Blanks},
 		{}
 	];
@@ -1545,7 +1474,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(*throw errors if we are*)
 	multipleIndicesOptions=If[Length[multipleIndicesBlanks]>0&&!gatherTests,
-		Message[Error::SameBlankIndexDifferentObjects,ObjectToString[multipleIndicesBlanks,Cache->simulatedCache]];
+		Message[Error::SameBlankIndexDifferentObjects,ObjectToString[multipleIndicesBlanks,Cache->cacheBall]];
 		{Blanks},
 		{}
 	];
@@ -1587,7 +1516,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(*throw errors if we are*)
 	multipleObjectsOptions=If[Length[multipleObjectsBlanks]>0&&!gatherTests,
-		Message[Error::IndexDifferentSameObject,ObjectToString[multipleObjectsBlanks,Cache->simulatedCache]];
+		Message[Error::IndexDifferentSameObject,ObjectToString[multipleObjectsBlanks,Cache->cacheBall]];
 		{Blanks},
 		{}
 	];
@@ -2016,7 +1945,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[suspensionSolutionSpecifiedVolumeNullInputs]>0&&!gatherTests,
-		Message[Error::SuspensionVolumeNull,ObjectToString[suspensionSolutionSpecifiedVolumeNullInputs,Cache->simulatedCache]]
+		Message[Error::SuspensionVolumeNull,ObjectToString[suspensionSolutionSpecifiedVolumeNullInputs,Cache->cacheBall]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2027,13 +1956,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			(* when not a single sample is low volume, we know we don't need to throw any failing test *)
 				Nothing,
 			(* otherwise, we throw one failing test for all low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[suspensionSolutionSpecifiedVolumeNullInputs,Cache->simulatedCache]<>", if have SuspensionSolution specified do not have SuspensionSolutionVolume set to Null:",True,False]
+				Test["The input sample(s) "<>ObjectToString[suspensionSolutionSpecifiedVolumeNullInputs,Cache->cacheBall]<>", if have SuspensionSolution specified do not have SuspensionSolutionVolume set to Null:",True,False]
 			];
 			passingTest=If[Length[suspensionSolutionSpecifiedVolumeNullInputs]==Length[simulatedSamples],
 			(* when ALL samples are low volume, we know we don't need to throw any passing test *)
 				Nothing,
 			(* otherwise, we throw one passing test for all non-low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,suspensionSolutionSpecifiedVolumeNullInputs],Cache->simulatedCache]<>", if have SuspensionSolution specified do not have SuspensionSolutionVolume set to Null:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,suspensionSolutionSpecifiedVolumeNullInputs],Cache->cacheBall]<>", if have SuspensionSolution specified do not have SuspensionSolutionVolume set to Null:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -2053,7 +1982,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[suspensionSolutionVolumeSpecifiedSuspensionNullInputs]>0&&!gatherTests,
-		Message[Error::SuspensionSolutionNull,ObjectToString[suspensionSolutionVolumeSpecifiedSuspensionNullInputs,Cache->simulatedCache]]
+		Message[Error::SuspensionSolutionNull,ObjectToString[suspensionSolutionVolumeSpecifiedSuspensionNullInputs,Cache->cacheBall]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2064,13 +1993,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			(* when not a single sample is low volume, we know we don't need to throw any failing test *)
 				Nothing,
 			(* otherwise, we throw one failing test for all low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[suspensionSolutionVolumeSpecifiedSuspensionNullInputs,Cache->simulatedCache]<>", if have SuspensionSolutionVolume specified do not have SuspensionSolution set to Null:",True,False]
+				Test["The input sample(s) "<>ObjectToString[suspensionSolutionVolumeSpecifiedSuspensionNullInputs,Cache->cacheBall]<>", if have SuspensionSolutionVolume specified do not have SuspensionSolution set to Null:",True,False]
 			];
 			passingTest=If[Length[suspensionSolutionVolumeSpecifiedSuspensionNullInputs]==Length[simulatedSamples],
 			(* when ALL samples are low volume, we know we don't need to throw any passing test *)
 				Nothing,
 			(* otherwise, we throw one passing test for all non-low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,suspensionSolutionVolumeSpecifiedSuspensionNullInputs],Cache->simulatedCache]<>", if have SuspensionSolutionVolume specified do not have SuspensionSolution set to Null:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,suspensionSolutionVolumeSpecifiedSuspensionNullInputs],Cache->cacheBall]<>", if have SuspensionSolutionVolume specified do not have SuspensionSolution set to Null:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -2090,7 +2019,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[integrationTimeNumberOfReadingsBothNullInputs]>0&&!gatherTests,
-		Message[Error::IntegrationReadingsNull,ObjectToString[integrationTimeNumberOfReadingsBothNullInputs,Cache->simulatedCache]]
+		Message[Error::IntegrationReadingsNull,ObjectToString[integrationTimeNumberOfReadingsBothNullInputs,Cache->cacheBall]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2101,13 +2030,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			(* when not a single sample is low volume, we know we don't need to throw any failing test *)
 				Nothing,
 			(* otherwise, we throw one failing test for all low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[integrationTimeNumberOfReadingsBothNullInputs,Cache->simulatedCache]<>" do not have IntegrationTime and NumberOfReadings both set to Null:",True,False]
+				Test["The input sample(s) "<>ObjectToString[integrationTimeNumberOfReadingsBothNullInputs,Cache->cacheBall]<>" do not have IntegrationTime and NumberOfReadings both set to Null:",True,False]
 			];
 			passingTest=If[Length[integrationTimeNumberOfReadingsBothNullInputs]==Length[simulatedSamples],
 			(* when ALL samples are low volume, we know we don't need to throw any passing test *)
 				Nothing,
 			(* otherwise, we throw one passing test for all non-low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,integrationTimeNumberOfReadingsBothNullInputs],Cache->simulatedCache]<>" do not have IntegrationTime and NumberOfReadings both set to Null:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,integrationTimeNumberOfReadingsBothNullInputs],Cache->cacheBall]<>" do not have IntegrationTime and NumberOfReadings both set to Null:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -2127,7 +2056,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[integrationTimeNumberOfReadingsBothSpecifiedInputs]>0&&!gatherTests,
-		Message[Error::IntegrationReadingsSpecified,ObjectToString[integrationTimeNumberOfReadingsBothSpecifiedInputs,Cache->simulatedCache]]
+		Message[Error::IntegrationReadingsSpecified,ObjectToString[integrationTimeNumberOfReadingsBothSpecifiedInputs,Cache->cacheBall]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2138,13 +2067,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			(* when not a single sample is low volume, we know we don't need to throw any failing test *)
 				Nothing,
 			(* otherwise, we throw one failing test for all low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[integrationTimeNumberOfReadingsBothSpecifiedInputs,Cache->simulatedCache]<>" do not have IntegrationTime and NumberOfReadings both Specified:",True,False]
+				Test["The input sample(s) "<>ObjectToString[integrationTimeNumberOfReadingsBothSpecifiedInputs,Cache->cacheBall]<>" do not have IntegrationTime and NumberOfReadings both Specified:",True,False]
 			];
 			passingTest=If[Length[integrationTimeNumberOfReadingsBothSpecifiedInputs]==Length[simulatedSamples],
 			(* when ALL samples are low volume, we know we don't need to throw any passing test *)
 				Nothing,
 			(* otherwise, we throw one passing test for all non-low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,integrationTimeNumberOfReadingsBothSpecifiedInputs],Cache->simulatedCache]<>" do not have IntegrationTime and NumberOfReadings both Specified:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,integrationTimeNumberOfReadingsBothSpecifiedInputs],Cache->cacheBall]<>" do not have IntegrationTime and NumberOfReadings both Specified:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -2163,7 +2092,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[minWavenumberMaxWavelengthBothNullInputs]>0&&!gatherTests,
-		Message[Error::MinWavenumberMaxWavelengthBothNull,ObjectToString[minWavenumberMaxWavelengthBothNullInputs,Cache->simulatedCache]]
+		Message[Error::MinWavenumberMaxWavelengthBothNull,ObjectToString[minWavenumberMaxWavelengthBothNullInputs,Cache->cacheBall]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2174,13 +2103,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			(* when not a single sample is low volume, we know we don't need to throw any failing test *)
 				Nothing,
 			(* otherwise, we throw one failing test for all low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[minWavenumberMaxWavelengthBothNullInputs,Cache->simulatedCache]<>" do not have MinWavenumber and MaxWavelength both Null:",True,False]
+				Test["The input sample(s) "<>ObjectToString[minWavenumberMaxWavelengthBothNullInputs,Cache->cacheBall]<>" do not have MinWavenumber and MaxWavelength both Null:",True,False]
 			];
 			passingTest=If[Length[minWavenumberMaxWavelengthBothNullInputs]==Length[simulatedSamples],
 			(* when ALL samples are low volume, we know we don't need to throw any passing test *)
 				Nothing,
 			(* otherwise, we throw one passing test for all non-low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,minWavenumberMaxWavelengthBothNullInputs],Cache->simulatedCache]<>" do not have MinWavenumber and MaxWavelength both Null:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,minWavenumberMaxWavelengthBothNullInputs],Cache->cacheBall]<>" do not have MinWavenumber and MaxWavelength both Null:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -2199,7 +2128,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[minWavenumberMaxWavelengthBothSpecifiedInputs]>0&&!gatherTests,
-		Message[Error::MinWavenumberMaxWavelengthBothSpecified,ObjectToString[minWavenumberMaxWavelengthBothSpecifiedInputs,Cache->simulatedCache]]
+		Message[Error::MinWavenumberMaxWavelengthBothSpecified,ObjectToString[minWavenumberMaxWavelengthBothSpecifiedInputs,Cache->cacheBall]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2210,13 +2139,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			(* when not a single sample is low volume, we know we don't need to throw any failing test *)
 				Nothing,
 			(* otherwise, we throw one failing test for all low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[minWavenumberMaxWavelengthBothSpecifiedInputs,Cache->simulatedCache]<>" do not have MinWavenumber and MaxWavelength both Specified:",True,False]
+				Test["The input sample(s) "<>ObjectToString[minWavenumberMaxWavelengthBothSpecifiedInputs,Cache->cacheBall]<>" do not have MinWavenumber and MaxWavelength both Specified:",True,False]
 			];
 			passingTest=If[Length[minWavenumberMaxWavelengthBothSpecifiedInputs]==Length[simulatedSamples],
 			(* when ALL samples are low volume, we know we don't need to throw any passing test *)
 				Nothing,
 			(* otherwise, we throw one passing test for all non-low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,minWavenumberMaxWavelengthBothSpecifiedInputs],Cache->simulatedCache]<>" do not have MinWavenumber and MaxWavelength both Specified:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,minWavenumberMaxWavelengthBothSpecifiedInputs],Cache->cacheBall]<>" do not have MinWavenumber and MaxWavelength both Specified:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -2235,7 +2164,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[maxWavenumberMinWavelengthBothNullInputs]>0&&!gatherTests,
-		Message[Error::MaxWavenumberMinWavelengthBothNull,ObjectToString[maxWavenumberMinWavelengthBothNullInputs,Cache->simulatedCache]]
+		Message[Error::MaxWavenumberMinWavelengthBothNull,ObjectToString[maxWavenumberMinWavelengthBothNullInputs,Cache->cacheBall]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2246,13 +2175,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			(* when not a single sample is low volume, we know we don't need to throw any failing test *)
 				Nothing,
 			(* otherwise, we throw one failing test for all low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[maxWavenumberMinWavelengthBothNullInputs,Cache->simulatedCache]<>" do not have MaxWavenumber and MinWavelength both Null:",True,False]
+				Test["The input sample(s) "<>ObjectToString[maxWavenumberMinWavelengthBothNullInputs,Cache->cacheBall]<>" do not have MaxWavenumber and MinWavelength both Null:",True,False]
 			];
 			passingTest=If[Length[maxWavenumberMinWavelengthBothNullInputs]==Length[simulatedSamples],
 			(* when ALL samples are low volume, we know we don't need to throw any passing test *)
 				Nothing,
 			(* otherwise, we throw one passing test for all non-low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,maxWavenumberMinWavelengthBothNullInputs],Cache->simulatedCache]<>" do not have MaxWavenumber and MinWavelength both Null:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,maxWavenumberMinWavelengthBothNullInputs],Cache->cacheBall]<>" do not have MaxWavenumber and MinWavelength both Null:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -2271,7 +2200,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[maxWavenumberMinWavelengthBothSpecifiedInputs]>0&&!gatherTests,
-		Message[Error::MaxWavenumberMinWavelengthBothSpecified,ObjectToString[maxWavenumberMinWavelengthBothSpecifiedInputs,Cache->simulatedCache]]
+		Message[Error::MaxWavenumberMinWavelengthBothSpecified,ObjectToString[maxWavenumberMinWavelengthBothSpecifiedInputs,Cache->cacheBall]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2281,13 +2210,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			(* when not a single sample is low volume, we know we don't need to throw any failing test *)
 				Nothing,
 			(* otherwise, we throw one failing test for all low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[maxWavenumberMinWavelengthBothSpecifiedInputs,Cache->simulatedCache]<>" do not have MaxWavenumber and MinWavelength both Specified:",True,False]
+				Test["The input sample(s) "<>ObjectToString[maxWavenumberMinWavelengthBothSpecifiedInputs,Cache->cacheBall]<>" do not have MaxWavenumber and MinWavelength both Specified:",True,False]
 			];
 			passingTest=If[Length[minWavenumberMaxWavelengthBothSpecifiedInputs]==Length[simulatedSamples],
 			(* when ALL samples are low volume, we know we don't need to throw any passing test *)
 				Nothing,
 			(* otherwise, we throw one passing test for all non-low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,maxWavenumberMinWavelengthBothSpecifiedInputs],Cache->simulatedCache]<>" do not have MaxWavenumber and MinWavelength both Specified:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,maxWavenumberMinWavelengthBothSpecifiedInputs],Cache->cacheBall]<>" do not have MaxWavenumber and MinWavelength both Specified:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -2306,7 +2235,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[minGreaterThanMinInputs]>0&&!gatherTests,
-		Message[Error::MinWavenumberGreaterThanMax,ObjectToString[minGreaterThanMinInputs,Cache->simulatedCache]]
+		Message[Error::MinWavenumberGreaterThanMax,ObjectToString[minGreaterThanMinInputs,Cache->cacheBall]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2316,13 +2245,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			(* when not a single sample is low volume, we know we don't need to throw any failing test *)
 				Nothing,
 			(* otherwise, we throw one failing test for all low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[minGreaterThanMinInputs,Cache->simulatedCache]<>", if specified, have a MaxWavenumber greater than MinWavenumber or MaxWavelength greater than MinWavelength:",True,False]
+				Test["The input sample(s) "<>ObjectToString[minGreaterThanMinInputs,Cache->cacheBall]<>", if specified, have a MaxWavenumber greater than MinWavenumber or MaxWavelength greater than MinWavelength:",True,False]
 			];
 			passingTest=If[Length[minGreaterThanMinInputs]==Length[simulatedSamples],
 			(* when ALL samples are low volume, we know we don't need to throw any passing test *)
 				Nothing,
 			(* otherwise, we throw one passing test for all non-low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,minGreaterThanMinInputs],Cache->simulatedCache]<>", if specified, have a MaxWavenumber greater than MinWavenumber or MaxWavelength greater than MinWavelength:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,minGreaterThanMinInputs],Cache->cacheBall]<>", if specified, have a MaxWavenumber greater than MinWavenumber or MaxWavelength greater than MinWavelength:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -2341,7 +2270,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[blankAndBlankAmountsSpecifiedAndNullInputs]>0&&!gatherTests,
-		Message[Error::BlankSpecifiedNull,ObjectToString[blankAndBlankAmountsSpecifiedAndNullInputs,Cache->simulatedCache]]
+		Message[Error::BlankSpecifiedNull,ObjectToString[blankAndBlankAmountsSpecifiedAndNullInputs,Cache->cacheBall]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2351,13 +2280,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			(* when not a single sample is low volume, we know we don't need to throw any failing test *)
 				Nothing,
 			(* otherwise, we throw one failing test for all low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[blankAndBlankAmountsSpecifiedAndNullInputs,Cache->simulatedCache]<>", if specified, have both Blanks and BlanksAmount as both specified or Null:",True,False]
+				Test["The input sample(s) "<>ObjectToString[blankAndBlankAmountsSpecifiedAndNullInputs,Cache->cacheBall]<>", if specified, have both Blanks and BlanksAmount as both specified or Null:",True,False]
 			];
 			passingTest=If[Length[blankAndBlankAmountsSpecifiedAndNullInputs]==Length[simulatedSamples],
 			(* when ALL samples are low volume, we know we don't need to throw any passing test *)
 				Nothing,
 			(* otherwise, we throw one passing test for all non-low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,blankAndBlankAmountsSpecifiedAndNullInputs],Cache->simulatedCache]<>", if specified, have both Blanks and BlanksAmount as both specified or Null:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,blankAndBlankAmountsSpecifiedAndNullInputs],Cache->cacheBall]<>", if specified, have both Blanks and BlanksAmount as both specified or Null:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -2376,7 +2305,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[pressBlankWithNoBlanksInputs]>0&&!gatherTests,
-		Message[Error::NoBlanks, ObjectToString[pressBlankWithNoBlanksInputs,Cache->simulatedCache]]
+		Message[Error::NoBlanks, ObjectToString[pressBlankWithNoBlanksInputs,Cache->cacheBall]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2386,13 +2315,13 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				(* when not a single sample is low volume, we know we don't need to throw any failing test *)
 				Nothing,
 				(* otherwise, we throw one failing test for all low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[pressBlankWithNoBlanksInputs,Cache->simulatedCache]<>", if specified, have Blanks if PressBlank is specified:",True,False]
+				Test["The input sample(s) "<>ObjectToString[pressBlankWithNoBlanksInputs,Cache->cacheBall]<>", if specified, have Blanks if PressBlank is specified:",True,False]
 			];
 			passingTest=If[Length[pressBlankWithNoBlanksInputs]==Length[simulatedSamples],
 				(* when ALL samples are low volume, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,pressBlankWithNoBlanksInputs],Cache->simulatedCache]<>", if specified, have Blanks if PressBlank is specified:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,pressBlankWithNoBlanksInputs],Cache->cacheBall]<>", if specified, have Blanks if PressBlank is specified:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -2401,7 +2330,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	];
 
 	(* pull out all the shared options from the input options *)
-	{name, confirm, template, samplesInStorageCondition, originalCache, operator, parentProtocol, upload, outputOption, email, imageSample, numberOfReplicates, recoupSample} = Lookup[myOptions, {Name, Confirm, Template, SamplesInStorageCondition, Cache, Operator, ParentProtocol, Upload, Output, Email, ImageSample, NumberOfReplicates,RecoupSample}];
+	{name, confirm, canaryBranch, template, samplesInStorageCondition, originalCache, operator, parentProtocol, upload, outputOption, email, imageSample, numberOfReplicates, recoupSample} = Lookup[myOptions, {Name, Confirm, CanaryBranch, Template, SamplesInStorageCondition, Cache, Operator, ParentProtocol, Upload, Output, Email, ImageSample, NumberOfReplicates,RecoupSample}];
 
 	(*Resolution warnings*)
 
@@ -2416,7 +2345,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw the warning if we are. *)
 	If[Length[recoupSuspensionInputs]>0&&!gatherTests,
-		Message[Warning::RecoupSuspensionSolution,ObjectToString[recoupSuspensionInputs,Cache->simulatedCache]]
+		Message[Warning::RecoupSuspensionSolution,ObjectToString[recoupSuspensionInputs,Cache->cacheBall]]
 	];
 
 	(*Sample Module warning*)
@@ -2436,7 +2365,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw the warning if we are. *)
 	If[Length[samplePressureWithLiquidInputs]>0&&!gatherTests,
-		Message[Warning::PressureApplicationWithFluidSample,ObjectToString[samplePressureWithLiquidInputs,Cache->simulatedCache]]
+		Message[Warning::PressureApplicationWithFluidSample,ObjectToString[samplePressureWithLiquidInputs,Cache->cacheBall]]
 	];
 
 	(*No Sample Pressure with solid warning*)
@@ -2446,7 +2375,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw the warning if we are. *)
 	If[Length[noSamplePressureSolidInputs]>0&&!gatherTests,
-		Message[Warning::DryNoPressure,ObjectToString[noSamplePressureSolidInputs,Cache->simulatedCache]]
+		Message[Warning::DryNoPressure,ObjectToString[noSamplePressureSolidInputs,Cache->cacheBall]]
 	];
 
 	(*Blank Pressure with liquid warning*)
@@ -2456,7 +2385,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw the warning if we are. *)
 	If[Length[blankPressureWithLiquidInputs]>0&&!gatherTests,
-		Message[Warning::PressureApplicationWithFluidSampleBlanks,ObjectToString[blankPressureWithLiquidInputs,Cache->simulatedCache]]
+		Message[Warning::PressureApplicationWithFluidSampleBlanks,ObjectToString[blankPressureWithLiquidInputs,Cache->cacheBall]]
 	];
 
 	(*No Blank Pressure with solid  warning*)
@@ -2466,7 +2395,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw the warning if we are. *)
 	If[Length[noBlankPressureSolidInputs]>0&&!gatherTests,
-		Message[Warning::DryNoPressureBlanks,ObjectToString[noBlankPressureSolidInputs,Cache->simulatedCache]]
+		Message[Warning::DryNoPressureBlanks,ObjectToString[noBlankPressureSolidInputs,Cache->cacheBall]]
 	];
 
 	(* Throw a warning if the suspension solution was resolved to something *)
@@ -2476,7 +2405,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[suspensionSolutionResolvedInputs]>0&&!gatherTests,
-		Message[Warning::SuspensionSolutionResolved,ObjectToString[suspensionSolutionResolvedSolutions,Cache->simulatedCache],ObjectToString[suspensionSolutionResolvedInputs,Cache->simulatedCache]]
+		Message[Warning::SuspensionSolutionResolved,ObjectToString[suspensionSolutionResolvedSolutions,Cache->cacheBall],ObjectToString[suspensionSolutionResolvedInputs,Cache->cacheBall]]
 	];
 
 	(* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
@@ -2485,7 +2414,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTests,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->cacheBall]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -2521,7 +2450,8 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		mySamples,
 		simulatedSamples,
 		ReplaceRule[myOptions,resolvedSamplePrepOptions],
-		Cache->simulatedCache,
+		Cache -> cacheBall,
+		Simulation->updatedSimulation,
 		AllowSolids->True,
 		RequiredAliquotAmounts->bestAliquotAmount,
 		AliquotWarningMessage->Null
@@ -2571,6 +2501,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				RecoupSample->recoupSample,
 				NumberOfReplicates -> numberOfReplicates,
 				Confirm -> confirm,
+				CanaryBranch -> canaryBranch,
 				ImageSample -> resolvedImageSample,
 				Name -> name,
 				Template -> template,
@@ -2652,6 +2583,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 DefineOptions[irSpectroscopyResourcePackets,
 	Options:>{
 		CacheOption,
+		SimulationOption,
 		HelperOutputOption
 	}
 ];
@@ -2664,7 +2596,7 @@ irSpectroscopyResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolved
 		suspensionSolutionVolumes,wavenumberResolutions,samplePressures,blankPressures,minWavenumbersConverted,maxWavenumbersConverted,
 		suspensionSolutionResources,instrumentResource,
 		protocolPacket,allResourceBlobs,fulfillable,frqTests,resultRule,testsRule,
-		gatherResourcesTime
+		gatherResourcesTime, simulation, updatedSimulation, simulatedSamples, samplePackets
 	},
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
 	(* Determine the requested output format of this function. *)
@@ -2677,6 +2609,10 @@ irSpectroscopyResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolved
 	(* Fetch our cache from the parent function. *)
 	cache=Lookup[ToList[myOptions],Cache];
 	(*cache=Download[myOptions,Cache];*)
+	simulation = Lookup[ToList[myOptions], Simulation, Simulation[]];
+
+	(* simulate the samples after they go through all the sample prep *)
+	{simulatedSamples, updatedSimulation} = simulateSamplesResourcePacketsNew[ExperimentIRSpectroscopy, mySamples, myResolvedOptions, Cache -> cache, Simulation -> simulation];
 
 	(* Get rid of the links in mySamples. *)
 	samplesWithoutLinks=mySamples/.{link_Link:>Download[link, Object]};
@@ -2779,10 +2715,10 @@ irSpectroscopyResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolved
 		Replace[SuspensionSolutions]->suspensionSolutionResources,
 
 		Replace[Checkpoints]->{
-			{"Preparing Samples",0 Minute,"Preprocessing, such as thermal incubation/mixing, centrifugation, filteration, and aliquoting, is performed.", Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->0 Minute]},
-			{"Picking Resources",gatherResourcesTime,"Samples required to execute this protocol are gathered from storage.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10 Minute]},
-			{"Measuring Infrared",30 Minute*(Length[samplesWithReplicates]),"The Infrared spectra of the requested samples is measured.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->30Minute*(Length[samplesWithoutLinks])]},
-			{"Sample Postprocessing",0 Minute,"The samples are imaged and volumes are measured.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->0 Minute]}
+			{"Preparing Samples",0 Minute,"Preprocessing, such as incubation/mixing, centrifugation, filtration, and aliquoting, is performed.", Resource[Operator->$BaselineOperator,Time->0 Minute]},
+			{"Picking Resources",gatherResourcesTime,"Samples required to execute this protocol are gathered from storage.",Resource[Operator->$BaselineOperator,Time->10 Minute]},
+			{"Measuring Infrared",30 Minute*(Length[samplesWithReplicates]),"The Infrared spectra of the requested samples is measured.",Resource[Operator->$BaselineOperator,Time->30Minute*(Length[samplesWithoutLinks])]},
+			{"Sample Postprocessing",0 Minute,"The samples are imaged and volumes are measured.",Resource[Operator->$BaselineOperator,Time->0 Minute]}
 		},
 		ResolvedOptions->myCollapsedResolvedOptions,
 		UnresolvedOptions->myUnresolvedOptions
@@ -2800,9 +2736,9 @@ irSpectroscopyResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolved
 		MatchQ[$ECLApplication,Engine],
 		{True,{}},
 		gatherTests,
-		Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache -> cache],
+		Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache -> cache, Simulation -> updatedSimulation],
 		True,
-		{Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->Not[gatherTests],Cache -> cache],Null}
+		{Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->Not[gatherTests],Cache -> cache, Simulation -> updatedSimulation],Null}
 	];
 
 			(* generate the tests rule *)
@@ -2843,13 +2779,13 @@ DefineOptions[ExperimentIRSpectroscopyOptions,
 ];
 
 
-ExperimentIRSpectroscopyOptions[myInputs:ListableP[ObjectP[{Object[Container]}]] | ListableP[NonSelfContainedSampleP | _String],myOptions:OptionsPattern[]]:=Module[
+ExperimentIRSpectroscopyOptions[myInputs:ListableP[ObjectP[{Object[Container], Model[Sample]}]] | ListableP[NonSelfContainedSampleP | _String],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,noOutputOptions,options},
 
 (* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	(* get only the options *)
@@ -2869,7 +2805,7 @@ ExperimentIRSpectroscopyOptions[myInputs:ListableP[ObjectP[{Object[Container]}]]
 
 
 (* currently we only accept either a list of containers, or a list of samples *)
-ExperimentIRSpectroscopyPreview[myInput:ListableP[ObjectP[{Object[Container]}]] | ListableP[NonSelfContainedSampleP | _String],myOptions:OptionsPattern[ExperimentIRSpectroscopy]]:=
+ExperimentIRSpectroscopyPreview[myInput:ListableP[ObjectP[{Object[Container], Model[Sample]}]] | ListableP[NonSelfContainedSampleP | _String],myOptions:OptionsPattern[ExperimentIRSpectroscopy]]:=
 		ExperimentIRSpectroscopy[myInput,Append[ToList[myOptions],Output->Preview]];
 
 
@@ -2884,14 +2820,14 @@ DefineOptions[ValidExperimentIRSpectroscopyQ,
 ];
 
 (* currently we only accept either a list of containers, or a list of samples *)
-ValidExperimentIRSpectroscopyQ[myInput:ListableP[ObjectP[{Object[Container]}]] | ListableP[NonSelfContainedSampleP | _String],myOptions:OptionsPattern[ValidExperimentIRSpectroscopyQ]]:=Module[
+ValidExperimentIRSpectroscopyQ[myInput:ListableP[ObjectP[{Object[Container], Model[Sample]}]] | ListableP[NonSelfContainedSampleP | _String],myOptions:OptionsPattern[ValidExperimentIRSpectroscopyQ]]:=Module[
 	{listedOptions, listedInput, oOutputOptions, preparedOptions, filterTests, initialTestDescription, allTests, verbose, outputFormat},
 
 (* get the options as a list *)
 	listedOptions = ToList[myOptions];
 	listedInput = ToList[myInput];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentMeasurepH *)

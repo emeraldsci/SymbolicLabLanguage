@@ -50,6 +50,15 @@ DefineObjectType[Model[Instrument, MassSpectrometer], {
 			Category -> "Instrument Specifications",
 			Abstract -> True
 		},
+		VialAdapter -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Part],
+			Description -> "The type of adapter used to connect any sample vials to this type of mass spectrometer during direct infusion experiments.",
+			Category -> "Instrument Specifications",
+			Developer -> True
+		},
 		MinMass -> {
 			Format -> Single,
 			Class -> Real,
@@ -91,7 +100,7 @@ DefineObjectType[Model[Instrument, MassSpectrometer], {
 			Format->Single,
 			Class->Boolean,
 			Pattern:>BooleanP,
-			Description->"Indicate if this intrument is capable of conducting tandem mass spectrometry.",
+			Description->"Indicate if this instrument is capable of conducting tandem mass spectrometry.",
 			Category->"Operating Limits",
 			Abstract-> True
 		},

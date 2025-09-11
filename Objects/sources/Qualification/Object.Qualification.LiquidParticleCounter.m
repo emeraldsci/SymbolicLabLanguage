@@ -20,7 +20,11 @@ DefineObjectType[Object[Qualification,LiquidParticleCounter], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,RoboticSamplePreparation]|Object[Protocol,ManualSamplePreparation],
+			Relation -> Alternatives[
+				Object[Protocol,RoboticSamplePreparation],
+				Object[Protocol,ManualSamplePreparation],
+				Object[Notebook, Script]
+			],
 			Description -> "The sample manipulation protocol used to prepare antibody samples and standard samples for capillary ELISA experiments.",
 			Category -> "Sample Preparation"
 		},

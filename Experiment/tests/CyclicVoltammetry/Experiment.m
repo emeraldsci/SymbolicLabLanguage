@@ -2693,7 +2693,7 @@ DefineTests[ExperimentCyclicVoltammetry,
 				Output->Options
 			];
 			Lookup[options,AliquotSampleLabel],
-			"mySample1",
+			{"mySample1"},
 			Variables:>{options},
 			SetUp :> (Off[Warning::SamplesOutOfStock];$CreatedObjects = {}),
 			TearDown :> (
@@ -2912,7 +2912,7 @@ DefineTests[ExperimentCyclicVoltammetry,
 				Output -> Options
 			];
 			Lookup[options,AliquotContainer],
-			{1,ObjectP[Model[Container, Vessel, "50mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "50mL Tube"]]}},
 			TimeConstraint->240,
 			Variables:>{options},
 			SetUp :> (Off[Warning::SamplesOutOfStock];$CreatedObjects = {}),
@@ -2930,7 +2930,7 @@ DefineTests[ExperimentCyclicVoltammetry,
 				Output -> Options
 			];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			TimeConstraint->240,
 			Variables:>{options},
 			SetUp :> (Off[Warning::SamplesOutOfStock];$CreatedObjects = {}),
@@ -3066,29 +3066,29 @@ DefineTests[ExperimentCyclicVoltammetry,
 			)
 		],
 
-		Example[{Options, PreparatoryPrimitives, "Specify a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSampleManipulation:"},
-			ExperimentCyclicVoltammetry[
-				Object[Sample,"Example Ferrocene solid sample for CyclicVoltammetry tests" <> $SessionUUID],
-				PreparatoryPrimitives->{
-					Define[
-						Name -> "My ferrocene sample",
-						Container -> Model[Container, Vessel, "50mL Tube"],
-						Well -> "A1"
-					],
-					Transfer[
-						Source -> Model[Sample, "Ferrocene"],
-						Destination -> "My ferrocene sample",
-						Amount -> 10 Milligram
-					]
-				}
-			],
-			ObjectReferenceP[Object[Protocol, CyclicVoltammetry]],
-			TimeConstraint->240,
-			SetUp :> (Off[Warning::SamplesOutOfStock];$CreatedObjects = {}),
-			TearDown :> (
-				EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-				Unset[$CreatedObjects]
-			)
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentCyclicVoltammetry[
+				{Model[Sample, "Ferrocene"], Model[Sample, "Ferrocene"]},
+				PreparedModelContainer -> Model[Container, Vessel, "50mL Tube"],
+				PreparedModelAmount -> 10 Milligram,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "Ferrocene"]]..},
+				{ObjectP[Model[Container, Vessel, "50mL Tube"]]..},
+				{EqualP[10 Milligram]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
 		],
 		Example[{Options, PreparatoryUnitOperations, "Specify a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSamplePreparation:"},
 			ExperimentCyclicVoltammetry[
@@ -3117,6 +3117,84 @@ DefineTests[ExperimentCyclicVoltammetry,
 		(* ============== *)
 		(* == MESSAGES == *)
 		(* ============== *)
+
+		(* ---------------------- *)
+		(* -- ObjectDoesNotExist -- *)
+		(* ---------------------- *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentCyclicVoltammetry[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentCyclicVoltammetry[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentCyclicVoltammetry[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentCyclicVoltammetry[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, StockSolution, "0.1M [NBu4][PF6] in acetonitrile, 20 mL"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentCyclicVoltammetry[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, StockSolution, "0.1M [NBu4][PF6] in acetonitrile, 20 mL"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentCyclicVoltammetry[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 
 		(* ---------------------- *)
 		(* -- Precision Checks -- *)
@@ -6967,9 +7045,9 @@ DefineTests[ExperimentCyclicVoltammetry,
 					Replace[Analytes] -> {},
 					Solvent -> Link[Model[Sample, "Acetonitrile, Electronic Grade"]],
 					Replace[Composition] -> {
-						{100 VolumePercent, Link[Model[Molecule, "Acetonitrile"]]},
-						{100 Millimolar, Link[Model[Molecule, "Silver nitrate"]]},
-						{100 Millimolar, Link[Model[Molecule, "Tetrabutylammonium hexafluorophosphate"]]}
+						{100 VolumePercent, Link[Model[Molecule, "Acetonitrile"]], Now},
+						{100 Millimolar, Link[Model[Molecule, "Silver nitrate"]], Now},
+						{100 Millimolar, Link[Model[Molecule, "Tetrabutylammonium hexafluorophosphate"]], Now}
 					},
 					State -> Liquid
 				|>;
@@ -6980,9 +7058,9 @@ DefineTests[ExperimentCyclicVoltammetry,
 					Replace[Analytes] -> {Link[Model[Molecule, "Silver nitrate"]]},
 					Solvent -> Link[Model[Sample, "Acetonitrile, HPLC Grade"]],
 					Replace[Composition] -> {
-						{100 VolumePercent, Link[Model[Molecule, "Acetonitrile"]]},
-						{100 Millimolar, Link[Model[Molecule, "Silver nitrate"]]},
-						{100 Millimolar, Link[Model[Molecule, "Tetrabutylammonium hexafluorophosphate"]]}
+						{100 VolumePercent, Link[Model[Molecule, "Acetonitrile"]], Now},
+						{100 Millimolar, Link[Model[Molecule, "Silver nitrate"]], Now},
+						{100 Millimolar, Link[Model[Molecule, "Tetrabutylammonium hexafluorophosphate"]], Now}
 					},
 					State -> Liquid
 				|>;
@@ -6993,9 +7071,9 @@ DefineTests[ExperimentCyclicVoltammetry,
 					Replace[Analytes] -> {Link[Model[Molecule, "Silver nitrate"]]},
 					Solvent -> Link[Model[Sample, "Milli-Q water"]],
 					Replace[Composition] -> {
-						{100 VolumePercent, Link[Model[Molecule, "Water"]]},
-						{100 Millimolar, Link[Model[Molecule, "Silver nitrate"]]},
-						{100 Millimolar, Link[Model[Molecule, "Tetrabutylammonium hexafluorophosphate"]]}
+						{100 VolumePercent, Link[Model[Molecule, "Water"]], Now},
+						{100 Millimolar, Link[Model[Molecule, "Silver nitrate"]], Now},
+						{100 Millimolar, Link[Model[Molecule, "Tetrabutylammonium hexafluorophosphate"]], Now}
 					},
 					State -> Liquid
 				|>;
@@ -7006,9 +7084,9 @@ DefineTests[ExperimentCyclicVoltammetry,
 					Replace[Analytes] -> {Link[Model[Molecule, "Silver nitrate"]]},
 					Solvent -> Link[Model[Sample, "Acetonitrile, Electronic Grade"]],
 					Replace[Composition] -> {
-						{100 VolumePercent, Link[Model[Molecule, "Acetonitrile"]]},
-						{100 Millimolar, Link[Model[Molecule, "Silver nitrate"]]},
-						{100 Millimolar, Link[Model[Molecule, "Potassium Chloride"]]}
+						{100 VolumePercent, Link[Model[Molecule, "Acetonitrile"]], Now},
+						{100 Millimolar, Link[Model[Molecule, "Silver nitrate"]], Now},
+						{100 Millimolar, Link[Model[Molecule, "Potassium Chloride"]], Now}
 					},
 					State -> Liquid
 				|>;
@@ -7019,9 +7097,9 @@ DefineTests[ExperimentCyclicVoltammetry,
 					Replace[Analytes] -> {Link[Model[Molecule, "Silver nitrate"]]},
 					Solvent -> Link[Model[Sample, "Acetonitrile, Electronic Grade"]],
 					Replace[Composition] -> {
-						{100 VolumePercent, Link[Model[Molecule, "Acetonitrile"]]},
-						{100 Millimolar, Link[Model[Molecule, "Silver nitrate"]]},
-						{50 Millimolar, Link[Model[Molecule, "Tetrabutylammonium hexafluorophosphate"]]}
+						{100 VolumePercent, Link[Model[Molecule, "Acetonitrile"]], Now},
+						{100 Millimolar, Link[Model[Molecule, "Silver nitrate"]], Now},
+						{50 Millimolar, Link[Model[Molecule, "Tetrabutylammonium hexafluorophosphate"]], Now}
 					},
 					State -> Liquid
 				|>;

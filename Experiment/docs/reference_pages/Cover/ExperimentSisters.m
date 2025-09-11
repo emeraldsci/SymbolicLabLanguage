@@ -43,7 +43,7 @@ DefineUsage[ValidExperimentCoverQ,
 			"ExperimentManualSamplePreparation"
 		},
 		Tutorials -> {},
-		Author -> {"hanming.yang", "thomas"}
+		Author -> {"taylor.hochuli"}
 	}
 ];
 
@@ -84,6 +84,6 @@ DefineUsage[ExperimentCoverOptions,
 			"ExperimentManualSamplePreparation"
 		},
 		Tutorials -> {},
-		Author -> {"hanming.yang", "thomas"}
+		Author -> {"taylor.hochuli"}
 	}
 ];

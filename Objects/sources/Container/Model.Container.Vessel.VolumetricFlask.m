@@ -16,6 +16,14 @@ DefineObjectType[Model[Container, Vessel, VolumetricFlask], {
 			Units -> Milliliter,
 			Description -> "The amount a volume measurement deviates from the mean when measured with the meniscus at this volumetric flask's marked line.",
 			Category -> "Container Specifications"
+		},
+		CompatibleAdapters -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Container, Rack][CompatibleVolumetricFlasks],
+			Description -> "The shaker adapters that can be used with this volumetric flask with mixing with shaker.",
+			Category -> "Model Information"
 		}
 	}
 }];

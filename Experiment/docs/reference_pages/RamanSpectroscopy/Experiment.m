@@ -18,17 +18,25 @@ DefineUsage[ExperimentRamanSpectroscopy,
           IndexMatching[
             {
               InputName -> "Samples",
-              Description-> "Raman Spectroscopy is used to measure the chemical and structural fingerprint of a material. Samples can include solids, liquids, and tablets. Each measurement can be done as a single point or a motion pattern that allows for interrogation of the spatial distribution of constituent components within the sample.",
-              Widget->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              Description -> "The samples to be measured.",
+              Widget -> Alternatives[
+                "Sample or Container" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                  ObjectTypes -> {Object[Sample], Object[Container]},
+                  Dereference -> {
+                    Object[Container] -> Field[Contents[[All, 2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
-              Expandable->False
+              Expandable -> False
             },
-            IndexName->"experiment samples"
+            IndexName -> "experiment samples"
           ]
         },
         Outputs:>{
@@ -63,15 +71,23 @@ DefineUsage[ExperimentRamanSpectroscopyOptions,
           IndexMatching[
             {
               InputName -> "Samples",
-              Description-> "The samples to be measured.",
-              Widget->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              Description -> "The samples to be measured.",
+              Widget -> Alternatives[
+                "Sample or Container" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                  ObjectTypes -> {Object[Sample], Object[Container]},
+                  Dereference -> {
+                    Object[Container] -> Field[Contents[[All, 2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
-              Expandable->False
+              Expandable -> False
             },
             IndexName -> "experiment samples"
           ]
@@ -112,12 +128,20 @@ DefineUsage[ValidExperimentRamanSpectroscopyQ,
             {
               InputName -> "Samples",
               Description -> "The samples to be measured.",
-              Widget -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-                Dereference -> {
-                  Object[Container] -> Field[Contents[[All, 2]]]
-                }
+              Widget -> Alternatives[
+                "Sample or Container" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                  ObjectTypes -> {Object[Sample], Object[Container]},
+                  Dereference -> {
+                    Object[Container] -> Field[Contents[[All, 2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
               Expandable -> False
             },
@@ -152,12 +176,20 @@ DefineUsage[ExperimentRamanSpectroscopyPreview,
             {
               InputName -> "Samples",
               Description -> "The samples to be measured.",
-              Widget -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-                Dereference -> {
-                  Object[Container] -> Field[Contents[[All, 2]]]
-                }
+              Widget -> Alternatives[
+                "Sample or Container" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                  ObjectTypes -> {Object[Sample], Object[Container]},
+                  Dereference -> {
+                    Object[Container] -> Field[Contents[[All, 2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
               Expandable -> False
             },

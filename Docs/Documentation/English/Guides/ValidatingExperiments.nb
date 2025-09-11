@@ -1,3 +1,2429 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5040b8ea6c67e2dd8f52ef29cc973d88821bf9e1346e95e4bcb6d3255ea1ae83
-size 106778
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[    104149,       2419]
+NotebookOptionsPosition[     82020,       2044]
+NotebookOutlinePosition[     87106,       2140]
+CellTagsIndexPosition[     87063,       2137]
+WindowTitle->ValidatingExperiments
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "5f936aeb-3a6b-4194-b024-468014cd0b52"]
+        }],ExpressionUUID->"5238ca13-e587-47d3-b9f7-11706e73e62c"],
+        StripOnInput->False], {"\<\"ValidExperimentAbsorbanceIntensityQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentAbsorbanceIntensityQ"], \
+"\<\"ValidExperimentAbsorbanceKineticsQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentAbsorbanceKineticsQ"], \
+"\<\"ValidExperimentAbsorbanceSpectroscopyQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentAbsorbanceSpectroscopyQ"], \
+"\<\"ValidExperimentAcousticLiquidHandlingQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentAcousticLiquidHandlingQ"], \
+"\<\"ValidExperimentAdjustpHQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentAdjustpHQ"], \
+"\<\"ValidExperimentAgaroseGelElectrophoresisQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentAgaroseGelElectrophoresisQ"], \
+"\<\"ValidExperimentAliquotQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentAliquotQ"], \
+"\<\"ValidExperimentAlphaScreenQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentAlphaScreenQ"], \
+"\<\"ValidExperimentAutoclaveQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentAutoclaveQ"], \
+"\<\"ValidExperimentBioconjugationQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentBioconjugationQ"], \
+"\<\"ValidExperimentBioLayerInterferometryQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentBioLayerInterferometryQ"], \
+"\<\"ValidExperimentCapillaryELISAQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentCapillaryELISAQ"], \
+"\<\"ValidExperimentCapillaryGelElectrophoresisSDSQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentCapillaryGelElectrophoresisSDSQ"]\
+, "\<\"ValidExperimentCapillaryIsoelectricFocusingQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentCapillaryIsoelectricFocusingQ"], \
+"\<\"ValidExperimentCentrifugeQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentCentrifugeQ"], \
+"\<\"ValidExperimentCircularDichroismQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentCircularDichroismQ"], \
+"\<\"ValidExperimentCountLiquidParticlesQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentCountLiquidParticlesQ"], \
+"\<\"ValidExperimentCrossFlowFiltrationQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentCrossFlowFiltrationQ"], \
+"\<\"ValidExperimentCyclicVoltammetryQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentCyclicVoltammetryQ"], \
+"\<\"ValidExperimentDegasQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentDegasQ"], \
+"\<\"ValidExperimentDialysisQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentDialysisQ"], \
+"\<\"ValidExperimentDifferentialScanningCalorimetryQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/\
+ValidExperimentDifferentialScanningCalorimetryQ"], \
+"\<\"ValidExperimentDiluteQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentDiluteQ"], \
+"\<\"ValidExperimentDNASequencingQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentDNASequencingQ"], \
+"\<\"ValidExperimentDNASynthesisQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentDNASynthesisQ"], \
+"\<\"ValidExperimentDynamicFoamAnalysisQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentDynamicFoamAnalysisQ"], \
+"\<\"ValidExperimentDynamicLightScatteringQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentDynamicLightScatteringQ"], \
+"\<\"ValidExperimentELISAQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentELISAQ"], \
+"\<\"ValidExperimentEvaporateQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentEvaporateQ"], \
+"\<\"ValidExperimentFillToVolumeQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentFillToVolumeQ"], \
+"\<\"ValidExperimentFilterQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentFilterQ"], \
+"\<\"ValidExperimentFlashChromatographyQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentFlashChromatographyQ"], \
+"\<\"ValidExperimentFlashFreezeQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentFlashFreezeQ"], \
+"\<\"ValidExperimentFluorescenceIntensityQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentFluorescenceIntensityQ"], \
+"\<\"ValidExperimentFluorescenceKineticsQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentFluorescenceKineticsQ"], \
+"\<\"ValidExperimentFluorescencePolarizationKineticsQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/\
+ValidExperimentFluorescencePolarizationKineticsQ"], \
+"\<\"ValidExperimentFluorescencePolarizationQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentFluorescencePolarizationQ"], "\<\
+\"ValidExperimentFluorescenceSpectroscopyQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentFluorescenceSpectroscopyQ"], "\<\
+\"ValidExperimentFPLCQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentFPLCQ"], \
+"\<\"ValidExperimentGasChromatographyQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentGasChromatographyQ"], \
+"\<\"ValidExperimentGCMSQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentGCMSQ"], \
+"\<\"ValidExperimentHPLCQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentHPLCQ"], \
+"\<\"ValidExperimentImageCellsQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentImageCellsQ"], \
+"\<\"ValidExperimentImageSampleQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentImageSampleQ"], \
+"\<\"ValidExperimentIncubateQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentIncubateQ"], \
+"\<\"ValidExperimentIonChromatographyQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentIonChromatographyQ"], \
+"\<\"ValidExperimentIRSpectroscopyQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentIRSpectroscopyQ"], \
+"\<\"ValidExperimentLCMSQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentLCMSQ"], \
+"\<\"ValidExperimentLuminescenceIntensityQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentLuminescenceIntensityQ"], \
+"\<\"ValidExperimentLuminescenceKineticsQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentLuminescenceKineticsQ"], \
+"\<\"ValidExperimentLuminescenceSpectroscopyQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentLuminescenceSpectroscopyQ"], "\<\
+\"ValidExperimentLyophilizeQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentLyophilizeQ"], \
+"\<\"ValidExperimentMagneticBeadSeparationQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentMagneticBeadSeparationQ"], \
+"\<\"ValidExperimentMassSpectrometryQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentMassSpectrometryQ"], \
+"\<\"ValidExperimentMeasureConductivityQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentMeasureConductivityQ"], \
+"\<\"ValidExperimentMeasureCountQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentMeasureCountQ"], \
+"\<\"ValidExperimentMeasureDensityQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentMeasureDensityQ"], \
+"\<\"ValidExperimentMeasureDissolvedOxygenQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentMeasureDissolvedOxygenQ"], \
+"\<\"ValidExperimentMeasureOsmolalityQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentMeasureOsmolalityQ"], \
+"\<\"ValidExperimentMeasurepHQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentMeasurepHQ"], \
+"\<\"ValidExperimentMeasureRefractiveIndexQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentMeasureRefractiveIndexQ"], \
+"\<\"ValidExperimentMeasureSurfaceTensionQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentMeasureSurfaceTensionQ"], \
+"\<\"ValidExperimentMeasureViscosityQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentMeasureViscosityQ"], \
+"\<\"ValidExperimentMeasureVolumeQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentMeasureVolumeQ"], \
+"\<\"ValidExperimentMeasureWeightQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentMeasureWeightQ"], \
+"\<\"ValidExperimentMicrowaveDigestionQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentMicrowaveDigestionQ"], \
+"\<\"ValidExperimentMixQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentMixQ"], \
+"\<\"ValidExperimentNephelometryKineticsQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentNephelometryKineticsQ"], \
+"\<\"ValidExperimentNephelometryQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentNephelometryQ"], \
+"\<\"ValidExperimentNMR2DQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentNMR2DQ"], \
+"\<\"ValidExperimentNMRQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentNMRQ"], \
+"\<\"ValidExperimentPAGEQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentPAGEQ"], \
+"\<\"ValidExperimentPCRQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentPCRQ"], \
+"\<\"ValidExperimentPelletQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentPelletQ"], \
+"\<\"ValidExperimentPeptideSynthesisQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentPeptideSynthesisQ"], \
+"\<\"ValidExperimentPNASynthesisQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentPNASynthesisQ"], \
+"\<\"ValidExperimentPowderXRDQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentPowderXRDQ"], \
+"\<\"ValidExperimentPrepareReferenceElectrodeQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentPrepareReferenceElectrodeQ"], \
+"\<\"ValidExperimentqPCRQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentqPCRQ"], \
+"\<\"ValidExperimentRamanSpectroscopyQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentRamanSpectroscopyQ"], \
+"\<\"ValidExperimentResuspendQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentResuspendQ"], \
+"\<\"ValidExperimentRNASynthesisQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentRNASynthesisQ"], \
+"\<\"ValidExperimentSampleManipulationQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentSampleManipulationQ"], \
+"\<\"ValidExperimentSamplePreparationQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentSamplePreparationQ"], \
+"\<\"ValidExperimentSerialDiluteQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentSerialDiluteQ"], \
+"\<\"ValidExperimentSolidPhaseExtractionQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentSolidPhaseExtractionQ"], \
+"\<\"ValidExperimentStockSolutionQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentStockSolutionQ"], \
+"\<\"ValidExperimentSupercriticalFluidChromatographyQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/\
+ValidExperimentSupercriticalFluidChromatographyQ"], \
+"\<\"ValidExperimentThermalShiftQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentThermalShiftQ"], \
+"\<\"ValidExperimentTotalProteinDetectionQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentTotalProteinDetectionQ"], \
+"\<\"ValidExperimentTotalProteinQuantificationQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentTotalProteinQuantificationQ"], "\
+\<\"ValidExperimentTransferQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentTransferQ"], \
+"\<\"ValidExperimentUVMeltingQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentUVMeltingQ"], \
+"\<\"ValidExperimentVisualInspectionQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentVisualInspectionQ"], \
+"\<\"ValidExperimentWesternQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidExperimentWesternQ"], \
+"\<\"ValidSynthesisStepQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidSynthesisStepQ"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "fe4cdd32-487e-46b7-b761-5360a534b072"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "9bf9dc36-1ebe-4ba6-b7bd-43939b6f479c"]
+        }],ExpressionUUID->"e1ab0205-7359-488f-9d48-94415db5daf3"],
+        StripOnInput->False], {"\<\"CalculatingExperimentOptions\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/CalculatingExperimentOptions"], \
+"\<\"ExperimentTrackingAndManagement\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/ExperimentTrackingAndManagement"], \
+"\<\"FacilitiesCapabilitiesAndLimitations\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/FacilitiesCapabilitiesAndLimitations"], \
+"\<\"PricingFunctions\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/PricingFunctions"], "\<\"RunningExperiments\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/RunningExperiments"], "\<\"UnitOperations\"\>":>
+       Documentation`HelpLookup["paclet:Docs/guide/UnitOperations"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "a7772a3f-b74c-46b4-85ce-a8c752b0bd70"]
+    }], "AnchorBar",ExpressionUUID->"8c00bf4f-8a5b-43ea-901c-9ce4bd56436a"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"7e24805a-11ee-497c-8673-aaf633f24a4b"],
+
+Cell["Validating Experiments", "GuideTitle",
+ CellID->95837416,ExpressionUUID->"db5c73c9-1028-4038-8c0d-25691ac4dc3b"],
+
+Cell["\<\
+Collection of functions to check the validity of running experiment functions \
+on given input and options.\
+\>", "GuideAbstract",
+ CellID->5278826,ExpressionUUID->"17b86bd3-6fbe-4697-8466-2aec3af6ff04"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->73731285,ExpressionUUID->"9112c829-7665-4ccf-a1e5-441448077cb6"],
+
+Cell["Liquid Transfers", "GuideFunctionsSubsection",
+ CellID->585956,ExpressionUUID->"c2bd8a6d-dd2e-482a-8f06-e983b4923146"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentSamplePreparationQ"]],
+    "paclet:Experiment/ref/ValidExperimentSamplePreparationQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c9daa347-6c52-42d3-bff0-9dccbbe63ec2"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentSamplePreparation function call are valid."
+}], "GuideText",
+ CellID->409204081,ExpressionUUID->"f4c73205-dc9f-431f-9e2d-3b5d17d32151"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentSerialDiluteQ"]],
+    "paclet:Experiment/ref/ValidExperimentSerialDiluteQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "cca5c2c9-793e-448a-bf76-02769f9c7949"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentSerialDilute function call are valid."
+}], "GuideText",
+ CellID->2350904,ExpressionUUID->"cd907661-fd15-49e4-ac68-1ca00e174246"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentAcousticLiquidHandlingQ"]],
+    "paclet:Experiment/ref/ValidExperimentAcousticLiquidHandlingQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a9f81747-24ea-4b9a-8270-1c9dafbcc147"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentAcousticLiquidHandling function call are valid."
+}], "GuideText",
+ CellID->43147594,ExpressionUUID->"c5ffb1a1-4b3c-4db2-b08b-f73aecd0822b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentAliquotQ"]],
+    "paclet:Experiment/ref/ValidExperimentAliquotQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e2fd22a2-3a56-42de-9a92-00ba3c3036b4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentAliquot function call are valid."
+}], "GuideText",
+ CellID->94801199,ExpressionUUID->"a654f559-5f5f-4a75-8628-d1f890053b12"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentTransferQ"]],
+    "paclet:Experiment/ref/ValidExperimentTransferQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8f678b02-29e5-42c7-a1c9-aff56f6cb2b4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentTransfer function call are valid."
+}], "GuideText",
+ CellID->216476614,ExpressionUUID->"12d7ff4a-43ad-4fb4-8fa2-6b0676d7f47c"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->127024186,ExpressionUUID->"0d05d952-ee1c-4f16-b796-52526096620b"],
+
+Cell["Solid Transfers", "GuideFunctionsSubsection",
+ CellID->283422272,ExpressionUUID->"5f033e8e-df0a-4650-a46c-55410bef086b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentTransferQ"]],
+    "paclet:Experiment/ref/ValidExperimentTransferQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0bdfa879-318a-4017-8b97-aa06fc645cd0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentTransfer function call are valid."
+}], "GuideText",
+ CellID->104761747,ExpressionUUID->"d9395288-239c-4c2c-b31e-b544a6217c6c"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->326838178,ExpressionUUID->"a7590508-47b1-4a0c-a8b3-12d243acd568"],
+
+Cell["Organic Synthesis", "GuideFunctionsSubsection",
+ CellID->775221538,ExpressionUUID->"88705b27-220d-4c1b-b7e0-89971c42a939"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentDNASynthesisQ"]],
+    "paclet:Experiment/ref/ValidExperimentDNASynthesisQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "24ce78a7-e70d-42a4-b646-029119ab7ae6"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentDNASynthesis function call are valid."
+}], "GuideText",
+ CellID->946652369,ExpressionUUID->"2654cff9-4bb6-4b20-a0fe-611f13b152a1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentRNASynthesisQ"]],
+    "paclet:Experiment/ref/ValidExperimentRNASynthesisQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c3432e94-80c4-4784-a317-35c71840950c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentRNASynthesis function call are valid."
+}], "GuideText",
+ CellID->944236139,ExpressionUUID->"d56e2cdd-5e3c-4a2b-b539-28048d56e154"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentPNASynthesisQ"]],
+    "paclet:Experiment/ref/ValidExperimentPNASynthesisQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e06a294b-71a7-4caa-9dca-526199f9f09e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentPNASynthesis function call are valid."
+}], "GuideText",
+ CellID->49560262,ExpressionUUID->"4583ec42-7dc8-4e9f-9847-8bc63563eb0c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentPCRQ"]],
+    "paclet:Experiment/ref/ValidExperimentPCRQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "973b9372-a08b-4c1e-8356-923db30a80b1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentPCR function call are valid."
+}], "GuideText",
+ CellID->166256038,ExpressionUUID->"4ddce1da-4e58-42d3-97bb-2a3e4e0ddae2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentPeptideSynthesisQ"]],
+    "paclet:Experiment/ref/ValidExperimentPeptideSynthesisQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "cdb97597-025d-44b6-83a7-6604424ef71a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentPeptideSynthesis function call are valid."
+}], "GuideText",
+ CellID->565015948,ExpressionUUID->"85947ba0-dd16-4d28-95e7-95e57d782fbd"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentBioconjugationQ"]],
+    "paclet:Experiment/ref/ValidExperimentBioconjugationQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a356522c-72e1-4e90-a235-3aed3578711f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentBioconjugation function call are valid."
+}], "GuideText",
+ CellID->29984527,ExpressionUUID->"754831aa-8395-4c9d-802e-e2158295b75e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidSynthesisStepQ"]],
+    "paclet:Experiment/ref/ValidSynthesisStepQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6a6944bd-6e02-4560-94b7-9a7c4676a26b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the input primitive has all the required key and can pass all \
+the associated tests."
+}], "GuideText",
+ CellID->58169627,ExpressionUUID->"2685e397-33fe-4032-855f-a4596799de6a"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->622764522,ExpressionUUID->"9c70e341-c5ae-481c-a13e-9d61f2bcbfc3"],
+
+Cell["Separations", "GuideFunctionsSubsection",
+ CellID->465432043,ExpressionUUID->"13af8328-a2bb-4d77-9761-7015b72846a0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentTotalProteinDetectionQ"]],
+    "paclet:Experiment/ref/ValidExperimentTotalProteinDetectionQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9604e59e-8c81-44f2-9811-29802e866623"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentTotalProteinDetection function call are valid."
+}], "GuideText",
+ CellID->604566058,ExpressionUUID->"df46b330-2d6a-498f-8c75-a94b4972cd81"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentSolidPhaseExtractionQ"]],
+    "paclet:Experiment/ref/ValidExperimentSolidPhaseExtractionQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c6969c4d-526d-475f-b029-0a918ea468a9"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentSolidPhaseExtraction function call are valid."
+}], "GuideText",
+ CellID->7352852,ExpressionUUID->"c561532e-bc03-4bb0-a64e-92059d7734bf"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentHPLCQ"]],
+    "paclet:Experiment/ref/ValidExperimentHPLCQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "173e4e9c-1174-425a-83fe-11c3e2e0e597"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentHPLC function call are valid."
+}], "GuideText",
+ CellID->380750049,ExpressionUUID->"2af02b1c-23e3-4409-a680-38b92afa4d8b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentSupercriticalFluidChromatographyQ"]],
+    "paclet:Experiment/ref/ValidExperimentSupercriticalFluidChromatographyQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5cbfaf90-c9ac-43f2-bf1f-5f1f01ad6224"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentSupercriticalFluidChromatography function call are valid."
+}], "GuideText",
+ CellID->18871553,ExpressionUUID->"f74341b5-8e49-4957-a678-03f11fd8500d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentFPLCQ"]],
+    "paclet:Experiment/ref/ValidExperimentFPLCQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9268c7dd-18eb-4f17-9aac-5684fede4765"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentFPLC function call are valid."
+}], "GuideText",
+ CellID->611770547,ExpressionUUID->"3a585a24-ff6c-4325-8014-8df7fe649117"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentAgaroseGelElectrophoresisQ"]],
+    "paclet:Experiment/ref/ValidExperimentAgaroseGelElectrophoresisQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b46baf13-551b-4489-b69b-82abb8cabdc9"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentAgaroseGelElectrophoresis function call are valid."
+}], "GuideText",
+ CellID->191479937,ExpressionUUID->"9747ea50-76b8-4f2c-9d12-69b109f0f5a4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentPAGEQ"]],
+    "paclet:Experiment/ref/ValidExperimentPAGEQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3361ee29-1490-490b-964a-5a64cd48b9fc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentPAGE function call are valid."
+}], "GuideText",
+ CellID->283512703,ExpressionUUID->"5f059eec-d1e3-48dc-90c0-524e15c39cc8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentWesternQ"]],
+    "paclet:Experiment/ref/ValidExperimentWesternQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "28e39858-52ca-4f3d-92cb-2153761ab758"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentWestern function call are valid."
+}], "GuideText",
+ CellID->4502954,ExpressionUUID->"71083f9b-2e92-4128-8514-ab0283342200"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentCapillaryGelElectrophoresisSDSQ"]],
+    "paclet:Experiment/ref/ValidExperimentCapillaryGelElectrophoresisSDSQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9728a7ca-f4a1-494e-8370-6f870a6fa025"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentCapillaryGelElectrophoresisSDS function call are valid."
+}], "GuideText",
+ CellID->117467893,ExpressionUUID->"9e9d29fb-c422-4df1-b815-8e16b5d60e7a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentIonChromatographyQ"]],
+    "paclet:Experiment/ref/ValidExperimentIonChromatographyQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "276a91f3-8aaf-470b-b9cf-f9530fc34ced"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentIonChromatography function call are valid."
+}], "GuideText",
+ CellID->525071869,ExpressionUUID->"fa73b785-7aaf-4dca-8661-676c87c29e71"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentFlashChromatographyQ"]],
+    "paclet:Experiment/ref/ValidExperimentFlashChromatographyQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9d8623ff-8b62-4ce8-851c-aa75b70d6bf8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentFlashChromatography function call are valid."
+}], "GuideText",
+ CellID->130678231,ExpressionUUID->"b31fb814-3e2f-4ef4-b4f1-3be981e06ba3"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentGasChromatographyQ"]],
+    "paclet:Experiment/ref/ValidExperimentGasChromatographyQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0e2e41d8-8ce5-427b-9065-8ba601c7c683"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentGasChromatography function call are valid."
+}], "GuideText",
+ CellID->233103358,ExpressionUUID->"3aea6b0c-3fe6-4cd5-a880-b6e3e042605a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentGCMSQ"]],
+    "paclet:Experiment/ref/ValidExperimentGCMSQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e9f2f672-ba23-4d41-bf4f-615d000d0f6d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentGCMS function call are valid."
+}], "GuideText",
+ CellID->2741937,ExpressionUUID->"b71df6fb-9ed3-4982-bd0c-482ef1803fbc"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentLCMSQ"]],
+    "paclet:Experiment/ref/ValidExperimentLCMSQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "cfb1621c-23a1-40e1-add2-8f5fe6a34f03"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentLCMS function call are valid."
+}], "GuideText",
+ CellID->79431114,ExpressionUUID->"99c7af7a-7bfd-4019-9ea0-392272ceb8c9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentCrossFlowFiltrationQ"]],
+    "paclet:Experiment/ref/ValidExperimentCrossFlowFiltrationQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "28e637f3-f394-43f3-9b19-6bd19a0cd924"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentCrossFlowFiltration function call are valid."
+}], "GuideText",
+ CellID->12862740,ExpressionUUID->"081407a4-0dd6-4d70-8ac3-eb3fd2f28315"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentDialysisQ"]],
+    "paclet:Experiment/ref/ValidExperimentDialysisQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6673f6b9-7763-49fb-9dcf-bd9d55ab9a38"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentDialysis function call are valid."
+}], "GuideText",
+ CellID->13076461,ExpressionUUID->"b24eb5b1-9f26-4d9f-adaf-b6606d83dda2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentCapillaryIsoelectricFocusingQ"]],
+    "paclet:Experiment/ref/ValidExperimentCapillaryIsoelectricFocusingQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7d194521-168c-40db-8cd7-22f20e9fd3bc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentCapillaryIsoelectricFocusing function call are valid."
+}], "GuideText",
+ CellID->85340978,ExpressionUUID->"84171b43-75cb-496c-a95e-d6b78fee96ef"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->610598355,ExpressionUUID->"9126e155-62f7-4d30-a56f-15b736e82864"],
+
+Cell["Spectroscopy Experiments", "GuideFunctionsSubsection",
+ CellID->804625942,ExpressionUUID->"ed2bc04f-df57-4470-97d8-cc46ce062b45"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentNMRQ"]],
+    "paclet:Experiment/ref/ValidExperimentNMRQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d4ca5260-38cd-492b-a72a-4783832a3538"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentNMR function call are valid."
+}], "GuideText",
+ CellID->311925462,ExpressionUUID->"63ee0c43-d7b3-46b3-a36c-5960932c9821"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentNMR2DQ"]],
+    "paclet:Experiment/ref/ValidExperimentNMR2DQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b5d6744d-df47-45ab-bfdc-eaf2483f1b5b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentNMR2D function call are valid."
+}], "GuideText",
+ CellID->145604109,ExpressionUUID->"42fc8d2a-6fcc-4234-a16c-88824c38e421"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentAbsorbanceIntensityQ"]],
+    "paclet:Experiment/ref/ValidExperimentAbsorbanceIntensityQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "96cc0055-ac7a-47c7-a3b1-4ad572761329"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentAbsorbanceIntensity function call are valid."
+}], "GuideText",
+ CellID->506214398,ExpressionUUID->"aed1a1b3-3131-4c6e-98dc-2a3125e1687b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentAbsorbanceSpectroscopyQ"]],
+    "paclet:Experiment/ref/ValidExperimentAbsorbanceSpectroscopyQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5a517274-1ddc-436e-9ebc-4c14c1474435"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentAbsorbanceSpectroscopy function call are valid."
+}], "GuideText",
+ CellID->30422293,ExpressionUUID->"33057623-a91c-4638-b271-9d4ab3f2d52c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentAbsorbanceKineticsQ"]],
+    "paclet:Experiment/ref/ValidExperimentAbsorbanceKineticsQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6278455d-fff4-40e2-9061-8573a780a47f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentAbsorbanceKinetics function call are valid."
+}], "GuideText",
+ CellID->455912059,ExpressionUUID->"2e6f16ff-e0ac-417c-8c34-3232197eb0b6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentIRSpectroscopyQ"]],
+    "paclet:Experiment/ref/ValidExperimentIRSpectroscopyQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6380e036-d52d-46c7-aa8c-f9c2d4863d14"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentIRSpectroscopy function call are valid."
+}], "GuideText",
+ CellID->141862165,ExpressionUUID->"07a3cdca-f953-4473-ae30-c10540e8119d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentDynamicLightScatteringQ"]],
+    "paclet:Experiment/ref/ValidExperimentDynamicLightScatteringQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7194ca5e-8f64-4e8f-b0d5-c40378f0c7b9"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentDynamicLightScattering function call are valid."
+}], "GuideText",
+ CellID->241226986,ExpressionUUID->"ac8870cb-fe1d-4501-a0f7-34090ae769bd"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentFluorescenceIntensityQ"]],
+    "paclet:Experiment/ref/ValidExperimentFluorescenceIntensityQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f3a7d90e-3e4f-472e-a411-a2cbb8ce8adf"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentFluorescenceIntensity function call are valid."
+}], "GuideText",
+ CellID->144327924,ExpressionUUID->"54b69233-6c52-4088-babb-7f7e4a89e39a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentFluorescenceSpectroscopyQ"]],
+    "paclet:Experiment/ref/ValidExperimentFluorescenceSpectroscopyQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0101e2aa-64ac-4739-b798-05059f8f577b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentFluorescenceSpectroscopy function call are valid."
+}], "GuideText",
+ CellID->734512057,ExpressionUUID->"8b1b6508-718a-426e-8257-e4deea262567"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentFluorescenceKineticsQ"]],
+    "paclet:Experiment/ref/ValidExperimentFluorescenceKineticsQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "38de4198-dfbe-4555-acb7-b423ca489c8a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentFluorescenceKinetics function call are valid."
+}], "GuideText",
+ CellID->96104749,ExpressionUUID->"f51de156-2cbb-4c9e-b78a-8ad9f5c28506"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentFluorescencePolarizationQ"]],
+    "paclet:Experiment/ref/ValidExperimentFluorescencePolarizationQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "231e4335-b9c5-4fb4-a70d-813ff2af2ad4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentFluorescencePolarization function call are valid."
+}], "GuideText",
+ CellID->649406174,ExpressionUUID->"a1438dac-567a-40fb-90fc-9e932ee4a920"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentFluorescencePolarizationKineticsQ"]],
+    "paclet:Experiment/ref/ValidExperimentFluorescencePolarizationKineticsQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "45bdd438-623d-4f58-8f94-ea654dddf9b2"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentFluorescencePolarizationKinetics function call are valid."
+}], "GuideText",
+ CellID->422027714,ExpressionUUID->"f58b5b7f-f001-4715-b743-90af226f79f6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentLuminescenceIntensityQ"]],
+    "paclet:Experiment/ref/ValidExperimentLuminescenceIntensityQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e5db46c5-e75a-4f94-afe9-130636b2752c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentLuminescenceIntensity function call are valid."
+}], "GuideText",
+ CellID->79801577,ExpressionUUID->"428c422d-2427-48b2-b4a8-0c9120bbf07a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentLuminescenceSpectroscopyQ"]],
+    "paclet:Experiment/ref/ValidExperimentLuminescenceSpectroscopyQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e945a6b8-24b2-4b88-a1de-603da0acf879"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentLuminescenceSpectroscopy function call are valid."
+}], "GuideText",
+ CellID->313967438,ExpressionUUID->"a92080c7-0fe5-4c0a-97c0-e8cd049c2088"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentLuminescenceKineticsQ"]],
+    "paclet:Experiment/ref/ValidExperimentLuminescenceKineticsQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f579780a-923c-47f6-a57e-5861462c944d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentLuminescenceKinetics function call are valid."
+}], "GuideText",
+ CellID->68435455,ExpressionUUID->"1eaf7f4c-7f52-41b4-99b2-d0bd46ab0030"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentNephelometryQ"]],
+    "paclet:Experiment/ref/ValidExperimentNephelometryQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4d458735-7267-4242-aa03-35ef3b58e300"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentNephelometry function call are valid."
+}], "GuideText",
+ CellID->162552295,ExpressionUUID->"12d72589-f7ef-479d-bfdd-5c1209e5ef32"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentNephelometryKineticsQ"]],
+    "paclet:Experiment/ref/ValidExperimentNephelometryKineticsQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "77d9772f-b50f-4c99-a829-b30384d393f8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentNephelometryKinetics function call are valid."
+}], "GuideText",
+ CellID->27387492,ExpressionUUID->"e1f9e0c9-e3cc-404c-9a1f-25ff68aa47a1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentCircularDichroismQ"]],
+    "paclet:Experiment/ref/ValidExperimentCircularDichroismQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "99b323b7-eaf6-44f5-9834-c3bd20df5350"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentCircularDichroism function call are valid."
+}], "GuideText",
+ CellID->306697968,ExpressionUUID->"7aeb9c70-d10c-49a9-80a6-2909c52ecd3b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentThermalShiftQ"]],
+    "paclet:Experiment/ref/ValidExperimentThermalShiftQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3bce0e0d-3bd1-4d17-8872-49ead525f36b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentThermalShift function call are valid."
+}], "GuideText",
+ CellID->708654308,ExpressionUUID->"fe09b196-6a56-4b1b-ab07-0ef9af28366e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentRamanSpectroscopyQ"]],
+    "paclet:Experiment/ref/ValidExperimentRamanSpectroscopyQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c5a45bd0-ee3f-490b-a62c-4d1f8cca20c5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentRamanSpectroscopy function call are valid."
+}], "GuideText",
+ CellID->6086369,ExpressionUUID->"714bd440-c14b-44ac-a0d0-0fa2db8d55ea"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->46865167,ExpressionUUID->"c2258a1e-d60a-4efd-a555-8e820fc3f322"],
+
+Cell["Mass Spectrometry", "GuideFunctionsSubsection",
+ CellID->114188871,ExpressionUUID->"999c55a3-102d-4377-b6e1-383cfc4b569a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentMassSpectrometryQ"]],
+    "paclet:Experiment/ref/ValidExperimentMassSpectrometryQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c2b0a146-a542-47d4-be2e-ed6a9f9a2d9c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentMassSpectrometry function call are valid."
+}], "GuideText",
+ CellID->23393943,ExpressionUUID->"49136112-4784-4def-a780-87ad9c3c28f6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentGCMSQ"]],
+    "paclet:Experiment/ref/ValidExperimentGCMSQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ab4e29a8-a1da-46ec-ae72-2ca155a58da2"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentGCMS function call are valid."
+}], "GuideText",
+ CellID->339624658,ExpressionUUID->"e16be39b-e0e7-4ad9-bc9b-ef3f3c8b9b35"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentLCMSQ"]],
+    "paclet:Experiment/ref/ValidExperimentLCMSQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "80580af5-0ee9-4278-8d99-410bbd951b04"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentLCMS function call are valid."
+}], "GuideText",
+ CellID->122300031,ExpressionUUID->"1cd8338c-992b-4a78-b840-fbdd202c6cbe"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentSupercriticalFluidChromatographyQ"]],
+    "paclet:Experiment/ref/ValidExperimentSupercriticalFluidChromatographyQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "50e095c2-137b-47b1-8c2c-cbfb1b5369d7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentSupercriticalFluidChromatography function call are valid."
+}], "GuideText",
+ CellID->301373745,ExpressionUUID->"0f81dfbd-4901-418c-8d67-f7606acccbcf"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->594526984,ExpressionUUID->"f144f47b-e9db-4e34-8bd0-07ff5bc943d5"],
+
+Cell["Bioassays", "GuideFunctionsSubsection",
+ CellID->305686025,ExpressionUUID->"1326356f-1e7d-4a3f-ab39-825c5546100c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentAlphaScreenQ"]],
+    "paclet:Experiment/ref/ValidExperimentAlphaScreenQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "24d59723-ebd3-47b0-a8bc-6052010cfd6c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentAlphaScreen function call are valid."
+}], "GuideText",
+ CellID->339954127,ExpressionUUID->"4678aa9c-6efc-40f3-813e-309de93ff231"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentTotalProteinQuantificationQ"]],
+    "paclet:Experiment/ref/ValidExperimentTotalProteinQuantificationQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "fbfd8a37-c83a-4358-91b7-79ff33e0d0d7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentTotalProteinQuantification function call are valid."
+}], "GuideText",
+ CellID->418245828,ExpressionUUID->"70ed8f11-6eec-4a9b-b06c-3e7b2a9f49d0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentqPCRQ"]],
+    "paclet:Experiment/ref/ValidExperimentqPCRQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8441c06d-489e-4b50-a7de-30e02b394881"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentqPCR function call are valid."
+}], "GuideText",
+ CellID->522832806,ExpressionUUID->"d64b15eb-2de9-487a-9473-162314dc6378"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentBioLayerInterferometryQ"]],
+    "paclet:Experiment/ref/ValidExperimentBioLayerInterferometryQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "372008c4-1e71-4c2e-ae02-c9768fcd4b8b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentBioLayerInterferometry function call are valid."
+}], "GuideText",
+ CellID->82025698,ExpressionUUID->"2e2f18b0-7af1-4b51-910a-efd8f06a5fd1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentWesternQ"]],
+    "paclet:Experiment/ref/ValidExperimentWesternQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "10a40f80-4fa4-40db-920e-f80859b47e1d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentWestern function call are valid."
+}], "GuideText",
+ CellID->26875478,ExpressionUUID->"b7680876-ed45-4607-95a8-301393859eb6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentUVMeltingQ"]],
+    "paclet:Experiment/ref/ValidExperimentUVMeltingQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "55ee0d9f-9371-408b-8b61-8c433ccfbb2c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentUVMelting function call are valid."
+}], "GuideText",
+ CellID->669520775,ExpressionUUID->"def08f7c-365a-4fb4-bdab-39bdf6fdff64"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentCapillaryELISAQ"]],
+    "paclet:Experiment/ref/ValidExperimentCapillaryELISAQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a533bd19-2bf6-49df-b604-5e163622221a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentCapillaryELISA function call are valid."
+}], "GuideText",
+ CellID->190327851,ExpressionUUID->"169569dc-6d6e-4c4e-b618-d54bae6c6f55"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentDifferentialScanningCalorimetryQ"]],
+    "paclet:Experiment/ref/ValidExperimentDifferentialScanningCalorimetryQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "465482e4-0b0c-4c58-9d82-16317caa5894"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentDifferentialScanningCalorimetry function call are valid."
+}], "GuideText",
+ CellID->13893040,ExpressionUUID->"fe02755b-453b-49b5-9f81-fb940409160b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentELISAQ"]],
+    "paclet:Experiment/ref/ValidExperimentELISAQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "544ca7ee-74e4-4433-9d2b-26d0e711b7d9"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentELISA function call are valid."
+}], "GuideText",
+ CellID->111847285,ExpressionUUID->"56c7b0ed-82f5-4048-a9c8-5c5ed8cd614d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentDNASequencingQ"]],
+    "paclet:Experiment/ref/ValidExperimentDNASequencingQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ef7d84a8-ef33-41a3-bae5-af70d7f052b0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentDNASequencing function call are valid."
+}], "GuideText",
+ CellID->427325477,ExpressionUUID->"08e6c7cf-76ad-496a-a334-d70de8a00f0e"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->297397217,ExpressionUUID->"f56da770-b4b2-4ed6-b582-0a5aea356529"],
+
+Cell["Crystallography", "GuideFunctionsSubsection",
+ CellID->280333245,ExpressionUUID->"5913c2fb-2b5b-492f-aeb4-afb57fe4479a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentPowderXRDQ"]],
+    "paclet:Experiment/ref/ValidExperimentPowderXRDQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8c8cedbb-9874-421d-8f46-514c42697132"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentPowderXRD function call are valid."
+}], "GuideText",
+ CellID->46216947,ExpressionUUID->"67b309ef-7a17-40dc-8f00-157a8601827f"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->407266521,ExpressionUUID->"bb2a12fe-53e0-4daf-91ac-29c204c71c87"],
+
+Cell["Sample Preparation", "GuideFunctionsSubsection",
+ CellID->6563332,ExpressionUUID->"f7a1e463-03c0-40e2-a562-87e328557d51"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentDiluteQ"]],
+    "paclet:Experiment/ref/ValidExperimentDiluteQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ea15aa25-ae05-4848-bb71-9f2e5a7d0c1a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentDilute function call are valid."
+}], "GuideText",
+ CellID->945720904,ExpressionUUID->"b634036f-b0e5-43ee-9eae-d722e6eaf69b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentSampleManipulationQ"]],
+    "paclet:Experiment/ref/ValidExperimentSampleManipulationQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0e73d7c6-8f73-4082-8c98-d25972cb9590"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentSampleManipulation function call are valid."
+}], "GuideText",
+ CellID->407737743,ExpressionUUID->"80c7defb-60cb-4e46-a6d4-f58519ede033"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentSamplePreparationQ"]],
+    "paclet:Experiment/ref/ValidExperimentSamplePreparationQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ffa51287-74eb-42a4-84d9-79a2f63e5cd2"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentSamplePreparation function call are valid."
+}], "GuideText",
+ CellID->156464511,ExpressionUUID->"5359c139-6d92-41d3-a045-729fc2a11c95"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentSerialDiluteQ"]],
+    "paclet:Experiment/ref/ValidExperimentSerialDiluteQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6551ebb4-e4ae-4d66-ba49-9395ea7ce87b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentSerialDilute function call are valid."
+}], "GuideText",
+ CellID->61446508,ExpressionUUID->"f72b9edc-be77-4ce2-975a-e5adb241dd76"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentFlashFreezeQ"]],
+    "paclet:Experiment/ref/ValidExperimentFlashFreezeQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "147e6796-f400-46da-9eb7-06a0384d0336"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentFlashFreeze function call are valid."
+}], "GuideText",
+ CellID->32537549,ExpressionUUID->"435e0ba3-5031-4acc-a7af-0a780e19d985"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentAliquotQ"]],
+    "paclet:Experiment/ref/ValidExperimentAliquotQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "61501de9-055a-4f76-ae2e-3ec53faa53ea"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentAliquot function call are valid."
+}], "GuideText",
+ CellID->29092624,ExpressionUUID->"b2620ead-7c91-41c8-b535-f91dc1e5abb0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentIncubateQ"]],
+    "paclet:Experiment/ref/ValidExperimentIncubateQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5a3350dc-df18-4086-ba0b-c58abf6212bd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentIncubate function call are valid."
+}], "GuideText",
+ CellID->265305068,ExpressionUUID->"f94219ff-a8dd-4468-b4ff-ccaef3e389e0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentMixQ"]],
+    "paclet:Experiment/ref/ValidExperimentMixQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a3fcde32-88a3-458e-9ff5-961985b372e5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentMix function call are valid."
+}], "GuideText",
+ CellID->816674440,ExpressionUUID->"6ff270aa-1796-4303-b523-2aa9e94291db"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentTransferQ"]],
+    "paclet:Experiment/ref/ValidExperimentTransferQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8075ada2-d73d-4191-8ea8-cabf5ea33e90"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentTransfer function call are valid."
+}], "GuideText",
+ CellID->364965984,ExpressionUUID->"66bfa462-cd15-49db-a940-e2311c8a3dc7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentCentrifugeQ"]],
+    "paclet:Experiment/ref/ValidExperimentCentrifugeQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "eb67c739-b371-4cf1-99a0-4fb06542c84f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentCentrifuge function call are valid."
+}], "GuideText",
+ CellID->81126976,ExpressionUUID->"f68f140b-51be-4836-827c-9afcc0461dfc"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentDegasQ"]],
+    "paclet:Experiment/ref/ValidExperimentDegasQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ef71f291-d24d-40e2-96c1-bf1f688b4f7e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentDegas function call are valid."
+}], "GuideText",
+ CellID->12179674,ExpressionUUID->"0cea9cab-a5bf-449c-8ea4-39c5d024a9ff"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentFilterQ"]],
+    "paclet:Experiment/ref/ValidExperimentFilterQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ea8d98b6-14f0-47bc-9810-1f97e7e98f86"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentFilter function call are valid."
+}], "GuideText",
+ CellID->377614836,ExpressionUUID->"b7089a8e-cbc6-4e70-8773-df44490fb4a5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentStockSolutionQ"]],
+    "paclet:Experiment/ref/ValidExperimentStockSolutionQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8db768d0-1e9c-4975-b6d5-eef811ad9652"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentStockSolution function call are valid."
+}], "GuideText",
+ CellID->582702403,ExpressionUUID->"14c2179e-d689-40ae-a25d-88d82bda1905"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentAutoclaveQ"]],
+    "paclet:Experiment/ref/ValidExperimentAutoclaveQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "774d33ef-4829-4157-9cf5-12d205fe7f57"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentAutoclave function call are valid."
+}], "GuideText",
+ CellID->76812682,ExpressionUUID->"5d798f18-1bd8-44d4-9f2c-b99af6e5943e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentEvaporateQ"]],
+    "paclet:Experiment/ref/ValidExperimentEvaporateQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "987a332b-dd3e-4d27-8c3e-975af8565c85"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentEvaporate function call are valid."
+}], "GuideText",
+ CellID->480527691,ExpressionUUID->"b0261047-645b-4581-8d76-c0a919f1c52a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentLyophilizeQ"]],
+    "paclet:Experiment/ref/ValidExperimentLyophilizeQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "cecc0eb6-452e-4a42-b8a2-a902a3009dc0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentLyophilize function call are valid."
+}], "GuideText",
+ CellID->330527355,ExpressionUUID->"d939e316-8fcd-4ce4-8712-5161ef25e4de"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentPelletQ"]],
+    "paclet:Experiment/ref/ValidExperimentPelletQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7c326ac8-dc2f-4159-a699-d49b6a086532"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentPellet function call are valid."
+}], "GuideText",
+ CellID->212309524,ExpressionUUID->"2213dae2-22a3-412d-b340-83a3613ccaa6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentFillToVolumeQ"]],
+    "paclet:Experiment/ref/ValidExperimentFillToVolumeQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "83cf2820-bc4f-41bc-8198-e01f9bfa6e41"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentFillToVolume function call are valid."
+}], "GuideText",
+ CellID->307972554,ExpressionUUID->"efcc2d15-97b1-4cda-8a90-01fe8b06f984"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentAcousticLiquidHandlingQ"]],
+    "paclet:Experiment/ref/ValidExperimentAcousticLiquidHandlingQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "89fffcea-4f00-49e9-90e1-94467659f093"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentAcousticLiquidHandling function call are valid."
+}], "GuideText",
+ CellID->227167416,ExpressionUUID->"59d899a4-e675-4164-9772-42c8b72f3ec2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentAdjustpHQ"]],
+    "paclet:Experiment/ref/ValidExperimentAdjustpHQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7541c8d6-b4cd-4ef2-ac14-b2721357a2a1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentAdjustpH function call are valid."
+}], "GuideText",
+ CellID->80585151,ExpressionUUID->"2f808db5-a7e3-4531-9484-065e7acde4ae"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentResuspendQ"]],
+    "paclet:Experiment/ref/ValidExperimentResuspendQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "35768fb4-3d62-4e42-b85d-3c26230921dc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentResuspend function call are valid."
+}], "GuideText",
+ CellID->482709404,ExpressionUUID->"65e6cc9a-9a97-4f2a-836e-d344bce239c0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentMagneticBeadSeparationQ"]],
+    "paclet:Experiment/ref/ValidExperimentMagneticBeadSeparationQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5048a626-ce5d-4782-8ad9-87773f2f03cc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentMagneticBeadSeparation function call are valid."
+}], "GuideText",
+ CellID->165848228,ExpressionUUID->"942bd7f9-e5af-4a9c-9b7a-6bebcb84fe27"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentMicrowaveDigestionQ"]],
+    "paclet:Experiment/ref/ValidExperimentMicrowaveDigestionQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "79c4642e-b99c-4c32-9db4-6d7a9f22fb2d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentMicrowaveDigestion function call are valid."
+}], "GuideText",
+ CellID->601136289,ExpressionUUID->"ef45876d-6031-4c85-9e29-b175501db4fd"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->82072216,ExpressionUUID->"39c725a8-d3de-4098-b418-0174324836e3"],
+
+Cell["Property Measurement", "GuideFunctionsSubsection",
+ CellID->298973168,ExpressionUUID->"d7524118-d602-478f-9f40-888390ddecf2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentCountLiquidParticlesQ"]],
+    "paclet:Experiment/ref/ValidExperimentCountLiquidParticlesQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d2d8fda1-f500-4051-8589-d88c6eeaf08b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentCountLiquidParticles function call are valid."
+}], "GuideText",
+ CellID->254466397,ExpressionUUID->"408b8831-48ba-4dda-b818-27e3ba63ee6f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentMeasureOsmolalityQ"]],
+    "paclet:Experiment/ref/ValidExperimentMeasureOsmolalityQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "55143b36-9860-4aa3-a9ab-550c1aa82e0e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentMeasureOsmolality function call are valid."
+}], "GuideText",
+ CellID->342783143,ExpressionUUID->"27c084cb-0e6f-4ada-91d0-04c1314ccfe0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentMeasureConductivityQ"]],
+    "paclet:Experiment/ref/ValidExperimentMeasureConductivityQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "00a6aaa8-447a-4481-a76c-2ea98e9c8870"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentMeasureConductivity function call are valid."
+}], "GuideText",
+ CellID->468404563,ExpressionUUID->"f7104c2a-b6ce-40c9-bc2e-c82f118b6f79"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentMeasureDensityQ"]],
+    "paclet:Experiment/ref/ValidExperimentMeasureDensityQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "47950a3b-0410-42f6-b2b9-635fd43e4db3"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentMeasureDensity function call are valid."
+}], "GuideText",
+ CellID->79921206,ExpressionUUID->"4ffa5287-41e8-48a5-9a2e-d6e17ba977df"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentMeasureDissolvedOxygenQ"]],
+    "paclet:Experiment/ref/ValidExperimentMeasureDissolvedOxygenQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f950f921-24c6-4dbd-8f7c-cb09d4cae41f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentMeasureDissolvedOxygen function call are valid."
+}], "GuideText",
+ CellID->46194176,ExpressionUUID->"df90db99-3591-4481-8ef6-818d8fd5ffc6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentMeasurepHQ"]],
+    "paclet:Experiment/ref/ValidExperimentMeasurepHQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3e566b9d-28f9-4349-bf6e-0c2aee4d483f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentMeasurepH function call are valid."
+}], "GuideText",
+ CellID->429092594,ExpressionUUID->"79a49602-bb58-4227-9d7d-4dc6f40a92a0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentMeasureWeightQ"]],
+    "paclet:Experiment/ref/ValidExperimentMeasureWeightQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7d3ad2cf-af24-48ce-9d6f-92338e311711"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentMeasureWeight function call are valid."
+}], "GuideText",
+ CellID->503981867,ExpressionUUID->"09b7670d-398d-4041-831b-7f0870827edf"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentMeasureVolumeQ"]],
+    "paclet:Experiment/ref/ValidExperimentMeasureVolumeQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ea359883-3619-400c-b24c-33a58c30e376"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentMeasureVolume function call are valid."
+}], "GuideText",
+ CellID->127844689,ExpressionUUID->"23e979ab-48b8-4d62-9f8a-3525aaa12a0c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentMeasureCountQ"]],
+    "paclet:Experiment/ref/ValidExperimentMeasureCountQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "555aedd2-e99a-436d-bd10-bcca345fc2b5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentMeasureCount function call are valid."
+}], "GuideText",
+ CellID->584896127,ExpressionUUID->"4ed54d55-3698-48e0-bf42-3e843baf9a5f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentImageSampleQ"]],
+    "paclet:Experiment/ref/ValidExperimentImageSampleQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "518a22dd-7177-4b5f-af38-5caec6f0e4bf"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentImageSample function call are valid."
+}], "GuideText",
+ CellID->164365059,ExpressionUUID->"9d6185b9-69c0-454c-b75f-4051c5cc862d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentMeasureSurfaceTensionQ"]],
+    "paclet:Experiment/ref/ValidExperimentMeasureSurfaceTensionQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ba0691db-1c8b-4a19-be66-4aaf40c4f859"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentMeasureSurfaceTension function call are valid."
+}], "GuideText",
+ CellID->141602774,ExpressionUUID->"e3a657c2-bf86-44c8-bfcf-ba202e745656"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentMeasureRefractiveIndexQ"]],
+    "paclet:Experiment/ref/ValidExperimentMeasureRefractiveIndexQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a314f7d2-41bd-4c73-a757-d8ed24773b28"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentMeasureRefractiveIndex function call are valid."
+}], "GuideText",
+ CellID->333475104,ExpressionUUID->"aab52aa7-214d-43eb-a3dd-2402a8337063"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentCyclicVoltammetryQ"]],
+    "paclet:Experiment/ref/ValidExperimentCyclicVoltammetryQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "918a2f73-8aa7-4f85-8788-e4d7fcdb5f88"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentCyclicVoltammetry function call are valid."
+}], "GuideText",
+ CellID->344506175,ExpressionUUID->"fa2c91b7-fbd2-437f-ab24-c9b7ef7b92b1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentPrepareReferenceElectrodeQ"]],
+    "paclet:Experiment/ref/ValidExperimentPrepareReferenceElectrodeQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "fe824937-4a72-4232-88ec-405bfcefc1e0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentPrepareReferenceElectrode function call are valid."
+}], "GuideText",
+ CellID->138112478,ExpressionUUID->"7ccf1986-a644-4123-b2c8-83edb05be92a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentVisualInspectionQ"]],
+    "paclet:Experiment/ref/ValidExperimentVisualInspectionQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d0fa17ef-409f-4c34-8da1-e9e5723fe461"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentVisualInspection function call are valid."
+}], "GuideText",
+ CellID->836542374,ExpressionUUID->"b5991cfe-6c19-4ac0-8bba-ea5e69f29b7f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentMeasureViscosityQ"]],
+    "paclet:Experiment/ref/ValidExperimentMeasureViscosityQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f04987e0-130f-498d-809a-33ba77f5d03e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentMeasureViscosity function call are valid."
+}], "GuideText",
+ CellID->40848861,ExpressionUUID->"26d3d0b9-04db-4fe7-a03e-18ed0011a157"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentDynamicFoamAnalysisQ"]],
+    "paclet:Experiment/ref/ValidExperimentDynamicFoamAnalysisQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a658fab3-de27-48cc-bad0-a833f22cd652"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentDynamicFoamAnalysis function call are valid."
+}], "GuideText",
+ CellID->24283749,ExpressionUUID->"5c8be2b9-2241-4afd-8b3f-11a17a8af120"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->675629108,ExpressionUUID->"c010a2fe-6d76-4faa-89f3-6aa496f2e13a"],
+
+Cell["Cellular Experiments", "GuideFunctionsSubsection",
+ CellID->59858025,ExpressionUUID->"81e9586f-8a3e-4351-b119-f5ef3ddcb6d5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidExperimentImageCellsQ"]],
+    "paclet:Experiment/ref/ValidExperimentImageCellsQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "97d40b4a-3572-4fe0-b914-ae2a73d6752a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and specified options for the given \
+ExperimentImageCells function call are valid."
+}], "GuideText",
+ CellID->18789226,ExpressionUUID->"dd5700d0-1307-446b-b56b-1e473ef98f31"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->23938600,ExpressionUUID->"15a7edc0-3946-42eb-8659-8e853314f407"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"78e65954-b164-4e45-8ad1-d509ae53a52e"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->305822794,ExpressionUUID->"704559dd-a7fa-4cfe-909c-b65fafbcb504"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->567239214,ExpressionUUID->"6b22731c-29ff-4a1f-af14-cc0f7cbd5aa6"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["RunningExperiments"]],"paclet:Docs/guide/RunningExperiments"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->142296010,ExpressionUUID->"e36cdbbd-4536-41c7-98e6-6b1900ef8a2a"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["UnitOperations"]],"paclet:Docs/guide/UnitOperations"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->89097766,ExpressionUUID->"6e88bb36-2241-4d07-bd1f-7b67d237739b"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["CalculatingExperimentOptions"]],
+   "paclet:Docs/guide/CalculatingExperimentOptions"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->192876616,ExpressionUUID->"55abe36d-d744-4adb-ac3b-775dc38ac3c3"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["ExperimentTrackingAndManagement"]],
+   "paclet:Docs/guide/ExperimentTrackingAndManagement"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->69866259,ExpressionUUID->"485c885b-0803-4c3c-9f47-d7646a6c4cd3"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["FacilitiesCapabilitiesAndLimitations"]],
+   "paclet:Docs/guide/FacilitiesCapabilitiesAndLimitations"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->595974963,ExpressionUUID->"da71ebb3-7064-4ba8-bd10-6913331d4056"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["PricingFunctions"]],"paclet:Docs/guide/PricingFunctions"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->111289658,ExpressionUUID->"6f9b9817-51bd-42b3-9bf2-915ec3c7093b"],
+
+Cell["", "FooterCell",
+ CellID->553074051,ExpressionUUID->"cd6c8967-dde3-4932-ad51-10e5e96a66f5"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{564, Automatic}, {Automatic, 54}},
+WindowTitle->"ValidatingExperiments",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Mon 14 Nov 2022 17:09:04", "context" -> "Docs`", 
+    "keywords" -> {
+     "ValidExperimentSamplePreparationQ", "ValidExperimentSerialDiluteQ", 
+      "ValidExperimentAcousticLiquidHandlingQ", "ValidExperimentAliquotQ", 
+      "ValidExperimentTransferQ", "ValidExperimentDNASynthesisQ", 
+      "ValidExperimentRNASynthesisQ", "ValidExperimentPNASynthesisQ", 
+      "ValidExperimentPCRQ", "ValidExperimentPeptideSynthesisQ", 
+      "ValidExperimentBioconjugationQ", "ValidSynthesisStepQ", 
+      "ValidExperimentTotalProteinDetectionQ", 
+      "ValidExperimentSolidPhaseExtractionQ", "ValidExperimentHPLCQ", 
+      "ValidExperimentSupercriticalFluidChromatographyQ", 
+      "ValidExperimentFPLCQ", "ValidExperimentAgaroseGelElectrophoresisQ", 
+      "ValidExperimentPAGEQ", "ValidExperimentWesternQ", 
+      "ValidExperimentCapillaryGelElectrophoresisSDSQ", 
+      "ValidExperimentIonChromatographyQ", 
+      "ValidExperimentFlashChromatographyQ", 
+      "ValidExperimentGasChromatographyQ", "ValidExperimentGCMSQ", 
+      "ValidExperimentLCMSQ", "ValidExperimentCrossFlowFiltrationQ", 
+      "ValidExperimentDialysisQ", 
+      "ValidExperimentCapillaryIsoelectricFocusingQ", "ValidExperimentNMRQ", 
+      "ValidExperimentNMR2DQ", "ValidExperimentAbsorbanceIntensityQ", 
+      "ValidExperimentAbsorbanceSpectroscopyQ", 
+      "ValidExperimentAbsorbanceKineticsQ", "ValidExperimentIRSpectroscopyQ", 
+      "ValidExperimentDynamicLightScatteringQ", 
+      "ValidExperimentFluorescenceIntensityQ", 
+      "ValidExperimentFluorescenceSpectroscopyQ", 
+      "ValidExperimentFluorescenceKineticsQ", 
+      "ValidExperimentFluorescencePolarizationQ", 
+      "ValidExperimentFluorescencePolarizationKineticsQ", 
+      "ValidExperimentLuminescenceIntensityQ", 
+      "ValidExperimentLuminescenceSpectroscopyQ", 
+      "ValidExperimentLuminescenceKineticsQ", "ValidExperimentNephelometryQ", 
+      "ValidExperimentNephelometryKineticsQ", 
+      "ValidExperimentCircularDichroismQ", "ValidExperimentThermalShiftQ", 
+      "ValidExperimentRamanSpectroscopyQ", "ValidExperimentMassSpectrometryQ",
+       "ValidExperimentAlphaScreenQ", 
+      "ValidExperimentTotalProteinQuantificationQ", "ValidExperimentqPCRQ", 
+      "ValidExperimentBioLayerInterferometryQ", "ValidExperimentUVMeltingQ", 
+      "ValidExperimentCapillaryELISAQ", 
+      "ValidExperimentDifferentialScanningCalorimetryQ", 
+      "ValidExperimentELISAQ", "ValidExperimentDNASequencingQ", 
+      "ValidExperimentPowderXRDQ", "ValidExperimentDiluteQ", 
+      "ValidExperimentSampleManipulationQ", "ValidExperimentFlashFreezeQ", 
+      "ValidExperimentIncubateQ", "ValidExperimentMixQ", 
+      "ValidExperimentCentrifugeQ", "ValidExperimentDegasQ", 
+      "ValidExperimentFilterQ", "ValidExperimentStockSolutionQ", 
+      "ValidExperimentAutoclaveQ", "ValidExperimentEvaporateQ", 
+      "ValidExperimentLyophilizeQ", "ValidExperimentPelletQ", 
+      "ValidExperimentFillToVolumeQ", "ValidExperimentAdjustpHQ", 
+      "ValidExperimentResuspendQ", "ValidExperimentMagneticBeadSeparationQ", 
+      "ValidExperimentMicrowaveDigestionQ", 
+      "ValidExperimentCountLiquidParticlesQ", 
+      "ValidExperimentMeasureOsmolalityQ", 
+      "ValidExperimentMeasureConductivityQ", "ValidExperimentMeasureDensityQ",
+       "ValidExperimentMeasureDissolvedOxygenQ", "ValidExperimentMeasurepHQ", 
+      "ValidExperimentMeasureWeightQ", "ValidExperimentMeasureVolumeQ", 
+      "ValidExperimentMeasureCountQ", "ValidExperimentImageSampleQ", 
+      "ValidExperimentMeasureSurfaceTensionQ", 
+      "ValidExperimentMeasureRefractiveIndexQ", 
+      "ValidExperimentCyclicVoltammetryQ", 
+      "ValidExperimentPrepareReferenceElectrodeQ", 
+      "ValidExperimentVisualInspectionQ", "ValidExperimentMeasureViscosityQ", 
+      "ValidExperimentDynamicFoamAnalysisQ", "ValidExperimentImageCellsQ"}, 
+    "specialkeywords" -> {}, "tutorialcollectionlinks" -> {}, "index" -> True,
+     "label" -> "ECL Guide", "language" -> "en", "paclet" -> "Docs", "status" -> 
+    "None", "summary" -> 
+    "Collection of functions to check the validity of running experiment \
+functions on given input and options.", "synonyms" -> {}, "titlemodifier" -> 
+    "", "Windowtitle" -> "ValidatingExperiments", "title" -> 
+    "ValidatingExperiments", "type" -> "Guide", "uri" -> 
+    "Docs/guide/ValidatingExperiments", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.0 for Microsoft Windows (64-bit) (September 6, 2019)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[593, 21, 16605, 288, 56, "AnchorBarGrid",ExpressionUUID->"7e24805a-11ee-497c-8673-aaf633f24a4b",
+ CellID->1],
+Cell[17201, 311, 118, 1, 50, "GuideTitle",ExpressionUUID->"db5c73c9-1028-4038-8c0d-25691ac4dc3b",
+ CellID->95837416],
+Cell[17322, 314, 213, 4, 31, "GuideAbstract",ExpressionUUID->"17b86bd3-6fbe-4697-8466-2aec3af6ff04",
+ CellID->5278826],
+Cell[17538, 320, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"9112c829-7665-4ccf-a1e5-441448077cb6",
+ CellID->73731285],
+Cell[17653, 323, 124, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"c2bd8a6d-dd2e-482a-8f06-e983b4923146",
+ CellID->585956],
+Cell[17780, 326, 566, 13, 53, "GuideText",ExpressionUUID->"f4c73205-dc9f-431f-9e2d-3b5d17d32151",
+ CellID->409204081],
+Cell[18349, 341, 549, 13, 59, "GuideText",ExpressionUUID->"cd907661-fd15-49e4-ac68-1ca00e174246",
+ CellID->2350904],
+Cell[18901, 356, 580, 13, 59, "GuideText",ExpressionUUID->"c5ffb1a1-4b3c-4db2-b08b-f73aecd0822b",
+ CellID->43147594],
+Cell[19484, 371, 535, 13, 59, "GuideText",ExpressionUUID->"a654f559-5f5f-4a75-8628-d1f890053b12",
+ CellID->94801199],
+Cell[20022, 386, 539, 13, 59, "GuideText",ExpressionUUID->"12d7ff4a-43ad-4fb4-8fa2-6b0676d7f47c",
+ CellID->216476614],
+Cell[20564, 401, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"0d05d952-ee1c-4f16-b796-52526096620b",
+ CellID->127024186],
+Cell[20680, 404, 126, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"5f033e8e-df0a-4650-a46c-55410bef086b",
+ CellID->283422272],
+Cell[20809, 407, 539, 13, 53, "GuideText",ExpressionUUID->"d9395288-239c-4c2c-b31e-b544a6217c6c",
+ CellID->104761747],
+Cell[21351, 422, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"a7590508-47b1-4a0c-a8b3-12d243acd568",
+ CellID->326838178],
+Cell[21467, 425, 128, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"88705b27-220d-4c1b-b7e0-89971c42a939",
+ CellID->775221538],
+Cell[21598, 428, 551, 13, 53, "GuideText",ExpressionUUID->"2654cff9-4bb6-4b20-a0fe-611f13b152a1",
+ CellID->946652369],
+Cell[22152, 443, 551, 13, 59, "GuideText",ExpressionUUID->"d56e2cdd-5e3c-4a2b-b539-28048d56e154",
+ CellID->944236139],
+Cell[22706, 458, 550, 13, 59, "GuideText",ExpressionUUID->"4583ec42-7dc8-4e9f-9847-8bc63563eb0c",
+ CellID->49560262],
+Cell[23259, 473, 524, 13, 59, "GuideText",ExpressionUUID->"4ddce1da-4e58-42d3-97bb-2a3e4e0ddae2",
+ CellID->166256038],
+Cell[23786, 488, 563, 13, 59, "GuideText",ExpressionUUID->"85947ba0-dd16-4d28-95e7-95e57d782fbd",
+ CellID->565015948],
+Cell[24352, 503, 556, 13, 59, "GuideText",ExpressionUUID->"754831aa-8395-4c9d-802e-e2158295b75e",
+ CellID->29984527],
+Cell[24911, 518, 511, 13, 59, "GuideText",ExpressionUUID->"2685e397-33fe-4032-855f-a4596799de6a",
+ CellID->58169627],
+Cell[25425, 533, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"9c70e341-c5ae-481c-a13e-9d61f2bcbfc3",
+ CellID->622764522],
+Cell[25541, 536, 122, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"13af8328-a2bb-4d77-9761-7015b72846a0",
+ CellID->465432043],
+Cell[25666, 539, 578, 13, 53, "GuideText",ExpressionUUID->"df46b330-2d6a-498f-8c75-a94b4972cd81",
+ CellID->604566058],
+Cell[26247, 554, 573, 13, 59, "GuideText",ExpressionUUID->"c561532e-bc03-4bb0-a64e-92059d7734bf",
+ CellID->7352852],
+Cell[26823, 569, 527, 13, 59, "GuideText",ExpressionUUID->"2af02b1c-23e3-4409-a680-38b92afa4d8b",
+ CellID->380750049],
+Cell[27353, 584, 610, 13, 59, "GuideText",ExpressionUUID->"f74341b5-8e49-4957-a678-03f11fd8500d",
+ CellID->18871553],
+Cell[27966, 599, 527, 13, 59, "GuideText",ExpressionUUID->"3a585a24-ff6c-4325-8014-8df7fe649117",
+ CellID->611770547],
+Cell[28496, 614, 590, 13, 59, "GuideText",ExpressionUUID->"9747ea50-76b8-4f2c-9d12-69b109f0f5a4",
+ CellID->191479937],
+Cell[29089, 629, 527, 13, 59, "GuideText",ExpressionUUID->"5f059eec-d1e3-48dc-90c0-524e15c39cc8",
+ CellID->283512703],
+Cell[29619, 644, 534, 13, 59, "GuideText",ExpressionUUID->"71083f9b-2e92-4128-8514-ab0283342200",
+ CellID->4502954],
+Cell[30156, 659, 605, 13, 59, "GuideText",ExpressionUUID->"9e9d29fb-c422-4df1-b815-8e16b5d60e7a",
+ CellID->117467893],
+Cell[30764, 674, 566, 13, 59, "GuideText",ExpressionUUID->"fa73b785-7aaf-4dca-8661-676c87c29e71",
+ CellID->525071869],
+Cell[31333, 689, 572, 13, 59, "GuideText",ExpressionUUID->"b31fb814-3e2f-4ef4-b4f1-3be981e06ba3",
+ CellID->130678231],
+Cell[31908, 704, 566, 13, 59, "GuideText",ExpressionUUID->"3aea6b0c-3fe6-4cd5-a880-b6e3e042605a",
+ CellID->233103358],
+Cell[32477, 719, 525, 13, 59, "GuideText",ExpressionUUID->"b71df6fb-9ed3-4982-bd0c-482ef1803fbc",
+ CellID->2741937],
+Cell[33005, 734, 526, 13, 59, "GuideText",ExpressionUUID->"99c7af7a-7bfd-4019-9ea0-392272ceb8c9",
+ CellID->79431114],
+Cell[33534, 749, 571, 13, 59, "GuideText",ExpressionUUID->"081407a4-0dd6-4d70-8ac3-eb3fd2f28315",
+ CellID->12862740],
+Cell[34108, 764, 538, 13, 59, "GuideText",ExpressionUUID->"b24eb5b1-9f26-4d9f-adaf-b6606d83dda2",
+ CellID->13076461],
+Cell[34649, 779, 598, 13, 59, "GuideText",ExpressionUUID->"84171b43-75cb-496c-a95e-d6b78fee96ef",
+ CellID->85340978],
+Cell[35250, 794, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"9126e155-62f7-4d30-a56f-15b736e82864",
+ CellID->610598355],
+Cell[35366, 797, 135, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"ed2bc04f-df57-4470-97d8-cc46ce062b45",
+ CellID->804625942],
+Cell[35504, 800, 524, 13, 53, "GuideText",ExpressionUUID->"63ee0c43-d7b3-46b3-a36c-5960932c9821",
+ CellID->311925462],
+Cell[36031, 815, 530, 13, 59, "GuideText",ExpressionUUID->"42fc8d2a-6fcc-4234-a16c-88824c38e421",
+ CellID->145604109],
+Cell[36564, 830, 572, 13, 59, "GuideText",ExpressionUUID->"aed1a1b3-3131-4c6e-98dc-2a3125e1687b",
+ CellID->506214398],
+Cell[37139, 845, 580, 13, 59, "GuideText",ExpressionUUID->"33057623-a91c-4638-b271-9d4ab3f2d52c",
+ CellID->30422293],
+Cell[37722, 860, 569, 13, 59, "GuideText",ExpressionUUID->"2e6f16ff-e0ac-417c-8c34-3232197eb0b6",
+ CellID->455912059],
+Cell[38294, 875, 557, 13, 59, "GuideText",ExpressionUUID->"07a3cdca-f953-4473-ae30-c10540e8119d",
+ CellID->141862165],
+Cell[38854, 890, 581, 13, 59, "GuideText",ExpressionUUID->"ac8870cb-fe1d-4501-a0f7-34090ae769bd",
+ CellID->241226986],
+Cell[39438, 905, 578, 13, 59, "GuideText",ExpressionUUID->"54b69233-6c52-4088-babb-7f7e4a89e39a",
+ CellID->144327924],
+Cell[40019, 920, 587, 13, 59, "GuideText",ExpressionUUID->"8b1b6508-718a-426e-8257-e4deea262567",
+ CellID->734512057],
+Cell[40609, 935, 574, 13, 59, "GuideText",ExpressionUUID->"f51de156-2cbb-4c9e-b78a-8ad9f5c28506",
+ CellID->96104749],
+Cell[41186, 950, 587, 13, 59, "GuideText",ExpressionUUID->"a1438dac-567a-40fb-90fc-9e932ee4a920",
+ CellID->649406174],
+Cell[41776, 965, 611, 13, 59, "GuideText",ExpressionUUID->"f58b5b7f-f001-4715-b743-90af226f79f6",
+ CellID->422027714],
+Cell[42390, 980, 577, 13, 59, "GuideText",ExpressionUUID->"428c422d-2427-48b2-b4a8-0c9120bbf07a",
+ CellID->79801577],
+Cell[42970, 995, 587, 13, 59, "GuideText",ExpressionUUID->"a92080c7-0fe5-4c0a-97c0-e8cd049c2088",
+ CellID->313967438],
+Cell[43560, 1010, 574, 13, 59, "GuideText",ExpressionUUID->"1eaf7f4c-7f52-41b4-99b2-d0bd46ab0030",
+ CellID->68435455],
+Cell[44137, 1025, 551, 13, 59, "GuideText",ExpressionUUID->"12d72589-f7ef-479d-bfdd-5c1209e5ef32",
+ CellID->162552295],
+Cell[44691, 1040, 574, 13, 59, "GuideText",ExpressionUUID->"e1f9e0c9-e3cc-404c-9a1f-25ff68aa47a1",
+ CellID->27387492],
+Cell[45268, 1055, 566, 13, 59, "GuideText",ExpressionUUID->"7aeb9c70-d10c-49a9-80a6-2909c52ecd3b",
+ CellID->306697968],
+Cell[45837, 1070, 551, 13, 59, "GuideText",ExpressionUUID->"fe09b196-6a56-4b1b-ab07-0ef9af28366e",
+ CellID->708654308],
+Cell[46391, 1085, 564, 13, 59, "GuideText",ExpressionUUID->"714bd440-c14b-44ac-a0d0-0fa2db8d55ea",
+ CellID->6086369],
+Cell[46958, 1100, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"c2258a1e-d60a-4efd-a555-8e820fc3f322",
+ CellID->46865167],
+Cell[47073, 1103, 128, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"999c55a3-102d-4377-b6e1-383cfc4b569a",
+ CellID->114188871],
+Cell[47204, 1106, 562, 13, 53, "GuideText",ExpressionUUID->"49136112-4784-4def-a780-87ad9c3c28f6",
+ CellID->23393943],
+Cell[47769, 1121, 527, 13, 59, "GuideText",ExpressionUUID->"e16be39b-e0e7-4ad9-bc9b-ef3f3c8b9b35",
+ CellID->339624658],
+Cell[48299, 1136, 527, 13, 59, "GuideText",ExpressionUUID->"1cd8338c-992b-4a78-b840-fbdd202c6cbe",
+ CellID->122300031],
+Cell[48829, 1151, 611, 13, 59, "GuideText",ExpressionUUID->"0f81dfbd-4901-418c-8d67-f7606acccbcf",
+ CellID->301373745],
+Cell[49443, 1166, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"f144f47b-e9db-4e34-8bd0-07ff5bc943d5",
+ CellID->594526984],
+Cell[49559, 1169, 120, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"1326356f-1e7d-4a3f-ab39-825c5546100c",
+ CellID->305686025],
+Cell[49682, 1172, 548, 13, 53, "GuideText",ExpressionUUID->"4678aa9c-6efc-40f3-813e-309de93ff231",
+ CellID->339954127],
+Cell[50233, 1187, 593, 13, 59, "GuideText",ExpressionUUID->"70ed8f11-6eec-4a9b-b06c-3e7b2a9f49d0",
+ CellID->418245828],
+Cell[50829, 1202, 527, 13, 59, "GuideText",ExpressionUUID->"d64b15eb-2de9-487a-9473-162314dc6378",
+ CellID->522832806],
+Cell[51359, 1217, 580, 13, 59, "GuideText",ExpressionUUID->"2e2f18b0-7af1-4b51-910a-efd8f06a5fd1",
+ CellID->82025698],
+Cell[51942, 1232, 535, 13, 59, "GuideText",ExpressionUUID->"b7680876-ed45-4607-95a8-301393859eb6",
+ CellID->26875478],
+Cell[52480, 1247, 542, 13, 59, "GuideText",ExpressionUUID->"def08f7c-365a-4fb4-bdab-39bdf6fdff64",
+ CellID->669520775],
+Cell[53025, 1262, 557, 13, 59, "GuideText",ExpressionUUID->"169569dc-6d6e-4c4e-b618-d54bae6c6f55",
+ CellID->190327851],
+Cell[53585, 1277, 607, 13, 59, "GuideText",ExpressionUUID->"fe02755b-453b-49b5-9f81-fb940409160b",
+ CellID->13893040],
+Cell[54195, 1292, 530, 13, 59, "GuideText",ExpressionUUID->"56c7b0ed-82f5-4048-a9c8-5c5ed8cd614d",
+ CellID->111847285],
+Cell[54728, 1307, 554, 13, 59, "GuideText",ExpressionUUID->"08e6c7cf-76ad-496a-a334-d70de8a00f0e",
+ CellID->427325477],
+Cell[55285, 1322, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"f56da770-b4b2-4ed6-b582-0a5aea356529",
+ CellID->297397217],
+Cell[55401, 1325, 126, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"5913c2fb-2b5b-492f-aeb4-afb57fe4479a",
+ CellID->280333245],
+Cell[55530, 1328, 541, 13, 53, "GuideText",ExpressionUUID->"67b309ef-7a17-40dc-8f00-157a8601827f",
+ CellID->46216947],
+Cell[56074, 1343, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"bb2a12fe-53e0-4daf-91ac-29c204c71c87",
+ CellID->407266521],
+Cell[56190, 1346, 127, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"f7a1e463-03c0-40e2-a562-87e328557d51",
+ CellID->6563332],
+Cell[56320, 1349, 533, 13, 53, "GuideText",ExpressionUUID->"b634036f-b0e5-43ee-9eae-d722e6eaf69b",
+ CellID->945720904],
+Cell[56856, 1364, 569, 13, 59, "GuideText",ExpressionUUID->"80c7defb-60cb-4e46-a6d4-f58519ede033",
+ CellID->407737743],
+Cell[57428, 1379, 566, 13, 59, "GuideText",ExpressionUUID->"5359c139-6d92-41d3-a045-729fc2a11c95",
+ CellID->156464511],
+Cell[57997, 1394, 550, 13, 59, "GuideText",ExpressionUUID->"f72b9edc-be77-4ce2-975a-e5adb241dd76",
+ CellID->61446508],
+Cell[58550, 1409, 547, 13, 59, "GuideText",ExpressionUUID->"435e0ba3-5031-4acc-a7af-0a780e19d985",
+ CellID->32537549],
+Cell[59100, 1424, 535, 13, 59, "GuideText",ExpressionUUID->"b2620ead-7c91-41c8-b535-f91dc1e5abb0",
+ CellID->29092624],
+Cell[59638, 1439, 539, 13, 59, "GuideText",ExpressionUUID->"f94219ff-a8dd-4468-b4ff-ccaef3e389e0",
+ CellID->265305068],
+Cell[60180, 1454, 524, 13, 59, "GuideText",ExpressionUUID->"6ff270aa-1796-4303-b523-2aa9e94291db",
+ CellID->816674440],
+Cell[60707, 1469, 539, 13, 59, "GuideText",ExpressionUUID->"66bfa462-cd15-49db-a940-e2311c8a3dc7",
+ CellID->364965984],
+Cell[61249, 1484, 544, 13, 59, "GuideText",ExpressionUUID->"f68f140b-51be-4836-827c-9afcc0461dfc",
+ CellID->81126976],
+Cell[61796, 1499, 529, 13, 59, "GuideText",ExpressionUUID->"0cea9cab-a5bf-449c-8ea4-39c5d024a9ff",
+ CellID->12179674],
+Cell[62328, 1514, 533, 13, 59, "GuideText",ExpressionUUID->"b7089a8e-cbc6-4e70-8773-df44490fb4a5",
+ CellID->377614836],
+Cell[62864, 1529, 554, 13, 59, "GuideText",ExpressionUUID->"14c2179e-d689-40ae-a25d-88d82bda1905",
+ CellID->582702403],
+Cell[63421, 1544, 541, 13, 59, "GuideText",ExpressionUUID->"5d798f18-1bd8-44d4-9f2c-b99af6e5943e",
+ CellID->76812682],
+Cell[63965, 1559, 542, 13, 59, "GuideText",ExpressionUUID->"b0261047-645b-4581-8d76-c0a919f1c52a",
+ CellID->480527691],
+Cell[64510, 1574, 545, 13, 59, "GuideText",ExpressionUUID->"d939e316-8fcd-4ce4-8712-5161ef25e4de",
+ CellID->330527355],
+Cell[65058, 1589, 533, 13, 59, "GuideText",ExpressionUUID->"2213dae2-22a3-412d-b340-83a3613ccaa6",
+ CellID->212309524],
+Cell[65594, 1604, 551, 13, 59, "GuideText",ExpressionUUID->"efcc2d15-97b1-4cda-8a90-01fe8b06f984",
+ CellID->307972554],
+Cell[66148, 1619, 581, 13, 59, "GuideText",ExpressionUUID->"59d899a4-e675-4164-9772-42c8b72f3ec2",
+ CellID->227167416],
+Cell[66732, 1634, 538, 13, 59, "GuideText",ExpressionUUID->"2f808db5-a7e3-4531-9484-065e7acde4ae",
+ CellID->80585151],
+Cell[67273, 1649, 542, 13, 59, "GuideText",ExpressionUUID->"65e6cc9a-9a97-4f2a-836e-d344bce239c0",
+ CellID->482709404],
+Cell[67818, 1664, 581, 13, 59, "GuideText",ExpressionUUID->"942bd7f9-e5af-4a9c-9b7a-6bebcb84fe27",
+ CellID->165848228],
+Cell[68402, 1679, 569, 13, 59, "GuideText",ExpressionUUID->"ef45876d-6031-4c85-9e29-b175501db4fd",
+ CellID->601136289],
+Cell[68974, 1694, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"39c725a8-d3de-4098-b418-0174324836e3",
+ CellID->82072216],
+Cell[69089, 1697, 131, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"d7524118-d602-478f-9f40-888390ddecf2",
+ CellID->298973168],
+Cell[69223, 1700, 575, 13, 53, "GuideText",ExpressionUUID->"408b8831-48ba-4dda-b818-27e3ba63ee6f",
+ CellID->254466397],
+Cell[69801, 1715, 566, 13, 59, "GuideText",ExpressionUUID->"27c084cb-0e6f-4ada-91d0-04c1314ccfe0",
+ CellID->342783143],
+Cell[70370, 1730, 572, 13, 59, "GuideText",ExpressionUUID->"f7104c2a-b6ce-40c9-bc2e-c82f118b6f79",
+ CellID->468404563],
+Cell[70945, 1745, 556, 13, 59, "GuideText",ExpressionUUID->"4ffa5287-41e8-48a5-9a2e-d6e17ba977df",
+ CellID->79921206],
+Cell[71504, 1760, 580, 13, 59, "GuideText",ExpressionUUID->"df90db99-3591-4481-8ef6-818d8fd5ffc6",
+ CellID->46194176],
+Cell[72087, 1775, 542, 13, 59, "GuideText",ExpressionUUID->"79a49602-bb58-4227-9d7d-4dc6f40a92a0",
+ CellID->429092594],
+Cell[72632, 1790, 554, 13, 59, "GuideText",ExpressionUUID->"09b7670d-398d-4041-831b-7f0870827edf",
+ CellID->503981867],
+Cell[73189, 1805, 554, 13, 59, "GuideText",ExpressionUUID->"23e979ab-48b8-4d62-9f8a-3525aaa12a0c",
+ CellID->127844689],
+Cell[73746, 1820, 551, 13, 59, "GuideText",ExpressionUUID->"4ed54d55-3698-48e0-bf42-3e843baf9a5f",
+ CellID->584896127],
+Cell[74300, 1835, 548, 13, 59, "GuideText",ExpressionUUID->"9d6185b9-69c0-454c-b75f-4051c5cc862d",
+ CellID->164365059],
+Cell[74851, 1850, 578, 13, 59, "GuideText",ExpressionUUID->"e3a657c2-bf86-44c8-bfcf-ba202e745656",
+ CellID->141602774],
+Cell[75432, 1865, 581, 13, 59, "GuideText",ExpressionUUID->"aab52aa7-214d-43eb-a3dd-2402a8337063",
+ CellID->333475104],
+Cell[76016, 1880, 566, 13, 59, "GuideText",ExpressionUUID->"fa2c91b7-fbd2-437f-ab24-c9b7ef7b92b1",
+ CellID->344506175],
+Cell[76585, 1895, 590, 13, 59, "GuideText",ExpressionUUID->"7ccf1986-a644-4123-b2c8-83edb05be92a",
+ CellID->138112478],
+Cell[77178, 1910, 563, 13, 59, "GuideText",ExpressionUUID->"b5991cfe-6c19-4ac0-8bba-ea5e69f29b7f",
+ CellID->836542374],
+Cell[77744, 1925, 562, 13, 59, "GuideText",ExpressionUUID->"26d3d0b9-04db-4fe7-a03e-18ed0011a157",
+ CellID->40848861],
+Cell[78309, 1940, 571, 13, 59, "GuideText",ExpressionUUID->"5c8be2b9-2241-4afd-8b3f-11a17a8af120",
+ CellID->24283749],
+Cell[78883, 1955, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"c010a2fe-6d76-4faa-89f3-6aa496f2e13a",
+ CellID->675629108],
+Cell[78999, 1958, 130, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"81e9586f-8a3e-4351-b119-f5ef3ddcb6d5",
+ CellID->59858025],
+Cell[79132, 1961, 544, 13, 53, "GuideText",ExpressionUUID->"dd5700d0-1307-446b-b56b-1e473ef98f31",
+ CellID->18789226],
+Cell[79679, 1976, 105, 1, 29, "SectionFooterSpacer",ExpressionUUID->"15a7edc0-3946-42eb-8659-8e853314f407",
+ CellID->23938600],
+Cell[79787, 1979, 392, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"704559dd-a7fa-4cfe-909c-b65fafbcb504",
+ CellID->305822794],
+Cell[80182, 1993, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"6b22731c-29ff-4a1f-af14-cc0f7cbd5aa6",
+ CellID->567239214],
+Cell[80291, 1996, 255, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"e36cdbbd-4536-41c7-98e6-6b1900ef8a2a",
+ CellID->142296010],
+Cell[80549, 2003, 246, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"6e88bb36-2241-4d07-bd1f-7b67d237739b",
+ CellID->89097766],
+Cell[80798, 2010, 279, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"55abe36d-d744-4adb-ac3b-775dc38ac3c3",
+ CellID->192876616],
+Cell[81080, 2018, 284, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"485c885b-0803-4c3c-9f47-d7646a6c4cd3",
+ CellID->69866259],
+Cell[81367, 2026, 295, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"da71ebb3-7064-4ba8-bd10-6913331d4056",
+ CellID->595974963],
+Cell[81665, 2034, 251, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"6f9b9817-51bd-42b3-9bf2-915ec3c7093b",
+ CellID->111289658],
+Cell[81919, 2041, 97, 1, 41, "FooterCell",ExpressionUUID->"cd6c8967-dde3-4932-ad51-10e5e96a66f5",
+ CellID->553074051]
+}
+]
+*)
+
+(* End of internal cache information *)
+

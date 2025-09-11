@@ -144,6 +144,24 @@ DefineObjectType[Object[Protocol, Autoclave], {
 			Description -> "The container that holds the items being autoclaved during autoclaving.",
 			Category -> "Autoclave Setup",
 			Developer -> True
+		},
+		CappedContainers -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container],
+			Description -> "The containers to be autoclaved that already have caps at the beginning of the protocol and do not need to be covered with aluminum foil.",
+			Category -> "Autoclave Setup",
+			Developer -> True
+		},
+		AluminumFoilContainers -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container],
+			Description -> "The containers that started the protocol without a cover that are covered with aluminum foil prior to autoclaving.",
+			Category -> "Autoclave Setup",
+			Developer -> True
 		}
 	}
 }];

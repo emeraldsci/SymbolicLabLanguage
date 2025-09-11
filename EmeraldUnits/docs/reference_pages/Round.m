@@ -30,9 +30,6 @@ DefineUsage[SafeRound,
 				"RoundReals",
 				"RoundOptionPrecision"
 			},
-		Author -> {
-			"wyatt",
-			"thomas"
-		}
+		Author -> {"xu.yi", "wyatt", "thomas"}
 	}
 ];

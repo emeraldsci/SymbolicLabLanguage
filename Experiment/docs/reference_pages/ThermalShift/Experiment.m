@@ -20,7 +20,7 @@ DefineUsage[ExperimentThermalShift,
 							Description-> "The samples to be analyzed for thermal stability.",
 							Widget->Widget[
 								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+								Pattern:>ObjectP[{Object[Sample],Object[Container],Model[Sample]}],
 								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
 							],
 							Expandable->False,

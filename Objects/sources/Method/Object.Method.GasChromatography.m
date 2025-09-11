@@ -289,7 +289,7 @@ DefineObjectType[Object[Method, GasChromatography], {
 			Class->Expression,
 			Pattern:>Alternatives[
 				{{GreaterEqualP[0*Minute],GreaterP[0*Kelvin]}..},
-				{{GreaterP[0*Kelvin/Minute],GreaterP[0*Kelvin],GreaterEqualP[0*Minute]}..},
+				{{GreaterEqualP[0*Kelvin/Minute],GreaterP[0*Kelvin],GreaterEqualP[0*Minute]}..},
 				{GreaterP[0*Kelvin],GreaterP[0*Minute]},
 				Isothermal
 			],

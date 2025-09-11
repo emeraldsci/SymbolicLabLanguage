@@ -13,7 +13,7 @@ DefineObjectType[Object[Container, Bench], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Instrument, Balance],
-			Description -> "The balances that are contained on this instrument for weighing purposes.",
+			Description -> "The balances that are contained on this bench for weighing purposes.",
 			Category -> "Instrument Specifications"
 		},
 		Pipettes->{

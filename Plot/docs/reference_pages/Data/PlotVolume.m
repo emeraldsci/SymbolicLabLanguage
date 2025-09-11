@@ -61,6 +61,6 @@ DefineUsage[PlotVolume,
 		"PlotChromatography",
 		"PlotNMR"
 	},
-	Author -> {"eunbin.go", "ryan.bisbey", "charlene.konkankit", "fan.wu", "brad"},
+	Author -> {"dirk.schild", "eunbin.go", "ryan.bisbey", "charlene.konkankit", "fan.wu", "brad"},
 	Preview->True
 }];

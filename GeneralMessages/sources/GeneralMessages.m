@@ -18,6 +18,7 @@ OnLoad[
 
 	Error::DuplicateName = "The requested name is already used for another `1`. Please rename the current object or specify a new unique name.";
 	Error::MethodOptionConflict="The samples, `1`, at indices, `4`, have option(s), `2`, that do not match the option specified by the selected method, `3`. If any option(s) do not match the selected method, please set Method to Custom.";
+	Error::ConflictingWorkCellWithPreparation = "WorkCell option is set at `1` and Preparation option is set at `2`. If Preparation is Manual, WorkCell must be Null; if Preparation is Robotic, WorkCell must be populated. Please correct the values or let the options set automatically.";
 
 	(* Math.m *)
 	General::EvaluationFailure = "The function did not evaluate as expected.";

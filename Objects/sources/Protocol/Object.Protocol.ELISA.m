@@ -144,7 +144,7 @@ DefineObjectType[Object[Protocol, ELISA],
 			SampleAssemblyPrimitives->{
 				Format->Multiple,
 				Class->Expression,
-				Pattern :> SampleManipulationP,
+				Pattern :> SampleManipulationP|SamplePreparationP,
 				Description->"A set of SampleManipulation instructions specifying the dilution, spiking, and antibody mixings of Samples, Standards, and Blanks.",
 				Category->"General"
 			},
@@ -152,14 +152,14 @@ DefineObjectType[Object[Protocol, ELISA],
 			AntibodyAntigenDilutionPrimitives->{
 				Format->Multiple,
 				Class->Expression,
-				Pattern :> SampleManipulationP,
+				Pattern :> SampleManipulationP|SamplePreparationP,
 				Description->"A set of SampleManipulation instructions specifying the dilution of antibodies and reference antigen using their corresponding diluents.",
 				Category->"General"
 			},
 			CoatingPlateAssemblyPrimitives->{
 				Format->Multiple,
 				Class->Expression,
-				Pattern :> SampleManipulationP,
+				Pattern :> SampleManipulationP|SamplePreparationP,
 				Description->"A set of SampleManipulation instructions specifying the coating of ELISAPlate and SecondaryELISAPlate.",
 				Category->"General"
 			},
@@ -173,24 +173,24 @@ DefineObjectType[Object[Protocol, ELISA],
 			SampleAssemblyProtocol->{
 				Format->Single,
 				Class->Link,
-				Pattern :> ObjectP[Object[Protocol, SampleManipulation]],
-				Relation->Object[Protocol, SampleManipulation],
+				Pattern :> _Link,
+				Relation->Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
 				Description->"The sample manipulation protocol used for the dilution, spiking, and antibody mixings of Samples, Standards, and Blanks.",
 				Category->"General"
 			},
 			AntibodyAntigenDilutionProtocol->{
 				Format->Single,
 				Class->Link,
-				Pattern :> ObjectP[Object[Protocol, SampleManipulation]],
-				Relation->Object[Protocol, SampleManipulation],
+				Pattern :> _Link,
+				Relation->Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
 				Description->"The sample manipulation protocol used for the dilution of antibodies and reference antigen using their corresponding diluents.",
 				Category->"General"
 			},
 			CoatingPlateAssemblyProtocol->{
 				Format->Single,
 				Class->Link,
-				Pattern :> ObjectP[Object[Protocol, SampleManipulation]],
-				Relation->Object[Protocol, SampleManipulation],
+				Pattern :> _Link,
+				Relation->Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation],
 				Description->"The sample manipulation protocol used for transfering the solutions for the coating of ELISAPlate and SecondaryELISAPlate.",
 				Category->"General"
 			},

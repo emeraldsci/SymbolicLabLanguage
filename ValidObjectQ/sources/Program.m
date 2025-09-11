@@ -97,37 +97,6 @@ validProgramcDNAPrepQTests[packet:PacketP[Object[Program,cDNAPrep]]]:={
 };
 
 
-
-(* ::Subsection:: *)
-(*validProgramCellBleachQTests*)
-
-
-validProgramCellBleachQTests[packet:PacketP[Object[Program,CellBleach]]]:={
-(* Indiviudal Fields Tests *)
-
-	NotNullFieldTest[packet,{
-	(* Key parameters *)
-		BleachVolume,
-		AspirationVolume,
-		BleachTime,
-		PlateFormat,
-	(* Key robot sequences*)
-		LidPositions,
-		BleachWells
-	}],
-
-	(* instrument should be filled once the protocol is done *)
-	Test[
-		"Instrument is informed if the associated protocol, qualification or maintenance is completed:",
-		{Download[DeleteCases[Lookup[packet,{Protocol,Qualification,Maintenance}],Null], Status], Lookup[packet,Instrument]},
-		Alternatives[
-			{Completed,Except[NullP]},
-			{Except[Completed],_}
-		]
-	]
-};
-
-
 (* ::Subsection:: *)
 (*validProgramCellMediaChangeQTests*)
 
@@ -949,7 +918,6 @@ validProgramTransferQTests[packet:PacketP[Object[Program,Transfer]]]:={
 registerValidQTestFunction[Object[Program],validProgramQTests];
 registerValidQTestFunction[Object[Program, AbsorbanceQuantificationPrep],validProgramAbsorbanceQuantificationPrepQTests];
 registerValidQTestFunction[Object[Program, cDNAPrep],validProgramcDNAPrepQTests];
-registerValidQTestFunction[Object[Program, CellBleach],validProgramCellBleachQTests];
 registerValidQTestFunction[Object[Program, CellMediaChange],validProgramCellMediaChangeQTests];
 registerValidQTestFunction[Object[Program, CellSplit],validProgramCellSplitQTests];
 registerValidQTestFunction[Object[Program, CellStaining],validProgramCellStainingQTests];

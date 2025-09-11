@@ -1,3 +1,11 @@
+(* ::Package:: *)
+
+(* ::Text:: *)
+(*\[Copyright] 2011-2024 Emerald Cloud Lab, Inc.*)
+
+(* ::Subsubsection:: *)
+(*ExperimentLiquidLiquidExtraction *)
+
 DefineTests[
   ExperimentLiquidLiquidExtraction,
   {
@@ -1706,19 +1714,80 @@ DefineTests[
       }
     ],
 
-    Example[{Messages,"ObjectDoesNotExist","Return an error if given an object that does not exist:"},
-      ExperimentLiquidLiquidExtraction[
-        {
-          Object[Sample, "This Object Does Not Exist (Test for ExperimentLiquidLiquidExtraction)"]
-        },
-        ExtractionMixType->Pipette,
-        NumberOfExtractionMixes->Null
-      ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+      ExperimentLiquidLiquidExtraction[Object[Sample, "Nonexistent sample"]],
       $Failed,
-      Messages:>{
-        Error::ObjectDoesNotExist,
-        Error::InvalidInput
-      }
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+      ExperimentLiquidLiquidExtraction[Object[Container, Vessel, "Nonexistent container"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+      ExperimentLiquidLiquidExtraction[Object[Sample, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+      ExperimentLiquidLiquidExtraction[Object[Container, Vessel, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+
+    Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+      Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+        containerPackets = UploadSample[
+          Model[Container,Vessel,"50mL Tube"],
+          {"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True
+        ];
+        simulationToPassIn = Simulation[containerPackets];
+        containerID = Lookup[First[containerPackets], Object];
+        samplePackets = UploadSample[
+          {{10 Molar, Model[Molecule,"Taxol"]}, {100 VolumePercent, Model[Molecule, "Water"]}},
+          {"A1", containerID},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True,
+          Simulation -> simulationToPassIn,
+          InitialAmount -> 500 Microliter
+        ];
+        sampleID = Lookup[First[samplePackets], Object];
+        simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+        ExperimentLiquidLiquidExtraction[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+      ],
+      {__Rule}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+      Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+        containerPackets = UploadSample[
+          Model[Container,Vessel,"50mL Tube"],
+          {"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True
+        ];
+        simulationToPassIn = Simulation[containerPackets];
+        containerID = Lookup[First[containerPackets], Object];
+        samplePackets = UploadSample[
+          {{10 Molar, Model[Molecule,"Taxol"]}, {100 VolumePercent, Model[Molecule, "Water"]}},
+          {"A1", containerID},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True,
+          Simulation -> simulationToPassIn,
+          InitialAmount -> 500 Microliter
+        ];
+        sampleID = Lookup[First[samplePackets], Object];
+        simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+        ExperimentLiquidLiquidExtraction[containerID, Simulation -> simulationToPassIn, Output -> Options]
+      ],
+      {__Rule}
     ],
 
     Example[{Messages,"ConflictingMixParametersForLLE","Return an error if there are conflicting mix options specified:"},
@@ -2004,6 +2073,58 @@ DefineTests[
         ExtractionMixVolume -> EqualP[0.5 Milliliter]
       }]
     ],
+    Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared (robotic is implied):"},
+      {options,result} = ExperimentLiquidLiquidExtraction[
+        Model[Sample, "id:D8KAEvG0r7qL"](* Gram's Iodine Solution *),
+        PreparedModelContainer -> Model[Container, Vessel, "id:bq9LA0dBGGR6"](* 50mL Tube *),
+        PreparedModelAmount ->1 Milliliter,
+        ExtractionTechnique -> PhaseSeparator,
+        TargetPhase->Organic,
+        Output ->{Options,Result}
+      ];
+      outputUOs = Download[result, OutputUnitOperations];
+      robotUOs = Download[outputUOs[[1]], RoboticUnitOperations];
+      prepUOs = Lookup[options, PreparatoryUnitOperations];
+      {
+        prepUOs[[-1, 1]][Sample],
+        prepUOs[[-1, 1]][Container],
+        prepUOs[[-1, 1]][Amount],
+        prepUOs[[-1, 1]][Well],
+        prepUOs[[-1, 1]][ContainerLabel],
+        Download[outputUOs[[1]], SampleLink],
+        robotUOs
+      },
+      {
+        {ObjectP[Model[Sample, "id:D8KAEvG0r7qL"]]},
+        {ObjectP[Model[Container, Vessel, "id:bq9LA0dBGGR6"]]},
+        {EqualP[1 Milliliter]},
+        {"A1"},
+        {_String},
+        {ObjectP[Model[Sample, "id:D8KAEvG0r7qL"]]},
+        (* TODO update that these have everything we need *)
+        {
+          ObjectP[Object[UnitOperation, LabelSample]],
+          ObjectP[Object[UnitOperation, LabelContainer]],
+          ObjectP[Object[UnitOperation, LabelSample]],
+          ObjectP[Object[UnitOperation, LabelContainer]],
+          ObjectP[Object[UnitOperation, Transfer]],
+          ObjectP[Object[UnitOperation, Mix]],
+          ObjectP[Object[UnitOperation, Transfer]],
+          ObjectP[Object[UnitOperation, Wait]],
+          ObjectP[Object[UnitOperation, Transfer]],
+          ObjectP[Object[UnitOperation, Mix]],
+          ObjectP[Object[UnitOperation, Transfer]],
+          ObjectP[Object[UnitOperation, Wait]],
+          ObjectP[Object[UnitOperation, Transfer]],
+          ObjectP[Object[UnitOperation, Mix]],
+          ObjectP[Object[UnitOperation, Transfer]],
+          ObjectP[Object[UnitOperation, Wait]],
+          ObjectP[Object[UnitOperation, Transfer]],
+          ObjectP[Object[UnitOperation, LabelSample]]
+        }
+      },
+      Variables :> {options, prepUOs, result}
+    ],
     Test["The ExtractionMixVolume is set to 970 microliters if 1/2 of the smallest extraction volume (the sample volume plus the volume of the added aqueous solvent, organic solvent, and demulsifier if specified) is greater than 970 microliters:",
       ExperimentLiquidLiquidExtraction[
         {
@@ -2256,6 +2377,9 @@ DefineTests[
     $PersonID=Object[User,"Test user for notebook-less test protocols"]
   }
 ];
+
+(* ::Subsubsection:: *)
+(*LiquidLiquidExtraction *)
 
 DefineTests[
   LiquidLiquidExtraction,

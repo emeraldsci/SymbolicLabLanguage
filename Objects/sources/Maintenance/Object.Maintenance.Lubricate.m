@@ -37,7 +37,7 @@ DefineObjectType[Object[Maintenance, Lubricate], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Container],
+			Relation -> Object[Container]|Model[Container],
 			Description -> "The location where the Target is lubricated.",
 			Category -> "Equilibration",
 			Developer -> True

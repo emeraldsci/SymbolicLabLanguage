@@ -206,7 +206,11 @@ DefineObjectType[Object[Protocol, CountLiquidParticles], {
 			Format->Single,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Alternatives[Object[Protocol,ManualSamplePreparation],Object[Protocol,RoboticSamplePreparation]],
+			Relation->Alternatives[
+				Object[Protocol,ManualSamplePreparation],
+				Object[Protocol,RoboticSamplePreparation],
+				Object[Notebook, Script]
+			],
 			Description->"A sample manipulation protocol used to load the DilutionContainers and mix its contents.",
 			Category->"Sample Preparation"
 		},

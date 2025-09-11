@@ -1,3 +1,319 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:54c6ab23b477b7364612bc1849cca041befb3d1ec6062d7ab4967d051e53161b
-size 12753
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     12234,        309]
+NotebookOptionsPosition[      8512,        237]
+NotebookOutlinePosition[      9861,        272]
+CellTagsIndexPosition[      9818,        269]
+WindowTitle->ECLPackaging
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "227849fd-bfe4-486e-9b66-27cbd3d35238"]
+        }],ExpressionUUID->"9de04406-d214-4efa-b186-784dafcc12bd"],
+        StripOnInput->False], {"\<\"AppendPackagePath\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Packager/ref/AppendPackagePath"], "\<\"AvailablePackages\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Packager/ref/AvailablePackages"], "\<\"FunctionPackage\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Packager/ref/FunctionPackage"], "\<\"LoadPackage\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Packager/ref/LoadPackage"], "\<\"LoadUsage\"\>":>
+       Documentation`HelpLookup["paclet:Packager/ref/LoadUsage"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "ca6c157e-a2a6-469c-b17d-2f1ce91d448c"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "58c8cf9f-18c4-4c30-8376-815e1ca73435"]
+        }],ExpressionUUID->"27b3ed50-6f12-404b-b9d4-f060bab58874"],
+        StripOnInput->False], {},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "92689126-632b-4c2f-ad4d-e69c6e82eb11"]
+    }], "AnchorBar",ExpressionUUID->"49e6968e-ddce-4dee-a6ba-737ed33d633d"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"74b8d50a-a0a7-46b5-9b7d-27c4d871f0c4"],
+
+Cell["ECL Packaging", "GuideTitle",
+ CellID->175335283,ExpressionUUID->"9c310c23-b746-433b-be4c-3e9e4298bdd5"],
+
+Cell["Functions for working with packages in the ECL system.", "GuideAbstract",
+ CellID->363125656,ExpressionUUID->"b8a04bba-d47d-4bdc-bdc0-cfaffb4cd58a"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->173563791,ExpressionUUID->"512f2c29-2354-4a08-8977-e3d8b64ab07d"],
+
+Cell["Loading Packages", "GuideFunctionsSubsection",
+ CellID->143184959,ExpressionUUID->"b8d231c0-b533-4742-bbde-6b59aaee3806"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["LoadPackage"]],"paclet:Packager/ref/LoadPackage"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6068b126-0ed9-4456-98f9-b10a4179f3f3"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Load a package by its name."
+}], "GuideText",
+ CellID->35940901,ExpressionUUID->"707db1b5-8f60-4e4b-b271-2aaabd96f7c5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AvailablePackages"]],"paclet:Packager/ref/AvailablePackages"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a0e2a1d9-b06f-4889-98af-2567facfa847"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Get the list of packages that can be loaded."
+}], "GuideText",
+ CellID->12058698,ExpressionUUID->"444e766b-2a39-4bf0-9607-06722b81fa45"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AppendPackagePath"]],"paclet:Packager/ref/AppendPackagePath"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "132913da-98c4-4130-abe5-722be0032046"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Add directories to the package search path"
+}], "GuideText",
+ CellID->339867858,ExpressionUUID->"d844433a-3102-434f-88aa-282a6705ab70"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["LoadUsage"]],"paclet:Packager/ref/LoadUsage"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "89a311ef-a906-44f9-aefa-b678352526c5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Load documentation for a package."
+}], "GuideText",
+ CellID->112301820,ExpressionUUID->"a3d4841a-175d-413b-be72-82f498bea969"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->21988463,ExpressionUUID->"269da2c5-01c7-4838-8959-2a141f2b11f0"],
+
+Cell["Package Membership", "GuideFunctionsSubsection",
+ CellID->815407745,ExpressionUUID->"0aebb995-d746-4621-b846-5c5565f18ff0"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["FunctionPackage"]],"paclet:Packager/ref/FunctionPackage"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"c653d36c-2f07-4416-833b-63760bbe7edb"]],\
+ "InlineGuideFunctionListing",
+ CellID->687657992,ExpressionUUID->"9de8a29d-8ce5-4e88-8a81-b4efde8c1b3b"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->69796645,ExpressionUUID->"d4e1b1da-4849-4877-b891-a5fd3c542278"],
+
+Cell["Documentation Generation", "GuideFunctionsSubsection",
+ CellID->358914795,ExpressionUUID->"80c756bf-007a-4072-846a-647c61302d81"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["FunctionPackage"]],"paclet:Packager/ref/FunctionPackage"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"bbd4c9d6-30c1-4bfa-94d3-620429a05ed3"]],\
+ "InlineGuideFunctionListing",
+ CellID->133407804,ExpressionUUID->"6ee35e93-af82-4be4-bc46-d46a40ab56ac"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["LoadUsage"]],"paclet:Packager/ref/LoadUsage"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"bdd4a786-0def-4e79-b59b-94123530a23f"]],\
+ "InlineGuideFunctionListing",
+ CellID->264603277,ExpressionUUID->"c86d3ac6-a1fe-4d01-9a80-d4a37d885f1d"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->374795501,ExpressionUUID->"649f9a6b-f364-4dd9-906e-8f513aaea5ba"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"324e6ae2-2cde-4b24-bde0-47ba91fd8cea"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->93993278,ExpressionUUID->"2a6e9cb1-28d8-440c-9c37-eb413223eb38"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->507313155,ExpressionUUID->"4860f3e7-d4ba-4dd9-baaa-24c21b20dcf1"],
+
+Cell["", "FooterCell",
+ CellID->365133459,ExpressionUUID->"ade1b476-2096-48a0-b785-dcb8c5bb20cd"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{144, Automatic}, {Automatic, 474}},
+WindowTitle->"ECLPackaging",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Mon 7 Jan 2019 17:21:40", "context" -> "Packager`", 
+    "keywords" -> {
+     "LoadPackage", "AvailablePackages", "AppendPackagePath", "LoadUsage", 
+      "FunctionPackage"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Packager", "status" -> "None", "summary" -> 
+    "Functions for working with packages in the ECL system.", 
+    "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> "ECLPackaging", 
+    "title" -> "ECLPackaging", "type" -> "Guide", "uri" -> 
+    "Packager/guide/ECLPackaging", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"11.3 for Microsoft Windows (64-bit) (March 6, 2018)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[584, 21, 3361, 85, 58, "AnchorBarGrid",ExpressionUUID->"74b8d50a-a0a7-46b5-9b7d-27c4d871f0c4",
+ CellID->1],
+Cell[3948, 108, 110, 1, 50, "GuideTitle",ExpressionUUID->"9c310c23-b746-433b-be4c-3e9e4298bdd5",
+ CellID->175335283],
+Cell[4061, 111, 154, 1, 31, "GuideAbstract",ExpressionUUID->"b8a04bba-d47d-4bdc-bdc0-cfaffb4cd58a",
+ CellID->363125656],
+Cell[4218, 114, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"512f2c29-2354-4a08-8977-e3d8b64ab07d",
+ CellID->173563791],
+Cell[4334, 117, 127, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"b8d231c0-b533-4742-bbde-6b59aaee3806",
+ CellID->143184959],
+Cell[4464, 120, 420, 11, 31, "GuideText",ExpressionUUID->"707db1b5-8f60-4e4b-b271-2aaabd96f7c5",
+ CellID->35940901],
+Cell[4887, 133, 449, 11, 35, "GuideText",ExpressionUUID->"444e766b-2a39-4bf0-9607-06722b81fa45",
+ CellID->12058698],
+Cell[5339, 146, 448, 11, 35, "GuideText",ExpressionUUID->"d844433a-3102-434f-88aa-282a6705ab70",
+ CellID->339867858],
+Cell[5790, 159, 423, 11, 35, "GuideText",ExpressionUUID->"a3d4841a-175d-413b-be72-82f498bea969",
+ CellID->112301820],
+Cell[6216, 172, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"269da2c5-01c7-4838-8959-2a141f2b11f0",
+ CellID->21988463],
+Cell[6331, 175, 129, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"0aebb995-d746-4621-b846-5c5565f18ff0",
+ CellID->815407745],
+Cell[6463, 178, 362, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"9de8a29d-8ce5-4e88-8a81-b4efde8c1b3b",
+ CellID->687657992],
+Cell[6828, 188, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"d4e1b1da-4849-4877-b891-a5fd3c542278",
+ CellID->69796645],
+Cell[6943, 191, 135, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"80c756bf-007a-4072-846a-647c61302d81",
+ CellID->358914795],
+Cell[7081, 194, 362, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"6ee35e93-af82-4be4-bc46-d46a40ab56ac",
+ CellID->133407804],
+Cell[7446, 204, 350, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"c86d3ac6-a1fe-4d01-9a80-d4a37d885f1d",
+ CellID->264603277],
+Cell[7799, 214, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"649f9a6b-f364-4dd9-906e-8f513aaea5ba",
+ CellID->374795501],
+Cell[7908, 217, 391, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"2a6e9cb1-28d8-440c-9c37-eb413223eb38",
+ CellID->93993278],
+Cell[8302, 231, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"4860f3e7-d4ba-4dd9-baaa-24c21b20dcf1",
+ CellID->507313155],
+Cell[8411, 234, 97, 1, 41, "FooterCell",ExpressionUUID->"ade1b476-2096-48a0-b785-dcb8c5bb20cd",
+ CellID->365133459]
+}
+]
+*)
+
+(* End of internal cache information *)
+

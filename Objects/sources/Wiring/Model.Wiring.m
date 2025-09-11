@@ -346,6 +346,14 @@ DefineObjectType[Model[Wiring], {
 			Headers->{"Storage Container", "Storage Position"},
 			Developer -> True
 		},
+
+		AsepticTransportContainerType -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> AsepticTransportContainerTypeP,
+			Description -> "Indicates how wiring components of this model are contained in an aseptic barrier and if they need to be unbagged before being used in a protocol, maintenance, or qualification.",
+			Category -> "Storage Information"
+		},
 		
 		SupportedInstruments -> {
 			Format -> Multiple,

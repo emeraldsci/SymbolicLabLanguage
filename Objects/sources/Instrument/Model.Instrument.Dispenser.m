@@ -5,10 +5,17 @@
 
 
 DefineObjectType[Model[Instrument, Dispenser],{
-	Description -> "A model for dispenser instrument used to deliver liquid from its reservoir container.",
+	Description -> "A model for a device that is designed to release, spray, or dispense contents in controlled or convenient amounts.",
 	CreatePrivileges -> None,
 	Cache -> Session,
 	Fields  -> {
+		DispensingMaterialType -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern:> DispensingMaterialTypeP,
+			Description -> "The physical state of a material as it exists in the dispenser.",
+			Category -> "Instrument Specifications"
+		},
 		ReservoirContainer -> {
 			Format -> Single,
 			Class -> Link,

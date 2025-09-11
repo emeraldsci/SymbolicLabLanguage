@@ -148,7 +148,7 @@ DefineObjectType[Object[Maintenance, CalibrateDNASynthesizer], {
 	    	Format -> Single,
 	    	Class -> Link,
 	    	Pattern :> _Link,
-	    	Relation -> Object[Protocol,SampleManipulation],
+	    	Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
 	    	Description -> "The set of instructions specifying the transfers of synthesizer wash solution to the placeholder bottles.",
 	    	Category -> "General",
 	    	Developer->True
@@ -156,7 +156,7 @@ DefineObjectType[Object[Maintenance, CalibrateDNASynthesizer], {
 		PlaceholderPrepPrimitives->{
 			Format->Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "The set of instructions specifying the transfers of synthesizer wash solution to the placeholder bottles.",
 			Category -> "General",
 			Developer->True

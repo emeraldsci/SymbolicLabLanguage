@@ -38,6 +38,26 @@ DefineUsage[PlotLuminescenceSpectroscopy,
 						Pattern:>ValidGraphicsP[]
 					}
 				}
+			},
+			{
+				Definition -> {"PlotLuminescenceSpectroscopy[protocol]", "plot"},
+				Description -> "creates a 'plot' of luminescence intensity vs wavelength for the data found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing luminescence spectroscopy data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, LuminescenceSpectroscopy]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the luminescence spectroscopy protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
 			}
 		},
 		SeeAlso -> {
@@ -45,10 +65,7 @@ DefineUsage[PlotLuminescenceSpectroscopy,
 			"PlotFluorescenceSpectroscopy",
 			"PlotLuminescenceKinetics"
 		},
-		Author -> {
-			"sebastian.bernasek",
-			"hayley"
-		},
+		Author -> {"ben", "sebastian.bernasek", "hayley"},
 		Preview->True
 	}
 ];

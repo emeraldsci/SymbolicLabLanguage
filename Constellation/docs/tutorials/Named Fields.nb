@@ -1,3 +1,611 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0d31f287591617cd9f4d694d9ccdae23e3a51bdd677073e9bc44be08a3b90072
-size 22214
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.1' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     22055,        603]
+NotebookOptionsPosition[     19699,        539]
+NotebookOutlinePosition[     20069,        556]
+CellTagsIndexPosition[     20026,        553]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Named Fields", "Title",
+ CellChangeTimes->{{3.718634759572811*^9, 
+  3.718634762610531*^9}},ExpressionUUID->"92e2dea3-fe3a-432b-8f6d-\
+1ce94cf5082c"],
+
+Cell[CellGroupData[{
+
+Cell["Defining named fields", "Section",
+ CellChangeTimes->{{3.7186348972921877`*^9, 3.718634900233281*^9}, {
+  3.718635768133058*^9, 
+  3.718635771829537*^9}},ExpressionUUID->"3e716015-7d58-4802-a5fe-\
+a20b2976e31d"],
+
+Cell[TextData[{
+ "Like indexed fields, each row in a named field contains a fixed number of \
+subfields. Unlike indexed fields, each subfield has a name in addition to it\
+\[CloseCurlyQuote]s index. It must be defined with a lists of {(Name -> \
+Value) ..} in place of the lists of values {Value ..} that define indexed \
+fields. Downloading a named field will return an association <|(Name -> \
+Data)..|> for every row, in place of the lists {Data ..} returned by indexed \
+fields.\n\n",
+ StyleBox["The following rules apply:",
+  FontWeight->"Bold"],
+ "\n1. All names must be symbols and should be defined in the package \
+manifest the same way as field names.\n2. The ",
+ StyleBox["Class",
+  FontSlant->"Italic"],
+ ", ",
+ StyleBox["Pattern",
+  FontSlant->"Italic"],
+ ", ",
+ StyleBox["Relation",
+  FontSlant->"Italic"],
+ ", ",
+ StyleBox["Headers",
+  FontSlant->"Italic"],
+ ", and ",
+ StyleBox["Units",
+  FontSlant->"Italic"],
+ " keys of the field definition must all be lists of rules (from Name -> \
+Value).\n3. The order of the keys ",
+ StyleBox["must",
+  FontSlant->"Italic"],
+ " be the same for each key.\n4. Names cannot be repeated in the same field"
+}], "Text",
+ CellChangeTimes->{{3.7186347758372726`*^9, 3.718634794664648*^9}, {
+  3.718635003413269*^9, 3.718635029846879*^9}, {3.718635114610312*^9, 
+  3.718635151579853*^9}, {3.7186353397218313`*^9, 3.7186354694303017`*^9}, {
+  3.718635542662215*^9, 3.718635554903234*^9}, {3.718643821415419*^9, 
+  3.71864384912106*^9}},ExpressionUUID->"8e364ce2-8068-443b-a6d0-\
+ffd82657d942"],
+
+Cell[TextData[{
+ "The example below mimics the ",
+ StyleBox["Contents ",
+  FontSlant->"Italic"],
+ "field in Object[Container] with a new field ",
+ StyleBox["ContentsNamed ",
+  FontSlant->"Italic"],
+ "with sub-fields for ",
+ StyleBox["Position ",
+  FontSlant->"Italic"],
+ "and ",
+ StyleBox["Occupant ",
+  FontSlant->"Italic"],
+ "(which correspond to index 1 and 2 of the ",
+ StyleBox["Contents ",
+  FontSlant->"Italic"],
+ "field of Object[Container]):"
+}], "Text",
+ CellChangeTimes->{{3.718636802860347*^9, 3.7186368310136833`*^9}, {
+  3.718640011633554*^9, 
+  3.718640063004405*^9}},ExpressionUUID->"18502c74-f656-4ea5-a808-\
+0349b5163951"],
+
+Cell[BoxData[
+ RowBox[{"ContentsNamed", " ", "->", " ", 
+  RowBox[{"{", "\n", "\t", 
+   RowBox[{
+    RowBox[{"Format", " ", "->", " ", "Multiple"}], ",", "\n", "\t", 
+    RowBox[{"Class", " ", "->", " ", 
+     RowBox[{"{", "\n", "\t\t", 
+      RowBox[{
+       RowBox[{"Position", " ", "->", " ", "String"}], ",", "\n", "\t\t", 
+       RowBox[{"Occupant", " ", "->", " ", "Link"}]}], "\n", "\t", "}"}]}], 
+    ",", "\n", "\t", 
+    RowBox[{"Pattern", " ", ":>", " ", 
+     RowBox[{"{", "\n", "\t\t", 
+      RowBox[{
+       RowBox[{"Position", " ", "->", " ", "LocationPositionP"}], ",", "\n", 
+       "\t\t", 
+       RowBox[{"Occupant", " ", "->", " ", "_Link"}]}], "\n", "\t", "}"}]}], 
+    ",", "\n", "\t", 
+    RowBox[{"Relation", " ", "->", " ", 
+     RowBox[{"{", "\n", "\t\t", 
+      RowBox[{
+       RowBox[{"Position", " ", "->", " ", "Null"}], ",", "\n", "\t\t", 
+       RowBox[{"Occupant", " ", "->", " ", 
+        RowBox[{"Alternatives", "[", "\n", "\t\t\t", 
+         RowBox[{
+          RowBox[{
+           RowBox[{"Object", "[", "Container", "]"}], "[", "Container", "]"}],
+           ",", "\n", "\t\t\t", 
+          RowBox[{
+           RowBox[{"Object", "[", "Instrument", "]"}], "[", "Container", 
+           "]"}], ",", "\n", "\t\t\t", 
+          RowBox[{
+           RowBox[{"Object", "[", "Sensor", "]"}], "[", "Container", "]"}], 
+          ",", "\n", "\t\t\t", 
+          RowBox[{
+           RowBox[{"Object", "[", "Part", "]"}], "[", "Container", "]"}], ",",
+           "\n", "\t\t\t", 
+          RowBox[{
+           RowBox[{"Object", "[", "Sample", "]"}], "[", "Container", "]"}], 
+          ",", "\n", "\t\t\t", 
+          RowBox[{
+           RowBox[{"Object", "[", "Plumbing", "]"}], "[", "Container", 
+           "]"}]}], "\n", "\t\t", "]"}]}]}], "\n", "\t", "}"}]}], ",", "\n", 
+    "\t", 
+    RowBox[{
+    "Description", " ", "->", " ", 
+     "\"\<A list of all the Objects that this Object currently \
+contains.\>\""}], ",", "\n", "\t", 
+    RowBox[{"Category", " ", "->", " ", "\"\<Container Specifications\>\""}], 
+    ",", "\n", "\t", 
+    RowBox[{"Abstract", " ", "->", " ", "True"}], ",", "\n", "\t", 
+    RowBox[{"Headers", " ", "->", " ", 
+     RowBox[{"{", "\n", "\t\t", 
+      RowBox[{
+       RowBox[{"Position", " ", "->", " ", "\"\<Position\>\""}], ",", "\n", 
+       "\t\t", 
+       RowBox[{"Occupant", " ", "->", " ", "\"\<Object in Position\>\""}]}], 
+      "\n", "\t", "}"}]}]}], "\n", "}"}]}]], "Code",
+ CellChangeTimes->{{3.718635171513575*^9, 3.7186351834331007`*^9}, 
+   3.7186353143952303`*^9, {3.7186363652709637`*^9, 3.718636370232162*^9}, {
+   3.718636784699481*^9, 
+   3.718636785225114*^9}},ExpressionUUID->"e33c5cb7-4d68-41b8-9f10-\
+005fa94908cf"],
+
+Cell[CellGroupData[{
+
+Cell["Converting from indexed fields", "Subsection",
+ CellChangeTimes->{{3.7186348972921877`*^9, 3.7186349095058403`*^9}, {
+  3.718635762627997*^9, 
+  3.718635774373149*^9}},ExpressionUUID->"a1c355f0-6f35-4995-849d-\
+6f749d72edc4"],
+
+Cell[TextData[{
+ "Since ",
+ StyleBox["Indexed",
+  FontSlant->"Italic"],
+ " and ",
+ StyleBox["Named",
+  FontSlant->"Italic"],
+ " fields are a similar structure, an ",
+ StyleBox["Indexed",
+  FontSlant->"Italic"],
+ " field can easily be converted to a ",
+ StyleBox["Named",
+  FontSlant->"Italic"],
+ " field (or vice versa). To do so convert the ",
+ StyleBox["Class",
+  FontSlant->"Italic"],
+ ", ",
+ StyleBox["Pattern",
+  FontSlant->"Italic"],
+ ", ",
+ StyleBox["Relation",
+  FontSlant->"Italic"],
+ ", ",
+ StyleBox["Headers",
+  FontSlant->"Italic"],
+ ", and ",
+ StyleBox["Units ",
+  FontSlant->"Italic"],
+ "keys of the field definition to/from a list/list of rules, reload the type \
+definitions and call SyncType. The order of the keys/indices ",
+ StyleBox["must remain the same ",
+  FontWeight->"Bold"],
+ "as the index in the list is how we match up the names.\n\nFor example, to \
+switch the above ",
+ StyleBox["ContentsNamed ",
+  FontSlant->"Italic"],
+ "field definition to and indexed field you would modify the definition as \
+below and then call ",
+ StyleBox["SyncType. ",
+  FontSlant->"Italic"],
+ "You ",
+ StyleBox["must not ",
+  FontWeight->"Bold"],
+ "rename the field ",
+ StyleBox["and ",
+  FontSlant->"Italic"],
+ "switch between an indexed/named field at the same time (this will end up \
+creating a ",
+ StyleBox["new ",
+  FontSlant->"Italic"],
+ "field instead of modifying the original)."
+}], "Text",
+ CellChangeTimes->{{3.718635567343877*^9, 3.718635728552267*^9}, {
+  3.718635796569066*^9, 3.718635826987194*^9}, {3.718635860783558*^9, 
+  3.718635925247777*^9}, {3.7186360871190166`*^9, 3.718636095268908*^9}, {
+  3.71863897396249*^9, 3.7186389744895287`*^9}, {3.7186400742722063`*^9, 
+  3.718640173809822*^9}, {3.718640210207592*^9, 
+  3.718640210396162*^9}},ExpressionUUID->"7e3cf975-313a-4861-824d-\
+46426cbaadae"],
+
+Cell[BoxData[
+ RowBox[{"ContentsNamed", " ", "->", " ", 
+  RowBox[{"{", "\n", "\t", 
+   RowBox[{
+    RowBox[{"Format", " ", "->", " ", "Multiple"}], ",", "\n", "\t", 
+    RowBox[{"Class", " ", "->", " ", 
+     RowBox[{"{", "\n", "\t\t", 
+      RowBox[{"String", ",", "\n", "\t\t", "Link"}], "\n", "\t", "}"}]}], ",",
+     "\n", "\t", 
+    RowBox[{"Pattern", " ", ":>", " ", 
+     RowBox[{"{", "\n", "\t\t", 
+      RowBox[{"LocationPositionP", ",", "\n", "\t\t", "_Link"}], "\n", "\t", 
+      "}"}]}], ",", "\n", "\t", 
+    RowBox[{"Relation", " ", "->", " ", 
+     RowBox[{"{", "\n", "\t\t", 
+      RowBox[{"Null", ",", "\n", "\t\t", 
+       RowBox[{"Alternatives", "[", "\n", "\t\t\t", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"Object", "[", "Container", "]"}], "[", "Container", "]"}], 
+         ",", "\n", "\t\t\t", 
+         RowBox[{
+          RowBox[{"Object", "[", "Instrument", "]"}], "[", "Container", "]"}],
+          ",", "\n", "\t\t\t", 
+         RowBox[{
+          RowBox[{"Object", "[", "Sensor", "]"}], "[", "Container", "]"}], 
+         ",", "\n", "\t\t\t", 
+         RowBox[{
+          RowBox[{"Object", "[", "Part", "]"}], "[", "Container", "]"}], ",", 
+         "\n", "\t\t\t", 
+         RowBox[{
+          RowBox[{"Object", "[", "Sample", "]"}], "[", "Container", "]"}], 
+         ",", "\n", "\t\t\t", 
+         RowBox[{
+          RowBox[{"Object", "[", "Plumbing", "]"}], "[", "Container", "]"}]}],
+         "\n", "\t\t", "]"}]}], "\n", "\t", "}"}]}], ",", "\n", "\t", 
+    RowBox[{
+    "Description", " ", "->", " ", 
+     "\"\<A list of all the Objects that this Object currently \
+contains.\>\""}], ",", "\n", "\t", 
+    RowBox[{"Category", " ", "->", " ", "\"\<Container Specifications\>\""}], 
+    ",", "\n", "\t", 
+    RowBox[{"Abstract", " ", "->", " ", "True"}], ",", "\n", "\t", 
+    RowBox[{"Headers", " ", "->", " ", 
+     RowBox[{"{", "\n", "\t\t", 
+      RowBox[{
+      "\"\<Position\>\"", ",", "\n", "\t\t", "\"\<Object in Position\>\""}], 
+      "\n", "\t", "}"}]}]}], "\n", "}"}]}]], "Code",
+ CellChangeTimes->{{3.718635171513575*^9, 3.7186351834331007`*^9}, 
+   3.7186353143952303`*^9, {3.718635903574031*^9, 3.7186359189509087`*^9}, 
+   3.718636788413352*^9, 
+   3.718640135964273*^9},ExpressionUUID->"32dbf1bd-c794-4ba9-8c42-\
+251b2124be81"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Renaming a sub-field", "Subsection",
+ CellChangeTimes->{{3.7186348972921877`*^9, 3.7186349095058403`*^9}, {
+  3.7186357520362864`*^9, 
+  3.718635760076345*^9}},ExpressionUUID->"47bf1700-e942-4a17-b6e1-\
+2dc04b465a92"],
+
+Cell[TextData[{
+ "It is possible to rename the the sub-fields of a named field (but not to \
+re-order them). To do so, change the name in ",
+ StyleBox["all ",
+  FontSlant->"Italic"],
+ "of the ",
+ StyleBox["Class",
+  FontSlant->"Italic"],
+ ", ",
+ StyleBox["Pattern",
+  FontSlant->"Italic"],
+ ", ",
+ StyleBox["Relation",
+  FontSlant->"Italic"],
+ ", ",
+ StyleBox["Headers",
+  FontSlant->"Italic"],
+ ", and ",
+ StyleBox["Units ",
+  FontSlant->"Italic"],
+ "keys of the field definition to the new name (and make sure it\
+\[CloseCurlyQuote]s in the package manifest). Once this is done, reload the \
+type definition and call SyncType.\n\nFor example, to rename the ",
+ StyleBox["Position ",
+  FontSlant->"Italic"],
+ "sub-field to ",
+ StyleBox["Slot ",
+  FontSlant->"Italic"],
+ "you would modify the definition as below and call ",
+ StyleBox["SyncType",
+  FontSlant->"Italic"],
+ ":"
+}], "Text",
+ CellChangeTimes->{{3.7186360143432283`*^9, 
+  3.718636129948354*^9}},ExpressionUUID->"9a2a45b9-a0cb-4569-8a8a-\
+c7adb89bf228"],
+
+Cell[BoxData[
+ RowBox[{"ContentsNamed", " ", "->", " ", 
+  RowBox[{"{", "\n", "\t", 
+   RowBox[{
+    RowBox[{"Format", " ", "->", " ", "Multiple"}], ",", "\n", "\t", 
+    RowBox[{"Class", " ", "->", " ", 
+     RowBox[{"{", "\n", "\t\t", 
+      RowBox[{
+       RowBox[{"Slot", " ", "->", " ", "String"}], ",", "\n", "\t\t", 
+       RowBox[{"Occupant", " ", "->", " ", "Link"}]}], "\n", "\t", "}"}]}], 
+    ",", "\n", "\t", 
+    RowBox[{"Pattern", " ", ":>", " ", 
+     RowBox[{"{", "\n", "\t\t", 
+      RowBox[{
+       RowBox[{"Slot", " ", "->", " ", "LocationPositionP"}], ",", "\n", 
+       "\t\t", 
+       RowBox[{"Occupant", " ", "->", " ", "_Link"}]}], "\n", "\t", "}"}]}], 
+    ",", "\n", "\t", 
+    RowBox[{"Relation", " ", "->", " ", 
+     RowBox[{"{", "\n", "\t\t", 
+      RowBox[{
+       RowBox[{"Slot", " ", "->", " ", "Null"}], ",", "\n", "\t\t", 
+       RowBox[{"Occupant", " ", "->", " ", 
+        RowBox[{"Alternatives", "[", "\n", "\t\t\t", 
+         RowBox[{
+          RowBox[{
+           RowBox[{"Object", "[", "Container", "]"}], "[", "Container", "]"}],
+           ",", "\n", "\t\t\t", 
+          RowBox[{
+           RowBox[{"Object", "[", "Instrument", "]"}], "[", "Container", 
+           "]"}], ",", "\n", "\t\t\t", 
+          RowBox[{
+           RowBox[{"Object", "[", "Sensor", "]"}], "[", "Container", "]"}], 
+          ",", "\n", "\t\t\t", 
+          RowBox[{
+           RowBox[{"Object", "[", "Part", "]"}], "[", "Container", "]"}], ",",
+           "\n", "\t\t\t", 
+          RowBox[{
+           RowBox[{"Object", "[", "Sample", "]"}], "[", "Container", "]"}], 
+          ",", "\n", "\t\t\t", 
+          RowBox[{
+           RowBox[{"Object", "[", "Plumbing", "]"}], "[", "Container", 
+           "]"}]}], "\n", "\t\t", "]"}]}]}], "\n", "\t", "}"}]}], ",", "\n", 
+    "\t", 
+    RowBox[{
+    "Description", " ", "->", " ", 
+     "\"\<A list of all the Objects that this Object currently \
+contains.\>\""}], ",", "\n", "\t", 
+    RowBox[{"Category", " ", "->", " ", "\"\<Container Specifications\>\""}], 
+    ",", "\n", "\t", 
+    RowBox[{"Abstract", " ", "->", " ", "True"}], ",", "\n", "\t", 
+    RowBox[{"Headers", " ", "->", " ", 
+     RowBox[{"{", "\n", "\t\t", 
+      RowBox[{
+       RowBox[{"Slot", " ", "->", " ", "\"\<Position\>\""}], ",", "\n", 
+       "\t\t", 
+       RowBox[{"Occupant", " ", "->", " ", "\"\<Object in Position\>\""}]}], 
+      "\n", "\t", "}"}]}]}], "\n", "}"}]}]], "Code",
+ CellChangeTimes->{{3.718635171513575*^9, 3.7186351834331007`*^9}, 
+   3.7186353143952303`*^9, {3.718636151304388*^9, 3.7186361555125513`*^9}, 
+   3.718636790268621*^9},ExpressionUUID->"1f87d4ec-fa39-4dc1-9196-\
+991750ae16b8"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Downloading Named Fields", "Section",
+ CellChangeTimes->{{3.7186348972921877`*^9, 
+  3.718634924779114*^9}},ExpressionUUID->"cfb1f00b-fe17-4e1b-bf45-\
+ac516a360df5"],
+
+Cell[TextData[StyleBox["Downloading Named fields is similar to downloading \
+indexed fields, however, instead of a List, an Association with a fixed set \
+of keys is returned. For example:",
+ FontSlant->"Plain"]], "Text",
+ CellChangeTimes->{{3.718636310100172*^9, 3.718636341682324*^9}, {
+  3.718636469545464*^9, 3.718636472432407*^9}},
+ FontSlant->"Italic",ExpressionUUID->"2fa831f3-74cc-4e9e-81c8-a15d6d0daf2d"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "1", "]"}], " ", ":=", " ", 
+  RowBox[{"Download", "[", 
+   RowBox[{
+    RowBox[{"Object", "[", 
+     RowBox[{"Container", ",", "Plate", ",", "\"\<id:abc\>\""}], "]"}], ",", 
+    "ContentsNamed"}], "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "1", "]"}], " ", "=", " ", 
+  RowBox[{"{", 
+   RowBox[{"<|", 
+    RowBox[{
+     RowBox[{"Position", "\[Rule]", "\"\<A1\>\""}], ",", 
+     RowBox[{"Link", "[", 
+      RowBox[{
+       RowBox[{"Object", "[", 
+        RowBox[{"Sample", ",", "Chemical", ",", "\"\<id:87a7f1\>\""}], "]"}], 
+       ",", "Container", ",", "\"\<asdfadsf\>\""}], "]"}]}], "|>"}], 
+   "}"}]}]}], "Code",
+ CellChangeTimes->{{3.718635171513575*^9, 3.7186351834331007`*^9}, 
+   3.7186353143952303`*^9, {3.718636360422248*^9, 3.718636463168262*^9}, {
+   3.718636844804496*^9, 3.718636861475822*^9}, 
+   3.7186369275234613`*^9},ExpressionUUID->"fe2b181e-a6f5-4ec3-b837-\
+6c00c5fd1015"],
+
+Cell[TextData[{
+ "To download through links using named fields you use the same ",
+ StyleBox["Part ",
+  FontSlant->"Italic"],
+ "syntax you would for indexed fields except instead of an integer index use \
+the name you want to download through. For example, using a theoretical named \
+version of the ",
+ StyleBox["Contents ",
+  FontSlant->"Italic"],
+ "field in ",
+ StyleBox["Object[Container] ",
+  FontSlant->"Italic"],
+ "download all the objects in that container:"
+}], "Text",
+ CellChangeTimes->{{3.718636490115176*^9, 3.718636543783972*^9}, {
+  3.718636606872025*^9, 3.718636629680839*^9}, {3.718636698776486*^9, 
+  3.7186367067142353`*^9}},ExpressionUUID->"1be8be9a-732d-49a4-94e4-\
+72cf54335722"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "1", "]"}], " ", ":=", " ", 
+  RowBox[{"Download", "[", 
+   RowBox[{
+    RowBox[{"Object", "[", 
+     RowBox[{"Container", ",", "Plate", ",", "\"\<id:abc\>\""}], "]"}], ",", 
+    RowBox[{"ContentsNamed", "[", 
+     RowBox[{"[", 
+      RowBox[{"All", ",", "Occupant"}], "]"}], "]"}]}], "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "1", "]"}], " ", "=", " ", 
+  RowBox[{"{", 
+   RowBox[{"Link", "[", 
+    RowBox[{
+     RowBox[{"Object", "[", 
+      RowBox[{"Sample", ",", "Chemical", ",", "\"\<id:87a7f1\>\""}], "]"}], 
+     ",", "Container", ",", "\"\<asdfadsf\>\""}], "]"}], "}"}]}]}], "Code",
+ CellChangeTimes->{{3.718635171513575*^9, 3.7186351834331007`*^9}, 
+   3.7186353143952303`*^9, {3.718636360422248*^9, 3.718636463168262*^9}, {
+   3.718636555451201*^9, 3.718636598615733*^9}, {3.718636637012113*^9, 
+   3.7186366727253513`*^9}, {3.718636921329962*^9, 
+   3.718636923855446*^9}},ExpressionUUID->"4a4865fc-a70b-46cf-9969-\
+d768490ee883"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Uploading Named Fields", "Section",
+ CellChangeTimes->{{3.7186348972921877`*^9, 
+  3.718634919035182*^9}},ExpressionUUID->"2fd3938e-b71d-43e8-91a5-\
+fcd7f35f0436"],
+
+Cell[TextData[{
+ StyleBox["Uploading Named fields is similar to uploading indexed fields, \
+however, instead of a List you must specify an Association with the correct \
+keys as the value. \n\nFor example, adding a new sample to the theoretical ",
+  FontSlant->"Plain"],
+ "ContentsNamed ",
+ StyleBox["field a plate:",
+  FontSlant->"Plain"]
+}], "Text",
+ CellChangeTimes->{{3.718636310100172*^9, 3.718636341682324*^9}, {
+  3.718636469545464*^9, 3.718636472432407*^9}, {3.718636742910782*^9, 
+  3.718636782665432*^9}, {3.718636936964202*^9, 3.718636965948861*^9}},
+ FontSlant->"Italic",ExpressionUUID->"893eedba-67f4-4d68-ac75-9748bb0afdab"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "1", "]"}], " ", ":=", " ", 
+  RowBox[{"Upload", "[", 
+   RowBox[{"<|", 
+    RowBox[{
+     RowBox[{"Object", "->", 
+      RowBox[{"Object", "[", 
+       RowBox[{"Container", ",", "Plate", ",", "\"\<id:abc\>\""}], "]"}]}], 
+     ",", 
+     RowBox[{
+      RowBox[{"Append", "[", "ContentsNamed", "]"}], "\[Rule]", 
+      RowBox[{"{", 
+       RowBox[{"<|", 
+        RowBox[{
+         RowBox[{"Position", "\[Rule]", "\"\<B2\>\""}], ",", 
+         RowBox[{"Occupant", "\[Rule]", 
+          RowBox[{"Link", "[", 
+           RowBox[{
+            RowBox[{"Object", "[", 
+             RowBox[{"Sample", ",", "Chemical", ",", "\"\<id:71dfbhjk\>\""}], 
+             "]"}], ",", "Container"}], "]"}]}]}], "|>"}], "}"}]}]}], "|>"}], 
+   "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "1", "]"}], " ", "=", " ", 
+  RowBox[{"Object", "[", 
+   RowBox[{"Container", ",", "Plate", ",", "\"\<id:abc\>\""}], 
+   "]"}]}]}], "Code",
+ CellChangeTimes->{{3.718635171513575*^9, 3.7186351834331007`*^9}, 
+   3.7186353143952303`*^9, {3.718636360422248*^9, 3.718636463168262*^9}, {
+   3.718636555451201*^9, 3.718636598615733*^9}, {3.718636637012113*^9, 
+   3.7186366727253513`*^9}, {3.718636921329962*^9, 3.718636923855446*^9}, {
+   3.718636976864094*^9, 
+   3.718637027302184*^9}},ExpressionUUID->"7450a423-d5f9-4061-bc4d-\
+c884074971ba"]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{2560, 1391},
+WindowMargins->{{0, Automatic}, {Automatic, 0}},
+Visible->True,
+FrontEndVersion->"11.1 for Mac OS X x86 (32-bit, 64-bit Kernel) (April 18, \
+2017)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 155, 3, 92, "Title", "ExpressionUUID" -> \
+"92e2dea3-fe3a-432b-8f6d-1ce94cf5082c"],
+Cell[CellGroupData[{
+Cell[760, 29, 217, 4, 64, "Section", "ExpressionUUID" -> \
+"3e716015-7d58-4802-a5fe-a20b2976e31d"],
+Cell[980, 35, 1539, 37, 163, "Text", "ExpressionUUID" -> \
+"8e364ce2-8068-443b-a6d0-ffd82657d942"],
+Cell[2522, 74, 640, 21, 30, "Text", "ExpressionUUID" -> \
+"18502c74-f656-4ea5-a808-0349b5163951"],
+Cell[3165, 97, 2698, 62, 786, "Code", "ExpressionUUID" -> \
+"e33c5cb7-4d68-41b8-9f10-005fa94908cf"],
+Cell[CellGroupData[{
+Cell[5888, 163, 231, 4, 44, "Subsection", "ExpressionUUID" -> \
+"a1c355f0-6f35-4995-849d-6f749d72edc4"],
+Cell[6122, 169, 1826, 58, 87, "Text", "ExpressionUUID" -> \
+"7e3cf975-313a-4861-824d-46426cbaadae"],
+Cell[7951, 229, 2293, 52, 786, "Code", "ExpressionUUID" -> \
+"32dbf1bd-c794-4ba9-8c42-251b2124be81"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[10281, 286, 223, 4, 44, "Subsection", "ExpressionUUID" -> \
+"47bf1700-e942-4a17-b6e1-2dc04b465a92"],
+Cell[10507, 292, 1015, 35, 68, "Text", "ExpressionUUID" -> \
+"9a2a45b9-a0cb-4569-8a8a-c7adb89bf228"],
+Cell[11525, 329, 2654, 61, 786, "Code", "ExpressionUUID" -> \
+"1f87d4ec-fa39-4dc1-9196-991750ae16b8"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[14228, 396, 171, 3, 64, "Section", "ExpressionUUID" -> \
+"cfb1f00b-fe17-4e1b-bf45-ac516a360df5"],
+Cell[14402, 401, 413, 6, 30, "Text", "ExpressionUUID" -> \
+"2fa831f3-74cc-4e9e-81c8-a15d6d0daf2d"],
+Cell[14818, 409, 945, 24, 84, "Code", "ExpressionUUID" -> \
+"fe2b181e-a6f5-4ec3-b837-6c00c5fd1015"],
+Cell[15766, 435, 701, 17, 30, "Text", "ExpressionUUID" -> \
+"1be8be9a-732d-49a4-94e4-72cf54335722"],
+Cell[16470, 454, 993, 23, 84, "Code", "ExpressionUUID" -> \
+"4a4865fc-a70b-46cf-9969-d768490ee883"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[17500, 482, 169, 3, 64, "Section", "ExpressionUUID" -> \
+"2fd3938e-b71d-43e8-91a5-fcd7f35f0436"],
+Cell[17672, 487, 638, 12, 68, "Text", "ExpressionUUID" -> \
+"893eedba-67f4-4d68-ac75-9748bb0afdab"],
+Cell[18313, 501, 1358, 34, 84, "Code", "ExpressionUUID" -> \
+"7450a423-d5f9-4061-bc4d-c884074971ba"]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+

@@ -22,7 +22,13 @@ DefineUsage[ExperimentTransfer,
 								"Sample or Container" -> Widget[
 									Type -> Object,
 									Pattern :> ObjectP[{Object[Sample], Object[Container], Model[Sample]}],
-									Dereference -> {Object[Container] -> Field[Contents[[All, 2]]]}
+									Dereference -> {Object[Container] -> Field[Contents[[All, 2]]]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
 								],
 								"New Container with Index"->{
 									"Index" -> Widget[
@@ -33,7 +39,13 @@ DefineUsage[ExperimentTransfer,
 										Type -> Object,
 										Pattern :> ObjectP[{Model[Container]}],
 										PreparedSample -> False,
-										PreparedContainer -> False
+										PreparedContainer -> False,
+										OpenPaths -> {
+											{
+												Object[Catalog, "Root"],
+												"Containers"
+											}
+										}
 									]
 								},
 								"Existing Container with Well Position" -> {
@@ -56,7 +68,7 @@ DefineUsage[ExperimentTransfer,
 									]
 								}
 							],
-							Expandable -> True
+							Expandable -> False
 						},
 						{
 							InputName -> "Destinations",
@@ -65,7 +77,13 @@ DefineUsage[ExperimentTransfer,
 								"Sample or Container" -> Widget[
 									Type -> Object,
 									Pattern :> ObjectP[{Object[Sample], Object[Item], Object[Container], Model[Container]}],
-									Dereference -> {Object[Container] -> Field[Contents[[All, 2]]]}
+									Dereference -> {Object[Container] -> Field[Contents[[All, 2]]]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Containers"
+										}
+									}
 								],
 								"New Container with Index" -> {
 									"Index" -> Widget[

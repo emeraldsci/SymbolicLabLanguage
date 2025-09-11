@@ -3099,7 +3099,7 @@ DefineOptions[ExperimentExtractSubcellularProtein,
     RoboticPreparationOption,
     ProtocolOptions,
     SimulationOption,
-    PostProcessingOptions,
+    BiologyPostProcessingOptions,
     SubprotocolDescriptionOption,
     SamplesInStorageOptions,
     SamplesOutStorageOptions,
@@ -3144,11 +3144,11 @@ ExperimentExtractSubcellularProtein[myContainers:ListableP[ObjectP[{Object[Conta
   gatherTests=MemberQ[output,Tests];
 
   (* Remove temporal links and named objects. *)
-  {listedContainers, listedOptions} = removeLinks[ToList[myContainers], ToList[myOptions]];
+  {listedContainers, listedOptions} = {ToList[myContainers], ToList[myOptions]};
 
   (* Fetch the cache from listedOptions. *)
   cache=ToList[Lookup[listedOptions, Cache, {}]];
-  simulation=ToList[Lookup[listedOptions, Simulation, {}]];
+  simulation=Lookup[listedOptions, Simulation, Null];
 
   (* Convert our given containers into samples and sample index-matched options. *)
   containerToSampleResult=If[gatherTests,
@@ -3177,7 +3177,7 @@ ExperimentExtractSubcellularProtein[myContainers:ListableP[ObjectP[{Object[Conta
         Simulation->simulation
       ],
       $Failed,
-      {Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
+      {Download::ObjectDoesNotExist, Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
     ]
   ];
 
@@ -3209,7 +3209,7 @@ ExperimentExtractSubcellularProtein[mySamples:ListableP[ObjectP[Object[Sample]]]
     protocolObject, preResolvedOptions, preResolvedOptionsResult, preResolvedOptionsTests, resourceResult, resourcePacketTests,
     returnEarlyQ, safeOps, safeOptions, safeOptionTests, templatedOptions, templateTests, resolvedPreparation, roboticSimulation, runTime,
     inheritedSimulation, userSpecifiedObjects, objectsExistQs, objectsExistTests, validLengths, validLengthTests, simulation, listedSanitizedSamples,
-    listedSanitizedOptions
+    listedSanitizedOptions, rawListedOptions
   },
 
   (* Determine the requested return value from the function (Result, Options, Tests, or multiple). *)
@@ -3221,22 +3221,22 @@ ExperimentExtractSubcellularProtein[mySamples:ListableP[ObjectP[Object[Sample]]]
   messages=!gatherTests;
 
   (* Remove links and temporal links (turn them into just objects). *)
-  {listedSamples, listedOptions}=removeLinks[ToList[mySamples], ToList[myOptions]];
+  {listedSamples, rawListedOptions}=removeLinks[ToList[mySamples], ToList[myOptions]];
+
+  (* SafeRound TargetCellCount and TargetCellConcentration to integers before SafeOptions call *)
+  (* For these 2 options that might involve calculating big numbers, we cannot use RoundOptionPrecision to risk throwing a non-sense warning due to how MM store numbers. E.g. 2.3*10^5 is 229999.99999...7*)
+  (* So we define the widgets to allow only increment of 1 and here we are sure the overly precise numbers are not what user gives us *)
+  listedOptions = preProcessOptionPrecision[rawListedOptions, {TargetCellConcentration, TargetCellCount}, {1 EmeraldCell/Milliliter, 1 EmeraldCell}];
 
   (* Call SafeOptions to make sure all options match the option patterns. *)
   {safeOptions, safeOptionTests}=If[gatherTests,
     SafeOptions[ExperimentExtractSubcellularProtein,listedOptions,AutoCorrect->False,Output->{Result,Tests}],
     {SafeOptions[ExperimentExtractSubcellularProtein,listedOptions,AutoCorrect->False],{}}
   ];
+  inheritedSimulation=Lookup[safeOptions, Simulation, Null];
 
   (* Call sanitize-inputs to clean any named objects (all object Names to object IDs). *)
-  {listedSanitizedSamples, safeOps, listedSanitizedOptions} = sanitizeInputs[listedSamples, safeOptions, listedOptions];
-
-  (* Call ValidInputLengthsQ to make sure all options are the right length *)
-  {validLengths,validLengthTests}=If[gatherTests,
-    ValidInputLengthsQ[ExperimentExtractSubcellularProtein,{listedSanitizedSamples},listedSanitizedOptions,Output->{Result,Tests}],
-    {ValidInputLengthsQ[ExperimentExtractSubcellularProtein,{listedSanitizedSamples},listedSanitizedOptions],Null}
-  ];
+  {listedSanitizedSamples, safeOps, listedSanitizedOptions} = sanitizeInputs[listedSamples, safeOptions, listedOptions, Simulation -> inheritedSimulation];
 
   (* If the specified options don't match their patterns return $Failed *)
   If[MatchQ[safeOps,$Failed],
@@ -3247,6 +3247,12 @@ ExperimentExtractSubcellularProtein[mySamples:ListableP[ObjectP[Object[Sample]]]
       Preview -> Null,
       Simulation -> Null
     }]
+  ];
+
+  (* Call ValidInputLengthsQ to make sure all options are the right length *)
+  {validLengths,validLengthTests}=If[gatherTests,
+    ValidInputLengthsQ[ExperimentExtractSubcellularProtein,{listedSanitizedSamples},listedSanitizedOptions,Output->{Result,Tests}],
+    {ValidInputLengthsQ[ExperimentExtractSubcellularProtein,{listedSanitizedSamples},listedSanitizedOptions],Null}
   ];
 
   (* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -3297,7 +3303,6 @@ ExperimentExtractSubcellularProtein[mySamples:ListableP[ObjectP[Object[Sample]]]
 
   (* Fetch the cache from expandedSafeOps *)
   cache=Lookup[expandedSafeOps, Cache, {}];
-  inheritedSimulation=Lookup[expandedSafeOps, Simulation, Null];
 
   (* Disallow Upload->False and Confirm->True. *)
   (* Not making a test here because Upload is a hidden option and we don't currently make tests for hidden options. *)
@@ -3365,7 +3370,7 @@ ExperimentExtractSubcellularProtein[mySamples:ListableP[ObjectP[Object[Sample]]]
       Flatten[Lookup[safeOps, {LiquidLiquidExtractionContainer, ContainerOut}]],
       ObjectP[Model[Container]]
     ],
-    PreferredContainer[All, LiquidHandlerCompatible -> True, Type -> All],
+    PreferredContainer[All, LiquidHandlerCompatible -> True, Sterile -> True, Type -> All],
     (* Model[Container, Plate, PhaseSeparator, "Semi-Transparent Plastic 96 Fixed Well Plate with Phase Separator Frits"] *)
     Model[Container, Plate, PhaseSeparator, "id:jLq9jXqrWW11"]
   }];
@@ -3531,7 +3536,7 @@ ExperimentExtractSubcellularProtein[mySamples:ListableP[ObjectP[Object[Sample]]]
       *)
       Options -> RemoveHiddenOptions[ExperimentExtractSubcellularProtein,collapsedPreResolvedOptions],
       Preview -> Null,
-      Simulation -> simulation,
+      Simulation -> inheritedSimulation,
       RunTime -> runTime
     }]
   ];
@@ -3588,6 +3593,7 @@ ExperimentExtractSubcellularProtein[mySamples:ListableP[ObjectP[Object[Sample]]]
           Name->Lookup[safeOps,Name],
           Upload->Lookup[safeOps,Upload],
           Confirm->Lookup[safeOps,Confirm],
+          CanaryBranch->Lookup[safeOps,CanaryBranch],
           ParentProtocol->Lookup[safeOps,ParentProtocol],
           Priority->Lookup[safeOps,Priority],
           StartDate->Lookup[safeOps,StartDate],
@@ -3606,7 +3612,7 @@ ExperimentExtractSubcellularProtein[mySamples:ListableP[ObjectP[Object[Sample]]]
     Tests -> Flatten[{safeOptionTests,validLengthTests,templateTests,preResolvedOptionsTests,resourcePacketTests}],
     Options -> RemoveHiddenOptions[ExperimentExtractSubcellularProtein,collapsedPreResolvedOptions],
     Preview -> Null,
-    Simulation -> simulation,
+    Simulation -> inheritedSimulation,
     RunTime -> runTime
   }
 ];
@@ -3654,12 +3660,13 @@ DefineOptions[resolveExtractSubcellularProteinWorkCell,
 resolveExtractSubcellularProteinWorkCell[
   myContainersAndSamples:ListableP[Automatic|ObjectP[{Object[Sample], Object[Container]}]],
   myOptions:OptionsPattern[]
-]:=Module[{mySamples, myContainers, samplePackets},
+]:=Module[{mySamples, myContainers, samplePackets, simulation},
 
   mySamples = Cases[myContainersAndSamples, ObjectP[Object[Sample]], Infinity];
   myContainers = Cases[myContainersAndSamples, ObjectP[Object[Container]], Infinity];
+  simulation = Lookup[ToList[myOptions], Simulation, Null];
 
-  samplePackets = Download[mySamples, Packet[CellType]];
+  samplePackets = Download[mySamples, Packet[CellType], Simulation -> simulation];
 
   (* NOTE: due to the mechanism by which the primitive framework resolves WorkCell, we can't just resolve it on our own and then tell the framework what to use. So, we resolve using the CellType option if specified, or the CellType field in the input sample(s). *)
   Which[
@@ -5611,7 +5618,7 @@ resolveExperimentExtractSubcellularProteinOptions[mySamples:{ObjectP[Object[Samp
         LysisAliquotContainer,ClarifiedLysateContainer,
         FractionationFilter,CytosolicFractionationSupernatantContainer,CytosolicFractionationFiltrateContainer,MembraneFractionationSupernatantContainer,MembraneFractionationFiltrateContainer,NuclearFractionationSupernatantContainer,NuclearFractionationFiltrateContainer}],
       (*Add the preferred container models here in case samples running through LyseCells and are placed in new containers, then we need the max volume of that container*)
-      PreferredContainer[All, LiquidHandlerCompatible -> True],
+      PreferredContainer[All, LiquidHandlerCompatible -> True, Sterile -> True, Type -> All],
       (*Default filter*)
       Model[Container, Plate, Filter, "id:xRO9n3O0B9E5"]}], ObjectP[Model[Container]]]}],
       (*8*)DeleteDuplicates@Flatten[{Cases[Flatten[Lookup[myOptions, {
@@ -5665,8 +5672,8 @@ resolveExperimentExtractSubcellularProteinOptions[mySamples:{ObjectP[Object[Samp
     containerModelFromObjectPackets
   }];
 
-  (* Make fast association to look up things from cache quickly.*)
-  fastCacheBall = makeFastAssocFromCache[cacheBall];
+  (* Make fast association to look up things from cache quickly; also include the simulation.*)
+  fastCacheBall = makeFastAssocFromCache[FlattenCachePackets[{cacheBall, Lookup[FirstOrDefault[currentSimulation, <||>], Packets, {}]}]];
   (* - INPUT VALIDATION CHECKS - *)
 
   (*-- DISCARDED SAMPLE CHECK --*)
@@ -5886,9 +5893,9 @@ resolveExperimentExtractSubcellularProteinOptions[mySamples:{ObjectP[Object[Samp
 
   (* Pre-resolve the ContainerOutWell and the indexed version of the container out (without a well). *)
   (* Needed for threading user-specified ContainerOut into unit operations for simulation/protocol.  *)
-  {preResolvedCytosolicProteinContainerOutWell, preResolvedIndexedCytosolicProteinContainerOut} = preResolveContainerOutWellAndIndexedContainer[preResolvedCytosolicProteinContainersOutWithWellsRemoved,roundedExperimentOptions,ExtractedCytosolicProteinContainer];
-  {preResolvedMembraneProteinContainerOutWell, preResolvedIndexedMembraneProteinContainerOut} = preResolveContainerOutWellAndIndexedContainer[preResolvedMembraneProteinContainersOutWithWellsRemoved,roundedExperimentOptions,ExtractedMembraneProteinContainer];
-  {preResolvedNuclearProteinContainerOutWell, preResolvedIndexedNuclearProteinContainerOut} = preResolveContainerOutWellAndIndexedContainer[preResolvedNuclearProteinContainersOutWithWellsRemoved,roundedExperimentOptions,ExtractedNuclearProteinContainer];
+  {preResolvedCytosolicProteinContainerOutWell, preResolvedIndexedCytosolicProteinContainerOut} = preResolveContainerOutWellAndIndexedContainer[preResolvedCytosolicProteinContainersOutWithWellsRemoved,roundedExperimentOptions,ExtractedCytosolicProteinContainer, fastCacheBall];
+  {preResolvedMembraneProteinContainerOutWell, preResolvedIndexedMembraneProteinContainerOut} = preResolveContainerOutWellAndIndexedContainer[preResolvedMembraneProteinContainersOutWithWellsRemoved,roundedExperimentOptions,ExtractedMembraneProteinContainer, fastCacheBall];
+  {preResolvedNuclearProteinContainerOutWell, preResolvedIndexedNuclearProteinContainerOut} = preResolveContainerOutWellAndIndexedContainer[preResolvedNuclearProteinContainersOutWithWellsRemoved,roundedExperimentOptions,ExtractedNuclearProteinContainer, fastCacheBall];
 
   (* Add in pre-resolved labels into options and make mapThreadFriendly for further resolutions. *)
   preResolvedRoundedExperimentOptions = Merge[
@@ -6651,7 +6658,7 @@ resolveExperimentExtractSubcellularProteinOptions[mySamples:{ObjectP[Object[Samp
   preResolvedPurificationOptions = preResolvePurificationSharedOptions[mySamples, optionsWithResolvedFractionationAndPurification, mapThreadFriendlyoptionsWithResolvedFractionationAndPurification, TargetCellularComponent -> resolvedTargetProteins/.Alternatives[All,Null]->TotalProtein];
 
   (* Resolve Post Processing Options *)
-  resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions];
+  resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions,Sterile->True];
 
   (* Overwrite our rounded options with our resolved options.*)
   resolvedOptions=ReplaceRule[

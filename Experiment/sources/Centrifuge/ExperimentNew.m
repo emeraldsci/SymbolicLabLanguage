@@ -88,7 +88,18 @@ DefineOptions[ExperimentCentrifuge,
 				OptionName->Rotor,
 				Default->Automatic,
 				AllowNull->True,
-				Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Container,CentrifugeRotor],Object[Container,CentrifugeRotor]}]],
+				Widget->Widget[
+					Type->Object,
+					Pattern:>ObjectP[{Model[Container,CentrifugeRotor],Object[Container,CentrifugeRotor]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Centrifuge",
+							"Ultracentrifuge Rotors"
+						}
+					}
+				],
 				Description->"The centrifuge rotor that will be used to spin the provided samples if ultracentrifuge instrument is selected. Unique when Preparation -> Manual.",
 				ResolutionDescription->"Automatically set to a rotor that can attain the specified intensity, time, temperature, and sterility and (if possible) fits the sample in its current container. "
 			},
@@ -131,7 +142,14 @@ DefineOptions[ExperimentCentrifuge,
 					Widget[
 						Type -> Object,
 						Pattern :> ObjectP[{Model[Container], Object[Container]}],
-						ObjectTypes -> {Model[Container], Object[Container]}
+						ObjectTypes -> {Model[Container], Object[Container]},
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Containers",
+								"Plates"
+							}
+						}
 					],
 					{
 						"Index" -> Alternatives[
@@ -141,7 +159,14 @@ DefineOptions[ExperimentCentrifuge,
 							Widget[
 								Type -> Object,
 								Pattern :> ObjectP[{Model[Container], Object[Container]}],
-								ObjectTypes -> {Model[Container], Object[Container]}
+								ObjectTypes -> {Model[Container], Object[Container]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Containers",
+										"Plates"
+									}
+								}
 							],
 							Widget[Type -> Enumeration,Pattern :> Alternatives[Automatic]]
 						]
@@ -170,7 +195,7 @@ DefineOptions[ExperimentCentrifuge,
 			}
 		],
 	(* Shared Options *)
-	(* Here we would usually just include FuntopiaSharedOptions, but since this is a sample prep experiment, we have to exclude the centrifuge prep options. *)
+	(* Here we would usually just include NonBiologyFuntopiaSharedOptions, but since this is a sample prep experiment, we have to exclude the centrifuge prep options. *)
 		{
 			OptionName->NumberOfReplicates,
 			Default->Null,
@@ -189,8 +214,8 @@ DefineOptions[ExperimentCentrifuge,
 		FilterPrepOptionsNew,
 		AliquotOptions,
 		PreparatoryUnitOperationsOption,
-		PreparatoryPrimitivesOption,
-		PostProcessingOptions,
+		ModelInputOptions,
+		NonBiologyPostProcessingOptions,
 		SterileOption,
 
 	(* SamplesIn Shared Options *)
@@ -243,7 +268,7 @@ Error::ContainerCentrifugeIncompatibleRobotic="The samples `1` are in containers
 
 
 (* Mixed Input *)
-ExperimentCentrifuge[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String|{LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions : OptionsPattern[]] := Module[
+ExperimentCentrifuge[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String|{LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions : OptionsPattern[]] := Module[
 	{listedContainers, listedOptions, outputSpecification, output, gatherTests, containerToSampleResult, samples,
 		sampleOptions, containerToSampleTests, containerToSampleOutput, validSamplePreparationResult,containerToSampleSimulation,
 		mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation},
@@ -256,7 +281,7 @@ ExperimentCentrifuge[myInputs : ListableP[ObjectP[{Object[Container], Object[Sam
 	gatherTests = MemberQ[output, Tests];
 
 	(* Remove temporal links and named objects. *)
-	{listedContainers, listedOptions} = removeLinks[ToList[myInputs], ToList[myOptions]];
+	{listedContainers, listedOptions} = {ToList[myInputs], ToList[myOptions]};
 
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
@@ -267,7 +292,7 @@ ExperimentCentrifuge[myInputs : ListableP[ObjectP[{Object[Container], Object[Sam
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -339,7 +364,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 		returnEarlyBecauseOptionsResolverOnly, returnEarlyBecauseFailuresQ,collectionContainerOption,
 		templatedOptions, templateTests, inheritedOptions, expandedSafeOps, cacheBall, resolvedOptionsResult,
 		resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions, sampleObjects, centrifugeOption,allCentrifugeEquipmentPackets,
-		samplePackets, centrifugeFields, centrifugeRotorOption, centrifugeRotorFields, allCentrifugableContainers, allRacks,
+		allPreferredContainers, samplePackets, centrifugeFields, centrifugeRotorOption, centrifugeRotorFields,
 		allCounterweights, counterweightModelFields, updatedSimulation,
 		thingsToDownload, fieldsToDownload, downloadedStuff, protocolPacketWithResources, resourcePacketTests, protocolObject,
 		sampleFields, objectContainerFields, modelContainerFields, resolvedPreparation, centrifugeInstruments,
@@ -367,7 +392,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -384,7 +409,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 	];
 
 	(* Call sanitize-inputs to clean any named objects *)
-	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps, $Failed],
@@ -444,8 +469,8 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 
 	(* Centrifuge defaults to model, but can be specified as an object. Get the appropriate fields to download. *)
 	centrifugeFields = Switch[#,
-		ObjectP[Model[Instrument]], {Packet[MaxTime, RequestedResources, MaxTemperature, MinTemperature, SpeedResolution, MaxRotationRate, MinRotationRate, CentrifugeType, SampleHandlingCategories, Positions]},
-		ObjectP[Object[Instrument]], {Packet[Model], Packet[Field[Model[{MaxTime, RequestedResources, MaxTemperature, MinTemperature, SpeedResolution, MaxRotationRate, MinRotationRate, CentrifugeType, SampleHandlingCategories, Positions}]]]},
+		ObjectP[Model[Instrument]], {Packet[MaxTime, RequestedResources, MaxTemperature, MinTemperature, SpeedResolution, MaxRotationRate, MinRotationRate, CentrifugeType, AsepticHandling, Positions]},
+		ObjectP[Object[Instrument]], {Packet[Model], Packet[Field[Model[{MaxTime, RequestedResources, MaxTemperature, MinTemperature, SpeedResolution, MaxRotationRate, MinRotationRate, CentrifugeType, AsepticHandling, Positions}]]]},
 		Automatic, {}
 	]& /@ ToList[centrifugeOption];
 
@@ -475,6 +500,12 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 	(* This download is memoized so it should only run once in a single kernel session.  Note that it includes all the other memoized searches too *)
 	allCentrifugeEquipmentPackets = nonDeprecatedCentrifugeModelPackets["Memoization"];
 
+	(* Get a list of preferred container models which we potential transfer sample in order to centrifuge. *)
+	allPreferredContainers = DeleteDuplicates@Join[
+		PreferredContainer[All, Type -> All],
+		PreferredContainer[All, UltracentrifugeCompatible -> True]
+	];
+
 	(* Format the list of things to download *)
 	thingsToDownload = Join[
 		{
@@ -483,7 +514,8 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 		},
 		List /@ ToList[centrifugeOption] /. Automatic -> Null,
 		List /@ ToList[centrifugeRotorOption] /. Automatic -> Null,
-		{allCounterweights}
+		{allCounterweights},
+		{allPreferredContainers}
 	];
 
 	(* Sample Fields. *)
@@ -506,7 +538,8 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 		},
 		centrifugeFields,
 		centrifugeRotorFields,
-		{counterweightModelFields}
+		{counterweightModelFields},
+		{{Packet[Footprint, Dimensions, Name]}}
 	];
 
 	cacheToUse = ToList[Lookup[expandedSafeOps, Cache, {}]];
@@ -546,7 +579,10 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 		Ignore -> listedOptions,
 		Messages -> False
 	];
-	
+	(* echo some debugging information when running tests in manifold *)
+	If[MatchQ[$UnitTestObject, ObjectP[]],
+		Echo[ReplaceRule[resolvedOptions, Cache -> {}], "resolvedOptions"];
+	];
 	(* Lookup our resolved Preparation option. *)
 	resolvedPreparation = Lookup[resolvedOptions, Preparation];
 
@@ -566,7 +602,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 
 	(* NOTE: We need to perform simulation if Result is asked for in Centrifuge since it's part of the SamplePreparation experiments. *)
 	(* This is because we pass down our simulation to ExperimentMSP or ExperimentRSP. *)
-	performSimulationQ = MemberQ[output, Result | Simulation] && MatchQ[Lookup[resolvedOptions, PreparatoryPrimitives], Null | {}];
+	performSimulationQ = MemberQ[output, Result | Simulation];
 
 	(* If option resolution failed and we aren't asked for the simulation or output, return early. *)
 	If[!performSimulationQ && (returnEarlyBecauseFailuresQ || returnEarlyBecauseOptionsResolverOnly),
@@ -589,26 +625,30 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 		True, {centrifugeResourcePackets[sampleObjects, templatedOptions, resolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> Result], {}}
 	];
 
-
-	(* If we were asked for a simulation, also return a simulation. *)
-	{simulatedProtocol, simulation} = If[performSimulationQ,
-		simulateExperimentCentrifuge[
-			If[MatchQ[protocolPacketWithResources, $Failed],
-				$Failed,
-				protocolPacketWithResources[[1]] (* protocolPacket *)
-			],
-			If[MatchQ[protocolPacketWithResources, $Failed],
-				$Failed,
-				Flatten[ToList[protocolPacketWithResources[[2]]]] (* unitOperationPackets *)
-			],
-			ToList[sampleObjects],
-			resolvedOptions,
-			Cache -> cacheBall,
-			Simulation -> updatedSimulation
-		],
-		{Null, Null}
+	(* echo some debugging information when running tests in manifold *)
+	If[MatchQ[$UnitTestObject, ObjectP[]],
+		Echo["centrifugeResourcePackets done"];
 	];
-	
+	(* If we were asked for a simulation, also return a simulation. *)
+	{simulatedProtocol, simulation} = Which[
+		MatchQ[protocolPacketWithResources, $Failed], {$Failed, Simulation[]},
+		performSimulationQ,
+			simulateExperimentCentrifuge[
+				(* protocolPacket *)
+				protocolPacketWithResources[[1]],
+				(* unitOperationPackets *)
+				Flatten[ToList[protocolPacketWithResources[[2]]]],
+				ToList[sampleObjects],
+				resolvedOptions,
+				Cache -> cacheBall,
+				Simulation -> updatedSimulation
+			],
+		True, {Null, updatedSimulation}
+	];
+	(* echo some debugging information when running tests in manifold *)
+	If[MatchQ[$UnitTestObject, ObjectP[]],
+		Echo["centrifuge simulation done"];
+	];
 	(* If Result does not exist in the output, return everything without uploading *)
 	If[!MemberQ[output, Result],
 		Return[outputSpecification /. {
@@ -636,13 +676,27 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 
 		(* If we're doing Preparation->Robotic and Upload->True, call ExperimentRoboticSamplePreparation with our primitive. *)
 		MatchQ[resolvedPreparation, Robotic],
-			Module[{primitive,nonHiddenOriginOptions},
+			Module[{primitive,nonHiddenOriginOptions, samplesMaybeWithModels},
+
+				(* convert the samples to models if we had model inputs originally *)
+				(* if we don't have a simulation or a single prep unit op, then we know we didn't have a model input *)
+				(* NOTE: this is important. Need to use updatedSimulation here and not simulation.  This is because mySamples needs to get converted to model via the simulation _before_ SimulateResources is called in simulateExperimentFilter *)
+				(* otherwise, the same label will point at two different IDs, and that's going to cause problems *)
+				samplesMaybeWithModels = If[NullQ[updatedSimulation] || Not[MatchQ[Lookup[resolvedOptions, PreparatoryUnitOperations], {_[_LabelSample]}]],
+					mySamples,
+					simulatedSamplesToModels[
+						Lookup[resolvedOptions, PreparatoryUnitOperations][[1, 1]],
+						updatedSimulation,
+						mySamples
+					]
+				];
+
 				(* Create our transfer primitive to feed into RoboticSamplePreparation. *)
 				(* Remove any hidden options before returning. *)
 				nonHiddenOriginOptions=RemoveHiddenPrimitiveOptions[Centrifuge,listedOptions];
 				primitive=Centrifuge@@Join[
 					{
-						Sample->mySamples
+						Sample->samplesMaybeWithModels
 					},
 					nonHiddenOriginOptions
 				];
@@ -678,6 +732,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 							{primitive},
 							Upload->Lookup[safeOps,Upload],
 							Confirm->Lookup[safeOps,Confirm],
+							CanaryBranch->Lookup[safeOps,CanaryBranch],
 							ParentProtocol->Lookup[safeOps,ParentProtocol],
 							Priority->Lookup[safeOps,Priority],
 							StartDate->Lookup[safeOps,StartDate],
@@ -693,7 +748,6 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 		(* Object[Protocol, ManualSamplePreparation]. *)
 		And[
 			!MatchQ[Lookup[safeOps,ParentProtocol], ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation]}]],
-			MatchQ[Lookup[resolvedOptions, PreparatoryPrimitives], Null|{}],
 			MatchQ[Lookup[resolvedOptions, PreparatoryUnitOperations], Null|{}],
 			MatchQ[Lookup[resolvedOptions, Incubate], {False..}],
 			(* NOTE: No Centrifuge prep for Centrifuge. *)
@@ -734,6 +788,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 						Name->Lookup[safeOps,Name],
 						Upload->Lookup[safeOps,Upload],
 						Confirm->Lookup[safeOps,Confirm],
+						CanaryBranch->Lookup[safeOps,CanaryBranch],
 						ParentProtocol->Lookup[safeOps,ParentProtocol],
 						Priority->Lookup[safeOps,Priority],
 						StartDate->Lookup[safeOps,StartDate],
@@ -752,16 +807,20 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 				Null,
 				Upload -> Lookup[safeOps, Upload],
 				Confirm -> Lookup[safeOps, Confirm],
+				CanaryBranch->Lookup[safeOps,CanaryBranch],
 				ParentProtocol -> Lookup[safeOps, ParentProtocol],
 				Priority -> Lookup[safeOps, Priority],
 				StartDate -> Lookup[safeOps, StartDate],
 				HoldOrder -> Lookup[safeOps, HoldOrder],
 				QueuePosition -> Lookup[safeOps, QueuePosition],
 				ConstellationMessage -> Object[Protocol,Centrifuge],
-				Simulation -> updatedSimulation
+				Simulation -> simulation
 			]
 	];
-
+	(* echo some debugging information when running tests in manifold *)
+	If[MatchQ[$UnitTestObject, ObjectP[]],
+		Echo["centrifuge everything done"];
+	];
 	(* Return requested output *)
 	outputSpecification /. {
 		Result -> protocolObject,
@@ -936,7 +995,17 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 			fetchPacketFromFastAssoc[#, fastAssoc]& /@ simulatedSamples,
 			fetchPacketFromFastAssoc[fastAssocLookup[fastAssoc, #, {Container, Model}], fastAssoc]& /@ simulatedSamples,
 			fetchPacketFromFastAssoc[fastAssocLookup[fastAssoc, #, Container], fastAssoc]& /@ simulatedSamples,
-			With[{containerContents = fastAssocLookup[fastAssoc, #, {Container, Contents}][[All, 2]]& /@ simulatedSamples},
+			With[
+				{
+					containerContents = Map[
+						If[MatchQ[fastAssocLookup[fastAssoc, #, {Container, Contents}],$Failed],
+							(* If the Container is Null because the sample is discarded, assume that we only have this sample to check. We will throw an error message later for discarded sample. Any non-discarded sample should ALWAYS have a container *)
+							{#},
+							fastAssocLookup[fastAssoc, #, {Container, Contents}][[All,2]]
+						]&,
+						simulatedSamples
+					]
+				},
 				Map[
 					fetchPacketFromFastAssoc[#, fastAssoc]&,
 					containerContents,
@@ -949,8 +1018,8 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 
 	(* If the sample is discarded, it doesn't have a container, so the corresponding container packet is Null.
 		Make these packets {} instead so that we can call Lookup on them like we would on a packet. *)
-	sampleContainerModelPackets = Replace[sampleContainerModelPacketsWithNulls,{Null->{}}, 1];
-	sampleContainerPackets = Replace[sampleContainerPacketsWithNulls,{Null->{}}, 1];
+	sampleContainerModelPackets = Replace[sampleContainerModelPacketsWithNulls,{Null-><||>,$Failed-><||>}, 1];
+	sampleContainerPackets = Replace[sampleContainerPacketsWithNulls,{Null-><||>,$Failed-><||>}, 1];
 
 	(* Pull out footprints for input containers *)
 	(* inputContainerFootprints = Lookup[sampleContainerModelPackets, Footprint, Null]; *)
@@ -1492,7 +1561,7 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 	roboticPritimitveQ=MatchQ[resolvedPreparation, Robotic];
 
 	allowedWorkCells=If[roboticPritimitveQ,
-		resolveExperimentCentrifugeWorkCell[mySamples, ReplaceRule[myOptions, {Cache->cacheBall, Output->Result}]]
+		resolveExperimentCentrifugeWorkCell[mySamples, ReplaceRule[myOptions, {Simulation -> updatedSimulation, Cache->cacheBall, Output->Result}]]
 	];
 
 	(*--- Resolve all Sample Labels ---*)
@@ -1796,8 +1865,8 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 		If we're doing robotic, we can't ever transfer automatically anyway so just get the stuff for the samples
 		If we're doing manual, we can also transfer into the PreferredContainers so add those here
 		Importantly, we are NOT collecting _all_ centrifugable containers because that would be silly and time consuming and not a thing that we let slow us down for 5+ years *)
-	(* get the input samples as container models *)
-	inputContainerModels = fastAssocLookup[fastAssoc, #, {Container, Model, Object}]& /@ simulatedSamples;
+	(* get the input samples as container models. Note that if we don't have a container because of discarded sample, we give a default value of 2mL tube just for resolver purposes (CentrifugeDevices won't be happy with Null input) *)
+	inputContainerModels = Lookup[sampleContainerModelPackets,Object,Model[Container, Vessel, "id:3em6Zv9NjjN8"]];
 	centrifugesAndContainersByOptionSet = If[MatchQ[resolvedPreparation, Robotic],
 		Module[{compatibleCentrifuges, centrifugesToContainerRules, mergedCentrifugesToContainerRules},
 
@@ -1839,26 +1908,33 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 
 		],
 		(* this logic is mirroring what CentrifugeDevices itself does to add the extra preferred containers and make sure the options are correctly index matching *)
-		Module[{allPreferredContainers, expandedTimeByContainer, expandedTemperatureByContainer, expandedContainers,
+		Module[
+			{allPreferredContainers, expandedTimeByContainer, expandedTemperatureByContainer, expandedContainers,
 			expandedIntensityByContainer, expandedCollectionContainerByContainer, containerOptionSets, uniqueOptionSets,
 			uniqueContainers, uniqueTimes, uniqueTemperatures, uniqueIntensity, uniqueCollectionContainer, compatibleCentrifuges,
 			centrifugesToContainerRules, mergedCentrifugesToContainerRules, optionSetToCompatibleCentrifuges,
-			optionSetsPerInput, centrifugesByOptionsByContainer},
+			optionSetsPerInput, centrifugesByOptionsByContainer, allCentrifugableContainers},
 
 			(* get all the containers that we could aliquot into *)
-			allPreferredContainers = Flatten[{
+			allPreferredContainers = DeleteDuplicates@Flatten[{
 				PreferredContainer[All, Type -> All],
 				PreferredContainer[All, UltracentrifugeCompatible -> True]
 			}];
 
+			(* filter allPreferredContainers and select only Container has CentrifugeableFootprintP *)
+			allCentrifugableContainers = Module[{centrifugableContainerQs},
+				centrifugableContainerQs = MemberQ[CentrifugeableFootprintP, fastAssocLookup[fastAssoc, #, Footprint]]& /@ allPreferredContainers;
+				PickList[allPreferredContainers, centrifugableContainerQs]
+			];
+
 			(* expand the containers and options in question *)
 			expandedContainers = Map[
-				Flatten[{#, allPreferredContainers}]&,
+				Flatten[{#, allCentrifugableContainers}]&,
 				inputContainerModels
 			];
 			{expandedTimeByContainer, expandedTemperatureByContainer, expandedIntensityByContainer, expandedCollectionContainerByContainer} = Map[
 				(* doing Length[allPreferredContainers] + 1 because we are taking all the preferred containers and also the input container for each sample *)
-				Flatten[Transpose[ConstantArray[#,Length[allPreferredContainers]+1]],1]&,
+				Flatten[Transpose[ConstantArray[#,Length[allCentrifugableContainers]+1]],1]&,
 				{specifiedTimes, resolvedTemperature, specifiedIntensities,resolvedCollectionContainers}
 			];
 
@@ -1939,7 +2015,7 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 			Which[
 				(* If the sample is discarded, it won't have a container, but we still need to handle it.
 				Return Null as the centrifuge and target container, and don't throw any errors (we are already throwing one for the sample being discarded). *)
-				MatchQ[currentContainerPacket,{}],
+				MatchQ[currentContainerPacket,<||>],
 				{Null,Null,False,False,False,False},
 
 				(* If they specified a centrifuge that is NOT on the list of centrifuges that would work with the settings,
@@ -1995,13 +2071,23 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 
 					(* Before finding the preferred container, first check if the centrifuge of interest is an ultracentrifuge, whose preferred container is different *)
 					ultracentrifugeQ = Lookup[fetchPacketFromFastAssoc[#, fastAssoc], CentrifugeType] &/@(compatibleCentrifugesAndContainers[[All,1]]);
-					transferContainer = If[!MatchQ[ultracentrifugeQ, {Ultra}],
-						(* TODO update the CentrifugeDevices call above to also include PreferredContainer[All] but NOT all however many containers.  Also if we're robotic don't even include those; only include the input samples *)
-						FirstCase[sortedFittingContainersByVolume, Alternatives @@ PreferredContainer[All, Type->(Lookup[currentContainerPacket,Type]/.{Object[Container, Plate] | Object[Container, Plate, Filter] -> Plate, Object[Container, Vessel] | Object[Container, Vessel, Filter]-> Vessel})],
-							FirstCase[sortedFittingContainersByVolume,Alternatives @@ PreferredContainer[All],Null]
-						],
-						FirstCase[sortedFittingContainersByVolume, Alternatives @@ PreferredContainer[All, Type->(Lookup[currentContainerPacket,Type]/.{Object[Container, Plate] | Object[Container, Plate, Filter]-> Plate, Object[Container, Vessel] | Object[Container, Vessel, Filter]-> Vessel}), UltracentrifugeCompatible -> True],
-							FirstCase[sortedFittingContainersByVolume,Alternatives @@ PreferredContainer[All, UltracentrifugeCompatible -> True],Null]
+					transferContainer = Module[{preferredTransferContainers, centrifugableContainers},
+						preferredTransferContainers = Which[
+							MatchQ[Lookup[currentContainerPacket, Type], Object[Container, Plate]| Object[Container, Plate, Filter]],
+								PreferredContainer[All, Type -> Plate, UltracentrifugeCompatible -> (Automatic/.If[MatchQ[ultracentrifugeQ, {Ultra}], {Automatic -> True}, {}])],
+							MatchQ[Lookup[currentContainerPacket, Type], Object[Container, Vessel] | Object[Container, Vessel, Filter]],
+								PreferredContainer[All, Type -> Vessel, UltracentrifugeCompatible -> (Automatic/.If[MatchQ[ultracentrifugeQ, {Ultra}], {Automatic -> True}, {}])],
+							True,
+								(* For other container types like Object[Container, Plate, Irregular] or Object[Container, ReactionVessel] use this condition *)
+								PreferredContainer[All, UltracentrifugeCompatible -> (Automatic/.If[MatchQ[ultracentrifugeQ, {Ultra}], {Automatic -> True}, {}])]
+						];
+						(* filter preferredTransferContainers and select only Container has CentrifugeableFootprintP *)
+						centrifugableContainers = PickList[preferredTransferContainers, MemberQ[CentrifugeableFootprintP, fastAssocLookup[fastAssoc, #, Footprint]]& /@ preferredTransferContainers];
+						(* If the rotor compatible container model sorted by volume consists of the centrifugableContainers, use first of it, otherwise use any preferred container in the list *)
+						If[MemberQ[sortedFittingContainersByVolume, Alternatives @@ centrifugableContainers],
+							FirstCase[sortedFittingContainersByVolume, Alternatives @@ centrifugableContainers],
+							(* If no compatible container can be found to transfer the sample into, return Null *)
+							FirstCase[sortedFittingContainersByVolume, Alternatives @@ PreferredContainer[All], Null]
 						]
 					];
 					(*if we are robotic and we need to transfer, then that is an error because we can't auto-transfer using robotic *)
@@ -2067,12 +2153,23 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 
 					(* Before finding the preferred container, first check if the centrifuge of interest is an ultracentrifuge, whose preferred container is different *)
 					ultracentrifugeQ = Lookup[fetchPacketFromFastAssoc[#, fastAssoc], CentrifugeType] &/@(compatibleCentrifugesAndContainers[[All,1]]);
-					transferContainer = If[!MatchQ[ultracentrifugeQ, {Ultra}],
-						FirstCase[sortedFittingContainersByVolume, Alternatives @@ PreferredContainer[All, Type->(Lookup[currentContainerPacket,Type]/.{Object[Container, Plate] | Object[Container, Plate, Filter] -> Plate, Object[Container, Vessel] | Object[Container, Vessel, Filter] -> Vessel})],
-							FirstCase[sortedFittingContainersByVolume,Alternatives @@ PreferredContainer[All],Null]
-						],
-						FirstCase[sortedFittingContainersByVolume, Alternatives @@ PreferredContainer[All, Type->(Lookup[currentContainerPacket,Type]/.{Object[Container, Plate] | Object[Container, Plate, Filter] -> Plate, Object[Container, Vessel] | Object[Container, Vessel, Filter] -> Vessel}), UltracentrifugeCompatible -> True],
-							FirstCase[sortedFittingContainersByVolume,Alternatives @@ PreferredContainer[All, UltracentrifugeCompatible -> True],Null]
+					transferContainer = Module[{preferredTransferContainers, centrifugableContainers},
+						preferredTransferContainers = Which[
+							MatchQ[Lookup[currentContainerPacket, Type], Object[Container, Plate]| Object[Container, Plate, Filter]],
+								PreferredContainer[All, Type -> Plate, UltracentrifugeCompatible -> (Automatic/.If[MatchQ[ultracentrifugeQ, {Ultra}], {Automatic -> True}, {}])],
+							MatchQ[Lookup[currentContainerPacket, Type], Object[Container, Vessel] | Object[Container, Vessel, Filter]],
+								PreferredContainer[All, Type -> Vessel, UltracentrifugeCompatible -> (Automatic/.If[MatchQ[ultracentrifugeQ, {Ultra}], {Automatic -> True}, {}])],
+							True,
+								(* For other container types like Object[Container, Plate, Irregular] or Object[Container, ReactionVessel] use this condition *)
+								PreferredContainer[All, UltracentrifugeCompatible -> (Automatic/.If[MatchQ[ultracentrifugeQ, {Ultra}], {Automatic -> True}, {}])]
+						];
+						(* filter preferredTransferContainers and select only Container has CentrifugeableFootprintP *)
+						centrifugableContainers = PickList[preferredTransferContainers, MemberQ[CentrifugeableFootprintP, fastAssocLookup[fastAssoc, #, Footprint]]& /@ preferredTransferContainers];
+						(* If the rotor compatible container model sorted by volume consists of the centrifugableContainers, use first of it, otherwise use any preferred container in the list *)
+						If[MemberQ[sortedFittingContainersByVolume, Alternatives @@ centrifugableContainers],
+							FirstCase[sortedFittingContainersByVolume, Alternatives @@ centrifugableContainers],
+							(* If no compatible container can be found to transfer the sample into, return Null *)
+							FirstCase[sortedFittingContainersByVolume, Alternatives @@ PreferredContainer[All], Null]
 						]
 					];
 					(*if we are robotic and we need to transfer, then that is an error because we can't auto-transfer using robotic *)
@@ -2546,16 +2643,9 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 				{Round[intensity,resolution],False}
 			],
 
-		(* If intensity is specified as a force, convert the force to a rate.
-		If the corresponding rate is attainable at the centrifuge precision, keep the value as is and set the precision validity bool as True.
-		Otherwise, round the value and convert the rounded value back to force and set the precision validity bool as False *)
+		(* If we have to convert force to RPM, we can't really do the precision check since the units are different, skip it *)
 			True,
-			With[{rate=Round[RCFToRPM[intensity,maxRadius],0.5 Revolution/Minute]},
-				If[PossibleZeroQ[Mod[rate,resolution]],
-					{intensity,True},
-					{RPMToRCF[Round[rate,resolution],maxRadius],False}
-				]
-			]
+			{intensity,True}
 		]
 	],{specifiedIntensities,maxRadii,centrifugeRateResolutions,resolvedCentrifuges}]];
 	(* Update the options with the rounded intensities *)
@@ -2824,7 +2914,7 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 			!stowAwayBool,
 			targetContainer
 		]
-	],{semiResolvedTargetContainers,Lookup[sampleContainerModelPackets,Object],stowAwayBools}];
+	],{semiResolvedTargetContainers,Lookup[sampleContainerModelPackets,Object,Null],stowAwayBools}];
 
 	(* - Conflicting Options Transfers -
 		The sample groupings up to this point just reflects the current container groupings.
@@ -3431,7 +3521,7 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 		centrifugingEstimate,spinTimesByParameterGroup,samplesInResources,returningEstimate,postProcessingEstimate,name,
 		balancingEstimate,allResourceBlobs,fulfillable,frqTests,testsRule,resultRule,protocolPacket,
 		aliquotBools,currentContainers,currentContainerModels,balanceResource,tareRackResources,
-		allRacks,allRackPackets,containerModelsNeedingRacks,containerModelsNeedingRacksPackets,containerModelsNeedingRacksFootprint,availableRackFootprints,openRackFootprintQ,defaultOpenHolder,holders,
+		allRacks,allRackPackets,containerModelsNeedingRacks,containerModelsNeedingRacksPackets,containerModelsNeedingRacksFootprint,availableRackFootprints,openRackFootprintQ,defaultOpenHolder,holders,	commonFootprintToRackLookup,commonRackLookup,
 
 		potentialRacksByContainer,tareRackSets,replicates,preparation,
 		expandedTargetContainers,expandedTargetContainerModels,expandedCentrifuges,expandedTimes,expandedForces,
@@ -3448,14 +3538,18 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 		expandedRotorsModels, rotorByParameterGroup, rotorToResourceRules, rotorResources, expandedRotorResources, plierResourceReplaceRules, plierResource, chilledRotors,
 		expandedChilledRotors, chilledRotorByParameterGroup, centrifugeRotorObjectPackets, rotorObjectByParameterGroup,
 		rotorAngle,rotorGeometry,counterbalanceWeights,sampleLabel, sampleContainerLabel,
-		counterweight,sampleToResourceRules,sampleContainerResources,sampleContaienrToResourceRules,collectionContainerToResourceRules,
+		counterweight,sampleToResourceRules,sampleContainerResources,sampleContainerToResourceRules,collectionContainerToResourceRules,
 		expandedCollectionContainers,expandedSampleLabel, expandedSampleContainerLabel, expandedCounterweight,
 		uniqueCounterweightResourceRules, counterweightResources, counterweightToResourceRules,resourcesWithoutName,resourceToNameReplaceRules,previewRule,optionsRule,
 		rawResourceBlobs,resolvedOptionsExpanded, cacheBall, fastAssoc, existingInputCollectionContainerModelPackets,
 		existingInputCollectionContainerPackets, riffleAlternativesBoolsCollectionContainerModels, riffleAlternativesBoolsCollectionContainers,
 		remainingCollectionContainerModels, remainingCollectionContainers, remainingCollectionContainerModelPackets,
 		remainingCollectionContainerObjectPackets, existingSimulatedSamplePackets, riffleAlternativesBoolsSimulatedSamples,
-		remainingSimulatedSamples, remainingSimulatedSampleDownloads
+		remainingSimulatedSamples, remainingSimulatedSampleDownloads,
+
+		adapterResourcesIndexMatchedToContainer, secondaryAdapterResourcesIndexMatchedToContainer, tareRackIndexMatched,
+		tertiaryAdapterResourcesIndexMatchedToContainer, counterbalanceAdapterLinksIndexMatchedToContainer, tareRackResourcesIndexMatched,
+		secondaryCounterbalanceAdapterLinksIndexMatchedToContainer, tertiaryCounterbalanceAdapterLinksIndexMatchedToContainer
 	},
 
 	resolvedOptionsExpanded=RemoveHiddenOptions[ExperimentCentrifuge, myResolvedOptions];
@@ -3582,6 +3676,7 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 		remainingSimulatedSampleDownloads[[All, 3]],
 		riffleAlternativesBoolsSimulatedSamples
 	];
+
 	collectionContainerModelPackets = RiffleAlternatives[
 		DeleteCases[existingInputCollectionContainerModelPackets, {_, $Failed|{}|<||>}],
 		remainingCollectionContainerModelPackets,
@@ -3622,6 +3717,7 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 
 	(* get the simulated container and model packets without Nulls in case we don't actually have a container*)
 	simulatedSampleContainerPackets = If[NullQ[#], <||>, #]& /@ simulatedSampleContainerPacketsWithNull;
+
 	simulatedSampleContainerModelPackets = If[NullQ[#], <||>, #]& /@ simulatedSampleContainerModelPacketsWithNull;
 
 	(* Get the container and container model of each sample *)
@@ -4110,7 +4206,7 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 		{Download[Lookup[samplePackets,Container],Object],sampleContainerLabel}
 	];
 
-	sampleContaienrToResourceRules=Rule@@@DeleteDuplicates[Transpose[{Download[Lookup[samplePackets,Container],Object],sampleContainerResources}]];
+	sampleContainerToResourceRules=Rule@@@DeleteDuplicates[Transpose[{Download[Lookup[samplePackets,Container],Object],sampleContainerResources}]];
 
 	(* Resource gathering will only be necessary if this is not a subprotocol *)
 	gatheringEstimate = If[NullQ[parentProtocol],
@@ -4154,6 +4250,30 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 	containerModelsNeedingRacksPackets=Experiment`Private`fetchPacketFromCache[#, cache]&/@containerModelsNeedingRacks;
 	containerModelsNeedingRacksFootprint=Lookup[#,Footprint, Null]&/@containerModelsNeedingRacksPackets;
 
+	(* define lookup tables that contain rack models for commonly used CONTAINERS *)
+	commonRackLookup={
+		(*15mL Tube*)
+		Model[Container,Vessel,"id:xRO9n3vk11pw"]->Model[Container,Rack,"id:R8e1PjRDbbo7"],
+		(*50mL Tube*)
+		Model[Container,Vessel,"id:bq9LA0dBGGR6"]->Model[Container,Rack,"id:GmzlKjY5EEdE"],
+		(*2mL Tube - MicrocentrifugeTube*)
+		Model[Container,Vessel,"id:3em6Zv9NjjN8"]->Model[Container,Rack,"id:vXl9j57WEJ8Z"],
+		(*1.5mL Tube with 2mL Tube Skirt - MicrocentrifugeTube*)
+		Model[Container,Vessel,"id:eGakld01zzpq"]->Model[Container,Rack,"id:vXl9j57WEJ8Z"],
+		(*0.5mL Tube with 2mL Tube Skirt - MicrocentrifugeTube*)
+		Model[Container,Vessel,"id:o1k9jAG00e3N"]->Model[Container,Rack,"id:vXl9j57WEJ8Z"]
+	};
+
+	(* define lookup tables that contain rack models for commonly used FOOTPRINTS *)
+	commonFootprintToRackLookup={
+		Conical15mLTube->Model[Container, Rack, "id:R8e1PjRDbbo7"], (*15mL Tube Stand*)
+		Conical50mLTube->Model[Container, Rack, "id:GmzlKjY5EEdE"], (*50mL Tube Stand*)
+		MicrocentrifugeTube->Model[Container, Rack, "id:vXl9j57WEJ8Z"], (*2mL Tube Stand*)
+		Round9mLOptiTube->Model[Container, Rack, "id:n0k9mG8EWdNp"],
+		Round32mLOptiTube->Model[Container, Rack, "id:GmzlKjY5EEdE"],
+		Round94mLUltraClearTube->Model[Container, Rack, "id:zGj91a7NxY1j"]
+	};
+
 	(* get information about the racks *)
 	(* Foorprint information *)
 	availableRackFootprints = Map[
@@ -4175,32 +4295,59 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 		Function[{containerModel,containerFootprint},
 			(* If we're not InSitu, resolve a holder if necessary *)
 				Module[
-					{footprintCompatibleQ,bestHolder},
+					{footprintCompatibleQ,bestHolder, possibleDefaultByModel, possibleDefaultByFootprint},
+
+					(* check if we have any of the common situations. This is the same logic used in RackFinder *)
+					possibleDefaultByModel = Lookup[commonRackLookup, containerModel];
+					possibleDefaultByFootprint = Lookup[commonFootprintToRackLookup,containerFootprint];
+					If[MemberQ[{possibleDefaultByModel,possibleDefaultByFootprint}, ObjectP[Model[Container, Rack]]],
+						Return[
+							ObjectP[containerModel] -> FirstCase[
+								{possibleDefaultByModel,possibleDefaultByFootprint},
+								ObjectP[Model[Container, Rack]]
+							],
+							Module
+						]
+					];
+
+					(* if we have an uncommon case, we will usually need an uncommon rack. *)
 					footprintCompatibleQ=Map[
 						MemberQ[#,containerFootprint]&,
 						availableRackFootprints
 					];
+
 					bestHolder=If[MemberQ[footprintCompatibleQ,True],
 						(* If we get a compatible footprint *)
 						First[PickList[allRacks,footprintCompatibleQ]],
 						(* otherwise, fill in with the default rack *)
 						defaultOpenHolder
-					]
+					];
+
+					ObjectP[containerModel] -> bestHolder
 				]
 		],
 		{containerModelsNeedingRacks,containerModelsNeedingRacksFootprint}
 	];
 
 	(*A 15 mL tube and light sensitive 15mL tube will return the same set of potential tare racks, so get only the unique sets *)
-	tareRackSets = DeleteCases[DeleteDuplicates[potentialRacksByContainer],{}];
+	tareRackSets = DeleteCases[DeleteDuplicates[Values[potentialRacksByContainer]],{}];
 
 	(* Make resources for any tube racks we need for weighing the containers. We only take the first allowed Model from the list of Racks as our Resource system no longer supports list of potential models. This is valid because empty list is deleted earlier. *)
 	tareRackResources = Map[
 		Resource[
-			Sample->#,
-			Rent->True
+			Sample -> #,
+			Name -> CreateUniqueLabel["Tare Rack"],
+			Rent -> True
 		]&,tareRackSets
 	];
+
+	(* potentialRacksByContainer are a list of rules pointing from Model[Container] to a tare rack for that model. *)
+	(* For each simulated working container look up its model and make the replacement. *)
+	(* Add a catch all ObjectP if a tare rack is not needed. *)
+	tareRackIndexMatched = Lookup[DeleteDuplicates[simulatedSampleContainerPackets], Model] /. Join[potentialRacksByContainer, {ObjectP[] -> Null}];
+
+	(* Convert the index matched tare racks to resources. *)
+	tareRackResourcesIndexMatched = tareRackIndexMatched /. MapThread[Rule[#1,#2]&, {tareRackSets,tareRackResources}];
 
 	(* Get any indices that we've specified in our collection container options. *)
 	collectionContainerIndices=DeleteDuplicates[Cases[collectionContainers, {_Integer, _}][[All,1]]];
@@ -4259,6 +4406,27 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 
 	counterweightToResourceRules=If[roboticPrimitiveQ,Rule@@@DeleteDuplicates[Transpose[{counterweight,counterweightResources}]],{}];
 
+	(* Convert our adapters which were index-matched to samples above to be index-matched with containers *)
+	{
+		adapterResourcesIndexMatchedToContainer,
+		secondaryAdapterResourcesIndexMatchedToContainer,
+		tertiaryAdapterResourcesIndexMatchedToContainer,
+		counterbalanceAdapterLinksIndexMatchedToContainer,
+		secondaryCounterbalanceAdapterLinksIndexMatchedToContainer,
+		tertiaryCounterbalanceAdapterLinksIndexMatchedToContainer
+	} = Drop[
+		Transpose[DeleteDuplicatesBy[Transpose[
+			{
+				adapterResources,
+				secondaryAdapterResources,
+				tertiaryAdapterResources,
+				counterbalanceAdapterLinks,
+				secondaryCounterbalanceAdapterLinks,
+				tertiaryCounterbalanceAdapterLinks,
+				expandedTargetContainers
+			}
+		], Last]], -1];
+
 	(* --- Generate our unit operation protocol protocol packet --- *)
 	(* fill in the protocol packet with all the resources *)
 	{protocolPacket,unitOperationPackets} = If[MatchQ[preparation, Manual],
@@ -4282,12 +4450,12 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 				Replace[Rotors] -> expandedRotorResources, (* Resources are only generated for ultracentrifuge rotors and not generated for other rotors because most rotors remain attached to associated centrifuges and are never gathered/placed *)
 				Replace[Plier] -> plierResource,
 				Replace[Buckets] -> bucketResources,
-				Replace[CentrifugeAdapters]-> adapterResources,
-				Replace[SecondaryCentrifugeAdapters]-> secondaryAdapterResources,
-				Replace[TertiaryCentrifugeAdapters]-> tertiaryAdapterResources,
-				Replace[CounterbalanceAdapters] -> counterbalanceAdapterLinks,
-				Replace[SecondaryCounterbalanceAdapters] -> secondaryCounterbalanceAdapterLinks,
-				Replace[TertiaryCounterbalanceAdapters] -> tertiaryCounterbalanceAdapterLinks,
+				Replace[CentrifugeAdapters]-> adapterResourcesIndexMatchedToContainer,
+				Replace[SecondaryCentrifugeAdapters]-> secondaryAdapterResourcesIndexMatchedToContainer,
+				Replace[TertiaryCentrifugeAdapters]-> tertiaryAdapterResourcesIndexMatchedToContainer,
+				Replace[CounterbalanceAdapters] -> counterbalanceAdapterLinksIndexMatchedToContainer,
+				Replace[SecondaryCounterbalanceAdapters] -> secondaryCounterbalanceAdapterLinksIndexMatchedToContainer,
+				Replace[TertiaryCounterbalanceAdapters] -> tertiaryCounterbalanceAdapterLinksIndexMatchedToContainer,
 				Replace[Times] -> expandedTimes,
 				Replace[Temperatures] -> expandedTemperatures,
 				Balance -> If[MatchQ[Lookup[myResolvedOptions,CounterbalanceWeight],{MassP..}],
@@ -4298,17 +4466,18 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 					{},
 					tareRackResources
 				],
+				Replace[TareRacksIndexMatched] -> tareRackResourcesIndexMatched,
 				Replace[CollectionContainers] -> collectionContainerResources,
 				Replace[SamplesInStorage] -> Lookup[myResolvedOptions, SamplesInStorageCondition],
 				Replace[CounterbalanceWeights] -> (Lookup[myResolvedOptions,CounterbalanceWeight]/.{{(Automatic|Null)..}->{}}),
 				Replace[RotorGeometry] -> Lookup[myResolvedOptions,RotorGeometry]/.{FixedAngle->FixedAngleRotor,SwingingBucket->SwingingBucketRotor},
 				Replace[Checkpoints] -> {
-					{"Preparing Samples",5 Minute, "Preprocessing, such as thermal incubation/mixing, centrifugation,	filteration, and aliquoting, is performed.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 5Minute]]},
-					{"Picking Resources",gatheringEstimate,"Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> gatheringEstimate]]},
-					{"Balancing Centrifuge",balancingEstimate,"Containers are weighed and counterweights are gathered to balance the centrifuge.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> balancingEstimate]]},
-					{"Centrifuging Samples",centrifugingEstimate,"Samples are centrifuged.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> operatorCentrifugingEstimate]]},
-					{"Sample Post-Processing",postProcessingEstimate,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> postProcessingEstimate]]},
-					{"Returning Materials",returningEstimate,"Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> returningEstimate]]}
+					{"Preparing Samples",5 Minute, "Preprocessing, such as thermal incubation/mixing, centrifugation,	filteration, and aliquoting, is performed.",Link[Resource[Operator -> $BaselineOperator, Time -> 5Minute]]},
+					{"Picking Resources",gatheringEstimate,"Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> gatheringEstimate]]},
+					{"Balancing Centrifuge",balancingEstimate,"Containers are weighed and counterweights are gathered to balance the centrifuge.", Link[Resource[Operator -> $BaselineOperator, Time -> balancingEstimate]]},
+					{"Centrifuging Samples",centrifugingEstimate,"Samples are centrifuged.", Link[Resource[Operator -> $BaselineOperator, Time -> operatorCentrifugingEstimate]]},
+					{"Sample Post-Processing",postProcessingEstimate,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> postProcessingEstimate]]},
+					{"Returning Materials",returningEstimate,"Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> returningEstimate]]}
 				},
 
 				Template -> Link[Lookup[resolvedOptionsNoHidden, Template], ProtocolsTemplated],
@@ -4325,15 +4494,27 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 		],
 		Module[
 			{
-				innerPrococolPacket, innerUnitOperationPackets,innerUnitOperationPacketWithLabeleds
+				innerPrococolPacket, innerUnitOperationPackets,innerUnitOperationPacketWithLabeleds, newLabelSampleUO,
+				oldResourceToNewResourceRules, labelSampleAndCentrifugeUnitOperationPackets,
+				labelSampleUOPacket
 			},
 
+			(* get the new label sample unit operation if it exists; need to replace the models in it with the sample resources we've already created/simulated *)
+			{newLabelSampleUO, oldResourceToNewResourceRules} = If[MatchQ[Lookup[myResolvedOptions, PreparatoryUnitOperations], {_[_LabelSample]}],
+				generateLabelSampleUO[
+					Lookup[myResolvedOptions, PreparatoryUnitOperations][[1, 1]],
+					updatedSimulation,
+					Join[expandedSampleResource, sampleContainerResources]
+				],
+				{Null, {}}
+			];
 
 			(* No protocol packets will be returned*)
 			innerPrococolPacket={};
-			innerUnitOperationPackets=UploadUnitOperation[
+			labelSampleAndCentrifugeUnitOperationPackets = UploadUnitOperation[{
+				If[NullQ[newLabelSampleUO], Nothing, newLabelSampleUO],
 				Centrifuge@@{
-					Sample->expandedSampleResource,
+					Sample->expandedSampleResource /. oldResourceToNewResourceRules,
 					Intensity->expandedIntensities,
 					Time->expandedTimes,
 					SampleLabel->expandedSampleLabel,
@@ -4343,11 +4524,15 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 					CollectionContainer->(expandedCollectionContainers/.collectionContainerToResourceRules),
 					Counterweight->(expandedCounterweight/.counterweightToResourceRules),
 					NumberOfReplicates->replicates
-				},
+				}},
 				Preparation->Robotic,
 				UnitOperationType->Output,
 				FastTrack->True,
 				Upload->False
+			];
+			{labelSampleUOPacket, innerUnitOperationPackets} = If[NullQ[newLabelSampleUO],
+				{Null, First[labelSampleAndCentrifugeUnitOperationPackets]},
+				labelSampleAndCentrifugeUnitOperationPackets
 			];
 
 
@@ -4355,17 +4540,17 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 				innerUnitOperationPackets,
 				Replace[LabeledObjects]->DeleteDuplicates@Join[
 					Cases[
-						Transpose[{sampleLabel, samplesInResources}],
+						Transpose[{sampleLabel, samplesInResources /. oldResourceToNewResourceRules}],
 						{_String, Resource[KeyValuePattern[Sample->ObjectP[{Object[Sample], Model[Sample]}]]]}
 					],
 					Cases[
-						Transpose[{Download[Lookup[samplePackets,Container],Object], Download[Lookup[samplePackets,Container],Object]/.sampleContaienrToResourceRules}],
+						Transpose[{Download[Lookup[samplePackets,Container],Object], (Download[Lookup[samplePackets,Container],Object]/.sampleContainerToResourceRules) /. oldResourceToNewResourceRules}],
 						{_String, Resource[KeyValuePattern[Sample->ObjectP[{Object[Container], Model[Container]}]]]}
 					]
 				]
 			];
 
-			{innerPrococolPacket,innerUnitOperationPacketWithLabeleds}
+			{innerPrococolPacket,{If[NullQ[labelSampleUOPacket], Nothing, labelSampleUOPacket], innerUnitOperationPacketWithLabeleds}}
 
 		]
 	];
@@ -4791,7 +4976,7 @@ Error::OptionLengthDisagreement="The options `1` do not have the same length. Pl
 (* ::Subsubsection::Closed:: *)
 (* CentrifugeDevices - Download Fields *)
 
-centrifugeInstrumentDownloadFields[]:={MaxTime, MaxTemperature, MinTemperature, MaxRotationRate, MinRotationRate, CentrifugeType, SampleHandlingCategories, Footprint, Positions, Name, MaxStackHeight, MaxWeight, SpeedResolution};
+centrifugeInstrumentDownloadFields[]:={MaxTime, MaxTemperature, MinTemperature, MaxRotationRate, MinRotationRate, CentrifugeType, AsepticHandling, Footprint, Positions, Name, MaxStackHeight, MaxWeight, SpeedResolution};
 
 centrifugeRotorDownloadFields[]:={MaxRadius, MaxForce, MaxRotationRate, Footprint, Positions, StorageCondition, Name, MaxImbalance, AvailableLayouts, RotorType, DefaultStorageCondition, RotorAngle};
 
@@ -4807,7 +4992,7 @@ centrifugeAdapterDownloadFields[]:={Footprint, AdapterFootprint, Name};
 
 (* Overload with no container inputs (to find all centrifuges that can attain the desired settings, regardless of container) *)
 CentrifugeDevices[myOptions:OptionsPattern[]]:=Module[{
-	safeOps,listedOptions,outputSpecification,output,gatherTests,
+	safeOps,outputSpecification,output,gatherTests,
 	safeOpsTests,cacheOption,timeOption,temperatureOption,intensityOption,
 	expandedTimeOption, expandedTemperatureOption, expandedIntensityOption,listedOptionLengths,
 	optionLengthTest,allCentrifugableContainers,
@@ -4816,11 +5001,9 @@ CentrifugeDevices[myOptions:OptionsPattern[]]:=Module[{
 	expandedIntensityByContainer,containerOptionSets,uniqueOptionSets,uniqueContainers,
 	uniqueTimes,uniqueTemperatures,uniqueIntensity,centrifugeDevicesByUniqueSet,setRules,resultRules,
 	centrifugeDevicesBySet,collectionContainerOption,expandedCollectionContainerOption,expandedCollectionContainerByContainer,
-	uniqueCollectionContainer, centrifugeAdapters, simulation,preparationMethod
+	uniqueCollectionContainer, safeOpsNamed, simulation,preparationMethod
 },
 
-	(* Make sure we're working with a list of options and we replace all Names with IDs *)
-	listedOptions=sanitizeInputs[ToList[myOptions]];
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -4829,14 +5012,15 @@ CentrifugeDevices[myOptions:OptionsPattern[]]:=Module[{
 	(* Determine if we should keep a running list of tests *)
 	gatherTests=MemberQ[output,Tests];
 	
-	(* retrieve preparation scale *)
-	preparationMethod=Lookup[listedOptions,Preparation,Manual];
 
 	(* Call SafeOptions to make sure all options match pattern *)
-	{safeOps,safeOpsTests}=If[gatherTests,
+	{safeOpsNamed,safeOpsTests}=If[gatherTests,
 		SafeOptions[CentrifugeDevices,ToList[myOptions],AutoCorrect->False,Output->{Result,Tests}],
 		{SafeOptions[CentrifugeDevices,ToList[myOptions],AutoCorrect->False],{}}
 	];
+
+	(* Make sure we're working with a list of options and we replace all Names with IDs *)
+	safeOps = sanitizeInputs[safeOpsNamed, Simulation -> Lookup[safeOpsNamed, Simulation]];
 
 	(* If the specified options don't match their patterns return $Failed (or the tests up to this point)*)
 	If[MatchQ[safeOps,$Failed],
@@ -4845,6 +5029,9 @@ CentrifugeDevices[myOptions:OptionsPattern[]]:=Module[{
 			Tests -> safeOpsTests
 		}]
 	];
+
+	(* retrieve preparation scale *)
+	preparationMethod = Lookup[safeOps,Preparation,Manual];
 
 	(* Pull out options and assign them to variables *)
 	{cacheOption,simulation,timeOption,temperatureOption,intensityOption,collectionContainerOption}=Lookup[safeOps,{Cache,Simulation,Time,Temperature,Intensity,CollectionContainer}];
@@ -4964,13 +5151,13 @@ CentrifugeDevices[myInput:ObjectP[{Model[Container],Object[Container],Object[Sam
 (* Overload with container model/container/sample inputs (to find all centrifuges that can attain the desired settings AND fit the container) *)
 CentrifugeDevices[myInputs : {ObjectP[{Model[Container], Object[Container], Object[Sample]}]..}, myOptions : OptionsPattern[]] := Module[
 	{
-		sanitizedInputs, safeOps, expandedSafeOps, listedOptions, outputSpecification, output, gatherTests, preparationMethod,
+		sanitizedInputs, safeOps, expandedSafeOps, outputSpecification, output, gatherTests, preparationMethod,
 		safeOpsTests, validLengths, validLengthTests, cacheOption, timeOption, temperatureOption, intensityOption,
 		compatibleCentrifugesByContainer,
 		inputPackets, centrifugeEquipmentPackets, inputContainerFootprints, inputContainerCentrifugeEnsembles, centrifugeEnsemblesByType,
 		centrifugeObjectPacketLookup, centrifugeEnsemblesPackets, inputModelContainerPackets, inputObjectContainerPackets,
 		inputSamplePackets, collectionContainerPackets,
-		collectionContainerOption, collectionContainerNoIndices, fastAssoc,
+		collectionContainerOption, collectionContainerNoIndices, allCentrifugableContainers , fastAssoc,
 		collectionContainerModelPackets, collectionContainerObjectPackets, simulation,
 
 		inputModelContainers, inputObjectContainers, inputSamples, collectionContainerModels, collectionContainers,
@@ -4981,28 +5168,25 @@ CentrifugeDevices[myInputs : {ObjectP[{Model[Container], Object[Container], Obje
 		riffleAlternativesBoolsCollectionContainers, remainingInputModelContainers, remainingInputObjectContainers,
 		remainingInputSamples, remainingCollectionContainerModels, remainingCollectionContainers,
 		remainingInputModelContainerPackets, remainingInputObjectContainerPackets, remainingInputSamplePackets,
-		remainingCollectionContainerModelPackets, remainingCollectionContainerObjectPackets
+		remainingCollectionContainerModelPackets, remainingCollectionContainerObjectPackets, safeOpsNamed
 
 	},
-
-	(* Make sure we're working with a list of options *)
-	{sanitizedInputs,listedOptions} = sanitizeInputs[myInputs,ToList[myOptions]];
 
 	(* Determine the requested return value from the function *)
 	outputSpecification = Quiet[OptionValue[Output]];
 	output = ToList[outputSpecification];
 
-	(* retrieve preparation scale *)
-	preparationMethod = Lookup[listedOptions, Preparation, Manual];
 	(* Determine if we should keep a running list of tests *)
 	gatherTests = MemberQ[output, Tests];
 
-
 	(* Call SafeOptions to make sure all options match pattern *)
-	{safeOps, safeOpsTests} = If[gatherTests,
-		SafeOptions[CentrifugeDevices, listedOptions, AutoCorrect -> False, Output -> {Result, Tests}],
-		{SafeOptions[CentrifugeDevices, listedOptions, AutoCorrect -> False], {}}
+	{safeOpsNamed, safeOpsTests} = If[gatherTests,
+		SafeOptions[CentrifugeDevices, ToList[myOptions], AutoCorrect -> False, Output -> {Result, Tests}],
+		{SafeOptions[CentrifugeDevices, ToList[myOptions], AutoCorrect -> False], {}}
 	];
+
+	(* Make sure we're working with a list of options *)
+	{sanitizedInputs, safeOps} = sanitizeInputs[myInputs, safeOpsNamed, Simulation -> Lookup[safeOpsNamed, Simulation]];
 
 	(* If the specified options don't match their patterns return $Failed  (or the tests up to this point)*)
 	If[MatchQ[safeOps, $Failed],
@@ -5014,8 +5198,8 @@ CentrifugeDevices[myInputs : {ObjectP[{Model[Container], Object[Container], Obje
 
 	(* Call ValidInputLengthsQ to make sure all options are the right length *)
 	{validLengths, validLengthTests} = If[gatherTests,
-		ValidInputLengthsQ[CentrifugeDevices, {sanitizedInputs}, listedOptions, Output -> {Result, Tests}],
-		{ValidInputLengthsQ[CentrifugeDevices, {sanitizedInputs}, listedOptions], {}}
+		ValidInputLengthsQ[CentrifugeDevices, {sanitizedInputs}, safeOps, Output -> {Result, Tests}],
+		{ValidInputLengthsQ[CentrifugeDevices, {sanitizedInputs}, safeOps], {}}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -5026,6 +5210,9 @@ CentrifugeDevices[myInputs : {ObjectP[{Model[Container], Object[Container], Obje
 		}]
 	];
 
+	(* retrieve preparation scale *)
+	preparationMethod = Lookup[safeOps, Preparation, Manual];
+
 	(* Expand any safe ops *)
 	expandedSafeOps = Last[ExpandIndexMatchedInputs[CentrifugeDevices, {ToList[sanitizedInputs]}, safeOps]];
 
@@ -5034,6 +5221,12 @@ CentrifugeDevices[myInputs : {ObjectP[{Model[Container], Object[Container], Obje
 		expandedSafeOps,
 		{Cache, Simulation, Time, Temperature, Intensity, CollectionContainer}
 	];
+
+	(* Centrifuges and related parameters are stored in Model[Container,Plate]/Model[Container,Vessel]. Find all of these containers.
+	(We need to know the rotor/bucket/centrifuge combo in order to calculate force/speed limits, and this combo is container-specific.) *)
+	allCentrifugableContainers = allCentrifugableContainersSearch["Memoization"];
+
+
 	fastAssoc = makeFastAssocFromCache[cacheOption];
 
 	(* Get rid of any indices in the collection container option. *)
@@ -5280,6 +5473,10 @@ CentrifugeDevices[myInputs : {ObjectP[{Model[Container], Object[Container], Obje
 		that are technically usable in a given centrifuge (e.g. Microfuge 16 with FX241.5 and FA361.5) *)
 	compatibleCentrifugesByContainer = DeleteDuplicates /@ MapThread[
 		Function[{packets, desiredTime, desiredTemperature, desiredIntensity, collectionContainerPacket, inputPacket},
+			(* Return {} if the inputPackets is not in allCentrifugableContainers *)
+			(* Note: this is the case for deprecated or Quartz container which we can still resolve centrifuge based on footprint, but we should not proceed *)
+			If[!MemberQ[allCentrifugableContainers, ObjectP[Lookup[inputPacket, Object]]],
+				{},
 			Module[
 				{
 					inputDimensions, inputTareWeight, inputWellDepth, collectionContainerWeight, collectionContainerDimensions,
@@ -5301,15 +5498,17 @@ CentrifugeDevices[myInputs : {ObjectP[{Model[Container], Object[Container], Obje
 				MapThread[
 					Function[{centrifugePacket, rotorPacket, bucketPacket},
 						Module[
-							{maxTime, maxTemperature, minTemperature, centrifugeMinRate, centrifugeMaxRate, rotorMaxRadius, bucketMaxRadius,
+							{
+								maxTime, maxTemperature, minTemperature, centrifugeMinRate, centrifugeMaxRate, rotorMaxRadius, bucketMaxRadius,
 								maxRadius, rotorMaxForce, bucketMaxForce, centrifugeMinForce, centrifugeMaxForce, rotorMaxRate, bucketMaxRate,
 								maxForce, maxRate, timeCompatible, temperatureCompatible, speedCompatible, forceCompatible, centrifugeType, typeCompatible,
-								sampleHandlingCategories, stackCompatible, object, preparationMethodCompatible, weightCompatible, HiGCompatible},
+								asepticHandling, stackCompatible, object, preparationMethodCompatible, weightCompatible, HiGCompatible
+							},
 
 							(* Get info about the centrifuge *)
-							{object, maxTime, maxTemperature, minTemperature, centrifugeMinRate, centrifugeMaxRate, centrifugeType, sampleHandlingCategories} = Lookup[
+							{object, maxTime, maxTemperature, minTemperature, centrifugeMinRate, centrifugeMaxRate, centrifugeType, asepticHandling} = Lookup[
 								centrifugePacket,
-								{Object, MaxTime, MaxTemperature, MinTemperature, MinRotationRate, MaxRotationRate, CentrifugeType, SampleHandlingCategories},
+								{Object, MaxTime, MaxTemperature, MinTemperature, MinRotationRate, MaxRotationRate, CentrifugeType, AsepticHandling},
 								Null
 							];
 
@@ -5472,7 +5671,7 @@ CentrifugeDevices[myInputs : {ObjectP[{Model[Container], Object[Container], Obje
 					(* converting all times to seconds and all weights to grams*)
 					packets
 				]
-			]
+			]]
 		],
 		{centrifugeEnsemblesPackets, timeOption, (temperatureOption /. {Ambient -> $AmbientTemperature}), intensityOption, collectionContainerPackets, inputPackets}
 	];
@@ -5503,7 +5702,7 @@ DefineOptions[ExperimentCentrifugeOptions,
 	},
 	SharedOptions :> {ExperimentCentrifuge}];
 
-ExperimentCentrifugeOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String], myOptions:OptionsPattern[]]:=Module[
+ExperimentCentrifugeOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String], myOptions:OptionsPattern[]]:=Module[
 	{listedOptions, noOutputOptions,options},
 
 (* get the options as a list *)
@@ -5537,7 +5736,7 @@ DefineOptions[ValidExperimentCentrifugeQ,
 ];
 
 
-ValidExperimentCentrifugeQ[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String], myOptions:OptionsPattern[]]:=Module[
+ValidExperimentCentrifugeQ[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String], myOptions:OptionsPattern[]]:=Module[
 	{listedOptions, preparedOptions, ExperimentCentrifugeNewTests, initialTestDescription, allTests, verbose, outputFormat},
 
 (* get the options as a list *)
@@ -5592,7 +5791,7 @@ DefineOptions[ExperimentCentrifugePreview,
 	SharedOptions :> {ExperimentCentrifuge}
 ];
 
-ExperimentCentrifugePreview[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String], myOptions:OptionsPattern[]]:=Module[
+ExperimentCentrifugePreview[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String], myOptions:OptionsPattern[]]:=Module[
 	{listedOptions, noOutputOptions},
 
 (* get the options as a list *)
@@ -5634,18 +5833,54 @@ allCentrifugableContainersSearch[fakeString:_String]:=allCentrifugableContainers
 	(*Add allCentrifugableContainersSearch to list of Memoized functions*)
 	AppendTo[$Memoization,Experiment`Private`allCentrifugableContainersSearch];
 	compatibleObjs = Search[
-		{Model[Container, Plate], Model[Container, Vessel]},
-		And[
-			Deprecated != True,
-			OpenContainer != True,
-			Footprint == CentrifugeableFootprintP,
-			DeveloperObject != True,
-			Or[
-				MaxCentrifugationForce == Null,
-				MaxCentrifugationForce >= 1 GravitationalAcceleration
+		{
+			Model[Container, Plate],
+			Model[Container, Vessel],
+			Model[Container, Vessel, Filter]
+		},
+		{
+			(* we definitely do not allow open plates to be centrifuged *)
+			And[
+				Deprecated != True,
+				OpenContainer != True,
+				Footprint == CentrifugeableFootprintP,
+				ContainerMaterials != Quartz,
+				DeveloperObject != True,
+				Or[
+					MaxCentrifugationForce == Null,
+					MaxCentrifugationForce >= 1 GravitationalAcceleration
+				]
+			],
+			(* we definitely do not allow open vessels to be centrifuged *)
+			And[
+				Deprecated != True,
+				OpenContainer != True,
+				Footprint == CentrifugeableFootprintP,
+				ContainerMaterials != Quartz,
+				DeveloperObject != True,
+				Or[
+					MaxCentrifugationForce == Null,
+					MaxCentrifugationForce >= 1 GravitationalAcceleration
+				]
+			],
+			(* we allow open container filter as long as we are sure it is a filter, DestinationContainerModel is populated *)
+			And[
+				Deprecated != True,
+				OpenContainer == True,
+				DestinationContainerModel != Null,
+				Footprint == CentrifugeableFootprintP,
+				ContainerMaterials != Quartz,
+				DeveloperObject != True,
+				Or[
+					MaxCentrifugationForce == Null,
+					MaxCentrifugationForce >= 1 GravitationalAcceleration
+				]
 			]
-		]
-	]
+		}
+	];
+	
+	(* return a flatten list *)
+	Flatten[compatibleObjs]
 
 ];
 
@@ -5654,7 +5889,7 @@ allCentrifugableContainersSearch[fakeString:_String]:=allCentrifugableContainers
 allRacksSearch[fakeString:_String] :=allRacksSearch[fakeString] = Module[{},
 	(*Add allRacksSearch to list of Memoized functions*)
 	AppendTo[$Memoization,Experiment`Private`allRacksSearch];
-	Search[Model[Container, Rack], Deprecated != True&&DeveloperObject != True, SubTypes -> False]
+	Search[Model[Container, Rack], Deprecated!=True&&DeveloperObject!=True&&Length[Objects]>5, SubTypes -> False]
 ];
 
 (* Find all the counterweights
@@ -5769,7 +6004,7 @@ DefineOptions[resolveExperimentCentrifugeWorkCell,
 (*resolveExperimentCentrifugeWorkCell*)
 
 resolveExperimentCentrifugeWorkCell[
-	myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}]], myOptions : OptionsPattern[]
+	myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}]], myOptions : OptionsPattern[]
 ] := Module[{workCell, allowedInstruments, userChosenInstrument, usableCentrifugeDevices, hasHiG, hasVSpin},
 
 	workCell = Lookup[myOptions, WorkCell, Automatic];
@@ -5896,12 +6131,8 @@ resolveCentrifugeMethod[myContainers : ListableP[ObjectP[{Object[Container], Obj
 	(* Pickout those options that can only be applied to the manual primitives*)
 	manualOnlyOptions = Select[
 		{
-			RotorGeometry,
 			RotorAngle,
-			ChilledRotor,
-			Rotor,
-			PreparatoryUnitOperations,
-			PreparatoryPrimitives
+			ChilledRotor
 		},
 		(!MatchQ[Lookup[ToList[myOptions], #, Null], ListableP[Null|Automatic]]&)
 	];

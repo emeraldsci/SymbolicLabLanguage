@@ -34,7 +34,7 @@ DefineObjectType[Object[Inventory], {
 		Status -> {
 			Format -> Single,
 			Class -> Expression,
-			Pattern :> Active | Inactive, (* we could call this InventoryStatusP, but Active|Inactive is broad enough that it seems odd to call it that when other things could use that eventually too *)
+			Pattern :> InventoryStatusP | Invalid,
 			Description -> "Indicates if this inventory object is currently actively keeping samples in stock.",
 			Category -> "Inventory"
 		},
@@ -80,8 +80,8 @@ DefineObjectType[Object[Inventory], {
 		StockingMethod -> {
 			Format -> Single,
 			Class -> Expression,
-			Pattern :> NumberOfStockedContainers | TotalAmount,
-			Description -> "Indicates if this inventory keeps track of how much to keep in stock in the lab by the number of currently-stocked containers or the total amount of the model stocked.",
+			Pattern :> InventoryStockingMethodP,
+			Description -> "Indicates if this inventory keeps track of how much to keep in stock in the lab by the number of currently-stocked objects or the total amount (mass/volume/count/number of objects) of the model currently stocked or available.",
 			Category -> "Inventory"
 		},
 		CurrentAmount -> {
@@ -91,11 +91,27 @@ DefineObjectType[Object[Inventory], {
 			Description -> "The amount of sample currently in stock in the lab that has not already been requested by a confirmed or running protocol.",
 			Category -> "Inventory"
 		},
+		CurrentAmountLog -> {
+			Format -> Multiple,
+			Class -> {Date, VariableUnit},
+			Pattern :> {_?DateObjectQ, GreaterEqualP[0 Gram]|GreaterEqualP[0 Milliliter]|GreaterEqualP[0 Unit, 1 Unit]},
+			Description -> "A record of the amount of sample in stock in the lab that had not already been requested by a confirmed or running protocol, over time.",
+			Headers -> {"Date", "Amount"},
+			Category -> "Inventory"
+		},
 		ReorderThreshold -> {
 			Format -> Single,
 			Class -> VariableUnit,
 			Pattern :> GreaterEqualP[0 Gram]|GreaterEqualP[0 Milliliter]|GreaterEqualP[0 Unit, 1 Unit],
 			Description -> "Indicates the point below which CurrentAmount + OutstandingAmount must fall for a new order to be triggered.",
+			Category -> "Inventory"
+		},
+		ReorderThresholdLog -> {
+			Format -> Multiple,
+			Class -> {Date, VariableUnit},
+			Pattern :> {_?DateObjectQ, GreaterEqualP[0 Gram]|GreaterEqualP[0 Milliliter]|GreaterEqualP[0 Unit, 1 Unit]},
+			Description -> "A record of the point below which CurrentAmount + OutstandingAmount must have fallen for a new order to be triggered, over time.",
+			Headers -> {"Date", "Amount"},
 			Category -> "Inventory"
 		},
 		OutstandingAmount -> {
@@ -105,11 +121,27 @@ DefineObjectType[Object[Inventory], {
 			Description -> "The amount of sample that has been ordered but has not yet been received and made available in the lab.",
 			Category -> "Inventory"
 		},
+		OutstandingAmountLog -> {
+			Format -> Multiple,
+			Class -> {Date, VariableUnit},
+			Pattern :> {_?DateObjectQ, GreaterEqualP[0 Gram]|GreaterEqualP[0 Milliliter]|GreaterEqualP[0 Unit, 1 Unit]},
+			Description -> "A record of the amount of sample that had been ordered but not yet been received and made available in the lab, over time.",
+			Headers -> {"Date", "Amount"},
+			Category -> "Inventory"
+		},
 		ReorderAmount -> {
 			Format -> Single,
 			Class -> VariableUnit,
 			Pattern :> GreaterEqualP[0 Gram]|GreaterEqualP[0 Milliliter]|GreaterEqualP[0 Unit, 1 Unit],
 			Description -> "Indicates the amount that will be automatically ordered if CurrentAmount + OutstandingAmount falls below ReorderThreshold. If StockingMethod -> NumberOfStockedContainers and this is a StockSolution, the number of stock solution to prepare using the stock solution's formula volume.",
+			Category -> "Inventory"
+		},
+		ReorderAmountLog -> {
+			Format -> Multiple,
+			Class -> {Date, VariableUnit},
+			Pattern :> {_?DateObjectQ, GreaterEqualP[0 Gram]|GreaterEqualP[0 Milliliter]|GreaterEqualP[0 Unit, 1 Unit]},
+			Description -> "A record of the amount that would be automatically ordered when CurrentAmount + OutstandingAmount fell below ReorderThreshold, over time. If StockingMethod -> NumberOfStockedContainers and this is a StockSolution, the number of stock solution to prepare using the stock solution's formula volume.",
+			Headers -> {"Date", "Amount"},
 			Category -> "Inventory"
 		},
 		Expires -> {
@@ -134,6 +166,22 @@ DefineObjectType[Object[Inventory], {
 			Units -> Day,
 			Description -> "The length of time after opening that samples kept in stock by this inventory are recommended for use before they should be discarded.",
 			Category -> "Storage Information"
+		},
+		ExpiredAmountLog -> {
+			Format -> Multiple,
+			Class -> {Date, VariableUnit},
+			Pattern :> {_?DateObjectQ, GreaterEqualP[0 Gram]|GreaterEqualP[0 Milliliter]|GreaterEqualP[0 Unit, 1 Unit]},
+			Description -> "A record of the amount of sample that first exceeded its shelf life at some point in the logged day.",
+			Headers -> {"Date", "Amount"},
+			Category -> "Inventory"
+		},
+		UsageLog -> {
+			Format -> Multiple,
+			Class -> {Date, Integer, VariableUnit},
+			Pattern :> {_?DateObjectQ, GreaterEqualP[0, 1], GreaterEqualP[0 Gram]|GreaterEqualP[0 Milliliter]|GreaterEqualP[0 Unit, 1 Unit]},
+			Description -> "A record of the number and total amount of the sample resources fulfilled at some point in the logged day.",
+			Headers -> {"Date", "Count", "Amount"},
+			Category -> "Inventory"
 		},
 		MaxNumberOfUses -> {
 			Format -> Single,

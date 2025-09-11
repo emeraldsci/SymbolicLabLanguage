@@ -138,10 +138,11 @@ DefineOptions[ExperimentVisualInspection,
 				Category->"Imaging"
 			}
 		],
-		FuntopiaSharedOptions,
+		NonBiologyFuntopiaSharedOptions,
 		SimulationOption,
 		SamplesInStorageOption,
-		SamplesOutStorageOption
+		SamplesOutStorageOption,
+		ModelInputOptions
 	}
 ];
 
@@ -159,7 +160,7 @@ ExperimentVisualInspection[mySamples:{ObjectP[Object[Sample]]..}, myOptions:Opti
 	{outputSpecification, output, gatherTests, listedSamples, listedOptions, validSamplePreparationResult,
 		mySamplesWithPreparedSamplesNamed, optionsWithPreparedSamplesNamed, updatedSimulation, safeOptionsNamed, expandedInheritedOptions,
 		safeOpsTests, mySamplesWithPreparedSamples, safeOps, optionsWithPreparedSamples, validLengths, validLengthTests,
-		unresolvedOptions, templateTests, inheritedOptions, upload, confirm, fastTrack, parentProtocol, cache, instrumentModels,
+		unresolvedOptions, templateTests, inheritedOptions, upload, confirm, canaryBranch, fastTrack, parentProtocol, cache, instrumentModels,
 		specifiedInstruments, objectSampleFields, modelSampleFields, objectContainerFields, modelContainerFields, packetObjectSample,
 		downloadedStuff, containerPackets, samplePackets, cacheBall, resolvedOptionsResult, resolvedOptions, resolvedOptionsTests,
 		collapsedResolvedOptions, returnEarlyQ, performSimulationQ, protocolPacketWithResources, resourcePacketTests, simulatedProtocol, simulation, protocolObject
@@ -183,7 +184,7 @@ ExperimentVisualInspection[mySamples:{ObjectP[Object[Sample]]..}, myOptions:Opti
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -201,7 +202,7 @@ ExperimentVisualInspection[mySamples:{ObjectP[Object[Sample]]..}, myOptions:Opti
 	];
 
 	(* replace all objects referenced by Name to ID *)
-	{mySamplesWithPreparedSamples, safeOps, optionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, optionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples, safeOps, optionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, optionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps, $Failed],
@@ -255,7 +256,7 @@ ExperimentVisualInspection[mySamples:{ObjectP[Object[Sample]]..}, myOptions:Opti
 	expandedInheritedOptions = Last[ExpandIndexMatchedInputs[ExperimentVisualInspection, {ToList[mySamplesWithPreparedSamples]}, inheritedOptions]];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProtocol, cache} = Lookup[expandedInheritedOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProtocol, cache} = Lookup[expandedInheritedOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	instrumentModels = Join[Search[Model[Instrument, SampleInspector],Deprecated != True],Cases[Lookup[expandedInheritedOptions,Instrument],ObjectP[Model[Instrument]]]];
 	specifiedInstruments = Cases[Lookup[expandedInheritedOptions,Instrument],Alternatives[ObjectP[Object[Instrument]],ObjectP[Model[Instrument]]]];
@@ -386,7 +387,7 @@ ExperimentVisualInspection[mySamples:{ObjectP[Object[Sample]]..}, myOptions:Opti
 			Cache->cacheBall,
 			Simulation->updatedSimulation
 		],
-		{Null, Null}
+		{Null, updatedSimulation}
 	];
 
 	(* If Result does not exist in the output, return everything without uploading *)
@@ -399,7 +400,7 @@ ExperimentVisualInspection[mySamples:{ObjectP[Object[Sample]]..}, myOptions:Opti
 				RemoveHiddenOptions[ExperimentVisualInspection, collapsedResolvedOptions]
 			],
 			Preview->Null,
-			Simulation->updatedSimulation
+			Simulation->simulation
 		}]
 	];
 
@@ -415,13 +416,14 @@ ExperimentVisualInspection[mySamples:{ObjectP[Object[Sample]]..}, myOptions:Opti
 			protocolPacketWithResources[[2]],
 			Upload->Lookup[safeOps, Upload],
 			Confirm->Lookup[safeOps, Confirm],
+			CanaryBranch->Lookup[safeOps, CanaryBranch],
 			ParentProtocol->Lookup[safeOps, ParentProtocol],
 			Priority->Lookup[safeOps, Priority],
 			StartDate->Lookup[safeOps, StartDate],
 			HoldOrder->Lookup[safeOps, HoldOrder],
 			QueuePosition->Lookup[safeOps, QueuePosition],
 			ConstellationMessage->Object[Protocol, VisualInspection],
-			Simulation->updatedSimulation
+			Simulation->simulation
 		]
 	];
 
@@ -441,7 +443,7 @@ DefineOptions[
 ];
 
 resolveVisualInspectionOptions[myInputSamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, myResolutionOptions:OptionsPattern[resolveVisualInspectionOptions]]:=Module[
-	{outputSpecification, output, gatherTests, messages, cache, simulation, allInstrumentModels, fastTrack, samplePrepOptions, visualInspectionOptions, simulatedSamples, simulatedContainerModelPackets, resolvedSamplePrepOptions, updatedSimulation, samplePrepTests, specifiedInstruments, specifiedIlluminationDirection, specifiedSampleMixingRates, specifiedInspectionConditions, specifiedTemperatureEquilibrationTimes, specifiedAliquotQs, specifiedAliquotAmounts, specifiedAliquotContainers, specifiedTargetConcentrations, specifiedAssayVolumes, sampleDownloads, instrumentDownloads, cacheBall, fastAssoc, samplePackets, sampleContainerObjectPacketsWithNulls, specifiedInstrumentsWithoutAutomatic, automaticInstrumentPositions, specifiedInstrumentPositions, instrumentDownloadsWithAutomatic, sampleContainerModelPacketsWithNulls, sampleContainerModelPackets, sampleContainerObjectPackets, discardedSamplePackets, discardedInvalidInputs, discardedTest, conflictingSampleContainerAliquotQ, conflictingSampleContainerAliquotSamplePackets, conflictingAliquotSampleContainerModels, conflictingSampleContainerAliquots, conflictingSampleContainerAliquotInvalidInputs, conflictingSampleContainerAliquotInvalidOptions, conflictingInstrumentSampleMixingRateQ, sampleModelPacketsWithNulls, conflictingInstrumentSampleMixingRatesSamplePackets, conflictingInstrumentSampleMixingRatesInvalidInputs, conflictingInstrumentSampleMixingRates, conflictingInstrumentSampleMixingRatesInvalidOptions, conflictingInstrumentSampleMixingRateTests, nonLiquidSampleQs, liquidSampleQ, nonLiquidSamplePackets, nonLiquidSampleWarningInputs, nonLiquidSampleTest, roundedVisualInspectionOptions, precisionTests, mapThreadFriendlyOptions, resolvedInstruments, resolvedSampleMixingRates, resolvedInspectionCondition, resolvedTemperatureEquilibrationTimes, specifiedSampleMixingTimes, specifiedSampleSettlingTimes, insufficientTemperatureEquilibrationTimeWarnings, aliquotQs, aliquotContainers, aliquotAmounts, specifiedSampleLabels, specifiedContainerLabels, resolvedSampleLabels, resolvedContainerLabels, confirm, template, unresolvedOperator, resolvedPostProcessingOptions, parentProtocol, upload, unresolvedEmail, unresolvedName, resolvedEmail, resolvedOperator, nameInvalidBool, nameInvalidOption, nameInvalidTest, sampleMixingRateTooLowTests, sampleMixingRateTooHighTests, insufficientTemperatureEquilibrationTimeSamples, insufficientTemperatureEquilibrationTimes, insufficientTemperatureEquilibrationTimeOptions, conflictingInstrumentAliquotContainerQ, conflictingInstrumentAliquotContainerSamplePackets, conflictingInstrumentAliquotContainerInvalidInputs, conflictingInstrumentAliquotContainers, conflictingInstrumentAliquotContainerInvalidOptions, theoreticalMaxAgitationTime, automaticInstrumentReplacements, allInstrumentDownloads, specifiedAliquotContainersPositions, specifiedAliquotContainersDownload,specifiedAliquotContainerModels, conflictingAliquotContainerSampleMixingRateQ, conflictingAliquotContainerSampleMixingRateSamplePackets, conflictingAliquotContainerSampleMixingRateInvalidInputs, conflictingAliquotContainerSampleMixingRates, conflictingAliquotContainerSampleMixingRateInvalidOptions, conflictingAliquotContainerSampleMixingRateTests, optionsForAliquot, resolvedAliquotOptions, aliquotTests, resolvedOptions, invalidInputs, invalidOptions, allTests, storageConditionPackets, debugOptions,debugCache, debugSimulation, debugSamplePrepOptions, objectSampleFields, modelSampleFields, objectContainerFields, modelContainerFields, packetObjectSample},
+	{outputSpecification, output, gatherTests, messages, cache, simulation, allInstrumentModels, fastTrack, samplePrepOptions, visualInspectionOptions, simulatedSamples, simulatedContainerModelPackets, resolvedSamplePrepOptions, updatedSimulation, samplePrepTests, specifiedInstruments, specifiedIlluminationDirection, specifiedSampleMixingRates, specifiedInspectionConditions, specifiedTemperatureEquilibrationTimes, specifiedAliquotQs, specifiedAliquotAmounts, specifiedAliquotContainers, specifiedTargetConcentrations, specifiedAssayVolumes, sampleDownloads, instrumentDownloads, cacheBall, fastAssoc, samplePackets, sampleContainerObjectPacketsWithNulls, specifiedInstrumentsWithoutAutomatic, automaticInstrumentPositions, specifiedInstrumentPositions, instrumentDownloadsWithAutomatic, sampleContainerModelPacketsWithNulls, sampleContainerModelPackets, sampleContainerObjectPackets, discardedSamplePackets, discardedInvalidInputs, discardedTest, conflictingSampleContainerAliquotQ, conflictingSampleContainerAliquotSamplePackets, conflictingAliquotSampleContainerModels, conflictingSampleContainerAliquots, conflictingSampleContainerAliquotInvalidInputs, conflictingSampleContainerAliquotInvalidOptions, conflictingInstrumentSampleMixingRateQ, sampleModelPacketsWithNulls, conflictingInstrumentSampleMixingRatesSamplePackets, conflictingInstrumentSampleMixingRatesInvalidInputs, conflictingInstrumentSampleMixingRates, conflictingInstrumentSampleMixingRatesInvalidOptions, conflictingInstrumentSampleMixingRateTests, nonLiquidSampleQs, liquidSampleQ, nonLiquidSamplePackets, nonLiquidSampleWarningInputs, nonLiquidSampleTest, roundedVisualInspectionOptions, precisionTests, mapThreadFriendlyOptions, resolvedInstruments, resolvedSampleMixingRates, resolvedInspectionCondition, resolvedTemperatureEquilibrationTimes, specifiedSampleMixingTimes, specifiedSampleSettlingTimes, insufficientTemperatureEquilibrationTimeWarnings, aliquotQs, aliquotContainers, aliquotAmounts, specifiedSampleLabels, specifiedContainerLabels, resolvedSampleLabels, resolvedContainerLabels, confirm, canaryBranch, template, unresolvedOperator, resolvedPostProcessingOptions, parentProtocol, upload, unresolvedEmail, unresolvedName, resolvedEmail, resolvedOperator, nameInvalidBool, nameInvalidOption, nameInvalidTest, sampleMixingRateTooLowTests, sampleMixingRateTooHighTests, insufficientTemperatureEquilibrationTimeSamples, insufficientTemperatureEquilibrationTimes, insufficientTemperatureEquilibrationTimeOptions, conflictingInstrumentAliquotContainerQ, conflictingInstrumentAliquotContainerSamplePackets, conflictingInstrumentAliquotContainerInvalidInputs, conflictingInstrumentAliquotContainers, conflictingInstrumentAliquotContainerInvalidOptions, theoreticalMaxAgitationTime, automaticInstrumentReplacements, allInstrumentDownloads, specifiedAliquotContainersPositions, specifiedAliquotContainersDownload,specifiedAliquotContainerModels, conflictingAliquotContainerSampleMixingRateQ, conflictingAliquotContainerSampleMixingRateSamplePackets, conflictingAliquotContainerSampleMixingRateInvalidInputs, conflictingAliquotContainerSampleMixingRates, conflictingAliquotContainerSampleMixingRateInvalidOptions, conflictingAliquotContainerSampleMixingRateTests, optionsForAliquot, resolvedAliquotOptions, aliquotTests, resolvedOptions, invalidInputs, invalidOptions, allTests, storageConditionPackets, debugOptions,debugCache, debugSimulation, debugSamplePrepOptions, objectSampleFields, modelSampleFields, objectContainerFields, modelContainerFields, packetObjectSample},
 
 	(* Determine the requested output format of this function. *)
 	outputSpecification = Quiet[OptionValue[Output]];
@@ -952,7 +954,7 @@ resolveVisualInspectionOptions[myInputSamples:{ObjectP[Object[Sample]]..}, myOpt
 	];
 
 	(* Get the rest of our options directly from SafeOptions. *)
-	{confirm, template, fastTrack, unresolvedOperator, parentProtocol, upload, unresolvedEmail, unresolvedName} = Lookup[myOptions, {Confirm, Template, FastTrack, Operator, ParentProtocol, Upload, Email, Name}];
+	{confirm, canaryBranch, template, fastTrack, unresolvedOperator, parentProtocol, upload, unresolvedEmail, unresolvedName} = Lookup[myOptions, {Confirm, CanaryBranch, Template, FastTrack, Operator, ParentProtocol, Upload, Email, Name}];
 
 	(* Adjust the email option based on the upload option *)
 	resolvedEmail = If[!MatchQ[unresolvedEmail, Automatic],
@@ -1620,13 +1622,13 @@ visualInspectionResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresol
 		(* Checkpoints *)
 		Replace[Checkpoints]->Join[
 			{
-				{"Picking Resources", 10 * Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 Minute]]},
-				{"Preparing Samples", 2 * Minute, "Samples that need aliquoting are transferred to appropriate containers.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 2 Minute]]}
+				{"Picking Resources", 10 * Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 Minute]]},
+				{"Preparing Samples", 2 * Minute, "Samples that need aliquoting are transferred to appropriate containers.", Link[Resource[Operator -> $BaselineOperator, Time -> 2 Minute]]}
 			},
 			Table[
 				{"Inspecting Sample", 5*Minute, "The prepared samples are agitated and recorded in the sample inspector instrument, one by one.",
 					Link[Resource[
-						Operator -> Model[User, Emerald, Operator, "Trainee"],
+						Operator -> $BaselineOperator,
 						Time -> 2 Minute
 					]]
 				},
@@ -1678,10 +1680,10 @@ visualInspectionResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresol
 
 
 (* singleton container input *)
-ExperimentVisualInspection[myContainer:(ObjectP[{Object[Container],Object[Sample]}]|_String), myOptions:OptionsPattern[ExperimentVisualInspection]]:=ExperimentVisualInspection[{myContainer}, myOptions];
+ExperimentVisualInspection[myContainer:(ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String), myOptions:OptionsPattern[ExperimentVisualInspection]]:=ExperimentVisualInspection[{myContainer}, myOptions];
 
 (* multiple container input *)
-ExperimentVisualInspection[myContainers:{(ObjectP[{Object[Container],Object[Sample]}]|_String)..}, myOptions:OptionsPattern[ExperimentVisualInspection]]:=Module[
+ExperimentVisualInspection[myContainers:{(ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String)..}, myOptions:OptionsPattern[ExperimentVisualInspection]]:=Module[
 	{listedContainers,listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,
 		mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,containerToSampleResult,containerToSampleOutput,
 		updatedCache,samples,sampleOptions,containerToSampleTests,objectsExistQs,objectsExistTests,currentSimulation},
@@ -1825,7 +1827,7 @@ DefineOptions[ExperimentVisualInspectionOptions,
 	SharedOptions :> {ExperimentVisualInspection}
 ];
 
-ExperimentVisualInspectionOptions[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[
+ExperimentVisualInspectionOptions[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[
 	{listedOptions, noOutputOptions, options},
 
 	(* get the options as a list *)
@@ -1859,17 +1861,17 @@ DefineOptions[ValidExperimentVisualInspectionQ,
 ];
 
 (* --- Overloads --- *)
-ValidExperimentVisualInspectionQ[mySample:_String|ObjectP[Object[Sample]], myOptions:OptionsPattern[ValidExperimentVisualInspectionQ]] := ValidExperimentVisualInspectionQ[{mySample}, myOptions];
+ValidExperimentVisualInspectionQ[mySample:_String|ObjectP[{Model[Sample], Object[Sample]}], myOptions:OptionsPattern[ValidExperimentVisualInspectionQ]] := ValidExperimentVisualInspectionQ[{mySample}, myOptions];
 
 ValidExperimentVisualInspectionQ[myContainer:_String|ObjectP[Object[Container]], myOptions:OptionsPattern[ValidExperimentVisualInspectionQ]] := ValidExperimentVisualInspectionQ[{myContainer}, myOptions];
 
-ValidExperimentVisualInspectionQ[myContainers : {(_String|ObjectP[Object[Container]])..}, myOptions : OptionsPattern[ValidExperimentVisualInspectionQ]] := Module[
+ValidExperimentVisualInspectionQ[myContainers : {(_String|ObjectP[{Object[Container], Model[Sample]}])..}, myOptions : OptionsPattern[ValidExperimentVisualInspectionQ]] := Module[
 	{listedOptions, preparedOptions, visualInspectionTests, initialTestDescription, allTests, verbose, outputFormat},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat)->_];
 
 	(* return only the tests for ExperimentVisualInspection *)
@@ -1918,7 +1920,7 @@ ValidExperimentVisualInspectionQ[mySamples:{(_String|ObjectP[Object[Sample]])..}
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat)->_];
 
 	(* return only the tests for ExperimentVisualInspection *)

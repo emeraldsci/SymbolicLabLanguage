@@ -164,12 +164,19 @@ resolveFilterMethod[myContainers : ListableP[Automatic|ObjectP[{Object[Container
 			Map[
 				Function[
 					{input},
-					If[MatchQ[input, ObjectP[Object[Sample]]],
+					Which[
+						MatchQ[input, ObjectP[Object[Sample]]],
 						(* If input is an object sample, only one set of {sample volume, Automatic, Object[Sample]}*)
 						{{fastAssocLookup[fastAssoc, input, Volume],Automatic,input}},
 						
+						MatchQ[input, ObjectP[Object[Container]]],
 						(* If input is an object container, there can be multiple sample contents and it is possible to have multiple sets of {sample volume, Automatic, Object[Sample]}*)
-						Map[{fastAssocLookup[fastAssoc, #, Volume],Automatic,#} &, fastAssocLookup[fastAssoc, input, Contents][[All, 2]]]
+						Map[{fastAssocLookup[fastAssoc, #, Volume],Automatic,#} &, fastAssocLookup[fastAssoc, input, Contents][[All, 2]]],
+						
+						(* If input is Automatic (eg primitiveResolverMethod call by ValidateUnitOperationsJSON or resolvePrimitiveMethods during pre-resolving method of UO inputs), no tuple is added since there is no need to set allInputSampleLargeVolumeBoolean for the sample *)
+						True,
+						Nothing
+						
 					]
 				],
 				listedInputs
@@ -183,12 +190,18 @@ resolveFilterMethod[myContainers : ListableP[Automatic|ObjectP[{Object[Container
 			MapThread[
 				Function[
 					{input,volumeOption},
-					If[MatchQ[input, ObjectP[Object[Sample]]],
+					Which[
+						MatchQ[input, ObjectP[Object[Sample]]],
 						(* If input is an object sample, only one set of {sample volume, volume option, Object[Sample]}*)
 						{{fastAssocLookup[fastAssoc, input, Volume],volumeOption,input}},
 						
+						MatchQ[input, ObjectP[Object[Container]]],
 						(* If input is an object container, there can be multiple sample contents and it is possible to have multiple sets of {sample volume, volume option, Object[Sample]}*)
-						Map[{fastAssocLookup[fastAssoc, #, Volume],volumeOption,#} &, fastAssocLookup[fastAssoc, input, Contents][[All, 2]]]
+						Map[{fastAssocLookup[fastAssoc, #, Volume],volumeOption,#} &, fastAssocLookup[fastAssoc, input, Contents][[All, 2]]],
+						
+						(* If input is Automatic (eg primitiveResolverMethod call by ValidateUnitOperationsJSON or resolvePrimitiveMethods during pre-resolving method of UO inputs), use {Null, volumeOption, Automatic} to allow for checking of allInputSampleLargeVolumeBoolean *)
+						True,
+						{Null,volumeOption,Automatic}
 					]
 				],
 				{listedInputs,Lookup[expandedSafeOps,Volume]}

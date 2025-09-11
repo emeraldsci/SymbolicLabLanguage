@@ -19,6 +19,6 @@ DefineUsage[fractionContainerReplacement,
 		SeeAlso -> {
 			"ExperimentHPLC"
 		},
-		Author -> {"andrey.shur", "lei.tian", "jihan.kim"}
+		Author -> {"malav.desai", "andrey.shur", "lei.tian", "jihan.kim"}
 	}
 ];

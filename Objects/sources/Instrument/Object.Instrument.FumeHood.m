@@ -5,7 +5,7 @@
 
 
 DefineObjectType[Object[Instrument, FumeHood], {
-	Description->"Ventaliation device for working with potentially harmful chemical fumes and vapors.",
+	Description->"Ventilation device for working with potentially harmful chemical fumes and vapors.",
 	CreatePrivileges->None,
 	Cache->Download,
 	Fields -> {
@@ -33,13 +33,6 @@ DefineObjectType[Object[Instrument, FumeHood], {
 			Description -> "Whether or not a flow meter is connected to the hood.",
 			Category -> "Instrument Specifications"
 		},
-		FlowRate -> {
-			Format -> Computable,
-			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model],FlowRate]],
-			Pattern :> GreaterP[(0*Liter)/Second],
-			Description -> "The recommended face velocity at the sash opening to ensure vapors do not escape.",
-			Category -> "Instrument Specifications"
-		},
 		LiquidWasteBin -> {
 			Format -> Single,
 			Class -> Link,
@@ -60,7 +53,7 @@ DefineObjectType[Object[Instrument, FumeHood], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Instrument, SchlenkLine],
-			Description -> "The schlenk line that is contained within this instrument for backfill and vacuum purposes.",
+			Description -> "The Schlenk line that is contained within this instrument for backfill and vacuum purposes.",
 			Category -> "Instrument Specifications"
 		},
 		IRProbe->{
@@ -68,7 +61,7 @@ DefineObjectType[Object[Instrument, FumeHood], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Sensor, Temperature],
-			Description -> "The IR temperature probe that should be used to measure the temperature of any samples transferred in this biosafety cabinet.",
+			Description -> "The IR temperature probe used to measure the temperature of samples transferred in this fume hood.",
 			Category -> "Instrument Specifications"
 		},
 		ImmersionProbe->{
@@ -76,7 +69,7 @@ DefineObjectType[Object[Instrument, FumeHood], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Sensor, Temperature],
-			Description -> "The immersion probe that should be used to measure the temperature of any samples transferred in this biosafety cabinet.",
+			Description -> "The immersion probe used to measure the temperature of samples transferred in this fume hood.",
 			Category -> "Instrument Specifications"
 		}
 	}

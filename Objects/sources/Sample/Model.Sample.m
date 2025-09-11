@@ -51,7 +51,7 @@ DefineObjectType[Model[Sample], {
 				"Amount",
 				"Identity Model"
 			},
-			Description->"The molecular composition of this model.",
+			Description->"The various molecular components present in this sample, along with their respective initial or theoretical concentrations.",
 			Category->"Organizational Information",
 			Abstract->True
 		},
@@ -169,6 +169,30 @@ DefineObjectType[Model[Sample], {
 			Description->"Indicates that this object is being used for test purposes only and is not supported by standard SLL features.",
 			Category->"Organizational Information",
 			Developer->True
+		},
+		Verified -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the information in this model has been reviewed for accuracy by an ECL employee.",
+			Category -> "Organizational Information"
+		},
+		VerifiedLog -> {
+			Format -> Multiple,
+			Class -> {Boolean, Link, Date},
+			Pattern :> {BooleanP, _Link, _?DateObjectQ},
+			Relation -> {Null, Object[User], Null},
+			Headers -> {"Verified", "Responsible person", "Date"},
+			Description -> "Records the history of changes to the Verified field, along with when the change occured, and the person responsible.",
+			Category -> "Organizational Information"
+		},
+		AdditionalInformation -> {
+			Format -> Multiple,
+			Class -> {String, Date},
+			Pattern :> {_String, _?DateObjectQ},
+			Description -> "Supplementary information recorded from the UploadMolecule function. These information usually records the user supplied input and options, providing additional information for verification.",
+			Headers -> {"Information", "Date Added"},
+			Category -> "Hidden"
 		},
 
 		(* --- Physical Properties --- *)
@@ -288,6 +312,15 @@ DefineObjectType[Model[Sample], {
 			Category->"Physical Properties",
 			Abstract->False
 		},
+		pHTemperatureFitAnalysis->{
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Analysis, Fit],
+			Description->"A fit analysis describing the expected pH of this sample at specified temperatures. Generated from the pH temperature dependence table in the sample's manufacturer specification.",
+			Category->"Physical Properties",
+			Abstract->False
+		},
 		RefractiveIndex->{
 			Format->Single,
 			Class->Real,
@@ -327,19 +360,34 @@ DefineObjectType[Model[Sample], {
 			Description->"Indicates if this model is in the form of a small disk or cylinder of compressed solid substance in a measured amount.",
 			Category->"Physical Properties"
 		},
-		TabletWeight->{
+		SolidUnitWeight->{
 			Format->Single,
 			Class->Real,
 			Pattern:>GreaterEqualP[0*Gram],
 			Units->Gram,
-			Description->"The mean mass of a single tablet of this model.",
+			Description->"The mean mass of a single tablet or sachet of this model.",
 			Category->"Physical Properties"
 		},
-		TabletWeightDistribution->{
+		SolidUnitWeightDistribution->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>DistributionP[Gram],
-			Description-> "The distribution of the single tablet weights measured from multiple samplings.",
+			Description-> "The distribution of the single tablet or sachet weights measured from multiple samplings.",
+			Category->"Physical Properties"
+		},
+		Sachet->{
+			Format->Single,
+			Class->Boolean,
+			Pattern:>BooleanP,
+			Description->"Indicates if this model is in the form of a small pouch filled with a measured amount of loose solid substance.",
+			Category->"Physical Properties"
+		},
+		DefaultSachetPouch -> {
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Model[Material],
+			Description->"The material of the pouch that the filler of the sachet is wrapped in to form a single unit of sachet.",
 			Category->"Physical Properties"
 		},
 		Viscosity->{
@@ -454,6 +502,13 @@ DefineObjectType[Model[Sample], {
 			Description->"The method by which this sample should be manipulated in the lab when transfers out of the sample are requested.",
 			Category->"Storage & Handling"
 		},
+		AsepticHandling -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if aseptic techniques are followed for handling this sample in lab. Aseptic techniques include sanitization, autoclaving, sterile filtration, or transferring in a biosafety cabinet during experimentation and storage.",
+			Category -> "Storage & Handling"
+		},
 		TransportCondition->{
 			Format->Single,
 			Class->Link,
@@ -565,20 +620,21 @@ DefineObjectType[Model[Sample], {
 			Category->"Storage & Handling"
 		},
 		(*Fields below are phasing out after TransportCondition is in play*)
-		TransportChilled->{
-			Format->Single,
-			Class->Expression,
-			Pattern:>BooleanP,
-			Description->"Indicates if samples of this model should be refrigerated during transport when used in experiments.",
-			Category->"Storage & Handling"
-		},
-		TransportWarmed->{
+
+		TransportTemperature->{
 			Format->Single,
 			Class->Real,
 			Pattern:>GreaterP[0*Kelvin],
 			Units->Celsius,
 			Description->"The temperature that samples of this model should be incubated at while transported between instruments during experimentation.",
 			Category->"Storage & Handling"
+		},
+		AsepticTransportContainerType -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> AsepticTransportContainerTypeP,
+			Description -> "Indicates how samples of this model are contained in an aseptic barrier and if they need to be unbagged before being used in a protocol, maintenance, or qualification.",
+			Category -> "Storage & Handling"
 		},
 
 		(* --- Inventory ---*)
@@ -718,7 +774,7 @@ DefineObjectType[Model[Sample], {
 			Format->Single,
 			Class->Expression,
 			Pattern:>BooleanP,
-			Description->"Indicates that this model of sample arrives sterile from the manufacturer.",
+			Description->"Indicates that this model of sample arrives free of both microbial contamination and any microbial cell samples from the manufacturer, or is prepared free of both microbial contamination and any microbial cell samples by employing aseptic techniques during experimentation and storage.",
 			Category->"Health & Safety"
 		},
 		RNaseFree->{
@@ -761,13 +817,6 @@ DefineObjectType[Model[Sample], {
 			Class->Expression,
 			Pattern:>BooleanP,
 			Description->"Indicates if samples of this model must be handled in a glove box.",
-			Category->"Health & Safety"
-		},
-		BiosafetyHandling->{
-			Format->Single,
-			Class->Expression,
-			Pattern:>BooleanP,
-			Description->"Indicates if samples of this model must be handled in a biosafety cabinet.",
 			Category->"Health & Safety"
 		},
 		GloveBoxIncompatible->{
@@ -868,6 +917,13 @@ DefineObjectType[Model[Sample], {
 			Description->"Indicates if samples of this model may be safely disposed down a standard drain.",
 			Category->"Health & Safety"
 		},
+		LabWasteDisposal->{
+			Format->Single,
+			Class->Boolean,
+			Pattern:>BooleanP,
+			Description->"Indicates if samples of this model may be safely disposed into a regular lab waste container.",
+			Category->"Health & Safety"
+		},
 		Pungent->{
 			Format->Single,
 			Class->Boolean,
@@ -910,6 +966,14 @@ DefineObjectType[Model[Sample], {
 			Pattern:>BiosafetyLevelP,
 			Description->"The Biosafety classification of the substance.",
 			Category->"Health & Safety"
+		},
+		DoubleGloveRequired -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> BooleanP,
+			Description -> "Indicates if working with this sample requires to wear two pairs of gloves.",
+			Category -> "Health & Safety",
+			Developer -> True
 		},
 
 		(* --- Compatibility --- *)
@@ -991,6 +1055,15 @@ DefineObjectType[Model[Sample], {
 			Description->"The list of resource requests for this model that have not yet been Fulfilled.",
 			Category->"Resources",
 			Developer->True
+		},
+
+		(* --- Quality Assurance --- *)
+		ReceivingBatchInformation -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> FieldP[Object[Report,Certificate,Analysis], Output->Short],
+			Description -> "A list of the required fields populated by receiving.",
+			Category -> "Quality Assurance"
 		},
 
 		(* --- Migration Support --- *)

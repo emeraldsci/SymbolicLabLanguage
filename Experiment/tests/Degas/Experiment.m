@@ -32,9 +32,89 @@ DefineTests[
 			ExperimentDegas[Object[Sample,"Degas Test Water Sample Severed Model"<> $SessionUUID],Upload->True],
 			ObjectP[Object[Protocol,Degas]]
 		],
+		Test["Degas a model:",
+			ExperimentDegas[Model[Sample,"Milli-Q water"],Upload->True],
+			ObjectP[Object[Protocol,Degas]]
+		],
 
 
 		(* Messages: errors and warnings *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentDegas[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentDegas[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentDegas[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentDegas[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[
+				{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample,"Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+				
+				ExperimentDegas[sampleID, Aliquot->True,Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[
+				{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample,"Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+				
+				ExperimentDegas[containerID, Aliquot->True,Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[{Messages,"DiscardedSamples","If the provided sample is discarded, an error will be thrown:"},
 			ExperimentDegas[Object[Sample,"Test discarded sample for ExperimentDegas"<> $SessionUUID],DegasType->VacuumDegas],
 			$Failed,
@@ -490,16 +570,16 @@ DefineTests[
 			Lookup[ExperimentDegas[Object[Sample,"Degas Test Water Sample1"<> $SessionUUID],DegasType->FreezePumpThaw,Instrument->Automatic,Output->Options],Instrument],
 			Model[Instrument,FreezePumpThawApparatus,"High Tech FreezePumpThaw Apparatus"]
 		],
-		Example[{Options,DissolvedOxygen,"DissolvedOxygen will default based on the composition of the sample, and will be True for aqueous samples if it is left as Automatic:"},
-			Lookup[ExperimentDegas[Object[Sample,"Degas Test Water Sample7 500mL Bottle"<> $SessionUUID],DegasType->VacuumDegas,DissolvedOxygen->Automatic,Output->Options],DissolvedOxygen],
-			True
-		],
-		Example[{Options,DissolvedOxygen,"DissolvedOxygen will default based on the composition of the sample, and will be False for non-aqueous samples if it is left as Automatic:"},
-			Lookup[ExperimentDegas[Object[Sample,"Degas Test DCM Sample1"<> $SessionUUID],DegasType->FreezePumpThaw,DissolvedOxygen->Automatic,Output->Options],DissolvedOxygen],
+		Example[{Options,DissolvedOxygen,"DissolvedOxygen will default to False for aqueous samples:"},
+			Lookup[ExperimentDegas[Object[Sample,"Degas Test Water Sample7 500mL Bottle"<> $SessionUUID],DegasType->VacuumDegas,Output->Options],DissolvedOxygen],
 			False
 		],
-		Example[{Options,DissolvedOxygen,"DissolvedOxygen will default based on the volume of the sample, and will be False for samples with volume <50mL if it is left as Automatic:"},
-			Lookup[ExperimentDegas[Object[Sample,"Degas Test Water Sample1"<> $SessionUUID],DegasType->FreezePumpThaw,DissolvedOxygen->Automatic,Output->Options],DissolvedOxygen],
+		Example[{Options,DissolvedOxygen,"DissolvedOxygen will default to False for non-aqueous samples:"},
+			Lookup[ExperimentDegas[Object[Sample,"Degas Test DCM Sample1"<> $SessionUUID],DegasType->FreezePumpThaw,Output->Options],DissolvedOxygen],
+			False
+		],
+		Example[{Options,DissolvedOxygen,"DissolvedOxygen will default to False for samples with volume <50mL:"},
+			Lookup[ExperimentDegas[Object[Sample,"Degas Test Water Sample1"<> $SessionUUID],DegasType->FreezePumpThaw,Output->Options],DissolvedOxygen],
 			False
 		],
 		Example[{Options,FreezeTime,"FreezeTime for FreezePumpThaw will default to 3 minutes if it is left as Automatic:"},
@@ -658,23 +738,6 @@ DefineTests[
 			];
 			Download[protocol, PreparatoryUnitOperations],
 			{SamplePreparationP..},
-			Variables :> {protocol}
-		],
-		Example[{Options, PreparatoryPrimitives, "Specify prepared samples to be degassed:"},
-			protocol = ExperimentDegas[
-				"Degas sample 1",
-				PreparatoryPrimitives -> {
-					Define[Name -> "Degas sample 1",
-						Container -> Model[Container, Vessel, "id:pZx9joxev3k0"] (*Model[Container, Vessel, "10 mL Schlenk Flask, 14/20 Outer Joint with Chem-Cap High Vacuum Valve"]*)
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Destination -> "Degas sample 1", Amount -> 4 Milliliter
-					]
-				}
-			];
-			Download[protocol, PreparatoryPrimitives],
-			{SampleManipulationP..},
 			Variables :> {protocol}
 		],
 		(*incubate options*)
@@ -1002,7 +1065,7 @@ DefineTests[
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentDegas[Object[Sample, "Degas Test Water Sample1" <> $SessionUUID], AliquotContainer -> Model[Container, Vessel, "id:pZx9joxev3k0"] (*Model[Container,Vessel,"10 mL Schlenk Flask, 14/20 Outer Joint with Chem-Cap High Vacuum Valve"]*), Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Vessel, "id:pZx9joxev3k0"] (*Model[Container,Vessel,"10 mL Schlenk Flask, 14/20 Outer Joint with Chem-Cap High Vacuum Valve"]*)]},
+			{{1, ObjectP[Model[Container, Vessel, "id:pZx9joxev3k0"] (*Model[Container,Vessel,"10 mL Schlenk Flask, 14/20 Outer Joint with Chem-Cap High Vacuum Valve"]*)]}},
 			Variables :> {options}
 		],
 		Example[{Options,SamplesInStorageCondition,"Indicates how the input samples of the experiment should be stored:"},
@@ -1046,7 +1109,7 @@ DefineTests[
 		Example[{Options,DestinationWell,"Indicates how the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentDegas[Object[Sample,"Degas Test Water Sample2"<> $SessionUUID],DestinationWell->"A1",Output->Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 		Example[{Options,Name,"Specify the name of a protocol:"},
@@ -1425,7 +1488,7 @@ DefineTests[
 				<|Object->waterSampleNotLiq4,Name->"Degas Test Water Sample4 for not liquid"<> $SessionUUID,Status->Available,Site->Link[$Site],DeveloperObject->True|>,
 				<|Object->dcmSamp1,Name->"Degas Test DCM Sample1"<> $SessionUUID,Status->Available,Site->Link[$Site],DeveloperObject->True|>,
 				<|Object->waterSample6,Name->"Test discarded sample for ExperimentDegas"<> $SessionUUID,Status->Discarded,Site->Link[$Site],DeveloperObject->True|>,
-				<|Object->concentrationSample,Name->"Test Sample for ExperimentDegas with concentration"<> $SessionUUID,Replace[Composition]->{{100 VolumePercent,Link[Model[Molecule,"Water"]]},{5 Micromolar,Link[Model[Molecule,"Uracil"]]}},Status->Available,Site->Link[$Site],DeveloperObject->True|>,
+				<|Object->concentrationSample,Name->"Test Sample for ExperimentDegas with concentration"<> $SessionUUID,Replace[Composition]->{{100 VolumePercent,Link[Model[Molecule,"Water"]],Now},{5 Micromolar,Link[Model[Molecule,"Uracil"]],Now}},Status->Available,Site->Link[$Site],DeveloperObject->True|>,
 				<|Object->dcmSamp2,Name->"Degas Test DCM Sample2"<> $SessionUUID,Status->Available,Site->Link[$Site],DeveloperObject->True|>,
 				<|Object->waterSampleModelSevered,Name->"Degas Test Water Sample Severed Model"<> $SessionUUID,Status->Available,DeveloperObject->True,Model->Null|>,
 				<|Object->waterSample7,Name->"Degas Test Water Sample7 500mL Bottle"<> $SessionUUID,Status->Available,Site->Link[$Site],DeveloperObject->True|>,

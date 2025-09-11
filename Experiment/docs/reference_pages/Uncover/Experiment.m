@@ -40,9 +40,9 @@ DefineUsage[ExperimentUncover,
 		SeeAlso -> {
 			"ExperimentUncoverOptions",
 			"ValidExperimentUncoverOptions",
-			"ExperimentSampleManipulation"
+			"ExperimentSamplePreparation"
 		},
 		Tutorials -> {},
-		Author -> {"waseem.vali", "malav.desai"}
+		Author -> {"malav.desai"}
 	}
 ]

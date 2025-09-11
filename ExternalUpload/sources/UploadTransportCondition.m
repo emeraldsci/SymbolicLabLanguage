@@ -24,25 +24,23 @@ Warning::DuplicateSamples="The samples `1` are duplicated. Therefore the last tr
 Error::IncompatibleTransportConditions="The samples and transport conditions, `1`, are not compatible. Please consider changing the transport condition.";
 
 (* Singleton Input Overload *)
-UploadTransportCondition[myObject:ObjectP[{Object[Sample], Model[Sample]}], myTransportCondition:Alternatives[TransportConditionP, RangeP[-86 Celsius, 105 Celsius]], myOptions:OptionsPattern[]]:=
+UploadTransportCondition[myObject:ObjectP[{Object[Sample], Model[Sample], Object[Item], Model[Item]}], myTransportCondition:Alternatives[TransportConditionP, RangeP[-150 Celsius, 105 Celsius]], myOptions:OptionsPattern[]]:=
 	First[UploadTransportCondition[{myObject}, {myTransportCondition}, myOptions]];
 
 (* Overload with multiple objects all going to the same condition *)
-UploadTransportCondition[myObjects:{ObjectP[{Object[Sample], Model[Sample]}]..}, myTransportCondition:Alternatives[TransportConditionP, RangeP[-86 Celsius, 105 Celsius]], myOptions:OptionsPattern[]]:=
+UploadTransportCondition[myObjects:{ObjectP[{Object[Sample], Model[Sample], Object[Item], Model[Item]}]..}, myTransportCondition:Alternatives[TransportConditionP, RangeP[-150 Celsius, 105 Celsius]], myOptions:OptionsPattern[]]:=
 	UploadTransportCondition[myObjects, Repeat[myTransportCondition, Length[myObjects]], myOptions];
 
 (* Define Main Function *)
-UploadTransportCondition[myObjects:{ObjectP[{Object[Sample], Model[Sample]}]..}, myTransportConditions:{Alternatives[TransportConditionP, RangeP[-86 Celsius, 105 Celsius]]..}, myOptions:OptionsPattern[]]:=Module[
+UploadTransportCondition[myObjects:{ObjectP[{Object[Sample], Model[Sample], Object[Item], Model[Item]}]..}, myTransportConditions:{Alternatives[TransportConditionP, RangeP[-150 Celsius, 105 Celsius]]..}, myOptions:OptionsPattern[]]:=Module[
 	{
-		listedOptions, outputSpecification, output,
-		gatherTests, safeOptions, safeOptionTests,
-		validLengths, validLengthsTests, upload,
-		cache, inputPacketSpecs, inputDownload, allObjects, allIDs, newCache,
+		listedOptions, outputSpecification, output, gatherTests, safeOptions, safeOptionTests,
+		validLengths, validLengthsTests, upload, cache, inputDownload, allObjects, allIDs, newCache,
 		notInEngine, discardedSamples, discardedSamplesCheck, discardedTests,
-		idCounts, duplicateSamples, duplicateSamplesCheck, duplicateTests,
-		packetsToUpload,
+		idCounts, duplicateSamples, duplicateSamplesCheck, duplicateTests, packetsToUpload, allStatus,
 		optionsRule, previewRule, testsRule, resultRule, allResultingTransportInstruments,
-		positionsOfFailed, failingObjectsAndConditions,objectsAndTCsFailed
+		objectsAndTCsFailed, allTransportConditionObjects, transportConditionDownload,
+		transportConditionSymbolToObjectLookup, transportConditionSymbolToTemperatureLookup
 	},
 
 	(* Make sure we're working with a list of options *)
@@ -99,13 +97,23 @@ UploadTransportCondition[myObjects:{ObjectP[{Object[Sample], Model[Sample]}]..},
 	(* Look up cache *)
 	cache=Lookup[safeOptions, Cache];
 
-	(* Create packet spects for downloading from each of the input objects *)
-	inputPacketSpecs={Packet[Object, ID, Status]}& /@ myObjects;
+	allTransportConditionObjects = Search[Model[TransportCondition], Deprecated!=True];
 
+	(* Create packet spects for downloading from each of the input objects *)
 	(* Download information from input objects according to packet specs. Pass the cache *)
-	inputDownload=Quiet[
-		Download[myObjects, inputPacketSpecs, Cache -> cache],
-		Download::FieldDoesntExist
+	{inputDownload, transportConditionDownload}=Quiet[
+		Download[
+			{
+				myObjects,
+				allTransportConditionObjects
+			},
+			{
+				{Packet[Object, ID, Status]},
+				{Packet[TransportTemperature, TransportLightSensitive, TransportCondition]}
+			},
+			Cache -> cache
+		],
+		{Download::FieldDoesntExist, Download::ObjectDoesNotExist}
 	];
 
 	(* Convert all links or packets in myObjects to objects *)
@@ -118,6 +126,20 @@ UploadTransportCondition[myObjects:{ObjectP[{Object[Sample], Model[Sample]}]..},
 	];
 
 	newCache=Join[cache, Cases[inputDownload, PacketP[]]];
+
+	transportConditionSymbolToObjectLookup = Map[
+		Function[{packet},
+			Lookup[First[packet], TransportCondition] -> Lookup[First[packet], Object]
+		],
+		transportConditionDownload
+	];
+
+	transportConditionSymbolToTemperatureLookup = Map[
+		Function[{packet},
+			Lookup[First[packet], TransportCondition] -> Lookup[First[packet], TransportTemperature]
+		],
+		transportConditionDownload
+	];
 
 	(* ----------------------------- Generate Packets to Upload ------------------------------------ *)
 
@@ -174,30 +196,22 @@ UploadTransportCondition[myObjects:{ObjectP[{Object[Sample], Model[Sample]}]..},
 	];
 
 	(* Generate packets to upload *)
-	packetsToUpload=
-		MapThread[
-			Function[{sample, transportCondition},
-				Switch[transportCondition,
-					OvenDried, <|Object -> sample, TransportCondition -> Link[Model[TransportCondition,"OvenDried"]]|>,
-					LightBox, <|Object -> sample, TransportCondition -> Link[Model[TransportCondition,"LightBox"]]|>,
-					Chilled, <|Object -> sample, TransportCondition -> Link[Model[TransportCondition,"Chilled"]]|>,
-					Minus40, <|Object -> sample, TransportCondition -> Link[Model[TransportCondition,"Minus 40"]]|>,
-					Minus80, <|Object -> sample, TransportCondition -> Link[Model[TransportCondition,"Minus 80"]]|>,
-
-					(*incubator for warm transport*)
-					RangeP[37 Celsius, 105 Celsius], <|Object -> sample, TransportCondition -> Link[Model[TransportCondition,"OvenDried"]]|>,
-					(*LightBox for room temp transport*)
-					RangeP[25 Celsius, 37 Celsius], <|Object -> sample, TransportCondition -> Link[Model[TransportCondition,"LightBox"]]|>,
-					(*cooler for chilled transport*)
-					RangeP[4 Celsius, 25 Celsius], <|Object -> sample, TransportCondition -> Link[Model[TransportCondition,"Chilled"]]|>,
-					(*cooler for Minus40 transport*)
-					RangeP[-40 Celsius, 4 Celsius], <|Object -> sample, TransportCondition -> Link[Model[TransportCondition,"Minus 40"]]|>,
-					(*cooler for Minus80 transport*)
-					RangeP[-86 Celsius, -40 Celsius], <|Object -> sample, TransportCondition -> Link[Model[TransportCondition,"Minus 80"]]|>
-				]
-			],
-			{allObjects, myTransportConditions}
-		];
+	packetsToUpload = MapThread[
+		Function[{sample, transportCondition},
+			If[MatchQ[transportCondition, TransportConditionP],
+				<|
+					Object -> sample,
+					TransportCondition -> Link[Replace[transportCondition, transportConditionSymbolToObjectLookup]],
+					TransportTemperature -> Replace[transportCondition, transportConditionSymbolToTemperatureLookup]
+				|>,
+				<|
+					Object -> sample,
+					TransportTemperature -> transportCondition
+				|>
+			]
+		],
+		{allObjects, myTransportConditions}
+	];
 
 	(* call TransportDevices on each Object[Sample]/Model[Sample] and TransportCondition pair, if there are any failures in the outputs then throw an error *)
 	allResultingTransportInstruments = Map[

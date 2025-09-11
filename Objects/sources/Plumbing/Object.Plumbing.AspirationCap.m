@@ -78,6 +78,28 @@ DefineObjectType[Object[Plumbing,AspirationCap], {	(* Note that this field has b
 			],
 			Description -> "The plate washer instrument that is connected to this cap.",
 			Category -> "Instrument Specifications"
+		},
+		MassSpectrometer -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Instrument, MassSpectrometer][WashBufferCap],
+				Object[Instrument, MassSpectrometer][LockMassCap]
+			],
+			Description -> "The MassSpectrometer that is connected to this cap.",
+			Category -> "Instrument Specifications"
+		},
+		pHTitrator -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Instrument, pHTitrator][AcidContainerCap],
+				Object[Instrument, pHTitrator][BaseContainerCap]
+			],
+			Description -> "The pHTitrator instrument that is connected to this cap.",
+			Category -> "Instrument Specifications"
 		}
 	}
 }];

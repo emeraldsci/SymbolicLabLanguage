@@ -124,7 +124,7 @@ DefineObjectType[Object[Protocol, RamanSpectroscopy], {
     SamplePlatePrimitives -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> (Null|SampleManipulationP),
+      Pattern :> (SampleManipulationP|SamplePreparationP),
       Description -> "Instructions specifying the transfer of the SamplesIn into the SamplePlate.",
       Category -> "Sample Preparation"
     },
@@ -132,7 +132,7 @@ DefineObjectType[Object[Protocol, RamanSpectroscopy], {
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Object[Protocol],
+      Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, ManualSamplePreparation] | Object[Protocol, RoboticSamplePreparation] | Object[Notebook, Script],
       Description -> "The specific sub-protocols performed to transfer samples into the SamplePlate.",
       Category -> "Sample Preparation"
     },
@@ -400,7 +400,7 @@ DefineObjectType[Object[Protocol, RamanSpectroscopy], {
       Format -> Multiple,
       Class -> String,
       Pattern :> FilePathP,
-      Description -> "For each batch of method files, the file paths where the scripts to load and modify insturment parameters are located.",
+      Description -> "For each batch of method files, the file paths where the scripts to load and modify instrument parameters are located.",
       Category -> "General",
       Developer -> True
     },

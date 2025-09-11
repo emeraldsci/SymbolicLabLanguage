@@ -9,6 +9,14 @@ DefineObjectType[Model[Maintenance, Flush], {
 	CreatePrivileges->None,
 	Cache->Session,
 	Fields -> {
+		IdleFlush -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the flush continues after the instrument is released from the maintenance.",
+			Category -> "General",
+			Abstract -> True
+		},
 		BufferA -> {
 			Format -> Single,
 			Class -> Link,

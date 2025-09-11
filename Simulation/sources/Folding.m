@@ -613,7 +613,7 @@ SimulateFoldingOptions[inList: ListableP[inputPatternSimulateFoldingP], ops : Op
 
 	listedOptions = ToList[ops];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	SimulateFolding[inList, Sequence@@Append[noOutputOptions,Output->Options]]

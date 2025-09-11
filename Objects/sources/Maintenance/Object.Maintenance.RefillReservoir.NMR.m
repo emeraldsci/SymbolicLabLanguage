@@ -70,13 +70,24 @@ DefineObjectType[Object[Maintenance, RefillReservoir, NMR], {
 			Developer -> True
 		},
 
-		GasCylinderPlacement->{
+		HeatSinkFillRemovalPlacement->{
 			Format -> Multiple,
 			Class -> {Link, Link, String},
 			Pattern :> {_Link, _Link, LocationPositionP},
-			Relation -> {Object[Container], Object[Container], Null},
-			Description -> "Placement for gas cylinder at the site where it was initially gathered.",
-			Headers->{"Movement Container", "Destination Container", "Destination Position"},
+			Relation -> {Object[Part]|Object[Item], Object[Instrument], Null},
+			Description -> "Placement for removal of the heat sink from the fill turret.",
+			Headers->{"Movement Part", "Destination Instrument", "Destination Position"},
+			Category -> "Placements",
+			Developer -> True
+		},
+
+		HeatSinkExhaustRemovalPlacement->{
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Object[Part]|Object[Item], Object[Instrument], Null},
+			Description -> "Placement for removal of the heat sink from the Exhaust turret.",
+			Headers->{"Movement Part", "Destination Instrument", "Destination Position"},
 			Category -> "Placements",
 			Developer -> True
 		},

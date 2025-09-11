@@ -11,6 +11,6 @@ DefineTests[
 				Download[First@Search[Object[EmeraldCloudFile], FileType=="\"MP4\"", MaxResults -> 1], CloudFile]
 			],
 			URLP
-		];
+		]
 	}
 ];

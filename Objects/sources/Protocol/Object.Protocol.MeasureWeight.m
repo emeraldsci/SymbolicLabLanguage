@@ -18,9 +18,9 @@ DefineObjectType[Object[Protocol, MeasureWeight], {
 				Object[Instrument],
 				Model[Instrument]
 			],
-			Description -> "For each member of ContainersInExpanded, the instrument used to measure the weight of the container.",
+			Description -> "For each member of WeighingItemsExpanded, the instrument used to measure the weight of the container.",
 			Category -> "Weighing",
-			IndexMatching -> ContainersInExpanded,
+			IndexMatching -> WeighingItemsExpanded,
 			Abstract -> True
 		},
 
@@ -84,10 +84,46 @@ DefineObjectType[Object[Protocol, MeasureWeight], {
         Object[Container],
         Model[Container]
       ],
-      Description -> "The containers containing this protocols' SamplesIn, expanded according to NumberOfReplicates.",
+      Description -> "The items or containers to be weighted by this protocol.",
       Category -> "Organizational Information"
     },
-		
+
+		WeighingItems -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Model[Container],
+				Object[Item],
+				Model[Item]
+			],
+			Description -> "The items or containers to be weighted by this protocol.",
+			Category -> "Organizational Information"
+		},
+		WeighingItemsExpanded -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Model[Container],
+				Object[Item],
+				Model[Item]
+			],
+			Description -> "The containers containing this protocols' SamplesIn, expanded according to NumberOfReplicates.",
+			Category -> "Organizational Information"
+		},
+
+		UpdateModel -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> (Skip | Overwrite),
+			Description -> "Indicates the strategy used if the measured container/cap weight deviates from the stored weight from container/cap model more than InternalExperiment`Private`$WeightDeviationTolerance. Skip means the parser will not update the model so the original stored weight is kept. Overwrite means the parser will update the model with the newly measured weight.",
+			Category -> "Troubleshooting",
+			Developer -> True
+		},
+
 		Batching -> {
 			Format -> Multiple,
 			Class -> {
@@ -123,11 +159,15 @@ DefineObjectType[Object[Protocol, MeasureWeight], {
 			Relation -> {
 				WorkingContainerIn -> Alternatives[
 					Object[Container],
-					Model[Container]
+					Model[Container],
+					Object[Item],
+					Model[Item]
 				],
 				ContainerIn -> Alternatives[
 					Object[Container],
-					Model[Container]
+					Model[Container],
+					Object[Item],
+					Model[Item]
 				],
 				ScoutBalance -> Alternatives[
 					Object[Instrument],
@@ -202,7 +242,7 @@ DefineObjectType[Object[Protocol, MeasureWeight], {
 				Index -> "Index"
 
 			},
-			Description -> "The list of containers, sorted by batch, and their corresponding resources needed for weighing and/or transferring.",
+			Description -> "The list of containers or items, sorted by batch, and their corresponding resources needed for weighing and/or transferring.",
 			Category -> "Batching",
 			Developer -> True
 		},
@@ -220,34 +260,34 @@ DefineObjectType[Object[Protocol, MeasureWeight], {
 
   (* --- Data acquisition --- *)
 
-		(* in addition to Data (shared field), we have the following data sets. The parser makes sure these are indexmatched with ContainersInExpanded *)
+		(* in addition to Data (shared field), we have the following data sets. The parser makes sure these are indexmatched with WeighingItemsExpanded *)
 
 		ScoutData -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Data][Protocol],
-			Description -> "For each member of ContainersInExpanded, the initial weight estimate of the container (and sample if present), based on which a final Balance is chosen to get an accurate weight measurement of the sample.",
+			Description -> "For each member of WeighingItemsExpanded, the initial weight estimate of the container (and sample if present), based on which a final Balance is chosen to get an accurate weight measurement of the sample.",
 			Category -> "Weighing",
-			IndexMatching -> ContainersInExpanded
+			IndexMatching -> WeighingItemsExpanded
 		},
 		TareData -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Data][Protocol],
-			Description -> "For each member of ContainersInExpanded, the weight measurement data of the weigh container when empty and before any incoming sample transfer has commenced.",
+			Description -> "For each member of WeighingItemsExpanded, the weight measurement data of the weigh container when empty and before any incoming sample transfer has commenced.",
 			Category -> "Tare",
-			IndexMatching -> ContainersInExpanded
+			IndexMatching -> WeighingItemsExpanded
 		},
 		ResidueWeightData -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Data][Protocol],
-			Description -> "For each member of ContainersInExpanded, the weight measurement data of the weigh container after weighing is complete and the sample has been transferred out, leaving behind possible residue in the container. Note that this includes the weight of the container.",
+			Description -> "For each member of WeighingItemsExpanded, the weight measurement data of the weigh container after weighing is complete and the sample has been transferred out, leaving behind possible residue in the container. Note that this includes the weight of the container.",
 			Category -> "Tare",
-			IndexMatching -> ContainersInExpanded
+			IndexMatching -> WeighingItemsExpanded
 		},
 		TareWeights -> {
 			Format -> Multiple,

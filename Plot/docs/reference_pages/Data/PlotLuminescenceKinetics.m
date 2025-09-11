@@ -40,6 +40,26 @@ DefineUsage[PlotLuminescenceKinetics,
 				}
 			},
 			{
+				Definition -> {"PlotLuminescenceKinetics[protocol]", "plot"},
+				Description -> "creates a 'plot' of the emission trajectories found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing luminescence kinetics data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, LuminescenceKinetics]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the luminescence kinetics protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
+			},
+			{
 				Definition->{"PlotLuminescenceKinetics[EmissionTrajectoryData]", "plot"},
 				Description->"displays luminescence vs time when given a set of raw 'emissionTrajectories'.",
 				Inputs:>{
@@ -62,14 +82,10 @@ DefineUsage[PlotLuminescenceKinetics,
 			}
 		},
 		SeeAlso -> {
-			"PlotLuminescenceIntensity",
-			"PlotLuminescenceSpectroscopy"
+			"PlotLuminescenceSpectroscopy",
+			"PlotObject"
 		},
-		Author -> {
-			"sebastian.bernasek",
-			"kevin.hou",
-			"hayley"			
-		},
+		Author -> {"ben", "sebastian.bernasek", "kevin.hou", "hayley"},
 		Preview->True
 	}
 ];

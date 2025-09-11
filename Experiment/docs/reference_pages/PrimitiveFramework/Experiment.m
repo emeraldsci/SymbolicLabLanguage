@@ -3,202 +3,8 @@
 (* ::Text:: *)
 (*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
 
-DefineUsage[LookupLabeledObject,
-	{
-		BasicDefinitions -> {
-			{
-				Definition->{"LookupLabeledObject[Protocol, Label]","Object"},
-				Description->"looks up the labeled 'Object' associated with 'Label' in the 'Protocol' object.",
-				Inputs:>{
-					{
-						InputName -> "Protocol",
-						Description-> "The protocol object that contains the labeled object.",
-						Widget->Widget[
-							Type -> Object,
-							Pattern :> ObjectP[Object[Protocol]]
-						],
-						Expandable->False
-					},
-					{
-						InputName -> "Label",
-						Description-> "The label that was used to identify the object in the protocol.",
-						Widget->Widget[
-							Type -> String,
-							Pattern :> _String,
-							Size->Word
-						],
-						Expandable->False
-					}
-				},
-				Outputs:>{
-					{
-						OutputName->"object",
-						Description->"The corresponding labeled object.",
-						Pattern:>ObjectP[]
-					}
-				}
-			},
-			{
-				Definition->{"LookupLabeledObject[Simulation, Label]","Object"},
-				Description->"looks up the labeled 'Object' associated with 'Label' in the 'Simulation'.",
-				Inputs:>{
-					{
-						InputName -> "Simulation",
-						Description-> "The simulation that contains the labeled object.",
-						Widget->Widget[
-							Type -> Expression,
-							Pattern :> SimulationP,
-							Size -> Line
-						],
-						Expandable->False
-					},
-					{
-						InputName -> "Label",
-						Description-> "The label that was used to identify the object in the protocol.",
-						Widget->Widget[
-							Type -> String,
-							Pattern :> _String,
-							Size->Word
-						],
-						Expandable->False
-					}
-				},
-				Outputs:>{
-					{
-						OutputName->"object",
-						Description->"The corresponding labeled object.",
-						Pattern:>ObjectP[]
-					}
-				}
-			}
-		},
-		SeeAlso -> {
-			"Experiment",
-			"ExperimentSamplePreparation",
-			"ExperimentCellPreparation"
-		},
-		Tutorials -> {},
-		Author -> {"dima", "steven"}
-	}
-];
-
 (* ::Subsubsection::Closed:: *)
-(*RestrictLabeledSamples*)
-
-DefineUsage[RestrictLabeledSamples,
-	{
-		BasicDefinitions -> {
-			{
-				Definition->{"RestrictLabeledSamples[Samples]","Objects"},
-				Description->"restricts 'samples' that were labeled preventing their use for model fulfillment.",
-				Inputs:>{
-					{
-						InputName -> "Samples",
-						Description-> "Samples that were assigned to labels and now can not be use for model fulfillment.",
-						Widget->Widget[
-							Type -> Object,
-							Pattern :> ObjectP[{Object[Sample], Object[Container], Object[Item]}]
-						],
-						Expandable->False
-					}
-				},
-				Outputs:>{
-					{
-						OutputName->"Objects",
-						Description->"Objects that were assigned to labels and now can not be use for model fulfillment.",
-						Pattern:>ObjectP[]
-					}
-				}
-			}
-		},
-		SeeAlso -> {
-			"Experiment",
-			"ExperimentSamplePreparation",
-			"ExperimentCellPreparation",
-			"UnrestrictLabeledSamples",
-			"RestrictSamples"
-		},
-		Tutorials -> {},
-		Author -> {"dima", "steven"}
-	}
-];
-
-(* ::Subsubsection::Closed:: *)
-(*UnrestrictLabeledSamples*)
-
-DefineUsage[UnrestrictLabeledSamples,
-	{
-		BasicDefinitions -> {
-			{
-				Definition->{"UnrestrictLabeledSamples[Samples]","Objects"},
-				Description->"unrestricts 'samples' that were labeled allowing their use for model fulfillment.",
-				Inputs:>{
-					{
-						InputName -> "Samples",
-						Description-> "Samples that were assigned to labels and now can be use for model fulfillment.",
-						Widget->Widget[
-							Type -> Object,
-							Pattern :> ObjectP[{Object[Sample], Object[Container], Object[Item]}]
-						],
-						Expandable->False
-					}
-				},
-				Outputs:>{
-					{
-						OutputName->"Objects",
-						Description->"Objects that were assigned to labels and now can be use for model fulfillment.",
-						Pattern:>ObjectP[]
-					}
-				}
-			}
-		},
-		SeeAlso -> {
-			"Experiment",
-			"ExperimentSamplePreparation",
-			"ExperimentCellPreparation",
-			"RestrictLabeledSamples",
-			"UnrestrictSamples"
-		},
-		Tutorials -> {},
-		Author -> {"dima", "steven"}
-	}
-];
-
-DefineUsage[Experiment`Private`SimulateResources,
-	{
-		BasicDefinitions -> {
-			{
-				Definition->{"Experiment`Private`SimulateResources[ProtocolPacket]","Simulation"},
-				Description->"replaces any resource requests in the given 'ProtocolPacket' with simulated samples/containers/items.",
-				Inputs:>{
-					{
-						InputName -> "ProtocolPacket",
-						Description-> "The protocol packet that contains the resource requests to be simulated.",
-						Widget->Widget[
-							Type -> Object,
-							Pattern :> ObjectP[Object[Protocol]]
-						],
-						Expandable->False
-					}
-				},
-				Outputs:>{
-					{
-						OutputName->"Simulation",
-						Description->"The simulation that contains the simulated samples/containers/items inside of the protocol object.",
-						Pattern:>ObjectP[]
-					}
-				}
-			}
-		},
-		SeeAlso -> {
-			"Experiment",
-			"ExperimentSamplePreparation",
-			"ExperimentCellPreparation"
-		},
-		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
-	}
-];
+(*Experiment*)
 
 DefineUsage[Experiment,
 	{
@@ -252,7 +58,7 @@ DefineUsage[Experiment,
 			"ExperimentRoboticSamplePreparation"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"taylor.hochuli"}
 	}
 ];
 
@@ -306,7 +112,7 @@ DefineUsage[ExperimentInputs,
 			"ExperimentRoboticSamplePreparation"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"taylor.hochuli"}
 	}
 ];
 
@@ -360,7 +166,7 @@ DefineUsage[ExperimentOptions,
 			"ExperimentRoboticSamplePreparation"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"taylor.hochuli"}
 	}
 ];
 
@@ -414,7 +220,7 @@ DefineUsage[ValidExperimentQ,
 			"ExperimentRoboticSamplePreparation"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"lige.tonggu"}
 	}
 ];
 
@@ -464,7 +270,7 @@ DefineUsage[ExperimentSamplePreparation,
 			"ExperimentRoboticSamplePreparation"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"steven"}
 	}
 ];
 
@@ -512,7 +318,7 @@ DefineUsage[ExperimentSamplePreparationInputs,
 			"ExperimentRoboticSamplePreparation"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"steven"}
 	}
 ];
 
@@ -560,7 +366,7 @@ DefineUsage[ExperimentSamplePreparationOptions,
 			"ExperimentRoboticSamplePreparation"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"steven"}
 	}
 ];
 
@@ -609,7 +415,7 @@ DefineUsage[ExperimentSamplePreparationPreview,
 			"ExperimentRoboticSamplePreparation"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"steven"}
 	}
 ];
 
@@ -657,7 +463,7 @@ DefineUsage[ValidExperimentSamplePreparationQ,
 			"ExperimentRoboticSamplePreparation"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"steven"}
 	}
 ];
 
@@ -732,7 +538,7 @@ DefineUsage[ExperimentManualSamplePreparationInputs,
 			"ExperimentManualSamplePreparationOptions"
 		},
 		Tutorials -> {},
-		Author -> {"kelmen.low", "harrison.gronlund"}
+		Author -> {"steven"}
 	}
 ];
 
@@ -769,7 +575,7 @@ DefineUsage[ExperimentManualSamplePreparationOptions,
 			"ExperimentManualSamplePreparationInputs"
 		},
 		Tutorials -> {},
-		Author -> {"kelmen.low", "harrison.gronlund"}
+		Author -> {"steven"}
 	}
 ];
 
@@ -805,7 +611,7 @@ DefineUsage[ValidExperimentManualSamplePreparationQ,
 			"ExperimentManualSamplePreparationInputs"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"steven"}
 	}
 ];
 
@@ -843,7 +649,7 @@ DefineUsage[ExperimentRoboticSamplePreparation,
 			"ExperimentRoboticSamplePreparationInputs"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"steven"}
 	}
 ];
 
@@ -880,7 +686,7 @@ DefineUsage[ExperimentRoboticSamplePreparationInputs,
 			"ExperimentRoboticSamplePreparationOptions"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"steven"}
 	}
 ];
 
@@ -917,7 +723,7 @@ DefineUsage[ExperimentRoboticSamplePreparationOptions,
 			"ExperimentRoboticSamplePreparationInputs"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"steven"}
 	}
 ];
 
@@ -953,7 +759,7 @@ DefineUsage[ValidExperimentRoboticSamplePreparationQ,
 			"ExperimentRoboticSamplePreparationInputs"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"steven"}
 	}
 ];
 
@@ -1003,7 +809,7 @@ DefineUsage[ExperimentCellPreparation,
 			"ExperimentRoboticCellPreparation"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"steven"}
 	}
 ];
 
@@ -1050,7 +856,7 @@ DefineUsage[ExperimentCellPreparationInputs,
 			"ExperimentRoboticCellPreparation"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"lige.tonggu"}
 	}
 ];
 
@@ -1098,7 +904,7 @@ DefineUsage[ExperimentCellPreparationOptions,
 			"ExperimentRoboticCellPreparation"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"lige.tonggu"}
 	}
 ];
 
@@ -1145,7 +951,7 @@ DefineUsage[ValidExperimentCellPreparationQ,
 			"ExperimentRoboticCellPreparation"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"lige.tonggu"}
 	}
 ];
 
@@ -1185,7 +991,7 @@ DefineUsage[ExperimentManualCellPreparation,
 			"ExperimentRoboticCellPreparation"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"lige.tonggu"}
 	}
 ];
 
@@ -1221,7 +1027,7 @@ DefineUsage[ExperimentManualCellPreparationInputs,
 			"ExperimentRoboticCellPreparation"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"lige.tonggu"}
 	}
 ];
 
@@ -1258,7 +1064,7 @@ DefineUsage[ExperimentManualCellPreparationOptions,
 			"ExperimentRoboticCellPreparation"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"lige.tonggu"}
 	}
 ];
 
@@ -1294,7 +1100,7 @@ DefineUsage[ValidExperimentManualCellPreparationQ,
 			"ExperimentRoboticCellPreparation"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"lige.tonggu"}
 	}
 ];
 
@@ -1370,7 +1176,7 @@ DefineUsage[ExperimentRoboticCellPreparationInputs,
 			"ExperimentRoboticCellPreparationOptions"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"lige.tonggu"}
 	}
 ];
 
@@ -1380,7 +1186,7 @@ DefineUsage[ExperimentRoboticCellPreparationOptions,
 		BasicDefinitions -> {
 			{
 				Definition->{"ExperimentRoboticCellPreparationOptions[UnitOperations]","CalculatedOptions"},
-				Description->"returns the 'CalculatedOptions' that will be used to perform the robotic cell preparation specified in 'UnitOperations'",
+				Description->"returns the 'CalculatedOptions' that will be used to perform the robotic cell preparation specified in 'UnitOperations'.",
 				Inputs:>{
 					{
 						InputName -> "UnitOperations",
@@ -1407,7 +1213,7 @@ DefineUsage[ExperimentRoboticCellPreparationOptions,
 			"ExperimentRoboticCellPreparationInputs"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"lige.tonggu"}
 	}
 ];
 
@@ -1443,6 +1249,6 @@ DefineUsage[ValidExperimentRoboticCellPreparationQ,
 			"ExperimentRoboticCellPreparationInputs"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"lige.tonggu"}
 	}
 ];

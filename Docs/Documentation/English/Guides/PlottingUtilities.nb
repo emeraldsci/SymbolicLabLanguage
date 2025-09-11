@@ -1,3 +1,783 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:74195c54747eb6c7da5d20d98ed1d1f0125c9c7abf20121bdb666e8b567d99a9
-size 32302
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     31319,        773]
+NotebookOptionsPosition[     23938,        641]
+NotebookOutlinePosition[     25855,        684]
+CellTagsIndexPosition[     25812,        681]
+WindowTitle->PlottingUtilities
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "4b0f6425-c669-4aaf-afbe-d29fab03e48d"]
+        }],ExpressionUUID->"3647e3f8-df7d-4764-8de5-1777815506b1"],
+        StripOnInput->False], {"\<\"AutomaticYRange\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/AutomaticYRange"], "\<\"AxisLines\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/AxisLines"], "\<\"EmeraldBarChart\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/EmeraldBarChart"], "\<\"EmeraldBoxWhiskerChart\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/EmeraldBoxWhiskerChart"], \
+"\<\"EmeraldDateListPlot\"\>":>Documentation`HelpLookup[
+       "paclet:Plot/ref/EmeraldDateListPlot"], "\<\"EmeraldFrameTicks\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/EmeraldFrameTicks"], "\<\"EmeraldHistogram\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/EmeraldHistogram"], "\<\"EmeraldHistogram3D\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/EmeraldHistogram3D"], \
+"\<\"EmeraldListContourPlot\"\>":>Documentation`HelpLookup[
+       "paclet:Plot/ref/EmeraldListContourPlot"], \
+"\<\"EmeraldListLinePlot\"\>":>Documentation`HelpLookup[
+       "paclet:Plot/ref/EmeraldListLinePlot"], "\<\"EmeraldListPlot3D\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/EmeraldListPlot3D"], "\<\"EmeraldListPointPlot3D\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/EmeraldListPointPlot3D"], "\<\"EmeraldPieChart\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/EmeraldPieChart"], "\<\"EmeraldPlotMarkers\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/EmeraldPlotMarkers"], \
+"\<\"EmeraldSmoothHistogram\"\>":>Documentation`HelpLookup[
+       "paclet:Plot/ref/EmeraldSmoothHistogram"], \
+"\<\"EmeraldSmoothHistogram3D\"\>":>Documentation`HelpLookup[
+       "paclet:Plot/ref/EmeraldSmoothHistogram3D"], "\<\"ErrorBar\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/ErrorBar"], "\<\"FindPlotRange\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/FindPlotRange"], "\<\"FullPlotRange\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/FullPlotRange"], "\<\"ImageIntensity\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Objects/ref/ImageIntensity"], "\<\"ImageMask\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/ImageMask"], "\<\"ImageOverlay\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/ImageOverlay"], "\<\"LabelPeaks\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/LabelPeaks"], "\<\"PeakEpilog\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/PeakEpilog"], "\<\"PlotDistribution\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotDistribution"], "\<\"PlotImage\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotImage"], "\<\"PlotWaterfall\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotWaterfall"], "\<\"Unzoomable\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/Unzoomable"], "\<\"Zoomable\"\>":>
+       Documentation`HelpLookup["paclet:Core/ref/Zoomable"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "030b1f9c-79f0-4d0d-9c31-1294aad29bb1"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "7c20ccb2-75ab-4cb1-9cf5-072b5a13a693"]
+        }],ExpressionUUID->"a557183d-df01-44ac-aba8-e7cbbfc71e23"],
+        StripOnInput->False], {"\<\"PlottingBySubjectMatter\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/PlottingBySubjectMatter"], \
+"\<\"VisualizingConstellationObjects\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/VisualizingConstellationObjects"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "75010124-f782-4bd6-8254-1c0577726f0f"]
+    }], "AnchorBar",ExpressionUUID->"30e301c2-842f-47e7-a78c-b796714ef45a"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"843b6996-83a5-454f-a69f-10dab51ef5fe"],
+
+Cell["Plotting Utilities", "GuideTitle",
+ CellID->278826342,ExpressionUUID->"d6df4381-958e-43d6-b35f-ee7ec7fd80d6"],
+
+Cell["\<\
+Collection of utility functions used to generate plots and charts of ECL \
+derived scientific data.\
+\>", "GuideAbstract",
+ CellID->169821124,ExpressionUUID->"e242e033-2409-4842-ab06-b9ee12c5170f"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->78073891,ExpressionUUID->"2fd5e71c-a656-4206-b8f6-e23b2e293f2d"],
+
+Cell["Plot Functions", "GuideFunctionsSubsection",
+ CellID->136509271,ExpressionUUID->"22d93875-c210-45c2-8400-7468ff9deb4e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldListLinePlot"]],"paclet:Plot/ref/EmeraldListLinePlot"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "97b66718-56a1-4557-82d7-c20bb26f5cc5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given raw numeric data generates a line plot designed specifically for \
+handling laboratory data."
+}], "GuideText",
+ CellID->717167236,ExpressionUUID->"2487a363-57e1-4dec-89cb-893fc6dfcb65"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldDateListPlot"]],"paclet:Plot/ref/EmeraldDateListPlot"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "bd31781d-ea70-451a-936d-229ab2c78dee"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given raw numeric data generates a scatter plot designed specifically for \
+handling laboratory data."
+}], "GuideText",
+ CellID->919928229,ExpressionUUID->"3cadcd08-9f24-4f5d-9c77-965de26a483e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldBarChart"]],"paclet:Plot/ref/EmeraldBarChart"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8636e278-3a27-4bd0-9dcf-12e504e009cb"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given raw numeric data generates a bar chart designed specifically for \
+handling laboratory data."
+}], "GuideText",
+ CellID->798196647,ExpressionUUID->"37535515-ffb0-4147-9453-f58234636f89"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldPieChart"]],"paclet:Plot/ref/EmeraldPieChart"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b9da269e-1668-4881-bd12-f1846f50229f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given raw numeric data generates a pie chart designed specifically for \
+handling laboratory data."
+}], "GuideText",
+ CellID->376249957,ExpressionUUID->"6cd0b510-a056-4a01-990f-44bea4309a8f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldBoxWhiskerChart"]],
+    "paclet:Plot/ref/EmeraldBoxWhiskerChart"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9e341c80-f0c0-4f5d-9b91-7b07aab4f334"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given raw numeric data generates a box and whisker chart designed \
+specifically for handling laboratory data."
+}], "GuideText",
+ CellID->387858814,ExpressionUUID->"e8cf5090-68a7-4a52-8577-7bc5dccd2404"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldHistogram"]],"paclet:Plot/ref/EmeraldHistogram"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "198adc02-9ee3-4244-84a7-2d3a7bcaefdc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given raw numeric data generates a histogram designed specifically for \
+handling laboratory data."
+}], "GuideText",
+ CellID->214683187,ExpressionUUID->"b599a949-b536-47f1-a15d-338b996b1347"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldHistogram3D"]],"paclet:Plot/ref/EmeraldHistogram3D"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "46629cb3-7152-4306-be4f-ac29d8c165a2"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given raw 2D numeric data generates a 3D histogram designed specifically \
+for handling laboratory data."
+}], "GuideText",
+ CellID->170382151,ExpressionUUID->"5a26d33a-d656-44cc-a900-b33295cdd0d7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldSmoothHistogram"]],
+    "paclet:Plot/ref/EmeraldSmoothHistogram"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f742a9ae-5a05-4df7-b0ea-aefedcbed499"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given raw numeric data generates a smoothed histogram designed \
+specifically for handling laboratory data."
+}], "GuideText",
+ CellID->847608344,ExpressionUUID->"836cec49-48bd-4c3c-b553-c038fed39b11"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldSmoothHistogram3D"]],
+    "paclet:Plot/ref/EmeraldSmoothHistogram3D"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4e003224-4776-40b9-a986-f7f113795666"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given raw 2D numeric data generates a smoothed 3D histogram designed \
+specifically for handling laboratory data."
+}], "GuideText",
+ CellID->350053735,ExpressionUUID->"296915da-34af-4215-a6f0-be6cf27c42b2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldListContourPlot"]],
+    "paclet:Plot/ref/EmeraldListContourPlot"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "58a369eb-d323-4265-a392-94786ea5afa0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given raw 3D numeric data generates a contour plot designed specifically \
+for handling laboratory data."
+}], "GuideText",
+ CellID->67313065,ExpressionUUID->"caca692d-cdb6-4767-ab91-87e407916d93"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldListPlot3D"]],"paclet:Plot/ref/EmeraldListPlot3D"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5ef12baa-c35b-4a5f-a684-50a2ca11bd78"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given raw 3D numeric data generates a 3D surface plot designed \
+specifically for handling laboratory data."
+}], "GuideText",
+ CellID->411983232,ExpressionUUID->"fbf0a72f-e7b3-4097-a35a-25ee56dece27"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldListPointPlot3D"]],
+    "paclet:Plot/ref/EmeraldListPointPlot3D"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f2840773-d632-408d-a12d-fa6b8f21f788"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given raw 3D numeric data generates a 3D scatter plot designed \
+specifically for handling laboratory data."
+}], "GuideText",
+ CellID->108961984,ExpressionUUID->"a23ba146-ff90-4676-8f3f-92936a97043e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PlotDistribution"]],"paclet:Plot/ref/PlotDistribution"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "df734187-5e5c-4d92-91bf-222ca3f7d561"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a distribution generates a plot of the probability density function \
+of that distribution."
+}], "GuideText",
+ CellID->714458740,ExpressionUUID->"f3b481cc-3052-4f5b-892c-9b1a28d749d9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PlotImage"]],"paclet:Plot/ref/PlotImage"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "db0f5248-8658-4ad0-9773-68e3055fb3be"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a raw image file or an object containing an image generates an \
+interactive visualization of that image."
+}], "GuideText",
+ CellID->41457865,ExpressionUUID->"0795370e-0cb0-4696-aa23-2460ad0ea3d3"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PlotWaterfall"]],"paclet:Plot/ref/PlotWaterfall"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b6dc4f2b-c59f-4283-9c29-e6f4dca681ac"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a list of either raw 2D numeric data or objects containing 2D data, \
+generates a 3D plot in which each set of 2D data is visualized as a line \
+confined to its own 2D plane."
+}], "GuideText",
+ CellID->168254971,ExpressionUUID->"dc505e4d-cc43-467d-a494-2c6761f21b8a"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->501479646,ExpressionUUID->"23c77a55-1ebc-4085-b1d8-138522273f86"],
+
+Cell["Plot Components & Graphics Primitives", "GuideFunctionsSubsection",
+ CellID->317266237,ExpressionUUID->"96a7218f-7396-4ef3-9ac4-5f8886babce8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldFrameTicks"]],"paclet:Core/ref/EmeraldFrameTicks"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f9b34775-4847-4e9e-8256-2bea18815893"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a range of data and optionally a set of points, generates frame \
+ticks ideally spaced for plotting scientific data."
+}], "GuideText",
+ CellID->168995476,ExpressionUUID->"c1a3b90e-1f8a-4c49-8bad-946ca65dc0dd"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldPlotMarkers"]],"paclet:Core/ref/EmeraldPlotMarkers"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ce5d7d2d-f7d2-423f-8b17-6c03da0893f4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given an index number provides a cycling list of plot labels ideal for \
+scientific data."
+}], "GuideText",
+ CellID->101708052,ExpressionUUID->"d115ad6c-72fb-4064-b04c-6246f7bc6d48"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ErrorBar"]],"paclet:Core/ref/ErrorBar"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "97796ccd-3074-4aa6-a7eb-68ce130a49fe"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a data point and an error generates a graphics primitive which \
+represents an error bar."
+}], "GuideText",
+ CellID->122727649,ExpressionUUID->"9e894a05-d29a-48e6-9d33-60b054001aa3"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AxisLines"]],"paclet:Core/ref/AxisLines"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1ea52ae6-df5b-4050-b363-720064c16f1d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a set of points and a plot range, generates a graphics primitive \
+which draws intersect lines from the point to the labeled axes."
+}], "GuideText",
+ CellID->29874375,ExpressionUUID->"ff14300d-54e4-4c90-95e0-109eebbfa0a0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PeakEpilog"]],"paclet:Analysis/ref/PeakEpilog"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2f1c329d-b87c-48e6-95dc-1e2447b33bd5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a set of data points and a peak analysis object, generates an \
+interactive graphics primitive which highlights picked peaks."
+}], "GuideText",
+ CellID->4759126,ExpressionUUID->"7205374a-4132-4866-bc10-92cc502b8fe2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["LabelPeaks"]],"paclet:Analysis/ref/LabelPeaks"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b6337088-41f6-4e8f-aac6-4d3c8faafaa6"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Opens a graphical interface to interactively assign chemical components to \
+peaks identified in an analysis object."
+}], "GuideText",
+ CellID->110519467,ExpressionUUID->"ee247800-7dd7-46ad-91d7-59a5eb1bc3b9"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->277412565,ExpressionUUID->"d75248b3-99f8-4713-9478-05b6ee919df3"],
+
+Cell["Plot Range Control", "GuideFunctionsSubsection",
+ CellID->76516414,ExpressionUUID->"19191927-7716-4ae3-834c-4d58e2df2106"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["Zoomable"]],"paclet:Core/ref/Zoomable"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "376657e5-31d9-4c02-940d-7adcbaa3ddc7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Enables interactive click zooming of a plot."
+}], "GuideText",
+ CellID->392924493,ExpressionUUID->"587a042b-4f4d-465e-abad-8352365f6b1e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["Unzoomable"]],"paclet:Core/ref/Unzoomable"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8f18dfee-e2d5-4477-8f03-20ea63fd0735"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Disables interactive click zooming of a plot."
+}], "GuideText",
+ CellID->531076637,ExpressionUUID->"9f0800de-2d36-4f3d-be19-3059cec5cce0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["FindPlotRange"]],"paclet:Plot/ref/FindPlotRange"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7000fd64-bb9d-4d53-baf2-eef123bbe12c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a set of data points and a plot range containing Automatics, returns \
+a resolve plot range with the Automatics filled in."
+}], "GuideText",
+ CellID->991718868,ExpressionUUID->"85b1430c-215d-4f6a-9969-0189e64be2ab"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["FullPlotRange"]],"paclet:Core/ref/FullPlotRange"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e034fa6f-12bc-48b0-b66c-cfdfa9898b43"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Expands a provided plot range to the full {{x-min,x-max},{y-min,y-max}} \
+form."
+}], "GuideText",
+ CellID->19104433,ExpressionUUID->"9f1baec1-889f-4589-95cf-78882c437eb8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AutomaticYRange"]],"paclet:Plot/ref/AutomaticYRange"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f74e209f-7907-4dee-b4d1-737d75ed46c0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a set of data points and buffer offset, provides a Y-range that \
+covers all the data plus the buffer."
+}], "GuideText",
+ CellID->357540261,ExpressionUUID->"76cfc7ec-b2c0-4e21-9c63-ab07d5fbd454"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->89914066,ExpressionUUID->"cdd0b414-e770-402b-b44e-0798c34d1554"],
+
+Cell["Image Processing", "GuideFunctionsSubsection",
+ CellID->501708391,ExpressionUUID->"874ff9fe-85c7-4f17-bf20-cc7d0a817e59"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ImageIntensity"]],"paclet:Objects/ref/ImageIntensity"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "908697c1-69b4-434a-a6c1-fda8ec873216"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the average intensity of the pixels as a function of the vertical \
+pixel position in the image."
+}], "GuideText",
+ CellID->418239963,ExpressionUUID->"45df944c-20da-4e04-b7b8-3bcb964ffaf7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ImageMask"]],"paclet:Analysis/ref/ImageMask"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a9a1708c-3f30-4bb6-b93f-459fd887acc1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Replaces all the pixels in the input image that are outside of a given \
+color range."
+}], "GuideText",
+ CellID->157477256,ExpressionUUID->"949f1e15-773c-4a0d-9552-1b458e5385d6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ImageOverlay"]],"paclet:Analysis/ref/ImageOverlay"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4d7f2298-2646-4115-b7d5-bc5805a99d20"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Overlays the pixel information from two images to combine them into one."
+}], "GuideText",
+ CellID->652622686,ExpressionUUID->"e07a80dd-54bf-4af9-8783-75c443a5b66a"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->106230088,ExpressionUUID->"63b6912c-89c1-4c00-9201-015521983bfb"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"326b96b3-95f6-4e79-9f16-972915e87e17"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->59784470,ExpressionUUID->"bc848e3b-ec6c-4a7f-a11e-a3f86f5ea8ef"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->12471170,ExpressionUUID->"4979ec3a-3fa6-4e1a-b1aa-01758102610a"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["VisualizingConstellationObjects"]],
+   "paclet:Docs/guide/VisualizingConstellationObjects"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->544222900,ExpressionUUID->"ec04b0c5-5b7c-43b1-9c4d-34ebdcf2c022"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["PlottingBySubjectMatter"]],
+   "paclet:Docs/guide/PlottingBySubjectMatter"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->178157988,ExpressionUUID->"a08cd4e8-4b79-424d-94da-5623fc0087ae"],
+
+Cell["", "FooterCell",
+ CellID->15536753,ExpressionUUID->"a56b785d-3c08-482b-b042-635c65eda545"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{564, Automatic}, {Automatic, 54}},
+WindowTitle->"PlottingUtilities",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Mon 14 Nov 2022 18:49:00", "context" -> "Docs`", 
+    "keywords" -> {
+     "EmeraldListLinePlot", "EmeraldDateListPlot", "EmeraldBarChart", 
+      "EmeraldPieChart", "EmeraldBoxWhiskerChart", "EmeraldHistogram", 
+      "EmeraldHistogram3D", "EmeraldSmoothHistogram", 
+      "EmeraldSmoothHistogram3D", "EmeraldListContourPlot", 
+      "EmeraldListPlot3D", "EmeraldListPointPlot3D", "PlotDistribution", 
+      "PlotImage", "PlotWaterfall", "EmeraldFrameTicks", "EmeraldPlotMarkers",
+       "ErrorBar", "AxisLines", "PeakEpilog", "LabelPeaks", "Zoomable", 
+      "Unzoomable", "FindPlotRange", "FullPlotRange", "AutomaticYRange", 
+      "ImageIntensity", "ImageMask", "ImageOverlay"}, "specialkeywords" -> {},
+     "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide",
+     "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "Collection of utility functions used to generate plots and charts of ECL \
+derived scientific data.", "synonyms" -> {}, "titlemodifier" -> "", 
+    "Windowtitle" -> "PlottingUtilities", "title" -> "PlottingUtilities", 
+    "type" -> "Guide", "uri" -> "Docs/guide/PlottingUtilities", 
+    "WorkflowDockedCell" -> ""}, "SearchTextTranslated" -> "", "LinkTrails" -> 
+  ""},
+FrontEndVersion->"12.0 for Microsoft Windows (64-bit) (September 6, 2019)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[589, 21, 6090, 137, 56, "AnchorBarGrid",ExpressionUUID->"843b6996-83a5-454f-a69f-10dab51ef5fe",
+ CellID->1],
+Cell[6682, 160, 115, 1, 50, "GuideTitle",ExpressionUUID->"d6df4381-958e-43d6-b35f-ee7ec7fd80d6",
+ CellID->278826342],
+Cell[6800, 163, 207, 4, 31, "GuideAbstract",ExpressionUUID->"e242e033-2409-4842-ab06-b9ee12c5170f",
+ CellID->169821124],
+Cell[7010, 169, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"2fd5e71c-a656-4206-b8f6-e23b2e293f2d",
+ CellID->78073891],
+Cell[7125, 172, 125, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"22d93875-c210-45c2-8400-7468ff9deb4e",
+ CellID->136509271],
+Cell[7253, 175, 504, 12, 53, "GuideText",ExpressionUUID->"2487a363-57e1-4dec-89cb-893fc6dfcb65",
+ CellID->717167236],
+Cell[7760, 189, 507, 12, 59, "GuideText",ExpressionUUID->"3cadcd08-9f24-4f5d-9c77-965de26a483e",
+ CellID->919928229],
+Cell[8270, 203, 496, 12, 59, "GuideText",ExpressionUUID->"37535515-ffb0-4147-9453-f58234636f89",
+ CellID->798196647],
+Cell[8769, 217, 496, 12, 59, "GuideText",ExpressionUUID->"6cd0b510-a056-4a01-990f-44bea4309a8f",
+ CellID->376249957],
+Cell[9268, 231, 527, 13, 59, "GuideText",ExpressionUUID->"e8cf5090-68a7-4a52-8577-7bc5dccd2404",
+ CellID->387858814],
+Cell[9798, 246, 498, 12, 59, "GuideText",ExpressionUUID->"b599a949-b536-47f1-a15d-338b996b1347",
+ CellID->214683187],
+Cell[10299, 260, 508, 12, 59, "GuideText",ExpressionUUID->"5a26d33a-d656-44cc-a900-b33295cdd0d7",
+ CellID->170382151],
+Cell[10810, 274, 524, 13, 59, "GuideText",ExpressionUUID->"836cec49-48bd-4c3c-b553-c038fed39b11",
+ CellID->847608344],
+Cell[11337, 289, 534, 13, 59, "GuideText",ExpressionUUID->"296915da-34af-4215-a6f0-be6cf27c42b2",
+ CellID->350053735],
+Cell[11874, 304, 520, 13, 59, "GuideText",ExpressionUUID->"caca692d-cdb6-4767-ab91-87e407916d93",
+ CellID->67313065],
+Cell[12397, 319, 509, 12, 59, "GuideText",ExpressionUUID->"fbf0a72f-e7b3-4097-a35a-25ee56dece27",
+ CellID->411983232],
+Cell[12909, 333, 524, 13, 59, "GuideText",ExpressionUUID->"a23ba146-ff90-4676-8f3f-92936a97043e",
+ CellID->108961984],
+Cell[13436, 348, 497, 12, 59, "GuideText",ExpressionUUID->"f3b481cc-3052-4f5b-892c-9b1a28d749d9",
+ CellID->714458740],
+Cell[13936, 362, 496, 12, 59, "GuideText",ExpressionUUID->"0795370e-0cb0-4696-aa23-2460ad0ea3d3",
+ CellID->41457865],
+Cell[14435, 376, 574, 13, 59, "GuideText",ExpressionUUID->"dc505e4d-cc43-467d-a494-2c6761f21b8a",
+ CellID->168254971],
+Cell[15012, 391, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"23c77a55-1ebc-4085-b1d8-138522273f86",
+ CellID->501479646],
+Cell[15128, 394, 148, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"96a7218f-7396-4ef3-9ac4-5f8886babce8",
+ CellID->317266237],
+Cell[15279, 397, 524, 12, 53, "GuideText",ExpressionUUID->"c1a3b90e-1f8a-4c49-8bad-946ca65dc0dd",
+ CellID->168995476],
+Cell[15806, 411, 493, 12, 59, "GuideText",ExpressionUUID->"d115ad6c-72fb-4064-b04c-6246f7bc6d48",
+ CellID->101708052],
+Cell[16302, 425, 479, 12, 59, "GuideText",ExpressionUUID->"9e894a05-d29a-48e6-9d33-60b054001aa3",
+ CellID->122727649],
+Cell[16784, 439, 521, 12, 59, "GuideText",ExpressionUUID->"ff14300d-54e4-4c90-95e0-109eebbfa0a0",
+ CellID->29874375],
+Cell[17308, 453, 521, 12, 59, "GuideText",ExpressionUUID->"7205374a-4132-4866-bc10-92cc502b8fe2",
+ CellID->4759126],
+Cell[17832, 467, 508, 12, 59, "GuideText",ExpressionUUID->"ee247800-7dd7-46ad-91d7-59a5eb1bc3b9",
+ CellID->110519467],
+Cell[18343, 481, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"d75248b3-99f8-4713-9478-05b6ee919df3",
+ CellID->277412565],
+Cell[18459, 484, 128, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"19191927-7716-4ae3-834c-4d58e2df2106",
+ CellID->76516414],
+Cell[18590, 487, 428, 11, 32, "GuideText",ExpressionUUID->"587a042b-4f4d-465e-abad-8352365f6b1e",
+ CellID->392924493],
+Cell[19021, 500, 433, 11, 38, "GuideText",ExpressionUUID->"9f0800de-2d36-4f3d-be19-3059cec5cce0",
+ CellID->531076637],
+Cell[19457, 513, 522, 12, 59, "GuideText",ExpressionUUID->"85b1430c-215d-4f6a-9969-0189e64be2ab",
+ CellID->991718868],
+Cell[19982, 527, 472, 12, 38, "GuideText",ExpressionUUID->"9f1baec1-889f-4589-95cf-78882c437eb8",
+ CellID->19104433],
+Cell[20457, 541, 506, 12, 59, "GuideText",ExpressionUUID->"76cfc7ec-b2c0-4e21-9c63-ab07d5fbd454",
+ CellID->357540261],
+Cell[20966, 555, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"cdd0b414-e770-402b-b44e-0798c34d1554",
+ CellID->89914066],
+Cell[21081, 558, 127, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"874ff9fe-85c7-4f17-bf20-cc7d0a817e59",
+ CellID->501708391],
+Cell[21211, 561, 504, 12, 53, "GuideText",ExpressionUUID->"45df944c-20da-4e04-b7b8-3bcb964ffaf7",
+ CellID->418239963],
+Cell[21718, 575, 475, 12, 38, "GuideText",ExpressionUUID->"949f1e15-773c-4a0d-9552-1b458e5385d6",
+ CellID->157477256],
+Cell[22196, 589, 468, 11, 38, "GuideText",ExpressionUUID->"e07a80dd-54bf-4af9-8783-75c443a5b66a",
+ CellID->652622686],
+Cell[22667, 602, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"63b6912c-89c1-4c00-9201-015521983bfb",
+ CellID->106230088],
+Cell[22776, 605, 391, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"bc848e3b-ec6c-4a7f-a11e-a3f86f5ea8ef",
+ CellID->59784470],
+Cell[23170, 619, 105, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"4979ec3a-3fa6-4e1a-b1aa-01758102610a",
+ CellID->12471170],
+Cell[23278, 622, 285, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"ec04b0c5-5b7c-43b1-9c4d-34ebdcf2c022",
+ CellID->544222900],
+Cell[23566, 630, 269, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"a08cd4e8-4b79-424d-94da-5623fc0087ae",
+ CellID->178157988],
+Cell[23838, 638, 96, 1, 41, "FooterCell",ExpressionUUID->"a56b785d-3c08-482b-b042-635c65eda545",
+ CellID->15536753]
+}
+]
+*)
+
+(* End of internal cache information *)
+

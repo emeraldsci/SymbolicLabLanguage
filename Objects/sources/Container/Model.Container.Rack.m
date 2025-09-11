@@ -58,6 +58,14 @@ DefineObjectType[Model[Container, Rack], {
 			Description -> "Distance from the top edge of the rack to the edge of the first position.",
 			Category -> "Container Specifications"
 		},
+		DepthMargin -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Milli*Meter],
+			Units -> Meter Milli,
+			Description -> "Distance from the bottom of the rack to the inside bottom of its first position.",
+			Category -> "Container Specifications"
+		},
 		HorizontalPitch -> {
 			Format -> Single,
 			Class -> Real,
@@ -143,7 +151,7 @@ DefineObjectType[Model[Container, Rack], {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates if racks of this model are stocked in common areas for easy accessibility and used as the default when selecting racks for general usage. For example, OperationStandard racks are selected preferentially during the rack selection within resource picking tasks.",
+			Description -> "Indicates whether racks of this model are stocked in common areas for easy accessibility and used by default for general purposes. Racks with OperationStandard set to True are preferred for selection during resource picking tasks. If set to False, the rack model is not intended for holding vessels during transportation.",
 			Category -> "General"
 		},
 		MaxCentrifugationForce -> {
@@ -186,6 +194,22 @@ DefineObjectType[Model[Container, Rack], {
 			Relation -> Model[Instrument][AssociatedAccessories,1],
 			Description -> "A list of instruments for which this container model is an accompanying accessory.",
 			Category -> "Qualifications & Maintenance"
+		},
+		CompatibleMixers -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Instrument, Roller][CompatibleRacks]|Model[Instrument, Shaker][CompatibleAdapters]|Model[Instrument, Sonicator][CompatibleSonicationAdapters],
+			Description -> "A list of instruments that this rack model can support to hold samples during mixing. Currently, this is only applicable for rollers, sonicators and shakers.",
+			Category -> "Model Information"
+		},
+		CompatibleVolumetricFlasks ->{
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Container, Vessel, VolumetricFlask][CompatibleAdapters],
+			Description -> "Volumetric flasks that can be used with this shaker adapter when mixing with shaker.",
+			Category -> "Model Information"
 		}
 	}
 }];

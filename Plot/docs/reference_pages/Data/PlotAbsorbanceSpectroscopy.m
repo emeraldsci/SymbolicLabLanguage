@@ -41,6 +41,27 @@ DefineUsage[PlotAbsorbanceSpectroscopy,
 				}
 			},
 			{
+				Definition -> {"PlotAbsorbanceSpectroscopy[protocol]", "plot"},
+				Description -> "creates a 'plot' of spectra belonging to the data objects found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing absorbance spectrscopy data objects.",
+						Widget -> Alternatives[
+							"Absorbance spectroscopy protocol" -> Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, AbsorbanceSpectroscopy]]],
+							"Total protein quantification protocol" -> Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, TotalProteinQuantification]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the absorbance spectrscopy protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
+			},
+			{
 				Definition->{"PlotAbsorbanceSpectroscopy[spectrum]","plot"},
 				Description->"provides a graphical plot of the provided spectrum.",
 
@@ -66,11 +87,7 @@ DefineUsage[PlotAbsorbanceSpectroscopy,
 			"PlotChromatography",
 			"PlotNMR"
 		},
-		Author -> {
-			"sebastian.bernasek",
-			"hayley",
-			"brad"			
-		},
+		Author -> {"yanzhe.zhu", "sebastian.bernasek", "hayley", "brad"},
 		Preview->True
 	}
 ];

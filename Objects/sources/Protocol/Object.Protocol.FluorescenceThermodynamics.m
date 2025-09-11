@@ -119,7 +119,7 @@ DefineObjectType[Object[Protocol, FluorescenceThermodynamics], {
 			Class -> Real,
 			Pattern :> GreaterEqualP[0*Liter],
 			Units -> Liter Micro,
-			Description -> "The total volume of each fluorescence thermodynamics reaction, including sample, complement sample, buffer, passsive reference, and dye.",
+			Description -> "The total volume of each fluorescence thermodynamics reaction, including sample, complement sample, buffer, passive reference, and dye.",
 			Category -> "Sample Preparation"
 		},
 		LiquidHandler -> {

@@ -20,11 +20,17 @@ DefineTests[PlotFluorescenceIntensity,
 			PlotFluorescenceIntensity[Download[objs96a]],
 			ValidGraphicsP[],
 			TimeConstraint -> 120
-		],		Example[{Basic,"Plot a histogram of intensities from links:"},
-		PlotFluorescenceIntensity[links96a],
-		ValidGraphicsP[],
-		TimeConstraint -> 120
-	],
+		],
+		Example[{Basic,"Plot a histogram of intensities from links:"},
+			PlotFluorescenceIntensity[links96a],
+			ValidGraphicsP[],
+			TimeConstraint -> 120
+		],
+		Example[{Basic,"Plot data objects linked to a given FluorescenceIntensity protocol object:"},
+			PlotFluorescenceIntensity[Object[Data, FluorescenceIntensity, "id:lYq9jRxzlObV"][Protocol]],
+			ValidGraphicsP[],
+			TimeConstraint -> 120
+		],
 		Example[{Basic,"Compare intensities across datasets using a BoxWhiskerChart:"},
 			PlotFluorescenceIntensity[Download/@{objs96a,objs96b,objs96c,objs96d}],
 			ValidGraphicsP[],

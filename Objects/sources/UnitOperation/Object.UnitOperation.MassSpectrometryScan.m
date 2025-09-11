@@ -131,7 +131,7 @@ DefineObjectType[Object[UnitOperation,MassSpectrometryScan],
 			LowCollisionEnergy -> {
 				Format -> Single,
 				Class -> Real,
-				Pattern :> GreaterP[0Volt],
+				Pattern :> GreaterEqualP[0Volt],
 				Units -> Volt,
 				Description -> "The lowest value of the linear function for applied potential as mapped to the MinMass.",
 				Category -> "Mass Analysis"
@@ -139,7 +139,7 @@ DefineObjectType[Object[UnitOperation,MassSpectrometryScan],
 			HighCollisionEnergy -> {
 				Format -> Single,
 				Class -> Real,
-				Pattern :> GreaterP[0Volt],
+				Pattern :> GreaterEqualP[0Volt],
 				Units -> Volt,
 				Description -> "The highest value of the linear function for applied potential as mapped to the MinMass.",
 				Category -> "Mass Analysis"

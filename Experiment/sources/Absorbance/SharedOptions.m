@@ -28,12 +28,50 @@ DefineOptionSet[AbsorbanceSharedOptions :> {
 		Category->"Sample Handling"
 	},
 	{
+		OptionName->TargetCarbonDioxideLevel,
+		Default->Automatic,
+		Description->"The target amount of carbon dioxide in the atmosphere in the plate reader chamber.",
+		ResolutionDescription->"Automatically set to 5% for mammalian cells, and Null otherwise.",
+		AllowNull->True,
+		Widget->Widget[
+			Type->Quantity,
+			Pattern:>RangeP[0.1Percent,20 Percent],
+			Units:>{Percent,{Percent}}
+		],
+		Category->"Sample Handling"
+	},
+	{
+		OptionName->TargetOxygenLevel,
+		Default->Null,
+		Description->"The target amount of oxygen in the atmosphere in the plate reader chamber. If specified, nitrogen gas is pumped into the chamber to force oxygen in ambient air out of the chamber until the desired level is reached.",
+		AllowNull->True,
+		Widget->Widget[
+			Type->Quantity,
+			Pattern:>RangeP[0.1Percent,20 Percent],
+			Units:>{Percent,{Percent}}
+		],
+		Category->"Sample Handling"
+	},
+	{
+		OptionName->AtmosphereEquilibrationTime,
+		Default->Automatic,
+		Description->"The length of time for which the samples equilibrate at the requested oxygen and carbon dioxide level before being read.",
+		ResolutionDescription->"Automatically set to 5 Minute if TargetCarbonDioxideLevel or TargetOxygenLevel is specified. Otherwise, set to Null.",
+		AllowNull->True,
+		Widget->Widget[
+			Type->Quantity,
+			Pattern:>RangeP[0 Second, 24 Hour],
+			Units:>{1,{Minute,{Second,Minute,Hour}}}
+		],
+		Category->"Sample Handling"
+	},
+	{
 		OptionName->NumberOfReadings,
 		Default->Automatic,
-		Description->"Number of redundant readings taken by the detector to determine a single averaged absorbance reading.",
+		Description->"Number of redundant readings taken by the detector to determine a single averaged absorbance reading. This is currently available on the BMG plate readers: \"CLARIOstar\", \"CLARIOstar Plus with ACU\", \"FLUOstar Omega\", and \"PHERAstar FS\".",
 		ResolutionDescription->"If an instrument capable of adjusting NumberOfReadings is selected, resolves to 100. Otherwise resolves to Null",
 		AllowNull->True,
-		Widget->Widget[Type->Number,Pattern:>RangeP[1,200]],
+		Widget->Widget[Type->Number,Pattern:>RangeP[1,200,1]],
 		Category->"Absorbance Measurement"
 	},
 	{
@@ -153,7 +191,7 @@ DefineOptionSet[AbsorbanceSharedOptions :> {
 			Default->Automatic,
 			AllowNull->True,
 			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
-			Description->"The object or source used to generate a blank sample (i.e. buffer only, water only, etc.) whose absorbance is subtracted as background from the absorbance readings of the SamplesIn to take accound for any artifacts.",
+			Description->"The object or source used to generate a blank sample (i.e. buffer only, water only, etc.) whose absorbance is subtracted as background from the absorbance readings of the SamplesIn to take account for any artifacts.",
 			ResolutionDescription->"Automatically set to Null if BlankMeasurement is False. Otherwise, automatically set to the value of Solvent in SamplesIn. If Solvent not specfied, set to Model[Sample, \"Milli-Q water\"].",
 			Category->"Data Processing"
 		},
@@ -181,7 +219,8 @@ DefineOptionSet[AbsorbanceSharedOptions :> {
 	},
 	PlateReaderMixOptions,
 	EvaporationOptions,
-	FuntopiaSharedOptions,
+	NonBiologyFuntopiaSharedOptions,
+	ModelInputOptions,
 	SamplesInStorageOptions,
 	SimulationOption,
 	PreparationOption,

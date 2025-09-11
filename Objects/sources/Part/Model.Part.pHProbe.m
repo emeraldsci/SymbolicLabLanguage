@@ -17,6 +17,22 @@ DefineObjectType[Model[Part, pHProbe], {
 			Description -> "The type of pH measurement principle.",
 			Category -> "Model Information"
 		},
+		ReservoirModel -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Container, Vessel],
+			Description -> "The model of internal chamber container of the pH probe that contains the storage solution (usually \"Electrolyte 3 mol/L KCl\") used to maintain stable reference electrode conditions for accurate pH measurement.",
+			Category -> "Model Information"
+		},
+		StorageContainerModel -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Container, Vessel],
+			Description -> "The model of container filled with storage solution (usually \"Electrolyte 3 mol/L KCl\") secured to the bottom of the probe to keep the pH probe's glass membrane and reference junction hydrated when not in use.",
+			Category -> "Model Information"
+		},
 		(* --- Physical Properties --- *)
 		ShaftDiameter -> {
 			Format -> Single,

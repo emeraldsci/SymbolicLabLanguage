@@ -141,14 +141,14 @@ DefineTests[PlotSupportRate, {
 		_Grid
 	],
 	Example[{Basic, "Create a grid of plots of troubleshooting rate with given time period:"},
-		PlotSupportRate[1 Month],
+		PlotSupportRate[1 Week],
 		_Grid,
 		Stubs :> {Today = Now -2 Month}
 	],
 	Example[{Basic, "Create a grid of plots of troubleshooting rate with no input:"},
 		PlotSupportRate[],
 		_Grid,
-		Stubs :> {Today = Now -2 Month}
+		Stubs :> {Today = DateObject[List[2025, 1, 15, 13, 27, 32.4604522`], "Instant", "Gregorian", -4.`]}
 	]
 }
 ];
@@ -364,7 +364,7 @@ DefineTests[PlotSupportDistributions, {
 				},
 				AffectedProtocol -> {protocol2, protocol3, protocol4, protocol5, protocol6, protocol7},
 				SourceProtocol -> {protocol2, protocol3, protocol4, protocol5, protocol6, protocol7},
-				ErrorSource -> {"Missing Item", Null, Null, Null, Null, Null},
+				ErrorCategory -> {"Missing Items", Null, Null, Null, Null, Null},
 				Resolved -> {True, False, False, True, True, True},
 				Blocked -> {False, False, True, False, False, False},
 				Notebook -> notebook,
@@ -394,6 +394,14 @@ DefineTests[PlotTotalSupportRate, {
 	],
 	Example[{Basic, "Create a grid of plots of total troubleshooting rate between last 2 month to last month with 1 day interval:"},
 		PlotTotalSupportRate[Today - 2 Month,Today - 1 Month, 1 Day],
+		_Grid
+	],
+	Example[{Options, Site, "Create a grid of plots of total troubleshooting rate between last 2 month to last month with 1 day interval for all sites:"},
+		PlotTotalSupportRate[Today - 2 Month,Today - 1 Month, 1 Day, Site->Null],
+		_Grid
+	],
+	Example[{Options, Site, "Create a grid of plots of total troubleshooting rate between last 2 month to last month with 1 day interval for the specified site:"},
+		PlotTotalSupportRate[Today - 2 Month,Today - 1 Month, 1 Day, Site->$Site],
 		_Grid
 	]
 }
@@ -427,8 +435,8 @@ DefineTests[PlotSupportTimeline, {
 			$Failed,
 			Messages :> {PlotSupportTimeline::NoProtocols}
 		],
-		Example[{Options, Tags, "Display the troubleshooting protocols with ErrorSource -> \"Missing Item\":"},
-			PlotSupportTimeline[Today-7 Day, Today-1 Day, 1 Day, Tags -> "Missing Item"],
+		Example[{Options, Tags, "Display the troubleshooting protocols with ErrorCategory -> \"Missing Items\":"},
+			PlotSupportTimeline[Today-7 Day, Today-1 Day, 1 Day, Tags -> "Missing Items"],
 			ValidGraphicsP[]
 		],
 		Example[{Options, Annotation, "Include a vertical line epilog demarcating an event:"},
@@ -440,11 +448,11 @@ DefineTests[PlotSupportTimeline, {
 			ValidGraphicsP[]
 		],
 		Example[{Options, RemoveMonitoringTickets, "Indicate that monitoring tickets such as long tasks and force quits should be shown:"},
-			PlotSupportTimeline[Object[Protocol, SampleManipulation], Today-7 Day, Today-1 Day, 1 Day, RemoveMonitoringTickets -> False],
+			PlotSupportTimeline[Object[Protocol, ManualSamplePreparation], Today-7 Day, Today-1 Day, 1 Day, RemoveMonitoringTickets -> False],
 			ValidGraphicsP[]
 		],
 		Example[{Options, Display, "Show both the rate (tickets/protocol) and the number of tickets:"},
-			PlotSupportTimeline[Object[Protocol,SampleManipulation], Today-7 Day, Today-1 Day, 1 Day, Display -> Both],
+			PlotSupportTimeline[Object[Protocol,ManualSamplePreparation], Today-7 Day, Today-1 Day, 1 Day, Display -> Both],
 			_Pane
 		],
 		Example[{Options, SearchCriteria, "Add additional criteria to the search:"},
@@ -452,7 +460,7 @@ DefineTests[PlotSupportTimeline, {
 			_Pane
 		],
 		Example[{Options, ExcludeCanaryProtocols, "Indicates if the tickets generated for a root canary protocol should be shown:"},
-			PlotSupportTimeline[Object[Protocol,SampleManipulation], Today-7 Day, Today-1 Day, 1 Day, ExcludeCanaryProtocols -> True],
+			PlotSupportTimeline[Object[Protocol,ManualSamplePreparation], Today-7 Day, Today-1 Day, 1 Day, ExcludeCanaryProtocols -> True],
 			ValidGraphicsP[]
 		]
 	},
@@ -461,7 +469,7 @@ DefineTests[PlotSupportTimeline, {
 		$DeveloperSearch = True
 	},
 	SymbolSetUp :> Module[{notebookPacket,notebook,tubePacket,tube1,tube2,waterSample1,
-		waterSample2,protocol1,protocol2,protocol3,protocol4,protocol5,protocol6,protocol7,tickets,
+		waterSample2,protocol1,protocol2,protocol3,protocol4,protocol5,protocol6,protocol7,protocol8,protocol9,protocol10,tickets,
 		statusPackets,namePackets},
 
 		$CreatedObjects={};
@@ -481,9 +489,16 @@ DefineTests[PlotSupportTimeline, {
 		protocol2 = ExperimentImageSample[waterSample2];
 		protocol3 = ExperimentImageSample[waterSample1];
 		protocol4 = ExperimentImageSample[waterSample1];
-		protocol5 = Upload[<|Type -> Object[Protocol, SampleManipulation], LiquidHandlingScale -> MicroLiquidHandling|>];
-		protocol6 = Upload[<|Type -> Object[Protocol, SampleManipulation], LiquidHandlingScale -> MacroLiquidHandling|>];
-		protocol7 = Upload[<|Type -> Object[Protocol, SampleManipulation], LiquidHandlingScale -> MacroLiquidHandling|>];
+		{protocol5,protocol6,protocol7,protocol8,protocol9,protocol10} = Upload[{
+			<|Type -> Object[Protocol, SampleManipulation], LiquidHandlingScale -> MicroLiquidHandling|>,
+			<|Type -> Object[Protocol, SampleManipulation], LiquidHandlingScale -> MicroLiquidHandling|>,
+			<|Type -> Object[Protocol, SampleManipulation], LiquidHandlingScale -> MacroLiquidHandling|>,
+			<|Type -> Object[Protocol, ManualSamplePreparation]|>,
+			<|Type -> Object[Protocol, ManualSamplePreparation]|>,
+			<|Type -> Object[Protocol, ManualSamplePreparation]|>
+		}];
+
+		Upload[<|Object -> #, RootProtocol -> Link[#]|>& /@ {protocol5,protocol6,protocol7,protocol8,protocol9,protocol10}];
 
 		tickets = RequestSupport[
 			{
@@ -497,7 +512,7 @@ DefineTests[PlotSupportTimeline, {
 			},
 			AffectedProtocol  ->  {protocol1, protocol2, protocol3, protocol5, protocol4,protocol6},
 			SourceProtocol  ->  {protocol1, protocol2, protocol3, protocol5, protocol4,protocol6},
-			ErrorSource  ->  {"PAGE Compile", "PAGE Parse", "Missing Item",Null,Null,Null},
+			ErrorCategory  ->  {"Science Function Error", "Science Function Error", "Missing Items",Null,Null,Null},
 			Resolved  ->  {True, False, False, False, False, False},
 			Blocked  ->  {False, False, True, True, True, True},
 			Notebook  ->  notebook,
@@ -508,7 +523,8 @@ DefineTests[PlotSupportTimeline, {
 
 		statusPackets=MapIndexed[
 			With[
-				{date=Now-First[#2]*Day},
+				(* make sure all are created within 1 week *)
+				{date=Now-Mod[First[#2], 7, 1]*Day},
 				<|
 					Object -> #1,
 					DateCompleted -> date,
@@ -516,7 +532,7 @@ DefineTests[PlotSupportTimeline, {
 					Replace[StatusLog] -> {{date, Completed, Link[$PersonID]}}
 				|>
 			]&,
-			{protocol1,protocol2,protocol3,protocol4,protocol5,protocol6,protocol7}
+			{protocol1,protocol2,protocol3,protocol4,protocol5,protocol6,protocol7,protocol8,protocol9,protocol10}
 		];
 
 		namePackets = Map[
@@ -525,7 +541,7 @@ DefineTests[PlotSupportTimeline, {
 				Name -> StringReplace[#[ID] <> " TroubleshootingTimeline", "id:" -> ""],
 				DeveloperObject -> True
 			|>&,
-			Join[tickets, {notebook,tube1,tube2,waterSample1,waterSample2,protocol1,protocol2,protocol3,protocol4,protocol5,protocol6,protocol7}]
+			Join[tickets, {notebook,tube1,tube2,waterSample1,waterSample2,protocol1,protocol2,protocol3,protocol4,protocol5,protocol6,protocol7,protocol8,protocol9,protocol10}]
 		];
 
 		Upload[Join[statusPackets,namePackets]]
@@ -602,16 +618,16 @@ DefineTests[TroubleshootingTable,
 			TroubleshootingTable[Object[Protocol, ImageSample], 1 Week, Blocker -> True,Detailed -> True],
 			_Pane|{}
 		],
-		Example[{Options,ErrorSource, "Show only tickets tagged as \"PAGE Compile\" errors:"},
-			TroubleshootingTable[Object[Protocol, ImageSample], 1 Week, ErrorSource -> "PAGE Compile"],
+		Example[{Options,ErrorCategory, "Show only tickets tagged as \"Science Function Error\" errors:"},
+			TroubleshootingTable[Object[Protocol, ImageSample], 1 Week, ErrorCategory -> "Science Function Error"],
 			_Pane|{}
 		],
-		Example[{Options,ErrorSource, "Show only tickets for Micro SM protocols:"},
+		Example[{Options,ErrorCategory, "Show only tickets for Micro SM protocols:"},
 			TroubleshootingTable[Object[Protocol, SampleManipulation], 1 Week, MicroLiquidHandling -> True],
 			_Pane | {}
 		],
 		Example[{Options,RemoveMonitoringTickets, "Indicate that monitoring tickets such as long tasks and force quits should be shown:"},
-			TroubleshootingTable[Object[Protocol, SampleManipulation], Now-10 Day, Now, RemoveMonitoringTickets -> False],
+			TroubleshootingTable[Object[Protocol, ManualSamplePreparation], Now-10 Day, Now, RemoveMonitoringTickets -> False],
 			_Pane | {}
 		]
 	},
@@ -620,7 +636,7 @@ DefineTests[TroubleshootingTable,
 		$DeveloperSearch=True
 	},
 	SymbolSetUp :> Module[{notebookPacket,notebook,tubePacket,tube1,tube2,waterSample1,
-		waterSample2,protocol1,protocol2,protocol3,protocol4,protocol5,tickets},
+		waterSample2,protocol1,protocol2,protocol3,protocol4,protocol5,protocol6,tickets},
 
 		$CreatedObjects={};
 
@@ -639,7 +655,11 @@ DefineTests[TroubleshootingTable,
 		protocol2 = ExperimentImageSample[waterSample2];
 		protocol3 = ExperimentImageSample[waterSample1];
 		protocol4 = ExperimentImageSample[waterSample1];
-		protocol5 = Upload[<|Type -> Object[Protocol, SampleManipulation], LiquidHandlingScale -> MicroLiquidHandling|>];
+		{protocol5, protocol6} = Upload[{
+			<|Type -> Object[Protocol, SampleManipulation], LiquidHandlingScale -> MicroLiquidHandling|>,
+			<|Type -> Object[Protocol, ManualSamplePreparation]|>
+		}];
+		Upload[<|Object -> #, RootProtocol -> Link[#]|>& /@ {protocol5,protocol6}];
 
 		tickets = RequestSupport[
 			{
@@ -647,15 +667,16 @@ DefineTests[TroubleshootingTable,
 				{Operations, "Parse Error", "Parser return $Failed"},
 				{Operations, "Missing Resource", "Couldn't find Object[Container,Vessel,\"id:ABC\"]"},
 				{Operations, "My robot is dead and crying", "I come to it and see nothing but tears."},
+				{Operations, "Instrument gears grinding", "Loud grinding noise when camera moves"},
 				{Operations, "Instrument gears grinding", "Loud grinding noise when camera moves"}
 			},
-			AffectedProtocol  ->  {protocol1, protocol2, protocol3, protocol5, protocol4},
-			SourceProtocol  ->  {protocol1, protocol2, protocol3, protocol5, protocol4},
-			ErrorSource  ->  {"PAGE Compile", "PAGE Parse", "Missing Item",Null,Null},
-			Resolved -> {True, False, False, False, False},
-			Blocked -> {False, False, True, True, True},
+			AffectedProtocol  ->  {protocol1, protocol2, protocol3, protocol5, protocol4,protocol6},
+			SourceProtocol  ->  {protocol1, protocol2, protocol3, protocol5, protocol4,protocol6},
+			ErrorCategory  ->  {"Science Function Error", "Science Function Error", "Missing Items",Null,Null,Null},
+			Resolved -> {True, False, False, False, False,False},
+			Blocked -> {False, False, True, True, True,True},
 			Notebook -> notebook,
-			SystematicChanges -> {True, False, False, False, False}
+			SystematicChanges -> {True, False, False, False, False, False}
 		];
 
 		RequestSupport[Last[tickets], Blocked -> False];
@@ -664,8 +685,8 @@ DefineTests[TroubleshootingTable,
 			Map[
 				<|
 					Object -> #,
-					OperationStatus -> Troubleshooting,
-					Replace[StatusLog] -> {{Now - 3 Hour, Troubleshooting, Link[$PersonID]}}
+					OperationStatus -> ScientificSupport,
+					Replace[StatusLog] -> {{Now - 3 Hour, ScientificSupport, Link[$PersonID]}}
 				|>&,
 				{protocol3, protocol4}
 			]
@@ -679,7 +700,7 @@ DefineTests[TroubleshootingTable,
 						Name -> StringReplace[#[ID] <> " TroubleshootingTable", "id:" -> ""],
 						DeveloperObject -> True
 					|>&,
-					Join[tickets, {notebook,tube1,tube2,waterSample1,waterSample2,protocol3,protocol4,protocol5}]
+					Join[tickets, {notebook,tube1,tube2,waterSample1,waterSample2,protocol3,protocol4,protocol5,protocol6}]
 				],
 				{
 					<|
@@ -742,7 +763,7 @@ DefineTests[BlockerTable,
 				{Operations, "Sad Parse", "Really Sad"}
 			},
 			AffectedProtocol -> {protocol1, protocol2},
-			ErrorSource -> {"HPLC Compile", "HPLC Parse"},
+			ErrorCategory -> {"Science Function Error", "Science Function Error"},
 			Notebook -> notebook,
 			Blocked -> {True, True}
 		];
@@ -789,7 +810,7 @@ DefineTests[TroubleshootingErrorSources,
 				{Operations, "Sad Parse", "Really Sad"}
 			},
 			Notebook  ->  notebook,
-			ErrorSource  ->  {"HPLC Compile", "HPLC Parse"}
+			ErrorCategory  ->  {"Science Function Error", "Science Function Error"}
 		];
 
 		Upload[<|Object -> #, Name -> StringReplace[#[ID] <> " TroubleshootingErrorSources", "id:"  ->  ""], DeveloperObject -> True|>& /@ tickets]

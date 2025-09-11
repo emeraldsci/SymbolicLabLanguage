@@ -53,7 +53,7 @@ DefineUsage[ExperimentRNASynthesis,
 			"ExperimentHPLC",
 			"ExperimentAbsorbanceSpectroscopy"
 		},
-		Author -> {"andrey.shur", "robert", "ti.wu", "dima"}
+		Author -> {"ryan.bisbey", "andrey.shur", "robert", "ti.wu", "dima"}
 	}
 ];
 
@@ -96,7 +96,7 @@ DefineUsage[ExperimentRNASynthesisPreview,
 			"ExperimentRNASynthesisOptions",
 			"ValidExperimentRNASynthesisQ"
 		},
-		Author -> {"andrey.shur", "robert", "ti.wu", "dima"}
+		Author -> {"ryan.bisbey", "andrey.shur", "robert", "ti.wu", "dima"}
 	}
 ];
 
@@ -140,7 +140,7 @@ DefineUsage[ValidExperimentRNASynthesisQ,
 			"ExperimentRNASynthesis",
 			"ExperimentRNASynthesisOptions"
 		},
-		Author -> {"andrey.shur", "robert", "ti.wu", "dima"}
+		Author -> {"ryan.bisbey", "andrey.shur", "robert", "ti.wu", "dima"}
 	}
 ];
 

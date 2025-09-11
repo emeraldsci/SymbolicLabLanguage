@@ -19,6 +19,7 @@ DefineObjectType[Object[Maintenance, StorageUpdate], {
 				Object[Sample],
 				Object[Item],
 				Object[Item][Maintenance],
+				Object[Part],
 				Object[Part][Maintenance],
 				Object[Plumbing],
 				Object[Wiring]
@@ -35,6 +36,7 @@ DefineObjectType[Object[Maintenance, StorageUpdate], {
 				Object[Sample],
 				Object[Item],
 				Object[Item][Maintenance],
+				Object[Part],
 				Object[Part][Maintenance],
 				Object[Plumbing],
 				Object[Wiring]
@@ -126,6 +128,37 @@ DefineObjectType[Object[Maintenance, StorageUpdate], {
 			Category -> "Batching",
 			Developer -> True
 		},
+		MovedBiohazardDisposalSamples -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Object[Sample]
+			],
+			Description -> "Biological samples or containers that were marked to be moved and further categorized based on whether they can be disposed of in biohazard waste holding directly or if they contain LiquidBiohazardWaste or UnsealedBiohazardWaste and require bleaching or taping respectively.",
+			Category -> "General"
+		},
+		FoundBiohazardDisposalSamples -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Object[Sample]
+			],
+			Description -> "Biological samples or containers that were successfully scanned but not yet moved and categorized based on if they can be disposed of in biohazard waste holding directly or if they contain LiquidBiohazardWaste and UnsealedBiohazardWaste and require bleaching or taping.",
+			Developer -> True,
+			Category -> "General"
+		},
+		BiohazardDisposalBatchLengths -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterP[0],
+			Description -> "The lengths of each grouping of MovedBiohazardDisposalSamples, so that only a certain number of items are gathered or stored at a time.",
+			Category -> "Batching",
+			Developer -> True
+		},
 		MovedLargeVolumeSamples -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -175,6 +208,17 @@ DefineObjectType[Object[Maintenance, StorageUpdate], {
 			],
 			Description -> "The cabinet in which the solid samples should be stored temporarily while awaiting pickup.",
 			Category -> "General"
+		},
+		BatchedStorageTargets -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container]
+			],
+			Description -> "The storage shelves targeted by this maintenance.",
+			Category -> "General",
+			Developer->True
 		},
 
 		(* long term testing fields *)
@@ -320,6 +364,53 @@ DefineObjectType[Object[Maintenance, StorageUpdate], {
 				Object[Instrument]
 			],
 			Description -> "The environmental chamber used for PhotostabilityTesting.",
+			Category -> "General"
+		},
+		InsufficientScanResponse -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The reason given by the operator for selecting less than 30 items in a batched storage update.",
+			Category -> "General"
+		},
+		RetryState -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[True, False, Skip],
+			Description -> "Indicate if operator needs to retry auditing of items from current iteration.",
+			Category -> "General",
+			Developer -> True
+		},
+		MissingObjects -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Object[Sample],
+				Object[Item],
+				Object[Item],
+				Object[Part],
+				Object[Plumbing],
+				Object[Wiring]
+			],
+			Description -> "Objects that were not found in this storage update.",
+			Category -> "General"
+		},
+		CurrentMissingObjects -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Object[Sample],
+				Object[Item],
+				Object[Item],
+				Object[Part],
+				Object[Plumbing],
+				Object[Wiring]
+			],
+			Description -> "Objects that were not found in the current iteration.",
 			Category -> "General"
 		}
 	}

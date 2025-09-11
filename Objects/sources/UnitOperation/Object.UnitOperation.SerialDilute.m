@@ -13,7 +13,7 @@ DefineObjectType[Object[UnitOperation, SerialDilute], {
 		Source -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> (_String | ObjectP[{Object[Sample], Object[Container]}]) | {(_String | ObjectP[{Object[Sample], Object[Container]}])..},
+			Pattern :> (_String | ObjectP[{Object[Sample], Object[Container], Model[Sample]}]) | {(_String | ObjectP[{Object[Sample], Object[Container], Model[Sample]}])..},
 			Description -> "Source sample to be used in the serial dilution.",
 			Category -> "Organizational Information"
 		},
@@ -106,6 +106,39 @@ DefineObjectType[Object[UnitOperation, SerialDilute], {
 			Pattern :> {GreaterP[0]..},
 			Description -> "For each member of Source, the factors by which you wish to reduce the concentrations starting with SamplesIn, followed by each previous dilution in the series of dilutions.",
 			Category -> "Sample Preparation"
+		},
+		ContainerOutLink -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Model[Container]
+			],
+			Description -> "For each member of Source, the destination container we should serial aliquot into.",
+			Category -> "General",
+			Migration -> SplitField,
+			IndexMatching -> Source
+		},
+		ContainerOutString -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Relation -> Null,
+			Description -> "For each member of Source, the destination container we should serial aliquot into.",
+			Category -> "General",
+			Migration -> SplitField,
+			IndexMatching -> Source
+		},
+		ContainerOutExpression -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> {_, ObjectP[{Model[Container], Object[Container]}] | _String} | Waste,
+			Relation -> Null,
+			Description -> "For each member of Source, the destination container we should serial aliquot into.",
+			Category -> "General",
+			Migration -> SplitField,
+			IndexMatching -> Source
 		},
 
 		NumberOfSerialDilutions -> {

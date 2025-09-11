@@ -323,7 +323,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
     PreWashPrimitives -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> {SampleManipulationP..},
+      Pattern :> {(SampleManipulationP|SamplePreparationP)..},
       Description -> "A set of instructions specifying sample washing and resuspension prior to activation or conjugation.",
       Category -> "PreWash"
     },
@@ -331,7 +331,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Object[Protocol, SampleManipulation],
+      Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
       Description -> "The sample manipulation protocols used to wash and resuspend the samples prior to activation or conjugation.",
       Category -> "PreWash"
     },
@@ -452,7 +452,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
     ActivationReactionPrimitives -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> {SampleManipulationP..},
+      Pattern :> {(SampleManipulationP|SamplePreparationP)..},
       Description -> "A set of instructions specifying the transfer of reagents into the Activation reaction and subsequent incubation. Includes any washing steps before or after activation.",
       Category -> "Activation"
     },
@@ -460,7 +460,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Object[Protocol, SampleManipulation],
+      Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
       Description -> "The sample manipulation protocol used to assemble and incubate the activation reaction.",
       Category -> "Activation"
     },
@@ -852,7 +852,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
     ConjugationReactionPrimitives -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> {SampleManipulationP..},
+      Pattern :> {(SampleManipulationP|SamplePreparationP)..},
       Description -> "A set of instructions specifying the transfer of reagents into the conjugation reaction and subsequent incubation.",
       Category -> "Conjugation"
     },
@@ -860,7 +860,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Object[Protocol, SampleManipulation],
+      Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
       Description -> "The sample manipulation protocol used assemble and incubate the conjugation reaction.",
       Category -> "Conjugation"
     },
@@ -1002,7 +1002,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
     QuenchReactionPrimitives -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> {SampleManipulationP..},
+      Pattern :> {(SampleManipulationP|SamplePreparationP)..},
       Description -> "A set of instructions specifying the assembly and incubation of the quenching reaction.",
       Category -> "Quenching"
     },
@@ -1010,7 +1010,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Object[Protocol, SampleManipulation],
+      Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
       Description -> "The sample manipulation protocol used assemble and incubate the quenching reaction.",
       Category -> "Quenching"
     },
@@ -1281,7 +1281,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
     PostConjugationPrimitives -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> SampleManipulationP,
+      Pattern :> (SampleManipulationP|SamplePreparationP),
       Description -> "A set of instructions specifying the post-conjugation workup.",
       Category -> "Post-Conjugation Workup"
     },
@@ -1289,7 +1289,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Object[Protocol, SampleManipulation],
+      Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
       Description -> "The sample manipulation protocol used execute the post-conjugation workup.",
       Category -> "Post-Conjugation Workup"
     },
@@ -1297,7 +1297,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
     BatchConjugationPrimitives -> {
       Format->Multiple,
       Class->Expression,
-      Pattern:>SampleManipulationP,
+      Pattern:>(SampleManipulationP|SamplePreparationP),
       Description->"The set of instructions specifying the conjugation reaction for the current batch.",
       Category->"Conjugation",
       Developer->True
@@ -1305,7 +1305,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
     BatchQuenchPrimitives -> {
       Format->Multiple,
       Class->Expression,
-      Pattern:>SampleManipulationP,
+      Pattern:>(SampleManipulationP|SamplePreparationP),
       Description->"The set of instructions specifying the quenching reaction for the current batch.",
       Category->"Quenching",
       Developer->True
@@ -1313,7 +1313,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
     BatchPostConjugationPrimitives -> {
       Format->Multiple,
       Class->Expression,
-      Pattern:>SampleManipulationP,
+      Pattern:>(SampleManipulationP|SamplePreparationP),
       Description->"The set of instructions specifying the post-conjugation workup reaction for the current batch.",
       Category->"Post-Conjugation Workup",
       Developer->True

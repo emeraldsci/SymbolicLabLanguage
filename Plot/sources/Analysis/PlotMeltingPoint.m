@@ -472,10 +472,9 @@ safeNullListLookup[ruleList_,field_]:=Lookup[ruleList,field,Null];
 
 plotMeasureMeltingPointHelper[analysisPacket_] := Module[
 	{
-		mpPacket, protocol, protocolObj, pointUSP, pointBP, pointJP, downloadFields, totalDownloads, allIDs, allDataObjs, tooltippedIDs,
-		startTs, endTs, curves, videoFiles, pointsUSP, pointsBP, pointsJP,
-		allLineValues, labeledPointsXY, pointsUnitlessUSP, pointsUnitlessBP, pointsUnitlessJP,
-		videoStream, duration, startTemp, endTemp, graphicsRange, allColors, imageSizeCalculation, allStandardsP,
+		mpPacket, protocol, protocolObj, downloadFields, totalDownloads, allIDs, allDataObjs, tooltippedIDs,
+		startTs, endTs, curves, videoFiles, pointsUSP, pointsBP, pointsJP, allLineValues, labeledPointsXY, videoStream,
+		duration, startTemp, endTemp, graphicsRange, allColors, imageSizeCalculation, allStandardsP,
 		minPercent, maxPercent, plotRangeXMin, plotRangeXMax, plotRangeYMin, plotRangeYMax, plotImageSize, plotImagePadding,
 		dataObjList, analysisObjList, sampleNumber
 	},
@@ -485,27 +484,20 @@ plotMeasureMeltingPointHelper[analysisPacket_] := Module[
 	protocolObj = protocol[Object];
 	{dataObjList, analysisObjList} = Download[protocol, {Data, Data[MeltingAnalyses]}];
 
-	{pointUSP, pointBP, pointJP} = Download[analysisPacket,
-		{USPharmacopeiaMeltingRange, BritishPharmacopeiaMeltingPoint, JapanesePharmacopeiaMeltingPoint}
-	];
-
 	(*Download all other necessary information for the plot*)
 	downloadFields = {
 		Object, StartTemperature, EndTemperature, MeltingCurve, CapillaryVideoFile,
-		MeltingAnalyses[USPharmacopeiaMeltingRange], MeltingAnalyses[BritishPharmacopeiaMeltingPoint], MeltingAnalyses[JapanesePharmacopeiaMeltingPoint]
+		MeltingAnalyses[USPharmacopeiaMeltingRange], MeltingAnalyses[BritishPharmacopeiaMeltingTemperature], MeltingAnalyses[JapanesePharmacopeiaMeltingTemperature]
 	};
 	totalDownloads = Download[protocol, Data[downloadFields]];
 	{allDataObjs, startTs, endTs, curves, videoFiles, pointsUSP, pointsBP, pointsJP} = Transpose[totalDownloads];
 	(* these need to be in lists to conform with legacy code below, consider refactoring to simplify *)
-	pointsUSP = ConstantArray[pointUSP, Length[startTs]];
-	pointsBP = ConstantArray[pointBP, Length[startTs]];
-	pointsJP = ConstantArray[pointJP, Length[startTs]];
+
 
 	allIDs = allDataObjs[[All, -1]];
 	tooltippedIDs = MapThread[Tooltip, {allIDs, allDataObjs}];
 
 
-	{pointsUnitlessUSP, pointsUnitlessBP, pointsUnitlessJP} = QuantityMagnitude[{pointsUSP, pointsBP, pointsJP}];
 
 	(*In theory, starting and ending temperatures should be the same for all samples, due to measuring noise they could still be different.*)
 	startTemp = QuantityMagnitude[Min[startTs]];
@@ -534,7 +526,8 @@ plotMeasureMeltingPointHelper[analysisPacket_] := Module[
       3-> <|"USP"->{point1, point2}, "BP"->{point1}, "JP"->{point1}|>
    |>, and each point is {x, y}.
    *)
-	labeledPointsXY = coordinatesAssociation[allLineValues, pointsUnitlessUSP, pointsUnitlessBP, pointsUnitlessJP];
+
+	labeledPointsXY = coordinatesAssociation[allLineValues, pointsUSP, pointsBP, pointsJP, startTs];
 	sampleNumber = Length[labeledPointsXY];
 
 	(*Import video*)
@@ -627,16 +620,19 @@ plotMeasureMeltingPointHelper[analysisPacket_] := Module[
 		(*This helper function was used in both labeled points on the curve, and on the slider.*)
 		allStandardsP = "USP" | "BP" | "JP";
 		helperCurvePoints[pointsCoordinates_, Dynamic[traceCurve_], Dynamic[traceStandard_], curveIdx_, standard:allStandardsP, standardPointIdx_] :=
+		  If[ Length[pointsCoordinates[curveIdx][standard]] < standardPointIdx,
+			  {},
 				Dynamic[
 					If[MemberQ[traceCurve, curveIdx] && traceStandard == standard,
 						{
-							Style[Point[pointsCoordinates[curveIdx][standard][[standardPointIdx]]], PointSize[0.025], White],
-							Style[Point[pointsCoordinates[curveIdx][standard][[standardPointIdx]]], PointSize[0.02], Darker[allColors[[curveIdx]]]]
+							Style[pointsCoordinates[curveIdx][standard][[standardPointIdx]], PointSize[0.025], White],
+							Style[pointsCoordinates[curveIdx][standard][[standardPointIdx]], PointSize[0.02], Darker[allColors[[curveIdx]]]]
 						},
 						{}
 					],
 					TrackedSymbols :> {traceCurve, traceStandard}
-				];
+				]
+		  ];
 
 		(*plot a single line and its labeled points given the line index*)
 		helperPlotCurveWithPoints[allLineV_, Dynamic[multipleS_], Dynamic[standardS_], idx_]:= {
@@ -670,34 +666,38 @@ plotMeasureMeltingPointHelper[analysisPacket_] := Module[
 					],
 					TrackedSymbols :> {traceStandard, traceEpilog1, traceEpilog2}
 				],
-
-				EventHandler[
-					Dynamic[
-						If[MemberQ[traceCurve, curveIdx] && traceStandard == "USP",
-							Style[Point[labeledPointsXY[curveIdx]["USP"][[1]]], PointSize[0.03], Opacity[0]],
-							{}
+				If[Length[labeledPointsXY[curveIdx]["USP"]] < 2, {},
+					EventHandler[
+						Dynamic[
+							If[MemberQ[traceCurve, curveIdx] && traceStandard == "USP",
+								Style[labeledPointsXY[curveIdx]["USP"][[1]], PointSize[0.03], Opacity[0]],
+								{}
+							],
+							TrackedSymbols :> {traceCurve, traceStandard}
 						],
-						TrackedSymbols :> {traceCurve, traceStandard}
-					],
-					{
-						"MouseEntered" :> (traceEpilog2 = If[MemberQ[traceCurve, curveIdx] && traceStandard == "USP", True, False]),
-						"MouseExited" :> (traceEpilog2 = False)
-					}
+						{
+							"MouseEntered" :> (traceEpilog2 = If[MemberQ[traceCurve, curveIdx] && traceStandard == "USP", True, False]),
+							"MouseExited" :> (traceEpilog2 = False)
+						}
+					]
 				],
-				EventHandler[
-					Dynamic[
-						If[MemberQ[traceCurve, curveIdx] && (traceStandard == "JP" || traceStandard == "BP" || traceStandard == "USP"),
-							Style[Point[labeledPointsXY[curveIdx]["USP"][[2]]], PointSize[0.03], Opacity[0]],
-							{}
+				If[Length[labeledPointsXY[curveIdx]["JP"]] < 1 || Length[labeledPointsXY[curveIdx]["BP"]] < 1 || Length[labeledPointsXY[curveIdx]["USP"]] < 1, {},
+					EventHandler[
+						Dynamic[
+							If[MemberQ[traceCurve, curveIdx] && (traceStandard == "JP" || traceStandard == "BP" || traceStandard == "USP"),
+								Style[labeledPointsXY[curveIdx]["USP"][[2]], PointSize[0.03], Opacity[0]],
+								{}
+							],
+							TrackedSymbols :> {traceCurve, traceStandard}
 						],
-						TrackedSymbols :> {traceCurve, traceStandard}
-					],
-					{
-						"MouseEntered" :> (traceEpilog1 = If[MemberQ[traceCurve, curveIdx] && (traceStandard == "JP" || traceStandard == "BP" || traceStandard == "USP"), True, False]),
-						"MouseExited" :> (traceEpilog1 = False)
-					}
+						{
+							"MouseEntered" :> (traceEpilog1 = If[MemberQ[traceCurve, curveIdx] && (traceStandard == "JP" || traceStandard == "BP" || traceStandard == "USP"), True, False]),
+							"MouseExited" :> (traceEpilog1 = False)
+						}
+					]
 				]
-			}];
+			}
+		];
 
 		(*interactive plot*)
 		componentLinePlots = DynamicModule[
@@ -756,7 +756,7 @@ plotMeasureMeltingPointHelper[analysisPacket_] := Module[
 				PlotRange -> Dynamic[{{SciCompFramework`Private`xMin, SciCompFramework`Private`xMax}, {SciCompFramework`Private`yMin, SciCompFramework`Private`yMax}}],
 				AspectRatio -> Full
 			] // (*ZoomWrapper to concatenate all*)
-					SciCompFramework`Private`scrollZoomWrapper[True, graphicsRange, {0, 0}, imageSizeCalculation, {False, False}]
+					SciCompFramework`Private`scrollZoomWrapper[True, graphicsRange, {0, 0}, imageSizeCalculation, Automatic, {False, False}]
 		];
 
 
@@ -826,8 +826,7 @@ plotMeasureMeltingPointHelper[analysisPacket_] := Module[
 			{
 				boxMiddle, activeXPos, xPos, yPos, mouseMover, zMinX, zMaxX, zBoxHalfHeight, zMouseMover, boxMax, boxMin,
 				unitString, fontSize, fontFamily, smallThickness, largeThickness, tickLengths, sliderLineThickness,
-				sliderBoxThickness, sliderLineColor, arrowSteepness, fontColor, alignment, sliderFaceColor, sliderFontColor,
-				assoSliderPoints
+				sliderBoxThickness, sliderLineColor, arrowSteepness, fontColor, alignment, sliderFaceColor, sliderFontColor
 			},
 			(*initialize parameters*)
 			boxMiddle = 1+currentTime/duration*9;
@@ -896,19 +895,19 @@ plotMeasureMeltingPointHelper[analysisPacket_] := Module[
 
 			(*convert temperature points to points on slider*)
 			convertLabelPoints[asso_] := AssociationMap[helper2F, asso];
-			convertToSlider[value_] := {
+			convertToSlider[value_] := Point[{
 				Max[
 					boxMin,
 					boxMin + (value - temperatureStart)/(temperatureEnd - temperatureStart)*(boxMax - boxMin)
 				], 0
-			};
+			}];
 			helper2F[key_ -> value_] := key -> AssociationMap[helperF, value];
-			helperF[key_ -> value_] := key -> (convertToSlider[First[#]] & /@ value);
+			helperF[key_ -> value_] := key -> (convertToSlider[#[[1,1]]] & /@ value);
 
 			(*points on slider for a single data object*)
 			helperSliderLinePoints[assoPoints_, Dynamic[curveTrace_], Dynamic[standardTrace_], curveIdx_]:=
-					helperCurvePoints[assoPoints, Dynamic[curveTrace], Dynamic[standardTrace], curveIdx, Sequence@@#]&
-							/@ {{"BP", 1}, {"JP", 1}, {"USP", 1}, {"USP", 2}};
+				helperCurvePoints[assoPoints, Dynamic[curveTrace], Dynamic[standardTrace], curveIdx, Sequence@@#]&
+					/@ {{"BP", 1}, {"JP", 1}, {"USP", 1}, {"USP", 2}};
 
 
 			(*main code for the slider*)
@@ -922,7 +921,7 @@ plotMeasureMeltingPointHelper[analysisPacket_] := Module[
 					axisObjectSide[Up],
 					axisObjectSide[Down],
 
-					helperSliderLinePoints[assoSliderPoints, Dynamic[multipleSel], Dynamic[standardSel], #]& /@ Range[sampleNumber],
+					helperSliderLinePoints[convertLabelPoints[labeledPts], Dynamic[multipleSel], Dynamic[standardSel], #]& /@ Range[sampleNumber],
 
 					(*Display slider icon*)
 					Dynamic[
@@ -974,8 +973,7 @@ plotMeasureMeltingPointHelper[analysisPacket_] := Module[
 			];
 
 			(*main part of the function*)
-			Framed[sliderEventHandler[], ImageSize -> {520, 30}, FrameStyle -> None, FrameMargins -> {{0, 0}, {0, 0}}],
-			Initialization :> (assoSliderPoints = convertLabelPoints[labeledPts])
+			Framed[sliderEventHandler[], ImageSize -> {520, 30}, FrameStyle -> None, FrameMargins -> {{0, 0}, {0, 0}}]
 		];
 
 
@@ -1023,7 +1021,7 @@ plotMeasureMeltingPointHelperV12[analysisObject_] := Module[
 	(*Download all necessary information for the plot*)
 	downloadFields = {
 		Object, StartTemperature, EndTemperature, MeltingCurve, CapillaryVideoFile,
-		MeltingAnalyses[USPharmacopeiaMeltingRange], MeltingAnalyses[BritishPharmacopeiaMeltingPoint], MeltingAnalyses[JapanesePharmacopeiaMeltingPoint]
+		MeltingAnalyses[USPharmacopeiaMeltingRange], MeltingAnalyses[BritishPharmacopeiaMeltingTemperature], MeltingAnalyses[JapanesePharmacopeiaMeltingTemperature]
 	};
 	totalDownloads = Download[protocol, Data[downloadFields]];
 	{allDataObjs, startTs, endTs, curves, videoFiles, pointsUSP, pointsBP, pointsJP} = Transpose[totalDownloads];
@@ -1061,7 +1059,7 @@ plotMeasureMeltingPointHelperV12[analysisObject_] := Module[
       3-> <|"USP"->{point1, point2}, "BP"->{point1}, "JP"->{point1}|>
    |>, and each point is {x, y}.
    *)
-	labeledPointsXY = coordinatesAssociation[allLineValues, pointsUnitlessUSP, pointsUnitlessBP, pointsUnitlessJP];
+	labeledPointsXY = coordinatesAssociation[allLineValues, pointsUSP, pointsBP, pointsJP, startTs];
 	sampleNumber = Length[labeledPointsXY];
 
 	(*all colors chosen for display data*)
@@ -1122,16 +1120,19 @@ plotMeasureMeltingPointHelperV12[analysisObject_] := Module[
     The points have outer circle white, and inner circle consistent with line color*)
 		allStandardsP = "USP" | "BP" | "JP";
 		helperCurvePoints[pointsCoordinates_, Dynamic[traceCurve_], Dynamic[traceStandard_], curveIdx_, standard:allStandardsP, standardPointIdx_] :=
+			If[ Length[pointsCoordinates[curveIdx][standard]] < standardPointIdx,
+				{},
 				Dynamic[
 					If[MemberQ[traceCurve, curveIdx] && traceStandard == standard,
 						{
-							Style[Point[pointsCoordinates[curveIdx][standard][[standardPointIdx]]], PointSize[0.025], White],
-							Style[Point[pointsCoordinates[curveIdx][standard][[standardPointIdx]]], PointSize[0.02], Darker[allColors[[curveIdx]]]]
+							Style[pointsCoordinates[curveIdx][standard][[standardPointIdx]], PointSize[0.025], White],
+							Style[pointsCoordinates[curveIdx][standard][[standardPointIdx]], PointSize[0.02], Darker[allColors[[curveIdx]]]]
 						},
 						{}
 					],
 					TrackedSymbols :> {traceCurve, traceStandard}
-				];
+				]
+			];
 
 		(*plot a single line and its labeled points given the line index*)
 		helperPlotCurveWithPoints[allLineV_, Dynamic[multipleS_], Dynamic[standardS_], idx_]:= {
@@ -1144,6 +1145,7 @@ plotMeasureMeltingPointHelperV12[analysisObject_] := Module[
 			],
 
 			(*USP has two points, BP and JP has one point each*)
+
 			helperCurvePoints[labeledPointsXY, Dynamic[multipleS], Dynamic[standardS], idx, Sequence@@#]& /@ {{"USP", 1}, {"USP", 2}, {"BP", 1}, {"JP", 1}}
 		};
 
@@ -1165,32 +1167,35 @@ plotMeasureMeltingPointHelperV12[analysisObject_] := Module[
 					],
 					TrackedSymbols :> {traceStandard, traceEpilog1, traceEpilog2}
 				],
-
-				EventHandler[
-					Dynamic[
-						If[MemberQ[traceCurve, curveIdx] && traceStandard == "USP",
-							Style[Point[labeledPointsXY[curveIdx]["USP"][[1]]], PointSize[0.03], Opacity[0]],
-							{}
+				If[Length[labeledPointsXY[curveIdx]["USP"]] < 2, {},
+					EventHandler[
+						Dynamic[
+							If[MemberQ[traceCurve, curveIdx] && traceStandard == "USP",
+								Style[labeledPointsXY[curveIdx]["USP"][[1]], PointSize[0.03], Opacity[0]],
+								{}
+							],
+							TrackedSymbols :> {traceCurve, traceStandard}
 						],
-						TrackedSymbols :> {traceCurve, traceStandard}
-					],
-					{
-						"MouseEntered" :> (traceEpilog2 = If[MemberQ[traceCurve, curveIdx] && traceStandard == "USP", True, False]),
-						"MouseExited" :> (traceEpilog2 = False)
-					}
+						{
+							"MouseEntered" :> (traceEpilog2 = If[MemberQ[traceCurve, curveIdx] && traceStandard == "USP", True, False]),
+							"MouseExited" :> (traceEpilog2 = False)
+						}
+					]
 				],
-				EventHandler[
-					Dynamic[
-						If[MemberQ[traceCurve, curveIdx] && (traceStandard == "JP" || traceStandard == "BP" || traceStandard == "USP"),
-							Style[Point[labeledPointsXY[curveIdx]["USP"][[2]]], PointSize[0.03], Opacity[0]],
-							{}
+				If[Length[labeledPointsXY[curveIdx]["JP"]] < 1 || Length[labeledPointsXY[curveIdx]["BP"]] < 1 || Length[labeledPointsXY[curveIdx]["USP"]] < 1, {},
+					EventHandler[
+						Dynamic[
+							If[MemberQ[traceCurve, curveIdx] && (traceStandard == "JP" || traceStandard == "BP" || traceStandard == "USP"),
+								Style[labeledPointsXY[curveIdx]["USP"][[2]], PointSize[0.03], Opacity[0]],
+								{}
+							],
+							TrackedSymbols :> {traceCurve, traceStandard}
 						],
-						TrackedSymbols :> {traceCurve, traceStandard}
-					],
-					{
-						"MouseEntered" :> (traceEpilog1 = If[MemberQ[traceCurve, curveIdx] && (traceStandard == "JP" || traceStandard == "BP" || traceStandard == "USP"), True, False]),
-						"MouseExited" :> (traceEpilog1 = False)
-					}
+						{
+							"MouseEntered" :> (traceEpilog1 = If[MemberQ[traceCurve, curveIdx] && (traceStandard == "JP" || traceStandard == "BP" || traceStandard == "USP"), True, False]),
+							"MouseExited" :> (traceEpilog1 = False)
+						}
+					]
 				]
 			}];
 
@@ -1226,7 +1231,7 @@ plotMeasureMeltingPointHelperV12[analysisObject_] := Module[
 				PlotRange -> Dynamic[{{SciCompFramework`Private`xMin, SciCompFramework`Private`xMax}, {SciCompFramework`Private`yMin, SciCompFramework`Private`yMax}}],
 				AspectRatio -> Full
 			] // (*ZoomWrapper to concatenate all*)
-					SciCompFramework`Private`scrollZoomWrapper[True, graphicsRange, {0, 0}, imageSizeCalculation, {False, False}]
+					SciCompFramework`Private`scrollZoomWrapper[True, graphicsRange, {0, 0}, imageSizeCalculation, Automatic, {False, False}]
 		];
 
 

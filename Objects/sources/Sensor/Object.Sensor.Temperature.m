@@ -38,6 +38,14 @@ DefineObjectType[Object[Sensor, Temperature], {
 			Pattern :> GreaterP[0*Percent],
 			Description -> "This is the variation in measurements taken under the same conditions as reported by the manufacturer, stored as a +/- percentage of the reading.",
 			Category -> "Sensor Information"
+		},
+		HandlingStation -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Instrument, HandlingStation][IRProbe],
+			Description -> "The handling station to which this sensor serves as a detector of sample temperature.",
+			Category -> "Sensor Information"
 		}
 	}
 }];

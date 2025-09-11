@@ -1,3 +1,11 @@
+(* ::Package:: *)
+
+(* ::Text:: *)
+(*\[Copyright] 2011-2025 Emerald Cloud Lab, Inc.*)
+
+(*::Subsection::*)
+(*UploadUnitOperation*)
+
 UnitOperationPrimitiveP:=Alternatives@@(
   Blank /@ DeleteDuplicates@Flatten[Lookup[Values[$PrimitiveSetPrimitiveLookup], Primitives][[All, All, 1]]]
 );
@@ -147,7 +155,7 @@ UploadUnitOperation[myPrimitives:ListableP[UnitOperationPrimitiveP],myOptions:Op
       allPrimitiveInformation=Lookup[primitiveSetInformation, Primitives];
 
       (* Helper function to prepend primitive index information to a message association. *)
-      throwMessageWithPrimitiveIndex[messageAssociation_, index_]:=Module[{permanentlyIgnoredMessages},
+      throwMessageWithPrimitiveIndex[messageAssociation_, index_, preCallMessageLength_, messageIndex_]:=Module[{permanentlyIgnoredMessages},
         (* Only bother throwing the message if it's not Error::InvalidInput or Error::InvalidOption. *)
         (* NOTE: Also silence Warning::UnknownOption and Warning::AmountRounded since we're collecting all messages that would normally not show up if they're *)
         (* usually inside of a Quiet[...]. *)
@@ -169,6 +177,30 @@ UploadUnitOperation[myPrimitives:ListableP[UnitOperationPrimitiveP],myOptions:Op
 
             (* Create a new message template string. *)
             newMessageTemplate="The following message was thrown at primitive index `"<>ToString[numberOfMessageArguments+1]<>"`: "<>messageTemplate;
+
+            (* If we are in CommandCenter, we need to gather the positions of the original message that is quieted by this function, but would still be captured by EvaluationData. Otherwise it is okay in MM. *)
+            If[MatchQ[$ECLApplication, CommandCenter],
+              Module[{currentMessagePosition},
+                (* Find the position of the message during function call pre-modified in the overall $MessageList, so that we can delete it eventually *)
+                (* At this point in the local helper, the position of the original message in the overall $MessageList is the current index plus the length of messages before calling the child function. *)
+                (* It avoids messing up the position numbers if there's multiple calls of this framework function or ModifyFunctionMessages, or the function is throwing multiple message with some permanently quieted ones in between. *)
+                (* It does not affect throwing the modified version of the message, which is thrown below in the With block. *)
+                currentMessagePosition = preCallMessageLength + First[messageIndex];
+
+                (* Keep track of the quieted messages using the global variable, that is used to filtered out from EvaluationData results in resolvedOptionsAssoc*)
+                Which[
+                  (* In framework function, it is possible that the primitive function call involves ModifyFunctionMessages, so that the currentMessagePosition would point to the message that was stored in $MessageList but already quieted by ModifyFunctionMessages. *)
+                  (* In this case, the message that we modify in the chunk below and thus want to remove from final ResolvedOptionsJSON message list would actually be the next one in the $MessageList *)
+                  MatchQ[$MessagePositionsToQuiet, _List] && IntegerQ[currentMessagePosition] && MemberQ[$MessagePositionsToQuiet, ToList[currentMessagePosition]],
+                  AppendTo[$MessagePositionsToQuiet, ToList[currentMessagePosition+1]],
+                  (* Otherwise this original message is to be removed from the final list in ResolvedOptionsJSON *)
+                  MatchQ[$MessagePositionsToQuiet, _List] && IntegerQ[currentMessagePosition],
+                  AppendTo[$MessagePositionsToQuiet, ToList[currentMessagePosition]],
+                  True,
+                  Nothing
+                ]
+              ]
+            ];
 
             (* Block our the head of our message name. This prevents us from overwriting in the real codebase since *)
             (* message name information is stored in the LanguageDefinition under the head (see Language`ExtendedDefinition *)
@@ -482,8 +514,11 @@ UploadUnitOperation[myPrimitives:ListableP[UnitOperationPrimitiveP],myOptions:Op
               ];
 
               (* See if this primitive has an index matching issue. *)
-              validLengthsQ=Module[{myMessageList, messageHandler, validLengthsResult},
+              validLengthsQ=Module[{myMessageList, messageHandler, validLengthsResult, preValidLengthMessageLength},
                 myMessageList = {};
+
+                (* Get the current count of total messages before calling ValidInputLengthsQ *)
+                preValidLengthMessageLength = Length[$MessageList];
 
                 messageHandler[one_String, two:Hold[msg_MessageName], three:Hold[Message[msg_MessageName, args___]]] := Module[{},
                   (* Keep track of the messages thrown during evaluation of the test. *)
@@ -504,8 +539,8 @@ UploadUnitOperation[myPrimitives:ListableP[UnitOperationPrimitiveP],myOptions:Op
 
                 (* If they are not, throw some messages with prepended primitive index information. *)
                 If[MatchQ[validLengthsResult, False],
-                  Map[
-                    throwMessageWithPrimitiveIndex[#, primitiveIndex]&,
+                  MapIndexed[
+                    throwMessageWithPrimitiveIndex[#1, primitiveIndex, preValidLengthMessageLength, #2]&,
                     myMessageList
                   ]
                 ];

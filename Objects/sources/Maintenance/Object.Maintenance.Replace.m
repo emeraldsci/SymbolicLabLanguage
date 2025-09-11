@@ -71,6 +71,21 @@ DefineObjectType[Object[Maintenance, Replace], {
 			Description -> "Indicates if an operator has determined by inspection whether the parts replacement is necessary.",
 			Category -> "Placements",
 			Developer -> True
+		},
+		RequiredTools -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Screwdriver],
+				Model[Item, Wrench],
+				Model[Item, Plier],
+				Object[Item, Screwdriver],
+				Object[Item, Wrench],
+				Object[Item, Plier]
+			],
+			Description -> "The tools required for the maintenance.",
+			Category -> "General"
 		}
 	}
 }];

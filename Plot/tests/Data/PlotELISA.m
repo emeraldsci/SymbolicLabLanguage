@@ -54,6 +54,17 @@ DefineTests[PlotELISA,
 				Unset[$CreatedObjects]
 			)
 		],
+		Example[{Basic, "Given an Object[Protocol, CapillaryELISA], PlotELISA returns an plot:"},
+			PlotELISA[Object[Data, ELISA, "id:bq9LA0JwN9nv"][Protocol]],
+			ValidGraphicsP[],
+			SetUp :> (
+				$CreatedObjects = {}
+			),
+			TearDown :> (
+				EraseObject[$CreatedObjects, Force -> True];
+				Unset[$CreatedObjects]
+			)
+		],
 
 
 

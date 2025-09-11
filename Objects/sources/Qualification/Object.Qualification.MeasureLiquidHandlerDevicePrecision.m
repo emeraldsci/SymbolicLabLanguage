@@ -117,6 +117,15 @@ DefineObjectType[Object[Qualification,MeasureLiquidHandlerDevicePrecision],{
 			Developer->True
 		},
 
+		CopyFilePath-> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The string that is pasted to a terminal in order to copy the automatically generated file to server with a predictable name.",
+			Category -> "Experimental Results",
+			Developer -> True
+		},
+
 		(* recorded files *)
 		TraceFile->{
 			Format->Single,

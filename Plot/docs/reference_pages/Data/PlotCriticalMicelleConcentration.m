@@ -30,13 +30,33 @@ DefineUsage[PlotCriticalMicelleConcentration,
 						Pattern :> ValidGraphicsP[]
 					}
 				}
+			},
+			{
+				Definition -> {"PlotCriticalMicelleConcentration[protocol]", "plot"},
+				Description -> "creates a 'plot' of the surface tension data found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing surface tension data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, MeasureSurfaceTension]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the MeasureSurfaceTension protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
 			}
 		},
 		SeeAlso -> {
 			"AnalyzeCriticalMicelleConcentration",
 			"PlotSurfaceTension"
 		},
-		Author -> {"eunbin.go", "ryan.bisbey", "charlene.konkankit", "cgullekson"},
+		Author -> {"dirk.schild", "eunbin.go", "ryan.bisbey", "charlene.konkankit", "cgullekson"},
 		Preview->True
 	}
 ];

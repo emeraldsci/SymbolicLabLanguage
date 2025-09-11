@@ -40,6 +40,18 @@ DefineObjectType[Object[Instrument, PortableHeater], {
 			Pattern :> {GreaterP[0*Meter],GreaterP[0*Meter],GreaterP[0*Meter]},
 			Description -> "The size of space inside the Freezer interior in the  {X (width), Y (depth), Z (height)} directions.",
 			Category -> "Dimensions & Positions"
+		},
+		TemperatureControlledResources -> {
+			Format -> Multiple,
+			Class -> {Link, Link},
+			Pattern :> {_Link, _Link},
+			Relation -> {
+				Alternatives[Object[Resource, Sample], Object[Sample], Object[Item], Object[Container], Model[Sample], Model[Item], Model[Container]],
+				Alternatives[Object[Protocol], Object[Maintenance], Object[Qualification]]
+			},
+			Description -> "Resources whose samples are stored in this portable cooler during the execution of the given protocol (if there is no resource for a sample, points to the sample directly).",
+			Headers -> {"Resource", "Responsible Protocol"},
+			Category -> "Container Specifications"
 		}
 	}
 }];

@@ -215,7 +215,7 @@ DefineTests[
 				DownloadMonomer
 			],
 			Null,
-			Messages:>{Message[Error::RequiredOption],Message[Error::UnknownDownloadMonomer],Message[Error::InvalidOption]}
+			Messages:>{Message[Error::RequiredOption],Message[Error::UnavailableDownloadMonomer],Message[Error::InvalidOption]}
 		],
 		Example[{Messages,DownloadMonomer,"DownloadMonomer should only be specified if DownloadResin has been set to True::"},
 			Lookup[
@@ -2389,6 +2389,12 @@ DefineTests[
 		],
 
 	(* MESSAGES *)
+		Example[{Messages, "NoCappingSet", "Throws a warning if number of cappings is 0 while InitialCapping is set to True:"},
+			ExperimentPeptideSynthesis[Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],InitialCapping->True,NumberOfCappings->0],
+			ObjectP[Object[Protocol,PeptideSynthesis]],
+			TimeConstraint -> 150,
+			Messages:>{Message[Warning::NoCappingSet]}
+		],
 		Example[{Messages,"UnneededCleavageOptions","ResuspensionMixType should only be specified if Cleavage has been set to True:"},
 			Lookup[
 				ExperimentPeptideSynthesis[{Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID]},
@@ -2439,6 +2445,7 @@ DefineTests[
 			Messages:>{
 				Message[Error::MixTypeNumberOfMixesMismatch],
 				Message[Error::MixTypeIncorrectOptions],
+				Message[Error::InvalidInput],
 				Message[Error::IncompatibleResuspensionMixPrimitives],
 				Message[Error::InvalidOption]
 			}
@@ -2591,6 +2598,8 @@ DefineTests[
 						Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID]
 					},
 					SwellResin->{True,False},
+					DownloadResin->False,
+					Resin->Model[Sample,"Peptide Test Downloaded Resin"<>$SessionUUID],
 					Output->Options
 				],
 				SwellResin
@@ -2626,7 +2635,7 @@ DefineTests[
 				SwellSolution
 			],
 			ObjectP[Model[Sample, "Milli-Q water"]],
-			Messages:>{Message[Error::UnneededSwellOptions],Message[Error::InvalidOption]}
+			Messages:>{Message[Error::UnneededSwellOptions],Error::SwellResinNeeded,Message[Error::InvalidOption]}
 		],
 
 		Example[{Options,SwellTime,"SwellTime allows specification of the amount of time that the resin is swelled for (per cycle):"},
@@ -2640,6 +2649,8 @@ DefineTests[
 					},
 					SwellResin->{True,False,False,True},
 					SwellTime->{12 Minute, Null,Automatic, Automatic},
+					DownloadResin->False,
+					Resin->Model[Sample,"Peptide Test Downloaded Resin"<>$SessionUUID],
 					Output->Options
 				],
 				SwellTime
@@ -2658,7 +2669,7 @@ DefineTests[
 				SwellTime
 			],
 			12 Minute,
-			Messages:>{Message[Error::UnneededSwellOptions],Message[Error::InvalidOption]}
+			Messages:>{Message[Error::UnneededSwellOptions],Error::SwellResinNeeded,Message[Error::InvalidOption]}
 		],
 
 		Example[{Options,SwellVolume,"SwellVolume allows specification the volume of SwellSolution that the samples are swelled with:"},
@@ -2671,6 +2682,8 @@ DefineTests[
 					},
 					SwellResin->{True,False,True},
 					SwellVolume->{2.5 Milliliter,Automatic,Automatic},
+					DownloadResin->False,
+					Resin->Model[Sample,"Peptide Test Downloaded Resin"<>$SessionUUID],
 					Output->Options
 				],
 				SwellVolume
@@ -2689,7 +2702,7 @@ DefineTests[
 				SwellVolume
 			],
 			2.5 Milliliter,
-			Messages:>{Message[Error::UnneededSwellOptions],Message[Error::InvalidOption]}
+			Messages:>{Message[Error::UnneededSwellOptions],Error::SwellResinNeeded,Message[Error::InvalidOption]}
 		],
 
 		Example[{Options,NumberOfSwellCycles,"NumberOfSwellCycles allows specification of the number of the cycles of swelling of the resin before the start of a synthesis:"},
@@ -2702,6 +2715,8 @@ DefineTests[
 					},
 					SwellResin->{True,False,True},
 					NumberOfSwellCycles->{7,Automatic, Automatic},
+					DownloadResin->False,
+					Resin->Model[Sample, "Peptide Test Downloaded Resin"<>$SessionUUID],
 					Output->Options
 				],
 				NumberOfSwellCycles
@@ -2720,7 +2735,7 @@ DefineTests[
 				NumberOfSwellCycles
 			],
 			7,
-			Messages:>{Message[Error::UnneededSwellOptions],Message[Error::InvalidOption]}
+			Messages:>{Message[Error::UnneededSwellOptions],Error::SwellResinNeeded,Message[Error::InvalidOption]}
 		],
 
 	(* Note: PrimaryResinShrinkSolution/SecondaryResinShrink *)
@@ -3054,6 +3069,20 @@ DefineTests[
 			TimeConstraint->180
 		],
 
+		Example[{Options,MonomerPreactivation,"Specify that preactivation of the monomers should happen in situ (in the same reaction vessel):"},
+			Lookup[ExperimentPeptideSynthesis[
+				{
+					Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
+					Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID]
+				},
+				MonomerPreactivation->InSitu,
+				Output->Options
+			],MonomerPreactivation],
+			InSitu,
+			TimeConsuming->180
+		],
+
+
 	(*NOTE: shared options *)
 		Example[{Options,Name, "An object name which should be used to refer to the output object in lieu of an automatically generated ID number:"},
 			Lookup[
@@ -3079,6 +3108,20 @@ DefineTests[
 				Output->Options
 			],
 			_
+		],
+		Example[{Options,CanaryBranch,"Specify the CanaryBranch on which the protocol is run:"},
+			Download[
+				ExperimentPeptideSynthesis[
+					{
+						Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
+						Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID]
+					},
+					CanaryBranch->"d1cacc5a-948b-4843-aa46-97406bbfc368"
+				],
+				CanaryBranch
+			],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Stubs:>{GitBranchExistsQ[___] = True, InternalUpload`Private`sllDistroExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
 		],
 		Example[{Options,Upload,"Upload specifies if the database changes resulting from this function should be made immediately or if upload packets should be returned:"},
 			ExperimentPeptideSynthesis[
@@ -3199,6 +3242,16 @@ DefineTests[
 			Messages:>{Message[Error::DownloadedResinNeeded],Message[Error::InvalidOption]}
 		],
 
+		Example[{Messages,"SwellResinNeeded","If DownloadResin is set to False and SwellResin is True, an error will be thrown:"},
+		    ExperimentPeptideSynthesis[
+				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
+				DownloadResin -> True,
+				SwellResin -> False
+			],
+		    $Failed,
+		    Messages :> {Error::SwellResinNeeded,Error::InvalidOption}
+		],
+
 		Example[{Messages,MismatchedResinAndStrand,"The specified downloaded Resin has to match the sequence of the 3' bases in the strand to be synthesized:"},
 			ExperimentPeptideSynthesis[
 				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
@@ -3238,8 +3291,8 @@ DefineTests[
 			$Failed,
 			Messages:>{
 				Message[Error::PolymerType],
-				Message[Error::UnknownDownloadMonomer],
-				Message[Error::UnknownMonomer],
+				Message[Error::UnavailableDownloadMonomer],
+				Message[Error::UnavailableMonomer],
 				Message[Error::InvalidOption],
 				Message[Error::InvalidInput]
 			}
@@ -3307,10 +3360,10 @@ DefineTests[
 				SwellSolution
 			],
 			ObjectP[Model[Sample, "Milli-Q water"]],
-			Messages:>{Message[Error::UnneededSwellOptions],Message[Error::InvalidOption]}
+			Messages:>{Message[Error::UnneededSwellOptions],Error::SwellResinNeeded,Message[Error::InvalidOption]}
 		],
 
-		Example[{Messages,"UnneededCleavageOptions","Cleavage related otpions should only be specified if Cleavage has been set to True:"},
+		Example[{Messages,"UnneededCleavageOptions","Cleavage related options should only be specified if Cleavage has been set to True:"},
 			Lookup[
 				ExperimentPeptideSynthesis[
 					Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
@@ -3367,7 +3420,7 @@ DefineTests[
 			{False,False, ObjectP[Model[Sample, "Milli-Q water"]]},
 			Messages:>{Message[Error::UnneededDeprotonationOptions],Message[Error::InvalidOption]}
 		],
-		Example[{Messages,"UnknownDownloadMonomer","DownloadMonomer automatic resolution will fail when a novel (non-default) download monomer is used and therefore must be explicitly specified:"},
+		Example[{Messages,"UnavailableDownloadMonomer","DownloadMonomer automatic resolution will fail when a novel (non-default) download monomer is used and therefore must be explicitly specified:"},
 			Lookup[
 				ExperimentPeptideSynthesis[
 					StrandJoin[
@@ -3380,7 +3433,7 @@ DefineTests[
 				DownloadMonomer
 			],
 			Null,
-			Messages:>{Message[Error::UnknownDownloadMonomer],Message[Error::InvalidOption]}
+			Messages:>{Message[Error::UnavailableDownloadMonomer],Message[Error::InvalidOption]}
 		],
 		Example[{Messages,"WrongResin","If DownloadResin is set to True, Resin cannot be specified to a downloaded resin (Object/Model[Sample]) since the first step in the synthesis will be the download of the resin:"},
 			ExperimentPeptideSynthesis[
@@ -3431,7 +3484,7 @@ DefineTests[
 				DownloadMonomer
 			],
 			Null,
-			Messages:>{Message[Error::RequiredOption],Message[Error::UnknownDownloadMonomer],Message[Error::InvalidOption]}
+			Messages:>{Message[Error::RequiredOption],Message[Error::UnavailableDownloadMonomer],Message[Error::InvalidOption]}
 		],
 		Example[{Messages,"UnneededDownloadResinOptions","Download related options should only be specified if DownloadResin has been set to True::"},
 			Lookup[
@@ -3633,7 +3686,7 @@ DefineTests[
 		$PersonID = Object[User, "Test user for notebook-less test protocols"],
 		$AllowPublicObjects = True
 	},
-	SymbolSetUp:>{
+	SymbolSetUp:>{Module[{createdObjects,existsFilter},
 		$CreatedObjects={};
 		Off[Warning::SamplesOutOfStock];
 		Off[Warning::InstrumentUndergoingMaintenance];
@@ -3648,7 +3701,7 @@ DefineTests[
 			Model[Sample,"Peptide Test Oligomer Model with novel monomers "<>$SessionUUID],
 			Model[Sample,"Peptide Test Oligomer Model with novel download monomer "<>$SessionUUID],
 			Model[Instrument,PeptideSynthesizer,"Test PeptideSynthesizer for PeptideSynthesis "<>$SessionUUID],
-			Object[User, Emerald, "Peptide Test Operator "<>$SessionUUID],
+			Object[User,Emerald,"Peptide Test Operator "<>$SessionUUID],
 			Object[Protocol,PeptideSynthesis,"Peptide Test Template Protocol "<>$SessionUUID],
 			Object[Protocol,PeptideSynthesis,"Peptide Test Parent Protocol "<>$SessionUUID],
 			Model[Sample,"Peptide Test Undownloaded Resin"<>$SessionUUID],
@@ -3688,17 +3741,18 @@ DefineTests[
 			Model[Resin,SolidPhaseSupport,"Peptide Test Resin Ile"<>$SessionUUID],
 			Model[Resin,"Peptide Test Resin"<>$SessionUUID],
 			Object[Sample,"Dimethylformamide Test for ExperimentPeptideSynthesis"<>$SessionUUID],
-			Object[Container,Vessel, "Dimethylformamide container for ExperimentPeptideSynthesis"<>$SessionUUID]
+			Object[Container,Vessel,"Dimethylformamide container for ExperimentPeptideSynthesis"<>$SessionUUID]
 		};
 
-	(* Check whether the names we want to ],give below already exist in the database *)
+		(* Check whether the names we want to ],give below already exist in the database *)
 		existsFilter=DatabaseMemberQ[createdObjects];
- 		(* Erase any objects that we failed to erase in the last unit test. *)
+		(* Erase any objects that we failed to erase in the last unit test. *)
 		Quiet[EraseObject[
 			PickList[createdObjects,existsFilter],
 			Force->True,
 			Verbose->False
 		]];
+	];
 		Module[{identityATCG,identityModelSuperLong,identityATTCG,identityATTTCG,
 			identity1,identityDNA,identitySuperLong,identity2,identityATCGDNA,identityNovel,identityCrazy,identityNovelDownload,dmfContainer,dmfSample,
 			identityForResin,identityForResinWrong,identityResinWithMonomer,

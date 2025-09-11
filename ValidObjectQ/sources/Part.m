@@ -553,10 +553,10 @@ validPartCameraQTests[packet:PacketP[Object[Part,Camera]]]:={
 			Lookup[packet,{Model, Status, EmbeddedPC}],
 				Alternatives
 				[
-					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}], Except[Stocked], ObjectP[Object[Part, EmbeddedPC]]},
-					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}], Stocked, _},
-					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}]], Except[Stocked], _},
-					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}]], Stocked, _}
+					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}], Except[Stocked], ObjectP[Object[Part, EmbeddedPC]]},
+					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}], Stocked, _},
+					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}]], Except[Stocked], _},
+					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}]], Stocked, _}
 				]
 		],
 		Test[
@@ -564,10 +564,10 @@ validPartCameraQTests[packet:PacketP[Object[Part,Camera]]]:={
 			Lookup[packet,{Model, Status, PLCVariableName}],
 				Alternatives
 				[
-					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}], Except[Stocked], _String},
-					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}], Stocked, _},
-					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}]], Except[Stocked], _},
-					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}]], Stocked, _}
+					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}], Except[Stocked], _String},
+					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}], Stocked, _},
+					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}]], Except[Stocked], _},
+					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}]], Stocked, _}
 				]
 		],
 		Test[
@@ -575,10 +575,10 @@ validPartCameraQTests[packet:PacketP[Object[Part,Camera]]]:={
 			Lookup[packet,{Model, Status, IP}],
 				Alternatives
 				[
-					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}], Except[Stocked], _String},
-					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}], Stocked, _},
-					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}]], Except[Stocked], _},
-					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}]], Stocked, _}
+					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}], Except[Stocked], _String},
+					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}], Stocked, _},
+					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}]], Except[Stocked], _},
+					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}]], Stocked, _}
 				]
 		],
 		Test[
@@ -586,10 +586,10 @@ validPartCameraQTests[packet:PacketP[Object[Part,Camera]]]:={
 			Lookup[packet,{Model, Status, PostRotation}],
 				Alternatives
 				[
-					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}], Except[Stocked], RangeP[Quantity[-360, "Degrees"], Quantity[360, "Degrees"]]},
-					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}], Stocked, _},
-					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}]], Except[Stocked], _},
-					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}]], Stocked, _}
+					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}], Except[Stocked], RangeP[Quantity[-360, "Degrees"], Quantity[360, "Degrees"]]},
+					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}], Stocked, _},
+					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}]], Except[Stocked], _},
+					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}]], Stocked, _}
 				]
 		],
 		Test[
@@ -597,10 +597,10 @@ validPartCameraQTests[packet:PacketP[Object[Part,Camera]]]:={
 			Lookup[packet,{Model, Status, Name}],
 				Alternatives
 				[
-					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}], Except[Stocked], _String},
-					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}], Stocked, _},
-					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}]], Except[Stocked], _},
-					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}]], Stocked, _}
+					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}], Except[Stocked], _String},
+					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}], Stocked, _},
+					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}]], Except[Stocked], _},
+					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}]], Stocked, _}
 				]
 		],
 		Test[
@@ -608,10 +608,10 @@ validPartCameraQTests[packet:PacketP[Object[Part,Camera]]]:={
 			Lookup[packet,{Model, Status, FieldOfView}],
 				Alternatives
 				[
-					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}], Except[Stocked], CameraFieldOfViewP},
-					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}], Stocked, _},
-					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}]], Except[Stocked], _},
-					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}]], Stocked, _}
+					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}], Except[Stocked], CameraFieldOfViewP},
+					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}], Stocked, _},
+					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}]], Except[Stocked], _},
+					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}]], Stocked, _}
 				]
 		],
 		Test[
@@ -619,10 +619,10 @@ validPartCameraQTests[packet:PacketP[Object[Part,Camera]]]:={
 			Lookup[packet,{Model, Status, Illumination}],
 				Alternatives
 				[
-					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}], Except[Stocked], IlluminationDirectionP},
-					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}], Stocked, _},
-					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}]], Except[Stocked], _},
-					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}]], Stocked, _}
+					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}], Except[Stocked], IlluminationDirectionP},
+					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}], Stocked, _},
+					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}]], Except[Stocked], _},
+					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}]], Stocked, _}
 				]
 		],
 		Test[
@@ -630,10 +630,10 @@ validPartCameraQTests[packet:PacketP[Object[Part,Camera]]]:={
 			Lookup[packet,{Model, Status, ExposureTime}],
 				Alternatives
 				[
-					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}], Except[Stocked], GreaterP[0*Second]},
-					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}], Stocked, _},
-					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}]], Except[Stocked], _},
-					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"]}]], Stocked, _}
+					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}], Except[Stocked], GreaterP[0*Second]},
+					{ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}], Stocked, _},
+					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}]], Except[Stocked], _},
+					{Except[ObjectP[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]}]], Stocked, _}
 				]
 		]
 };
@@ -695,7 +695,23 @@ validPartCheckValveQTests[packet:PacketP[Object[Part,CheckValve]]]:={};
 (*validPartColonyHandlerHeadCassetteQ*)
 
 
-validPartColonyHandlerHeadCasseteQTests[packet:PacketP[Object[Part,ColonyHandlerHeadCassette]]]:={};
+validPartColonyHandlerHeadCasseteQTests[packet:PacketP[Object[Part,ColonyHandlerHeadCassette]]]:={
+
+	NotNullFieldTest[
+		packet,
+		{
+			ColonyHandlerHeadCassetteHolder
+		}
+	],
+
+	Test["The ColonyHandlerHeadCassette of the ColonyHandlerHeadCassetteHolder must be this object",
+		MatchQ[
+			Download[Lookup[packet,ColonyHandlerHeadCassetteHolder,Null],ColonyHandlerHeadCassette[Object]],
+			ObjectP[Lookup[packet,Object]]
+		],
+		True
+	]
+};
 
 
 (* ::Subsection::Closed:: *)
@@ -741,7 +757,11 @@ validPartComputerQTests[packet:PacketP[Object[Part,Computer]]]:={
 	Test["If the computer is an InstrumentComputer, is the VirtualNetworkConnection field informed?",
 			If[MatchQ[Lookup[packet, Model][ComputerType], InstrumentComputer],
 				MatchQ[Lookup[packet, VirtualNetworkConnection], _Link], Null], (True|Null)
-		]
+		],
+	Test["If the computer is an TabletComputer, is the WiringConnectors field informed?",
+		If[MatchQ[Lookup[packet, Model][ComputerType], TabletComputer],
+			MatchQ[Lookup[packet, WiringConnectors], Except[{}]], Null], (True|Null)
+	]
 
 };
 
@@ -772,6 +792,20 @@ validPartConductivitySensorQTests[packet:PacketP[Object[Part,ConductivitySensor]
 };
 
 
+
+(* ::Subsection::Closed:: *)
+(*validDecrimperClipQTests*)
+
+
+validDecrimperClipQTests[packet:PacketP[Object[Part,Decrimper]]]:={
+};
+
+(* ::Subsection::Closed:: *)
+(*validDeionizerQTests*)
+
+
+validDeionizerQTests[packet:PacketP[Object[Part,Deionizer]]]:={
+};
 
 (* ::Subsection::Closed:: *)
 (*validPartDialysisClipQTests*)
@@ -1036,6 +1070,10 @@ validPartVacuumPumpQTests[packet:PacketP[Object[Part,VacuumPump]]]:={
 
 
 validPartpHProbeQTests[packet:PacketP[Object[Part,pHProbe]]]:={
+	If[MatchQ[Lookup[packet,Status],Installed],
+		NotNullFieldTest[packet,{Reservoir, StorageContainer}],
+		Nothing
+	]
 };
 
 
@@ -1332,6 +1370,12 @@ validPartPressureRegulatorQTests[packet:PacketP[Object[Part,PressureRegulator]]]
 validPartFoamImagingModuleQTests[packet:PacketP[Object[Part,FoamImagingModule]]]:={};
 
 
+(* ::Subsection::Closed:: *)
+(*validPartFootPedalQTests*)
+
+validPartFootPedalQTests[packet:PacketP[Object[Part,FootPedal]]]:={};
+
+
 
 (* ::Subsection::Closed:: *)
 (*validPartLiquidConductivityModuleQTests*)
@@ -1346,6 +1390,12 @@ validPartLiquidConductivityModuleQTests[packet:PacketP[Object[Part,DiodeArrayMod
 
 validPartDiodeArrayModuleQTests[packet:PacketP[Object[Part,DiodeArrayModule]]]:={};
 
+
+(* ::Subsection::Closed:: *)
+(*validPartDockingStationQTests*)
+
+
+validPartDockingStationQTests[packet:PacketP[Object[Part, DockingStation]]]:={};
 
 
 (* ::Subsection::Closed:: *)
@@ -1683,8 +1733,11 @@ registerValidQTestFunction[Object[Part, Chiller],validPartChillerQTests];
 registerValidQTestFunction[Object[Part, Computer],validPartComputerQTests];
 registerValidQTestFunction[Object[Part, ConductivityProbe],validPartConductivityProbeQTests];
 registerValidQTestFunction[Object[Part, ConductivitySensor],validPartConductivitySensorQTests];
+registerValidQTestFunction[Object[Part, Decrimper],validDecrimperClipQTests];
+registerValidQTestFunction[Object[Part, Deionizer],validDeionizerQTests];
 registerValidQTestFunction[Object[Part, DialysisClip],validPartDialysisClipQTests];
 registerValidQTestFunction[Object[Part, DiodeArrayModule],validPartDiodeArrayModuleQTests];
+registerValidQTestFunction[Object[Part, DockingStation],validPartDockingStationQTests];
 registerValidQTestFunction[Object[Part, ElectrochemicalReactionVesselHolder], validPartElectrochemicalReactionVesselHolderQTests];
 registerValidQTestFunction[Object[Part, ElectrodePolishingPlate], validPartElectrodePolishingPlateQTests];
 registerValidQTestFunction[Object[Part, ElectrodeRack], validPartElectrodeRackQTests];
@@ -1699,6 +1752,7 @@ registerValidQTestFunction[Object[Part, FilterAdapter],validPartFilterAdapterQTe
 registerValidQTestFunction[Object[Part, FlowCell],validPartFlowCellQTests];
 registerValidQTestFunction[Object[Part, FlowRestrictor],validPartFlowRestrictorQTests];
 registerValidQTestFunction[Object[Part, FoamImagingModule],validPartFoamImagingModuleQTests];
+registerValidQTestFunction[Object[Part, FootPedal],validPartFootPedalQTests];
 registerValidQTestFunction[Object[Part, Funnel],validPartFunnelQTests];
 registerValidQTestFunction[Object[Part, FurnitureEquipment],validPartFurnitureEquipmentQTests];
 registerValidQTestFunction[Object[Part, GauzeHolder],validPartGauzeHolderQTests];

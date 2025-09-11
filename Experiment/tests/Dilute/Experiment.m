@@ -27,7 +27,7 @@ DefineTests[ExperimentDilute,
 			ObjectP[Object[Protocol, ManualSamplePreparation]]
 		],
 		Example[{Basic, "Generate a new protocol to dilute multiple specified as containers:"},
-			ExperimentDilute[{Object[Container, Vessel, "Fake container 1 for ExperimentDilute tests"<> $SessionUUID], Object[Container, Vessel, "Fake container 2 for ExperimentDilute tests"<> $SessionUUID], Object[Container, Vessel, "Fake container 3 for ExperimentDilute tests"<> $SessionUUID]}, TotalVolume -> 300 Microliter],
+			ExperimentDilute[{Object[Container, Vessel, "Test container 1 for ExperimentDilute tests"<> $SessionUUID], Object[Container, Vessel, "Test container 2 for ExperimentDilute tests"<> $SessionUUID], Object[Container, Vessel, "Test container 3 for ExperimentDilute tests"<> $SessionUUID]}, TotalVolume -> 300 Microliter],
 			ObjectP[Object[Protocol, ManualSamplePreparation]]
 		],
 		Test["Ensure that manipulations are properly generated when diluting in the current container:",
@@ -172,13 +172,13 @@ DefineTests[ExperimentDilute,
 		Example[{Options, ContainerOut, "If not specified, ContainerOut is automatically set to the current container of the specified samples:"},
 			prot = ExperimentDilute[Object[Sample, "ExperimentDilute New Test Chemical 1 (100 uL)"<> $SessionUUID], TotalVolume -> 1 Milliliter];
 			FirstCase[Download[prot, OutputUnitOperations], ObjectP[Object[UnitOperation, LabelContainer]]][Container],
-			{ObjectP[Object[Container, Vessel, "Fake container 1 for ExperimentDilute tests"<> $SessionUUID]]},
+			{ObjectP[Object[Container, Vessel, "Test container 1 for ExperimentDilute tests"<> $SessionUUID]]},
 			Variables :> {prot}
 		],
 		Example[{Options, DestinationWell, "Specify the position in the specified container in which to dilute the samples:"},
 			options = ExperimentDilute[Object[Sample, "ExperimentDilute New Test Chemical 1 (100 uL)"<> $SessionUUID], DestinationWell -> "A2", ContainerOut -> Model[Container, Plate, "96-well 2mL Deep Well Plate"], TotalVolume -> 1 Milliliter, Output -> Options];
 			Lookup[options, DestinationWell],
-			"A2",
+			{"A2"},
 			Variables :> {options}
 		],
 		Example[{Options, Diluent, "Specify the solvent in which to dissolve the provided sample:"},
@@ -474,6 +474,202 @@ DefineTests[ExperimentDilute,
 			Manual,
 			Variables :> {options}
 		],
+		Example[{Options, WorkCell, "If diluting bacterial cells robotically, perform in the microbioSTAR:"},
+			protocol = ExperimentDilute[
+				{Model[Sample, "E.coli MG1655"]},
+				PreparedModelContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate, Sterile"],
+				PreparedModelAmount -> 0.25 Milliliter,
+				TotalVolume -> 1.2 Milliliter,
+				Preparation -> Robotic
+			];
+			resolvedWorkCell = Download[Download[protocol, OutputUnitOperations], WorkCell];
+			{
+				protocol,
+				resolvedWorkCell
+			},
+			{
+				ObjectP[Object[Protocol, RoboticCellPreparation]],
+				{microbioSTAR}
+			},
+			Variables :> {protocol, resolvedWorkCell}
+		],
+		Example[{Options, WorkCell, "If Preparation is Manual, WorkCell is Null:"},
+			options = ExperimentDilute[
+				{Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				TotalVolume -> 1.2 Milliliter,
+				Preparation -> Manual,
+				Output -> Options
+			];
+			Lookup[options, WorkCell],
+			Null,
+			Variables :> {options}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentDilute[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				TotalVolume -> 1.2 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared (preparation -> robotic):"},
+			options = ExperimentDilute[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				TotalVolume -> 1.2 Milliliter,
+				Preparation -> Robotic,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "If a model input is specified, make sure the protocol object/unit operations are created properly (robotic):"},
+			protocol = ExperimentDilute[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				TotalVolume -> 1.2 Milliliter,
+				Preparation -> Robotic
+			];
+			outputUOs = Download[protocol, OutputUnitOperations[Object]];
+			roboticUOs = Download[outputUOs[[1]], RoboticUnitOperations[Object]];
+			{
+				Download[outputUOs, SampleLink],
+				roboticUOs
+			},
+			{
+				{{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..}},
+				{ObjectP[Object[UnitOperation, LabelSample]], ObjectP[Object[UnitOperation, Transfer]], ObjectP[Object[UnitOperation, Transfer]], ObjectP[Object[UnitOperation, Mix]]}
+			},
+			Variables :> {protocol, outputUOs, roboticUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "If a model input is specified, make sure the protocol object/unit operations are created properly (manual):"},
+			protocol = ExperimentDilute[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				TotalVolume -> 1.2 Milliliter,
+				Preparation -> Manual
+			];
+			outputUOs = Download[protocol, OutputUnitOperations[Object]];
+			{
+				outputUOs,
+				Download[outputUOs[[1]], SampleLink]
+			},
+			{
+				{ObjectP[Object[UnitOperation, LabelSample]], ObjectP[Object[UnitOperation, Transfer]], ObjectP[Object[UnitOperation, Transfer]], ObjectP[Object[UnitOperation, Incubate]]},
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..}
+			},
+			Variables :> {protocol, outputUOs}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentDilute[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentDilute[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentDilute[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentDilute[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentDilute[sampleID, TotalVolume -> 30 Milliliter, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentDilute[containerID, TotalVolume -> 30 Milliliter, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[{Messages, "DilutePreparationInvalid", "Thow an error if the specified preparation cannot be performed:"},
 			ExperimentDilute[Object[Sample, "ExperimentDilute New Test Chemical 1 (100 uL)"<> $SessionUUID], TotalVolume->1Milliliter, Preparation -> Robotic, MixType->Vortex],
 			$Failed,
@@ -520,7 +716,7 @@ DefineTests[ExperimentDilute,
 			}
 		],
 		Example[{Messages, "SampleStateInvalid", "If the input sample is a solid, it cannot be diluted:"},
-			ExperimentDilute[Object[Sample, "ExperimentDilute New Test Chemcial 6 (100 mg)"<> $SessionUUID], TotalVolume -> 1 Milliliter],
+			ExperimentDilute[Object[Sample, "ExperimentDilute New Test Chemical 6 (100 mg)"<> $SessionUUID], TotalVolume -> 1 Milliliter],
 			$Failed,
 			Messages :> {
 				Error::SampleStateInvalid,
@@ -610,7 +806,7 @@ DefineTests[ExperimentDilute,
 			}
 		],
 		Example[{Messages, "PartialResuspensionContainerInvalid", "If the ContainerOut is set to the current container, Amount must be equal to the full Volume of the specified sample:"},
-			ExperimentDilute[Object[Sample, "ExperimentDilute New Test Chemical 1 (100 uL)"<> $SessionUUID], Amount -> 10 Microliter, ContainerOut -> Object[Container, Vessel, "Fake container 1 for ExperimentDilute tests"<> $SessionUUID], TotalVolume -> 1 Milliliter],
+			ExperimentDilute[Object[Sample, "ExperimentDilute New Test Chemical 1 (100 uL)"<> $SessionUUID], Amount -> 10 Microliter, ContainerOut -> Object[Container, Vessel, "Test container 1 for ExperimentDilute tests"<> $SessionUUID], TotalVolume -> 1 Milliliter],
 			$Failed,
 			Messages :> {
 				Error::DiluteInitialVolumeOverContainerMax,
@@ -709,6 +905,28 @@ DefineTests[ExperimentDilute,
 			EqualP[200 Microliter],
 			Variables :> {simulation},
 			TimeConstraint -> 1000
+		],
+		Test["Generate an Object[Protocol, ManualCellPreparation] if Preparation -> Manual and a cell-containing sample is used:",
+			ExperimentDilute[
+				{Object[Sample, "ExperimentDilute cell sample 1 "<> $SessionUUID]},
+				Preparation -> Manual,
+				TotalVolume -> 1.2 Milliliter,
+				ImageSample -> False,
+				MeasureVolume -> False,
+				MeasureWeight -> False
+			],
+			ObjectP[Object[Protocol, ManualCellPreparation]]
+		],
+		Test["Generate an Object[Protocol, RoboticCellPreparation] if Preparation -> Robotic and a cell-containing sample is used:",
+			ExperimentDilute[
+				{Object[Sample, "ExperimentDilute cell sample 1 "<> $SessionUUID]},
+				Preparation -> Robotic,
+				TotalVolume -> 1.2 Milliliter,
+				ImageSample -> False,
+				MeasureVolume -> False,
+				MeasureWeight -> False
+			],
+			ObjectP[Object[Protocol, RoboticCellPreparation]]
 		]
 	},
 
@@ -732,33 +950,35 @@ DefineTests[ExperimentDilute,
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 1 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 2 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 4 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 5 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 6 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 7 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 8 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 9 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 10 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 11 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 12 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 13 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 14 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Plate, "Fake plate 1 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Bench, "Test bench for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 10 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 11 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 12 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 13 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 14 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 15 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Plate, "Test plate 1 for ExperimentDilute tests"<> $SessionUUID],
 				Object[Sample, "ExperimentDilute New Test Chemical 1 (100 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilute New Test Chemical 2 (100 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilute New Test Chemical 3 (200 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilute New Test Chemical 4 (Discarded)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilute New Test Chemical 5 (no amount)"<> $SessionUUID],
-				Object[Sample, "ExperimentDilute New Test Chemcial 6 (100 mg)"<> $SessionUUID],
+				Object[Sample, "ExperimentDilute New Test Chemical 6 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilute New Test Chemical 7 (0.01 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilute New Test Chemical 8 (120 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilute New Test Chemical 9 (200 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilute New Test Chemical In Plate 2 (100 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilute New Test Chemical In Plate 3 (100 uL)"<> $SessionUUID],
+				Object[Sample, "ExperimentDilute cell sample 1 "<> $SessionUUID],
 				Object[Protocol, ManualSamplePreparation, "Existing ExperimentDilute Protocol"<> $SessionUUID]
 			};
 			existingObjs = PickList[allObjs, DatabaseMemberQ[allObjs]];
@@ -767,13 +987,13 @@ DefineTests[ExperimentDilute,
 		Block[{$AllowSystemsProtocols = True},
 			Module[
 				{
-					fakeBench,
-					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, container13, container14, plate1,
-					sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11,
+					testBench,
+					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, container13, container14, plate1, container15,
+					sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12,
 					allObjs, templateProtocol
 				},
 
-				fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Fake bench for ExperimentDilute tests"<> $SessionUUID, DeveloperObject -> True|>];
+				testBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Test bench for ExperimentDilute tests"<> $SessionUUID, DeveloperObject -> True|>];
 				{
 					container,
 					container2,
@@ -789,7 +1009,8 @@ DefineTests[ExperimentDilute,
 					container12,
 					container13,
 					container14,
-					plate1
+					plate1,
+					container15
 				} = UploadSample[
 					{
 						Model[Container, Vessel, "2mL Tube"],
@@ -806,26 +1027,29 @@ DefineTests[ExperimentDilute,
 						Model[Container, Vessel, "2mL Tube"],
 						Model[Container, Vessel, "2mL Tube"],
 						Model[Container, Vessel, "2mL Tube"],
-						Model[Container, Plate, "96-well 2mL Deep Well Plate"]
+						Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+						Model[Container, Vessel, "2mL Tube"]
 					},
 					{
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench}
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench}
 					},
 					Status -> {
+						Available,
 						Available,
 						Available,
 						Available,
@@ -843,21 +1067,22 @@ DefineTests[ExperimentDilute,
 						Available
 					},
 					Name -> {
-						"Fake container 1 for ExperimentDilute tests"<> $SessionUUID,
-						"Fake container 2 for ExperimentDilute tests"<> $SessionUUID,
-						"Fake container 3 for ExperimentDilute tests"<> $SessionUUID,
-						"Fake container 4 for ExperimentDilute tests"<> $SessionUUID,
-						"Fake container 5 for ExperimentDilute tests"<> $SessionUUID,
-						"Fake container 6 for ExperimentDilute tests"<> $SessionUUID,
-						"Fake container 7 for ExperimentDilute tests"<> $SessionUUID,
-						"Fake container 8 for ExperimentDilute tests"<> $SessionUUID,
-						"Fake container 9 for ExperimentDilute tests"<> $SessionUUID,
-						"Fake container 10 for ExperimentDilute tests"<> $SessionUUID,
-						"Fake container 11 for ExperimentDilute tests"<> $SessionUUID,
-						"Fake container 12 for ExperimentDilute tests"<> $SessionUUID,
-						"Fake container 13 for ExperimentDilute tests"<> $SessionUUID,
-						"Fake container 14 for ExperimentDilute tests"<> $SessionUUID,
-						"Fake plate 1 for ExperimentDilute tests"<> $SessionUUID
+						"Test container 1 for ExperimentDilute tests"<> $SessionUUID,
+						"Test container 2 for ExperimentDilute tests"<> $SessionUUID,
+						"Test container 3 for ExperimentDilute tests"<> $SessionUUID,
+						"Test container 4 for ExperimentDilute tests"<> $SessionUUID,
+						"Test container 5 for ExperimentDilute tests"<> $SessionUUID,
+						"Test container 6 for ExperimentDilute tests"<> $SessionUUID,
+						"Test container 7 for ExperimentDilute tests"<> $SessionUUID,
+						"Test container 8 for ExperimentDilute tests"<> $SessionUUID,
+						"Test container 9 for ExperimentDilute tests"<> $SessionUUID,
+						"Test container 10 for ExperimentDilute tests"<> $SessionUUID,
+						"Test container 11 for ExperimentDilute tests"<> $SessionUUID,
+						"Test container 12 for ExperimentDilute tests"<> $SessionUUID,
+						"Test container 13 for ExperimentDilute tests"<> $SessionUUID,
+						"Test container 14 for ExperimentDilute tests"<> $SessionUUID,
+						"Test plate 1 for ExperimentDilute tests"<> $SessionUUID,
+						"Test container 15 for ExperimentDilute tests"<> $SessionUUID
 					}
 				];
 				{
@@ -871,7 +1096,8 @@ DefineTests[ExperimentDilute,
 					sample8,
 					sample9,
 					sample10,
-					sample11
+					sample11,
+					sample12
 				} = UploadSample[
 					{
 						Model[Sample, "Milli-Q water"],
@@ -884,7 +1110,8 @@ DefineTests[ExperimentDilute,
 						Model[Sample, "Milli-Q water"],
 						Model[Sample, "T7 RNA Polymerase"],
 						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"]
+						Model[Sample, "Milli-Q water"],
+						Model[Sample, "E.coli MG1655"]
 					},
 					{
 						{"A1", container},
@@ -897,7 +1124,8 @@ DefineTests[ExperimentDilute,
 						{"A1", container8},
 						{"A1", container9},
 						{"A1", plate1},
-						{"A2", plate1}
+						{"A2", plate1},
+						{"A1", container15}
 					},
 					InitialAmount -> {
 						100 Microliter,
@@ -910,7 +1138,8 @@ DefineTests[ExperimentDilute,
 						120 Microliter,
 						200 Microliter,
 						100 Microliter,
-						100 Microliter
+						100 Microliter,
+						1 Milliliter
 					},
 					Name -> {
 						"ExperimentDilute New Test Chemical 1 (100 uL)"<> $SessionUUID,
@@ -918,12 +1147,13 @@ DefineTests[ExperimentDilute,
 						"ExperimentDilute New Test Chemical 3 (200 uL)"<> $SessionUUID,
 						"ExperimentDilute New Test Chemical 4 (Discarded)"<> $SessionUUID,
 						"ExperimentDilute New Test Chemical 5 (no amount)"<> $SessionUUID,
-						"ExperimentDilute New Test Chemcial 6 (100 mg)"<> $SessionUUID,
+						"ExperimentDilute New Test Chemical 6 (100 mg)"<> $SessionUUID,
 						"ExperimentDilute New Test Chemical 7 (0.01 uL)"<> $SessionUUID,
 						"ExperimentDilute New Test Chemical 8 (120 uL)"<> $SessionUUID,
 						"ExperimentDilute New Test Chemical 9 (200 uL)"<> $SessionUUID,
 						"ExperimentDilute New Test Chemical In Plate 2 (100 uL)"<> $SessionUUID,
-						"ExperimentDilute New Test Chemical In Plate 3 (100 uL)"<> $SessionUUID
+						"ExperimentDilute New Test Chemical In Plate 3 (100 uL)"<> $SessionUUID,
+						"ExperimentDilute cell sample 1 "<> $SessionUUID
 					}
 				];
 
@@ -932,8 +1162,8 @@ DefineTests[ExperimentDilute,
 				templateProtocol = ExperimentDilute[sample8, TotalVolume -> 123 Microliter, Name -> "Existing ExperimentDilute Protocol"<> $SessionUUID];
 
 				allObjs = Cases[Flatten[{
-					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, container13, container14, plate1,
-					sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11,
+					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, container13, container14, plate1, container15,
+					sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12,
 					templateProtocol, Download[templateProtocol, {ProcedureLog[Object], RequiredResources[[All, 1]][Object]}]
 				}], ObjectP[]];
 
@@ -954,28 +1184,28 @@ DefineTests[ExperimentDilute,
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 1 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 2 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 4 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 5 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 6 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 7 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 8 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 9 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 10 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 11 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 12 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 13 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 14 for ExperimentDilute tests"<> $SessionUUID],
-				Object[Container, Plate, "Fake plate 1 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Bench, "Test bench for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 10 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 11 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 12 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 13 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 14 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Plate, "Test plate 1 for ExperimentDilute tests"<> $SessionUUID],
 				Object[Sample, "ExperimentDilute New Test Chemical 1 (100 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilute New Test Chemical 2 (100 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilute New Test Chemical 3 (200 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilute New Test Chemical 4 (Discarded)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilute New Test Chemical 5 (no amount)"<> $SessionUUID],
-				Object[Sample, "ExperimentDilute New Test Chemcial 6 (100 mg)"<> $SessionUUID],
+				Object[Sample, "ExperimentDilute New Test Chemical 6 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilute New Test Chemical 7 (0.01 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilute New Test Chemical 8 (120 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilute New Test Chemical 9 (200 uL)"<> $SessionUUID],
@@ -1004,7 +1234,7 @@ DefineTests[ExperimentDilutePreview,
 			Null
 		],
 		Example[{Basic, "Always returns Null:"},
-			ExperimentDilutePreview[{Object[Container, Vessel, "Fake container 1 for ExperimentDilutePreview tests"<> $SessionUUID], Object[Container, Vessel, "Fake container 2 for ExperimentDilutePreview tests"<> $SessionUUID], Object[Container, Vessel, "Fake container 3 for ExperimentDilutePreview tests"<> $SessionUUID]}, TotalVolume -> 300 Microliter],
+			ExperimentDilutePreview[{Object[Container, Vessel, "Test container 1 for ExperimentDilutePreview tests"<> $SessionUUID], Object[Container, Vessel, "Test container 2 for ExperimentDilutePreview tests"<> $SessionUUID], Object[Container, Vessel, "Test container 3 for ExperimentDilutePreview tests"<> $SessionUUID]}, TotalVolume -> 300 Microliter],
 			Null
 		]
 	},
@@ -1027,10 +1257,10 @@ DefineTests[ExperimentDilutePreview,
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ExperimentDilutePreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 1 for ExperimentDilutePreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 2 for ExperimentDilutePreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ExperimentDilutePreview tests"<> $SessionUUID],
+				Object[Container, Bench, "Test bench for ExperimentDilutePreview tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for ExperimentDilutePreview tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for ExperimentDilutePreview tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentDilutePreview tests"<> $SessionUUID],
 				Object[Sample, "ExperimentDilutePreview New Test Chemical 1 (100 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilutePreview New Test Chemical 2 (100 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilutePreview New Test Chemical 3 (200 uL)"<> $SessionUUID]
@@ -1041,10 +1271,10 @@ DefineTests[ExperimentDilutePreview,
 		Block[{$AllowSystemsProtocols = True},
 			Module[
 				{
-					fakeBench, container, container2, container3, sample, sample2, sample3, allObjs
+					testBench, container, container2, container3, sample, sample2, sample3, allObjs
 				},
 
-				fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Fake bench for ExperimentDilutePreview tests"<> $SessionUUID, DeveloperObject -> True|>];
+				testBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Test bench for ExperimentDilutePreview tests"<> $SessionUUID, DeveloperObject -> True|>];
 				{
 					container,
 					container2,
@@ -1056,9 +1286,9 @@ DefineTests[ExperimentDilutePreview,
 						Model[Container, Vessel, "2mL Tube"]
 					},
 					{
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench}
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench}
 					},
 					Status -> {
 						Available,
@@ -1066,9 +1296,9 @@ DefineTests[ExperimentDilutePreview,
 						Available
 					},
 					Name -> {
-						"Fake container 1 for ExperimentDilutePreview tests"<> $SessionUUID,
-						"Fake container 2 for ExperimentDilutePreview tests"<> $SessionUUID,
-						"Fake container 3 for ExperimentDilutePreview tests"<> $SessionUUID
+						"Test container 1 for ExperimentDilutePreview tests"<> $SessionUUID,
+						"Test container 2 for ExperimentDilutePreview tests"<> $SessionUUID,
+						"Test container 3 for ExperimentDilutePreview tests"<> $SessionUUID
 					}
 				];
 				{
@@ -1117,10 +1347,10 @@ DefineTests[ExperimentDilutePreview,
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ExperimentDilutePreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 1 for ExperimentDilutePreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 2 for ExperimentDilutePreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ExperimentDilutePreview tests"<> $SessionUUID],
+				Object[Container, Bench, "Test bench for ExperimentDilutePreview tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for ExperimentDilutePreview tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for ExperimentDilutePreview tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentDilutePreview tests"<> $SessionUUID],
 				Object[Sample, "ExperimentDilutePreview New Test Chemical 1 (100 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilutePreview New Test Chemical 2 (100 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDilutePreview New Test Chemical 3 (200 uL)"<> $SessionUUID]
@@ -1176,10 +1406,10 @@ DefineTests[ExperimentDiluteOptions,
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ExperimentDiluteOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 1 for ExperimentDiluteOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 2 for ExperimentDiluteOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ExperimentDiluteOptions tests"<> $SessionUUID],
+				Object[Container, Bench, "Test bench for ExperimentDiluteOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for ExperimentDiluteOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for ExperimentDiluteOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentDiluteOptions tests"<> $SessionUUID],
 				Object[Sample, "ExperimentDiluteOptions New Test Chemical 1 (100 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDiluteOptions New Test Chemical 2 (100 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDiluteOptions New Test Chemical 3 (200 uL)"<> $SessionUUID]
@@ -1190,10 +1420,10 @@ DefineTests[ExperimentDiluteOptions,
 		Block[{$AllowSystemsProtocols = True},
 			Module[
 				{
-					fakeBench, container, container2, container3, sample, sample2, sample3, allObjs
+					testBench, container, container2, container3, sample, sample2, sample3, allObjs
 				},
 
-				fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Fake bench for ExperimentDiluteOptions tests"<> $SessionUUID, DeveloperObject -> True|>];
+				testBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Test bench for ExperimentDiluteOptions tests"<> $SessionUUID, DeveloperObject -> True|>];
 				{
 					container,
 					container2,
@@ -1205,9 +1435,9 @@ DefineTests[ExperimentDiluteOptions,
 						Model[Container, Vessel, "2mL Tube"]
 					},
 					{
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench}
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench}
 					},
 					Status -> {
 						Available,
@@ -1215,9 +1445,9 @@ DefineTests[ExperimentDiluteOptions,
 						Available
 					},
 					Name -> {
-						"Fake container 1 for ExperimentDiluteOptions tests"<> $SessionUUID,
-						"Fake container 2 for ExperimentDiluteOptions tests"<> $SessionUUID,
-						"Fake container 3 for ExperimentDiluteOptions tests"<> $SessionUUID
+						"Test container 1 for ExperimentDiluteOptions tests"<> $SessionUUID,
+						"Test container 2 for ExperimentDiluteOptions tests"<> $SessionUUID,
+						"Test container 3 for ExperimentDiluteOptions tests"<> $SessionUUID
 					}
 				];
 				{
@@ -1266,10 +1496,10 @@ DefineTests[ExperimentDiluteOptions,
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ExperimentDiluteOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 1 for ExperimentDiluteOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 2 for ExperimentDiluteOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ExperimentDiluteOptions tests"<> $SessionUUID],
+				Object[Container, Bench, "Test bench for ExperimentDiluteOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for ExperimentDiluteOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for ExperimentDiluteOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentDiluteOptions tests"<> $SessionUUID],
 				Object[Sample, "ExperimentDiluteOptions New Test Chemical 1 (100 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDiluteOptions New Test Chemical 2 (100 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentDiluteOptions New Test Chemical 3 (200 uL)"<> $SessionUUID]
@@ -1294,7 +1524,7 @@ DefineTests[ValidExperimentDiluteQ,
 			True
 		],
 		Example[{Basic, "Generate a new protocol to dilute multiple specified as containers:"},
-			ValidExperimentDiluteQ[{Object[Container, Vessel, "Fake container 1 for ValidExperimentDiluteQ tests"<> $SessionUUID], Object[Container, Vessel, "Fake container 2 for ValidExperimentDiluteQ tests"<> $SessionUUID], Object[Container, Vessel, "Fake container 3 for ValidExperimentDiluteQ tests"<> $SessionUUID]}, TotalVolume -> 300 Microliter],
+			ValidExperimentDiluteQ[{Object[Container, Vessel, "Test container 1 for ValidExperimentDiluteQ tests"<> $SessionUUID], Object[Container, Vessel, "Test container 2 for ValidExperimentDiluteQ tests"<> $SessionUUID], Object[Container, Vessel, "Test container 3 for ValidExperimentDiluteQ tests"<> $SessionUUID]}, TotalVolume -> 300 Microliter],
 			True
 		],
 		Example[{Options, Verbose, "Verbose option indicates if tests should be printed:"},
@@ -1318,7 +1548,7 @@ DefineTests[ValidExperimentDiluteQ,
 			True
 		],
 		Example[{Messages, "SampleStateInvalid", "If the input sample is a solid, it cannot be diluted:"},
-			ValidExperimentDiluteQ[Object[Sample, "ValidExperimentDiluteQ New Test Chemcial 6 (100 mg)"<> $SessionUUID], TotalVolume -> 1 Milliliter],
+			ValidExperimentDiluteQ[Object[Sample, "ValidExperimentDiluteQ New Test Chemical 6 (100 mg)"<> $SessionUUID], TotalVolume -> 1 Milliliter],
 			False
 		],
 		Example[{Messages, "DuplicateName", "If the specified name already exists for a Dilute protocol, an error is thrown:"},
@@ -1365,7 +1595,7 @@ DefineTests[ValidExperimentDiluteQ,
 			False
 		],
 		Example[{Messages, "PartialResuspensionContainerInvalid", "If the ContainerOut is set to the current container, Amount must be equal to the full Volume of the specified sample:"},
-			ValidExperimentDiluteQ[Object[Sample, "ValidExperimentDiluteQ New Test Chemical 1 (100 uL)"<> $SessionUUID], Amount -> 10 Microliter, ContainerOut -> Object[Container, Vessel, "Fake container 1 for ValidExperimentDiluteQ tests"<> $SessionUUID], TotalVolume -> 1 Milliliter],
+			ValidExperimentDiluteQ[Object[Sample, "ValidExperimentDiluteQ New Test Chemical 1 (100 uL)"<> $SessionUUID], Amount -> 10 Microliter, ContainerOut -> Object[Container, Vessel, "Test container 1 for ValidExperimentDiluteQ tests"<> $SessionUUID], TotalVolume -> 1 Milliliter],
 			False
 		],
 		Example[{Messages, "DuplicateSampleConflictingConditions", "If the same sample is specified more than once, it will only be diluted once.  In this case, all the options for these samples must be identical:"},
@@ -1399,34 +1629,36 @@ DefineTests[ValidExperimentDiluteQ,
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 1 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 2 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 4 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 5 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 6 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 7 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 8 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 9 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 10 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 11 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 12 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 13 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 14 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Plate, "Fake plate 1 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Sample, "ValidExperimentDiluteQ New Test Chemical 1 (100 uL)"<> $SessionUUID],
-				Object[Sample, "ValidExperimentDiluteQ New Test Chemical 2 (100 uL)"<> $SessionUUID],
-				Object[Sample, "ValidExperimentDiluteQ New Test Chemical 3 (200 uL)"<> $SessionUUID],
-				Object[Sample, "ValidExperimentDiluteQ New Test Chemical 4 (Discarded)"<> $SessionUUID],
-				Object[Sample, "ValidExperimentDiluteQ New Test Chemical 5 (no amount)"<> $SessionUUID],
-				Object[Sample, "ValidExperimentDiluteQ New Test Chemcial 6 (100 mg)"<> $SessionUUID],
-				Object[Sample, "ValidExperimentDiluteQ New Test Chemical 7 (0.01 uL)"<> $SessionUUID],
-				Object[Sample, "ValidExperimentDiluteQ New Test Chemical 8 (120 uL)"<> $SessionUUID],
-				Object[Sample, "ValidExperimentDiluteQ New Test Chemical 9 (200 uL)"<> $SessionUUID],
-				Object[Sample, "ValidExperimentDiluteQ New Test Chemical In Plate 2 (100 uL)"<> $SessionUUID],
-				Object[Sample, "ValidExperimentDiluteQ New Test Chemical In Plate 3 (100 uL)"<> $SessionUUID],
-				Object[Protocol, ManualSamplePreparation "Existing ValidExperimentDiluteQ Protocol"<> $SessionUUID]
+				Object[Container, Bench, "Test bench for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 10 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 11 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 12 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 13 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 14 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 15 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Container, Plate, "Test plate 1 for ExperimentDilute tests"<> $SessionUUID],
+				Object[Sample, "ExperimentDilute New Test Chemical 1 (100 uL)"<> $SessionUUID],
+				Object[Sample, "ExperimentDilute New Test Chemical 2 (100 uL)"<> $SessionUUID],
+				Object[Sample, "ExperimentDilute New Test Chemical 3 (200 uL)"<> $SessionUUID],
+				Object[Sample, "ExperimentDilute New Test Chemical 4 (Discarded)"<> $SessionUUID],
+				Object[Sample, "ExperimentDilute New Test Chemical 5 (no amount)"<> $SessionUUID],
+				Object[Sample, "ExperimentDilute New Test Chemical 6 (100 mg)"<> $SessionUUID],
+				Object[Sample, "ExperimentDilute New Test Chemical 7 (0.01 uL)"<> $SessionUUID],
+				Object[Sample, "ExperimentDilute New Test Chemical 8 (120 uL)"<> $SessionUUID],
+				Object[Sample, "ExperimentDilute New Test Chemical 9 (200 uL)"<> $SessionUUID],
+				Object[Sample, "ExperimentDilute New Test Chemical In Plate 2 (100 uL)"<> $SessionUUID],
+				Object[Sample, "ExperimentDilute New Test Chemical In Plate 3 (100 uL)"<> $SessionUUID],
+				Object[Sample, "ExperimentDilute cell sample 1 "<> $SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "Existing ExperimentDilute Protocol"<> $SessionUUID]
 			};
 			existingObjs = PickList[allObjs, DatabaseMemberQ[allObjs]];
 			EraseObject[existingObjs, Force -> True, Verbose -> False]
@@ -1434,13 +1666,13 @@ DefineTests[ValidExperimentDiluteQ,
 		Block[{$AllowSystemsProtocols = True},
 			Module[
 				{
-					fakeBench,
+					testBench,
 					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, container13, container14, plate1,
 					sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11,
 					allObjs, templateProtocol
 				},
 
-				fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Fake bench for ValidExperimentDiluteQ tests"<> $SessionUUID, DeveloperObject -> True|>];
+				testBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Test bench for ValidExperimentDiluteQ tests"<> $SessionUUID, DeveloperObject -> True|>];
 				{
 					container,
 					container2,
@@ -1476,21 +1708,21 @@ DefineTests[ValidExperimentDiluteQ,
 						Model[Container, Plate, "96-well 2mL Deep Well Plate"]
 					},
 					{
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench}
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench}
 					},
 					Status -> {
 						Available,
@@ -1510,21 +1742,21 @@ DefineTests[ValidExperimentDiluteQ,
 						Available
 					},
 					Name -> {
-						"Fake container 1 for ValidExperimentDiluteQ tests"<> $SessionUUID,
-						"Fake container 2 for ValidExperimentDiluteQ tests"<> $SessionUUID,
-						"Fake container 3 for ValidExperimentDiluteQ tests"<> $SessionUUID,
-						"Fake container 4 for ValidExperimentDiluteQ tests"<> $SessionUUID,
-						"Fake container 5 for ValidExperimentDiluteQ tests"<> $SessionUUID,
-						"Fake container 6 for ValidExperimentDiluteQ tests"<> $SessionUUID,
-						"Fake container 7 for ValidExperimentDiluteQ tests"<> $SessionUUID,
-						"Fake container 8 for ValidExperimentDiluteQ tests"<> $SessionUUID,
-						"Fake container 9 for ValidExperimentDiluteQ tests"<> $SessionUUID,
-						"Fake container 10 for ValidExperimentDiluteQ tests"<> $SessionUUID,
-						"Fake container 11 for ValidExperimentDiluteQ tests"<> $SessionUUID,
-						"Fake container 12 for ValidExperimentDiluteQ tests"<> $SessionUUID,
-						"Fake container 13 for ValidExperimentDiluteQ tests"<> $SessionUUID,
-						"Fake container 14 for ValidExperimentDiluteQ tests"<> $SessionUUID,
-						"Fake plate 1 for ValidExperimentDiluteQ tests"<> $SessionUUID
+						"Test container 1 for ValidExperimentDiluteQ tests"<> $SessionUUID,
+						"Test container 2 for ValidExperimentDiluteQ tests"<> $SessionUUID,
+						"Test container 3 for ValidExperimentDiluteQ tests"<> $SessionUUID,
+						"Test container 4 for ValidExperimentDiluteQ tests"<> $SessionUUID,
+						"Test container 5 for ValidExperimentDiluteQ tests"<> $SessionUUID,
+						"Test container 6 for ValidExperimentDiluteQ tests"<> $SessionUUID,
+						"Test container 7 for ValidExperimentDiluteQ tests"<> $SessionUUID,
+						"Test container 8 for ValidExperimentDiluteQ tests"<> $SessionUUID,
+						"Test container 9 for ValidExperimentDiluteQ tests"<> $SessionUUID,
+						"Test container 10 for ValidExperimentDiluteQ tests"<> $SessionUUID,
+						"Test container 11 for ValidExperimentDiluteQ tests"<> $SessionUUID,
+						"Test container 12 for ValidExperimentDiluteQ tests"<> $SessionUUID,
+						"Test container 13 for ValidExperimentDiluteQ tests"<> $SessionUUID,
+						"Test container 14 for ValidExperimentDiluteQ tests"<> $SessionUUID,
+						"Test plate 1 for ValidExperimentDiluteQ tests"<> $SessionUUID
 					}
 				];
 				{
@@ -1585,7 +1817,7 @@ DefineTests[ValidExperimentDiluteQ,
 						"ValidExperimentDiluteQ New Test Chemical 3 (200 uL)"<> $SessionUUID,
 						"ValidExperimentDiluteQ New Test Chemical 4 (Discarded)"<> $SessionUUID,
 						"ValidExperimentDiluteQ New Test Chemical 5 (no amount)"<> $SessionUUID,
-						"ValidExperimentDiluteQ New Test Chemcial 6 (100 mg)"<> $SessionUUID,
+						"ValidExperimentDiluteQ New Test Chemical 6 (100 mg)"<> $SessionUUID,
 						"ValidExperimentDiluteQ New Test Chemical 7 (0.01 uL)"<> $SessionUUID,
 						"ValidExperimentDiluteQ New Test Chemical 8 (120 uL)"<> $SessionUUID,
 						"ValidExperimentDiluteQ New Test Chemical 9 (200 uL)"<> $SessionUUID,
@@ -1620,28 +1852,28 @@ DefineTests[ValidExperimentDiluteQ,
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 1 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 2 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 4 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 5 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 6 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 7 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 8 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 9 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 10 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 11 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 12 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 13 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 14 for ValidExperimentDiluteQ tests"<> $SessionUUID],
-				Object[Container, Plate, "Fake plate 1 for ValidExperimentDiluteQ tests"<> $SessionUUID],
+				Object[Container, Bench, "Test bench for ValidExperimentDiluteQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for ValidExperimentDiluteQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for ValidExperimentDiluteQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ValidExperimentDiluteQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for ValidExperimentDiluteQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for ValidExperimentDiluteQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for ValidExperimentDiluteQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for ValidExperimentDiluteQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for ValidExperimentDiluteQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for ValidExperimentDiluteQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 10 for ValidExperimentDiluteQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 11 for ValidExperimentDiluteQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 12 for ValidExperimentDiluteQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 13 for ValidExperimentDiluteQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 14 for ValidExperimentDiluteQ tests"<> $SessionUUID],
+				Object[Container, Plate, "Test plate 1 for ValidExperimentDiluteQ tests"<> $SessionUUID],
 				Object[Sample, "ValidExperimentDiluteQ New Test Chemical 1 (100 uL)"<> $SessionUUID],
 				Object[Sample, "ValidExperimentDiluteQ New Test Chemical 2 (100 uL)"<> $SessionUUID],
 				Object[Sample, "ValidExperimentDiluteQ New Test Chemical 3 (200 uL)"<> $SessionUUID],
 				Object[Sample, "ValidExperimentDiluteQ New Test Chemical 4 (Discarded)"<> $SessionUUID],
 				Object[Sample, "ValidExperimentDiluteQ New Test Chemical 5 (no amount)"<> $SessionUUID],
-				Object[Sample, "ValidExperimentDiluteQ New Test Chemcial 6 (100 mg)"<> $SessionUUID],
+				Object[Sample, "ValidExperimentDiluteQ New Test Chemical 6 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ValidExperimentDiluteQ New Test Chemical 7 (0.01 uL)"<> $SessionUUID],
 				Object[Sample, "ValidExperimentDiluteQ New Test Chemical 8 (120 uL)"<> $SessionUUID],
 				Object[Sample, "ValidExperimentDiluteQ New Test Chemical 9 (200 uL)"<> $SessionUUID],
@@ -1729,28 +1961,28 @@ DefineTests[
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 1 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 2 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 4 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 5 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 6 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 7 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 8 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 9 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 10 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 11 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 12 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 13 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 14 for Dilute tests"<> $SessionUUID],
-				Object[Container, Plate, "Fake plate 1 for Dilute tests"<> $SessionUUID],
+				Object[Container, Bench, "Test bench for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 10 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 11 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 12 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 13 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 14 for Dilute tests"<> $SessionUUID],
+				Object[Container, Plate, "Test plate 1 for Dilute tests"<> $SessionUUID],
 				Object[Sample, "Dilute New Test Chemical 1 (100 uL)"<> $SessionUUID],
 				Object[Sample, "Dilute New Test Chemical 2 (100 uL)"<> $SessionUUID],
 				Object[Sample, "Dilute New Test Chemical 3 (200 uL)"<> $SessionUUID],
 				Object[Sample, "Dilute New Test Chemical 4 (Discarded)"<> $SessionUUID],
 				Object[Sample, "Dilute New Test Chemical 5 (no amount)"<> $SessionUUID],
-				Object[Sample, "Dilute New Test Chemcial 6 (100 mg)"<> $SessionUUID],
+				Object[Sample, "Dilute New Test Chemical 6 (100 mg)"<> $SessionUUID],
 				Object[Sample, "Dilute New Test Chemical 7 (0.01 uL)"<> $SessionUUID],
 				Object[Sample, "Dilute New Test Chemical 8 (120 uL)"<> $SessionUUID],
 				Object[Sample, "Dilute New Test Chemical 9 (200 uL)"<> $SessionUUID],
@@ -1764,13 +1996,13 @@ DefineTests[
 		Block[{$AllowSystemsProtocols = True},
 			Module[
 				{
-					fakeBench,
+					testBench,
 					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, container13, container14, plate1,
 					sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11,
 					allObjs, templateProtocol
 				},
 
-				fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Fake bench for Dilute tests"<> $SessionUUID, DeveloperObject -> True|>];
+				testBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Test bench for Dilute tests"<> $SessionUUID, DeveloperObject -> True|>];
 				{
 					container,
 					container2,
@@ -1806,21 +2038,21 @@ DefineTests[
 						Model[Container, Plate, "96-well 2mL Deep Well Plate"]
 					},
 					{
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench}
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench}
 					},
 					Status -> {
 						Available,
@@ -1840,21 +2072,21 @@ DefineTests[
 						Available
 					},
 					Name -> {
-						"Fake container 1 for Dilute tests"<> $SessionUUID,
-						"Fake container 2 for Dilute tests"<> $SessionUUID,
-						"Fake container 3 for Dilute tests"<> $SessionUUID,
-						"Fake container 4 for Dilute tests"<> $SessionUUID,
-						"Fake container 5 for Dilute tests"<> $SessionUUID,
-						"Fake container 6 for Dilute tests"<> $SessionUUID,
-						"Fake container 7 for Dilute tests"<> $SessionUUID,
-						"Fake container 8 for Dilute tests"<> $SessionUUID,
-						"Fake container 9 for Dilute tests"<> $SessionUUID,
-						"Fake container 10 for Dilute tests"<> $SessionUUID,
-						"Fake container 11 for Dilute tests"<> $SessionUUID,
-						"Fake container 12 for Dilute tests"<> $SessionUUID,
-						"Fake container 13 for Dilute tests"<> $SessionUUID,
-						"Fake container 14 for Dilute tests"<> $SessionUUID,
-						"Fake plate 1 for Dilute tests"<> $SessionUUID
+						"Test container 1 for Dilute tests"<> $SessionUUID,
+						"Test container 2 for Dilute tests"<> $SessionUUID,
+						"Test container 3 for Dilute tests"<> $SessionUUID,
+						"Test container 4 for Dilute tests"<> $SessionUUID,
+						"Test container 5 for Dilute tests"<> $SessionUUID,
+						"Test container 6 for Dilute tests"<> $SessionUUID,
+						"Test container 7 for Dilute tests"<> $SessionUUID,
+						"Test container 8 for Dilute tests"<> $SessionUUID,
+						"Test container 9 for Dilute tests"<> $SessionUUID,
+						"Test container 10 for Dilute tests"<> $SessionUUID,
+						"Test container 11 for Dilute tests"<> $SessionUUID,
+						"Test container 12 for Dilute tests"<> $SessionUUID,
+						"Test container 13 for Dilute tests"<> $SessionUUID,
+						"Test container 14 for Dilute tests"<> $SessionUUID,
+						"Test plate 1 for Dilute tests"<> $SessionUUID
 					}
 				];
 				{
@@ -1915,7 +2147,7 @@ DefineTests[
 						"Dilute New Test Chemical 3 (200 uL)"<> $SessionUUID,
 						"Dilute New Test Chemical 4 (Discarded)"<> $SessionUUID,
 						"Dilute New Test Chemical 5 (no amount)"<> $SessionUUID,
-						"Dilute New Test Chemcial 6 (100 mg)"<> $SessionUUID,
+						"Dilute New Test Chemical 6 (100 mg)"<> $SessionUUID,
 						"Dilute New Test Chemical 7 (0.01 uL)"<> $SessionUUID,
 						"Dilute New Test Chemical 8 (120 uL)"<> $SessionUUID,
 						"Dilute New Test Chemical 9 (200 uL)"<> $SessionUUID,
@@ -1950,28 +2182,28 @@ DefineTests[
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 1 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 2 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 4 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 5 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 6 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 7 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 8 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 9 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 10 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 11 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 12 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 13 for Dilute tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 14 for Dilute tests"<> $SessionUUID],
-				Object[Container, Plate, "Fake plate 1 for Dilute tests"<> $SessionUUID],
+				Object[Container, Bench, "Test bench for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 10 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 11 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 12 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 13 for Dilute tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 14 for Dilute tests"<> $SessionUUID],
+				Object[Container, Plate, "Test plate 1 for Dilute tests"<> $SessionUUID],
 				Object[Sample, "Dilute New Test Chemical 1 (100 uL)"<> $SessionUUID],
 				Object[Sample, "Dilute New Test Chemical 2 (100 uL)"<> $SessionUUID],
 				Object[Sample, "Dilute New Test Chemical 3 (200 uL)"<> $SessionUUID],
 				Object[Sample, "Dilute New Test Chemical 4 (Discarded)"<> $SessionUUID],
 				Object[Sample, "Dilute New Test Chemical 5 (no amount)"<> $SessionUUID],
-				Object[Sample, "Dilute New Test Chemcial 6 (100 mg)"<> $SessionUUID],
+				Object[Sample, "Dilute New Test Chemical 6 (100 mg)"<> $SessionUUID],
 				Object[Sample, "Dilute New Test Chemical 7 (0.01 uL)"<> $SessionUUID],
 				Object[Sample, "Dilute New Test Chemical 8 (120 uL)"<> $SessionUUID],
 				Object[Sample, "Dilute New Test Chemical 9 (200 uL)"<> $SessionUUID],

@@ -129,6 +129,7 @@
 		"WaterModelP",
 		"WideBore",
 		"Wrap",
-		"$EmailEnabled"
+		"$EmailEnabled",
+		"$PreferredContainerCoverLookup"
 	]
 }

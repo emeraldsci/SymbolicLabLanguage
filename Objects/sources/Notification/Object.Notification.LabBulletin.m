@@ -47,6 +47,14 @@ DefineObjectType[Object[Notification, LabBulletin], {
 			Category -> "Organizational Information",
 			Abstract -> False,
 			Developer -> True
+		},
+		Site -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container, Site],
+			Description -> "Site of this bulletin object.",
+			Category -> "Organizational Information"
 		}
 	}
 }];

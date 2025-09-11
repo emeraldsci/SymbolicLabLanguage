@@ -412,7 +412,7 @@ AnalyzeBindingKinetics[
 
   listOps = ToList[ops];
 
-  (* Call SafeOptions to make sure all options match pattern - dont gather tests here because we wil do that in the core function *)
+  (* Call SafeOptions to make sure all options match pattern - don't gather tests here because we wil do that in the core function *)
   {safeOptions, safeOptionTests} =
       {
         SafeOptions[AnalyzeBindingKinetics, listOps, AutoCorrect -> False],
@@ -584,7 +584,7 @@ AnalyzeBindingKinetics[
   (* Make sure we're working with a list of options *)
   listedOptions = ToList[ops];
 
-  (* remove the cache that had been passed as an option - we dont want it to show up in the unresolved options *)
+  (* remove the cache that had been passed as an option - we don't want it to show up in the unresolved options *)
   cachelessOptions = DeleteCases[listedOptions, (Cache -> _)];
 
   (* Determine the requested return value from the function *)
@@ -942,7 +942,7 @@ AnalyzeBindingKinetics[
         (*adjust the domain for alignemnet and data density - this will also remove units*)
         Round[Divide[Plus[#1, #2], #3], 1],
 
-        (*if the domain is not in the proper form, we are using the entire data set so just grab the end points which are 1 and the lenght of the data*)
+        (*if the domain is not in the proper form, we are using the entire data set so just grab the end points which are 1 and the length of the data*)
         {1, Length[#4]}
       ]&,
       {matchedAssociationDomains, alignedAssociationOffsets, associationDataDensities, alignedAssociationData}
@@ -965,7 +965,7 @@ AnalyzeBindingKinetics[
         (*adjust the domain for alignemnet and data density - this will also remove units*)
         Round[Divide[Plus[#1, #2], #3], 1],
 
-        (*if the domain is not in the proper form, we are using the entire data set so just grab the end points which are 1 and the lenght of the data*)
+        (*if the domain is not in the proper form, we are using the entire data set so just grab the end points which are 1 and the length of the data*)
         {1, Length[#4]}
       ]&,
       {matchedDissociationDomains, alignedDissociationOffsets, dissociationDataDensities, alignedDissociationDataForDisplay}
@@ -979,7 +979,7 @@ AnalyzeBindingKinetics[
 
   (* -- CONCENTRATIONS -- *)
 
-  (*TODO: there is a way to specify concentrations in AK, but I dont think it will have the same meaning as it does here, since the only concentration we input is not gogin to change, and we dont know the other conc.*)
+  (*TODO: there is a way to specify concentrations in AK, but I don't think it will have the same meaning as it does here, since the only concentration we input is not gogin to change, and we don't know the other conc.*)
   (* -- get the concentrations in a usable form -- *)
   safeStandardConcentrations = If[MatchQ[analyteDilutions, {ObjectP[]..}|ObjectP[]],
     Flatten[DeleteDuplicates[Download[analyteDilutions, KineticsDilutionConcentrations, Cache -> cacheBall, Date ->Now]], 1],
@@ -1839,7 +1839,7 @@ resolveAnalyzeBindingKineticsOptions[
       associationDataMinMax
     ]]],
 
-    (* in every other case, we are throwing a different error for a mismatch, so we dont need to error for this *)
+    (* in every other case, we are throwing a different error for a mismatch, so we don't need to error for this *)
     True,
     {}
   ];
@@ -1891,7 +1891,7 @@ resolveAnalyzeBindingKineticsOptions[
       dissociationDataMinMax
     ]]],
 
-    (* in every other case, we are throwing a different error for a mismatch, so we dont need to error for this *)
+    (* in every other case, we are throwing a different error for a mismatch, so we don't need to error for this *)
     True,
     {}
   ];

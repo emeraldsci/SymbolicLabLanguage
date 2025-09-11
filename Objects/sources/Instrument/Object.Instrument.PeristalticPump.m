@@ -54,6 +54,14 @@ DefineObjectType[Object[Instrument, PeristalticPump], {
 			Pattern :> GreaterP[0*Meter*Milli],
 			Description -> "Internal diameter of the tubing in the pump.",
 			Category -> "Dimensions & Positions"
+		},
+		DissolutionApparatus -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Instrument, DissolutionApparatus][WastePump],
+			Description -> "The dissolution apparatus that the pump is used in.",
+			Category -> "Instrument Specifications"
 		}
 	}
 }];

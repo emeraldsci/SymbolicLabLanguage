@@ -46,7 +46,14 @@ DefineOptions[ExperimentEvaporate,
 							Object[Instrument, RotaryEvaporator],
 							Object[Instrument, Evaporator]
 						}
-					]
+					],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Evaporators"
+						}
+					}
 				],
 				Description -> "The instrument used to perform the vacuum evaporation, rotary evaporation, or nitrogen blow down evaporation.",
 				Category -> "General"
@@ -145,7 +152,7 @@ DefineOptions[ExperimentEvaporate,
 				Widget -> Alternatives[
 					Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[20 * Milli * Bar, 1030 * Milli * Bar],
+						Pattern :> RangeP[0 * Milli * Bar, 1030 * Milli * Bar],
 						Units -> Alternatives[
 							{Bar, {Milli * Bar, Bar}},
 							{Torr, {Torr}},
@@ -169,7 +176,7 @@ DefineOptions[ExperimentEvaporate,
 				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[0 * Hour, 10 * Hour],
+					Pattern :> RangeP[0 * Hour, 12 * Hour],
 					Units -> Alternatives[{Hour, {Hour, Minute}}]
 				],
 				Description -> "The amount of time the instrument will use to gradually evacuate the chamber until EvaporationPressure is achieved before evaporation.",
@@ -215,36 +222,6 @@ DefineOptions[ExperimentEvaporate,
 				Category -> "RotaryEvaporation"
 			},
 			{
-				OptionName -> RinseSolution,
-				Default -> Automatic,
-				AllowNull -> True,
-				Widget -> Widget[
-					Type -> Object,
-					Pattern :> ObjectP[
-						{
-							Model[Sample],
-							Object[Sample]
-						}
-					]
-				],
-				Description -> "The solution that will be used to resuspend or dissolve any solid material that has accumulated in the EvaporationFlask during evaporation.",
-				ResolutionDescription -> "If RinseVolume is provided, RinseSolution defaults to Acetone. Otherwise defaults to Null.",
-				Category -> "Hidden"
-			},
-			{
-				OptionName -> RinseVolume,
-				Default -> Automatic,
-				AllowNull -> True,
-				Widget -> Widget[
-					Type -> Quantity,
-					Pattern :> RangeP[0 * Milliliter, 1 Liter],
-					Units -> {Milliliter, {Milliliter, Liter}}
-				],
-				Description -> "The amount of RinseSolution that will be used to resuspend or dissolve any solid material that has accumulated in the EvaporationFlask during evaporation.",
-				ResolutionDescription -> "If RinseSolution is provided, defaults to 1/4th the evaporation container's volume. Otherwise defaults to Null.",
-				Category -> "Hidden"
-			},
-			{
 				OptionName -> RecoupBumpTrap,
 				Default -> Automatic,
 				AllowNull -> True,
@@ -264,10 +241,18 @@ DefineOptions[ExperimentEvaporate,
 							Model[Sample],
 							Object[Sample]
 						}
-					]
+					],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Solvents"
+						}
+					}
 				],
 				Description -> "If RecoupBumpTrap is True, indicates which chemical or stock solution to rinse the bump trap with to resuspend any dried material that was caught by the trap.",
-				ResolutionDescription -> "If RecoupBumpTrap is True, if EvaporationTemperature is 25C or ambient, will resolve to DMF. If RecoupBumpTrap is True and EvaporationTemperature is greater than 25C, then Methanol. Otherwise defaults to Null.",
+				ResolutionDescription -> "If EvaporationType is set to RotaryEvaporation, set to Acetone. Otherwise set to Null.",
 				Category -> "RotaryEvaporation"
 			},
 			{
@@ -294,7 +279,13 @@ DefineOptions[ExperimentEvaporate,
 							Model[Container],
 							Object[Container]
 						}
-					]
+					],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers"
+						}
+					}
 				],
 				Description -> "If RecoupBumpTrap is True, indicates which container to use or stock solution to rinse the bump trap with to resuspend any dried material that was caught by the trap.",
 				ResolutionDescription -> "If RecoupBumpTrap is True and EvaporateUntilDry is False, defaults to a scintillation vial if BumpTrapRinseVolume is low enough. If RecoupBumpTrap is True and EvaporateUntilDry is True, defaults to EvaporationContainer to indicate material will be resuspended and then put back into the evaporation flask for additional evaporation.",
@@ -321,39 +312,17 @@ DefineOptions[ExperimentEvaporate,
 							Model[Container],
 							Object[Container]
 						}
-					]
+					],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers"
+						}
+					}
 				],
 				Description -> "If RecoupCondensate is True, indicates the container into which condensate is transferred at the end of the protocol.",
 				ResolutionDescription -> "If RecoupCondensate is True, then automatically set to the PreferredContainer for the full volume of the source sample.  Otherwise set to Null.",
 				Category -> "RotaryEvaporation"
-			},
-			(* Material Collection *)
-			{
-				OptionName -> SaveSolventWaste,
-				Default -> False,
-				AllowNull -> True,
-				Widget -> Widget[
-					Type -> Enumeration,
-					Pattern :> BooleanP
-				],
-				Description -> "Indicates whether any condensed solvent that has been evaporated from the analyte sample will be stored at the end of the run. The collected sample will be linked to in SolventWasteSample field of the protocol.",
-				Category -> "Hidden"
-			},
-			{
-				OptionName -> WasteContainer,
-				Default -> Automatic,
-				AllowNull -> True,
-				Widget -> Widget[
-					Type -> Object,
-					Pattern :> ObjectP[
-						{
-							Model[Container],
-							Object[Container]
-						}
-					]
-				],
-				Description -> "Indicates the container in which any saved, solvent waste will stored at the end of the run. The collected sample will be linked to in SolventWasteSample field of the protocol.",
-				Category -> "Hidden"
 			},
 
 			(* --- Vacuum Centrifugation --- *)
@@ -362,7 +331,10 @@ DefineOptions[ExperimentEvaporate,
 				OptionName -> VacuumEvaporationMethod,
 				Default -> Automatic,
 				AllowNull -> True,
-				Widget -> Widget[Type -> Object, Pattern :> ObjectP[Object[Method, VacuumEvaporation]]],
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[Object[Method, VacuumEvaporation]]
+				],
 				Description -> "The method object describing the set of conditions used to evaporate the samples.",
 				ResolutionDescription -> "The SolventBoilingPoint option and the composition of the samples provided are used to pick from a list of preset methods objects.",
 				Category -> "SpeedVac"
@@ -384,7 +356,16 @@ DefineOptions[ExperimentEvaporate,
 				OptionName -> BalancingSolution,
 				Default -> Automatic,
 				AllowNull -> True,
-				Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Model[Sample]}]],
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[{Model[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials"
+						}
+					}
+				],
 				Description -> "The solution used to counterbalance samples during evaporation, if a counterbalance is needed.",
 				Category -> "SpeedVac"
 			},
@@ -439,10 +420,24 @@ DefineOptions[ExperimentEvaporate,
 		(*NumberOfReplicates would be here but ExperimentEvaporate utilizes an option, EvaporateUntilDry, to allow for users to repeat the experiment if their samples are not completely dry after 1 round.
 			This is because it is difficult to gauge the length of an evaporation run, which can take 12+ hours or more. The EvaporateUntilDry option polls lab ops to determine whether a sample is fully evaporated,
  			and if not, then the sample will enter in another round of evaporation so long as the total time has not exceeded 72 h. *)
-		FuntopiaSharedOptionsPooled,
+		SimulationOption,
+		NonBiologyFuntopiaSharedOptionsPooled,
 		SubprotocolDescriptionOption,
 		SamplesInStorageOptions,
-		SamplesOutStorageOptions
+		SamplesOutStorageOptions,
+		ModifyOptions[
+			ModelInputOptions,
+			{
+				{
+					OptionName -> PreparedModelAmount,
+					NestedIndexMatching -> True
+				},
+				{
+					OptionName -> PreparedModelContainer,
+					NestedIndexMatching -> True
+				}
+			}
+		]
 	}
 ];
 
@@ -452,77 +447,78 @@ DefineOptions[ExperimentEvaporate,
 (*ExperimentEvaporate Errors and Warnings*)
 
 
-Error::RinseMismatch = "In ExperimentEvaporate, the option values for RinseVolume and RinseSolution (`1`) conflict for the following samples: `2`.";
 Error::SpeedVacTemperature = "In ExperimentEvaporate, the EvaporationTemperature specified for `1` falls outside the instrument's operable range.";
-Error::TurboVapFlowRate="In ExperimentEvaporate, the specified Flow rate in FlowRateProfile, `1,` specified for Sample `2` falls outside the instrument's operable range of 0-3.5 Liter/Minute for 2-15 mL tubes or 0-5.5 Liter/Minute for 50 mL tubes.";
+Error::TurboVapFlowRate = "In ExperimentEvaporate, the specified Flow rate in FlowRateProfile, `1,` specified for Sample `2` falls outside the instrument's operable range of 0-3.5 Liter/Minute for 2-15 mL tubes or 0-5.5 Liter/Minute for 50 mL tubes.";
 Error::EvaporationFlowRateProfileTimeConflict = "In ExperimentEvaporate, the total duration in the provided FlowRateProfile, `1` for Sample `2` is different from the provided EvaporationTime, `3`. Please set the EvaporationTime equal to the total duration specified in the FlowRateProfile.";
 Error::FlowRateProfileLength = "In ExperimentEvaporate, the number of FlowRateProfile parameters specified for `1` is greater than the instrument's number of programmable settings. A maximum of 3 FlowRateProfiles may be specified for Model[Instrument,Evaporator, id:kEJ9mqRxKA3p]. A maximum of 1 FlowRateProfile may be specified for Model[Instrument,Evaporator,id:R8e1PjRDb36j].";
-Warning::HighFlowRate="In ExperimentEvaporate, the FlowRate is high and may result in sample splashing and cross-contamination for the following samples: `1`. A lower flow rate is recommended.";
+Warning::HighFlowRate = "In ExperimentEvaporate, the FlowRate is high and may result in sample splashing and cross-contamination for the following samples: `1`. A lower flow rate is recommended.";
 Warning::EvaporateTemperatureGreaterThanSampleBoilingPoint = "In ExperimentEvaporate, the specified EvaporationTemperature for `1` is greater than the sample's BoilingPoint, `2`, and may result in sample degradation. An EvaporationTemperature below the SolventBoilingPoint is recommended.";
-Error::SampleVolumeUnknown="In ExperimentEvaporate, the volume of samples, `1`, is unknown. These volumes must be populated for ExperimentEvaporate to proceed.";
-Error::EvaporateEvapFlaskIncompatible="In ExperimentEvaporate, the value specified for EvaporationFlask `1`, is too small to safely evaporate the sample, `2` or does not contain the correct connector. Please make sure that the EvaporationFlask contains a 24/40 connector and that the MaxVolume is at least 2x as much as the sample volume or leave this option as Automatic.";
+Error::SampleVolumeUnknown = "In ExperimentEvaporate, the volume of samples, `1`, is unknown. These volumes must be populated for ExperimentEvaporate to proceed.";
+Error::EvaporateEvapFlaskIncompatible = "In ExperimentEvaporate, the value specified for EvaporationFlask `1`, is too small to safely evaporate the sample, `2` or does not contain the correct connector. Please make sure that the EvaporationFlask contains a 24/40 connector and that the MaxVolume is at least 2x as much as the sample volume or leave this option as Automatic.";
 Error::IncompatibleSpeedVac = "In ExperimentEvaporate, specified samples `1` can not be used with the specified Instrument `2`, please check your inputs.";
-Error::DuplicatedSamples = "In ExperimentEvaporate, the specified samples `1` are duplicated entries in the input. Please make sure each sample is used only once in each protocol.";
+Error::DuplicatedSamples = "In `2`, the specified samples `1` are duplicated entries in the input. Please make sure each sample is used only once in each protocol.";
 Error::CannotComputeEvaporationPressure = "For the following samples using RotaryEvaporation, EvaporationPressure was not set, and the samples' vapor pressures at `2` cannot be calculated because the VaporPressure/BoilingPoint field is not populated for a sufficient percentage of the Composition: `1`.  Please specify EvaporationPressure directly, or populate the VaporPressure/BoilingPoint field in the models in the samples' Composition field such that greater than 70 VolumePercent of the sample has known VaporPressure/BoilingPoint.";
+Error::IncompatibleBumpTrapVolume = "In ExperimentEvaporate, the BumpTrapRinseVolume, `2`, for samples `1` is too large for the collection container or the available Model[Container, BumpTrap]. Please ensure that the BumpTrapRinseVolume is less than the MaxVolume of BumpTrapSampleContainer and the available Model[Container, BumpTrap].";
 
 
 (* ::Subsubsection:: *)
 (*ExperimentEvaporate*)
 
 
-ExperimentEvaporate[myInput:ObjectP[Object[Sample]],myOptions:OptionsPattern[ExperimentEvaporate]]:=ExperimentEvaporate[ToList[myInput],myOptions];
-ExperimentEvaporate[myInputs:ListableP[{ObjectP[Object[Sample]]..}],myOptions:OptionsPattern[ExperimentEvaporate]]:=Module[
+ExperimentEvaporate[myInput:ObjectP[Object[Sample]], myOptions:OptionsPattern[ExperimentEvaporate]] := ExperimentEvaporate[ToList[myInput], myOptions];
+ExperimentEvaporate[myInputs:ListableP[{ObjectP[Object[Sample]]..}], myOptions:OptionsPattern[ExperimentEvaporate]] := Module[
 	{
-		listedSamples,listedOptions,listedOps,cacheOption,output,outputSpecification,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,
-		myOptionsWithPreparedSamples,mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed,
-		samplePreparationCache,safeOps,safeOpsTests,validLengths,validLengthTests,
-		templatedOptions,templateTests,inheritedOptions,expandedSafeOps,uploadOption,confirmOption,parentProtocolOption,
-		rawEmailOption,emailOption,allDownloads,resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,
-		cacheBall,resourcePacket,resourcePacketTests,allTests,protocolObject,availableVacEvapMethods,possibleInstruments,
-		possibleRotovapFlasks,allRotovapFlasks,allCentrifugableContainers,sampleInfo,modelInfo,containerInfo,containerModelInfo,allTurbovapRacks,preferredVessels,modelContainerPacket
+		listedSamples, listedOptions, listedOps, cacheOption, output, outputSpecification, gatherTests, validSamplePreparationResult, mySamplesWithPreparedSamples,
+		myOptionsWithPreparedSamples, mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation,
+		safeOps, safeOpsTests, validLengths, validLengthTests, containersFromOptions, samplesFromOptions,
+		templatedOptions, templateTests, inheritedOptions, expandedSafeOps, uploadOption, confirmOption, canaryBranchOption, parentProtocolOption,
+		rawEmailOption, emailOption, allDownloads, resolvedOptionsResult, resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions,
+		cacheBall, resourcePacket, resourcePacketTests, allTests, protocolObject, availableVacEvapMethods, possibleInstruments,
+		possibleRotovapFlasks, allRotovapFlasks, allCentrifugableContainers, sampleInfo, modelInfo, containerInfo, containerModelInfo,
+		allTurbovapRacks, preferredVessels, modelContainerPacket, pooledSamples
 	},
 
 	(* Check that all options are singletons or match the length of their index-matched associate *)
 	listedOps = ToList[myOptions];
-	cacheOption = ToList[Lookup[listedOps,Cache,{}]];
+	cacheOption = ToList[Lookup[listedOps, Cache, {}]];
 
 	(* Determine the requested return value from the function *)
 	outputSpecification = Quiet[OptionValue[Output]];
 	output = ToList[outputSpecification];
 
 	(* Determine if we should keep a running list of tests *)
-	gatherTests = MemberQ[output,Tests];
+	gatherTests = MemberQ[output, Tests];
 
 	(* Remove temporal links *)
-	{listedSamples, listedOptions}=removeLinks[ToList[myInputs], ToList[myOptions]];
+	{listedSamples, listedOptions} = removeLinks[ToList[myInputs], ToList[myOptions]];
 
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentEvaporate,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 	(* If we are given an invalid define name, return early. *)
-	If[MatchQ[validSamplePreparationResult,$Failed],
+	If[MatchQ[validSamplePreparationResult, $Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
 		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
-	{safeOpsNamed,safeOpsTests}=If[gatherTests,
-		SafeOptions[ExperimentEvaporate,myOptionsWithPreparedSamplesNamed,AutoCorrect->False,Output->{Result,Tests}],
-		{SafeOptions[ExperimentEvaporate,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],Null}
+	{safeOpsNamed, safeOpsTests} = If[gatherTests,
+		SafeOptions[ExperimentEvaporate, myOptionsWithPreparedSamplesNamed, AutoCorrect -> False, Output -> {Result, Tests}],
+		{SafeOptions[ExperimentEvaporate, myOptionsWithPreparedSamplesNamed, AutoCorrect -> False], Null}
 	];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
-	If[MatchQ[safeOpsNamed,$Failed],
-		Return[outputSpecification/.{
+	If[MatchQ[safeOpsNamed, $Failed],
+		Return[outputSpecification /. {
 			Result -> $Failed,
 			Tests -> safeOpsTests,
 			Options -> $Failed,
@@ -531,70 +527,70 @@ ExperimentEvaporate[myInputs:ListableP[{ObjectP[Object[Sample]]..}],myOptions:Op
 	];
 
 	(* Call sanitize-inputs to clean any named objects *)
-	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* Call ValidInputLengthsQ to make sure all options are the right length *)
 	(* delete the PreparedResouces because of Cam's thing*)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentEvaporate,{mySamplesWithPreparedSamples},safeOps,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentEvaporate,{mySamplesWithPreparedSamples},safeOps],Null}
+	{validLengths, validLengthTests} = If[gatherTests,
+		ValidInputLengthsQ[ExperimentEvaporate, {mySamplesWithPreparedSamples}, safeOps, Output -> {Result, Tests}],
+		{ValidInputLengthsQ[ExperimentEvaporate, {mySamplesWithPreparedSamples}, safeOps], Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
 	If[!validLengths,
-		Return[outputSpecification/.{
+		Return[outputSpecification /. {
 			Result -> $Failed,
-			Tests -> Join[safeOpsTests,validLengthTests],
+			Tests -> Join[safeOpsTests, validLengthTests],
 			Options -> $Failed,
 			Preview -> Null
 		}]
 	];
 
 	(* Use any template options to get values for options not specified in myOptions *)
-	{templatedOptions,templateTests} = If[gatherTests,
-		ApplyTemplateOptions[ExperimentEvaporate,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ApplyTemplateOptions[ExperimentEvaporate,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
+	{templatedOptions, templateTests} = If[gatherTests,
+		ApplyTemplateOptions[ExperimentEvaporate, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples, Output -> {Result, Tests}],
+		{ApplyTemplateOptions[ExperimentEvaporate, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples], Null}
 	];
 
 	(* Return early if the template cannot be used - will only occur if the template object does not exist. *)
-	If[MatchQ[templatedOptions,$Failed],
-		Return[outputSpecification/.{
+	If[MatchQ[templatedOptions, $Failed],
+		Return[outputSpecification /. {
 			Result -> $Failed,
-			Tests -> Join[safeOpsTests,validLengthTests,templateTests],
+			Tests -> Join[safeOpsTests, validLengthTests, templateTests],
 			Options -> $Failed,
 			Preview -> Null
 		}]
 	];
 
 	(* Replace our safe options with our inherited options from our template. *)
-	inheritedOptions = ReplaceRule[safeOps,templatedOptions];
+	inheritedOptions = ReplaceRule[safeOps, templatedOptions];
 
 	(* Expand index-matching options *)
-	expandedSafeOps = Last@ExpandIndexMatchedInputs[ExperimentEvaporate,{mySamplesWithPreparedSamples},inheritedOptions];
+	{{pooledSamples}, expandedSafeOps} = ExpandIndexMatchedInputs[ExperimentEvaporate, {mySamplesWithPreparedSamples}, inheritedOptions];
 
 	(* Lookup some standard options from the safe options*)
-	{uploadOption,confirmOption,parentProtocolOption,rawEmailOption}=Lookup[
+	{uploadOption, confirmOption, canaryBranchOption, parentProtocolOption, rawEmailOption} = Lookup[
 		inheritedOptions,
-		{Upload,Confirm,ParentProtocol,Email}
+		{Upload, Confirm, CanaryBranch, ParentProtocol, Email}
 	];
 
 	(* adjust the email option based on the upload optoin *)
-	emailOption=If[!MatchQ[emailOption, Automatic],rawEmailOption,
-		If[And[uploadOption, MemberQ[output, Result]],True,False]
+	emailOption = If[!MatchQ[emailOption, Automatic], rawEmailOption,
+		If[And[uploadOption, MemberQ[output, Result]], True, False]
 	];
 
-	availableVacEvapMethods = Search[Object[Method, VacuumEvaporation],DeveloperObject!=True];
+	availableVacEvapMethods = Search[Object[Method, VacuumEvaporation], DeveloperObject != True];
 
 	(* TODO: change this to a Search *)
 	possibleInstruments = DeleteDuplicates@Join[
-		ToList[Lookup[safeOps,Instrument]]/.Automatic->Nothing,
+		ToList[Lookup[safeOps, Instrument]] /. Automatic -> Nothing,
 		{
-			Model[Instrument,VacuumCentrifuge,"id:n0k9mGzRal4w"],
+			Model[Instrument, VacuumCentrifuge, "id:n0k9mGzRal4w"],
 			Model[Instrument, VacuumCentrifuge, "id:dORYzZJ9d64w"],
-			Model[Instrument,RotaryEvaporator,"id:jLq9jXvmeYxR"],
-			Model[Instrument,Evaporator,"id:R8e1PjRDb36j"],
-			Model[Instrument,Balance,"id:o1k9jAGvbWMA"],
-			Model[Instrument,Evaporator, "id:kEJ9mqRxKA3p"]
+			Model[Instrument, RotaryEvaporator, "id:jLq9jXvmeYxR"],
+			Model[Instrument, Evaporator, "id:R8e1PjRDb36j"],
+			Model[Instrument, Balance, "id:o1k9jAGvbWMA"],
+			Model[Instrument, Evaporator, "id:kEJ9mqRxKA3p"]
 		}
 	];
 
@@ -607,7 +603,7 @@ ExperimentEvaporate[myInputs:ListableP[{ObjectP[Object[Sample]]..}],myOptions:Op
 
 	(* combine what we searched for with what was specified *)
 	possibleRotovapFlasks = DeleteDuplicates[Flatten[{
-		ToList[Lookup[safeOps,EvaporationFlask]]/.Automatic->Nothing,
+		ToList[Lookup[safeOps, EvaporationFlask]] /. Automatic -> Nothing,
 		allRotovapFlasks
 		(* Model[Container,Vessel,"id:dORYzZn0ooED"],(*500mL Pear Shaped Flask with 24/40 Joint*)
 			Model[Container,Vessel,"id:E8zoYveRllDm"],(*1L Pear Shaped Flask with 24/40 Joint*)
@@ -616,28 +612,53 @@ ExperimentEvaporate[myInputs:ListableP[{ObjectP[Object[Sample]]..}],myOptions:Op
 	}]];
 
 	(* Get all of our preferred vessels. *)
-	preferredVessels=DeleteDuplicates[Flatten[{
-		PreferredContainer[All,Type->Vessel],
-		PreferredContainer[All,Sterile->True,LightSensitive->True,Type->Vessel],
-		PreferredContainer[All,Sterile->False,LightSensitive->True,Type->Vessel],
-		PreferredContainer[All,Sterile->True,LightSensitive->False,Type->Vessel],
-		Model[Container,Plate,"96-well 2mL Deep Well Plate"]
+	preferredVessels = DeleteDuplicates[Flatten[{
+		PreferredContainer[All, Type -> Vessel],
+		PreferredContainer[All, Sterile -> True, LightSensitive -> True, Type -> Vessel],
+		PreferredContainer[All, Sterile -> False, LightSensitive -> True, Type -> Vessel],
+		PreferredContainer[All, Sterile -> True, LightSensitive -> False, Type -> Vessel],
+		Model[Container, Plate, "96-well 2mL Deep Well Plate"]
 	}]];
+
+	(* Get container objects/models from options *)
+	containersFromOptions = Cases[Flatten[Lookup[safeOps,
+		{
+			EvaporationFlask,
+			BumpTrapSampleContainer,
+			CondensateSampleContainer,
+			IncubateAliquotContainer,
+			CentrifugeAliquotContainer,
+			FilterContainerOut,
+			FilterAliquotContainer,
+			AliquotContainer
+		}
+	]], ObjectP[]];
+
+	(* Get sample objects/models from options *)
+	samplesFromOptions = Cases[Flatten[Lookup[safeOps,
+		{
+			BumpTrapRinseSolution,
+			BalancingSolution,
+			ConcentratedBuffer,
+			BufferDiluent,
+			AssayBuffer
+		}
+	]], ObjectP[]];
 
 	(*Assign variables to the items for download to include sample prep fields*)
 
 	(* Sample Information *)
-	sampleInfo=Packet@@Union[
-			(*For sample prep*)
-			SamplePreparationCacheFields[Object[Sample]],
-			(* For ExperimentEvaporate *)
-			{Notebook},
-			(* For Caching *)
-			{BoilingPoint}
+	sampleInfo = Packet @@ Union[
+		(*For sample prep*)
+		SamplePreparationCacheFields[Object[Sample]],
+		(* For ExperimentEvaporate *)
+		{Notebook},
+		(* For Caching *)
+		{BoilingPoint}
 	];
 
 	(* Sample Model information *)
-	modelInfo=Union[
+	modelInfo = Union[
 		(*For sample prep*)
 		SamplePreparationCacheFields[Model[Sample]],
 		(* For ExperimentEvaporate *)
@@ -647,13 +668,15 @@ ExperimentEvaporate[myInputs:ListableP[{ObjectP[Object[Sample]]..}],myOptions:Op
 	];
 
 	(* Sample's Container packet information *)
-	containerInfo=Union[
+	containerInfo = Union[Join[
 		(*For sample prep*)
-		SamplePreparationCacheFields[Object[Container]]
-	];
+		SamplePreparationCacheFields[Object[Container]],
+		(* additional fields *)
+		{ModelName}
+	]];
 
 	(* Container Model Packet *)
-	containerModelInfo=Union[
+	containerModelInfo = Union[
 		(*For sample prep*)
 		SamplePreparationCacheFields[Model[Container]],
 		(* ExperimentEvaporate required *)
@@ -661,153 +684,164 @@ ExperimentEvaporate[myInputs:ListableP[{ObjectP[Object[Sample]]..}],myOptions:Op
 		(* Cache required *)
 		{CentrifugeCompatibility, VacuumCentrifugeCompatibility}
 	];
-	modelContainerPacket=Packet@@containerModelInfo;
+	modelContainerPacket = Packet @@ containerModelInfo;
 
 	(* Download all the needed things *)
 	allDownloads = Flatten@Quiet[
 		Download[
 			{
-				Flatten[mySamplesWithPreparedSamples],
-				availableVacEvapMethods,
-				possibleInstruments,
-				possibleRotovapFlasks,
-				allCentrifugableContainers,
-				allTurbovapRacks,
-				preferredVessels
+				(* 1 *)Flatten[{pooledSamples, samplesFromOptions}],
+				(* 2 *)availableVacEvapMethods,
+				(* 3 *)possibleInstruments,
+				(* 4 *)possibleRotovapFlasks,
+				(* 5 *)allCentrifugableContainers,
+				(* 6 *)allTurbovapRacks,
+				(* 7 *)preferredVessels,
+				(* 8 *)containersFromOptions
 			},
 			{
-				{
+				{(* 1 *)
 					sampleInfo,
 					Packet[Model[modelInfo]],
 					(* Model Composition *)
-					Packet[Model[{BoilingPoint, State, Deprecated,Sterile,LiquidHandlerIncompatible,Tablet,TabletWeight,Products, Dimensions,TransportChilled,TransportWarmed}]],
+					Packet[Model[{BoilingPoint, State, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, Products, Dimensions, TransportTemperature}]],
 					(* Object Compositions *)
-					Packet[Composition[[All,2]][{BoilingPoint, VaporPressure, State, MolecularWeight}]],
+					Packet[Composition[[All, 2]][{BoilingPoint, VaporPressure, State, MolecularWeight}]],
 					Packet[Container[containerInfo]],
 					Packet[Container[Model][containerModelInfo]]
 				},
-				{
+				{(* 2 *)
 					Packet[
-						Name,CentrifugalForce,PressureRampTime,EvaporationTime,EquilibrationPressure,
-						EvaporationPressure,ControlledChamberEvacuation
+						Name, CentrifugalForce, PressureRampTime, EvaporationTime, EquilibrationPressure,
+						EvaporationPressure, ControlledChamberEvacuation
 					]
 				},
-				{
+				{(* 3 *)
 					Packet[
-						Name,MinTemperature,MaxTemperature,VacuumPressure,MaxSpinRate,BathFluid,MinFlowRate,MaxFlowRate,BathVolume,
-						MinBathTemperature,MaxBathTemperature,MaxRotationRate,Model
+						Name, MinTemperature, MaxTemperature, VacuumPressure, MaxSpinRate, BathFluid, MinFlowRate, MaxFlowRate, BathVolume,
+						MinBathTemperature, MaxBathTemperature, MaxRotationRate, Model
 					]
 				},
-				{
-					Evaluate[Packet@@containerInfo],
+				{(* 4 *)
+					Evaluate[Packet @@ containerInfo],
 					modelContainerPacket
 				},
-				{
+				{(* 5 *)
 					modelContainerPacket,
-					Packet[Field[VacuumCentrifugeCompatibility[[All, Instrument]][{MaxTime, MaxTemperature, MinTemperature, SpeedResolution, MaxRotationRate, MinRotationRate, CentrifugeType, SampleHandlingCategories}]]],
-					Packet[Field[VacuumCentrifugeCompatibility[[All, Rotor]][{MaxRotationRate,Positions,AvailableLayouts,MaxImbalance,Name, MaxRadius, MaxForce, Footprint, RotorType, DefaultStorageCondition, RotorAngle}]]],
-					Packet[Field[VacuumCentrifugeCompatibility[[All, Bucket]][{Positions,AvailableLayouts,Name, MaxRadius, MaxForce, MaxRotationRate, Footprint, MaxStackHeight, DefaultStorageCondition}]]],
+					Packet[Field[VacuumCentrifugeCompatibility[[All, Instrument]][{MaxTime, MaxTemperature, MinTemperature, SpeedResolution, MaxRotationRate, MinRotationRate, CentrifugeType, AsepticHandling}]]],
+					Packet[Field[VacuumCentrifugeCompatibility[[All, Rotor]][{MaxRotationRate, Positions, AvailableLayouts, MaxImbalance, Name, MaxRadius, MaxForce, Footprint, RotorType, DefaultStorageCondition, RotorAngle}]]],
+					Packet[Field[VacuumCentrifugeCompatibility[[All, Bucket]][{Positions, AvailableLayouts, Name, MaxRadius, MaxForce, MaxRotationRate, Footprint, MaxStackHeight, DefaultStorageCondition}]]],
 					Packet[Field[VacuumCentrifugeCompatibility[[All, Rack]][containerModelInfo]]]
 				},
-				{
+				{(* 6 *)
 					modelContainerPacket
 				},
 				(*preferredVessels*)
-				{modelContainerPacket}
+				{(* 7 *)
+					modelContainerPacket
+				},
+				{(* 8 *)
+					modelContainerPacket,
+					Evaluate[Packet @@ containerInfo],
+					Packet[Model[containerModelInfo]]
+				}
 			},
-			Cache->Flatten[{samplePreparationCache,cacheOption}]
+			Cache -> cacheOption,
+			Simulation -> updatedSimulation
 		],
-		{Download::FieldDoesntExist,Download::NotLinkField,Download::Part}
+		{Download::FieldDoesntExist, Download::NotLinkField, Download::Part}
 	];
 
 	(* Add the new packets to the cache *)
-	cacheBall = FlattenCachePackets[Cases[Join[samplePreparationCache,cacheOption,allDownloads],PacketP[]]];
+	cacheBall = FlattenCachePackets[Flatten[{cacheOption, allDownloads}]];
 
 	(* resolve the options*)
 	resolvedOptionsResult = Check[
-		{resolvedOptions,resolvedOptionsTests}=If[gatherTests,
-			resolveExperimentEvaporateOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}],
-			{resolveExperimentEvaporateOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall,Output->Result],Null}
+		{resolvedOptions, resolvedOptionsTests} = If[gatherTests,
+			resolveExperimentEvaporateOptions[pooledSamples, expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+			{resolveExperimentEvaporateOptions[pooledSamples, expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> Result], Null}
 		],
 		$Failed,
-		{Error::InvalidInput,Error::InvalidOption}
+		{Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* Collapse the resolved options *)
 	collapsedResolvedOptions = CollapseIndexMatchedOptions[
 		ExperimentEvaporate,
 		resolvedOptions,
-		Ignore->ToList[myOptions],
-		Messages->False
+		Ignore -> ToList[myOptions],
+		Messages -> False
 	];
 
 	(* If option resolution failed, return early. *)
-	If[MatchQ[resolvedOptionsResult,$Failed],
-		Return[outputSpecification/.{
+	If[MatchQ[resolvedOptionsResult, $Failed],
+		Return[outputSpecification /. {
 			Result -> $Failed,
-			Tests->Join[safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests],
-			Options->RemoveHiddenOptions[ExperimentEvaporate,collapsedResolvedOptions],
-			Preview->Null
+			Tests -> Join[safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests],
+			Options -> RemoveHiddenOptions[ExperimentEvaporate, collapsedResolvedOptions],
+			Preview -> Null
 		}]
 	];
 
 	(* Build packets with resources *)
 	(* Note that evaporateResourcePackets[...] will also return an EmeraldCloudFile objects/packets, so we have to do an extra filter here *)
-	{resourcePacket,resourcePacketTests} = If[gatherTests,
-		evaporateResourcePackets[Download[mySamplesWithPreparedSamples,Object],listedOptions,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{evaporateResourcePackets[Download[mySamplesWithPreparedSamples,Object],listedOptions,resolvedOptions,Cache->cacheBall,Output->Result],{}}
+	{resourcePacket, resourcePacketTests} = If[gatherTests,
+		evaporateResourcePackets[Download[pooledSamples, Object], listedOptions, resolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+		{evaporateResourcePackets[Download[pooledSamples, Object], listedOptions, resolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> Result], {}}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
-	If[!MemberQ[output,Result],
-		Return[outputSpecification/.{
+	If[!MemberQ[output, Result],
+		Return[outputSpecification /. {
 			Result -> Null,
-			Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
-			Options -> RemoveHiddenOptions[ExperimentEvaporate,collapsedResolvedOptions],
+			Tests -> Flatten[{safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests, resourcePacketTests}],
+			Options -> RemoveHiddenOptions[ExperimentEvaporate, collapsedResolvedOptions],
 			Preview -> Null
 		}]
 	];
 
 	(* combine all the tests *)
-	allTests=DeleteCases[Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],Null];
+	allTests = DeleteCases[Flatten[{safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests, resourcePacketTests}], Null];
 
 	(* We have to return the result. Call UploadProtocol[...] to prepare our protocol packet (and upload it if asked). *)
-	protocolObject = If[!MatchQ[resourcePacket,$Failed],
+	protocolObject = If[!MatchQ[resourcePacket, $Failed],
 		UploadProtocol[
 			(* Note that evaporateResourcePackets[...] will also return EmeraldCloudFile objects/packets, so we have to do an extra screening here *)
 			First[resourcePacket],
-			Upload->Lookup[safeOps,Upload],
-			Confirm->Lookup[safeOps,Confirm],
-			ParentProtocol->Lookup[safeOps,ParentProtocol],
+			Upload -> Lookup[safeOps, Upload],
+			Confirm -> Lookup[safeOps, Confirm],
+			CanaryBranch -> Lookup[safeOps, CanaryBranch],
+			ParentProtocol -> Lookup[safeOps, ParentProtocol],
 
-			Priority -> Lookup[safeOps,Priority],
-			StartDate -> Lookup[safeOps,StartDate],
-			HoldOrder -> Lookup[safeOps,HoldOrder],
-			QueuePosition -> Lookup[safeOps,QueuePosition],
+			Priority -> Lookup[safeOps, Priority],
+			StartDate -> Lookup[safeOps, StartDate],
+			HoldOrder -> Lookup[safeOps, HoldOrder],
+			QueuePosition -> Lookup[safeOps, QueuePosition],
 
-			ConstellationMessage->Object[Protocol,Evaporate],
-			Cache->samplePreparationCache
+			ConstellationMessage -> Object[Protocol, Evaporate],
+			Cache -> cacheBall,
+			Simulation -> updatedSimulation
 		],
 		$Failed
 	];
 
 	(* return the result, depending on the output option *)
-	outputSpecification/.{
-		Tests->allTests,
-		Options->RemoveHiddenOptions[ExperimentEvaporate,resolvedOptions],
-		Result->If[TrueQ[Lookup[safeOps,Upload]],
+	outputSpecification /. {
+		Tests -> allTests,
+		Options -> RemoveHiddenOptions[ExperimentEvaporate, resolvedOptions],
+		Result -> If[TrueQ[Lookup[safeOps, Upload]],
 			(* If we are uploading, only return the protocol object *)
 			protocolObject,
 			(* Otherwise, return all upload packets *)
-			Join[protocolObject,Rest[resourcePacket]]
+			Join[protocolObject, Rest[resourcePacket]]
 		],
-		Preview->Null
+		Preview -> Null
 	}
 ];
 
-ExperimentEvaporate[myContainers:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]],_String]]],myOptions:OptionsPattern[ExperimentEvaporate]]:=Module[
-	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,sampleCache,
-		containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests,updatedCache},
+ExperimentEvaporate[myContainers:ListableP[ListableP[Alternatives[ObjectP[{Object[Sample], Object[Container], Model[Sample]}], _String]]], myOptions:OptionsPattern[ExperimentEvaporate]] := Module[
+	{listedOptions, outputSpecification, output, gatherTests, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation, sampleCache,
+		containerToSampleResult, containerToSampleOutput, samples, sampleOptions, containerToSampleTests, containerToSampleSimulation},
 
 	(* Make sure we're working with a list of options *)
 	listedOptions = ToList[myOptions];
@@ -817,78 +851,72 @@ ExperimentEvaporate[myContainers:ListableP[ListableP[Alternatives[ObjectP[Object
 	output = ToList[outputSpecification];
 
 	(* Determine if we should keep a running list of tests *)
-	gatherTests = MemberQ[output,Tests];
+	gatherTests = MemberQ[output, Tests];
 
 	(* First, simulate our sample preparation. *)
-	validSamplePreparationResult=Check[
+	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentEvaporate,
 			ToList[myContainers],
 			ToList[myOptions]
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
-	If[MatchQ[validSamplePreparationResult,$Failed],
+	If[MatchQ[validSamplePreparationResult, $Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult = If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests} = containerToSampleOptions[
+		{containerToSampleOutput, containerToSampleTests, containerToSampleSimulation} = pooledContainerToSampleOptions[
 			ExperimentEvaporate,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output -> {Result, Tests, Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
-		If[RunUnitTest[<|"Tests"->containerToSampleTests|>,OutputFormat->SingleBoolean,Verbose->False],
+		If[RunUnitTest[<|"Tests" -> containerToSampleTests|>, OutputFormat -> SingleBoolean, Verbose -> False],
 			Null,
 			$Failed
 		],
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput = containerToSampleOptions[
+			{containerToSampleOutput, containerToSampleSimulation} = pooledContainerToSampleOptions[
 				ExperimentEvaporate,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output -> {Result, Simulation},
+				Simulation -> updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
 
-	(* Update our cache with our new simulated values. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
-
 	(* If we were given an empty container, return early. *)
-	If[MatchQ[containerToSampleResult,$Failed],
-		(* containerToSampleOptions failed - return $Failed *)
-		outputSpecification/.{
+	If[MatchQ[containerToSampleResult, $Failed],
+		(* pooledContainerToSampleOptions failed - return $Failed *)
+		outputSpecification /. {
 			Result -> $Failed,
 			Tests -> containerToSampleTests,
 			Options -> $Failed,
 			Preview -> Null
 		},
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions,sampleCache} = containerToSampleOutput;
+		{samples, sampleOptions} = containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentEvaporate[samples,ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache,sampleCache}]]]
+		ExperimentEvaporate[samples, ReplaceRule[sampleOptions, Simulation -> containerToSampleSimulation]]
 	]
 ];
 
@@ -900,7 +928,7 @@ ExperimentEvaporate[myContainers:ListableP[ListableP[Alternatives[ObjectP[Object
  	Memoizes the result after first execution to avoid repeated database trips within a single kernel session. *)
 nonDeprecatedEvaporationContainers[fakeString:_String] := nonDeprecatedEvaporationContainers[fakeString] = Module[{},
 	(*Add allCentrifugeEquipmentSearch to list of Memoized functions*)
-	AppendTo[$Memoization,Experiment`Private`nonDeprecatedEvaporationContainers];
+	AppendTo[$Memoization, Experiment`Private`nonDeprecatedEvaporationContainers];
 
 	Search[
 		{
@@ -911,14 +939,14 @@ nonDeprecatedEvaporationContainers[fakeString:_String] := nonDeprecatedEvaporati
 			{Model[Container, Rack]}
 		},
 		{
-			Connectors != Null && DeveloperObject!=True,
+			Connectors != Null && DeveloperObject != True,
 			VacuumCentrifugeCompatibility != Null && Deprecated != True && DeveloperObject != True,
 			Footprint == TurboVapRack && Deprecated != True && DeveloperObject != True
 		}
 	]
 ];
 
-evaporateReplacementCounterweighContainers={
+evaporateReplacementCounterweighContainers = {
 	Model[Container, Plate, "id:E8zoYveRll17"] -> Model[Container, Plate, "id:L8kPEjkmLbvW"] (*DWP that is deprecated*)
 };
 
@@ -929,27 +957,27 @@ evaporateReplacementCounterweighContainers={
 
 DefineOptions[
 	resolveExperimentEvaporateOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
-resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]...}],myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentEvaporateOptions]]:=Module[
-	{outputSpecification,output,gatherTests,cache,samplePrepOptions,evaporationOptions,simulatedSamples,resolvedSamplePrepOptions,
-		simulatedCache,fastAssocSimulatedCache, flatSimulatedSamples, samplePrepTests,samplePackets,sampleComponentPackets,sampleContainerModelPackets,
-		sampleContainerPackets,methodPackets,rotorPackets,maxImbalance,discardedSamplePackets, allRotovapFlasks, allCentrifugableContainers,
-		discardedInvalidInputs,discardedTest,noVolumeSamplePackets,noVolumeInvalidInputs,noVolumeTest,duplicatedInvalidInputs,
-		duplicatesTest,roundedEvaporationOptions,optionPrecisionTests,allowedVacuumEvaporationTimeSettings,
-		pooledSamplePackets, pooledSampleComponentPackets,pooledSampleContainerModelPackets,pooledSampleContainerPackets,
-		rinseVolumeMismatches,rinseVolMismatchOptions,rinseVolContainerMismatchInputs,rinseVolInvalidOptions,rinseVolTest,
-		poolVolumes,pooledContainerModel,pooledContainerModelCleaned,
+resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]...}], myOptions:{_Rule...}, myResolutionOptions:OptionsPattern[resolveExperimentEvaporateOptions]] := Module[
+	{outputSpecification, output, gatherTests, cache, samplePrepOptions, evaporationOptions, simulatedSamples, resolvedSamplePrepOptions,
+		simulatedCache, fastAssocSimulatedCache, flatSimulatedSamples, samplePrepTests, samplePackets, sampleComponentPackets, sampleContainerModelPackets,
+		sampleContainerPackets, methodPackets, rotorPackets, maxImbalance, discardedSamplePackets, allRotovapFlasks, allCentrifugableContainers,
+		discardedInvalidInputs, discardedTest, noVolumeSamplePackets, noVolumeInvalidInputs, noVolumeTest, duplicatedInvalidInputs,
+		duplicatesTest, roundedEvaporationOptions, optionPrecisionTests, allowedVacuumEvaporationTimeSettings, updatedSimulation,
+		pooledSamplePackets, pooledSampleComponentPackets, pooledSampleContainerModelPackets, pooledSampleContainerPackets,
+		poolVolumes, pooledContainerModel, pooledContainerModelCleaned,
 		poolContainerPackets,
 
-		emailOption,uploadOption,resolvedEmail,resolvedPostProcessingOptions,nameOption,nameValidBool,nameOptionInvalid,
-		nameUniquenessTest,samplesInStorage,samplesOutStorage,
+		emailOption, uploadOption, resolvedEmail, resolvedPostProcessingOptions, nameOption, nameValidBool, nameOptionInvalid,
+		nameUniquenessTest, samplesInStorage, samplesOutStorage, quasiExpandedSamplesInStorage,
 		optionsAssociation,
 
 		speedVacExclusiveOptions,
 		rotoVapExclusiveOptions,
 		nitrogenBlowerExclusiveOptions,
+		getModelPacket,
 
 		mapThreadFriendlyOptions,
 
@@ -967,14 +995,10 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 		resolvedBalancingSolutions,
 		resolvedEvapFlasks,
 		resolvedCondenserTemps,
-		resolvedRinseSolutions,
-		resolvedRinseVolumes,
 		resolvedRecoupTraps,
 		resolvedRecoupTrapSolutions,
 		resolvedRecoupTrapVolumes,
 		resolvedRecoupTrapContainers,
-		resolvedSaveWastes,
-		resolvedWasteContainers,
 		resolvedRecoupCondensates,
 		resolvedCondensateSampleContainers,
 		resolvedFlowRateProfiles,
@@ -985,12 +1009,14 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 		allTypeOptionConflicts,
 		insufficientVolumeErrors,
 		sampleVolumeTooLargeErrors,
-		primaryEvaporationContainerConflictErrors,primaryEvaporationContainerConflictTests,primaryEvaporationContainerConflictOptions,
+		primaryEvaporationContainerConflictErrors, primaryEvaporationContainerConflictTests, primaryEvaporationContainerConflictOptions,
 		nitrogenAmbiguousWarnings,
 		rotovapAmbiguousWarnings,
 		speedVacAmbiguousWarnings,
 		rinseSolutionVolumeErrors,
 		bumpTrapRinseSolutionVolumeErrors,
+		bumpTrapRinseSolutionConflictOptions,
+		bumpTrapRinseSolutionVolumeTests,
 		bumpMethodConflictWarnings,
 		impossibleEvapTempErrors,
 		impossibleEvapTempErrorsTests,
@@ -1013,37 +1039,39 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 		evapTempTooHighOptions,
 
 		resolvedEvapContainers,
-		allTurbovapRacks,turboInst,containerPacks,rotoPearContainerPackets,rotoRoundContainerPackets,
-		allBumpTrapPacks,rotoBumpTrapPackets,turboVapRackPackets,allSamplePackets,rotoVapContainerPackets,
+		allTurbovapRacks, turboInst, containerPacks, rotoPearContainerPackets, rotoRoundContainerPackets,
+		allBumpTrapPacks, rotoBumpTrapPackets, turboVapRackPackets, simulation, rotoVapContainerPackets,
 		(*Related to Aliquot options*)
-		targetContainers, targetVolumes,aliquotOptions,
-		resolvedAliquotOptions,aliquotTests,aliquotOpts,aliquotWarningMsg,validSampleStorageConditionQ,
-		invalidStorageConditionOptions,invalidStorageConditionTest,
-		invalidInputs,invalidOptions,allTests
+		targetContainers, targetVolumes, aliquotOptions, resolveSamplePrepOptionsWithoutAliquot,
+		resolvedAliquotOptions, aliquotTests, aliquotOpts, aliquotWarningMsg, validSampleStorageConditionQ,
+		invalidStorageConditionOptions, invalidStorageConditionTest,
+		invalidInputs, invalidOptions, allTests, mapThreadFriendlyPrepOptions
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
 
 	(* Determine the requested output format of this function. *)
-	outputSpecification=Quiet[OptionValue[Output]];
-	output=ToList[outputSpecification];
+	outputSpecification = Quiet[OptionValue[Output]];
+	output = ToList[outputSpecification];
 
 	(* Determine if we should keep a running list of tests to return to the user. *)
-	gatherTests = MemberQ[output,Tests];
+	gatherTests = MemberQ[output, Tests];
 
 	(* Fetch our cache from the parent function. *)
-	cache = Quiet[OptionValue[Cache]];
+	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
 	(* Separate out our Evaporation options from our Sample Prep options. *)
-	{samplePrepOptions,evaporationOptions} = splitPrepOptions[myOptions];
+	{samplePrepOptions, evaporationOptions} = splitPrepOptions[myOptions];
 
 	(* Resolve the sample prep options *)
-	{{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests} = If[gatherTests,
-		resolveSamplePrepOptions[ExperimentEvaporate,mySamples,samplePrepOptions,Cache->cache,Output->{Result,Tests}],
-		{resolveSamplePrepOptions[ExperimentEvaporate,mySamples,samplePrepOptions,Cache->cache,Output->Result],{}}
+	{{simulatedSamples, resolvedSamplePrepOptions, updatedSimulation}, samplePrepTests} = If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentEvaporate, mySamples, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> {Result, Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentEvaporate, mySamples, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> Result], {}}
 	];
 
 	(* generate a fast cache association *)
+	simulatedCache = FlattenCachePackets[{cache, Lookup[First[updatedSimulation], Packets]}];
 	fastAssocSimulatedCache = makeFastAssocFromCache[simulatedCache];
 
 	(* these were memoized before so inexpensive to get again*)
@@ -1071,95 +1099,96 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 	sampleContainerPackets = fastAssocPacketLookup[fastAssocSimulatedCache, #, Container]& /@ flatSimulatedSamples;
 
 	(* Re-list the samplePackets in the form of the original listed, pooled sample input *)
-	pooledSamplePackets = TakeList[samplePackets,Length[ToList[#]]&/@simulatedSamples];
+	pooledSamplePackets = TakeList[samplePackets, Length[ToList[#]]& /@ simulatedSamples];
 
 	(* Re-list the sampleComponentPackets in the form of the original listed, pooled sample input *)
-	pooledSampleComponentPackets = TakeList[sampleComponentPackets,Length[ToList[#]]&/@simulatedSamples];
+	pooledSampleComponentPackets = TakeList[sampleComponentPackets, Length[ToList[#]]& /@ simulatedSamples];
 
 	(* Re-list the sampleContainerModelPacksts in the form of the original listed, pooled sample input *)
-	pooledSampleContainerModelPackets = TakeList[sampleContainerModelPackets,Length[ToList[#]]&/@simulatedSamples];
+	pooledSampleContainerModelPackets = TakeList[sampleContainerModelPackets, Length[ToList[#]]& /@ simulatedSamples];
 
 	(* Re-list the sampleContainerModelPacksts in the form of the original listed, pooled sample input *)
-	pooledSampleContainerPackets = TakeList[sampleContainerPackets,Length[ToList[#]]&/@simulatedSamples];
+	pooledSampleContainerPackets = TakeList[sampleContainerPackets, Length[ToList[#]]& /@ simulatedSamples];
 
-	aliquotOpts = Lookup[samplePrepOptions,Aliquot];
+	aliquotOpts = Lookup[samplePrepOptions, Aliquot];
 
 	(* In addition to each specific sample's volumes, look up the assay volume of each sample pool *)
 	poolVolumes = MapThread[
-		Function[{aliquotting,assayVol,sampList},
-			If[MatchQ[aliquotting,True],
+		Function[{aliquotting, assayVol, sampList},
+			If[MatchQ[aliquotting, True],
 				If[MatchQ[assayVol, Except[Automatic]],
 					(*If an aliquot volume is specified, use that*)
 					assayVol,
 
 					(*If no aliquot volume is specified, use the SampleVolume. We need this to resolve some options *)
-					 Total[ToList[Lookup[#,Volume]]&/@sampList]
+					Total[ToList[Lookup[#, Volume]]& /@ sampList]
 				],
 				(*If we're not aliquoting, just use the Sample Volume*)
-				Total[ToList[Lookup[#,Volume]]&/@sampList]
+				Total[ToList[Lookup[#, Volume]]& /@ sampList]
 			]
 		],
 		{
 			aliquotOpts,
-			Lookup[samplePrepOptions,AssayVolume],
+			Lookup[samplePrepOptions, AssayVolume],
 			pooledSamplePackets
 		}
 	];
 
 	(*In the case that the samples are pooled, look up what container they are going in.
 		Replace any nulls with {Null,Null}*)
-	pooledContainerModel = Lookup[resolvedSamplePrepOptions,AliquotContainer,Null]/.Null->{Null,Null};
+	pooledContainerModel = Lookup[resolvedSamplePrepOptions, AliquotContainer, Null] /. Null -> {Null, Null};
 
 	(* Get the container models only *)
 	pooledContainerModelCleaned = If[NullQ[pooledContainerModel],
 		(*If poolecContainerModel is all null, then we are not pooling*)
-		Table[Null,Length[ToList[simulatedSamples]]],
+		Table[Null, Length[ToList[simulatedSamples]]],
 
-		pooledContainerModel[[All,2]]
+		pooledContainerModel[[All, 2]]
 	];
 
 	(*Download the object and max volume of the pooled container*)
 	poolContainerPackets = Download[pooledContainerModelCleaned,
-			Packet[Object,MaxVolume]
+		Packet[Object, MaxVolume],
+		Simulation->updatedSimulation
 	];
 
 	(* Relist the packets in the form of the original, listed samples *)
 
 	(* Don't do the search again to find the method packets; just pull them from the cache *)
-	methodPackets = Cases[simulatedCache,PacketP[Object[Method,VacuumEvaporation]]];
+	methodPackets = Cases[cache, PacketP[Object[Method, VacuumEvaporation]]];
 
 	(* Pull out the rotor packet and figure out the max imbalance from the cache *)
 	rotorPackets = Cases[cache, ObjectP[Model[Container, CentrifugeRotor]]];
 
-	maxImbalance = Min[DeleteCases[Lookup[rotorPackets, MaxImbalance],Null]];
+	maxImbalance = Min[DeleteCases[Lookup[rotorPackets, MaxImbalance], Null]];
 
 	(*-- INPUT VALIDATION CHECKS --*)
 
 	(* - Check if samples are discarded - *)
 
 	(* Get the samples from simulatedSamples that are discarded. *)
-	discardedSamplePackets=Cases[Flatten[samplePackets],KeyValuePattern[Status->Discarded]];
-	discardedInvalidInputs=Lookup[discardedSamplePackets,Object,{}];
+	discardedSamplePackets = Cases[Flatten[samplePackets], KeyValuePattern[Status -> Discarded]];
+	discardedInvalidInputs = Lookup[discardedSamplePackets, Object, {}];
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message .*)
-	If[Length[discardedInvalidInputs]>0&&!gatherTests,
-		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Cache->simulatedCache]]
+	If[Length[discardedInvalidInputs] > 0 && !gatherTests,
+		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Cache -> simulatedCache]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-	discardedTest=If[gatherTests,
-		Module[{failingTest,passingTest},
-			failingTest=If[Length[discardedInvalidInputs]==0,
+	discardedTest = If[gatherTests,
+		Module[{failingTest, passingTest},
+			failingTest = If[Length[discardedInvalidInputs] == 0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[discardedInvalidInputs, Cache->simulatedCache]<>" are not discarded:",True,False]
+				Test["Our input samples "<>ObjectToString[discardedInvalidInputs, Cache -> simulatedCache]<>" are not discarded:", True, False]
 			];
 
-			passingTest=If[Length[discardedInvalidInputs]==Length[simulatedSamples],
+			passingTest = If[Length[discardedInvalidInputs] == Length[simulatedSamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs], Cache->simulatedCache]<>" are not discarded:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples, discardedInvalidInputs], Cache -> simulatedCache]<>" are not discarded:", True, True]
 			];
 
-			{failingTest,passingTest}
+			{failingTest, passingTest}
 		],
 		Nothing
 	];
@@ -1167,28 +1196,28 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 	(* - Check if samples have volume - *)
 
 	(* Get the samples from simulatedSamples that do not have volume populated. *)
-	noVolumeSamplePackets=Cases[Flatten[samplePackets],KeyValuePattern[Volume->Null]];
-	noVolumeInvalidInputs=Lookup[noVolumeSamplePackets,Object,{}];
+	noVolumeSamplePackets = Cases[Flatten[samplePackets], KeyValuePattern[Volume -> Null]];
+	noVolumeInvalidInputs = Lookup[noVolumeSamplePackets, Object, {}];
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message .*)
-	If[Length[noVolumeInvalidInputs]>0&&!gatherTests,
-		Message[Error::SampleVolumeUnknown, ObjectToString[noVolumeInvalidInputs, Cache->simulatedCache]]
+	If[Length[noVolumeInvalidInputs] > 0 && !gatherTests,
+		Message[Error::SampleVolumeUnknown, ObjectToString[noVolumeInvalidInputs, Cache -> simulatedCache]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-	noVolumeTest=If[gatherTests,
-		Module[{failingTest,passingTest},
-			failingTest=If[Length[noVolumeInvalidInputs]==0,
+	noVolumeTest = If[gatherTests,
+		Module[{failingTest, passingTest},
+			failingTest = If[Length[noVolumeInvalidInputs] == 0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[noVolumeInvalidInputs, Cache->simulatedCache]<>" have volume populated:",True,False]
+				Test["Our input samples "<>ObjectToString[noVolumeInvalidInputs, Cache -> simulatedCache]<>" have volume populated:", True, False]
 			];
 
-			passingTest=If[Length[noVolumeInvalidInputs]==Length[simulatedSamples],
+			passingTest = If[Length[noVolumeInvalidInputs] == Length[simulatedSamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,noVolumeInvalidInputs], Cache->simulatedCache]<>" have volume populated:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples, noVolumeInvalidInputs], Cache -> simulatedCache]<>" have volume populated:", True, True]
 			];
 
-			{failingTest,passingTest}
+			{failingTest, passingTest}
 		],
 		Nothing
 	];
@@ -1196,27 +1225,32 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 	(* - Check if samples are duplicated (Evaporation does not handle replicates since the solvent is evaporated over the course of the experiment.) - *)
 
 	(* Get the samples from simulatedSamples that are duplicated. *)
-	duplicatedInvalidInputs=Cases[Tally[simulatedSamples], {_, Except[1]}][[All, 1]];
+	(* note that if we're aliquoting, then all bets are off because we don't actually simulate aliquoting if we're pooled so duplicate samples could be ok *)
+	(* could go back into resolveSamplePrepOptions for changing that logic if we want, but for now we don't *)
+	duplicatedInvalidInputs = If[MemberQ[Lookup[resolvedSamplePrepOptions, Aliquot], True],
+		{},
+		Cases[Tally[simulatedSamples], {_, Except[1]}][[All, 1]]
+	];
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message .*)
-	If[Length[duplicatedInvalidInputs]>0&&!gatherTests,
-		Message[Error::DuplicatedSamples, ObjectToString[duplicatedInvalidInputs, Cache->simulatedCache]]
+	If[Length[duplicatedInvalidInputs] > 0 && !gatherTests,
+		Message[Error::DuplicatedSamples, ObjectToString[duplicatedInvalidInputs, Cache -> simulatedCache], "ExperimentEvaporate"]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-	duplicatesTest=If[gatherTests,
-		Module[{failingTest,passingTest},
-			failingTest=If[Length[duplicatedInvalidInputs]==0,
+	duplicatesTest = If[gatherTests,
+		Module[{failingTest, passingTest},
+			failingTest = If[Length[duplicatedInvalidInputs] == 0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[duplicatedInvalidInputs, Cache->simulatedCache]<>" are not listed more than once:",True,False]
+				Test["Our input samples "<>ObjectToString[duplicatedInvalidInputs, Cache -> simulatedCache]<>" are not listed more than once:", True, False]
 			];
 
-			passingTest=If[Length[duplicatedInvalidInputs]==Length[simulatedSamples],
+			passingTest = If[Length[duplicatedInvalidInputs] == Length[simulatedSamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,duplicatedInvalidInputs], Cache->simulatedCache]<>" are not listed more than once:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples, duplicatedInvalidInputs], Cache -> simulatedCache]<>" are not listed more than once:", True, True]
 			];
 
-			{failingTest,passingTest}
+			{failingTest, passingTest}
 		],
 		Nothing
 	];
@@ -1229,10 +1263,10 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 	optionsAssociation = Association[evaporationOptions];
 
 	{roundedEvaporationOptions, optionPrecisionTests} = Module[
-		{flowProfs, frpFlowPositions,frpTimePositions,frpFlowAssociation,frpTimeAssociation,
-		frpFlowRoundedAssociation,frpFlowRoundedTests,frpTimeRoundedAssociation,
-		frpTimeRoundedTests,roundedFlowRateProfileOptions,singletonRoundedAssociations,
-		singletonRoundedTests,allRoundedOptionsAssociation,allRoundingTests},
+		{flowProfs, frpFlowPositions, frpTimePositions, frpFlowAssociation, frpTimeAssociation,
+			frpFlowRoundedAssociation, frpFlowRoundedTests, frpTimeRoundedAssociation,
+			frpTimeRoundedTests, roundedFlowRateProfileOptions, singletonRoundedAssociations,
+			singletonRoundedTests, allRoundedOptionsAssociation, allRoundingTests},
 
 		(*Treat FlowRateProfile differently since it is a nested list*)
 		flowProfs = {FlowRateProfile};
@@ -1240,128 +1274,105 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 		(*Find all the positions in the FlowRateProfiles where a flow rate exists*)
 		(*frpFlowPositions = Position[FlowRateProfile,_Quantity?FlowRateQ,Infinity,Heads->False];*)
 		frpFlowPositions = Map[
-			Position[ToList[#],_Quantity?FlowRateQ,Infinity,Heads->False]&,
-			Lookup[optionsAssociation,flowProfs]
+			Position[ToList[#], _Quantity?FlowRateQ, Infinity, Heads -> False]&,
+			Lookup[optionsAssociation, flowProfs]
 		];
 
 		(*Find all the positions in the FlowRateProfiles where a time exists*)
 		frpTimePositions = Map[
-			Position[ToList[#],_Quantity?TimeQ,Infinity,Heads->False]&,
-			Lookup[optionsAssociation,flowProfs]
+			Position[ToList[#], _Quantity?TimeQ, Infinity, Heads -> False]&,
+			Lookup[optionsAssociation, flowProfs]
 		];
 
 		(* Build an association with flattened flow rates: instead of {{1L/Minute, 60 min},{3L/Minute, 45 Minute}} it will be {1L/Minute,3L/Minute} with frpFlowPositions = {{1,1},{2,1}}*)
 		frpFlowAssociation = Association@MapThread[
 			Function[{optionName, indices},
-				(optionName->(Extract[ToList[Lookup[optionsAssociation,optionName]],#]&/@indices))
+				(optionName -> (Extract[ToList[Lookup[optionsAssociation, optionName]], #]& /@ indices))
 			],
-			{flowProfs,frpFlowPositions}
+			{flowProfs, frpFlowPositions}
 		];
 
 		(* Build an association with flattened times *)
 		frpTimeAssociation = Association@MapThread[
 			Function[{optionName, indices},
-				(optionName->(Extract[ToList[Lookup[optionsAssociation,optionName]],#]&/@indices))
+				(optionName -> (Extract[ToList[Lookup[optionsAssociation, optionName]], #]& /@ indices))
 			],
-			{flowProfs,frpTimePositions}
+			{flowProfs, frpTimePositions}
 		];
 
 		(* Get rounded flow rate values *)
-		{frpFlowRoundedAssociation,frpFlowRoundedTests} = If[gatherTests,
+		{frpFlowRoundedAssociation, frpFlowRoundedTests} = If[gatherTests,
 			RoundOptionPrecision[
 				frpFlowAssociation,
 				flowProfs,
-				Table[10^-1 Liter/Minute,Length[flowProfs]],
-				Output->{Result,Tests}
+				Table[10^-1 Liter / Minute, Length[flowProfs]],
+				Output -> {Result, Tests}
 			],
 			{
 				RoundOptionPrecision[
 					frpFlowAssociation,
 					flowProfs,
-					Table[10^-1 Liter/Minute,Length[flowProfs]]
+					Table[10^-1 Liter / Minute, Length[flowProfs]]
 				],
 				{}
 			}
-			];
+		];
 
 		(* Get rounded times *)
-		{frpTimeRoundedAssociation,frpTimeRoundedTests} = If[gatherTests,
+		{frpTimeRoundedAssociation, frpTimeRoundedTests} = If[gatherTests,
 			RoundOptionPrecision[
 				frpTimeAssociation,
 				flowProfs,
-				Table[10^0 Minute,Length[flowProfs]],
-				Output->{Result,Tests}
-				],
+				Table[10^0 Minute, Length[flowProfs]],
+				Output -> {Result, Tests}
+			],
 			{
 				RoundOptionPrecision[
 					frpTimeAssociation,
 					flowProfs,
-					Table[10^0 Minute,Length[flowProfs]]
+					Table[10^0 Minute, Length[flowProfs]]
 				],
 				{}
 			}
-			];
+		];
 
 		(* Rebuid the Flow Rate profile association by replacing the orginal values with the rounded values *)
 		roundedFlowRateProfileOptions = Association@MapThread[
-			Function[{optionName,flowRatePositions,timePositions},
-				optionName -> If[MatchQ[Lookup[optionsAssociation,optionName],_List],
+			Function[{optionName, flowRatePositions, timePositions},
+				optionName -> If[MatchQ[Lookup[optionsAssociation, optionName], _List],
 					ReplacePart[
-						Lookup[optionsAssociation,optionName],
+						Lookup[optionsAssociation, optionName],
 						Join[
 							MapThread[
 								Rule,
-								{flowRatePositions,Lookup[frpFlowRoundedAssociation,optionName]}
+								{flowRatePositions, Lookup[frpFlowRoundedAssociation, optionName]}
 							],
 							MapThread[
 								Rule,
-								{timePositions,Lookup[frpTimeRoundedAssociation,optionName]}
+								{timePositions, Lookup[frpTimeRoundedAssociation, optionName]}
 							]
 						]
 					],
 					ReplacePart[
-						ToList[Lookup[optionsAssociation,optionName]],
+						ToList[Lookup[optionsAssociation, optionName]],
 						Join[
 							MapThread[
 								Rule,
-								{flowRatePositions,Lookup[frpFlowRoundedAssociation,optionName]}
+								{flowRatePositions, Lookup[frpFlowRoundedAssociation, optionName]}
 							],
 							MapThread[
 								Rule,
-								{timePositions,Lookup[frpTimeRoundedAssociation,optionName]}
+								{timePositions, Lookup[frpTimeRoundedAssociation, optionName]}
 							]
 						]
 					][[1]]
 				]
 			],
-			{flowProfs,frpFlowPositions,frpTimePositions}
+			{flowProfs, frpFlowPositions, frpTimePositions}
 		];
 
 		(*The rest of the options are singletons*)
-		{singletonRoundedAssociations,singletonRoundedTests} = If[gatherTests,
-			RoundOptionPrecision[
-			optionsAssociation,
-			{
-				RotationRate,
-				EvaporationPressure,
-				PressureRampTime,
-				EvaporationTemperature,
-				CondenserTemperature,
-				EquilibrationTime,
-				EvaporationTime
-			},
-			{
-				10^0  * RPM,
-				5 * 10^-1 * Milli * Bar,
-				10^-1 * Second,
-				10^0  * Celsius,
-				10^0  * Celsius,
-				10^-1 * Second,
-				10^-1 * Second
-			},
-			Output -> {Result,Tests}
-		],
-		{
+		{singletonRoundedAssociations, singletonRoundedTests} = If[gatherTests,
 			RoundOptionPrecision[
 				optionsAssociation,
 				{
@@ -1374,88 +1385,69 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 					EvaporationTime
 				},
 				{
-					10^0  * RPM,
+					10^0 * RPM,
 					5 * 10^-1 * Milli * Bar,
 					10^-1 * Second,
-					10^0  * Celsius,
-					10^0  * Celsius,
+					10^0 * Celsius,
+					10^0 * Celsius,
 					10^-1 * Second,
 					10^-1 * Second
 				},
-				Output -> Result
+				Output -> {Result, Tests}
 			],
-			{}
+			{
+				RoundOptionPrecision[
+					optionsAssociation,
+					{
+						RotationRate,
+						EvaporationPressure,
+						PressureRampTime,
+						EvaporationTemperature,
+						CondenserTemperature,
+						EquilibrationTime,
+						EvaporationTime
+					},
+					{
+						10^0 * RPM,
+						5 * 10^-1 * Milli * Bar,
+						10^-1 * Second,
+						10^0 * Celsius,
+						10^0 * Celsius,
+						10^-1 * Second,
+						10^-1 * Second
+					},
+					Output -> Result
+				],
+				{}
 			}
 		];
 
-	(* Join all rounded associations together *)
-	allRoundedOptionsAssociation = Join[
-		optionsAssociation,
-		singletonRoundedAssociations,
-		roundedFlowRateProfileOptions
+		(* Join all rounded associations together *)
+		allRoundedOptionsAssociation = Join[
+			optionsAssociation,
+			singletonRoundedAssociations,
+			roundedFlowRateProfileOptions
 
 		];
 
-	allRoundingTests = Join[
-		frpFlowRoundedTests,
-		singletonRoundedTests,
-		frpTimeRoundedTests
+		allRoundingTests = Join[
+			frpFlowRoundedTests,
+			singletonRoundedTests,
+			frpTimeRoundedTests
 		];
 
-	(* Return the expected tuple of the rounded association and all tests*)
-	{allRoundedOptionsAssociation,allRoundingTests}
+		(* Return the expected tuple of the rounded association and all tests*)
+		{allRoundedOptionsAssociation, allRoundingTests}
 	];
 
 	(* - Check that time is available on the instrument - *)
 
 	(* These are the times that are allowed. Stash them so we may look them up below in the MapThread *)
 	allowedVacuumEvaporationTimeSettings = Join[
-		Range[1 Minute,15 Minute,1 Minute],
-		Range[20 Minute,2 Hour,5 Minute],
-		Range[135 Minute,4 Hour,15 Minute],
-		Range[4.5 Hour,48 Hour,0.5 Hour]
-	];
-
-	(* Check each index for a conflict between RinseSolution and RinseVolume *)
-	rinseVolumeMismatches = MapThread[
-		Function[
-			{rinseSol,rinseVol,sampleObject},
-			If[
-				Or[
-					(* If RinseSolution -> False but an option value was given for the option *)
-					MatchQ[rinseSol,False|Null] && !MatchQ[rinseVol,Null|Automatic],
-
-					(* OR If RinseSolution -> True but an option value was given as Null *)
-					MatchQ[rinseSol,True] && MatchQ[rinseVol,Null]
-				],
-				{{rinseSol,rinseVol},sampleObject},
-				Nothing
-			]
-		],
-		{Lookup[roundedEvaporationOptions,RinseSolution],Lookup[roundedEvaporationOptions,RinseVolume],ToList[simulatedSamples]}
-	];
-
-	(* Transpose our result if there were mismatches. *)
-	{rinseVolMismatchOptions,rinseVolContainerMismatchInputs} = If[MatchQ[rinseVolumeMismatches,{}],
-		{{},{}},
-		Transpose[rinseVolumeMismatches]
-	];
-
-	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
-	rinseVolInvalidOptions = If[Length[rinseVolMismatchOptions]>0,
-		Message[Error::RinseMismatch,rinseVolMismatchOptions,ObjectToString[rinseVolContainerMismatchInputs,Cache->simulatedCache]];
-
-		(* Store the errant options for later InvalidOption checks *)
-		{RinseSolution, RinseVolume},
-
-		(* No errors so just initialize the variable to a list for joining later *)
-		{}
-	];
-
-	(* Build a test for whether BumpTrapSampleContainer was provided even though MeasureDensity -> False *)
-	rinseVolTest = Test["The options RinseSolution and RinseVolume do not contradict each other. If RinseSolution is Null, RinseVolume cannot point to a volume. If RinseSolution is True, RinseVolume may not be Null:",
-		rinseVolInvalidOptions,
-		{}
+		Range[1 Minute, 15 Minute, 1 Minute],
+		Range[20 Minute, 2 Hour, 5 Minute],
+		Range[135 Minute, 4 Hour, 15 Minute],
+		Range[4.5 Hour, 48 Hour, 0.5 Hour]
 	];
 
 	(* Stash the list of options that are VacuumCentrifuge Specific *)
@@ -1469,14 +1461,10 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 	rotoVapExclusiveOptions = {
 		EvaporationFlask,
 		CondenserTemperature,
-		RinseSolution,
-		RinseVolume,
 		RecoupBumpTrap,
 		BumpTrapRinseSolution,
 		BumpTrapRinseVolume,
 		BumpTrapSampleContainer,
-		SaveSolventWaste,
-		WasteContainer,
 		RecoupCondensate,
 		CondensateSampleContainer
 	};
@@ -1487,23 +1475,50 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 	};
 
 	(* Pull out the Racks associated with the TurboVap instruments from the packet *)
-	turboInst = Cases[cache, ObjectP[Model[Instrument,Evaporator,"TurboVap LV Evaporator"]]];
+	turboInst = Cases[cache, ObjectP[Model[Instrument, Evaporator, "TurboVap LV Evaporator"]]];
 
-	containerPacks = Cases[cache,ObjectP[{Model[Container,Vessel],Object[Container,Vessel]}]];
+	containerPacks = Cases[cache, ObjectP[{Model[Container, Vessel], Object[Container, Vessel]}]];
 
 	(* Pull out all possiblecrotovap container packets. We only want connectors with a 24/40 Thread*)
-	rotoVapContainerPackets = Cases[containerPacks,KeyValuePattern[Connectors -> ListableP[{_,_,"24/40",_,_,_}]]];
+	rotoVapContainerPackets = Cases[containerPacks, KeyValuePattern[Connectors -> ListableP[{_, _, "24/40", _, _, _}]]];
 
 	(* Separate the rotovap packets into pear shaped flasks and the round bottom flasks *)
-	rotoPearContainerPackets = Cases[rotoVapContainerPackets,KeyValuePattern[Name -> _?(StringMatchQ[#, ___ ~~ "Pear" ~~ ___] &)]];
-	rotoRoundContainerPackets = Sort[Cases[rotoVapContainerPackets,KeyValuePattern[Name -> _?(StringMatchQ[#, ___ ~~ "Round" ~~ ___] &)]]];
+	rotoPearContainerPackets = Join[
+		(* We are doing two Cases, one for container objects and another for container models. Then joining them together in a list *)
+		Cases[rotoVapContainerPackets, KeyValuePattern[ModelName -> _?(StringMatchQ[ToString[#], ___~~"Pear"~~___] &)]],
+		Cases[rotoVapContainerPackets, KeyValuePattern[Name -> _?(StringMatchQ[ToString[#], ___~~"Pear"~~___] &)]]
+		];
+
+	rotoRoundContainerPackets = Sort[
+	Join[
+		(* We are doing two Cases, one for container objects and another for container models. Then joining them together in a list *)
+		Cases[rotoVapContainerPackets, KeyValuePattern[ModelName -> _?(StringMatchQ[ToString[#], ___~~"Round"~~___] &)]],
+		Cases[rotoVapContainerPackets, KeyValuePattern[Name -> _?(StringMatchQ[ToString[#], ___~~"Round"~~___] &)]]
+	]
+	];
 
 	(* Pull out all possible rotovap bump trap packets*)
-	allBumpTrapPacks = Cases[cache,ObjectP[Model[Container,BumpTrap]]];
-	rotoBumpTrapPackets = Cases[allBumpTrapPacks,KeyValuePattern[Connectors -> ListableP[{_,_,"24/40",_,_,_}]]];
+	allBumpTrapPacks = Cases[cache, ObjectP[Model[Container, BumpTrap]]];
+	rotoBumpTrapPackets = Cases[allBumpTrapPacks, KeyValuePattern[Connectors -> ListableP[{_, _, "24/40", _, _, _}]]];
 	(*-- RESOLVE EXPERIMENT OPTIONS --*)
 	(* MapThread-ify my options such that we can investigate each option value corresponding to the sample we're resolving around *)
-	mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentEvaporate,roundedEvaporationOptions];
+	mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentEvaporate, roundedEvaporationOptions];
+	mapThreadFriendlyPrepOptions= OptionsHandling`Private`mapThreadOptions[ExperimentEvaporate,resolvedSamplePrepOptions];
+
+	(* Helper: getModelPacket takes an input object or model and fetches the model packet from cache *)
+	getModelPacket[objectInput_]:=Module[{modelFromObject},
+		(* Depending on whether we get the object or its model, we will have to do this in 2 or 1 step(s), repsectively *)
+		If[MatchQ[objectInput, ObjectP[Object[]]],
+			(* TRUE *)
+			(* When our input is an object, we need to first get the model from its packet *)
+			modelFromObject = Download[Lookup[fetchPacketFromFastAssoc[objectInput, fastAssocSimulatedCache], Model], Object];
+			(* Now we can find the model's packet *)
+			fetchPacketFromFastAssoc[modelFromObject, fastAssocSimulatedCache],
+			(* FALSE *)
+			(* Since we already got a model, we can get its packet *)
+			fetchPacketFromFastAssoc[objectInput, fastAssocSimulatedCache]
+		]
+	];
 
 	(* -------- MAP THREAD -------- *)
 	{
@@ -1521,14 +1536,10 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 		(*12*)resolvedBalancingSolutions,
 		(*13*)resolvedEvapFlasks,
 		(*14*)resolvedCondenserTemps,
-		(*15*)resolvedRinseSolutions,
-		(*16*)resolvedRinseVolumes,
 		(*17*)resolvedRecoupTraps,
 		(*18*)resolvedRecoupTrapSolutions,
 		(*19*)resolvedRecoupTrapVolumes,
 		(*20*)resolvedRecoupTrapContainers,
-		(*21*)resolvedSaveWastes,
-		(*22*)resolvedWasteContainers,
 		(*23a*)resolvedRecoupCondensates,
 		(*24a*)resolvedCondensateSampleContainers,
 		(*23b*)resolvedFlowRateProfiles,
@@ -1555,7 +1566,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 		(*44*)incompatibleContainers,
 		(*45*)noVaporPressureErrors
 	} = Transpose@MapThread[
-		Function[{myMapThreadOptions,mySamplePool,myPoolVolume,mySampleComponents,myContainerModel,myPoolContainer(*,myInstrument*)},
+		Function[{myMapThreadOptions, mySamplePool, myPoolVolume, mySampleComponents, myContainerModel, myPoolContainer, mySamplePrepOptions},
 			Module[
 				{
 					evapType,
@@ -1578,14 +1589,10 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 					rotovapOptionVals,
 					evapFlask,
 					condenserTemp,
-					rinseSolution,
-					rinseVolume,
 					recoupTrap,
 					recoupTrapSolution,
 					recoupTrapVolume,
 					recoupTrapContainer,
-					saveWaste,
-					wasteContainer,
 					recoupCondensate,
 					condensateSampleContainer,
 
@@ -1608,14 +1615,10 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 					resolvedEvapContainer,
 					resolvedEvapFlask,
 					resolvedCondenserTemp,
-					resolvedRinseSolution,
-					resolvedRinseVolume,
 					resolvedRecoupTrap,
 					resolvedRecoupTrapSolution,
 					resolvedRecoupTrapVolume,
 					resolvedRecoupTrapContainer,
-					resolvedSaveWaste,
-					resolvedWasteContainer,
 					resolvedRecoupCondensate,
 					resolvedCondensateSampleContainer,
 					resolvedBump,
@@ -1668,7 +1671,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 					impossibleFlowRate,
 					evapTempTooHigh,
 					incompatibleContainer
-				} = ConstantArray[False,15];
+				} = ConstantArray[False, 15];
 
 				(* Store our general options in their variables *)
 				{
@@ -1705,31 +1708,27 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 					vacEvapMethod,
 					bump,
 					balancingSolution
-				} = Lookup[myMapThreadOptions,speedVacExclusiveOptions];
+				} = Lookup[myMapThreadOptions, speedVacExclusiveOptions];
 
 				(* Store our RotoVap specific options *)
 				rotovapOptionVals = {
 					evapFlask,
 					condenserTemp,
-					rinseSolution,
-					rinseVolume,
 					recoupTrap,
 					recoupTrapSolution,
 					recoupTrapVolume,
 					recoupTrapContainer,
-					saveWaste,
-					wasteContainer,
 					recoupCondensate,
 					condensateSampleContainer
-				} = Lookup[myMapThreadOptions,rotoVapExclusiveOptions];
+				} = Lookup[myMapThreadOptions, rotoVapExclusiveOptions];
 
 				(* Store our NitrogenBlower specific options *)
 				nitrogenOptionVals = {
 					flowRateProfile
-					} = Lookup[myMapThreadOptions,nitrogenBlowerExclusiveOptions];
+				} = Lookup[myMapThreadOptions, nitrogenBlowerExclusiveOptions];
 
 				(* Stash the default volume of the sample. If the volume is missing, default to 0. We will have thrown an error above *)
-				mySampVol = Max[Replace[myPoolVolume,Null -> 0*Milli*Liter]];
+				mySampVol = Max[Replace[myPoolVolume, Null -> 0 * Milli * Liter]];
 
 				(* We just want to know roughly what type of solvent (aqueous, organic, mixture) and what boiling points (<50C, 50-90C, 90C) we are dealing with as a whole.
 					So we don't need to be super precise for each sample. *)
@@ -1746,24 +1745,53 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 				];
 
 				(* Roughly figure out the type of solvents we are dealing with. *)
-				solventType = Switch[Download[rootComponentPackets,Object],
+				solventType = Switch[Download[rootComponentPackets, Object],
 
 					(* If all of the samples/liquid stock solution components are water, classify the solvent type as Aqueous *)
 					{WaterModelP..},
-						Aqueous,
+					Aqueous,
 					(* If the samples/liquid stock solution only contains one chemical, classify the solvent type as Organic (this isn't a great system, but we just need to know roughly anyway). *)
-					{ObjectP[{Object[Sample],Model[Sample]}]},
-						Organic,
+					{ObjectP[{Object[Sample], Model[Sample]}]},
+					Organic,
 					(* If the samples/liquid stock solution contains many chemicals, classify the solvent type as Mixture (this isn't a great system, but we just need to know roughly anyway). *)
-					{ObjectP[{Object[Sample],Model[Sample]}]..},
-						Mixture,
+					{ObjectP[{Object[Sample], Model[Sample]}]..},
+					Mixture,
 					(* Otherwise classify it as Mixture. *)
 					_,
-						Mixture
+					Mixture
 				];
 
 				(* get the relative percentages of volumes for the pools *)
-				pooledVolumePercentages = If[NullQ[#], Null, # / Total[Cases[ToList[myPoolVolume], VolumeP]]]& /@ Lookup[mySamplePool, Volume];
+				(* Added check against myPoolVolume being 0 Liter because it threw an error that could halt Scripts *)
+				pooledVolumePercentages = Which[
+					MatchQ[myPoolVolume, {0. Liter}],
+					{Indeterminate},
+					
+					(*if we have only one sample in the pool - the percent is 100%*)
+					Length[mySamplePool]==1,
+					{1},
+					
+					(*we have a pool with more than 1 sample - we actually need to calculate %*)
+					True,
+					Module[{safePoolVolume,componentsVolume},
+						componentsVolume = MapThread[
+							Which[
+								VolumeQ[#1],#1,
+								VolumeQ[Lookup[#2,Volume]],Lookup[#2,Volume],
+								True,Null
+							]&,
+							{Lookup[mySamplePrepOptions,AliquotAmount],mySamplePool}
+						];
+
+						safePoolVolume = If[VolumeQ[myPoolVolume],
+							myPoolVolume,
+							Total@componentsVolume
+						];
+
+						Map[#/safePoolVolume&,componentsVolume]
+					]
+					
+				];
 
 				(* get the combined composition of the pool *)
 				combinedComposition = Join @@ MapThread[
@@ -1787,10 +1815,10 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 				(* Get the boiling points of the samples, if it is known *)
 				knownBoilingPoints = If[
-					MatchQ[Lookup[mySamplePool,BoilingPoint],TemperatureP],
+					MatchQ[Lookup[mySamplePool, BoilingPoint], TemperatureP],
 
 					(* Use the boiling point stashed in the sample *)
-					Lookup[mySamplePool,BoilingPoint],
+					Lookup[mySamplePool, BoilingPoint],
 
 					(* Otherwise pull it out of the components *)
 					Lookup[
@@ -1806,79 +1834,79 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 				resolvedBoilingPoint = Which[
 
 					(* If boiling point(s) are specified, use them *)
-					MatchQ[specifiedBoilingPoints,ListableP[GreaterP[0 Kelvin] | SolventBoilingPointP]],
-						specifiedBoilingPoints,
+					MatchQ[specifiedBoilingPoints, ListableP[GreaterP[0 Kelvin] | SolventBoilingPointP]],
+					specifiedBoilingPoints,
 
 					(* If boiling point is known for all of the samples, use them *)
-					!MemberQ[knownBoilingPoints,Null|$Failed],
-						DeleteDuplicates[knownBoilingPoints],
+					!MemberQ[knownBoilingPoints, Null | $Failed],
+					DeleteDuplicates[knownBoilingPoints],
 
 					(* Otherwise, resolve on what boiling points we do know and on the solvent type *)
 					True,
-						DeleteDuplicates[Flatten[Join[ToList[knownBoilingPoints], ToList[solventType]] /. {Null -> Nothing, $Failed -> Nothing, Aqueous -> High, Organic -> {Medium, High}, Mixture -> {Medium, High}}]]
+					DeleteDuplicates[Flatten[Join[ToList[knownBoilingPoints], ToList[solventType]] /. {Null -> Nothing, $Failed -> Nothing, Aqueous -> High, Organic -> {Medium, High}, Mixture -> {Medium, High}}]]
 				];
 
 				(* Convert the resolvedBoilingPoint to a rough temperature if it is med/high/low *)
-				resBoilingPointToTemp = If[MatchQ[Select[resolvedBoilingPoint,TemperatureQ],Alternatives[Null,{}]],
+				resBoilingPointToTemp = If[MatchQ[Select[resolvedBoilingPoint, TemperatureQ], Alternatives[Null, {}]],
 					Switch[DeleteCases[resolvedBoilingPoint, Null],
 						{Low}, 40 Celsius,
 						{Medium}, 60 Celsius,
 						{High}, 80 Celsius,
 						{Medium, High}, 60 Celsius,
-						___,35 Celsius
+						___, 35 Celsius
 					],
-					Min[Select[resolvedBoilingPoint,TemperatureQ]] (*If there is a temperature specified, use that*)
+					Min[Select[resolvedBoilingPoint, TemperatureQ]] (*If there is a temperature specified, use that*)
 				];
 
 				(* EvaporationType Master Switch*)
 				resolvedType = Which[
 
 					(* User has specified an evaporation type*)
-					MatchQ[evapType,Except[Automatic]],
-						evapType,
+					MatchQ[evapType, Except[Automatic]],
+					evapType,
 
 					(* User has specified an instrument*)
-					MatchQ[evapInstrument,Except[Automatic]],
-						(* Pull the instrument's type *)
-						Switch[evapInstrument,
-							ObjectP[{Object[Instrument,RotaryEvaporator],Model[Instrument,RotaryEvaporator]}],
-								RotaryEvaporation,
-							ObjectP[{Object[Instrument,VacuumCentrifuge],Model[Instrument,VacuumCentrifuge]}],
-								SpeedVac,
-							ObjectP[{Object[Instrument,Evaporator],Model[Instrument,Evaporator]}],
-								NitrogenBlowDown,
-							_,(* Failure Case *)
-								SpeedVac
-						],
+					MatchQ[evapInstrument, Except[Automatic]],
+					(* Pull the instrument's type *)
+					Switch[evapInstrument,
+						ObjectP[{Object[Instrument, RotaryEvaporator], Model[Instrument, RotaryEvaporator]}],
+						RotaryEvaporation,
+						ObjectP[{Object[Instrument, VacuumCentrifuge], Model[Instrument, VacuumCentrifuge]}],
+						SpeedVac,
+						ObjectP[{Object[Instrument, Evaporator], Model[Instrument, Evaporator]}],
+						NitrogenBlowDown,
+						_, (* Failure Case *)
+						SpeedVac
+					],
 
 					(* Determine if speedvac specific options are provided and no other option types are provided*)
 					And[
-						MemberQ[speedVacOptionVals,Except[Automatic|Null|False]],
-						!MemberQ[Join[rotovapOptionVals,nitrogenOptionVals],Except[Automatic|Null|False]]
+						MemberQ[speedVacOptionVals, Except[Automatic | Null | False]],
+						!MemberQ[Join[rotovapOptionVals, nitrogenOptionVals], Except[Automatic | Null | False]]
 					],
-						SpeedVac,
+					SpeedVac,
 
 					(* Determine if rotovap specific options are provided and no other option types are provided*)
 					And[
-						MemberQ[rotovapOptionVals,Except[Automatic|Null|False]],
-						!MemberQ[Join[speedVacOptionVals,nitrogenOptionVals],Except[Automatic|Null|False]]
+						MemberQ[rotovapOptionVals, Except[Automatic | Null | False]],
+						!MemberQ[Join[speedVacOptionVals, nitrogenOptionVals], Except[Automatic | Null | False]]
 					],
-						RotaryEvaporation,
+					RotaryEvaporation,
 
 					(* Determine if nitrogen blower specific options are provided and no other option types are provided*)
 					And[
-						MemberQ[nitrogenOptionVals,Except[Automatic|Null|False]],
-						!MemberQ[Join[speedVacOptionVals,rotovapOptionVals],Except[Automatic|Null|False]]
+						MemberQ[nitrogenOptionVals, Except[Automatic | Null | False]],
+						!MemberQ[Join[speedVacOptionVals, rotovapOptionVals], Except[Automatic | Null | False]]
 					],
-						NitrogenBlowDown,
+					NitrogenBlowDown,
 
 					(* Is the samples volume within the SpeedVac range? 50mL represents the largest compatible SpeedVac container *)
-					Less[mySampVol,50*Milli*Liter],
-						SpeedVac,
+					Less[mySampVol, 50 * Milli * Liter],
+					SpeedVac,
 
 					(* Otherwise default to Rotovap as that can handle the largest range of volumes *)
 					True,
-						RotaryEvaporation
+					RotaryEvaporation
 				];
 
 				(* Based on the master switch, enter option resolution for the specific evaporation types*)
@@ -1895,14 +1923,10 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 					(*10*)resolvedBalancingSolution,
 					(*11*)resolvedEvapFlask,
 					(*12*)resolvedCondenserTemp,
-					(*13*)resolvedRinseSolution,
-					(*14*)resolvedRinseVolume,
 					(*15*)resolvedRecoupTrap,
 					(*16*)resolvedRecoupTrapSolution,
 					(*17*)resolvedRecoupTrapVolume,
 					(*18*)resolvedRecoupTrapContainer,
-					(*19*)resolvedSaveWaste,
-					(*20*)resolvedWasteContainer,
 					(*21*)resolvedRecoupCondensate,
 					(*22*)resolvedCondensateSampleContainer,
 
@@ -1915,10 +1939,10 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 					(* -------- SpeedVac -------- *)
 					SpeedVac, Module[
 						{
-							resInst,specifiedMethodPacket,controlledEvaporation,resMethod,balancingSolutionOption,
-							resBalancingSolution,resMethodPacket,equilibrationTimeOption,evaporationTimeOption,defaultEquilibrationTime,
-							defaultEvaporationTime,resEquilTime,resTime,optionConflicts,defaultedUnnecessaryOptions,resTemp,resInstPacket,resRampTime,
-							resPressure,resFlowRateProfile,newNitrogenOptionVals, noVaporPressure
+							resInst, specifiedMethodPacket, controlledEvaporation, resMethod, balancingSolutionOption,
+							resBalancingSolution, resMethodPacket, equilibrationTimeOption, evaporationTimeOption, defaultEquilibrationTime,
+							defaultEvaporationTime, resEquilTime, resTime, optionConflicts, defaultedUnnecessaryOptions, resTemp, resInstPacket, resRampTime,
+							resPressure, resFlowRateProfile, newNitrogenOptionVals, noVaporPressure
 						},
 
 						(* these error messages are just for rotovap so just set them False for speedvac*)
@@ -1926,10 +1950,10 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 						(* TODO: Change if we get more models of speedvacs in *)
 						(* Get the vacuum centrifuge option, which can either be a model or an object *)
-						resInst = If[MatchQ[evapInstrument,Automatic],
+						resInst = If[MatchQ[evapInstrument, Automatic],
 
 							(* Default to the only model of instrument we have*)
-							Model[Instrument,VacuumCentrifuge,"id:n0k9mGzRal4w"],(*Genevac EZ-2.3 Elite*)
+							Model[Instrument, VacuumCentrifuge, "id:n0k9mGzRal4w"], (*Genevac EZ-2.3 Elite*)
 
 							evapInstrument
 						];
@@ -1937,37 +1961,37 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 						(* TODO: Add an error in case they specified an instrument that isn't a speed vac *)
 
 						(* Stash the packet of the instrument we've resolved to *)
-						resInstPacket = fetchPacketFromFastAssoc[resInst,fastAssocSimulatedCache];
+						resInstPacket = fetchPacketFromFastAssoc[resInst, fastAssocSimulatedCache];
 
 						(* - If the user told us that the sample is likely to bump but selected a method that does not have controlled chamber evacuation,
  							give them a warning and suggest that they use a different method or allow method to be resolved automatically. - *)
 						(* Get the corresponding method packet. (If they didn't specify a method, this will be {}.) *)
-						specifiedMethodPacket = FirstCase[methodPackets,KeyValuePattern[Object->Download[vacEvapMethod, Object]],{}];
+						specifiedMethodPacket = FirstCase[methodPackets, KeyValuePattern[Object -> Download[vacEvapMethod, Object]], {}];
 
 						(* Get the ControlledChamberEvacuation for the method. (This is Null if they didn't specify a method.) *)
-						controlledEvaporation = Lookup[specifiedMethodPacket,ControlledChamberEvacuation,Null];
+						controlledEvaporation = Lookup[specifiedMethodPacket, ControlledChamberEvacuation, Null];
 
 						(* If the user told us that the sample is likely to bump but selected a method that does not have controlled chamber evacuation,
 						 give them a warning and suggest that they use a different method or allow method to be resolved automatically *)
-						bumpMethodConflictWarning = bump&&!controlledEvaporation;
+						bumpMethodConflictWarning = bump && !controlledEvaporation;
 
 						(* Resolve the method *)
-						resMethod = If[MatchQ[vacEvapMethod,ObjectP[Object[Method,VacuumEvaporation]]],
+						resMethod = If[MatchQ[vacEvapMethod, ObjectP[Object[Method, VacuumEvaporation]]],
 							vacEvapMethod,
-							Switch[{DeleteCases[resolvedBoilingPoint,Null],bump,solventType},
-								{{Alternatives[GreaterEqualP[90 Celsius], High] ..},False,Aqueous},Object[Method, VacuumEvaporation, "Aqueous"],
-								{{Alternatives[GreaterEqualP[90 Celsius], High] ..},False,Organic},Object[Method, VacuumEvaporation, "HighBoilingPoint"],
-								{{Alternatives[GreaterEqualP[90 Celsius], High] ..},False,Mixture},Object[Method, VacuumEvaporation, "HPLC"],
-								{{Alternatives[GreaterEqualP[90 Celsius], High] ..},True,Aqueous},Object[Method, VacuumEvaporation, "AqueousHCl"],
-								{{Alternatives[GreaterEqualP[90 Celsius], High] ..},True,Organic},Object[Method, VacuumEvaporation, "AqueousHCl"],
-								{{Alternatives[GreaterEqualP[90 Celsius], High] ..},True,Mixture},Object[Method, VacuumEvaporation, "HPLC"],
-								{{Alternatives[RangeP[50 Celsius, 90 Celsius], Medium] ..},False,_},Object[Method, VacuumEvaporation, "LowBoilingPoint"],
-								{{Alternatives[RangeP[50 Celsius, 90 Celsius], Medium] ..},True,_},Object[Method, VacuumEvaporation, "LowBoilingPointMix"],
-								{{Alternatives[LessP[50 Celsius], Low] ..},_,_},Object[Method, VacuumEvaporation, "VeryLowBoilingPoint"],
-								{{Alternatives[GreaterEqualP[50 Celsius], High,Medium] ..},_,_},Object[Method, VacuumEvaporation, "HighAndLowBoilingPointMix"],
-								{{Alternatives[LessP[90 Celsius], Low,Medium] ..},_,_},Object[Method, VacuumEvaporation, "VeryLowBoilingPointMix"],
-								{{Alternatives[LessP[50 Celsius],GreaterEqualP[90 Celsius], High,Low] ..},_,_},Object[Method, VacuumEvaporation, "HighAndLowBoilingPointMix"],
-								___,Object[Method, VacuumEvaporation, "HighAndLowBoilingPointMix"]
+							Switch[{DeleteCases[resolvedBoilingPoint, Null], bump, solventType},
+								{{Alternatives[GreaterEqualP[90 Celsius], High] ..}, False, Aqueous}, Object[Method, VacuumEvaporation, "Aqueous"],
+								{{Alternatives[GreaterEqualP[90 Celsius], High] ..}, False, Organic}, Object[Method, VacuumEvaporation, "HighBoilingPoint"],
+								{{Alternatives[GreaterEqualP[90 Celsius], High] ..}, False, Mixture}, Object[Method, VacuumEvaporation, "HPLC"],
+								{{Alternatives[GreaterEqualP[90 Celsius], High] ..}, True, Aqueous}, Object[Method, VacuumEvaporation, "AqueousHCl"],
+								{{Alternatives[GreaterEqualP[90 Celsius], High] ..}, True, Organic}, Object[Method, VacuumEvaporation, "AqueousHCl"],
+								{{Alternatives[GreaterEqualP[90 Celsius], High] ..}, True, Mixture}, Object[Method, VacuumEvaporation, "HPLC"],
+								{{Alternatives[RangeP[50 Celsius, 90 Celsius], Medium] ..}, False, _}, Object[Method, VacuumEvaporation, "LowBoilingPoint"],
+								{{Alternatives[RangeP[50 Celsius, 90 Celsius], Medium] ..}, True, _}, Object[Method, VacuumEvaporation, "LowBoilingPointMix"],
+								{{Alternatives[LessP[50 Celsius], Low] ..}, _, _}, Object[Method, VacuumEvaporation, "VeryLowBoilingPoint"],
+								{{Alternatives[GreaterEqualP[50 Celsius], High, Medium] ..}, _, _}, Object[Method, VacuumEvaporation, "HighAndLowBoilingPointMix"],
+								{{Alternatives[LessP[90 Celsius], Low, Medium] ..}, _, _}, Object[Method, VacuumEvaporation, "VeryLowBoilingPointMix"],
+								{{Alternatives[LessP[50 Celsius], GreaterEqualP[90 Celsius], High, Low] ..}, _, _}, Object[Method, VacuumEvaporation, "HighAndLowBoilingPointMix"],
+								___, Object[Method, VacuumEvaporation, "HighAndLowBoilingPointMix"]
 							]
 						];
 
@@ -1978,84 +2002,84 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 						resBalancingSolution = Which[
 
 							(* If the user specified a balancing solution, use that *)
-							MatchQ[balancingSolutionOption,ObjectP[]],
-								balancingSolutionOption,
+							MatchQ[balancingSolutionOption, ObjectP[]],
+							balancingSolutionOption,
 
 							(* If the boiling points are <90C, use methanol*)
-							MatchQ[ToList[resolvedBoilingPoint],{Alternatives[LessP[90 Celsius], Low, Medium] ..}],
-								Model[Sample, "Methanol"],
+							MatchQ[ToList[resolvedBoilingPoint], {Alternatives[LessP[90 Celsius], Low, Medium] ..}],
+							Model[Sample, "Methanol"],
 
 							(* Otherwise, use water *)
 							True,
-								Model[Sample, "Milli-Q water"]
+							Model[Sample, "Milli-Q water"]
 						];
 
 						(* Find the packet that corresponds to the resolved method *)
-						resMethodPacket = FirstCase[methodPackets,KeyValuePattern[Object->Download[resMethod, Object]],{}];
+						resMethodPacket = FirstCase[methodPackets, KeyValuePattern[Object -> Download[resMethod, Object]], {}];
 
 						(* Get the specified equilibration time and evaporation time*)
 						equilibrationTimeOption = equilibrationTime;
 						evaporationTimeOption = evapTime;
 
 						(* Resolve the temperature to Ambient unless specified otherwise *)
-						resTemp = If[MatchQ[evapTemp,TemperatureP],
+						resTemp = If[MatchQ[evapTemp, TemperatureP],
 							evapTemp,
-							25.`*Celsius
+							25.` * Celsius
 						];
 
 						(* Double check if the evaporation temperature selected is outside the range of the instrument *)
 						impossibleEvapTempError = And[
 							(* If the instrument was specified incorrectly, that will be a different error and we can skip this check *)
-							MatchQ[resInst,ObjectP[{Model[Instrument,VacuumCentrifuge],Object[Instrument,VacuumCentrifuge]}]],
+							MatchQ[resInst, ObjectP[{Model[Instrument, VacuumCentrifuge], Object[Instrument, VacuumCentrifuge]}]],
 
 							(* If a valid instrument was provided, make sure the temperature resolved to is between min/max temp of the instrument *)
-							!MatchQ[resTemp,RangeP[Lookup[resInstPacket,MinTemperature],Lookup[resInstPacket,MaxTemperature]]]
+							!MatchQ[resTemp, RangeP[Lookup[resInstPacket, MinTemperature], Lookup[resInstPacket, MaxTemperature]]]
 						];
 
 						(* Get the default equilibration time and evaporation time for the resolved method *)
-						defaultEquilibrationTime = 0*Minute(* TODO: Change the default wait time here if we decide we need a temp equil *);
-						defaultEvaporationTime = Lookup[resMethodPacket,EvaporationTime];
+						defaultEquilibrationTime = 0 * Minute(* TODO: Change the default wait time here if we decide we need a temp equil *);
+						defaultEvaporationTime = Lookup[resMethodPacket, EvaporationTime];
 
 						(* If the user specified an equilibration time, use that. Otherwise, use the default time for the method. *)
-						resTime = If[MatchQ[evaporationTimeOption,TimeP],
+						resTime = If[MatchQ[evaporationTimeOption, TimeP],
 							evaporationTimeOption,
 							defaultEvaporationTime
 						];
 
 						(* If the user specified an equilibration time, use that. Otherwise, use the default time for the method. *)
-						resEquilTime = If[MatchQ[equilibrationTimeOption,TimeP],
+						resEquilTime = If[MatchQ[equilibrationTimeOption, TimeP],
 							equilibrationTimeOption,
 							defaultEquilibrationTime
 						];
 
 						(* Resolve the Ramp Time to the specified value or to the method's value  *)
-						resRampTime = If[MatchQ[rampTime,TimeP],
+						resRampTime = If[MatchQ[rampTime, TimeP],
 							rampTime,
-							Lookup[resMethodPacket,PressureRampTime,1*Hour](*TODO: Potentiall remove this pressure ramp time hardcode *)
+							Lookup[resMethodPacket, PressureRampTime, 1 * Hour](*TODO: Potentiall remove this pressure ramp time hardcode *)
 						];
 
 						(* Resolve the EvaporationPressure to the specified value or to the method's value *)
-						resPressure = If[MatchQ[evapPressure,PressureP],
+						resPressure = If[MatchQ[evapPressure, PressureP],
 							evapPressure,
-							Lookup[resMethodPacket,EvaporationPressure,0*Millibar]
+							Lookup[resMethodPacket, EvaporationPressure, 0 * Millibar]
 						];
 
 						(* Pick out any options that apply to a non-speedvac evaporation type that are NOT Automatic|Null	*)
 						optionConflicts = PickList[
-							Join[{rotationRate},rotoVapExclusiveOptions,nitrogenBlowerExclusiveOptions],
-							Join[{rotationRate},rotovapOptionVals,nitrogenOptionVals],
-							Except[Automatic|Null|False|{Automatic,Automatic,Automatic}|{Automatic}]
+							Join[{rotationRate}, rotoVapExclusiveOptions, nitrogenBlowerExclusiveOptions],
+							Join[{rotationRate}, rotovapOptionVals, nitrogenOptionVals],
+							Except[Automatic | Null | False | {Automatic, Automatic, Automatic} | {Automatic}]
 						];
 
 						(*default FlowRateProfile to Null: necessary since FlowRateProfiles are of the form *)
-						resFlowRateProfile = Replace[flowRateProfile, Automatic ->Null];
+						resFlowRateProfile = Replace[flowRateProfile, Automatic -> Null];
 						newNitrogenOptionVals = ReplacePart[nitrogenOptionVals, 2 -> resFlowRateProfile];
 
 						(* Determine if we need to throw a warning below for this sample pool*)
-						speedVacAmbiguousWarning = !MatchQ[optionConflicts,{}];
+						speedVacAmbiguousWarning = !MatchQ[optionConflicts, {}];
 
 						(* Default any options that are still automatic to Null. Leave user values untouched *)
-						defaultedUnnecessaryOptions = Replace[#, Automatic -> Null]&/@Join[rotovapOptionVals,newNitrogenOptionVals];
+						defaultedUnnecessaryOptions = Replace[#, Automatic -> Null]& /@ Join[rotovapOptionVals, newNitrogenOptionVals];
 
 						{
 							resInst,
@@ -2066,9 +2090,9 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 							resPressure,
 							Replace[rotationRate, Automatic -> Null],
 							resMethod,
-							Lookup[resMethodPacket,ControlledChamberEvacuation],(* This is bump protection *)
+							Lookup[resMethodPacket, ControlledChamberEvacuation], (* This is bump protection *)
 							resBalancingSolution,
-							Sequence@@defaultedUnnecessaryOptions,
+							Sequence @@ defaultedUnnecessaryOptions,
 							optionConflicts,
 							noVaporPressure
 						}
@@ -2077,71 +2101,71 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 					(* -------- Rotary Evaporation -------- *)
 					RotaryEvaporation, Module[
 						{
-							resInst,resTempEquil,resTemp,resCondenserTemp,resPressure,resRampTime,resTime,resEvapFlask,resRotationRate,
-							resRecoupTrap,resRecoupTrapSolution,resRecoupTrapVolume,resRecoupTrapContainer,resRinseVolume,resWasteContainer,
-							optionConflicts,defaultedUnnecessaryOptions,resRinseSamp,resFlowRateProfile,newNitrogenOptionVals,
-							noVaporPressure, evapFlaskMaxVolume, resRecoupCondensate, resCondensateSampleContainer,combinedVaporPressure, vaporPressurePercentages
+							resInst, resTempEquil, resTemp, resCondenserTemp, resPressure, resRampTime, resTime, resEvapFlask, resRotationRate,
+							resRecoupTrap, resRecoupTrapSolution, resRecoupTrapVolume, resRecoupTrapContainer,
+							optionConflicts, defaultedUnnecessaryOptions, resFlowRateProfile, newNitrogenOptionVals,
+							noVaporPressure, evapFlaskMaxVolume, resRecoupCondensate, resCondensateSampleContainer, combinedVaporPressure, vaporPressurePercentages
 						},
 
 						(* Resolve the instrument type *)
-						resInst = Replace[evapInstrument, Automatic -> Model[Instrument,RotaryEvaporator,"id:jLq9jXvmeYxR"]];
+						resInst = Replace[evapInstrument, Automatic -> Model[Instrument, RotaryEvaporator, "id:jLq9jXvmeYxR"]];
 
 						(* Default EquilibrationTime *)
-						resTempEquil = Replace[equilibrationTime, {Automatic -> 5*Minute, Null-> 0 Minute}];
+						resTempEquil = Replace[equilibrationTime, {Automatic -> 5 * Minute, Null -> 0 Minute}];
 
 						(* Default EvaporationTemperature to room temperature; the point of rotovap is you don't heat it high anyway *)
 						(* We don't try to back calculate EvaporationTemperature given a EvaporationPressure - we assume user knows what they are doing when they set EvaporationPressure *)
-						resTemp = Replace[evapTemp, {Automatic|Ambient -> 25.`*Celsius}];
+						resTemp = Replace[evapTemp, {Automatic | Ambient -> 25.` * Celsius}];
 
 						(* Default EvaporationTemperature *)
-						resCondenserTemp = Replace[condenserTemp, {Automatic|Null -> -20.`*Celsius, Ambient -> 25.`*Celsius}];
+						resCondenserTemp = Replace[condenserTemp, {Automatic | Null -> -20.` * Celsius, Ambient -> 25.` * Celsius}];
 
-						{combinedVaporPressure,vaporPressurePercentages}=Module[{pressuresAndPercentages},
+						{combinedVaporPressure, vaporPressurePercentages} = Module[{pressuresAndPercentages},
 							(* Resolve evaporation pressure based on Clausius-Clapeyron equation *)
 							(*  Log P = Constant1 * 1/T + Constant 2 - Constant 1 and Constant 2 varies for different molecules - T_target = resTemp *)
-							pressuresAndPercentages=Map[
+							pressuresAndPercentages = Map[
 								Function[{comp},
-									Module[{compRTVapPressure,compBP,ccEquation,scaledRTVapPressure,scaledConst,scaledBP,scaledResVapPressure,scaledResTemp,
-										solvedVarsRaw,compResVapPressure},
+									Module[{compRTVapPressure, compBP, ccEquation, scaledRTVapPressure, scaledConst, scaledBP, scaledResVapPressure, scaledResTemp,
+										solvedVarsRaw, compResVapPressure},
 										(* Pull out the vapor pressure for the specific component at room temperature *)
-										compRTVapPressure=fastAssocLookup[fastAssocSimulatedCache,comp[[2]],VaporPressure];
+										compRTVapPressure = fastAssocLookup[fastAssocSimulatedCache, comp[[2]], VaporPressure];
 										(* Pull out the boiling point for the specific component *)
-										compBP=fastAssocLookup[fastAssocSimulatedCache,comp[[2]],BoilingPoint];
+										compBP = fastAssocLookup[fastAssocSimulatedCache, comp[[2]], BoilingPoint];
 
 										(* Set up the Clausius-Clapeyron equation *)
 										(* P1 = atmosphere (KNOWN), T1 = compBP *)
 										(* P2 = compRTVapPressure, T2 = 25*Celsius (KNOWN) *)
 										(* P3 = vapPressureToSolve, T3 = resTemp (KNOWN) *)
-										ccEquation={
+										ccEquation = {
 											(* Log(P1/P2) = const*(1/T1-1/T2) *)
-											Log[(QuantityMagnitude[1*Atmosphere,Pascal]/scaledRTVapPressure)]==scaledConst*(1/scaledBP-1/QuantityMagnitude[25*Celsius,Kelvin]),
+											Log[(QuantityMagnitude[1 * Atmosphere, Pascal] / scaledRTVapPressure)] == scaledConst * (1 / scaledBP - 1 / QuantityMagnitude[25 * Celsius, Kelvin]),
 											(* Log(P1/P3) = const*(1/T1-1/T3) *)
-											Log[(QuantityMagnitude[1*Atmosphere,Pascal]/scaledResVapPressure)]==scaledConst*(1/scaledBP-1/scaledResTemp)
+											Log[(QuantityMagnitude[1 * Atmosphere, Pascal] / scaledResVapPressure)] == scaledConst * (1 / scaledBP - 1 / scaledResTemp)
 										};
 										(* Convert everything into consistent unitless numbers, and assign values if we can *)
 										(* Pressure -> Pascal *)
 										(* Temperature -> Kelvin *)
-										scaledBP=If[MatchQ[compBP,TemperatureP],
-											QuantityMagnitude[compBP,Kelvin],
+										scaledBP = If[MatchQ[compBP, TemperatureP],
+											QuantityMagnitude[compBP, Kelvin],
 											scaledBP
 										];
-										scaledRTVapPressure=If[MatchQ[compRTVapPressure,PressureP],
-											QuantityMagnitude[compRTVapPressure,Pascal],
+										scaledRTVapPressure = If[MatchQ[compRTVapPressure, PressureP],
+											QuantityMagnitude[compRTVapPressure, Pascal],
 											scaledRTVapPressure
 										];
-										scaledResTemp=If[MatchQ[resTemp,TemperatureP],
-											QuantityMagnitude[resTemp,Kelvin],
+										scaledResTemp = If[MatchQ[resTemp, TemperatureP],
+											QuantityMagnitude[resTemp, Kelvin],
 											scaledResTemp
 										];
 										(* Solve the equation *)
-										solvedVarsRaw=Quiet[First[Solve[ccEquation],{}]];
+										solvedVarsRaw = Quiet[First[Solve[ccEquation], {}]];
 										(* Extract the solved pressure at given EvaporationTemperature for the current component *)
-										compResVapPressure=(scaledResVapPressure/.solvedVarsRaw)*Pascal;
+										compResVapPressure = (scaledResVapPressure /. solvedVarsRaw) * Pascal;
 										(* Get the percentages and combined pressures as lists *)
-										If[Not[PressureQ[compResVapPressure]]||Not[MatchQ[comp[[1]],VolumePercentP]],
+										If[Not[PressureQ[compResVapPressure]] || Not[MatchQ[comp[[1]], VolumePercentP]],
 											Nothing,
-											With[{compNumber=Unitless[comp[[1]],VolumePercent]/100},
-												{compResVapPressure*compNumber,compNumber}
+											With[{compNumber = Unitless[comp[[1]], VolumePercent] / 100},
+												{compResVapPressure * compNumber, compNumber}
 											]
 										]
 									]
@@ -2149,12 +2173,12 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 								combinedComposition
 							];
 							(* total them together here *)
-							{Total[pressuresAndPercentages[[All,1]]],Total[pressuresAndPercentages[[All,2]]]}
+							{Total[pressuresAndPercentages[[All, 1]]], Total[pressuresAndPercentages[[All, 2]]]}
 						];
 
 						(* if we have not set pressure and there is no vapor pressure for the input sample, then throw an error *)
 						(* threshold we're setting for when we "know" the vapor pressure is if we know the vapor pressure of 70 volume percent of the components (or higher) *)
-						noVaporPressure = MatchQ[evapPressure, Automatic|Null] && (Not[PressureQ[combinedVaporPressure]] || vaporPressurePercentages < 0.7);
+						noVaporPressure = MatchQ[evapPressure, Automatic | Null] && (Not[PressureQ[combinedVaporPressure]] || vaporPressurePercentages < 0.7);
 
 						(* Default EvaporationPressure to 50 Millibar unless a User has provided a value.*)
 						resPressure = Which[
@@ -2171,7 +2195,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 						];
 
 						(* Default PresureRampTime to based on sample volume unless a User has provided a value *)
-						resRampTime = If[!MatchQ[rampTime,Automatic],
+						resRampTime = If[!MatchQ[rampTime, Automatic],
 
 							(* User has specified a value so use it *)
 							rampTime,
@@ -2181,13 +2205,13 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 						];
 
 						(* Default Evaporation Flask *)
-						resEvapFlask = If[!MatchQ[evapFlask,Automatic],
+						resEvapFlask = If[!MatchQ[evapFlask, Automatic],
 
 							(* User has specified a value so use it. Make sure it is big enough and that it has a 24/40 joint*)
 							If[And[
-									Greater[mySampVol,0.5*Lookup[fetchPacketFromFastAssoc[evapFlask,fastAssocSimulatedCache],MaxVolume]],
-									Not[ContainsAny[Lookup[fetchPacketFromFastAssoc[evapFlask,fastAssocSimulatedCache],Connectors][[All,3]],{"24/40"}]]
-								],
+								Greater[mySampVol, 0.5 * Lookup[fetchPacketFromFastAssoc[evapFlask, fastAssocSimulatedCache], MaxVolume]],
+								Not[ContainsAny[Lookup[fetchPacketFromFastAssoc[evapFlask, fastAssocSimulatedCache], Connectors][[All, 3]], {"24/40"}]]
+							],
 
 								(* The volume is great than half the flask, meaning we can't use it *)
 								(
@@ -2199,16 +2223,16 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 								evapFlask
 							],
 
-								(* We should pick a container large enough. The volume of the flask must be 2x the volume of the sample *)
+							(* We should pick a container large enough. The volume of the flask must be 2x the volume of the sample *)
 							(*We will select based on the max volume of all possible rotovap flasks*)
 
-							Module[{sortedRotoPearContainerPackets,potentialContainer},
+							Module[{sortedRotoPearContainerPackets, potentialContainer},
 								(* Sort the found containers by their max volume *)
-								sortedRotoPearContainerPackets=SortBy[rotoPearContainerPackets,Lookup[#,MaxVolume]&];
+								sortedRotoPearContainerPackets = SortBy[rotoPearContainerPackets, Lookup[#, MaxVolume]&];
 								(* try to find if we have a suitable evap that is at least 2x the volume of the sample *)
-								potentialContainer=Lookup[FirstCase[sortedRotoPearContainerPackets,KeyValuePattern[MaxVolume->GreaterEqualP[2*mySampVol]]],Object];
+								potentialContainer = Lookup[FirstCase[sortedRotoPearContainerPackets, KeyValuePattern[MaxVolume -> GreaterEqualP[2 * mySampVol]]], Object];
 								(* return if we found a container, otherwise failure mode *)
-								If[MatchQ[potentialContainer,ObjectP[{Object[Container,Vessel],Model[Container,Vessel]}]],
+								If[MatchQ[potentialContainer, ObjectP[{Object[Container, Vessel], Model[Container, Vessel]}]],
 									potentialContainer,
 									(* The volume is great than half the flask, meaning we can't use it *)
 									(
@@ -2243,7 +2267,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 						];
 
 						(* Default RotationRate to Null unless a User has provided a value. We'll generate a warning for that later *)
-						resRotationRate = If[!MatchQ[rotationRate,Automatic],
+						resRotationRate = If[!MatchQ[rotationRate, Automatic],
 
 							(* User has specified a value so use it *)
 							rotationRate,
@@ -2256,45 +2280,19 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 							]
 						];
 
-						(* Default the rinse solution model *)
-						resRinseSamp = If[MatchQ[rinseSolution,Automatic],
-
-							(* Othwerise default to a solvent *)
-							Model[Sample,"id:54n6evKx00PL"],(*Dichloromethane, Anhydrous*)
-
-							(* Otherwise return the user's value. If it wasn't a valid value, we would've already thrown an error *)
-							rinseSolution
-						];
-
-						(* If RinseSolution is True, we need to determine a volume, otherwise Default Automatic to Null *)
-						resRinseVolume = If[MatchQ[rinseVolume,Automatic],
-
-							If[!NullQ[rinseSolution],
-
-								(* Resolve to something smaller than the container's volume *)
-								Round[(1/3) * Lookup[fetchPacketFromFastAssoc[resEvapFlask,fastAssocSimulatedCache],MaxVolume],1*Milliliter],
-
-								(* Return the user's specified volume. We've check above that if RinseSolution is provided, RinseVolume may not be Null *)
-								Replace[rinseVolume,Automatic -> Null]
-							],
-
-							(* Otherwise use their provided option values. We'll throw errors elsewhere if it's not a compatible volume *)
-							rinseVolume
-						];
-
 						(* RecoupTrap only affects whether we store or discard/cleanup the BumpTrapSampleContainer after transferring and rinsing bump trap *)
 						(* Always default to store the recouped sample from bump trap if no user-value provided *)
-						resRecoupTrap=If[MatchQ[recoupTrap,Except[Automatic]],recoupTrap,True];
+						resRecoupTrap = If[MatchQ[recoupTrap, Except[Automatic]], recoupTrap, True];
 						(* Regardless of the RecoupTrap option, we are always resolving BumpTrapRinseSolution, BumpTrapRinseVolume, and BumpTrapSampleContainer *)
-						{resRecoupTrapSolution,resRecoupTrapVolume,resRecoupTrapContainer}=Module[
-							{resTrapRinseVol,resTrapRinseSamp,resTrapRinseCont},
+						{resRecoupTrapSolution, resRecoupTrapVolume, resRecoupTrapContainer} = Module[
+							{resTrapRinseVol, resTrapRinseSamp, resTrapRinseCont},
 
 							(* Resolve BumpTrapRinseVolume and make sure, if a volume was provided, it's not too big *)
-							resTrapRinseVol=If[MatchQ[recoupTrapVolume,Automatic],
+							resTrapRinseVol = If[MatchQ[recoupTrapVolume, Automatic],
 
 								(* TODO: Work out how this line will resolve, specifically how to get MaxVolume from the bump trap *)
 								(* Base the volume off the bump trap. The bump trap is hard resolved based on which EvapFlask is being used *)
-								Round[((1/8)*Lookup[fetchPacketFromFastAssoc[resEvapFlask,fastAssocSimulatedCache],MaxVolume]),1*Milliliter],
+								Round[((1 / 8) * Lookup[fetchPacketFromFastAssoc[resEvapFlask, fastAssocSimulatedCache], MaxVolume]), 1 * Milliliter],
 
 								(* The user gave us a value, make sure it's not too large for the container we're given *)
 								If[
@@ -2303,29 +2301,31 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 									And[
 
 										(* If we were given a volume *)
-										MatchQ[recoupTrapVolume,VolumeP],
+										MatchQ[recoupTrapVolume, VolumeP],
 
-										(* Followin are error states*)
+										(* Following are error states*)
 										Or[
-											(* Make sure the volume is less than the size of the bump trap *)
-											recoupTrapVolume>200*Milliliter,(* TODO: Remove this hardcode, but at the moment it's the only size bump trap we use *)
+											(* If the volume is greater than the size of the largest bump trap, we must throw an error *)
+											recoupTrapVolume > 200 * Milliliter, (* TODO: Remove this hardcode, but at the moment it's the only size bump trap we use *)
 
-											(* Make sure that volume is less than the evap flask if that's the collection container *)
-											And[
-												MatchQ[recoupTrapContainer,EvaporationFlask],
-												recoupTrapVolume>Lookup[fetchPacketFromFastAssoc[resEvapFlask,fastAssocSimulatedCache],MaxVolume]
+											(* When BumpTrapSampleContainer is the same as EvaporationFlask, we must throw an error if the volume is greater than MaxVolume of that flask *)
+											If[MatchQ[Download[recoupTrapContainer, Object], ObjectReferenceP[Download[resEvapFlask, Object]]],
+												recoupTrapVolume > Lookup[getModelPacket[resEvapFlask], MaxVolume],
+												(* if recoupTrapContainer is different from the evaporation flask, then we are good *)
+												False
 											],
-											(* Or if they provided a container, make sure the volume is less than that containers MaxVolume *)
-											And[
-												MatchQ[recoupTrapContainer,ObjectP[]],
-												recoupTrapVolume>Lookup[recoupTrapContainer,MaxVolume]
+											(* Or if they provided a container, we must throw an error if volume is greater than that containers MaxVolume *)
+											If[MatchQ[recoupTrapContainer, ObjectP[]],
+												recoupTrapVolume > Lookup[getModelPacket[recoupTrapContainer], MaxVolume],
+												(* if recoupTrapContainer is Automatic, then we are good *)
+												False
 											]
 										]
 									],
 
 									(* We've established the volume is too large, stash an error *)
 									(
-										bumpTrapRinseSolutionVolumeError=True;
+										bumpTrapRinseSolutionVolumeError = True;
 										recoupTrapVolume
 									),
 
@@ -2335,23 +2335,17 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 							];
 
 							(* Default the bump trap rinse solution model *)
-							resTrapRinseSamp=If[MatchQ[recoupTrapSolution,Automatic],
+							resTrapRinseSamp = If[MatchQ[recoupTrapSolution, Automatic],
 
-								(* If no bump trap rinse solution was provided, try to use rinse solution *)
-								If[MatchQ[rinseSolution,ObjectP[]],
-
-									rinseSolution,
-
-									(* Othwerise default to a solvent *)
-									Model[Sample,"id:Vrbp1jG80zno"](*Acetone, Reagent Grade*)
-								],
+								(* default to a solvent *)
+								Model[Sample, "id:Vrbp1jG80zno"], (*Acetone, Reagent Grade*)
 
 								(* Otherwise return the user's value. If it wasn't a valid value, we would've already thrown an error *)
 								recoupTrapSolution
 							];
 
 							(* Resolve the RinseContainer *)
-							resTrapRinseCont=If[MatchQ[recoupTrapContainer,Automatic],
+							resTrapRinseCont = If[MatchQ[recoupTrapContainer, Automatic],
 
 								(* Use PreferredContainer on the rinse volume to pick a suitable container for the rinsed solution *)
 								PreferredContainer[resTrapRinseVol],
@@ -2361,7 +2355,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 							];
 
 							(* True here represents RecoupBumpTrap, which we determine at the top of the If statement must be True *)
-							{resTrapRinseSamp,resTrapRinseVol,resTrapRinseCont}
+							{resTrapRinseSamp, resTrapRinseVol, resTrapRinseCont}
 						];
 
 						(* Resolve RecoupCondensate/CondensateSampleContainer *)
@@ -2372,31 +2366,21 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 						(* otherwise just default Automatics to Null *)
 						{resRecoupCondensate, resCondensateSampleContainer} = Switch[{recoupCondensate, condensateSampleContainer},
 							{Except[Automatic], Except[Automatic]}, {recoupCondensate, condensateSampleContainer},
-							{Automatic|False|Null, Automatic|Null}, {False, Null},
+							{Automatic | False | Null, Automatic | Null}, {False, Null},
 							{True, Automatic}, {recoupCondensate, PreferredContainer[mySampVol /. {Null | LessP[5 Milliliter] -> 5 Milliliter}]},
 							{Automatic, ObjectP[{Model[Container], Object[Container]}]}, {True, condensateSampleContainer},
 							{_, _}, {recoupCondensate, condensateSampleContainer} /. {Automatic -> Null}
 						];
 
-						(* Resolve WasteContainer *)
-						resWasteContainer = If[TrueQ[saveWaste],
-
-							(* Pick a preferred container based on the solvent waste flasks size *)
-							PreferredContainer[Lookup[fetchPacketFromFastAssoc[resEvapFlask,fastAssocSimulatedCache],MaxVolume]],
-
-							(* Return the user's specified volume. We've check above that if SaveWaste is True, WasteContainer may not be Null *)
-							Replace[wasteContainer, Automatic -> Null]
-						];
-
 						(* Pick out any options that apply to a non-rotovap evaporation type that are NOT Automatic|Null	*)
 						optionConflicts = PickList[
-							Join[speedVacExclusiveOptions,nitrogenBlowerExclusiveOptions],
-							Join[speedVacOptionVals,nitrogenOptionVals],
-							Except[Automatic|Null|False|{Automatic}|{Automatic,Automatic,Automatic}]
+							Join[speedVacExclusiveOptions, nitrogenBlowerExclusiveOptions],
+							Join[speedVacOptionVals, nitrogenOptionVals],
+							Except[Automatic | Null | False | {Automatic} | {Automatic, Automatic, Automatic}]
 						];
 
 						(* Determine if we need to throw a warning below for this sample pool*)
-						rotovapAmbiguousWarning = !MatchQ[optionConflicts,{}];
+						rotovapAmbiguousWarning = !MatchQ[optionConflicts, {}];
 
 						(*default FlowRateProfile to Null: necessary since FlowRateProfiles are of the form {{},{},{}}*)
 						resFlowRateProfile = Replace[flowRateProfile, Automatic -> Null];
@@ -2404,10 +2388,10 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 						(* Build a list of rules in the form unnecessary option -> defaulted or user value *)
 						defaultedUnnecessaryOptions = MapThread[
-							Function[{optName,optVal},optName -> Replace[optVal, Automatic -> Null]],
+							Function[{optName, optVal}, optName -> Replace[optVal, Automatic -> Null]],
 							{
-								Join[speedVacExclusiveOptions,nitrogenBlowerExclusiveOptions],
-								Join[speedVacOptionVals,newNitrogenOptionVals]
+								Join[speedVacExclusiveOptions, nitrogenBlowerExclusiveOptions],
+								Join[speedVacOptionVals, newNitrogenOptionVals]
 							}
 						];
 
@@ -2419,22 +2403,18 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 							resTime,
 							resPressure,
 							resRotationRate,
-							Lookup[defaultedUnnecessaryOptions,VacuumEvaporationMethod],
-							Lookup[defaultedUnnecessaryOptions,BumpProtection],
-							Lookup[defaultedUnnecessaryOptions,BalancingSolution],
+							Lookup[defaultedUnnecessaryOptions, VacuumEvaporationMethod],
+							Lookup[defaultedUnnecessaryOptions, BumpProtection],
+							Lookup[defaultedUnnecessaryOptions, BalancingSolution],
 							resEvapFlask,
 							resCondenserTemp,
-							resRinseSamp,
-							resRinseVolume,
 							resRecoupTrap,
 							resRecoupTrapSolution,
 							resRecoupTrapVolume,
 							resRecoupTrapContainer,
-							saveWaste,
-							resWasteContainer,
 							resRecoupCondensate,
 							resCondensateSampleContainer,
-							Lookup[defaultedUnnecessaryOptions,FlowRateProfile],
+							Lookup[defaultedUnnecessaryOptions, FlowRateProfile],
 							optionConflicts,
 							noVaporPressure
 						}
@@ -2443,8 +2423,8 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 					(* -------- Nitrogen Blowing -------- *)
 					NitrogenBlowDown, Module[
 						{
-							resInst, resNitrogenInstrumentType,resFRP,resTemp,resTempEquil,nitrogenEvapRate,resTime,resRampTime,resPressure,resRotationRate,
-							optionConflicts,defaultedUnnecessaryOptions, evapContainerMaxVol, noVaporPressure
+							resInst, resNitrogenInstrumentType, resFRP, resTemp, resTempEquil, nitrogenEvapRate, resTime, resRampTime, resPressure, resRotationRate,
+							optionConflicts, defaultedUnnecessaryOptions, evapContainerMaxVol, noVaporPressure
 						},
 
 						(* these error messages are just for rotovap so just set them False for nitrogen blow down *)
@@ -2452,111 +2432,111 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 						(* Resolve the instrument type *)
 						resInst = Which[
-									(* Set to the specified Instrument, if specified *)
-									MatchQ[evapInstrument,Except[Automatic]],
-									evapInstrument,
+							(* Set to the specified Instrument, if specified *)
+							MatchQ[evapInstrument, Except[Automatic]],
+							evapInstrument,
 
-									(* Select the needle dryer if the user specifies 1 FlowRateProfile and the sample is in a 96-well plate*)
-									And[
-										MatchQ[First[Lookup[myContainerModel,Object]],ObjectP[Model[Container,Plate]]],
-										MatchQ[flowRateProfile,Alternatives[Automatic,{{_,_}}]]
-									],
-									Model[Instrument, Evaporator, "id:R8e1PjRDb36j"],
+							(* Select the needle dryer if the user specifies 1 FlowRateProfile and the sample is in a 96-well plate*)
+							And[
+								MatchQ[First[Lookup[myContainerModel, Object]], ObjectP[Model[Container, Plate]]],
+								MatchQ[flowRateProfile, Alternatives[Automatic, {{_, _}}]]
+							],
+							Model[Instrument, Evaporator, "id:R8e1PjRDb36j"],
 
-									(* Select the Tube Dryer if they specify > 1 flow rate profile *)
-									Greater[Length[flowRateProfile], 1],
-									Model[Instrument, Evaporator, "id:kEJ9mqRxKA3p"],
+							(* Select the Tube Dryer if they specify > 1 flow rate profile *)
+							Greater[Length[flowRateProfile], 1],
+							Model[Instrument, Evaporator, "id:kEJ9mqRxKA3p"],
 
-									(* Otherwise, default to the tube dryer *)
-									True,
-									Model[Instrument, Evaporator, "id:kEJ9mqRxKA3p"]
+							(* Otherwise, default to the tube dryer *)
+							True,
+							Model[Instrument, Evaporator, "id:kEJ9mqRxKA3p"]
 						];
 
 						(* Distinguish between the needle dryer and tube dryer *)
 						resNitrogenInstrumentType = If[
-							MatchQ[resInst, ObjectP[{Model[Instrument, Evaporator, "id:R8e1PjRDb36j"],Object[Instrument, Evaporator, "id:xRO9n3vk1DDY"]}]],
+							MatchQ[resInst, ObjectP[{Model[Instrument, Evaporator, "id:R8e1PjRDb36j"], Object[Instrument, Evaporator, "id:xRO9n3vk1DDY"]}]],
 							NeedleDryer,
 							TubeDryer
 						];
 
 						(* Get the evaporation container. If the sample is pooled, it will be the preferred container, otherwise, it is the original container that the sample is in*)
 						evapContainerMaxVol = If[
-								MatchQ[Length[myContainerModel],1], (*sample is not pooled*)
-								First[Lookup[myContainerModel,MaxVolume]],
-								Lookup[myPoolContainer,MaxVolume]
+							MatchQ[Length[myContainerModel], 1], (*sample is not pooled*)
+							First[Lookup[myContainerModel, MaxVolume]],
+							Lookup[myPoolContainer, MaxVolume]
 						];
 
-							If[
-								(* -- The NeedleDryer is selected -- *)
-								MatchQ[resNitrogenInstrumentType,NeedleDryer],
-									{resFRP,resTime} = Module[{flowRates,times},
+						If[
+							(* -- The NeedleDryer is selected -- *)
+							MatchQ[resNitrogenInstrumentType, NeedleDryer],
+							{resFRP, resTime} = Module[{flowRates, times},
 
-										(* TODO: Experimentally verifiy *)
-										nitrogenEvapRate = 1`*Milliliter/Hour;
+								(* TODO: Experimentally verifiy *)
+								nitrogenEvapRate = 1` * Milliliter / Hour;
 
-										(* Resolve the flow rate *)
-										If[
-											(* User specified. Only one FRP can be specified. If there are more, throw an error; we'll generate this later. *)
-											MatchQ[flowRateProfile,Except[Automatic|{Automatic}|{Automatic,Automatic}]],
-												(*Get the evaporation times. If no value specified, set it equal to what is in the FlowRateProfile*)
-												times = If[
-													MatchQ[evapTime,Except[Automatic]],
-													evapTime,
-													Replace[evapTime, Automatic -> Plus@@flowRateProfile[[All,2]]]
-												];
+								(* Resolve the flow rate *)
+								If[
+									(* User specified. Only one FRP can be specified. If there are more, throw an error; we'll generate this later. *)
+									MatchQ[flowRateProfile, Except[Automatic | {Automatic} | {Automatic, Automatic}]],
+									(*Get the evaporation times. If no value specified, set it equal to what is in the FlowRateProfile*)
+									times = If[
+										MatchQ[evapTime, Except[Automatic]],
+										evapTime,
+										Replace[evapTime, Automatic -> Plus @@ flowRateProfile[[All, 2]]]
+									];
 
-												If[
-													(*1 FRP is specified*)
-													MatchQ[Length[flowRateProfile],1],
-														flowRates = Convert[flowRateProfile,{Liter/Minute,Minute}];  (*Convert duration to Minute units*)
+									If[
+										(*1 FRP is specified*)
+										MatchQ[Length[flowRateProfile], 1],
+										flowRates = Convert[flowRateProfile, {Liter / Minute, Minute}];  (*Convert duration to Minute units*)
 
-														(* If the flowRate is high, throw a warning about possible sample splashing *)
-														highFlowRateWarning = If[
-															And[
-																GreaterEqual[mySampVol,0.6*evapContainerMaxVol],
-																Greater[flowRates[[1,1]], 16 Liter/Minute]
-															],
-															True,
-															False
-														],
-
-													(* Otherwise, more than 1 flow rate profile is specified, throw an options conflict warning *)
-												flowRateProfileWarning = True; flowRates = flowRateProfile
+										(* If the flowRate is high, throw a warning about possible sample splashing *)
+										highFlowRateWarning = If[
+											And[
+												GreaterEqual[mySampVol, 0.6 * evapContainerMaxVol],
+												Greater[flowRates[[1, 1]], 16 Liter / Minute]
 											],
+											True,
+											False
+										],
 
-										(* Otherwise, no flow rate profile is provided so we will automatically resolve: set the resTime to what the user-specified or what the sample volume is *)
-										times = If[MatchQ[evapTime,Except[Automatic]],
-											evapTime,
-											Replace[evapTime, Automatic -> SafeRound[Min[48*Hour, mySampVol/(nitrogenEvapRate)],1 Minute]]
-										];
+										(* Otherwise, more than 1 flow rate profile is specified, throw an options conflict warning *)
+										flowRateProfileWarning = True; flowRates = flowRateProfile
+									],
 
-										(* Then switch off intensity based on how large the volume is *)
-										flowRates = If[
-											GreaterEqual[mySampVol,0.6*evapContainerMaxVol],
-									 		{{12.5` Liter/Minute,Convert[times,Minute]}},
-											{{25.` Liter/Minute,Convert[times,Minute]}}
-										];
-								(*Return the resolved flow rate profiles and evaporation times*)
+									(* Otherwise, no flow rate profile is provided so we will automatically resolve: set the resTime to what the user-specified or what the sample volume is *)
+									times = If[MatchQ[evapTime, Except[Automatic]],
+										evapTime,
+										Replace[evapTime, Automatic -> SafeRound[Min[48 * Hour, mySampVol / (nitrogenEvapRate)], 1 Minute]]
+									];
+
+									(* Then switch off intensity based on how large the volume is *)
+									flowRates = If[
+										GreaterEqual[mySampVol, 0.6 * evapContainerMaxVol],
+										{{12.5` Liter / Minute, Convert[times, Minute]}},
+										{{25.` Liter / Minute, Convert[times, Minute]}}
+									];
+									(*Return the resolved flow rate profiles and evaporation times*)
 								];
 
-						(*return the resolved FlowRate profiles, evaporation times, and bath fluids*)
-						{flowRates,times}
-					],
+								(*return the resolved FlowRate profiles, evaporation times, and bath fluids*)
+								{flowRates, times}
+							],
 
 
-					(* -- Otherwise, the TubeDryer is selected -- *)
-					{resFRP,resTime} = Module[{flowRates,times},
-					(* Approximate evpaoration rate for water at 60 C and 3L/min gas flow*)
-						nitrogenEvapRate = 2.5`*Milliliter/Hour;
+							(* -- Otherwise, the TubeDryer is selected -- *)
+							{resFRP, resTime} = Module[{flowRates, times},
+								(* Approximate evpaoration rate for water at 60 C and 3L/min gas flow*)
+								nitrogenEvapRate = 2.5` * Milliliter / Hour;
 
 								(* Resolve the flow rate and EvaporationTimes *)
-							 If[
-								(* The user specified a FRP *)
-								MatchQ[flowRateProfile,Except[Automatic|{Automatic}|{Automatic,Automatic}|{}]],
+								If[
+									(* The user specified a FRP *)
+									MatchQ[flowRateProfile, Except[Automatic | {Automatic} | {Automatic, Automatic} | {}]],
 									If[
 										(* The user specified 1, 2, or 3 FlowRateProfiles *)
-										LessEqual[Length[flowRateProfile],3],
-										flowRates = Convert[flowRateProfile,{Liter/Minute,Minute}],
+										LessEqual[Length[flowRateProfile], 3],
+										flowRates = Convert[flowRateProfile, {Liter / Minute, Minute}],
 
 										(* Otherwise, they specified >3 FlowRateProfiles which the instrument cannot handle, so throw an error*)
 										flowRateProfileWarning = True; flowRates = flowRateProfile
@@ -2564,17 +2544,17 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 									(* Resolve the EvaporationTime*)
 									times = If[
-										MatchQ[evapTime,Except[Automatic|Null]],
+										MatchQ[evapTime, Except[Automatic | Null]],
 										evapTime,
-										Replace[evapTime, Automatic -> Plus@@flowRates[[All,2]]]
+										Replace[evapTime, Automatic -> Plus @@ flowRates[[All, 2]]]
 									];
 
 									(* To avoid sample splashing, check to see if all flow rates are reasonably low for the sample volume in the container. Generally, the sample volume should be < 0.8*Container Max volume *)
 									(* We will only check the first flow rate provided, as over the evaporation run, the sample volume will decrease*)
 									highFlowRateWarning = If[
 										And[
-											GreaterEqual[mySampVol,0.6*evapContainerMaxVol],
-											Greater[flowRates[[1,1]], 3 Liter/Minute]
+											GreaterEqual[mySampVol, 0.6 * evapContainerMaxVol],
+											Greater[flowRates[[1, 1]], 3 Liter / Minute]
 										],
 										True,
 										False
@@ -2583,15 +2563,15 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 									(*Check to see if the Flow Rates are all less than 5.5L/min*)
 									impossibleFlowRate = Which[
 										(* If container model is has a max volume less than 15 mL (or we need to aliquot into a container of this size), we will need to use a 48-position rack, which can support flow rates 0-3.5L/min*)
-										LessEqual[evapContainerMaxVol, 15*Milliliter],
-										If[Or @@ (Greater[#,3.5` Liter/Minute]& /@ flowRates[[All,1]]),
+										LessEqual[evapContainerMaxVol, 15 * Milliliter],
+										If[Or @@ (Greater[#, 3.5` Liter / Minute]& /@ flowRates[[All, 1]]),
 											True,
 											False
 										],
 
 										(* If container model is between 15-50 mL (or we need to aliquot into a container of this size), we will need to use a 24-position rack, which can support flow rates 0-5.5L/min*)
-										LessEqual[evapContainerMaxVol, 50*Milliliter] && GreaterEqual[evapContainerMaxVol, 15*Milliliter],
-										If[Or @@ (Greater[#,5.5` Liter/Minute]& /@ flowRates[[All,1]]),
+										LessEqual[evapContainerMaxVol, 50 * Milliliter] && GreaterEqual[evapContainerMaxVol, 15 * Milliliter],
+										If[Or @@ (Greater[#, 5.5` Liter / Minute]& /@ flowRates[[All, 1]]),
 											True,
 											False
 										],
@@ -2600,42 +2580,42 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 										False
 									],
 
-								(* Otherwise, the user did not specify a FRP *)
-								(* First, resolve the evaporation time *)
-									times = If[MatchQ[evapTime,TimeP],
+									(* Otherwise, the user did not specify a FRP *)
+									(* First, resolve the evaporation time *)
+									times = If[MatchQ[evapTime, TimeP],
 										(*User specified a time so use that value*)
 										evapTime,
 
 										(* Otherwise automatically resolve *)
-										Replace[evapTime, Automatic -> SafeRound[Min[48*Hour, mySampVol/(nitrogenEvapRate)],1 Minute]]
+										Replace[evapTime, Automatic -> SafeRound[Min[48 * Hour, mySampVol / (nitrogenEvapRate)], 1 Minute]]
 									];
 
 									(*Then, resolve the FRPs *)
 									flowRates = If[
-										GreaterEqual[mySampVol,0.6*evapContainerMaxVol],
-									 	{{1.0` Liter/Minute,Convert[(times/2),Minute]},{2.5` Liter/Minute,Convert[(times/2),Minute]}},
-										{{2.0` Liter/Minute,Convert[(times/2),Minute]},{3.5` Liter/Minute,Convert[(times/2),Minute]}}
+										GreaterEqual[mySampVol, 0.6 * evapContainerMaxVol],
+										{{1.0` Liter / Minute, Convert[(times / 2), Minute]}, {2.5` Liter / Minute, Convert[(times / 2), Minute]}},
+										{{2.0` Liter / Minute, Convert[(times / 2), Minute]}, {3.5` Liter / Minute, Convert[(times / 2), Minute]}}
 									]
-							];
+								];
 
 
-						(*return the values for the flowrate, evaporation time, and bath fluid*)
-						{flowRates,times}
-					]
-				];
+								(*return the values for the flowrate, evaporation time, and bath fluid*)
+								{flowRates, times}
+							]
+						];
 
-					(* Check to see if the provided evapTime is the same as the duration specified in the FlowRateProfile *)
+						(* Check to see if the provided evapTime is the same as the duration specified in the FlowRateProfile *)
 						flowRateEvapTimeConflictWarning = If[
-							!MatchQ[SafeRound[Convert[resTime,Minute],10 Minute],SafeRound[Plus@@resFRP[[All,2]],10 Minute]],
+							!MatchQ[SafeRound[Convert[resTime, Minute], 10 Minute], SafeRound[Plus @@ resFRP[[All, 2]], 10 Minute]],
 							True,
 							False
 						];
 
 						(* Default EvaporationTemperature. We always want it to be below the SolventBoilingPoint *)
-						resTemp = Replace[evapTemp, {Automatic -> SafeRound[resBoilingPointToTemp-10 Celsius,1 Celsius], Ambient-> $AmbientTemperature}];
+						resTemp = Replace[evapTemp, {Automatic -> SafeRound[resBoilingPointToTemp - 10 Celsius, 1 Celsius], Ambient -> $AmbientTemperature}];
 
 						(* Default EquilibrationTime *)
-						resTempEquil = Replace[equilibrationTime, Automatic -> 5*Minute];
+						resTempEquil = Replace[equilibrationTime, Automatic -> 5 * Minute];
 
 						(* Default PresureRampTime to Null unless a User has provided a value. We'll generate a warning for that later *)
 						resRampTime = Replace[rampTime, Automatic -> Null];
@@ -2648,16 +2628,16 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 						(* Pick out any options that apply to a non-nitrogen blowing evaporation type that are NOT Automatic|Null	*)
 						optionConflicts = PickList[
-							Join[speedVacExclusiveOptions,rotoVapExclusiveOptions],
-							Join[speedVacOptionVals,rotovapOptionVals],
-							Except[Automatic|Null|False]
+							Join[speedVacExclusiveOptions, rotoVapExclusiveOptions],
+							Join[speedVacOptionVals, rotovapOptionVals],
+							Except[Automatic | Null | False]
 						];
 
 						(* Determine if we need to throw a warning below for this sample pool*)
-						nitrogenAmbiguousWarning = !MatchQ[optionConflicts,{}];
+						nitrogenAmbiguousWarning = !MatchQ[optionConflicts, {}];
 
 						(* Default any options that are still automatic to Null. Leave user values untouched *)
-						defaultedUnnecessaryOptions = Replace[#, Automatic -> Null]&/@Join[speedVacOptionVals,rotovapOptionVals];
+						defaultedUnnecessaryOptions = Replace[#, Automatic -> Null]& /@ Join[speedVacOptionVals, rotovapOptionVals];
 
 						(* Return all the defualted options*)
 						{
@@ -2668,8 +2648,8 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 							resTime,
 							resPressure,
 							resRotationRate,
-							Sequence@@defaultedUnnecessaryOptions[[1;;3]],
-							Sequence@@defaultedUnnecessaryOptions[[4;;]],
+							Sequence @@ defaultedUnnecessaryOptions[[1;;3]],
+							Sequence @@ defaultedUnnecessaryOptions[[4;;]],
 							resFRP,
 							optionConflicts,
 							noVaporPressure
@@ -2693,14 +2673,10 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 							resolvedBalancingSolution,
 							resolvedEvapFlask,
 							resolvedCondenserTemp,
-							resolvedRinseSolution,
-							resolvedRinseVolume,
 							resolvedRecoupTrap,
 							resolvedRecoupTrapSolution,
 							resolvedRecoupTrapVolume,
 							resolvedRecoupTrapContainer,
-							resolvedSaveWaste,
-							resolvedWasteContainer,
 							resolvedRecoupCondensate,
 							resolvedCondensateSampleContainer,
 							resolvedFlowRateProfile,
@@ -2714,7 +2690,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 				resolvedEvapUntilDry = evapUntilDry;
 
 				(* If MaxEvapTime was specified use that (we'll error check later *)
-				resolvedMaxEvapTime = If[MatchQ[maxEvapTime,TimeP],
+				resolvedMaxEvapTime = If[MatchQ[maxEvapTime, TimeP],
 
 					maxEvapTime,
 
@@ -2722,50 +2698,50 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 					If[resolvedEvapUntilDry,
 
 						(* Then default Automatic -> 3x evap time and include ramp time IF SpeedVac or RotoVap *)
-						If[MatchQ[resolvedType,SpeedVac|RotaryEvaporation],
-							Replace[maxEvapTime,Automatic -> 3*(resolvedEvapTime+resolvedRampTime)],
-							Replace[maxEvapTime,Automatic -> 3*(resolvedEvapTime)]
+						If[MatchQ[resolvedType, SpeedVac | RotaryEvaporation],
+							Replace[maxEvapTime, Automatic -> 3 * (resolvedEvapTime + resolvedRampTime)],
+							Replace[maxEvapTime, Automatic -> 3 * (resolvedEvapTime)]
 						],
 
 						(* Otherwise we're not continuously evaporating so just make it equal to evap time and include ramp time IF SpeedVac or RotoVap *)
-						If[MatchQ[resolvedType,SpeedVac|RotaryEvaporation],
-							Replace[maxEvapTime,Automatic -> (resolvedEvapTime+resolvedRampTime)],
-							Replace[maxEvapTime,Automatic -> (resolvedEvapTime)]
+						If[MatchQ[resolvedType, SpeedVac | RotaryEvaporation],
+							Replace[maxEvapTime, Automatic -> (resolvedEvapTime + resolvedRampTime)],
+							Replace[maxEvapTime, Automatic -> (resolvedEvapTime)]
 						]
 					]
 				];
 
-			(*Get the container information for the sample. If it is pooled, used the pooled container. *)
-			containerModelObj = If[
-				MatchQ[Length[myContainerModel],1],
-				First[Lookup[myContainerModel,Object]],
-				Lookup[myPoolContainer,Object]
-			];
+				(*Get the container information for the sample. If it is pooled, used the pooled container. *)
+				containerModelObj = If[
+					MatchQ[Length[myContainerModel], 1],
+					First[Lookup[myContainerModel, Object]],
+					Lookup[myPoolContainer, Object]
+				];
 
-			(* Check to see if the smaple container can fit in at least one of the available turbovap racks *)
-			sampleInTurboCompatibleContainer = ContainsAny[CompatibleFootprintQ[allTurbovapRacks,containerModelObj,ExactMatch -> False],{True}];
+				(* Check to see if the smaple container can fit in at least one of the available turbovap racks *)
+				sampleInTurboCompatibleContainer = ContainsAny[CompatibleFootprintQ[allTurbovapRacks, containerModelObj, ExactMatch -> False], {True}];
 
-			(* Check to see if we are using the TurboVap AND the sample is in a compatible container.  *)
-			(* For now this is only for the TurboVap Tube Dryer Instrument *)
-			incompatibleContainer = If[
-				And[
-					(* We are using the TurboVap*)
-					MatchQ[resolvedEvapInstrument, Alternatives[ObjectP[{Model[Instrument, Evaporator, "id:kEJ9mqRxKA3p"],Object[Instrument, Evaporator, "id:kEJ9mqRxKARz"]}]]],
-					(* The sample is not in a compatible container *)
-					MatchQ[sampleInTurboCompatibleContainer, False]
-				],
-				True,
+				(* Check to see if we are using the TurboVap AND the sample is in a compatible container.  *)
+				(* For now this is only for the TurboVap Tube Dryer Instrument *)
+				incompatibleContainer = If[
+					And[
+						(* We are using the TurboVap*)
+						MatchQ[resolvedEvapInstrument, Alternatives[ObjectP[{Model[Instrument, Evaporator, "id:kEJ9mqRxKA3p"], Object[Instrument, Evaporator, "id:kEJ9mqRxKARz"]}]]],
+						(* The sample is not in a compatible container *)
+						MatchQ[sampleInTurboCompatibleContainer, False]
+					],
+					True,
 
-				(*Otherwise, we are not using the TubeDryer or the sample is in a compatible container*)
-				False
-			];
+					(*Otherwise, we are not using the TubeDryer or the sample is in a compatible container*)
+					False
+				];
 
-			(* Check to see if BoilingPoint is below evaporation temperature *)
-			evapTempTooHigh = If[
-				Greater[resolvedEvapTemp,Min[resBoilingPointToTemp]],
-				True,
-				False
-			];
+				(* Check to see if BoilingPoint is below evaporation temperature *)
+				evapTempTooHigh = If[
+					Greater[resolvedEvapTemp, Min[resBoilingPointToTemp]],
+					True,
+					False
+				];
 
 				(* Gather MapThread results *)
 				{
@@ -2784,14 +2760,10 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 					(*12*)resolvedBalancingSolution,
 					(*13*)resolvedEvapFlask,
 					(*14*)resolvedCondenserTemp,
-					(*15*)resolvedRinseSolution,
-					(*16*)resolvedRinseVolume,
 					(*17*)resolvedRecoupTrap,
 					(*18*)resolvedRecoupTrapSolution,
 					(*19*)resolvedRecoupTrapVolume,
 					(*20*)resolvedRecoupTrapContainer,
-					(*21*)resolvedSaveWaste,
-					(*22*)resolvedWasteContainer,
 					(*23a*)resolvedRecoupCondensate,
 					(*24a*)resolvedCondensateSampleContainer,
 					(*23b*)resolvedFlowRateProfile,
@@ -2822,7 +2794,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 		],
 
 		(* MapThread over our index-matched lists *)
-		{mapThreadFriendlyOptions,pooledSamplePackets,poolVolumes,pooledSampleComponentPackets,pooledSampleContainerModelPackets,poolContainerPackets}
+		{mapThreadFriendlyOptions, pooledSamplePackets, poolVolumes, pooledSampleComponentPackets, pooledSampleContainerModelPackets, poolContainerPackets, mapThreadFriendlyPrepOptions}
 	];
 
 	(* Pull Email, Upload and Name options from the expanded Options *)
@@ -2840,31 +2812,31 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 	];
 
 	(* Resolve Post Processing Options *)
-	resolvedPostProcessingOptions=resolvePostProcessingOptions[myOptions];
+	resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions];
 
 	(* - Validate the Name option - *)
 
 	(* Check if the name is used already. We will only make one protocol, so don't need to worry about appending index. *)
-	nameValidBool=TrueQ[DatabaseMemberQ[Append[Object[Protocol, VacuumEvaporation], nameOption]]];
+	nameValidBool = TrueQ[DatabaseMemberQ[Append[Object[Protocol, VacuumEvaporation], nameOption]]];
 
 	(* If the name is invalid, will add it to the list if invalid options later *)
-	nameOptionInvalid=If[nameValidBool,
+	nameOptionInvalid = If[nameValidBool,
 		Name,
 		Nothing
 	];
 
-	nameUniquenessTest=If[nameValidBool,
+	nameUniquenessTest = If[nameValidBool,
 
 		(* Give a failing test or throw a message if the user specified a name that is in use *)
 		If[gatherTests,
-			Test["The specified name is unique.",False,True],
-			Message[Error::DuplicateName,Object[Protocol, VacuumEvaporation]];
+			Test["The specified name is unique.", False, True],
+			Message[Error::DuplicateName, Object[Protocol, VacuumEvaporation]];
 			Nothing
 		],
 
 		(* Give a passing test or do nothing otherwise. If the user did not specify a name, do nothing since this test is irrelevant. *)
 		If[gatherTests && !NullQ[nameOption],
-			Test["The specified name is unique.",False,True],
+			Test["The specified name is unique.", False, True],
 			Nothing
 		]
 	];
@@ -2897,7 +2869,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 	(* generate the PulseSequenceSpecified warnings *)
 	impossibleEvapTempErrorsTests = If[gatherTests,
-		Module[{failingSamples,failingInstruments,passingSamples,passingInstruments,failingSampleTests, passingSampleTests},
+		Module[{failingSamples, failingInstruments, passingSamples, passingInstruments, failingSampleTests, passingSampleTests},
 
 			(* get the inputs that fail this test *)
 			failingSamples = PickList[simulatedSamples, impossibleEvapTempErrors];
@@ -2909,7 +2881,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", an evaporation temperature was provided that was within the instruments " <> ObjectToString[failingInstruments, Cache -> simulatedCache] <> "possible temperature range:",
+				Test["For the provided samples "<>ObjectToString[failingSamples, Cache -> simulatedCache]<>", an evaporation temperature was provided that was within the instruments "<>ObjectToString[failingInstruments, Cache -> simulatedCache]<>"possible temperature range:",
 					True,
 					False
 				],
@@ -2918,7 +2890,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", an evaporation temperature was provided that was within the instruments " <> ObjectToString[passingInstruments, Cache -> simulatedCache] <> "possible temperature range:",
+				Test["For the provided samples "<>ObjectToString[passingSamples, Cache -> simulatedCache]<>", an evaporation temperature was provided that was within the instruments "<>ObjectToString[passingInstruments, Cache -> simulatedCache]<>"possible temperature range:",
 					True,
 					True
 				],
@@ -2937,46 +2909,46 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 		Nothing
 	];
 
-		(* throw a message if the specified Evaporationflask is too small or does not have the proper connection joint *)
-		If[MemberQ[primaryEvaporationContainerConflictErrors, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-			Message[Error::EvaporateEvapFlaskIncompatible, PickList[resolvedEvapFlasks, primaryEvaporationContainerConflictErrors], ObjectToString[PickList[simulatedSamples, primaryEvaporationContainerConflictErrors], Cache -> simulatedCache]]
-		];
+	(* throw a message if the specified Evaporationflask is too small or does not have the proper connection joint *)
+	If[MemberQ[primaryEvaporationContainerConflictErrors, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
+		Message[Error::EvaporateEvapFlaskIncompatible, PickList[resolvedEvapFlasks, primaryEvaporationContainerConflictErrors], ObjectToString[PickList[simulatedSamples, primaryEvaporationContainerConflictErrors], Cache -> simulatedCache]]
+	];
 
-		(* generate the error *)
-		primaryEvaporationContainerConflictTests = If[gatherTests,
-			Module[{failingSamples,failingFlasks,passingSamples,passingFlasks, passingSampleTests,failingSampleTests},
+	(* generate the error *)
+	primaryEvaporationContainerConflictTests = If[gatherTests,
+		Module[{failingSamples, failingFlasks, passingSamples, passingFlasks, passingSampleTests, failingSampleTests},
 
-				(* get the inputs that fail this test *)
-				failingSamples = PickList[simulatedSamples, primaryEvaporationContainerConflictErrors];
-				failingFlasks = PickList[resolvedEvapFlasks, primaryEvaporationContainerConflictErrors];
+			(* get the inputs that fail this test *)
+			failingSamples = PickList[simulatedSamples, primaryEvaporationContainerConflictErrors];
+			failingFlasks = PickList[resolvedEvapFlasks, primaryEvaporationContainerConflictErrors];
 
-				(* get the inputs that pass this test *)
-				passingSamples = PickList[simulatedSamples, primaryEvaporationContainerConflictErrors, False];
-				passingFlasks = PickList[resolvedEvapFlasks, primaryEvaporationContainerConflictErrors, False];
+			(* get the inputs that pass this test *)
+			passingSamples = PickList[simulatedSamples, primaryEvaporationContainerConflictErrors, False];
+			passingFlasks = PickList[resolvedEvapFlasks, primaryEvaporationContainerConflictErrors, False];
 
-				(* create a test for the non-passing inputs *)
-				failingSampleTests = If[Length[failingSamples] > 0,
-					Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", an EvaporationFlask, " <> ObjectToString[failingFlasks, Cache -> simulatedCache]<> " was provided that has a MaxVolume at least 2x tha of the sample volume and has a 24/40 connector:",
-						True,
-						False
-					],
-					Nothing
-				];
+			(* create a test for the non-passing inputs *)
+			failingSampleTests = If[Length[failingSamples] > 0,
+				Test["For the provided samples "<>ObjectToString[failingSamples, Cache -> simulatedCache]<>", an EvaporationFlask, "<>ObjectToString[failingFlasks, Cache -> simulatedCache]<>" was provided that has a MaxVolume at least 2x tha of the sample volume and has a 24/40 connector:",
+					True,
+					False
+				],
+				Nothing
+			];
 
-				(* create a test for the passing inputs *)
-				passingSampleTests = If[Length[passingSamples] > 0,
-					Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <>  ", an EvaporationFlask, " <> ObjectToString[passingFlasks, Cache -> simulatedCache]<> " was provided that has a MaxVolume at least 2x tha of the sample volume and has a 24/40 connector:",
-						True,
-						True
-					],
-					Nothing
-				];
+			(* create a test for the passing inputs *)
+			passingSampleTests = If[Length[passingSamples] > 0,
+				Test["For the provided samples "<>ObjectToString[passingSamples, Cache -> simulatedCache]<>", an EvaporationFlask, "<>ObjectToString[passingFlasks, Cache -> simulatedCache]<>" was provided that has a MaxVolume at least 2x tha of the sample volume and has a 24/40 connector:",
+					True,
+					True
+				],
+				Nothing
+			];
 
-				(* return the created tests *)
-				{passingSampleTests, failingSampleTests}
+			(* return the created tests *)
+			{passingSampleTests, failingSampleTests}
 
-			]
-		];
+		]
+	];
 
 	(* Stash the failing options related to this error *)
 	primaryEvaporationContainerConflictOptions = If[MemberQ[primaryEvaporationContainerConflictErrors, True],
@@ -2987,12 +2959,12 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 	(* throw a warning message if more FRPs are specified than allowed by the instrument  *)
 	If[MemberQ[flowRateProfileWarnings, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Error::FlowRateProfileLength,ObjectToString[PickList[simulatedSamples, flowRateProfileWarnings], Cache -> simulatedCache]]
+		Message[Error::FlowRateProfileLength, ObjectToString[PickList[simulatedSamples, flowRateProfileWarnings], Cache -> simulatedCache]]
 	];
 
 	(* -- generate the flowRateProfileTests warnings -- *)
 	flowRateProfileWarningTests = If[gatherTests,
-		Module[{failingSamples,failingInstruments,passingSamples,passingInstruments,failingSampleTests, passingSampleTests},
+		Module[{failingSamples, failingInstruments, passingSamples, passingInstruments, failingSampleTests, passingSampleTests},
 
 			(* get the inputs that fail this test *)
 			failingSamples = PickList[simulatedSamples, flowRateProfileWarnings];
@@ -3004,7 +2976,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the number of FlowRate Profiles specified for " <> ObjectToString[failingInstruments, Cache -> simulatedCache] <> "is greater than the instrument's programmable capabilitites:",
+				Test["For the provided samples "<>ObjectToString[failingSamples, Cache -> simulatedCache]<>", the number of FlowRate Profiles specified for "<>ObjectToString[failingInstruments, Cache -> simulatedCache]<>"is greater than the instrument's programmable capabilitites:",
 					True,
 					False
 				],
@@ -3013,7 +2985,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the number of FlowRate Profiles specified for " <> ObjectToString[passingInstruments, Cache -> simulatedCache] <> "is within the instrument's programmable capabilitites:",
+				Test["For the provided samples "<>ObjectToString[passingSamples, Cache -> simulatedCache]<>", the number of FlowRate Profiles specified for "<>ObjectToString[passingInstruments, Cache -> simulatedCache]<>"is within the instrument's programmable capabilitites:",
 					True,
 					True
 				],
@@ -3039,7 +3011,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 	(* -- generate the HighFlowRate warnings tests -- *)
 	highFlowRateWarningTests = If[gatherTests,
-		Module[{failingSamples,failingFRPs,passingSamples,passingFRPs,failingSampleTests, passingSampleTests},
+		Module[{failingSamples, failingFRPs, passingSamples, passingFRPs, failingSampleTests, passingSampleTests},
 
 			(* get the inputs that fail this test *)
 			failingSamples = PickList[simulatedSamples, highFlowRateWarnings];
@@ -3051,7 +3023,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the specified FlowRate" <> ObjectToString[failingFRPs, Cache -> simulatedCache] <> "is high and may result in sample splashing and contamination:",
+				Test["For the provided samples "<>ObjectToString[failingSamples, Cache -> simulatedCache]<>", the specified FlowRate"<>ObjectToString[failingFRPs, Cache -> simulatedCache]<>"is high and may result in sample splashing and contamination:",
 					True,
 					False
 				],
@@ -3060,7 +3032,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the specified FlowRate" <> ObjectToString[passingFRPs, Cache -> simulatedCache] <> "is low engough to prevent sample splashing and contamination:",
+				Test["For the provided samples "<>ObjectToString[passingSamples, Cache -> simulatedCache]<>", the specified FlowRate"<>ObjectToString[passingFRPs, Cache -> simulatedCache]<>"is low engough to prevent sample splashing and contamination:",
 					True,
 					True
 				],
@@ -3081,12 +3053,12 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 	(* -- throw an error message if the total duration specified in the flow rate profile is different from the specified EvaporationTime -- *)
 	If[MemberQ[flowRateEvapTimeConflictWarnings, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Error::EvaporationFlowRateProfileTimeConflict, PickList[resolvedFlowRateProfiles, flowRateEvapTimeConflictWarnings], ObjectToString[PickList[simulatedSamples, flowRateEvapTimeConflictWarnings], Cache -> simulatedCache],PickList[resolvedEvapTimes, flowRateEvapTimeConflictWarnings]]
+		Message[Error::EvaporationFlowRateProfileTimeConflict, PickList[resolvedFlowRateProfiles, flowRateEvapTimeConflictWarnings], ObjectToString[PickList[simulatedSamples, flowRateEvapTimeConflictWarnings], Cache -> simulatedCache], PickList[resolvedEvapTimes, flowRateEvapTimeConflictWarnings]]
 	];
 
 	(* generate the HighFlowRate warnings tests *)
 	flowRateEvapTimeConflictTests = If[gatherTests,
-		Module[{failingSamples,failingFRPs,passingSamples,passingFRPs,failingSampleTests, passingSampleTests,failingEvapTimes,passingEvapTimes},
+		Module[{failingSamples, failingFRPs, passingSamples, passingFRPs, failingSampleTests, passingSampleTests, failingEvapTimes, passingEvapTimes},
 
 			(* get the inputs that fail this test *)
 			failingSamples = PickList[simulatedSamples, flowRateEvapTimeConflictWarnings];
@@ -3100,7 +3072,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the sum of all the specified durations in the FlowRateProfile" <> ObjectToString[failingFRPs, Cache -> simulatedCache] <> "conflicts with the EvaporationTime," <> ObjectToString[failingEvapTimes, Cache -> simulatedCache] <>":",
+				Test["For the provided samples "<>ObjectToString[failingSamples, Cache -> simulatedCache]<>", the sum of all the specified durations in the FlowRateProfile"<>ObjectToString[failingFRPs, Cache -> simulatedCache]<>"conflicts with the EvaporationTime,"<>ObjectToString[failingEvapTimes, Cache -> simulatedCache]<>":",
 					True,
 					False
 				],
@@ -3109,7 +3081,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the sum of all the specified durations in the FlowRateProfile" <> ObjectToString[passingFRPs, Cache -> simulatedCache] <> "agrees with the EvaporationTime," <> ObjectToString[passingEvapTimes, Cache -> simulatedCache]<>":",
+				Test["For the provided samples "<>ObjectToString[passingSamples, Cache -> simulatedCache]<>", the sum of all the specified durations in the FlowRateProfile"<>ObjectToString[passingFRPs, Cache -> simulatedCache]<>"agrees with the EvaporationTime,"<>ObjectToString[passingEvapTimes, Cache -> simulatedCache]<>":",
 					True,
 					True
 				],
@@ -3124,7 +3096,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 	(* Stash the failing options related to this error *)
 	flowRateEvapTimeConflictOptions = If[MemberQ[flowRateEvapTimeConflictWarnings, True],
-		{FlowRateProfile,EvaporationTime},
+		{FlowRateProfile, EvaporationTime},
 		Nothing
 	];
 
@@ -3135,7 +3107,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 	(* generate the impossibleFlowRate warnings tests *)
 	evapTempTooHighTests = If[gatherTests,
-		Module[{failingSamples,failingEvapTemps,passingSamples,passingEvapTemps,failingSampleTests, passingSampleTests},
+		Module[{failingSamples, failingEvapTemps, passingSamples, passingEvapTemps, failingSampleTests, passingSampleTests},
 
 			(* get the inputs that fail this test *)
 			failingSamples = PickList[simulatedSamples, evapTempTooHighWarnings];
@@ -3147,7 +3119,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the specified EvaporationTemperature" <> ObjectToString[failingEvapTemps, Cache -> simulatedCache] <> "is greater than the resolved sample boiling point:",
+				Test["For the provided samples "<>ObjectToString[failingSamples, Cache -> simulatedCache]<>", the specified EvaporationTemperature"<>ObjectToString[failingEvapTemps, Cache -> simulatedCache]<>"is greater than the resolved sample boiling point:",
 					True,
 					False
 				],
@@ -3156,7 +3128,51 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the specified EvaporationTemperature" <> ObjectToString[passingEvapTemps, Cache -> simulatedCache] <> "is less than the resolved sample boiling point:",
+				Test["For the provided samples "<>ObjectToString[passingSamples, Cache -> simulatedCache]<>", the specified EvaporationTemperature"<>ObjectToString[passingEvapTemps, Cache -> simulatedCache]<>"is less than the resolved sample boiling point:",
+					True,
+					True
+				],
+				Nothing
+			];
+
+			(* return the created tests *)
+			{passingSampleTests, failingSampleTests}
+		]
+	];
+
+	(* Stash the failing options related to this error *)
+	bumpTrapRinseSolutionConflictOptions = If[MemberQ[bumpTrapRinseSolutionVolumeErrors, True],
+		{BumpTrapRinseVolume, BumpTrapSampleContainer},
+		Nothing
+	];
+
+	(*-- throw an error message if the EvaporationTemperature is greater than the resolved Boiling Point  --*)
+	If[MemberQ[bumpTrapRinseSolutionVolumeErrors, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
+		Message[Error::IncompatibleBumpTrapVolume, ObjectToString[PickList[simulatedSamples, bumpTrapRinseSolutionVolumeErrors], Cache -> simulatedCache], PickList[resolvedRecoupTrapVolumes, bumpTrapRinseSolutionVolumeErrors]]
+	];
+
+	(* generate the impossibleFlowRate warnings tests *)
+	bumpTrapRinseSolutionVolumeTests = If[gatherTests,
+		Module[{failingSamples, passingSamples, failingSampleTests, passingSampleTests},
+
+			(* get the inputs that fail this test *)
+			failingSamples = PickList[simulatedSamples, bumpTrapRinseSolutionVolumeErrors];
+
+			(* get the inputs that pass this test *)
+			passingSamples = PickList[simulatedSamples, bumpTrapRinseSolutionVolumeErrors, False];
+
+			(* create a test for the non-passing inputs *)
+			failingSampleTests = If[Length[failingSamples] > 0,
+				Test["For the provided samples "<>ObjectToString[failingSamples, Cache -> simulatedCache]<>", the specified BumpTrapRinseVolume is greater than the MaxVolume of the BumpTrapSampleContainer:",
+					True,
+					False
+				],
+				Nothing
+			];
+
+			(* create a test for the passing inputs *)
+			passingSampleTests = If[Length[passingSamples] > 0,
+				Test["For the provided samples "<>ObjectToString[passingSamples, Cache -> simulatedCache]<>", the specified BumpTrapRinseVolume is less than the MaxVolume of the BumpTrapSampleContainer:",
 					True,
 					True
 				],
@@ -3176,13 +3192,13 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 	(*-- throw an error message if the flow rate is greater the TurboVap's max  --*)
 	If[MemberQ[impossibleFlowRates, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Error::TurboVapFlowRate, PickList[resolvedFlowRateProfiles, impossibleFlowRates],ObjectToString[PickList[simulatedSamples, impossibleFlowRates], Cache -> simulatedCache]]
+		Message[Error::TurboVapFlowRate, PickList[resolvedFlowRateProfiles, impossibleFlowRates], ObjectToString[PickList[simulatedSamples, impossibleFlowRates], Cache -> simulatedCache]]
 	];
 
 
 	(* generate the impossibleFlowRate warnings tests *)
 	impossibleFlowRatesTests = If[gatherTests,
-		Module[{failingSamples,failingFRPs,passingSamples,passingFRPs,failingSampleTests, passingSampleTests},
+		Module[{failingSamples, failingFRPs, passingSamples, passingFRPs, failingSampleTests, passingSampleTests},
 
 			(* get the inputs that fail this test *)
 			failingSamples = PickList[simulatedSamples, impossibleFlowRates];
@@ -3194,7 +3210,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the specified FlowRate" <> ObjectToString[failingFRPs, Cache -> simulatedCache] <> "is beyond the instrument's capabilities:",
+				Test["For the provided samples "<>ObjectToString[failingSamples, Cache -> simulatedCache]<>", the specified FlowRate"<>ObjectToString[failingFRPs, Cache -> simulatedCache]<>"is beyond the instrument's capabilities:",
 					True,
 					False
 				],
@@ -3203,7 +3219,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the specified FlowRate" <> ObjectToString[passingFRPs, Cache -> simulatedCache] <> "is within the instrument's capabilities:",
+				Test["For the provided samples "<>ObjectToString[passingSamples, Cache -> simulatedCache]<>", the specified FlowRate"<>ObjectToString[passingFRPs, Cache -> simulatedCache]<>"is within the instrument's capabilities:",
 					True,
 					True
 				],
@@ -3225,13 +3241,13 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 	(*--Throw an error message if we're doing rotovap, EvaporationPressure is not set, and we can't figure out the vapor pressure of the sample--*)
 	evaporationPressureRequiredOptions = If[Not[gatherTests] && MemberQ[noVaporPressureErrors, True],
 		(
-			Message[Error::CannotComputeEvaporationPressure, ObjectToString[PickList[simulatedSamples, noVaporPressureErrors], Cache -> simulatedCache],PickList[resolvedEvapTemps, noVaporPressureErrors]];
+			Message[Error::CannotComputeEvaporationPressure, ObjectToString[PickList[simulatedSamples, noVaporPressureErrors], Cache -> simulatedCache], PickList[resolvedEvapTemps, noVaporPressureErrors]];
 			{EvaporationPressure}
 		),
 		{}
 	];
 	evaporationPressureRequiredTests = If[gatherTests,
-		Module[{failingSamples,passingSamples,failingSampleTests, passingSampleTests},
+		Module[{failingSamples, passingSamples, failingSampleTests, passingSampleTests},
 
 			(* get the inputs that fail this test *)
 			failingSamples = PickList[simulatedSamples, noVaporPressureErrors];
@@ -3241,7 +3257,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", if using RotaryEvaporation, EvaporationPressure is set, or can be computed from the VaporPressure of the samples' Compositions:",
+				Test["For the provided samples "<>ObjectToString[failingSamples, Cache -> simulatedCache]<>", if using RotaryEvaporation, EvaporationPressure is set, or can be computed from the VaporPressure of the samples' Compositions:",
 					True,
 					False
 				],
@@ -3250,7 +3266,7 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", if using RotaryEvaporation, EvaporationPressure is set, or can be computed from the VaporPressure of the samples' Compositions:",
+				Test["For the provided samples "<>ObjectToString[passingSamples, Cache -> simulatedCache]<>", if using RotaryEvaporation, EvaporationPressure is set, or can be computed from the VaporPressure of the samples' Compositions:",
 					True,
 					True
 				],
@@ -3264,20 +3280,20 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 	];
 
 	(* Extract shared options relevant for aliquotting *)
-	aliquotOptions = KeySelect[samplePrepOptions,And[MatchQ[#,Alternatives@@ToExpression[Options[AliquotOptions][[All,1]]]],MemberQ[Keys[samplePrepOptions],#]]&];
+	aliquotOptions = KeySelect[samplePrepOptions, And[MatchQ[#, Alternatives @@ ToExpression[Options[AliquotOptions][[All, 1]]]], MemberQ[Keys[samplePrepOptions], #]]&];
 	(* Aliquot options for the TurboVap *)
-	{targetContainers,targetVolumes}= Module[{suppliedAliquotBools, suppliedAliquotContainers,
-				suppliedAliquotVolumes, targetAliquotContainers,
-				aliquotVolumes,incompatibleContainerBools,preresolvedAliquotBools},
+	{targetContainers, targetVolumes} = Module[{suppliedAliquotBools, suppliedAliquotContainers,
+		suppliedAliquotVolumes, targetAliquotContainers,
+		aliquotVolumes, incompatibleContainerBools, preresolvedAliquotBools},
 
 		(* Extract list of bools *)
-		suppliedAliquotBools = Lookup[aliquotOptions,Aliquot];
+		suppliedAliquotBools = Lookup[aliquotOptions, Aliquot];
 
 		(* Extract list of supplied aliquot containers *)
-		suppliedAliquotContainers = Lookup[aliquotOptions,AliquotContainer];
+		suppliedAliquotContainers = Lookup[aliquotOptions, AliquotContainer];
 
 		(* Extract list of supplied aliquot volumes *)
-		suppliedAliquotVolumes = Lookup[aliquotOptions,AliquotAmount];
+		suppliedAliquotVolumes = Lookup[aliquotOptions, AliquotAmount];
 
 		(* If the sample's container model is not compatible with the instrument, we may have to aliquot. *)
 		(*For now, this test only applies to the TurboVap, which can only take tubes*)
@@ -3285,9 +3301,9 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 		(*Set aliquot to True if not explicitly specified and we encounter an incompatible container *)
 		preresolvedAliquotBools = MapThread[
-			Function[{incompatibleContainer,suppliedAliquotBool},
+			Function[{incompatibleContainer, suppliedAliquotBool},
 				If[
-					Or[incompatibleContainer, MatchQ[suppliedAliquotBool,True]],
+					Or[incompatibleContainer, MatchQ[suppliedAliquotBool, True]],
 					True,
 					False
 				]
@@ -3296,110 +3312,127 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 		];
 
 		(*If aliquot options are supplied, use those, otherwise resolve for Tube Dryer*)
-			targetAliquotContainers = MapThread[
-				Function[{preresolvedAliquotBool,suppliedAliquotContainer,sampleVolPacket},
+		targetAliquotContainers = MapThread[
+			Function[{preresolvedAliquotBool, suppliedAliquotContainer, sampleVolPacket},
+				Which[
+					(* If aliquoting and user specified a container, use that *)
+					MatchQ[preresolvedAliquotBool, True] && MatchQ[suppliedAliquotContainer, Except[Automatic | Null]],
+					suppliedAliquotContainer,
+
+					(* If aliquoting and no container is specified, resolve based on sample volume*)
+					MatchQ[preresolvedAliquotBool, True] && MatchQ[suppliedAliquotContainer, Alternatives[Automatic | Null]],
 					Which[
-						(* If aliquoting and user specified a container, use that *)
-						MatchQ[preresolvedAliquotBool,True] && MatchQ[suppliedAliquotContainer,Except[Automatic|Null]],
-						suppliedAliquotContainer,
+						(* If sampleVolume < 1.7 mL, then set as  the 2mL tube*)
+						Min[Lookup[sampleVolPacket, Volume]] <= 0.8 * 1.7Milliliter,
+						Model[Container, Vessel, "2mL Tube"],
 
-						(* If aliquoting and no container is specified, resolve based on sample volume*)
-						MatchQ[preresolvedAliquotBool,True] && MatchQ[suppliedAliquotContainer,Alternatives[Automatic|Null]],
-						Which[
-							(* If sampleVolume < 1.7 mL, then set as  the 2mL tube*)
-							Min[Lookup[sampleVolPacket,Volume]] <= 0.8*1.7Milliliter,
-							Model[Container, Vessel, "2mL Tube"],
+						(* If sampleVolume > 1.7 mL and < 15 mL, then set as  the 15mL tube*)
+						Min[Lookup[sampleVolPacket, Volume]] > 0.8 * 1.7Milliliter && Min[Lookup[sampleVolPacket, Volume]] <= 0.8 * 15Milliliter,
+						Model[Container, Vessel, "15mL Tube"],
 
-							(* If sampleVolume > 1.7 mL and < 15 mL, then set as  the 15mL tube*)
-							Min[Lookup[sampleVolPacket,Volume]] > 0.8*1.7Milliliter && Min[Lookup[sampleVolPacket,Volume]] <= 0.8*15Milliliter,
-							Model[Container, Vessel, "15mL Tube"],
-
-							(* If sampleVolume > 15 mL, then set as  the 50mL tube*)
-							True,
-							Model[Container, Vessel, "50mL Tube"]
-							],
-
-						(*Otherwhise, set this to Null since sample is in correct container *)
+						(* If sampleVolume > 15 mL, then set as  the 50mL tube*)
 						True,
-						Null
-					]
-				],
-				{preresolvedAliquotBools,suppliedAliquotContainers,pooledSamplePackets}
-			];
+						Model[Container, Vessel, "50mL Tube"]
+					],
+
+					(*Otherwhise, set this to Null since sample is in correct container *)
+					True,
+					Null
+				]
+			],
+			{preresolvedAliquotBools, suppliedAliquotContainers, pooledSamplePackets}
+		];
 
 		(* If we end up aliquoting and AliquotAmount is not specified, determine an aliquot amount. *)
 		aliquotVolumes = MapThread[
 			Function[
-				{targetAliquotContainer,suppliedAliquotVolume,sampleVolPacket},
+				{targetAliquotContainer, suppliedAliquotVolume, sampleVolPacket},
 				Which[
 					(* Target container is not null, meaning we are aliquoting, and an aliquot volume is specified, so use the specified volume *)
-					MatchQ[targetAliquotContainer,ObjectP[]] && MatchQ[suppliedAliquotVolume, Except[Null|Automatic|{Automatic..}]],
+					MatchQ[targetAliquotContainer, ObjectP[]] && MatchQ[suppliedAliquotVolume, Except[Null | Automatic | {Automatic..}]],
 					suppliedAliquotVolume,
 
 					(* Target container is not null, meaning we are aliquoting, but an aliquot volume is NOT specified, so we resolve based on sample volume *)
-					MatchQ[targetAliquotContainer,ObjectP[]] && MatchQ[suppliedAliquotVolume, Alternatives[Null|Automatic]],
+					MatchQ[targetAliquotContainer, ObjectP[]] && MatchQ[suppliedAliquotVolume, Alternatives[Null | Automatic]],
 					(*Set aliquot volume to the lesser of the sample volume or 0.8*MaxVolume of the vesssel *)
-					Min[0.8*targetAliquotContainer[MaxVolume], Min[Lookup[sampleVolPacket,Volume]]],
+					Min[0.8 * targetAliquotContainer[MaxVolume], Min[Lookup[sampleVolPacket, Volume]]],
 
 					(*Otherwise, sample is in the correct container, so set this as null*)
 					True,
 					Null
 				]
 			],
-			{targetAliquotContainers,suppliedAliquotVolumes,pooledSamplePackets}
+			{targetAliquotContainers, suppliedAliquotVolumes, pooledSamplePackets}
 		];
 
 		(*Return the targetAliquotContainers and aliquot volumes *)
-		{targetAliquotContainers,aliquotVolumes}
+		{targetAliquotContainers, aliquotVolumes}
 	];
 
 	aliquotWarningMsg = "because the given samples are not in containers that are compatible with the evaporation instrument:";
 
+	(* Importantly: Remove the semi-resolved aliquot options from the sample prep options, before passing into the aliquot resolver. *)
+	resolveSamplePrepOptionsWithoutAliquot = First[splitPrepOptions[resolvedSamplePrepOptions, PrepOptionSets -> {IncubatePrepOptionsNew, CentrifugePrepOptionsNew, FilterPrepOptionsNew}]];
+
 	(* Resolve Aliquot Options *)
-	{resolvedAliquotOptions,aliquotTests}= If[gatherTests,
+	{resolvedAliquotOptions, aliquotTests} = If[gatherTests,
 		resolveAliquotOptions[
 			ExperimentEvaporate,
 			mySamples,
 			simulatedSamples,
-			ReplaceRule[myOptions, resolvedSamplePrepOptions],
-			RequiredAliquotAmounts->RoundOptionPrecision[targetVolumes,0.1 Microliter],
+			ReplaceRule[myOptions, resolveSamplePrepOptionsWithoutAliquot],
+			RequiredAliquotAmounts -> RoundOptionPrecision[targetVolumes, 0.1 Microliter],
 			AliquotWarningMessage -> aliquotWarningMsg,
-			RequiredAliquotContainers->targetContainers,
-			AllowSolids->True,
+			RequiredAliquotContainers -> targetContainers,
+			AllowSolids -> True,
 			MinimizeTransfers -> True,
-			Cache->Flatten[{cache, simulatedCache}],
-			Output->{Result,Tests}
+			Cache -> cache,
+			Simulation -> updatedSimulation,
+			Output -> {Result, Tests}
 		],
 		{
 			resolveAliquotOptions[
 				ExperimentEvaporate,
 				mySamples,
 				simulatedSamples,
-				ReplaceRule[myOptions, resolvedSamplePrepOptions],
-				RequiredAliquotAmounts->RoundOptionPrecision[targetVolumes,0.1 Microliter],
-				AliquotWarningMessage ->aliquotWarningMsg,
-				RequiredAliquotContainers->targetContainers,
-				AllowSolids->True,
+				ReplaceRule[myOptions, resolveSamplePrepOptionsWithoutAliquot],
+				RequiredAliquotAmounts -> RoundOptionPrecision[targetVolumes, 0.1 Microliter],
+				AliquotWarningMessage -> aliquotWarningMsg,
+				RequiredAliquotContainers -> targetContainers,
+				AllowSolids -> True,
 				MinimizeTransfers -> True,
-				Cache->Flatten[{cache, simulatedCache}],
-				Output->Result
+				Cache -> cache,
+				Simulation -> updatedSimulation,
+				Output -> Result
 			],
 			{}
 		}
 	];
 
-	{samplesInStorage,samplesOutStorage}=Lookup[myOptions,{SamplesInStorageCondition,SamplesOutStorageCondition}];
+	{samplesInStorage, samplesOutStorage} = Lookup[myOptions, {SamplesInStorageCondition, SamplesOutStorageCondition}];
 
-	validSampleStorageConditionQ=If[!MatchQ[samplesInStorage,ListableP[Automatic|Null]],
-		If[!gatherTests&& Not[MatchQ[$ECLApplication, Engine]],
-			ValidContainerStorageConditionQ[mySamples,samplesInStorage],
-			Quiet[ValidContainerStorageConditionQ[mySamples,samplesInStorage]]
+	(* since we have a pooled system here, we need to do some quasi-expansion so that it is the same length as the flattened pooled samples *)
+	quasiExpandedSamplesInStorage = If[ListQ[samplesInStorage],
+		Flatten[MapThread[
+			If[ListQ[#2],
+				ConstantArray[#1, Length[#2]],
+				#1
+			]&,
+			{samplesInStorage, mySamples}
+		]],
+		ConstantArray[samplesInStorage, Length[Flatten[mySamples]]]
+	];
+
+	validSampleStorageConditionQ = If[!MatchQ[quasiExpandedSamplesInStorage, ListableP[Automatic | Null]],
+		If[!gatherTests && Not[MatchQ[$ECLApplication, Engine]],
+			ValidContainerStorageConditionQ[Flatten[mySamples], quasiExpandedSamplesInStorage, Simulation -> updatedSimulation],
+			Quiet[ValidContainerStorageConditionQ[Flatten[mySamples], quasiExpandedSamplesInStorage, Simulation -> updatedSimulation]]
 		],
 		True
 	];
 
 	(* if the test above passes, there's no invalid option, otherwise, SamplesInStorageCondition will be an invalid option *)
-	invalidStorageConditionOptions=If[Not[And@@validSampleStorageConditionQ],
+	invalidStorageConditionOptions = If[Not[And @@ validSampleStorageConditionQ],
 		{SamplesInStorageCondition},
 		{}
 	];
@@ -3407,23 +3440,23 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 	(* generate test for storage condition *)
 	invalidStorageConditionTest = Test[
 		"The specified SamplesInStorageCondition can be filled for sample in a particular container or for samples sharing a container:",
-		And@@validSampleStorageConditionQ,
+		And @@ validSampleStorageConditionQ,
 		True
 	];
 
 	(*-- UNRESOLVABLE OPTION CHECKS --*)
 	(* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
-	invalidInputs=DeleteDuplicates[Flatten[{discardedInvalidInputs,noVolumeInvalidInputs,duplicatedInvalidInputs}]];
-	invalidOptions=DeleteDuplicates[Flatten[{
+	invalidInputs = DeleteDuplicates[Flatten[{discardedInvalidInputs, noVolumeInvalidInputs, duplicatedInvalidInputs}]];
+	invalidOptions = DeleteDuplicates[Flatten[{
 		nameOptionInvalid,
-		rinseVolInvalidOptions,
 		impossibleEvapTempOptions,
 		flowRateEvapTimeConflictOptions,
 		impossibleFlowRatesTestsOptions,
 		flowRateProfileWarningOptions,
 		primaryEvaporationContainerConflictOptions,
 		invalidStorageConditionOptions,
-		evaporationPressureRequiredOptions
+		evaporationPressureRequiredOptions,
+		bumpTrapRinseSolutionConflictOptions
 	}]];
 
 	allTests = Flatten[{
@@ -3432,7 +3465,6 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 		noVolumeTest,
 		duplicatesTest,
 		optionPrecisionTests,
-		rinseVolTest,
 		flowRateProfileWarningTests,
 		highFlowRateWarningTests,
 		flowRateEvapTimeConflictTests,
@@ -3440,21 +3472,22 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 		impossibleFlowRatesTests,
 		primaryEvaporationContainerConflictTests,
 		invalidStorageConditionTest,
-		evaporationPressureRequiredTests
+		evaporationPressureRequiredTests,
+		bumpTrapRinseSolutionVolumeTests
 	}];
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
-	If[!gatherTests&&Length[invalidInputs]>0,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs, Cache->simulatedCache]]
+	If[!gatherTests && Length[invalidInputs] > 0,
+		Message[Error::InvalidInput, ObjectToString[invalidInputs, Cache -> simulatedCache]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
-	If[!gatherTests&&Length[invalidOptions]>0,
-		Message[Error::InvalidOption,invalidOptions]
+	If[!gatherTests && Length[invalidOptions] > 0,
+		Message[Error::InvalidOption, invalidOptions]
 	];
 
 	(* Return our resolved options and/or tests. *)
-	outputSpecification/.{
+	outputSpecification /. {
 		Result -> ReplaceRule[Normal[roundedEvaporationOptions],
 			Join[
 				{
@@ -3473,23 +3506,19 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 					BalancingSolution -> resolvedBalancingSolutions,
 					EvaporationFlask -> resolvedEvapFlasks,
 					CondenserTemperature -> resolvedCondenserTemps,
-					RinseSolution -> resolvedRinseSolutions,
-					RinseVolume -> resolvedRinseVolumes,
 					RecoupBumpTrap -> resolvedRecoupTraps,
 					BumpTrapRinseSolution -> resolvedRecoupTrapSolutions,
 					BumpTrapRinseVolume -> resolvedRecoupTrapVolumes,
 					BumpTrapSampleContainer -> resolvedRecoupTrapContainers,
-					SaveSolventWaste -> resolvedSaveWastes,
-					WasteContainer -> resolvedWasteContainers,
 					RecoupCondensate -> resolvedRecoupCondensates,
 					CondensateSampleContainer -> resolvedCondensateSampleContainers,
 					FlowRateProfile -> resolvedFlowRateProfiles,
 					SolventBoilingPoints -> resolvedBoilingPoints,
 					Email -> resolvedEmail,
-					SamplesInStorageCondition->samplesInStorage,
-					SamplesOutStorageCondition->samplesOutStorage
+					SamplesInStorageCondition -> samplesInStorage,
+					SamplesOutStorageCondition -> samplesOutStorage
 				},
-				resolvedSamplePrepOptions,
+				resolveSamplePrepOptionsWithoutAliquot,
 				resolvedAliquotOptions,
 				resolvedPostProcessingOptions
 			]
@@ -3506,16 +3535,16 @@ resolveExperimentEvaporateOptions[mySamples:ListableP[{ObjectP[Object[Sample]]..
 
 
 DefineOptions[evaporateResourcePackets,
-	Options:>{CacheOption,HelperOutputOption}
+	Options :> {SimulationOption, CacheOption, HelperOutputOption}
 ];
 
 
-evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],myUnresolvedOptions:{___Rule},myResolvedOptions:{___Rule},myOptions:OptionsPattern[]]:=Module[
-	{outputSpecification,output,gatherTests,messages,upload,cache,poolLengths,expandedInputs,expandedResolvedOptions,
-		resolvedOptionsNoHidden,evapTypes,
-		sampleVolumesToReserve,simulatedSamples,simulatedCache,fastAssocSimulatedCache,
-		sampleResourceReplaceRules,expPooledSamplesIn,
-		samplesInResources,containersIn,estimatedRunTimes,instruments,
+evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}], myUnresolvedOptions:{___Rule}, myResolvedOptions:{___Rule}, myOptions:OptionsPattern[]] := Module[
+	{outputSpecification, output, gatherTests, messages, upload, cache, poolLengths, expandedInputs, expandedResolvedOptions,
+		resolvedOptionsNoHidden, evapTypes,
+		sampleVolumesToReserve, simulatedSamples, simulatedCache, fastAssocSimulatedCache,
+		sampleResourceReplaceRules, expPooledSamplesIn,
+		samplesInResources, containersIn, estimatedRunTimes, instruments,
 		balanceResources,
 		simulatedContainers,
 		simulatedModelContainers,
@@ -3523,7 +3552,7 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 		pooledContainerModelCleaned,
 		workingModelContainers,
 		simulatedWorkingContainers,
-		maxTotalRunTimeEstimate,containerVacCentCompat,finalContainerVacCentCompat,
+		maxTotalRunTimeEstimate, containerVacCentCompat, finalContainerVacCentCompat,
 
 		aliquotQs,
 		aliquotVols,
@@ -3534,18 +3563,17 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 
 		weightVerificationTime,
 
-		evapUntilDryVals,maxEvapTimes,tempEquilTimes,rampTimes,evapTimes,evapTemps,
+		evapUntilDryVals, maxEvapTimes, tempEquilTimes, rampTimes, evapTimes, evapTemps,
 		rinseSolutionObjVolPairs,
 		groupedSolventVolPairs,
 		uniqueSolventVolRequiredPairs,
 		rinseSolutionResourceMap,
-		rinseSolutionResources,
 		trapRinseSolutionResources,
 		bumpTrapSampleContainers, condensateRecoveryContainers,
 		evaporationContainerResources,
-		bumpTrapResources,allBumpTrapPacks,
-		condensationFlaskResources,containerPacks,rotoVapContainerPacketsWithBallJoint,rotoRoundContainerPackets,turboRackPackets,
-		condensationFlaskClampResource,evaporationFlaskClampResource,
+		bumpTrapResources, allBumpTrapPacks,
+		condensationFlaskResources, containerPacks, rotoVapContainerPacketsWithBallJoint, rotoRoundContainerPackets, turboRackPackets,
+		condensationFlaskClampResource, evaporationFlaskClampResource,
 		centRacksOnly,
 		groupedBatches,
 		evapParams,
@@ -3563,6 +3591,9 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 		batchedConnections,
 		batchedConnectionLengths,
 
+		unsortedInstrument,
+		instrumentModel,
+
 		batchedNitrogenTubeRacks,
 		nozzlePlugs,
 		drainTube,
@@ -3572,41 +3603,43 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 		simulateSamplesToPooledSamplesLookup,
 		finalContainerIndexes,
 		finalSampleIndexes,
-		evapParamsRaw,evapParamsWithBath,
+		evapParamsRaw, evapParamsWithBath,
 
-		protocolPacket,sharedFieldPacket,finalizedPacket,allResourceBlobs,fulfillable,frqTests,previewRule,
-		optionsRule,testsRule,resultRule,flowRateLookup,flowRateReformat,
+		protocolPacket, sharedFieldPacket, finalizedPacket, allResourceBlobs, fulfillable, frqTests, previewRule,
+		optionsRule, testsRule, resultRule, flowRateLookup, flowRateReformat,
 
-		evapParamsTypes,evapParamsMaxEvapTimes,evapParamsTempEquilTimes,evapParamsRampTimes,evapParamsEvapTimes,
-		expSubdivide,evapPressureProfileImageCloudFiles
+		evapParamsTypes, evapParamsMaxEvapTimes, evapParamsTempEquilTimes, evapParamsRampTimes, evapParamsEvapTimes,
+		expSubdivide, evapPressureProfileImageCloudFiles, updatedSimulation, simulation
 	},
 
-	outputSpecification=OptionValue[Output];
-	output=ToList[outputSpecification];
+	outputSpecification = OptionValue[Output];
+	output = ToList[outputSpecification];
 
 	(* Determine if we should keep a running list of tests to return to the user. *)
-	gatherTests = MemberQ[output,Tests];
+	gatherTests = MemberQ[output, Tests];
 	messages = Not[gatherTests];
 
 	(* lookup the cache *)
-	cache = Lookup[ToList[myOptions],Cache];
+	cache = Lookup[ToList[myOptions], Cache, {}];
+	simulation = Lookup[ToList[myOptions], Simulation, Simulation[]];
 
 	(* lookup the upload option *)
-	upload = Lookup[myResolvedOptions,Upload];
+	upload = Lookup[myResolvedOptions, Upload];
 
 	(* determine the pool lengths*)
-	poolLengths = Map[Length[ToList[#]]&,myPooledSamples];
+	poolLengths = Map[Length[ToList[#]]&, myPooledSamples];
 
 	(* expand the resolved options if they weren't expanded already *)
 	{expandedInputs, expandedResolvedOptions} = ExpandIndexMatchedInputs[ExperimentEvaporate, {myPooledSamples}, myResolvedOptions];
 
 	(* Generate the list of pooled samples *)
-	expPooledSamplesIn = TakeList[Flatten[expandedInputs],poolLengths];
+	expPooledSamplesIn = TakeList[Flatten[expandedInputs], poolLengths];
 
 	(* simulate the samples after they go through all the sample prep *)
-	{simulatedSamples, simulatedCache} = simulateSamplesResourcePackets[ExperimentEvaporate, myPooledSamples, myResolvedOptions, Cache -> cache];
+	{simulatedSamples, updatedSimulation} = simulateSamplesResourcePacketsNew[ExperimentEvaporate, myPooledSamples, myResolvedOptions, Cache -> cache, Simulation -> simulation];
 
 	(* generate a fast cache association *)
+	simulatedCache = FlattenCachePackets[{cache, Lookup[First[updatedSimulation], Packets]}];
 	fastAssocSimulatedCache = makeFastAssocFromCache[simulatedCache];
 
 	(* get the resolved collapsed index matching options that don't include hidden options *)
@@ -3618,21 +3651,21 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	];
 
 	(* stash the evaporation type *)
-	evapTypes = Lookup[myResolvedOptions,EvaporationType];
+	evapTypes = Lookup[myResolvedOptions, EvaporationType];
 
 	(* determine if each sample list index has aliquot -> true or not *)
-	aliquotQs = Lookup[myResolvedOptions,Aliquot,Null];
+	aliquotQs = Lookup[myResolvedOptions, Aliquot, Null];
 
 	(* determine if each sample list index has aliquot -> true or not *)
-	aliquotVols = Lookup[myResolvedOptions,AliquotAmount,Null];
+	aliquotVols = Lookup[myResolvedOptions, AliquotAmount, Null];
 
 	(*Get the aliquot containers*)
-	intAliquotContainers = Lookup[myResolvedOptions,AliquotContainer,Null];
+	intAliquotContainers = Lookup[myResolvedOptions, AliquotContainer, Null];
 
 	(*Extract only the model information of the aliquoted containers *)
-	aliquotContainers = If[MatchQ[#,Null], Null, #[[All;2]]]&/@intAliquotContainers;
+	aliquotContainers = If[MatchQ[#, Null], Null, #[[All;2]]]& /@ intAliquotContainers;
 
-(* get the sample volumes we need to reserve with each sample, accounting for whether we're aliquoting *)
+	(* get the sample volumes we need to reserve with each sample, accounting for whether we're aliquoting *)
 	(* if the samples is NOT getting aliquot, we'll reserve the whole sample without an amount request *)
 	sampleVolumesToReserve = Flatten[MapThread[
 		Function[{aliquot, volume},
@@ -3659,14 +3692,14 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	];
 
 	(* use the replace rules to get the sample resources *)
-	samplesInResources = Flatten[expandedInputs]/.sampleResourceReplaceRules;
+	samplesInResources = Flatten[expandedInputs] /. sampleResourceReplaceRules;
 
 	(* Create a list of the simulated containers and to list them so we can transpose down below *)
 	simulatedContainers = Map[
 		Function[{pool},
-			If[MatchQ[pool,_List],
-				Download[fastAssocLookup[fastAssocSimulatedCache,#,Container], Object]&/@pool,
-				Download[fastAssocLookup[fastAssocSimulatedCache,pool,Container], Object]
+			If[MatchQ[pool, _List],
+				Download[fastAssocLookup[fastAssocSimulatedCache, #, Container], Object]& /@ pool,
+				Download[fastAssocLookup[fastAssocSimulatedCache, pool, Container], Object]
 			]
 		],
 		simulatedSamples
@@ -3675,9 +3708,9 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	(* Gather the models of the simulated containers*)
 	simulatedModelContainers = Map[
 		Function[{pool},
-			If[MatchQ[pool,_List],
-				Download[fastAssocLookup[fastAssocSimulatedCache,#,Model], Object]&/@pool,
-				Download[fastAssocLookup[fastAssocSimulatedCache,pool,Model], Object]
+			If[MatchQ[pool, _List],
+				Download[fastAssocLookup[fastAssocSimulatedCache, #, Model], Object]& /@ pool,
+				Download[fastAssocLookup[fastAssocSimulatedCache, pool, Model], Object]
 			]
 		],
 		simulatedContainers
@@ -3686,23 +3719,23 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	(* Gather the information about AliquotContainers too *)
 	(*In the case that the samples are pooled, look up what container they are going in.
     Replace any nulls with {Null,Null} to give index and container*)
-	pooledContainerModel = Lookup[expandedResolvedOptions,AliquotContainer,Null]/.Null->{Null,Null};
+	pooledContainerModel = Lookup[expandedResolvedOptions, AliquotContainer, Null] /. Null -> {Null, Null};
 
 	(* Get the container models only *)
 	pooledContainerModelCleaned = If[NullQ[pooledContainerModel],
 		(*If poolecContainerModel is all null, then we are not pooling*)
-		Table[Null,Length[ToList[simulatedSamples]]],
+		Table[Null, Length[ToList[simulatedSamples]]],
 
-		pooledContainerModel[[All,2]]
+		pooledContainerModel[[All, 2]]
 	];
 
 	(* Assembly the list of working containers - if aliquoted, go with AliquotContainer; if not, go with Simulated Container *)
-	workingModelContainers=MapThread[
-		If[MatchQ[#2,ObjectP[Model[Container]]],
-			Download[#2,Object],
+	workingModelContainers = MapThread[
+		If[MatchQ[#2, ObjectP[Model[Container]]],
+			Download[#2, Object],
 			#1
 		]&,
-		{simulatedModelContainers,pooledContainerModelCleaned}
+		{simulatedModelContainers, pooledContainerModelCleaned}
 	];
 
 	(* Build an image of what WorkingContainers should look like directly after SamplePrep *)
@@ -3711,31 +3744,28 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 
 	(* create the containers in a flat non-duplicate list for the protocol packet *)
 
-	containersIn = DeleteDuplicates[Download[fastAssocLookup[fastAssocSimulatedCache,#,Container],Object]&/@Flatten[myPooledSamples]];
+	containersIn = DeleteDuplicates[Download[fastAssocLookup[fastAssocSimulatedCache, #, Container], Object]& /@ Flatten[myPooledSamples]];
 
 	(* Stash option values relevant for timing for EvaporateUntilDry *)
-	{evapUntilDryVals,maxEvapTimes,tempEquilTimes,rampTimes,evapTimes,vacEvapMethods} = Lookup[
+	{evapUntilDryVals, maxEvapTimes, tempEquilTimes, rampTimes, evapTimes, vacEvapMethods} = Lookup[
 		myResolvedOptions,
-		{EvaporateUntilDry,MaxEvaporationTime,EquilibrationTime,PressureRampTime,EvaporationTime,Method}
+		{EvaporateUntilDry, MaxEvaporationTime, EquilibrationTime, PressureRampTime, EvaporationTime, Method}
 	];
 
 	(* Stash the evaporation temperature and convert the symbol Ambient to 25*Celsius *)
-	evapTemps = ReplaceAll[Lookup[myResolvedOptions,EvaporationTemperature],Ambient->$AmbientTemperature];
+	evapTemps = ReplaceAll[Lookup[myResolvedOptions, EvaporationTemperature], Ambient -> $AmbientTemperature];
 
 	(* Stash the option values for EvaporateUntilDry *)
-	evapUntilDryVals = Lookup[myResolvedOptions,EvaporateUntilDry];
+	evapUntilDryVals = Lookup[myResolvedOptions, EvaporateUntilDry];
 
-	(* Build pairs of {solution, volumeRequired} for each sample pool's RinseSolution and BumpTrapRinseSolution *)
-	rinseSolutionObjVolPairs = DeleteCases[#,{Null,_}]&@Join[
-		Transpose@Lookup[myResolvedOptions,{RinseSolution,RinseVolume}],
-		Transpose@Lookup[myResolvedOptions,{BumpTrapRinseSolution,BumpTrapRinseVolume}]
-	];
+	(* Build pairs of {solution, volumeRequired} for each sample pool's and BumpTrapRinseSolution *)
+	rinseSolutionObjVolPairs = DeleteCases[#, {Null, _}]&@Transpose@Lookup[myResolvedOptions, {BumpTrapRinseSolution, BumpTrapRinseVolume}];
 
 	(* Group the {solution, volumeRequired} pairs by the solution *)
-	groupedSolventVolPairs = GatherBy[rinseSolutionObjVolPairs,First];
+	groupedSolventVolPairs = GatherBy[rinseSolutionObjVolPairs, First];
 
 	(* Pull out the solvent and total volume for each pair *)
-	uniqueSolventVolRequiredPairs = {First[First[#]],Total[#[[All,2]]]} &/@ groupedSolventVolPairs;
+	uniqueSolventVolRequiredPairs = {First[First[#]], Total[#[[All, 2]]]} & /@ groupedSolventVolPairs;
 
 	(* Generate resources for the rinse solutions required, and combine resources of the same model *)
 	rinseSolutionResourceMap = Map[
@@ -3746,9 +3776,8 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 		uniqueSolventVolRequiredPairs
 	];
 
-	(* Build field values for RinseSolution and BumpTrapRinseSolution, replacing each value with the required resource*)
-	rinseSolutionResources = Lookup[myResolvedOptions,RinseSolution]/.rinseSolutionResourceMap;
-	trapRinseSolutionResources = Lookup[myResolvedOptions,BumpTrapRinseSolution]/.rinseSolutionResourceMap;
+	(* Build field values for BumpTrapRinseSolution, replacing each value with the required resource*)
+	trapRinseSolutionResources = Lookup[myResolvedOptions, BumpTrapRinseSolution] /. rinseSolutionResourceMap;
 
 	(* make resources for the bump trap containers and the condensate containers *)
 	(* if they're models never share; if they're objects conceivably you could share if that's what the customer wants *)
@@ -3768,26 +3797,26 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	];
 
 	(* Determine which instrument we'll use *)
-	instruments = Lookup[myResolvedOptions,Instrument];
+	instruments = Lookup[myResolvedOptions, Instrument];
 
 	(* Figure out how long it will take to verify the weights of the containers and counterweights *)
 	(* TODO: Limit this to SpeedVacs *)
-	weightVerificationTime = 2*Length[containersIn]*(2 Minute);
+	weightVerificationTime = 2 * Length[containersIn] * (2 Minute);
 
 	(* TODO: This gets more complicated because it's 2minutes * number of containers IN THIS BATCH *)
 	(* Balance Resource for weighing the samples/buckets *)
-	balanceResources = If[MatchQ[#,SpeedVac],
+	balanceResources = If[MatchQ[#, SpeedVac],
 		Resource[
-			Instrument->Model[Instrument,Balance,"id:o1k9jAGvbWMA"],
-			Time->weightVerificationTime
+			Instrument -> Model[Instrument, Balance, "id:o1k9jAGvbWMA"],
+			Time -> weightVerificationTime
 		],
 		Null
-	]&/@evapTypes;
+	]& /@ evapTypes;
 
-	balances = If[MatchQ[#,SpeedVac],
-		Model[Instrument,Balance,"id:o1k9jAGvbWMA"],
+	balances = If[MatchQ[#, SpeedVac],
+		Model[Instrument, Balance, "id:o1k9jAGvbWMA"],
 		Null
-	]&/@evapTypes;
+	]& /@ evapTypes;
 
 	(* Build resources for balancing solutions *)
 	(* TODO: more intelligently account for amount here *)
@@ -3798,24 +3827,24 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	]&/@Lookup[myResolvedOptions,BalancingSolution];*)
 
 	(* Evaporation flask resources *)
-	evaporationContainerResources = If[!NullQ[#],Link@Resource[Sample -> #, Name -> ToString[Unique[]]],Null]&/@Lookup[myResolvedOptions,EvaporationFlask];
+	evaporationContainerResources = If[!NullQ[#], Link@Resource[Sample -> #, Name -> ToString[Unique[]]], Null]& /@ Lookup[myResolvedOptions, EvaporationFlask];
 
 	(* Bump trap resources *)
 	(* we currently only have one bump trap. if we add more, select one based on the sample volume*)
 	(* Get the info from the cache packet that we need *)
-	allBumpTrapPacks = Cases[cache,ObjectP[Model[Container,BumpTrap]]];
+	allBumpTrapPacks = Cases[cache, ObjectP[Model[Container, BumpTrap]]];
 
 	bumpTrapResources = If[
-		MatchQ[#1,RotaryEvaporation],
+		MatchQ[#1, RotaryEvaporation],
 		Link@Resource[Sample -> First[Lookup[allBumpTrapPacks, Object]], Rent -> True, Name -> ToString[Unique[]]],
 		Null
-	]&/@Lookup[myResolvedOptions, EvaporationType];
+	]& /@ Lookup[myResolvedOptions, EvaporationType];
 
 	(* Make resources for the keck clamps *)
 	(* Since all of our current BumpTrap, EvaporationFlask are sharing the same size of Taper Joint Size of 24mm, we are going to just request for the same hard-coded model here *)
 	evaporationFlaskClampResource = Module[{totalKeckClampsNeeded},
 		(* For each RotarayEvaporation that we are doing, we need 2 keck clamps *)
-		totalKeckClampsNeeded = 2*Count[Lookup[myResolvedOptions, EvaporationType], RotaryEvaporation];
+		totalKeckClampsNeeded = 2 * Count[Lookup[myResolvedOptions, EvaporationType], RotaryEvaporation];
 		If[TrueQ[GreaterQ[totalKeckClampsNeeded, 0]],
 			(*  Replace the named model with ID after db refresh  *)
 			Link@Resource[Sample -> Model[Item, Clamp, "Keck Clamps for 24/25, 24/40 Taper Joint"], Amount -> totalKeckClampsNeeded, Rent -> True],
@@ -3824,32 +3853,32 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	];
 
 	(* CondensationFlask resources *)
-	containerPacks = Cases[cache,ObjectP[{Model[Container,Vessel],Object[Container,Vessel]}]];
+	containerPacks = Cases[cache, ObjectP[{Model[Container, Vessel], Object[Container, Vessel]}]];
 	(* Pull out all possible rotovap container packets for condensation flask. We only want connectors with a 35/20 Thread and SphericalGroundGlass for condensation flask *)
-	rotoVapContainerPacketsWithBallJoint = Cases[containerPacks,KeyValuePattern[Connectors -> ListableP[{_,SphericalGroundGlass,"35/20",_,_,_}]]];
-	rotoRoundContainerPackets = Sort[Cases[rotoVapContainerPacketsWithBallJoint,KeyValuePattern[Name -> _?(StringMatchQ[#, ___ ~~ "Round" ~~ ___] &)]]];
+	rotoVapContainerPacketsWithBallJoint = Cases[containerPacks, KeyValuePattern[Connectors -> ListableP[{_, SphericalGroundGlass, "35/20", _, _, _}]]];
+	rotoRoundContainerPackets = Sort[Cases[rotoVapContainerPacketsWithBallJoint, KeyValuePattern[Name -> _?(StringMatchQ[#, ___~~"Round"~~___] &)]]];
 
-	turboRackPackets = Cases[cache,KeyValuePattern[Footprint->TurboVapRack]];
+	turboRackPackets = Cases[cache, KeyValuePattern[Footprint -> TurboVapRack]];
 
 	condensationFlaskResources = MapThread[
-		Function[{samples,evaType},
+		Function[{samples, evaType},
 			Module[
-				{sampleVolumes,totalVolume},
-				sampleVolumes=fastAssocLookup[fastAssocSimulatedCache,#,Volume]&/@ToList[samples];
-				totalVolume=Total[sampleVolumes/.{Null->0Liter}];
+				{sampleVolumes, totalVolume},
+				sampleVolumes = fastAssocLookup[fastAssocSimulatedCache, #, Volume]& /@ ToList[samples];
+				totalVolume = Total[sampleVolumes /. {Null -> 0Liter}];
 				Which[
-					MatchQ[evaType,RotaryEvaporation] && Less[totalVolume,1.5Liter],
-						Link@Resource[Sample -> Lookup[FirstCase[rotoRoundContainerPackets, KeyValuePattern[MaxVolume -> GreaterEqualP[2 Liter]]], Object], Rent -> True, Name -> ToString[Unique[]]],(*2L Round Bottom Flask with 24/40 Joint*)
-					MatchQ[evaType,RotaryEvaporation],
-						Link@Resource[Sample -> Lookup[FirstCase[rotoRoundContainerPackets, KeyValuePattern[MaxVolume -> GreaterP[2 Liter]]], Object], Rent -> True, Name -> ToString[Unique[]]],(*3L Round Bottom Flask with 24/40 Joint*)
-					True,(* Equivalent to MatchQ[evaType,Except[RotaryEvaporation]] *)
-						Null
+					MatchQ[evaType, RotaryEvaporation] && Less[totalVolume, 1.5Liter],
+					Link@Resource[Sample -> Lookup[FirstCase[rotoRoundContainerPackets, KeyValuePattern[MaxVolume -> GreaterEqualP[2 Liter]]], Object], Rent -> True, Name -> ToString[Unique[]]], (*2L Round Bottom Flask with 24/40 Joint*)
+					MatchQ[evaType, RotaryEvaporation],
+					Link@Resource[Sample -> Lookup[FirstCase[rotoRoundContainerPackets, KeyValuePattern[MaxVolume -> GreaterP[2 Liter]]], Object], Rent -> True, Name -> ToString[Unique[]]], (*3L Round Bottom Flask with 24/40 Joint*)
+					True, (* Equivalent to MatchQ[evaType,Except[RotaryEvaporation]] *)
+					Null
 				]
 			]
 		],
 		{
 			simulatedSamples,
-			Lookup[myResolvedOptions,EvaporationType]
+			Lookup[myResolvedOptions, EvaporationType]
 		}
 	];
 
@@ -3861,12 +3890,18 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	];
 
 	(* Make a Download call to get the vacuum centrifuge compatibility  of the input samples *)
-	containerVacCentCompat=Quiet[Download[workingModelContainers, Packet[VacuumCentrifugeCompatibility],Cache->simulatedCache],
+	containerVacCentCompat = Quiet[
+		Download[
+			workingModelContainers,
+			Packet[VacuumCentrifugeCompatibility],
+			Cache -> cache,
+			Simulation -> updatedSimulation
+		],
 		{Download::FieldDoesntExist}
 	];
 
 	(* If we have pooled sample but no aliquoting, our simulatedModelContainers is wrapped in another layer of list. However, this only happens in a single-sample pool. Basially we need to get the first of the VacuumCentrifugeCompatibility *)
-	finalContainerVacCentCompat=FirstOrDefault[ToList[#]]&/@containerVacCentCompat;
+	finalContainerVacCentCompat = FirstOrDefault[ToList[#]]& /@ containerVacCentCompat;
 
 	(* ---- BATCHING CALCULATIONS ---- *)
 	(* TODO: If you change the following index format, be sure to change all the references to the indexes below this section! *)
@@ -3877,11 +3912,11 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 			(*1*)expPooledSamplesIn,
 			(*2*)simulatedSamples,
 			(*3*)simulatedContainers,
-			(*4*)workingModelContainers,(* Group by container model *)
+			(*4*)workingModelContainers, (* Group by container model *)
 			(*5*)evapTypes,
 
 			(* Evaporation Parameters *)
-			(*6*)Link/@instruments,
+			(*6*)Link /@ instruments,
 			(*7*)tempEquilTimes,
 			(*8*)evapTimes,
 			(*9*)evapTemps,
@@ -3890,37 +3925,37 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 
 			(* Shared SV and RV not NB *)
 			(*12*)rampTimes,
-			(*13*)Lookup[myResolvedOptions,EvaporationPressure]/.MaxVacuum->0*Millibar,
+			(*13*)Lookup[myResolvedOptions, EvaporationPressure] /. MaxVacuum -> 0 * Millibar,
 
 			(* Shared RV and NB not SV *)
 
 			(* Rotovap Parameters *)
-			(*14*)Lookup[myResolvedOptions,RotationRate],
-			(*15*)Lookup[myResolvedOptions,CondenserTemperature],
+			(*14*)Lookup[myResolvedOptions, RotationRate],
+			(*15*)Lookup[myResolvedOptions, CondenserTemperature],
 			(*16*)bumpTrapResources,
 			(*17*)evaporationContainerResources,
 			(*18*)condensationFlaskResources,
-			(*19*)Lookup[myResolvedOptions,SaveSolventWaste],
-			(*20*)Link/@rinseSolutionResources,
-			(*21*)Lookup[myResolvedOptions,RinseVolume],
-			(*22*)Link/@trapRinseSolutionResources,
-			(*23*)Lookup[myResolvedOptions,BumpTrapRinseVolume],
-			(*24*)Link/@bumpTrapSampleContainers,
-			(*25*)Link/@condensateRecoveryContainers,
+			(*19*)Lookup[myResolvedOptions, RecoupCondensate],
+			(*20*)ConstantArray[Null, Length[expPooledSamplesIn]], (* RinseSolution is deprecated *)
+			(*21*)ConstantArray[Null, Length[expPooledSamplesIn]], (* RinseVolume is deprecated *)
+			(*22*)Link /@ trapRinseSolutionResources,
+			(*23*)Lookup[myResolvedOptions, BumpTrapRinseVolume],
+			(*24*)Link /@ bumpTrapSampleContainers,
+			(*25*)Link /@ condensateRecoveryContainers,
 
 			(* SpeedVac Parameters *)
-			(*26*)Link/@balances,
-			(*27*)Link/@Lookup[myResolvedOptions,BalancingSolution],
-			(*28*)Link/@Lookup[myResolvedOptions,VacuumEvaporationMethod],
+			(*26*)Link /@ balances,
+			(*27*)Link /@ Lookup[myResolvedOptions, BalancingSolution],
+			(*28*)Link /@ Lookup[myResolvedOptions, VacuumEvaporationMethod],
 
 			(* Nitrogen blower *)
-			(*29*)Lookup[myResolvedOptions,FlowRateProfile],
+			(*29*)Lookup[myResolvedOptions, FlowRateProfile],
 			(*30*)aliquotContainers,
 			(*31*)finalContainerVacCentCompat
 		}],
 
 		(* Group by everything but the samples and containers themselves, as well as the final key which is the index of the samples in NestedIndexMatchingSamplesIn *)
-		(*Most[#[[4;;]]]&*)#[[4;;31]]&
+		(*Most[#[[4;;]]]&*)#[[4;;]]&
 	];
 
 	(* For each grouping of batched parameters, break into the desired partition size based on container type *)
@@ -3929,10 +3964,10 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 		Function[{groupedEvapBatch},
 			Module[
 				{
-					sharedBatchPacket,containerModel,gatheredContainers,groupedSamplesPools,
-					groupedSamplesIndexes,groupedContainerIndexes,batchEvapType,maxContainersPairingsPerBatch,
-					reGroupedContainers,racksNeededPerBatch,bucketsNeededPerBatch,uniqueContainers,counterweightRules,
-					groupedCounterWeights,aliquotContainer,joinedContainers
+					sharedBatchPacket, containerModel, gatheredContainers, groupedSamplesPools,
+					groupedSamplesIndexes, groupedContainerIndexes, batchEvapType, maxContainersPairingsPerBatch,
+					reGroupedContainers, racksNeededPerBatch, bucketsNeededPerBatch, uniqueContainers, counterweightRules,
+					groupedCounterWeights, aliquotContainer, joinedContainers, batchInstrument, batchInstrumentModel
 				},
 
 				(*
@@ -3944,23 +3979,23 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 
 					(* These are all the keys, IN ORDER, of the BatchedEvaporationParameters field *)
 					{
-						EvaporationType,Instrument,EquilibrationTime,EvaporationTime,EvaporationTemperature,EvaporateUntilDry,
-						MaxEvaporationTime,PressureRampTime,EvaporationPressure,RotationRate,CondenserTemperature,BumpTrap,
-						EvaporationFlask,CondensationFlask,CollectEvaporatedSolvent,RinseSolution,RinseVolume,BumpTrapRinseSolution,
-						BumpTrapRinseVolume,BumpTrapSampleContainer, CondensateRecoveryContainer, Balance,BalancingSolution,
-						VacuumEvaporationMethod,FlowRateProfile
+						EvaporationType, Instrument, EquilibrationTime, EvaporationTime, EvaporationTemperature, EvaporateUntilDry,
+						MaxEvaporationTime, PressureRampTime, EvaporationPressure, RotationRate, CondenserTemperature, BumpTrap,
+						EvaporationFlask, CondensationFlask, CollectEvaporatedSolvent, RinseSolution, RinseVolume, BumpTrapRinseSolution,
+						BumpTrapRinseVolume, BumpTrapSampleContainer, CondensateRecoveryContainer, Balance, BalancingSolution,
+						VacuumEvaporationMethod, FlowRateProfile
 					},
-					First[groupedEvapBatch][[Range[5,29]]]
+					First[groupedEvapBatch][[Range[5, 29]]]
 				];
 
 				(* Stash which mode of evaporation this batch will utilize *)
-				batchEvapType = Lookup[sharedBatchPacket,EvaporationType];
+				batchEvapType = Lookup[sharedBatchPacket, EvaporationType];
 
 				(* Stash the model of container we're handling in this group of batch. The model is stored as a packet in the 4th index of each sample's values *)
 				containerModel = First[groupedEvapBatch][[4]];
 
 				(* Generate packets of our unique containers *)
-				uniqueContainers = fetchPacketFromFastAssoc[#,fastAssocSimulatedCache]&/@DeleteDuplicates[Flatten[groupedEvapBatch[[All,3]]]];
+				uniqueContainers = fetchPacketFromFastAssoc[#, fastAssocSimulatedCache]& /@ DeleteDuplicates[Flatten[groupedEvapBatch[[All, 3]]]];
 				aliquotContainer = First[groupedEvapBatch][[30]];
 
 				(*
@@ -3970,121 +4005,121 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 				*)
 				gatheredContainers = Switch[batchEvapType,
 					RotaryEvaporation,
-						ToList/@Download[uniqueContainers,Object],(* A rotovap currently can only hold one evaporation flask at a time *)
+					ToList /@ Download[uniqueContainers, Object], (* A rotovap currently can only hold one evaporation flask at a time *)
 
 					NitrogenBlowDown,
-						(* TODO: Better to switch off of container type or instrument model? *)
-						If[
-							(* If the sample is in a plate, and the resolved EvaporationType is NitrogeBlowDown, we are using the needle dryer *)
-							MatchQ[containerModel, ObjectP[{Model[Container,Plate],Object[Container,Plate]}]],
+					(* TODO: Better to switch off of container type or instrument model? *)
+					If[
+						(* If the sample is in a plate, and the resolved EvaporationType is NitrogeBlowDown, we are using the needle dryer *)
+						MatchQ[containerModel, ObjectP[{Model[Container, Plate], Object[Container, Plate]}]],
 
-							(*The NeedleDryer can only handle one nitrogen blower plate at a time*)
-							ToList/@Download[uniqueContainers,Object],
+						(*The NeedleDryer can only handle one nitrogen blower plate at a time*)
+						ToList /@ Download[uniqueContainers, Object],
 
-							(*Otherwise we are using the tube dryer and the samples are in Object[Container,Vessel]. We want to separate containers based on type, since we use different racks for 2 ml tubes, 15 mL, and 50 mL*)
-							ToList@Download[uniqueContainers,Object](*TODO: Change to use the footprint system*)
-						],
+						(*Otherwise we are using the tube dryer and the samples are in Object[Container,Vessel]. We want to separate containers based on type, since we use different racks for 2 ml tubes, 15 mL, and 50 mL*)
+						ToList@Download[uniqueContainers, Object](*TODO: Change to use the footprint system*)
+					],
 
 					SpeedVac,
-						Module[
-							{
-								containerSampleVolumePairs,duplicateValidPairs,shorteningValidPairs,
-								growingValidPairs,finalBalancedContainerPairs,remainingUnbalancedContainers,
-								containerCounterweightModelPairs
-							},
+					Module[
+						{
+							containerSampleVolumePairs, duplicateValidPairs, shorteningValidPairs,
+							growingValidPairs, finalBalancedContainerPairs, remainingUnbalancedContainers,
+							containerCounterweightModelPairs
+						},
 
 
-							(* Build a list of lists in the form {{container,volume of contents}..} *)
-							containerSampleVolumePairs = Map[
-								Function[
-									{containerPack},
-									{
-										Lookup[containerPack, Object],
-										Total[
-											cacheLookup[simulatedCache,#,Volume]&/@(Lookup[containerPack,Contents][[All,2]])
-										]
-									}
-								],
-								uniqueContainers
-							];
+						(* Build a list of lists in the form {{container,volume of contents}..} *)
+						containerSampleVolumePairs = Map[
+							Function[
+								{containerPack},
+								{
+									Lookup[containerPack, Object],
+									Total[
+										fastAssocLookup[fastAssocSimulatedCache, #, Volume]& /@ (Lookup[containerPack, Contents][[All, 2]])
+									]
+								}
+							],
+							uniqueContainers
+						];
 
-							(* First gather all the unique containers in the batch that have a difference less than 5% of the greatest weight of the two containers *)
-							duplicateValidPairs = Cases[
-								Subsets[containerSampleVolumePairs, {2}],
-								_?(
-									LessEqual[
-										(* We're examining subsets of the form: {{cont1,vol1},{cont2,vol2}} and want to minimize diff of vol1 & vol2 *)
-										Abs[#[[1,2]] - #[[2,2]]],
+						(* First gather all the unique containers in the batch that have a difference less than 5% of the greatest weight of the two containers *)
+						duplicateValidPairs = Cases[
+							Subsets[containerSampleVolumePairs, {2}],
+							_?(
+								LessEqual[
+									(* We're examining subsets of the form: {{cont1,vol1},{cont2,vol2}} and want to minimize diff of vol1 & vol2 *)
+									Abs[#[[1, 2]] - #[[2, 2]]],
 
-										(* We want the different to be below 5% of the volume of the most volumous container *)
-										0.05 * Max[#[[1,2]], #[[2,2]]]
-									]&
-								)
-							];
-							(* We need to initialize a variable that will shorten as we search the valid pairs *)
-							shorteningValidPairs = duplicateValidPairs;
+									(* We want the different to be below 5% of the volume of the most volumous container *)
+									0.05 * Max[#[[1, 2]], #[[2, 2]]]
+								]&
+							)
+						];
+						(* We need to initialize a variable that will shorten as we search the valid pairs *)
+						shorteningValidPairs = duplicateValidPairs;
 
-							(* We need to initialize a variable that will grow as we find valid pairs *)
-							growingValidPairs = {};
+						(* We need to initialize a variable that will grow as we find valid pairs *)
+						growingValidPairs = {};
 
-							(*
+						(*
 								Now for the tricky part:
 								- We will iterate enough times to find a list of unique pairs of containers
 								- Whenever we find a valid pair, we add it to the growing list
 								- Whenever we find a valid pair, we remove any existing pairs in the shortening list that contains objects in the valid pair we found
 								This will build a list of containers who's volumes are within 5% of each other and will generate NO overlapping pairs
 							*)
-							(*
+						(*
 							 	We will map the following function over the length of the duplicate free to list to avoid usiing While.
 								This means our function will iterate a finite number of times no matter what.
 							*)
-							Map[
-								Function[
-									{index},
-									If[
-										(* Make sure the list of remaining pairs is not empty *)
-										MatchQ[shorteningValidPairs, {}],
+						Map[
+							Function[
+								{index},
+								If[
+									(* Make sure the list of remaining pairs is not empty *)
+									MatchQ[shorteningValidPairs, {}],
 
-										(* If it is empty, do not save any pairs of containers *)
-										Nothing,
+									(* If it is empty, do not save any pairs of containers *)
+									Nothing,
 
-										(* If it's NOT empty, follow the logic above to pull out a pair of containers that can balance each other and scrub the volume info, leaving only containers *)
-										growingValidPairs = Append[growingValidPairs, Flatten@DeleteCases[First[shorteningValidPairs],VolumeP,Infinity]];
-										shorteningValidPairs = DeleteCases[
-											shorteningValidPairs, _List?(
-												MemberQ[#,
+									(* If it's NOT empty, follow the logic above to pull out a pair of containers that can balance each other and scrub the volume info, leaving only containers *)
+									growingValidPairs = Append[growingValidPairs, Flatten@DeleteCases[First[shorteningValidPairs], VolumeP, Infinity]];
+									shorteningValidPairs = DeleteCases[
+										shorteningValidPairs, _List?(
+											MemberQ[#,
 												Alternatives @@ First[shorteningValidPairs]]&
-											)
-										];
-									]
-								],
-								Range[Length[duplicateValidPairs]]
-							];
+										)
+									];
+								]
+							],
+							Range[Length[duplicateValidPairs]]
+						];
 
-							(* Having completed pairing all the containers we could, gather all containers we couldn't pair	*)
-							remainingUnbalancedContainers = DeleteCases[
-								DeleteDuplicates[Lookup[uniqueContainers,Object]],
-								Alternatives@@Flatten[growingValidPairs]
-							];
+						(* Having completed pairing all the containers we could, gather all containers we couldn't pair	*)
+						remainingUnbalancedContainers = DeleteCases[
+							DeleteDuplicates[Lookup[uniqueContainers, Object]],
+							Alternatives @@ Flatten[growingValidPairs]
+						];
 
-							(* Now mirror the paired container structures by adding a model resource that will become a counterweight plate *)
-							containerCounterweightModelPairs = {
-								#,
-								Link@Resource[
-									Sample -> Download[fastAssocLookup[fastAssocSimulatedCache,#,Model],Object]/.evaporateReplacementCounterweighContainers,
-									Name -> ToString[Unique[]]]
-							}&/@remainingUnbalancedContainers;
+						(* Now mirror the paired container structures by adding a model resource that will become a counterweight plate *)
+						containerCounterweightModelPairs = {
+							#,
+							Link@Resource[
+								Sample -> Download[fastAssocLookup[fastAssocSimulatedCache, #, Model], Object] /. evaporateReplacementCounterweighContainers,
+								Name -> ToString[Unique[]]]
+						}& /@ remainingUnbalancedContainers;
 
-									(* Now that we have a full list of balanced containers, add all the containers we couldn't balance to it and return *)
-							Join[
-								growingValidPairs,
-								containerCounterweightModelPairs
-							]
-						],
+						(* Now that we have a full list of balanced containers, add all the containers we couldn't balance to it and return *)
+						Join[
+							growingValidPairs,
+							containerCounterweightModelPairs
+						]
+					],
 
 					(* Failure case *)
 					_,
-						{{}}
+					{{}}
 				];
 
 				(* Now that we've gathered containers, determine the number of racks we'd need. *)
@@ -4096,35 +4131,43 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 				} = Switch[batchEvapType,
 
 					RotaryEvaporation,
-					{{Null},{Null},1},
+					{{Null}, {Null}, 1},
 
 					NitrogenBlowDown,
-							(*If the instrument is the Needle Dryer, this should be {{Null},{Null},1} since it can only handle one sample at a time.*)
-							If[MatchQ[Lookup[sharedBatchPacket,Instrument][Object], Alternatives[Model[Instrument, Evaporator, "id:R8e1PjRDb36j"],Object[Instrument, Evaporator, "id:xRO9n3vk1DDY"]]],
-								(*The Needle Dryer can only handle one plate at a time. *)
-								{{Null},{Null},1},
+					(* Pullout the Instrument from sharedBatchPacket *)
+					batchInstrument = Lookup[sharedBatchPacket, Instrument][Object];
+					(* Get the model of the instrument, this is used in the next check *)
+					batchInstrumentModel = If[
+						!MatchQ[batchInstrument, ObjectP[Model[Instrument]]],
+						batchInstrument[Model][Object],
+						batchInstrument
+					];
+					(*If the instrument is the Needle Dryer, this should be {{Null},{Null},1} since it can only handle one sample at a time.*)
+					If[MatchQ[batchInstrumentModel, Alternatives[Model[Instrument, Evaporator, "id:R8e1PjRDb36j"]]],
+						(*The Needle Dryer can only handle one plate at a time. *)
+						{{Null}, {Null}, 1},
 
-								(*Otherwise, calculate how many racks and container pairings we can have. Should be {{1},{Null},24|48}*)
-								Module[{availableRacks, numberOfTubePositions, rackTubeNumberRule, chosenRack, maxPositionsAvailable,rackCompatibiity},
-									(*List of the available racks that fit in the TubeDryer*)
-									availableRacks = Lookup[turboRackPackets,Object];
+						(*Otherwise, calculate how many racks and container pairings we can have. Should be {{1},{Null},24|48}*)
+						Module[{availableRacks, numberOfTubePositions, rackTubeNumberRule, chosenRack, maxPositionsAvailable, rackCompatibiity},
+							(*List of the available racks that fit in the TubeDryer*)
+							availableRacks = Lookup[turboRackPackets, Object];
 
-									(*Get the number of positions in each rack*)
-									numberOfTubePositions = Length/@Lookup[turboRackPackets,Positions];
+							(*Get the number of positions in each rack*)
+							numberOfTubePositions = Length /@ Lookup[turboRackPackets, Positions];
 
-									(*Make an association of RackObject->numberOfTubePositions*)
-									rackTubeNumberRule = AssociationThread[availableRacks,numberOfTubePositions];
+							(*Make an association of RackObject->numberOfTubePositions*)
+							rackTubeNumberRule = AssociationThread[availableRacks, numberOfTubePositions];
 
-								(*Get the container model. If we are aliquoting, it will be the aliquot container *)
-								joinedContainers = FirstCase[Append[ToList[aliquotContainer],containerModel],ObjectP[]];
+							(*Get the container model. If we are aliquoting, it will be the aliquot container *)
+							joinedContainers = FirstCase[Flatten[{ToList[aliquotContainer], containerModel}], ObjectP[]];
 
-								(*Check the compatibility of the container with the available racks *)
-								rackCompatibiity = CompatibleFootprintQ[#,joinedContainers,ExactMatch->False]&/@availableRacks;
+							(*Check the compatibility of the container with the available racks *)
+							rackCompatibiity = CompatibleFootprintQ[#, joinedContainers, ExactMatch -> False]& /@ availableRacks;
 
-								(*Choose the rack with that is compatible with the container *)
-								chosenRack = PickList[availableRacks,rackCompatibiity]/.{}->{Null};
+							(*Choose the rack with that is compatible with the container *)
+							chosenRack = PickList[availableRacks, rackCompatibiity] /. {} -> {Null};
 
-								maxPositionsAvailable = Lookup[rackTubeNumberRule,chosenRack];
+							maxPositionsAvailable = Lookup[rackTubeNumberRule, chosenRack];
 							{
 								Link[chosenRack],
 								{Null},
@@ -4134,80 +4177,80 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 					],
 
 					SpeedVac,
-						Module[
-							{
-								vacCentrifugeCompatibility,allowedRacks,allowedBuckets,allowedRotors,rackPositionsRules,
-								bucketPositionRules,rotorPositionRules,numberSlotsByContainerByRack,numberSlotsByContainerByBucket,
-								numberSlotsByContainerByRotor,numberOfPositionPerSetup,maxPositionsAvailable,chosenSpeedVacSetup,
-								numberOfBucketsNeeded,numberOfRacksNeeded
-							},
+					Module[
+						{
+							vacCentrifugeCompatibility, allowedRacks, allowedBuckets, allowedRotors, rackPositionsRules,
+							bucketPositionRules, rotorPositionRules, numberSlotsByContainerByRack, numberSlotsByContainerByBucket,
+							numberSlotsByContainerByRotor, numberOfPositionPerSetup, maxPositionsAvailable, chosenSpeedVacSetup,
+							numberOfBucketsNeeded, numberOfRacksNeeded
+						},
 
-							(* vacCentrifugeCompatibility *)
-							vacCentrifugeCompatibility = Cases[
-								(*fastAssocLookup[fastAssocSimulatedCache,containerModel,VacuumCentrifugeCompatibility],*)Lookup[First[groupedEvapBatch][[31]],VacuumCentrifugeCompatibility],
-								If[MatchQ[Lookup[sharedBatchPacket,Instrument],ObjectP[Model[Instrument]]],
-									AssociationMatchP[<|Instrument->ObjectP[Lookup[sharedBatchPacket,Instrument]]|>,AllowForeignKeys->True],
-									AssociationMatchP[<|Instrument->ObjectP[Download[fastAssocLookup[fastAssocSimulatedCache,Lookup[sharedBatchPacket,Instrument],Model], Object]]|>,AllowForeignKeys->True]
-								]
-							];
+						(* vacCentrifugeCompatibility *)
+						vacCentrifugeCompatibility = Cases[
+							(*fastAssocLookup[fastAssocSimulatedCache,containerModel,VacuumCentrifugeCompatibility],*)Lookup[First[groupedEvapBatch][[31]], VacuumCentrifugeCompatibility],
+							If[MatchQ[Lookup[sharedBatchPacket, Instrument], ObjectP[Model[Instrument]]],
+								AssociationMatchP[<|Instrument -> ObjectP[Lookup[sharedBatchPacket, Instrument]]|>, AllowForeignKeys -> True],
+								AssociationMatchP[<|Instrument -> ObjectP[Download[fastAssocLookup[fastAssocSimulatedCache, Lookup[sharedBatchPacket, Instrument], Model], Object]]|>, AllowForeignKeys -> True]
+							]
+						];
 
-							(* Make sure the sample has entry for the instrument we're using. Otherwise throw an error *)
-							If[MatchQ[vacCentrifugeCompatibility,{}|<||>],
-								Message[Error::IncompatibleSpeedVac,Flatten@groupedEvapBatch[[All,1]],Download[Lookup[sharedBatchPacket,Instrument],Object]];
-								$Failed
-							];
+						(* Make sure the sample has entry for the instrument we're using. Otherwise throw an error *)
+						If[MatchQ[vacCentrifugeCompatibility, {} | <||>],
+							Message[Error::IncompatibleSpeedVac, Flatten@groupedEvapBatch[[All, 1]], Download[Lookup[sharedBatchPacket, Instrument], Object]];
+							$Failed
+						];
 
-							(* Find the rack(s) and bucket(s) that each sample container could fit in on in this centrifuge *)
-							allowedRacks= Download[Lookup[vacCentrifugeCompatibility, Rack], Object, {}];
-							allowedBuckets = Download[Lookup[vacCentrifugeCompatibility, Bucket], Object, {}];
-							allowedRotors = Download[Lookup[vacCentrifugeCompatibility, Rotor], Object, {}];
+						(* Find the rack(s) and bucket(s) that each sample container could fit in on in this centrifuge *)
+						allowedRacks = Download[Lookup[vacCentrifugeCompatibility, Rack], Object, {}];
+						allowedBuckets = Download[Lookup[vacCentrifugeCompatibility, Bucket], Object, {}];
+						allowedRotors = Download[Lookup[vacCentrifugeCompatibility, Rotor], Object, {}];
 
-							(* Find the number of slots in each rotor/bucket/rack.
+						(* Find the number of slots in each rotor/bucket/rack.
 								 To avoid calling openLocations multiple times on the same object, we will call it on just the unique objects first and relate the object to the outcome *)
-							rackPositionsRules = Map[Rule[#,If[NullQ[#], 1, Length[Locations`Private`openLocations[#, Cache -> simulatedCache]]]] &, DeleteDuplicates[Flatten[allowedRacks]]];
-							bucketPositionRules = Map[Rule[#,If[NullQ[#], 1, Length[Locations`Private`openLocations[#, Cache -> simulatedCache]]]] &, DeleteDuplicates[Flatten[allowedBuckets]]];
-							rotorPositionRules = Map[Rule[#,If[NullQ[#], 1, Length[Locations`Private`openLocations[#, Cache -> simulatedCache]]]] &, DeleteDuplicates[Flatten[allowedRotors]]];
+						rackPositionsRules = Map[Rule[#, If[NullQ[#], 1, Length[Locations`Private`openLocations[#, Cache -> cache, Simulation -> updatedSimulation]]]] &, DeleteDuplicates[Flatten[allowedRacks]]];
+						bucketPositionRules = Map[Rule[#, If[NullQ[#], 1, Length[Locations`Private`openLocations[#, Cache -> cache, Simulation -> updatedSimulation]]]] &, DeleteDuplicates[Flatten[allowedBuckets]]];
+						rotorPositionRules = Map[Rule[#, If[NullQ[#], 1, Length[Locations`Private`openLocations[#, Cache -> cache, Simulation -> updatedSimulation]]]] &, DeleteDuplicates[Flatten[allowedRotors]]];
 
-							(* Then expand the rules so that we have the number of slots for each object *)
-							numberSlotsByContainerByRack = allowedRacks /. rackPositionsRules;
-							numberSlotsByContainerByBucket = allowedBuckets /. bucketPositionRules;
-							numberSlotsByContainerByRotor = allowedRotors /. rotorPositionRules;
+						(* Then expand the rules so that we have the number of slots for each object *)
+						numberSlotsByContainerByRack = allowedRacks /. rackPositionsRules;
+						numberSlotsByContainerByBucket = allowedBuckets /. bucketPositionRules;
+						numberSlotsByContainerByRotor = allowedRotors /. rotorPositionRules;
 
-							(* For each container, find the number of positions in the rotor/bucket/rack combo that can fit the most containers*)
-							numberOfPositionPerSetup = MapThread[
-								Times[#1, #2, #3]&,
-								{numberSlotsByContainerByRack,numberSlotsByContainerByBucket,numberSlotsByContainerByRotor}
-							];
+						(* For each container, find the number of positions in the rotor/bucket/rack combo that can fit the most containers*)
+						numberOfPositionPerSetup = MapThread[
+							Times[#1, #2, #3]&,
+							{numberSlotsByContainerByRack, numberSlotsByContainerByBucket, numberSlotsByContainerByRotor}
+						];
 
-							(* Now determine the max *)
-							maxPositionsAvailable = Max[numberOfPositionPerSetup];
+						(* Now determine the max *)
+						maxPositionsAvailable = Max[numberOfPositionPerSetup];
 
-							chosenSpeedVacSetup = First@Flatten@PickList[
-								vacCentrifugeCompatibility,
-								numberOfPositionPerSetup,
-								maxPositionsAvailable
-							];
+						chosenSpeedVacSetup = First@Flatten@PickList[
+							vacCentrifugeCompatibility,
+							numberOfPositionPerSetup,
+							maxPositionsAvailable
+						];
 
-							(* Stash how many buckets we can put into the rotor *)
-							numberOfBucketsNeeded = Download[Lookup[chosenSpeedVacSetup,Rotor],Object]/.rotorPositionRules;
+						(* Stash how many buckets we can put into the rotor *)
+						numberOfBucketsNeeded = Download[Lookup[chosenSpeedVacSetup, Rotor], Object] /. rotorPositionRules;
 
-							(* Calculate how many racks are needed for the run, which is number of racks per bucket * number of buckets per rotor *)
-							numberOfRacksNeeded = numberOfBucketsNeeded * (Download[Lookup[chosenSpeedVacSetup,Bucket],Object]/.bucketPositionRules);
+						(* Calculate how many racks are needed for the run, which is number of racks per bucket * number of buckets per rotor *)
+						numberOfRacksNeeded = numberOfBucketsNeeded * (Download[Lookup[chosenSpeedVacSetup, Bucket], Object] /. bucketPositionRules);
 
-							(* Return our batches' rack and bucket information - this information will be multiple by the number of batches we're making in this evap params section *)
-							{
-								Table[Link[Lookup[chosenSpeedVacSetup,Rack]],numberOfRacksNeeded],
-								Table[Link[Lookup[chosenSpeedVacSetup,Bucket]],numberOfBucketsNeeded],
+						(* Return our batches' rack and bucket information - this information will be multiple by the number of batches we're making in this evap params section *)
+						{
+							Table[Link[Lookup[chosenSpeedVacSetup, Rack]], numberOfRacksNeeded],
+							Table[Link[Lookup[chosenSpeedVacSetup, Bucket]], numberOfBucketsNeeded],
 
-								(* Now since the gathered containers are balanced against a plate with equal weight, we need to divide this by 2 *)
-								maxPositionsAvailable/2
-							}
-						]
+							(* Now since the gathered containers are balanced against a plate with equal weight, we need to divide this by 2 *)
+							maxPositionsAvailable / 2
+						}
+					]
 				];
 
 				(* Now take our lists of balanced/grouped containers and partition them according to instrument capacity, and remove the counterweight resources *)
 				reGroupedContainers = DeleteCases[
-					Flatten/@PartitionRemainder[gatheredContainers,maxContainersPairingsPerBatch],
+					Flatten /@ PartitionRemainder[gatheredContainers, maxContainersPairingsPerBatch],
 					Link[Resource[__]],
 					Infinity
 				];
@@ -4215,43 +4258,44 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 				counterweightRules = Which[
 
 					(* If it's an Object - Resource pair, point the Object at the resource *)
-					MatchQ[#,{ObjectP[Object[Container]],Link[Resource[__]]}],
-						First[#] -> Last[#],
+					MatchQ[#, {ObjectP[Object[Container]], Link[Resource[__]]}],
+					First[#] -> Last[#],
 
 					(* Otherwise these containers don't have counterweights, as other WorkingContainers will balance them  *)
-					MatchQ[#,{ObjectP[Object[Container]],ObjectP[Object[Container]]}],
-						Sequence@@{First[#] -> Null, Last[#] -> Null},
+					MatchQ[#, {ObjectP[Object[Container]], ObjectP[Object[Container]]}],
+					Sequence @@ {First[#] -> Null, Last[#] -> Null},
 
 					(* If this was a nitrogen or rotavap plate that never gets pair, set counterweights to null *)
-					MatchQ[#,{ObjectP[Object[Container]]}],
-						First[#] -> Null,
+					MatchQ[#, {ObjectP[Object[Container]]}],
+					First[#] -> Null,
 
 					(* When in doubt set everything to null *)
 					True,
-						# -> Null
-				]&/@gatheredContainers;
+					# -> Null
+				]& /@ gatheredContainers;
 
-				groupedCounterWeights = reGroupedContainers/.counterweightRules;
+				groupedCounterWeights = reGroupedContainers /. counterweightRules;
 				(* Build a lookup guide of simulated container to samples in *)
-				simulateSamplesToPooledSamplesLookup = AssociationThread[groupedEvapBatch[[All,2]]->groupedEvapBatch[[All,1]]];
+				(* flattening here because we only care about object1 -> object2 and don't care about the pooling grouping here *)
+				simulateSamplesToPooledSamplesLookup = AssociationThread[Flatten[groupedEvapBatch[[All, 2]]] -> Flatten[groupedEvapBatch[[All, 1]]]];
 
 				(* Determine the index of working containers these batched containers point to so we can pull it out later *)
 				(* NOTE: This variable is quite listed, but it doesn't matter as when we see these values next we're just gonna flatten everything *)
 				groupedContainerIndexes = Flatten[
 					Position[
-						Download[simulatedWorkingContainers, Object],
-						Alternatives@@#
+						Flatten[Download[simulatedWorkingContainers, Object],1],
+						Alternatives @@ #
 					]
-				]&/@reGroupedContainers;
+				]& /@ reGroupedContainers;
 
 				(* Using the lookup table above, gather the relevant sample pools so we can determine which sample indexes these batches point at *)
-				groupedSamplesPools = Flatten/@Map[
+				groupedSamplesPools = Flatten /@ Map[
 					Function[{oneGroupingOfContainers},
 						Lookup[
 							simulateSamplesToPooledSamplesLookup,
-							(fastAssocLookup[fastAssocSimulatedCache,#,Contents][[All,2]])/.xLink:LinkP[]:>First[xLink],
+							(fastAssocLookup[fastAssocSimulatedCache, #, Contents][[All, 2]]) /. xLink:LinkP[] :> First[xLink],
 							Nothing(*Comes up if we find things in the containers that were not in our samplesin or simulated samples *)
-						]&/@oneGroupingOfContainers
+						]& /@ oneGroupingOfContainers
 					],
 					reGroupedContainers
 				];
@@ -4259,7 +4303,7 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 				(* Now that we've grouped the input samples according to how they'll appear in the batch, determine which position in WorkingSamples these will point at*)
 				groupedSamplesIndexes = Map[
 					Function[{batchOfSamples},
-						Flatten[Position[myPooledSamples,#]&/@batchOfSamples]
+						Flatten[Position[Flatten[myPooledSamples,1], #]& /@ batchOfSamples]
 					],
 					groupedSamplesPools
 				];
@@ -4285,69 +4329,79 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 						groupedSamplesIndexes,
 						groupedContainerIndexes,
 						groupedCounterWeights,
-						Table[racksNeededPerBatch,Length[reGroupedContainers]],
-						Table[bucketsNeededPerBatch,Length[reGroupedContainers]]
+						Table[racksNeededPerBatch, Length[reGroupedContainers]],
+						Table[bucketsNeededPerBatch, Length[reGroupedContainers]]
 					}
 				]
 			]
 		],
 
 		(* We're mapping all the code above over our groupings to condense the batches for samples that can be evaporated together *)
-		groupedBatches
+			groupedBatches
 	];
 
 	(* Pull the list of pooled containers out and find the length of the containers*)
-	batchContainerLengths = Length/@Lookup[evapParamsRaw,PooledContainersIn];
-	batchSampleLengths = Length/@Lookup[evapParamsRaw,PooledSamplesIn];
-	finalContainerIndexes = Flatten[Lookup[evapParamsRaw,PooledContainerIndex]];
-	finalSampleIndexes = Flatten[Lookup[evapParamsRaw,PooledSampleIndex]];
+	batchContainerLengths = Length /@ Lookup[evapParamsRaw, PooledContainersIn];
+	batchSampleLengths = Length /@ Lookup[evapParamsRaw, PooledSamplesIn];
+	finalContainerIndexes = Flatten[Lookup[evapParamsRaw, PooledContainerIndex]];
+	finalSampleIndexes = Flatten[Lookup[evapParamsRaw, PooledSampleIndex]];
 
 	(* Get the final counterweight list. Note: It's batch lengths are the same as batchContainerLengths *)
-	batchedCounterWeights = Flatten[Lookup[evapParamsRaw,CounterweightResources]];
+	batchedCounterWeights = Flatten[Lookup[evapParamsRaw, CounterweightResources]];
 
 	(* Get the list of the centrifuge racks only *)
-	centRacksOnly = Lookup[evapParamsRaw,RequiredRacks]/.Alternatives[Model[Container, Rack, "id:54n6evLR9oEL"],Model[Container, Rack, "id:n0k9mG8wD6An"],Model[Container, Rack, "id:01G6nvwpN571"]]->Null;
+	centRacksOnly = Lookup[evapParamsRaw, RequiredRacks] /. Alternatives[Model[Container, Rack, "id:54n6evLR9oEL"], Model[Container, Rack, "id:n0k9mG8wD6An"], Model[Container, Rack, "id:01G6nvwpN571"]] -> Null;
 
 	(* Pull batching information for the SpeedVac racks and buckets *)
-	batchedCentrifugeTubeRacks = Flatten[MapThread[Function[{evapType,centRack},
+	batchedCentrifugeTubeRacks = Flatten[MapThread[Function[{evapType, centRack},
 		If[
-			MatchQ[evapType,SpeedVac],
-				centRack,
-				Table[Null,Length[centRack]]
-			]
-		],
-		{Lookup[evapParamsRaw,EvaporationType],centRacksOnly}
-		]];
-	batchedSpeedVacBuckets = Flatten[Lookup[evapParamsRaw,SpeedVacBuckets]];
+			MatchQ[evapType, SpeedVac],
+			centRack,
+			Table[Null, Length[centRack]]
+		]
+	],
+		{Lookup[evapParamsRaw, EvaporationType], centRacksOnly}
+	]];
+	batchedSpeedVacBuckets = Flatten[Lookup[evapParamsRaw, SpeedVacBuckets]];
 
-	{batchedNitrogenTubeRacks,nozzlePlugs} = Transpose@MapThread[Function[{inst,rack},
+	(* Isolate the instrument object, which at this point can be either a specific instrument or a model *)
+	unsortedInstrument = Download[Lookup[evapParamsRaw, Instrument], Object];
+
+	(* If the unsortedInstrument isn't a model, get the model of the instrument *)
+	instrumentModel = If[
+		MatchQ[unsortedInstrument,ObjectP[Objet[Instrument]]],
+		Download[unsortedInstrument, Model[Object], Simulation->updatedSimulation],
+		unsortedInstrument
+	];
+
+	{batchedNitrogenTubeRacks, nozzlePlugs} = Transpose@MapThread[Function[{inst, rack},
 		If[
 			(*If the Instrument is the Turbovap, get the turbovap racks needed*)
-			MatchQ[inst, Alternatives[Model[Instrument, Evaporator, "id:kEJ9mqRxKA3p"],Object[Instrument, Evaporator, "id:kEJ9mqRxKARz"]]],
-				Module[{nozzle,racks},
-					racks = First[rack];
-					nozzle = Model[Part, "Nozzle Plugs for TurboVap Evaporator"];
-					{racks, nozzle}
-				],
+			MatchQ[inst, ObjectP[Model[Instrument, Evaporator, "id:kEJ9mqRxKA3p"]]],
+			Module[{nozzle, racks},
+				racks = First[rack];
+				nozzle = Model[Part, "Nozzle Plugs for TurboVap Evaporator"];
+				{racks, nozzle}
+			],
 			(*Otherwise, the TurboVap is not selected for this batch so no Turbovap racks or nozzle plugs are needed *)
 			{
-				Table[Null,Length[rack]],
+				Table[Null, Length[rack]],
 				{Null}
 			}
 		]
-		],
-		{Download[Lookup[evapParamsRaw,Instrument],Object],Download[Lookup[evapParamsRaw,RequiredRacks],Object]}
+	],
+		{instrumentModel, Download[Lookup[evapParamsRaw, RequiredRacks], Object]}
 	];
 
 	(* If the TurboVap is selected, we will need a funnel, a drain tube, and a waste container for the bath water *)
-	{drainTube,funnelResource,wasteContainerResource} = If[
-		ContainsAny[Download[Lookup[evapParamsRaw,Instrument],Object], {Model[Instrument, Evaporator, "id:kEJ9mqRxKA3p"],Object[Instrument, Evaporator, "id:kEJ9mqRxKARz"]}],
-			Module[{drain,funnel,waste},
-				drain = ToList[Resource[Sample-> Model[Plumbing, Tubing, "TurboVap LV Water Bath Draining Tube"], Rent->True]];
-				funnel = ToList[Resource[Sample-> Model[Container, GraduatedCylinder, "4 L polypropylene graduated cylinder"], Rent->True]];
-				waste = ToList[Resource[Sample-> PreferredContainer[10 Liter], Rent->True]];
-				{drain,funnel,waste}
-			],
+	{drainTube, funnelResource, wasteContainerResource} = If[
+		MatchQ[instrumentModel, ObjectP[Model[Instrument, Evaporator, "id:kEJ9mqRxKA3p"]]],
+		Module[{drain, funnel, waste},
+			drain = ToList[Resource[Sample -> Model[Plumbing, Tubing, "TurboVap LV Water Bath Draining Tube"], Rent -> True]];
+			funnel = ToList[Resource[Sample -> Model[Container, GraduatedCylinder, "4 L polypropylene graduated cylinder"], Rent -> True]];
+			waste = ToList[Resource[Sample -> PreferredContainer[10 Liter], Rent -> True]];
+			{drain, funnel, waste}
+		],
 		{
 			{Null},
 			{Null},
@@ -4356,18 +4410,18 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	];
 
 	(* Generate resources for any bath fluid we may create *)
-	bathFluidResources=MapThread[
-		Function[{evap,evapFlaskLinkedResource},
+	bathFluidResources = MapThread[
+		Function[{evap, evapFlaskLinkedResource},
 			Switch[evap,
 				(*If we are using the RotaryEvaporator, we use Milli-Q water and we calculate the amount based on the volume of the pear flask*)
 				RotaryEvaporation,
-				Module[{evapFlask,flaskSize,bathVolume,bathVolumeRounded},
+				Module[{evapFlask, flaskSize, bathVolume, bathVolumeRounded},
 					(* evapFlask will be a Link[Resource[...]] so we have to extract model or object from it *)
-					evapFlask=evapFlaskLinkedResource[[1]][Sample];
+					evapFlask = evapFlaskLinkedResource[[1]][Sample];
 					(* Get the volume of the rotovap flask - make sure we always get this information from model *)
-					flaskSize=If[MatchQ[evapFlask,ObjectP[Object[Container,Vessel]]],
-						fastAssocLookup[fastAssocSimulatedCache,evapFlask,{Model,MaxVolume}],
-						fastAssocLookup[fastAssocSimulatedCache,evapFlask,{MaxVolume}]
+					flaskSize = If[MatchQ[evapFlask, ObjectP[Object[Container, Vessel]]],
+						fastAssocLookup[fastAssocSimulatedCache, evapFlask, {Model, MaxVolume}],
+						fastAssocLookup[fastAssocSimulatedCache, evapFlask, {MaxVolume}]
 					];
 
 					(* Calculate the volume of water we need for the water bath *)
@@ -4377,40 +4431,40 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 					(* 2 L flask    -> 2.45 L *)
 					(* Linear regression: bath volume (mL) = -1.2214 * flask volume (mL) + 5375 *)
 
-					bathVolume=-1.2214*flaskSize+5375 Milliliter;
+					bathVolume = -1.2214 * flaskSize + 5375 Milliliter;
 
 					(* Round to the nearest 50 mL as this is the resolution of the 4 L graduated cylinder *)
-					bathVolumeRounded=SafeRound[bathVolume,50 Milliliter];
+					bathVolumeRounded = SafeRound[bathVolume, 50 Milliliter];
 
 					(* Generate the resource for the Milli-Q water with the calculated amount *)
-					Resource[Sample->Model[Sample,"Milli-Q water"],Amount->bathVolumeRounded,Container->PreferredContainer[bathVolumeRounded],Name->ToString[Unique[]]]
+					Resource[Sample -> Model[Sample, "Milli-Q water"], Amount -> bathVolumeRounded, Container -> PreferredContainer[bathVolumeRounded], Name -> ToString[Unique[]]]
 				],
 				NitrogenBlowDown,
 				(*Otherwise, we are using NitrogenBlowDown, which requires 10 L of RO water*)
-				Resource[Sample->Model[Sample,"Milli-Q water"],Amount->10Liter,Container->PreferredContainer[10Liter],Name->ToString[Unique[]]],
-				_,Null
+				Resource[Sample -> Model[Sample, "Milli-Q water"], Amount -> 10Liter, Container -> PreferredContainer[10Liter], Name -> ToString[Unique[]]],
+				_, Null
 			]
 		],
-		{Lookup[evapParamsRaw,EvaporationType],Lookup[evapParamsRaw,EvaporationFlask]}
+		{Lookup[evapParamsRaw, EvaporationType], Lookup[evapParamsRaw, EvaporationFlask]}
 	];
 
 	(* Stash an instrument resource requesting at least one of the instruments we'll use to make sure the operators can actually run the protocol *)
-	placeHolderInstResources = Module[{resInstruments,resInstrumentModels,resInstrumentObjects,placeHolderInstTime},
+	placeHolderInstResources = Module[{resInstruments, resInstrumentModels, resInstrumentObjects, placeHolderInstTime},
 		(* We have split the resolved instruments by objects models since instrument resource does not accept mixed list *)
-		resInstruments=ToList[Lookup[myResolvedOptions,Instrument]];
-		resInstrumentModels=DeleteDuplicates@Cases[resInstruments,ObjectP[Model[Instrument]]];
-		resInstrumentObjects=DeleteDuplicates@Cases[resInstruments,ObjectP[Object[Instrument]]];
+		resInstruments = ToList[Lookup[myResolvedOptions, Instrument]];
+		resInstrumentModels = DeleteDuplicates@Cases[resInstruments, ObjectP[Model[Instrument]]];
+		resInstrumentObjects = DeleteDuplicates@Cases[resInstruments, ObjectP[Object[Instrument]]];
 		(* get a placeholder instrument time, does not need to be accurate updateEvaporationStatus will make a better resource that is actually used by individual batch *)
-		placeHolderInstTime=Total[Lookup[myResolvedOptions,EvaporationTime]];
+		placeHolderInstTime = Total[Lookup[myResolvedOptions, EvaporationTime]];
 		Flatten[{
 			(* For instrument objects, we have to make resource for each one of them *)
 			Map[
-				Resource[Instrument->#1,Time->placeHolderInstTime]&,
+				Resource[Instrument -> #1, Time -> placeHolderInstTime]&,
 				resInstrumentObjects
 			],
 			(* For instrument models, we can just make one resource indicating as long as one of the instruments is available we can pass RC and run the protocol in lab *)
-			If[Length[resInstrumentModels]>0,
-				Resource[Instrument->resInstrumentModels,Time->placeHolderInstTime],
+			If[Length[resInstrumentModels] > 0,
+				Resource[Instrument -> resInstrumentModels, Time -> placeHolderInstTime],
 				{}
 			]
 		}]
@@ -4431,109 +4485,109 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 			RequiredRacks,
 			SpeedVacBuckets
 		}
-	]&/@evapParamsRaw;
+	]& /@ evapParamsRaw;
 
 	(*Replace the bath fluids with a link to the resources in cleanedEvapParams *)
-	evapParamsWithBath = MapThread[Append[#1,BathFluid->Link[#2]]&,{cleanedEvapParams,bathFluidResources}];
+	evapParamsWithBath = MapThread[Append[#1, BathFluid -> Link[#2]]&, {cleanedEvapParams, bathFluidResources}];
 
 	(* expSubdivide: a helper that generates N exponentially spaced intermediate values between startVal and endVal *)
-	expSubdivide[startVal_,endVal_,numberOfPoints_Integer]:=Module[{logIntVals,truncatedLogIntVals},
+	expSubdivide[startVal_, endVal_, numberOfPoints_Integer] := Module[{logIntVals, truncatedLogIntVals},
 		(* Generate N+2 evenly distributed intermediate values of the LOG of startVal and the LOG of endVal *)
-		logIntVals=Subdivide[Log[startVal],Log[endVal],numberOfPoints+1];
+		logIntVals = Subdivide[Log[startVal], Log[endVal], numberOfPoints + 1];
 		(* Drop the first and last element so we have N values now *)
-		truncatedLogIntVals=Take[logIntVals,{2,-2}];
+		truncatedLogIntVals = Take[logIntVals, {2, -2}];
 		(* Convert LOG values back to real values *)
 		Exp[truncatedLogIntVals]
 	];
-	
+
 	(* Append the key BatchNumber to each batch association to indicate which batch it is *)
 	(* need to do these shenanigans with BumpTrapSampleContainer and CondensateRecoveryContainer because I believe we can't easily add indices to a named multiple field except to the end, and we needed to add these later *)
 	(* we are also going to make a pressure/rotation/time gradient table here so operator knows how to input parameters to rotovap, unfortunately we have to do this manually for now *)
 	(* this table always looks like this {{Pressure, RPM, Time}..} and will always have EXACT 10 entries b/c we can only fill up 10 entries in the rotovap instrument *)
-	{evapParams,evapPressureProfileImageCloudFiles}=Transpose@MapThread[
-		Function[{evapParamsPerBatch,index},
-			Module[{evapPressureProfile,evapPressureProfileImageCloudFile},
+	{evapParams, evapPressureProfileImageCloudFiles} = Transpose@MapThread[
+		Function[{evapParamsPerBatch, index},
+			Module[{evapPressureProfile, evapPressureProfileImageCloudFile},
 				(* Only try to generate the gradient table if we are doing RotaryEvaporation *)
-				{evapPressureProfile,evapPressureProfileImageCloudFile}=If[MatchQ[Lookup[evapParamsPerBatch,EvaporationType],RotaryEvaporation],
+				{evapPressureProfile, evapPressureProfileImageCloudFile} = If[MatchQ[Lookup[evapParamsPerBatch, EvaporationType], RotaryEvaporation],
 					Module[
-						{equilibrationTimePerBatch,pressureRampTimePerBatch,evapTimePerBatch,evapPressurePerBatch,rotationRatePerBatch,equilibrationTimeEntry,
-							pressureRampEntries,evapTimeEntry,allEntries,allEntryStrings,allEntryFormattedStrings,allEntryTableContents,allEntryImage,entryImageCloudFilePacket},
+						{equilibrationTimePerBatch, pressureRampTimePerBatch, evapTimePerBatch, evapPressurePerBatch, rotationRatePerBatch, equilibrationTimeEntry,
+							pressureRampEntries, evapTimeEntry, allEntries, allEntryStrings, allEntryFormattedStrings, allEntryTableContents, allEntryImage, entryImageCloudFilePacket},
 						(* Pull out EquilibrationTime, PressureRampTime, EvaporationTime, EvaporationPressure *)
-						{equilibrationTimePerBatch,pressureRampTimePerBatch,evapTimePerBatch,evapPressurePerBatch,rotationRatePerBatch}=Lookup[evapParamsPerBatch,
-							{EquilibrationTime,PressureRampTime,EvaporationTime,EvaporationPressure,RotationRate}
+						{equilibrationTimePerBatch, pressureRampTimePerBatch, evapTimePerBatch, evapPressurePerBatch, rotationRatePerBatch} = Lookup[evapParamsPerBatch,
+							{EquilibrationTime, PressureRampTime, EvaporationTime, EvaporationPressure, RotationRate}
 						];
 						(* See if we need to do equilibration up front - dont rotate since flask MIGHT fall off *)
-						equilibrationTimeEntry=If[MatchQ[equilibrationTimePerBatch,GreaterP[0*Minute]],
-							{{1*Atmosphere,0*RPM,equilibrationTimePerBatch}},
+						equilibrationTimeEntry = If[MatchQ[equilibrationTimePerBatch, GreaterP[0 * Minute]],
+							{{1 * Atmosphere, 0 * RPM, equilibrationTimePerBatch}},
 							{}
 						];
 						(* Now we need to do step-wise pressure ramp gradient - we will decrease pressure from atm to set pressure in an exponential way
 						since we want to put more pressure/time points when it is close to the set pressure to avoid boiling/bumping *)
 						(* We always try to generate three points, even though this may result in time for that intermediate pressure being 0 second, which is still okay *)
-						pressureRampEntries=If[MatchQ[pressureRampTimePerBatch,GreaterP[0*Minute]],
-							Module[{startPressure,endPressure,intPressures,totalRampTime,timeEquation,startDuration,solvedStartDuration,intTimes},
+						pressureRampEntries = If[MatchQ[pressureRampTimePerBatch, GreaterP[0 * Minute]],
+							Module[{startPressure, endPressure, intPressures, totalRampTime, timeEquation, startDuration, solvedStartDuration, intTimes},
 								(* Convert to mBar then get rid of the unit *)
-								startPressure=QuantityMagnitude[1*Atmosphere,Millibar];
-								endPressure=QuantityMagnitude[evapPressurePerBatch,Millibar];
+								startPressure = QuantityMagnitude[1 * Atmosphere, Millibar];
+								endPressure = QuantityMagnitude[evapPressurePerBatch, Millibar];
 								(* Use the helper to generate 3 exponentially spaced intermediate pressure values *)
-								intPressures=expSubdivide[startPressure,endPressure,3];
+								intPressures = expSubdivide[startPressure, endPressure, 3];
 
 								(* Convert the total ramp time to Second, get rid of the unit, also conveniently just round it *)
-								totalRampTime=QuantityMagnitude[pressureRampTimePerBatch,Second];
+								totalRampTime = QuantityMagnitude[pressureRampTimePerBatch, Second];
 								(* We have to do a bit equation solving here, we know the total ramp time,
 								but we want to get a span of exponentially spaced time durations that are reasonable and add up to total ramp time *)
 								(* Assuming we will spend {startDuration} amount at the first pressure that is closest to atmosphere,
 								then eventually spend 4 times longer at the pressure that is closet to the final set pressure *)
-								timeEquation=(Total[expSubdivide[startDuration,startDuration*4,3]]==totalRampTime);
-								solvedStartDuration=First[startDuration/.Solve[timeEquation],Null];
+								timeEquation = (Total[expSubdivide[startDuration, startDuration * 4, 3]] == totalRampTime);
+								solvedStartDuration = First[startDuration /. Solve[timeEquation], Null];
 								(* With the solved value we can generate 3 exponentially spaced time intervals *)
-								intTimes=expSubdivide[solvedStartDuration,solvedStartDuration*4,3];
+								intTimes = expSubdivide[solvedStartDuration, solvedStartDuration * 4, 3];
 
 								(* RPM will be the same for every entry *)
 								Transpose[{
-									intPressures*Millibar,
-									ConstantArray[rotationRatePerBatch,3],
-									intTimes*Second
+									intPressures * Millibar,
+									ConstantArray[rotationRatePerBatch, 3],
+									intTimes * Second
 								}]
 							],
 							{}
 						];
 						(* The actual evaporation setting is going to be simply one-liner *)
-						evapTimeEntry=If[MatchQ[evapTimePerBatch,GreaterP[0*Minute]],
-							{{evapPressurePerBatch,rotationRatePerBatch,evapTimePerBatch}},
+						evapTimeEntry = If[MatchQ[evapTimePerBatch, GreaterP[0 * Minute]],
+							{{evapPressurePerBatch, rotationRatePerBatch, evapTimePerBatch}},
 							{}
 						];
 						(* Join all the entries *)
-						allEntries=Join[equilibrationTimeEntry,pressureRampEntries,evapTimeEntry];
+						allEntries = Join[equilibrationTimeEntry, pressureRampEntries, evapTimeEntry];
 
 						(* Now we have all the entries, we can go make an image for the table so operator can easily see it in the task *)
 						(* Easier if we just convert everything to string in the right unit. Quieting b/c we also do not need to hear warnings from SafeRound[...] here  *)
-						allEntryStrings=Quiet[allEntries/.{
+						allEntryStrings = Quiet[allEntries /. {
 							(* Convert pressure to Millibar *)
-							pressure:PressureP:>ToString[SafeRound[QuantityMagnitude[pressure,Millibar],1]]<>" mBar",
+							pressure:PressureP :> ToString[SafeRound[QuantityMagnitude[pressure, Millibar], 1]]<>" mBar",
 							(* Convert rotation rate to RPM *)
-							rotationRate:RPMP:>ToString[SafeRound[QuantityMagnitude[rotationRate,RPM],1]]<>" RPM",
+							rotationRate:RPMP :> ToString[SafeRound[QuantityMagnitude[rotationRate, RPM], 1]]<>" RPM",
 							(* Format time in form of hh\:mm\:ss since that is how instrument accepts values *)
-							time:TimeP:>TextString[TimeObject@@QuantityMagnitude[SafeRound[time,1*Second],MixedUnit[{"Hours","Minutes","Seconds"}]]]
+							time:TimeP :> TextString[TimeObject @@ QuantityMagnitude[SafeRound[time, 1 * Second], MixedUnit[{"Hours", "Minutes", "Seconds"}]]]
 						}];
 						(* Pad the contents to a length 10 if we can b/c that is how many rotovap can take input in program mode *)
-						allEntryFormattedStrings=Switch[Length[allEntryStrings],
+						allEntryFormattedStrings = Switch[Length[allEntryStrings],
 							(* If we do not have any pressure value for some reason, return the error message *)
 							0,
-							{{"An error happened when trying to generate Pressure/Rotation/Time values, please stop and file a troubleshooting ticket.","N/A","N/A"}},
+							{{"An error happened when trying to generate Pressure/Rotation/Time values, please stop and file a troubleshooting ticket.", "N/A", "N/A"}},
 							(* Otherwise, always padding to a length of 10 also prepending index *)
-							RangeP[1,10],
-							PadRight[allEntryStrings,10,{{"1000 mBar","100 RPM","00:00:00"}}],
+							RangeP[1, 10],
+							PadRight[allEntryStrings, 10, {{"1000 mBar", "100 RPM", "00:00:00"}}],
 							(* For whatever other reasons that may cause error, return the error message *)
 							_,
-							{{"An error happened when trying to generate Pressure/Rotation/Time values, please stop and file a troubleshooting ticket.","N/A","N/A"}}
+							{{"An error happened when trying to generate Pressure/Rotation/Time values, please stop and file a troubleshooting ticket.", "N/A", "N/A"}}
 						];
 						(* Make the table contents by prepending index to each row *)
-						allEntryTableContents=Transpose[Join[{Range[Length[allEntryFormattedStrings]]},Transpose[allEntryFormattedStrings]]];
+						allEntryTableContents = Transpose[Join[{Range[Length[allEntryFormattedStrings]]}, Transpose[allEntryFormattedStrings]]];
 						(* Rasterize the table so we can get an image to UploadCloudFile with *)
-						allEntryImage=Rasterize[PlotTable[allEntryTableContents,TableHeadings->{None,{"No.","Pressure","Rotation","hh:mm:ss"}},Alignment->Center]];
-						(* Make a cloud file *)
-						entryImageCloudFilePacket=UploadCloudFile[allEntryImage,Upload->upload]/.$Failed->Null;
+						allEntryImage = Rasterize[PlotTable[allEntryTableContents, TableHeadings -> {None, {"No.", "Pressure", "Rotation", "hh:mm:ss"}}, Alignment -> Center]];
+						(* Make a cloud file, block $DisableVerbosePrinting True to not show constellation message of cloud file upload *)
+						entryImageCloudFilePacket = Block[{$DisableVerbosePrinting = True}, UploadCloudFile[allEntryImage, Upload -> upload] /. $Failed -> Null];
 
 						{
 							allEntries,
@@ -4541,18 +4595,18 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 						}
 					],
 					(* Otherwise dont bother making *)
-					{Null,Null}
+					{Null, Null}
 				];
 				{
 					(* Append the batch number as well BumpTrapSampleContainer, CondensateRecoveryContainer and all the above efforts *)
 					Join[
-						KeyDrop[evapParamsPerBatch,{BumpTrapSampleContainer,CondensateRecoveryContainer,EvaporationPressureProfile,EvaporationPressureProfileImage}],
+						KeyDrop[evapParamsPerBatch, {BumpTrapSampleContainer, CondensateRecoveryContainer, EvaporationPressureProfile, EvaporationPressureProfileImage}],
 						<|
-							BatchNumber->index,
-							BumpTrapSampleContainer->Lookup[evapParamsPerBatch,BumpTrapSampleContainer],
-							CondensateRecoveryContainer->Lookup[evapParamsPerBatch,CondensateRecoveryContainer],
-							EvaporationPressureProfile->evapPressureProfile,
-							EvaporationPressureProfileImage->Link[Download[evapPressureProfileImageCloudFile,Object]]
+							BatchNumber -> index,
+							BumpTrapSampleContainer -> Lookup[evapParamsPerBatch, BumpTrapSampleContainer],
+							CondensateRecoveryContainer -> Lookup[evapParamsPerBatch, CondensateRecoveryContainer],
+							EvaporationPressureProfile -> evapPressureProfile,
+							EvaporationPressureProfileImage -> Link[Download[evapPressureProfileImageCloudFile, Object]]
 						|>
 					],
 					(* We also want to return the cloud file packet in case user wants to do Upload->False and see what they get *)
@@ -4560,36 +4614,36 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 				}
 			]
 		],
-		{evapParamsWithBath,Range[Length[evapParamsWithBath]]}
+		{evapParamsWithBath, Range[Length[evapParamsWithBath]]}
 	];
 
 	(*getting all of the fields necessary to determine evaporation time estimates*)
-	evapParamsTypes = Lookup[evapParams,EvaporationType];
-	evapParamsMaxEvapTimes= Lookup[evapParams,MaxEvaporationTime];
-	evapParamsTempEquilTimes= Lookup[evapParams,EquilibrationTime];
-	evapParamsRampTimes= Lookup[evapParams,PressureRampTime];
-	evapParamsEvapTimes= Lookup[evapParams,MaxEvaporationTime];
+	evapParamsTypes = Lookup[evapParams, EvaporationType];
+	evapParamsMaxEvapTimes = Lookup[evapParams, MaxEvaporationTime];
+	evapParamsTempEquilTimes = Lookup[evapParams, EquilibrationTime];
+	evapParamsRampTimes = Lookup[evapParams, PressureRampTime];
+	evapParamsEvapTimes = Lookup[evapParams, MaxEvaporationTime];
 
 	(* Generate batched connections list *)
 	batchedConnections = MapThread[
-		Function[{currentEvapType,currentEvapParam},
+		Function[{currentEvapType, currentEvapParam},
 
 			(* Only generate a connections list if we're in RotaryEvaporation mode *)
-			If[MatchQ[currentEvapType,RotaryEvaporation],
+			If[MatchQ[currentEvapType, RotaryEvaporation],
 
 				{
 					(* We need to build connections between the instrument the bump trap*)
-					{Lookup[currentEvapParam,Instrument],"Evaporation Flask Port",Lookup[currentEvapParam,BumpTrap],"Instrument Port"},
+					{Lookup[currentEvapParam, Instrument], "Evaporation Flask Port", Lookup[currentEvapParam, BumpTrap], "Instrument Port"},
 
 					(* The bump trap and the evaporation flask *)
-					{Lookup[currentEvapParam,BumpTrap],"Evaporation Flask Port",Lookup[currentEvapParam,EvaporationFlask],"Neck Inlet"},
+					{Lookup[currentEvapParam, BumpTrap], "Evaporation Flask Port", Lookup[currentEvapParam, EvaporationFlask], "Neck Inlet"},
 
 					(* The instrument and the condensation flask *)
-					{Lookup[currentEvapParam,Instrument],"Condensation Flask Port",Lookup[currentEvapParam,CondensationFlask],"Neck Inlet"}
+					{Lookup[currentEvapParam, Instrument], "Condensation Flask Port", Lookup[currentEvapParam, CondensationFlask], "Neck Inlet"}
 				},
 
 				(* We're not in Rotovap so make an empty connection list *)
-				{{Null,Null,Null,Null}}
+				{{Null, Null, Null, Null}}
 			]
 		],
 		{
@@ -4599,12 +4653,12 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	];
 
 	(* Stash the batched connection lengths *)
-	batchedConnectionLengths = Length/@batchedConnections;
+	batchedConnectionLengths = Length /@ batchedConnections;
 
 	(* Estimate how long the actual run will take *)
 	estimatedRunTimes = MapThread[
 		Function[
-			{evapType,maxEvapTime,tempEquilTime,rampTime,evapTime},
+			{evapType, maxEvapTime, tempEquilTime, rampTime, evapTime},
 
 			(* If we're given a maxEvapTime, then default to that to be conservative on our time estimate *)
 			If[!NullQ[maxEvapTime],
@@ -4615,8 +4669,8 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 				(* Otherwise, based on which evap method we're using, calculate the total time of the relevant stages added together *)
 
 				Switch[evapType,
-					SpeedVac,tempEquilTime + rampTime + evapTime,
-					RotaryEvaporation,tempEquilTime + rampTime + evapTime,
+					SpeedVac, tempEquilTime + rampTime + evapTime,
+					RotaryEvaporation, tempEquilTime + rampTime + evapTime,
 					NitrogenBlowDown, tempEquilTime + evapTime,
 					_, evapTime
 				]
@@ -4632,20 +4686,20 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	];
 
 	(* Now add each run time together to get the worst case scenario run time *)
-	maxTotalRunTimeEstimate = Total[estimatedRunTimes]/.Null->0;
+	maxTotalRunTimeEstimate = Total[estimatedRunTimes] /. Null -> 0;
 
 	(* reformat the FlowRateProfile for the upload *)
-	flowRateLookup = First[Lookup[myResolvedOptions,FlowRateProfile]];
+	flowRateLookup = First[Lookup[myResolvedOptions, FlowRateProfile]];
 
 	flowRateReformat = If[NullQ[flowRateLookup],
-		{Null,Null},
+		{Null, Null},
 		(*Otherwise reformat*)
 		Map[Function[{flowRateTuple},
-				{flowRateTuple[[1]],
-				 flowRateTuple[[2]]}
-			],
-		(* If it is one tuple, we should wrap it *)
-		If[Depth[flowRateLookup]==3,{flowRateLookup},flowRateLookup]]
+			{flowRateTuple[[1]],
+				flowRateTuple[[2]]}
+		],
+			(* If it is one tuple, we should wrap it *)
+			If[Depth[flowRateLookup] == 3, {flowRateLookup}, flowRateLookup]]
 	];
 
 	(* assemble the protocol packet *)
@@ -4656,40 +4710,38 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 			Template -> Link[Lookup[myResolvedOptions, Template], ProtocolsTemplated],
 			Name -> Link[Lookup[myResolvedOptions, Template], ProtocolsTemplated],
 			(* Give an initial estimated processing time so we can decide if we should reuse our covers in the procedure *)
-			EstimatedProcessingTime -> Max[Min[estimatedRunTimes],0Minute],
+			EstimatedProcessingTime -> Max[Min[estimatedRunTimes], 0Minute],
 			(* General shared fields *)
-			Replace[SamplesIn] -> Flatten[Map[Link[#,Protocols]&,samplesInResources]],
+			Replace[SamplesIn] -> Flatten[Map[Link[#, Protocols]&, samplesInResources]],
 			Replace[PooledSamplesIn] -> expPooledSamplesIn,
-			Replace[ContainersIn] -> (Link[Resource[Sample->#],Protocols]&)/@containersIn,
+			Replace[ContainersIn] -> (Link[Resource[Sample -> #], Protocols]&) /@ containersIn,
 			Replace[BatchedContainerIndexes] -> finalContainerIndexes,
 			Replace[BatchedSampleIndexes] -> finalSampleIndexes,
 
 			(* Pool-indexed fields *)
-			Replace[Instruments] -> Link/@instruments,
-			Replace[ReadyCheckResourcePlaceholders] -> Link/@placeHolderInstResources,
+			Replace[Instruments] -> Link /@ instruments,
+			Replace[ReadyCheckResourcePlaceholders] -> Link /@ placeHolderInstResources,
 
 			Replace[Balances] -> balanceResources,
-			Replace[BalancingSolutions] -> Link/@Lookup[evapParamsRaw,BalancingSolution],(* NOTE: This is a simple link as the compiler builds resources based on sample weights *)
-			Replace[CentrifugeBuckets] -> Link/@batchedSpeedVacBuckets,
-			Replace[CentrifugeRacks] -> Link/@batchedCentrifugeTubeRacks,
-			Replace[BucketBatchLengths] -> Length/@Lookup[evapParamsRaw,SpeedVacBuckets],
-			Replace[RackBatchLengths] -> Length/@Lookup[evapParamsRaw,RequiredRacks],
-			Replace[Counterbalances] -> batchedCounterWeights,(*counterweightResources,*)
-			Replace[CentrifugalForces] -> {},(*centForces,*)
-			Replace[VacuumEvaporationMethods] -> Link[Lookup[myResolvedOptions,VacuumEvaporationMethod]],
-			Replace[ContainerPlacements] -> Table[{Null,Null,Null},Length[evapParamsRaw]],
-			Replace[ContainerPlacementLengths] -> Table[1,Length[evapParamsRaw]],
-			Replace[BucketPlacements] -> Table[{Null,Null,Null},Length[Flatten@batchedSpeedVacBuckets]],
+			Replace[BalancingSolutions] -> Link /@ Lookup[evapParamsRaw, BalancingSolution], (* NOTE: This is a simple link as the compiler builds resources based on sample weights *)
+			Replace[CentrifugeBuckets] -> Link /@ batchedSpeedVacBuckets,
+			Replace[CentrifugeRacks] -> Link /@ batchedCentrifugeTubeRacks,
+			Replace[BucketBatchLengths] -> Length /@ Lookup[evapParamsRaw, SpeedVacBuckets],
+			Replace[RackBatchLengths] -> Length /@ Lookup[evapParamsRaw, RequiredRacks],
+			Replace[Counterbalances] -> batchedCounterWeights, (*counterweightResources,*)
+			Replace[CentrifugalForces] -> {}, (*centForces,*)
+			Replace[VacuumEvaporationMethods] -> Link[Lookup[myResolvedOptions, VacuumEvaporationMethod]],
+			Replace[ContainerPlacements] -> Table[{Null, Null, Null}, Length[evapParamsRaw]],
+			Replace[ContainerPlacementLengths] -> Table[1, Length[evapParamsRaw]],
+			Replace[BucketPlacements] -> Table[{Null, Null, Null}, Length[Flatten@batchedSpeedVacBuckets]],
 
-			Replace[BathFluids] -> Link/@bathFluidResources,
+			Replace[BathFluids] -> Link /@ bathFluidResources,
 			Replace[BumpTraps] -> bumpTrapResources,
-			Replace[CollectEvaporatedSolvent] -> Lookup[myResolvedOptions,SaveSolventWaste],
-			Replace[RinseSolutions] -> rinseSolutionResources,
-			Replace[RinseVolumes] -> Lookup[myResolvedOptions,RinseVolume],
+			Replace[CollectEvaporatedSolvent] -> Lookup[myResolvedOptions, RecoupCondensate],
 			Replace[BumpTrapRinseSolutions] -> trapRinseSolutionResources,
-			Replace[BumpTrapRinseVolumes] -> Lookup[myResolvedOptions,BumpTrapRinseVolume],
+			Replace[BumpTrapRinseVolumes] -> Lookup[myResolvedOptions, BumpTrapRinseVolume],
 
-			Replace[BatchedConnections] -> Flatten[batchedConnections,1],(* This is currently grouped so we want to flatten to list of lists *)
+			Replace[BatchedConnections] -> Flatten[batchedConnections, 1], (* This is currently grouped so we want to flatten to list of lists *)
 			Replace[BatchedConnectionLengths] -> batchedConnectionLengths,
 
 			Replace[EvaporationFlasks] -> evaporationContainerResources,
@@ -4697,33 +4749,33 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 			CondensationFlaskClamp -> condensationFlaskClampResource,
 			EvaporationFlaskClamp -> evaporationFlaskClampResource,
 			TransferAllPlaceholder -> All, (* This field is simply just populated to be All so we can enqueue a Transfer subprotocol with no issue when recouping from CondensationFlasks *)
-			Replace[BumpTrapSampleContainers] -> Link/@bumpTrapSampleContainers,
-			Replace[CondensateRecoveryContainers] -> Link/@condensateRecoveryContainers,
+			Replace[BumpTrapSampleContainers] -> Link /@ bumpTrapSampleContainers,
+			Replace[CondensateRecoveryContainers] -> Link /@ condensateRecoveryContainers,
 
 			Replace[EvaporationTypes] -> ToList[evapTypes],
 			Replace[EquilibrationTimes] -> tempEquilTimes,
 			Replace[EvaporationTemperatures] -> evapTemps,
 			Replace[PressureRampTimes] -> rampTimes,
-			Replace[EvaporationPressures] -> Lookup[myResolvedOptions,EvaporationPressure]/.MaxVacuum->0*Millibar,
+			Replace[EvaporationPressures] -> Lookup[myResolvedOptions, EvaporationPressure] /. MaxVacuum -> 0 * Millibar,
 			Replace[EvaporationTimes] -> evapTimes,
-			Replace[RotationRates] -> Lookup[myResolvedOptions,RotationRate],
-			Replace[CondenserTemperatures] -> Lookup[myResolvedOptions,CondenserTemperature],
+			Replace[RotationRates] -> Lookup[myResolvedOptions, RotationRate],
+			Replace[CondenserTemperatures] -> Lookup[myResolvedOptions, CondenserTemperature],
 
 			(* Null out the batching parallelization fields so they can mapthread in the execute commands *)
-			Replace[EvaporationReady] -> Table[Null,Length[evapParams]],
-			Replace[CleanUpReady] -> Table[Null,Length[evapParams]],
-			Replace[EvaporationStartTimes] -> Table[Null,Length[evapParams]],
-			Replace[EvaporationEndTimes] -> Table[Null,Length[evapParams]],
-			Replace[TotalEvaporationTimes] -> Table[Null,Length[evapParams]],
-			Replace[FullyEvaporated] -> Table[Null,Length[myPooledSamples]],
-			Replace[EvaporationComplete] -> Table[False,Length[evapParams]],
+			Replace[EvaporationReady] -> Table[Null, Length[evapParams]],
+			Replace[CleanUpReady] -> Table[Null, Length[evapParams]],
+			Replace[EvaporationStartTimes] -> Table[Null, Length[evapParams]],
+			Replace[EvaporationEndTimes] -> Table[Null, Length[evapParams]],
+			Replace[TotalEvaporationTimes] -> Table[Null, Length[evapParams]],
+			Replace[FullyEvaporated] -> Table[Null, Length[myPooledSamples]],
+			Replace[EvaporationComplete] -> Table[False, Length[evapParams]],
 
 			Replace[FlowRateProfiles] -> flowRateReformat,
-			Replace[NitrogenBlowerRacks] -> Link/@Flatten[batchedNitrogenTubeRacks],
-			Replace[NozzlePlugs] -> Link/@Flatten[nozzlePlugs],
-			Replace[DrainTube] -> Link/@drainTube,
-			Replace[Funnel] -> Link/@funnelResource,
-			Replace[WasteContainer] -> Link/@wasteContainerResource,
+			Replace[NitrogenBlowerRacks] -> Link /@ Flatten[batchedNitrogenTubeRacks],
+			Replace[NozzlePlugs] -> Link /@ Flatten[nozzlePlugs],
+			Replace[DrainTube] -> Link /@ drainTube,
+			Replace[Funnel] -> Link /@ funnelResource,
+			Replace[WasteContainer] -> Link /@ wasteContainerResource,
 
 			Replace[BatchLengths] -> batchContainerLengths,
 			Replace[BatchedSampleLengths] -> batchSampleLengths,
@@ -4734,23 +4786,23 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 
 			ResolvedOptions -> resolvedOptionsNoHidden,
 			UnresolvedOptions -> myUnresolvedOptions,
-			Replace[SamplesInStorage]->Lookup[myResolvedOptions,SamplesInStorageCondition],
-			Replace[SamplesOutStorage]->Lookup[myResolvedOptions,SamplesOutStorageCondition],
+			Replace[SamplesInStorage] -> Lookup[myResolvedOptions, SamplesInStorageCondition],
+			Replace[SamplesOutStorage] -> Lookup[myResolvedOptions, SamplesOutStorageCondition],
 
 
 			(* checkpoints *)
 
 			Replace[Checkpoints] -> {
-				{"Picking Resources", 5*Minute, "Samples required to execute this protocol are gathered from storage.", Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time -> 5*Minute]},
-				{"Preparing Samples", 30*Minute, "Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.", Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time -> 30*Minute]},
-				{"Evaporating Samples", maxTotalRunTimeEstimate, "Samples are put under nitrogen airflow or vacuum pressure and concentrated.", Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time -> maxTotalRunTimeEstimate]},
-				{"Returning Materials", 5 Minute, "Samples are returned to storage.", Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time -> 20 Minute]}
+				{"Picking Resources", 5 * Minute, "Samples required to execute this protocol are gathered from storage.", Resource[Operator -> $BaselineOperator, Time -> 5 * Minute]},
+				{"Preparing Samples", 30 * Minute, "Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.", Resource[Operator -> $BaselineOperator, Time -> 30 * Minute]},
+				{"Evaporating Samples", maxTotalRunTimeEstimate, "Samples are put under nitrogen airflow or vacuum pressure and concentrated.", Resource[Operator -> $BaselineOperator, Time -> maxTotalRunTimeEstimate]},
+				{"Returning Materials", 5 Minute, "Samples are returned to storage.", Resource[Operator -> $BaselineOperator, Time -> 20 Minute]}
 			}
 		]
 	];
 
 	(* generate a packet with the shared sample prep and aliquotting fields *)
-	sharedFieldPacket = populateSamplePrepFields[myPooledSamples, expandedResolvedOptions, Cache->cache];
+	sharedFieldPacket = populateSamplePrepFieldsPooled[ToList /@ myPooledSamples, expandedResolvedOptions, Cache -> cache, Simulation -> updatedSimulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket = Join[sharedFieldPacket, protocolPacket];
@@ -4760,10 +4812,10 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	allResourceBlobs = DeleteDuplicates[Cases[Flatten[Values[finalizedPacket]], _Resource, Infinity]];
 
 	(* call fulfillableResourceQ on all resources we created *)
-	{fulfillable,frqTests}=Which[
+	{fulfillable, frqTests} = Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->cache],Null}
+		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack], Site -> Lookup[myResolvedOptions, Site], Cache -> cache, Simulation -> updatedSimulation],
+		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> Result, FastTrack -> Lookup[myResolvedOptions, FastTrack], Site -> Lookup[myResolvedOptions, Site], Messages -> messages, Cache -> cache, Simulation -> updatedSimulation], Null}
 	];
 
 	(* generate the Preview option; that is always Null *)
@@ -4785,12 +4837,12 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	(* if not returning Result, or the resources are not fulfillable, Results rule is just $Failed *)
 	resultRule = Result -> If[MemberQ[output, Result] && TrueQ[fulfillable],
 		(* We also want to return cloud file packet in case Upload->False *)
-		Cases[Prepend[evapPressureProfileImageCloudFiles,finalizedPacket],ObjectP[]],
+		Cases[Flatten[{finalizedPacket, evapPressureProfileImageCloudFiles}], PacketP[]],
 		$Failed
 	];
 
 	(* return the output as we desire it *)
-	outputSpecification /. {previewRule, optionsRule,resultRule,testsRule}
+	outputSpecification /. {previewRule, optionsRule, resultRule, testsRule}
 ];
 
 
@@ -4820,20 +4872,20 @@ Note that LegacySLL`Private`centrifugeBalance also exists to more closely pair c
 We use LegacySLL`Private`centrifugeBalance in the compile and parse, but we use this for speed purposes here to decide on groupings. Anything paired off here should also be pairable by centrifugeBalance.
 *)
 
-pairContainers[myContainerWeightPairs:{{ObjectP[{Object[Container],Model[Container]}],MassP}..},myMaxImbalance:GreaterEqualP[0Gram]]:=Module[
-	{balancingGroups,mixGroups,pairedContainers,unpairedContainers},
+pairContainers[myContainerWeightPairs:{{ObjectP[{Object[Container], Model[Container]}], MassP}..}, myMaxImbalance:GreaterEqualP[0Gram]] := Module[
+	{balancingGroups, mixGroups, pairedContainers, unpairedContainers},
 
 	(* split containers into groups of similiar weights within the rotor imbalance range: {{within imbalance range containers}..,{single unpaired container}..} *)
-	balancingGroups = Gather[myContainerWeightPairs,Abs[#1[[2]] - #2[[2]]] <= myMaxImbalance&];
+	balancingGroups = Gather[myContainerWeightPairs, Abs[#1[[2]] - #2[[2]]] <= myMaxImbalance&];
 
 	(* split the {within imbalance range containers}.. into pairs: {{paired containers}..,{single unpaired container}..} *)
 	(* This will not necessarily generate the pairs with the smallest mass difference! *)
-	mixGroups = Flatten[PartitionRemainder[#,2]& /@ balancingGroups,1];
+	mixGroups = Flatten[PartitionRemainder[#, 2]& /@ balancingGroups, 1];
 
 	(* get a list of paired and unpaired containers *)
-	pairedContainers = Cases[mixGroups,{{ObjectP[{Object[Container],Model[Container]}],_?MassQ},{ObjectP[{Object[Container],Model[Container]}],_?MassQ}}];
-	unpairedContainers = Cases[mixGroups,{{obj : ObjectP[{Object[Container],Model[Container]}],mass : _?MassQ}} :> {obj,mass}];
+	pairedContainers = Cases[mixGroups, {{ObjectP[{Object[Container], Model[Container]}], _?MassQ}, {ObjectP[{Object[Container], Model[Container]}], _?MassQ}}];
+	unpairedContainers = Cases[mixGroups, {{obj:ObjectP[{Object[Container], Model[Container]}], mass:_?MassQ}} :> {obj, mass}];
 
 	(* Return the paired container/mass pairs and the unpaired container/masses *)
-	Flatten[{pairedContainers,unpairedContainers},1]
+	Flatten[{pairedContainers, unpairedContainers}, 1]
 ];

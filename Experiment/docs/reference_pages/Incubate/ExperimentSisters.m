@@ -44,7 +44,12 @@ DefineUsage[ExperimentMixOptions,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -68,7 +73,7 @@ DefineUsage[ExperimentMixOptions,
 			"ExperimentMixPreview",
 			"ValidExperimentMixQ"
 		},
-		Author -> {"Yahya.Benslimane", "steven", "thomas", "lige.tonggu", "josh.kenchel"}
+		Author -> {"tyler.pabst", "Yahya.Benslimane", "steven", "thomas", "lige.tonggu", "josh.kenchel"}
 	}
 ];
 
@@ -112,7 +117,12 @@ DefineUsage[ExperimentMixPreview,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -134,7 +144,7 @@ DefineUsage[ExperimentMixPreview,
 			"ExperimentMixOptions",
 			"ValidExperimentMixQ"
 		},
-		Author -> {"Yahya.Benslimane", "dima", "thomas", "lige.tonggu", "josh.kenchel"}
+		Author -> {"tyler.pabst", "Yahya.Benslimane", "dima", "thomas", "lige.tonggu", "josh.kenchel"}
 	}
 ];
 
@@ -179,7 +189,12 @@ DefineUsage[ValidExperimentMixQ,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -202,7 +217,7 @@ DefineUsage[ValidExperimentMixQ,
 			"ExperimentMixPreview"
 
 		},
-		Author -> {"Yahya.Benslimane", "dima", "thomas", "lige.tonggu", "josh.kenchel"}
+		Author -> {"tyler.pabst", "Yahya.Benslimane", "dima", "thomas", "lige.tonggu", "josh.kenchel"}
 	}
 ];
 
@@ -246,7 +261,12 @@ DefineUsage[ExperimentIncubateOptions,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -314,7 +334,12 @@ DefineUsage[ExperimentIncubatePreview,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -380,7 +405,12 @@ DefineUsage[ValidExperimentIncubateQ,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},

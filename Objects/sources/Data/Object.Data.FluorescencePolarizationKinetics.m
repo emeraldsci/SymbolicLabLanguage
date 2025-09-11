@@ -38,7 +38,7 @@ DefineObjectType[Object[Data, FluorescencePolarizationKinetics], {
     FocalHeight -> {
       Format -> Single,
       Class -> Real,
-      Pattern :> GreaterEqualP[0*Meter*Milli],
+      Pattern :> DistanceP,
       Units -> Meter Milli,
       Description -> "The focal height of the objective lens when the sample fluorescence was measured.",
       Category -> "General"

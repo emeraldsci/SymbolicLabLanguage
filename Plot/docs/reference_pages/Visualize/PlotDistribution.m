@@ -60,13 +60,7 @@ DefineUsage[PlotDistribution,
 		},
 		MoreInformation->{},
 		SeeAlso->{"SinglePrediction","PlotPrediction","AnalyzeFit"},
-		Author->{
-			"sebastian.bernasek",
-			"brad",
-			"thomas",
-			"alice",
-			"qian"
-		},
+		Author->{"dirk.schild", "sebastian.bernasek", "brad", "thomas", "alice", "qian"},
 		Preview->True
 	}
 ];
@@ -129,13 +123,7 @@ DefineUsage[PlotDistributionPreview,
 		},
 		MoreInformation->{},
 		SeeAlso->{"PlotDistribution","PlotPrediction","AnalyzeFit"},
-		Author->{
-			"sebastian.bernasek",
-			"brad",
-			"thomas",
-			"alice",
-			"qian"
-		},
+		Author->{"dirk.schild", "sebastian.bernasek", "brad", "thomas", "alice", "qian"},
 		Preview->True
 	}
 ];
@@ -198,13 +186,7 @@ DefineUsage[PlotDistributionOptions,
 		},
 		MoreInformation->{},
 		SeeAlso->{"PlotDistribution","PlotDistributionPreview","PlotPrediction","AnalyzeFit"},
-		Author->{
-			"sebastian.bernasek",
-			"brad",
-			"thomas",
-			"alice",
-			"qian"
-		},
+		Author->{"dirk.schild", "sebastian.bernasek", "brad", "thomas", "alice", "qian"},
 		Preview->True
 	}
 ];

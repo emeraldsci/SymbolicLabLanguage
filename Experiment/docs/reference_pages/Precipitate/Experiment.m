@@ -70,7 +70,7 @@ DefineUsage[ExperimentPrecipitate,
 			"Sample Preparation"
 		},
 		Author -> {
-			"tim.pierpont"
+			"taylor.hochuli"
 		}
 	}
 ];

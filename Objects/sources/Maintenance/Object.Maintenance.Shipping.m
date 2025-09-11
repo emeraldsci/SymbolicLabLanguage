@@ -179,6 +179,30 @@ DefineObjectType[Object[Maintenance,Shipping], {
 			Developer -> True,
 			Category -> "Shipping Information",
 			IndexMatching->ShippingContainers
+		},
+		Fragile -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of SamplesIn, indicates whether the shipped sample is wrapped with an additional layer of protective material.",
+			Category -> "Shipping Information",
+			IndexMatching -> SamplesIn
+		},
+		BubbleSheet -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Item], Model[Item]],
+			Description -> "A padded material such as a roll of bubblewrap used to wrap fragile items for better protection during shipment.",
+			Category -> "Shipping Information"
+		},
+		ProtectiveWrappedItems -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Item], Object[Container]],
+			Description -> "Items wrapped with additional padding to prevent damage during shipment.",
+			Category -> "Shipping Information"
 		}
 	}
 }];

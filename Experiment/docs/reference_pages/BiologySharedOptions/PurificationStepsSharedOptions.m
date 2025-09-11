@@ -58,7 +58,7 @@ DefineUsage[preResolvePurificationSharedOptions,
               Description->"The map thread version of the experiment options of the parent function that contains the purification shared options.",
               Widget->Widget[
                 Type -> Expression,
-                Pattern :> {_Rule..},
+                Pattern :> {_Association..},
                 Size -> Line
               ],
               Expandable->False
@@ -82,7 +82,7 @@ DefineUsage[preResolvePurificationSharedOptions,
       "preResolveExtractionSolidPhaseSharedOptions",
       "preResolveMagneticBeadSeparationSharedOptions"
     },
-    Author -> {"thomas"}
+    Author -> {"taylor.hochuli", "thomas"}
   }
 ];
 
@@ -172,7 +172,7 @@ DefineUsage[buildPurificationUnitOperations,
               Description->"The map thread version of the experiment options of the parent function that contains the purification shared options preResolved based on user input, method, and experiment default.",
               Widget->Widget[
                 Type -> Expression,
-                Pattern :> {_Rule..},
+                Pattern :> {_Association..},
                 Size -> Line
               ],
               Expandable->False

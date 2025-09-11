@@ -137,7 +137,7 @@ DefineOptions[ExperimentPrepareReferenceElectrode,
 
 		(* --- Shared Standard Protocol Options --- *)
 		ProtocolOptions,
-		PostProcessingOptions,
+		NonBiologyPostProcessingOptions,
 		SamplesOutStorageOption,
 
 		{
@@ -366,7 +366,7 @@ experimentPrepareReferenceElectrode[
 ]:=Module[
 	{
 		(* Initialization *)
-		listedSourceReferenceElectrodes, listedTargetReferenceElectrodeModels, listedOptions, outputSpecification, output, gatherTests, messages, sameInputLengthsQ, sameInputLengthTests, unresolvedOptions, applyTemplateOptionTests, safeOptions, safeOptionTests, validLengths, validLengthTests, upload, confirm, fastTrack, parentProt, inheritedCache, expandedSafeOptions,
+		listedSourceReferenceElectrodesNamed, listedTargetReferenceElectrodeModelsNamed,listedOptionsNamed,safeOptionsNamed,listedSourcesAndTargets, listedSourceReferenceElectrodes, listedTargetReferenceElectrodeModels, listedOptions, outputSpecification, output, gatherTests, messages, sameInputLengthsQ, sameInputLengthTests, unresolvedOptions, applyTemplateOptionTests, safeOptions, safeOptionTests, validLengths, validLengthTests, upload, confirm, canaryBranch, fastTrack, parentProt, inheritedCache, expandedSafeOptions,
 
 		(* DatabaseMemberQ and BlankModel checks *)
 		objectsFromOptions, userSpecifiedObjects, objectsExistQs, objectsExistTests, blankNotNullTests,
@@ -386,7 +386,7 @@ experimentPrepareReferenceElectrode[
 	(* -------------------- *)
 
 	(* Make sure we're working with a list of mySourceReferenceElectrodes, myTargetReferenceElectrodeModels and options *)
-	{listedSourceReferenceElectrodes, listedTargetReferenceElectrodeModels,listedOptions}={ToList[mySourceReferenceElectrodes],ToList[myTargetReferenceElectrodeModels],ToList[myOptions]};
+	{{listedSourceReferenceElectrodesNamed, listedTargetReferenceElectrodeModelsNamed},listedOptionsNamed}=removeLinks[{ToList[mySourceReferenceElectrodes],ToList[myTargetReferenceElectrodeModels]},ToList[myOptions]];
 
 	(* determine the requested return value; careful not to default this as it will throw error; it's Hidden, assume used correctly *)
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]], OptionValue::nodef];
@@ -395,6 +395,31 @@ experimentPrepareReferenceElectrode[
 	(* determine if we should keep a running list of tests *)
 	gatherTests = MemberQ[output, Tests];
 	messages = !gatherTests;
+
+	(* Call SafeOptions to make sure all options match pattern *)
+	{safeOptionsNamed,safeOptionTests}=If[gatherTests,
+		SafeOptions[ExperimentPrepareReferenceElectrode,listedOptionsNamed,AutoCorrect->False,Output->{Result,Tests}],
+		{SafeOptions[ExperimentPrepareReferenceElectrode,listedOptionsNamed,AutoCorrect->False],{}}
+	];
+
+	(*change all Names to objects *)
+	(* important for the first variable here to be a signle one because it could return $Failed and we don't want a set error *)
+	{listedSourcesAndTargets, safeOptions, listedOptions} = sanitizeInputs[{listedSourceReferenceElectrodesNamed, listedTargetReferenceElectrodeModelsNamed}, safeOptionsNamed, listedOptionsNamed];
+	{listedSourceReferenceElectrodes, listedTargetReferenceElectrodeModels} = If[MatchQ[listedSourcesAndTargets, $Failed],
+		{$Failed, $Failed},
+		listedSourcesAndTargets
+	];
+
+	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
+	If[MatchQ[listedSourcesAndTargets,$Failed],
+		Return[outputSpecification/.{
+			Result -> $Failed,
+			Tests -> listedSourcesAndTargets,
+			Options -> $Failed,
+			Preview -> Null,
+			RunTime -> 0 Minute
+		}]
+	];
 
 	(* Check if the listedSourceReferenceElectrodes and listedTargetReferenceElectrodeModels are of the same length *)
 	sameInputLengthsQ = MatchQ[Length[listedSourceReferenceElectrodes], Length[listedTargetReferenceElectrodeModels]];
@@ -444,21 +469,6 @@ experimentPrepareReferenceElectrode[
 		]
 	];
 
-	(* Call SafeOptions to make sure all options match pattern *)
-	{safeOptions,safeOptionTests}=If[gatherTests,
-		SafeOptions[ExperimentPrepareReferenceElectrode,unresolvedOptions,AutoCorrect->False,Output->{Result,Tests}],
-		{SafeOptions[ExperimentPrepareReferenceElectrode,unresolvedOptions,AutoCorrect->False],{}}
-	];
-
-	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
-	If[MatchQ[safeOptions,$Failed],
-		Return[outputSpecification/.{
-			Result -> $Failed,
-			Tests -> Join[sameInputLengthTests, applyTemplateOptionTests, safeOptionTests],
-			Options -> $Failed,
-			Preview -> Null
-		}]
-	];
 
 	(* Call ValidInputLengthsQ to make sure all options are the right length *)
 	{validLengths,validLengthTests}=If[gatherTests,
@@ -477,7 +487,7 @@ experimentPrepareReferenceElectrode[
 	];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProt, inheritedCache} = Lookup[safeOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProt, inheritedCache} = Lookup[safeOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* Expand index-matching options *)
 	expandedSafeOptions=Last[ExpandIndexMatchedInputs[ExperimentPrepareReferenceElectrode, {listedTargetReferenceElectrodeModels}, safeOptions, 1]];
@@ -799,6 +809,7 @@ experimentPrepareReferenceElectrode[
 			resourcePackets,
 			Upload->Lookup[safeOptions,Upload],
 			Confirm->Lookup[safeOptions,Confirm],
+			CanaryBranch->Lookup[safeOptions,CanaryBranch],
 			ParentProtocol->Lookup[safeOptions,ParentProtocol],
 			Priority->Lookup[safeOptions,Priority],
 			StartDate->Lookup[safeOptions,StartDate],
@@ -2947,8 +2958,7 @@ prepareReferenceElectrodeResourcePackets[
 	referenceElectrodeRackResource = Resource[Sample -> Model[Container, Rack, "Electrode Holder for IKA Reference Electrodes"], Name -> CreateUUID[], Rent -> True];
 
 	(* -- Electrode Imaging Deck -- *)
-	(* TODO: we need to hard code this for now, may be able to update this later *)
-	electrodeImagingDeck = First[Model[Container, Deck, "IKA Electrodes Imaging Deck"][Objects]][Object];
+	electrodeImagingDeck = Model[Container, Deck, "IKA Electrodes Imaging Deck"];
 
 	(* -------------------- *)
 	(* -- TIME ESTIMATES -- *)
@@ -3061,10 +3071,10 @@ prepareReferenceElectrodeResourcePackets[
 
 		(* checkpoints *)
 		Replace[Checkpoints] -> {
-			{"Picking Resources", gatherResourcesTime, "Reference electrodes, solutions, and other items required to execute this protocol are gathered from storage.", Resource[Operator->Model[User,Emerald,Operator,"Trainee"], Time -> gatherResourcesTime]},
-			{"Clean Reference Electrodes", (polishingTime + washingTime), "The source reference electrodes are polished and washed.", Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> (polishingTime + washingTime)]},
-			{"Prime Reference Electrodes", primingTime, "The reference electrodes are primed.", Resource[Operator->Model[User,Emerald,Operator,"Trainee"], Time -> primingTime]},
-			{"Fill and Soak Reference Electrodes", refillAndSoakingTime, "The reference electrodes are filled with reference solutions and soaked.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"], Time -> refillAndSoakingTime]}
+			{"Picking Resources", gatherResourcesTime, "Reference electrodes, solutions, and other items required to execute this protocol are gathered from storage.", Resource[Operator->$BaselineOperator, Time -> gatherResourcesTime]},
+			{"Clean Reference Electrodes", (polishingTime + washingTime), "The source reference electrodes are polished and washed.", Resource[Operator -> $BaselineOperator, Time -> (polishingTime + washingTime)]},
+			{"Prime Reference Electrodes", primingTime, "The reference electrodes are primed.", Resource[Operator->$BaselineOperator, Time -> primingTime]},
+			{"Fill and Soak Reference Electrodes", refillAndSoakingTime, "The reference electrodes are filled with reference solutions and soaked.",Resource[Operator->$BaselineOperator, Time -> refillAndSoakingTime]}
 		},
 		ResolvedOptions -> myCollapsedResolvedOptions,
 		UnresolvedOptions -> myUnresolvedOptions,

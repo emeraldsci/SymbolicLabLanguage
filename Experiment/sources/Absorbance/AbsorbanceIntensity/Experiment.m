@@ -21,7 +21,7 @@ DefineOptions[ExperimentAbsorbanceIntensity,
 		{
 			OptionName -> Methods,
 			Default -> Automatic,
-			Description -> "Indicates the type of vessel to be used to measure the absorbance of SamplesIn. PlateReaders utilize an open well container that transveres light from top to bottom. Cuvette uses a square container with transparent sides to transverse light from the front to back at a fixed path length. Microfluidic uses small channels to load samples which are then gravity-driven towards chambers where light transverse from top to bottom and measured at a fixed path length.",
+			Description -> "Indicates the type of vessel to be used to measure the absorbance of SamplesIn. PlateReaders utilize an open well container that transverses light from top to bottom. Cuvette uses a square container with transparent sides to transverse light from the front to back at a fixed path length. Microfluidic uses small channels to load samples which are then gravity-driven towards chambers where light transverse from top to bottom and measured at a fixed path length.",
 			ResolutionDescription -> "If any of the SamplesIn provided has a volume less than 500 Micro Liter, set to microfluidic. Otherwise, if there are less 8 samples, set to Cuvette. If none of options are true, set to PlateReader",
 			AllowNull -> False,
 			Widget -> Widget[
@@ -139,7 +139,7 @@ DefineOptions[ExperimentAbsorbanceIntensity,
 				Description->"When using the Cuvette Method, indicates which model stir bar to be inserted into the cuvette to mix the sample.",
 				ResolutionDescription -> "If AcquisitionMix is True, StirBar (model xxxx) must be specified. Automatically set to Null.",
 				Widget-> Widget[Type->Object,
-					Pattern:>ObjectP[Model[Part,StirBar],Object[Part,StirBar]],
+					Pattern:>ObjectP[{Model[Part,StirBar],Object[Part,StirBar]}],
 					OpenPaths -> {
 						{
 							Object[Catalog, "Root"],
@@ -220,12 +220,12 @@ DefineOptions[ExperimentAbsorbanceIntensity,
 (* --- Core Function --- *)
 ExperimentAbsorbanceIntensity[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : OptionsPattern[ExperimentAbsorbanceIntensity]] := Module[
 	{listedOptions, outputSpecification, output, gatherTests, messages, safeOptions, safeOptionTests, upload,
-		confirm, fastTrack, parentProt, unresolvedOptions, unresolvedOptionsTests, combinedOptions, resolveOptionsResult,
-		resolvedOptionsNoHidden, allTests, estimatedRunTime, fastCacheBall,
+		confirm, canaryBranch, fastTrack, parentProt, unresolvedOptions, unresolvedOptionsTests, combinedOptions, resolveOptionsResult,
+		resolvedOptionsNoHidden, allTests, estimatedRunTime,
 		resourcePackets, resourcePacketTests, simulatedProtocol, simulation,
-		resultRule, resolvedOptions, resolutionTests, returnEarlyQ, performSimulationQ, validLengths, validLengthTests, expandedCombinedOptions, protocolObject,
-		cache, newCache, allPackets, userSpecifiedObjects, objectsExistQs, listedSamples, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
-		samplePreparationSimulation, downloadFields, mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed
+		resolvedOptions, resolutionTests, returnEarlyQBecauseFailure, performSimulationQ, validLengths, validLengthTests, expandedCombinedOptions, specifiedInstruments, protocolObject,
+		cache, newCache, allPackets, listedSamples, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
+		samplePreparationSimulation, downloadFields, mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed, optionsResolverOnly, returnEarlyQBecauseOptionsResolverOnly
 	},
 
 	(* determine the requested return value from the function *)
@@ -248,7 +248,7 @@ ExperimentAbsorbanceIntensity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -265,7 +265,7 @@ ExperimentAbsorbanceIntensity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 	];
 
 	(* replace all objects referenced by Name to ID *)
-	{mySamplesWithPreparedSamples, safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples, safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> samplePreparationSimulation];
 
 	(* If the specified options don't match their patterns or if the option lengths are invalid, return $Failed*)
 	If[MatchQ[safeOptions, $Failed],
@@ -294,7 +294,7 @@ ExperimentAbsorbanceIntensity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 	];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProt, cache} = Lookup[safeOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProt, cache} = Lookup[safeOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* apply the template options *)
 	(* need to specify the definition number (we are number 1 for samples at this point) *)
@@ -319,12 +319,22 @@ ExperimentAbsorbanceIntensity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 	(* expand the combined options *)
 	expandedCombinedOptions = Last[ExpandIndexMatchedInputs[ExperimentAbsorbanceIntensity, {mySamplesWithPreparedSamples}, combinedOptions]];
 
+	(* get all specified instruments *)
+	specifiedInstruments = DeleteDuplicates[Cases[Flatten[Lookup[combinedOptions, {Instrument}]], ObjectP[{Object[Instrument], Model[Instrument]}]]];
+
 	(* get all the Download fields *)
 	downloadFields = {
 		{
 			Packet[IncompatibleMaterials, Well, RequestedResources, SamplePreparationCacheFields[Object[Sample], Format -> Sequence]],
 			Packet[Container[SamplePreparationCacheFields[Object[Container]]]],
 			Packet[Field[Composition[[All, 2]][{Molecule, ExtinctionCoefficients, PolymerType, MolecularWeight}]]]
+		},
+		{
+			Packet[Model, Status, IntegratedLiquidHandler, WettedMaterials, PlateReaderMode, SamplingPatterns, IntegratedLiquidHandlers],
+			Packet[Model[{WettedMaterials, PlateReaderMode, SamplingPatterns}]],
+			Packet[IntegratedLiquidHandler[Model]],
+			Packet[IntegratedLiquidHandler[Model][Object]],
+			Packet[IntegratedLiquidHandlers[Object]]
 		}
 	};
 
@@ -333,14 +343,15 @@ ExperimentAbsorbanceIntensity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 		Quiet[
 			Download[
 				{
-					mySamplesWithPreparedSamples
+					mySamplesWithPreparedSamples,
+					specifiedInstruments
 				},
 				Evaluate[downloadFields],
 				Cache -> cache,
 				Simulation -> samplePreparationSimulation,
 				Date -> Now
 			],
-			{Download::FieldDoesntExist}
+			{Download::FieldDoesntExist, Download::NotLinkField}
 		],
 		$Failed,
 		{Download::ObjectDoesNotExist}
@@ -353,40 +364,6 @@ ExperimentAbsorbanceIntensity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 
 	(* Download information we need in both the Options and ResourcePackets functions *)
 	newCache = FlattenCachePackets[{cache, allPackets, standardPlatesDownloadCache["Memoization"]}];
-
-	(* Before going to resolver, check whether any of the specified objects does not exist. This is done early to avoid tons of errors later. *)
-	userSpecifiedObjects=DeleteDuplicates[
-		Cases[
-			Flatten@Join[
-				mySamplesWithPreparedSamples,
-				Values[expandedCombinedOptions]
-			],
-			ObjectP[]
-		]
-	];
-
-	(* Check that the specified objects exist or are visible to the current user *)
-	(* NOTE: Since we can be called by ExperimentSM which uses degenerate cache balling with Simulated->True, we need to check for that as well *)
-	(* as the new simulation style using PreparatoryUOs. *)
-	fastCacheBall = makeFastAssocFromCache[newCache];
-	objectsExistQs=MapThread[
-		Or[#1, #2]&,
-		{
-			(MatchQ[Lookup[fetchPacketFromFastAssoc[#, fastCacheBall], Simulated], True]&)/@userSpecifiedObjects,
-			DatabaseMemberQ[
-				userSpecifiedObjects,
-				Simulation->samplePreparationSimulation
-			]
-		}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		Message[Error::ObjectDoesNotExist,PickList[userSpecifiedObjects,objectsExistQs,False]];
-		Message[Error::InvalidInput,PickList[userSpecifiedObjects,objectsExistQs,False]];
-		Return[$Failed],
-		Nothing
-	];
 
 	(* resolve all options; if we throw InvalidOption or InvalidInput, we're also getting $Failed and we will return early *)
 	resolveOptionsResult=If[gatherTests,
@@ -417,10 +394,15 @@ ExperimentAbsorbanceIntensity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 		Messages -> False
 	];
 
+	(* lookup our OptionsResolverOnly option.  This will determine if we skip the resource packets and simulation functions *)
+	(* if Output contains Result or Simulation, then we can't do this *)
+	optionsResolverOnly = Lookup[resolvedOptions, OptionsResolverOnly];
+	returnEarlyQBecauseOptionsResolverOnly = TrueQ[optionsResolverOnly] && Not[MemberQ[output, Result | Simulation]];
+
 	(* run all the tests from the resolution; if any of them were False, then we should return early here *)
 	(* need to do this because if we are collecting tests then the Check wouldn't have caught it *)
 	(* basically, if _not_ all the tests are passing, then we do need to return early *)
-	returnEarlyQ = Which[
+	returnEarlyQBecauseFailure = Which[
 		MatchQ[resolveOptionsResult, $Failed], True,
 		gatherTests, Not[RunUnitTest[<|"Tests" -> resolutionTests|>, Verbose -> False, OutputFormat -> SingleBoolean]],
 		True, False
@@ -428,10 +410,10 @@ ExperimentAbsorbanceIntensity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 
 	(* Figure out if we need to perform our simulation. If so, we can't return early even though we want to because we *)
 	(* need to return some type of simulation to our parent function that called us. *)
-	performSimulationQ=MemberQ[output, Simulation] || MatchQ[$CurrentSimulation, SimulationP];
+	performSimulationQ=MemberQ[output, Simulation];
 
 	(* if resolveOptionsResult is $Failed, return early; messages would have been thrown already *)
-	If[returnEarlyQ && !performSimulationQ,
+	If[(returnEarlyQBecauseFailure || returnEarlyQBecauseOptionsResolverOnly) && !performSimulationQ,
 		Return[outputSpecification /. {
 			Result -> $Failed,
 			Options -> resolvedOptionsNoHidden,
@@ -482,7 +464,7 @@ ExperimentAbsorbanceIntensity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 			Cache->newCache,
 			Simulation->samplePreparationSimulation
 		],
-		{Null, Null}
+		{Null, samplePreparationSimulation}
 	];
 
 	estimatedRunTime = 15 Minute +
@@ -559,6 +541,7 @@ ExperimentAbsorbanceIntensity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 					Name->Lookup[safeOptions,Name],
 					Upload->Lookup[safeOptions,Upload],
 					Confirm->Lookup[safeOptions,Confirm],
+					CanaryBranch->Lookup[safeOptions,CanaryBranch],
 					ParentProtocol->Lookup[safeOptions,ParentProtocol],
 					Priority->Lookup[safeOptions,Priority],
 					StartDate->Lookup[safeOptions,StartDate],
@@ -575,6 +558,7 @@ ExperimentAbsorbanceIntensity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 			resourcePackets[[1]], (* protocolPacket *)
 			Upload->Lookup[safeOptions,Upload],
 			Confirm->Lookup[safeOptions,Confirm],
+			CanaryBranch->Lookup[safeOptions,CanaryBranch],
 			ParentProtocol->Lookup[safeOptions,ParentProtocol],
 			Priority->Lookup[safeOptions,Priority],
 			StartDate->Lookup[safeOptions,StartDate],
@@ -582,7 +566,7 @@ ExperimentAbsorbanceIntensity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 			QueuePosition->Lookup[safeOptions,QueuePosition],
 			ConstellationMessage->Object[Protocol,AbsorbanceIntensity],
 			Cache -> newCache,
-			Simulation -> samplePreparationSimulation
+			Simulation -> simulation
 		]
 	];
 
@@ -619,7 +603,7 @@ standardPlatesDownloadCache[string_]:=standardPlatesDownloadCache[string]=Module
 (* ExperimentAbsorbanceIntensity (container input) *)
 
 
-ExperimentAbsorbanceIntensity[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String|{LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions : OptionsPattern[ExperimentAbsorbanceIntensity]] := Module[
+ExperimentAbsorbanceIntensity[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String|{LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions : OptionsPattern[ExperimentAbsorbanceIntensity]] := Module[
 	{listedOptions, outputSpecification, output, gatherTests, containerToSampleResult,containerToSampleSimulation,
 		containerToSampleTests, inputSamples, messages, listedContainers, validSamplePreparationResult, mySamplesWithPreparedSamples,
 		myOptionsWithPreparedSamples, samplePreparationSimulation,containerToSampleOutput,sampleOptions},
@@ -645,7 +629,7 @@ ExperimentAbsorbanceIntensity[myContainers : ListableP[ObjectP[{Object[Container
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -728,7 +712,7 @@ ValidExperimentAbsorbanceIntensityQ[mySamples : ListableP[_String | ObjectP[Obje
 	listedOptions = ToList[myOptions];
 	listedSamples = ToList[mySamples];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentAbsorbanceIntensity *)
@@ -773,14 +757,14 @@ ValidExperimentAbsorbanceIntensityQ[mySamples : ListableP[_String | ObjectP[Obje
 
 
 (* plates overloads *)
-ValidExperimentAbsorbanceIntensityQ[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[ValidExperimentAbsorbanceIntensityQ]] := Module[
+ValidExperimentAbsorbanceIntensityQ[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[ValidExperimentAbsorbanceIntensityQ]] := Module[
 	{listedOptions, preparedOptions, absSpecTests, initialTestDescription, allTests, verbose, outputFormat, listedContainers},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 	listedContainers = ToList[myContainers];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentAbsorbanceIntensity *)
@@ -846,7 +830,7 @@ ExperimentAbsorbanceIntensityOptions[mySamples : ListableP[_String | ObjectP[Obj
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* get only the options for ExperimentAbsorbanceIntensity *)
@@ -861,13 +845,13 @@ ExperimentAbsorbanceIntensityOptions[mySamples : ListableP[_String | ObjectP[Obj
 
 
 (* containers overloads *)
-ExperimentAbsorbanceIntensityOptions[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[ExperimentAbsorbanceIntensityOptions]] := Module[
+ExperimentAbsorbanceIntensityOptions[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[ExperimentAbsorbanceIntensityOptions]] := Module[
 	{listedOptions, noOutputOptions, options},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* get only the options for ExperimentAbsorbanceIntensity *)
@@ -898,7 +882,7 @@ ExperimentAbsorbanceIntensityPreview[mySamples : ListableP[_String | ObjectP[Obj
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	ExperimentAbsorbanceIntensity[mySamples, Append[noOutputOptions, Output -> Preview]]
@@ -906,13 +890,13 @@ ExperimentAbsorbanceIntensityPreview[mySamples : ListableP[_String | ObjectP[Obj
 
 
 (* container overloads *)
-ExperimentAbsorbanceIntensityPreview[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[ExperimentAbsorbanceIntensityPreview]] := Module[
+ExperimentAbsorbanceIntensityPreview[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[ExperimentAbsorbanceIntensityPreview]] := Module[
 	{listedOptions, noOutputOptions},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	ExperimentAbsorbanceIntensity[myContainers, Append[noOutputOptions, Output -> Preview]]

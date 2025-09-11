@@ -1,3 +1,1146 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5b8247965152d5e7bd1df2175f3f1a3d9d4ee02caba4383e027066c2bee3bc64
-size 45001
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     44801,       1136]
+NotebookOptionsPosition[     33742,        947]
+NotebookOutlinePosition[     35909,        993]
+CellTagsIndexPosition[     35866,        990]
+WindowTitle->UtilityFunctionsForMathematica
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "a736cbcf-d7d1-44cd-823e-94bd140a1972"]
+        }],ExpressionUUID->"bf897deb-5bc6-485e-af4b-b92053671780"],
+        StripOnInput->False], {"\<\"AllGreaterEqual\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/AllGreaterEqual"], \
+"\<\"AssociationMatchP\"\>":>Documentation`HelpLookup[
+       "paclet:Core/ref/AssociationMatchP"], "\<\"AssociationMatchQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/AssociationMatchQ"], "\<\"ClearMemoization\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/ClearMemoization"], "\<\"ColorFade\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/ColorFade"], "\<\"DeleteNestedDuplicates\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/DeleteNestedDuplicates"], "\<\"EmeraldTest\"\>":>
+       Documentation`HelpLookup[
+       "paclet:UnitTest/ref/EmeraldTest"], "\<\"EmeraldTestSummary\"\>":>
+       Documentation`HelpLookup[
+       "paclet:UnitTest/ref/EmeraldTestSummary"], "\<\"ExpandDimensions\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/ExpandDimensions"], "\<\"ExtractRule\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/ExtractRule"], "\<\"FastExport\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/FastExport"], "\<\"FastImport\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/FastImport"], "\<\"FirstOrDefault\"\>":>
+       Documentation`HelpLookup[
+       "paclet:WLExtension/ref/FirstOrDefault"], "\<\"GroupByTotal\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/GroupByTotal"], "\<\"KeyPatternsQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:WLExtension/ref/KeyPatternsQ"], "\<\"LastOrDefault\"\>":>
+       Documentation`HelpLookup[
+       "paclet:WLExtension/ref/LastOrDefault"], "\<\"ListableP\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Options/ref/ListableP"], "\<\"Middle\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/Middle"], "\<\"ModificationQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ModificationQ"], "\<\"MostOrDefault\"\>":>
+       Documentation`HelpLookup[
+       "paclet:WLExtension/ref/MostOrDefault"], "\<\"NullQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:WLExtension/ref/NullQ"], "\<\"OptionDefinition\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Options/ref/OptionDefinition"], "\<\"PartitionRemainder\"\>":>
+       Documentation`HelpLookup[
+       "paclet:WLExtension/ref/PartitionRemainder"], "\<\"PDFFileQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/PDFFileQ"], "\<\"PickList\"\>":>
+       Documentation`HelpLookup["paclet:Core/ref/PickList"], "\<\"Repeat\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/Repeat"], "\<\"RepeatedQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/RepeatedQ"], "\<\"ReplaceRule\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/ReplaceRule"], "\<\"RestOrDefault\"\>":>
+       Documentation`HelpLookup[
+       "paclet:WLExtension/ref/RestOrDefault"], "\<\"RiffleAlternatives\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/RiffleAlternatives"], "\<\"SafeEvaluate\"\>":>
+       Documentation`HelpLookup[
+       "paclet:WLExtension/ref/SafeEvaluate"], "\<\"SameLengthQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/SameLengthQ"], "\<\"SetDifference\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/SetDifference"], "\<\"StringFirst\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/StringFirst"], "\<\"StringLast\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/StringLast"], "\<\"StringMost\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/StringMost"], "\<\"StringPartitionRemainder\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/StringPartitionRemainder"], "\<\"StringRest\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/StringRest"], "\<\"Tests\"\>":>
+       Documentation`HelpLookup[
+       "paclet:UnitTest/ref/Tests"], "\<\"ToList\"\>":>
+       Documentation`HelpLookup[
+       "paclet:WLExtension/ref/ToList"], "\<\"Unflatten\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/Unflatten"], "\<\"UnsortedComplement\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/UnsortedComplement"], "\<\"ValidComputationQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Manifold/ref/ValidComputationQ"], "\<\"ValidGraphicsQ\"\>":>
+       Documentation`HelpLookup["paclet:Core/ref/ValidGraphicsQ"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "1f8d4310-2783-4d1b-b418-bab7df4533c2"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "49da7a10-668f-448f-8218-9cb7f71025bb"]
+        }],ExpressionUUID->"ea32ca3d-a538-4e7e-aa49-1ce9eb857f5a"],
+        StripOnInput->False], {"\<\"ConstellationUtilityFunctions\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/ConstellationUtilityFunctions"], \
+"\<\"WorkingWithConstellationObjects\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/WorkingWithConstellationObjects"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "2e0bfb1f-9256-480b-8715-63d76a18e3b2"]
+    }], "AnchorBar",ExpressionUUID->"6c17f868-0f98-46ac-bbf8-d702e45107e9"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"4fb92b2d-5526-40b4-9b5c-0f616e7abc10"],
+
+Cell["Utility Functions For Mathematica", "GuideTitle",
+ CellID->198195714,ExpressionUUID->"7013d66d-2f0a-4fc0-be13-decb48c12268"],
+
+Cell["\<\
+Collection of functions that is useful for miscellaneous operations on \
+Mathematica.\
+\>", "GuideAbstract",
+ CellID->328228701,ExpressionUUID->"3d06a9e7-72de-4a8f-863b-7e4a6718167b"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1801772211,ExpressionUUID->"7175fb12-4b3c-4232-b4ec-bd0f19697c87"],
+
+Cell["List Manipulation", "GuideFunctionsSubsection",
+ CellID->718643930,ExpressionUUID->"a3ff439e-03c4-490f-9b7e-e1d462050893"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AllGreaterEqual"]], "paclet:EmeraldUnits/ref/AllGreaterEqual"},
+   
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8ccc15fc-0b08-4a07-baaf-ffcabd0a5fe7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if every element of an array is greater than or equal to a given \
+value."
+}], "GuideText",
+ CellID->800500782,ExpressionUUID->"ee66c309-8ea8-4ffa-9f44-7a058a2fc8d5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ToList"]], "paclet:WLExtension/ref/ToList"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "cf66acf7-dc59-45d0-a273-e6e928eb3b0d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Wraps the provided expression in List unless it is already a List."
+}], "GuideText",
+ CellID->31594619,ExpressionUUID->"73555cad-9cfe-4be8-80ce-3a4f7ce8ec1d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Repeat"]], "paclet:Core/ref/Repeat"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e1bc62a8-5fe1-4629-8f52-229810ae6c77"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a list consisting a specified number of repeated items."
+}], "GuideText",
+ CellID->582300724,ExpressionUUID->"de9ec0a2-4016-4e91-b0a3-8fcfef5a2f6f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["RepeatedQ"]], "paclet:Core/ref/RepeatedQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "eb75c074-8157-4e1e-b973-f3702c6eccd8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if all items in the provided list are identical."
+}], "GuideText",
+ CellID->645288889,ExpressionUUID->"517bea6a-c56a-4659-8133-f255ccbbb91a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ListableP"]], "paclet:Options/ref/ListableP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b64610f8-dbd8-4984-ad65-e1fc8f1a8873"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern which matches both single or a list of provided input pattern."
+}], "GuideText",
+ CellID->577940073,ExpressionUUID->"5dac7598-f402-410f-b987-381a5f5c2539"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SameLengthQ"]], "paclet:Core/ref/SameLengthQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f6d5a00c-127d-4fd6-b1e3-827ec8ad1832"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if all provided inputs have the same length."
+}], "GuideText",
+ CellID->370271530,ExpressionUUID->"b5c1133c-a74c-4bd6-8388-8ad51e4ee334"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Unflatten"]], "paclet:Core/ref/Unflatten"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "94fb3942-8e8f-4ec0-93fe-cb60c3b601ec"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Restructures the provided flat list so it has the same structure as a \
+specified list."
+}], "GuideText",
+ CellID->1893479351,ExpressionUUID->"c25e84c2-cdfd-4b77-b676-c3af258a6d8b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Middle"]], "paclet:Core/ref/Middle"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "13f29f2d-29b8-4836-adff-794fc3d331b2"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the middle element of the provided expression."
+}], "GuideText",
+ CellID->147287364,ExpressionUUID->"56389fcc-937e-4f6e-b23c-126a3f5ba95c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["DeleteNestedDuplicates"]], 
+    "paclet:Core/ref/DeleteNestedDuplicates"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5186d2f0-5167-49bb-837f-4b9925877ff6"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Deletes redundant non-List items across an arbitrary-depth list of lists \
+such that a flattened version of the input list will contain no duplicates."
+}], "GuideText",
+ CellID->1557565404,ExpressionUUID->"0966120c-00c2-4766-9d29-0227e44eba73"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ExpandDimensions"]], "paclet:Core/ref/ExpandDimensions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "30183c6a-c686-4e33-a66f-f6033bde6a82"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a list from the provided item by repeating or padding such that \
+its dimension matches the specified list."
+}], "GuideText",
+ CellID->176088098,ExpressionUUID->"262fbb00-9638-42e0-aadc-d59dbfebb510"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["RiffleAlternatives"]], "paclet:Core/ref/RiffleAlternatives"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "57d08ec1-23a3-42dd-a849-77c8e5decbbc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a list by selecting elements from two provided lists in an order \
+specified by a list of Booleans."
+}], "GuideText",
+ CellID->280197520,ExpressionUUID->"81644b70-1b00-4279-b3c0-ee1ecbe67e96"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PartitionRemainder"]], 
+    "paclet:WLExtension/ref/PartitionRemainder"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7ad807ae-cbbb-4d9c-b55f-b2684048a998"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a list of sublists by splitting the provided list into lists \
+with specified length."
+}], "GuideText",
+ CellID->1995564416,ExpressionUUID->"def8271b-55e7-4487-8bd1-d3b4fefa5b5e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SetDifference"]], "paclet:Core/ref/SetDifference"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "49433381-66be-4d31-a3a9-a44fcad704c0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of objects that are not in two provided lists."
+}], "GuideText",
+ CellID->51540866,ExpressionUUID->"8107d618-5f5a-45a3-883b-cd454125feee"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FirstOrDefault"]], "paclet:WLExtension/ref/FirstOrDefault"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e4b46843-ede9-4a75-8c3a-a183e28f2cde"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the first element of the input unless it has no length."
+}], "GuideText",
+ CellID->811425121,ExpressionUUID->"da1a8eac-01fd-4ffe-b256-98fbd8cad746"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["LastOrDefault"]], "paclet:WLExtension/ref/LastOrDefault"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d3ee3fc5-172b-49bb-9684-9069e6d3989c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the last element of the input unless it has no length."
+}], "GuideText",
+ CellID->1100850197,ExpressionUUID->"36ce0892-ab03-42ed-b118-2bd435b414ce"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["RestOrDefault"]], "paclet:WLExtension/ref/RestOrDefault"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "903a3729-12ce-44c0-85e4-578e811a7370"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Removes the first element from the input unless it has no length."
+}], "GuideText",
+ CellID->1417642074,ExpressionUUID->"6b88243c-1b2b-418a-acf1-77f3078f8d88"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MostOrDefault"]], "paclet:WLExtension/ref/MostOrDefault"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a0ee4c71-1fae-4cb4-877f-dfe3a94d77a3"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Removes the last element from the input unless it has no length."
+}], "GuideText",
+ CellID->2126757900,ExpressionUUID->"fc87f037-69f2-4fdd-a0f6-dcafd9321525"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["GroupByTotal"]], "paclet:Core/ref/GroupByTotal"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "84c10836-c7b2-41be-a865-e04fedcc503f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Groups the values in the provided list such that the total summation of a \
+each grouping is as close to the specified target value as possible without \
+going over."
+}], "GuideText",
+ CellID->1702204632,ExpressionUUID->"73dcc228-addf-4f63-85ef-7728046a932d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PickList"]], "paclet:Core/ref/PickList"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "56760471-46f3-400b-8bb7-c539656b9f84"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Picks elements of list for which the corresponding element matches \
+pattern, and returns a list of those elements."
+}], "GuideText",
+ CellID->176104690,ExpressionUUID->"040cb541-c9b1-4357-860b-b59d23a6a281"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->559059264,ExpressionUUID->"3666fced-bb23-4bac-ae7d-0894a3bdec3a"],
+
+Cell["String Functions", "GuideFunctionsSubsection",
+ CellID->868094423,ExpressionUUID->"d7f160d8-fc87-4884-9c58-f25659810243"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StringFirst"]], "paclet:Core/ref/StringFirst"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "172e777c-17c9-4eca-aea2-a706652028bb"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the first character of the provided string."
+}], "GuideText",
+ CellID->59069643,ExpressionUUID->"df699bfa-5ae7-47c1-bec1-e3ba0f6ba2eb"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StringLast"]], "paclet:Core/ref/StringLast"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4bf3c5d1-bd5d-481d-999d-a01cf727647d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the last character of the provided string."
+}], "GuideText",
+ CellID->646044987,ExpressionUUID->"d382b25c-e849-43be-8eba-aa83a413448a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StringRest"]], "paclet:Core/ref/StringRest"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b2202b2a-6462-4280-b6e5-2f44532ae14a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a string that contains the all but the first character from the \
+input string."
+}], "GuideText",
+ CellID->400777277,ExpressionUUID->"56b67ff9-9e58-4c98-a378-c7290be394a8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StringMost"]], "paclet:Core/ref/StringMost"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1e08c049-7800-4ef6-bae7-3a7063683af1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a string that contains the all but the last character from the \
+input string."
+}], "GuideText",
+ CellID->1354977547,ExpressionUUID->"a89cf439-5c5c-4324-90ad-711814c0a72f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StringPartitionRemainder"]], 
+    "paclet:Core/ref/StringPartitionRemainder"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "bb3b8de4-00ed-4823-9f34-d03603e67ff2"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a list of strings by splitting the provided string into \
+substrings with specified length."
+}], "GuideText",
+ CellID->1191039641,ExpressionUUID->"3bf31d5d-f054-437d-b8c6-c2d1247d32e8"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1108172600,ExpressionUUID->"5aed1b7b-afbe-409b-b152-f44449b99ade"],
+
+Cell["Associations", "GuideFunctionsSubsection",
+ CellID->2078701416,ExpressionUUID->"0c98f459-095f-407c-ad5e-fdb07af32312"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AssociationMatchQ"]], "paclet:Core/ref/AssociationMatchQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8144930e-8e9f-4392-8cf9-6a6194c6546a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if each key-value pair in the provided association matches the \
+specified pattern association."
+}], "GuideText",
+ CellID->1470729316,ExpressionUUID->"b164b1a8-81a1-491c-ac98-e33748c33ecd"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AssociationMatchP"]], "paclet:Core/ref/AssociationMatchP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "04d4c8e9-49cc-45a9-9b9c-c794f0c2eb07"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern that matches an association with key-value patterns matching \
+the patterns specified in the input."
+}], "GuideText",
+ CellID->1010837042,ExpressionUUID->"5dff8056-72f0-4354-9857-898a120871ac"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ReplaceRule"]], "paclet:Core/ref/ReplaceRule"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "dac464bc-fe9e-4498-a8ae-12052d6580a5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Replaces the rules in the provided list of rules with the specified new \
+rules with the same left-hand side."
+}], "GuideText",
+ CellID->395033477,ExpressionUUID->"628f45f4-db62-43fe-a08a-8d35a8b0b426"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ExtractRule"]], "paclet:Core/ref/ExtractRule"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f6081376-6fdf-4bcc-a44c-450264c36663"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Extracts the first rule whose left-hand side matches the specified \
+expression."
+}], "GuideText",
+ CellID->1455695062,ExpressionUUID->"a355e8b6-712e-4642-b470-1670cc7e4b90"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["KeyPatternsQ"]], "paclet:WLExtension/ref/KeyPatternsQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "315c955a-7785-4978-8ed6-ee119d20789e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the keys in the provided association or list of rules matches \
+the patterns specified in an association or list of rules with the same \
+keys."
+}], "GuideText",
+ CellID->1733200410,ExpressionUUID->"0225683f-6856-489f-9883-71a51e799eed"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1431102962,ExpressionUUID->"dabb2891-19fb-4b85-869d-7ee80937a201"],
+
+Cell["Helpful Patterns", "GuideFunctionsSubsection",
+ CellID->730635934,ExpressionUUID->"d4d06202-fae4-453b-8b09-ce2751180bc4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["NullQ"]], "paclet:WLExtension/ref/NullQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f4428b40-c09d-4cd6-ade4-7a51911ecfd2"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided expression is Null or a list of Null."
+}], "GuideText",
+ CellID->486649192,ExpressionUUID->"0ebc1297-4796-4a45-924f-c5e3b4a14b5f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidGraphicsQ"]], "paclet:Core/ref/ValidGraphicsQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "13d02960-1d4e-4ff8-9c86-1ad3ca4d8d60"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided expression is a valid Graphics."
+}], "GuideText",
+ CellID->1495242168,ExpressionUUID->"c513ee53-777d-4066-aa81-6d9a8dc702d4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PDFFileQ"]], "paclet:Constellation/ref/PDFFileQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d52e0482-b770-4b85-b8c9-7493a92e0309"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the given file is a PDF."
+}], "GuideText",
+ CellID->681480382,ExpressionUUID->"504efb9f-3d3a-4993-9465-68b924aa4b62"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ModificationQ"]], "paclet:NucleicAcids/ref/ModificationQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "312435ef-814a-431a-9a0f-5725990435e1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the given change is a valid sequence of modifications."
+}], "GuideText",
+ CellID->1110490823,ExpressionUUID->"ac8c5cfa-ec91-4a4f-bcb9-6f3b87a32f96"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->238886084,ExpressionUUID->"dd660eaa-a733-433a-b60e-4027c066a994"],
+
+Cell["Documentation", "GuideFunctionsSubsection",
+ CellID->1311477545,ExpressionUUID->"a543d58e-8c4e-4800-ae0d-9c6523be4380"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Tests"]], "paclet:UnitTest/ref/Tests"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "866262b7-284a-46a0-acf5-714b7b811616"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns defined tests and examples for the input."
+}], "GuideText",
+ CellID->230946007,ExpressionUUID->"b016b28d-28b7-47da-ac89-ab81fbc45471"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["EmeraldTest"]], "paclet:UnitTest/ref/EmeraldTest"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f5d3f02e-d4fa-4b76-bca6-e174f37fb52f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Represents the results of a test."
+}], "GuideText",
+ CellID->1006589520,ExpressionUUID->"46586191-f2d9-4813-8002-1b3d629b3582"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["EmeraldTestSummary"]], 
+    "paclet:UnitTest/ref/EmeraldTestSummary"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9d9f7634-4a79-43c5-bad1-9a0c42fbf4ab"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Represents the results of a group of tests."
+}], "GuideText",
+ CellID->2021375221,ExpressionUUID->"bfa9f839-60b7-44d6-9766-170c78b279e5"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->62043807,ExpressionUUID->"4ae7e490-a632-4a9a-a31c-8709e4f58d3c"],
+
+Cell["Graphics and Images", "GuideFunctionsSubsection",
+ CellID->1240695454,ExpressionUUID->"b54b9bd0-c61e-4531-ac16-0a3978c7551a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ColorFade"]], "paclet:Core/ref/ColorFade"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "43a760b4-6a9e-465e-847a-036acce187b5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a series of colors from the dark to light based on the provided \
+color."
+}], "GuideText",
+ CellID->302283008,ExpressionUUID->"1dc826ad-57b1-4718-acbf-8a5c84899365"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1671690301,ExpressionUUID->"47e1eec8-c553-4a25-accb-a3c775ed70b8"],
+
+Cell["Low Level", "GuideFunctionsSubsection",
+ CellID->570335206,ExpressionUUID->"254ccb3a-6080-4c50-afb1-52790ba68c94"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ClearMemoization"]], "paclet:Core/ref/ClearMemoization"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "40951e32-1f4a-46d7-bf3d-f37a53e58ad4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Clears all functions whose results have been saved, so those functions \
+will have to be run fresh again."
+}], "GuideText",
+ CellID->1404290681,ExpressionUUID->"24d77170-51f6-47ab-8fe4-1207589732c4"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1068195037,ExpressionUUID->"b76c0c30-eeb4-4f73-a2e4-1412eb57bfb7"],
+
+Cell["Input", "GuideFunctionsSubsection",
+ CellID->190697939,ExpressionUUID->"4f946c47-ed42-46e1-b45c-91ef12cf7166"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FastImport"]], "paclet:Core/ref/FastImport"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "342f5c44-9042-4019-a66c-549ea8f0988c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Imports the input file of specified file type using the fastest method \
+available."
+}], "GuideText",
+ CellID->1014659449,ExpressionUUID->"28d4e777-8ad8-465a-95a2-5d1b95427421"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->213718516,ExpressionUUID->"7b6e53b7-a184-42ae-9f27-43a1e87a66a8"],
+
+Cell["Output", "GuideFunctionsSubsection",
+ CellID->1374440628,ExpressionUUID->"b560cac3-81fc-42b0-9a5e-c3105fc75be0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FastExport"]], "paclet:Core/ref/FastExport"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9fe4a8b6-2afb-49f9-b251-a482f911e0e6"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Writes given content to a file using the fastest method available."
+}], "GuideText",
+ CellID->1889527664,ExpressionUUID->"bc9fbc2d-084e-4005-8be4-da417aa32f3a"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->303277012,ExpressionUUID->"84158e4f-d472-4140-89ea-f379e736ea2e"],
+
+Cell["Miscellaneous", "GuideFunctionsSubsection",
+ CellID->1198046353,ExpressionUUID->"1a19c234-bb56-46cb-96a1-cb442e40f218"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["OptionDefinition"]], "paclet:Options/ref/OptionDefinition"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "47c10812-0e82-405e-8165-beafb8a97ca0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of associations with the option name, default value, head, \
+pattern, description, category, symbol and index matching status for each \
+option of the input symbol."
+}], "GuideText",
+ CellID->758380599,ExpressionUUID->"76cdf426-161b-4c6b-a4fb-87daa4dbfe70"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SafeEvaluate"]], "paclet:WLExtension/ref/SafeEvaluate"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "691e3a53-79b5-4793-aa5f-133f371fc45f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Evaluates the input expression if no members of input list match NullP or \
+empty set, otherwise returns Null."
+}], "GuideText",
+ CellID->787282448,ExpressionUUID->"14e49a7a-f968-491a-817e-6a8cb318dafd"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["UnsortedComplement"]], "paclet:Core/ref/UnsortedComplement"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1b78d96d-7a93-4d2e-92b7-abec5bef084f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the elements that are in first input but not second input in the \
+order they are present in the first input."
+}], "GuideText",
+ CellID->1209354369,ExpressionUUID->"d9eb5e6e-2d5d-412f-b463-351b0f44f695"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidComputationQ"]], "paclet:Manifold/ref/ValidComputationQ"},
+   
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "39bb483a-6f21-4f35-91f4-2f7d99be3f48"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the mathematica commands in the input can be converted into a \
+computation."
+}], "GuideText",
+ CellID->1833644575,ExpressionUUID->"e1de722b-2206-4750-a6f0-19a81063c71a"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->1674037575,ExpressionUUID->"199dcf39-ec9e-4609-84c2-78d66d1cc4a6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"23b8bfb5-c247-4887-8602-09b1d320825c"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->1366263678,ExpressionUUID->"666064c6-0eac-45e2-ab98-ab1f141da734"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->1898482422,ExpressionUUID->"0b66defc-ffcb-48ae-baac-a56ecda6f226"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["WorkingWithConstellationObjects"]], 
+   "paclet:Docs/guide/WorkingWithConstellationObjects"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->482039428,ExpressionUUID->"a7eef5d5-cfbf-4bd9-ab45-2d75c2f7fc78"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["ConstellationUtilityFunctions"]], 
+   "paclet:Docs/guide/ConstellationUtilityFunctions"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1328349912,ExpressionUUID->"9b229d6a-a39c-4064-9ea8-756f17e566ab"],
+
+Cell["", "FooterCell",
+ CellID->336976772,ExpressionUUID->"40572d9d-5d2b-4304-8aaa-26631078a105"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{808, 911},
+WindowMargins->{{460, Automatic}, {Automatic, 70}},
+WindowTitle->"UtilityFunctionsForMathematica",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Tue 15 Nov 2022 15:10:35", "context" -> "Docs`", 
+    "keywords" -> {
+     "AllGreaterEqual", "ToList", "Repeat", "RepeatedQ", "ListableP", 
+      "SameLengthQ", "Unflatten", "Middle", "DeleteNestedDuplicates", 
+      "ExpandDimensions", "RiffleAlternatives", "PartitionRemainder", 
+      "SetDifference", "FirstOrDefault", "LastOrDefault", "RestOrDefault", 
+      "MostOrDefault", "GroupByTotal", "PickList", "StringFirst", 
+      "StringLast", "StringRest", "StringMost", "StringPartitionRemainder", 
+      "AssociationMatchQ", "AssociationMatchP", "ReplaceRule", "ExtractRule", 
+      "KeyPatternsQ", "NullQ", "ValidGraphicsQ", "PDFFileQ", "ModificationQ", 
+      "Tests", "EmeraldTest", "EmeraldTestSummary", "ColorFade", 
+      "ClearMemoization", "FastImport", "FastExport", "OptionDefinition", 
+      "SafeEvaluate", "UnsortedComplement", "ValidComputationQ"}, 
+    "specialkeywords" -> {}, "tutorialcollectionlinks" -> {}, "index" -> True,
+     "label" -> "ECL Guide", "language" -> "en", "paclet" -> "Docs", "status" -> 
+    "None", "summary" -> 
+    "Collection of functions that is useful for miscellaneous operations on \
+Mathematica.", "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "UtilityFunctionsForMathematica", "title" -> 
+    "UtilityFunctionsForMathematica", "type" -> "Guide", "uri" -> 
+    "Docs/guide/UtilityFunctionsForMathematica", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.3 for Mac OS X ARM (64-bit) (September 30, 2021)",
+StyleDefinitions->"EmeraldReference.nb",
+ExpressionUUID->"255d0dd7-8340-4b2c-bb40-5a3030e7c8ed"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[602, 21, 7541, 166, 58, "AnchorBarGrid",ExpressionUUID->"4fb92b2d-5526-40b4-9b5c-0f616e7abc10",
+ CellID->1],
+Cell[8146, 189, 130, 1, 45, "GuideTitle",ExpressionUUID->"7013d66d-2f0a-4fc0-be13-decb48c12268",
+ CellID->198195714],
+Cell[8279, 192, 193, 4, 30, "GuideAbstract",ExpressionUUID->"3d06a9e7-72de-4a8f-863b-7e4a6718167b",
+ CellID->328228701],
+Cell[8475, 198, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"7175fb12-4b3c-4232-b4ec-bd0f19697c87",
+ CellID->1801772211],
+Cell[8592, 201, 128, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"a3ff439e-03c4-490f-9b7e-e1d462050893",
+ CellID->718643930],
+Cell[8723, 204, 496, 14, 31, "GuideText",ExpressionUUID->"ee66c309-8ea8-4ffa-9f44-7a058a2fc8d5",
+ CellID->800500782],
+Cell[9222, 220, 458, 12, 37, "GuideText",ExpressionUUID->"73555cad-9cfe-4be8-80ce-3a4f7ce8ec1d",
+ CellID->31594619],
+Cell[9683, 234, 451, 12, 37, "GuideText",ExpressionUUID->"de9ec0a2-4016-4e91-b0a3-8fcfef5a2f6f",
+ CellID->582300724],
+Cell[10137, 248, 447, 12, 37, "GuideText",ExpressionUUID->"517bea6a-c56a-4659-8133-f255ccbbb91a",
+ CellID->645288889],
+Cell[10587, 262, 470, 12, 37, "GuideText",ExpressionUUID->"5dac7598-f402-410f-b987-381a5f5c2539",
+ CellID->577940073],
+Cell[11060, 276, 447, 12, 37, "GuideText",ExpressionUUID->"b5c1133c-a74c-4bd6-8388-8ad51e4ee334",
+ CellID->370271530],
+Cell[11510, 290, 480, 13, 37, "GuideText",ExpressionUUID->"c25e84c2-cdfd-4b77-b676-c3af258a6d8b",
+ CellID->1893479351],
+Cell[11993, 305, 440, 12, 37, "GuideText",ExpressionUUID->"56389fcc-937e-4f6e-b23c-126a3f5ba95c",
+ CellID->147287364],
+Cell[12436, 319, 574, 14, 57, "GuideText",ExpressionUUID->"0966120c-00c2-4766-9d29-0227e44eba73",
+ CellID->1557565404],
+Cell[13013, 335, 523, 13, 57, "GuideText",ExpressionUUID->"262fbb00-9638-42e0-aadc-d59dbfebb510",
+ CellID->176088098],
+Cell[13539, 350, 519, 13, 57, "GuideText",ExpressionUUID->"81644b70-1b00-4279-b3c0-ee1ecbe67e96",
+ CellID->280197520],
+Cell[14061, 365, 518, 14, 57, "GuideText",ExpressionUUID->"def8271b-55e7-4487-8bd1-d3b4fefa5b5e",
+ CellID->1995564416],
+Cell[14582, 381, 460, 12, 37, "GuideText",ExpressionUUID->"8107d618-5f5a-45a3-883b-cd454125feee",
+ CellID->51540866],
+Cell[15045, 395, 472, 12, 37, "GuideText",ExpressionUUID->"da1a8eac-01fd-4ffe-b256-98fbd8cad746",
+ CellID->811425121],
+Cell[15520, 409, 470, 12, 37, "GuideText",ExpressionUUID->"36ce0892-ab03-42ed-b118-2bd435b414ce",
+ CellID->1100850197],
+Cell[15993, 423, 473, 12, 37, "GuideText",ExpressionUUID->"6b88243c-1b2b-418a-acf1-77f3078f8d88",
+ CellID->1417642074],
+Cell[16469, 437, 472, 12, 37, "GuideText",ExpressionUUID->"fc87f037-69f2-4fdd-a0f6-dcafd9321525",
+ CellID->2126757900],
+Cell[16944, 451, 564, 14, 57, "GuideText",ExpressionUUID->"73dcc228-addf-4f63-85ef-7728046a932d",
+ CellID->1702204632],
+Cell[17511, 467, 505, 13, 57, "GuideText",ExpressionUUID->"040cb541-c9b1-4357-860b-b59d23a6a281",
+ CellID->176104690],
+Cell[18019, 482, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"3666fced-bb23-4bac-ae7d-0894a3bdec3a",
+ CellID->559059264],
+Cell[18135, 485, 127, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"d7f160d8-fc87-4884-9c58-f25659810243",
+ CellID->868094423],
+Cell[18265, 488, 446, 12, 31, "GuideText",ExpressionUUID->"df699bfa-5ae7-47c1-bec1-e3ba0f6ba2eb",
+ CellID->59069643],
+Cell[18714, 502, 444, 12, 37, "GuideText",ExpressionUUID->"d382b25c-e849-43be-8eba-aa83a413448a",
+ CellID->646044987],
+Cell[19161, 516, 481, 13, 37, "GuideText",ExpressionUUID->"56b67ff9-9e58-4c98-a378-c7290be394a8",
+ CellID->400777277],
+Cell[19645, 531, 481, 13, 37, "GuideText",ExpressionUUID->"a89cf439-5c5c-4324-90ad-711814c0a72f",
+ CellID->1354977547],
+Cell[20129, 546, 529, 14, 57, "GuideText",ExpressionUUID->"3bf31d5d-f054-437d-b8c6-c2d1247d32e8",
+ CellID->1191039641],
+Cell[20661, 562, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"5aed1b7b-afbe-409b-b152-f44449b99ade",
+ CellID->1108172600],
+Cell[20778, 565, 124, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"0c98f459-095f-407c-ad5e-fdb07af32312",
+ CellID->2078701416],
+Cell[20905, 568, 511, 13, 51, "GuideText",ExpressionUUID->"b164b1a8-81a1-491c-ac98-e33748c33ecd",
+ CellID->1470729316],
+Cell[21419, 583, 521, 13, 57, "GuideText",ExpressionUUID->"5dff8056-72f0-4354-9857-898a120871ac",
+ CellID->1010837042],
+Cell[21943, 598, 505, 13, 57, "GuideText",ExpressionUUID->"628f45f4-db62-43fe-a08a-8d35a8b0b426",
+ CellID->395033477],
+Cell[22451, 613, 477, 13, 37, "GuideText",ExpressionUUID->"a355e8b6-712e-4642-b470-1670cc7e4b90",
+ CellID->1455695062],
+Cell[22931, 628, 559, 14, 57, "GuideText",ExpressionUUID->"0225683f-6856-489f-9883-71a51e799eed",
+ CellID->1733200410],
+Cell[23493, 644, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"dabb2891-19fb-4b85-869d-7ee80937a201",
+ CellID->1431102962],
+Cell[23610, 647, 127, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"d4d06202-fae4-453b-8b09-ce2751180bc4",
+ CellID->730635934],
+Cell[23740, 650, 451, 12, 31, "GuideText",ExpressionUUID->"0ebc1297-4796-4a45-924f-c5e3b4a14b5f",
+ CellID->486649192],
+Cell[24194, 664, 457, 12, 37, "GuideText",ExpressionUUID->"c513ee53-777d-4066-aa81-6d9a8dc702d4",
+ CellID->1495242168],
+Cell[24654, 678, 433, 12, 37, "GuideText",ExpressionUUID->"504efb9f-3d3a-4993-9465-68b924aa4b62",
+ CellID->681480382],
+Cell[25090, 692, 473, 12, 37, "GuideText",ExpressionUUID->"ac8c5cfa-ec91-4a4f-bcb9-6f3b87a32f96",
+ CellID->1110490823],
+Cell[25566, 706, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"dd660eaa-a733-433a-b60e-4027c066a994",
+ CellID->238886084],
+Cell[25682, 709, 125, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"a543d58e-8c4e-4800-ae0d-9c6523be4380",
+ CellID->1311477545],
+Cell[25810, 712, 437, 12, 31, "GuideText",ExpressionUUID->"b016b28d-28b7-47da-ac89-ab81fbc45471",
+ CellID->230946007],
+Cell[26250, 726, 434, 12, 37, "GuideText",ExpressionUUID->"46586191-f2d9-4813-8002-1b3d629b3582",
+ CellID->1006589520],
+Cell[26687, 740, 463, 13, 37, "GuideText",ExpressionUUID->"bfa9f839-60b7-44d6-9766-170c78b279e5",
+ CellID->2021375221],
+Cell[27153, 755, 112, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"4ae7e490-a632-4a9a-a31c-8709e4f58d3c",
+ CellID->62043807],
+Cell[27268, 758, 131, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"b54b9bd0-c61e-4531-ac16-0a3978c7551a",
+ CellID->1240695454],
+Cell[27402, 761, 474, 13, 31, "GuideText",ExpressionUUID->"1dc826ad-57b1-4718-acbf-8a5c84899365",
+ CellID->302283008],
+Cell[27879, 776, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"47e1eec8-c553-4a25-accb-a3c775ed70b8",
+ CellID->1671690301],
+Cell[27996, 779, 120, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"254ccb3a-6080-4c50-afb1-52790ba68c94",
+ CellID->570335206],
+Cell[28119, 782, 512, 13, 51, "GuideText",ExpressionUUID->"24d77170-51f6-47ab-8fe4-1207589732c4",
+ CellID->1404290681],
+Cell[28634, 797, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"b76c0c30-eeb4-4f73-a2e4-1412eb57bfb7",
+ CellID->1068195037],
+Cell[28751, 800, 116, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"4f946c47-ed42-46e1-b45c-91ef12cf7166",
+ CellID->190697939],
+Cell[28870, 803, 478, 13, 31, "GuideText",ExpressionUUID->"28d4e777-8ad8-465a-95a2-5d1b95427421",
+ CellID->1014659449],
+Cell[29351, 818, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"7b6e53b7-a184-42ae-9f27-43a1e87a66a8",
+ CellID->213718516],
+Cell[29467, 821, 118, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"b560cac3-81fc-42b0-9a5e-c3105fc75be0",
+ CellID->1374440628],
+Cell[29588, 824, 461, 12, 31, "GuideText",ExpressionUUID->"bc9fbc2d-084e-4005-8be4-da417aa32f3a",
+ CellID->1889527664],
+Cell[30052, 838, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"84158e4f-d472-4140-89ea-f379e736ea2e",
+ CellID->303277012],
+Cell[30168, 841, 125, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"1a19c234-bb56-46cb-96a1-cb442e40f218",
+ CellID->1198046353],
+Cell[30296, 844, 588, 14, 51, "GuideText",ExpressionUUID->"76cdf426-161b-4c6b-a4fb-87daa4dbfe70",
+ CellID->758380599],
+Cell[30887, 860, 515, 13, 57, "GuideText",ExpressionUUID->"14e49a7a-f968-491a-817e-6a8cb318dafd",
+ CellID->787282448],
+Cell[31405, 875, 528, 13, 57, "GuideText",ExpressionUUID->"d9eb5e6e-2d5d-412f-b463-351b0f44f695",
+ CellID->1209354369],
+Cell[31936, 890, 503, 14, 57, "GuideText",ExpressionUUID->"e1de722b-2206-4750-a6f0-19a81063c71a",
+ CellID->1833644575],
+Cell[32442, 906, 107, 1, 29, "SectionFooterSpacer",ExpressionUUID->"199dcf39-ec9e-4609-84c2-78d66d1cc4a6",
+ CellID->1674037575],
+Cell[32552, 909, 393, 12, 73, "GuideMoreAboutSection",ExpressionUUID->"666064c6-0eac-45e2-ab98-ab1f141da734",
+ CellID->1366263678],
+Cell[32948, 923, 107, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"0b66defc-ffcb-48ae-baac-a56ecda6f226",
+ CellID->1898482422],
+Cell[33058, 926, 290, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"a7eef5d5-cfbf-4bd9-ab45-2d75c2f7fc78",
+ CellID->482039428],
+Cell[33351, 935, 287, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"9b229d6a-a39c-4064-9ea8-756f17e566ab",
+ CellID->1328349912],
+Cell[33641, 944, 97, 1, 40, "FooterCell",ExpressionUUID->"40572d9d-5d2b-4304-8aaa-26631078a105",
+ CellID->336976772]
+}
+]
+*)
+
+(* End of internal cache information *)
+

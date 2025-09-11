@@ -63,7 +63,7 @@ DefineObjectType[Object[Data, LuminescenceKinetics], {
 		FocalHeight -> {
 			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0*Meter*Milli],
+			Pattern :> DistanceP,
 			Units -> Meter Milli,
 			Description -> "The distance from the bottom of the plate carrier to the focal point.",
 			Category -> "General"
@@ -98,6 +98,24 @@ DefineObjectType[Object[Data, LuminescenceKinetics], {
 			Units -> Celsius,
 			Description -> "The desired temperature of the sample chamber during the experimental run.",
 			Category -> "General"
+		},
+		NominalOxygenLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Percent],
+			Units -> Percent,
+			Description -> "The target oxygen level in the atmosphere inside the instrument set by the protocol.",
+			Category -> "General",
+			Abstract -> True
+		},
+		NominalCarbonDioxideLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Percent],
+			Units -> Percent,
+			Description -> "The target carbon dioxide level in the atmosphere inside the instrument set by the protocol.",
+			Category -> "General",
+			Abstract -> True
 		},
 		Well -> {
 			Format -> Single,
@@ -165,6 +183,22 @@ DefineObjectType[Object[Data, LuminescenceKinetics], {
 			Pattern :> QuantityCoordinatesP[{Second,Celsius}],
 			Units -> {Second, Celsius},
 			Description -> "Temperature readings taken in the sample chamber, for the trajectories recorded.",
+			Category -> "Experimental Results"
+		},
+		OxygenLevel -> {
+			Format -> Single,
+			Class -> QuantityArray,
+			Pattern :> QuantityCoordinatesP[{Second,Percent}],
+			Units -> {Second, Percent},
+			Description -> "Oxygen level readings taken in the sample chamber, for the trajectories recorded.",
+			Category -> "Experimental Results"
+		},
+		CarbonDioxideLevel -> {
+			Format -> Single,
+			Class -> QuantityArray,
+			Pattern :> QuantityCoordinatesP[{Second,Percent}],
+			Units -> {Second, Percent},
+			Description -> "Carbon dioxide level readings taken in the sample chamber, for the trajectories recorded.",
 			Category -> "Experimental Results"
 		},
 		DetectorRangeExceeded -> {

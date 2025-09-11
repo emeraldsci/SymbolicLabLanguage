@@ -18,357 +18,30 @@
 
 DefineOptions[ExperimentPeptideSynthesis,
 	Options :> {
-		{
-			OptionName->Instrument,
-			Default->Model[Instrument, PeptideSynthesizer, "Symphony X"],
-			AllowNull->False,
-			Widget->Widget[Type->Object,Pattern:>ObjectP[{
-				Model[Instrument,PeptideSynthesizer],
-				Object[Instrument,PeptideSynthesizer]
-			}]],
-			Description->"The model or object instrument to be used for this synthesis.",
-			Category->"Protocol"
-		},
-		{
-			OptionName->SynthesisStrategy,
-			Default->Fmoc,
-			AllowNull->False,
-			Widget->Widget[Type->Enumeration,Pattern:>Alternatives[Fmoc]],
-			Description->"The type of N-terminal and side chain protecting group scheme used by this synthesis.",
-			Category->"Protocol"
-		},
-		{
-			OptionName->SwellSolution,
-			Default->Automatic,
-			AllowNull->True,
-			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
-			Description->"The model or sample object to be used to swell the resin prior to the start of the synthesis or resin download.",
-			ResolutionDescription->"Automatic will resolve to Model[Sample, \"Dichloromethane, Reagent Grade\"] if SwellResin has been set to True.",
-			Category->"Swelling"
-		},
-		{
-			OptionName->WashSolution,
-			Default->Model[Sample, "Dimethylformamide, Reagent Grade"],
-			AllowNull->False,
-			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
-			Description->"The model or sample object used to wash the resin in between each reagent addition.",
-			Category->"Washing"
-		},
-		{
-			OptionName->DeprotectionSolution,
-			Default->Automatic,
-			AllowNull->False,
-			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
-			Description->"The model or sample object that represents the deprotection solution that will be used to remove protecting groups from the growing strand during the deprotection step of a synthesis or download resin cycle.",
-			ResolutionDescription->"Will resolve to Model[Sample, StockSolution, \"Deprotection Solution (20% piperidine in NMP)\"] for Fmoc synthesis and Model[Sample, StockSolution, \"95% TFA 5% m-cresol\"] for Boc synthesis.",
-			Category->"Deprotection"
-		},
-		{
-			OptionName->DeprotonationSolution,
-			Default->Automatic,
-			AllowNull->True,
-			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
-			Description->"The model or sample object that represents the DeprotonationSolution that will be used to neutralize the resin prior to the coupling step.",
-			ResolutionDescription->"Will automatically resolve to Model[Sample, StockSolution, \"5% DIEA in DCM\"] Deprotonation has been set to True.",
-			Category->"Deprotonation"
-		},
-		{
-			OptionName->CappingSolution,
-			Default->Model[Sample, StockSolution, "Resin Download Capping Solution"],
-			AllowNull->False,
-			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
-			Description->"The model or sample objects that represents the solution that will be to cap any remaining uncoupled sites from growing further during the synthesis to aid in later purification of the truncations.",
-			Category->"Capping"
-		},
+		PeptideSynthesisSharedSet,
 		{
 			OptionName->ActivationSolution,
 			Default->Model[Sample, StockSolution, "100 mM HBTU, 400mM NMM in NMP"],
 			AllowNull->False,
-			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
+			Widget->Widget[
+				Type->Object,
+				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Peptide Synthesis",
+						"Reagents",
+						"Coupling"
+					}
+				}
+			],
 			Description->"The model or object representing the mix of preactivation and base solutions used to activate the monomers prior to coupling during a synthesis cycle.",
-			Category->"Monomer Activation"
-		},
-		{
-			OptionName->DownloadActivationSolution,
-			Default->Automatic,
-			AllowNull->True,
-			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
-			Description->"The model of object representing the activation used during the coupling step of resin download.",
-			ResolutionDescription->"Will automatically resolve to value specified by ActivationSolution if DownloadResin is set to True.",
-			Category->"Download Monomer Activation"
-		},
-		{
-			OptionName->StorageBuffer,
-			Default->Automatic,
-			AllowNull->True,
-			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
-			Description->"The sample or model of solution used to store any uncleaved resin samples.",
-			ResolutionDescription->"Will automatically resolve to Model[Sample,\"Dimethylformamide, Reagent Grade\"] if Cleavage is set to False.",
-			Category->"SampleStorage"
-		},
-		{
-			OptionName->PrimaryResinShrinkSolution,
-			Default->Automatic,
-			AllowNull->True,
-			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
-			Description->"The model or sample object that represents the primary shrink solution used to wash and dry the resin after last coupling step.",
-			ResolutionDescription->"Will automatically resolve to Model[Sample, \"Methanol\"] if PrimaryResinShrink is set to True.",
-			Category->"Cleavage"
-		},
-		{
-			OptionName->SecondaryResinShrinkSolution,
-			Default->Automatic,
-			AllowNull->True,
-			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
-			Description->"The model or sample object that represents the secondary shrink solution used to wash and dry the resin after last coupling step.",
-			ResolutionDescription->"Will automatically resolve to Model[Sample, \"Isopropanol\"] if SecondaryResinShrink is set to True.",
-			Category->"Cleavage"
-		},
-		{
-			OptionName->CleavageSolution,
-			Default->Automatic,
-			AllowNull->True,
-			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
-			Description->"The sample or model object that represents the cleavage cocktail that will be used to cleave the peptide strands from the resin.",
-			ResolutionDescription->"Will automatically resolve to Model[Sample,StockSolution,\"95%TFA-TIPS-H2O\"] if Cleavage is set to True.",
-			Category->"Cleavage"
-		},
-		{
-			OptionName->TriturationSolution,
-			Default->Automatic,
-			AllowNull->True,
-			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
-			Description->"The sample or model object that represents the solution that will be used to triturate the peptide strands after cleavage from the resin.",
-			ResolutionDescription->"Will automatically resolve to Model[Sample,\"Diethyl ether\"] if Cleavage is set to True.",
-			Category->"Trituration"
-		},
-		{
-			OptionName->TriturationVolume,
-			Default->Automatic,
-			AllowNull->True,
-			Widget->Widget[
-				Type->Quantity,
-				Pattern :> RangeP[Milliliter,35 Milliliter],
-				Units->{Microliter,{Microliter,Milliliter}}
-			],
-			Description->"The volume of ether that will be used to triturate the peptide strands after cleavage from the resin.",
-			ResolutionDescription->"Will automatically resolve to 35 milliliter if Cleavage is set to True.",
-			Category->"Trituration"
-		},
-		{
-			OptionName->NumberOfTriturationCycles,
-			Default->Automatic,
-			AllowNull->True,
-			Widget->Widget[Type->Number,Pattern :> RangeP[1,10,1]],
-			Description->"The number of times the cleaved peptide strands will be TriturationSolution with ether.",
-			ResolutionDescription->"Will automatically resolve to 3 if Cleavage is set to True.",
-			Category->"Trituration"
-		},
-		{
-			OptionName->TriturationTime,
-			Default->Automatic,
-			AllowNull->True,
-			Widget->Widget[
-				Type->Quantity,
-				Pattern :> RangeP[Minute,12 Hour],
-				Units->{Minute,{Minute, Hour}}
-			],
-			Description->"The length of time for which the cleaved strands will be incubated in ether.",
-			ResolutionDescription->"Will automatically resolve to 5 minutes if Cleavage is set to True.",
-			Category->"Trituration"
-		},
-		{
-			OptionName->TriturationTemperature,
-			Default->Automatic,
-			AllowNull->True,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>Alternatives[-80 Celsius]
-			],
-			Description->"The temperature at which the cleaved strands will be incubated while in ether.",
-			ResolutionDescription->"Will automatically resolve to -80 Celsius if Cleavage is set to True.",
-			Category->"Trituration"
-		},
-		{
-			OptionName->ResuspensionBuffer,
-			Default->Automatic,
-			AllowNull->True,
-			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
-			Description->"The sample or model object that represents the object that will be used to resuspend the peptide strands after cleavage from the resin.",
-			ResolutionDescription->"Will automatically resolve to Model[Sample,\"Milli-Q water\"] if Cleavage is set to True.",
-			Category->"SampleStorage"
-		},
-		{
-			OptionName->Monomers,
-			Default->Automatic,
-			AllowNull->False,
-			Widget->Adder[
-				{
-					"Monomer Sequence"->Widget[Type -> Expression, Pattern :> SequenceP, Size -> Word],
-					"Model"->Widget[
-						Type->Object,
-						Pattern:>ObjectP[{Model[Sample],Object[Sample]}]
-					]
-				},
-				Orientation->Vertical
-			],
-			Description->"The model or sample object to use for each of the monomers in the synthesis.",
-			ResolutionDescription->"Automatic will resolved to default options for all monomers needed for the synthesis.",
-			Category->"Monomer Activation"
-		},
-		{
-			OptionName->RecoupMonomers,
-			Default->False,
-			AllowNull->False,
-			Widget->Widget[Type->Enumeration,Pattern:>BooleanP],
-			Description->"Indicates if any left over monomer solutions will be stored or discarded at the conclusion of a synthesis.",
 			Category->"Monomer Activation"
 		},
 
 		IndexMatching[
 			IndexMatchingInput->"experiment samples",
-			{
-				OptionName->Scale,
-				Default->5 Micromole,
-				AllowNull->False,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[5*Micromole,100*Micromole,2.5*Micromole],
-				(* TODO: remove the increments *)
-					Units->{Micromole,{Micromole}}
-				],
-				Description->"The scale at which the oligomers will be synthesized.",
-				Category->"Protocol"
-			},
-			{
-				OptionName->TargetLoading,
-				Default->90 Micromole/Gram,
-				AllowNull->False,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> Alternatives[RangeP[60 Micromole/Gram,200 Micromole/Gram]],
-					Units->CompoundUnit[
-						{1,{Micromole,{Micromole}}},
-						{-1,{Gram,{Gram}}}
-					]
-				],
-				Description->"The desired target loading of the resin to be used for the synthesis.",
-				Category->"Protocol"
-			},
-			{
-				OptionName->Resin,
-				Default->Automatic,
-				AllowNull->False,
-				Widget->Widget[
-					Type->Object,
-					Pattern:>ObjectP[{
-						Model[Sample],
-						Object[Sample]
-					}]],
-				Description->"The model or sample object of resin to be used as the solid support for the synthesis.",
-				ResolutionDescription->"Will resolve automatically to the undownloaded Resin Model[Sample,\"Rink Amide ChemMatrix\"] if DownloadResin is set to True. If DownloadResin is set to False, the user is required to specify an appropriate downloaded resin.",
-				Category->"Protocol"
-			},
-			{
-				OptionName->DownloadResin,
-				Default->True,
-				AllowNull->False,
-				Widget->Widget[Type->Enumeration,Pattern:>BooleanP],
-				Description->"Indicates if an undownloaded resin will be used and resin download will be performed as the first cycle of the synthesis.",
-				Category->"Protocol"
-			},
-
-		(*NOTE: Swelling *)
-			{
-				OptionName->SwellResin,
-				Default->True,
-				AllowNull->False,
-				Widget->Widget[Type->Enumeration,Pattern:>BooleanP],
-				Description->"Indicates if the resin will be swelled in SwellSolution before the start of a synthesis.",
-				Category->"Swelling"
-			},
-			{
-				OptionName->SwellTime,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[0.1*Hour,12*Hour],
-					Units->{Second,{Second,Minute, Hour}}
-				],
-				Description->"Specifies the amount of time that the resin is swelled for (per cycle).",
-				ResolutionDescription->"Will automatically resolve to 20 Minutes is SwellResin is set to True.",
-				Category->"Swelling"
-			},
-			{
-				OptionName->SwellVolume,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[2.5 Milliliter,25 Milliliter],
-					Units->{Microliter,{Microliter,Milliliter}}
-				],
-				Description->"Specifies the volume of SwellSolution that the samples will be swelled with.",
-				ResolutionDescription->"Will automatically resolve to 10 Milliliter if SwellResin is set to True.",
-				Category->"Swelling"
-			},
-			{
-				OptionName->NumberOfSwellCycles,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Number,Pattern :> GreaterP[0, 1]],
-				Description->"Specifies the number of the cycles of swelling of the resin before the start of a synthesis.",
-				ResolutionDescription->"Will automatically resolve to 3 if SwellResin is set to True.",
-				Category->"Swelling"
-			},
-
-		(*NOTE: Washing *)
-			{
-				OptionName->WashVolume,
-				Default->Automatic,
-				AllowNull->False,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[1 Milliliter, 25 Milliliter],
-					Units->{Milliliter,{Microliter, Milliliter}}
-				],
-				Description->"The volume of WashSolution to be used to wash the resin in between each reagent addition.",
-				ResolutionDescription->"Will automatically resolve to 4 Milliliter plus an additonal .2 Milliliter for each 1 Micromole of synthesis Scale, rounded up to the nearest .5 Milliliter.",
-				Category->"Washing"
-			},
-
-		(* NOTE: Deprotection *)
-			{
-				OptionName->InitialDeprotection,
-				Default->False,
-				AllowNull->False,
-				Widget->Widget[Type->Enumeration,Pattern:>BooleanP],
-				Description->"Indicates if an initial deprotection step will be done before the synthesis of the strand begins.",
-				ResolutionDescription->"The initial deprotection will only occur if DownloadResin is set to True as all other cycles already include a deprotection step prior to their coupling steps.",
-				Category->"Deprotection"
-			},
-			{
-				OptionName->FinalDeprotection,
-				Default->True,
-				AllowNull->False,
-				Widget->Widget[Type->Enumeration,Pattern:>BooleanP],
-				Description->"Indicates if a final deprotection step is will be done as part of the last synthesis cycle prior to the start of cleavage or resin storage.",
-				Category->"Deprotection"
-			},
-			{
-				OptionName->DeprotectionVolume,
-				Default->Automatic,
-				AllowNull->False,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[1 Milliliter, 25 Milliliter],
-					Units->{Milliliter,{Microliter, Milliliter}}
-				],
-				Description->"The volume of DeprotectionSolution added to each reaction vessel during the deprotection step of a synthesis cycle.",
-				ResolutionDescription->"Automatic will resolve to 3 Milliliter plus an additonal .2 Milliliter for each Micromole of synthesis Scale, rounded up to the nearest .5 Milliliter",
-				Category->"Deprotection"
-			},
 			{
 				OptionName->DeprotectionTime,
 				Default->20 Minute,
@@ -381,287 +54,14 @@ DefineOptions[ExperimentPeptideSynthesis,
 				Category->"Deprotection",
 				Description->"The amount of time that each reaction vessel is exposed to the deprotection solution during each deprotection step of a synthesis cycle."
 			},
-			{
-				OptionName->NumberOfDeprotections,
-				Default->2,
-				AllowNull->False,
-				Widget->Widget[Type->Number,Pattern :> RangeP[1,10,1]],
-				Description->"The number of times that each reaction vessel will be deprotected per deprotection step of a synthesis cycle.",
-				Category->"Deprotection"
-			},
-			{
-				OptionName->NumberOfDeprotectionWashes,
-				Default->5,
-				AllowNull->False,
-				Widget->Widget[Type->Number,Pattern :> RangeP[1,10,1]],
-				Description->"The number of WashSolution washes each reaction vessel will undergo after the deprotection step of the synthesis cycle.",
-				Category->"Deprotection"
-			},
-
-		(* NOTE: Download Deprotection *)
-			{
-				OptionName->DownloadDeprotectionVolume,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[1 Milliliter, 25 Milliliter],
-					Units->{Milliliter,{Microliter, Milliliter}}
-				],
-				Description->"The volume of deprotection solution added to each reaction vessel during a resin download cycle.",
-				ResolutionDescription->"Automatic will resolve to 3 Milliliter plus an additonal .5 Milliliter for each 2.5 umol scale for PeptideSynthesizer syntheses.",
-				Category->"Download Deprotection"
-			},
-			{
-				OptionName->DownloadDeprotectionTime,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[Minute,30*Minute],
-					Units->{Second,{Second, Minute, Hour}}
-				],
-				Category->"Download Deprotection",
-				Description->"The amount of time that each reaction vessel is exposed to the deprotection solution during each deprotection step of a resin download cycle.",
-				ResolutionDescription->"Will automatically resolve to the same value as DeprotectionTime is DownloadResin is set to True."
-			},
-			{
-				OptionName->NumberOfDownloadDeprotections,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Number,Pattern :> RangeP[1,10,1]],
-				Description->"The number of times that each reaction vessel will be deprotected per deprotection step of a synthesis cycle.",
-				Category->"Download Deprotection"
-			},
-			{
-				OptionName->NumberOfDownloadDeprotectionWashes,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Number,Pattern :> RangeP[1,10,1]],
-				Description->"The number of wash solution washes each reaction vessel undergoes after the deprotection step of the synthesis cycle.",
-				Category->"Download Deprotection"
-			},
-
-		(* NOTE: Deprotection *)
-			{
-				OptionName->Deprotonation,
-				Default->False,
-				AllowNull->False,
-				Widget->Widget[Type->Enumeration,Pattern:>BooleanP],
-				Description->"Indicates if an optional deprotonation step is performed between the deprotection and capping steps of synthesis cycle.",
-				Category->"Deprotonation"
-			},
-			{
-				OptionName->DeprotonationVolume,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[1 Milliliter, 25 Milliliter],
-					Units->{Milliliter,{Microliter, Milliliter}}
-				],
-				Description->"The volume of DeprotonationSolution added to each reaction vessel during an optional deprotonation step of a synthesis cycle.",
-				ResolutionDescription->"Will automatically resolve to 3 Milliliter plus an additonal .2 Milliliter for each 1 Micromole of synthesis Scale, rounded up to the nearest .5 Milliliter.",
-				Category->"Deprotonation"
-			},
-			{
-				OptionName->DeprotonationTime,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[Minute,12*Hour],
-					Units->{Second,{Second, Minute, Hour}}
-				],
-				Category->"Deprotonation",
-				Description->"The amount of time that each reaction vessel is exposed to the DeprotonationSolution during each deprotonation step of a synthesis cycle."
-			},
-			{
-				OptionName->NumberOfDeprotonations,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Number,Pattern :> RangeP[1,10,1]],
-				Description->"The number of repetitions of mixing the resin with the DeprotonationSolution during the deprotonation step of a synthesis cycle.",
-				Category->"Deprotonation"
-			},
-			{
-				OptionName->NumberOfDeprotonationWashes,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Number,Pattern :> RangeP[1,10,1]],
-				Description->"The number of wash solution washes each reaction vessel undergoes after the deprotonation step.",
-				Category->"Deprotonation"
-			},
-		(* NOTE: Download Deprotection *)
-
-			{
-				OptionName->DownloadDeprotonationVolume,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[1 Milliliter, 25 Milliliter],
-					Units->{Milliliter,{Microliter, Milliliter}}
-				],
-				Description->"The volume of DeprotonationSolution added to each reaction vessel during a deprotonation step of a resin download cycle.",
-				Category->"Download Deprotection"
-			},
-			{
-				OptionName->DownloadDeprotonationTime,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[Minute,30*Minute],
-					Units->{Second,{Second, Minute, Hour}}
-				],
-				Category->"Download Deprotection",
-				Description->"The amount of time for which the resin will be mixed with DeprotonationSolution for each deprotonation step of a resin download cycle."
-			},
-			{
-				OptionName->NumberOfDownloadDeprotonations,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Number,Pattern :> RangeP[1,10,1]],
-				Description->"The number of repetitions of mixing the resin with the DeprotonationSolution during a resin download cycle.",
-				ResolutionDescription->"Will automatically resolve to 2 if DownloadResin has been set to True.",
-				Category->"Download Deprotection"
-			},
-			{
-				OptionName->NumberOfDownloadDeprotonationWashes,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Number,Pattern :> RangeP[1,10,1]],
-				Description->"The number of washes each reaction vessel will undergo after a deprotonation step during a resin download cycle.",
-				ResolutionDescription->"Will automatically resolve to 5 if DownloadResin has been set to True.",
-				Category->"Download Deprotection"
-			},
-
-		(* NOTE: Capping *)
-			{
-				OptionName->InitialCapping,
-				Default->Automatic,
-				AllowNull->False,
-				Widget->Widget[Type->Enumeration,Pattern:>BooleanP],
-				Description->"Indicates if an initial capping step will be done before the synthesis of the strand begins.",
-				ResolutionDescription->"Will automatically resolve to True of DownloadResin been set to False or False if DownloadResin has been set to True.",
-				Category->"Capping"
-			},
-			{
-				OptionName->FinalCapping,
-				Default->False,
-				AllowNull->False,
-				Widget->Widget[Type->Enumeration,Pattern:>BooleanP],
-				Description->"Indicates if a final capping step will be done as part of the last synthesis cycle before the start of cleavage.",
-				Category->"Capping"
-			},
-			{
-				OptionName->CappingVolume,
-				Default->Automatic,
-				AllowNull->False,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[1 Milliliter, 25 Milliliter],
-					Units->{Milliliter,{Microliter, Milliliter}}
-				],
-				Description->"The volume of CappingSolution added to each reaction vessel during the capping step of a main synthesis cycle.",
-				ResolutionDescription->"Will automatically resolve to 3 Milliliter plus an additonal .2 Milliliter for each Micromole of synthesis Scale rounded up to nearest .5 Milliliter",
-				Category->"Capping"
-			},
-			{
-				OptionName->CappingTime,
-				Default->7 Minute,
-				AllowNull->False,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[Minute,30*Minute],
-					Units->{Second,{Second, Minute, Hour}}
-				],
-				Description->"The amount of time that each reaction vessel is exposed to the CappingSolution during each capping step of synthesis cycle.",
-				Category->"Capping"
-			},
-			{
-				OptionName->NumberOfCappings,
-				Default->1,
-				AllowNull->False,
-				Widget->Widget[Type->Number,Pattern :> RangeP[1,10,1]],
-				Description->"The number of times that each reaction vessel is capped during each capping step of a synthesis cycle.",
-				Category->"Capping"
-			},
-			{
-				OptionName->NumberOfCappingWashes,
-				Default->5,
-				AllowNull->False,
-				Widget->Widget[Type->Number,Pattern :> RangeP[1,10,1]],
-				Description->"The number of wash solution washes each reaction vessel undergoes after the capping step of a main synthesis cycle.",
-				Category->"Capping"
-			},
-
-		(* NOTE: Download Capping*)
-
-			{
-				OptionName->DownloadCappingVolume,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[1 Milliliter, 25 Milliliter],
-					Units->{Milliliter,{Microliter, Milliliter}}
-				],
-				Description->"The volume of CappingSolution added to each reaction vessel during the capping step of of a resin download cycle.",
-				ResolutionDescription->"Will automatically resolve to 3 Milliliter plus an additonal .2 Milliliter per each umol of Scale.",
-				Category->"Download Capping"
-			},
-			{
-				OptionName->DownloadCappingTime,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[Minute,12*Hour],
-					Units->{Second,{Second, Minute, Hour}}
-				],
-				Category->"Download Capping",
-				Description->"The amount of time for which the resin will be shaken with CappingSolution per capping step of a resin download cycle.",
-				ResolutionDescription->"Will automatically resolve to 15 minutes if DownloadResin is set to True."
-			},
-			{
-				OptionName->NumberOfDownloadCappings,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Number,Pattern :> RangeP[1,10,1]],
-				Description->"The number of times that each reaction vessel is capped during each capping step of a resin download cycle.",
-				Category->"Download Capping"
-			},
-			{
-				OptionName->NumberOfDownloadCappingWashes,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Number,Pattern :> RangeP[1,10,1]],
-				Description->"The number of wash solution washes each reaction vessel undergoes after the capping step of a resin download cycle.",
-				Category->"Download Capping"
-			},
 		(* NOTE: Monomer Activation *)
 			{
 				OptionName->MonomerPreactivation,
 				Default->ExSitu,
-				AllowNull->True,
-				Widget->Widget[Type->Enumeration,Pattern:>PreactivationTypeP],
-				Description->"Determines if the monomer will be preactivated directly on the resin, in a separate reaction vessel or not at all.",
-				ResolutionDescription->"The maximum number of oligomers that can be concurrently synthesis depends on this option. Each ex situ preactivation requires an additional position on the instrument that could be otherwise used for synthesis when no preactivation or in situ preactivation is used.",
-				Category->"Monomer Activation"
-			},
-			{
-				OptionName->ActivationVolume,
-				Default->Automatic,
 				AllowNull->False,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[1 Milliliter, 25 Milliliter],
-					Units->{Milliliter, {Microliter, Milliliter, Liter}}
-				],
-				Description->"The volume of ActivationSolution added to each preactivation vessel.",
-				ResolutionDescription->"Will resolve automatically to .2 Milliliter per Micromole of synthesis scale Scale, rounded up to the nearest .5 Milliliter.",
+				Widget->Widget[Type->Enumeration,Pattern:>PreactivationTypeP],
+				Description->"Determines if the monomer will be preactivated directly on the resin, InSitu, or in a separate reaction vessel, ExSitu.",
+				ResolutionDescription->"The maximum number of oligomers that can be concurrently synthesized depends on this option. Each ex situ preactivation requires an additional position on the instrument that could be otherwise used for synthesis when no preactivation or in situ preactivation is used.",
 				Category->"Monomer Activation"
 			},
 			{
@@ -675,68 +75,6 @@ DefineOptions[ExperimentPeptideSynthesis,
 				],
 				Description->"The duration of the preactivation mixing.",
 				Category->"Monomer Activation"
-			},
-			{
-				OptionName->MonomerVolume,
-				Default->Automatic,
-				AllowNull->False,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[1 Milliliter, 25 Milliliter],
-					Units->{Milliliter,{Microliter, Milliliter}}
-				],
-				Description->"The volume of monomer solution added for each reaction vessel to the preactivation vessel for a micromole scale synthesis.",
-				ResolutionDescription->"Will resolve automatically to .2 Milliliter per Micromole of synthesis Scale, rounded up to the nearest .5 Milliliter.",
-				Category->"Monomer Activation"
-			},
-
-		(* NOTE: Download Monomer Activation *)
-			{
-				OptionName->DownloadActivationVolume,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[1 Milliliter, 25 Milliliter],
-					Units->{Milliliter, {Microliter, Milliliter, Liter}}
-				],
-				Description->"The volume of activator solution added to each preactivation vessel when preactivation monomer for coupling to undownloaded resin.",
-				Category->"Download Monomer Activation"
-			},
-			{
-				OptionName->DownloadActivationTime,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[Minute,30*Minute],
-					Units->{Second,{Second, Minute, Hour}}
-				],
-				Description->"The amount of time for which the monomer solution will be mixed with the activation solution prior to a resin download cycle.",
-				ResolutionDescription->"Will automatically resolve to 10 minutes if DownloadResin is set to True.",
-				Category->"Download Monomer Activation"
-			},
-			{
-				OptionName->DownloadMonomer,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
-				Description->"The model or sample object to use for each of the monomers in the download.",
-				ResolutionDescription->"Will automatically resolve to a default monomer solution for the monomer being used to download the resin.",
-				Category->"Download Monomer Activation"
-			},
-			{
-				OptionName->DownloadMonomerVolume,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[1 Milliliter, 25 Milliliter],
-					Units->{Milliliter, {Microliter, Milliliter, Liter}}
-				],
-				Description->"The volume of download monomer solution added to the preactivation vessel during resin download.",
-				ResolutionDescription->"Will automatically resolve to 1 Milliliter. The entire volume of a DownloadMonomer is delivered in a single shot and can be any amount within the accepted range.",
-				Category->"Download Monomer Activation"
 			},
 		(* NOTE: Coupling *)
 			{
@@ -768,7 +106,7 @@ DefineOptions[ExperimentPeptideSynthesis,
 				Category->"Coupling"
 			},
 
-		(* NOTE: Downoad Coupling *)
+		(* NOTE: Download Coupling *)
 			{
 				OptionName->DownloadCouplingTime,
 				Default->Automatic,
@@ -1029,7 +367,7 @@ DefineOptions[ExperimentPeptideSynthesis,
 				AllowNull->True,
 				Widget->Adder[Widget[
 					Type->Primitive,
-					Pattern:>ResuspensionPrimitiveP,(*ResuspensionIncubateP SampleManipulationP *)
+					Pattern:>ResuspensionPrimitiveP,
 					PrimitiveTypes->{Incubate,Mix},
 					PrimitiveKeyValuePairs -> {
 						Incubate -> {
@@ -1080,12 +418,32 @@ DefineOptions[ExperimentPeptideSynthesis,
 							Optional[Instrument] -> Alternatives[
 								Adder[
 									Alternatives[
-										Widget[Type -> Object,Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]],
+										Widget[
+											Type -> Object,
+											Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+											OpenPaths -> {
+												{
+													Object[Catalog, "Root"],
+													"Instruments",
+													"Mixing Devices"
+												}
+											}
+										],
 										Widget[Type -> Enumeration,Pattern :> Alternatives[Null]]
 									]
 								],
 								Alternatives[
-									Widget[Type -> Object,Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]],
+									Widget[
+										Type -> Object,
+										Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+										OpenPaths -> {
+											{
+												Object[Catalog, "Root"],
+												"Instruments",
+												"Mixing Devices"
+											}
+										}
+									],
 									Widget[Type -> Enumeration,Pattern :> Alternatives[Null]]
 								]
 							],
@@ -1271,12 +629,32 @@ DefineOptions[ExperimentPeptideSynthesis,
 							Optional[Instrument] -> Alternatives[
 								Adder[
 									Alternatives[
-										Widget[Type -> Object,Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]],
+										Widget[
+											Type -> Object,
+											Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+											OpenPaths -> {
+												{
+													Object[Catalog, "Root"],
+													"Instruments",
+													"Mixing Devices"
+												}
+											}
+										],
 										Widget[Type -> Enumeration,Pattern :> Alternatives[Null]]
 									]
 								],
 								Alternatives[
-									Widget[Type -> Object,Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]],
+									Widget[
+										Type -> Object,
+										Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+										OpenPaths -> {
+											{
+												Object[Catalog, "Root"],
+												"Instruments",
+												"Mixing Devices"
+											}
+										}
+									],
 									Widget[Type -> Enumeration,Pattern :> Alternatives[Null]]
 								]
 							],
@@ -1342,17 +720,16 @@ DefineOptions[ExperimentPeptideSynthesis,
 	}
 ];
 
-
 ExperimentPeptideSynthesis[myInputs:ListableP[Alternatives[ObjectP[{Model[Sample],Model[Molecule,Oligomer]}],SequenceP,StrandP,StructureP]],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,listedInputs,nonModelInputs,moleculeInputs,newModels,structuredNonModelInputs,outputSpecification,output,gatherTests,safeOps,
-		newIdentityModelPackets,newIdentityModels,newModelCache,
+		newIdentityModelPackets,newIdentityModels,
 		newModelsForStrands,newModelsForMolecules,newModelForStrandsCache,
 		newModelForMoleculeCache,downloadCall,safeOpsTests,validLengths,validLengthTests,
 		hasNonModelInputs,templatedOptions,templateTests,inheritedOptions,upload,
-		confirm,fastTrack,parentProt,cache,resins,cleanResins,cleanInstruments,newCache,download,expandedSafeOps,cacheBall,
-		resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,
+		confirm,canaryBranch,fastTrack,parentProt,cache,resins,cleanResins,cleanInstruments,newCache,expandedSafeOps,cacheBall,
+		resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,
 		resourcePackets,resourcePacketTests,allTests,validQ,previewRule,optionsRule,testsRule,resultRule,
-		protocolPacket,accessoryPackets,inputToModelLookup,inputWithGeneratedModels,listedInputsNamed, listedOptionsNamed, safeOpsNamed},
+		inputToModelLookup,inputWithGeneratedModels,listedInputsNamed, listedOptionsNamed, safeOpsNamed},
 
 	(* Make sure we're working with a list of options *)
 	{listedInputsNamed, listedOptionsNamed} = removeLinks[ToList[myInputs], ToList[myOptions]];
@@ -1372,6 +749,11 @@ ExperimentPeptideSynthesis[myInputs:ListableP[Alternatives[ObjectP[{Model[Sample
 
 	(* if there are any strands provided, convert them to structures (and delete duplicates so we only make one model each) *)
 	structuredNonModelInputs=If[!MatchQ[nonModelInputs,{}],DeleteDuplicates[Map[ToStructure[#,Polymer->Peptide]&,nonModelInputs]]];
+
+	(* If any of the strands are invalid, return early *)
+	If[MemberQ[structuredNonModelInputs,Null],
+		Return[$Failed]
+	];
 
 	(* we need to create new Identity Models for the oligomers that were provided as Strands *)
 	(* For the names we need to do a StringJoin here for cases that have defined their strand as StrandJoin[strand1, strand2] such that the name reflects the joint sequence and not just the first
@@ -1458,7 +840,7 @@ ExperimentPeptideSynthesis[myInputs:ListableP[Alternatives[ObjectP[{Model[Sample
 			],
 			{
 				moleculeInputs,
-				ToString/@(moleculeInputs[[All, -1]])
+				("Model composed of oligomer "<>ToString[#]&)/@(moleculeInputs[[All, -1]])
 			}],
 		Null
 	];
@@ -1540,7 +922,7 @@ ExperimentPeptideSynthesis[myInputs:ListableP[Alternatives[ObjectP[{Model[Sample
 	inheritedOptions=ReplaceRule[safeOps,templatedOptions];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProt, cache} = Lookup[inheritedOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProt, cache} = Lookup[inheritedOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* Expand index-matching options *)
 	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentPeptideSynthesis,{inputWithGeneratedModels},inheritedOptions]];
@@ -1670,6 +1052,7 @@ ExperimentPeptideSynthesis[myInputs:ListableP[Alternatives[ObjectP[{Model[Sample
 		UploadProtocol[
 			resourcePackets,If[MatchQ[newModels,{PacketP[]..}],newModels,Null], (* upload also the newly created Model[Sample] packets for the strand or Model[Molecule] inputs *)
 			Confirm -> confirm,
+			CanaryBranch -> canaryBranch,
 			Upload -> upload,
 			ParentProtocol -> parentProt,
 			ConstellationMessage->Object[Protocol,PeptideSynthesis]
@@ -1704,32 +1087,40 @@ Error::ResinNeeded = "For the following input oligomer model(s), `1`, DownloadRe
 Error::DownloadedResinNeeded = "For the following input oligomer model(s), `1`, DownloadResin is set to False, but the provided resin is un-downloaded. Please set DownloadResin to True, or provide an appropriate downloaded Resin (a sample containing a Model[Resin,SolidPhaseSupport]) if you would like to use an already downloaded resin for your synthesis.";
 Error::MismatchedResinAndStrand="For the following input oligomer model(s), `1` , the preloaded sequence(s) `2` on the specified downloaded resin does not match the 3' base(s) in the strand(s) `3`. Please provide a downloaded resin with matching 3' base(s).";
 
-Error::UnknownMonomer="For the following input oligomer model(s), `1`, the sequence to be synthesized contains the following monomers, `2`, for which default monomers not available and have not been specified explicitly. Please provide monomer(s) to be used in this synthesis by specifying the Monomers option value.";
-Error::UnknownDownloadMonomer="For the following input oligomer model(s), `1`, the sequence to be synthesized contains the following download monomers, `2`, for which default monomers are not available and have not been specified explicitly. Please provide monomer(s) to be used in this synthesis by specifying the DownloadMonomers option value.";
+Error::UnavailableMonomer="For the following input oligomer model(s), `1`, the sequence to be synthesized contains the following monomers, `2`, for which default monomer samples are not available and have not been specified explicitly. Please provide monomer(s) to be used in this synthesis by specifying the Monomers option value.";
+Error::UnavailableDownloadMonomer="For the following input oligomer model(s), `1`, the sequence to be synthesized contains the following download monomers, `2`, for which default monomer samples  are not available and have not been specified explicitly. Please provide monomer(s) to be used in this synthesis by specifying the DownloadMonomers option value.";
 Error::TooManyMonomers ="This synthesis requires more unique monomer types then there are available positions for on the instrument. Please use fewer unique monomers in your sequence or synthesize fewer strands.";
 
 Error::RequiredOption="Because `1` option has been resolved to `2`, `3` options cannot be set to Null. Please make sure that `3` are not being set to Null for any oligomer for which `1` has been set to `2`.";
 Error::InsufficientSolventVolume="This synthesis requires `1` of `2`, which is currently more then can be provided by the instrument. This is likely due to a large number of inputs or particularly long sequences. Please adjust your synthesis such that only `3` of wash solvent is needed.";
 
-Error::UnneededResuspensionOptions="For the mixing of the cleaved, pelleted strands in resuspension buffer, please provide either a list of mix primitives (via ResuspensionMixPrimitives), or specify the resuspension mix options (ResuspensionMixType, ResuspensionMixTime, NumberOfResuspensionMixes), but not both. Please either set the following options, `1`, to Null or Automatic, or do not provide ResuspensionMixPrimitives.";
-Error::IncompatibleResuspensionMixPrimitives="For the following input oligomer models, `1`, the primitives (`2`) provided to specify the resuspension of the pelleted strands are invalid. Please check the error messages and modify the primitives accordingly.";
+Error::UnneededResuspensionOptions="For the mixing of the cleaved, pelleted strands in resuspension buffer, please provide either a list of mix unit operations (via ResuspensionMixPrimitives), or specify the resuspension mix options (ResuspensionMixType, ResuspensionMixTime, NumberOfResuspensionMixes), but not both. Please either set the following options, `1`, to Null or Automatic, or do not provide ResuspensionMixPrimitives.";
+Error::IncompatibleResuspensionMixPrimitives="For the following input oligomer models, `1`, the unit operations (`2`) provided to specify the resuspension of the pelleted strands are invalid. Please check the error messages and modify the unit operations accordingly.";
+Error::SwellResinNeeded = "For the following input oligomer model(s), `1`, DownloadResin is set to True, but SwellResin is set to False. Resin swelling is required when downloading a resin. Please set SwellResin to True or allow it to resolve automatically.";
 
-resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentPeptideSynthesisOptions]]:=Module[
-	{outputSpecification,output,gatherTests,messages,cache,mySamplePrepOptions,myPeptideSynthesisOptions,mySimulatedSamples,
-		myResolvedSamplePrepOptions,simulatedCache,pnaSynthesisOptionsAssociation,invalidInputs,invalidOptions,oligomerModelPackets,pnaOptionsAssociation,
+Warning::NoCappingSet = "NumberOfCappings was set to 0 which means that there will be no capping performed in the beginning or end of the synthesis.";
+
+resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentPeptideSynthesisOptions]]:=resolveExperimentPeptideSynthesisOptions[Peptide,myInputs,myOptions,myResolutionOptions];
+
+resolveExperimentPeptideSynthesisOptions[myPolymer:(PNA|Peptide),myInputs:{ObjectP[Model[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentPeptideSynthesisOptions]]:=Module[
+	{
+		outputSpecification,output,gatherTests,messages,cache,mySamplePrepOptions,mySynthesisOptions,
+		synthesisOptionsAssociation,invalidInputs,invalidOptions,oligomerModelPackets,pnaOptionsAssociation,
 		cleanResins,allDownloadPackets,resinCompositionPackets,resinStrandPackets,
 		willSwell,willDeprotonate,willCleave,willDownloadResin,willStoreResin,willMethanolShrink,willIsopropanolShrink,resolvedPostProcessingOptions,
 		maxNumberOfStrands,tooManyInputsPackets,tooManyInputs,tooManyInputsTest,polymerTypePackets,polymerTypes,polymerTypeInputs,polymerTypeTest,
 		topDeliveryVolumePrecisionOptions,topDeliveryVolumePrecisionTest,pnaOptionsWithRoundedTopDeliveryVolumes,
 		bottomDeliveryVolumePrecisionOptions,bottomDeliveryVolumePrecisionTest,pnaOptionsWithRoundedBottomDeliveryVolumes,
-		allRoundedPNAOptionsAssociation,timePrecisionOptions,timePrecisionTest,upload,confirm,parentProtocol,email,name,fastTrack,operator,template,
+		allRoundedPNAOptionsAssociation,timePrecisionOptions,timePrecisionTest,upload,confirm,canaryBranch,parentProtocol,email,name,fastTrack,operator,template,
 		deprotonationSingleOptions,deprotonationMultipleOptions,unneededDeprotonationOptions,unneededDeprotonationOptionsTest,neededDeprotonationOptions,
-		neededDeprotonationOptionsTest,downloadResinSingeOptions,downloadResinMultipleOptions,downloadResinSingleOptions,
+		neededDeprotonationOptionsTest,downloadResinMultipleOptions,downloadResinSingleOptions,
 		unneededDownloadResinOptions,unneededDownloadResinOptionsTest,neededDownloadResinOptions,neededDownloadResinOptionsTest,
 		providedResins,providedDownloadResin,wrongResinSamples,needResinSamples,needToValidateResinTuples,needDResinSamples,wrongResinOptions,
 		wrongResinInvalidTests,needResinOptions,needResinInvalidTests,wrongDResinOptions,wrongDResinInvalidTests,
 		validateSequenceSamplePackets,validateSequenceResinPackets,validateSequenceResinStrandPackets,mismatchDResinResults,mismatchedResinSamples,
-		mismatchedResinStrand,mismatchedResinMonomers,mismatchDResinOptions,mismatchDResinTests,cleavageSingleOptions,cleavageMultipleOptions,
+		mismatchedResinStrand,mismatchedResinMonomers,mismatchDResinOptions,mismatchDResinTests,
+		swellResinNeededSamples,swellResinNeededOptions,swellResinNeededTests,
+		cleavageSingleOptions,cleavageMultipleOptions,
 		unneededCleavageOptions,unneededCleavageOptionsTest,neededCleavageOptions,neededCleavageOptionsTest,storageSingleOptions,storageMultipleOptions,
 		unneededStorageOptions,unneededStorageOptionsTest,neededStorageOptions,neededStorageOptionsTest,swellSingleOptions,swellMultipleOptions,
 		unneededSwellOptions,unneededSwellOptionsTest,unneededMethanolShrinkOptions,unneededIsopropanolShrinkOptions,unneededMethanolShrinkOptionsTest,
@@ -1744,18 +1135,24 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		deprotonationVolumes,deprotonationTimes,numberOfDeprotonationss,numberOfDeprotonationWashess,downloadDeprotonationVolumes,
 		downloadDeprotonationTimes,numberOfDownloadDeprotonationss,numberOfDownloadDeprotonationWashess,cappingVolumes,cappingTimes,
 		numberOfCappingss,numberOfCappingWashess,downloadCappingVolumes,downloadCappingTimes,numberOfDownloadCappingss,numberOfDownloadCappingWashess,
-		uniqueBulkMonomers,defaultPNABulkMonomers,providedMonomersOption,monomers,monomerVolumes,activationVolumes,activationTimes,
+		defaultBulkMonomers,monomers,monomerVolumes,activationVolumes,activationTimes,
 		downloadMonomers,downloadMonomerVolumes,downloadActivationVolumes,downloadActivationTimes,couplingTimes,numberOfCouplingWashess,doubleCouplings,
 		downloadCouplingTimes,numberOfDownloadCouplingWashess,cleavageVolumes,cleavageTimes,numberOfCleavageCycless,
 		methanolWashs,methanolWashVolumes,methanolWashTimes,isopropanolWashs,isopropanolWashVolumes,isopropanolWashTimes,
 		resuspensionVolumes,storageVolumes,numberOfResuspensionMixess,samplesOutStorageConditions,
-		unknowMonomerErrors,unknownDownloadMonomerErrors,unknowDownloadMonomerOptions,unknownMonomerOptions,unknownMonomerErrorsTest,
-		resolvedEmail,resolvedOperator,resolvedMonomers,unknownMonomerErrors,unresolvedMonomers,unknownDownloadMonomerErrorsTest,primitives,
+		unavailableDownloadMonomerErrors,unavailableDownloadMonomerOptions,unavailableMonomerOptions,unavailableMonomerErrorsTest,
+		resolvedEmail,resolvedOperator,resolvedMonomers,unavailableMonomerErrors,unresolvedMonomers,unavailableDownloadMonomerErrorsTest,primitives,
 		primitivess,preactivation,neededPositions,monomerPreactivations,resuspensionMixTimes,resuspensionMixTypes,
 		unneededResuspensionOptions,resuspensionMultipleOptions,providedCleavageOptions,unneededResuspensionOptionsBools,
 		unneededResuspensionTest,incompatibleMixPrimitivesOptions,incompatibleMixPrimitivesTest,
-		resolvedResuspensionMixPrimitives,reuspensionMixManipulationList,smOptions,smTests
+		resolvedResuspensionMixPrimitives,resuspensionMixPrimitiveList,mspOptions,mspTests,allowedSyntheticMonomerTypes,ambiguousInitialCappingTest
 	},
+
+	(* this is a list of the default monomers that we will be automatically resolving for the user *)
+	allowedSyntheticMonomerTypes=If[MatchQ[myPolymer,Peptide],
+		Peptide,
+		{PNA, GammaLeftPNA, GammaRightPNA, Modification, Peptide}
+	];
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
 
@@ -1770,18 +1167,18 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 	(* Fetch our cache from the parent function. *)
 	cache = Lookup[ToList[myResolutionOptions], Cache];
 
-	(* Seperate out our <Type> options from our Sample Prep options (but PeptideSynthesis has no sample prep so only case about the type options). *)
-	{mySamplePrepOptions, myPeptideSynthesisOptions} = splitPrepOptions[myOptions];
+	(* Separate out our <Type> options from our Sample Prep options (but PeptideSynthesis has no sample prep so only case about the type options). *)
+	{mySamplePrepOptions, mySynthesisOptions} = splitPrepOptions[myOptions];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. (only Peptide options) *)
-	pnaSynthesisOptionsAssociation = Association[myPeptideSynthesisOptions];
+	synthesisOptionsAssociation = Association[mySynthesisOptions];
 
 	(* Convert the list of rules into an association (all Options) *)
 	pnaOptionsAssociation=Association[myOptions];
 
 	(* pull out the indexmatched DownloadResin and Resin option from the provided options *)
-	providedResins=Lookup[pnaSynthesisOptionsAssociation,Resin];
-	providedDownloadResin=Lookup[pnaSynthesisOptionsAssociation,DownloadResin]; (* this is a boolean *)
+	providedResins=Lookup[synthesisOptionsAssociation,Resin];
+	providedDownloadResin=Lookup[synthesisOptionsAssociation,DownloadResin]; (* this is a boolean *)
 
 	cleanResins=providedResins /. {Automatic->Null};
 
@@ -1808,14 +1205,21 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 
 	(* Since we're traversing through Composition which is a list, we have to take the First to end up with just one packet per sample *)
 	(* Note that we stay indexmatched here. For resins that were Automatic we have downloaded from Null and will keep a Null entry here instead of a packet -- FirstOrDefault! *)
-	oligomerModelPackets=FirstOrDefault/@Flatten[allDownloadPackets[[1]],1];
+	oligomerModelPackets=If[MatchQ[myPolymer,Peptide],
+		FirstOrDefault/@Flatten[allDownloadPackets[[1]],1],
+		(*look for the Model[Molecule, Oligomer], and use that. Fall back on FirstOrDefault in case there isn't one*)
+		Map[
+			FirstCase[#, PacketP[Model[Molecule, Oligomer]], FirstOrDefault[#]]&,
+			Flatten[allDownloadPackets[[1]],1]
+		]
+	];
 	resinCompositionPackets=FirstOrDefault/@Flatten[allDownloadPackets[[2]],1];
 	resinStrandPackets=FirstOrDefault/@Flatten[allDownloadPackets[[3]],1];
 
 	(* get some common protocol option variables *)
-	{upload, confirm, parentProtocol, email, name, fastTrack, operator, template} = Lookup[
+	{upload, confirm, canaryBranch, parentProtocol, email, name, fastTrack, operator, template} = Lookup[
 		pnaOptionsAssociation,
-		{Upload, Confirm, ParentProtocol, Email, Name, FastTrack, Operator, Template}
+		{Upload, Confirm, CanaryBranch, ParentProtocol, Email, Name, FastTrack, Operator, Template}
 	];
 
 	(*setting up a couple of variable (if there is at least on True in any of these, will need to relevant options resolved)*)
@@ -1858,10 +1262,10 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 	];
 
 	(* NOTE: wrong polymer type check *)
-	(* Get the samples from mySamples that have the wrong PolymerType, PeptideSynthesis can only make Peptide *)
+	(* Get the samples from mySamples that have the wrong PolymerType, PeptideSynthesis can only make Peptide, PNASynthesis can only make PNA *)
 	polymerTypes = Lookup[oligomerModelPackets, PolymerType];
 	polymerTypePackets = Cases[oligomerModelPackets,
-		KeyValuePattern[PolymerType -> Except[Alternatives[Peptide]]]
+		KeyValuePattern[PolymerType -> Except[Alternatives[myPolymer]]]
 	];
 
 	(* get the invalid inputs *)
@@ -1879,11 +1283,11 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		Module[{failingTest, passingTest},
 			failingTest = If[Length[polymerTypeInputs] == 0,
 				Nothing,
-				Test["The input oligomer model(s) " <> ToString[myInputs] <> " has/have a Peptide polymer type:", True, False]
+				Test["The input oligomer model(s) " <> ToString[myInputs] <> " has/have a "<>ToString[myPolymer]<>" polymer type:", True, False]
 			];
 			passingTest = If[Length[polymerTypeInputs] == Length[myInputs],
 				Nothing,
-				Test["The input oligomer model(s) " <> ToString[Complement[myInputs, polymerTypeInputs]] <> " has/have a Peptide polymer type:", True, True]
+				Test["The input oligomer model(s) " <> ToString[Complement[myInputs, polymerTypeInputs]] <> " has/have a "<>ToString[myPolymer]<>" polymer type:", True, True]
 			];
 			{failingTest, passingTest}
 		],
@@ -1891,7 +1295,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 	];
 
 	(*-- OPTION PRECISION CHECKS --*)
-	(* These chemicals are deliveredy from the top of the RV and can only be deliver in certain amounts 1.mL, 1.5mL, 2.mL...*)
+	(* These chemicals are delivered from the top of the RV and can only be deliver in certain amounts 1.mL, 1.5mL, 2.mL...*)
 	topDeliveryVolumePrecisionOptions = {WashVolume, DeprotectionVolume, DeprotonationVolume, DownloadDeprotonationVolume, ActivationVolume, DownloadActivationVolume, CappingVolume, DownloadCappingVolume, MonomerVolume};
 	{pnaOptionsWithRoundedTopDeliveryVolumes, topDeliveryVolumePrecisionTest} = If[gatherTests,
 		RoundOptionPrecision[
@@ -1909,7 +1313,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		}
 	];
 
-	(* These chemicals are deliveredy from the bottom of the RV and can only be deliver in certain amounts 2.5mL, 5.mL, 7.5mL...*)
+	(* These chemicals are delivered from the bottom of the RV and can only be deliver in certain amounts 2.5mL, 5.mL, 7.5mL...*)
 	bottomDeliveryVolumePrecisionOptions = {SwellSolution, CleavageSolution};
 	{pnaOptionsWithRoundedBottomDeliveryVolumes, bottomDeliveryVolumePrecisionTest} = If[gatherTests,
 		RoundOptionPrecision[
@@ -1948,7 +1352,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 
 	(*-- CONFLICTING OPTIONS CHECKS --*)
 
-	(*== NOTE: uneeded download resin options provided by user *)
+	(*== NOTE: unneeded download resin options provided by user *)
 	(* list of all options that are only relevant if DownloadResin->True*)
 	downloadResinMultipleOptions = {
 		DownloadDeprotectionVolume, DownloadDeprotectionTime, NumberOfDownloadDeprotections, NumberOfDownloadDeprotectionWashes,
@@ -1985,12 +1389,12 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		]
 	}]];
 
-	(*do the oppositve check as well, this is to make sure that the user doesn't set a needed option to Null*)
+	(*do the opposite check as well, this is to make sure that the user doesn't set a needed option to Null*)
 	neededDownloadResinOptions = DeleteDuplicates[Flatten[{
 		MapThread[
 		(* if not downloading*)
 			If[#1,
-			(* get those options that have been set to Null, which is bad becuase we needs them *)
+			(* get those options that have been set to Null, which is bad because we needs them *)
 				PickList[downloadResinMultipleOptions, #2, Null],
 			(* else we do not care*)
 				Nothing
@@ -2028,7 +1432,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 				Nothing
 			];
 			passingTest = If[Length[unneededDownloadResinOptions] == 0,
-				Test["No unneed download resin options have been provided:", True, True],
+				Test["No unneeded download resin options have been provided:", True, True],
 				Nothing
 			];
 			{failingTest, passingTest}
@@ -2077,7 +1481,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 			(* Note that undownloaded Resin will also MatchQ Model[Sample], but we've already encountered that scenario above so all that is left is the non-oligomer resins *)
 				{False,Except[Automatic],ObjectP[{Model[Resin]}]},
 				{{},{},{},sampleObject},
-			(* If DownloadResin is True (default) and Resin is not specificied (Automatic), we're good since we can resolve to the default undownloaded Resin *)
+			(* If DownloadResin is True (default) and Resin is not specified (Automatic), we're good since we can resolve to the default undownloaded Resin *)
 				{True,Automatic,_},
 				{{},{},{},{}},
 			(* a catch all for all other cases *)
@@ -2135,12 +1539,12 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 			passingInputs = Complement[myInputs, Flatten[needResinSamples]];
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["For the input oligomer model(s) " <> ObjectToString[passingInputs, Cache -> cache] <> ", DownloadReasin is set to False and an appropriate Resin is provided:", True, True],
+				Test["For the input oligomer model(s) " <> ObjectToString[passingInputs, Cache -> cache] <> ", DownloadResin is set to False and an appropriate Resin is provided:", True, True],
 				Nothing
 			];
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest = If[Length[Flatten[needResinSamples]] > 0,
-				Test["For the input oligomer model(s) " <> ObjectToString[Flatten[needResinSamples], Cache -> cache] <> ", DownloadReasin is set to False and a appropriate Resin is provided:", True, False],
+				Test["For the input oligomer model(s) " <> ObjectToString[Flatten[needResinSamples], Cache -> cache] <> ", DownloadResin is set to False and a appropriate Resin is provided:", True, False],
 				Nothing
 			];
 			(* Return our created tests. *)
@@ -2194,8 +1598,8 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 	(* for samples with DownloadResin -> False and a provided downloaded resin, we may be good to proceed but we need to validate that the monomers on the resin match to the strand being synthesized *)
 	(* for problematic samples we collect both the packet and the resin so we can throw appropriate messages or tests below *)
 	mismatchDResinResults=MapThread[
-		Function[{packet,resinPacket,resinStrandPacket},
-			Module[{strand,monomers,resinStrand,resinMonomers,resinSequenceLength,strandSequenceLength,overlappingStrand},
+		Function[{packet,resinStrandPacket},
+			Module[{strand,monomers,resinStrand,resinMonomers,resinSequenceLength,strandSequenceLength},
 
 			(* get the strands we're dealing with *)
 				strand=Map[ToStrand[#]&,{Lookup[packet,Molecule]}];
@@ -2218,7 +1622,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 				(* If the length of the resin sequence is longer than the length of the strand to be synthesised, we already have a problem *)
 				If[resinSequenceLength>strandSequenceLength,
 					{packet,resinMonomers},
-				(* If the resin monomers don't match the respective monomers of the strand to be syntehsised, we also have a problem *)
+				(* If the resin monomers don't match the respective monomers of the strand to be synthesised, we also have a problem *)
 					If[!MatchQ[resinMonomers,Take[monomers,-(resinSequenceLength)]],
 						{packet,resinMonomers},
 					(* if they match, we return Nothing, the MapThread Result will return an empty list therefore if no samples are problematic *)
@@ -2226,7 +1630,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 				]
 			]
 		],
-		{validateSequenceSamplePackets,validateSequenceResinPackets,validateSequenceResinStrandPackets}
+		{validateSequenceSamplePackets,validateSequenceResinStrandPackets}
 	];
 
 
@@ -2268,12 +1672,44 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		{}
 	];
 
-	(*== NOTE: needed/uneeded cleavage options provided by user *)
+	(* If we are downloading a resin, we need to swell *)
+	swellResinNeededSamples = PickList[myInputs,Transpose[{Lookup[pnaOptionsAssociation, DownloadResin],Lookup[pnaOptionsAssociation, SwellResin]}],{True,False}];
+
+	swellResinNeededOptions = If[Length[swellResinNeededSamples] > 0 && messages,
+		Message[Error::SwellResinNeeded, ObjectToString[swellResinNeededSamples, Cache -> cache]];
+		{DownloadResin,SwellResin},
+		{}
+	];
+
+	swellResinNeededTests = If[gatherTests,
+		Module[{passingInputs, passingInputsTest, failingInputsTest},
+			(* Get the inputs that pass this test. *)
+			passingInputs = Complement[myInputs, swellResinNeededSamples];
+			(* Create a test for the passing inputs. *)
+			passingInputsTest = If[Length[passingInputs] > 0,
+				Test["For the input oligomer model(s) " <> ObjectToString[passingInputs, Cache -> cache] <> ", if DownloadResin is True, then SwellResin is also True.", True, True],
+				Nothing
+			];
+			(* Create a test for the non-passing inputs. *)
+			failingInputsTest = If[Length[mismatchedResinSamples] > 0,
+				Test["For the input oligomer model(s) " <> ObjectToString[mismatchedResinSamples, Cache -> cache] <> ", if DownloadResin is True, then SwellResin is also True.", True, False],
+				Nothing
+			];
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				failingInputsTest
+			}
+		],
+		{}
+	];
+
+	(*== NOTE: needed/unneeded cleavage options provided by user *)
 	(* list of all options that are only relevant if Cleavage->True*)
 	cleavageMultipleOptions = Join[
 		{CleavageVolume, CleavageTime, NumberOfCleavageCycles,ResuspensionVolume},
-		(* only if we were provided no mix primitives, then we care about the resuspension mix options *)
-		If[!MatchQ[Lookup[allRoundedPNAOptionsAssociation, ResuspensionMixPrimitives], {(Automatic |	Null) ..}],
+		(* only if we were provided no mix unit operations, then we care about the resuspension mix options *)
+		If[!MatchQ[Lookup[allRoundedPNAOptionsAssociation, ResuspensionMixPrimitives], {(Automatic|Null)..}],
 			{ResuspensionMixPrimitives},
 			{ResuspensionMixType} (* we can't include ResuspensionMixTime and NumberOfResuspensionMixes because those actually can be Null *)
 		]
@@ -2306,7 +1742,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		]
 	}]];
 
-	(*do the oppositve check as well, this is to make sure that the user doesn't set a needed option to Null*)
+	(*do the opposite check as well, this is to make sure that the user doesn't set a needed option to Null*)
 	neededCleavageOptions = DeleteDuplicates[Flatten[{
 		MapThread[
 		(* if cleaving*)
@@ -2321,7 +1757,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 				Transpose[Lookup[allRoundedPNAOptionsAssociation, cleavageMultipleOptions]]
 			}
 		],
-	(* do the same with single options, cannot be setting these optoins to Null if we're Cleaving*)
+	(* do the same with single options, cannot be setting these options to Null if we're Cleaving*)
 		If[willCleave,
 			PickList[
 				cleavageSingleOptions,
@@ -2344,7 +1780,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 				Nothing
 			];
 			passingTest = If[Length[unneededCleavageOptions] == 0,
-				Test["No unneed clevage options have been provided:", True, True],
+				Test["No unneeded clevage options have been provided:", True, True],
 				Nothing
 			];
 			{failingTest, passingTest}
@@ -2360,7 +1796,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 				Nothing
 			];
 			passingTest = If[Length[neededCleavageOptions] == 0,
-				Test["No needed clevage options have been set to Null:", True, True],
+				Test["No needed cleavage options have been set to Null:", True, True],
 				Nothing
 			];
 			{failingTest, passingTest}
@@ -2368,7 +1804,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		Nothing
 	];
 
-	(*== NOTE: uneeded deprotonation options provided by user *)
+	(*== NOTE: unneeded deprotonation options provided by user *)
 	(* list of all options that are only relevant if Deprotonation->True OR DownloadResin->True (since download has a deprotonation step) *)
 	deprotonationMultipleOptions = {DeprotonationTime, DeprotonationVolume, NumberOfDeprotonations, NumberOfDeprotonationWashes};
 	deprotonationSingleOptions = {DeprotonationSolution};
@@ -2400,7 +1836,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		]
 	}]];
 
-	(*do the oppositve check as well, this is to make sure that the user doesn't set a needed option to Null*)
+	(*do the opposite check as well, this is to make sure that the user doesn't set a needed option to Null*)
 	neededDeprotonationOptions = DeleteDuplicates[Flatten[{
 		MapThread[
 		(* if not cleaving*)
@@ -2440,7 +1876,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 				Nothing
 			];
 			passingTest = If[Length[unneededDeprotonationOptions] == 0,
-				Test["No unneed deprotonation options have been provided:", True, True],
+				Test["No unneeded deprotonation options have been provided:", True, True],
 				Nothing
 			];
 			{failingTest, passingTest}
@@ -2463,7 +1899,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		Nothing
 	];
 
-	(*== NOTE: uneeded storage options provided by user *)
+	(*== NOTE: unneeded storage options provided by user *)
 	(* list of all options that are only relevant is Cleavage->True*)
 	storageMultipleOptions = {StorageVolume};
 	storageSingleOptions = {StorageBuffer};
@@ -2555,12 +1991,12 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		Nothing
 	];
 
-	(*== NOTE: uneeded swell options provided by user *)
+	(*== NOTE: unneeded swell options provided by user *)
 	(* list of all options that are only relevant is Cleavage->True*)
 	swellMultipleOptions = {SwellTime, SwellVolume, NumberOfSwellCycles};
 	swellSingleOptions = {SwellSolution};
 
-	(* If all strands are swolled, then there is no reason for the swellMultipleOptions to be provided by the user *)
+	(* If all strands are swollen, then there is no reason for the swellMultipleOptions to be provided by the user *)
 	unneededSwellOptions = DeleteDuplicates[Flatten[{
 		MapThread[
 		(* if cleaving*)
@@ -2605,7 +2041,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		Nothing
 	];
 
-	(*== NOTE: uneeded resin shrink optoins (methanol/isopropanol washes) *)
+	(*== NOTE: unneeded resin shrink options (methanol/isopropanol washes) *)
 	(* list of all options that are only relevant is Cleavage->True*)
 	methanolMultipleOpions = {PrimaryResinShrinkTime, PrimaryResinShrinkVolume};
 	isopropanolMultipleOptions = {SecondaryResinShrinkTime, SecondaryResinShrinkVolume};
@@ -2795,7 +2231,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	finalCapButNoFinalDeprotectionInputs = If[And[Length[finalCapButNoFinalDeprotectionPackets] > 0, Not[gatherTests]],
 		With[{objects = Lookup[finalCapButNoFinalDeprotectionPackets, Object]},
-			Message[Error::FinalCapWithoutFinalDeprotection, objects];
+			Message[Error::FinalCapWithoutFinalDeprotection, ObjectToString[objects,Cache->cache]];
 			objects
 		], {}
 	];
@@ -2827,7 +2263,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		Transpose[Lookup[allRoundedPNAOptionsAssociation, resuspensionMultipleOptions]]
 	];
 
-	(* Figure out whehter we have unneeded resuspension options (still indexmatching) -- we only care if we're cleaving *)
+	(* Figure out whether we have unneeded resuspension options (still indexmatching) -- we only care if we're cleaving *)
 	unneededResuspensionOptionsBools = MapThread[
 		 (* Only if we're cleaving: If there is a mix primitive (neither Null nor Automatic) and we have options provided, then we're in trouble *)
 		If[(#1 &&!MatchQ[#2, (Null | Automatic)] && !MatchQ[#3, {}]),
@@ -2844,7 +2280,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		{}
 	];
 
-	(* make a test for unneeded resuspesnion options *)
+	(* make a test for unneeded resuspension options *)
 	unneededResuspensionTest=If[gatherTests,
 		Test["Either ResuspensionMixPrimitives or Resuspension mix options were provided, when Cleavage is set to True:",AnyTrue[unneededResuspensionOptionsBools,TrueQ],False]
 	];
@@ -2864,8 +2300,8 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		If[Not[MatchQ[userOption, Automatic]],
 			userOption,
 			If[MatchQ[synthesisStrategy, Fmoc],
-				Model[Sample, StockSolution, "Deprotection Solution (20% piperidine in NMP)"],
-				Model[Sample, StockSolution, "95% TFA 5% m-cresol"]
+				Model[Sample, StockSolution, "id:D8KAEvdqzb1R"] (* "Model[Sample, StockSolution, \"Deprotection Solution (20% piperidine in NMP)\"]" *),
+				Model[Sample, StockSolution, "id:zGj91aR3ddBe"] (* "Model[Sample, StockSolution, \"95% TFA 5% m-cresol\"]" *)
 			]
 		]
 	];
@@ -2873,8 +2309,8 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 	activationSolution = Lookup[allRoundedPNAOptionsAssociation, ActivationSolution];
 
 	(* resolving the download activation solution, unless otherwise specified by the user it will be the same as the activation solution
-		and will actually pull the solution from the same source bottle. if the user specifies something else we'll ultimaterly put it in
-		monomer bottles (this feasture was paid for by a user)
+		and will actually pull the solution from the same source bottle. if the user specifies something else we'll ultimately put it in
+		monomer bottles (this feature was paid for by a user)
 	 *)
 	downloadActivationSolution = With[
 		{userOption = Lookup[allRoundedPNAOptionsAssociation, DownloadActivationSolution]},
@@ -2884,22 +2320,22 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		]
 	];
 
-	(* resolve the swell solution option, only if we're gonig to swell *)
+	(* resolve the swell solution option, only if we're going to swell *)
 	swellSolution = With[
 		{userOption = Lookup[allRoundedPNAOptionsAssociation, SwellSolution]},
 		If[Not[MatchQ[userOption, Automatic]],
 			userOption,
-			If[willSwell, Model[Sample, "Dichloromethane, Reagent Grade"], Null]
+			If[willSwell, Model[Sample, "id:AEqRl954GJ0d"] (* "Model[Sample, \"Dichloromethane, Reagent Grade\"]" *), Null]
 		]
 	];
 
 	(* resolve the DeprotonationSolution, but only if deprotonating in at least one strand *)
-	(* not resolving a downloadDeprotonation since there isn't a seperate solution for that*)
+	(* not resolving a downloadDeprotonation since there isn't a separate solution for that*)
 	deprotonationSolution = With[
 		{userOption = Lookup[allRoundedPNAOptionsAssociation, DeprotonationSolution]},
 		If[Not[MatchQ[userOption, Automatic]],
 			userOption,
-			If[Or[willDeprotonate, willDownloadResin], Model[Sample, StockSolution, "5% DIEA in DCM"], Null]
+			If[Or[willDeprotonate, willDownloadResin], Model[Sample, StockSolution, "id:4pO6dMWvnn68"] (* "Model[Sample, StockSolution, \"5% DIEA in DCM\"]" *), Null]
 		]
 	];
 
@@ -2908,7 +2344,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		{userOption = Lookup[allRoundedPNAOptionsAssociation, CleavageSolution]},
 		If[Not[MatchQ[userOption, Automatic]],
 			userOption,
-			If[willCleave, Model[Sample, StockSolution, "95% TFA-TIPS-H2O"], Null]
+			If[willCleave, Model[Sample, StockSolution, "id:3em6Zv9NjGMM"] (* "Model[Sample, StockSolution, \"95% TFA-TIPS-H2O\"]" *), Null]
 		]
 	];
 
@@ -2917,7 +2353,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		{userOption = Lookup[allRoundedPNAOptionsAssociation, TriturationSolution]},
 		If[Not[MatchQ[userOption, Automatic]],
 			userOption,
-			If[willCleave, Model[Sample, "Diethyl ether"], Null]
+			If[willCleave, Model[Sample, "id:AEqRl954GGNp"] (* "Model[Sample, \"Diethyl ether\"]" *), Null]
 		]
 	];
 	triturationTime = With[
@@ -2954,40 +2390,43 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		{userOption = Lookup[allRoundedPNAOptionsAssociation, ResuspensionBuffer]},
 		If[Not[MatchQ[userOption, Automatic]],
 			userOption,
-			If[willCleave, Model[Sample, "Milli-Q water"], Null]
+			If[willCleave, Model[Sample, "id:8qZ1VWNmdLBD"] (* "Model[Sample, \"Milli-Q water\"]" *), Null]
 		]
 	];
 
-	(* resolve the storate solution, but only if storing uncleaved resin*)
+	(* resolve the storage solution, but only if storing uncleaved resin*)
 	storageBuffer = With[
 		{userOption = Lookup[allRoundedPNAOptionsAssociation, StorageBuffer]},
 		If[Not[MatchQ[userOption, Automatic]],
 			userOption,
-			If[willStoreResin, Model[Sample, "Dimethylformamide, Reagent Grade"], Null]
+			If[willStoreResin, Model[Sample, "id:KBL5DvYl3ekv"] (* "Model[Sample, \"Dimethylformamide, Reagent Grade\"]" *), Null]
 		]
 	];
 
-	(* resolve methanol, but only if methanolwash is true*)
+	(* resolve methanol, but only if methanol wash is true*)
 	methanol = With[
 		{methanolWashuserOption = AnyTrue[Lookup[allRoundedPNAOptionsAssociation, PrimaryResinShrink], TrueQ],
 			userOption = Lookup[allRoundedPNAOptionsAssociation, PrimaryResinShrinkSolution]},
 		If[Not[MatchQ[userOption, Automatic]],
 			userOption,
-			If[methanolWashuserOption, Model[Sample, "Methanol"], Null]
+			If[methanolWashuserOption, Model[Sample, "id:vXl9j5qEnnRD"] (* "Model[Sample, \"Methanol\"]" *), Null]
 		]
 	];
-	(* resolve isopropanol, but only if methanolwash is true*)
+	(* resolve isopropanol, but only if methanol wash is true*)
 	isopropanol = With[
 		{methanolWashuserOption = AnyTrue[Lookup[allRoundedPNAOptionsAssociation, SecondaryResinShrink], TrueQ],
 			userOption = Lookup[allRoundedPNAOptionsAssociation, SecondaryResinShrinkSolution]},
 		If[Not[MatchQ[userOption, Automatic]],
 			userOption,
-			If[methanolWashuserOption, Model[Sample, "Isopropanol"], Null]
+			If[methanolWashuserOption, Model[Sample, "id:jLq9jXY4k6da"] (* "Model[Sample, \"Isopropanol\"]" *), Null]
 		]
 	];
 
 	(* Convert our options into a MapThread friendly version. *)
-	mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentPeptideSynthesis, allRoundedPNAOptionsAssociation];
+	mapThreadFriendlyOptions = If[MatchQ[myPolymer,Peptide],
+		OptionsHandling`Private`mapThreadOptions[ExperimentPeptideSynthesis, allRoundedPNAOptionsAssociation],
+		OptionsHandling`Private`mapThreadOptions[ExperimentPNASynthesis, allRoundedPNAOptionsAssociation]
+	];
 
 	{
 		scales, targetLoadings, cleavages, downloadResins, resins, initialDeprotections, finalDeprotections, deprotonations, initialCappings, finalCappings,
@@ -3004,7 +2443,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		cleavageVolumes, cleavageTimes, numberOfCleavageCycless,
 		methanolWashs, methanolWashVolumes, methanolWashTimes, isopropanolWashs, isopropanolWashVolumes, isopropanolWashTimes,
 		resuspensionVolumes, storageVolumes, numberOfResuspensionMixess,
-		samplesOutStorageConditions, unknownDownloadMonomerErrors, unknownMonomerErrors, monomers, unresolvedMonomers,
+		samplesOutStorageConditions, unavailableDownloadMonomerErrors, unavailableMonomerErrors, monomers, unresolvedMonomers,
 		primitivess, monomerPreactivations, resuspensionMixTimes, resuspensionMixTypes
 	} = Transpose[MapThread[Function[{oligomerPacket, myMapThreadOptions},
 		Module[{
@@ -3022,15 +2461,16 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 			cleavageVolume, cleavageTime, numberOfCleavageCycles,
 			methanolWash, methanolWashVolume, methanolWashTime, isopropanolWash, isopropanolWashVolume, isopropanolWashTime,
 			resuspensionVolume, storageVolume, numberOfResuspensionMixes,
-			defaultFmocDownloadMonomers, defaultFmocPNABulkMonomers, defaultBocPNABulkMonomers, defaultBocDownloadMonomers, defaultPeptideBulkMonomers, providedMonomersOption, resolvedMonomers, unresolvableMonomers,
+			providedMonomersOption, resolvedMonomers, unresolvableMonomers,
 			downloadMonomer, bulkMonomers, resolveAutomatic, allResolvedOptions,
-			samplesOutStorageCondition, unknownDownloadMonomerError, downloadMonomerSequence, unknownMonomerError, vettedPrimitives,
-			bulkMonomersInAdditionOrder, resolvedPrimitives, unresolvedPrimitives, monomerPreactivation, unresolvedResuspensionIncubatePrimitives,
-			resuspensionTime, resuspensionType,	resolvedResupensionType,resolvedResuspensionTime,unresolvedNumberOfResuspensionMixes,
-			unresolvedResuspensionMixTime,unresolvedResuspensionMixType,mixPrimitivesProvided
+			samplesOutStorageCondition, initialSwellAndDownloadPrimitives,restOfPrimitives,unavailableDownloadMonomerError, downloadMonomerSequence,
+			unavailableMonomerError, vettedPrimitives,
+			bulkMonomersInAdditionOrder, resolvedPrimitives, unresolvedPrimitives, monomerPreactivation, unresolvedResuspensionMixPrimitives,
+			resolvedResupensionType,resolvedResuspensionTime,unresolvedNumberOfResuspensionMixes,
+			unresolvedResuspensionMixTime,unresolvedResuspensionMixType,mixUnitOperationsProvided
 		},
 
-		(* pull out all the options that have a default and have already been handeled by SafeOptions*)
+		(* pull out all the options that have a default and have already been handled by SafeOptions*)
 			{
 				scale, targetLoading, cleavage, downloadResin, initialDeprotection, finalDeprotection, deprotonation,
 				finalCapping, swellResin,
@@ -3038,7 +2478,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 				cappingTime, numberOfCappings, numberOfCappingWashes,
 				activationTime, couplingTime, numberOfCouplingWashes, doubleCoupling,
 				methanolWash, isopropanolWash,
-				unresolvedPrimitives, monomerPreactivation, unresolvedResuspensionIncubatePrimitives, unresolvedResuspensionMixType, unresolvedResuspensionMixTime, unresolvedNumberOfResuspensionMixes
+				unresolvedPrimitives, monomerPreactivation, unresolvedResuspensionMixPrimitives, unresolvedResuspensionMixType, unresolvedResuspensionMixTime, unresolvedNumberOfResuspensionMixes
 			} = Lookup[myMapThreadOptions,
 				{
 					Scale, TargetLoading, Cleavage, DownloadResin, InitialDeprotection, FinalDeprotection, Deprotonation,
@@ -3053,33 +2493,36 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 			];
 
 			(* set up the error variables *)
-			unknownDownloadMonomerError = False;
-			unknownMonomerError = False;
+			unavailableDownloadMonomerError = False;
+			unavailableMonomerError = False;
 
 			(* get the strand (==Molecule post-SampleFest) and split into the first and rest of monomers*)
 			(* the first is used for resolving DownloadMonomer, the rest (bulk) is used to resolve Monomers *)
-			(* differnet input forms result in a nested or un-nested list, so pull Peptide[_] at infinite depth to make sure we get all of the monomers *)
+			(* different input forms result in a nested or un-nested list, so pull Peptide[_] at infinite depth to make sure we get all of the monomers *)
 			(* pull out monomers of the wrong type as well so that the correct error can be thrown later *)
-			monomers = Cases[Monomers[ToStrand[Lookup[oligomerPacket, Molecule]]], (Peptide[_]|PNA[_]|DNA[_]|RNA[_]|GammaLeftPNA[_]|GammaRightPNA[_]), Infinity];
+			monomers = If[MatchQ[myPolymer,Peptide],
+				Cases[Monomers[ToStrand[Lookup[oligomerPacket, Molecule]]], (Peptide[_]|PNA[_]|DNA[_]|RNA[_]|GammaLeftPNA[_]|GammaRightPNA[_]), Infinity],
+				First[Monomers[ToStrand[ToStructure[Lookup[oligomerPacket,Molecule]]]]]
+				];
 
 			(* the last monomer is the one to download *)
 			downloadMonomerSequence = Last[monomers];
 
-			(* monomers composiing the bulk of the strand *)
+			(* monomers composing the bulk of the strand *)
 			bulkMonomers = Most[monomers];
 
-			(* reverse the order since thats how they will be synthesized *)
+			(* reverse the order since that's how they will be synthesized *)
 			bulkMonomersInAdditionOrder = Reverse[bulkMonomers];
 
-			(* the default monomer we use for the basic peptide monomers *)
-			defaultPNABulkMonomers = DeleteCases[Flatten[Physics`Private`lookupModelOligomer[Peptide,SyntheticMonomers,Head->True, SynthesisStrategy->synthesisStrategy]], $Failed];
+			(* the default monomer we use for the basic monomers *)
+			defaultBulkMonomers = DeleteCases[Flatten[Physics`Private`lookupModelOligomer[allowedSyntheticMonomerTypes,SyntheticMonomers,Head->True, SynthesisStrategy->synthesisStrategy]], $Failed];
 
 			(* for each unique monomer either take the user provided option, or grab something from the default list *)
 			providedMonomersOption = Rule @@@ ToList[Lookup[myMapThreadOptions, Monomers]];
 			resolvedMonomers = Map[
 				If[KeyExistsQ[providedMonomersOption, #],
 					{#, Lookup[providedMonomersOption, #]},
-					{#, Lookup[defaultPNABulkMonomers, #, Null]}
+					{#, Lookup[defaultBulkMonomers, #, Null]}
 				]&, DeleteDuplicates[bulkMonomers]
 			];
 
@@ -3087,7 +2530,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 			unresolvableMonomers = Cases[resolvedMonomers[[All, 2]], Null];
 
 			(* if we could not resolve all monomers from this strand, we need to throw an error for this oligomer - we will do this below collectively for all oligomers *)
-			unknownMonomerError = If[!MatchQ[unresolvableMonomers, {}], True, False];
+			unavailableMonomerError = If[!MatchQ[unresolvableMonomers, {}], True, False];
 
 			(* helper that either takes the user value or resolve the automatic to the automatic value*)
 			resolveAutomatic[assoc_, option_, automaticValue_] := With[{value = Lookup[assoc, option]},
@@ -3097,7 +2540,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 			(* a helper that helps resolve automatic options that are gated upon another (T/F) option or takes in user provided value *)
 			resolveAutomatic[assoc_, option_, gateBool_, trueValue_, falseValue_] := With[
 				{value = Lookup[assoc, option]},
-			(* if value is automatic, further resolve based on gateBool, else take the provied value*)
+			(* if value is automatic, further resolve based on gateBool, else take the provided value*)
 				If[MatchQ[value, Automatic],
 					If[gateBool, trueValue, falseValue],
 					value
@@ -3106,30 +2549,47 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 
 			(* resolve the resin, if Automatic then we resolve to Model[Sample, "Rink Amide AM resin"], otherwise we use what the user specified. *)
 			(* we already threw errors above in cases with conflicting DownloadResin values etc so we don't need to worry about this here *)
-			resin = resolveAutomatic[myMapThreadOptions, Resin, Model[Sample, "id:n0k9mGk00lD1"]];
+			resin = resolveAutomatic[myMapThreadOptions,Resin,Model[Sample, "id:n0k9mGk00lD1"]];(*Model[Sample, "Rink Amide AM resin"]*)
 
 			(* resolve options that do not have a default (all of these are gated on another option*)
 			(* TODO: download by default swells*)
-			swellTime = resolveAutomatic[myMapThreadOptions, SwellTime, swellResin, 20 Minute, 20 Minute];
-			swellVolume = resolveAutomatic[myMapThreadOptions, SwellVolume, swellResin, 10 Milliliter, 10 Milliliter];
-			numberOfSwellCycles = resolveAutomatic[myMapThreadOptions, NumberOfSwellCycles, swellResin, 3, 3];
+			swellTime = If[MatchQ[myPolymer,Peptide],
+				resolveAutomatic[myMapThreadOptions, SwellTime, swellResin, 20 Minute, 20 Minute],
+				resolveAutomatic[myMapThreadOptions, SwellTime, swellResin, 20 Minute, Null]
+			];
+			swellVolume = If[MatchQ[myPolymer,Peptide],
+				resolveAutomatic[myMapThreadOptions, SwellVolume, swellResin, 10 Milliliter, 10 Milliliter],
+				resolveAutomatic[myMapThreadOptions, SwellVolume, swellResin, 10 Milliliter, Null]
+			];
+			numberOfSwellCycles = If[MatchQ[myPolymer,Peptide],
+				resolveAutomatic[myMapThreadOptions, NumberOfSwellCycles, swellResin, 3, 3],
+				resolveAutomatic[myMapThreadOptions, NumberOfSwellCycles, swellResin, 3, Null]
+			];
 
-			initialCapping = resolveAutomatic[myMapThreadOptions, InitialCapping, downloadResin, False, True];
+			initialCapping = If[numberOfCappings!=0,
+				resolveAutomatic[myMapThreadOptions, InitialCapping, downloadResin, False, True],
+				False
+				];
+
+			finalCapping = If[numberOfCappings==0,
+				False,
+				finalCapping
+			];
 
 			(* take user volumes for monomer, else resolve automatically for them (this will always be needed)*)
 			monomerVolume = resolveAutomatic[myMapThreadOptions, MonomerVolume,
 				Ceiling[.200 (Milliliter / Micromole) * scale, .5 Milliliter]
 			];
 
-			(* the default monomer we use for downloading the resin *)
-			defaultDownloadMonomers = DeleteCases[Flatten[Physics`Private`lookupModelOligomer[Peptide,DownloadMonomers,Head->True, SynthesisStrategy->synthesisStrategy]], $Failed];
+			(* the default monomer we use to download the resin *)
+			defaultDownloadMonomers = DeleteCases[Flatten[Physics`Private`lookupModelOligomer[allowedSyntheticMonomerTypes,DownloadMonomers,Head->True, SynthesisStrategy->synthesisStrategy]], $Failed];
 
 			downloadMonomer = resolveAutomatic[myMapThreadOptions, DownloadMonomer, downloadResin,
 				Lookup[defaultDownloadMonomers, downloadMonomerSequence, Null], Null
 			];
 
 			(* if we're downloading, and download monomer resolution didn't come up with anything, than this is bad and should throw an error*)
-			unknownDownloadMonomerError = If[And[downloadResin, NullQ[downloadMonomer]], True, False];
+			unavailableDownloadMonomerError = If[And[downloadResin, NullQ[downloadMonomer]], True, False];
 
 			downloadMonomerVolume = resolveAutomatic[myMapThreadOptions, DownloadMonomerVolume,
 				If[downloadResin, N[scale / (5  Micromole / Milliliter)], Null]
@@ -3217,7 +2677,10 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 			];
 
 			cleavageVolume = resolveAutomatic[myMapThreadOptions, CleavageVolume, If[cleavage, 5 Milliliter, Null]];
-			cleavageTime = resolveAutomatic[myMapThreadOptions, CleavageTime, If[cleavage, 180 Minute, Null]];
+			cleavageTime = If[MatchQ[myPolymer,Peptide],
+				resolveAutomatic[myMapThreadOptions, CleavageTime, If[cleavage, 180 Minute, Null]],
+				resolveAutomatic[myMapThreadOptions, CleavageTime, If[cleavage, 30 Minute, Null]]
+			];
 			numberOfCleavageCycles = resolveAutomatic[myMapThreadOptions, NumberOfCleavageCycles, If[cleavage, 3, Null]];
 
 			methanolWashVolume = resolveAutomatic[myMapThreadOptions, PrimaryResinShrinkVolume, If[methanolWash, 20 Milliliter, Null]];
@@ -3235,243 +2698,312 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 				SamplesOutStorageCondition
 			];
 
-
 			(* setup the primitives the way they be *)
-			resolvedPrimitives = {
-			(* -=- SWELL -=- *)
+			(* NOTE: The only difference between the two polymers is the initial swell and download *)
+			initialSwellAndDownloadPrimitives = If[MatchQ[myPolymer,Peptide],
+				(* -=- SWELL -=- *)
 				{
-				(* Wash with WashSolution*)
-					Washing[Sample -> washSolution, Volume -> swellVolume, Time -> 1 Minute, NumberOfReplicates -> 1],
-				(* Swell with SwellSolution *)
-					Swelling[Sample -> swellSolution, Volume -> swellVolume, Time -> swellTime, NumberOfReplicates -> numberOfSwellCycles],
-				(* Wash with WashSolution *)
-					Washing[Sample -> washSolution, Volume -> swellVolume, Time -> 1 Minute, NumberOfReplicates -> 1]
-				},
-			(* -=- DOWNLOAD -=- *)
-				If[downloadResin,
-					Flatten[{
-						If[initialDeprotection,
-							{
-								Deprotecting[Sample -> deprotectionSolution, Volume -> downloadDeprotectionVolume, Time -> downloadDeprotectionTime, NumberOfReplicates -> numberOfDownloadDeprotections],
-								Washing[Sample -> washSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfDownloadDeprotectionWashes]
-							},
-							{}
-						],
-						{
-							Swelling[Sample -> swellSolution, Volume -> swellVolume, Time -> swellTime, NumberOfReplicates -> 1],
-							Deprotonating[Sample -> deprotonationSolution, Volume -> downloadDeprotonationVolume, Time -> downloadDeprotonationTime, NumberOfReplicates -> numberOfDownloadDeprotonations],
-							Swelling[Sample -> swellSolution, Volume -> swellVolume, Time -> 1 Minute, NumberOfReplicates -> 2]
-						},
-						{
-							Coupling[
-								Monomer -> downloadMonomer, MonomerVolume -> downloadMonomerVolume,
-								Activator -> downloadActivationSolution, ActivatorVolume -> downloadActivationVolume, ActivationTime -> downloadActivationTime,
-								CouplingTime -> downloadCouplingTime,
-								Preactivation -> monomerPreactivation,
-								SingleShot -> True,
-								NumberOfReplicates -> 1
+					(* -=- SWELL -=- *)
+					{
+						(* Wash with WashSolution*)
+						Washing[Sample->washSolution,Volume->swellVolume,Time->1 Minute,NumberOfReplicates->1],
+						(* Swell with SwellSolution *)
+						Swelling[Sample->swellSolution,Volume->swellVolume,Time->swellTime,NumberOfReplicates->numberOfSwellCycles],
+						(* Wash with WashSolution *)
+						Washing[Sample->washSolution,Volume->swellVolume,Time->1 Minute,NumberOfReplicates->1]
+					},
+					(* -=- DOWNLOAD -=- *)
+					If[downloadResin,
+						Flatten[{
+							If[initialDeprotection,
+								{
+									Deprotecting[Sample->deprotectionSolution,Volume->downloadDeprotectionVolume,Time->downloadDeprotectionTime,NumberOfReplicates->numberOfDownloadDeprotections],
+									Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfDownloadDeprotectionWashes]
+								},
+								{}
 							],
-							Washing[Sample -> washSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfDownloadCouplingWashes],
-							Washing[Sample -> swellSolution, Volume -> swellVolume, Time -> 1 Minute, NumberOfReplicates -> 2]
-						},
-						{
-							Deprotonating[Sample -> deprotonationSolution, Volume -> downloadDeprotonationVolume, Time -> downloadDeprotonationTime, NumberOfReplicates -> 1],
-							Washing[Sample -> swellSolution, Volume -> swellVolume, Time -> 1 Minute, NumberOfReplicates -> 2]
-						},
-						{
-							Capping[Sample -> cappingSolution, Volume -> downloadCappingVolume, Time -> downloadCappingTime, NumberOfReplicates -> 2],
-							Washing[Sample -> swellSolution, Volume -> swellVolume, Time -> 1 Minute, NumberOfReplicates -> 4]
-						}
+							{
+								Swelling[Sample->swellSolution,Volume->swellVolume,Time->swellTime,NumberOfReplicates->1],
+								Deprotonating[Sample->deprotonationSolution,Volume->downloadDeprotonationVolume,Time->downloadDeprotonationTime,NumberOfReplicates->numberOfDownloadDeprotonations],
+								Swelling[Sample->swellSolution,Volume->swellVolume,Time->1 Minute,NumberOfReplicates->2]
+							},
+							{
+								Coupling[
+									Monomer->downloadMonomer,MonomerVolume->downloadMonomerVolume,
+									Activator->downloadActivationSolution,ActivatorVolume->downloadActivationVolume,ActivationTime->downloadActivationTime,
+									CouplingTime->downloadCouplingTime,
+									Preactivation->monomerPreactivation,
+									SingleShot->True,
+									NumberOfReplicates->1
+								],
+								Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfDownloadCouplingWashes],
+								Washing[Sample->swellSolution,Volume->swellVolume,Time->1 Minute,NumberOfReplicates->2]
+							},
+							{
+								Deprotonating[Sample->deprotonationSolution,Volume->downloadDeprotonationVolume,Time->downloadDeprotonationTime,NumberOfReplicates->1],
+								Washing[Sample->swellSolution,Volume->swellVolume,Time->1 Minute,NumberOfReplicates->2]
+							},
+							{
+								Capping[Sample->cappingSolution,Volume->downloadCappingVolume,Time->downloadCappingTime,NumberOfReplicates->2],
+								Washing[Sample->swellSolution,Volume->swellVolume,Time->1 Minute,NumberOfReplicates->4]
+							}
+						}],
+						Nothing
+					]
+				},
+				{
+					(* -=- SWELL -=- *)
+					Flatten[{
+						(* Wash with WashSolution*)
+						Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->3],
+						(* Swell with SwellSolution *)
+						If[swellResin,
+							{
+								Swelling[Sample->swellSolution,Volume->swellVolume,Time->swellTime,NumberOfReplicates->numberOfSwellCycles],
+								Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->3]
+							},
+							Nothing
+						]
+						(* Wash with WashSolution *)
 					}],
-					Nothing
-				],
+					(* -=- DOWNLOAD -=- *)
+					If[downloadResin,
+						Flatten[{
+							If[initialDeprotection,
+								{
+									Deprotecting[Sample->deprotectionSolution,Volume->downloadDeprotectionVolume,Time->downloadDeprotectionTime,NumberOfReplicates->numberOfDownloadDeprotections],
+									Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfDownloadDeprotectionWashes]
+								},
+								{}
+							],
+							{
+								Deprotonating[Sample->deprotonationSolution,Volume->downloadDeprotonationVolume,Time->downloadDeprotonationTime,NumberOfReplicates->numberOfDownloadDeprotonations],
+								Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfDownloadDeprotonationWashes]
+							},
+							{
+								Coupling[
+									Monomer->downloadMonomer,MonomerVolume->downloadMonomerVolume,
+									Activator->downloadActivationSolution,ActivatorVolume->downloadActivationVolume,ActivationTime->downloadActivationTime,
+									CouplingTime->downloadCouplingTime,
+									Preactivation->monomerPreactivation,
+									SingleShot->True,
+									NumberOfReplicates->1
+								],
+								Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfDownloadCouplingWashes]
+							},
+							{
+								Deprotonating[Sample->deprotonationSolution,Volume->downloadDeprotonationVolume,Time->downloadDeprotonationTime,NumberOfReplicates->numberOfDownloadDeprotonations],
+								Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfDownloadDeprotonationWashes]
+							},
+							{
+								Capping[Sample->cappingSolution,Volume->downloadCappingVolume,Time->downloadCappingTime,NumberOfReplicates->2],
+								Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfDownloadCappingWashes]
+							}
+						}],
+						Nothing
+					]
+				}
+			];
 
-			(* -=- INITIAL -=- *)
+			(* Setup the rest of the primitives that are the same for all polymers *)
+			restOfPrimitives ={
+				(* -=- INITIAL -=- *)
 				Flatten[{
-				(* Initial Cap + Wash *)
+					(* Initial Cap + Wash *)
 					If[initialCapping,
 						{
-							Capping[Sample -> cappingSolution, Volume -> cappingVolume, Time -> cappingTime, NumberOfReplicates -> numberOfCappings],
-							Washing[Sample -> washSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfCappingWashes]
+							Capping[Sample->cappingSolution,Volume->cappingVolume,Time->cappingTime,NumberOfReplicates->numberOfCappings],
+							Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfCappingWashes]
 						},
 						{}
 					],
-				(* Additional Swell step if synth strat is Boc*)
-					If[MatchQ[synthesisStrategy, Boc],
-						Swelling[Sample -> swellSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfSwellCycles],
+					(* Additional Swell step if synth strategy is Boc*)
+					If[MatchQ[synthesisStrategy,Boc],
+						Swelling[Sample->swellSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfSwellCycles],
 						Nothing
 					],
-				(* Deprotection *)
-					Deprotecting[Sample -> deprotectionSolution, Volume -> deprotectionVolume, Time -> deprotectionTime, NumberOfReplicates -> numberOfDeprotections],
-				(* Additional Swell step if synth strat is Boc*)
-					If[MatchQ[synthesisStrategy, Boc],
-						Swelling[Sample -> swellSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfSwellCycles],
+					(* Deprotection *)
+					Deprotecting[Sample->deprotectionSolution,Volume->deprotectionVolume,Time->deprotectionTime,NumberOfReplicates->numberOfDeprotections],
+					(* Additional Swell step if synth strategy is Boc*)
+					If[MatchQ[synthesisStrategy,Boc],
+						Swelling[Sample->swellSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfSwellCycles],
 						Nothing
 					],
-				(* Post-Deprotection Wash *)
-					Washing[Sample -> washSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfDeprotectionWashes],
+					(* Post-Deprotection Wash *)
+					Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfDeprotectionWashes],
 
-				(* Deprotonation, only if deprotonatin is True *)
+					(* Deprotonation, only if deprotonation is True *)
 					If[deprotonation,
 						{
-							Deprotonating[Sample -> deprotonationSolution, Volume -> deprotonationVolume, Time -> deprotonationTime, NumberOfReplicates -> numberOfDeprotonations],
-							Washing[Sample -> washSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfDeprotonationWashes]
+							Deprotonating[Sample->deprotonationSolution,Volume->deprotonationVolume,Time->deprotonationTime,NumberOfReplicates->numberOfDeprotonations],
+							Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfDeprotonationWashes]
 						},
 						Nothing
 					],
 
-				(* This is going to be the second monomer of the sequence (since the first is either already on the resin, or being added as part of a seperate download cycle *)
+					(* This is going to be the second monomer of the sequence (since the first is either already on the resin, or being added as part of a separate download cycle *)
 					{
 						Coupling[
-							Monomer -> Last[FirstCase[resolvedMonomers, {bulkMonomersInAdditionOrder[[1]], _}]],
-							MonomerVolume -> monomerVolume,
-							Activator -> activationSolution, ActivatorVolume -> activationVolume, ActivationTime -> activationTime,
-							CouplingTime -> couplingTime,
-							Preactivation -> monomerPreactivation,
-							SingleShot -> False,
-							NumberOfReplicates -> If[Or[NullQ[doubleCoupling], doubleCoupling >= 2], 1, 2]
+							Monomer->Last[FirstCase[resolvedMonomers,{bulkMonomersInAdditionOrder[[1]],_}]],
+							MonomerVolume->monomerVolume,
+							Activator->activationSolution,ActivatorVolume->activationVolume,ActivationTime->activationTime,
+							CouplingTime->couplingTime,
+							Preactivation->monomerPreactivation,
+							SingleShot->False,
+							NumberOfReplicates->If[Or[NullQ[doubleCoupling],doubleCoupling>=2],1,2]
 						],
-						Washing[Sample -> washSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfCouplingWashes]
+						Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfCouplingWashes]
 					},
 
-				(* Capping + Wash*)
-					{
-						Capping[Sample -> cappingSolution, Volume -> cappingVolume, Time -> cappingTime, NumberOfReplicates -> numberOfCappings],
-						Washing[Sample -> washSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfCappingWashes]
-					}
+					(* Capping + Wash*)
+					If[numberOfCappings==0,
+						Nothing,
+						{
+							Capping[Sample->cappingSolution,Volume->cappingVolume,Time->cappingTime,NumberOfReplicates->numberOfCappings],
+							Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfCappingWashes]
+						}
+					]
 				}],
 
 				(* MIDDLE MONOMERS *)
 				(* In the rare case that we're making a strand of 2 monomers, we skip this step since the first monomer is taken care of and the last monomer is being taking care of below in "FINAL" *)
 				If[Length[bulkMonomersInAdditionOrder]==1,
 					{},
-					Sequence @@ MapIndexed[
+					Sequence@@MapIndexed[
 						{
-						(* Additional Swell step if synth strat is Boc*)
+							(* Additional Swell step if synth strategy is Boc*)
 							If[
-								MatchQ[synthesisStrategy, Boc],
-								Swelling[Sample -> swellSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfSwellCycles],
+								MatchQ[synthesisStrategy,Boc],
+								Swelling[Sample->swellSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfSwellCycles],
 								Nothing
 							],
 
-						(* Deprotection *)
-							Deprotecting[Sample -> deprotectionSolution, Volume -> deprotectionVolume, Time -> deprotectionTime, NumberOfReplicates -> numberOfDeprotections],
+							(* Deprotection *)
+							Deprotecting[Sample->deprotectionSolution,Volume->deprotectionVolume,Time->deprotectionTime,NumberOfReplicates->numberOfDeprotections],
 
-						(* Additional Swell step if synth strat is Boc*)
-							If[MatchQ[synthesisStrategy, Boc],
-								Swelling[Sample -> swellSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfSwellCycles],
+							(* Additional Swell step if synth strategy is Boc*)
+							If[MatchQ[synthesisStrategy,Boc],
+								Swelling[Sample->swellSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfSwellCycles],
 								Nothing
 							],
 
-						(* Post-Deprotection Wash *)
-							Washing[Sample -> washSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfDeprotectionWashes],
+							(* Post-Deprotection Wash *)
+							Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfDeprotectionWashes],
 
-						(* Deprotonation, only if deprotonatin is True *)
+							(* Deprotonation, only if deprotonation is True *)
 							If[deprotonation,
 								{
-									Deprotonating[Sample -> deprotonationSolution, Volume -> deprotonationVolume, Time -> deprotonationTime, NumberOfReplicates -> numberOfDeprotonations],
-									Washing[Sample -> washSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfDeprotonationWashes]
+									Deprotonating[Sample->deprotonationSolution,Volume->deprotonationVolume,Time->deprotonationTime,NumberOfReplicates->numberOfDeprotonations],
+									Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfDeprotonationWashes]
 								},
 								Nothing
 							],
 
-						(* For each monomer of the sequence, make an activate monomer primitive *)
+							(* For each monomer of the sequence, make an activate monomer primitive *)
 							Coupling[
-								Monomer -> Last[FirstCase[resolvedMonomers, {#1, _}]],
-								MonomerVolume -> monomerVolume,
-								Activator -> activationSolution, ActivatorVolume -> activationVolume, ActivationTime -> activationTime,
-								CouplingTime -> couplingTime,
-								Preactivation -> monomerPreactivation,
-								SingleShot -> False,
-								NumberOfReplicates -> If[Or[NullQ[doubleCoupling], doubleCoupling >= (First[#2] + 2)], 1, 2]
+								Monomer->Last[FirstCase[resolvedMonomers,{#1,_}]],
+								MonomerVolume->monomerVolume,
+								Activator->activationSolution,ActivatorVolume->activationVolume,ActivationTime->activationTime,
+								CouplingTime->couplingTime,
+								Preactivation->monomerPreactivation,
+								SingleShot->False,
+								NumberOfReplicates->If[Or[NullQ[doubleCoupling],doubleCoupling>=(First[#2] + 2)],1,2]
 							],
 
-						(* Post-Coupling Wash *)
-							Washing[Sample -> washSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfCouplingWashes],
+							(* Post-Coupling Wash *)
+							Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfCouplingWashes],
 
-						(* Capping *)
-							Capping[Sample -> cappingSolution, Volume -> cappingVolume, Time -> cappingTime, NumberOfReplicates -> numberOfCappings],
+							If[numberOfCappings==0,
+								Nothing,
+								Sequence@@{
+									(* Capping *)
+									Capping[Sample->cappingSolution,Volume->cappingVolume,Time->cappingTime,NumberOfReplicates->numberOfCappings],
 
-						(* Post-Capping Wash *)
-							Washing[Sample -> washSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfCappingWashes]
-						}&, bulkMonomersInAdditionOrder[[2 ;; -2]]
+									(* Post-Capping Wash *)
+									Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfCappingWashes]
+								}
+							]
+						}&,bulkMonomersInAdditionOrder[[2;;-2]]
 					]
 				],
-			(* -=- FINAL -=- *)
+				(* -=- FINAL -=- *)
 				Flatten[{
-				(* Additional Swell step if synth strat is Boc*)
+					(* Additional Swell step if synth strategy is Boc*)
 					If[
-						MatchQ[synthesisStrategy, Boc],
-						Washing[Sample -> swellSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfSwellCycles],
+						MatchQ[synthesisStrategy,Boc],
+						Washing[Sample->swellSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfSwellCycles],
 						Nothing
 					],
 
-				(* Deprotection *)
-					Deprotecting[Sample -> deprotectionSolution, Volume -> deprotectionVolume, Time -> deprotectionTime, NumberOfReplicates -> numberOfDeprotections],
+					(* Deprotection *)
+					Deprotecting[Sample->deprotectionSolution,Volume->deprotectionVolume,Time->deprotectionTime,NumberOfReplicates->numberOfDeprotections],
 
-				(* Additional Swell step if synth strat is Boc*)
+					(* Additional Swell step if synth strategy is Boc*)
 					If[
-						MatchQ[synthesisStrategy, Boc],
-						Washing[Sample -> swellSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfSwellCycles],
+						MatchQ[synthesisStrategy,Boc],
+						Washing[Sample->swellSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfSwellCycles],
 						Nothing
 					],
 
-				(* Post-Deprotection Wash *)
-					Washing[Sample -> washSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfDeprotectionWashes],
+					(* Post-Deprotection Wash *)
+					Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfDeprotectionWashes],
 
-				(* Deprotonation, only if deprotonatin is True *)
+					(* Deprotonation, only if deprotonation is True *)
 					If[deprotonation,
 						{
-							Deprotonating[Sample -> deprotonationSolution, Volume -> deprotonationVolume, Time -> deprotonationTime, NumberOfReplicates -> numberOfDeprotonations],
-							Washing[Sample -> washSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfDeprotonationWashes]
+							Deprotonating[Sample->deprotonationSolution,Volume->deprotonationVolume,Time->deprotonationTime,NumberOfReplicates->numberOfDeprotonations],
+							Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfDeprotonationWashes]
 						},
 						Nothing
 					],
 
-				(* Coupling + Wash *)
+					(* Coupling + Wash *)
 					{
 						Coupling[
-							Monomer -> Last[FirstCase[resolvedMonomers, {bulkMonomersInAdditionOrder[[-1]], _}]],
-							MonomerVolume -> monomerVolume,
-							Activator -> activationSolution, ActivatorVolume -> activationVolume, ActivationTime -> activationTime,
-							CouplingTime -> couplingTime,
-							Preactivation -> monomerPreactivation,
-							SingleShot -> False,
-							NumberOfReplicates -> If[Or[NullQ[doubleCoupling], doubleCoupling >= Length[monomers]], 1, 2]
+							Monomer->Last[FirstCase[resolvedMonomers,{bulkMonomersInAdditionOrder[[-1]],_}]],
+							MonomerVolume->monomerVolume,
+							Activator->activationSolution,ActivatorVolume->activationVolume,ActivationTime->activationTime,
+							CouplingTime->couplingTime,
+							Preactivation->monomerPreactivation,
+							SingleShot->False,
+							NumberOfReplicates->If[Or[NullQ[doubleCoupling],doubleCoupling>=Length[monomers]],1,2]
 						],
-						Washing[Sample -> washSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfCouplingWashes]
+						Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfCouplingWashes]
 					},
 
 					If[finalDeprotection,
 						{
-							Deprotecting[Sample -> deprotectionSolution, Volume -> deprotectionVolume, Time -> deprotectionTime, NumberOfReplicates -> numberOfDeprotections],
-							Washing[Sample -> washSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfDeprotectionWashes]
+							Deprotecting[Sample->deprotectionSolution,Volume->deprotectionVolume,Time->deprotectionTime,NumberOfReplicates->numberOfDeprotections],
+							Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfDeprotectionWashes]
 						},
 						Nothing
 					],
 
 					If[finalCapping,
 						{
-							Capping[Sample -> cappingSolution, Volume -> cappingVolume, Time -> cappingTime, NumberOfReplicates -> numberOfCappings],
-							Washing[Sample -> washSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> numberOfCappingWashes]
+							Capping[Sample->cappingSolution,Volume->cappingVolume,Time->cappingTime,NumberOfReplicates->numberOfCappings],
+							Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->numberOfCappingWashes]
 						},
 						Nothing
 					],
-					If[methanolWash, Washing[Sample -> methanol, Volume -> methanolWashVolume, Time -> methanolWashTime, NumberOfReplicates -> 1], Nothing],
-					If[isopropanolWash, Washing[Sample -> isopropanol, Volume -> isopropanolWashVolume, Time -> isopropanolWashTime, NumberOfReplicates -> 1], Nothing]
+					If[methanolWash,Washing[Sample->methanol,Volume->methanolWashVolume,Time->methanolWashTime,NumberOfReplicates->1],Nothing],
+					If[isopropanolWash,Washing[Sample->isopropanol,Volume->isopropanolWashVolume,Time->isopropanolWashTime,NumberOfReplicates->1],Nothing]
 				}],
 
-			(* -=- CLEAVAGE -=- *)
+				(* -=- CLEAVAGE -=- *)
 				If[cleavage,
 					{
-					(* Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute, NumberOfReplicates->1], *)(*TODO we're testing not to wash here since we just shrank *)
-						Cleaving[Sample -> cleavageSolution, Volume -> cleavageVolume, Time -> cleavageTime, NumberOfReplicates -> numberOfCleavageCycles],
-						Washing[Sample -> washSolution, Volume -> washVolume, Time -> 1 Minute, NumberOfReplicates -> 3]
+						(* Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute, NumberOfReplicates->1], *)(*TODO we're testing not to wash here since we just shrank *)
+						Cleaving[Sample->cleavageSolution,Volume->cleavageVolume,Time->cleavageTime,NumberOfReplicates->numberOfCleavageCycles],
+						Washing[Sample->washSolution,Volume->washVolume,Time->1 Minute,NumberOfReplicates->3]
 					},
 					Nothing
 				]
 
 			};
+
+			(* Join the primitives together *)
+			resolvedPrimitives = Join[initialSwellAndDownloadPrimitives,restOfPrimitives];
 
 			(* reconcile my primitives with user provide ones *)
 			vettedPrimitives = If[
@@ -3481,15 +3013,15 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 			];
 
 			(* check whether we have been provided mix primitives for resuspension *)
-			mixPrimitivesProvided=!MatchQ[unresolvedResuspensionIncubatePrimitives,(Automatic|Null)];
+			mixUnitOperationsProvided=!MatchQ[unresolvedResuspensionMixPrimitives,(Automatic|Null)];
 
 			(* we only care about volume if we are cleaving *)
 			resuspensionVolume = resolveAutomatic[myMapThreadOptions, ResuspensionVolume, If[cleavage, 1 Milliliter, Null]];
 
 			(* first we resolve the mix type *)
-			resolvedResupensionType = resolveAutomatic[myMapThreadOptions, ResuspensionMixType, If[cleavage&&!mixPrimitivesProvided, Pipette, Null]];
-			numberOfResuspensionMixes = resolveAutomatic[myMapThreadOptions, NumberOfResuspensionMixes, If[cleavage&&!mixPrimitivesProvided && MatchQ[resolvedResupensionType,Pipette], 10, Null]];
-			resolvedResuspensionTime = resolveAutomatic[myMapThreadOptions, ResuspensionMixTime, If[cleavage&&!mixPrimitivesProvided && MatchQ[resolvedResupensionType,Sonicate|Vortex], 5*Minute, Null]];
+			resolvedResupensionType = resolveAutomatic[myMapThreadOptions, ResuspensionMixType, If[cleavage&&!mixUnitOperationsProvided, Pipette, Null]];
+			numberOfResuspensionMixes = resolveAutomatic[myMapThreadOptions, NumberOfResuspensionMixes, If[cleavage&&!mixUnitOperationsProvided && MatchQ[resolvedResupensionType,Pipette], 10, Null]];
+			resolvedResuspensionTime = resolveAutomatic[myMapThreadOptions, ResuspensionMixTime, If[cleavage&&!mixUnitOperationsProvided && MatchQ[resolvedResupensionType,Sonicate|Vortex], 5*Minute, Null]];
 
 			allResolvedOptions = {
 				scale, targetLoading, cleavage, downloadResin, resin, initialDeprotection, finalDeprotection, deprotonation, initialCapping, finalCapping,
@@ -3506,7 +3038,7 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 				cleavageVolume, cleavageTime, numberOfCleavageCycles,
 				methanolWash, methanolWashVolume, methanolWashTime, isopropanolWash, isopropanolWashVolume, isopropanolWashTime,
 				resuspensionVolume, storageVolume, numberOfResuspensionMixes,
-				samplesOutStorageCondition, unknownDownloadMonomerError, unknownMonomerError, resolvedMonomers, unresolvableMonomers, vettedPrimitives,
+				samplesOutStorageCondition, unavailableDownloadMonomerError, unavailableMonomerError, resolvedMonomers, unresolvableMonomers, vettedPrimitives,
 				monomerPreactivation, resolvedResuspensionTime, resolvedResupensionType
 			};
 
@@ -3517,12 +3049,12 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 
 	(*-- UNRESOLVABLE OPTION CHECKS --*)
 
-	(* If any of the unknownDownloadMonomerErrors returned True, then we need to throw an error here, also collect InvalidOption *)
-	unknowDownloadMonomerOptions = If[Or @@ unknownDownloadMonomerErrors && !gatherTests,
-		Module[{downloadMonomers, unknownDownloadMonomerOligomerModels, unknownDownloadMonomerOligomerModelsObjects},
+	(* If any of the unavailableDownloadMonomerErrors returned True, then we need to throw an error here, also collect InvalidOption *)
+	unavailableDownloadMonomerOptions = If[Or @@ unavailableDownloadMonomerErrors && !gatherTests,
+		Module[{downloadMonomers, unavailableDownloadMonomerOligomerModels, unavailableDownloadMonomerOligomerModelsObjects},
 		(* Get the models that correspond to this error. *)
-			unknownDownloadMonomerOligomerModels = PickList[oligomerModelPackets, unknownDownloadMonomerErrors];
-			unknownDownloadMonomerOligomerModelsObjects = Lookup[unknownDownloadMonomerOligomerModels, Object];
+			unavailableDownloadMonomerOligomerModels = PickList[oligomerModelPackets, unavailableDownloadMonomerErrors];
+			unavailableDownloadMonomerOligomerModelsObjects = Lookup[unavailableDownloadMonomerOligomerModels, Object];
 
 			(* Get the relevant strands and then monomers*)
 			downloadMonomers = DeleteDuplicates[
@@ -3532,10 +3064,10 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 							ToStrand[Lookup[#, Molecule]]
 						]
 					]
-				]& /@ unknownDownloadMonomerOligomerModels];
+				]& /@ unavailableDownloadMonomerOligomerModels];
 
-			(* Throw the corresopnding error *)
-			Message[Error::UnknownDownloadMonomer, ObjectToString[unknownDownloadMonomerOligomerModelsObjects], ToString[downloadMonomers]];
+			(* Throw the corresponding error *)
+			Message[Error::UnavailableDownloadMonomer, ObjectToString[unavailableDownloadMonomerOligomerModelsObjects,Cache->cache], ToString[downloadMonomers]];
 
 			(* Return our invalid options. *)
 			{DownloadMonomer}
@@ -3543,25 +3075,25 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		{}
 	];
 
-	(* Create the corresponding test for the unknownDownloadMonomerErrors if we're collecting tests *)
-	unknownDownloadMonomerErrorsTest = If[gatherTests,
+	(* Create the corresponding test for the unavailableDownloadMonomerErrors if we're collecting tests *)
+	unavailableDownloadMonomerErrorsTest = If[gatherTests,
 	(* We're gathering tests. Create the appropriate tests. *)
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 		(* Get the inputs that fail this test. *)
-			failingInputs = PickList[myInputs, unknownDownloadMonomerErrors];
+			failingInputs = PickList[myInputs, unavailableDownloadMonomerErrors];
 
 			(* Get the inputs that pass this test. *)
 			passingInputs = Complement[myInputs, failingInputs];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Test["The following input oligomer model(s), " <> ObjectToString[failingInputs, Cache -> cache] <> ", contain(s) download monomers for which a default is available, or DonwloadMonomer is provided:", True, False],
+				Test["The following input oligomer model(s), " <> ObjectToString[failingInputs, Cache -> cache] <> ", contain(s) download monomers for which a default is available, or DownloadMonomer is provided:", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["The following input oligomer model(s), " <> ObjectToString[passingInputs, Cache -> cache] <> ", contain(s) download monomers for which a default is available, or DonwloadMonomer is provided:", True, True],
+				Test["The following input oligomer model(s), " <> ObjectToString[passingInputs, Cache -> cache] <> ", contain(s) download monomers for which a default is available, or DownloadMonomer is provided:", True, True],
 				Nothing
 			];
 
@@ -3575,30 +3107,30 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		{}
 	];
 
-	(* If any of the unknownMonomerErrors returned True, then we need to throw an error for the respective strands here, also collect the InvalidOption *)
-	unknownMonomerOptions = If[Or @@ unknownMonomerErrors && !gatherTests,
-		Module[{unknownMonomerOligomerPackets, unknownMonomerOligomerModelsObjects, unknownMonomerLists, unknownMonomersFiltered, unknownMonomersFlat},
+	(* If any of the unavailableMonomerErrors returned True, then we need to throw an error for the respective strands here, also collect the InvalidOption *)
+	unavailableMonomerOptions = If[Or @@ unavailableMonomerErrors && !gatherTests,
+		Module[{unavailableMonomerOligomerPackets, unavailableMonomerOligomerModelsObjects, unavailableMonomerLists, unavailableMonomersFiltered, unavailableMonomersFlat},
 		(* Get the models that correspond to this error. *)
-			unknownMonomerOligomerPackets = PickList[oligomerModelPackets, unknownMonomerErrors];
-			unknownMonomerOligomerModelsObjects = Lookup[unknownMonomerOligomerPackets, Object];
+			unavailableMonomerOligomerPackets = PickList[oligomerModelPackets, unavailableMonomerErrors];
+			unavailableMonomerOligomerModelsObjects = Lookup[unavailableMonomerOligomerPackets, Object];
 
 			(* get the monomer lists that correspond to this error *)
-			unknownMonomerLists = PickList[monomers, unknownMonomerErrors];
+			unavailableMonomerLists = PickList[monomers, unavailableMonomerErrors];
 
 			(* map through the lists of monomers and filter for the ones that are unresolved (instead of a stock solution, there will be Null) *)
 			(* this results in the  following list: {{{monomer,Null}..}..} *)
-			unknownMonomersFiltered = Map[
+			unavailableMonomersFiltered = Map[
 				Function[{monomersOfStrand},
 					Select[monomersOfStrand, #[[2]] == Null &]
 				],
-				unknownMonomerLists
+				unavailableMonomerLists
 			];
 
 			(* make a flat list of unresolved monomers from this (since Monomers (the Option) is not indexmatched, it does not make sense here to keep this indexmatched to the samples either when throwing the error message *)
-			unknownMonomersFlat = DeleteDuplicates[Flatten[unknownMonomersFiltered, 1][[All, 1]]];
+			unavailableMonomersFlat = DeleteDuplicates[Flatten[unavailableMonomersFiltered, 1][[All, 1]]];
 
-			(* Throw the corresopnding error specifying which strand is the problematic one *)
-			Message[Error::UnknownMonomer, ObjectToString[unknownMonomerOligomerModelsObjects], ToString[unknownMonomersFlat]];
+			(* Throw the corresponding error specifying which strand is the problematic one *)
+			Message[Error::UnavailableMonomer, ObjectToString[unavailableMonomerOligomerModelsObjects], ToString[unavailableMonomersFlat]];
 
 			(* Return our invalid options. *)
 			{Monomers}
@@ -3606,12 +3138,12 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		{}
 	];
 
-	(* Create the corresponding test for the unknownMonomerErrors if we're collecting tests *)
-	unknownMonomerErrorsTest = If[gatherTests,
+	(* Create the corresponding test for the unavailableMonomerErrors if we're collecting tests *)
+	unavailableMonomerErrorsTest = If[gatherTests,
 	(* We're gathering tests. Create the appropriate tests. *)
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 		(* Get the inputs that fail this test. *)
-			failingInputs = PickList[myInputs, unknownMonomerErrors];
+			failingInputs = PickList[myInputs, unavailableMonomerErrors];
 
 			(* Get the inputs that pass this test. *)
 			passingInputs = Complement[myInputs, failingInputs];
@@ -3638,122 +3170,160 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		{}
 	];
 
-	resolvedResuspensionMixPrimitives=MapThread[
-	(* If we're not cleaving, then this should be Null *)
+	resolvedResuspensionMixPrimitives = MapThread[
+		(* If we're not cleaving, then this should be Null *)
 		If[!#1,
 			Null,
-		(* If the mix type was resolved, then we know we need to construct our primitives *)
+			(* If the mix type was resolved, then we know we need to construct our primitives *)
 			If[!NullQ[#2],
-			(* construct the primitive - importantly, we wrap them in a list, because if we were to provide primitives it would be listed as well *)
-				If[MatchQ[#2,Sonicate|Vortex],
+				(* construct the primitive - importantly, we wrap them in a list, because if we were to provide primitives it would be listed as well *)
+				If[MatchQ[#2, Sonicate | Vortex],
 					{Mix[
-						MixType->#2,
-						Time->#3
+						MixType -> #2,
+						Time -> #3
 					]},
 					{Mix[
-						MixType->#2,
-						NumberOfMixes->#4
+						MixType -> #2,
+						NumberOfMixes -> #4
 					]}
 				],
-			(* otherwise we know we can just use the primitive(s) that were provided *)
+				(* otherwise we know we can just use the primitive(s) that were provided *)
 				#5
 			]
 		]&,
-		{cleavages, resuspensionMixTypes,resuspensionMixTimes,numberOfResuspensionMixess,Lookup[allRoundedPNAOptionsAssociation, ResuspensionMixPrimitives]}];
-
-	(* == check whether the resolved Primitives pass the ExperimentSampleManipulation call *)
-
-	(* mapping over the samples, we make a list of manipulations that we can check with ValidExperimentSampleManipulationQ below *)
-	reuspensionMixManipulationList=Map[Function[{primitives},
-		If[NullQ[primitives],
-			Null,
-			Module[{heads,associations,associationsWithSample,primitivesWithSample,mixPrimitivesWithSample,definedResuspendedSample},
-
-			(* extract the heads and the associations from the list of primitives *)
-				heads=Head/@primitives;
-				associations=First/@primitives;
-
-				(* fix the primitives so we can call ExpSM below - pipette primitives need MaxVolume, and all primitives need Sample keys *)
-				associationsWithSample=If[MatchQ[Lookup[#,MixType],Pipette],
-					Prepend[#,{Sample->"My Container",MixVolume->0.5*Milliliter}],
-					Prepend[#,{Sample->"My Container"}]
-				]&/@associations;
-
-				(* wrap the heads back around the associations to get a list of primitives *)
-				mixPrimitivesWithSample=MapThread[#1[#2]&,{heads,associationsWithSample}];
-
-				(* construct a Define and Transfer primitive that we can sneak into the list of manipulations *)
-				definedResuspendedSample={
-				(* we know the pelleted samples are always going to be in 50ml falcon tubes *)
-					Define[
-						Name -> "My Container",
-						Container -> Model[Container,Vessel,"50mL Tube"]
-					],
-					Transfer[
-						Source -> Model[Sample,"Milli-Q water"],
-						Destination -> "My Container",
-						Amount -> 1 Milliliter
-					]
-				};
-
-				(* combine the Define and Transfer primitives with the polished mix primitives *)
-				Join[definedResuspendedSample,mixPrimitivesWithSample]
-
-			]
-		]],resolvedResuspensionMixPrimitives
+		{cleavages, resuspensionMixTypes, resuspensionMixTimes, numberOfResuspensionMixess, Lookup[allRoundedPNAOptionsAssociation, ResuspensionMixPrimitives]}
 	];
 
-	(* Call ExperimentSampleManipulation to figure out whether our primitives are OK *)
-	(* We only do this check if we haven't already thrown another resuspension or cleavage error *)
-	{smOptions,smTests}=Transpose[Map[If[(NullQ[#]||Length[unneededResuspensionOptions]>0||Length[unneededCleavageOptions]>0),{Null,Null},
-		If[gatherTests,
-			Module[{options,tests},
-				{options,tests}=ExperimentSampleManipulation[#,LiquidHandlingScale->MacroLiquidHandling,Output->{Options,Tests}
-				];
-				If[RunUnitTest[<|"Tests"->tests|>,OutputFormat->SingleBoolean,Verbose->False],
-					{options,tests},
-					{$Failed,tests}
-				]
-			],
-			{
-				Check[
-					ExperimentSampleManipulation[#,LiquidHandlingScale->MacroLiquidHandling,Output->Options],
-					$Failed
-				],
-				{}
-			}
-		]]&,reuspensionMixManipulationList]];
+	(* == check whether the resolved Primitives pass the ExperimentManualSamplePreparation call *)
 
-	incompatibleMixPrimitivesOptions=If[MemberQ[smOptions,$Failed]&&messages,
-		Message[Error::IncompatibleResuspensionMixPrimitives,PickList[myInputs,smOptions,$Failed],PickList[resolvedResuspensionMixPrimitives,smOptions,$Failed]];
+	(* mapping over the samples, we make a list of primitives that we can check with ValidExperimentMSPQ below *)
+	resuspensionMixPrimitiveList = Map[
+		Function[{primitives},
+			If[NullQ[primitives],
+				Null,
+				Module[{heads, associations, associationsWithSample, mixPrimitivesWithSample, labelSamplePrimitive},
+
+					(* extract the heads and the associations from the list of primitives *)
+					heads = Head /@ primitives;
+					associations = First /@ primitives;
+
+					(* fix the primitives so we can call ExpMSP below - pipette primitives need MaxVolume, and all primitives need Sample keys *)
+					associationsWithSample = If[MatchQ[Lookup[#, MixType], Pipette],
+						Prepend[#, {Sample -> "My Container", MixVolume -> 0.5 * Milliliter}],
+						Prepend[#, {Sample -> "My Container"}]
+					]& /@ associations;
+
+					(* wrap the heads back around the associations to get a list of primitives *)
+					mixPrimitivesWithSample = MapThread[#1[#2]&, {heads, associationsWithSample}];
+
+					(* construct a LabelContainer and Transfer primitive that we can sneak into the list of primitives *)
+					labelSamplePrimitive = {
+						(* we know the pelleted samples are always going to be in 50ml falcon tubes *)
+						LabelSample[
+							Sample -> Model[Sample, "Milli-Q water"],
+							Amount -> 1 * Milliliter,
+							Label -> "My Sample",
+							Container -> Model[Container, Vessel, "50mL Tube"],
+							ContainerLabel -> "My Container"
+						]
+					};
+
+					(* combine the Define and Transfer primitives with the polished mix primitives *)
+					Join[labelSamplePrimitive, mixPrimitivesWithSample]
+
+				]
+			]
+		],
+		resolvedResuspensionMixPrimitives
+	];
+
+	(* Call ExperimentMSP to figure out whether our primitives are OK *)
+	(* We only do this check if we haven't already thrown another resuspension or cleavage error *)
+	{mspOptions, mspTests} = Transpose[Map[
+		If[(NullQ[#] || Length[unneededResuspensionOptions] > 0 || Length[unneededCleavageOptions] > 0),
+			{Null, Null},
+			If[gatherTests,
+				Module[{options, tests, flattenedTests},
+					{options, tests} = ExperimentManualSamplePreparation[#, Output -> {Options, Tests}];
+
+					(* msp will return tests in an indexed format index matching to the unit operations, so we are flattening here *)
+					flattenedTests = Flatten[tests];
+
+					If[RunUnitTest[<|"Tests" -> flattenedTests|>, OutputFormat -> SingleBoolean, Verbose -> False],
+						{options, flattenedTests},
+						{$Failed, flattenedTests}
+					]
+				],
+				{
+					Check[
+						ExperimentManualSamplePreparation[#, Output -> Options],
+						$Failed
+					],
+					{}
+				}
+			]
+		]&,
+		resuspensionMixPrimitiveList
+	]];
+
+	incompatibleMixPrimitivesOptions=If[MemberQ[mspOptions,$Failed]&&messages,
+		Message[Error::IncompatibleResuspensionMixPrimitives,PickList[myInputs,mspOptions,$Failed],PickList[resolvedResuspensionMixPrimitives,mspOptions,$Failed]];
 		{ResuspensionMixPrimitives},
 		{}
 	];
 
 	(* If we are gathering tests, create tests with the appropriate results. *)
-	incompatibleMixPrimitivesTest=If[gatherTests,
+	incompatibleMixPrimitivesTest= If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{nonPassingInputs, passingInputs, passingInputsTest, failingInputsTest},
 
-	(* We're gathering tests. Create the appropriate tests. *)
-		Module[{nonPassingInputs,passingInputs,passingInputsTest,failingInputsTest},
-
-		(* Get the inputs that pass this test. *)
-			nonPassingInputs=If[!MemberQ[smOptions,$Failed],{},PickList[myInputs,smOptions,$Failed]];
-			passingInputs=Complement[myInputs,nonPassingInputs];
+			(* Get the inputs that pass this test. *)
+			nonPassingInputs = If[!MemberQ[mspOptions, $Failed], {}, PickList[myInputs, mspOptions, $Failed]];
+			passingInputs = Complement[myInputs, nonPassingInputs];
 
 			(* Create a test for the passing inputs. *)
-			passingInputsTest=If[Length[passingInputs]>0,
-				Test["For the inputs "<>ObjectToString[passingInputs,Cache->cache]<>", the primitives describing the mixing steps to resuspend the cleaved peptide strands are valid:",True,True],
+			passingInputsTest = If[Length[passingInputs] > 0,
+				Test["For the inputs "<>ObjectToString[passingInputs, Cache -> cache]<>", the primitives describing the mixing steps to resuspend the cleaved peptide strands are valid:", True, True],
 				Nothing
 			];
 			(* Create a test for the non-passing inputs. *)
-			failingInputsTest=If[Length[nonPassingInputs]>0,
-				Test["For the inputs "<>ObjectToString[nonPassingInputs,Cache->cache]<>", the primitives describing the mixing steps to resuspend the cleaved peptide strands are valid:",True,False],
+			failingInputsTest = If[Length[nonPassingInputs] > 0,
+				Test["For the inputs "<>ObjectToString[nonPassingInputs, Cache -> cache]<>", the primitives describing the mixing steps to resuspend the cleaved peptide strands are valid:", True, False],
 				Nothing
 			];
 			(* Return our created tests. *)
 			{
 				passingInputsTest,
 				failingInputsTest
+			}
+		],
+		(* We aren't gathering tests. No tests to create. *)
+		{}
+	];
+
+	(* check that we don't have conflicting capping options *)
+	If[AllTrue[numberOfCappingss, EqualTo[0]]&&MemberQ[Lookup[allRoundedPNAOptionsAssociation,InitialCapping],True],
+		Message[Warning::NoCappingSet]
+	];
+	ambiguousInitialCappingTest=If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{passingInputsTest, failingInputTest},
+			(* Create a test for the non-passing inputs. *)
+			failingInputTest = If[AllTrue[numberOfCappingss, EqualTo[0]]&&MemberQ[Lookup[allRoundedPNAOptionsAssociation,InitialCapping],True],
+				Test["InitialCapping is set with a non-zero NumberOfCappings:", True, False],
+				Nothing
+			];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest = If[!(AllTrue[numberOfCappingss, EqualTo[0]]&&MemberQ[Lookup[allRoundedPNAOptionsAssociation,InitialCapping],True]),
+				Test["InitialCapping is set with a non-zero NumberOfCappings:", True, True],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				failingInputTest
 			}
 		],
 		(* We aren't gathering tests. No tests to create. *)
@@ -3773,16 +3343,17 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		unneededStorageOptions, neededStorageOptions,
 		unneededMethanolShrinkOptions, neededMethanolShrinkOptions,
 		unneededIsopropanolShrinkOptions, neededIsopropanolShrinkOptions,
-		unknowDownloadMonomerOptions, unknownMonomerOptions,
+		unavailableDownloadMonomerOptions, unavailableMonomerOptions,
 	(* option conflicts revolving around the Resin *)
 		wrongResinOptions, needResinOptions, wrongDResinOptions, mismatchDResinOptions,
+		swellResinNeededOptions,
 		unneededResuspensionOptions,
 		incompatibleMixPrimitivesOptions
 	}]];
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs] > 0,
-		Message[Error::InvalidInput, ObjectToString[invalidInputs]]
+		Message[Error::InvalidInput, ObjectToString[invalidInputs,Cache->cache]]
 	];
 
 
@@ -3792,13 +3363,13 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 		Message[Error::InvalidOption, invalidOptions]
 	];
 
-	(* === CONSTRUCT THE RESOLVED OTPIONS OR TESTS depending on the output specifiction === *)
+	(* === CONSTRUCT THE RESOLVED OPTIONS OR TESTS depending on the output specification === *)
 
 	(* resolve the Email option if Automatic *)
 	resolvedEmail = If[!MatchQ[email, Automatic], email, If[And[upload, MemberQ[output, Result]], True, False]];
 
 	(* resolve Operator so that we can use it for making operator resources later *)
-	resolvedOperator = If[NullQ[operator], Model[User, Emerald, Operator, "Level 3"], operator];
+	resolvedOperator = If[NullQ[operator], Model[User, Emerald, Operator, "id:n0k9mG8PA8B6"] (* "Model[User, Emerald, Operator, \"Level 3\"]" *), operator];
 
 	resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions];
 
@@ -3906,7 +3477,8 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 			ParentProtocol -> parentProtocol,
 			Upload -> upload,
 			Template -> template,
-			Confirm -> confirm
+			Confirm -> confirm,
+			CanaryBranch -> canaryBranch
 		},
 			resolvedPostProcessingOptions
 		}],
@@ -3915,16 +3487,17 @@ resolveExperimentPeptideSynthesisOptions[myInputs:{ObjectP[Model[Sample]]...},my
 			unneededSwellOptionsTest,
 			unneededDeprotonationOptionsTest, neededDownloadResinOptionsTest,
 			unneededDownloadResinOptionsTest, neededDownloadResinOptionsTest,
-			unknownMonomerErrorsTest, unknownDownloadMonomerErrorsTest,
+			unavailableMonomerErrorsTest, unavailableDownloadMonomerErrorsTest,
 			unneededCleavageOptionsTest, neededCleavageOptionsTest,
 			unneededMethanolShrinkOptionsTest, neededMethanolShrinkOptionsTest,
 			unneededIsopropanolShrinkOptionsTest, neededIsopropanolShrinkOptionsTest,
 			unneededStorageOptionsTest, neededStorageOptionsTest,
-			finalCapButNoFinalDeprotectionTest,
-			(* tests revolving around conflicting Resin specifiction *)
+			finalCapButNoFinalDeprotectionTest, ambiguousInitialCappingTest,
+			(* tests revolving around conflicting Resin specification *)
 			wrongResinInvalidTests, needResinInvalidTests, wrongDResinInvalidTests, mismatchDResinTests,
+			swellResinNeededTests,
 			(* tests revolving around the resuspension primitives *)
-			smTests,unneededResuspensionTest
+			mspTests,unneededResuspensionTest
 		}]
 	}
 ];
@@ -3948,14 +3521,14 @@ peptideSynthesisResourcePackets[
 	myResourcePacketOptions:OptionsPattern[]
 ]:=Module[
 	{outputSpecification,output,gatherTests,messages,operator,primitives,downloadResinOption,inheritedCache,
-		downloadMonomers,downloadMonomerVolumes,oligomerPackets,maxBottleVolume,monomerDeadVolume,strandModelPackets,oligomerMoleculePackets,containerPackets,instrumentPackets,resinPackets,
-		oligoObjects,strands,maxStrandLength,synthesisTimeEstimate,synthesisStrategy,downloadResins,deprotonations,initialDeprotections,
+		downloadMonomers,downloadMonomerVolumes,maxBottleVolume,monomerDeadVolume,strandModelPackets,oligomerMoleculePackets,containerPackets,instrumentPackets,resinPackets,
+		oligoObjects,strands,maxStrandLength,synthesisTimeEstimate,synthesisStrategy,downloadResins,deprotonations,
 		finalDeprotections,finalCaps,synthesisMonomerPartitions,reagentPositions,synthesisMonomerResources,synthCount,cleavages,
-		swells,cleavedCount,nonCleavedCount,cleavageHappening,bulkMonomers,bulkMonomerVolumes,washVolumes,swellVolumes,
+		swells,monomerPreactivation,cleavedCount,nonCleavedCount,cleavageHappening,bulkMonomerVolumes,washVolumes,swellVolumes,
 		swellTimes,methanolWashes,methanolWashVolumes,methanolWashTimes,isopropanolWashes,isopropanolWashVolumes,
 		isopropanolWashTimes,cleavageVolumes,cleavageTimes,numberOfCleavageCyclesList,numberOfSwellCyclesList,washSolution,
 		swellSolution,monomers,downloadActivationSolution,activationSolution,cappingSolution,deprotectionSolution,deprotonationSolution,
-		methanol,isopropanol,cleavageSolution,recoupMonomersContainerResources,singleShotMonomerResource,downloadMonomerResources,resinAmounts,resinStates,resinByAmount,
+		methanol,isopropanol,cleavageSolution,recoupMonomersContainerResources,singleShotMonomerResource,resinAmounts,resinStates,resinByAmount,
 		uniqueResinAmounts,resinResource,resinResourceIndexed,solventVessel,washSolventVolume,validTotalWashVolume,
 		insufficientWashVolumeTest,washResource,cappingResource,deprotectionResource,activationID,activationResource,
 		deprotonationResource,swellSolventVolume,swellResource,validTotalSwellVolume,insufficientSwellVolumeTest,cleavageResource,
@@ -3965,7 +3538,7 @@ peptideSynthesisResourcePackets[
 		uncleavedReactionVesselsResources,cleavedReactionVesselsResources,reactionVesselRackResource,numberOfCaps,septumCapsResource,
 		stopcocksResources,triturationSolutionResource,storageSolutionResource,resuspensionBufferResource,triturationBeakerResource,
 		cleaningSolutionsResources,bottleReplacements,protocolPacket,synthesisPositions,resourcePositions,allResources,fulfillable,frqTests,previewRule,optionsRule,testsRule,
-		resultRule,collapsedFields,expandedFields,validNumberOfReagentPositions,validNumberOfReagentPositionsTest
+		resultRule,validNumberOfReagentPositions,validNumberOfReagentPositionsTest
 	},
 
 (* Determine the requested output format of this function. *)
@@ -4040,9 +3613,9 @@ peptideSynthesisResourcePackets[
 	(* look at all the other Coupling primitives *)
 	bulkMonomerVolumes=Flatten[MapThread[
 		Function[{strandIndex,download,steps},
-			Module[{onlyCoupling,onlyRelevantCoupling,monomerReagent,monomerVolume,numberOfCouplings},
+			Module[{onlyRelevantCoupling,monomerReagent,monomerVolume,numberOfCouplings},
 			(* grab all coupling primitives (paying attention to whether downloading or not) *)
-			(* get either all, or rest of coupling primtivies depending on whether there is a download *)
+			(* get either all, or rest of coupling primitives depending on whether there is a download *)
 				onlyRelevantCoupling=With[
 					{onlyCoupling=Cases[Flatten[steps],_Coupling]},
 					If[download,Rest[onlyCoupling],onlyCoupling]
@@ -4067,7 +3640,12 @@ peptideSynthesisResourcePackets[
 	synthesisMonomerPartitions=partitionSynthesisMonomerVolumes[primitives,maxBottleVolume,monomerDeadVolume];
 
 	(* == add up all the volumes of all the reagents and where they're going to g on the synth, will use this later to make all the resources == *)
-	{reagentPositions,validNumberOfReagentPositions,validNumberOfReagentPositionsTest}=Module[{sameActivation,downloadActivationSolutionAdded,methanolAdded,isopropanolAdded,monomerPositions,solventPositions,primitivesAssociation,totalVolume,notEnoughPositions,neededMonomerPositions,neededNonMonomerPositionsm,validNumberOfAAPositions,validNumberOfAAPositionsTest,neededNonMonomerPositions},
+	{reagentPositions,validNumberOfReagentPositions,validNumberOfReagentPositionsTest}=Module[
+		{
+			sameActivation,downloadActivationSolutionAdded,methanolAdded,isopropanolAdded,monomerPositions,solventPositions,
+			primitivesAssociation,totalVolume,notEnoughPositions,neededMonomerPositions,
+			validNumberOfAAPositions,validNumberOfAAPositionsTest,neededNonMonomerPositions
+		},
 
 		primitivesAssociation=Last[#]&/@Flatten[primitives];
 		totalVolume[in_,field_]:=totalVolume[in,field,Volume];
@@ -4096,7 +3674,7 @@ peptideSynthesisResourcePackets[
 			Nothing
 		];
 
-		(* if isopropnal wash is happening, add isopropanl to AA28 position*)
+		(* if Isopropanol wash is happening, add Isopropanol to AA28 position*)
 		isopropanolAdded=If[Not[NullQ[isopropanol]],
 			Rule["AA28",Association["Reagent"->isopropanol[Object],"Amount"->Max[totalVolume[isopropanol,Sample],100 Milliliter],"Monomer"->False,"SingleShot"->False]],
 			Nothing
@@ -4126,7 +3704,7 @@ peptideSynthesisResourcePackets[
 			Message[Error::TooManyMonomers]
 		];
 
-		(* if we're collecting tests, make sure to add one for too many AA position requred*)
+		(* if we're collecting tests, make sure to add one for too many AA position required*)
 		validNumberOfAAPositionsTest=If[gatherTests,
 			Test[
 				"The number of monomer positions needed to perform the synthesis cannot exceed the maximum number of positions available on the instrument",
@@ -4137,7 +3715,7 @@ peptideSynthesisResourcePackets[
 		];
 
 		solventPositions={
-		(* additional 15mL of wash solutiont of wash the PV as part of the preactivation process*)
+		(* additional 15mL of wash solution of wash the PV as part of the preactivation process*)
 			"SLVT1"->Association["Reagent"->washSolution[Object],"Amount"->Total[{
 			(* for all washes*)
 				totalVolume[washSolution,Sample],
@@ -4184,7 +3762,7 @@ peptideSynthesisResourcePackets[
 
 	recoupMonomersContainerResources=If[
 		Lookup[myResolvedOptions,RecoupMonomers],
-		Table[Link[Resource[Name->ToString[Unique[]],Sample->Model[Container,Vessel,"50mL Tube"]]],Length[synthesisMonomerResources]],
+		Table[Link[Resource[Name->ToString[Unique[]],Sample->Model[Container, Vessel, "id:bq9LA0dBGGR6"] (* "Model[Container,Vessel,\"50mL Tube\"]" *)]],Length[synthesisMonomerResources]],
 		{}
 	];
 
@@ -4238,7 +3816,7 @@ peptideSynthesisResourcePackets[
 	resinResourceIndexed=Lookup[myResolvedOptions,Resin]/.AssociationThread[Keys[uniqueResinAmounts],resinResource];
 
 
-	(* helps determien which bottle we should use for the bulk reagents*)
+	(* helps determine which bottle we should use for the bulk reagents*)
 	solventVessel[amount_]:=Switch[amount,
 		LessEqualP[950 Milliliter],
 		Model[Container, Vessel, "id:GmzlKjY5EEME"],
@@ -4251,14 +3829,14 @@ peptideSynthesisResourcePackets[
 
 	(* if the total volume exceeds 19 Liters, we set the error boolean and throw an error message but only if we're not collecting tests *)
 	validTotalWashVolume=If[washSolventVolume> 19 Liter&&!gatherTests,
-		Message[Error::InsufficientSolventVolume, washSolventVolume, washSolution, 19 Liter];
+		Message[Error::InsufficientSolventVolume, washSolventVolume, ObjectToString[washSolution,Cache->inheritedCache], 19 Liter];
 		False,
 		True
 	];
 
 	(* If we're collecting tests, make the appropriate test *)
 	insufficientWashVolumeTest=If[gatherTests,
-		Test["The total volume of wash solvent needed, "<>ObjectToString[washSolution]<>", is less than can be currently loaded onto the synthesizer:",True,washSolventVolume < 19 Liter],
+		Test["The total volume of wash solvent needed, "<>ObjectToString[washSolution,Cache->inheritedCache]<>", is less than can be currently loaded onto the synthesizer:",True,washSolventVolume < 19 Liter],
 		Nothing
 	];
 
@@ -4344,7 +3922,7 @@ peptideSynthesisResourcePackets[
 
 	(* throw error if the total volume is above 4 Liters, but only if we're not collecting tests *)
 	validTotalSwellVolume=If[swellSolventVolume> 4 Liter&&!gatherTests,
-		Message[Error::InsufficientSolventVolume, swellSolventVolume, swellSolution, 4 Liter];
+		Message[Error::InsufficientSolventVolume, swellSolventVolume, ObjectToString[washSolution,Cache->cache], 4 Liter];
 		False,
 		True
 	];
@@ -4407,7 +3985,7 @@ peptideSynthesisResourcePackets[
 			Resource[Name->ToString[Unique[]],
 				Sample->methanol,
 				Amount->Min[{(reagentPositions["AA27"]["Amount"])+(100 Milliliter), 400 Milliliter}],
-				Container->Model[Container,Vessel,"400mL Reagent Bottle"],
+				Container->Model[Container, Vessel, "id:pZx9jonGJJB9"] (* "Model[Container,Vessel,\"400mL Reagent Bottle\"]" *),
 				RentContainer->True
 			]
 		],
@@ -4421,7 +3999,7 @@ peptideSynthesisResourcePackets[
 			Resource[Name->ToString[Unique[]],
 				Sample->isopropanol,
 				Amount->(reagentPositions["AA28"]["Amount"])+(50 Milliliter),
-				Container->Model[Container,Vessel,"400mL Reagent Bottle"],
+				Container->Model[Container, Vessel, "id:pZx9jonGJJB9"] (* "Model[Container,Vessel,\"400mL Reagent Bottle\"]" *),
 				RentContainer->True
 			]
 		],
@@ -4431,8 +4009,8 @@ peptideSynthesisResourcePackets[
 	(* for strands that are not cleaved, we use 15mL tubes, for cleaved strands we use 50mL tubes (since the same as collection vessels) *)
 	containersOutResources=Map[
 		If[#,
-			Link[Resource[Name->ToString[Unique[]],Sample->Model[Container,Vessel,"50mL Tube"]]],
-			Link[Resource[Name->ToString[Unique[]],Sample->Model[Container, Vessel, "id:xRO9n3vk11pw"]]]
+			Link[Resource[Name->ToString[Unique[]],Sample->Model[Container, Vessel, "id:bq9LA0dBGGR6"] (* "Model[Container,Vessel,\"50mL Tube\"]" *)]],
+			Link[Resource[Name->ToString[Unique[]],Sample->Model[Container, Vessel, "id:xRO9n3vk11pw"] (* "Model[Container, Vessel, \"id:xRO9n3vk11pw\"]" *)]]
 		]&,cleavages
 	];
 
@@ -4453,7 +4031,7 @@ peptideSynthesisResourcePackets[
 	cleaningFumeHoodResource=Link[Resource[Name->ToString[Unique[]],Instrument->fumeHoodModels,Time->5 Minute]];
 
 	vacuumManifoldResource=If[ContainsAny[downloadResins,{False}],
-		Link[Resource[Name->ToString[Unique[]],Instrument->Model[Instrument,VacuumManifold,"id:aXRlGnZmOdVm"],Time->15 Minute]],
+		Link[Resource[Name->ToString[Unique[]],Instrument->Model[Instrument, VacuumManifold, "id:aXRlGnZmOdVm"] (* "Model[Instrument,VacuumManifold,\"id:aXRlGnZmOdVm\"]" *),Time->15 Minute]],
 		Null
 	];
 
@@ -4465,20 +4043,20 @@ peptideSynthesisResourcePackets[
 	];
 
 	neutralizerResource=If[cleavageHappening,
-		Link[Resource[Name->ToString[Unique[]],Sample->Model[Sample,"id:wqW9BP4Y0664"],Amount->45 Gram,Container->Model[Container, Vessel, "100 mL Glass Bottle"]]],
+		Link[Resource[Name->ToString[Unique[]],Sample->Model[Sample, "id:wqW9BP4Y0664"] (* "Model[Sample,\"id:wqW9BP4Y0664\"]" *),Amount->45 Gram,Container->Model[Container, Vessel, "id:jLq9jXvA8ewR"] (* "Model[Container, Vessel, \"100 mL Glass Bottle\"]" *)]],
 		Null
 	];
 
-	reactionVesselsResources=Table[Link[Resource[Name->ToString[Unique[]],Sample->Model[Container,ReactionVessel,SolidPhaseSynthesis, "id:XnlV5jmaK6ZN"]]],synthCount];
+	reactionVesselsResources=Table[Link[Resource[Name->ToString[Unique[]],Sample->Model[Container, ReactionVessel, SolidPhaseSynthesis, "id:XnlV5jmaK6ZN"] (* "Model[Container,ReactionVessel,SolidPhaseSynthesis, \"id:XnlV5jmaK6ZN\"]" *)]],synthCount];
 	uncleavedReactionVesselsResources=Pick[reactionVesselsResources,cleavages,False];
 	cleavedReactionVesselsResources=Pick[reactionVesselsResources,cleavages,True];
 
 	reactionVesselRackResource=If[synthCount>=7,
 		{
-			Link[Resource[Name->ToString[Unique[]],Sample->Model[Container,Rack,"id:J8AY5jwEazxE"], Rent -> True]],
-			Link[Resource[Name->ToString[Unique[]],Sample->Model[Container,Rack,"id:J8AY5jwEazxE"], Rent -> True]]
+			Link[Resource[Name->ToString[Unique[]],Sample->Model[Container, Rack, "id:J8AY5jwEazxE"] (* "Model[Container,Rack,\"id:J8AY5jwEazxE\"]" *), Rent -> True]],
+			Link[Resource[Name->ToString[Unique[]],Sample->Model[Container, Rack, "id:J8AY5jwEazxE"] (* "Model[Container,Rack,\"id:J8AY5jwEazxE\"]" *), Rent -> True]]
 		},
-		{Link[Resource[Name->ToString[Unique[]],Sample->Model[Container,Rack,"id:J8AY5jwEazxE"], Rent -> True]]}
+		{Link[Resource[Name->ToString[Unique[]],Sample->Model[Container, Rack, "id:J8AY5jwEazxE"] (* "Model[Container,Rack,\"id:J8AY5jwEazxE\"]" *), Rent -> True]]}
 	];
 
 
@@ -4494,9 +4072,9 @@ peptideSynthesisResourcePackets[
 		}
 	];
 
-	septumCapsResource=Table[Link[Resource[Name->ToString[Unique[]],Sample->Model[Item, Cap, "14/20 Joint Septum, Rubber"]]],numberOfCaps];
+	septumCapsResource=Table[Link[Resource[Name->ToString[Unique[]],Sample->Model[Item, Cap, "id:dORYzZJoJV3q"] (* "Model[Item, Cap, \"14/20 Joint Septum, Rubber\"]" *)]],numberOfCaps];
 
-	stopcocksResources=Table[Link[Resource[Name->ToString[Unique[]],Sample->Model[Item, Cap, "14/20 Joint Septum, Rubber"]]],synthCount];
+	stopcocksResources=Table[Link[Resource[Name->ToString[Unique[]],Sample->Model[Item, Cap, "id:dORYzZJoJV3q"] (* "Model[Item, Cap, \"14/20 Joint Septum, Rubber\"]" *)]],synthCount];
 
 	triturationSolutionResource=If[cleavageHappening,
 		Link[
@@ -4514,7 +4092,7 @@ peptideSynthesisResourcePackets[
 		Link[Resource[
 			Name->ToString[Unique[]],Sample->Lookup[myResolvedOptions,StorageBuffer],
 			Amount->Total[DeleteCases[Lookup[myResolvedOptions,StorageVolume],Null]]*1.2,
-			Container->Model[Container, Vessel, "500mL Glass Bottle"],
+			Container->Model[Container, Vessel, "id:aXRlGnZmOONB"] (* "Model[Container, Vessel, \"500mL Glass Bottle\"]" *),
 			RentContainer->True
 		]
 		],
@@ -4525,7 +4103,7 @@ peptideSynthesisResourcePackets[
 		Link[Resource[
 			Name->ToString[Unique[]],Sample->Lookup[myResolvedOptions,ResuspensionBuffer],
 			Amount->Total[DeleteCases[Lookup[myResolvedOptions,ResuspensionVolume],Null]]*1.2,
-			Container->Model[Container, Vessel, "50mL Tube"]
+			Container->Model[Container, Vessel, "id:bq9LA0dBGGR6"] (* "Model[Container, Vessel, \"50mL Tube\"]" *)
 		]
 		],
 		Null
@@ -4534,7 +4112,7 @@ peptideSynthesisResourcePackets[
 	triturationBeakerResource = If[cleavageHappening,
 		Link[Resource[
 			Name->ToString[Unique[]],
-			Sample->Model[Container,Vessel,"id:R8e1PjRDbbOv"],
+			Sample->Model[Container, Vessel, "id:R8e1PjRDbbOv"] (* "Model[Container,Vessel,\"id:R8e1PjRDbbOv\"]" *),
 			Rent->True]
 		],
 		Null
@@ -4542,14 +4120,14 @@ peptideSynthesisResourcePackets[
 
 	cleaningSolutionsResources ={
 		Link[Resource[Name->ToString[Unique[]],
-			Sample->Model[Sample, "Dichloromethane, Reagent Grade"],
-			Container->Model[Container,Vessel,"Amber Glass Bottle 4 L"],
+			Sample->Model[Sample, "id:AEqRl954GJ0d"] (* "Model[Sample, \"Dichloromethane, Reagent Grade\"]" *),
+			Container->Model[Container, Vessel, "id:Vrbp1jG800Zm"] (* "Model[Container,Vessel,\"Amber Glass Bottle 4 L\"]" *),
 			Amount->2.1 Liter,
 			RentContainer->True
 		]],
 		Link[Resource[Name->ToString[Unique[]],
-			Sample->Model[Sample, "Dichloromethane, Reagent Grade"],
-			Container->Model[Container,Vessel,"1L SymphonyX Bottle"],
+			Sample->Model[Sample, "id:AEqRl954GJ0d"] (* "Model[Sample, \"Dichloromethane, Reagent Grade\"]" *),
+			Container->Model[Container, Vessel, "id:GmzlKjY5EEME"] (* "Model[Container,Vessel,\"1L SymphonyX Bottle\"]" *),
 			Amount->375 Milliliter,
 			RentContainer->True
 		]]
@@ -4561,10 +4139,10 @@ peptideSynthesisResourcePackets[
 	(*used to keep track of which strand is which *)
 		uniqueIDs=Table[Unique[],Length[primitives]];
 
-		(* because cleavages have a seperate program, we don't care about those when comparing between synths*)
+		(* because cleavages have a separate program, we don't care about those when comparing between synths*)
 		primitivesWithoutCleavage=MapThread[If[#2,Most[#1],#1]&,{primitives,cleavages}];
 
-		(* get all the insitu primitives and ids and the exsitu ids*)
+		(* get all the in-situ primitives and ids and the ex-situ ids*)
 		nonExSituPrimitives=PickList[primitivesWithoutCleavage,preactivations,Alternatives[InSitu,None]];
 		nonExSituIDs=PickList[uniqueIDs,preactivations,Alternatives[InSitu,None]];
 		exSituIDs=PickList[uniqueIDs,preactivations,ExSitu];
@@ -4583,7 +4161,7 @@ peptideSynthesisResourcePackets[
 		groupStrands[done_,{}]:=done;
 
 		(*
-			bin strands into groups based on their prefix similairy
+			bin strands into groups based on their prefix similarity
 			we're comparing the longest strand to the next longest (or same length) strand, if the part at which they overlap
 			at is the same (using hash), they they could be made in tandem
 		*)
@@ -4614,7 +4192,7 @@ peptideSynthesisResourcePackets[
 						Drop[rest,position]
 					]
 				],
-			(* if we couldn't find a match, then make this a singelton and pass on the rest to be grouped*)
+			(* if we couldn't find a match, then make this a singleton and pass on the rest to be grouped*)
 				groupStrands[
 					Join[done,{{longest}}],
 					rest
@@ -4628,7 +4206,7 @@ peptideSynthesisResourcePackets[
 		(*take as my RV positions as we have ExSitu synths*)
 		rvPositions=Take[Map["RV"<>ToString[#]&,Range[1,12]],Length[exSituIDs]];
 
-		(*assing an RV positions to each exsitu synth*)
+		(*assign an RV positions to each ex-situ synth*)
 		rvPositionsRules=MapThread[Rule[#1,#2]&,{exSituIDs,rvPositions}];
 
 		(*prep tandem pv-rv positions for all remaining tandem sites*)
@@ -4740,7 +4318,7 @@ peptideSynthesisResourcePackets[
 		TriturationCentrifugationRate -> If[NullQ[Lookup[myResolvedOptions, NumberOfTriturationCycles, Null]], Null, 3000 RPM],
 		TriturationCentrifugationForce -> If[NullQ[Lookup[myResolvedOptions, NumberOfTriturationCycles, Null]], Null, 2050 GravitationalAcceleration],
 		Replace[NumbersOfResuspensionMixes] -> Lookup[myResolvedOptions, NumberOfResuspensionMixes, {}],
-		Replace[ResuspensionMixPrimitives] -> Lookup[myResolvedOptions,ResuspensionMixPrimitives,{}],
+(*		Replace[ResuspensionMixPrimitives] -> Lookup[myResolvedOptions,ResuspensionMixPrimitives,{}],*)
 		Replace[ResuspensionVolumes] -> DeleteCases[Lookup[myResolvedOptions, ResuspensionVolume, {}], Null],
 		Replace[StorageVolumes] -> DeleteCases[Lookup[myResolvedOptions, StorageVolume, {}], Null],
 
@@ -4792,7 +4370,7 @@ peptideSynthesisResourcePackets[
 			{"Synthesizing", synthesisTimeEstimate, "Oligomers are synthesized.", Link[Resource[Operator -> operator, Time -> synthesisTimeEstimate]]},
 			{"Cleaving", 12 Hour, "Oligomers are cleaved from their solid resin supports.", Link[Resource[Operator -> operator, Time -> 12 Hour]]},
 			{"Triturating", 12 Hour, "Crude oligomers are washed with solvent,pelleted,and the supernatant is removed.", Link[Resource[Operator -> operator, Time -> 12 Hour]]},
-			{"Resuspending", 4 Hour, "The oligomers are resuspened in buffer.", Link[Resource[Operator -> operator, Time -> 4 Hour]]},
+			{"Resuspending", 4 Hour, "The oligomers are resuspended in buffer.", Link[Resource[Operator -> operator, Time -> 4 Hour]]},
 			{"Sample Post-Processing", 45 Minute, "Any measuring of volume,weight,or sample imaging post experiment is performed.", Link[Resource[Operator -> operator, Time -> 45 Minute]]},
 			{"Cleaning Up Materials", 12 Hour, "The synthesizer deck is cleared,and the samples are put into storage.", Link[Resource[Operator -> operator, Time -> 12 Hour]]}
 		}
@@ -4873,7 +4451,7 @@ ValidExperimentPeptideSynthesisQ[myInputs:ListableP[Alternatives[ObjectP[{Model[
 	listedOptions = ToList[myOptions];
 	listedSamples = ToList[myInputs];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentPeptideSynthesis *)
@@ -4885,7 +4463,7 @@ ValidExperimentPeptideSynthesisQ[myInputs:ListableP[Alternatives[ObjectP[{Model[
 	allTests = If[MatchQ[pnaTests, $Failed],
 		{Test[initialTestDescription, False, True]},
 		Module[
-			{initialTest, validObjectBooleans, voqWarnings, testResults,isSampleQ},
+			{initialTest, validObjectBooleans, voqWarnings, isSampleQ},
 		(* generate the initial test, which we know will pass if we got this far (?) *)
 			initialTest = Test[initialTestDescription, True, True];
 			isSampleQ = MatchQ[#,ObjectP[]]&/@listedSamples;
@@ -4944,7 +4522,7 @@ ExperimentPeptideSynthesisOptions[myInputs:ListableP[Alternatives[ObjectP[{Model
 (* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	(* get only the options for ExperimentPeptideSynthesis *)
@@ -4976,7 +4554,7 @@ ExperimentPeptideSynthesisPreview[myInputs:ListableP[Alternatives[ObjectP[{Model
 (* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	ExperimentPeptideSynthesis[myInputs, Append[noOutputOptions, Output -> Preview]]
@@ -4996,7 +4574,7 @@ ValidSynthesisStepQ[myCycles:{Alternatives[_Washing,_Swelling,_Capping,_Deprotec
 	(*determine the type of synthesis step*)
 		stepType=Head[in];
 		stepMatter=KeyDrop[Last[in],{Preactivate,Preactivation,SingleShot}];
-		(* select the pattern to use for this rescoues *)
+		(* select the pattern to use for this resource *)
 		selectedPattern=Switch[stepType,
 			Swelling,SwellingP,
 			Washing,WashingP,

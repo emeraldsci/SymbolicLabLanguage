@@ -769,6 +769,19 @@ DefineTests[
 			}
 		],
 
+		Example[{Options,StickerSize,"Specify the size of a sticker to be Piggyback:"},
+		    PrintStickers[
+				Object[Sample, "id:kEJ9mqa154dV"],
+				StickerSize -> Piggyback,
+				Print -> False
+			],
+			{_NotebookObject},
+			TearDown :> {
+				NotebookClose /@ Notebooks["Sticker Printing Output"]
+			}
+		],
+
+
 		Example[
 			{Options, StickerModel, "Specify the particular Model[Item,Sticker] on which stickers should be printed:"},
 			PrintStickers[
@@ -899,6 +912,16 @@ DefineTests[
 				]
 			}
 		],
+		Example[{Messages,"StickerSizeTypeMismatch","Specifying a Piggyback StickerSize and Destination StickerType will produce an error:"},
+		    PrintStickers[
+				Object[Container, Plate, "id:M8n3rxYAoe1R"],
+				{{"A1"}, {"B2"}},
+				StickerSize -> Piggyback
+			],
+		    $Failed,
+		    Messages :> {PrintStickers::StickerSizeTypeMismatch}
+		],
+
 		Test[
 			"Won't print stickers for a plumbing connector the item doesn't have a connector for:",
 			PrintStickers[
@@ -1038,6 +1061,7 @@ DefineTests[
 					Border -> False,
 					FontFamily -> "Bitstream Vera Sans Mono",
 					FastTrack -> False,
+					Interactive -> False,
 					Cache -> {}
 				}
 			}
@@ -1143,6 +1167,7 @@ DefineTests[
 				Border -> False,
 				FontFamily -> "Bitstream Vera Sans Mono",
 				Output -> Notebook,
+				Interactive -> False,
 				FastTrack -> False,
 				Upload -> True,
 				Cache -> {}
@@ -1216,6 +1241,32 @@ DefineTests[
 			KeyValuePattern[Object -> Model[Item, Sticker, "id:WNa4ZjRDwv1V"]],
 			Stubs :> {
 				opsList=ReplaceRule[optDefaults, {StickerSize -> Large}]
+			}
+		],
+		Test[
+			"If StickerModel->Automatic, it is resolved appropriately if StickerSize is Piggyback:",
+			StickerModel /. resolvePrintStickersOptions[testCtrList, stickerModels, Object, opsList],
+			KeyValuePattern[Name -> "2in x 0.5in Piggyback Object Label with DataMatrix Barcode"],
+			Stubs :> {
+				opsList=ReplaceRule[optDefaults, {StickerSize -> Piggyback}]
+			}
+		],
+		Test[
+			"If StickerSize is Piggyback and StickerType is Destination, throw an error and return $Failed:",
+			resolvePrintStickersOptions[testCtrList, stickerModels, Destination, opsList],
+			$Failed,
+			Messages :> {PrintStickers::StickerSizeTypeMismatch},
+			Stubs :> {
+				opsList=ReplaceRule[optDefaults, {StickerSize -> Piggyback}]
+			}
+		],
+		Test[
+			"If the StickerSize of the given StickerModel is Piggyback and StickerType is Destination, throw an error and return $Failed:",
+			resolvePrintStickersOptions[testCtrList, stickerModels, Destination, opsList],
+			$Failed,
+			Messages :> {PrintStickers::StickerSizeTypeMismatch},
+			Stubs :> {
+				opsList=ReplaceRule[optDefaults, {StickerModel -> Model[Item, Sticker, "2in x 0.5in Piggyback Object Label with DataMatrix Barcode"]}]
 			}
 		]
 	},

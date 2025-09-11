@@ -43,7 +43,12 @@ DefineUsage[ExperimentGrowCrystal,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -67,7 +72,8 @@ DefineUsage[ExperimentGrowCrystal,
 			"ValidExperimentGrowCrystalQ",
 			"ExperimentAcousticLiquidHandling",
 			"ExperimentRoboticSamplePreparation",
-			"ExperimentTransfer"
+			"ExperimentTransfer",
+			"PlotCrystallizationImagingLog"
 		},
 		Author -> {"lige.tonggu", "thomas"}
 	}
@@ -116,7 +122,12 @@ DefineUsage[ExperimentGrowCrystalOptions,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -181,7 +192,12 @@ DefineUsage[ExperimentGrowCrystalPreview,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -249,7 +265,12 @@ DefineUsage[ValidExperimentGrowCrystalQ,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},

@@ -47,16 +47,6 @@ DefineObjectType[Object[Qualification,pHMeter], {
 			Headers -> {Standard -> "Standard", pHDistribution -> "pH Distribution", RSD -> "% Relative Standard Deviation", Passing -> "Passing"},
 			Category -> "Experimental Results"
 		},
-		MeasurementPrecisionNew -> {
-			Format -> Multiple,
-			Class -> {Probe->Link,Standard -> Link, pHDistribution -> Expression, RSD -> Real, Passing -> Boolean},
-			Pattern :> {Probe->_Link,Standard -> _Link, pHDistribution -> DistributionP[], RSD -> GreaterEqualP[0Percent], Passing -> BooleanP},
-			Relation -> {Probe->Object[Instrument,pHMeter]|Object[Part,pHProbe],Standard -> Object[Sample], pHDistribution -> Null, RSD -> Null, Passing -> Null},
-			Units -> {Probe-> None,Standard -> None, pHDistribution -> None, RSD -> Percent, Passing -> None},
-			Description -> "For each qualification sample, the pH distribution from replicate pH measurements, and whether or not the %RSD meets the MaxpHRSD criterion.",
-			Headers -> {Probe->"Probe",Standard -> "Standard", pHDistribution -> "pH Distribution", RSD -> "% Relative Standard Deviation", Passing -> "Passing"},
-			Category -> "Experimental Results"
-		},
 		MeasurementPrecisions -> {
 			Format -> Multiple,
 			Class -> {Probe->Link,Standard -> Link, pHDistribution -> Expression, RSD -> Real, Passing -> Boolean},
@@ -73,15 +63,6 @@ DefineObjectType[Object[Qualification,pHMeter], {
 			Pattern :> {Slope -> LessP[0 Millivolt], Ratio -> GreaterP[0], Passing -> BooleanP},
 			Units -> {Slope -> Millivolt, Ratio -> None, Passing -> None},
 			Headers -> {Slope -> "Slope", Ratio -> "Slope/Expected Slope", Passing -> "Passing"},
-			Description -> "The slope of the graph of millivolts vs. pH, it's ratio to the expected slope, and whether it falls within the min and max acceptable slopes.",
-			Category -> "Experimental Results"
-		},
-		SlopeNew -> {
-			Format -> Multiple,
-			Class -> {Probe->Link, Slope -> VariableUnit, Ratio -> Real, Passing -> Boolean},
-			Pattern :> {Probe->_Link, Slope -> Alternatives[LessP[0 Millivolt],GreaterP[0 Percent]], Ratio -> GreaterP[0], Passing -> BooleanP},
-			Relation -> {Probe->Object[Instrument,pHMeter]|Object[Part,pHProbe],Slope -> Null, Ratio -> Null, Passing -> Null},
-			Headers -> {Probe->"Probe", Slope -> "Slope", Ratio -> "Slope/Expected Slope", Passing -> "Passing"},
 			Description -> "The slope of the graph of millivolts vs. pH, it's ratio to the expected slope, and whether it falls within the min and max acceptable slopes.",
 			Category -> "Experimental Results"
 		},
@@ -113,16 +94,6 @@ DefineObjectType[Object[Qualification,pHMeter], {
 			Category -> "Experimental Results"
 		},
 		Offsets -> {
-			Format -> Multiple,
-			Class -> {Probe->Link, Offset -> Real, Passing -> Boolean},
-			Pattern :> {Probe->_Link, Offset -> VoltageP, Passing -> BooleanP},
-			Relation -> {Probe->Object[Instrument, pHMeter]|Object[Part,pHProbe],Offset -> Null,Passing -> Null},
-			Units -> {Probe->None,Offset -> Millivolt, Passing -> None},
-			Headers -> {Probe->"Probe",Offset -> "Offset", Passing -> "Passing"},
-			Description -> "The slope of the graph of millivolts vs. pH, it's ratio to the expected slope, and whether it falls within the min and max acceptable slopes.",
-			Category -> "Experimental Results"
-		},
-		OffsetNew -> {
 			Format -> Multiple,
 			Class -> {Probe->Link, Offset -> Real, Passing -> Boolean},
 			Pattern :> {Probe->_Link, Offset -> VoltageP, Passing -> BooleanP},
@@ -192,6 +163,71 @@ DefineObjectType[Object[Qualification,pHMeter], {
 			Pattern :> SamplePreparationP,
 			Description -> "The primitives used by Sample Manipulation to generate the pH Standards.",
 			Category -> "Sample Preparation"
+		},
+		WashSolution->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Sample]|Model[Sample],
+			Description->"The sample that are used to wash the probe(s) by submerging it in robotic pHMeter qualification.",
+			Category->"Cleaning"
+		},
+		WasteBeaker->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Sample]|Model[Sample],
+			Description->"A vessel that contains water to dilute base and acid and will be used to catch any residual water that comes off the pH instrument as it is washed in robotic pHMeter qualification.",
+			Developer->True,
+			Category->"Cleaning"
+		},
+		CurrentpHMeterResponseTime -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The most recently response timestamp from robotic SevenExcellence pHMeter. The most recently response timestamp is in the format of yyyy-mm-ddThh:mm:ss.",
+			Category -> "General",
+			Developer ->True
+		},
+		LowCalibrationBuffer->{
+			Format->Single,
+			Class->Link,
+			Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
+			Relation->Object[Sample]|Model[Sample],
+			Description->"The low pH reference buffer (pH 4) used to calibrate the robotic pHMeter in qualification.",
+			Category->"General"
+		},
+		MediumCalibrationBuffer->{
+			Format->Single,
+			Class->Link,
+			Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
+			Relation->Object[Sample]|Model[Sample],
+			Description->"The medium pH reference buffer (pH 7) used to calibrate the robotic pHMeter in qualification.",
+			Category->"General"
+		},
+		HighCalibrationBuffer->{
+			Format->Single,
+			Class->Link,
+			Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
+			Relation->Object[Sample]|Model[Sample],
+			Description->"The high pH reference buffer (pH 10) used to calibrate the robotic pHMeter in qualification.",
+			Category->"General"
+		},
+		DataFilePaths -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The batched file path of the SentData.txt and ReceivedData.txt to communicate with robotic SevenExcellence pHMeter in qualification.",
+			Category -> "General",
+			Developer -> True
+		},
+		CalibrationData -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Calibration,pH][Protocol],
+			Description -> "Any calibration data generated by this qualification.",
+			Category -> "General"
 		}
 	}
 }];

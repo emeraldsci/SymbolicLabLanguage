@@ -19,13 +19,15 @@ DefineOptions[ExperimentGasChromatography,
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Instrument, GasChromatograph], Object[Instrument, GasChromatograph]}](*,
+				Pattern :> ObjectP[{Model[Instrument, GasChromatograph], Object[Instrument, GasChromatograph]}],
 				OpenPaths->{
 					{
 						Object[Catalog,"Root"],
-						"Instruments"
+						"Instruments",
+						"Chromatography",
+						"Gas Chromatography"
 					}
-				}*)
+				}
 			]
 		},
 		(* Carrier gas selection (Configuration > Modules) *)
@@ -62,13 +64,15 @@ DefineOptions[ExperimentGasChromatography,
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Item, GCInletLiner], Object[Item, GCInletLiner]}](*,
+				Pattern :> ObjectP[{Model[Item, GCInletLiner], Object[Item, GCInletLiner]}],
 				OpenPaths->{
 					{
 						Object[Catalog,"Root"],
-						"Materials" *)(* GC Consumables? *)(*
+						"Materials",
+						"Gas Chromatography",
+						"GC Inlet Liners"
 					}
-				}*)
+				}
 			]
 		},
 		(* Inlet liner O-ring *)
@@ -80,13 +84,15 @@ DefineOptions[ExperimentGasChromatography,
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Item, ORing], Object[Item, ORing]}](*,
+				Pattern :> ObjectP[{Model[Item, ORing], Object[Item, ORing]}],
 				OpenPaths->{
 					{
 						Object[Catalog,"Root"],
-						"Materials" *)(* GC Consumables? *)(*
+						"Materials",
+						"Gas Chromatography",
+						"GC Inlet Liner O-Rings"
 					}
-				}*)
+				}
 			]
 		},
 		(* Inlet septum *)
@@ -98,59 +104,64 @@ DefineOptions[ExperimentGasChromatography,
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Item, Septum], Object[Item, Septum]}](*,
+				Pattern :> ObjectP[{Model[Item, Septum], Object[Item, Septum]}],
 				OpenPaths->{
 					{
 						Object[Catalog,"Root"],
-						"Materials" *)(* GC Consumables? *)(*
+						"Materials",
+						"Gas Chromatography",
+						"GC Inlet Septa"
 					}
-				}*)
+				}
 			]
 		},
 
 		(* Column setup *)
 
 		(* Column selection *)
-		{
-			OptionName -> Column,
-			Default -> {Model[Item, Column, "HP-5ms Ultra Inert, 30 m, 0.25 mm ID, 0.25 \[Mu]m film thickness, 7 inch cage"]},
-			Description -> "The capillary tube containing a wall-coated stationary phase into which injected samples are carried from the inlet by the continuous flow of carrier gas. As the sample flows through the column, analytes in each injected sample are separated according to their differing interaction with the column stationary phase and boiling points.",
-			AllowNull -> False,
-			Widget -> Widget[
-				Type -> Object,
-				Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}](*,
-					OpenPaths->{
+		IndexMatching[
+			IndexMatchingParent -> Column,
+			{
+				OptionName -> Column,
+				Default -> Model[Item, Column, "HP-5ms Ultra Inert, 30 m, 0.25 mm ID, 0.25 \[Mu]m film thickness, 7 inch cage"],
+				Description -> "The capillary tube containing a wall-coated stationary phase into which injected samples are carried from the inlet by the continuous flow of carrier gas. As the sample flows through the column, analytes in each injected sample are separated according to their differing interaction with the column stationary phase and boiling points.",
+				AllowNull -> False,
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}],
+					OpenPaths -> {
 						{
-							Object[Catalog,"Root"],
-							"Materials" *)(* GC Consumables? *)(*
+							Object[Catalog, "Root"],
+							"Materials",
+							"Gas Chromatography",
+							"Gas Chromatography Columns"
 						}
-					}*)
-			]
-		},
-		(* Trim column *)
-		{
-			OptionName -> TrimColumn,
-			Default -> False,
-			Description -> "Indicates whether or not a length of the inlet end of the column will be separated from the remainder of the column and discarded, typically in an attempt to remove contamination of the inlet end of the column that may result from injections of samples containing nonvolatile and/or reactive compounds.",
-			AllowNull -> False,
-			Widget -> Widget[
-				Type -> Enumeration,
-				Pattern :> BooleanP
-			]
-		},
-		(* TrimColumnLength *)
-		{
-			OptionName -> TrimColumnLength,
-			Default -> Automatic,
-			Description -> "The length of the inlet end of the column to separate from the column and discard prior to installation of the column into the gas chromatograph.",
-			ResolutionDescription -> "If TrimColumn is True, automatically set to 50 cm.",
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Quantity,
-				Pattern :> RangeP[0 * Meter, 100 * Meter],
-				Units -> {1, {Meter, {Meter, Centimeter}}}
-			]
-		},
+					}
+				]
+			},
+			{
+				OptionName -> TrimColumn,
+				Default -> False,
+				Description -> "Indicates whether or not a length of the inlet end of the column will be separated from the remainder of the column and discarded, typically in an attempt to remove contamination of the inlet end of the column that may result from injections of samples containing nonvolatile and/or reactive compounds.",
+				AllowNull -> False,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				]
+			},
+			{
+				OptionName -> TrimColumnLength,
+				Default -> Automatic,
+				Description -> "The length of the inlet end of the column to separate from the column and discard prior to installation of the column into the gas chromatograph.",
+				ResolutionDescription -> "If TrimColumn is True, automatically set to 50 cm.",
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[0 * Meter, 100 * Meter],
+					Units -> {1, {Meter, {Meter, Centimeter}}}
+				]
+			}
+		],
 
 		(* Condition column Boolean *)
 		{
@@ -233,14 +244,15 @@ DefineOptions[ExperimentGasChromatography,
 			Widget -> Widget[
 				Type -> Object,
 				PreparedContainer -> False,
-				Pattern :> ObjectP[{Model[Container, Syringe], Object[Container, Syringe]}](*,
+				Pattern :> ObjectP[{Model[Container, Syringe], Object[Container, Syringe]}],
 				OpenPaths->{
 					{
 						Object[Catalog,"Root"],
-						"Containers",
-						"Syringes"*)(* GC Syringes? *)(*
+						"Materials",
+						"Gas Chromatography",
+						"Liquid Injection Syringes for GC"
 					}
-				}*)
+				}
 			]
 		},
 		(* Choose installed headspace injection syringe *)
@@ -253,14 +265,15 @@ DefineOptions[ExperimentGasChromatography,
 			Widget -> Widget[
 				Type -> Object,
 				PreparedContainer -> False,
-				Pattern :> ObjectP[{Model[Container, Syringe], Object[Container, Syringe]}](*,
+				Pattern :> ObjectP[{Model[Container, Syringe], Object[Container, Syringe]}],
 				OpenPaths->{
 					{
 						Object[Catalog,"Root"],
-						"Containers",
-						"Syringes"*)(* GC Syringes? *)(*
+						"Materials",
+						"Gas Chromatography",
+						"Headspace Injection Syringes for GC"
 					}
-				}*)
+				}
 			]
 		},
 		(* Choose installed SPME fiber *)
@@ -273,13 +286,15 @@ DefineOptions[ExperimentGasChromatography,
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Item, SPMEFiber], Object[Item, SPMEFiber]}](*,
+				Pattern :> ObjectP[{Model[Item, SPMEFiber], Object[Item, SPMEFiber]}],
 				OpenPaths->{
 					{
 						Object[Catalog,"Root"],
-						"Materials"
+						"Materials",
+						"Gas Chromatography",
+						"Solid Phase MicroExtraction (SPME) Fibers for GC"
 					}
-				}*)
+				}
 			]
 		},
 		(* Choose installed liquid handling syringe *)
@@ -292,14 +307,15 @@ DefineOptions[ExperimentGasChromatography,
 			Widget -> Widget[
 				Type -> Object,
 				PreparedContainer -> False,
-				Pattern :> ObjectP[{Model[Container, Syringe], Object[Container, Syringe]}](*,
+				Pattern :> ObjectP[{Model[Container, Syringe], Object[Container, Syringe]}],
 				OpenPaths->{
 					{
 						Object[Catalog,"Root"],
-						"Containers",
-						"Syringes"*)(* GC Syringes? *)(*
+						"Materials",
+						"Gas Chromatography",
+						"Liquid Handling Syringes for GC"
 					}
-				}*)
+				}
 			]
 		},
 
@@ -314,7 +330,14 @@ DefineOptions[ExperimentGasChromatography,
 			Category -> "Solvent Configuration",
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+				Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+				OpenPaths->{
+					{
+						Object[Catalog,"Root"],
+						"Materials",
+						"Reagents"
+					}
+				}
 			]
 		},
 		{
@@ -326,7 +349,14 @@ DefineOptions[ExperimentGasChromatography,
 			Category -> "Solvent Configuration",
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+				Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+				OpenPaths->{
+					{
+						Object[Catalog,"Root"],
+						"Materials",
+						"Reagents"
+					}
+				}
 			]
 		},
 		{
@@ -338,7 +368,14 @@ DefineOptions[ExperimentGasChromatography,
 			Category -> "Solvent Configuration",
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+				Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+				OpenPaths->{
+					{
+						Object[Catalog,"Root"],
+						"Materials",
+						"Reagents"
+					}
+				}
 			]
 		},
 		IndexMatching[
@@ -554,7 +591,14 @@ DefineOptions[ExperimentGasChromatography,
 			Category -> "Solvent Configuration",
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+				Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+				OpenPaths->{
+					{
+						Object[Catalog,"Root"],
+						"Materials",
+						"Reagents"
+					}
+				}
 			]
 		},
 		{
@@ -566,7 +610,14 @@ DefineOptions[ExperimentGasChromatography,
 			Category -> "Solvent Configuration",
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+				Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+				OpenPaths->{
+					{
+						Object[Catalog,"Root"],
+						"Materials",
+						"Reagents"
+					}
+				}
 			]
 		},
 		{
@@ -578,7 +629,14 @@ DefineOptions[ExperimentGasChromatography,
 			Category -> "Solvent Configuration",
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+				Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+				OpenPaths->{
+					{
+						Object[Catalog,"Root"],
+						"Materials",
+						"Reagents"
+					}
+				}
 			]
 		},
 		{
@@ -590,7 +648,14 @@ DefineOptions[ExperimentGasChromatography,
 			Category -> "Solvent Configuration",
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+				Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+				OpenPaths->{
+					{
+						Object[Catalog,"Root"],
+						"Materials",
+						"Reagents"
+					}
+				}
 			]
 		},
 		IndexMatching[
@@ -807,7 +872,7 @@ DefineOptions[ExperimentGasChromatography,
 				OptionName -> InjectionVolume,
 				Default -> Automatic,
 				Description -> "The amount of sample to draw into the liquid or headspace injection syringe for subsequent injection into the inlet.",
-				ResolutionDescription -> "Automatically set to 25% of the LiquidInjectionSyringe volume if the SamplingMethod is LiquidInjection, or 1.5 mL if the SamplingMethod is HeadspaceInjection.",
+				ResolutionDescription -> "Automatically set to 25% of the LiquidInjectionSyringe volume if a LiquidInjectionSyringe is provided, or 2.5 \[Micro]L if the SamplingMethod is LiquidInjection, or 1.5 mL if the SamplingMethod is HeadspaceInjection.",
 				AllowNull -> True,
 				Category -> "Sample Aspiration",
 				Widget -> Widget[
@@ -836,11 +901,11 @@ DefineOptions[ExperimentGasChromatography,
 				Default -> Automatic,
 				Description -> "The volume of sample per time unit at which the sample will be drawn into the injection syringe for subsequent injection onto the column.",
 				ResolutionDescription -> "Automatically set to 1 microliters per second if the SamplingMethod is LiquidInjection, or 10 milliliters per minute if the SamplingMethod is HeadspaceInjection.",
-				AllowNull -> False,
+				AllowNull -> True,
 				Category -> "Sample Aspiration",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[0.1 * Microliter / Second, 100 * Milliliter / Second],
+					Pattern :> RangeP[0.01 * Microliter / Second, 100 * Milliliter / Second],
 					Units -> CompoundUnit[{1, {Microliter, {Milliliter, Microliter}}}, {-1, {Second, {Minute, Second}}}]
 				]
 			},
@@ -919,7 +984,7 @@ DefineOptions[ExperimentGasChromatography,
 				Category -> "Sample Injection",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[0.1 * Microliter / Second, 100 * Milliliter / Minute],
+					Pattern :> RangeP[1 * Microliter / Second, 100 * Milliliter / Minute],
 					Units -> CompoundUnit[{1, {Microliter, {Milliliter, Microliter}}}, {-1, {Second, {Minute, Second}}}]
 				]
 			},
@@ -1155,7 +1220,14 @@ DefineOptions[ExperimentGasChromatography,
 				Category -> "Pre-Injection Syringe Preparation",
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+					Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+					OpenPaths->{
+						{
+							Object[Catalog,"Root"],
+							"Materials",
+							"Reagents"
+						}
+					}
 				]
 			},
 			(* Derivatizing agent adsorption time: 0-600 minutes def 0.2 minutes *)
@@ -1695,7 +1767,7 @@ DefineOptions[ExperimentGasChromatography,
 				Default -> Automatic,
 				Description -> "The duration of time for which the initial OvenTemperature will be held before allowing the instrument to begin the next separation.",
 				ResolutionDescription -> "Automatically set to 2 minutes unless another value is specified by a SeparationMethod.",
-				AllowNull -> False,
+				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Quantity,
 					Pattern :> RangeP[0 * Minute, 999.99 * Minute],
@@ -1763,7 +1835,7 @@ DefineOptions[ExperimentGasChromatography,
 					Adder[{
 						"OvenTemperatureRampRate" -> Widget[
 							Type -> Quantity,
-							Pattern :> RangeP[0 * Celsius / Minute, 900 * Celsius / Minute],
+							Pattern :> RangeP[0 * Celsius / Minute, 900 * Celsius / Minute, Inclusive -> Right],
 							Units -> CompoundUnit[{1, {Celsius, {Celsius, Fahrenheit}}}, {-1, {Second, {Hour, Minute, Second}}}]
 						],
 						"OvenTemperature" -> Widget[
@@ -2228,7 +2300,15 @@ DefineOptions[ExperimentGasChromatography,
 				Category -> "Standards",
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Standards"
+						}
+					}
 				]
 			},
 			{
@@ -2239,7 +2319,13 @@ DefineOptions[ExperimentGasChromatography,
 				Category -> "Standards",
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Model[Container, Vessel], Object[Container, Vessel]}]
+					Pattern :> ObjectP[{Model[Container, Vessel], Object[Container, Vessel]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers"
+						}
+					}
 				]
 			},
 			{
@@ -2674,7 +2760,7 @@ DefineOptions[ExperimentGasChromatography,
 				OptionName -> StandardInjectionVolume,
 				Default -> Automatic,
 				Description -> "The amount of sample to draw into the liquid or headspace injection syringe for subsequent injection into the inlet.",
-				ResolutionDescription -> "Automatically set to 25% of the LiquidInjectionSyringe volume if the SamplingMethod is LiquidInjection, or 1.5 mL if the SamplingMethod is HeadspaceInjection.",
+				ResolutionDescription -> "Automatically set to 25% of the LiquidInjectionSyringe volume if a LiquidInjectionSyringe is provided, or 2.5 \[Micro]L if the SamplingMethod is LiquidInjection, or 1.5 mL if the SamplingMethod is HeadspaceInjection.",
 				AllowNull -> True,
 				Category -> "Standard Sample Aspiration",
 				Widget -> Widget[
@@ -2707,7 +2793,7 @@ DefineOptions[ExperimentGasChromatography,
 				Category -> "Standard Sample Aspiration",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[0.1 * Microliter / Second, 100 * Milliliter / Second],
+					Pattern :> RangeP[0.01 * Microliter / Second, 100 * Milliliter / Second],
 					Units -> CompoundUnit[{1, {Microliter, {Milliliter, Microliter}}}, {-1, {Second, {Minute, Second}}}]
 				]
 			},
@@ -2786,7 +2872,7 @@ DefineOptions[ExperimentGasChromatography,
 				Category -> "Standard Sample Injection",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[0.1 * Microliter / Second, 100 * Milliliter / Minute],
+					Pattern :> RangeP[1 * Microliter / Second, 100 * Milliliter / Minute],
 					Units -> CompoundUnit[{1, {Microliter, {Milliliter, Microliter}}}, {-1, {Second, {Minute, Second}}}]
 				]
 			},
@@ -3022,7 +3108,14 @@ DefineOptions[ExperimentGasChromatography,
 				Category -> "Standard Pre-Injection Syringe Preparation",
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+					Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents"
+						}
+					}
 				]
 			},
 			(* Derivatizing agent adsorption time: 0-600 minutes def 0.2 minutes *)
@@ -3628,7 +3721,7 @@ DefineOptions[ExperimentGasChromatography,
 					Adder[{
 						"OvenTemperatureRampRate" -> Widget[
 							Type -> Quantity,
-							Pattern :> RangeP[0 * Celsius / Minute, 900 * Celsius / Minute],
+							Pattern :> RangeP[0 * Celsius / Minute, 900 * Celsius / Minute, Inclusive -> Right],
 							Units -> CompoundUnit[{1, {Celsius, {Celsius, Fahrenheit}}}, {-1, {Second, {Hour, Minute, Second}}}]
 						],
 						"OvenTemperature" -> Widget[
@@ -3741,7 +3834,14 @@ DefineOptions[ExperimentGasChromatography,
 				Widget -> Alternatives[
 					Widget[
 						Type -> Object,
-						Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+						Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Reagents"
+							}
+						}
 					],
 					Widget[
 						Type -> Enumeration,
@@ -3757,7 +3857,13 @@ DefineOptions[ExperimentGasChromatography,
 				Category -> "Blanks",
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Model[Container, Vessel], Object[Container, Vessel]}]
+					Pattern :> ObjectP[{Model[Container, Vessel], Object[Container, Vessel]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers"
+						}
+					}
 				]
 			},
 			{
@@ -4192,7 +4298,7 @@ DefineOptions[ExperimentGasChromatography,
 				OptionName -> BlankInjectionVolume,
 				Default -> Automatic,
 				Description -> "The amount of sample to draw into the liquid or headspace injection syringe for subsequent injection into the inlet.",
-				ResolutionDescription -> "Automatically set to 25% of the LiquidInjectionSyringe volume if the SamplingMethod is LiquidInjection, or 1.5 mL if the SamplingMethod is HeadspaceInjection.",
+				ResolutionDescription -> "Automatically set to 25% of the LiquidInjectionSyringe volume if a LiquidInjectionSyringe is provided, or 2.5 \[Micro]L if the SamplingMethod is LiquidInjection, or 1.5 mL if the SamplingMethod is HeadspaceInjection.",
 				AllowNull -> True,
 				Category -> "Blank Sample Aspiration",
 				Widget -> Widget[
@@ -4225,7 +4331,7 @@ DefineOptions[ExperimentGasChromatography,
 				Category -> "Blank Sample Aspiration",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[0.1 * Microliter / Second, 100 * Milliliter / Second],
+					Pattern :> RangeP[0.01 * Microliter / Second, 100 * Milliliter / Second],
 					Units -> CompoundUnit[{1, {Microliter, {Milliliter, Microliter}}}, {-1, {Second, {Minute, Second}}}]
 				]
 			},
@@ -4304,7 +4410,7 @@ DefineOptions[ExperimentGasChromatography,
 				Category -> "Blank Sample Injection",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[0.1 * Microliter / Second, 100 * Milliliter / Minute],
+					Pattern :> RangeP[1 * Microliter / Second, 100 * Milliliter / Minute],
 					Units -> CompoundUnit[{1, {Microliter, {Milliliter, Microliter}}}, {-1, {Second, {Minute, Second}}}]
 				]
 			},
@@ -4540,7 +4646,14 @@ DefineOptions[ExperimentGasChromatography,
 				Category -> "Blank Pre-Injection Syringe Preparation",
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+					Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents"
+						}
+					}
 				]
 			},
 			(* Derivatizing agent adsorption time: 0-600 minutes def 0.2 minutes *)
@@ -5146,7 +5259,7 @@ DefineOptions[ExperimentGasChromatography,
 					Adder[{
 						"OvenTemperatureRampRate" -> Widget[
 							Type -> Quantity,
-							Pattern :> RangeP[0 * Celsius / Minute, 900 * Celsius / Minute],
+							Pattern :> RangeP[0 * Celsius / Minute, 900 * Celsius / Minute, Inclusive -> Right],
 							Units -> CompoundUnit[{1, {Celsius, {Celsius, Fahrenheit}}}, {-1, {Second, {Hour, Minute, Second}}}]
 						],
 						"OvenTemperature" -> Widget[
@@ -5262,7 +5375,13 @@ DefineOptions[ExperimentGasChromatography,
 						Widget[
 							Type -> Object,
 							Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
-							ObjectTypes -> {Model[Sample], Object[Sample]}
+							ObjectTypes -> {Model[Sample], Object[Sample]},
+							OpenPaths -> {
+								{
+									Object[Catalog, "Root"],
+									"Materials"
+								}
+							}
 						],
 						Widget[
 							Type -> Enumeration,
@@ -5299,10 +5418,66 @@ DefineOptions[ExperimentGasChromatography,
 			],
 			Category -> "Injection Table"
 		},
+		IndexMatching[
+			IndexMatchingInput -> "experiment samples",
+			{
+				OptionName -> SampleCaps,
+				Default -> Automatic,
+				Description -> "A cover to place on the working container to facilitate the injection or any movements on the autosampler deck.",
+				ResolutionDescription -> "If a new cap on the sample container is required automatically set to a cap compatible with the autosampler and the working container; if the sample needs to move on the autosampler, a magnetic cap is required, otherwise a pierceable cap is sufficient.",
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[Model[Item, Cap]]
+				],
+				Category -> "Hidden"
+			}
+		],
+		IndexMatching[
+			IndexMatchingParent -> Standard,
+			{
+				OptionName -> StandardCaps,
+				Default -> Automatic,
+				Description -> "A cover to place on the standard container to facilitate the injection or any movements on the autosampler deck.",
+				ResolutionDescription -> "If a new cap on the sample container is required automatically set to a cap compatible with the autosampler and the working container; if the standard needs to move on the autosampler, a magnetic cap is required, otherwise a pierceable cap is sufficient.",
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[Model[Item, Cap]]
+				],
+				Category -> "Hidden"
+			}
+		],
+		IndexMatching[
+			IndexMatchingParent -> Blank,
+			{
+				OptionName -> BlankCaps,
+				Default -> Automatic,
+				Description -> "A cover to place on the blank container to facilitate the injection or any movements on the autosampler deck.",
+				ResolutionDescription -> "If a new cap on the sample container is required automatically set to a cap compatible with the autosampler and the working container; if the blank needs to move on the autosampler, a magnetic cap is required, otherwise a pierceable cap is sufficient.",
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[Model[Item, Cap]]
+				],
+				Category -> "Hidden"
+			}
+		],
 
-
-		FuntopiaSharedOptions,
-		SamplesInStorageOptions
+		NonBiologyFuntopiaSharedOptions,
+		SamplesInStorageOptions,
+		SimulationOption,
+		ModifyOptions[
+			ModelInputOptions,
+			OptionName -> PreparedModelAmount
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Vessel, \"2 mL clear glass GC vial\"]."
+			}
+		]
 	}
 ];
 
@@ -5318,8 +5493,8 @@ Error::IncompatibleInletAndInletOption = "Options `1` are not compatible with th
 Error::SplitRatioAndFlowRateCospecified = "Options SplitRatio and SplitVentFlowRate cannot be specified simultaneously for any sample. Please make sure these options are not specified at the same time for any sample.";
 Error::GCOptionsAreConflicting = "Options `1` cannot be specified while `2` is set to `3` for a given sample. Please make sure these options are not specified at the same time for any sample.";
 Error::OptionsNotCompatibleWithSamplingMethod = "Options `1` cannot be specified if the SamplingMethod is `2`. Please do not specify these options for this SamplingMethod, or change the SamplingMethod to be compatible with these options.";
-Error::GCContainerIncompatible = "Containers `2` specified in option `1` are incompatible with the specified Instrument. Please ensure all specified `1`s have CEVial Footprint with 9/425 NeckType or HeadspaceVial Footprint with 18/425 NeckType.";
-Error::OptionValueAboveLimit = "If the SamplingMethod is `4` and a `1` syringe has been selected, `2` cannot exceed `3`. Please specify a value below the maximum allowed value for this option.";
+Error::GCContainerIncompatible = "Containers `2` specified in option `1` are incompatible with the specified Instrument. Containers must have a CEVial or HeadspaceVial footprint. For samples that require on-deck agitation or vortexing, the containers must have a respective NeckType of 9/425 or 18/425. Otherwise, the sample containers must be capable of being covered by a pierceable cap.";
+Error::OptionValueOutOfBounds = "If the SamplingMethod is `5` and a `1` syringe has been selected, `2` must be within `3` - `4`. Please specify a value within the allowed range for this option and SamplingMethod.";
 Error::DetectorOptionsIncompatible = "Options `1` are not compatible with the specified detector: `2`. Please make sure the specified options are compatible with the specified detector.";
 Error::GCORingNotCompatible = "The specified LinerORing `1` cannot currently be used on instrument `2` because its inner diameter must be greater than `3`, its outer diameter must be less than `4`, and it must have a max temperature rating of `5`. Please select an o-ring of the correct specifications.";
 Error::GCSeptumNotCompatible = "The specified InletSeptum `1` cannot currently be used on instrument `2` because its diameter must be `3`, its thickness must be greater than `4`, and it must have a max temperature rating of `5`. Please select a septum of the correct specifications.";
@@ -5357,18 +5532,18 @@ Error::GCStandardBlankContainer = "`1`s `2` are currently in GC-incompatible con
 Error::GCPostRunOvenTimeTemperatureConflict = "The options `1`PostRunOvenTime and `1`PostRunOvenTemperature must be specified together. Please specify both options if a post run period is desired, or remove the post run period by setting both options to Null.";
 Error::DetectorOptionsRequired = "Options `1` are required for the specified detector: `2`. Please make sure the specified options are not Null with the specified detector";
 Error::GCGasSaverConflict = "Options `1`GasSaverFlowRate and `1`GasSaverActivationTime must be specified if GasSaver is True, and Null if GasSaver is False. If GasSaver is required, please make sure that GasSaver is set to True and these options are non-Null. If GasSaver is not required, please make sure GasSaver is set to False and these options are Null.";
-Error::TooManyCEVialsForAutosampler = "The number of samples, standards, and blanks that have been requested in CEVial Footprint containers exceeds the maximum number of vials that can fit on the autosampler deck (162). Please reduce the number of samples, standards, and blanks to be used in this experiment.";
+Error::TooManyCEVialsForAutosampler = "The number of samples, standards, and blanks that have been requested in CEVial Footprint containers exceeds the maximum number of vials that can fit on the autosampler deck (81). Please reduce the number of samples, standards, and blanks to be used in this experiment.";
 Error::TooManyHeadspaceVialsForAutosampler = "The number of samples, standards, and blanks that have been requested in HeadspaceVial Footprint containers exceeds the maximum number of vials that can fit on the autosampler deck (3 groups of up to 15 vials, with each group containing only 1 container size, e.g. 2 groups of 20 mL HeadspaceVials and 1 group of 10 mL HeadspaceVials). Please reduce the number of samples, standards, and blanks to be used in this experiment or request all samples, standards, and blanks in HeadspaceVials of the same size if fewer than 45 vials are to be analyzed.";
-
+Error::CoverNeededForContainer = "The `1`sample(s) `2` at indices `3` have a container model for which a cover compatible with both the gas chromatrography autosampler and container could not be found. Please source a compatible cap for this container, specify another container, or allow an aliquot container to resolve automatically.";
 
 Warning::AutomaticallySelectedWashSolvent = "No `1`SyringeWashSolvent has been specified, using default Hexanes.";
 Warning::AutomaticallySelectedDilutionSolvent = "No `1`DilutionSolvent has been specified, using default Hexanes.";
 (*Warning::AutomaticallySelectedGCStandard="No Standard was specified, using default Hexanes.";
 Warning::AutomaticallySelectedGCBlank="No Blank type was specified, using default NoInjection.";*)          (* these warnings are not thrown in the experiment function *)
 Warning::GCColumnMinTemperatureExceeded = "Temperature setpoint(s) `1` in option `2` are below the minimum column temperature of `3`! Your column may not be able to perform separations at this temperature.";
-Warning::OverwritingSeparationMethod = "The specified SeparationMethod will be overwritten based on setting of other options: `1`. Please review and ensure that it meets desired specifications.";
+Warning::OverwritingSeparationMethod = "The values for `2` as specified in the `1` will be overwritten based on explicitly set values for the `2` option(s). Please review and ensure that it meets desired specifications. Note that these options are dependent on each other, which means that changing one from the Method will change the others.";
 Warning::UnneededSyringeComponent = "The specified `1` is not required, as none of the values in option(s) `3` specified are `2`. Please ensure option `3` has been specified correctly for each sample.";
-
+Warning::ContainerCapSwapRequired = "The `1`samples `2` at indices `3` will be re-covered automatically with the following GC-compatible cover models: `4`.";
 
 
 (* ::Subsection::Closed:: *)
@@ -5378,19 +5553,20 @@ Warning::UnneededSyringeComponent = "The specified `1` is not required, as none 
 (* ::Subsubsection:: *)
 (* ExperimentGasChromatography *)
 
-
+(* Set a flag to determine whether we are doing streaming for GC protocols *)
+$GasChromatographyStreaming = True;
 
 (* Core sample overload *)
 ExperimentGasChromatography[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
 	{listedSamples, listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-		samplePreparationCache,safeOps,safeOpsTests,validLengths,validLengthTests,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,
+		safeOps,safeOpsTests,validLengths,validLengthTests,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,
 		templatedOptions,templateTests,inheritedOptions,expandedSafeOps,cacheBall,resolvedOptionsResult,safeOptionsNamed,
 		resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests,optionsWithObjects,
 		allObjects,availableInstruments,injectionTableLookup,injectionTableObjects,sampleObjects,modelContainerObjects,instrumentObjects,
 		modelInstrumentObjects,columnObjects,modelColumnObjects,syringeObjects, modelSyringeObjects, spmeFiberObjects, modelSPMEFiberObjects,
-		methodObjects, modelLinerObjects,linerObjects,userSpecifiedObjects, simulatedSampleQ, objectsExistQs, objectsExistTests, runningCache,
+		methodObjects, modelLinerObjects,linerObjects, runningCache,
 		oRingObjects, modelORingObjects, septumObjects, modelSeptumObjects, containerObjects, sampleFields, modelSampleFields, containerFields,
-		modelContainerFields, fieldsToDownload, objsToDownloadFrom, downloadedStuff,
+		modelContainerFields, fieldsToDownload, objsToDownloadFrom, downloadedStuff,samplePreparationSimulation, modelCaps, modelCapObjects,
 		(* timeTableQ*)
 		timeTable, status, rawTimes,
 		tick,
@@ -5419,20 +5595,20 @@ ExperimentGasChromatography[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, samplePreparationCache} = simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, samplePreparationSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentGasChromatography,
-			ToList[listedSamples],
-			ToList[listedOptions]
+			listedSamples,
+			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult, $Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	status = "Parsing options...";
@@ -5448,7 +5624,7 @@ ExperimentGasChromatography[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 	];
 
 	(*change all Names to objects *)
-	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> samplePreparationSimulation];
 
 	(* we need to get the cache from the container overload *)
 	runningCache = Lookup[safeOps, Cache];
@@ -5548,41 +5724,19 @@ ExperimentGasChromatography[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 		Null
 	];
 
-	(* Extract any objects that the user has explicitly specified *)
-	userSpecifiedObjects = DeleteDuplicates@Cases[
-		Flatten@Join[ToList[mySamplesWithPreparedSamples], Lookup[ToList[safeOps], optionsWithObjects, Null], injectionTableObjects],
-		ObjectP[]
-	];
-
-	(* Check that the specified objects exist or are visible to the current user *)
-	simulatedSampleQ = Lookup[fetchPacketFromCache[#, samplePreparationCache], Simulated, False]& /@ userSpecifiedObjects;
-	objectsExistQs = DatabaseMemberQ[PickList[userSpecifiedObjects, simulatedSampleQ, False]];
-
-	(* Build tests for object existence *)
-	objectsExistTests = If[gatherTests,
-		MapThread[
-			Test[StringTemplate["Specified object `1` exists in the database:"][#1], #2, True]&,
-			{PickList[userSpecifiedObjects, simulatedSampleQ, False], objectsExistQs}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And @@ objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist, PickList[PickList[userSpecifiedObjects, simulatedSampleQ, False], objectsExistQs, False]];
-			Message[Error::InvalidInput, PickList[PickList[userSpecifiedObjects, simulatedSampleQ, False], objectsExistQs, False]]
-		];
-		Return[outputSpecification /. {
-			Result -> $Failed,
-			Tests -> Join[safeOpsTests, validLengthTests, templateTests, objectsExistTests],
-			Options -> $Failed,
-			Preview -> Null
-		}]
-	];
-
 	(*all the instruments to use*)
 	availableInstruments = {Model[Instrument, GasChromatograph, "Agilent 8890 GCMS"]};
+
+	{
+		modelCaps
+	} = Search[
+		{
+			Model[Item, Cap]
+		},
+		{
+			Pierceable == True && DeveloperObject != True && Deprecated != True
+		}
+	];
 
 	(* Flatten and merge all possible objects needed into a list *)
 	allObjects = DeleteDuplicates@Download[
@@ -5598,6 +5752,12 @@ ExperimentGasChromatography[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 					Model[Container, Vessel, "10 mL clear glass GC vial"],
 					Model[Container, Vessel, "2 mL clear glass GC vial"],
 					Model[Container, Vessel, "0.3 mL clear glass GC vial"],
+					(* caps *)
+					(* magnetic caps *)
+					Model[Item, Cap, "id:L8kPEjn1PRww"],
+					Model[Item, Cap, "id:AEqRl9Kmnrqv"],
+					(* non-magnetic caps *)
+					modelCaps,
 					(* Instruments *)
 					availableInstruments,
 					(* default GC liner consumables *)
@@ -5632,6 +5792,7 @@ ExperimentGasChromatography[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 	(* Isolate objects of particular types so we can build a indexed-download call *)
 	sampleObjects = Cases[allObjects, NonSelfContainedSampleP];
 	containerObjects = Cases[allObjects, ObjectP[Object[Container]]];
+	modelCapObjects = Cases[allObjects, ObjectP[Model[Item, Cap]]];
 	modelContainerObjects = Cases[allObjects, ObjectP[Model[Container]]];
 	instrumentObjects = Cases[allObjects, ObjectP[Object[Instrument, GasChromatograph]]];
 	modelInstrumentObjects = Cases[allObjects, ObjectP[Model[Instrument, GasChromatograph]]];
@@ -5662,22 +5823,23 @@ ExperimentGasChromatography[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 	objsToDownloadFrom = {
 		(*1*)sampleObjects,
 		(*2*)containerObjects,
-		(*3*)modelContainerObjects,
-		(*4*)modelInstrumentObjects,
-		(*5*)modelColumnObjects,
-		(*6*)modelSyringeObjects,
-		(*7*)modelSPMEFiberObjects,
-		(*8*)modelLinerObjects,
-		(*9*)linerObjects,
-		(*10*)methodObjects,
-		(*11*)instrumentObjects,
-		(*12*)columnObjects,
-		(*13*)syringeObjects,
-		(*14*)spmeFiberObjects,
-		(*15*)oRingObjects,
-		(*16*)modelORingObjects,
-		(*17*)septumObjects,
-		(*18*)modelSeptumObjects
+		(*3*)modelCapObjects,
+		(*4*)modelContainerObjects,
+		(*5*)modelInstrumentObjects,
+		(*6*)modelColumnObjects,
+		(*7*)modelSyringeObjects,
+		(*8*)modelSPMEFiberObjects,
+		(*9*)modelLinerObjects,
+		(*10*)linerObjects,
+		(*11*)methodObjects,
+		(*12*)instrumentObjects,
+		(*13*)columnObjects,
+		(*14*)syringeObjects,
+		(*15*)spmeFiberObjects,
+		(*16*)oRingObjects,
+		(*17*)modelORingObjects,
+		(*18*)septumObjects,
+		(*19*)modelSeptumObjects
 	};
 
 	(* get all the fields to download from*)
@@ -5696,41 +5858,43 @@ ExperimentGasChromatography[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 			Packet[containerFields],
 			Packet[Model[{modelContainerFields}]]
 		},
+		(* capObjects *)
+		(*3*){Packet[CoverFootprint, Pierceable]},
 		(* modelContainerObjects *)
-		(*3*){Packet[modelContainerFields]},
+		(*4*){Packet[modelContainerFields]},
 		(* modelInstrumentObjects *)
-		(*4*){Packet[Name]},
+		(*5*){Packet[Name]},
 		(* modelColumnObjects *)
-		(*5*){Packet[Name, MinTemperature, MaxTemperature, ChromatographyType, Diameter, Polarity, ColumnLength, FilmThickness]},
+		(*6*){Packet[Name, MinTemperature, MaxTemperature, ChromatographyType, Diameter, Polarity, ColumnLength, FilmThickness]},
 		(* modelSyringeObjects *)
-		(*6*){Packet[Name, GCInjectionType, MaxVolume, ConnectionType]},
+		(*7*){Packet[Name, GCInjectionType, MaxVolume, ConnectionType]},
 		(* modelSPMEFiberObjects *)
-		(*7*){Packet[Name, MaxTemperature, MinTemperature]},
+		(*8*){Packet[Name, MaxTemperature, MinTemperature]},
 		(* modelLinerObjects *)
-		(*8*){Packet[Name, Volume]},
+		(*9*){Packet[Name, Volume]},
 		(* linerObjects *)
-		(*9*){Packet[Name, Model], Packet[Model[{Name, Volume}]]},
+		(*10*){Packet[Name, Model], Packet[Model[{Name, Volume}]]},
 		(* methodObjects *)
-		(*10*){Packet[Name, ColumnLength, ColumnDiameter, ColumnFilmThickness, InletLinerVolume, Detector, CarrierGas, InletSeptumPurgeFlowRate, InitialInletTemperature,
+		(*11*){Packet[Name, ColumnLength, ColumnDiameter, ColumnFilmThickness, InletLinerVolume, Detector, CarrierGas, InletSeptumPurgeFlowRate, InitialInletTemperature,
 			InitialInletTemperatureDuration, InletTemperatureProfile, SplitRatio, SplitVentFlowRate, SplitlessTime, InitialInletPressure, InitialInletTime, GasSaver,
 			GasSaverFlowRate, GasSaverActivationTime, SolventEliminationFlowRate, InitialColumnFlowRate, InitialColumnPressure, InitialColumnAverageVelocity,
 			InitialColumnResidenceTime, InitialColumnSetpointDuration, ColumnPressureProfile, ColumnFlowRateProfile, OvenEquilibrationTime, InitialOvenTemperature,
 			InitialOvenTemperatureDuration, OvenTemperatureProfile, PostRunOvenTemperature, PostRunOvenTime, PostRunFlowRate, PostRunPressure]},
 		(* instrumentObjects *)
-		(*11*){Packet[Name, Model], Packet[Model[{Name}]]},
+		(*12*){Packet[Name, Model], Packet[Model[{Name}]]},
 		(* columnObjects *)
-		(*12*){Packet[Name, Model], Packet[Model[{Name, MinTemperature, MaxTemperature, ChromatographyType, Diameter, Polarity, ColumnLength, FilmThickness}]]}, (* MinTemperature,MaxTemperature *)                        (* syringeObjects *)
-		(*13*){Packet[Name, Model], Packet[Model[{Name, GCInjectionType, MaxVolume, ConnectionType}]]}, (* GCInjectionType,MaxVolume *)
+		(*13*){Packet[Name, Model], Packet[Model[{Name, MinTemperature, MaxTemperature, ChromatographyType, Diameter, Polarity, ColumnLength, FilmThickness}]]}, (* MinTemperature,MaxTemperature *)                        (* syringeObjects *)
+		(*14*){Packet[Name, Model], Packet[Model[{Name, GCInjectionType, MaxVolume, ConnectionType}]]}, (* GCInjectionType,MaxVolume *)
 		(* spmeFiberObjects *)
-		(*14*){Packet[Name, Model], Packet[Model[{Name, MaxTemperature, MinTemperature}]]}, (* MaxTemperature, MinTemperature *)
+		(*15*){Packet[Name, Model], Packet[Model[{Name, MaxTemperature, MinTemperature}]]}, (* MaxTemperature, MinTemperature *)
 		(* oRingObjects *)
-		(*15*){Packet[Name, Model], Packet[Model[{Name, InnerDiameter, OuterDiameter, MaxTemperature}]]}, (* InnerDiameter,OuterDiameter,MaxTemperature *)
+		(*16*){Packet[Name, Model], Packet[Model[{Name, InnerDiameter, OuterDiameter, MaxTemperature}]]}, (* InnerDiameter,OuterDiameter,MaxTemperature *)
 		(* modelORingObjects *)
-		(*16*){Packet[Name, InnerDiameter, OuterDiameter, MaxTemperature]}, (* MaxTemperature, MinTemperature *)
+		(*17*){Packet[Name, InnerDiameter, OuterDiameter, MaxTemperature]}, (* MaxTemperature, MinTemperature *)
 		(* septumObjects *)
-		(*17*){Packet[Name, Model], Packet[Model[{Name, Diameter, Thickness, MaxTemperature}]]}, (* InnerDiameter,OuterDiameter,MaxTemperature *)
+		(*18*){Packet[Name, Model], Packet[Model[{Name, Diameter, Thickness, MaxTemperature}]]}, (* InnerDiameter,OuterDiameter,MaxTemperature *)
 		(* modelSeptumObjects *)
-		(*18*){Packet[Name, Diameter, Thickness, MaxTemperature]} (* Diameter,Thickness,MaxTemperature *)
+		(*19*){Packet[Name, Diameter, Thickness, MaxTemperature]} (* Diameter,Thickness,MaxTemperature *)
 	};
 
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
@@ -5740,7 +5904,8 @@ ExperimentGasChromatography[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 		Download[
 			objsToDownloadFrom,
 			fieldsToDownload,
-			Cache -> Flatten[{samplePreparationCache, runningCache}],
+			Cache -> runningCache,
+			Simulation -> samplePreparationSimulation,
 			Date -> Now
 		],
 		(* we need to quiet object does not exist because there could be prep primitive options here that create nonexistent samples *)
@@ -5749,7 +5914,6 @@ ExperimentGasChromatography[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 	cacheBall=FlattenCachePackets[
 		{
 			runningCache,
-			samplePreparationCache,
 			downloadedStuff
 		}
 	];
@@ -5763,7 +5927,7 @@ ExperimentGasChromatography[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 	(* Build the resolved options *)
 	resolvedOptionsResult = If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions, resolvedOptionsTests} = resolveExperimentGasChromatographyOptions[ToList[mySamplesWithPreparedSamples], expandedSafeOps, Cache -> cacheBall, Output -> {Result, Tests}];
+		{resolvedOptions, resolvedOptionsTests} = resolveExperimentGasChromatographyOptions[ToList[mySamplesWithPreparedSamples], expandedSafeOps, Cache -> cacheBall, Simulation -> samplePreparationSimulation,Output -> {Result, Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests" -> resolvedOptionsTests|>, OutputFormat -> SingleBoolean, Verbose -> False],
@@ -5773,7 +5937,7 @@ ExperimentGasChromatography[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions, resolvedOptionsTests} = {resolveExperimentGasChromatographyOptions[ToList[mySamplesWithPreparedSamples], expandedSafeOps, Cache -> cacheBall], {}},
+			{resolvedOptions, resolvedOptionsTests} = {resolveExperimentGasChromatographyOptions[ToList[mySamplesWithPreparedSamples], expandedSafeOps, Cache -> cacheBall, Simulation -> samplePreparationSimulation], {}},
 			$Failed,
 			{Error::InvalidInput, Error::InvalidOption}
 		]
@@ -5807,8 +5971,8 @@ ExperimentGasChromatography[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 
 	(* Build packets with resources *)
 	{resourcePackets, resourcePacketTests} = If[gatherTests,
-		experimentGasChromatographyResourcePackets[ToList[mySamplesWithPreparedSamples], expandedSafeOps, resolvedOptions, Cache -> cacheBall, Output -> {Result, Tests}],
-		{experimentGasChromatographyResourcePackets[ToList[mySamplesWithPreparedSamples], expandedSafeOps, resolvedOptions, Cache -> cacheBall], {}}
+		experimentGasChromatographyResourcePackets[ToList[mySamplesWithPreparedSamples], expandedSafeOps, resolvedOptions, Cache -> cacheBall, Simulation -> samplePreparationSimulation,Output -> {Result, Tests}],
+		{experimentGasChromatographyResourcePackets[ToList[mySamplesWithPreparedSamples], expandedSafeOps, resolvedOptions, Cache -> cacheBall, Simulation -> samplePreparationSimulation], {}}
 	];
 
 	status = "Uploading protocol...";
@@ -5845,26 +6009,30 @@ ExperimentGasChromatography[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 				Rest[resourcePackets],
 				Upload -> Lookup[safeOps, Upload],
 				Confirm -> Lookup[safeOps, Confirm],
+				CanaryBranch -> Lookup[safeOps, CanaryBranch],
 				ParentProtocol -> Lookup[safeOps, ParentProtocol],
 				Priority -> Lookup[safeOps, Priority],
 				StartDate -> Lookup[safeOps, StartDate],
 				HoldOrder -> Lookup[safeOps, HoldOrder],
 				QueuePosition -> Lookup[safeOps, QueuePosition],
 				ConstellationMessage -> Object[Protocol, GasChromatography],
-				Cache -> samplePreparationCache
+				Cache -> cacheBall,
+				Simulation -> samplePreparationSimulation
 			],
 			(*otherwise just protocol packet*)
 			UploadProtocol[
 				First[resourcePackets],
 				Upload -> Lookup[safeOps, Upload],
 				Confirm -> Lookup[safeOps, Confirm],
+				CanaryBranch -> Lookup[safeOps, CanaryBranch],
 				ParentProtocol -> Lookup[safeOps, ParentProtocol],
 				Priority -> Lookup[safeOps, Priority],
 				StartDate -> Lookup[safeOps, StartDate],
 				HoldOrder -> Lookup[safeOps, HoldOrder],
 				QueuePosition -> Lookup[safeOps, QueuePosition],
 				ConstellationMessage -> Object[Protocol, GasChromatography],
-				Cache -> samplePreparationCache
+				Cache -> cacheBall,
+				Simulation -> samplePreparationSimulation
 			]
 		],
 		$Failed
@@ -5888,13 +6056,14 @@ ExperimentGasChromatography[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 	}
 ];
 
-(* Container overload *)
-ExperimentGasChromatography[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]}], myOptions : OptionsPattern[]] := Module[
-	{listedOptions, outputSpecification, output, gatherTests, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, sampleCache,
-		samplePreparationCache, containerToSampleResult, containerToSampleOutput, updatedCache, samples, sampleOptions, containerToSampleTests, safeOptions, safeOptionTests},
+(* Mixed input overload *)
+ExperimentGasChromatography[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]}], myOptions : OptionsPattern[]] := Module[
+	{listedOptions, outputSpecification, output, gatherTests, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationSimulation, cache,
+		containerToSampleResult, containerToSampleOutput, samples, sampleOptions, containerToSampleTests, containerToSampleSimulation},
 
 	(* Make sure we're working with a list of options *)
 	listedOptions = ToList[myOptions];
+	cache = Lookup[listedOptions, Cache, {}];
 
 	(* Determine the requested return value from the function *)
 	outputSpecification = Quiet[OptionValue[Output]];
@@ -5906,31 +6075,32 @@ ExperimentGasChromatography[myContainers : ListableP[ObjectP[{Object[Container],
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationCache} = simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentGasChromatography,
 			ToList[myContainers],
-			ToList[myOptions]
+			ToList[myOptions],
+			DefaultPreparedModelContainer -> Model[Container, Vessel, "2 mL clear glass GC vial"]
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult, $Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
-	(* Convert our given containers into samples and sample index-matched options. *)
+	(* convert the containers to samples, and also get the options index matched properly *)
 	containerToSampleResult = If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput, containerToSampleTests} = containerToSampleOptions[
+		{containerToSampleOutput, containerToSampleTests, containerToSampleSimulation} = containerToSampleOptions[
 			ExperimentGasChromatography,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output -> {Result, Tests},
-			Cache -> samplePreparationCache
+			Output -> {Result, Tests, Simulation},
+			Simulation -> samplePreparationSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -5941,24 +6111,18 @@ ExperimentGasChromatography[myContainers : ListableP[ObjectP[{Object[Container],
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput = containerToSampleOptions[
+			{containerToSampleOutput, containerToSampleSimulation} = containerToSampleOptions[
 				ExperimentGasChromatography,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output -> Result,
-				Cache -> samplePreparationCache
+				Output -> {Result, Simulation},
+				Simulation -> samplePreparationSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
 
-	(* Update our cache with our new simulated values. *)
-	(* It is important the sample preparation cache appears first in the cache ball. *)
-	updatedCache = Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions, Cache, {}]
-	}];
 
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToSampleResult, $Failed],
@@ -5967,13 +6131,17 @@ ExperimentGasChromatography[myContainers : ListableP[ObjectP[{Object[Container],
 			Result -> $Failed,
 			Tests -> containerToSampleTests,
 			Options -> $Failed,
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> Null,
+			InvalidInputs -> {},
+			InvalidOptions -> {}
 		},
+
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples, sampleOptions, sampleCache} = containerToSampleOutput;
+		{samples, sampleOptions} = containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentGasChromatography[samples, ReplaceRule[sampleOptions, Cache -> Flatten[{updatedCache, sampleCache}]]]
+		ExperimentGasChromatography[samples, ReplaceRule[sampleOptions, Simulation->containerToSampleSimulation]]
 	]
 ];
 
@@ -5995,20 +6163,20 @@ ExperimentGasChromatography[myContainers : ListableP[ObjectP[{Object[Container],
 
 DefineOptions[
 	resolveExperimentGasChromatographyOptions,
-	Options :> {HelperOutputOption, CacheOption}
+	Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
 resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule...}, myResolutionOptions : OptionsPattern[resolveExperimentGasChromatographyOptions]] := Module[
-	{outputSpecification, output, gatherTests, engineQ, cache, samplePrepOptions, GasChromatographyOptions, simulatedSamples, resolvedSamplePrepOptions, simulatedCache, samplePrepTests,
-		GasChromatographyOptionsAssociation, invalidInputs, invalidOptions, targetVials, resolvedAliquotOptions, aliquotTests, samplePackets, discardedSamplePackets, discardedInvalidInputs,
-		discardedTest, sampleContainerModels, simulatedContainerModels, sampleContainers, resolvedExperimentOptions, resolvedPostProcessingOptions, requiredAliquotAmounts,
-		resolvedOptions, allTests, resolvedInletLiner, columnModelPacket, minColumnTempLimit, maxColumnTempLimit,
+	{outputSpecification, output, gatherTests, engineQ, cache, samplePrepOptions, gasChromatographyOptions, simulatedSamples, resolvedSamplePrepOptions, samplePrepTests,
+		gasChromatographyOptionsAssociation, invalidInputs, invalidOptions, targetVials, resolvedAliquotOptions, aliquotTests, samplePackets, discardedSamplePackets, discardedInvalidInputs,
+		discardedTest,  simulatedContainerModels, sampleContainers, resolvedExperimentOptions, resolvedPostProcessingOptions, requiredAliquotAmounts,
+		resolvedOptions, allTests, resolvedInletLiner, columnModelPacket, minColumnTempLimit, maxColumnTempLimit, recalculateSampleMethodOptions,	recalculateStandardMethodOptions,	recalculateBlankMethodOptions,
 		containerlessSamples, containerlessInvalidInputs, containersExistTest, protocolName, validProtocolNameQ, invalidProtocolName, validProtocolNameTest, standards, tooManySamplesQ,
 		tooManySamplesInputs, tooManySamplesTest, column, separationMode, roundedInletTemperatureProfile, inletTemperatureProfileTests, roundedColumnPressureProfile,
 		columnPressureProfileTests, roundedColumnFlowRateProfile, columnFlowRateProfileTests, roundedOvenTemperatureProfile, ovenTemperatureProfileTests, columnModel,
 		allInitialColumnFlowrates, allInitialColumnPressures, allInitialColumnAverageVelocities, allInitialColumnResidenceTimes,
 		specifiedInletModes, specifiedSamplingMethods, resolvedSamplingMethods, specifiedLiquidInjectionSyringe, specifiedLiquidInjectionSyringeModel,
-		specifiedLiquidInjectionSyringeModelType, specifiedLiquidSampleVolumes, resolvedLiquidInjectionSyringe, invalidColumns, invalidInputColumns, invalidColumnsTest, roundedGasChromatographyOptions,
+		specifiedLiquidInjectionSyringeModelType, specifiedLiquidInjectionSyringeVolume, preResolvedLiquidInjectionSyringe, specifiedLiquidSampleVolumes, resolvedLiquidInjectionSyringe, invalidColumns, invalidInputColumns, invalidColumnsTest, roundedGasChromatographyOptions,
 		precisionTests, sampleStates, sampleMasses, sampleVolumes, specifiedLiquidSamplingOptions, specifiedLiquidPreInjectionSyringeWashVolumes, specifiedLiquidPreInjectionSyringeWashRates,
 		specifiedLiquidPreInjectionNumberOfSolventWashes, specifiedLiquidPreInjectionNumberOfSecondarySolventWashes, specifiedLiquidPreInjectionNumberOfTertiarySolventWashes, specifiedLiquidPreInjectionNumberOfQuaternarySolventWashes,
 		specifiedNumberOfLiquidSampleWashes, specifiedLiquidSampleWashVolumes, specifiedLiquidSampleFillingStrokes, specifiedLiquidSampleFillingStrokesVolumes, specifiedLiquidFillingStrokeDelays,
@@ -6158,25 +6326,24 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		resolvedBlankInitialColumnResidenceTimes, resolvedBlankInitialColumnSetpointDurations, resolvedBlankColumnPressureProfiles, resolvedBlankColumnFlowRateProfiles, resolvedStandardInitialColumnFlowRateValues,
 		resolvedStandardSplitlessTimes, resolvedStandardGasSaverActivationTimes, resolvedBlankInitialColumnFlowRateValues,
 		resolvedBlankSplitlessTimes, resolvedBlankGasSaverActivationTimes, maxOvenTemperatureSetpoint, specifiedLinerORing, specifiedInletSeptum, maxInletTemperatureSetpoint,
-		gasSaverConflictTuples, gasSaverConflictOptions, gasSaverConflictTests,
-		resolvedLinerORing, resolvedInletSeptum, resolvedColumnConditioningTemperature, specifiedInletSeptumPurgeFlowRates, specifiedInitialOvenTemperatureDurations, specifiedPostRunOvenTimes, specifiedPostRunFlowRates, specifiedPostRunPressures,
+		gasSaverConflictTuples, gasSaverConflictOptions, gasSaverConflictTests, resolvedLinerORing, resolvedInletSeptum, resolvedColumnConditioningTemperature, specifiedInletSeptumPurgeFlowRates, specifiedInitialOvenTemperatureDurations, specifiedPostRunOvenTimes, specifiedPostRunFlowRates, specifiedPostRunPressures,
 		specifiedStandardInletSeptumPurgeFlowRates, specifiedStandardInitialOvenTemperatureDurations, specifiedStandardPostRunOvenTimes, specifiedStandardPostRunFlowRates, specifiedStandardPostRunPressures, specifiedBlankInletSeptumPurgeFlowRates, specifiedBlankInitialOvenTemperatureDurations,
 		specifiedBlankPostRunOvenTimes, specifiedBlankPostRunFlowRates, specifiedBlankPostRunPressures, specifiedSeparationMethods, specifiedStandardSeparationMethods, specifiedBlankSeparationMethods, resolvedSeparationMethods, resolvedStandardSeparationMethods, resolvedBlankSeparationMethods, intermediateInjectionTable, injectionTableBlanks,
-		injectionTableStandards, injectionTableStandardSeparationMethods, injectionTableBlankSeparationMethods, overwriteSeparationMethodsBool, overwriteStandardSeparationMethodsBool, overwriteBlankSeparationMethodsBool, overwriteOptionBool, adjustedOverwriteStandardBool,
+		injectionTableStandards, injectionTableStandardSeparationMethods, injectionTableBlankSeparationMethods, overwriteSeparationMethodsBool, overwrittenSeparationMethodOptions, overwriteStandardSeparationMethodsBool,overwrittenBlankSeparationMethodOptions, overwrittenStandardSeparationMethodOptions, overwriteBlankSeparationMethodsBool, overwriteOptionBool, adjustedOverwriteStandardBool,
 		adjustedOverwriteBlankBool, resolvedOptionsForInjectionTable, resolvedInjectionTableResult, invalidInjectionTableOptions, invalidInjectionTableTests, preResolvedInjectionTable, resolvedInjectionTable, resolvedInjectionTableBlanks,
 		resolvedInjectionTableBlankInjectionVolumes, resolvedInjectionTableBlankSeparationMethods, foreignBlanksQ, foreignBlankOptions, foreignBlankTest, resolvedInjectionTableStandards, resolvedInjectionTableStandardInjectionVolumes,
 		resolvedInjectionTableStandardSeparationMethods, foreignStandardsQ, foreignStandardOptions, foreignStandardTest, drawVolumesTooLargeQ, standardDrawVolumesTooLargeQ, incompatibleSampleAndAirVolumes, incompatibleStandardSampleAndAirVolumes,
 		allStandardInitialColumnFlowrates, allStandardInitialColumnPressures, allStandardInitialColumnAverageVelocities, allStandardInitialColumnResidenceTimes, allBlankInitialColumnFlowrates, allBlankInitialColumnPressures,
 		allBlankInitialColumnAverageVelocities, allBlankInitialColumnResidenceTimes, specifiedInitialColumnConditions, specifiedStandardInitialColumnConditions, specifiedBlankInitialColumnConditions, cospecifiedSampleOptions,
-		cospecifiedSampleOptionsTests, cospecifiedStandardOptions, cospecifiedStandardOptionsTests, cospecifiedBlankOptions, cospecifiedBlankOptionsTests, compatibleGCVialModels, aliquotQ, resolvedTargetVials, resolvedAliquotAmounts,
+		cospecifiedSampleOptionsTests, cospecifiedStandardOptions, cospecifiedStandardOptionsTests, cospecifiedBlankOptions, cospecifiedBlankOptionsTests, magneticCapCompatibleGCVialModels, aliquotQ, resolvedTargetVials, resolvedAliquotAmounts,
 		specifiedStandardDilutionSolventVolumes, specifiedStandardSecondaryDilutionSolventVolumes, specifiedStandardTertiaryDilutionSolventVolumes, resolvedStandardDilutes, masterSwitchedStandardLiquidPreInjectionNumberOfSecondarySolventWashes,
-		outOfRangeLiquidSampleVolumes, outOfRangeStandardLiquidSampleVolumes, outOfRangeLiquidSampleVolumeTests, outOfRangeStandardLiquidSampleVolumeTests,
+		outOfRangeLiquidSampleVolumes, outOfRangeStandardLiquidSampleVolumes, outOfRangeLiquidSampleVolumeTests, outOfRangeStandardLiquidSampleVolumeTests, simulatedContainers,
 		outOfRangeHeadspaceSampleVolumes, outOfRangeStandardHeadspaceSampleVolumes, outOfRangeHeadspaceSampleVolumeTests, outOfRangeStandardHeadspaceSampleVolumeTests, specifiedInitialInletTemperatureSetpoints, specifiedStandardAmounts,
 		specifiedStandardVials, resolvedStandardAmounts, resolvedStandardVials, specifiedColumnConditioningTemperature, specifiedColumnConditioningTime, separationMethodSpecifiedQ,
 		specifiedSeparationMethodParameters, standardSeparationMethodSpecifiedQ, specifiedStandardSeparationMethodParameters, blankSeparationMethodSpecifiedQ, specifiedBlankSeparationMethodParameters,
 		separationMethodColumnLengths, separationMethodColumnDiameters, separationMethodColumnFilmThicknesses, separationMethodInletLinerVolumes, separationMethodDetectors, separationMethodCarrierGases,
 		separationMethodInletSeptumPurgeFlowRates, separationMethodInitialInletTemperatures, separationMethodInitialInletTemperatureDurations,
-		separationMethodInletTemperatureProfiles, separationMethodSplitRatios, separationMethodSplitVentFlowRates,
+		separationMethodInletTemperatureProfiles, separationMethodSplitRatios, separationMethodSplitVentFlowRates, magneticCapRequiredQ, standardMagneticCapRequiredQ, blankMagneticCapRequiredQ,
 		separationMethodSplitlessTimes, separationMethodInitialInletPressures, separationMethodInitialInletTimes, separationMethodGasSavers, separationMethodGasSaverFlowRates,
 		separationMethodGasSaverActivationTimes, separationMethodSolventEliminationFlowRates,
 		separationMethodInitialColumnFlowRates, separationMethodInitialColumnPressures, separationMethodInitialColumnAverageVelocities,
@@ -6199,7 +6366,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		separationMethodBlankInletTemperatureProfiles, separationMethodBlankSplitRatios, separationMethodBlankSplitVentFlowRates,
 		separationMethodBlankSplitlessTimes, separationMethodBlankInitialInletPressures, separationMethodBlankInitialInletTimes,
 		separationMethodBlankGasSavers, separationMethodBlankGasSaverFlowRates, separationMethodBlankGasSaverActivationTimes, separationMethodBlankSolventEliminationFlowRates,
-		separationMethodBlankInitialColumnFlowRates,
+		separationMethodBlankInitialColumnFlowRates, noCapForContainerInvalidOptions, noStandardVialCapInvalidOption, invalidBlankVialCapInvalidOption,
 		separationMethodBlankInitialColumnPressures, separationMethodBlankInitialColumnAverageVelocities, separationMethodBlankInitialColumnResidenceTimes,
 		separationMethodBlankInitialColumnSetpointDurations, separationMethodBlankColumnPressureProfiles, separationMethodBlankColumnFlowRateProfiles, separationMethodBlankOvenEquilibrationTimes,
 		separationMethodBlankInitialOvenTemperatures, separationMethodBlankInitialOvenTemperatureDurations, separationMethodBlankOvenTemperatureProfiles, separationMethodBlankPostRunOvenTemperatures,
@@ -6207,7 +6374,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		prespecifiedInitialOvenTemperatureDurations, prespecifiedStandardInitialOvenTemperatureDurations, prespecifiedBlankInitialOvenTemperatureDurations, prespecifiedPostRunOvenTimes, prespecifiedPostRunFlowRates, prespecifiedPostRunPressures,
 		prespecifiedStandardPostRunOvenTimes, prespecifiedStandardPostRunFlowRates, prespecifiedStandardPostRunPressures, prespecifiedBlankPostRunOvenTimes, prespecifiedBlankPostRunFlowRates, prespecifiedBlankPostRunPressures, prespecifiedSplitVentFlowRates, prespecifiedStandardSplitVentFlowRates, prespecifiedBlankSplitVentFlowRates,
 		prespecifiedInitialOvenTemperatures, prespecifiedStandardInitialOvenTemperatures, prespecifiedBlankInitialOvenTemperatures, prespecifiedInitialInletTemperatures,
-		prespecifiedInitialInletTemperatureDurations,
+		prespecifiedInitialInletTemperatureDurations, capForVialTests, capForStandardVialTests, capForBlankVialTests,
 		prespecifiedStandardInitialInletTemperatures, prespecifiedStandardInitialInletTemperatureDurations, prespecifiedBlankInitialInletTemperatures,
 		prespecifiedBlankInitialInletTemperatureDurations, prespecifiedInletTemperatureProfiles, prespecifiedStandardInletTemperatureProfiles, prespecifiedBlankInletTemperatureProfiles, prespecifiedSplitRatios,
 		prespecifiedSplitlessTimes, prespecifiedInitialInletPressures, prespecifiedInitialInletTimes, prespecifiedSolventEliminationFlowRates,
@@ -6248,7 +6415,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		resolvedStandardPreparationOptionsInternal, blankPreparationOptionsInternal, resolvedBlankPreparationOptionsInternal, injectionTableColumnOptionValue,
 		injectionTableStandardColumnOptionValue, injectionTableBlankColumnOptionValue, specifiedTransferLineTemperature, specifiedIonSource,
 		specifiedIonMode, specifiedSourceTemperature, specifiedQuadrupoleTemperature, specifiedSolventDelay, specifiedMassDetectionGain, specifiedMassRangeThreshold, specifiedTraceIonDetection, specifiedAcquisitionWindowStartTime, specifiedMassRange,
-		specifiedMassRangeScanSpeed, specifiedSIMGroupStartTime, specifiedMassSelection, specifiedMassSelectionResolution, specifiedMassSelectionDetectionGain, resolvedIonMode, specifiedInlet, multimodeInletOptionsSpecifiedQ,
+		specifiedMassRangeScanSpeed, specifiedMassSelection, specifiedMassSelectionResolution, specifiedMassSelectionDetectionGain, resolvedIonMode, specifiedInlet, multimodeInletOptionsSpecifiedQ,
 		incompatibleInletOptions, inletOptionsCompatibleTests, cospecifiedOptionsTests, conflictingBlankLiquidSamplingOptionsQ, conflictingBlankHeadspaceSamplingOptionsQ, conflictingBlankSPMESamplingOptionsQ,
 		sampleLiquidOps, sampleHeadspaceOps, sampleSPMEOps, standardLiquidOps, standardHeadspaceOps, standardSPMEOps, blankLiquidOps, blankHeadspaceOps, blankSPMEOps, conflictingLiquidSamplingOptions,
 		conflictingHeadspaceSamplingOptions, conflictingSPMESamplingOptions, conflictingStandardLiquidSamplingOptions, conflictingStandardHeadspaceSamplingOptions, conflictingStandardSPMESamplingOptions,
@@ -6276,17 +6443,17 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		aliquotStandardQ, aliquotBlankQ, specifiedBlankNumberOfLiquidSampleWashes, specifiedBlankLiquidSampleWashVolumes, specifiedBlankLiquidSampleFillingStrokes,
 		specifiedBlankLiquidSampleFillingStrokesVolumes, specifiedBlankLiquidFillingStrokeDelays, specifiedBlankLiquidSampleOverAspirationVolumes, specifiedBlankSPMESampleExtractionTimes,
 		specifiedBlankSPMESampleDesorptionTimes, specifiedBlankAgitateWhileSamplings, resolvedBlankDilutes, outOfRangeBlankLiquidSampleVolumes, resolvedBlankLiquidSampleVolumes,
-		outOfRangeBlankLiquidSampleVolumeTests, maxLiquidSampleAspirationRate, maxLiquidFillingStrokesRate, maxLiquidInjectionRate, sampleAspirationRatesTooFastQ,
-		standardAspirationRatesTooFastQ, blankAspirationRatesTooFastQ, sampleInjectionRatesTooFastQ, standardInjectionRatesTooFastQ, blankInjectionRatesTooFastQ, sampleAspirationRatesTooFastTest,
-		standardAspirationRatesTooFastTest, blankAspirationRatesTooFastTest, sampleInjectionRatesTooFastTest, standardInjectionRatesTooFastTest, blankInjectionRatesTooFastTest,
-		headspaceSampleAspirationRatesTooFastQ, headspaceStandardAspirationRatesTooFastQ, headspaceBlankAspirationRatesTooFastQ, headspaceSampleInjectionRatesTooFastQ,
-		headspaceStandardInjectionRatesTooFastQ, headspaceBlankInjectionRatesTooFastQ, headspaceSampleAspirationRatesTooFastTest, headspaceStandardAspirationRatesTooFastTest,
-		headspaceBlankAspirationRatesTooFastTest, headspaceSampleInjectionRatesTooFastTest, headspaceStandardInjectionRatesTooFastTest, headspaceBlankInjectionRatesTooFastTest,
+		outOfRangeBlankLiquidSampleVolumeTests, maxLiquidSampleAspirationRate, maxLiquidFillingStrokesRate, maxLiquidInjectionRate, sampleAspirationRatesOutOfBoundsQ,
+		standardAspirationRatesOutOfBoundsQ, blankAspirationRatesOutOfBoundsQ, sampleInjectionRatesOutOfBoundsQ, standardInjectionRatesOutOfBoundsQ, blankInjectionRatesOutOfBoundsQ, sampleAspirationRatesOutOfBoundsTest,
+		standardAspirationRatesOutOfBoundsTest, blankAspirationRatesOutOfBoundsTest, sampleInjectionRatesOutOfBoundsTest, standardInjectionRatesOutOfBoundsTest, blankInjectionRatesOutOfBoundsTest,
+		headspaceSampleAspirationRatesOutOfBoundsQ, headspaceStandardAspirationRatesOutOfBoundsQ, headspaceBlankAspirationRatesOutOfBoundsQ, headspaceSampleInjectionRatesOutOfBoundsQ,
+		headspaceStandardInjectionRatesOutOfBoundsQ, headspaceBlankInjectionRatesOutOfBoundsQ, headspaceSampleAspirationRatesOutOfBoundsTest, headspaceStandardAspirationRatesOutOfBoundsTest,
+		headspaceBlankAspirationRatesOutOfBoundsTest, headspaceSampleInjectionRatesOutOfBoundsTest, headspaceStandardInjectionRatesOutOfBoundsTest, headspaceBlankInjectionRatesOutOfBoundsTest,
 		specifiedBlankWithAutomatics, injectionTableRules, injectionTableGasChromatographyOptionsAssociation, resolvedBlankAgitateWhileSamplings, resolvedEmail,
 		resolvedPostRunOvenTimes, resolvedPostRunFlowRates, resolvedPostRunPressures, resolvedStandardPostRunOvenTimes, resolvedStandardPostRunFlowRates, resolvedStandardPostRunPressures,
 		resolvedBlankPostRunOvenTimes, resolvedBlankPostRunFlowRates, resolvedBlankPostRunPressures, incompatibleDetectorOptionsQ, incompatibleDetectorOptions, incompatibleDetectorOptionTests,
 		fidRequiredOptions, msRequiredOptions, specifiedRequiredFIDOptions, specifiedRequiredMSOptions, incompatibleNullDetectorOptionsQ, incompatibleNullDetectorOptions, incompatibleNullDetectorOptionTests,
-		emptySamples, emptySamplesTests, compatibleORingQ, incompatibleORing, compatibleSeptumQ, incompatibleSeptum, specifiedInstrument,
+		compatibleORingQ, incompatibleORing, compatibleSeptumQ, incompatibleSeptum, specifiedInstrument,
 		compatibleORingTest, compatibleSeptumTest, conflictingTrimOptionsQ, conflictingTrimOptionsTest, invalidTrimOptions, liquidInjectionSyringeMissingQ,
 		incompatibleLiquidInjectionSyringeQ, liquidInjectionSyringeOption, specifiedHeadspaceInjectionSyringeModelType, headspaceInjectionSyringeMissingQ, incompatibleHeadspaceInjectionSyringeQ,
 		headspaceInjectionSyringeOption, spmeInjectionFiberMissingQ, spmeInjectionFiberOption, specifiedLiquidHandlingSyringeModelType, liquidHandlingSyringeMissingQ,
@@ -6306,9 +6473,13 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		headspaceAgitationConflictTests, headspaceAgitateWhileSamplingTuples, cospecifiedOptionsOptions, cospecifiedOptionsTuples, invalidBlankPrepOpsQ, invalidBlankPrepOptions,
 		invalidBlankPrepOpsTest, standardBlankTransferErrorTuples, standardBlankTransferErrorOptions, standardBlankTransferErrorTests, compatibleAliquotContainerQ,
 		incompatibleAliquotContainers, incompatibleAliquotContainersOptions, incompatibleAliquotContainersTest, allSpecifiedLiquidInjectionVolumes, allSpecifiedHeadspaceInjectionVolumes,
-		oRingPacket, oRingParameters, septumPacket, septumParameters, invalidGCSampleVolumeOutOfRangeOptions, optionValueAboveLimitOptions,
+		oRingPacket, oRingParameters, septumPacket, septumParameters, invalidGCSampleVolumeOutOfRangeOptions, optionValueOutOfBoundsOptions,
 		finalVialModels, finalStandardVialModels, finalBlankVialModels, allVials, smallVials, shortBigVials, tallBigVials, tooManySmallSamplesInvalidOption,
-		tooManyBigSamplesInvalidOption
+		tooManyBigSamplesInvalidOption, simulation, updatedSimulation, blankDrawVolumesTooLargeQ, incompatibleBlankSampleAndAirVolumes, simulatedContainerCoverPackets, simulatedContainerModelPackets,
+		simulatedContainerModelCoverPackets, standardContainerCoverPackets, standardContainerModelPackets, standardContainerCoverModelPackets, blankContainerCoverPackets,
+		blankContainerModelPackets, blankContainerCoverModelPackets, modelCapPackets, resolvedSampleCaps, resolvedStandardCaps, resolvedBlankCaps,
+		standardContainerCoverPacketsWithNulls, standardContainerModelPacketsWithNulls, standardContainerCoverModelPacketsWithNulls,
+		blankContainerCoverPacketsWithNulls, blankContainerModelPacketsWithNulls, blankContainerCoverModelPacketsWithNull, aliquotContainerModelPackets, standardAliquotContainerModelPackets, blankAliquotContainerModelPackets
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -6325,23 +6496,24 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 
 	(* Fetch our cache from the parent function. *)
 	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, {}];
 
 	(* Separate out our GasChromatography options from our Sample Prep options. *)
-	{samplePrepOptions, GasChromatographyOptions} = splitPrepOptions[myOptions];
+	{samplePrepOptions, gasChromatographyOptions} = splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{{simulatedSamples, resolvedSamplePrepOptions, simulatedCache}, samplePrepTests} = If[gatherTests,
-		resolveSamplePrepOptions[ExperimentGasChromatography, mySamples, samplePrepOptions, Cache -> cache, Output -> {Result, Tests}],
-		{resolveSamplePrepOptions[ExperimentGasChromatography, mySamples, samplePrepOptions, Cache -> cache, Output -> Result], {}}
+	{{simulatedSamples, resolvedSamplePrepOptions, updatedSimulation}, samplePrepTests} = If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentGasChromatography, mySamples, samplePrepOptions, Cache -> cache, Simulation->simulation, Output -> {Result, Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentGasChromatography, mySamples, samplePrepOptions, Cache -> cache, Simulation->simulation, Output -> Result], {}}
 	];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
-	GasChromatographyOptionsAssociation = Association[GasChromatographyOptions];
+	gasChromatographyOptionsAssociation = Association[gasChromatographyOptions];
 
-	specifiedInstrument = Lookup[GasChromatographyOptionsAssociation, Instrument];
+	specifiedInstrument = Lookup[gasChromatographyOptionsAssociation, Instrument];
 
 	(* Extract the packets that we need from our downloaded cache. *)
-	(* Remember to download from simulatedSamples, using our simulatedCache *)
+	(* Remember to download from simulatedSamples, using our updatedSimulation *)
 	(* Quiet[Download[...],Download::FieldDoesntExist] *)
 
 	(* Download sample packets *)
@@ -6350,31 +6522,44 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		(*{
 			Packet[Fields to download from each sample: Expect to need: Composition, Analytes, Solvent, Status, State, Density, MeltingPoint, BoilingPoint, VaporPressure, Container, et al. ]
 		},*)
-		Cache -> simulatedCache,
+		Cache -> cache,
+		Simulation->updatedSimulation,
 		Date -> Now
 	], {Download::MissingField, Download::FieldDoesntExist, Download::NotLinkField, Download::MissingCacheField}];
 
 	(* If you have Warning:: messages, do NOT throw them when MatchQ[$ECLApplication,Engine]. Warnings should NOT be surfaced in engine. *)
 
 	(* Pull out the container and model of each sample *)
-	sampleContainers = Download[samplePackets, Container[Object], Cache -> simulatedCache, Date -> Now];
+	sampleContainers = Download[samplePackets, Container[Object], Cache -> cache, Simulation->updatedSimulation, Date -> Now];
 
 	(* Pull out the container model and properties of each simulated sample *)
-	{
-		simulatedContainerModels,
-		simulatedSampleVolumes,
-		simulatedSampleMasses,
-		simulatedSampleStates
-	} = Transpose@Download[
-		simulatedSamples,
+	Quiet[
 		{
-			Container[Model][Object],
-			Volume,
-			Mass,
-			State
-		},
-		Cache -> simulatedCache,
-		Date -> Now
+			simulatedContainers,
+			simulatedContainerModels,
+			simulatedContainerCoverPackets,
+			simulatedContainerModelPackets,
+			simulatedContainerModelCoverPackets,
+			simulatedSampleVolumes,
+			simulatedSampleMasses,
+			simulatedSampleStates
+		} = Transpose@Download[
+			simulatedSamples,
+			{
+				Container[Object],
+				Container[Model][Object],
+				Container[Cover][Packet[]],
+				Container[Model][Packet[Footprint, NeckType, CoverFootprints]],
+				Container[Cover][Model][Packet[Pierceable]],
+				Volume,
+				Mass,
+				State
+			},
+			Cache -> cache,
+		Simulation -> updatedSimulation,
+			Date -> Now
+		],
+		{Download::FieldDoesntExist}
 	];
 
 	(*-- INPUT VALIDATION CHECKS --*)
@@ -6393,7 +6578,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs] > 0 && !gatherTests,
-		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Cache -> simulatedCache]];
+		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation]];
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -6401,12 +6586,12 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		Module[{failingTest, passingTest},
 			failingTest = If[Length[discardedInvalidInputs] == 0,
 				Nothing,
-				Test["Input sample(s) " <> ObjectToString[discardedInvalidInputs, Cache -> simulatedCache] <> " are not discarded:", True, False]
+				Test["Input sample(s) " <> ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation] <> " are not discarded:", True, False]
 			];
 
 			passingTest = If[Length[discardedInvalidInputs] == Length[mySamples],
 				Nothing,
-				Test["Input sample(s) " <> ObjectToString[Complement[mySamples, discardedInvalidInputs], Cache -> simulatedCache] <> " are not discarded:", True, True]
+				Test["Input sample(s) " <> ObjectToString[Complement[mySamples, discardedInvalidInputs], Simulation -> updatedSimulation] <> " are not discarded:", True, True]
 			];
 
 			{failingTest, passingTest}
@@ -6422,7 +6607,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 	(* If we are throwing messages, throw an error *)
 	containerlessInvalidInputs = If[!gatherTests && Length[containerlessSamples] > 0,
 		(
-			Message[Error::ContainerlessSamples, ObjectToString[containerlessSamples, Cache -> simulatedCache]];
+			Message[Error::ContainerlessSamples, ObjectToString[containerlessSamples, Simulation -> updatedSimulation]];
 			containerlessSamples
 		),
 		containerlessSamples
@@ -6433,12 +6618,12 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		Module[{failingTest, passingTest},
 			failingTest = If[Length[containerlessInvalidInputs] == 0,
 				Nothing,
-				Test["Input sample(s) " <> ObjectToString[containerlessInvalidInputs, Cache -> simulatedCache] <> " are in containers:", True, False]
+				Test["Input sample(s) " <> ObjectToString[containerlessInvalidInputs, Simulation -> updatedSimulation] <> " are in containers:", True, False]
 			];
 
 			passingTest = If[Length[containerlessInvalidInputs] == Length[mySamples],
 				Nothing,
-				Test["Input sample(s) " <> ObjectToString[Complement[mySamples, containerlessInvalidInputs], Cache -> simulatedCache] <> " are in containers:", True, True]
+				Test["Input sample(s) " <> ObjectToString[Complement[mySamples, containerlessInvalidInputs], Simulation -> updatedSimulation] <> " are in containers:", True, True]
 			];
 
 			{failingTest, passingTest}
@@ -6459,7 +6644,8 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 			Model[Container, Vessel, "2 mL clear glass GC vial"]
 		},
 		Object,
-		Cache -> simulatedCache,
+		Cache -> cache,
+		Simulation -> updatedSimulation,
 		Date -> Now
 	];
 
@@ -6481,9 +6667,9 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 						Switch[
 							vial,
 							ObjectP[Object[Container, Vessel]],
-							Download[vial, Model[{Footprint, NeckType}], Cache -> simulatedCache, Date -> Now],
+							Download[vial, Model[{Footprint, NeckType}], Cache -> cache, Simulation -> updatedSimulation, Date -> Now],
 							ObjectP[Model[Container, Vessel]],
-							Download[vial, {Footprint, NeckType}, Cache -> simulatedCache, Date -> Now],
+							Download[vial, {Footprint, NeckType}, Cache -> cache, Simulation -> updatedSimulation, Date -> Now],
 							_,
 							{Null, Null}
 						],
@@ -6537,7 +6723,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 				Module[{footprint, neckType},
 					(* get the relevant fields from the simulated cache *)
 					{footprint, neckType} = If[!NullQ[containerModel],
-						Download[containerModel, {Footprint, NeckType}, Cache -> simulatedCache, Date -> Now],
+						Download[containerModel, {Footprint, NeckType}, Cache -> cache, Simulation -> updatedSimulation, Date -> Now],
 						{Null, Null}
 					];
 					(* check if the vial is compatible *)
@@ -6589,14 +6775,14 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 	(* == Column is a gas chromatography column == *)
 
 	(* Get the column and corresponding separation mode *)
-	column = ToList[Lookup[GasChromatographyOptionsAssociation, Column]];
+	column = ToList[Lookup[gasChromatographyOptionsAssociation, Column]];
 
 	(* Get the model(s) of the installed column(s) *)
 	columnModel = Map[
 		Switch[
 			#,
 			ObjectP[Object[Item, Column]],
-			Download[#, Model, Cache -> simulatedCache, Date -> Now],
+			Download[#, Model, Cache -> cache, Simulation -> updatedSimulation, Date -> Now],
 			ObjectP[Model[Item, Column]],
 			#,
 			_,
@@ -6609,9 +6795,15 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		Switch[
 			#,
 			ObjectP[Object[Item, Column]],
-			Download[Download[#, Model, Cache -> simulatedCache, Date -> Now], ChromatographyType, Cache -> simulatedCache, Date -> Now],
+			Download[
+				Download[#, Model, Cache -> cache, Simulation -> updatedSimulation, Date -> Now],
+				ChromatographyType,
+				Cache -> cache,
+				Simulation -> updatedSimulation,
+				Date -> Now
+			],
 			ObjectP[Model[Item, Column]],
-			Download[#, ChromatographyType, Cache -> simulatedCache, Date -> Now],
+			Download[#, ChromatographyType, Cache -> cache, Simulation -> updatedSimulation, Date -> Now],
 			_,
 			$Failed
 		]&,
@@ -6624,7 +6816,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 	(* If we are throwing messages, throw an error *)
 	invalidInputColumns = If[Length[invalidColumns] > 0,
 		(
-			If[!gatherTests, Message[Error::GCIncompatibleColumn, ObjectToString[invalidColumns]]];
+			If[!gatherTests, Message[Error::GCIncompatibleColumn, ObjectToString[invalidColumns, Cache -> cache, Simulation -> updatedSimulation]]];
 			Column
 		),
 		{}
@@ -6635,12 +6827,12 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		Module[{failingTest, passingTest},
 			failingTest = If[Length[invalidColumns] == 0,
 				Nothing,
-				Test["Input column(s) " <> ObjectToString[invalidColumns] <> " are gas chromatography columns:", True, False]
+				Test["Input column(s) " <> ObjectToString[invalidColumns, Cache -> cache, Simulation -> updatedSimulation] <> " are gas chromatography columns:", True, False]
 			];
 
 			passingTest = If[Length[invalidColumns] == Length[column],
 				Nothing,
-				Test["Input column(s) " <> ObjectToString[Complement[column, invalidColumns]] <> " are gas chromatography columns:", True, True]
+				Test["Input column(s) " <> ObjectToString[Complement[column, invalidColumns], Cache -> cache, Simulation -> updatedSimulation] <> " are gas chromatography columns:", True, True]
 			];
 
 			{failingTest, passingTest}
@@ -6651,7 +6843,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 	(* -- INJECTIONTABLE -- *)
 
 	(*get the injection table option and see if need consider the suboptions within it*)
-	injectionTableLookup = Lookup[GasChromatographyOptionsAssociation, InjectionTable, Null];
+	injectionTableLookup = Lookup[gasChromatographyOptionsAssociation, InjectionTable, Null];
 
 	(*is the injection specified (meaning that it has tuples within it)?*)
 	injectionTableSpecifiedQ = MatchQ[injectionTableLookup, Except[Automatic | Null | {}]];
@@ -6667,7 +6859,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 			injectionTableSpecifiedBlanks, injectionTableSpecifiedSampleSamplingMethods, injectionTableSpecifiedStandardSamplingMethods, injectionTableSpecifiedBlankSamplingMethods,
 			injectionTableSpecifiedSampleSeparationMethods, injectionTableSpecifiedStandardSeparationMethods, injectionTableSpecifiedBlankSeparationMethods, injectionTableSpecifiedSampleOps,
 			injectionTableSpecifiedStandardOps, injectionTableSpecifiedBlankOps, injectionTableSpecifiedSampleOpKeys, injectionTableSpecifiedStandardOpKeys, injectionTableSpecifiedBlankOpKeys,
-			injectionTableReplaceRules, tableRules
+			injectionTableReplaceRules, standardTableRules, blankTableRules, tableRules
 		},
 		(* break the table down into its constituents *)
 		{
@@ -6693,7 +6885,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		{injectionTableSpecifiedSampleOps, injectionTableSpecifiedStandardOps, injectionTableSpecifiedBlankOps} = {injectionTableSampleEntries, injectionTableStandardEntries, injectionTableBlankEntries}[[All, All, 4]];
 
 		(* extract the keys *)
-		{injectionTableSpecifiedSampleOpKeys, injectionTableSpecifiedStandardOpKeys, injectionTableSpecifiedBlankOpKeys} = Keys /@ {injectionTableSpecifiedSampleOps, injectionTableSpecifiedStandardOps, injectionTableSpecifiedBlankOps};
+		{injectionTableSpecifiedSampleOpKeys, injectionTableSpecifiedStandardOpKeys, injectionTableSpecifiedBlankOpKeys} = Keys /@ ({injectionTableSpecifiedSampleOps, injectionTableSpecifiedStandardOps, injectionTableSpecifiedBlankOps}/.{(Automatic|Null)-><||>});
 
 		(* prepare the replace rule groups and return the list as an association *)
 		injectionTableReplaceRules = Flatten@MapThread[
@@ -6725,16 +6917,35 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 			}
 		];
 
-		tableRules = <|
-			Standard -> injectionTableSpecifiedStandards,
-			Blank -> injectionTableSpecifiedBlanks /. {Null -> NoInjection},
-			SamplingMethod -> injectionTableSpecifiedSampleSamplingMethods,
-			StandardSamplingMethod -> injectionTableSpecifiedStandardSamplingMethods,
-			BlankSamplingMethod -> injectionTableSpecifiedBlankSamplingMethods,
-			SeparationMethod -> injectionTableSpecifiedSampleSeparationMethods,
-			StandardSeparationMethod -> injectionTableSpecifiedStandardSeparationMethods,
-			BlankSeparationMethod -> injectionTableSpecifiedBlankSeparationMethods
-		|>;
+		(* Only include Standard options when there are standards, otherwise just Standard -> {} *)
+		standardTableRules=If[MatchQ[injectionTableSpecifiedStandards,{}],
+			<|Standard -> injectionTableSpecifiedStandards|>,
+			<|
+				Standard -> injectionTableSpecifiedStandards,
+				StandardSamplingMethod -> injectionTableSpecifiedStandardSamplingMethods,
+				StandardSeparationMethod -> injectionTableSpecifiedStandardSeparationMethods
+			|>
+		];
+
+		(* Only include Blank options when there are standards, otherwise just Blank -> {} *)
+		blankTableRules=If[MatchQ[injectionTableSpecifiedStandards,{}],
+			<|Blank -> injectionTableSpecifiedBlanks /. {Null -> NoInjection}|>,
+			<|
+				Blank -> injectionTableSpecifiedBlanks /. {Null -> NoInjection},
+				BlankSamplingMethod -> injectionTableSpecifiedBlankSamplingMethods,
+				BlankSeparationMethod -> injectionTableSpecifiedBlankSeparationMethods
+			|>
+		];
+
+		(* Join the Sample, Standard, Blank rules together. Note we should always have Sample *)
+		tableRules = Join[
+			<|
+				SamplingMethod -> injectionTableSpecifiedSampleSamplingMethods,
+				SeparationMethod -> injectionTableSpecifiedSampleSeparationMethods
+			|>,
+			standardTableRules,
+			blankTableRules
+		];
 
 		Join[Association[injectionTableReplaceRules], tableRules]
 	];
@@ -6746,7 +6957,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 	];
 
 	(* replace the specified options with those derived from the injection table. this is currently pretty aggressive, and probably needs to do more checks to ensure merging the injection table and specified options, if any *)
-	injectionTableGasChromatographyOptionsAssociation = Join[GasChromatographyOptionsAssociation, injectionTableRules];
+	injectionTableGasChromatographyOptionsAssociation = Join[gasChromatographyOptionsAssociation, injectionTableRules];
 
 	(* == Number of samples check == *)
 
@@ -6764,9 +6975,9 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		TrueQ[tooManySamplesQ] && !gatherTests,
 		(
 			Message[Error::GCTooManySamples, 207];
-			Join[Download[mySamples, Object, Cache -> simulatedCache, Date -> Now], standards]
+			Join[Download[mySamples, Object, Cache -> cache, Simulation -> updatedSimulation, Date -> Now], standards]
 		),
-		TrueQ[tooManySamplesQ], Join[Download[mySamples, Object, Cache -> simulatedCache, Date -> Now], standards, blanksWithoutNoInjection],
+		TrueQ[tooManySamplesQ], Join[Download[mySamples, Object, Cache -> cache, Simulation -> updatedSimulation, Date -> Now], standards, blanksWithoutNoInjection],
 		True, {}
 	];
 
@@ -7080,19 +7291,19 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 				10^(-10) * Microliter,
 				10^(-10) * Microliter,
 				10^(-10) * Microliter,
-				(* volume rate (uL/s) *)
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
+				(* volume rate (Attoliter/s) *)
+				100 Attoliter / Second,
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
+				100 Attoliter / Second,
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
 				(* distance (mm) *)
 				10^(-10) * Millimeter,
 				10^(-10) * Millimeter,
@@ -7471,19 +7682,19 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 				10^(-10) * Microliter,
 				10^(-10) * Microliter,
 				10^(-10) * Microliter,
-				(* volume rate (uL/s) *)
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
-				10^(-10) * Microliter / Second,
+				(* volume rate (Attoliter/s) *)
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
+				100 Attoliter  / Second,
 				(* distance (mm) *)
 				10^(-10) * Millimeter,
 				10^(-10) * Millimeter,
@@ -8035,7 +8246,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 	(* expand standards with automatic *)
 	expandedStandards = Switch[
 		preResolvedStandard,
-		Null,
+		Null|{},
 		Null,
 		ObjectP[{Model[Sample], Object[Sample]}],
 		PadRight[
@@ -8075,7 +8286,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 	(* expand specified Blanks *)
 	expandedBlanks = Switch[
 		preResolvedBlankWithPlaceholder,
-		Null,
+		Null|{},
 		Null,
 		ObjectP[{Model[Sample], Object[Sample]}] | NoInjection,
 		PadRight[
@@ -8198,13 +8409,13 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 									(* if the sample is an object, we need to download its container model's info *)
 									ObjectP[Object[]],
 									Download[
-										Download[sample, Container[Model], Cache -> simulatedCache, Date -> Now],
+										Download[sample, Container[Model], Cache -> cache, Simulation -> updatedSimulation, Date -> Now],
 										{Footprint, NeckType},
-										Cache -> simulatedCache, Date -> Now],
+										Cache -> cache, Simulation -> updatedSimulation, Date -> Now],
 									(* if the sample is a model, then i guess we assume it will have to be moved? nothing ships in a GC vial afaik *)
 									ObjectP[Model[]],
 									{Null, Null}
-									(*Download[#,Container[{Footprint,NeckType}],Cache->simulatedCache]*)
+									(*Download[#,Container[{Footprint,NeckType}],Cache -> cache, Simulation -> updatedSimulation]*)
 								],
 								{Null, Null}
 							];
@@ -8334,7 +8545,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 	(*-- CONFLICTING OPTIONS CHECKS --*)
 
 	(* Get the column temperature limits *)
-	columnModelPacket = fetchPacketFromCache[#, simulatedCache]& /@ columnModel;
+	columnModelPacket = fetchPacketFromCache[#, cache]& /@ columnModel;
 	minColumnTempLimit = Max[Lookup[columnModelPacket, MinTemperature]];
 	maxColumnTempLimit = Min[Lookup[columnModelPacket, MaxTemperature]];
 
@@ -8356,7 +8567,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 						{
 							True,
 							Lookup[
-								fetchPacketFromCache[separationMethod, simulatedCache],
+								fetchPacketFromCache[separationMethod, cache],
 								{
 									ColumnLength,
 									ColumnDiameter,
@@ -8953,8 +9164,42 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 			separationMethodBlankPostRunOvenTemperatures
 		}
 	};
+	recalculateOptionsQ[prespecifiedSeparationModeOptions_, separationMethodSeparationModeOptions_] := Module[{variableMethodOptions,booleanList,recalculate,boolean},
+		(*These are the method options that vary depending on the other input method options*)
+		variableMethodOptions = Transpose[{prespecifiedSeparationModeOptions[[{13,14,15,16}]],separationMethodSeparationModeOptions[[{13,14,15,16}]]}];
+		booleanList = Transpose[Map[MapThread[Function[{prespecifiedSeparationModeOption,separationMethodSeparationModeOption},
+			Which[
+				MatchQ[separationMethodSeparationModeOption,Null],False,
+				MatchQ[{prespecifiedSeparationModeOption,separationMethodSeparationModeOption},{Automatic,_}],False,
+				MatchQ[prespecifiedSeparationModeOption,separationMethodSeparationModeOption], False,
+				!MatchQ[prespecifiedSeparationModeOption,separationMethodSeparationModeOption], True]],#]&,variableMethodOptions]];
+		boolean=Or@@#&/@booleanList;
+		Map[PadRight[PadLeft[Table[#,4],16,False],21,False]&,boolean]
+	];
+
+	{
+		recalculateSampleMethodOptions,
+		recalculateStandardMethodOptions,
+		recalculateBlankMethodOptions
+	} =	MapThread[Function[{specifiedOptionSet, methodSpecifiedOptionSet}, recalculateOptionsQ[specifiedOptionSet,methodSpecifiedOptionSet]],
+		{
+			{
+				prespecifiedSeparationModeOptions,
+				prespecifiedStandardSeparationModeOptions,
+				prespecifiedBlankSeparationModeOptions
+			},
+			{
+				separationMethodSeparationModeOptions,
+				separationMethodStandardSeparationModeOptions,
+				separationMethodBlankSeparationModeOptions
+			}
+		}
+	];
 
 	(* Here we are again replacing anything that is specified in the separationmethod, unless the user has already specified it in the options *)
+	(* Not all of these options can be taken directly from the method. If any of the velocity, flowRate, pressure,or residenceTime are modified, the others need to be
+	recalculated. Whether or not an option needs to be recalculated is listed in recalculateOptionsQ. *)
+
 	{
 		specifiedSeparationModeParameters,
 		specifiedStandardSeparationModeParameters,
@@ -8962,21 +9207,22 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 	} = MapThread[
 		Function[{optionSet, methodSpecifiedQList},
 			MapThread[
-				Function[{specifiedParameterList, separationMethodParameterList},
+				Function[{specifiedParameterList, separationMethodParameterList,recalculateOptionQ},
 					MapThread[
-						Function[{parameter, methodSpecifiedParameter, methodSpecifiedQ},
-							Switch[
-								{parameter, methodSpecifiedQ},
-								{Except[Automatic], _},
-								parameter,
-								{Automatic, False},
-								Automatic,
-								{Automatic, True},
-								methodSpecifiedParameter
+						Function[{parameter, methodSpecifiedParameter,recalculateParameterQ, methodSpecifiedQ},
+							Which[
+								(*Use parameter, if the parameter is set automatic, given in the methodSpecifiedParameter and does not need to be recalculated*)
+								!recalculateParameterQ&&!methodSpecifiedQ, parameter,
+								(*Use methodSpecifiedParameter, if the parameter is set automatic, given in the methodSpecifiedParameter and does not need to be recalculated*)
+								MatchQ[parameter,(methodSpecifiedParameter|Automatic)]&&!recalculateParameterQ&&methodSpecifiedQ, methodSpecifiedParameter,
+								(*Use Automatic, if the parameter is set automatic, given in the methodSpecifiedParameter and needs to be recalculated*)
+								MatchQ[parameter,(methodSpecifiedParameter|Automatic)]&&recalculateParameterQ&&methodSpecifiedQ, Automatic,
+								(*Use the specified paramter, differs from the methodSpecifiedParameter*)
+								!MatchQ[parameter,(methodSpecifiedParameter|Automatic)]&&recalculateParameterQ&&methodSpecifiedQ, parameter
 							]
 						],
 						(* this separationMethodSpecified needs to be split between sample, standard, and blank *)
-						{specifiedParameterList, separationMethodParameterList, methodSpecifiedQList}
+						{specifiedParameterList, separationMethodParameterList, recalculateOptionQ, methodSpecifiedQList}
 					]
 				],
 				optionSet
@@ -8985,7 +9231,8 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		{
 			Transpose@{
 				{prespecifiedSeparationModeOptions, prespecifiedStandardSeparationModeOptions, prespecifiedBlankSeparationModeOptions},
-				{separationMethodSeparationModeOptions, separationMethodStandardSeparationModeOptions, separationMethodBlankSeparationModeOptions}
+				{separationMethodSeparationModeOptions, separationMethodStandardSeparationModeOptions, separationMethodBlankSeparationModeOptions},
+				Transpose[#]&/@{recalculateSampleMethodOptions,recalculateStandardMethodOptions,recalculateBlankMethodOptions}
 			},
 			{separationMethodSpecifiedQ, standardSeparationMethodSpecifiedQ, blankSeparationMethodSpecifiedQ}
 		}
@@ -10139,10 +10386,10 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 	];
 
 	(* get the inlet liner *)
-	inletLinerPacket = fetchPacketFromCache[resolvedInletLiner, simulatedCache];
+	inletLinerPacket = fetchPacketFromCache[resolvedInletLiner, cache];
 	inletLinerVolume = If[MatchQ[inletLinerPacket, ObjectP[Model[Item, GCInletLiner]]],
 		Lookup[inletLinerPacket, Volume],
-		Lookup[fetchPacketFromCache[Lookup[inletLinerPacket, Model], simulatedCache], Volume]
+		Lookup[fetchPacketFromCache[Lookup[inletLinerPacket, Model], cache], Volume]
 	] /. {_Missing -> Null};
 
 	(* === Resolve Column Joins === *)
@@ -10222,14 +10469,14 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		Transpose@Map[
 			Function[{standard},
 				If[MatchQ[standard, _Model],
-					{Download[standard, State, Cache -> simulatedCache, Date -> Now], ModelNoMass, ModelNoVolume},
-					Download[standard, {State, Mass, Volume}, Cache -> simulatedCache, Date -> Now]
+					{Download[standard, State, Cache -> cache, Simulation-> updatedSimulation, Date -> Now], ModelNoMass, ModelNoVolume},
+					Download[standard, {State, Mass, Volume}, Cache -> cache, Simulation-> updatedSimulation, Date -> Now]
 				]
 			],
 			mySamples
 		],
 		(* we need to change this to download the simulated samples instead of the samples *)
-		Transpose@Download[mySamples, {State, Mass, Volume}, Cache -> simulatedCache, Date -> Now]
+		Transpose@Download[mySamples, {State, Mass, Volume}, Cache -> cache, Simulation-> updatedSimulation, Date -> Now]
 	];
 
 	{standardStates, standardMasses, standardVolumes} = Which[
@@ -10240,9 +10487,9 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 			Function[{standard},
 				Switch[standard,
 					ObjectP[Model[]],
-					{Download[standard, State, Cache -> simulatedCache, Date -> Now], ModelNoMass, ModelNoVolume},
+					{Download[standard, State, Cache -> cache, Simulation-> updatedSimulation, Date -> Now], ModelNoMass, ModelNoVolume},
 					ObjectP[],
-					Download[standard, {State, Mass, Volume}, Cache -> simulatedCache, Date -> Now],
+					Download[standard, {State, Mass, Volume}, Cache -> cache, Simulation-> updatedSimulation, Date -> Now],
 					_,
 					{Null, Null, Null}
 				]
@@ -10250,7 +10497,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 			resolvedStandards
 		],
 		True,
-		Transpose@Download[resolvedStandards, {State, Mass, Volume}, Cache -> simulatedCache, Date -> Now]
+		Transpose@Download[resolvedStandards, {State, Mass, Volume}, Cache -> cache, Simulation-> updatedSimulation, Date -> Now]
 	];
 
 	{blankStates, blankMasses, blankVolumes} = Which[
@@ -10262,9 +10509,9 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 				Switch[
 					standard,
 					ObjectP[Model[]],
-					{Download[standard, State, Cache -> simulatedCache, Date -> Now], ModelNoMass, ModelNoVolume},
+					{Download[standard, State, Cache -> cache, Simulation-> updatedSimulation, Date -> Now], ModelNoMass, ModelNoVolume},
 					ObjectP[],
-					Download[standard, {State, Mass, Volume}, Cache -> simulatedCache, Date -> Now],
+					Download[standard, {State, Mass, Volume}, Cache -> cache, Simulation-> updatedSimulation, Date -> Now],
 					_,
 					{Null, Null, Null}
 				]
@@ -10273,7 +10520,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		],
 		(* give it a try I guess *)
 		True,
-		Transpose@Download[resolvedBlanks, {State, Mass, Volume}, Cache -> simulatedCache, Date -> Now]
+		Transpose@Download[resolvedBlanks, {State, Mass, Volume}, Cache -> cache, Simulation-> updatedSimulation, Date -> Now]
 	];
 
 	(* Resolve SamplingMethod *)
@@ -10293,7 +10540,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 						HeadspaceInjection,
 						{_, Automatic},
 						LiquidInjection,
-						{_, Null},
+						{_, Null|{}},
 						Null
 					]&,
 					{states, preResolvedMethods}
@@ -10308,7 +10555,19 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 	];
 
 	(* combine all sampling methods for later use *)
-	allSamplingMethods = Flatten[{resolvedSamplingMethods, resolvedStandardSamplingMethods, resolvedBlankSamplingMethods}];
+	allSamplingMethods = Flatten[
+		{
+			resolvedSamplingMethods,
+			If[standardExistsQ,
+				resolvedStandardSamplingMethods,
+				{}
+			],
+			If[blankExistsQ,
+				resolvedBlankSamplingMethods,
+				{}
+			]
+		}
+	];
 
 	(* split some shared option parameters into liquid and headspace *)
 
@@ -10480,870 +10739,15 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 			Map[
 				Function[{sample},
 					If[MatchQ[sample, ObjectP[Object[Sample]]],
-						Download[sample, Container, Cache -> simulatedCache],
+						Download[sample, Container, Cache -> cache, Simulation -> updatedSimulation],
 						Null
 					]
 				],
 				sampleList
 			]
 		],
-		{standards, blanks}
+		{resolvedStandards, resolvedBlanks}
 	];
-
-	{
-		{targetVials, resolvedDilutionSolventVolumes, resolvedSecondaryDilutionSolventVolumes, resolvedTertiaryDilutionSolventVolumes, requiredAliquotAmounts},
-		{targetStandardVials, resolvedStandardDilutionSolventVolumes, resolvedStandardSecondaryDilutionSolventVolumes, resolvedStandardTertiaryDilutionSolventVolumes, requiredStandardAliquotAmounts},
-		{targetBlankVials, resolvedBlankDilutionSolventVolumes, resolvedBlankSecondaryDilutionSolventVolumes, resolvedBlankTertiaryDilutionSolventVolumes, requiredBlankAliquotAmounts}
-	} = Map[
-		Function[{optionsList},
-			Module[{samplingMethodsInternal, states, volumes, masses, dilutionSolventVolumes, secondaryDilutionSolventVolumes, tertiaryDilutionSolventVolumes, dilutes, initialContainers, aliquotBooleans, specifiedAliquots, assayVolumes, aliquotContainers},
-				{samplingMethodsInternal, states, volumes, masses, dilutionSolventVolumes, secondaryDilutionSolventVolumes, tertiaryDilutionSolventVolumes, dilutes, initialContainers, aliquotBooleans, specifiedAliquots, assayVolumes, aliquotContainers} = optionsList;
-				Transpose@MapThread[
-					Function[{samplingMethod, sampleState, sampleVolume, sampleMass, dilutionSolventVolume, secondaryDilutionSolventVolume, tertiaryDilutionSolventVolume, diluteBoolean, initialContainer, aliquotBoolean, specifiedAliquot, assayVolume, aliquotContainer},
-						Module[{targetContainer, requiredAmount, resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume, targetContainerVolume},
-							(*logic for target container for each sample*)
-							(* check if we need to aliquot *)
-							{targetContainer, targetContainerVolume} = If[!aliquotBoolean,
-								(* if we do not need to aliquot, then we are already in an acceptable target container so we need to determine that container and its max volume? *)
-								{
-									initialContainer,
-									Switch[
-										initialContainer,
-										ObjectP[Object[]],
-										Download[initialContainer, Model[MaxVolume], Cache -> simulatedCache],
-										ObjectP[Model[]],
-										Download[initialContainer, MaxVolume, Cache -> simulatedCache]
-									]
-								},
-								(* otherwise if we do need to aliquot, we need to resolve a container based on first whether an aliquot container is specified, and if not then the specified, volume, sampling method, state, etc. *)
-								If[MatchQ[aliquotContainer, ObjectP[]],
-									{
-										aliquotContainer,
-										Switch[
-											aliquotContainer,
-											ObjectP[Object[]],
-											Download[aliquotContainer, Model[MaxVolume], Cache -> simulatedCache],
-											ObjectP[Model[]],
-											Download[aliquotContainer, MaxVolume, Cache -> simulatedCache]
-										]
-									},
-									(* if a volume is specified *)
-									Which[
-										MatchQ[assayVolume, GreaterP[0 * Liter]],
-										Which[
-											assayVolume <= 0.27 Milliliter,
-											{Model[Container, Vessel, "0.3 mL clear glass GC vial"], 0.3 * Milliliter},
-											(* 2 mL clear glass GC vial can hold only 1.5 mL *)
-											assayVolume <= 1.5 Milliliter,
-											{Model[Container, Vessel, "2 mL clear glass GC vial"], 2 * Milliliter},
-											assayVolume <= 10 Milliliter,
-											{Model[Container, Vessel, "10 mL clear glass GC vial"], 10 * Milliliter},
-											assayVolume <= 20 Milliliter,
-											{Model[Container, Vessel, "20 mL clear glass GC vial"], 20 * Milliliter}
-										],
-										MatchQ[specifiedAliquot, GreaterP[0 * Liter]],
-										Which[
-											specifiedAliquot <= 0.27 Milliliter,
-											{Model[Container, Vessel, "0.3 mL clear glass GC vial"], 0.3 * Milliliter},
-											(* 2 mL clear glass GC vial can hold only 1.5 mL *)
-											specifiedAliquot <= 1.5 Milliliter,
-											{Model[Container, Vessel, "2 mL clear glass GC vial"], 2 * Milliliter},
-											specifiedAliquot <= 10 Milliliter,
-											{Model[Container, Vessel, "10 mL clear glass GC vial"], 10 * Milliliter},
-											specifiedAliquot <= 20 Milliliter,
-											{Model[Container, Vessel, "20 mL clear glass GC vial"], 20 * Milliliter}
-										],
-										True,
-										Switch[
-											samplingMethod,
-											(* If headspace/spme injection, use the 10 mL clear glass GC vials *)
-											(HeadspaceInjection | SPMEInjection),
-											{Model[Container, Vessel, "10 mL clear glass GC vial"], 10 * Milliliter},
-											(* If liquid injection, use the 2 mL clear glass GC vials *)
-											(LiquidInjection),
-											If[Switch[sampleState,
-												Liquid,
-												If[MatchQ[sampleVolume, _Quantity],
-													sampleVolume < 300 * Microliter,
-													False
-												],
-												Solid,
-												If[MatchQ[sampleMass, _Quantity],
-													sampleMass < 200 * Milli * Gram,
-													False
-												],
-												(* if no sample state is available *)
-												Null,
-												Which[
-													MatchQ[sampleVolume, _Quantity],
-													If[MatchQ[sampleVolume, _Quantity],
-														sampleVolume < 300 * Microliter,
-														False
-													],
-													MatchQ[sampleMass, _Quantity],
-													If[MatchQ[sampleMass, _Quantity],
-														sampleMass < 200 * Milli * Gram,
-														False
-													],
-													True,
-													False
-												]
-											],
-												{Model[Container, Vessel, "0.3 mL clear glass GC vial"], 0.3 * Milliliter},
-												{Model[Container, Vessel, "2 mL clear glass GC vial"], 2 * Milliliter}
-											],
-											Null,
-											Null
-										]
-									]
-								]
-							];
-							(* logic for dilution volumes *)
-							{resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume} = MapThread[
-								Function[{solventVolume, solventSpecifiedQ},
-									Switch[
-										{solventVolume, diluteBoolean},
-										{Except[Automatic], _},
-										solventVolume,
-										(* To automatically resolve the dilution solvent volume, take the target container and subtract the volume of all specified dilution solvent volumes. Then divide that quantity by the number of specified dilution solvents plus one. *)
-										{Automatic, True},
-										If[solventSpecifiedQ,
-											If[!aliquotBoolean,
-												(* if we are not aliquoting, we already have some volume in the container. this should be the simulated volume so use that to determine how much to add. MUST BE POSITIVE *)
-												Max[0 * Milliliter, (0.9 * targetContainerVolume - ((dilutionSolventVolume + secondaryDilutionSolventVolume + tertiaryDilutionSolventVolume + sampleVolume) /. {Automatic -> 0 * Milliliter, Null -> 0 * Milliliter})) / (numberOfDilutionSolventsSpecified)],
-												(* if we are aliquoting, then we just need to make sure the volumes don't add up to more than the container's max volume. Still must be greater than 0 *)
-												Max[0 * Milliliter, (0.9 * targetContainerVolume - ((dilutionSolventVolume + secondaryDilutionSolventVolume + tertiaryDilutionSolventVolume + specifiedAliquot) /. {Automatic -> 0 * Milliliter, Null -> 0 * Milliliter})) / (numberOfDilutionSolventsSpecified + If[MatchQ[specifiedAliquot, Automatic], 1, 0])]
-											],
-											Null
-										],
-										{Automatic, False},
-										Null
-									]
-								],
-								{
-									{dilutionSolventVolume, secondaryDilutionSolventVolume, tertiaryDilutionSolventVolume},
-									{dilutionSolventSpecifiedQ, secondaryDilutionSolventSpecifiedQ, tertiaryDilutionSolventSpecifiedQ}
-								}
-							];
-
-							(*logic for aliquot amount for each sample: take the minimum of either the sample amount or the resolve total volume target minus the automatically selected amount of diluent *)
-							requiredAmount = Which[
-								aliquotBoolean && !MatchQ[specifiedAliquot, Automatic],
-								specifiedAliquot,
-								!aliquotBoolean,
-								sampleVolume,
-								True(* including aliquotBoolean && MatchQ[specifiedAliquot,Automatic]*),
-								Switch[
-									{targetContainerVolume, samplingMethod},
-									{_, HeadspaceInjection},
-									Switch[sampleState,
-										Liquid,
-										Max[1 * Microliter,
-											If[MatchQ[sampleVolume, _Quantity],
-												Min[sampleVolume, 0.2 * targetContainerVolume - Total[{resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}]],
-												0.2 * targetContainerVolume - Total[{resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}]
-											]
-										],
-										Solid,
-										If[MatchQ[sampleMass, _Quantity],
-											Clip[sampleMass, {1 * Milligram, 0.5 * Gram}],
-											0.5 * Gram
-										]
-									],
-									{_, LiquidInjection},
-									Max[1 * Microliter,
-										If[MatchQ[sampleVolume, _Quantity],
-											Min[sampleVolume, 1.5 * Milliliter - Total[{resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}]],
-											1.5 * Milliliter - Total[{resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}]
-										]
-									],
-									{LessP[5 * Milliliter], SPMEInjection},
-									Switch[sampleState,
-										Liquid,
-										Max[1 * Microliter,
-											If[MatchQ[sampleVolume, _Quantity],
-												Min[sampleVolume, 0.9 * targetContainerVolume - Total[{resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}]],
-												0.9 * targetContainerVolume - Total[{resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}]
-											]
-										],
-										Solid,
-										If[MatchQ[sampleMass, _Quantity],
-											Clip[sampleMass, {1 * Milligram, 0.25 * Gram}],
-											0.25 * Gram
-										]
-									],
-									{GreaterEqualP[5 * Milliliter], SPMEInjection},
-									Switch[sampleState,
-										Liquid,
-										Max[1 * Microliter,
-											If[MatchQ[sampleVolume, _Quantity],
-												Min[sampleVolume, 0.2 * targetContainerVolume - Total[{resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}]],
-												0.2 * targetContainerVolume - Total[{resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}]
-											]
-										],
-										Solid,
-										If[MatchQ[sampleMass, _Quantity],
-											Clip[sampleMass, {1 * Milligram, 0.5 * Gram}],
-											0.5 * Gram
-										]
-									],
-									{_, Null},
-									Null
-								]
-							];
-
-							(* return the result *)
-							{
-								targetContainer,
-								resolvedDilutionSolventVolume,
-								resolvedSecondaryDilutionSolventVolume,
-								resolvedTertiaryDilutionSolventVolume,
-								requiredAmount
-							}
-						]
-					],
-					{
-						samplingMethodsInternal,
-						states,
-						volumes,
-						masses,
-						dilutionSolventVolumes,
-						secondaryDilutionSolventVolumes,
-						tertiaryDilutionSolventVolumes,
-						dilutes,
-						initialContainers,
-						aliquotBooleans,
-						specifiedAliquots,
-						assayVolumes,
-						aliquotContainers
-					}
-				]
-			]
-		],
-		{
-			{
-				resolvedSamplingMethods,
-				simulatedSampleStates,
-				simulatedSampleVolumes,
-				simulatedSampleMasses,
-				specifiedDilutionSolventVolumes,
-				specifiedSecondaryDilutionSolventVolumes,
-				specifiedTertiaryDilutionSolventVolumes,
-				resolvedDilutes,
-				simulatedContainerModels,
-				aliquotQ,
-				specifiedAliquotAmounts,
-				specifiedAssayVolumes,
-				specifiedAliquotContainers
-			},
-			{
-				resolvedStandardSamplingMethods,
-				standardStates,
-				standardVolumes,
-				standardMasses,
-				specifiedStandardDilutionSolventVolumes,
-				specifiedStandardSecondaryDilutionSolventVolumes,
-				specifiedStandardTertiaryDilutionSolventVolumes,
-				resolvedStandardDilutes,
-				standardContainers,
-				aliquotStandardQ,
-				(* For Standard, there is no AssayVolume. The total volume is always the standard amount (equivalent to AliquotAmount for SamplesIn *)
-				specifiedStandardAmounts,
-				specifiedStandardAmounts,
-				specifiedStandardVials
-			},
-			{
-				resolvedBlankSamplingMethods,
-				blankStates,
-				blankVolumes,
-				blankMasses,
-				specifiedBlankDilutionSolventVolumes,
-				specifiedBlankSecondaryDilutionSolventVolumes,
-				specifiedBlankTertiaryDilutionSolventVolumes,
-				resolvedBlankDilutes,
-				blankContainers,
-				aliquotBlankQ,
-				(* For Blank, there is no AssayVolume. The total volume is always the blank amount (equivalent to AliquotAmount for SamplesIn *)
-				specifiedBlankAmounts,
-				specifiedBlankAmounts,
-				specifiedBlankVials
-			}
-		}
-	];
-
-	(* DilutionSolventVolume *)
-
-	(* SecondaryDilutionSolventVolume *)
-
-	(* TertiaryDilutionSolventVolume *)
-
-	(* === Resolve LiquidInjectionSyringe === *)
-	(* Get the specified LiquidInjectionSyringe *)
-	specifiedLiquidInjectionSyringe = Lookup[roundedGasChromatographyOptions, LiquidInjectionSyringe];
-
-	(* Get the model of the specified LiquidInjectionSyringe *)
-	specifiedLiquidInjectionSyringeModel = Switch[
-		specifiedLiquidInjectionSyringe,
-		ObjectP[Model[Container, Syringe]],
-		Download[specifiedLiquidInjectionSyringe, Object],
-		ObjectP[Object[Container, Syringe]],
-		Download[specifiedLiquidInjectionSyringe, Model, Cache -> simulatedCache],
-		_,
-		Null
-	];
-
-	(* Get the list of compatible LiquidInjectionSyringes *)
-	specifiedLiquidInjectionSyringeModelType = Lookup[
-		fetchPacketFromCache[specifiedLiquidInjectionSyringeModel, simulatedCache] /. {Null -> <||>},
-		GCInjectionType,
-		Null
-	];
-
-	(* supported syringes: Alternatives[
-		(*name form*)
-		Model[Container,Syringe,"1 \[Mu]L GC liquid sample injection syringe"], (* 1 microliter *)
-		Model[Container,Syringe,"5 \[Mu]L GC liquid sample injection syringe"], (* 5 microliter *)
-		Model[Container,Syringe,"10 \[Mu]L GC liquid sample injection syringe"], (* 10 microliter *)
-		Model[Container,Syringe,"25 \[Mu]L GC liquid sample injection syringe"], (* 25 microliter *)
-		Model[Container,Syringe,"100 \[Mu]L GC liquid sample injection syringe"],  (* 100 microliter *)
-		(*object form*)
-		Model[Container, Syringe, "id:bq9LA0JE9VG6"], (* 1 microliter *)
-		Model[Container, Syringe, "id:KBL5Dvw9LKjj"], (* 5 microliter *)
-		Model[Container, Syringe, "id:dORYzZJxRqER"], (* 10 microliter *)
-		Model[Container, Syringe, "id:R8e1Pjp9eN0K"], (* 25 microliter *)
-		Model[Container, Syringe, "id:eGakldJEaRYG"]  (* 100 microliter *)
-	] *)
-
-	(* Get the specifiedLiquidSampleVolumes *)
-	liquidSampleVolumeQuantities = Cases[allSpecifiedLiquidInjectionVolumes, _Quantity];
-
-	(* Resolve the LiquidInjectionSyringe *)
-	resolvedLiquidInjectionSyringe = Which[
-		(* If the LiquidInjectionSyringe is already specified, go with that one *)
-		MatchQ[specifiedLiquidInjectionSyringeModelType, LiquidInjection],
-		specifiedLiquidInjectionSyringe,
-		(* If there are no LiquidInjection samples, we don't need a LiquidInjectionSyringe *)
-		MatchQ[specifiedLiquidInjectionSyringe, Automatic] && Not[MemberQ[allSamplingMethods, LiquidInjection]],
-		Null,
-		(* If there are LiquidInjection samples but none have specified injection volumes, pick the 10 microliter syringe *)
-		MatchQ[specifiedLiquidInjectionSyringe, Automatic] && MemberQ[allSamplingMethods, LiquidInjection] && Not[MemberQ[allSpecifiedLiquidInjectionVolumes, Except[Automatic | Null]]],
-		Model[Container, Syringe, "10 \[Mu]L GC liquid sample injection syringe"],
-		(* If there are LiquidInjection samples with specified volumes, resolve a syringe that can fit the range of the smallest to the largest sample size *)
-		MatchQ[specifiedLiquidInjectionSyringe, Automatic] && MemberQ[allSamplingMethods, LiquidInjection] && MemberQ[allSpecifiedLiquidInjectionVolumes, _Quantity],
-		(* Get the minimum and maximum injection sizes and pick the smallest syringe that can accommodate these values (largest volume fits) *)
-		Which[
-			Max[liquidSampleVolumeQuantities] < 1 * Microliter,
-			Model[Container, Syringe, "1 \[Mu]L GC liquid sample injection syringe"],
-			Max[liquidSampleVolumeQuantities] < 5 * Microliter,
-			Model[Container, Syringe, "5 \[Mu]L GC liquid sample injection syringe"],
-			Max[liquidSampleVolumeQuantities] < 10 * Microliter,
-			Model[Container, Syringe, "10 \[Mu]L GC liquid sample injection syringe"],
-			Max[liquidSampleVolumeQuantities] < 25 * Microliter,
-			Model[Container, Syringe, "25 \[Mu]L GC liquid sample injection syringe"],
-			Max[liquidSampleVolumeQuantities] > 25 * Microliter,
-			Model[Container, Syringe, "100 \[Mu]L GC liquid sample injection syringe"]
-		],
-		(* what if we haven't been able to resolve a syringe based on all these options? *)
-		True,
-		Null
-	];
-
-	(* if we failed to resolve a liquid injection syringe, we have to figure out why and throw an error. *)
-
-	(* first case: a liquid injection sample is specified but the specified value is null. *)
-	liquidInjectionSyringeMissingQ = MemberQ[allSamplingMethods, LiquidInjection] && MatchQ[specifiedLiquidInjectionSyringe, Null];
-
-	(* second case: the injection type of the specified syringe was incorrect *)
-	incompatibleLiquidInjectionSyringeQ = MatchQ[specifiedLiquidInjectionSyringe, ObjectP[]] && !MatchQ[specifiedLiquidInjectionSyringeModelType, LiquidInjection];
-
-	(* throw the appropriate errors *)
-	liquidInjectionSyringeOption = If[(liquidInjectionSyringeMissingQ || incompatibleLiquidInjectionSyringeQ),
-		If[!gatherTests && liquidInjectionSyringeMissingQ, Message[Error::GCLiquidInjectionSyringeRequired]];
-		If[!gatherTests && incompatibleLiquidInjectionSyringeQ, Message[Error::GCIncompatibleLiquidInjectionSyringe]];
-		LiquidInjectionSyringe,
-		{}
-	];
-
-	liquidInjectionSyringeTests = If[gatherTests,
-		{
-			Test["If a liquid injection sample is specified, a liquid injection syringe is also specified:",
-				liquidInjectionSyringeMissingQ,
-				False
-			],
-			Test["If a liquid injection syringe is specified, it is compatible with the requested instrument:",
-				incompatibleLiquidInjectionSyringeQ,
-				False
-			]
-		},
-		{}
-	];
-
-	resolvedLiquidInjectionSyringeVolume = If[NullQ[resolvedLiquidInjectionSyringe],
-		Nothing,
-		Convert[Lookup[fetchPacketFromCache[resolvedLiquidInjectionSyringe, simulatedCache], MaxVolume], Microliter]
-	];
-
-	(* === Resolve HeadspaceInjectionSyringe === *)
-
-	(* Get the specified HeadspaceInjectionSyringe *)
-	specifiedHeadspaceInjectionSyringe = Lookup[roundedGasChromatographyOptions, HeadspaceInjectionSyringe];
-
-	(* Get the model of the specified HeadspaceInjectionSyringe *)
-	specifiedHeadspaceInjectionSyringeModel = Switch[
-		specifiedHeadspaceInjectionSyringe,
-		ObjectP[Model[Container, Syringe]],
-		Download[specifiedHeadspaceInjectionSyringe, Object],
-		ObjectP[Object[Container, Syringe]],
-		Download[specifiedHeadspaceInjectionSyringe, Model, Cache -> simulatedCache],
-		_,
-		Null
-	];
-
-	(* Get the list of compatible HeadspaceInjectionSyringes *)
-	specifiedHeadspaceInjectionSyringeModelType = Lookup[
-		fetchPacketFromCache[specifiedHeadspaceInjectionSyringeModel, simulatedCache] /. {Null -> <||>},
-		GCInjectionType,
-		Null
-	];
-
-	(* Get the list of compatible HeadspaceInjectionSyringe *)
-	compatibleHeadspaceInjectionSyringeModels = Alternatives[
-		Model[Container, Syringe, "2500 \[Mu]L GC headspace sample injection syringe"], (* 2500 uL headspace syringe *)
-		Model[Container, Syringe, "id:4pO6dM50O14B"] (* id form *)
-	];
-
-	(* Resolve the HeadspaceInjectionSyringe *)
-	resolvedHeadspaceInjectionSyringe = Which[
-		(* If the HeadspaceInjectionSyringe is already specified properly, go with that one *)
-		MatchQ[specifiedHeadspaceInjectionSyringeModelType, HeadspaceInjection],
-		specifiedHeadspaceInjectionSyringe,
-		(* If there are no HeadspaceInjection samples, we don't need a HeadspaceInjectionSyringe *)
-		MatchQ[specifiedHeadspaceInjectionSyringe, Automatic] && Not[MemberQ[allSamplingMethods, HeadspaceInjection]],
-		Null,
-		(* If there are HeadspaceInjection samples but none have specified injection volumes, pick a 2500 microliter syringe *)
-		MatchQ[specifiedHeadspaceInjectionSyringe, Automatic] && MemberQ[allSamplingMethods, HeadspaceInjection] && MemberQ[allSpecifiedHeadspaceInjectionVolumes, Except[Null]],
-		Model[Container, Syringe, "2500 \[Mu]L GC headspace sample injection syringe"],
-		True,
-		Null
-	];
-
-	(* if we failed to resolve a headspace injection syringe, we have to figure out why and throw an error. *)
-
-	(* first case: a headspace injection sample is specified but the specified value is null. *)
-	headspaceInjectionSyringeMissingQ = MemberQ[allSamplingMethods, HeadspaceInjection] && MatchQ[specifiedHeadspaceInjectionSyringe, Null];
-
-	(* second case: the injection type of the specified syringe was incorrect *)
-	incompatibleHeadspaceInjectionSyringeQ = MatchQ[specifiedHeadspaceInjectionSyringe, ObjectP[]] && !MatchQ[specifiedHeadspaceInjectionSyringeModelType, HeadspaceInjection];
-
-	(* throw the appropriate errors *)
-	headspaceInjectionSyringeOption = If[(headspaceInjectionSyringeMissingQ || incompatibleHeadspaceInjectionSyringeQ),
-		If[!gatherTests && headspaceInjectionSyringeMissingQ, Message[Error::GCHeadspaceInjectionSyringeRequired]];
-		If[!gatherTests && incompatibleHeadspaceInjectionSyringeQ, Message[Error::GCIncompatibleHeadspaceInjectionSyringe]];
-		HeadspaceInjectionSyringe,
-		{}
-	];
-
-	headspaceInjectionSyringeTests = If[gatherTests,
-		{
-			Test["If a headspace injection sample is specified, a headspace injection syringe is also specified:",
-				headspaceInjectionSyringeMissingQ,
-				False
-			],
-			Test["If a headspace injection syringe is specified, it is compatible with the requested instrument:",
-				incompatibleHeadspaceInjectionSyringeQ,
-				False
-			]
-		},
-		{}
-	];
-
-	resolvedHeadspaceInjectionSyringeVolume = If[NullQ[resolvedHeadspaceInjectionSyringe],
-		Null,
-		Lookup[fetchPacketFromCache[resolvedHeadspaceInjectionSyringe, simulatedCache], MaxVolume]
-	];
-
-
-	(* === Resolve SPMEInjectionFiber === *)
-
-	(* Get the specified SPMEInjectionFiber *)
-	specifiedSPMEInjectionFiber = Lookup[roundedGasChromatographyOptions, SPMEInjectionFiber];
-
-	(* Get the model of the specified SPMEInjectionFiber *)
-	specifiedSPMEInjectionFiberModel = Switch[
-		specifiedSPMEInjectionFiber,
-		ObjectP[Model[Item, SPMEFiber]],
-		specifiedSPMEInjectionFiber[Object],
-		ObjectP[Object[Item, SPMEFiber]],
-		specifiedSPMEInjectionFiber[Model],
-		Automatic,
-		Automatic,
-		_,
-		Null
-	];
-
-	(* Resolve the SPMEInjectionFiber *)
-	resolvedSPMEInjectionFiber = Which[
-		(* If the SPMEInjectionFiber is already specified, go with that one *)
-		MatchQ[specifiedSPMEInjectionFiberModel, ObjectP[{Model[Item, SPMEFiber], Object[Item, SPMEFiber]}]],
-		specifiedSPMEInjectionFiber,
-		(* If there are no SPMEInjection samples, we don't need a SPMEInjectionFiber *)
-		MatchQ[specifiedSPMEInjectionFiber, Automatic] && Not[MemberQ[allSamplingMethods, SPMEInjection]],
-		Null,
-		(* If there are SPMEInjection samples, pick the all-purpose fiber *)
-		MatchQ[specifiedSPMEInjectionFiber, Automatic] && MemberQ[allSamplingMethods, SPMEInjection],
-		Model[Item, SPMEFiber, "id:54n6evLR3kLG"], (* 30 um PDMS fiber *)
-		True,
-		Null
-	];
-
-	(* if we failed to resolve a fiber, we have to figure out why and throw an error. *)
-
-	(* first case: a spme injection sample is specified but the specified value is null. *)
-	spmeInjectionFiberMissingQ = MemberQ[allSamplingMethods, SPMEInjection] && MatchQ[specifiedSPMEInjectionFiber, Null];
-
-	(* throw the appropriate errors *)
-	spmeInjectionFiberOption = If[(spmeInjectionFiberMissingQ),
-		If[!gatherTests && spmeInjectionFiberMissingQ, Message[Error::GCSPMEInjectionFiberRequired]];
-		SPMEInjectionFiber,
-		{}
-	];
-
-	spmeInjectionFiberTests = If[gatherTests,
-		{
-			Test["If a SPME injection sample is specified, a SPME injection fiber is also specified:",
-				spmeInjectionFiberMissingQ,
-				False
-			]
-		},
-		{}
-	];
-
-	resolvedSPMEInjectionFiberMaxTemperature = If[NullQ[resolvedSPMEInjectionFiber],
-		Null,
-		Lookup[fetchPacketFromCache[resolvedSPMEInjectionFiber, simulatedCache], MaxTemperature]
-	];
-
-
-	(* === Resolve LiquidHandlingSyringe === *)
-
-	(* Get the specified LiquidHandlingSyringe *)
-	specifiedLiquidHandlingSyringe = Lookup[roundedGasChromatographyOptions, LiquidHandlingSyringe];
-
-	(* Get the model of the specified LiquidHandlingSyringe *)
-	specifiedLiquidHandlingSyringeModel = Switch[
-		specifiedLiquidHandlingSyringe,
-		ObjectP[Model[Container, Syringe]],
-		Download[specifiedLiquidHandlingSyringe, Object],
-		ObjectP[Object[Container, Syringe]],
-		Download[specifiedLiquidHandlingSyringe, Model, Cache -> simulatedCache],
-		_,
-		Null
-	];
-
-	(* Get the list of compatible LiquidHandlingSyringes *)
-	specifiedLiquidHandlingSyringeModelType = Lookup[
-		fetchPacketFromCache[specifiedLiquidHandlingSyringeModel, simulatedCache] /. {Null -> <||>},
-		GCInjectionType,
-		Null
-	];
-
-	(* Get the list of compatible LiquidHandlingSyringes *)
-	compatibleLiquidHandlingSyringeModels = Alternatives[
-		Model[Container, Syringe, "2500 \[Mu]L GC PAL3 liquid handling syringe"][Object] (* 2500 uL liquid syringe *)
-	];
-
-	(* Get the model of the specified LiquidHandlingSyringe *)
-	specifiedLiquidHandlingSyringeModel = Switch[
-		specifiedLiquidHandlingSyringe,
-		ObjectP[Model[Container, Syringe]],
-		specifiedLiquidHandlingSyringe[Object],
-		ObjectP[Object[Container, Syringe]],
-		specifiedLiquidHandlingSyringe[Model],
-		_,
-		$Failed
-	];
-
-	(* Resolve the LiquidHandlingSyringe *)
-	resolvedLiquidHandlingSyringe = Which[
-		(* If the LiquidHandlingSyringe is already specified, go with that one *)
-		MatchQ[specifiedLiquidHandlingSyringeModelType, LiquidHandling],
-		specifiedLiquidHandlingSyringe,
-		(* If there are no LiquidHandling steps, we don't need a LiquidHandlingSyringe *)
-		MatchQ[specifiedLiquidHandlingSyringe, Automatic] && Not[MemberQ[Flatten[{resolvedDilutes, resolvedStandardDilutes, resolvedBlankDilutes}], True]],
-		Null,
-		(* If there are LiquidHandling samples and syringe isn't specified, pick the 2500 microliter syringe *)
-		MatchQ[specifiedLiquidHandlingSyringe, Automatic] && MemberQ[Flatten[{resolvedDilutes, resolvedStandardDilutes, resolvedBlankDilutes}], True],
-		Model[Container, Syringe, "2500 \[Mu]L GC PAL3 liquid handling syringe"]
-	];
-
-	(* if we failed to resolve a liquid handling syringe, we have to figure out why and throw an error. *)
-
-	(* first case: a liquid handling step is specified but the specified value is null. *)
-	liquidHandlingSyringeMissingQ = MemberQ[
-		Flatten[
-			{
-				resolvedDilutionSolventVolumes,
-				resolvedSecondaryDilutionSolventVolumes,
-				resolvedTertiaryDilutionSolventVolumes,
-				resolvedStandardDilutionSolventVolumes,
-				resolvedStandardSecondaryDilutionSolventVolumes,
-				resolvedStandardTertiaryDilutionSolventVolumes,
-				resolvedBlankDilutionSolventVolumes,
-				resolvedBlankSecondaryDilutionSolventVolumes,
-				resolvedBlankTertiaryDilutionSolventVolumes
-			}
-		],
-		Except[Null]
-	] && MatchQ[specifiedLiquidHandlingSyringe, Null];
-
-	(* second case: the injection type of the specified syringe was incorrect *)
-	incompatibleLiquidHandlingSyringeQ = MatchQ[specifiedLiquidHandlingSyringe, ObjectP[]] && !MatchQ[specifiedLiquidHandlingSyringeModelType, LiquidHandling];
-
-	(* throw the appropriate errors *)
-	liquidHandlingSyringeOption = If[(liquidHandlingSyringeMissingQ || incompatibleLiquidHandlingSyringeQ),
-		If[!gatherTests && liquidHandlingSyringeMissingQ, Message[Error::GCLiquidHandlingSyringeRequired]];
-		If[!gatherTests && incompatibleLiquidHandlingSyringeQ, Message[Error::GCIncompatibleLiquidHandlingSyringe]];
-		LiquidHandlingSyringe,
-		{}
-	];
-
-	(* now that we have resolved all the required syringes, do a final check to make sure the user hasn't specified an unneeded syringe/fiber *)
-	{unneededLiquidInjectionSyringeQ, unneededHeadspaceInjectionSyringeQ, unneededSPMEFiberQ, unneededLiquidHandlingSyringeQ} = MapThread[
-		(* a syringe is unneeded if a syringe is specified but there are no injections of that type *)
-		MatchQ[#1, ObjectP[]] && Not[MemberQ[#3, #2]]&,
-		{
-			{resolvedLiquidInjectionSyringe, resolvedHeadspaceInjectionSyringe, resolvedSPMEInjectionFiber, resolvedLiquidHandlingSyringe},
-			{LiquidInjection, HeadspaceInjection, SPMEInjection, True},
-			{allSamplingMethods, allSamplingMethods, allSamplingMethods, Flatten[{resolvedDilutes, resolvedStandardDilutes, resolvedBlankDilutes}]}
-		}
-	];
-
-	(* throw a warning if needed *)
-	If[!gatherTests,
-		MapThread[
-			(* a syringe is specified but there are no injections of that type *)
-			If[#1,
-				Message[Warning::UnneededSyringeComponent, #2, #3, #4],
-				Nothing
-			]&,
-			{
-				{unneededLiquidInjectionSyringeQ, unneededHeadspaceInjectionSyringeQ, unneededSPMEFiberQ, unneededLiquidHandlingSyringeQ},
-				{LiquidInjectionSyringe, HeadspaceInjectionSyringe, SPMEInjectionFiber, LiquidHandlingSyringe},
-				{LiquidInjection, HeadspaceInjection, SPMEInjection, True},
-				{SamplingMethod, SamplingMethod, SamplingMethod, {Dilute, StandardDilute, BlankDilute}}
-			}
-		],
-		Nothing
-	];
-
-	(* create tests if needed *)
-	unneededSyringeTests = If[gatherTests,
-		MapThread[
-			(* a syringe is specified but there are no injections of that type *)
-			Test["If a " <> ToString[#2] <> " is specified, at least one value in option(s) " <> ToString[#4] <> " must be set to " <> ToString[#3] <> ".",
-				#1,
-				False
-			]&,
-			{
-				{unneededLiquidInjectionSyringeQ, unneededHeadspaceInjectionSyringeQ, unneededSPMEFiberQ, unneededLiquidHandlingSyringeQ},
-				{LiquidInjectionSyringe, HeadspaceInjectionSyringe, SPMEInjectionFiber, LiquidHandlingSyringe},
-				{LiquidInjection, HeadspaceInjection, SPMEInjection, True},
-				{SamplingMethod, SamplingMethod, SamplingMethod, {Dilute, StandardDilute, BlankDilute}}
-			}
-		],
-		{}
-	];
-
-	(* === Resolve OvenEquilibrationTime, ColumnOvenTemperatureProfile, PostRunOvenTemperature === *)
-
-	(* OvenEquilibrationTime *)
-
-	(* Create the default resolved OvenTemperatureProfile if not specified *)
-	defaultOvenTemperatureProfile = {{20 * Celsius / Minute, maxColumnTempLimit - 50 * Celsius, 3 * Minute}};
-
-	(* Resolve the oven temperature parameters, post run parameters *)
-
-	{
-		{resolvedOvenEquilibrationTimes, resolvedOvenTemperatureProfiles, resolvedOvenTemperatureProfileSetpoints, resolvedPostRunOvenTemperatures, resolvedPostRunOvenTimes},
-		{resolvedStandardOvenEquilibrationTimes, resolvedStandardOvenTemperatureProfiles, resolvedStandardOvenTemperatureProfileSetpoints, resolvedStandardPostRunOvenTemperatures, resolvedStandardPostRunOvenTimes},
-		{resolvedBlankOvenEquilibrationTimes, resolvedBlankOvenTemperatureProfiles, resolvedBlankOvenTemperatureProfileSetpoints, resolvedBlankPostRunOvenTemperatures, resolvedBlankPostRunOvenTimes}
-	} = Map[
-		Function[{optionsList},
-			Module[{ovenEquilibrationTimes, ovenTemperatureProfiles, postRunOvenTemperatures, postRunOvenTimes, postRunFlowRates, postRunPressures, initialOvenTemperatures,
-				resolvedEquilibrationTimes, resolvedTemperatureProfiles, resolvedTemperatureProfileSetpoints, resolvedPostRunTemperatures, resolvedPostRunFlows, resolvedPostRunPress, resolvedPostRunTimes, samples},
-				{ovenEquilibrationTimes, ovenTemperatureProfiles, postRunOvenTemperatures, postRunOvenTimes, postRunFlowRates, postRunPressures, initialOvenTemperatures, samples} = optionsList;
-
-				(* Oven equilibration times *)
-
-				resolvedEquilibrationTimes = Map[Switch[
-					#,
-					GreaterEqualP[0 * Minute],
-					#,
-					Automatic | Null,
-					Null
-				]&,
-					ovenEquilibrationTimes
-				];
-
-				(* OvenTemperatureProfile *)
-
-				(* Generate the list of resolved OvenTemperatureProfiles *)
-				resolvedTemperatureProfiles = MapThread[Switch[
-					{#1, #2},
-					{Except[Automatic | Null], _},
-					#1,
-					{Automatic, Except[Null]},
-					defaultOvenTemperatureProfile,
-					{Automatic, Null},
-					Null,
-					{Null, _},
-					Null
-				]&,
-					{ovenTemperatureProfiles, samples}
-				];
-
-				resolvedTemperatureProfileSetpoints = Map[
-					Function[profile, Cases[ToList[profile], _?(CompatibleUnitQ[#, Celsius] &), {2}]],
-					resolvedTemperatureProfiles
-				];
-
-				(* PostRunOvenTemperature *)
-
-				(* Resolve PostRunOvenTemperatures to either the specified or initial value, unless null *)
-				resolvedPostRunTemperatures = MapThread[
-					Function[
-						{temp, flow, pressure, time, initialTemps},
-						Switch[
-							{temp, flow, pressure, time},
-							(* keep option if specified *)
-							{Except[Automatic], __},
-							temp,
-							(* null option if nothing else is specified and it's automatic *)
-							{Automatic, Automatic | Null, Automatic | Null, Automatic | Null},
-							Null,
-							(* resolve to initial temperature, presuming that value is not null *)
-							{Automatic, __},
-							initialTemps
-						]
-					],
-					{postRunOvenTemperatures, postRunFlowRates, postRunPressures, postRunOvenTimes, initialOvenTemperatures}
-				];
-
-				(* Resolve PostRunOvenTimes to either the specified or initial value, unless null *)
-				resolvedPostRunTimes = MapThread[
-					Function[
-						{temp, flow, pressure, time},
-						Switch[
-							{temp, flow, pressure, time},
-							(* keep option if specified *)
-							{_, _, _, Except[Automatic]},
-							time,
-							(* null option if nothing else is specified and it's automatic *)
-							{Automatic | Null, Automatic | Null, Automatic | Null, Automatic},
-							Null,
-							(* resolve to 2 Minutes if we're using other options *)
-							{_, _, _, Automatic},
-							2 * Minute
-						]
-					],
-					{postRunOvenTemperatures, postRunFlowRates, postRunPressures, postRunOvenTimes}
-				];
-
-				(* Return the resolved values *)
-				{resolvedEquilibrationTimes, resolvedTemperatureProfiles, resolvedTemperatureProfileSetpoints, resolvedPostRunTemperatures, resolvedPostRunTimes}
-			]
-		],
-		{
-			{specifiedOvenEquilibrationTimes, specifiedOvenTemperatureProfiles, specifiedPostRunOvenTemperatures, specifiedPostRunOvenTimes, specifiedPostRunFlowRates, specifiedPostRunPressures,
-				specifiedInitialOvenTemperatures, mySamples},
-			{specifiedStandardOvenEquilibrationTimes, specifiedStandardOvenTemperatureProfiles, specifiedStandardPostRunOvenTemperatures, specifiedStandardPostRunOvenTimes, specifiedStandardPostRunFlowRates,
-				specifiedStandardPostRunPressures, specifiedStandardInitialOvenTemperatures, resolvedStandards},
-			{specifiedBlankOvenEquilibrationTimes, specifiedBlankOvenTemperatureProfiles, specifiedBlankPostRunOvenTemperatures, specifiedBlankPostRunOvenTimes, specifiedBlankPostRunFlowRates,
-				specifiedBlankPostRunPressures, specifiedBlankInitialOvenTemperatures, resolvedBlanks}
-		}
-	];
-
-	(* error check the profiles to make sure they are not broken TODO HERE *)
-
-	(* Check that if an oven time period is specified, we have a temperature/temperature profile for that period *)
-	(* Also warn if a temperature is provided, but we have a Null/0 time *)
-
-	ovenTimeTemperatureConflictTuples = Map[
-		Function[opsList,
-			Module[
-				{
-					postRunOvenTemperatures, postRunOvenTimes, prefix, postRunOvenTimeNoTemperatureConflicts, conflictingPostRunOvenTimeNoTemperatureOptions, conflictingOptions,
-					postRunOvenTimeNoTemperatureConflictTest
-				},
-				{postRunOvenTemperatures, postRunOvenTimes, prefix} = opsList;
-
-				(* Figure out if we have oven times specified, but no temperature or profile *)
-				{
-					postRunOvenTimeNoTemperatureConflicts
-				} = Transpose@MapThread[
-					Function[
-						{postRunTime, postRunTemperatures},
-
-						{
-							(MatchQ[postRunTime, GreaterP[0 Minute]] && NullQ[postRunTemperatures]) || (NullQ[postRunTime] && MatchQ[postRunTemperatures, GreaterEqualP[0 Kelvin]])
-						}
-					],
-					{postRunOvenTimes, postRunOvenTemperatures}
-				];
-
-				(* Gather the options names that are used to specify the temperatures *)
-				{
-					conflictingPostRunOvenTimeNoTemperatureOptions
-				} = MapThread[
-					Function[{conflicts, options},
-						If[Or @@ conflicts, ToExpression@StringJoin[prefix, #]& /@ options, {}]
-					],
-					{
-						{
-							postRunOvenTimeNoTemperatureConflicts
-						},
-						{
-							{"PostRunOvenTime", "PostRunOvenTemperature"}
-						}
-					}
-				];
-
-				conflictingOptions = Union[conflictingPostRunOvenTimeNoTemperatureOptions];
-
-				(* If we have conflicts,throw an error *)
-				If[!gatherTests,
-					If[Or @@ postRunOvenTimeNoTemperatureConflicts,
-						Message[Error::GCPostRunOvenTimeTemperatureConflict, prefix],
-						Nothing
-					];
-				];
-
-				(* Gather the tests *)
-				postRunOvenTimeNoTemperatureConflictTest = If[gatherTests,
-					Test[prefix <> "PostRunOvenTemperature is not Null if " <> prefix <> "PostRunOvenTime is not null:",
-						Or @@ postRunOvenTimeNoTemperatureConflicts,
-						False
-					],
-					{}
-				];
-
-				(* Format the output *)
-				{
-					Flatten[{conflictingOptions}],
-					Flatten[{postRunOvenTimeNoTemperatureConflictTest}]
-				}
-
-			]
-		],
-		{
-			{resolvedPostRunOvenTemperatures, resolvedPostRunOvenTimes, ""},
-			{resolvedStandardPostRunOvenTemperatures, resolvedStandardPostRunOvenTimes, "Standard"},
-			{resolvedBlankPostRunOvenTemperatures, resolvedBlankPostRunOvenTimes, "Blank"}
-		}
-	];
-
-	(* Split the resulting tuples to create error issues *)
-	{ovenTimeTemperatureConflictOptions, ovenTimeTemperatureConflictTests} = {Flatten[ovenTimeTemperatureConflictTuples[[All, 1]]], Flatten[ovenTimeTemperatureConflictTuples[[All, 2]]]};
 
 	(* === MapThread to resolve DilutionSolventVolume, SecondaryDilutionSolventVolume, TertiaryDilutionSolventVolume, Agitate, AgitationTemperature, AgitationMixRate, AgitationTime, AgitationOnTime, AgitationOffTime, Vortex, VortexMixRate, VortexTime === *)
 
@@ -11756,6 +11160,1273 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 	(* split the resulting tuples to create error issues *)
 	{vortexConflictOptions, vortexConflictTests} = {Flatten[vortexConflictTuples[[All, 1]]], Flatten[vortexConflictTuples[[All, 2]]]};
 
+	(* Determine if a magnetic cap is required. *)
+	(* Currently the compiler has the operator places the vials onto the sample rack. *)
+	(* If the user requests to agitate or vortex the sample will be moved to a new rack with the magnetic mover. *)
+	(* HeadspaceInjection (currently) requires agitation so we can check resolved Agitate as a proxy. *)
+	magneticCapRequiredQ = MapThread[Or, {resolvedAgitates, resolvedVortexs}];
+	standardMagneticCapRequiredQ = MapThread[Or, {resolvedStandardAgitates /. Null -> False, resolvedStandardVortexs /. Null -> False}];
+	blankMagneticCapRequiredQ = MapThread[Or, {resolvedBlankAgitates /. Null -> False, resolvedBlankVortexs /. Null -> False}];
+
+	(* resolve whether we need to move specified standards and blanks around if they aren't already in compatible vials *)
+	{aliquotStandardQ, aliquotBlankQ} = MapThread[
+		Function[
+			{samples, vials, amounts, requiresMagneticCapQs},
+			MapThread[
+				Function[
+					{sample, vial, amount, requiresMagneticCapQ},
+					Which[
+						NullQ[sample] || MatchQ[sample, NoInjection],
+						False,
+						!MatchQ[vial, Null | Automatic] || !MatchQ[amount, Null | Automatic],
+						True,
+						True,
+						Module[{footprint, neckType, coverFootprints},
+							(* get the relevant fields from the simulated cache *)
+							{footprint, neckType, coverFootprints} = If[!NullQ[sample] && !MatchQ[sample, NoInjection],
+								Switch[
+									sample,
+									(* If the sample is an object, we need to download its container model's info *)
+									ObjectP[Object[]],
+									Download[
+										Download[sample, Container[Model], Simulation -> updatedSimulation, Date -> Now],
+										{Footprint, NeckType, CoverFootprints},
+										Simulation -> updatedSimulation, Date -> Now],
+									(* If the sample is a model, download *)
+									ObjectP[Model[]],
+									{Null, Null, Null}
+								],
+								{Null, Null, Null}
+							];
+							(* check if the container is compatible *)
+							If[requiresMagneticCapQ,
+								!MatchQ[
+									{footprint, neckType},
+									Alternatives[
+										(* small GC vials *)
+										{CEVial, "9/425"},
+										(* larger headspace vials *)
+										{HeadspaceVial, "18/425"}
+									]
+								],
+								If[!ValueQ[modelCapPackets],
+									modelCapPackets = Cases[cache, PacketP[Model[Item, Cap]]]
+								];
+								(* If a magnetic cap is not required just check that the footprint will fit the autosampler & a pierceable cap exits for the container. *)
+								Nand[MatchQ[footprint, Alternatives[CEVial, HeadspaceVial]], !MatchQ[FirstCase[modelCapPackets, KeyValuePattern[{CoverFootprint -> Alternatives@@coverFootprints, Pierceable -> True}]], Missing["NotFound"]]]
+							]
+						]
+					]
+				],
+				{samples, vials, amounts, requiresMagneticCapQs}
+			]
+		],
+		{
+			{resolvedStandards, resolvedBlanks},
+			{specifiedStandardVials, specifiedBlankVials},
+			{specifiedStandardAmounts, specifiedBlankAmounts},
+			{standardMagneticCapRequiredQ, blankMagneticCapRequiredQ}
+		}
+	];
+
+	(* == Compatible container checking == *)
+
+	(* let's update the aliquotQ check here. in order to fit on the autosampler, the vials must:
+	 1. be either CEVial or HeadspaceVial footprint.
+	 2. have 9/245 or 18/425 NeckType *)
+
+	{specifiedAliquotAmounts, specifiedAssayVolumes, specifiedAliquotContainers, specifiedAliquotBoolean} = Lookup[samplePrepOptions, {AliquotAmount, AssayVolume, AliquotContainer, Aliquot}];
+
+	(* error check any specified aliquot containers to ensure they are of the correct type *)
+	compatibleAliquotContainerQ = MapThread[
+		Function[{vial, requiresMagneticCapQ},
+			(* if we don't specify an aliquot then it doesn't matter *)
+			If[MatchQ[vial, (Null | Automatic)],
+				True,
+				Module[{footprint, neckType, coverFootprints},
+					(* get the relevant fields from the simulated cache *)
+					{footprint, neckType, coverFootprints} = If[!NullQ[vial],
+						Switch[
+							vial,
+							ObjectP[Object[Container, Vessel]],
+							Download[vial, Model[{Footprint, NeckType, CoverFootprints}], Simulation -> updatedSimulation, Date -> Now],
+							ObjectP[Model[Container, Vessel]],
+							Download[vial, {Footprint, NeckType, CoverFootprints}, Simulation -> updatedSimulation, Date -> Now],
+							_,
+							{Null, Null, Null}
+						],
+						{Null, Null, Null}
+					];
+					(* check if the vial is compatible *)
+					If[requiresMagneticCapQ,
+						(* If a magnetic cap is not required just check both the footprint will fit the autosampler. *)
+						(* And that the neck will fit the magnetic cap. *)
+						MatchQ[
+							{footprint, neckType},
+							Alternatives[
+								(* small GC vials *)
+								{CEVial, "9/425"},
+								(* larger headspace vials *)
+								{HeadspaceVial, "18/425"}
+							]
+						],
+						If[!ValueQ[modelCapPackets],
+							modelCapPackets =  Cases[cache, PacketP[Model[Item, Cap]]]
+						];
+						(* If a magnetic cap is not required just check that the footprint will fit the autosampler & a pierceable cap exits for the container. *)
+						MatchQ[footprint, Alternatives[CEVial, HeadspaceVial]] && !MatchQ[FirstCase[modelCapPackets, KeyValuePattern[{CoverFootprint -> Alternatives@@coverFootprints, Pierceable -> True}]], Missing["NotFound"]]
+					]
+				]
+			]
+		],
+		{specifiedAliquotContainers, magneticCapRequiredQ}
+	];
+
+	(* determine any incompatible aliquot containers *)
+	incompatibleAliquotContainers = DeleteDuplicates@PickList[specifiedAliquotContainers /. {x : ObjectP[] :> Download[x, Object]}, compatibleAliquotContainerQ, False];
+
+	(*errors*)
+	incompatibleAliquotContainersOptions = If[!gatherTests,
+		If[Nand @@ compatibleAliquotContainerQ,
+			Message[Error::GCContainerIncompatible, "AliquotContainer", incompatibleAliquotContainers];
+			AliquotContainer,
+			Nothing
+		],
+		{}
+	];
+
+	(* tests *)
+	incompatibleAliquotContainersTest = If[gatherTests,
+		Test["If AliquotContainers are specified, they must have Footprint of CEVial or HeadspaceVial. If samples are to undergo on-deck agitation or vortexing the containers must also have a NeckType of 9/425 or 18/425, respectively. Otherwise, the container must be capable of being covered by a pierceable cap:",
+			And @@ compatibleAliquotContainerQ,
+			True],
+		{}
+	];
+
+	(* decide if any samples will need to be moved into a GC compatible vial*)
+	aliquotQ = MapThread[
+		Function[{containerModel, aliquotAmount, aliquotContainer, aliquotBool, requiresMagneticCapQ},
+			(* if the containerType is not a vessel (such as a plate), or an aliquot option is already specified we can return True early *)
+			If[
+				!MatchQ[containerModel, ObjectP[Model[Container, Vessel]]] || TrueQ[aliquotBool] || MatchQ[aliquotAmount, Except[Null | Automatic]] || MatchQ[aliquotContainer, Except[Null | Automatic]],
+				True,
+				(* otherwise we should check to see if the current container is GC compatible *)
+				Module[{footprint, neckType, coverFootprints},
+					(* get the relevant fields from the simulated cache *)
+					{footprint, neckType, coverFootprints} = If[!NullQ[containerModel],
+						Download[containerModel, {Footprint, NeckType, CoverFootprints}, Simulation -> updatedSimulation, Date -> Now],
+						{Null, Null, Null}
+					];
+
+					(* check if the vial is compatible *)
+					If[requiresMagneticCapQ,
+						(* If a magnetic cap is not required just check both the footprint will fit the autosampler. *)
+						(* And that the neck will fit the magnetic cap. *)
+						!MatchQ[
+							{footprint, neckType},
+							Alternatives[
+								(* small GC vials *)
+								{CEVial, "9/425"},
+								(* larger headspace vials *)
+								{HeadspaceVial, "18/425"}
+							]
+						],
+						If[!ValueQ[modelCapPackets],
+							modelCapPackets =  Cases[cache, PacketP[Model[Item, Cap]]]
+						];
+						(* If a magnetic cap is not required just check that the footprint will fit the autosampler & a pierceable cap exsists for the container. *)
+						Nand[MatchQ[footprint, Alternatives[CEVial, HeadspaceVial]], !MatchQ[FirstCase[modelCapPackets, KeyValuePattern[{CoverFootprint -> Alternatives@@coverFootprints, Pierceable -> True}]], Missing["NotFound"]]]
+					]
+				]
+			]
+		],
+		{simulatedContainerModels, specifiedAliquotAmounts, specifiedAliquotContainers, specifiedAliquotBoolean, magneticCapRequiredQ}
+	];
+
+	{
+		{targetVials, resolvedDilutionSolventVolumes, resolvedSecondaryDilutionSolventVolumes, resolvedTertiaryDilutionSolventVolumes, requiredAliquotAmounts},
+		{targetStandardVials, resolvedStandardDilutionSolventVolumes, resolvedStandardSecondaryDilutionSolventVolumes, resolvedStandardTertiaryDilutionSolventVolumes, requiredStandardAliquotAmounts},
+		{targetBlankVials, resolvedBlankDilutionSolventVolumes, resolvedBlankSecondaryDilutionSolventVolumes, resolvedBlankTertiaryDilutionSolventVolumes, requiredBlankAliquotAmounts}
+	} = Map[
+		Function[{optionsList},
+			Module[{samplingMethodsInternal, states, volumes, masses, dilutionSolventVolumes, secondaryDilutionSolventVolumes, tertiaryDilutionSolventVolumes, dilutes, initialContainers, aliquotBooleans, specifiedAliquots, assayVolumes, aliquotContainers},
+				{samplingMethodsInternal, states, volumes, masses, dilutionSolventVolumes, secondaryDilutionSolventVolumes, tertiaryDilutionSolventVolumes, dilutes, initialContainers, aliquotBooleans, specifiedAliquots, assayVolumes, aliquotContainers} = optionsList;
+				Transpose@MapThread[
+					Function[{samplingMethod, sampleState, sampleVolume, sampleMass, dilutionSolventVolume, secondaryDilutionSolventVolume, tertiaryDilutionSolventVolume, diluteBoolean, initialContainer, aliquotBoolean, specifiedAliquot, assayVolume, aliquotContainer},
+						Module[{targetContainer, requiredAmount, resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume, targetContainerVolume},
+							(*logic for target container for each sample*)
+							(* check if we need to aliquot *)
+							{targetContainer, targetContainerVolume} = If[!aliquotBoolean,
+								(* if we do not need to aliquot, then we are already in an acceptable target container so we need to determine that container and its max volume? *)
+								{
+									initialContainer,
+									Switch[
+										initialContainer,
+										ObjectP[Object[]],
+										Download[initialContainer, Model[MaxVolume], Cache -> cache, Simulation -> updatedSimulation],
+										ObjectP[Model[]],
+										Download[initialContainer, MaxVolume, Cache -> cache, Simulation -> updatedSimulation],
+										Null,
+										Null
+									]
+								},
+								(* otherwise if we do need to aliquot, we need to resolve a container based on first whether an aliquot container is specified, and if not then the specified, volume, sampling method, state, etc. *)
+								If[MatchQ[aliquotContainer, ObjectP[]],
+									{
+										aliquotContainer,
+										Switch[
+											aliquotContainer,
+											ObjectP[Object[]],
+											Download[aliquotContainer, Model[MaxVolume], Cache -> cache, Simulation -> updatedSimulation],
+											ObjectP[Model[]],
+											Download[aliquotContainer, MaxVolume, Cache -> cache, Simulation -> updatedSimulation]
+										]
+									},
+									(* if a volume is specified *)
+									Which[
+										MatchQ[assayVolume, GreaterP[0 * Liter]],
+										Which[
+											assayVolume <= 0.27 Milliliter,
+											{Model[Container, Vessel, "0.3 mL clear glass GC vial"], 0.3 * Milliliter},
+											(* 2 mL clear glass GC vial can hold only 1.5 mL *)
+											assayVolume <= 1.5 Milliliter,
+											{Model[Container, Vessel, "2 mL clear glass GC vial"], 2 * Milliliter},
+											assayVolume <= 10 Milliliter,
+											{Model[Container, Vessel, "10 mL clear glass GC vial"], 10 * Milliliter},
+											assayVolume <= 20 Milliliter,
+											{Model[Container, Vessel, "20 mL clear glass GC vial"], 20 * Milliliter}
+										],
+										MatchQ[specifiedAliquot, GreaterP[0 * Liter]],
+										Which[
+											specifiedAliquot <= 0.27 Milliliter,
+											{Model[Container, Vessel, "0.3 mL clear glass GC vial"], 0.3 * Milliliter},
+											(* 2 mL clear glass GC vial can hold only 1.5 mL *)
+											specifiedAliquot <= 1.5 Milliliter,
+											{Model[Container, Vessel, "2 mL clear glass GC vial"], 2 * Milliliter},
+											specifiedAliquot <= 10 Milliliter,
+											{Model[Container, Vessel, "10 mL clear glass GC vial"], 10 * Milliliter},
+											specifiedAliquot <= 20 Milliliter,
+											{Model[Container, Vessel, "20 mL clear glass GC vial"], 20 * Milliliter}
+										],
+										True,
+										Switch[
+											samplingMethod,
+											(* If headspace/spme injection, use the 10 mL clear glass GC vials *)
+											(HeadspaceInjection | SPMEInjection),
+											{Model[Container, Vessel, "10 mL clear glass GC vial"], 10 * Milliliter},
+											(* If liquid injection, use the 2 mL clear glass GC vials *)
+											(LiquidInjection),
+											If[Switch[sampleState,
+												Liquid,
+												If[MatchQ[sampleVolume, _Quantity],
+													sampleVolume < 300 * Microliter,
+													False
+												],
+												Solid,
+												If[MatchQ[sampleMass, _Quantity],
+													sampleMass < 200 * Milli * Gram,
+													False
+												],
+												(* if no sample state is available *)
+												Null,
+												Which[
+													MatchQ[sampleVolume, _Quantity],
+													If[MatchQ[sampleVolume, _Quantity],
+														sampleVolume < 300 * Microliter,
+														False
+													],
+													MatchQ[sampleMass, _Quantity],
+													If[MatchQ[sampleMass, _Quantity],
+														sampleMass < 200 * Milli * Gram,
+														False
+													],
+													True,
+													False
+												]
+											],
+												{Model[Container, Vessel, "0.3 mL clear glass GC vial"], 0.3 * Milliliter},
+												{Model[Container, Vessel, "2 mL clear glass GC vial"], 2 * Milliliter}
+											],
+											Null,
+											Null
+										]
+									]
+								]
+							];
+							(* logic for dilution volumes *)
+							{resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume} = MapThread[
+								Function[{solventVolume, solventSpecifiedQ},
+									Switch[
+										{solventVolume, diluteBoolean},
+										{Except[Automatic], _},
+										solventVolume,
+										(* To automatically resolve the dilution solvent volume, take the target container and subtract the volume of all specified dilution solvent volumes. Then divide that quantity by the number of specified dilution solvents plus one. *)
+										{Automatic, True},
+										If[solventSpecifiedQ,
+											If[!aliquotBoolean,
+												(* if we are not aliquoting, we already have some volume in the container. this should be the simulated volume so use that to determine how much to add. MUST BE POSITIVE *)
+												Max[0 * Milliliter, (0.9 * targetContainerVolume - ((dilutionSolventVolume + secondaryDilutionSolventVolume + tertiaryDilutionSolventVolume + sampleVolume) /. {Automatic -> 0 * Milliliter, Null -> 0 * Milliliter})) / (numberOfDilutionSolventsSpecified)],
+												(* if we are aliquoting, then we just need to make sure the volumes don't add up to more than the container's max volume. Still must be greater than 0 *)
+												Max[0 * Milliliter, (0.9 * targetContainerVolume - ((dilutionSolventVolume + secondaryDilutionSolventVolume + tertiaryDilutionSolventVolume + specifiedAliquot) /. {Automatic -> 0 * Milliliter, Null -> 0 * Milliliter})) / (numberOfDilutionSolventsSpecified + If[MatchQ[specifiedAliquot, Automatic], 1, 0])]
+											],
+											Null
+										],
+										{Automatic, False},
+										Null
+									]
+								],
+								{
+									{dilutionSolventVolume, secondaryDilutionSolventVolume, tertiaryDilutionSolventVolume},
+									{dilutionSolventSpecifiedQ, secondaryDilutionSolventSpecifiedQ, tertiaryDilutionSolventSpecifiedQ}
+								}
+							];
+
+							(*logic for aliquot amount for each sample: take the minimum of either the sample amount or the resolve total volume target minus the automatically selected amount of diluent *)
+							requiredAmount = Which[
+								aliquotBoolean && !MatchQ[specifiedAliquot, Automatic],
+								specifiedAliquot,
+								!aliquotBoolean,
+								sampleVolume,
+								True(* including aliquotBoolean && MatchQ[specifiedAliquot,Automatic]*),
+								Switch[
+									{targetContainerVolume, samplingMethod},
+									{_, HeadspaceInjection},
+									Switch[sampleState,
+										Liquid,
+										Max[1 * Microliter,
+											If[MatchQ[sampleVolume, _Quantity],
+												Min[sampleVolume, 0.2 * targetContainerVolume - Total[{resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}]],
+												0.2 * targetContainerVolume - Total[{resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}]
+											]
+										],
+										Solid,
+										If[MatchQ[sampleMass, _Quantity],
+											Clip[sampleMass, {1 * Milligram, 0.5 * Gram}],
+											0.5 * Gram
+										]
+									],
+									{_, LiquidInjection},
+									Max[1 * Microliter,
+										If[MatchQ[sampleVolume, _Quantity],
+											Min[sampleVolume, 1.5 * Milliliter - Total[{resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}]],
+											1.5 * Milliliter - Total[{resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}]
+										]
+									],
+									{LessP[5 * Milliliter], SPMEInjection},
+									Switch[sampleState,
+										Liquid,
+										Max[1 * Microliter,
+											If[MatchQ[sampleVolume, _Quantity],
+												Min[sampleVolume, 0.9 * targetContainerVolume - Total[{resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}]],
+												0.9 * targetContainerVolume - Total[{resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}]
+											]
+										],
+										Solid,
+										If[MatchQ[sampleMass, _Quantity],
+											Clip[sampleMass, {1 * Milligram, 0.25 * Gram}],
+											0.25 * Gram
+										]
+									],
+									{GreaterEqualP[5 * Milliliter], SPMEInjection},
+									Switch[sampleState,
+										Liquid,
+										Max[1 * Microliter,
+											If[MatchQ[sampleVolume, _Quantity],
+												Min[sampleVolume, 0.2 * targetContainerVolume - Total[{resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}]],
+												0.2 * targetContainerVolume - Total[{resolvedDilutionSolventVolume, resolvedSecondaryDilutionSolventVolume, resolvedTertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}]
+											]
+										],
+										Solid,
+										If[MatchQ[sampleMass, _Quantity],
+											Clip[sampleMass, {1 * Milligram, 0.5 * Gram}],
+											0.5 * Gram
+										]
+									],
+									{_, Null},
+									Null
+								]
+							];
+
+							(* return the result *)
+							{
+								targetContainer,
+								resolvedDilutionSolventVolume,
+								resolvedSecondaryDilutionSolventVolume,
+								resolvedTertiaryDilutionSolventVolume,
+								requiredAmount
+							}
+						]
+					],
+					{
+						samplingMethodsInternal,
+						states,
+						volumes,
+						masses,
+						dilutionSolventVolumes,
+						secondaryDilutionSolventVolumes,
+						tertiaryDilutionSolventVolumes,
+						dilutes,
+						initialContainers,
+						aliquotBooleans,
+						specifiedAliquots,
+						assayVolumes,
+						aliquotContainers
+					}
+				]
+			]
+		],
+		{
+			{
+				resolvedSamplingMethods,
+				simulatedSampleStates,
+				simulatedSampleVolumes,
+				simulatedSampleMasses,
+				specifiedDilutionSolventVolumes,
+				specifiedSecondaryDilutionSolventVolumes,
+				specifiedTertiaryDilutionSolventVolumes,
+				resolvedDilutes,
+				simulatedContainerModels,
+				aliquotQ,
+				specifiedAliquotAmounts,
+				specifiedAssayVolumes,
+				specifiedAliquotContainers
+			},
+			{
+				resolvedStandardSamplingMethods,
+				standardStates,
+				standardVolumes,
+				standardMasses,
+				specifiedStandardDilutionSolventVolumes,
+				specifiedStandardSecondaryDilutionSolventVolumes,
+				specifiedStandardTertiaryDilutionSolventVolumes,
+				resolvedStandardDilutes,
+				standardContainers,
+				aliquotStandardQ,
+				(* For Standard, there is no AssayVolume. The total volume is always the standard amount (equivalent to AliquotAmount for SamplesIn *)
+				specifiedStandardAmounts,
+				specifiedStandardAmounts,
+				specifiedStandardVials
+			},
+			{
+				resolvedBlankSamplingMethods,
+				blankStates,
+				blankVolumes,
+				blankMasses,
+				specifiedBlankDilutionSolventVolumes,
+				specifiedBlankSecondaryDilutionSolventVolumes,
+				specifiedBlankTertiaryDilutionSolventVolumes,
+				resolvedBlankDilutes,
+				blankContainers,
+				aliquotBlankQ,
+				(* For Blank, there is no AssayVolume. The total volume is always the blank amount (equivalent to AliquotAmount for SamplesIn *)
+				specifiedBlankAmounts,
+				specifiedBlankAmounts,
+				specifiedBlankVials
+			}
+		}
+	];
+
+	{
+		{
+			standardContainerCoverPacketsWithNulls,
+			standardContainerModelPacketsWithNulls,
+			standardContainerCoverModelPacketsWithNulls
+		},
+		{
+			blankContainerCoverPacketsWithNulls,
+			blankContainerModelPacketsWithNulls,
+			blankContainerCoverModelPacketsWithNull
+		}
+	} = Transpose /@ Replace[
+		Quiet[Download[
+		(* If either list is {Null} it Download will not generated the correct pattern, expand to {Null, Null, Null} to prevent that. *)
+		{
+			resolvedStandards,
+			(resolvedBlanks /. NoInjection -> Null)
+		},
+		{
+			Container[Cover][Packet[]],
+			Container[Model][Packet[Footprint, CoverFootprints]],
+			Container[Cover][Model][Packet[Pierceable]]
+		},
+		Simulation -> updatedSimulation], {Download::FieldDoesntExist}],
+	(* Replace any Nulls so we can transpose. *)
+	Null -> {Null, Null, Null}, {2}];
+
+	(* If there are no Standards or Blanks than the download returned a Null at the first level *)
+	{
+		standardContainerCoverPackets,
+		standardContainerModelPackets,
+		standardContainerCoverModelPackets,
+		blankContainerCoverPackets,
+		blankContainerModelPackets,
+		blankContainerCoverModelPackets
+	} = Map[Replace[#, Null -> {Null} , {0}]&,
+	{
+		standardContainerCoverPacketsWithNulls,
+		standardContainerModelPacketsWithNulls,
+		standardContainerCoverModelPacketsWithNulls,
+		blankContainerCoverPacketsWithNulls,
+		blankContainerModelPacketsWithNulls,
+		blankContainerCoverModelPacketsWithNull
+	}];
+
+	{aliquotContainerModelPackets, standardAliquotContainerModelPackets, blankAliquotContainerModelPackets} = Map[Function[{containers},
+		Map[Function[{container},
+			(* If the container is a model. *)
+			If[MatchQ[container, ObjectP[Model[Container]]],
+				(* Download the fields as a packet. *)
+				Download[container, Packet[Footprint, NeckType, CoverFootprints], Simulation -> updatedSimulation],
+				(* Otherwise it was an object, download the fields after traversing to the model. *)
+				Download[container, Model[Packet[Footprint, NeckType, CoverFootprints]], Simulation -> updatedSimulation]
+			]
+		],
+			(* Map over each container in the list. *)
+			containers
+		]],
+		(* Map over the list of containers for samples, standards, and blanks. *)
+			{targetVials, targetStandardVials, targetBlankVials}
+	];
+
+	(* Determine if we'll need to swap out any sample, standard, or blank caps to be compatible with the injector or autosampler movements. *)
+	{
+		resolvedSampleCaps,
+		resolvedStandardCaps,
+		resolvedBlankCaps
+	} = MapThread[
+		Function[
+			{samples, aliquotBooles, aliquotModelContainers, coverPackets, magneticCapRequiredQs, coverModelPackets, containerModelPackets},
+			MapThread[
+				Function[
+					{sample, aliquotBoole, aliquotModelContainer, coverPacket, requiresMagneticCapQ, coverModelPacket, containerModelPacket},
+					Which[
+						(* If we don't have a sample (e.g. no Standards or no Blanks).. *)
+						MatchQ[sample, Null|NoInjection],
+						(* .. then we don't need to resolve a cap. *)
+						Null,
+
+						(* If we're aliquoting pick a cap *)
+						MatchQ[aliquotBoole, True],
+						Which[
+							MatchQ[aliquotModelContainer, KeyValuePattern[{Footprint -> CEVial, NeckType -> "9/425"}]],
+							Model[Item, Cap, "id:L8kPEjn1PRww"],
+							MatchQ[aliquotModelContainer, KeyValuePattern[{Footprint -> HeadspaceVial, NeckType ->"18/425"}]],
+							Model[Item, Cap, "id:AEqRl9Kmnrqv"],
+							True,
+							If[!ValueQ[modelCapPackets],
+								modelCapPackets =  Cases[cache, PacketP[Model[Item, Cap]]]
+							];
+							Lookup[
+								FirstCase[modelCapPackets, KeyValuePattern[{Pierceable -> True, CoverFootprint -> Alternatives@@Lookup[containerModelPacket, CoverFootprints]}], <||>],
+								Object,
+								$Failed
+							]
+						],
+
+						(* If were not aliquoting and the container has a cover, check that is it compatible. *)
+						MatchQ[coverPacket, ObjectP[]] &&
+								Or[
+									(* If we need a magnetic cover it has to be either Model[Item, Cap, "id:L8kPEjn1PRww"] or Model[Item, Cap, "id:AEqRl9Kmnrqv"] *)
+									(requiresMagneticCapQ && MatchQ[coverModelPacket, ObjectP[{Model[Item, Cap, "id:L8kPEjn1PRww"], Model[Item, Cap, "id:AEqRl9Kmnrqv"]}]]),
+									(* If we do not need a magnetic cover it has to be pierceable (the container is already compatible) *)
+									(!requiresMagneticCapQ && TrueQ[Lookup[coverModelPacket, Pierceable, False]])
+								],
+						(* If its already compatible than we do not need a cap. *)
+						Null,
+
+						(* Otherwise we need to ensure the container has a specific cover *)
+						(* Magnetic covers are resolved for the container footprint: *)
+						requiresMagneticCapQ && MatchQ[Lookup[containerModelPacket, Footprint], CEVial],
+						Model[Item, Cap, "id:L8kPEjn1PRww"],
+						requiresMagneticCapQ && MatchQ[Lookup[containerModelPacket, Footprint], HeadspaceVial],
+						Model[Item, Cap, "id:AEqRl9Kmnrqv"],
+
+						(* For non-magnetic covers pick the first cover with a compatible cover footprint that is also pierceable. *)
+						MatchQ[Lookup[containerModelPacket, CoverFootprints], {__Symbol}],
+						(* Searching the cache is computationally expensive. Only do it if we have to and only do it once. *)
+						If[!ValueQ[modelCapPackets],
+							modelCapPackets =  Cases[cache, PacketP[Model[Item, Cap]]]
+						];
+						(* Look for a compatible cap, return an association if no cap was found. *)
+						Lookup[
+							FirstCase[modelCapPackets, KeyValuePattern[{Pierceable -> True, CoverFootprint -> Alternatives@@Lookup[containerModelPacket, CoverFootprints]}], <||>], Object,
+							(* If there was no object, return $Failed*)
+							$Failed
+						],
+
+						(* If there the model container has no CoverFootprint, we cannot search for a cap, return $Failed *)
+						True,
+						$Failed
+					]
+				],
+				{samples, aliquotBooles, aliquotModelContainers, coverPackets, magneticCapRequiredQs, coverModelPackets, containerModelPackets}
+			]
+		],
+		{
+			(* Samples, Standards, and Blanks *)
+			{simulatedSamples, resolvedStandards, resolvedBlanks},
+			(* Aliquot Booles*)
+			{aliquotQ, aliquotStandardQ, aliquotBlankQ},
+			(* Aliquot Model Container Packets *)
+			{aliquotContainerModelPackets, standardAliquotContainerModelPackets, blankAliquotContainerModelPackets},
+			(* Covers *)
+			Replace[{simulatedContainerCoverPackets, standardContainerCoverPackets, blankContainerCoverPackets}, Except[PacketP[]] -> {} , {2}],
+			(* MangeticCapRequireQ *)
+			{magneticCapRequiredQ, standardMagneticCapRequiredQ, blankMagneticCapRequiredQ},
+			(* Cover Model Packets *)
+			Replace[{simulatedContainerModelCoverPackets, standardContainerCoverModelPackets, blankContainerCoverModelPackets}, Except[PacketP[]] -> {}, {2}],
+			(* Container Model Packets *)
+			Replace[{simulatedContainerModelPackets, standardContainerModelPackets, blankContainerModelPackets}, Except[PacketP[]] -> {}, {2}]
+		}
+	];
+
+	(* Throw an error if we cannot find a compatible cap. *)
+	{noCapForContainerInvalidOptions, noStandardVialCapInvalidOption, invalidBlankVialCapInvalidOption} = MapThread[Function[
+		{caps, samples, prefix},
+			If[MemberQ[caps, $Failed|Missing["NotFound"]],
+				Message[Error::CoverNeededForContainer, prefix, ObjectToString[PickList[samples, caps, $Failed], Simulation -> updatedSimulation], Flatten[Position[caps, $Failed]]];
+				Which[
+					MatchQ[prefix, ""], {AliquotContainer},
+					MatchQ[prefix, "standard "], {StandardVial},
+					MatchQ[prefix, "blank "], {BlankVial}
+				],
+				{}
+			]
+		],
+		{
+			{resolvedSampleCaps, resolvedStandardCaps, resolvedBlankCaps},
+			{simulatedSamples, resolvedStandards, resolvedBlanks},
+			{"", "standard ", "blank "}
+		}
+	];
+
+	(* Tests for GC-method compatible caps: *)
+	capForVialTests = If[gatherTests,
+		Module[{containers, failingMagneticContainers, failingPierceableContainers, passingMagneticContainers, passingPierceableContainers, failingMagneticTest, failingPierceableTest, passingMagneticTest, passingPierceableTest},
+			(* Determine which container to reference in the test. *)
+			containers = MapThread[Function[{aliquot, container, aliquotContainer},
+				If[aliquot, aliquotContainer, container]],
+				{aliquotQ, simulatedContainers, targetVials}
+			];
+
+			(* Determine what is failing or passing. *)
+			failingMagneticContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {$Failed|Missing["NotFound"], True}];
+			failingPierceableContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {$Failed|Missing["NotFound"], False}];
+			passingMagneticContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {Except[$Failed|Missing["NotFound"]], True}];
+			passingPierceableContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {Except[$Failed|Missing["NotFound"]], False}];
+
+			(* Construct failing tests. *)
+			failingMagneticTest = If[failingMagneticContainers == {},
+				Nothing,
+				Test["Pierceable, magnetic caps exist for sample containers " <> ObjectToString[DeleteDuplicates@failingMagneticContainers, Simulation -> updatedSimulation] <> ":", True, False]
+			];
+
+			failingPierceableTest = If[failingPierceableContainers == {},
+					Nothing,
+				Test["Pierceable caps exist for sample containers" <> ObjectToString[DeleteDuplicates@failingPierceableContainers, Simulation -> updatedSimulation] <> ":", True, False]
+			];
+
+			(* Construct passing tests. *)
+			passingMagneticTest = If[passingMagneticContainers == {},
+				Nothing,
+				Test["Pierceable, magnetic caps exist for sample containers" <> ObjectToString[DeleteDuplicates@passingMagneticContainers, Simulation -> updatedSimulation] <> ":", True, True]
+			];
+
+			passingPierceableTest = If[passingPierceableContainers == {},
+				Nothing,
+				Test["Pierceable caps exist for sample containers" <> ObjectToString[DeleteDuplicates@passingPierceableContainers, Simulation -> updatedSimulation] <> ":", True, True]
+			];
+
+			(* Return the tests as a list. *)
+			{failingMagneticTest, failingPierceableTest, passingMagneticTest, passingPierceableTest}
+		],
+		Nothing
+	];
+
+	capForStandardVialTests = If[gatherTests,
+		Module[{containers, failingMagneticContainers, failingPierceableContainers, passingMagneticContainers, passingPierceableContainers, failingMagneticTest, failingPierceableTest, passingMagneticTest, passingPierceableTest},
+			(* Determine which container to reference in the test. *)
+			containers = MapThread[Function[{aliquot, container, aliquotContainer},
+				If[aliquot, aliquotContainer, container]],
+				{aliquotStandardQ, standardContainers, targetStandardVials}
+			];
+
+			(* Determine what is failing or passing. *)
+			failingMagneticContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {$Failed|Missing["NotFound"], True}];
+			failingPierceableContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {$Failed|Missing["NotFound"], False}];
+			passingMagneticContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {Except[$Failed|Missing["NotFound"]], True}];
+			passingPierceableContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {Except[$Failed|Missing["NotFound"]], False}];
+
+			(* Construct failing tests. *)
+			failingMagneticTest = If[failingMagneticContainers == {},
+				Nothing,
+				Test["Pierceable, magnetic caps exist for Standard containers " <> ObjectToString[DeleteDuplicates@failingMagneticContainers, Simulation -> updatedSimulation] <> ":", True, False]
+			];
+
+			failingPierceableTest = If[failingPierceableContainers == {},
+				Nothing,
+				Test["Pierceable caps exist for Standard containers " <> ObjectToString[DeleteDuplicates@failingPierceableContainers, Simulation -> updatedSimulation] <> ":", True, False]
+			];
+
+			(* Construct passing tests. *)
+			passingMagneticTest = If[passingMagneticContainers == {},
+				Nothing,
+				Test["Pierceable, magnetic caps exist for Standard containers " <> ObjectToString[DeleteDuplicates@passingMagneticContainers, Simulation -> updatedSimulation] <> ":", True, True]
+			];
+
+			passingPierceableTest = If[passingPierceableContainers == {},
+				Nothing,
+				Test["Pierceable caps exist for Standard containers " <> ObjectToString[DeleteDuplicates@passingPierceableContainers, Simulation -> updatedSimulation] <> ":", True, True]
+			];
+
+			(* Return the tests as a list. *)
+			{failingMagneticTest, failingPierceableTest, passingMagneticTest, passingPierceableTest}
+			],
+			Nothing
+		];
+
+	capForBlankVialTests = If[gatherTests,
+		Module[{containers, failingMagneticContainers, failingPierceableContainers, passingMagneticContainers, passingPierceableContainers, failingMagneticTest, failingPierceableTest, passingMagneticTest, passingPierceableTest},
+			(* Determine which container to reference in the test. *)
+			containers = MapThread[Function[{aliquot, container, aliquotContainer},
+				If[aliquot, aliquotContainer, container]],
+				{aliquotBlankQ, blankContainers, targetBlankVials}
+			];
+
+			(* Determine what is failing or passing. *)
+			failingMagneticContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {$Failed|Missing["NotFound"], True}];
+			failingPierceableContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {$Failed|Missing["NotFound"], False}];
+			passingMagneticContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {Except[$Failed|Missing["NotFound"]], True}];
+			passingPierceableContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {Except[$Failed|Missing["NotFound"]], False}];
+
+			(* Construct failing tests. *)
+			failingMagneticTest = If[failingMagneticContainers == {},
+				Nothing,
+				Test["Pierceable, magnetic caps exist for Blank containers " <> ObjectToString[DeleteDuplicates@failingMagneticContainers, Simulation -> updatedSimulation] <> ":", True, False]
+			];
+
+			failingPierceableTest = If[failingPierceableContainers == {},
+				Nothing,
+				Test["Pierceable caps exist for Blank containers " <> ObjectToString[DeleteDuplicates@failingPierceableContainers, Simulation -> updatedSimulation] <> ":", True, False]
+			];
+
+			(* Construct passing tests. *)
+			passingMagneticTest = If[passingMagneticContainers == {},
+				Nothing,
+				Test["Pierceable, magnetic caps exist for Blank containers " <> ObjectToString[DeleteDuplicates@passingMagneticContainers, Simulation -> updatedSimulation] <> ":", True, True]
+			];
+
+			passingPierceableTest = If[passingPierceableContainers == {},
+				Nothing,
+				Test["Pierceable caps exist for Blank containers " <> ObjectToString[DeleteDuplicates@passingPierceableContainers, Simulation -> updatedSimulation] <> ":", True, True]
+			];
+
+			(* Return the tests as a list. *)
+			{failingMagneticTest, failingPierceableTest, passingMagneticTest, passingPierceableTest}
+		],
+		Nothing
+	];
+
+	(* Throw a warning if a cap swap will occur. *)
+	MapThread[Function[
+		{caps, aliquotBooles, containerCoverPackets, prefix, samples},
+		Module[{pickList},
+			(* Determine which samples to include in the warning if any. *)
+			pickList = MapThread[
+				Function[{cap, aliquotBoole, coverPacket},
+					Which[
+						(* If we're aliquoting the sample cap is going to change anyways. *)
+						aliquotBoole, False,
+						(* If there isn't a cap they probably don't care that we will cap it. *)
+						MatchQ[coverPacket, Null|{}], False,
+						(* Otherwise we're not aliquoting and there is a cap, if we're swapping it mark it as True. *)
+						MatchQ[cap, ObjectP[]], True,
+						(* Otherwise it has the correct cap for the experiment and we do not need to Warn. *)
+						True, False
+					]
+				], {caps, aliquotBooles, containerCoverPackets}];
+
+			(* If we have to surface a warning, surface one. *)
+			If[MemberQ[pickList, True],
+				Message[Warning::ContainerCapSwapRequired, prefix, ObjectToString[PickList[samples, pickList], Simulation -> updatedSimulation], Flatten[Position[pickList, True]], ObjectToString[PickList[caps, pickList], Simulation -> updatedSimulation]]
+			]
+		]
+	],
+		{
+			(* Resolved swaps *)
+			Replace[{resolvedSampleCaps, resolvedStandardCaps, resolvedBlankCaps}, $Failed -> Null, {2}],
+			(* Aliquot Booles*)
+			{aliquotQ, aliquotStandardQ, aliquotBlankQ},
+			(* Covers *)
+			Replace[{simulatedContainerCoverPackets, standardContainerCoverPackets, blankContainerCoverPackets}, Except[PacketP[]] -> {} , {2}],
+			(* Prefix *)
+			{"", "standard ", "blank "},
+			(* Samples*)
+			{simulatedSamples, resolvedStandards, resolvedBlanks}
+		}
+	];
+
+	(* DilutionSolventVolume *)
+
+	(* SecondaryDilutionSolventVolume *)
+
+	(* TertiaryDilutionSolventVolume *)
+
+	(* === Handle LiquidInjectionSyringe === *)
+	(* Resolution of LiquidInjectionSyringe is performed later when we have resolved injection volumes, to avoid conflict between the resolved volumes and the syringes used *)
+	(* Get the specified LiquidInjectionSyringe *)
+	specifiedLiquidInjectionSyringe = Lookup[roundedGasChromatographyOptions, LiquidInjectionSyringe];
+
+	(* Get the model of the specified LiquidInjectionSyringe *)
+	specifiedLiquidInjectionSyringeModel = Switch[
+		specifiedLiquidInjectionSyringe,
+		ObjectP[Model[Container, Syringe]],
+		Download[specifiedLiquidInjectionSyringe, Object],
+		ObjectP[Object[Container, Syringe]],
+		Download[specifiedLiquidInjectionSyringe, Model, Cache -> cache, Simulation -> updatedSimulation],
+		_,
+		Null
+	];
+
+	(* Get the list of compatible LiquidInjectionSyringes *)
+	specifiedLiquidInjectionSyringeModelType = Lookup[
+		fetchPacketFromCache[specifiedLiquidInjectionSyringeModel, cache] /. {Null -> <||>},
+		GCInjectionType,
+		Null
+	];
+
+	specifiedLiquidInjectionSyringeVolume = If[MatchQ[specifiedLiquidInjectionSyringeModelType, LiquidInjection],
+		Convert[Lookup[fetchPacketFromCache[specifiedLiquidInjectionSyringeModel, cache], MaxVolume], Microliter]
+	];
+
+	(* Pre-Resolve LiquidInjectionSyringe so that we turn the syringe to Null if needed *)
+	preResolvedLiquidInjectionSyringe = Which[
+		(* If the LiquidInjectionSyringe is already specified, go with that one *)
+		MatchQ[specifiedLiquidInjectionSyringeModelType, LiquidInjection],
+		specifiedLiquidInjectionSyringe,
+		(* If there are no LiquidInjection samples, we don't need a LiquidInjectionSyringe *)
+		MatchQ[specifiedLiquidInjectionSyringe, Automatic] && Not[MemberQ[allSamplingMethods, LiquidInjection]],
+		Null,
+		MatchQ[specifiedLiquidInjectionSyringe, Automatic] && MemberQ[allSamplingMethods, LiquidInjection],
+		Automatic,
+		True,
+		Null
+	];
+
+	(* === Resolve HeadspaceInjectionSyringe === *)
+
+	(* Get the specified HeadspaceInjectionSyringe *)
+	specifiedHeadspaceInjectionSyringe = Lookup[roundedGasChromatographyOptions, HeadspaceInjectionSyringe];
+
+	(* Get the model of the specified HeadspaceInjectionSyringe *)
+	specifiedHeadspaceInjectionSyringeModel = Switch[
+		specifiedHeadspaceInjectionSyringe,
+		ObjectP[Model[Container, Syringe]],
+		Download[specifiedHeadspaceInjectionSyringe, Object],
+		ObjectP[Object[Container, Syringe]],
+		Download[specifiedHeadspaceInjectionSyringe, Model, Cache -> cache, Simulation -> updatedSimulation],
+		_,
+		Null
+	];
+
+	(* Get the list of compatible HeadspaceInjectionSyringes *)
+	specifiedHeadspaceInjectionSyringeModelType = Lookup[
+		fetchPacketFromCache[specifiedHeadspaceInjectionSyringeModel, cache] /. {Null -> <||>},
+		GCInjectionType,
+		Null
+	];
+
+	(* Get the list of compatible HeadspaceInjectionSyringe *)
+	compatibleHeadspaceInjectionSyringeModels = Alternatives[
+		Model[Container, Syringe, "2500 \[Mu]L GC headspace sample injection syringe"], (* 2500 uL headspace syringe *)
+		Model[Container, Syringe, "id:4pO6dM50O14B"] (* id form *)
+	];
+
+	(* Resolve the HeadspaceInjectionSyringe *)
+	resolvedHeadspaceInjectionSyringe = Which[
+		(* If the HeadspaceInjectionSyringe is already specified properly, go with that one *)
+		MatchQ[specifiedHeadspaceInjectionSyringeModelType, HeadspaceInjection],
+		specifiedHeadspaceInjectionSyringe,
+		(* If there are no HeadspaceInjection samples, we don't need a HeadspaceInjectionSyringe *)
+		MatchQ[specifiedHeadspaceInjectionSyringe, Automatic] && Not[MemberQ[allSamplingMethods, HeadspaceInjection]],
+		Null,
+		(* If there are HeadspaceInjection samples but none have specified injection volumes, pick a 2500 microliter syringe *)
+		MatchQ[specifiedHeadspaceInjectionSyringe, Automatic] && MemberQ[allSamplingMethods, HeadspaceInjection] && MemberQ[allSpecifiedHeadspaceInjectionVolumes, Except[Null]],
+		Model[Container, Syringe, "2500 \[Mu]L GC headspace sample injection syringe"],
+		True,
+		Null
+	];
+
+	(* if we failed to resolve a headspace injection syringe, we have to figure out why and throw an error. *)
+
+	(* first case: a headspace injection sample is specified but the specified value is null. *)
+	headspaceInjectionSyringeMissingQ = MemberQ[allSamplingMethods, HeadspaceInjection] && MatchQ[specifiedHeadspaceInjectionSyringe, Null];
+
+	(* second case: the injection type of the specified syringe was incorrect *)
+	incompatibleHeadspaceInjectionSyringeQ = MatchQ[specifiedHeadspaceInjectionSyringe, ObjectP[]] && !MatchQ[specifiedHeadspaceInjectionSyringeModelType, HeadspaceInjection];
+
+	(* throw the appropriate errors *)
+	headspaceInjectionSyringeOption = If[(headspaceInjectionSyringeMissingQ || incompatibleHeadspaceInjectionSyringeQ),
+		If[!gatherTests && headspaceInjectionSyringeMissingQ, Message[Error::GCHeadspaceInjectionSyringeRequired]];
+		If[!gatherTests && incompatibleHeadspaceInjectionSyringeQ, Message[Error::GCIncompatibleHeadspaceInjectionSyringe]];
+		HeadspaceInjectionSyringe,
+		{}
+	];
+
+	headspaceInjectionSyringeTests = If[gatherTests,
+		{
+			Test["If a headspace injection sample is specified, a headspace injection syringe is also specified:",
+				headspaceInjectionSyringeMissingQ,
+				False
+			],
+			Test["If a headspace injection syringe is specified, it is compatible with the requested instrument:",
+				incompatibleHeadspaceInjectionSyringeQ,
+				False
+			]
+		},
+		{}
+	];
+
+	resolvedHeadspaceInjectionSyringeVolume = If[NullQ[resolvedHeadspaceInjectionSyringe],
+		Null,
+		Lookup[fetchPacketFromCache[resolvedHeadspaceInjectionSyringe, cache], MaxVolume]
+	];
+
+
+	(* === Resolve SPMEInjectionFiber === *)
+
+	(* Get the specified SPMEInjectionFiber *)
+	specifiedSPMEInjectionFiber = Lookup[roundedGasChromatographyOptions, SPMEInjectionFiber];
+
+	(* Get the model of the specified SPMEInjectionFiber *)
+	specifiedSPMEInjectionFiberModel = Switch[
+		specifiedSPMEInjectionFiber,
+		ObjectP[Model[Item, SPMEFiber]],
+		specifiedSPMEInjectionFiber[Object],
+		ObjectP[Object[Item, SPMEFiber]],
+		specifiedSPMEInjectionFiber[Model],
+		Automatic,
+		Automatic,
+		_,
+		Null
+	];
+
+	(* Resolve the SPMEInjectionFiber *)
+	resolvedSPMEInjectionFiber = Which[
+		(* If the SPMEInjectionFiber is already specified, go with that one *)
+		MatchQ[specifiedSPMEInjectionFiberModel, ObjectP[{Model[Item, SPMEFiber], Object[Item, SPMEFiber]}]],
+		specifiedSPMEInjectionFiber,
+		(* If there are no SPMEInjection samples, we don't need a SPMEInjectionFiber *)
+		MatchQ[specifiedSPMEInjectionFiber, Automatic] && Not[MemberQ[allSamplingMethods, SPMEInjection]],
+		Null,
+		(* If there are SPMEInjection samples, pick the all-purpose fiber *)
+		MatchQ[specifiedSPMEInjectionFiber, Automatic] && MemberQ[allSamplingMethods, SPMEInjection],
+		Model[Item, SPMEFiber, "id:54n6evLR3kLG"], (* 30 um PDMS fiber *)
+		True,
+		Null
+	];
+
+	(* if we failed to resolve a fiber, we have to figure out why and throw an error. *)
+
+	(* first case: a spme injection sample is specified but the specified value is null. *)
+	spmeInjectionFiberMissingQ = MemberQ[allSamplingMethods, SPMEInjection] && MatchQ[specifiedSPMEInjectionFiber, Null];
+
+	(* throw the appropriate errors *)
+	spmeInjectionFiberOption = If[(spmeInjectionFiberMissingQ),
+		If[!gatherTests && spmeInjectionFiberMissingQ, Message[Error::GCSPMEInjectionFiberRequired]];
+		SPMEInjectionFiber,
+		{}
+	];
+
+	spmeInjectionFiberTests = If[gatherTests,
+		{
+			Test["If a SPME injection sample is specified, a SPME injection fiber is also specified:",
+				spmeInjectionFiberMissingQ,
+				False
+			]
+		},
+		{}
+	];
+
+	resolvedSPMEInjectionFiberMaxTemperature = If[NullQ[resolvedSPMEInjectionFiber],
+		Null,
+		Lookup[fetchPacketFromCache[resolvedSPMEInjectionFiber, cache], MaxTemperature]
+	];
+
+
+	(* === Resolve LiquidHandlingSyringe === *)
+
+	(* Get the specified LiquidHandlingSyringe *)
+	specifiedLiquidHandlingSyringe = Lookup[roundedGasChromatographyOptions, LiquidHandlingSyringe];
+
+	(* Get the model of the specified LiquidHandlingSyringe *)
+	specifiedLiquidHandlingSyringeModel = Switch[
+		specifiedLiquidHandlingSyringe,
+		ObjectP[Model[Container, Syringe]],
+		Download[specifiedLiquidHandlingSyringe, Object],
+		ObjectP[Object[Container, Syringe]],
+		Download[specifiedLiquidHandlingSyringe, Model, Cache -> cache, Simulation -> updatedSimulation],
+		_,
+		Null
+	];
+
+	(* Get the list of compatible LiquidHandlingSyringes *)
+	specifiedLiquidHandlingSyringeModelType = Lookup[
+		fetchPacketFromCache[specifiedLiquidHandlingSyringeModel, cache] /. {Null -> <||>},
+		GCInjectionType,
+		Null
+	];
+
+	(* Get the list of compatible LiquidHandlingSyringes *)
+	compatibleLiquidHandlingSyringeModels = Alternatives[
+		Model[Container, Syringe, "2500 \[Mu]L GC PAL3 liquid handling syringe"][Object] (* 2500 uL liquid syringe *)
+	];
+
+	(* Get the model of the specified LiquidHandlingSyringe *)
+	specifiedLiquidHandlingSyringeModel = Switch[
+		specifiedLiquidHandlingSyringe,
+		ObjectP[Model[Container, Syringe]],
+		specifiedLiquidHandlingSyringe[Object],
+		ObjectP[Object[Container, Syringe]],
+		specifiedLiquidHandlingSyringe[Model],
+		_,
+		$Failed
+	];
+
+	(* Resolve the LiquidHandlingSyringe *)
+	resolvedLiquidHandlingSyringe = Which[
+		(* If the LiquidHandlingSyringe is already specified, go with that one *)
+		MatchQ[specifiedLiquidHandlingSyringeModelType, LiquidHandling],
+		specifiedLiquidHandlingSyringe,
+		(* If there are no LiquidHandling steps, we don't need a LiquidHandlingSyringe *)
+		MatchQ[specifiedLiquidHandlingSyringe, Automatic] && Not[MemberQ[Flatten[{resolvedDilutes, resolvedStandardDilutes, resolvedBlankDilutes}], True]],
+		Null,
+		(* If there are LiquidHandling samples and syringe isn't specified, pick the 2500 microliter syringe *)
+		MatchQ[specifiedLiquidHandlingSyringe, Automatic] && MemberQ[Flatten[{resolvedDilutes, resolvedStandardDilutes, resolvedBlankDilutes}], True],
+		Model[Container, Syringe, "2500 \[Mu]L GC PAL3 liquid handling syringe"]
+	];
+
+	(* if we failed to resolve a liquid handling syringe, we have to figure out why and throw an error. *)
+
+	(* first case: a liquid handling step is specified but the specified value is null. *)
+	liquidHandlingSyringeMissingQ = MemberQ[
+		Flatten[
+			{
+				resolvedDilutionSolventVolumes,
+				resolvedSecondaryDilutionSolventVolumes,
+				resolvedTertiaryDilutionSolventVolumes,
+				resolvedStandardDilutionSolventVolumes,
+				resolvedStandardSecondaryDilutionSolventVolumes,
+				resolvedStandardTertiaryDilutionSolventVolumes,
+				resolvedBlankDilutionSolventVolumes,
+				resolvedBlankSecondaryDilutionSolventVolumes,
+				resolvedBlankTertiaryDilutionSolventVolumes
+			}
+		],
+		Except[Null]
+	] && MatchQ[specifiedLiquidHandlingSyringe, Null];
+
+	(* second case: the injection type of the specified syringe was incorrect *)
+	incompatibleLiquidHandlingSyringeQ = MatchQ[specifiedLiquidHandlingSyringe, ObjectP[]] && !MatchQ[specifiedLiquidHandlingSyringeModelType, LiquidHandling];
+
+	(* throw the appropriate errors *)
+	liquidHandlingSyringeOption = If[(liquidHandlingSyringeMissingQ || incompatibleLiquidHandlingSyringeQ),
+		If[!gatherTests && liquidHandlingSyringeMissingQ, Message[Error::GCLiquidHandlingSyringeRequired]];
+		If[!gatherTests && incompatibleLiquidHandlingSyringeQ, Message[Error::GCIncompatibleLiquidHandlingSyringe]];
+		LiquidHandlingSyringe,
+		{}
+	];
+
+	(* === Resolve OvenEquilibrationTime, ColumnOvenTemperatureProfile, PostRunOvenTemperature === *)
+
+	(* OvenEquilibrationTime *)
+
+	(* Create the default resolved OvenTemperatureProfile if not specified *)
+	defaultOvenTemperatureProfile = {{20 * Celsius / Minute, maxColumnTempLimit - 50 * Celsius, 3 * Minute}};
+
+	(* Resolve the oven temperature parameters, post run parameters *)
+
+	{
+		{resolvedOvenEquilibrationTimes, resolvedOvenTemperatureProfiles, resolvedOvenTemperatureProfileSetpoints, resolvedPostRunOvenTemperatures, resolvedPostRunOvenTimes},
+		{resolvedStandardOvenEquilibrationTimes, resolvedStandardOvenTemperatureProfiles, resolvedStandardOvenTemperatureProfileSetpoints, resolvedStandardPostRunOvenTemperatures, resolvedStandardPostRunOvenTimes},
+		{resolvedBlankOvenEquilibrationTimes, resolvedBlankOvenTemperatureProfiles, resolvedBlankOvenTemperatureProfileSetpoints, resolvedBlankPostRunOvenTemperatures, resolvedBlankPostRunOvenTimes}
+	} = Map[
+		Function[{optionsList},
+			Module[{ovenEquilibrationTimes, ovenTemperatureProfiles, postRunOvenTemperatures, postRunOvenTimes, postRunFlowRates, postRunPressures, initialOvenTemperatures,
+				resolvedEquilibrationTimes, resolvedTemperatureProfiles, resolvedTemperatureProfileSetpoints, resolvedPostRunTemperatures, resolvedPostRunFlows, resolvedPostRunPress, resolvedPostRunTimes, samples},
+				{ovenEquilibrationTimes, ovenTemperatureProfiles, postRunOvenTemperatures, postRunOvenTimes, postRunFlowRates, postRunPressures, initialOvenTemperatures, samples} = optionsList;
+
+				(* Oven equilibration times *)
+
+				resolvedEquilibrationTimes = Map[Switch[
+					#,
+					GreaterEqualP[0 * Minute],
+					#,
+					Automatic | Null,
+					Null
+				]&,
+					ovenEquilibrationTimes
+				];
+
+				(* OvenTemperatureProfile *)
+
+				(* Generate the list of resolved OvenTemperatureProfiles *)
+				resolvedTemperatureProfiles = MapThread[Switch[
+					{#1, #2},
+					{Except[Automatic | Null], _},
+					#1,
+					{Automatic, Except[Null]},
+					defaultOvenTemperatureProfile,
+					{Automatic, Null},
+					Null,
+					{Null, _},
+					Null
+				]&,
+					{ovenTemperatureProfiles, samples}
+				];
+
+				resolvedTemperatureProfileSetpoints = Map[
+					Function[profile, Cases[ToList[profile], _?(CompatibleUnitQ[#, Celsius] &), {2}]],
+					resolvedTemperatureProfiles
+				];
+
+				(* PostRunOvenTemperature *)
+
+				(* Resolve PostRunOvenTemperatures to either the specified or initial value, unless null *)
+				resolvedPostRunTemperatures = MapThread[
+					Function[
+						{temp, flow, pressure, time, initialTemps},
+						Switch[
+							{temp, flow, pressure, time},
+							(* keep option if specified *)
+							{Except[Automatic], __},
+							temp,
+							(* null option if nothing else is specified and it's automatic *)
+							{Automatic, Automatic | Null, Automatic | Null, Automatic | Null},
+							Null,
+							(* resolve to initial temperature, presuming that value is not null *)
+							{Automatic, __},
+							initialTemps
+						]
+					],
+					{postRunOvenTemperatures, postRunFlowRates, postRunPressures, postRunOvenTimes, initialOvenTemperatures}
+				];
+
+				(* Resolve PostRunOvenTimes to either the specified or initial value, unless null *)
+				resolvedPostRunTimes = MapThread[
+					Function[
+						{temp, flow, pressure, time},
+						Switch[
+							{temp, flow, pressure, time},
+							(* keep option if specified *)
+							{_, _, _, Except[Automatic]},
+							time,
+							(* null option if nothing else is specified and it's automatic *)
+							{Automatic | Null, Automatic | Null, Automatic | Null, Automatic},
+							Null,
+							(* resolve to 2 Minutes if we're using other options *)
+							{_, _, _, Automatic},
+							2 * Minute
+						]
+					],
+					{postRunOvenTemperatures, postRunFlowRates, postRunPressures, postRunOvenTimes}
+				];
+
+				(* Return the resolved values *)
+				{resolvedEquilibrationTimes, resolvedTemperatureProfiles, resolvedTemperatureProfileSetpoints, resolvedPostRunTemperatures, resolvedPostRunTimes}
+			]
+		],
+		{
+			{specifiedOvenEquilibrationTimes, specifiedOvenTemperatureProfiles, specifiedPostRunOvenTemperatures, specifiedPostRunOvenTimes, specifiedPostRunFlowRates, specifiedPostRunPressures,
+				specifiedInitialOvenTemperatures, mySamples},
+			{specifiedStandardOvenEquilibrationTimes, specifiedStandardOvenTemperatureProfiles, specifiedStandardPostRunOvenTemperatures, specifiedStandardPostRunOvenTimes, specifiedStandardPostRunFlowRates,
+				specifiedStandardPostRunPressures, specifiedStandardInitialOvenTemperatures, resolvedStandards},
+			{specifiedBlankOvenEquilibrationTimes, specifiedBlankOvenTemperatureProfiles, specifiedBlankPostRunOvenTemperatures, specifiedBlankPostRunOvenTimes, specifiedBlankPostRunFlowRates,
+				specifiedBlankPostRunPressures, specifiedBlankInitialOvenTemperatures, resolvedBlanks}
+		}
+	];
+
+	(* error check the profiles to make sure they are not broken TODO HERE *)
+
+	(* Check that if an oven time period is specified, we have a temperature/temperature profile for that period *)
+	(* Also warn if a temperature is provided, but we have a Null/0 time *)
+
+	ovenTimeTemperatureConflictTuples = Map[
+		Function[opsList,
+			Module[
+				{
+					postRunOvenTemperatures, postRunOvenTimes, prefix, postRunOvenTimeNoTemperatureConflicts, conflictingPostRunOvenTimeNoTemperatureOptions, conflictingOptions,
+					postRunOvenTimeNoTemperatureConflictTest
+				},
+				{postRunOvenTemperatures, postRunOvenTimes, prefix} = opsList;
+
+				(* Figure out if we have oven times specified, but no temperature or profile *)
+				{
+					postRunOvenTimeNoTemperatureConflicts
+				} = Transpose@MapThread[
+					Function[
+						{postRunTime, postRunTemperatures},
+
+						{
+							(MatchQ[postRunTime, GreaterP[0 Minute]] && NullQ[postRunTemperatures]) || (NullQ[postRunTime] && MatchQ[postRunTemperatures, GreaterEqualP[0 Kelvin]])
+						}
+					],
+					{postRunOvenTimes, postRunOvenTemperatures}
+				];
+
+				(* Gather the options names that are used to specify the temperatures *)
+				{
+					conflictingPostRunOvenTimeNoTemperatureOptions
+				} = MapThread[
+					Function[{conflicts, options},
+						If[Or @@ conflicts, ToExpression@StringJoin[prefix, #]& /@ options, {}]
+					],
+					{
+						{
+							postRunOvenTimeNoTemperatureConflicts
+						},
+						{
+							{"PostRunOvenTime", "PostRunOvenTemperature"}
+						}
+					}
+				];
+
+				conflictingOptions = Union[conflictingPostRunOvenTimeNoTemperatureOptions];
+
+				(* If we have conflicts,throw an error *)
+				If[!gatherTests,
+					If[Or @@ postRunOvenTimeNoTemperatureConflicts,
+						Message[Error::GCPostRunOvenTimeTemperatureConflict, prefix],
+						Nothing
+					];
+				];
+
+				(* Gather the tests *)
+				postRunOvenTimeNoTemperatureConflictTest = If[gatherTests,
+					Test[prefix <> "PostRunOvenTemperature is not Null if " <> prefix <> "PostRunOvenTime is not null:",
+						Or @@ postRunOvenTimeNoTemperatureConflicts,
+						False
+					],
+					{}
+				];
+
+				(* Format the output *)
+				{
+					Flatten[{conflictingOptions}],
+					Flatten[{postRunOvenTimeNoTemperatureConflictTest}]
+				}
+
+			]
+		],
+		{
+			{resolvedPostRunOvenTemperatures, resolvedPostRunOvenTimes, ""},
+			{resolvedStandardPostRunOvenTemperatures, resolvedStandardPostRunOvenTimes, "Standard"},
+			{resolvedBlankPostRunOvenTemperatures, resolvedBlankPostRunOvenTimes, "Blank"}
+		}
+	];
+
+	(* Split the resulting tuples to create error issues *)
+	{ovenTimeTemperatureConflictOptions, ovenTimeTemperatureConflictTests} = {Flatten[ovenTimeTemperatureConflictTuples[[All, 1]]], Flatten[ovenTimeTemperatureConflictTuples[[All, 2]]]};
 
 
 	(* === MapThread to resolve Master Switch for SamplingMethod of each sample, error check for mismatched options, then resolve the sampling and injection parameters relevant to each sample. === *)
@@ -12319,19 +12990,43 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 							Automatic,
 							(* if we will aliquot, test against the aliquot volume. If we did not, use the simulated sample volume *)
 							If[aliquotBool,
-								If[Or[NullQ[aliquotVolume], MatchQ[resolvedLiquidInjectionSyringeVolume, Nothing]],
+								Which[
+									(* No LiquidInjection *)
+									Or[NullQ[aliquotVolume], NullQ[preResolvedLiquidInjectionSyringe]],
 									Null,
+									(* No LiquidInjectionSyringe provided, go with our default and use this to resolve LiquidInjectionSyringe downstream *)
+									MatchQ[preResolvedLiquidInjectionSyringe,Automatic]||NullQ[specifiedLiquidInjectionSyringeVolume],
 									Min[
-										0.25 * resolvedLiquidInjectionSyringeVolume,
+										2.5Microliter,
+										If[diluteQ,
+											aliquotVolume + Total[{dilutionSolventVolume, secondaryDilutionSolventVolume, tertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}],
+											aliquotVolume] / totalNumberOfReplicates
+									],
+									(* Consider the max volume of LiquidInjectionSyringe provided *)
+									True,
+									Min[
+										0.25 * specifiedLiquidInjectionSyringeVolume,
 										If[diluteQ,
 											aliquotVolume + Total[{dilutionSolventVolume, secondaryDilutionSolventVolume, tertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}],
 											aliquotVolume] / totalNumberOfReplicates
 									]
 								],
-								If[Or[NullQ[simulatedVolume], MatchQ[resolvedLiquidInjectionSyringeVolume, Nothing]],
+								Which[
+									(* No LiquidInjection *)
+									Or[NullQ[simulatedVolume], NullQ[preResolvedLiquidInjectionSyringe]],
 									Null,
+									MatchQ[preResolvedLiquidInjectionSyringe,Automatic]||NullQ[specifiedLiquidInjectionSyringeVolume],
+									(* No LiquidInjectionSyringe provided, go with our default and use this to resolve LiquidInjectionSyringe downstream *)
 									Min[
-										0.25 * resolvedLiquidInjectionSyringeVolume,
+										2.5Microliter,
+										If[diluteQ,
+											simulatedVolume + Total[{dilutionSolventVolume, secondaryDilutionSolventVolume, tertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}],
+											simulatedVolume] / totalNumberOfReplicates
+									],
+									(* Consider the max volume of LiquidInjectionSyringe provided *)
+									True,
+									Min[
+										0.25 * specifiedLiquidInjectionSyringeVolume,
 										If[diluteQ,
 											simulatedVolume + Total[{dilutionSolventVolume, secondaryDilutionSolventVolume, tertiaryDilutionSolventVolume} /. {Null -> 0 * Milliliter}],
 											simulatedVolume] / totalNumberOfReplicates
@@ -12475,6 +13170,135 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 
 	(* extract the options and tests from the tuples *)
 	{insufficientSampleVolumeOptions, insufficientSampleVolumeTests} = {Flatten[injectionVolumeErrorTuples[[All, 1]]], Flatten[injectionVolumeErrorTuples[[All, 2]]]};
+
+	(* === Resolve LiquidInjectionSyringe === *)
+	(* Now we have resolvedLiquidSampleVolumes/resolvedStandardLiquidSampleVolumes/resolvedBlankLiquidSampleVolumes *)
+	(* supported syringes: Alternatives[
+	(*name form*)
+	Model[Container,Syringe,"1 \[Mu]L GC liquid sample injection syringe"], (* 1 microliter *)
+	Model[Container,Syringe,"5 \[Mu]L GC liquid sample injection syringe"], (* 5 microliter *)
+	Model[Container,Syringe,"10 \[Mu]L GC liquid sample injection syringe"], (* 10 microliter *)
+	Model[Container,Syringe,"25 \[Mu]L GC liquid sample injection syringe"], (* 25 microliter *)
+	Model[Container,Syringe,"100 \[Mu]L GC liquid sample injection syringe"],  (* 100 microliter *)
+	(*object form*)
+	Model[Container, Syringe, "id:bq9LA0JE9VG6"], (* 1 microliter *)
+	Model[Container, Syringe, "id:KBL5Dvw9LKjj"], (* 5 microliter *)
+	Model[Container, Syringe, "id:dORYzZJxRqER"], (* 10 microliter *)
+	Model[Container, Syringe, "id:R8e1Pjp9eN0K"], (* 25 microliter *)
+	Model[Container, Syringe, "id:eGakldJEaRYG"]  (* 100 microliter *)
+] *)
+	(* Get the resolved injection volumes *)
+	liquidSampleVolumeQuantities = Cases[Flatten[{resolvedLiquidSampleVolumes,resolvedStandardLiquidSampleVolumes,resolvedBlankLiquidSampleVolumes}], _Quantity];
+
+	resolvedLiquidInjectionSyringe = Which[
+		(* If the LiquidInjectionSyringe is already specified, go with that one *)
+		MatchQ[specifiedLiquidInjectionSyringeModelType, LiquidInjection],
+		specifiedLiquidInjectionSyringe,
+		(* If there are no LiquidInjection samples, we don't need a LiquidInjectionSyringe *)
+		MatchQ[specifiedLiquidInjectionSyringe, Automatic] && Not[MemberQ[allSamplingMethods, LiquidInjection]],
+		Null,
+		(* If there are LiquidInjection samples with resolved liquid injection volumes, resolve a syringe that can fit the range of the smallest to the largest sample size *)
+		MatchQ[specifiedLiquidInjectionSyringe, Automatic] && MemberQ[allSamplingMethods, LiquidInjection] && MemberQ[liquidSampleVolumeQuantities, _Quantity],
+		(* Get the minimum and maximum injection sizes and pick the smallest syringe that can accommodate these values (largest volume fits) *)
+		Which[
+			Max[liquidSampleVolumeQuantities] < 1 * Microliter,
+			Model[Container, Syringe, "1 \[Mu]L GC liquid sample injection syringe"],
+			Max[liquidSampleVolumeQuantities] < 5 * Microliter,
+			Model[Container, Syringe, "5 \[Mu]L GC liquid sample injection syringe"],
+			Max[liquidSampleVolumeQuantities] < 10 * Microliter,
+			Model[Container, Syringe, "10 \[Mu]L GC liquid sample injection syringe"],
+			Max[liquidSampleVolumeQuantities] < 25 * Microliter,
+			Model[Container, Syringe, "25 \[Mu]L GC liquid sample injection syringe"],
+			Max[liquidSampleVolumeQuantities] > 25 * Microliter,
+			Model[Container, Syringe, "100 \[Mu]L GC liquid sample injection syringe"]
+		],
+		(* what if we haven't been able to resolve a syringe based on all these options? *)
+		True,
+		Null
+	];
+
+	(* if we failed to resolve a liquid injection syringe, we have to figure out why and throw an error. *)
+
+	(* first case: a liquid injection sample is specified but the specified value is null. *)
+	liquidInjectionSyringeMissingQ = MemberQ[allSamplingMethods, LiquidInjection] && MatchQ[specifiedLiquidInjectionSyringe, Null];
+
+	(* second case: the injection type of the specified syringe was incorrect *)
+	incompatibleLiquidInjectionSyringeQ = MatchQ[specifiedLiquidInjectionSyringe, ObjectP[]] && !MatchQ[specifiedLiquidInjectionSyringeModelType, LiquidInjection];
+
+	(* throw the appropriate errors *)
+	liquidInjectionSyringeOption = If[(liquidInjectionSyringeMissingQ || incompatibleLiquidInjectionSyringeQ),
+		If[!gatherTests && liquidInjectionSyringeMissingQ, Message[Error::GCLiquidInjectionSyringeRequired]];
+		If[!gatherTests && incompatibleLiquidInjectionSyringeQ, Message[Error::GCIncompatibleLiquidInjectionSyringe]];
+		LiquidInjectionSyringe,
+		{}
+	];
+
+	liquidInjectionSyringeTests = If[gatherTests,
+		{
+			Test["If a liquid injection sample is specified, a liquid injection syringe is also specified:",
+				liquidInjectionSyringeMissingQ,
+				False
+			],
+			Test["If a liquid injection syringe is specified, it is compatible with the requested instrument:",
+				incompatibleLiquidInjectionSyringeQ,
+				False
+			]
+		},
+		{}
+	];
+
+	(* Get the MaxVolume of the syringe from cache *)
+	resolvedLiquidInjectionSyringeVolume = If[NullQ[resolvedLiquidInjectionSyringe],
+		Nothing,
+		Convert[Lookup[fetchPacketFromCache[resolvedLiquidInjectionSyringe, cache], MaxVolume], Microliter]
+	];
+
+	(* now that we have resolved all the required syringes, do a final check to make sure the user hasn't specified an unneeded syringe/fiber *)
+	{unneededLiquidInjectionSyringeQ, unneededHeadspaceInjectionSyringeQ, unneededSPMEFiberQ, unneededLiquidHandlingSyringeQ} = MapThread[
+		(* a syringe is unneeded if a syringe is specified but there are no injections of that type *)
+		MatchQ[#1, ObjectP[]] && Not[MemberQ[#3, #2]]&,
+		{
+			{resolvedLiquidInjectionSyringe, resolvedHeadspaceInjectionSyringe, resolvedSPMEInjectionFiber, resolvedLiquidHandlingSyringe},
+			{LiquidInjection, HeadspaceInjection, SPMEInjection, True},
+			{allSamplingMethods, allSamplingMethods, allSamplingMethods, Flatten[{resolvedDilutes, resolvedStandardDilutes, resolvedBlankDilutes}]}
+		}
+	];
+
+	(* throw a warning if needed *)
+	If[!gatherTests,
+		MapThread[
+			(* a syringe is specified but there are no injections of that type *)
+			If[#1,
+				Message[Warning::UnneededSyringeComponent, #2, #3, #4],
+				Nothing
+			]&,
+			{
+				{unneededLiquidInjectionSyringeQ, unneededHeadspaceInjectionSyringeQ, unneededSPMEFiberQ, unneededLiquidHandlingSyringeQ},
+				{LiquidInjectionSyringe, HeadspaceInjectionSyringe, SPMEInjectionFiber, LiquidHandlingSyringe},
+				{LiquidInjection, HeadspaceInjection, SPMEInjection, True},
+				{SamplingMethod, SamplingMethod, SamplingMethod, {Dilute, StandardDilute, BlankDilute}}
+			}
+		],
+		Nothing
+	];
+
+	(* create tests if needed *)
+	unneededSyringeTests = If[gatherTests,
+		MapThread[
+			(* a syringe is specified but there are no injections of that type *)
+			Test["If a " <> ToString[#2] <> " is specified, at least one value in option(s) " <> ToString[#4] <> " must be set to " <> ToString[#3] <> ".",
+				#1,
+				False
+			]&,
+			{
+				{unneededLiquidInjectionSyringeQ, unneededHeadspaceInjectionSyringeQ, unneededSPMEFiberQ, unneededLiquidHandlingSyringeQ},
+				{LiquidInjectionSyringe, HeadspaceInjectionSyringe, SPMEInjectionFiber, LiquidHandlingSyringe},
+				{LiquidInjection, HeadspaceInjection, SPMEInjection, True},
+				{SamplingMethod, SamplingMethod, SamplingMethod, {Dilute, StandardDilute, BlankDilute}}
+			}
+		],
+		{}
+	];
 
 	(* Make sure all the sample volumes are between 1-100% of the syringe volume *)
 
@@ -13718,19 +14542,20 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 
 	(* check our inputs to make sure that we haven't exceeded the maximum allowed aspiration or injection speeds *)
 	{
-		sampleAspirationRatesTooFastQ,
-		standardAspirationRatesTooFastQ,
-		blankAspirationRatesTooFastQ,
-		headspaceSampleAspirationRatesTooFastQ,
-		headspaceStandardAspirationRatesTooFastQ,
-		headspaceBlankAspirationRatesTooFastQ
+		sampleAspirationRatesOutOfBoundsQ,
+		standardAspirationRatesOutOfBoundsQ,
+		blankAspirationRatesOutOfBoundsQ,
+		headspaceSampleAspirationRatesOutOfBoundsQ,
+		headspaceStandardAspirationRatesOutOfBoundsQ,
+		headspaceBlankAspirationRatesOutOfBoundsQ
 	} = MapThread[
-		Function[{aspirationRateList, limit},
+		Function[{aspirationRateList, lowerLimit, upperLimit},
 			Map[
 				Function[
 					aspirationRate,
 					If[!NullQ[aspirationRate],
-						aspirationRate > limit,
+						(* Original author did strictly greater than.. I changed this to or equal to without testing on the instrument *)
+						Or[aspirationRate <= lowerLimit, aspirationRate >= upperLimit],
 						False
 					]
 				],
@@ -13747,26 +14572,30 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 				resolvedBlankHeadspaceSampleAspirationRates
 			},
 			Flatten@{
+				ConstantArray[0.01 Microliter / Second, 3],
+				ConstantArray[1 Milliliter / Minute, 3]
+			},
+			Flatten@{
 				ConstantArray[maxLiquidSampleAspirationRate, 3],
-				ConstantArray[100 * Milliliter / Minute, 3]
+				ConstantArray[100 Milliliter / Minute, 3]
 			}
 		}
 	];
 
 	{
-		sampleInjectionRatesTooFastQ,
-		standardInjectionRatesTooFastQ,
-		blankInjectionRatesTooFastQ,
-		headspaceSampleInjectionRatesTooFastQ,
-		headspaceStandardInjectionRatesTooFastQ,
-		headspaceBlankInjectionRatesTooFastQ
+		sampleInjectionRatesOutOfBoundsQ,
+		standardInjectionRatesOutOfBoundsQ,
+		blankInjectionRatesOutOfBoundsQ,
+		headspaceSampleInjectionRatesOutOfBoundsQ,
+		headspaceStandardInjectionRatesOutOfBoundsQ,
+		headspaceBlankInjectionRatesOutOfBoundsQ
 	} = MapThread[
-		Function[{aspirationRateList, limit},
+		Function[{aspirationRateList, lowerLimit, upperLimit},
 			Map[
 				Function[
 					aspirationRate,
 					If[!NullQ[aspirationRate],
-						aspirationRate > limit,
+						Or[aspirationRate <= lowerLimit, aspirationRate >= upperLimit],
 						False
 					]
 				],
@@ -13783,6 +14612,10 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 				resolvedBlankHeadspaceSampleInjectionRates
 			},
 			Flatten@{
+				ConstantArray[1 Microliter / Second, 3],
+				ConstantArray[1 * Milliliter / Minute, 3]
+			},
+			Flatten@{
 				ConstantArray[maxLiquidInjectionRate, 3],
 				ConstantArray[100 * Milliliter / Minute, 3]
 			}
@@ -13790,30 +14623,30 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 	];
 
 	(* if there were any failures, we should throw an error if we're not gathering tests *)
-	optionValueAboveLimitOptions = If[!gatherTests,
+	optionValueOutOfBoundsOptions = If[!gatherTests,
 		MapThread[
 			Function[
-				{boolList, optionName, maxRate, samplingMethod},
+				{boolList, optionName, minRate, maxRate, samplingMethod},
 				If[And @@ boolList,
-					Message[Error::OptionValueAboveLimit, resolvedLiquidInjectionSyringeVolume, optionName, maxRate, samplingMethod];
+					Message[Error::OptionValueOutOfBounds, resolvedLiquidInjectionSyringeVolume, optionName, minRate, maxRate, samplingMethod];
 					{optionName},
 					Nothing
 				]
 			],
 			{
 				{
-					sampleAspirationRatesTooFastQ,
-					standardAspirationRatesTooFastQ,
-					blankAspirationRatesTooFastQ,
-					sampleInjectionRatesTooFastQ,
-					standardInjectionRatesTooFastQ,
-					blankInjectionRatesTooFastQ,
-					headspaceSampleAspirationRatesTooFastQ,
-					headspaceStandardAspirationRatesTooFastQ,
-					headspaceBlankAspirationRatesTooFastQ,
-					headspaceSampleInjectionRatesTooFastQ,
-					headspaceStandardInjectionRatesTooFastQ,
-					headspaceBlankInjectionRatesTooFastQ
+					sampleAspirationRatesOutOfBoundsQ,
+					standardAspirationRatesOutOfBoundsQ,
+					blankAspirationRatesOutOfBoundsQ,
+					sampleInjectionRatesOutOfBoundsQ,
+					standardInjectionRatesOutOfBoundsQ,
+					blankInjectionRatesOutOfBoundsQ,
+					headspaceSampleAspirationRatesOutOfBoundsQ,
+					headspaceStandardAspirationRatesOutOfBoundsQ,
+					headspaceBlankAspirationRatesOutOfBoundsQ,
+					headspaceSampleInjectionRatesOutOfBoundsQ,
+					headspaceStandardInjectionRatesOutOfBoundsQ,
+					headspaceBlankInjectionRatesOutOfBoundsQ
 				},
 				{
 					SampleAspirationRate,
@@ -13831,9 +14664,16 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 				},
 				Flatten[
 					{
+						ConstantArray[0.01 Microliter / Second, 3],
+						ConstantArray[1 Microliter / Second, 3],
+						ConstantArray[1 Milliliter / Minute, 6]
+					}
+				],
+				Flatten[
+					{
 						ConstantArray[maxLiquidSampleAspirationRate, 3],
 						ConstantArray[maxLiquidInjectionRate, 3],
-						ConstantArray[100 * Milliliter / Minute, 6]
+						ConstantArray[100 Milliliter / Minute, 6]
 					}
 				],
 				Flatten[
@@ -13849,41 +14689,41 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 
 	(* otherwise create some tests *)
 	{
-		sampleAspirationRatesTooFastTest,
-		standardAspirationRatesTooFastTest,
-		blankAspirationRatesTooFastTest,
-		sampleInjectionRatesTooFastTest,
-		standardInjectionRatesTooFastTest,
-		blankInjectionRatesTooFastTest,
-		headspaceSampleAspirationRatesTooFastTest,
-		headspaceStandardAspirationRatesTooFastTest,
-		headspaceBlankAspirationRatesTooFastTest,
-		headspaceSampleInjectionRatesTooFastTest,
-		headspaceStandardInjectionRatesTooFastTest,
-		headspaceBlankInjectionRatesTooFastTest
+		sampleAspirationRatesOutOfBoundsTest,
+		standardAspirationRatesOutOfBoundsTest,
+		blankAspirationRatesOutOfBoundsTest,
+		sampleInjectionRatesOutOfBoundsTest,
+		standardInjectionRatesOutOfBoundsTest,
+		blankInjectionRatesOutOfBoundsTest,
+		headspaceSampleAspirationRatesOutOfBoundsTest,
+		headspaceStandardAspirationRatesOutOfBoundsTest,
+		headspaceBlankAspirationRatesOutOfBoundsTest,
+		headspaceSampleInjectionRatesOutOfBoundsTest,
+		headspaceStandardInjectionRatesOutOfBoundsTest,
+		headspaceBlankInjectionRatesOutOfBoundsTest
 	} = If[gatherTests,
 		MapThread[
 			Function[
-				{boolList, optionName, maxRate},
-				Test["The specified values for " <> ToString[optionName] <> " are less than or equal to the limit of " <> ToString[maxRate] <> " set by the instrument:",
+				{boolList, optionName, minRate, maxRate},
+				Test["The specified values for " <> ToString[optionName] <> " are within the (inclusive) range " <> ToString[minRate] <> " - " <> ToString[maxRate] <> " set by the instrument:",
 					And @@ boolList,
 					False
 				]
 			],
 			{
 				{
-					sampleAspirationRatesTooFastQ,
-					standardAspirationRatesTooFastQ,
-					blankAspirationRatesTooFastQ,
-					sampleInjectionRatesTooFastQ,
-					standardInjectionRatesTooFastQ,
-					blankInjectionRatesTooFastQ,
-					headspaceSampleAspirationRatesTooFastQ,
-					headspaceStandardAspirationRatesTooFastQ,
-					headspaceBlankAspirationRatesTooFastQ,
-					headspaceSampleInjectionRatesTooFastQ,
-					headspaceStandardInjectionRatesTooFastQ,
-					headspaceBlankInjectionRatesTooFastQ
+					sampleAspirationRatesOutOfBoundsQ,
+					standardAspirationRatesOutOfBoundsQ,
+					blankAspirationRatesOutOfBoundsQ,
+					sampleInjectionRatesOutOfBoundsQ,
+					standardInjectionRatesOutOfBoundsQ,
+					blankInjectionRatesOutOfBoundsQ,
+					headspaceSampleAspirationRatesOutOfBoundsQ,
+					headspaceStandardAspirationRatesOutOfBoundsQ,
+					headspaceBlankAspirationRatesOutOfBoundsQ,
+					headspaceSampleInjectionRatesOutOfBoundsQ,
+					headspaceStandardInjectionRatesOutOfBoundsQ,
+					headspaceBlankInjectionRatesOutOfBoundsQ
 				},
 				{
 					SampleAspirationRate,
@@ -13900,9 +14740,14 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 					BlankSampleInjectionRate
 				},
 				Flatten[{
+					ConstantArray[0.01 Microliter/Second, 3],
+					ConstantArray[1 Microliter/Second, 3],
+					ConstantArray[1 Milliliter / Minute, 6]
+				}],
+				Flatten[{
 					ConstantArray[maxLiquidSampleAspirationRate, 3],
 					ConstantArray[maxLiquidInjectionRate, 3],
-					ConstantArray[100 * Milliliter / Minute, 6]
+					ConstantArray[100 Milliliter / Minute, 6]
 				}]
 			}
 		],
@@ -13956,19 +14801,19 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 								postInjectionFlushTimes /. {Automatic -> Null},
 								syringeFlushings
 							},
-							SubsetQ[syringeFlushings, {BeforeSampleAspiration, AfterSampleInjection}],
+							SubsetQ[{syringeFlushings}, {BeforeSampleAspiration, AfterSampleInjection}],
 							{
 								preInjectionFlushTimes /. {Automatic -> 3 * Second},
 								postInjectionFlushTimes /. {Automatic -> 3 * Second},
 								syringeFlushings
 							},
-							SubsetQ[syringeFlushings, {BeforeSampleAspiration}],
+							SubsetQ[{syringeFlushings}, {BeforeSampleAspiration}],
 							{
 								preInjectionFlushTimes /. {Automatic -> 3 * Second},
 								postInjectionFlushTimes /. {Automatic -> Null},
 								syringeFlushings
 							},
-							SubsetQ[syringeFlushings, {AfterSampleInjection}],
+							SubsetQ[{syringeFlushings}, {AfterSampleInjection}],
 							{
 								preInjectionFlushTimes /. {Automatic -> Null},
 								postInjectionFlushTimes /. {Automatic -> 3 * Second},
@@ -14202,7 +15047,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 	(* Get minimum installed Fiber temperature *)
 
 	fiberMinTemperature = If[!NullQ[resolvedSPMEInjectionFiber],
-		Lookup[fetchPacketFromCache[resolvedSPMEInjectionFiber, simulatedCache], MinTemperature],
+		Lookup[fetchPacketFromCache[resolvedSPMEInjectionFiber, cache], MinTemperature],
 		Null
 	];
 
@@ -15147,6 +15992,8 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 								convertColumnFlowRateToPressure[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, defaultFlowRate, temperature, outletPressure, referencePressure, referenceTemperature],
 								convertColumnFlowRateToResidenceTime[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, defaultFlowRate, temperature, outletPressure, referencePressure, referenceTemperature]
 							},
+							{Except[Automatic | Null], Except[Automatic | Null], Except[Automatic | Null], Except[Automatic | Null]},
+							{velocity, flowRate, pressure, residenceTime},
 							{Null, Null, Null, Null},
 							{
 								Null,
@@ -15229,7 +16076,9 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 						{#1, #2, #3, #4},
 						{Except[Automatic], _, _, _},
 						#1,
-						{Automatic, Except[Null], Except[Null], _},
+						(* I'm pretty sure this is right but not 100% sure *)
+						(* if we have a resolved pressure profile and we're automatic for flow rate, then we can't control the flow rate and the pressure so we have to be Null *)
+						{Automatic, _, Except[Null], _},
 						Null,
 						{Automatic, Except[Null], Null, _},
 						{{1 * Milliliter / Minute / Minute, 20 * Milliliter / Minute, 5 * Minute}},
@@ -16095,12 +16944,12 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 
 	(* is the specified ORing compatible with the instrument *)
 	(* first extract the ORing packet *)
-	oRingPacket = If[MatchQ[specifiedLinerORing, Except[Automatic]], fetchPacketFromCache[specifiedLinerORing, simulatedCache], {}];
+	oRingPacket = If[MatchQ[specifiedLinerORing, Except[Automatic]], fetchPacketFromCache[specifiedLinerORing, cache], {}];
 
 	(*Look up ORing parameters*)
 	oRingParameters = If[MatchQ[specifiedLinerORing, ObjectP[Model[Item, ORing]]],
-		Lookup[fetchPacketFromCache[specifiedLinerORing, simulatedCache], {InnerDiameter, OuterDiameter, MaxTemperature}],
-		Lookup[fetchPacketFromCache[Lookup[oRingPacket, Model], simulatedCache], {InnerDiameter, OuterDiameter, MaxTemperature}]
+		Lookup[fetchPacketFromCache[specifiedLinerORing, cache], {InnerDiameter, OuterDiameter, MaxTemperature}],
+		Lookup[fetchPacketFromCache[Lookup[oRingPacket, Model], cache], {InnerDiameter, OuterDiameter, MaxTemperature}]
 	];
 
 	(* check if all the ORing parameters fall in the allowed range*)
@@ -16133,12 +16982,12 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 
 
 	(*First extract the septum packet*)
-	septumPacket = If[MatchQ[specifiedInletSeptum, Except[Automatic]], fetchPacketFromCache[specifiedInletSeptum, simulatedCache], {}];
+	septumPacket = If[MatchQ[specifiedInletSeptum, Except[Automatic]], fetchPacketFromCache[specifiedInletSeptum, cache], {}];
 
 	(*Look up septum parameters*)
 	septumParameters = If[MatchQ[specifiedInletSeptum, ObjectP[Model[Item, Septum]]],
-		Lookup[fetchPacketFromCache[specifiedInletSeptum, simulatedCache], {Diameter, Thickness, MaxTemperature}],
-		Lookup[fetchPacketFromCache[Lookup[septumPacket, Model], simulatedCache], {Diameter, Thickness, MaxTemperature}]
+		Lookup[fetchPacketFromCache[specifiedInletSeptum, cache], {Diameter, Thickness, MaxTemperature}],
+		Lookup[fetchPacketFromCache[Lookup[septumPacket, Model], cache], {Diameter, Thickness, MaxTemperature}]
 	];
 
 	(* is the specified Septum compatible with the instrument *)
@@ -16500,9 +17349,9 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 										Switch[
 											vial,
 											ObjectP[Object[Container, Vessel]],
-											Download[vial, Model[{Footprint, NeckType}], Cache -> simulatedCache, Date -> Now],
+											Download[vial, Model[{Footprint, NeckType}], Cache -> cache, Simulation -> updatedSimulation, Date -> Now],
 											ObjectP[Model[Container, Vessel]],
-											Download[vial, {Footprint, NeckType}, Cache -> simulatedCache, Date -> Now],
+											Download[vial, {Footprint, NeckType}, Cache -> cache, Simulation -> updatedSimulation, Date -> Now],
 											_,
 											{Null, Null}
 										],
@@ -16526,7 +17375,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 								(* if a vial is specified, verify that it is compatible *)
 								Module[{footprint, neckType},
 									(* get the relevant fields from the simulated cache *)
-									{footprint, neckType} = Download[sample, Container[Model][{Footprint, NeckType}], Cache -> simulatedCache, Date -> Now];
+									{footprint, neckType} = Download[sample, Container[Model][{Footprint, NeckType}],Cache -> cache, Simulation -> updatedSimulation, Date -> Now];
 									(* check if the vial is compatible *)
 									MatchQ[
 										{footprint, neckType},
@@ -16948,23 +17797,24 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 
 	(*we also need to figure out if we're overwriting the separationMethods and supplying a new one, because a GC method was specified but was subsequently changed? *)
 	{
-		overwriteSeparationMethodsBool,
-		overwriteStandardSeparationMethodsBool,
-		overwriteBlankSeparationMethodsBool
+		{overwriteSeparationMethodsBool,overwrittenSeparationMethodOptions},
+		{overwriteStandardSeparationMethodsBool,overwrittenStandardSeparationMethodOptions},
+		{overwriteBlankSeparationMethodsBool, overwrittenBlankSeparationMethodOptions}
 	} = Map[
 		Function[{methodsList},
 			Module[{specifiedMethods, resolvedMethods},
 				{specifiedMethods, resolvedMethods} = methodsList;
+
 				(* Check if the resolvedSeparationMethod (supplied by the user via options) contains the same values as the specified SeparationMethod *)
 				(* If a SeparationMethod was specified, compare it to the resolved SeparationMethod, otherwise just say False because there's no Method to overwrite *)
-				If[!MatchQ[specifiedMethods, {} | Null],
-					MapThread[
-						Function[{specifiedSeparationMethod, resolvedSeparationMethod},
-							If[MatchQ[specifiedSeparationMethod, ObjectP[Object[Method, GasChromatography]]],
-								!MatchQ[resolvedSeparationMethod,
-									Lookup[
-										fetchPacketFromCache[specifiedSeparationMethod, simulatedCache],
-										{
+				If[!MatchQ[specifiedMethods, ({} | Null|{Null})],
+					Transpose[
+						MapThread[
+							Function[{specifiedSeparationMethod, resolvedSeparationMethod},
+
+								If[MatchQ[specifiedSeparationMethod, ObjectP[Object[Method, GasChromatography]]],
+									Module[{overWrittenOptions,overWrittenOptionsBooleans,separationMethodSpecifiedOptionsList},
+										separationMethodSpecifiedOptionsList = {
 											InletSeptumPurgeFlowRate,
 											InitialInletTemperature,
 											InitialInletTemperatureDuration,
@@ -16995,13 +17845,19 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 											PostRunOvenTime,
 											PostRunFlowRate,
 											PostRunPressure
-										}
-									]
+										};
+
+										overWrittenOptions = MapThread[If[!MatchQ[#1,#2], #3, Nothing] &, #]&/@{{resolvedSeparationMethod, Lookup[fetchPacketFromCache[specifiedSeparationMethod, cache],separationMethodSpecifiedOptionsList],separationMethodSpecifiedOptionsList}};
+										overWrittenOptionsBooleans = !MatchQ[#, {} | Null]&/@overWrittenOptions;
+										{overWrittenOptionsBooleans[[1]],overWrittenOptions[[1]]}
+									],
+									{False, {}}
 								]
-							]
-						],
-						{specifiedMethods, resolvedMethods}
-					]
+							],
+							{specifiedMethods, resolvedMethods}
+						]
+					],
+					{{False}, {}}
 				]
 			]
 		],
@@ -17010,31 +17866,36 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 			{specifiedStandardSeparationMethods, resolvedStandardSeparationMethods},
 			{specifiedBlankSeparationMethods, resolvedBlankSeparationMethods}
 		}
+
 	];
+
+	overwrittenStandardSeparationMethodOptions = ToExpression["Standard" <>ToString[#]&/@overwrittenStandardSeparationMethodOptions];
+	overwrittenBlankSeparationMethodOptions = ToExpression["Blank" <>ToString[#]&/@overwrittenBlankSeparationMethodOptions];
 
 	(* figure out from the bools and specified separationmethods what the resolved SeparationMethods will ultimately be *)
 	{resolvedSeparationMethodsWithObjects, resolvedStandardSeparationMethodsWithObjects, resolvedBlankSeparationMethodsWithObjects} = Map[
 		Function[opsLists,
-			Module[{specifiedMethods, resolvedMethods, overwriteMethodBools, samples},
-				{specifiedMethods, resolvedMethods, overwriteMethodBools, samples} = opsLists;
+			Module[{specifiedMethods, overwriteMethodBools, samples},
+				{specifiedMethods, overwriteMethodBools, samples} = opsLists;
 				If[NullQ[samples],
 					Null,
 					MapThread[
-						Function[{specifiedMethod, resolvedMethod, overwriteMethodBool},
+						Function[{specifiedMethod, overwriteMethodBool},
 							If[MatchQ[specifiedMethod, ObjectP[Object[Method, GasChromatography]]] && MatchQ[overwriteMethodBool, False],
-								Download[specifiedMethod, Object, Cache -> simulatedCache, Date -> Now],
-								resolvedMethod
+								Download[specifiedMethod, Object, Cache -> cache, Simulation -> updatedSimulation, Date -> Now],
+								(*Keep the method as Automatic if needed so resolveInjectionTable will be able to create a new ID*)
+								specifiedMethod
 							]
 						],
-						{specifiedMethods, resolvedMethods, overwriteMethodBools}
+						{specifiedMethods, overwriteMethodBools}
 					]
 				]
 			]
 		],
 		{
-			{specifiedSeparationMethods, resolvedSeparationMethods, overwriteSeparationMethodsBool, mySamples},
-			{specifiedStandardSeparationMethods, resolvedStandardSeparationMethods, overwriteStandardSeparationMethodsBool, resolvedStandards},
-			{specifiedBlankSeparationMethods, resolvedBlankSeparationMethods, overwriteBlankSeparationMethodsBool, resolvedBlanks}
+			{specifiedSeparationMethods, overwriteSeparationMethodsBool, mySamples},
+			{specifiedStandardSeparationMethods, overwriteStandardSeparationMethodsBool, resolvedStandards},
+			{specifiedBlankSeparationMethods, overwriteBlankSeparationMethodsBool, resolvedBlanks}
 		}
 	];
 
@@ -17057,10 +17918,11 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 						If[
 							MatchQ[specifiedMethodObject, ObjectP[Object[Method, GasChromatography]]] && MatchQ[overwriteBool, False],
 							Quiet[
-								Download[specifiedMethodObject, Object, Cache -> simulatedCache, Date -> Now],
+								Download[specifiedMethodObject, Object, Cache -> cache, Simulation -> updatedSimulation, Date -> Now],
 								{Download::MissingField}
 							],
 							Association[
+								Type -> Object[Method, GasChromatography],
 								ColumnLength -> columnLength,
 								ColumnDiameter -> columnDiameter,
 								ColumnFilmThickness -> columnFilmThickness,
@@ -17080,7 +17942,6 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 								GasSaverFlowRate -> gasSaverFlowRate,
 								GasSaverActivationTime -> gasSaverActivationTime,
 								SolventEliminationFlowRate -> solventEliminationFlowRate,
-								InitialInletTime -> initialInletTime,
 								InitialColumnFlowRate -> If[!NullQ[initialColumnFlowRate], RoundOptionPrecision[N[initialColumnFlowRate], 0.0001 Milliliter / Minute], Null],
 								InitialColumnPressure -> If[!NullQ[initialColumnPressure], RoundOptionPrecision[N[initialColumnPressure], 0.0001 PSI], Null],
 								InitialColumnAverageVelocity -> If[!NullQ[initialColumnAverageVelocity], RoundOptionPrecision[N[initialColumnAverageVelocity], 0.0001 Centimeter / Second], Null],
@@ -17122,7 +17983,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 
 	(* if there is a mismatch between the Blank options and the injection table, throw an error *)
 	If[!gatherTests && Or @@ overwriteOptionBool && !MatchQ[$ECLApplication, Engine],
-		Message[Warning::OverwritingSeparationMethod, PickList[{SeparationMethod, StandardSeparationMethod, BlankSeparationMethod}, overwriteOptionBool]]
+		Message[Warning::OverwritingSeparationMethod, PickList[{SeparationMethod, StandardSeparationMethod, BlankSeparationMethod}, overwriteOptionBool], DeleteDuplicates[Flatten[#]]&/@PickList[{overwrittenSeparationMethodOptions, overwrittenStandardSeparationMethodOptions, overwrittenBlankSeparationMethodOptions}, overwriteOptionBool]]
 	];
 
 	(*we must adjust the overwrite if the standards and blanks are imbalanced in the injection table*)
@@ -17183,7 +18044,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 						{tableTuples, samples, injectionVolumes, columns, methods} = entry;
 
 						(*first check if there is something here (e.g. no standards), in which case return an empty list*)
-						If[MatchQ[{tableTuples, samples, injectionVolumes, columns, methods}, {(Null | {})..}],
+						If[MatchQ[tableTuples, Null | {}],
 							{},
 							(*otherwise map thread and fill these tuples*)
 							MapThread[
@@ -17225,7 +18086,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 
 	(*we'll need to combine all of the relevant options for the injection table*)
 	resolvedOptionsForInjectionTable = Association[
-		(* Inject whatever information we need to pass into the injection table through its resolver here, MUST BE DONE AS AN ASSOCIATION BECAUSE THERE'S WEIRD FLATTENING SHIT THAT HAPPENS INSIDE THE SHARED FUNCTION *)
+		(* Inject whatever information we need to pass into the injection table through its resolver here, MUST BE DONE AS AN ASSOCIATION BECAUSE THERE'S WEIRD FLATTENING THINGS THAT HAPPEN INSIDE THE SHARED FUNCTION *)
 		Column -> injectionTableColumnOptionValue, (* {resolvedSamplingMethods, resolvedSamplePreparationOptionsInternal} *)
 		InjectionVolume -> resolvedInjectionVolumes,
 		Gradient -> resolvedSeparationMethodsWithObjects,
@@ -17483,7 +18344,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 						MatchQ[#, ObjectP[Model[]]],
 						#,
 						MatchQ[#, ObjectP[Object[]]],
-						Download[#, Model, Cache -> simulatedCache]
+						Download[#, Model, Cache -> cache, Simulation -> updatedSimulation]
 					]&,
 					vials
 				]
@@ -17499,21 +18360,22 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 	allVials = Flatten[{finalVialModels, finalStandardVialModels, finalBlankVialModels}];
 
 	(* split the samples into small vials and large vials with 10 or 20 ml size *)
-	smallVials = Select[allVials, MatchQ[Download[#, Footprint, Cache -> simulatedCache], CEVial]&];
+	smallVials = Select[allVials, MatchQ[Download[#, Footprint, Cache -> cache, Simulation -> updatedSimulation], CEVial]&];
 
 	shortBigVials = Select[allVials, And[
-		MatchQ[Download[#, Footprint, Cache -> simulatedCache], HeadspaceVial],
-		Download[#, MaxVolume, Cache -> simulatedCache] <= 10 Milliliter
+		MatchQ[Download[#, Footprint, Cache -> cache, Simulation -> updatedSimulation], HeadspaceVial],
+		Download[#, MaxVolume, Cache -> cache, Simulation -> updatedSimulation] <= 10 Milliliter
 	]&];
 
 	tallBigVials = Select[allVials, And[
-		MatchQ[Download[#, Footprint, Cache -> simulatedCache], HeadspaceVial],
-		Download[#, MaxVolume, Cache -> simulatedCache] > 10 Milliliter
+		MatchQ[Download[#, Footprint, Cache -> cache, Simulation -> updatedSimulation], HeadspaceVial],
+		Download[#, MaxVolume, Cache -> cache, Simulation -> updatedSimulation] > 10 Milliliter
 	]&];
 
 	(* throw some errors *)
 	tooManySmallSamplesInvalidOption = If[
-		Length[PartitionRemainder[smallVials, 54]] > 3,
+		(* Based on discussion in https://app.asana.com/1/84467620246/project/1138532600226514/task/1209599044619210 and https://app.asana.com/1/84467620246/project/1207565984751460/task/1209608497776324, we need to arrange the vials so that there are no other vials next to any vial. In other words, we want the vials to be arranged in the checker board pattern. That means, we can only fit in 5*3 + 4*3 = 27 vials in a 9*6 rack. *)
+		Length[PartitionRemainder[smallVials, 27]] > 3,
 		Message[Error::TooManyCEVialsForAutosampler];
 		{SamplesIn, ContainersIn},
 		{}
@@ -17562,9 +18424,9 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 								Switch[
 									targetVial,
 									ObjectP[Object[]],
-									Download[targetVial, Model, Cache -> simulatedCache],
+									Download[targetVial, Model, Cache -> cache, Simulation -> updatedSimulation],
 									ObjectP[Model[]],
-									Download[targetVial, Object, Cache -> simulatedCache],
+									Download[targetVial, Object, Cache -> cache, Simulation -> updatedSimulation],
 									_,
 									targetVial
 								],
@@ -17572,16 +18434,16 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 								Switch[
 									startingContainer,
 									ObjectP[Object[]],
-									Download[startingContainer, Model, Cache -> simulatedCache],
+									Download[startingContainer, Model, Cache -> cache, Simulation -> updatedSimulation],
 									ObjectP[Model[]],
-									Download[startingContainer, Object, Cache -> simulatedCache],
+									Download[startingContainer, Object, Cache -> cache, Simulation -> updatedSimulation],
 									_,
 									startingContainer
 								]
 							];
 
 							(* get the max volume of the container in question *)
-							maxVolume = Download[finalContainerModel, MaxVolume, Cache -> simulatedCache];
+							maxVolume = Download[finalContainerModel, MaxVolume, Cache -> cache, Simulation -> updatedSimulation];
 
 							(* we need to know how much volume was inside the container to begin with. if we aliquoted we know, otherwise we have the starting amount. this will break if we get a solid so eventually we need to revisist this *)
 							initialVolume = If[aliquotQ,
@@ -17708,6 +18570,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 	];
 
 	resolvedExperimentOptions = {
+		SampleCaps -> resolvedSampleCaps,
 		Instrument -> Lookup[roundedGasChromatographyOptions, Instrument],
 		CarrierGas -> Lookup[roundedGasChromatographyOptions, CarrierGas],
 		Inlet -> Lookup[roundedGasChromatographyOptions, Inlet],
@@ -17856,6 +18719,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		(*standards*)
 		Standard -> resolvedStandards,
 		StandardVial -> resolvedStandardVials,
+		StandardCaps -> resolvedStandardCaps,
 		StandardAmount -> resolvedStandardAmounts,
 		StandardDilute -> resolvedStandardDilutes,
 		StandardDilutionSolventVolume -> resolvedStandardDilutionSolventVolumes,
@@ -17952,6 +18816,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		StandardFrequency -> resolvedStandardFrequency,
 		Blank -> resolvedBlanks,
 		BlankVial -> resolvedBlankVials,
+		BlankCaps -> resolvedBlankCaps,
 		BlankAmount -> resolvedBlankAmounts,
 		BlankDilute -> resolvedBlankDilutes,
 		BlankDilutionSolventVolume -> resolvedBlankDilutionSolventVolumes,
@@ -18053,13 +18918,13 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		ParentProtocol -> Lookup[myOptions, ParentProtocol],
 		Operator -> Lookup[myOptions, Operator],
 		Confirm -> Lookup[myOptions, Confirm],
+		CanaryBranch -> Lookup[myOptions, CanaryBranch],
 		Name -> Lookup[myOptions, Name],
 		Upload -> Lookup[myOptions, Upload],
 		Output -> Lookup[myOptions, Output],
 		Email -> resolvedEmail,
 		SamplesInStorageCondition -> Lookup[roundedGasChromatographyOptions, SamplesInStorageCondition],
-		PreparatoryUnitOperations -> Lookup[myOptions, PreparatoryUnitOperations],
-		PreparatoryPrimitives -> Lookup[myOptions, PreparatoryPrimitives]
+		PreparatoryUnitOperations -> Lookup[myOptions, PreparatoryUnitOperations]
 	};
 
 	(*-- UNRESOLVABLE OPTION CHECKS --*)
@@ -18143,8 +19008,8 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		cospecifiedOptionsOptions, invalidBlankPrepOptions, standardBlankTransferErrorOptions, incompatibleAliquotContainersOptions, invalidGCSampleVolumeOutOfRangeOptions, cospecifiedStandardOptions,
 		cospecifiedSampleOptions, cospecifiedBlankOptions, incompatibleDetectorOptions, incompatibleNullDetectorOptions, gasSaverConflictOptions, incompatibleInletOptions, conflictingLiquidSamplingOptions,
 		conflictingHeadspaceSamplingOptions, conflictingSPMESamplingOptions, conflictingStandardLiquidSamplingOptions, conflictingStandardHeadspaceSamplingOptions, conflictingStandardHeadspaceSamplingOptions,
-		conflictingStandardSPMESamplingOptions, conflictingBlankLiquidSamplingOptions, conflictingBlankHeadspaceSamplingOptions, conflictingBlankSPMESamplingOptions, optionValueAboveLimitOptions,
-		incompatibleDetectorOptions, tooManySmallSamplesInvalidOption, tooManyBigSamplesInvalidOption}]];
+		conflictingStandardSPMESamplingOptions, conflictingBlankLiquidSamplingOptions, conflictingBlankHeadspaceSamplingOptions, conflictingBlankSPMESamplingOptions, optionValueOutOfBoundsOptions,
+		incompatibleDetectorOptions, tooManySmallSamplesInvalidOption, tooManyBigSamplesInvalidOption, noCapForContainerInvalidOptions, noStandardVialCapInvalidOption, invalidBlankVialCapInvalidOption}]];
 
 	allTests = DeleteDuplicates[Flatten[{
 		samplePrepTests, discardedTest, containersExistTest, validProtocolNameTest, tooManySamplesTest, inletTemperatureProfileTests, columnPressureProfileTests, columnFlowRateProfileTests,
@@ -18156,9 +19021,9 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		tooColdBlankPostRunOvenTemperatureTests, tooColdBlankInitialOvenTemperatureTests, tooHotOvenTemperatureProfileTests, tooHotPostRunOvenTemperatureTests, tooHotInitialOvenTemperatureTests,
 		tooHotStandardOvenTemperatureProfileTests, tooHotStandardPostRunOvenTemperatureTests, tooHotStandardInitialOvenTemperatureTests, tooHotBlankOvenTemperatureProfileTests, tooHotBlankPostRunOvenTemperatureTests,
 		tooHotBlankInitialOvenTemperatureTests, inletOptionsCompatibleTests, conflictingSamplingMethodTests, ovenTimeTemperatureConflictTests, agitationConflictTests, outOfRangeBlankHeadspaceSampleVolumeTests,
-		outOfRangeBlankLiquidSampleVolumeTests, sampleAspirationRatesTooFastTest, standardAspirationRatesTooFastTest, blankAspirationRatesTooFastTest, sampleInjectionRatesTooFastTest, standardInjectionRatesTooFastTest,
-		blankInjectionRatesTooFastTest, headspaceSampleAspirationRatesTooFastTest, headspaceStandardAspirationRatesTooFastTest, headspaceBlankAspirationRatesTooFastTest, headspaceSampleInjectionRatesTooFastTest,
-		headspaceStandardInjectionRatesTooFastTest, headspaceBlankInjectionRatesTooFastTest,
+		outOfRangeBlankLiquidSampleVolumeTests, sampleAspirationRatesOutOfBoundsTest, standardAspirationRatesOutOfBoundsTest, blankAspirationRatesOutOfBoundsTest, sampleInjectionRatesOutOfBoundsTest, standardInjectionRatesOutOfBoundsTest,
+		blankInjectionRatesOutOfBoundsTest, headspaceSampleAspirationRatesOutOfBoundsTest, headspaceStandardAspirationRatesOutOfBoundsTest, headspaceBlankAspirationRatesOutOfBoundsTest, headspaceSampleInjectionRatesOutOfBoundsTest,
+		headspaceStandardInjectionRatesOutOfBoundsTest, headspaceBlankInjectionRatesOutOfBoundsTest, capForVialTests, capForStandardVialTests, capForBlankVialTests,
 
 		conflictingTrimOptionsTest, compatibleORingTest, compatibleSeptumTest, unneededSyringeTests, conditionColumnTests, invalidColumnsTest, liquidInjectionSyringeTests, headspaceInjectionSyringeTests,
 		spmeInjectionFiberTests, agitationConflictTests, overfilledContainerTests, vortexConflictTests, preInjectionSyringeWashesConflictTests, sampleWashConflictTests, insufficientSampleVolumeTests,
@@ -18168,7 +19033,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs] > 0 && !gatherTests,
-		Message[Error::InvalidInput, ObjectToString[invalidInputs, Cache -> simulatedCache]]
+		Message[Error::InvalidInput, ObjectToString[invalidInputs, Simulation -> updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -18219,7 +19084,8 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 			mySamples,
 			simulatedSamples,
 			ReplaceRule[Normal@aliquotOptions, resolvedSamplePrepOptions],
-			Cache -> simulatedCache,
+			Cache -> cache,
+			Simulation->updatedSimulation,
 			RequiredAliquotAmounts -> resolvedAliquotAmounts,
 			RequiredAliquotContainers -> resolvedTargetVials,
 			Output -> {Result, Tests},
@@ -18231,7 +19097,8 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 				mySamples,
 				simulatedSamples,
 				ReplaceRule[Normal@aliquotOptions, resolvedSamplePrepOptions],
-				Cache -> simulatedCache,
+				Cache -> cache,
+				Simulation->updatedSimulation,
 				RequiredAliquotAmounts -> resolvedAliquotAmounts,
 				RequiredAliquotContainers -> resolvedTargetVials,
 				Output -> Result,
@@ -18266,17 +19133,16 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 (* GasChromatographyResourcePackets *)
 
 DefineOptions[experimentGasChromatographyResourcePackets,
-	Options :> {OutputOption, CacheOption}
+	Options :> {OutputOption, CacheOption, SimulationOption}
 ];
 
 experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions : {___Rule}, myResolvedOptions : {___Rule}, ops : OptionsPattern[]] := Module[
 	{
-		expandedInputs, expandedResolvedOptions, resolvedOptionsNoHidden, outputSpecification, output, gatherTests, messages, inheritedCache, numReplicates, samplePacketFields,
-		samplePackets, expandedSamplesWithNumReplicates, minimumVolume, expandedAliquotVolume, sampleVolumes, pairedSamplesInAndVolumes, sampleVolumeRules,
-		sampleResourceReplaceRules, samplesInResources, instrument, instrumentTime, instrumentResource, protocolPacket, sharedFieldPacket, finalizedPacket,
+		expandedInputs, expandedResolvedOptions, resolvedOptionsNoHidden, outputSpecification, output, gatherTests, messages, inheritedCache, numReplicates,
+		expandedSamplesWithNumReplicates, instrumentTime, protocolPacket, sharedFieldPacket, finalizedPacket,
 		allResourceBlobs, fulfillable, frqTests, testsRule, resultRule, expandedOptionsWithNumReplicates, uniqueSamples, uniqueSamplePackets, sampleContainers, specifiedAliquotAmount,
 		uniqueSampleResources, sampleResources, samplePositions, standardPositions, blankPositions, injectionTableSamples, injectionTableStandards, injectionTableBlanks,
-		uniqueStandards, targetStandardVials, resolvedStandardAmounts, standardResources, resolvedStandards, standardTuples, assignedStandardTuples, groupedStandardsTuples,
+		uniqueStandards, targetStandardVials, resolvedStandardAmounts, resolvedStandards, standardTuples, assignedStandardTuples, groupedStandardsTuples,
 		groupedStandardsPositionVolumes, standardVialAssociation, standardAmountAssociation, groupedStandard, flatStandardResources, linkedStandardResources, injectionTable,
 		operatorResource, dilutionContainerVolume, resolvedDilutionSolvents, dilutionSolventResources, syringeWashContainerVolume, resolvedSyringeWashSolvents,
 		syringeWashSolventResources, liquidInjectionSyringeResource, headspaceInjectionSyringeResource, liquidHandlingSyringeResource, spmeFiberResource, columnResources,
@@ -18290,11 +19156,12 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 		attachColumnFrontEnd, columnConditioningTime, attachColumnBackEnd, dilutionTime, agitationTime, vortexTime, syringePrepTime, sampleWashTime, separationTime,
 		instrumentTimeTentative, columnNutResources, columnFerruleResources, trimColumnLengths, installedColumnFittings, requiredColumnJoins, swagingToolResource,
 		columnWaferResource, columnsRequested, resolvedSampleCaps, resolvedStandardCaps, resolvedSolventContainerCaps, uniqueAliquotAmounts, specifiedAliquotContainer,
-		uniqueAliquotContainers, sampleContainerModelFootprints, uniqueAliquotContainerFootprints, uniqueStandardVialFootprints, uniqueStandardInjectionTableEntries,
+		uniqueAliquotContainers, sampleContainerModelFootprints, uniqueAliquotContainerFootprints, uniqueStandardVialFootprints, simulation,
 		allStandards, allTargetStandardVials, allResolvedStandardAmounts, columnAssemblySimplified, injectionTime, swagingToolResourceMSD, allBlanks,
 		allTargetBlankVials, allResolvedBlankAmounts, targetBlankVials, resolvedBlankAmounts, uniqueBlankVialFootprints, blankTuples, assignedBlankTuples,
 		groupedBlanksTuples, groupedBlanksPositionVolumes, blankVialAssociation, blankAmountAssociation, groupedBlank, uniqueBlanks, flatBlankResources, linkedBlankResources,
-		resolvedBlankCaps, columnGreenSeptaResource, columnRedSeptaResource, resolvedDilutionSolventVolumes, finalPrepTime
+		resolvedBlankCaps, columnGreenSeptaResource, columnRedSeptaResource, resolvedDilutionSolventVolumes, finalPrepTime, sampleCapResources, standardCapResources, blankCapResources,
+		makeReverseAssociation
 	},
 	(* expand the resolved options if they weren't expanded already *)
 	{expandedInputs, expandedResolvedOptions} = ExpandIndexMatchedInputs[ExperimentGasChromatography, {mySamples}, myResolvedOptions];
@@ -18317,6 +19184,7 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 
 	(* Get the inherited cache *)
 	inheritedCache = Lookup[ToList[ops], Cache];
+	simulation = Lookup[ToList[ops], Simulation];
 
 	(* Get the number of replicates specified *)
 	numReplicates = Lookup[expandedResolvedOptions, NumberOfReplicates] /. {Null -> 1};
@@ -18331,10 +19199,10 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 	{uniqueSamples, uniqueAliquotAmounts, uniqueAliquotContainers} = Transpose@DeleteDuplicates[Transpose@{mySamples, specifiedAliquotAmount, specifiedAliquotContainer}];
 
 	(* Extract packets for sample objects *)
-	uniqueSamplePackets = fetchPacketFromCache[#, inheritedCache]& /@ Download[uniqueSamples, Object, Cache -> inheritedCache, Date -> Now];
+	uniqueSamplePackets = fetchPacketFromCache[#, inheritedCache]& /@ Download[uniqueSamples, Object, Cache -> inheritedCache, Simulation -> simulation, Date -> Now];
 
 	(*get the unique sample containers*)
-	sampleContainers = Download[Lookup[uniqueSamplePackets, Container], Object, Cache -> inheritedCache, Date -> Now];
+	sampleContainers = Download[Lookup[uniqueSamplePackets, Container], Object, Cache -> inheritedCache, Simulation -> simulation, Date -> Now];
 
 	(* get the resolved injection table *)
 	injectionTable = Lookup[expandedOptionsWithNumReplicates, InjectionTable];
@@ -18416,6 +19284,7 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 			{sampleContainers, If[!NullQ[#], Last[#], #]& /@ uniqueAliquotContainers},
 			{Footprint, Model[Footprint]},
 			Cache -> inheritedCache,
+			Simulation -> simulation,
 			Date -> Now
 		],
 		{
@@ -18434,7 +19303,7 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 	{allStandards, allBlanks} = {injectionTableStandards[[All, 2]], injectionTableBlanks[[All, 2]]};
 
 	{allTargetStandardVials, allResolvedStandardAmounts} = If[Length[injectionTableStandards] > 0,
-		Transpose@Lookup[injectionTableStandards[[All, 4]], {StandardVial, StandardAmount}],
+		Transpose@Lookup[injectionTableStandards[[All, 4]], {StandardVial, StandardAmount}]/. {_Missing -> Null},
 		{{}, {}}
 	];
 
@@ -18473,6 +19342,7 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 					Model[Footprint]
 				},
 				Cache -> inheritedCache,
+				Simulation -> simulation,
 				Date -> Now
 			],
 			{
@@ -18609,7 +19479,7 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 	resolvedSeparationMethods = Join[Cases[{sampleSeparationMethod, standardSeparationMethod, blankSeparationMethod}, Except[Null | {Null}]]];
 
 	(*find all of the separation methods where there is already a method*)
-	separationMethodInPlace = Flatten@Cases[resolvedSeparationMethods, ListableP[ObjectP[Object[Method]]]];
+	separationMethodInPlace = Flatten@Cases[Flatten[resolvedSeparationMethods], ListableP[ObjectP[Object[Method]]]];
 
 	(*take the complement of the table separation methods and the ones already in place*)
 	(*we'll need to create packets for all of these separation method objects*)
@@ -18857,11 +19727,11 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 
 	(* -- Get operator resource -- *)
 
-	operatorResource = Model[User, Emerald, Operator, "Trainee"];
+	operatorResource = $BaselineOperator;
 
 	(* post-resolve what the InletModes and ColumnModes are, because we need this info for the exporter *)
 
-	{ inletOptions, standardInletOptions, blankInletOptions } = {
+	{inletOptions, standardInletOptions, blankInletOptions } = {
 		Lookup[expandedOptionsWithNumReplicates, {SplitRatio, SplitVentFlowRate, SplitlessTime, InitialInletPressure, SolventEliminationFlowRate, InitialInletTime}],
 		Lookup[expandedOptionsWithNumReplicates, {StandardSplitRatio, StandardSplitVentFlowRate, StandardSplitlessTime, StandardInitialInletPressure, StandardSolventEliminationFlowRate, StandardInitialInletTime}],
 		Lookup[expandedOptionsWithNumReplicates, {BlankSplitRatio, BlankSplitVentFlowRate, BlankSplitlessTime, BlankInitialInletPressure, BlankSolventEliminationFlowRate, BlankInitialInletTime}]
@@ -18959,7 +19829,7 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 		Switch[
 			#,
 			ObjectP[Object[Item, Column]],
-			Download[#, Model, Cache -> inheritedCache, Date -> Now],
+			Download[#, Model, Cache -> inheritedCache, Simulation -> simulation, Date -> Now],
 			ObjectP[Model[Item, Column]],
 			#,
 			_,
@@ -18969,7 +19839,7 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 	];
 
 	(* get the column diameters *)
-	columnDiameters = ToList@Download[columnModels, Diameter, Cache -> inheritedCache, Date -> Now];
+	columnDiameters = ToList@Download[columnModels, Diameter, Cache -> inheritedCache, Simulation -> simulation, Date -> Now];
 
 	(* determine if we will use a guard column *)
 	guardColumns = False;
@@ -18978,24 +19848,7 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 		Nothing(* something happens if we want to use guards *),
 		columns
 	];
-	(*
 
-	inletGuardColumn = Switch[
-		inlet,
-		Multimode,
-		Switch[
-			First@columnDiameters,
-
-
-		],
-		SplitSplitless,
-		Switch[
-			First@columnDiameters,
-
-		]
-	];
-
-	*)
 	(* 	SSL insertion distance: 5 mm
 				MMI insertion distance: 11 mm
 				MSD insertion distance: EI XTR, SS, Inert, or CI: 1 mm from column guide tube
@@ -19013,7 +19866,7 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 					ObjectP[Model[Item]],
 					column,
 					ObjectP[Object[Item]],
-					Download[column, Model, Cache -> inheritedCache, Date -> Now]
+					Download[column, Model, Cache -> inheritedCache, Simulation -> simulation, Date -> Now]
 				],
 				Name -> ToString[Unique[]]]
 		],
@@ -19339,6 +20192,7 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 		10 * Hour
 	];
 
+	(* If updating the injection time logic to be more accurate please also update estimateGCRunDuration *)
 	injectionTime = Total[{dilutionTime, agitationTime, vortexTime, syringePrepTime, sampleWashTime, separationTime}];
 
 	(* generate the resource for the tackle box, swaging tool, and column cutting wafer *)
@@ -19362,75 +20216,16 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 
 	(* create cap resources for picking. WE MUST USE THESE CAPS *)
 
-	resolvedSampleCaps = MapThread[
-		Function[
-			{aliquotContainer, sampleContainer, aliquotFootprint, sampleFootprint},
-			Switch[
-				(* preferentially look at the aliquot container *)
-				If[
-					!NullQ[aliquotContainer],
-					aliquotFootprint,
-					sampleFootprint
-				],
-				(* if the target vial is a CEVial footprint *)
-				CEVial,
-				(* create a resource for a small magnetic cap *)
-				Link@Resource[Sample -> Model[Item, Cap, "id:L8kPEjn1PRww"]],
-				(* non-magnetic caps, jic *)
-				(*Link@Resource[Sample->Model[Item, Cap, "id:eGakldJlbZX4"]],*)
-				(* if the footprint is a headspace vial *)
-				HeadspaceVial,
-				(* use the 10/20mL vial caps *)
-				Link@Resource[Sample -> Model[Item, Cap, "id:AEqRl9Kmnrqv"]],
-				(* Otherwise something went wrong *)
-				_,
-				Null
-			]
-		],
-		{If[!NullQ[#], Last[#], #]& /@ uniqueAliquotContainers, sampleContainers, ToList@uniqueAliquotContainerFootprints, ToList@sampleContainerModelFootprints}
-	];
+	{resolvedSampleCaps, resolvedStandardCaps, resolvedBlankCaps} = Lookup[expandedOptionsWithNumReplicates, {SampleCaps, StandardCaps, BlankCaps}];
 
-	resolvedStandardCaps = Map[
-		Function[
-			{standardFootprint},
-			Switch[
-				standardFootprint,
-				(* if the target vial is a CEVial footprint *)
-				CEVial,
-				(* create a resource for a small magnetic cap *)
-				Link@Resource[Sample -> Model[Item, Cap, "id:L8kPEjn1PRww"]],
-				(* for headspace vial *)
-				HeadspaceVial,
-				(* it is a big un so use the 10/20mL vial caps *)
-				Link@Resource[Sample -> Model[Item, Cap, "id:AEqRl9Kmnrqv"]],
-				(* the standard might not be aliquoted or exist so we don't need a cap. this is risky if the vial doesn't already have a mag cap. todo revisit? *)
-				Null,
-				Nothing
-			]
-		],
-		uniqueStandardVialFootprints
-	];
-
-	resolvedBlankCaps = Map[
-		Function[
-			{blankFootprint},
-			Switch[
-				blankFootprint,
-				(* if the target vial is a CEVial footprint *)
-				CEVial,
-				(* create a resource for a small magnetic cap *)
-				Link@Resource[Sample -> Model[Item, Cap, "id:L8kPEjn1PRww"]],
-				(* for headspace vial *)
-				HeadspaceVial,
-				(* it is a big un so use the 10/20mL vial caps *)
-				Link@Resource[Sample -> Model[Item, Cap, "id:AEqRl9Kmnrqv"]],
-				(* the blank might not be aliquoted or exist so we don't need a cap. this is risky if the vial doesn't already have a mag cap. todo revisit? *)
-				Null,
-				Nothing
-			]
-		],
-		uniqueBlankVialFootprints
-	];
+	(* Convert any required caps to resources. *)
+	{sampleCapResources, standardCapResources, blankCapResources} = Map[
+		If[NullQ[#],
+			Null,
+			Link[Resource[Sample -> #]]
+		]&,
+		(* Map over the second level of: *)
+		{resolvedSampleCaps, resolvedStandardCaps, resolvedBlankCaps} , {2}];
 
 	(* todo spme caps? *)
 	resolvedSolventContainerCaps = ConstantArray[Link@Resource[Sample -> Model[Item, Cap, "id:n0k9mG8Ln5G4"]], Length[Flatten[{dilutionSolventResources, syringeWashSolventResources}] /. {Null -> Nothing}]];
@@ -19473,6 +20268,10 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 		InletLiner -> linerResource,
 		LinerORing -> linerORingResource,
 		InletSeptum -> septumResource,
+		(* Make dummy placement fields here. This allows resource picking to update the liner, o-ring, and septum objects. The actual locations will be determined later via InternalExperiment`Private`prepareGCMSHardware *)
+		Replace[LinerPlacement] -> {{linerResource, Null}},
+		Replace[ORingPlacement] -> {{linerORingResource, Null}},
+		Replace[SeptumPlacement] -> {{septumResource, Null}},
 		Replace[Columns] -> columnResources,
 		(* LOL *)
 		Replace[ColumnsRequested] -> Link /@ columnsRequested,
@@ -19519,6 +20318,7 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 		Replace[LiquidPreInjectionNumberOfSecondarySolventWashes] -> Lookup[expandedOptionsWithNumReplicates, LiquidPreInjectionNumberOfSecondarySolventWashes],
 		Replace[LiquidPreInjectionNumberOfTertiarySolventWashes] -> Lookup[expandedOptionsWithNumReplicates, LiquidPreInjectionNumberOfTertiarySolventWashes],
 		Replace[LiquidPreInjectionNumberOfQuaternarySolventWashes] -> Lookup[expandedOptionsWithNumReplicates, LiquidPreInjectionNumberOfQuaternarySolventWashes],
+		Replace[LiquidSampleWash] -> Lookup[expandedOptionsWithNumReplicates, LiquidSampleWash],
 		Replace[NumberOfLiquidSampleWashes] -> Lookup[expandedOptionsWithNumReplicates, NumberOfLiquidSampleWashes],
 		Replace[LiquidSampleWashVolume] -> Lookup[expandedOptionsWithNumReplicates, LiquidSampleWashVolume],
 		Replace[LiquidSampleFillingStrokes] -> Lookup[expandedOptionsWithNumReplicates, LiquidSampleFillingStrokes],
@@ -19650,6 +20450,7 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 		Replace[StandardLiquidPreInjectionNumberOfSecondarySolventWashes] -> Lookup[expandedOptionsWithNumReplicates, StandardLiquidPreInjectionNumberOfSecondarySolventWashes],
 		Replace[StandardLiquidPreInjectionNumberOfTertiarySolventWashes] -> Lookup[expandedOptionsWithNumReplicates, StandardLiquidPreInjectionNumberOfTertiarySolventWashes],
 		Replace[StandardLiquidPreInjectionNumberOfQuaternarySolventWashes] -> Lookup[expandedOptionsWithNumReplicates, StandardLiquidPreInjectionNumberOfQuaternarySolventWashes],
+		Replace[StandardLiquidSampleWash] -> Lookup[expandedOptionsWithNumReplicates, StandardLiquidSampleWash],
 		Replace[StandardNumberOfLiquidSampleWashes] -> Lookup[expandedOptionsWithNumReplicates, StandardNumberOfLiquidSampleWashes],
 		Replace[StandardLiquidSampleWashVolume] -> Lookup[expandedOptionsWithNumReplicates, StandardLiquidSampleWashVolume],
 		Replace[StandardLiquidSampleFillingStrokes] -> Lookup[expandedOptionsWithNumReplicates, StandardLiquidSampleFillingStrokes],
@@ -19749,6 +20550,7 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 		Replace[BlankLiquidPreInjectionNumberOfSecondarySolventWashes] -> Lookup[expandedOptionsWithNumReplicates, BlankLiquidPreInjectionNumberOfSecondarySolventWashes],
 		Replace[BlankLiquidPreInjectionNumberOfTertiarySolventWashes] -> Lookup[expandedOptionsWithNumReplicates, BlankLiquidPreInjectionNumberOfTertiarySolventWashes],
 		Replace[BlankLiquidPreInjectionNumberOfQuaternarySolventWashes] -> Lookup[expandedOptionsWithNumReplicates, BlankLiquidPreInjectionNumberOfQuaternarySolventWashes],
+		Replace[BlankLiquidSampleWash] -> Lookup[expandedOptionsWithNumReplicates, BlankLiquidSampleWash],
 		Replace[BlankNumberOfLiquidSampleWashes] -> Lookup[expandedOptionsWithNumReplicates, BlankNumberOfLiquidSampleWashes],
 		Replace[BlankLiquidSampleWashVolume] -> Lookup[expandedOptionsWithNumReplicates, BlankLiquidSampleWashVolume],
 		Replace[BlankLiquidSampleFillingStrokes] -> Lookup[expandedOptionsWithNumReplicates, BlankLiquidSampleFillingStrokes],
@@ -19825,6 +20627,7 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 		Replace[InjectionTable] -> injectionTableUploadable,
 
 		SeparationTime -> injectionTime,
+		GasChromatographyStreaming -> TrueQ[$GasChromatographyStreaming],
 
 		(* grabbing parts *)
 		ColumnTrimmingTool -> columnWaferResource,
@@ -19832,9 +20635,9 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 		MSDSwagingTool -> swagingToolResourceMSD,
 
 		(* magnetic caps for everything *)
-		Replace[SampleCaps] -> resolvedSampleCaps,
-		Replace[StandardCaps] -> resolvedStandardCaps,
-		Replace[BlankCaps] -> resolvedBlankCaps,
+		Replace[SampleCaps] -> sampleCapResources,
+		Replace[StandardCaps] -> standardCapResources,
+		Replace[BlankCaps] -> blankCapResources,
 		Replace[SolventContainerCaps] -> resolvedSolventContainerCaps,
 
 		(* septa *)
@@ -19881,9 +20684,9 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 		MatchQ[$ECLApplication, Engine],
 		{True, {}},
 		gatherTests,
-		Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[expandedOptionsWithNumReplicates, FastTrack], Site->Lookup[myResolvedOptions,Site], Cache -> inheritedCache],
+		Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[expandedOptionsWithNumReplicates, FastTrack], Site->Lookup[myResolvedOptions,Site], Cache -> inheritedCache, Simulation -> simulation],
 		True,
-		{Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[expandedOptionsWithNumReplicates, FastTrack], Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache -> inheritedCache], Null}
+		{Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[expandedOptionsWithNumReplicates, FastTrack], Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache -> inheritedCache, Simulation -> simulation], Null}
 	];
 
 	(* generate the tests rule *)
@@ -19923,13 +20726,13 @@ DefineOptions[ExperimentGasChromatographyOptions,
 ];
 
 
-ExperimentGasChromatographyOptions[myInput : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[
+ExperimentGasChromatographyOptions[myInput : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[
 	{listedOptions, noOutputOptions, options},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* get only the options for ExperimentGasChromatography *)
@@ -19943,7 +20746,7 @@ ExperimentGasChromatographyOptions[myInput : ListableP[ObjectP[{Object[Container
 ];
 
 
-ExperimentGasChromatographyPreview[myInput : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[ExperimentGasChromatography]] :=
+ExperimentGasChromatographyPreview[myInput : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[ExperimentGasChromatography]] :=
 	ExperimentGasChromatography[myInput, Append[ToList[myOptions], Output -> Preview]];
 
 
@@ -19953,14 +20756,14 @@ DefineOptions[ValidExperimentGasChromatographyQ,
 ];
 
 
-ValidExperimentGasChromatographyQ[myInput : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[ValidExperimentGasChromatographyQ]] := Module[
+ValidExperimentGasChromatographyQ[myInput : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[ValidExperimentGasChromatographyQ]] := Module[
 	{listedOptions, listedInput, preparedOptions, filterTests, initialTestDescription, allTests, verbose, outputFormat},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 	listedInput = ToList[myInput];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentGasChromatography *)
@@ -20054,10 +20857,10 @@ convertColumnFlowRateToPressure[myCarrierGas_, myColumnDiameter_, myColumnLength
 ];
 
 (* Helper function to convert a column velocity to column pressure. *)
-convertColumnVelocityToPressure[myCarrierGas_, myColumnDiameter_, myColumnLength_, myColumnVelocity_, myColumnTemperature_, myColumnOutletPressure_, myColumnReferencePressure_, myColumnReferenceTemperature_] := Module[
-	{pressure, myColumnTemperatureKelvin},
-	myColumnTemperatureKelvin = Convert[myColumnTemperature, Kelvin];
-	pressure = Round[N@Convert[(PinitSolve /. Flatten@Cases[Solve[(3 * myColumnDiameter^2 * (PinitSolve^2 - (myColumnOutletPressure + myColumnReferencePressure)^2)^2) / (16 * myColumnLength * (myColumnOutletPressure + myColumnReferencePressure)^3 * (-8 + (4 + (4 * (PinitSolve^2 - (myColumnOutletPressure + myColumnReferencePressure)^2)) / (myColumnOutletPressure + myColumnReferencePressure)^2)^(3 / 2)) * carrierGasViscosity[myCarrierGas, myColumnTemperature]) == myColumnVelocity, PinitSolve], {PinitSolve -> GreaterP[0 * PSI]}]) - myColumnReferencePressure, PSI], 10^(-2) * PSI]
+convertColumnVelocityToPressure[myCarrierGas_, myColumnDiameter_, myColumnLength_,myColumnVelocity_, myColumnTemperature_, myColumnOutletPressure_, myColumnReferencePressure_, myColumnReferenceTemperature_] := Module[
+	{flowRate,pressure},
+	flowRate = convertColumnVelocityToFlowRate[myCarrierGas, myColumnDiameter, myColumnLength, myColumnVelocity, myColumnTemperature, myColumnOutletPressure, myColumnReferencePressure, myColumnReferenceTemperature];
+	pressure = convertColumnFlowRateToPressure[myCarrierGas, myColumnDiameter, myColumnLength, flowRate, myColumnTemperature, myColumnOutletPressure, myColumnReferencePressure, myColumnReferenceTemperature]
 ];
 
 (* Helper function to convert a column residence time to column pressure. *)
@@ -20166,7 +20969,7 @@ excludeOptions[myNewFunction_Symbol, myOldFunction_Symbol, myExcludedOptions : {
 excludeOptions[ExperimentGCMS, ExperimentGasChromatography, {Detector, CarrierGasFlowCorrection, FIDAirFlowRate, FIDDataCollectionFrequency, FIDDihydrogenFlowRate, FIDMakeupGas, FIDMakeupGasFlowRate, FIDTemperature}];
 
 (* main experiment function: should handle all cases *)
-ExperimentGCMS[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[{},
+ExperimentGCMS[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[{},
 
 	(* there's no detector option in ExperimentGCMS so add it here *)
 	ExperimentGasChromatography[myInputs, Sequence @@ ReplaceRule[ToList[myOptions], Detector -> MassSpectrometer]]
@@ -20176,19 +20979,19 @@ ExperimentGCMS[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample]}]
 
 (* sister functions *)
 
-ExperimentGCMSOptions[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[{},
+ExperimentGCMSOptions[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[{},
 
 	(* there's no detector option in ExperimentGCMS so add it here *)
 	ExperimentGasChromatographyOptions[myInputs, Sequence @@ ReplaceRule[ToList[myOptions], Detector -> MassSpectrometer]]
 ];
 
-ExperimentGCMSPreview[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[ExperimentGasChromatography]] := Module[{},
+ExperimentGCMSPreview[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[ExperimentGasChromatography]] := Module[{},
 
 	(* there's no detector option in ExperimentGCMS so add it here *)
 	ExperimentGasChromatographyPreview[myInputs, Sequence @@ ReplaceRule[ToList[myOptions], Detector -> MassSpectrometer]]
 ];
 
-ValidExperimentGCMSQ[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[ValidExperimentGasChromatographyQ]] := Module[{},
+ValidExperimentGCMSQ[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[ValidExperimentGasChromatographyQ]] := Module[{},
 
 	(* there's no detector option in ExperimentGCMS so add it here *)
 	ValidExperimentGasChromatographyQ[myInputs, Sequence @@ ReplaceRule[ToList[myOptions], Detector -> MassSpectrometer]]

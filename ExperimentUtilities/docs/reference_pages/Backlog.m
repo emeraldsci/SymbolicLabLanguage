@@ -24,6 +24,6 @@ DefineUsage[UploadProtocolPriority,
 			"AvailableThreads",
 			"UploadProtocolStatus"
 		},
-		Author -> {"waseem.vali", "malav.desai", "thomas"}
+		Author -> {"xu.yi", "waseem.vali", "malav.desai", "thomas"}
 	}];
 	

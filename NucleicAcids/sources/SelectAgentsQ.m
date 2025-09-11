@@ -136,6 +136,11 @@ selectAgentsQ[molecule_, ops:OptionsPattern[SelectAgentsQ]] := Module[
   (* wait for the dna runs to finish *)
   cellText = "(2/5) Waiting for all blast jobs to finish";
   idAndStatuses = waitForAllBlasts[allResponses];
+  (*
+    for troubleshooting/debugging, this information should be enough?
+    At least in my tests (Dima) I was able to pull the information without issues or needed to wait for the calculations to happen again
+  *)
+  ECL`ManifoldEcho[idAndStatuses,"idAndStatuses"];
 
   failIfNotReady[Lookup[idAndStatuses, "Statuses"]];
 

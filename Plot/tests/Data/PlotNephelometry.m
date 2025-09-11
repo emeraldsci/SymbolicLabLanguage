@@ -17,7 +17,7 @@ DefineTests[PlotNephelometry,{
 	Example[
 		{Basic,"Plot the results of an ExperimentNephelometry using a protocol object as input:"},
 		PlotNephelometry[Object[Protocol,Nephelometry,"PlotNephelometry Test Protocol with data"<>$SessionUUID]],
-		{ValidGraphicsP[]..}
+		ValidGraphicsP[]
 	],
 
 	Example[
@@ -73,7 +73,7 @@ DefineTests[PlotNephelometry,{
 				Object[Protocol,Nephelometry,"Nephelometry Protocol Without Data"<>$SessionUUID],
 				Object[Data,Nephelometry,"Nephelometry Data Without Protocol"<>$SessionUUID],
 				Object[Protocol,Nephelometry,"PlotNephelometry Test Protocol with data"<>$SessionUUID],
-				Object[Protocol,Nephelometry,"PlotNephelometry Test Protocol with bad data"<>$SessionUUID]
+				Object[Protocol,Nephelometry,"PlotNephelometry Test Protocol with bad data"<>$SessionUUID],
 				Object[Data,Nephelometry,"PlotNephelometry Test Data"<>$SessionUUID],
 				Object[Data,Nephelometry,"PlotNephelometry Test Data no Input Conc"<>$SessionUUID]
 			};

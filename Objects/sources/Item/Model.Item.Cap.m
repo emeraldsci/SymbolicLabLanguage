@@ -84,7 +84,7 @@ DefineObjectType[Model[Item,Cap], {
 			Class -> Real,
 			Pattern :> PressureP,
 			Units -> PSI,
-			Description -> "Indicates the minium pressure rating for the cap.",
+			Description -> "Indicates the minimum pressure rating for the cap.",
 			Category -> "Operating Limits"
 		},
 		MaxPressure -> {
@@ -219,6 +219,84 @@ DefineObjectType[Model[Item,Cap], {
 			Description -> "Indicates if this cover model is parameterized or if it needs to be parameterized and verified by the ECLs team.",
 			Category -> "Qualifications & Maintenance",
 			Developer -> True
+		},
+		InternalDepth -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Milli*Meter],
+			Units -> Meter Milli,
+			Description -> "The depth of pHProbe inside of the vessel when the cap is covered in AdjustpH experiments. This depth is measured as the vertical distance from the top of the container.",
+			Category -> "Dimensions & Positions"
+		},
+		InternalDiameter -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Milli*Meter],
+			Units -> Meter Milli,
+			Description -> "The required minimum interior diameter of the vessel to fit pHProbe when the cap is covered in AdjustpH experiments.",
+			Category -> "Dimensions & Positions"
+		},
+		pHProbe -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Part, pHProbe],
+			Description -> "The pH probe associated with this cap that directly immerses into samples for measurement.",
+			Category -> "Instrument Specifications"
+		},
+		Verified -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the information in this model has been reviewed for accuracy by an ECL employee.",
+			Category -> "Organizational Information"
+		},
+		VerifiedLog -> {
+			Format -> Multiple,
+			Class -> {Boolean, Link, Date},
+			Pattern :> {BooleanP, _Link, _?DateObjectQ},
+			Relation -> {Null, Object[User], Null},
+			Headers -> {"Verified", "Responsible person", "Date"},
+			Description -> "Records the history of changes to the Verified field, along with when the change occured, and the person responsible.",
+			Category -> "Organizational Information"
+		},
+		PendingParameterization -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicate whether this model is awaiting measurement and assessment of physical properties in the lab.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		AdditionalInformation -> {
+			Format -> Multiple,
+			Class -> {String, Date},
+			Pattern :> {_String, _?DateObjectQ},
+			Description -> "Supplementary information recorded from the UploadMolecule function. These information usually records the user supplied input and options, providing additional information for verification.",
+			Headers -> {"Information", "Date Added"},
+			Category -> "Hidden"
+		},
+		Weight -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Gram],
+			Units -> Gram,
+			Description -> "The mean weight of caps of this model. Experimental weights of new caps of this model must be within 5% of this weight.",
+			Category -> "Physical Properties"
+		},
+		WeightDistribution -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> DistributionP[Gram],
+			Description -> "The statistical distribution of the mean weight of caps of this model.",
+			Category -> "Physical Properties"
+		},
+		PreferredBalance -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> BalanceModeP,
+			Description -> "Indicates the recommended balance type for weighing a sample in this type of container.",
+			Category -> "Physical Properties"
 		}
 	}
 }];

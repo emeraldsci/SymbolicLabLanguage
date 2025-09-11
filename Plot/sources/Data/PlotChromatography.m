@@ -135,27 +135,27 @@ DefineOptions[PlotChromatography,
 			Category -> "Data Specifications",
 			Widget -> Alternatives[
 				Widget[
-					Type->Enumeration,
-					Pattern:>Alternatives[FlowRates | GradientA | GradientB | GradientC | GradientD  | Chromatogram |
-         			Absorbance | Absorbance3D | SecondaryAbsorbance | TertiaryAbsorbance | Fluorescence | SecondaryFluorescence | TertiaryFluorescence | QuaternaryFluorescence |
-							Scattering | MultiAngleLightScattering22Degree | MultiAngleLightScattering28Degree | MultiAngleLightScattering32Degree | MultiAngleLightScattering38Degree | MultiAngleLightScattering44Degree | MultiAngleLightScattering50Degree | MultiAngleLightScattering57Degree | MultiAngleLightScattering64Degree | MultiAngleLightScattering72Degree | MultiAngleLightScattering81Degree | MultiAngleLightScattering90Degree | MultiAngleLightScattering99Degree | MultiAngleLightScattering108Degree | MultiAngleLightScattering117Degree | MultiAngleLightScattering126Degree | MultiAngleLightScattering134Degree | MultiAngleLightScattering141Degree | MultiAngleLightScattering147Degree | DynamicLightScattering | DynamicLightScatteringCorrelationFunction |
-							RefractiveIndex | CircularDichroism | Charge |
-           		Pressure | Temperature |
-           		Conductance | ConductivityFlowCellTemperature | pH | pHFlowCellTemperature |
-              MassSpectrum | IonAbundance | IonAbundance3D | FIDResponse |
+					Type -> Enumeration,
+					Pattern :> Alternatives[FlowRates | GradientA | GradientB | GradientC | GradientD | Chromatogram |
+						Absorbance | Absorbance3D | SecondaryAbsorbance | TertiaryAbsorbance | Fluorescence | SecondaryFluorescence | TertiaryFluorescence | QuaternaryFluorescence |
+						Scattering | MultiAngleLightScattering22Degree | MultiAngleLightScattering28Degree | MultiAngleLightScattering32Degree | MultiAngleLightScattering38Degree | MultiAngleLightScattering44Degree | MultiAngleLightScattering50Degree | MultiAngleLightScattering57Degree | MultiAngleLightScattering64Degree | MultiAngleLightScattering72Degree | MultiAngleLightScattering81Degree | MultiAngleLightScattering90Degree | MultiAngleLightScattering99Degree | MultiAngleLightScattering108Degree | MultiAngleLightScattering117Degree | MultiAngleLightScattering126Degree | MultiAngleLightScattering134Degree | MultiAngleLightScattering141Degree | MultiAngleLightScattering147Degree | DynamicLightScattering | DynamicLightScatteringCorrelationFunction |
+						RefractiveIndex | CircularDichroism | Charge |
+						Pressure | Temperature |
+						Conductance | ConductivityFlowCellTemperature | pH | pHFlowCellTemperature |
+						MassSpectrum | IonAbundance | IonAbundance3D | FIDResponse |
 						SamplePressure | PreColumnPressure | PostColumnPressure | DeltaColumnPressure]
 				],
 				Adder[
 					Widget[
-						Type->Enumeration,
-						Pattern:>ListableP[FlowRates | GradientA | GradientB | GradientC | GradientD  | Chromatogram |
-								Absorbance | Absorbance3D | SecondaryAbsorbance | TertiaryAbsorbance | Fluorescence | SecondaryFluorescence | TertiaryFluorescence | QuaternaryFluorescence |
-								Scattering | MultiAngleLightScattering22Degree | MultiAngleLightScattering28Degree | MultiAngleLightScattering32Degree | MultiAngleLightScattering38Degree | MultiAngleLightScattering44Degree | MultiAngleLightScattering50Degree | MultiAngleLightScattering57Degree | MultiAngleLightScattering64Degree | MultiAngleLightScattering72Degree | MultiAngleLightScattering81Degree | MultiAngleLightScattering90Degree | MultiAngleLightScattering99Degree | MultiAngleLightScattering108Degree | MultiAngleLightScattering117Degree | MultiAngleLightScattering126Degree | MultiAngleLightScattering134Degree | MultiAngleLightScattering141Degree | MultiAngleLightScattering147Degree | DynamicLightScattering | DynamicLightScatteringCorrelationFunction |
-								RefractiveIndex | CircularDichroism | Charge |
-								Pressure | Temperature |
-								Conductance | ConductivityFlowCellTemperature | pH | pHFlowCellTemperature |
-								MassSpectrum | IonAbundance | IonAbundance3D | FIDResponse |
-            					SamplePressure | PreColumnPressure | PostColumnPressure | DeltaColumnPressure
+						Type -> Enumeration,
+						Pattern :> ListableP[FlowRates | GradientA | GradientB | GradientC | GradientD | Chromatogram |
+							Absorbance | Absorbance3D | SecondaryAbsorbance | TertiaryAbsorbance | Fluorescence | SecondaryFluorescence | TertiaryFluorescence | QuaternaryFluorescence |
+							Scattering | MultiAngleLightScattering22Degree | MultiAngleLightScattering28Degree | MultiAngleLightScattering32Degree | MultiAngleLightScattering38Degree | MultiAngleLightScattering44Degree | MultiAngleLightScattering50Degree | MultiAngleLightScattering57Degree | MultiAngleLightScattering64Degree | MultiAngleLightScattering72Degree | MultiAngleLightScattering81Degree | MultiAngleLightScattering90Degree | MultiAngleLightScattering99Degree | MultiAngleLightScattering108Degree | MultiAngleLightScattering117Degree | MultiAngleLightScattering126Degree | MultiAngleLightScattering134Degree | MultiAngleLightScattering141Degree | MultiAngleLightScattering147Degree | DynamicLightScattering | DynamicLightScatteringCorrelationFunction |
+							RefractiveIndex | CircularDichroism | Charge |
+							Pressure | Temperature |
+							Conductance | ConductivityFlowCellTemperature | pH | pHFlowCellTemperature |
+							MassSpectrum | IonAbundance | IonAbundance3D | FIDResponse |
+							SamplePressure | PreColumnPressure | PostColumnPressure | DeltaColumnPressure
 						]
 					]
 				]
@@ -451,6 +451,8 @@ Warning::CannotTransformMassSpecData="Cannot transform the x-axis of the mass sp
 Warning::InvalidTargetUnits="The target units specified `1` do not match the option TransformX. Plot will be generated without the transform.";
 Warning::UndefinedFlowRate="The flow rate is not specified. Plot will be generated without the transform.";
 Error::DimensionMismatch="Cannot make 3D plot using 2D data.";
+Error::NoChromatographyDataToPlot = "The protocol object does not contain any associated chromatography data.";
+Error::ChromatographyProtocolDataNotPlotted = "The data objects linked to the input protocol were not able to be plotted. The data objects may be missing field values that are required for plotting. Please inspect the data objects to ensure that they contain the data to be plotted, and call PlotChromatography or PlotObject on an individual data object to identify the missing values.";
 
 
 (* ::Subsubsection::Closed:: *)
@@ -489,6 +491,84 @@ PlotChromatography[primaryData:rawPlotInputP,inputOptions:OptionsPattern[]]:=raw
 			(* and if not automatic just go with whatever the specification was *)
 			safeOptions
 		]
+	]
+];
+
+(* Protocol Overload *)
+PlotChromatography[
+	obj: ObjectP[{
+		Object[Protocol, HPLC],
+		Object[Protocol, FPLC],
+		Object[Protocol, GasChromatography],
+		Object[Protocol, IonChromatography],
+		Object[Protocol, LCMS],
+		Object[Protocol, SupercriticalFluidChromatography]
+	}],
+	ops: OptionsPattern[PlotChromatography]
+] := Module[{safeOps, output, data, previewPlot, plots, resolvedOptions, finalResult, outputPlot, outputOptions},
+
+	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
+	safeOps=SafeOptions[PlotChromatography, ToList[ops]];
+
+	(* Requested output, either a single value or list of Alternatives[Result,Options,Preview,Tests] *)
+	output = ToList[Lookup[safeOps, Output]];
+
+	(* Download the data from the input protocol *)
+	data = Download[obj, Data];
+
+	(* Return an error if there is no data or it is not the correct data type *)
+	If[!MatchQ[data, Alternatives[{ObjectP[Object[Data, Chromatography]]..}, {ObjectP[Object[Data, ChromatographyMassSpectra]]..}]],
+		Message[Error::NoChromatographyDataToPlot];
+		Return[$Failed]
+	];
+
+	(* If Preview is requested, return a plot with all of the data objects in the protocol overlaid in one plot *)
+	previewPlot = If[MemberQ[output, Preview],
+		PlotChromatography[data, Sequence @@ ReplaceRule[safeOps, Output -> Preview]],
+		Null
+	];
+
+	(* If either Result or Options are requested, map over the data objects. Remove anything that failed from the list of plots to be displayed*)
+	{plots, resolvedOptions} = If[MemberQ[output, (Result | Options)],
+		Transpose[
+			(PlotChromatography[#, Sequence @@ ReplaceRule[safeOps, Output -> {Result, Options}]]& /@ data) /. $Failed -> Nothing
+		],
+		{{}, {}}
+	];
+
+	(* If all of the data objects failed to plot, return an error *)
+	If[MatchQ[plots, (ListableP[{}] | ListableP[Null])] && MatchQ[previewPlot, (Null | $Failed)],
+		Message[Error::ChromatographyProtocolDataNotPlotted];
+		Return[$Failed],
+		Nothing
+	];
+
+	(* If Result was requested, output the plots in slide view, unless there is only one plot then we can just show it not in slide view. *)
+	outputPlot = If[MemberQ[output, Result],
+		If[Length[plots] > 1,
+			SlideView[plots],
+			First[plots]
+		]
+	];
+
+	(* If Options were requested, just take the first set of options since they are the same for all plots. Make it a List first just in case there is only one option set. *)
+	outputOptions = If[MemberQ[output, Options],
+		First[ToList[resolvedOptions]]
+	];
+
+	(* Prepare our final result *)
+	finalResult = output /. {
+		Result -> outputPlot,
+		Options -> outputOptions,
+		Preview -> previewPlot,
+		Tests -> {}
+	};
+
+	(* Return the result *)
+	If[
+		Length[finalResult] == 1,
+		First[finalResult],
+		finalResult
 	]
 ];
 
@@ -649,7 +729,16 @@ PlotChromatography[input:ListableP[ObjectP[Object[Data,Chromatography]]]|Listabl
 	];
 
 	(*get the detectors used*)
-	detectors=Lookup[First@packets,Detectors];
+	(* this is a little bit goofy; ideally we want the detectors that were used in _all_ the packets so we don't have a weird case where detectors in the first packet that aren't in any other ones *)
+	(* if we don't have _any_ that are universal to all (not counting Pressure/Temperature), then yeah just take the first ones *)
+	detectors=With[{allDetectors = Lookup[packets, Detectors]},
+		Which[
+			(* if we have raw data this is $Failed and that is fine for below *)
+			MatchQ[allDetectors, {$Failed..}], $Failed,
+			MemberQ[Intersection @@ allDetectors, Except[Pressure | Temperature]], Intersection @@ allDetectors,
+			True, First[allDetectors]
+		]
+	];
 
 	(* NOTE: if you update the below, make sure the fields you add are included in "secondaryFields" and "primaryFields". *)
 	(* Automatic resolution of best primary and secondary fields.*)
@@ -1036,7 +1125,9 @@ PlotChromatography[input:ListableP[ObjectP[Object[Data,Chromatography]]]|Listabl
 				(* Check to see if we're mapping. If so, then we have to Transpose our result. *)
 				{listLinePlot,listLinePlotOptions}=If[OptionValue[Map],
 					Module[{transposedResult,plots,ellpOptions},
-						transposedResult=Transpose[ellpResult];
+						(* Transpose needs to still work even if we have Null values *)
+						(* only replacing at level 1 because don't want to mess with Nulls deeper in the plot *)
+						transposedResult=Transpose[Replace[ellpResult, Null -> {$Failed, {}}, 1]];
 
 						(* The plots are simply the first element in the list. *)
 						plots=First[transposedResult];

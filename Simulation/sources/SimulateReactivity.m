@@ -385,7 +385,7 @@ Authors[SimulateReactivityOptions] := {"brad"};
 SimulateReactivityOptions[in: InputPatternSimulateMechanismP, ops : OptionsPattern[SimulateReactivity]] := Module[{listedOptions, noOutputOptions},
 	listedOptions = ToList[ops];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	SimulateReactivity[in, PassOptions[SimulateReactivity, Append[noOutputOptions, Output->Options]]]
@@ -433,14 +433,21 @@ DefineOptions[resolveOptionsSimulateMechanism,
 ];
 
 resolveOptionsSimulateMechanism[initialState_,unresolvedOptions_List, ops:OptionsPattern[]]:=Module[
-	{method, safeOps, resolvedOptions, output, listedOutput, collectTestsBoolean, expandedOptions, messagesBoolean, allTests},
+	{method, safeOps, resolvedOptions, output, listedOutput, collectTestsBoolean, expandedOptions, messagesBoolean,
+		allTests, overloadNumber},
 
 	(* From resolveSimulateFoldingOptions's options, get Output value *)
 	output = OptionDefault[OptionValue[Output]];
 	listedOutput = ToList[output];
 	collectTestsBoolean = MemberQ[listedOutput,Tests];
 
-	expandedOptions = Last[ExpandIndexMatchedInputs[SimulateReactivity,{initialState},unresolvedOptions]];
+	(* determine the overload type because ExpandIndexMatchedInputs will freak out if we do it incorrectly and pick the wrong one *)
+	overloadNumber = If[MatchQ[initialState, ReactionMechanismP|ObjectP[Object[Simulation, ReactionMechanism]]],
+		2,
+		1
+	];
+
+	expandedOptions = Last[ExpandIndexMatchedInputs[SimulateReactivity,{initialState},unresolvedOptions, overloadNumber]];
 	safeOps = safeSimulateOptions[SimulateReactivity, unresolvedOptions];
 
 	(* Print messages whenever we're not getting tests instead *)

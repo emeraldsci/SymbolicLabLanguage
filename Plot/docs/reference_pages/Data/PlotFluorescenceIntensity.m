@@ -30,6 +30,26 @@ DefineUsage[PlotFluorescenceIntensity,
 			}
 		},
 		{
+			Definition -> {"PlotFluorescenceIntensity[protocol]", "plot"},
+			Description -> "creates a 'plot' of fluorescence intensities in the data objects found in the Data field of 'protocol'.",
+			Inputs :> {
+				{
+					InputName -> "protocol",
+					Description -> "The protocol object containing fluorescence intensity data objects.",
+					Widget -> Alternatives[
+						Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, FluorescenceIntensity]]]
+					]
+				}
+			},
+			Outputs :> {
+				{
+					OutputName -> "plot",
+					Description -> "The figure generated from data found in the fluorescence intensity protocol.",
+					Pattern :> ValidGraphicsP[]
+				}
+			}
+		},
+		{
 			Definition -> {"PlotFluorescenceIntensity[intensities]", "plot"},
 			Description -> "provides a graphical plot of the provided fluorescence intensities either in the form of a histogram or a box and whisker plot.",
 			Inputs :> {

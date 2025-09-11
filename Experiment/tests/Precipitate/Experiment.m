@@ -265,123 +265,72 @@ DefineTests[ExperimentPrecipitate,
     ],
 
     (* Test FiltrationInstrument STAR resolution *)
-    Example[{Options,FiltrationInstrument,"FiltrationInstrument option is set properly based on FiltrationTechnique, otherwise FiltrationInstrument is set to Null:"},
+    Example[{Options, {FiltrationInstrument, FilterCentrifugeIntensity}, "Filter options are set properly based on FiltrationTechnique in STAR WorkCell, otherwise FiltrationInstrument is set to Null:"},
       ExperimentPrecipitate[
-        {Object[Sample,"DNA in water sample 1 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],Object[Sample,"DNA in water sample 2 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
-          Object[Sample,"DNA in water sample 3 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]},
-        SeparationTechnique -> {Filter,Filter,Pellet},
-        FiltrationTechnique -> {Centrifuge,AirPressure,Null},
+        {
+          Object[Sample, "DNA in water sample 1 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
+          Object[Sample, "DNA in water sample 2 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
+          Object[Sample, "DNA in water sample 3 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]
+        },
+        SampleVolume -> {100 Microliter, 250 Microliter, 250 Microliter},
+        SeparationTechnique -> {Filter, Filter, Pellet},
+        FiltrationTechnique -> {Centrifuge, AirPressure, Null},
         WorkCell -> STAR,
-        Output -> {Result,Options}
+        Output -> Options
       ],
-      {
-        ObjectP[Object[Protocol, RoboticSamplePreparation]],
       KeyValuePattern[
         {
-          FiltrationInstrument -> {ObjectP[Model[Instrument,Centrifuge,"id:vXl9j57YaYrk"]],ObjectP[Model[Instrument,PressureManifold,"id:J8AY5jD1okLb"]],Null}
+          FiltrationInstrument -> {ObjectP[Model[Instrument, Centrifuge, "id:vXl9j57YaYrk"]], ObjectP[Model[Instrument, PressureManifold, "id:J8AY5jD1okLb"]], Null},
+          FilterCentrifugeIntensity -> {EqualP[2800 RPM], Null, Null}
         }
-      ]},
+      ],
       TimeConstraint -> 3200
     ],
 
     (* Test FiltrationInstrument bioSTAR resolution *)
-    Example[{Options,FiltrationInstrument,"FiltrationInstrument option is set properly based on FiltrationTechnique, otherwise FiltrationInstrument is set to Null:"},
+    Example[{Options, {FiltrationInstrument, FilterCentrifugeIntensity}, "Filter options are set properly based on FiltrationTechnique in bioSTAR WorkCell, otherwise FiltrationInstrument is set to Null:"},
       ExperimentPrecipitate[
-        {Object[Sample,"DNA in water sample 1 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],Object[Sample,"DNA in water sample 2 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
-          Object[Sample,"DNA in water sample 3 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]},
-        SeparationTechnique -> {Filter,Filter,Pellet},
-        FiltrationTechnique -> {Centrifuge,AirPressure,Null},
+        {
+          Object[Sample, "DNA in water sample 1 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
+          Object[Sample, "DNA in water sample 2 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
+          Object[Sample, "DNA in water sample 3 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]
+        },
+        SampleVolume -> {100 Microliter, 250 Microliter, 250 Microliter},
+        SeparationTechnique -> {Filter, Filter, Pellet},
+        FiltrationTechnique -> {Centrifuge, AirPressure, Null},
         Sterile -> True,
         WorkCell -> bioSTAR,
-        UnprecipitatedSampleContainerOut->Model[Container,Plate,"96-well 2mL Deep Well Plate, Sterile"],
-        Output -> {Result,Options}
+        UnprecipitatedSampleContainerOut -> Model[Container, Plate, "96-well 2mL Deep Well Plate, Sterile"],
+        Output -> Options
       ],
-      {
-        ObjectP[Object[Protocol,RoboticCellPreparation]],
-        KeyValuePattern[
-          {
-            FiltrationInstrument -> {ObjectP[Model[Instrument,Centrifuge,"id:kEJ9mqaVPAXe"]],ObjectP[Model[Instrument,PressureManifold,"id:4pO6dMOqXNpX"]],Null}
-          }
-        ]},
-        TimeConstraint -> 3200
-    ],
-
-    (* Test FilterCentrifugeIntensity STAR resolution *)
-    Example[{Options,FilterCentrifugeIntensity,"FilterCentrifugeIntensity option is set to 4000g if FiltrationTechnique is set to Centrifuge, otherwise FilterCentrifugeIntensity is set to Null:"},
-      ExperimentPrecipitate[
-        {Object[Sample,"DNA in water sample 1 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],Object[Sample,"DNA in water sample 2 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
-          Object[Sample,"DNA in water sample 3 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]},
-        SeparationTechnique -> {Filter,Filter,Pellet},
-        FiltrationTechnique -> {AirPressure,Centrifuge,Null},
-        WorkCell -> STAR,
-        Output -> {Result,Options}
-      ],
-      {
-        ObjectP[Object[Protocol, RoboticSamplePreparation]],
       KeyValuePattern[
         {
-          FilterCentrifugeIntensity -> {Null,EqualP[2800 RPM],Null}
+          FiltrationInstrument -> {ObjectP[Model[Instrument , Centrifuge, "id:kEJ9mqaVPAXe"]], ObjectP[Model[Instrument, PressureManifold, "id:4pO6dMOqXNpX"]], Null},
+          FilterCentrifugeIntensity -> {EqualP[3600 GravitationalAcceleration], Null, Null}
         }
-      ]},
-      TimeConstraint -> 3200
-    ],
-
-    (* Test FilterCentrifugeIntensity bioSTAR resolution *)
-    Example[{Options,FilterCentrifugeIntensity,"FilterCentrifugeIntensity option is set to 3600 g if FiltrationTechnique is set to Centrifuge, otherwise FilterCentrifugeIntensity is set to Null:"},
-      ExperimentPrecipitate[
-        {Object[Sample,"DNA in water sample 1 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],Object[Sample,"DNA in water sample 2 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
-          Object[Sample,"DNA in water sample 3 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]},
-        SeparationTechnique -> {Filter,Filter,Pellet},
-        FiltrationTechnique -> {AirPressure,Centrifuge,Null},
-        WorkCell -> bioSTAR,
-        UnprecipitatedSampleContainerOut->Model[Container,Plate,"96-well 2mL Deep Well Plate, Sterile"],
-        Output -> {Result,Options}
       ],
-      {
-        ObjectP[Object[Protocol, RoboticCellPreparation]],
-      KeyValuePattern[
-        {
-          FilterCentrifugeIntensity -> {Null,EqualP[3600 GravitationalAcceleration],Null}
-        }
-      ]},
       TimeConstraint -> 3200
     ],
 
     (* Test FiltrationPressure resolution *)
-    Example[{Options,FiltrationPressure,"FiltrationPressure option is set to 40 PSI if FiltrationTechnique is set to AirPressure, otherwise FiltrationPressure is set to Null:"},
+    Example[{Options, {FiltrationPressure, FiltrationTime}, "FiltrationPressure is set to 40 PSI if FiltrationTechnique is set to AirPressure and and FiltrationTime is set 10 Minute if SeparationTechnique is set to Filter, otherwise set to Null:"},
       ExperimentPrecipitate[
-        {Object[Sample,"DNA in water sample 1 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],Object[Sample,"DNA in water sample 2 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
-          Object[Sample,"DNA in water sample 3 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]},
-        SeparationTechnique -> {Filter,Filter,Pellet},
-        FiltrationTechnique -> {AirPressure,Centrifuge,Null},
-        Output -> {Result,Options}
+        {
+          Object[Sample, "DNA in water sample 1 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
+          Object[Sample, "DNA in water sample 2 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
+          Object[Sample, "DNA in water sample 3 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]
+        },
+        SampleVolume -> {250 Microliter, 100 Microliter, 250 Microliter},
+        SeparationTechnique -> {Filter, Filter, Pellet},
+        FiltrationTechnique -> {AirPressure, Centrifuge, Null},
+        Output -> Options
       ],
-      {
-        ObjectP[Object[Protocol, RoboticSamplePreparation]],
       KeyValuePattern[
         {
-          FiltrationPressure -> {EqualP[40 PSI],Null,Null}
+          FiltrationPressure -> {EqualP[40 PSI], Null, Null},
+          FiltrationTime -> {10 Minute, 10 Minute, Null}
         }
-      ]},
-      TimeConstraint -> 3200
-    ],
-
-    (* Test FiltrationTime resolution *)
-    Example[{Options,FiltrationTime,"FiltrationTime option is set to 10 Minute if SeparationTechnique is set to Filter, otherwise FiltrationTime is set to Null:"},
-      ExperimentPrecipitate[
-        {Object[Sample,"DNA in water sample 1 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],Object[Sample,"DNA in water sample 2 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
-          Object[Sample,"DNA in water sample 3 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]},
-        SeparationTechnique -> {Filter,Filter,Pellet},
-        FiltrationTechnique -> {AirPressure,Centrifuge,Null},
-        Output -> {Result,Options}
       ],
-      {
-        ObjectP[Object[Protocol, RoboticSamplePreparation]],
-      KeyValuePattern[
-        {
-          FiltrationTime -> {10 Minute,10 Minute,Null}
-        }
-      ]},
       TimeConstraint -> 3200
     ],
 
@@ -860,99 +809,94 @@ DefineTests[ExperimentPrecipitate,
     ],
 
     (* Test WashCentrifugeIntensity resolution *)
-    Example[{Options,WashCentrifugeIntensity,"WashCentrifugeIntensity option is set to 4000 g if FiltrationTechnique is set to Centrifuge or if SeparationTechnique is set to Pellet, otherwise WashCentrifugeIntensity is set to Null:"},
+    Example[{Options, {WashCentrifugeIntensity, WashPressure}, "WashCentrifugeIntensity option is set to 4000 g if FiltrationTechnique is set to Centrifuge or if SeparationTechnique is set to Pellet, WashPressure option is set to 40 PSI if FiltrationTechnique is set to AirPressure:"},
       ExperimentPrecipitate[
-        {Object[Sample,"DNA in water sample 5 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],Object[Sample,"DNA in water sample 1 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
-          Object[Sample,"DNA in water sample 2 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]},
-        FiltrationTechnique -> {Automatic,Centrifuge,AirPressure},
-        SeparationTechnique -> {Pellet,Filter,Filter},
+        {
+          Object[Sample, "DNA in water sample 5 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
+          Object[Sample, "DNA in water sample 1 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
+          Object[Sample, "DNA in water sample 2 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]
+        },
+        SampleVolume -> {100 Microliter, 50 Microliter, 250 Microliter},
+        WashSolutionVolume -> {100 Microliter, 50 Microliter, 250 Microliter},
+        NumberOfWashes -> 1,
+        FiltrationTechnique -> {Automatic, Centrifuge, AirPressure},
+        SeparationTechnique -> {Pellet, Filter, Filter},
         WorkCell -> STAR,
-        Output -> {Result,Options}
+        Output -> Options
       ],
-      {
-        ObjectP[Object[Protocol, RoboticSamplePreparation]],
       KeyValuePattern[
         {
-          WashCentrifugeIntensity -> {EqualP[2800 RPM],EqualP[2800 RPM],Null}
+          WashCentrifugeIntensity -> {EqualP[2800 RPM], EqualP[2800 RPM], Null},
+          WashPressure -> {Null, Null, EqualP[40 PSI]}
         }
-      ]},
-      TimeConstraint -> 3200
-    ],
-
-    (* Test WashPressure resolution *)
-    Example[{Options,WashPressure,"WashPressure option is set to 40 PSI if FiltrationTechnique is set to AirPressure, otherwise WashPressure is set to Null:"},
-      ExperimentPrecipitate[
-        {Object[Sample,"DNA in water sample 5 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],Object[Sample,"DNA in water sample 1 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
-          Object[Sample,"DNA in water sample 2 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]},
-        FiltrationTechnique -> {Null,Centrifuge,AirPressure},
-        SeparationTechnique -> {Pellet,Filter,Filter},
-        Output -> {Result,Options}
       ],
-      {
-        ObjectP[Object[Protocol, RoboticSamplePreparation]],
-      KeyValuePattern[
-        {
-          WashPressure -> {Null,Null,EqualP[40 PSI]}
-        }
-      ]},
       TimeConstraint -> 3200
     ],
 
     (* Test WashSeparationTime resolution (FiltrationTechnique AirPressure Only) *)
-    Example[{Options,WashSeparationTime,"WashSeparationTime option is properly set based on SeparationTechnique, FiltrationTechnique (AirPressure Only), and NumberOfWashes:"},
+    Example[{Options, WashSeparationTime, "WashSeparationTime option is properly set based on SeparationTechnique, FiltrationTechnique (AirPressure Only), and NumberOfWashes:"},
       ExperimentPrecipitate[
-        {Object[Sample,"DNA in water sample 5 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],Object[Sample,"DNA in water sample 1 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
-          Object[Sample,"DNA in water sample 2 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],Object[Sample,"DNA in water sample 3 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]},
-        FiltrationTechnique -> {Null,Null,AirPressure,AirPressure},
-        SeparationTechnique -> {Pellet,Pellet,Filter,Filter},
-        NumberOfWashes -> {0,3,3,0},
-        Output -> {Result,Options}
+        {
+          Object[Sample,"DNA in water sample 5 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
+          Object[Sample,"DNA in water sample 1 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
+          Object[Sample,"DNA in water sample 2 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
+          Object[Sample,"DNA in water sample 3 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]
+        },
+        FiltrationTechnique -> {Null, Null, AirPressure, AirPressure},
+        SeparationTechnique -> {Pellet, Pellet, Filter, Filter},
+        NumberOfWashes -> {0, 3, 3, 0},
+        Output -> {Result, Options}
       ],
       {
         ObjectP[Object[Protocol, RoboticSamplePreparation]],
       KeyValuePattern[
         {
-          WashSeparationTime -> {Null,EqualP[20 Minute],EqualP[3 Minute],Null}
+          WashSeparationTime -> {Null, EqualP[20 Minute], EqualP[3 Minute], Null}
         }
       ]},
       TimeConstraint -> 3200
     ],
 
     (* Test WashSeparationTime resolution (FiltrationTechnique Centrifuge Only) *)
-    Example[{Options,WashSeparationTime,"WashSeparationTime option is properly set based on SeparationTechnique, FiltrationTechnique (Pellet Only), and NumberOfWashes:"},
+    Example[{Options, WashSeparationTime, "WashSeparationTime option is properly set based on SeparationTechnique, FiltrationTechnique (Pellet Only), and NumberOfWashes:"},
       ExperimentPrecipitate[
-        {Object[Sample,"DNA in water sample 5 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],Object[Sample,"DNA in water sample 1 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]},
-        FiltrationTechnique -> {Null,Null},
-        SeparationTechnique -> {Pellet,Pellet},
-        NumberOfWashes -> {0,3},
-        Output -> {Result,Options}
+        {
+          Object[Sample, "DNA in water sample 5 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
+          Object[Sample,"DNA in water sample 1 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]
+        },
+        FiltrationTechnique -> {Null, Null},
+        SeparationTechnique -> {Pellet, Pellet},
+        NumberOfWashes -> {0, 3},
+        Output -> {Result, Options}
       ],
       {
         ObjectP[Object[Protocol, RoboticSamplePreparation]],
       KeyValuePattern[
         {
-          WashSeparationTime -> {Null,EqualP[20 Minute]}
+          WashSeparationTime -> {Null, EqualP[20 Minute]}
         }
       ]},
       TimeConstraint -> 3200
     ],
 
     (* Test WashSeparationTime resolution (FiltrationTechnique Centrifuge Only) *)
-    Example[{Options,WashSeparationTime,"WashSeparationTime option is properly set based on SeparationTechnique, FiltrationTechnique (Filter Centrifuge Only), and NumberOfWashes:"},
+    Example[{Options, WashSeparationTime, "WashSeparationTime option is properly set based on SeparationTechnique, FiltrationTechnique (Filter Centrifuge Only), and NumberOfWashes:"},
       ExperimentPrecipitate[
-        {Object[Sample,"DNA in water sample 5 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],Object[Sample,"DNA in water sample 1 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]},
-        FiltrationTechnique -> {Centrifuge,Centrifuge},
-        SeparationTechnique -> {Filter,Filter},
-        NumberOfWashes -> {3,0},
-        Output -> {Result,Options}
+        {
+          Object[Sample,"DNA in water sample 5 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
+          Object[Sample,"DNA in water sample 1 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]
+        },
+        SampleVolume -> {100 Microliter, 100 Microliter},
+        FiltrationTechnique -> {Centrifuge, Centrifuge},
+        SeparationTechnique -> {Filter, Filter},
+        NumberOfWashes -> {3, 0},
+        Output -> Options
       ],
-      {
-        ObjectP[Object[Protocol, RoboticSamplePreparation]],
       KeyValuePattern[
         {
-          WashSeparationTime -> {EqualP[20 Minute],Null}
+          WashSeparationTime -> {EqualP[20 Minute], Null}
         }
-      ]},
+      ],
       TimeConstraint -> 3200
     ],
 
@@ -1552,6 +1496,88 @@ DefineTests[ExperimentPrecipitate,
     ],
 
     (* Messages tests *)
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+      ExperimentPrecipitate[Object[Sample, "Nonexistent sample"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+      ExperimentPrecipitate[Object[Container, Vessel, "Nonexistent container"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+      ExperimentPrecipitate[Object[Sample, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+      ExperimentPrecipitate[Object[Container, Vessel, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+      Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+        containerPackets = UploadSample[
+          Model[Container,Vessel,"2mL Tube"],
+          {"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True
+        ];
+        simulationToPassIn = Simulation[containerPackets];
+        containerID = Lookup[First[containerPackets], Object];
+        samplePackets = UploadSample[
+          {{100 MassPercent, Model[Cell, Mammalian, "HEK293"]}},
+          {"A1", containerID},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True,
+          Simulation -> simulationToPassIn,
+          InitialAmount -> 0.5 Milliliter,
+          CellType -> Mammalian,
+          CultureAdhesion -> Adherent,
+          Living -> True,
+          State -> Liquid
+        ];
+        sampleID = Lookup[First[samplePackets], Object];
+        simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+        ExperimentPrecipitate[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+      ],
+      {__Rule}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+      Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+        containerPackets = UploadSample[
+          Model[Container,Vessel,"50mL Tube"],
+          {"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True
+        ];
+        simulationToPassIn = Simulation[containerPackets];
+        containerID = Lookup[First[containerPackets], Object];
+        samplePackets = UploadSample[
+          {{100 MassPercent, Model[Cell, Mammalian, "HEK293"]}},
+          {"A1", containerID},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True,
+          Simulation -> simulationToPassIn,
+          InitialAmount -> 0.5 Milliliter,
+          CellType -> Mammalian,
+          CultureAdhesion -> Adherent,
+          Living -> True,
+          State -> Liquid
+        ];
+        sampleID = Lookup[First[samplePackets], Object];
+        simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+        ExperimentPrecipitate[containerID, Simulation -> simulationToPassIn, Output -> Options]
+      ],
+      {__Rule}
+    ],
     Example[{Messages,"SeparationTechniqueConflictingOptions","Return an Error if there are conflicting separation technique options set:"},
       ExperimentPrecipitate[
         Object[Sample,"DNA in water sample 5 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],

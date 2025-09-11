@@ -202,7 +202,7 @@ DefineUsage[StoreSamples,
 					{
 						InputName->"condition",
 						Widget->Alternatives[
-							Widget[Type->Enumeration,Pattern:>SampleStorageTypeP],
+							Widget[Type->Enumeration,Pattern:>(SampleStorageTypeP|None)],
 							Widget[Type->Object,Pattern:>ObjectP[Model[StorageCondition]]]
 						],
 						Description->"A genre of storage from which storage condition can be determined.",
@@ -268,9 +268,9 @@ DefineUsage[StoreSamples,
 				{"YeastShakingIncubation","30 Celsius","400 RPM (Plates) / 200 RPM (Flasks)","25mm","Null","Null","Null","Null"},
 				{"MammalianIncubation","37 Celsius","Null","Null","5%","95%","Null","Null"},
 				{"ViralIncubation","37 Celsius","Null","Null","5%","95%","Null","Null"},
-				{"AcceleratedTesting","37 Celsius","Null","Null","Null","70%","Null","Null"},
+				{"AcceleratedTesting","40 Celsius","Null","Null","Null","75%","Null","Null"},
 				{"IntermediateTesting","30 Celsius","Null","Null","Null","65%","Null","Null"},
-				{"LongTermTesting","25 Celsius","Null","Null","Null","60%","Null","Null"},
+				{"LongTermTesting","25 Celsius","Null","Null","Null","50%","Null","Null"},
 				{"UVLightIntensity","25 Celsius","Null","Null","Null","60%","36W/m^2","29klm/m^2"}
 			}
 		],
@@ -283,7 +283,7 @@ DefineUsage[StoreSamples,
 		"OrderSamples",
 		"ShipToUser"
 	},
-	Author -> {"ryan.bisbey", "axu", "cgullekson", "xiwei.shan", "steven", "juiyun"}
+	Author -> {"mohamad.zandian", "axu", "cgullekson", "xiwei.shan", "steven", "juiyun"}
 }];
 
 
@@ -367,7 +367,7 @@ DefineUsage[StoreSamplesOptions,
 		"OrderSamples",
 		"ShipToUser"
 	},
-		Author -> {"ryan.bisbey", "axu", "cgullekson", "xiwei.shan", "steven", "juiyun"}
+		Author -> {"mohamad.zandian", "axu", "cgullekson", "xiwei.shan", "steven", "juiyun"}
 	}
 ];
 
@@ -451,7 +451,7 @@ DefineUsage[StoreSamplesPreview,
 			"OrderSamples",
 			"ShipToUser"
 	},
-		Author -> {"ryan.bisbey", "axu", "cgullekson", "xiwei.shan", "steven", "juiyun"}
+		Author -> {"mohamad.zandian", "axu", "cgullekson", "xiwei.shan", "steven", "juiyun"}
 	}
 ];
 
@@ -535,7 +535,7 @@ DefineUsage[ValidStoreSamplesQ,
 			"OrderSamples",
 			"ShipToUser"
 	},
-		Author -> {"ryan.bisbey", "axu", "cgullekson", "xiwei.shan", "steven", "juiyun"}
+		Author -> {"mohamad.zandian", "axu", "cgullekson", "xiwei.shan", "steven", "juiyun"}
 	}
 ];
 
@@ -591,7 +591,7 @@ DefineUsage[ClearSampleStorageSchedule,
 			"OrderSamples",
 			"ShipToUser"
 		},
-		Author -> {"gil.sharon", "xiwei.shan"}
+		Author -> {"lige.tonggu", "gil.sharon", "xiwei.shan"}
 	}];
 
 (* ::Subsection::Closed:: *)
@@ -640,7 +640,7 @@ DefineUsage[DiscardSamples,
 		"ShipToECL",
 		"OrderSamples"
 	},
-	Author -> {"tim.pierpont", "steven", "hayley", "srikant"}
+	Author -> {"lige.tonggu", "tim.pierpont", "steven", "hayley", "srikant"}
 }];
 
 
@@ -682,7 +682,7 @@ DefineUsage[DiscardSamplesOptions,
 			"DiscardSamplesPreview",
 			"ValidDiscardSamplesQ"
 		},
-		Author -> {"tim.pierpont", "steven", "hayley", "srikant"}
+		Author -> {"lige.tonggu", "tim.pierpont", "steven", "hayley", "srikant"}
 	}
 ];
 
@@ -722,7 +722,7 @@ DefineUsage[DiscardSamplesPreview,
 			"DiscardSamplesOptions",
 			"ValidDiscardSamplesQ"
 		},
-		Author -> {"tim.pierpont", "steven", "hayley", "srikant"}
+		Author -> {"lige.tonggu", "tim.pierpont", "steven", "hayley", "srikant"}
 	}
 ];
 
@@ -762,7 +762,7 @@ DefineUsage[ValidDiscardSamplesQ,
 			"DiscardSamplesPreview",
 			"DiscardSamplesOptions"
 		},
-		Author -> {"tim.pierpont", "steven", "hayley", "srikant"}
+		Author -> {"lige.tonggu", "tim.pierpont", "steven", "hayley", "srikant"}
 	}
 ];
 
@@ -814,7 +814,7 @@ DefineUsage[CancelDiscardSamples,
 		"ShipToECL",
 		"OrderSamples"
 	},
-	Author -> {"tim.pierpont", "steven", "hayley", "srikant"}
+	Author -> {"lige.tonggu", "tim.pierpont", "steven", "hayley", "srikant"}
 }];
 
 
@@ -856,7 +856,7 @@ DefineUsage[CancelDiscardSamplesOptions,
 		"CancelDiscardSamplesPreview",
 		"ValidCancelDiscardSamplesQ"
 	},
-	Author -> {"tim.pierpont", "steven", "hayley", "srikant"}
+	Author -> {"lige.tonggu", "tim.pierpont", "steven", "hayley", "srikant"}
 }];
 
 
@@ -999,10 +999,7 @@ DefineUsage[OrderSamples,
 			"CancelTransaction",
 			"DropShipSamples"
 		},
-		Author->{
-			"wyatt",
-			"robert"
-		}
+		Author->{"lige.tonggu", "wyatt", "robert"}
 	}
 ];
 
@@ -1066,11 +1063,7 @@ DefineUsage[OrderSamplesOptions,
 			"ValidOrderSamplesQ",
 			"OrderSamplesPreview"
 		},
-		Author->{
-			"wyatt",
-			"robert",
-			"steven"
-		}
+		Author->{"lige.tonggu", "wyatt", "robert", "steven"}
 	}
 ];
 
@@ -1132,11 +1125,7 @@ DefineUsage[OrderSamplesPreview,
 			"ValidOrderSamplesQ",
 			"OrderSamplesOptions"
 		},
-		Author->{
-			"wyatt",
-			"robert",
-			"steven"
-		}
+		Author->{"lige.tonggu", "wyatt", "robert", "steven"}
 	}
 ];
 
@@ -1199,10 +1188,7 @@ DefineUsage[ValidOrderSamplesQ,
 			"OrderSamplesPreview",
 			"OrderSamplesOptions"
 		},
-		Author -> {
-			"wyatt",
-			"robert"
-		}
+		Author -> {"lige.tonggu", "wyatt", "robert"}
 	}
 ];
 
@@ -1221,19 +1207,19 @@ DefineUsage[DropShipSamples,
 		BasicDefinitions->{
 
 			{
-				Definition->{"DropShipSamples[orderedItems, orderNumber]","transaction"},
-				Description->"generates a 'transaction' to track the user-initiated shipment of 'orderedItems' from a third party company to ECL.",
+				Definition->{"DropShipSamples[OrderedItems, OrderNumber]","Transaction"},
+				Description->"generates a 'Transaction' to track the user-initiated shipment of 'OrderedItems' from a third party company to ECL.",
 				Inputs:>{
 					IndexMatching[
 						{
-							InputName -> "orderedItems",
+							InputName -> "OrderedItems",
 							Description-> "The products or models that a third party company is shipping to ECL on behalf of the user.",
 							Widget->Widget[Type->Object,Pattern:>ObjectP[{Object[Product],Model[Sample],Model[Item]}],ObjectTypes->{Object[Product],Model[Sample],Model[Item]}],
 							Expandable->False
 						},
 						{
-							InputName->"orderNumber",
-							Description->"A unique identifier (e.g. Order Number, Confirmation Number, or Transaction Number) associated with the samples that a third party company is shipping to ECL on behalf of the user.",
+							InputName->"OrderNumber",
+							Description->"A unique identifier (e.g. Order Number, Confirmation Number, or Transaction Number) associated with the samples being sent.",
 							Widget->Widget[Type->String,Pattern:>_String,Size->Word]
 						},
 						IndexName->"Model Input Block"
@@ -1241,7 +1227,7 @@ DefineUsage[DropShipSamples,
 				},
 				Outputs:>{
 					{
-						OutputName->"transaction",
+						OutputName->"Transaction",
 						Description->"A transaction object that tracks the user-initiated shipment of products from a supplier to ECL.",
 						Pattern:>ListableP[ObjectP[Object[Transaction,ShipToECL]]]
 					}
@@ -1249,13 +1235,13 @@ DefineUsage[DropShipSamples,
 			},
 
 			{
-				Definition->{"DropShipSamples[transaction]","transaction"},
-				Description->"update 'transaction' to add shipping information (such as tracking number, shipper, date shipped, and expected delivery date) or amount information (such as mass, volume, concentration, and mass concentration) to an existing transaction.",
+				Definition->{"DropShipSamples[Transaction]","UpdatedTransaction"},
+				Description->"update 'Transaction' to add shipping information (such as tracking number, shipper, date shipped, and expected delivery date) or amount information (such as mass, volume, concentration, and mass concentration).",
 				Inputs:>{
 					IndexMatching[
 						{
-							InputName -> "transaction",
-							Description-> "The transaction object being modified.",
+							InputName -> "Transaction",
+							Description-> "A transaction object that tracks the user-initiated shipment of samples from a supplier to ECL.",
 							Widget->
 								Widget[Type->Object,Pattern:>ObjectP[Object[Transaction,DropShipping]],ObjectTypes->{Object[Transaction,DropShipping]}],
 							Expandable->False
@@ -1265,8 +1251,8 @@ DefineUsage[DropShipSamples,
 				},
 				Outputs:>{
 					{
-						OutputName->"transaction",
-						Description->"A transaction object that tracks the user-initiated shipment of samples from a supplier to ECL.",
+						OutputName->"UpdatedTransaction",
+						Description->"The input transaction with newly added shipping information.",
 						Pattern:>ListableP[ObjectP[Object[Transaction,DropShipping]]]
 					}
 				}
@@ -1545,9 +1531,7 @@ DefineUsage[ShipToUser,
 			"ShipToECL",
 			"DropShipSamples"
 		},
-		Author->{
-			"clayton.schwarz","malav.desai","steven","wyatt"
-		}
+		Author->{"lige.tonggu", "clayton.schwarz", "malav.desai", "steven", "wyatt"}
 	}
 ];
 
@@ -1712,8 +1696,8 @@ DefineUsage[ShipBetweenSites,
 	{
 		BasicDefinitions->{
 			{
-				Definition->{"ShipBetweenSites[sample]","transaction"},
-				Description->"sends a 'sample' from an ECL facility to another ECL facility.",
+				Definition->{"ShipBetweenSites[sample, site]","transaction"},
+				Description->"sends a 'sample' from an ECL facility to another ECL 'site'.",
 				Inputs:>{
 					IndexMatching[
 						{
@@ -1728,7 +1712,15 @@ DefineUsage[ShipBetweenSites,
 							Expandable->False
 						},
 						IndexName->"experiment samples"
-					]
+					],
+					{
+						InputName -> "site",
+						Description-> "The destination ECL facility.",
+						Widget->Widget[
+							Type->Object,
+							Pattern:>ObjectP[Object[Container, Site]]
+						]
+					}
 				},
 				Outputs:>{
 					{
@@ -1766,7 +1758,7 @@ DefineUsage[ShipBetweenSitesOptions,
 	{
 		BasicDefinitions->{
 			{
-				Definition -> {"ShipBetweenSitesOptions[sample]","resolvedOptions"},
+				Definition -> {"ShipBetweenSitesOptions[sample, site]","resolvedOptions"},
 				Description -> "returns the resolved options for ShipBetweenSites when it is called on 'sample'.",
 				Inputs :> {
 					IndexMatching[
@@ -1782,7 +1774,15 @@ DefineUsage[ShipBetweenSitesOptions,
 							Expandable->False
 						},
 						IndexName->"experiment samples"
-					]
+					],
+					{
+						InputName -> "site",
+						Description-> "The destination ECL facility.",
+						Widget->Widget[
+							Type->Object,
+							Pattern:>ObjectP[Object[Container, Site]]
+						]
+					}
 				},
 				Outputs:>{
 					{
@@ -1816,7 +1816,7 @@ DefineUsage[ShipBetweenSitesPreview,
 	{
 		BasicDefinitions->{
 			{
-				Definition -> {"ShipBetweenSitesPreview[sample]","preview"},
+				Definition -> {"ShipBetweenSitesPreview[sample, site]","preview"},
 				Description -> "returns a graphical preview for ShipBetweenSites when it is called on 'sample'.",
 				Inputs :> {
 					IndexMatching[
@@ -1832,7 +1832,15 @@ DefineUsage[ShipBetweenSitesPreview,
 							Expandable->False
 						},
 						IndexName->"experiment samples"
-					]
+					],
+					{
+						InputName -> "site",
+						Description-> "The destination ECL facility.",
+						Widget->Widget[
+							Type->Object,
+							Pattern:>ObjectP[Object[Container, Site]]
+						]
+					}
 				},
 				Outputs:>{
 					{
@@ -1866,7 +1874,7 @@ DefineUsage[ValidShipBetweenSitesQ,
 	{
 		BasicDefinitions->{
 			{
-				Definition -> {"ValidShipBetweenSitesQ[sample]","bools"},
+				Definition -> {"ValidShipBetweenSitesQ[sample, site]","bools"},
 				Description -> "checks whether the provided 'sample' and specified options are valid for calling ShipBetweenSites.",
 				Inputs :> {
 					IndexMatching[
@@ -1882,7 +1890,15 @@ DefineUsage[ValidShipBetweenSitesQ,
 							Expandable->False
 						},
 						IndexName->"experiment samples"
-					]
+					],
+					{
+						InputName -> "site",
+						Description-> "The destination ECL facility.",
+						Widget->Widget[
+							Type->Object,
+							Pattern:>ObjectP[Object[Container, Site]]
+						]
+					}
 				},
 				Outputs:>{
 					{
@@ -1919,7 +1935,7 @@ DefineUsage[shipFromECL,
 	{
 		BasicDefinitions->{
 			{
-				Definition->{"shipFromECL[sample]","transaction"},
+				Definition->{"shipFromECL[sample, site]","transaction"},
 				Description->"sends a 'sample' from an ECL facility to a user or ECL facility.",
 				Inputs:>{
 					IndexMatching[
@@ -1935,7 +1951,15 @@ DefineUsage[shipFromECL,
 							Expandable->False
 						},
 						IndexName->"experiment samples"
-					]
+					],
+					{
+						InputName -> "parent function",
+						Description-> "parent function calling this helper.",
+						Widget->Widget[
+							Type->Enumeration,
+							Pattern:>Alternatives[ShipToUser, ShipBetweenSites]
+						]
+					}
 				},
 				Outputs:>{
 					{
@@ -1970,28 +1994,28 @@ DefineUsage[ShipToECL,
 		BasicDefinitions-> {
 
 			{
-				Definition -> {"ShipToECL[model, label]","transaction"},
+				Definition -> {"ShipToECL[Model, ContainerLabel]","Transaction"},
 				Description -> "send samples and items to ECL. After generating your transaction, you will be able to print ID stickers to label the items and sample containers.",
 				Inputs :> {
 					IndexMatching[
 						{
-							InputName -> "model",
-							Description-> "The model being sent to an ECL facility.",
+							InputName -> "Model",
+							Description-> "A model object describing the parameters of the sample or item being shipped to an ECL facility.",
 							Widget-> Widget[Type->Object,Pattern:>ObjectP[{Model[Item],Model[Sample]}],ObjectTypes->Types[{Model[Item],Model[Sample]}]],
-							Expandable->False
+							Expandable->True
 						},
 						{
-							InputName -> "label",
-							Description-> "The label of the sample's container or item being sent to an ECL facility.",
+							InputName -> "ContainerLabel",
+							Description-> "The name given to the sample's container or to the item being sent to an ECL facility.",
 							Widget-> Widget[Type->String, Pattern :> _String, Size->Line],
-							Expandable->False
+							Expandable->True
 						},
 						IndexName->"input"
 					]
 				},
 				Outputs :> {
 					{
-						OutputName -> "transaction",
+						OutputName -> "Transaction",
 						Description-> "A transaction object that tracks the shipping of the samples and items.",
 						Widget->Widget[Type->Object,Pattern:>ObjectP[Object[Transaction,ShipToECL]],ObjectTypes->{Object[Transaction,ShipToECL]}],
 						Pattern:>ObjectP[Object[Transaction,ShipToECL]]
@@ -1999,12 +2023,12 @@ DefineUsage[ShipToECL,
 				}
 			},
 			{
-				Definition -> {"ShipToECL[transaction]","transaction"},
-				Description -> "update an existing 'transaction' to add shipping information (such as tracking number, shipper, date shipped, and expected delivery date).",
+				Definition -> {"ShipToECL[Transaction]","UpdatedTransaction"},
+				Description -> "update an existing 'Transaction' to add shipping information (such as tracking number, shipper, date shipped, and expected delivery date).",
 				Inputs :> {
 					IndexMatching[
 						{
-							InputName -> "transaction",
+							InputName -> "Transaction",
 							Description-> "The transaction object being modified.",
 							Widget->Widget[
 								Type->Object,Pattern:>ObjectP[Object[Transaction,ShipToECL]],ObjectTypes->{Object[Transaction,ShipToECL]}
@@ -2015,8 +2039,8 @@ DefineUsage[ShipToECL,
 				},
 				Outputs :> {
 					{
-						OutputName -> "transaction",
-						Description-> "A transaction object that tracks the shipping of the samples.",
+						OutputName -> "UpdatedTransaction",
+						Description-> "The input transaction with newly added shipping information.",
 						Widget->Widget[Type->Object,Pattern:>ObjectP[Object[Transaction,ShipToECL]],ObjectTypes->{Object[Transaction,ShipToECL]}],
 						Pattern:>ObjectP[Object[Transaction,ShipToECL]]
 					}
@@ -2024,10 +2048,7 @@ DefineUsage[ShipToECL,
 			}
 		},
 		MoreInformation->{
-			"If the object being shipped is a sample, container model must be specified.",
-			"If the container has more than one position, position must be specified.",
-			"New containers should always be shipped with a compatible cap/lid/seal attached to avoid delays during receiving and parameterization. All containers which can be covered must have at least one entry in CoverTypes, but do not require CompatibleCoverFootprint as that is populated during receiving.",
-			"Samples destined for ECL-2 (Austin, TX) should be addressed as follows:\n\n\tc/o SAMPLES\n\tEmerald Cloud Lab\n\tCustomer Receiving\n\t15404 Long Vista Drive\n\tAustin, TX 78728\n\nThe following phone number may be added for the recipient contact information: 512\[Dash]226\[Dash]3002."
+			"Samples destined for ECL-2 (Austin, TX) should be addressed as follows:\n\n\tc/o SAMPLES\n\tEmerald Cloud Lab\n\tCustomer Receiving\n\t15404 Long Vista Drive\n\tAustin, TX 78728\n\nThe following phone number may be added for the recipient contact information: 512-226-3002."
 		},
 		SeeAlso->{
 			"ShipToECLOptions",
@@ -2050,19 +2071,19 @@ DefineUsage[ShipToECLOptions,
 	{
 		BasicDefinitions-> {
 			{
-				Definition -> {"ShipToECLOptions[model, label]","resolvedOptions"},
-				Description -> "returns the 'resolvedOptions' to send samples and items to ECL.",
+				Definition -> {"ShipToECLOptions[Model, ContainerLabel]","ResolvedOptions"},
+				Description -> "returns the options to send samples and items to ECL, calculating values for any unspecified options as needed.",
 				Inputs :> {
 					IndexMatching[
 						{
-							InputName -> "model",
-							Description-> "The model being sent to an ECL facility.",
+							InputName -> "Model",
+							Description-> "A model object describing the parameters of the sample or item being shipped to an ECL facility.",
 							Widget-> Widget[Type->Object,Pattern:>ObjectP[{Model[Item],Model[Sample]}],ObjectTypes->Types[{Model[Item],Model[Sample]}]],
 							Expandable->False
 						},
 						{
-							InputName -> "label",
-							Description-> "The label of the sample's container or item being sent to an ECL facility.",
+							InputName -> "ContainerLabel",
+							Description-> "The name given to the sample's container or to the item being sent to an ECL facility.",
 							Widget-> Widget[Type->String, Pattern :> _String, Size->Line],
 							Expandable->False
 						},
@@ -2071,19 +2092,19 @@ DefineUsage[ShipToECLOptions,
 				},
 				Outputs :> {
 					{
-						OutputName -> "resolvedOptions",
-						Description -> "Resolved options when ShipToECL is called on the input sample(s).",
+						OutputName -> "ResolvedOptions",
+						Description -> "The full set of options used by ShipToECL with default option values calculated.",
 						Pattern :> {Rule[_Symbol,Except[Automatic|$Failed]]|RuleDelayed[_Symbol,Except[Automatic|$Failed]]...}
 					}
 				}
 			},
 			{
-				Definition -> {"ShipToECLOptions[transaction]","resolvedOptions"},
-				Description -> "returns the 'resolvedOptions' to update shipping information (such as tracking number, shipper, date shipped, and expected delivery date) for an existing 'transaction'.",
+				Definition -> {"ShipToECLOptions[Transaction]","ResolvedOptions"},
+				Description -> "returns the options to update shipping information (such as tracking number, shipper, date shipped, and expected delivery date) for an existing 'Transaction', calculating values for any unspecified options as needed.",
 				Inputs :> {
 					IndexMatching[
 						{
-							InputName -> "transaction",
+							InputName -> "Transaction",
 							Description-> "The transaction object being modified.",
 							Widget->Widget[
 								Type->Object,Pattern:>ObjectP[Object[Transaction,ShipToECL]],ObjectTypes->{Object[Transaction,ShipToECL]}
@@ -2094,8 +2115,8 @@ DefineUsage[ShipToECLOptions,
 				},
 				Outputs :> {
 					{
-						OutputName -> "resolvedOptions",
-						Description -> "Resolved options when ShipToECL is called on the input transactions(s).",
+						OutputName -> "ResolvedOptions",
+						Description -> "The full set of options used by ShipToECL with default option values calculated.",
 						Pattern :> {Rule[_Symbol,Except[Automatic|$Failed]]|RuleDelayed[_Symbol,Except[Automatic|$Failed]]...}
 					}
 				}
@@ -2121,19 +2142,19 @@ DefineUsage[ShipToECLPreview,
 	{
 		BasicDefinitions-> {
 			{
-				Definition -> {"ShipToECLPreview[model, label]","preview"},
+				Definition -> {"ShipToECLPreview[Model, ContainerLabel]","Preview"},
 				Description -> "returns the preview for ShipToECL when trying to send samples and items to ECL.",
 				Inputs :> {
 					IndexMatching[
 						{
-							InputName -> "model",
-							Description-> "The model being sent to an ECL facility.",
+							InputName -> "Model",
+							Description-> "A model object describing the parameters of the sample or item being shipped to an ECL facility.",
 							Widget-> Widget[Type->Object,Pattern:>ObjectP[{Model[Item],Model[Sample]}],ObjectTypes->Types[{Model[Item],Model[Sample]}]],
 							Expandable->False
 						},
 						{
-							InputName -> "label",
-							Description-> "The label of the sample's container or item being sent to an ECL facility.",
+							InputName -> "ContainerLabel",
+							Description-> "The name given to the sample's container or to the item being sent to an ECL facility.",
 							Widget-> Widget[Type->String, Pattern :> _String, Size->Line],
 							Expandable->False
 						},
@@ -2142,19 +2163,19 @@ DefineUsage[ShipToECLPreview,
 				},
 				Outputs :> {
 					{
-						OutputName -> "preview",
+						OutputName -> "Preview",
 						Description -> "Graphical preview representing the output of ShipToECL.  This value is always Null.",
 						Pattern :> Null
 					}
 				}
 			},
 			{
-				Definition -> {"ShipToECLPreview[transaction]","preview"},
-				Description -> "returns the preview for ShipToECL when trying to update shipping information (such as tracking number, shipper, date shipped, and expected delivery date) for an existing 'transaction'.",
+				Definition -> {"ShipToECLPreview[Transaction]","Preview"},
+				Description -> "returns the preview for ShipToECL when trying to update shipping information (such as tracking number, shipper, date shipped, and expected delivery date) for an existing 'Transaction'.",
 				Inputs :> {
 					IndexMatching[
 						{
-							InputName -> "transaction",
+							InputName -> "Transaction",
 							Description-> "The transaction object being modified.",
 							Widget->Widget[
 								Type->Object,Pattern:>ObjectP[Object[Transaction,ShipToECL]],ObjectTypes->{Object[Transaction,ShipToECL]}
@@ -2165,7 +2186,7 @@ DefineUsage[ShipToECLPreview,
 				},
 				Outputs :> {
 					{
-						OutputName -> "preview",
+						OutputName -> "Preview",
 						Description -> "Graphical preview representing the output of ShipToECL. This value is always Null.",
 						Pattern :> Null
 					}
@@ -2190,19 +2211,19 @@ DefineUsage[ValidShipToECLQ,
 	{
 		BasicDefinitions-> {
 			{
-				Definition -> {"ValidShipToECLQ[model, label]","boolean"},
+				Definition -> {"ValidShipToECLQ[Model, ContainerLabel]","Boolean"},
 				Description -> "checks whether the provided input and specified options are valid for calling ShipToECL.",
 				Inputs :> {
 					IndexMatching[
 						{
-							InputName -> "model",
-							Description-> "The model being sent to an ECL facility.",
+							InputName -> "Model",
+							Description-> "A model object describing the parameters of the sample or item being shipped to an ECL facility.",
 							Widget-> Widget[Type->Object,Pattern:>ObjectP[{Model[Item],Model[Sample]}],ObjectTypes->Types[{Model[Item],Model[Sample]}]],
 							Expandable->False
 						},
 						{
-							InputName -> "label",
-							Description-> "The label of the sample's container or item being sent to an ECL facility.",
+							InputName -> "ContainerLabel",
+							Description-> "The name given to the sample's container or to the item being sent to an ECL facility.",
 							Widget-> Widget[Type->String, Pattern :> _String, Size->Line],
 							Expandable->False
 						},
@@ -2211,19 +2232,19 @@ DefineUsage[ValidShipToECLQ,
 				},
 				Outputs :> {
 					{
-						OutputName -> "boolean",
-						Description -> "Whether or not the ShipToECL call is valid.  Return value can be changed via the OutputFormat option.",
+						OutputName -> "Boolean",
+						Description -> "An indication of if the transaction can be created.",
 						Pattern :> _EmeraldTestSummary| BooleanP
 					}
 				}
 			},
 			{
-				Definition -> {"ValidShipToECLQ[transaction]","boolean"},
+				Definition -> {"ValidShipToECLQ[Transaction]","Boolean"},
 				Description -> "checks whether the provided 'transaction' and specified options are valid for calling ShipToECL.",
 				Inputs :> {
 					IndexMatching[
 						{
-							InputName -> "transaction",
+							InputName -> "Transaction",
 							Description-> "The transaction object being modified.",
 							Widget->Widget[
 								Type->Object,Pattern:>ObjectP[Object[Transaction,ShipToECL]],ObjectTypes->{Object[Transaction,ShipToECL]}
@@ -2234,8 +2255,8 @@ DefineUsage[ValidShipToECLQ,
 				},
 				Outputs :> {
 					{
-						OutputName -> "boolean",
-						Description -> "Whether or not the ShipToECL call is valid.  Return value can be changed via the OutputFormat option.",
+						OutputName -> "Boolean",
+						Description -> "An indication of if the transaction can be updated.",
 						Pattern :> _EmeraldTestSummary| BooleanP
 					}
 				}

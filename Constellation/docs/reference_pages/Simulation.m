@@ -11,7 +11,7 @@ DefineUsage[LookupObjectLabel,
 			{"label", _String | Null, "The label of the object, if it exists in the simulation."}
 		},
 		SeeAlso -> {"Simulation"},
-		Author -> {"hanming.yang", "thomas"}
+		Author -> {"xu.yi", "hanming.yang", "thomas"}
 	}
 ];
 
@@ -26,7 +26,7 @@ DefineUsage[StartUniqueLabelsSession,
 			{"null", Null, "Returns Null."}
 		},
 		SeeAlso -> {"Simulation"},
-		Author -> {"hanming.yang", "thomas"}
+		Author -> {"xu.yi", "hanming.yang", "thomas"}
 	}
 ];
 
@@ -41,7 +41,7 @@ DefineUsage[EndUniqueLabelsSession,
 			{"null", Null, "Returns Null."}
 		},
 		SeeAlso -> {"Simulation"},
-		Author -> {"hanming.yang", "thomas"}
+		Author -> {"xu.yi", "hanming.yang", "thomas"}
 	}
 ];
 
@@ -57,7 +57,7 @@ DefineUsage[CreateUniqueLabel,
 			{"uniqueLabel", _String, "The unique label."}
 		},
 		SeeAlso -> {"LookupObjectLabel"},
-		Author -> {"hanming.yang", "thomas"}
+		Author -> {"xu.yi", "hanming.yang", "thomas"}
 	}
 ];
 
@@ -68,10 +68,10 @@ DefineUsage[EnterSimulation,
 		},
 		Input :> {},
 		Output :> {
-			{"boolean", BooleanP, "Indicates if a new simulation was succesfully created."}
+			{"boolean", BooleanP, "Indicates if a new simulation was successfully created."}
 		},
 		SeeAlso -> {"ExitSimulation"},
-		Author -> {"hanming.yang", "thomas"}
+		Author -> {"xu.yi", "hanming.yang", "thomas"}
 	}
 ];
 
@@ -82,10 +82,10 @@ DefineUsage[ExitSimulation,
 		},
 		Input :> {},
 		Output :> {
-			{"boolean", BooleanP, "Indicates if a current simulation was succesfully exited."}
+			{"boolean", BooleanP, "Indicates if a current simulation was successfully exited."}
 		},
 		SeeAlso -> {"EnterSimulation"},
-		Author -> {"hanming.yang", "thomas"}
+		Author -> {"xu.yi", "hanming.yang", "thomas"}
 	}
 ];
 
@@ -103,7 +103,7 @@ DefineUsage[Simulation,
 			{"simulation", SimulationP, "The resulting simulation."}
 		},
 		SeeAlso -> {"LookupObjectLabel"},
-		Author -> {"hanming.yang", "thomas"}
+		Author -> {"xu.yi", "hanming.yang", "thomas"}
 	}
 ];
 
@@ -120,6 +120,6 @@ DefineUsage[UpdateSimulation,
 			{"resultingSimulation", SimulationP, "The resulting simulation."}
 		},
 		SeeAlso -> {"Simulation", "LookupObjectLabel"},
-		Author -> {"hanming.yang", "thomas"}
+		Author -> {"xu.yi", "hanming.yang", "thomas"}
 	}
 ];

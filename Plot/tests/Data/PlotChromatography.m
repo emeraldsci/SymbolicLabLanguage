@@ -48,6 +48,10 @@ DefineTests[PlotChromatography,
 			PlotChromatography[Link[Object[Data, Chromatography, "id:eGakld01dzk4"],Protocol]],
 			_?ValidGraphicsQ
 		],
+		Test["Plots the chromatography data objects linked to a protocol object:",
+			PlotChromatography[Object[Data, Chromatography, "id:eGakld01dzk4"][Protocol]],
+			SlideView[{ValidGraphicsP[] ..}]
+		],
 
 		Test[
 			"Plot two data objects with two items in SecondaryData:",
@@ -270,7 +274,7 @@ DefineTests[PlotChromatography,
 			_?ValidGraphicsQ
 		],
 		Test[
-			"The function is listable, creating a seperate plot for each nested list of data:",
+			"The function is listable, creating a separate plot for each nested list of data:",
 			PlotChromatography[{{Object[Data, Chromatography, "id:wqW9BP4YP0r9"]},{Object[Data, Chromatography, "id:eGakld01dzk4"]}},PlotRange->{{0,25 Minute},Full}],
 			{_?ValidGraphicsQ..}
 		],

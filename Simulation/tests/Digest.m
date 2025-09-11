@@ -223,58 +223,58 @@ DefineTests[SimulateDigest, {
         Type -> Object[Sample],
         Name -> "Test sample 1 " <> digestTestingUUID,
         Replace[Composition] -> {
-          {10 Millimolar, Link[Model[Molecule, Protein, "Insulin (Bovine)"]]},
-          {100 VolumePercent, Link[Model[Molecule, "Water"]]}
+          {10 Millimolar, Link[Model[Molecule, Protein, "Insulin (Bovine)"]], Now},
+          {100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
         }
       |>;
       testSamplePacket2 = <|
         Type -> Object[Sample],
         Name -> "Test sample 2 " <> digestTestingUUID,
         Replace[Composition] -> {
-          {10 Millimolar, Link[Model[Molecule, Protein, "Ubiquitin"]]},
-          {10 Micromolar, Link[Model[Molecule, "EDTA"]]},
-          {100 VolumePercent, Link[Model[Molecule, "Water"]]}
+          {10 Millimolar, Link[Model[Molecule, Protein, "Ubiquitin"]], Now},
+          {10 Micromolar, Link[Model[Molecule, "EDTA"]], Now},
+          {100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
         }
       |>;
       testSamplePacket3 = <|
         Type -> Object[Sample],
         Name -> "Test sample 3 " <> digestTestingUUID,
         Replace[Composition] -> {
-          {10 Millimolar, Link[Model[Molecule, Protein, "Insulin (Bovine)"]]},
-          {20 Millimolar, Link[Model[Molecule, Protein, "Ubiquitin"]]},
-          {100 VolumePercent, Link[Model[Molecule, "Water"]]}
+          {10 Millimolar, Link[Model[Molecule, Protein, "Insulin (Bovine)"]], Now},
+          {20 Millimolar, Link[Model[Molecule, Protein, "Ubiquitin"]], Now},
+          {100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
         }
       |>;
       testSamplePacket4 = <|
         Type -> Object[Sample],
         Name -> "Test sample with mass concentrations " <> digestTestingUUID,
         Replace[Composition] -> {
-          {10 Milligram / Milliliter, Link[Model[Molecule, Protein, "Ubiquitin"]]},
-          {10 Micromolar, Link[Model[Molecule, "EDTA"]]},
-          {100 VolumePercent, Link[Model[Molecule, "Water"]]}
+          {10 Milligram / Milliliter, Link[Model[Molecule, Protein, "Ubiquitin"]], Now},
+          {10 Micromolar, Link[Model[Molecule, "EDTA"]], Now},
+          {100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
         }
       |>;
       testSamplePacket5 = <|
         Type -> Object[Sample],
         Name -> "Test sample with Null concentration " <> digestTestingUUID,
         Replace[Composition] -> {
-          {Null, Link[Model[Molecule, Protein, "Insulin (Bovine)"]]},
-          {100 VolumePercent, Link[Model[Molecule, "Water"]]}
+          {Null, Link[Model[Molecule, Protein, "Insulin (Bovine)"]], Now},
+          {100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
         }
       |>;
       testSamplePacket6 = <|
         Type -> Object[Sample],
         Name -> "Test sample with protein with no molecule " <> digestTestingUUID,
         Replace[Composition] -> {
-          {Null, Link[Model[Molecule, Protein, "Bovine Albumin"]]},
-          {100 VolumePercent, Link[Model[Molecule, "Water"]]}
+          {Null, Link[Model[Molecule, Protein, "Bovine Albumin"]], Now},
+          {100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
         }
       |>;
       testSamplePacket7 = <|
         Type -> Object[Sample],
         Name -> "Test sample with no proteins or peptides " <> digestTestingUUID,
         Replace[Composition] -> {
-          {100 VolumePercent, Link[Model[Molecule, "Water"]]}
+          {100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
         }
       |>;
 
@@ -315,8 +315,8 @@ DefineTests[SimulateDigestOptions,{
       Type -> Object[Sample],
       Name -> "Test sample 1 " <> digestOptionsUUID,
       Replace[Composition] -> {
-        {10 Millimolar, Link[Model[Molecule, Protein, "Insulin (Bovine)"]]},
-        {100 VolumePercent, Link[Model[Molecule, "Water"]]}
+        {10 Millimolar, Link[Model[Molecule, Protein, "Insulin (Bovine)"]], Now},
+        {100 VolumePercent, Link[Model[Molecule, "Water"]],Now}
       }
     |>];
   )
@@ -353,8 +353,8 @@ DefineTests[SimulateDigestPreview,{
       Type -> Object[Sample],
       Name -> "Test sample 1 " <> digestPreviewUUID,
       Replace[Composition] -> {
-        {10 Millimolar, Link[Model[Molecule, Protein, "Insulin (Bovine)"]]},
-        {100 VolumePercent, Link[Model[Molecule, "Water"]]}
+        {10 Millimolar, Link[Model[Molecule, Protein, "Insulin (Bovine)"]], Now},
+        {100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
       }
     |>];
   )
@@ -391,8 +391,8 @@ DefineTests[ValidSimulateDigestQ,{
       Type -> Object[Sample],
       Name -> "Test sample 1 " <> digestValidQUUID,
       Replace[Composition] -> {
-        {10 Millimolar, Link[Model[Molecule, Protein, "Insulin (Bovine)"]]},
-        {100 VolumePercent, Link[Model[Molecule, "Water"]]}
+        {10 Millimolar, Link[Model[Molecule, Protein, "Insulin (Bovine)"]], Now},
+        {100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
       }
     |>];
   )

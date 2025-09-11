@@ -51,6 +51,14 @@ DefineObjectType[Model[Instrument, Sonicator], {
 			Description -> "The size of space inside the sonicator reservoir.",
 			Category -> "Dimensions & Positions",
 			Headers -> {"X Direction (Width)","Y Direction (Depth)","Z Direction (Height)"}
+		},
+		CompatibleSonicationAdapters -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Part, FlaskRing][CompatibleMixers]|Model[Container, Rack][CompatibleMixers],
+			Description -> "The flask ring or container rack that can be used as sonication adpater with this sonicator.",
+			Category -> "Model Information"
 		}
 	}
 }];

@@ -36,6 +36,37 @@ DefineObjectType[Object[Qualification,ControlledRateFreezer], {
 			Units->{Minute,Celsius},
 			Description->"Experimentally measured temperature of the solution as a function of time.",
 			Category->"Experimental Results"
+		},
+
+		FreezingStartTime -> {
+			Format -> Single,
+			Class -> Date,
+			Pattern :> _?DateObjectQ,
+			Description -> "The time at which the recording of environmental data inside the freezer begins.",
+			Category -> "Cell Freezing",
+			Developer -> True
+		},
+
+		FreezerSensors -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sensor, Temperature]],
+			Description -> "The temperature sensor object(s) inside Freezers whose data are recorded while the cell samples are being frozen.",
+			Category -> "Cell Freezing",
+			Developer -> True
+		},
+
+		FreezerEnvironmentalData -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Data, Temperature]],
+			Description -> "For each member of FreezerSensors, the temperature data recorded from the sensor during freezing.",
+			Category -> "Cell Freezing",
+			IndexMatching -> FreezerSensors,
+			Developer -> True
 		}
+
 	}
 }];

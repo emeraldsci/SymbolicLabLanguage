@@ -63,6 +63,44 @@ DefineOptionSet[LuminescenceOptions:>
 			Widget->Widget[Type->Quantity,Pattern:>RangeP[0 Minute,1 Hour],Units:>{1,{Minute,{Second,Minute,Hour}}}],
 			Category->"Sample Handling"
 		},
+		{
+			OptionName->TargetCarbonDioxideLevel,
+			Default->Automatic,
+			Description->"The target amount of carbon dioxide in the atmosphere in the plate reader chamber.",
+			ResolutionDescription->"Automatically set to 5% for mammalian cells, and Null otherwise.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>RangeP[0.1Percent,20 Percent],
+				Units:>{Percent,{Percent}}
+			],
+			Category->"Sample Handling"
+		},
+		{
+			OptionName->TargetOxygenLevel,
+			Default->Null,
+			Description->"The target amount of oxygen in the atmosphere in the plate reader chamber. If specified, nitrogen gas is pumped into the chamber to force oxygen in ambient air out of the chamber until the desired level is reached.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>RangeP[0.1Percent,20 Percent],
+				Units:>{Percent,{Percent}}
+			],
+			Category->"Sample Handling"
+		},
+		{
+			OptionName->AtmosphereEquilibrationTime,
+			Default->Automatic,
+			Description->"The length of time for which the samples equilibrate at the requested oxygen and carbon dioxide level before being read.",
+			ResolutionDescription->"Automatically set to 5 Minute if TargetCarbonDioxideLevel or TargetOxygenLevel is specified. Otherwise, set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>RangeP[0 Second, 24 Hour],
+				Units:>{1,{Minute,{Second,Minute,Hour}}}
+			],
+			Category->"Sample Handling"
+		},
 		IndexMatching[
 			IndexMatchingInput->"experiment samples",
 			(* for manual primitives. *)
@@ -201,7 +239,8 @@ DefineOptionSet[LuminescenceOptions:>
 		},
 		BMGSamplingOptions,
 		SamplesInStorageOption,
-		FuntopiaSharedOptions,
+		ModelInputOptions,
+		NonBiologyFuntopiaSharedOptions,
 		SimulationOption,
 		PreparationOption,
 		WorkCellOption,

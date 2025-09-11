@@ -279,6 +279,11 @@ mmVersionURLString[version:(_String|Null)]:=If[MatchQ[version,Null],"13-3-1",Str
 
 (* TODO write unit tests! *)
 (* if we are calling this on the computation reference, get packets and call the core overload *)
+
+
+(* Authors definition for Manifold`Private`getFargateLogURL *)
+Authors[Manifold`Private`getFargateLogURL]:={"steven"};
+
 getFargateLogURL[computation:ObjectP[Object[Notebook,Computation]]]:=getFargateLogURL[Sequence@@Download[computation,{
 	Packet[FargateClusterName,TaskID,DateCreated],
 	Packet[Job[{HardwareConfiguration,MathematicaVersion}]]

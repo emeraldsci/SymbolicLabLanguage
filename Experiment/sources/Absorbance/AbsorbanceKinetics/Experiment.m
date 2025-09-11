@@ -161,11 +161,11 @@ Error::MultipleWavelengthsUnsupported="When using ReadOrder->Serial it's not pos
 (* --- Core Function --- *)
 ExperimentAbsorbanceKinetics[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : OptionsPattern[ExperimentAbsorbanceKinetics]] := Module[
 	{listedOptions, outputSpecification, output, gatherTests, messages, safeOptions, safeOptionTests, upload,
-		confirm, fastTrack, parentProt, unresolvedOptions, unresolvedOptionsTests, combinedOptions, resolveOptionsResult,
-		resolvedOptionsNoHidden, allTests, estimatedRunTime, fastCacheBall,
+		confirm, canaryBranch, fastTrack, parentProt, unresolvedOptions, unresolvedOptionsTests, combinedOptions, resolveOptionsResult,
+		resolvedOptionsNoHidden, allTests, estimatedRunTime,
 		resourcePackets, resourcePacketTests, simulatedProtocol, simulation,
-		resultRule, resolvedOptions, resolutionTests, returnEarlyQ, performSimulationQ, validLengths, validLengthTests, expandedCombinedOptions, downloadFields, protocolObject,
-		cache, newCache, allPackets, userSpecifiedObjects, objectsExistQs, listedSamples, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationSimulation,
+		resolvedOptions, resolutionTests, returnEarlyQ, performSimulationQ, validLengths, validLengthTests, expandedCombinedOptions, specifiedInstruments, downloadFields, protocolObject,
+		cache, newCache, allPackets, listedSamples, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationSimulation,
 		mySamplesWithPreparedSamplesNamed,safeOptionsNamed, myOptionsWithPreparedSamplesNamed},
 
 	(* determine the requested return value from the function *)
@@ -188,7 +188,7 @@ ExperimentAbsorbanceKinetics[mySamples : ListableP[ObjectP[Object[Sample]]], myO
 			listedOptions
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -205,7 +205,7 @@ ExperimentAbsorbanceKinetics[mySamples : ListableP[ObjectP[Object[Sample]]], myO
 	];
 
 	(* Sanitize Inputs *)
-	{mySamplesWithPreparedSamples, safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples, safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> samplePreparationSimulation];
 
 	(* If the specified options don't match their patterns or if the option lengths are invalid, return $Failed*)
 	If[MatchQ[safeOptions, $Failed],
@@ -234,7 +234,7 @@ ExperimentAbsorbanceKinetics[mySamples : ListableP[ObjectP[Object[Sample]]], myO
 	];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProt, cache} = Lookup[safeOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProt, cache} = Lookup[safeOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* apply the template options *)
 	(* need to specify the definition number (we are number 1 for samples at this point) *)
@@ -259,12 +259,22 @@ ExperimentAbsorbanceKinetics[mySamples : ListableP[ObjectP[Object[Sample]]], myO
 	(* expand the combined options *)
 	expandedCombinedOptions = Last[ExpandIndexMatchedInputs[ExperimentAbsorbanceKinetics, {mySamplesWithPreparedSamples}, combinedOptions]];
 
+	(* get all specified instruments *)
+	specifiedInstruments = DeleteDuplicates[Cases[Flatten[Lookup[combinedOptions, {Instrument}]], ObjectP[{Object[Instrument], Model[Instrument]}]]];
+
 	(* get all the Download fields *)
 	downloadFields = {
 		{
 			Packet[IncompatibleMaterials, Well, RequestedResources, SamplePreparationCacheFields[Object[Sample], Format -> Sequence]],
 			Packet[Container[SamplePreparationCacheFields[Object[Container]]]],
 			Packet[Field[Composition[[All, 2]][{Molecule, ExtinctionCoefficients, PolymerType, MolecularWeight}]]]
+		},
+		{
+			Packet[Model, Status, IntegratedLiquidHandler, WettedMaterials, PlateReaderMode, SamplingPatterns, IntegratedLiquidHandlers],
+			Packet[Model[{WettedMaterials, PlateReaderMode, SamplingPatterns}]],
+			Packet[IntegratedLiquidHandler[Model]],
+			Packet[IntegratedLiquidHandler[Model][Object]],
+			Packet[IntegratedLiquidHandlers[Object]]
 		}
 	};
 
@@ -273,14 +283,15 @@ ExperimentAbsorbanceKinetics[mySamples : ListableP[ObjectP[Object[Sample]]], myO
 		Quiet[
 			Download[
 				{
-					mySamplesWithPreparedSamples
+					mySamplesWithPreparedSamples,
+					specifiedInstruments
 				},
 				Evaluate[downloadFields],
 				Cache -> cache,
 				Simulation -> samplePreparationSimulation,
 				Date -> Now
 			],
-			{Download::FieldDoesntExist}
+			{Download::FieldDoesntExist, Download::NotLinkField}
 		],
 		$Failed,
 		{Download::ObjectDoesNotExist}
@@ -293,40 +304,6 @@ ExperimentAbsorbanceKinetics[mySamples : ListableP[ObjectP[Object[Sample]]], myO
 
 	(* Download information we need in both the Options and ResourcePackets functions *)
 	newCache = FlattenCachePackets[{cache, allPackets, standardPlatesDownloadCache["Memoization"]}];
-
-	(* Before going to resolver, check whether any of the specified objects does not exist. This is done early to avoid tons of errors later. *)
-	userSpecifiedObjects=DeleteDuplicates[
-		Cases[
-			Flatten@Join[
-				mySamplesWithPreparedSamples,
-				Values[expandedCombinedOptions]
-			],
-			ObjectP[]
-		]
-	];
-
-	(* Check that the specified objects exist or are visible to the current user *)
-	(* NOTE: Since we can be called by ExperimentSM which uses degenerate cache balling with Simulated->True, we need to check for that as well *)
-	(* as the new simulation style using PreparatoryUOs. *)
-	fastCacheBall = makeFastAssocFromCache[newCache];
-	objectsExistQs=MapThread[
-		Or[#1, #2]&,
-		{
-			(MatchQ[Lookup[fetchPacketFromFastAssoc[#, fastCacheBall], Simulated], True]&)/@userSpecifiedObjects,
-			DatabaseMemberQ[
-				userSpecifiedObjects,
-				Simulation->samplePreparationSimulation
-			]
-		}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		Message[Error::ObjectDoesNotExist,PickList[userSpecifiedObjects,objectsExistQs,False]];
-		Message[Error::InvalidInput,PickList[userSpecifiedObjects,objectsExistQs,False]];
-		Return[$Failed],
-		Nothing
-	];
 
 	(* resolve all options; if we throw InvalidOption or InvalidInput, we're also getting $Failed and we will return early *)
 	resolveOptionsResult=If[gatherTests,
@@ -422,7 +399,7 @@ ExperimentAbsorbanceKinetics[mySamples : ListableP[ObjectP[Object[Sample]]], myO
 			Cache->newCache,
 			Simulation->samplePreparationSimulation
 		],
-		{Null, Null}
+		{Null, samplePreparationSimulation}
 	];
 
 	(* --- Packaging the return value --- *)
@@ -500,6 +477,7 @@ ExperimentAbsorbanceKinetics[mySamples : ListableP[ObjectP[Object[Sample]]], myO
 					Name->Lookup[safeOptions,Name],
 					Upload->Lookup[safeOptions,Upload],
 					Confirm->Lookup[safeOptions,Confirm],
+					CanaryBranch->Lookup[safeOptions,CanaryBranch],
 					ParentProtocol->Lookup[safeOptions,ParentProtocol],
 					Priority->Lookup[safeOptions,Priority],
 					StartDate->Lookup[safeOptions,StartDate],
@@ -517,6 +495,7 @@ ExperimentAbsorbanceKinetics[mySamples : ListableP[ObjectP[Object[Sample]]], myO
 				resourcePackets[[1]], (* protocolPacket *)
 				Upload->Lookup[safeOptions,Upload],
 				Confirm->Lookup[safeOptions,Confirm],
+				CanaryBranch->Lookup[safeOptions,CanaryBranch],
 				ParentProtocol->Lookup[safeOptions,ParentProtocol],
 				Priority->Lookup[safeOptions,Priority],
 				StartDate->Lookup[safeOptions,StartDate],
@@ -524,13 +503,14 @@ ExperimentAbsorbanceKinetics[mySamples : ListableP[ObjectP[Object[Sample]]], myO
 				QueuePosition->Lookup[safeOptions,QueuePosition],
 				ConstellationMessage->Object[Protocol,AbsorbanceIntensity],
 				Cache -> newCache,
-				Simulation -> samplePreparationSimulation
+				Simulation -> simulation
 			],
 			UploadProtocol[
 				resourcePackets[[1]], (* protocolPacket *)
 				resourcePackets[[2]], (* unitOperationPackets *)
 				Upload->Lookup[safeOptions,Upload],
 				Confirm->Lookup[safeOptions,Confirm],
+				CanaryBranch->Lookup[safeOptions,CanaryBranch],
 				ParentProtocol->Lookup[safeOptions,ParentProtocol],
 				Priority->Lookup[safeOptions,Priority],
 				StartDate->Lookup[safeOptions,StartDate],
@@ -538,7 +518,7 @@ ExperimentAbsorbanceKinetics[mySamples : ListableP[ObjectP[Object[Sample]]], myO
 				QueuePosition->Lookup[safeOptions,QueuePosition],
 				ConstellationMessage->Object[Protocol,AbsorbanceIntensity],
 				Cache -> newCache,
-				Simulation -> samplePreparationSimulation
+				Simulation -> simulation
 			]
 		]
 
@@ -562,7 +542,7 @@ ExperimentAbsorbanceKinetics[mySamples : ListableP[ObjectP[Object[Sample]]], myO
 (* ExperimentAbsorbanceKinetics (container input) *)
 
 
-ExperimentAbsorbanceKinetics[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String|{LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions : OptionsPattern[ExperimentAbsorbanceKinetics]] := Module[
+ExperimentAbsorbanceKinetics[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String|{LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions : OptionsPattern[ExperimentAbsorbanceKinetics]] := Module[
 	{listedOptions, outputSpecification, output, gatherTests, containerToSampleResult,containerToSampleSimulation,
 		containerToSampleTests, inputSamples, messages, listedContainers, validSamplePreparationResult, mySamplesWithPreparedSamples,
 		myOptionsWithPreparedSamples, samplePreparationSimulation,containerToSampleOutput, sampleOptions},
@@ -588,7 +568,7 @@ ExperimentAbsorbanceKinetics[myContainers : ListableP[ObjectP[{Object[Container]
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -657,7 +637,7 @@ DefineOptions[ExperimentAbsorbanceKineticsPreview,
 	SharedOptions :> {ExperimentAbsorbanceKinetics}
 ];
 
-ExperimentAbsorbanceKineticsPreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentAbsorbanceKineticsPreview]]:=Module[
+ExperimentAbsorbanceKineticsPreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentAbsorbanceKineticsPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -683,7 +663,7 @@ DefineOptions[ExperimentAbsorbanceKineticsOptions,
 	SharedOptions :> {ExperimentAbsorbanceKinetics}
 ];
 
-ExperimentAbsorbanceKineticsOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentAbsorbanceKineticsOptions]]:=Module[
+ExperimentAbsorbanceKineticsOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentAbsorbanceKineticsOptions]]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -713,7 +693,7 @@ DefineOptions[ValidExperimentAbsorbanceKineticsQ,
 	SharedOptions :> {ExperimentAbsorbanceKinetics}
 ];
 
-ValidExperimentAbsorbanceKineticsQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ValidExperimentAbsorbanceKineticsQ]]:=Module[
+ValidExperimentAbsorbanceKineticsQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentAbsorbanceKineticsQ]]:=Module[
 	{listedInput,listedOptions,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat,result},
 
 	listedInput=ToList[myInput];

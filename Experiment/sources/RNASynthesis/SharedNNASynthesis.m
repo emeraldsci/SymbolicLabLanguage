@@ -28,7 +28,15 @@ DefineOptionSet[NNASharedSet :>
 						Model[Instrument, DNASynthesizer],
 						Object[Instrument, DNASynthesizer]
 					}
-				]
+				],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Instruments",
+						"Solid Phase Synthesis",
+						"DNA/RNA Synthesis"
+					}
+				}
 			],
 			Description -> "The instrument used to perform the synthesis.",
 			Category -> "Protocol"
@@ -39,7 +47,7 @@ DefineOptionSet[NNASharedSet :>
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Enumeration,
-				Pattern :> (40 Nanomole | 0.2 Micromole | 1 Micromole)
+				Pattern :> (EqualP[40 Nanomole] | EqualP[0.2 Micromole] | EqualP[1 Micromole])
 			],
 			Description -> "The theoretical amount of reaction sites available for synthesis.",
 			ResolutionDescription -> "If Column is specified as an object, automatically set to the amount of reaction sites on the resin. Otherwise, automatically set to 0.2 Micromole",
@@ -54,14 +62,30 @@ DefineOptionSet[NNASharedSet :>
 				{
 					"Monomer" -> Widget[Type -> Expression, Pattern :> SequenceP, Size -> Word],
 					"Phosphoramidite" -> Alternatives[
-						Widget[Type -> Object, Pattern :> ObjectP[Model[Sample, StockSolution]]],
+						Widget[
+							Type -> Object,
+							Pattern :> ObjectP[Model[Sample, StockSolution]]
+						],
 						Adder[{
-							"Component"->Widget[Type->Object, Pattern:>ObjectP[Model[Sample, StockSolution]]],
-							"Component fraction"->Widget[Type -> Number, Pattern :> RangeP[0.01`, 1.`]]
+							"Component"->Widget[
+								Type->Object,
+								Pattern:>ObjectP[Model[Sample, StockSolution]]
+							],
+							"Component fraction"->Widget[
+								Type -> Number,
+								Pattern :> RangeP[0.01`, 1.`]
+							]
 						}],
 						Adder[{
-							"Component"->Widget[Type -> Expression, Pattern :> SequenceP, Size -> Word],
-							"Component fraction"->Widget[Type -> Number, Pattern :> RangeP[0.01`, 1.`]]
+							"Component"->Widget[
+								Type -> Expression,
+								Pattern :> SequenceP,
+								Size -> Word
+							],
+							"Component fraction"->Widget[
+								Type -> Number,
+								Pattern :> RangeP[0.01`, 1.`]
+							]
 						}]
 					]
 				}
@@ -193,16 +217,29 @@ DefineOptionSet[NNASharedSet :>
 			AllowNull -> False,
 			Widget -> Alternatives[Widget[
 				Type -> Object,
-				Pattern :> ObjectP[
-					{Model[Sample], Object[Sample]}
-				]
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Oligonucleotide Synthesis",
+						"Reagents"
+					}
+				}
 			],
 				Adder[Alternatives[
 					Widget[
 						Type -> Object,
-						Pattern :> ObjectP[
-							{Model[Sample], Object[Sample]}
-						]],
+						Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Oligonucleotide Synthesis",
+								"Reagents"
+							}
+						}
+					],
 					Widget[
 						Type -> Enumeration,
 						Pattern :> Alternatives[Automatic]
@@ -312,16 +349,29 @@ DefineOptionSet[NNASharedSet :>
 			AllowNull -> False,
 			Widget -> Alternatives[Widget[
 				Type -> Object,
-				Pattern :> ObjectP[
-					{Model[Sample], Object[Sample]}
-				]
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Oligonucleotide Synthesis",
+						"Reagents"
+					}
+				}
 			],
 				Adder[Alternatives[
 					Widget[
 						Type -> Object,
-						Pattern :> ObjectP[
-							{Model[Sample], Object[Sample]}
-						]],
+						Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Oligonucleotide Synthesis",
+								"Reagents"
+							}
+						}
+					],
 					Widget[
 						Type -> Enumeration,
 						Pattern :> Alternatives[Automatic]
@@ -342,16 +392,29 @@ DefineOptionSet[NNASharedSet :>
 			AllowNull -> False,
 			Widget -> Alternatives[Widget[
 				Type -> Object,
-				Pattern :> ObjectP[
-					{Model[Sample], Object[Sample]}
-				]
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Oligonucleotide Synthesis",
+						"Reagents"
+					}
+				}
 			],
 				Adder[Alternatives[
 					Widget[
 						Type -> Object,
-						Pattern :> ObjectP[
-							{Model[Sample], Object[Sample]}
-						]],
+						Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Oligonucleotide Synthesis",
+								"Reagents"
+							}
+						}
+					],
 					Widget[
 						Type -> Enumeration,
 						Pattern :> Alternatives[Automatic]
@@ -424,9 +487,15 @@ DefineOptionSet[NNASharedSet :>
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[
-					{Model[Sample], Object[Sample]}
-				]
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Oligonucleotide Synthesis",
+						"Reagents"
+					}
+				}
 			],
 			Description -> "The solution used to oxidize phosphorus(III) linker into phosphate, typically a solution of Iodine in THF with Pyridine and water.",
 			Category -> "Oxidation"
@@ -513,9 +582,15 @@ DefineOptionSet[NNASharedSet :>
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[
-					{Model[Sample], Object[Sample]}
-				]
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Oligonucleotide Synthesis",
+						"Reagents"
+					}
+				}
 			],
 			Description -> "The solution used to oxidize phosphorus(III) linker after coupling in the secondary set of cycle parameters.",
 			ResolutionDescription -> "If SecondaryCyclePositions is specified as Null, resolves to Null, otherwise resolves to Model[Sample, \"Oxidizer\"].",
@@ -644,7 +719,15 @@ DefineOptionSet[NNASharedSet :>
 				AllowNull -> False,
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Model[Sample], Object[Sample], Model[Resin]}]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample], Model[Resin]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Oligonucleotide Synthesis",
+							"Resins"
+						}
+					}
 				],
 				Description -> "The solid support on which the synthesis is carried out.",
 				Category -> "Protocol"
@@ -718,9 +801,13 @@ DefineOptionSet[NNASharedSet :>
 				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[
-						{Model[Sample], Object[Sample]}
-					]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials"
+						}
+					}
 				],
 				Description -> "The cleavage solution in which the strands cleaved.",
 				ResolutionDescription -> "If the strand is being cleaved and CleavageMethod is specified, automatically set based on the cleavage solution used in the specified method. If the strand is being cleaved and CleavageMethod is not specified, automatically set to ammonium hydroxide.",
@@ -745,9 +832,13 @@ DefineOptionSet[NNASharedSet :>
 				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[
-						{Model[Sample], Object[Sample]}
-					]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials"
+						}
+					}
 				],
 				Description -> "The solution used to wash the solid support following cleavage.",
 				ResolutionDescription -> "If the strand is being cleaved and CleavageMethod is specified, automatically set based on the cleavage wash solution used in the specified method. If the strand is being cleaved and CleavageMethod is not specified, automatically set to RNAse-free water.",
@@ -773,9 +864,13 @@ DefineOptionSet[NNASharedSet :>
 				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[
-						{Model[Sample], Object[Sample]}
-					]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials"
+						}
+					}
 				],
 				Description -> "The solution that uncleaved resin is stored in following synthesis.",
 				ResolutionDescription -> "If the strand is not being cleaved, automatically set to water.",
@@ -1006,7 +1101,15 @@ DefineOptionSet[RNASynthesisOptions:>{
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Object[Container, ExtractionCartridge], Model[Container, ExtractionCartridge]}]
+				Pattern :> ObjectP[{Object[Container, ExtractionCartridge], Model[Container, ExtractionCartridge]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Solid Phase Extraction (SPE)",
+						"ExtractionCartridges"
+					}
+				}
 			],
 			Description -> "The sorbent-packed container that forms the stationary phase for desalting for each sample pool.",
 			ResolutionDescription -> "Automatically set to Model[Container,ExtractionCartridge,\"500mg, 3cc, C18, Vac extraction cartridge\"].",
@@ -1187,9 +1290,14 @@ DefineOptionSet[RNASynthesisOptions:>{
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[
-					{Model[Sample], Object[Sample]}
-				]
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Reagents"
+					}
+				}
 			],
 			Description -> "Solvent used to resuspend oligomers after the clevage.",
 			ResolutionDescription -> "If the strand is having 2-OH protection removed and RNADeprotectionMethod is specified, automatically set based on the RNADeprotectionResuspensionSolution used in the specified method. If the strand is having 2-OH protection removed and RNADeprotectionMethod is not specified, automatically set to DMSO.",
@@ -1240,9 +1348,7 @@ DefineOptionSet[RNASynthesisOptions:>{
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[
-					{Model[Sample], Object[Sample]}
-				]
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
 			],
 			Description -> "The volume of RNA Deprotection solution used to remove 2-OH protective group.",
 			ResolutionDescription -> "If the strand is having 2-OH protection removed and RNADeprotectionMethod is specified, automatically set based on the RNA Deprotection solution used in the specified method. If the strand is having 2-OH protection removed and RNADeprotectionMethod is not specified, automatically set to TEA with TEAx3HF in DMSO.",
@@ -1267,9 +1373,14 @@ DefineOptionSet[RNASynthesisOptions:>{
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[
-					{Model[Sample], Object[Sample]}
-				]
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Reagents"
+					}
+				}
 			],
 			Description -> "The solution for quenching the 2-OH protective group deprotection reaction.",
 			ResolutionDescription -> "If the strand is having 2-OH protection removed and RNADeprotectionMethod is specified, automatically set based on the RNADeprotectionQuenchingSolution used in the specified method. If the strand is having 2-OH protection removed and RNADeprotectionMethod is not specified, automatically set to TRIS buffer.",
@@ -1370,7 +1481,15 @@ DefineOptionSet[RNASynthesisOptions:>{
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Object[Container, ExtractionCartridge], Model[Container, ExtractionCartridge]}]
+				Pattern :> ObjectP[{Object[Container, ExtractionCartridge], Model[Container, ExtractionCartridge]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Solid Phase Extraction (SPE)",
+						"ExtractionCartridges"
+					}
+				}
 			],
 			Description -> "The sorbent-packed container that forms the stationary phase for desalting for each sample pool.",
 			ResolutionDescription -> "Automatically set to Model[Container,ExtractionCartridge,\"500mg, 3cc, C18, Vac extraction cartridge\"].",
@@ -1485,10 +1604,21 @@ DefineOptionSet[RNASynthesisOptions:>{
 	{
 		OptionName -> PostCleavageDesaltingInstrument,
 		Default -> Automatic,
-		AllowNull -> False,
+		AllowNull -> True,
 		Widget -> Widget[
 			Type -> Object,
-			Pattern :> ObjectP[{Model[Instrument, LiquidHandler], Object[Instrument, LiquidHandler]}]
+			Pattern :> ObjectP[{
+				Model[Instrument, LiquidHandler], Object[Instrument, LiquidHandler],
+				Model[Instrument, PressureManifold], Object[Instrument, PressureManifold]
+			}],
+			OpenPaths -> {
+				{
+					Object[Catalog, "Root"],
+					"Materials",
+					"Solid Phase Extraction (SPE)",
+					"Instruments"
+				}
+			}
 		],
 		Description -> "The liquid handling instrument used for desalting after cleavage.",
 		ResolutionDescription -> "Automatically set to Model[Instrument, LiquidHandler, \"GX-271 for Solid Phase Extraction\"].",
@@ -1497,10 +1627,21 @@ DefineOptionSet[RNASynthesisOptions:>{
 	{
 		OptionName -> PostRNADeprotectionDesaltingInstrument,
 		Default -> Automatic,
-		AllowNull -> False,
+		AllowNull -> True,
 		Widget -> Widget[
 			Type -> Object,
-			Pattern :> ObjectP[{Model[Instrument, LiquidHandler], Object[Instrument, LiquidHandler]}]
+			Pattern :> ObjectP[{
+				Model[Instrument, LiquidHandler], Object[Instrument, LiquidHandler],
+				Model[Instrument, PressureManifold], Object[Instrument, PressureManifold]
+			}],
+			OpenPaths -> {
+				{
+					Object[Catalog, "Root"],
+					"Materials",
+					"Solid Phase Extraction (SPE)",
+					"Instruments"
+				}
+			}
 		],
 		Description -> "The liquid handling instrument used for desalting after removing protection from 2-OH group.",
 		ResolutionDescription -> "Automatically set to Model[Instrument, LiquidHandler, \"GX-271 for Solid Phase Extraction\"].",
@@ -1515,8 +1656,15 @@ DefineOptionSet[RNASynthesisOptions:>{
 		Category -> "PostCleavageDesalting",
 		Widget -> Widget[
 			Type -> Object,
-			Pattern :> ObjectP[{Object[Sample], Model[Sample]}
-			]
+			Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+			OpenPaths -> {
+				{
+					Object[Catalog, "Root"],
+					"Materials",
+					"Solid Phase Extraction (SPE)",
+					"PreFlushing Solution"
+				}
+			}
 		]
 	},
 	{
@@ -1524,11 +1672,18 @@ DefineOptionSet[RNASynthesisOptions:>{
 		Default -> Automatic,
 		Description -> "The solution that is used to wet and condition the sorbent in the ExtractionCartridge before oligomers are added to the corresponding ExtractionCartridge in order to ensure consistent interaction between the solid phase and the samples.",
 		ResolutionDescription -> "Automatically set to Model[Sample, StockSolution, \"15 mM ammonium acetate\"].",
-		AllowNull -> False,
+		AllowNull -> True,
 		Category -> "PostCleavageDesalting",
 		Widget -> Widget[
 			Type -> Object,
-			Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+			Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+			OpenPaths -> {
+				{
+					Object[Catalog, "Root"],
+					"Materials",
+					"Solid Phase Extraction (SPE)"
+				}
+			}
 		]
 	},
 	{
@@ -1536,11 +1691,24 @@ DefineOptionSet[RNASynthesisOptions:>{
 		Default -> Automatic,
 		Description -> "The wash solution that is used in desalting to elute any impurities present in the oligomers that do not stick to the sorbent off the cartridge prior to oligomer elution.",
 		ResolutionDescription -> "Automatically set to Model[Sample, \"Milli-Q water\"].",
-		AllowNull -> False,
+		AllowNull -> True,
 		Category -> "PostCleavageDesalting",
 		Widget -> Widget[
 			Type -> Object,
-			Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+			Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+			OpenPaths -> {
+				{
+					Object[Catalog, "Root"],
+					"Materials",
+					"Solid Phase Extraction (SPE)"
+				},
+				{
+					Object[Catalog, "Root"],
+					"Materials",
+					"Reagents",
+					"Water"
+				}
+			}
 		]
 	},
 	{
@@ -1548,11 +1716,19 @@ DefineOptionSet[RNASynthesisOptions:>{
 		Default -> Automatic,
 		Description -> "The elution solution that is used to disrupt the interaction between the oligomers and the sorbet and elute it into the collection container (Model[Container, Plate, \"48-well Pyramid Bottom Deep Well Plate\"]).",
 		ResolutionDescription -> "Automatically set to Model[Sample, StockSolution, \"90% methanol\"].",
-		AllowNull -> False,
+		AllowNull -> True,
 		Category -> "PostCleavageDesalting",
 		Widget -> Widget[
 			Type -> Object,
-			Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+			Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+			OpenPaths -> {
+				{
+					Object[Catalog, "Root"],
+					"Materials",
+					"Solid Phase Extraction (SPE)",
+					"Elution Buffers"
+				}
+			}
 		]
 	},
 
@@ -1565,8 +1741,14 @@ DefineOptionSet[RNASynthesisOptions:>{
 		Category -> "PostRNADeprotectionDesalting",
 		Widget -> Widget[
 			Type -> Object,
-			Pattern :> ObjectP[{Object[Sample], Model[Sample]}
-			]
+			Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+			OpenPaths -> {
+				{
+					Object[Catalog, "Root"],
+					"Materials",
+					"Solid Phase Extraction (SPE)"
+				}
+			}
 		]
 	},
 	{
@@ -1574,11 +1756,18 @@ DefineOptionSet[RNASynthesisOptions:>{
 		Default -> Automatic,
 		Description -> "The solution that is used to wet and condition the sorbent in the ExtractionCartridge before oligomers are added to the corresponding ExtractionCartridge in order to ensure consistent interaction between the solid phase and the samples.",
 		ResolutionDescription -> "Automatically set to Model[Sample, StockSolution, \"15 mM ammonium acetate\"].",
-		AllowNull -> False,
+		AllowNull -> True,
 		Category -> "PostRNADeprotectionDesalting",
 		Widget -> Widget[
 			Type -> Object,
-			Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+			Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+			OpenPaths -> {
+				{
+					Object[Catalog, "Root"],
+					"Materials",
+					"Solid Phase Extraction (SPE)"
+				}
+			}
 		]
 	},
 	{
@@ -1586,11 +1775,24 @@ DefineOptionSet[RNASynthesisOptions:>{
 		Default -> Automatic,
 		Description -> "The wash solution that is used in desalting to elute any impurities present in the oligomers that do not stick to the sorbent off the cartridge prior to oligomer elution.",
 		ResolutionDescription -> "Automatically set to Model[Sample, \"Milli-Q water\"].",
-		AllowNull -> False,
+		AllowNull -> True,
 		Category -> "PostRNADeprotectionDesalting",
 		Widget -> Widget[
 			Type -> Object,
-			Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+			Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+			OpenPaths -> {
+				{
+					Object[Catalog, "Root"],
+					"Materials",
+					"Solid Phase Extraction (SPE)"
+				},
+				{
+					Object[Catalog, "Root"],
+					"Materials",
+					"Reagents",
+					"Water"
+				}
+			}
 		]
 	},
 	{
@@ -1598,11 +1800,19 @@ DefineOptionSet[RNASynthesisOptions:>{
 		Default -> Automatic,
 		Description -> "The elution solution that is used to disrupt the interaction between the oligomers and the sorbet and elute it into the collection container (Model[Container, Plate, \"48-well Pyramid Bottom Deep Well Plate\"]).",
 		ResolutionDescription -> "Automatically set to Model[Sample, StockSolution, \"90% methanol\"].",
-		AllowNull -> False,
+		AllowNull -> True,
 		Category -> "PostRNADeprotectionDesalting",
 		Widget -> Widget[
 			Type -> Object,
-			Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+			Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+			OpenPaths -> {
+				{
+					Object[Catalog, "Root"],
+					"Materials",
+					"Solid Phase Extraction (SPE)",
+					"Elution Buffers"
+				}
+			}
 		]
 	}
 }];
@@ -1616,7 +1826,7 @@ DefineOptions[experimentNNASynthesis,
 		HoldOrderOption,
 		QueuePositionOption,
 		ProtocolOptions,
-		PostProcessingOptions,
+		NonBiologyPostProcessingOptions,
 		SamplesOutStorageOptions
 	}
 ];
@@ -1648,7 +1858,7 @@ Error::DesaltingPriorToCleavage = "For input `1` PostCleavageDesalting was speci
 Error::DeprotectingWithoutResuspension = "RNADeprotection is set as `1` while options for RNADeprotectionResuspension are set to `2` for the input `3`.";
 Error::DesaltingPriorToDeprotection = "For input `1` PostRNADeprotectionDesalting was specified as `2` even though the RNADeprotection was specified or set to `3`";
 Error::NoEvaporationDeprotection = "For input `1` RNADeprotection was specified as `2` but PostCleavageEvaporation was specified or set to `3`";
-Error::MismatchDeckReagentBanks = "The specified `1` is not copacetic with the number of banks that will be used in this experiment. The first 24 samples use Banks 1 and 3 and the subsequent 24 samples use Banks 2 and 4. The odd banks share one set of deck reagents as do the even banks. Pleae make sure sure to either specify the correct number of objects (`2`).";
+Error::MismatchDeckReagentBanks = "The specified `1` is not compatible with the number of banks that will be used in this experiment. The first 24 samples use Banks 1 and 3 and the subsequent 24 samples use Banks 2 and 4. The odd banks share one set of deck reagents as do the even banks. Pleae make sure sure to either specify the correct number of objects (`2`).";
 
 
 (* ::Subsubsection:: *)
@@ -2118,6 +2328,7 @@ experimentNNASynthesis[myPolymer:(DNA|RNA), myStrands : ListableP[Alternatives[O
 					protocolPacketWithResources,
 					Upload -> Lookup[safeOps, Upload],
 					Confirm -> Lookup[safeOps, Confirm],
+					CanaryBranch -> Lookup[safeOps, CanaryBranch],
 					ParentProtocol -> Lookup[safeOps, ParentProtocol],
 					Priority -> Lookup[safeOps, Priority],
 					StartDate -> Lookup[safeOps, StartDate],
@@ -2131,6 +2342,7 @@ experimentNNASynthesis[myPolymer:(DNA|RNA), myStrands : ListableP[Alternatives[O
 					otherPackets,
 					Upload -> Lookup[safeOps, Upload],
 					Confirm -> Lookup[safeOps, Confirm],
+					CanaryBranch -> Lookup[safeOps, CanaryBranch],
 					ParentProtocol -> Lookup[safeOps, ParentProtocol],
 					Priority -> Lookup[safeOps, Priority],
 					StartDate -> Lookup[safeOps, StartDate],
@@ -3921,11 +4133,11 @@ resolveExperimentNNASynthesisOptions[myPolymer : (DNA | RNA), myStrands : {Objec
 	columnSpecifiedScale = If[MemberQ[specifiedColumns, ObjectP[Object[Sample]]],
 		Switch[Max[DeleteCases[activeSitesS, Null]],
 			LessEqualP[40Nanomole],
-			40Nanomole,
+			40 Nanomole,
 			LessEqualP[200Nanomole],
-			200Nanomole,
+			0.20 Micromole,
 			_,
-			1000Nanomole
+			1 Micromole
 		],
 		Null
 	];
@@ -4294,7 +4506,9 @@ resolveExperimentNNASynthesisOptions[myPolymer : (DNA | RNA), myStrands : {Objec
 					(* grab dry phosphoramidite samples *)
 					LabelSample[
 						Label->phosphoramiditeSolidLabels,
-						Sample->Map[Download[FirstCase[Lookup[#,Formula],{MassP,_}][[2]], Object]&,compositionByPackets[[All,1]]]],
+						Sample->Map[Download[FirstCase[Lookup[#,Formula],{MassP,_}][[2]], Object]&,compositionByPackets[[All,1]]],
+						Amount->Map[FirstCase[Lookup[#,Formula],{MassP,_}][[1]]&,compositionByPackets[[All,1]]]
+					],
 					(* add acetonitrile to them *)
 					Transfer[
 						Source->ConstantArray[Model[Sample, "id:wqW9BP774kjw"],Length[phosphoramiditeSolidLabels]], (* Model[Sample,"Acetonitrile, anhydrous, hermetically sealed"] *)
@@ -4725,12 +4939,12 @@ resolveExperimentNNASynthesisOptions[myPolymer : (DNA | RNA), myStrands : {Objec
 				{resolvedPostCleavageDesaltingOptions, postCleavageDesaltingTests} = Quiet[ExperimentSolidPhaseExtraction[
 					cleavageDesaltingSampleIDs,
 					ReplaceRule[ToList[filteredPostCleavageDesaltingOptionsRules],
-						{Cache -> cacheBallCleavage, Upload -> False, Output -> {Options, Tests}}]],{Warning::TotalAliquotVolumeTooLarge, Warning::AliquotRequired}],
+						{Cache -> cacheBallCleavage, Simulation -> Simulation[cacheBallCleavage], Upload -> False, Output -> {Options, Tests}}]],{Warning::TotalAliquotVolumeTooLarge, Warning::AliquotRequired}],
 
 				{resolvedPostCleavageDesaltingOptions} = Quiet[ExperimentSolidPhaseExtraction[
 					cleavageDesaltingSampleIDs,
 					ReplaceRule[ToList[filteredPostCleavageDesaltingOptionsRules],
-						{Cache -> cacheBallCleavage, Upload -> False, Output -> {Options}}]],{Warning::TotalAliquotVolumeTooLarge, Warning::AliquotRequired}]
+						{Cache -> cacheBallCleavage, Simulation -> Simulation[cacheBallCleavage], Upload -> False, Output -> {Options}}]],{Warning::TotalAliquotVolumeTooLarge, Warning::AliquotRequired}]
 			];
 
 			(* parse the resulting options *)
@@ -4951,12 +5165,12 @@ resolveExperimentNNASynthesisOptions[myPolymer : (DNA | RNA), myStrands : {Objec
 					{resolvedPostRNADeprotectionDesaltingOptions, postRNADeprotectionDesaltingTests} = Quiet[ExperimentSolidPhaseExtraction[
 						rnaDeprotectionDesaltingSampleIDs,
 						ReplaceRule[ToList[filteredPostRNADeprotectionDesaltingOptionsRules],
-							{Cache -> cacheBallRNADeprotection, Upload -> False, Output -> {Options, Tests}}]],{Warning::TotalAliquotVolumeTooLarge, Warning::AliquotRequired}],
+							{Cache -> cacheBallRNADeprotection, Simulation -> Simulation[cacheBallRNADeprotection], Upload -> False, Output -> {Options, Tests}}]],{Warning::TotalAliquotVolumeTooLarge, Warning::AliquotRequired}],
 
 					{resolvedPostRNADeprotectionDesaltingOptions} = Quiet[ExperimentSolidPhaseExtraction[
 						rnaDeprotectionDesaltingSampleIDs,
 						ReplaceRule[ToList[filteredPostRNADeprotectionDesaltingOptionsRules],
-							{Cache -> cacheBallRNADeprotection, Upload -> False, Output -> {Options}}]],{Warning::TotalAliquotVolumeTooLarge, Warning::AliquotRequired}];
+							{Cache -> cacheBallRNADeprotection, Simulation -> Simulation[cacheBallRNADeprotection], Upload -> False, Output -> {Options}}]],{Warning::TotalAliquotVolumeTooLarge, Warning::AliquotRequired}];
 				];
 			];
 
@@ -5218,17 +5432,17 @@ resolveExperimentNNASynthesisOptions[myPolymer : (DNA | RNA), myStrands : {Objec
 		Null
 	];
 	
-	(* If any on-deck reagent is specified in a length that does not agree with teh number of banks used in the experiment, throw Error::MismatchDeckReagentBanks and Error::InvalidOption *)
-	{invalidOnDeckReagentsOption, invalidOnDeckReagentsTests} =	Module[{OnDeckCopaceticLength, options, tests},
+	(* If any on-deck reagent is specified in a length that does not agree with the number of banks used in the experiment, throw Error::MismatchDeckReagentBanks and Error::InvalidOption *)
+	{invalidOnDeckReagentsOption, invalidOnDeckReagentsTests} =	Module[{OnDeckCompatibleLength, options, tests},
 
 			(* check if the length of resolved activator agrees with the number of banks used *)
-			OnDeckCopaceticLength = {
+			OnDeckCompatibleLength = {
 					Length[resolvedActivatorSolution]!=banksUsed,
 					Length[resolvedCapASolution]!=banksUsed,
 					Length[resolvedCapBSolution]!=banksUsed
 			};
 
-			options = PickList[{ActivatorSolution,CapASolution,CapBSolution}, OnDeckCopaceticLength];
+			options = PickList[{ActivatorSolution,CapASolution,CapBSolution}, OnDeckCompatibleLength];
 
 			(* If there are invalid inputs and we are throwing messages, throw an error message .*)
 			If[Length[options] > 0 && !gatherTests && MatchQ[$ECLApplication, Except[Engine]],
@@ -5240,12 +5454,12 @@ resolveExperimentNNASynthesisOptions[myPolymer : (DNA | RNA), myStrands : {Objec
 				Module[{failingTest, passingTest},
 					failingTest = If[Length[options] == 0,
 						Nothing,
-						Test["All On-deck reagents (CapASolution, CapBSolution, and Activator) are each copacetic with the number of banks that will be used in the synthesis:", True, False]
+						Test["All On-deck reagents (CapASolution, CapBSolution, and Activator) are each compatible with the number of banks that will be used in the synthesis:", True, False]
 					];
 
 					passingTest = If[Length[doublySpecifiedMonomers] == Length[groupedAmidites],
 						Nothing,
-						Test["All On-deck reagents (CapASolution, CapBSolution, and Activator) are each copacetic with the number of banks that will be used in the synthesis:", True, True]
+						Test["All On-deck reagents (CapASolution, CapBSolution, and Activator) are each compatible with the number of banks that will be used in the synthesis:", True, True]
 					];
 
 					{failingTest, passingTest}

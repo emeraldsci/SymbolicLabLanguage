@@ -15,6 +15,14 @@ DefineObjectType[Object[Qualification,Training], {
 			Relation->Object[TrainingModule][Practicals],
 			Description->"The training module that this practical test is embedded in.",
 			Category->"General"
+		},
+		PrecisionScore -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Percent],
+			Units -> Percent,
+			Description -> "The average deviation (%) from the expected values obtained by the user during their training qualification.",
+			Category -> "Experimental Results"
 		}
 	}
 }];

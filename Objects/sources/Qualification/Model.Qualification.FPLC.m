@@ -131,6 +131,13 @@ DefineObjectType[Model[Qualification, FPLC], {
 			Description -> "The preparatory primitive-defined string pointing to the samples that will be injected when testing the FPLC's autosampler.",
 			Category -> "Autosampler Test"
 		},
+		AutosamplerPlateTestSamples -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The preparatory primitive-defined string pointing to the samples in a deep well plate that will be injected when testing the FPLC's autosampler.",
+			Category -> "Autosampler Test"
+		},
 		AutosamplerGradient -> {
 			Format -> Single,
 			Class -> Link,
@@ -147,6 +154,15 @@ DefineObjectType[Model[Qualification, FPLC], {
 			Description -> "For each member of AutosamplerTestSamples, the volumes of sample to inject when testing the FPLC's autosampler.",
 			Category -> "Autosampler Test",
 			IndexMatching -> AutosamplerTestSamples
+		},
+		AutosamplerPlateInjectionVolumes -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0*Microliter],
+			Units -> Microliter,
+			Description -> "For each member of AutosamplerPlateTestSamples, the volumes of sample to inject when testing the FPLC's autosampler.",
+			Category -> "Autosampler Test",
+			IndexMatching -> AutosamplerPlateTestSamples
 		},
 		AutosamplerBlank -> {
 			Format -> Single,

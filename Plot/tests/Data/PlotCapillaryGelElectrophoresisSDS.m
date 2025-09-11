@@ -35,6 +35,12 @@ DefineTests[PlotCapillaryGelElectrophoresisSDS,
 			TimeConstraint->120
 		],
 		Example[
+			{Basic,"Plots capillary gel electrophoresis when given a CapillaryGelElectrophoresisSDS protocol object:"},
+			PlotCapillaryGelElectrophoresisSDS[Object[Protocol, CapillaryGelElectrophoresisSDS, "CapillaryGelElectrophoresisSDS Protocol for PlotCapillaryGelElectrophoresisSDS Test "<>$SessionUUID]],
+			ValidGraphicsP[],
+			TimeConstraint->120
+		],
+		Example[
 			{Basic,"Plots capillary gel electrophoresis when given a list of XY coordinates representing the spectra:"},
 			PlotCapillaryGelElectrophoresisSDS[Download[Object[Data,CapillaryGelElectrophoresisSDS,"id:jLq9jXvol9Gx"],CurrentData]],
 			ValidGraphicsP[],
@@ -210,5 +216,58 @@ DefineTests[PlotCapillaryGelElectrophoresisSDS,
 			],
 			{PacketP[Object[Analysis,Peaks]]}
 		]
-	}
+	},
+
+	SymbolSetUp :> (
+		Module[{allObjects},
+			allObjects={
+				Object[Data, CapillaryGelElectrophoresisSDS, "CapillaryGelElectrophoresisSDS Data for PlotCapillaryGelElectrophoresisSDS test " <> $SessionUUID],
+				Object[Protocol, CapillaryGelElectrophoresisSDS, "CapillaryGelElectrophoresisSDS Protocol for PlotCapillaryGelElectrophoresisSDS Test "<>$SessionUUID]
+			};
+
+			EraseObject[
+				PickList[allObjects, DatabaseMemberQ[allObjects]],
+				Force -> True,
+				Verbose -> False
+			]
+		];
+
+		$CreatedObjects={};
+
+		Module[{data1, protocol1},
+			{data1, protocol1} = CreateID[{Object[Data, CapillaryGelElectrophoresisSDS], Object[Protocol, CapillaryGelElectrophoresisSDS]}];
+
+			Upload[
+				<|
+					Name -> "CapillaryGelElectrophoresisSDS Data for PlotCapillaryGelElectrophoresisSDS test " <> $SessionUUID,
+					Object -> data1,
+					Type -> Object[Data, CapillaryGelElectrophoresisSDS],
+					ProcessedUVAbsorbanceData -> QuantityArray[{#, RandomReal[20]} & /@ Range[0.5, 2100], {Second, AbsorbanceUnit}],
+					CurrentData -> QuantityArray[{#, RandomReal[{25, 30}]} & /@ Range[0.5, 2100], {Second, Milliampere}]
+				|>
+			];
+
+			Upload[
+				<|
+					Name -> "CapillaryGelElectrophoresisSDS Protocol for PlotCapillaryGelElectrophoresisSDS Test "<>$SessionUUID,
+					Object -> protocol1,
+					Type -> Object[Protocol, CapillaryGelElectrophoresisSDS],
+					Replace[Data] -> {Link[data1, Protocol]}
+				|>
+			];
+		]
+	),
+	SymbolTearDown:>Module[{objsToErase},
+		objsToErase=Flatten[{
+			$CreatedObjects,
+			Object[Data, CapillaryGelElectrophoresisSDS, "CapillaryGelElectrophoresisSDS Data for PlotCapillaryGelElectrophoresisSDS test " <> $SessionUUID],
+			Object[Protocol, CapillaryGelElectrophoresisSDS, "CapillaryGelElectrophoresisSDS Protocol for PlotCapillaryGelElectrophoresisSDS Test "<>$SessionUUID]
+		}];
+
+		EraseObject[
+			PickList[objsToErase,DatabaseMemberQ[objsToErase]],
+			Force->True,
+			Verbose->False
+		];
+	]
 ];

@@ -36,10 +36,10 @@ DefineObjectType[Object[Analysis,Downsampling],{
 		},
 		NoiseThreshold->{
 			Format -> Single,
-			Class -> Real,
-			Pattern :> NumericP,
+			Class -> Expression,
+			Pattern :> Alternatives[NumericP|None],
 			Units -> None,
-			Description -> "Data points with magnitude less than this threshold in the dependent-variable dimension (last entry of OriginalDimension) will be set to zero in DownsampledData.",
+			Description -> "Data points with magnitude less than this threshold in the dependent-variable dimension (last entry of OriginalDimension) will be set to zero in DownsampledData. For None, no Threshold was applied.",
 			Category -> "General"
 		},
 		DownsampledData->{

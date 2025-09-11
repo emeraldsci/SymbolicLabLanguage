@@ -133,7 +133,7 @@ DefineOptions[ExperimentLuminescenceKinetics,
 ];
 
 
-ExperimentLuminescenceKinetics[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+ExperimentLuminescenceKinetics[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{listedContainers,listedOptions,outputSpecification,output,gatherTests,containerToSampleResult,containerToSampleOutput,
 		samples,sampleOptions,containerToSampleTests,validSamplePreparationResult,mySamplesWithPreparedSamples,containerToSampleSimulation,
 		myOptionsWithPreparedSamples,samplePreparationSimulation},
@@ -146,7 +146,7 @@ ExperimentLuminescenceKinetics[myContainers:ListableP[ObjectP[{Object[Container]
 	gatherTests=MemberQ[output,Tests];
 
 	(* Remove temporal links and throw warnings *)
-	{listedContainers,listedOptions}=removeLinks[ToList[myContainers],ToList[myOptions]];
+	{listedContainers,listedOptions}={ToList[myContainers], ToList[myOptions]};
 
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
@@ -157,7 +157,7 @@ ExperimentLuminescenceKinetics[myContainers:ListableP[ObjectP[{Object[Container]
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -219,7 +219,7 @@ ExperimentLuminescenceKinetics[myContainers:ListableP[ObjectP[{Object[Container]
 ExperimentLuminescenceKinetics[mySamples:ListableP[ObjectP[{Object[Sample]}]],myOptions:OptionsPattern[]]:=Module[{
 	listedSamples,listedOptions,outputSpecification,output,gatherTestsQ,messagesBoolean,validSamplePreparationResult,
 	mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationSimulation,safeOptions,safeOptionsNamed,safeOptionTests,
-	upload, confirm, fastTrack, parentProt,estimatedRunTime,
+	upload, confirm, canaryBranch, fastTrack, parentProt,estimatedRunTime,
 	validLengthsQ,validLengthTests,templateOptions,templateOptionsTests,inheritedOptions,expandedSafeOps,
 	downloadedPackets,sampleObjects,cache,newCache,resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,resourcePackets,resourcePacketTests,protocolObject,
 	returnEarlyQ,performSimulationQ,simulatedProtocol,simulation
@@ -245,7 +245,7 @@ ExperimentLuminescenceKinetics[mySamples:ListableP[ObjectP[{Object[Sample]}]],my
 			listedOptions
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -263,7 +263,7 @@ ExperimentLuminescenceKinetics[mySamples:ListableP[ObjectP[{Object[Sample]}]],my
 		{SafeOptions[ExperimentLuminescenceKinetics,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],Null}
 	];
 
-	{mySamplesWithPreparedSamples,safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples,safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed, myOptionsWithPreparedSamplesNamed,Simulation->samplePreparationSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOptions,$Failed],
@@ -294,7 +294,7 @@ ExperimentLuminescenceKinetics[mySamples:ListableP[ObjectP[{Object[Sample]}]],my
 	];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProt, cache} = Lookup[safeOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProt, cache} = Lookup[safeOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* apply the template options - no need to specify the definition number since we only have samples defined as input *)
 	{templateOptions, templateOptionsTests} = If[gatherTestsQ,
@@ -416,7 +416,7 @@ ExperimentLuminescenceKinetics[mySamples:ListableP[ObjectP[{Object[Sample]}]],my
 			Cache->newCache,
 			Simulation->samplePreparationSimulation
 		],
-		{Null, Null}
+		{Null, samplePreparationSimulation}
 	];
 
 	estimatedRunTime = 15 Minute +
@@ -450,11 +450,25 @@ ExperimentLuminescenceKinetics[mySamples:ListableP[ObjectP[{Object[Sample]}]],my
 
 		(* If we're doing Preparation->Robotic and Upload->True, call RCP or RSP with our primitive. *)
 		MatchQ[Lookup[resolvedOptions,Preparation],Robotic],
-		Module[{primitive, nonHiddenOptions,experimentFunction},
+		Module[{samplesMaybeWithModels, primitive, nonHiddenOptions,experimentFunction},
+
+			(* convert the samples to models if we had model inputs originally *)
+			(* if we don't have a simulation or a single prep unit op, then we know we didn't have a model input *)
+			(* NOTE: this is important. Need to use samplePreparationSimulation here and not simulation.  This is because mySamples needs to get converted to model via the simulation _before_ SimulateResources is called in simulateExperimentFilter *)
+			(* otherwise, the same label will point at two different IDs, and that's going to cause problems *)
+			samplesMaybeWithModels = If[NullQ[samplePreparationSimulation] || Not[MatchQ[Lookup[resolvedOptions, PreparatoryUnitOperations], {_[_LabelSample]}]],
+				mySamples,
+				simulatedSamplesToModels[
+					Lookup[resolvedOptions, PreparatoryUnitOperations][[1, 1]],
+					samplePreparationSimulation,
+					mySamples
+				]
+			];
+
 			(* Create our primitive to feed into RoboticSamplePreparation. *)
 			primitive=LuminescenceKinetics@@Join[
 				{
-					Sample->mySamples
+					Sample->samplesMaybeWithModels
 				},
 				RemoveHiddenPrimitiveOptions[LuminescenceKinetics,ToList[myOptions]]
 			];
@@ -489,6 +503,7 @@ ExperimentLuminescenceKinetics[mySamples:ListableP[ObjectP[{Object[Sample]}]],my
 					Name->Lookup[safeOptions,Name],
 					Upload->Lookup[safeOptions,Upload],
 					Confirm->Lookup[safeOptions,Confirm],
+					CanaryBranch->Lookup[safeOptions,CanaryBranch],
 					ParentProtocol->Lookup[safeOptions,ParentProtocol],
 					Priority->Lookup[safeOptions,Priority],
 					StartDate->Lookup[safeOptions,StartDate],
@@ -505,6 +520,7 @@ ExperimentLuminescenceKinetics[mySamples:ListableP[ObjectP[{Object[Sample]}]],my
 			resourcePackets[[1]], (* protocolPacket *)
 			Upload->Lookup[safeOptions,Upload],
 			Confirm->Lookup[safeOptions,Confirm],
+			CanaryBranch->Lookup[safeOptions,CanaryBranch],
 			ParentProtocol->Lookup[safeOptions,ParentProtocol],
 			Priority->Lookup[safeOptions,Priority],
 			StartDate->Lookup[safeOptions,StartDate],
@@ -512,7 +528,7 @@ ExperimentLuminescenceKinetics[mySamples:ListableP[ObjectP[{Object[Sample]}]],my
 			QueuePosition->Lookup[safeOptions,QueuePosition],
 			ConstellationMessage->Object[Protocol,LuminescenceKinetics],
 			Cache -> newCache,
-			Simulation -> samplePreparationSimulation
+			Simulation -> simulation
 		]
 	];
 

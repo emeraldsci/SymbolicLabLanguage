@@ -238,7 +238,7 @@ resolveChromatographyStandardsAndBlanks[
       !templateSpecifiedQ,
       False
     },
-    (*check whether the standard and the injection table standards are copacetic*)
+    (*check whether the standard and the injection table standards are compatible*)
     {_,Except[ListableP[Automatic]],True},
     {
       (*if there is an injection table we default to Null*)
@@ -370,7 +370,7 @@ resolveChromatographyStandardsAndBlanks[
       !templateSpecifiedQ,
       False
     },
-    (*check whether the blank and the injection table blanks are copacetic*)
+    (*check whether the blank and the injection table blanks are compatible*)
     {_,Except[ListableP[Automatic]],True},
     {
       Null,
@@ -449,7 +449,7 @@ resolveChromatographyStandardsAndBlanks[
 
   (*now do all of our error checking*)
 
-  (*we need to make sure that if the injection table is specified that the samples and the input are copacetic*)
+  (*we need to make sure that if the injection table is specified that the samples and the input are compatible*)
   injectionTableSampleConflictQ=If[injectionTableSpecifiedQ,
     (*check first if they're the same length. that's already bad*)
     If[Length[ToList[mySamples]]==Count[injectionTableLookup,{Sample,___}],
@@ -820,7 +820,7 @@ resolveInjectionTable[mySamples_,partiallyResolvedOptions:_Association,experimen
   standardExistsQ = !MatchQ[resolvedStandard, Null | {} | {Null}];
   blankExistsQ = !MatchQ[resolvedBlank, Null | {} | {Null}];
 
-  (*we need to make sure that if the injection table is specified that the samples/standards/blanks and the input/options are copacetic*)
+  (*we need to make sure that if the injection table is specified that the samples/standards/blanks and the input/options are compatible*)
   injectionTableSampleConflictQ = If[injectionTableSpecifiedQ,
     !MatchQ[Download[Cases[roundedInjectionTableWithInjectionType, {Sample, ___}] /. {Sample, x_, ___} :> x, Object], Download[mySamples, Object]],
     False
@@ -1116,22 +1116,30 @@ resolveInjectionTable[mySamples_,partiallyResolvedOptions:_Association,experimen
       (*we'll now resolve the gradients*)
 
       (*for the gradients, we always want to associate the method to the appropriate column. accordingly, we need a dictionary*)
-      columnPrimeDictionary = If[experimentHPLCQ,
+      columnPrimeDictionary = Which[
+        NullQ[resolvedColumnSelectorPosition],
+        {},
+        experimentHPLCQ,
         Quiet[MapThread[
           Function[{selectedColumnPosition, primeGradient, overwriteQ},
             selectedColumnPosition-> If[!overwriteQ, primeGradient, CreateID[gradientMethodType]]
           ], {resolvedColumnSelectorPosition, ToList@resolvedColumnPrimeGradients, overwriteColumnPrimeGradients}], {Download::MissingField}],
+        True,
         Quiet[MapThread[
           Function[{selectedColumn, primeGradient, overwriteQ},
             Download[selectedColumn, Object] -> If[!overwriteQ, primeGradient, CreateID[gradientMethodType]]
           ], {resolvedColumnSelector, ToList@resolvedColumnPrimeGradients, overwriteColumnPrimeGradients}], {Download::MissingField}]
       ];
 
-      columnFlushDictionary = If[experimentHPLCQ,
+      columnFlushDictionary = Which[
+        NullQ[resolvedColumnSelectorPosition],
+        {},
+        experimentHPLCQ,
         Quiet[MapThread[
           Function[{selectedColumnPosition, flushGradient, overwriteQ},
             selectedColumnPosition -> If[!overwriteQ, flushGradient, CreateID[gradientMethodType]]
           ], {resolvedColumnSelectorPosition, ToList@resolvedColumnFlushGradients, overwriteColumnFlushGradients}], {Download::MissingField}],
+        True,
         Quiet[MapThread[
           Function[{selectedColumn, flushGradient, overwriteQ},
             Download[selectedColumn, Object] -> If[!overwriteQ, flushGradient, CreateID[gradientMethodType]]
@@ -2578,7 +2586,7 @@ aspirationCapPackets[] := aspirationCapPackets[] = Module[{capModels},
 
 (* a helper function to find a valid aspiration cap model for a given container model *)
 (* it first checks the AspirationCaps field in Model[Container, Vessel] *)
-(* if that is null or only contains deprecated models, it looks at the tubing lenght and the fittings (thread then dimensions) *)
+(* if that is null or only contains deprecated models, it looks at the tubing length and the fittings (thread then dimensions) *)
 (* there is a last resort in here such this function will always return something *)
 
 (*Options*)
@@ -2679,7 +2687,6 @@ findAspirationCap[containers : {ObjectP[Model[Container, Vessel]] ..}, options:O
               (* our first pass search is going to be looking for something that has the exact same thread type and the right aspiration tubing depth*)
               (
                 connectors = Lookup[packet, Connectors];
-
                 (* -- First pass: try to find anything with the right depth and the exact threads -- *)
 
                 (* look for anything that has the right thread and is Male/Female compatible *)
@@ -2716,12 +2723,12 @@ findAspirationCap[containers : {ObjectP[Model[Container, Vessel]] ..}, options:O
                 ];
 
                 (* pull out the compatible AspirationCaps *)
-                (*here we also want to quickly sort by the cap size such that we dont return a cap that is way too big*)
+                (*here we also want to quickly sort by the cap size such that we don't return a cap that is way too big*)
                 secondPassPackets = Quiet[SortBy[Cases[sortedCapPackets, backupSearchPattern], Lookup[#, Connectors][[4]]&]];
 
                 (* -- Last pass: try to find something that will reach the bottom -- *)
 
-                (*just find somethign that will reach the bottom*)
+                (*just find something that will reach the bottom*)
                 desparationSearhPattern = KeyValuePattern[
                   AspirationTubeLength -> RangeP[0.9*Lookup[packet, InternalDepth], 1.1*Lookup[packet, InternalDepth]]
                 ];

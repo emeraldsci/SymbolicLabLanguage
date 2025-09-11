@@ -108,6 +108,13 @@ DefineObjectType[Model[Part, ConductivityProbe], {
 			Units -> Celsius,
 			Description -> "Maximum temperature the probe can perform a measurement at.",
 			Category -> "Operating Limits"
+		},
+		SecondaryCalibration -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates whether to perform a two-points calibration.",
+			Category -> "Model Information"
 		}
 	}
 }];

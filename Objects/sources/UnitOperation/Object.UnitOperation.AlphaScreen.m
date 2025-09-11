@@ -97,7 +97,30 @@ DefineObjectType[Object[UnitOperation,AlphaScreen], {
 			Description->"The length of time for which the assay plates equilibrate at the requested temperature in the plate reader before being read.",
 			Category -> "Sample Handling"
 		},
-
+		TargetCarbonDioxideLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Percent],
+			Units -> Percent,
+			Description -> "The target amount of carbon dioxide in the atmosphere in the plate reader chamber.",
+			Category -> "Sample Handling"
+		},
+		TargetOxygenLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Percent],
+			Units -> Percent,
+			Description -> "The target amount of oxygen in the atmosphere in the plate reader chamber. If specified, nitrogen gas is pumped into the chamber to force oxygen in ambient air out of the chamber until the desired level is reached.",
+			Category -> "Sample Handling"
+		},
+		AtmosphereEquilibrationTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Minute],
+			Units -> Minute,
+			Description -> "The length of time for which the samples equilibrate at the requested oxygen and carbon dioxide level before being read.",
+			Category -> "Sample Handling"
+		},
 		PlateReaderMix -> {
 			Format -> Single,
 			Class -> Expression,

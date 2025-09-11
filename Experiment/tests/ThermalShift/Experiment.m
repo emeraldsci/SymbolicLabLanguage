@@ -39,6 +39,13 @@ DefineTests[ExperimentThermalShift,
 			ExperimentThermalShift[{{Object[Container, Plate, "ExperimentThermalShift test container 1" <> $SessionUUID]}}, AliquotAmount -> 50 * Microliter, AliquotContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"]],
 			ObjectP[Object[Protocol, ThermalShift]]
 		],
+		Example[{Basic, "Generates a thermal shift protocol from a sample model:"},
+			ExperimentThermalShift[Model[Sample,"Milli-Q water"]],
+			ObjectP[Object[Protocol, ThermalShift]],
+			Messages :> {
+				Warning::UnknownAnalytes
+			}
+		],
 
 		(*===Additional examples===*)
 		Example[{Additional, "Generates a thermal shift protocol from a mixed list of inputs by pooling any inputs within a nested list and keeping all other inputs independent:"},
@@ -52,6 +59,80 @@ DefineTests[ExperimentThermalShift,
 		],
 
 		(*===Messages tests===*)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentThermalShift[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentThermalShift[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentThermalShift[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentThermalShift[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "ExperimentThermalShift model test sample 1" <> $SessionUUID],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentThermalShift[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "ExperimentThermalShift model test sample 1" <> $SessionUUID],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentThermalShift[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[{Messages, "TooManyTemperatureRampOptions", "Temperature ramp options for both linear and step ramps cannot be specified:"},
 			ExperimentThermalShift[
 				Object[Sample, "ExperimentThermalShift test sample 5" <> $SessionUUID],
@@ -782,7 +863,7 @@ DefineTests[ExperimentThermalShift,
 				AliquotAmount -> {{50 * Microliter, 50 * Microliter}},
 				AliquotContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"], Output -> Options],
 				AliquotContainer],
-			{1, ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}
+			{{1, ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}}
 		],
 		Example[{Options, ConsolidateAliquots, "Use ConsolidateAliquots options to indicate if identical aliquots should be prepared in the same position:"},
 			Lookup[ExperimentThermalShift[{Object[Sample, "ExperimentThermalShift test sample 1" <> $SessionUUID], Object[Sample, "ExperimentThermalShift test sample 2" <> $SessionUUID]},
@@ -799,7 +880,7 @@ DefineTests[ExperimentThermalShift,
 				AliquotContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 				NestedIndexMatchingMix -> True, Output -> Options],
 				{NestedIndexMatchingMix, NestedIndexMatchingMixType, NestedIndexMatchingMixVolume, NestedIndexMatchingNumberOfMixes}],
-			{True, Pipette, 50.` Microliter, 5}
+			{True, Pipette, 50 Microliter, 5}
 		],
 		Example[{Options, NestedIndexMatchingMixType, "Indicate the type of mixing that the pooled samples should be mixed prior to measurement:"},
 			Lookup[ExperimentThermalShift[{{Object[Sample, "ExperimentThermalShift test sample 1" <> $SessionUUID], Object[Sample, "ExperimentThermalShift test sample 2" <> $SessionUUID]}},
@@ -807,7 +888,7 @@ DefineTests[ExperimentThermalShift,
 				AliquotContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 				NestedIndexMatchingMix -> True, Output -> Options],
 				{NestedIndexMatchingMix, NestedIndexMatchingMixType, NestedIndexMatchingMixVolume, NestedIndexMatchingNumberOfMixes}],
-			{True, Pipette, 50.` Microliter, 5}
+			{True, Pipette, 50 Microliter, 5}
 		],
 		Example[{Options, NestedIndexMatchingMixVolume, "Indicate volume that the pooled samples should be pipetted up and down for mixing prior to measurement:"},
 			Lookup[ExperimentThermalShift[{{Object[Sample, "ExperimentThermalShift test sample 1" <> $SessionUUID], Object[Sample, "ExperimentThermalShift test sample 2" <> $SessionUUID]}},
@@ -815,7 +896,7 @@ DefineTests[ExperimentThermalShift,
 				AliquotContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 				NestedIndexMatchingMix -> True, Output -> Options],
 				{NestedIndexMatchingMix, NestedIndexMatchingMixType, NestedIndexMatchingMixVolume, NestedIndexMatchingNumberOfMixes}],
-			{True, Pipette, 50.` Microliter, 5}
+			{True, Pipette, 50 Microliter, 5}
 		],
 		Example[{Options, NestedIndexMatchingNumberOfMixes, "Indicate the number of times that the pooled samples should be mixed by pipetting or inversion prior to measurement:"},
 			Lookup[ExperimentThermalShift[{{Object[Sample, "ExperimentThermalShift test sample 1" <> $SessionUUID], Object[Sample, "ExperimentThermalShift test sample 2" <> $SessionUUID]}},
@@ -823,7 +904,7 @@ DefineTests[ExperimentThermalShift,
 				AliquotContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 				NestedIndexMatchingMix -> True, Output -> Options],
 				{NestedIndexMatchingMix, NestedIndexMatchingMixType, NestedIndexMatchingMixVolume, NestedIndexMatchingNumberOfMixes}],
-			{True, Pipette, 50.` Microliter, 5}
+			{True, Pipette, 50 Microliter, 5}
 		],
 		Example[{Options, NestedIndexMatchingMix, "Indicate that some of the pools should be mixed prior to measurement, but not all:"},
 			Lookup[ExperimentThermalShift[
@@ -836,7 +917,7 @@ DefineTests[ExperimentThermalShift,
 				NestedIndexMatchingMix -> {False, True},
 				Output -> Options],
 				{NestedIndexMatchingMix, NestedIndexMatchingMixType, NestedIndexMatchingMixVolume, NestedIndexMatchingNumberOfMixes}],
-			{{False, True}, {Null, Pipette}, {Null, 50.` Microliter}, {Null, 5}}
+			{{False, True}, {Null, Pipette}, {Null, 50 Microliter}, {Null, 5}}
 		],
 		Example[{Options, NestedIndexMatchingIncubate, "Indicate that the pooled samples should be incubated prior to measurement:"},
 			Lookup[ExperimentThermalShift[{{Object[Sample, "ExperimentThermalShift test sample 1" <> $SessionUUID], Object[Sample, "ExperimentThermalShift test sample 2" <> $SessionUUID]}},
@@ -1350,7 +1431,7 @@ DefineTests[ExperimentThermalShift,
 				Output -> Options
 			];
 			Lookup[options, {DynamicLightScatteringMeasurementTemperatures, MinTemperature}],
-			{{30Celsius}, 30Celsius},
+			{30Celsius, 30Celsius},
 			Variables :> {options}
 		],
 		Example[{Options, DynamicLightScatteringMeasurementTemperatures, "The DynamicLightScatteringMeasurementTemperatures option defaults to MaxTemperature if DynamicLightScatteringMeasurements is After and the ramp is Heating:"},
@@ -1361,7 +1442,7 @@ DefineTests[ExperimentThermalShift,
 				Output -> Options
 			];
 			Lookup[options, {DynamicLightScatteringMeasurementTemperatures, MaxTemperature}],
-			{{80Celsius}, 80Celsius},
+			{80Celsius, 80Celsius},
 			Variables :> {options}
 		],
 		Example[{Options, DynamicLightScatteringMeasurementTemperatures, "The DynamicLightScatteringMeasurementTemperatures option defaults to {MinTemperature,MaxTemperature} if DynamicLightScatteringMeasurements is {Before,After} and the ramp is Heating:"},
@@ -1384,7 +1465,7 @@ DefineTests[ExperimentThermalShift,
 				Output -> Options
 			];
 			Lookup[options, DynamicLightScatteringMeasurementTemperatures],
-			{50Celsius},
+			50Celsius,
 			Variables :> {options}
 		],
 		Example[{Options, NumberOfDynamicLightScatteringAcquisitions, "The NumberOfDynamicLightScatteringAcquisitions option defaults to Null if DynamicLightScattering is False:"},
@@ -1564,26 +1645,40 @@ DefineTests[ExperimentThermalShift,
 			Variables :> {options},
 			TimeConstraint -> 600
 		],
-		Example[{Options, PreparatoryPrimitives, "Specify prepared samples for ExperimentThermalShift (old):"},
-			Download[ExperimentThermalShift["My Pooled Sample",
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My Pooled Sample",
-						Container -> Model[Container, Vessel, "2mL Tube"]
-					],
-					Transfer[
-						Source -> Model[Sample, "Isopropanol"],
-						Amount -> 500 * Microliter,
-						Destination -> {"My Pooled Sample"}
-					],
-					Transfer[
-						Source -> Model[Sample, "ExperimentThermalShift model test sample 1" <> $SessionUUID],
-						Amount -> 30 * Microliter,
-						Destination -> {"My Pooled Sample"}
-					]
-				}
-			], PreparatoryPrimitives],
-			{SampleManipulationP..}
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentThermalShift[
+				Model[Sample, "Ammonium hydroxide"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True,
+				Mix -> True
+			],
+			ObjectP[Object[Protocol, ThermalShift]],
+			Messages :> {Warning::UnknownAnalytes}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared"},
+			options = ExperimentThermalShift[
+				{{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]}},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs},
+			Messages:>{Warning::UnknownAnalytes}
 		],
 		Example[{Options, PreparatoryUnitOperations, "Specify prepared samples for ExperimentThermalShift (new):"},
 			protocol = Quiet[ExperimentThermalShift["My Pooled Sample",
@@ -1763,7 +1858,7 @@ DefineTests[ExperimentThermalShift,
 				Output -> Options
 			];
 			Lookup[options, DestinationWell],
-			"A1",
+			{"A1"},
 			Variables :> {options}
 		],
 		Example[{Options, Mix, "Indicates if this sample should be mixed while incubated, prior to starting the experiment:"},
@@ -2243,6 +2338,8 @@ DefineTests[ExperimentThermalShift,
 		$PersonID = Object[User, "Test user for notebook-less test protocols"],
 		$AllowPublicObjects = True
 	},
+	(* without this, telescolpe crashes and the tests fail *)
+	HardwareConfiguration->HighRAM,
 
 	SetUp :> ($CreatedObjects = {}),
 	TearDown :> (EraseObject[$CreatedObjects, Force -> True]),

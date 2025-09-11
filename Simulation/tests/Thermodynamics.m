@@ -1412,7 +1412,7 @@ DefineTestsWithCompanions[SimulateEntropy,
 		Example[{Messages, "UnsupportedReactionType", "Given too many reactants:"},
 			SimulateEntropy[DNA["ATGTATAG"]+DNA["TACATATC"]+DNA["GTCAGTC"]],
 			$Failed,
-			Messages:>{Error::InvalidInput}
+			Messages:>{Error::InvalidInput,Error::ValueDoesNotMatchPattern}
 		],
 
 		Example[{Messages, "ReactionTypeNull", "Given an object with ReactionType option set to Null:"},
@@ -2353,7 +2353,7 @@ DefineTestsWithCompanions[SimulateFreeEnergy,
 		Example[{Messages, "UnsupportedReactionType", "Given too many reactants:"},
 			SimulateFreeEnergy[DNA["ATGTATAG"]+DNA["TACATATC"]+DNA["GTCAGTC"], 37 Celsius],
 			$Failed,
-			Messages:>{Error::InvalidInput}
+			Messages:>{Error::InvalidInput,Error::ValueDoesNotMatchPattern}
 		],
 
 		Example[{Messages, "ReactionTypeNull", "Given an object with ReactionType option set to Null:"},
@@ -3200,7 +3200,7 @@ DefineTestsWithCompanions[SimulateMeltingTemperature,
 		Example[{Messages, "UnsupportedReactionType", "Given too many reactants:"},
 			SimulateMeltingTemperature[DNA["ATGTATAG"]+DNA["TACATATC"]+DNA["GTCAGTC"], 250.0*Micromolar],
 			$Failed,
-			Messages:>{Error::InvalidInput}
+			Messages:>{Error::InvalidInput,Error::ValueDoesNotMatchPattern}
 		],
 
 		Example[{Messages, "ReactionTypeNull", "Given an object with ReactionType option set to Null:"},
@@ -4136,7 +4136,7 @@ DefineTestsWithCompanions[SimulateEquilibriumConstant,{
 	Example[{Messages, "UnsupportedReactionType", "Given too many reactants:"},
 		SimulateEquilibriumConstant[DNA["ATGTATAG"]+DNA["TACATATC"]+DNA["GTCAGTC"], 37.0*Celsius],
 		$Failed,
-		Messages:>{Error::InvalidInput}
+		Messages:>{Error::InvalidInput,Error::ValueDoesNotMatchPattern}
 	],
 
 	Example[{Messages, "ReactionTypeNull", "Given an object with ReactionType option set to Null:"},

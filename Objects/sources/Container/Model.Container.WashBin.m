@@ -15,6 +15,6 @@ DefineObjectType[Model[Container, WashBin], {
 			Pattern :> CleaningTypeP,
 			Description -> "Indicates the type of cleaning or sterilization that the contents of containers of this model will undergo.",
 			Category -> "Container Specifications"
-		}				
+		}
 	}
 }];

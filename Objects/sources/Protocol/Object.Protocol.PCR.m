@@ -136,6 +136,13 @@ DefineObjectType[Object[Protocol,PCR],{
 			Category->"Sample Storage",
 			IndexMatching->SamplesIn
 		},
+		PreparedPlate -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the input sample is already prepared and is used as is without adding buffer or master mix.",
+			Category -> "Sample Preparation"
+		},
 		MasterMix->{
 			Format->Single,
 			Class->Link,
@@ -189,7 +196,7 @@ DefineObjectType[Object[Protocol,PCR],{
 		AssayPlatePrimitives->{
 			Format->Multiple,
 			Class->Expression,
-			Pattern:>SampleManipulationP,
+			Pattern:>SampleManipulationP|SamplePreparationP,
 			Description->"The set of instructions specifying the loading of AssayPlate with input samples, primers, master mix, and buffer.",
 			Category->"Sample Loading"
 		},

@@ -24,6 +24,14 @@ DefineObjectType[Object[Data,FragmentAnalysis],{
 			Description->"Indicates whether the data represent a ladder, a blank, or a sample for analysis.",
 			Category -> "Method Information"
 		},
+		SampleAnalyteType -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> FragmentAnalysisAnalyteTypeP,
+			Description -> "The desired nucleic acid type (DNA or RNA) of the analytes in the sample that are separated based on fragment size.",
+			Category -> "General",
+			Abstract -> True
+		},
 		Well->{
 			Format->Single,
 			Class->Expression,
@@ -176,6 +184,21 @@ DefineObjectType[Object[Data,FragmentAnalysis],{
 			Description -> "The image file that shows the consolidated fluorescence of all capillary arrays in a single experiment run detected through the capillary array detection window over time during the sample run.",
 			Category -> "Experimental Results"
 		},
+		LaneImage -> {
+			Format -> Computable,
+			Expression :> SafeEvaluate[{Field[LaneImageFile]}, ImportCloudFile[Field[LaneImageFile]]],
+			Pattern :> _Image,
+			Description -> "An image of the simulated lane containing the sample run on the capillary.",
+			Category -> "Experimental Results"
+		},
+		LaneImageFile -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image file of the simulated lane containing the sample run on the capillary.",
+			Category -> "Experimental Results"
+		},
 		RawDataFile -> {
 			Format -> Single,
 			Class -> Link,
@@ -200,6 +223,14 @@ DefineObjectType[Object[Data,FragmentAnalysis],{
 			Units->{Nucleotide,RFU},
 			Description->"The electropherogram of size (in nucleotide) vs RFU as processed by the ProSize Software (new analysis function - AnalyzeFragmentSize).",
 			Category->"Experimental Results"
+		},
+		PeaksAnalyses->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Analysis][Reference],
+			Description->"Peak picking analyses performed on Electropherogram, DNAFragmentSizeAnalyses,RNAFragmentSizeAnalyses.",
+			Category->"Analysis & Reports"
 		},
 		DNAPeakTable->{
 			Format->Single,
@@ -255,6 +286,13 @@ DefineObjectType[Object[Data,FragmentAnalysis],{
 			Units->Nanogram/Microliter,
 			Description -> "The total concetration of input RNA sample prior to addition of LoadingBuffer as determined by ProSize Software assuming the suggested values of the AnalysisMethod for SampleVolume,SampleLoadingBuffer,SampleLoadingBufferVolume,LadderVolume,LadderLoadingBuffer and LadderLoadingVolume are used.",
 			Category -> "Experimental Results"
+		},
+		RetryIndex->{
+			Format->Single,
+			Class->Integer,
+			Pattern:>GreaterEqualP[1,1],
+			Description->"The number indicating the order of the separation run associated with the data (eg. RetryIndex 1 means data is from the original run, RetryIndex 2 means the data is from the first retry separation run, etc.).",
+			Category->"Retry"
 		}
 	}
 }];

@@ -44,7 +44,12 @@ DefineUsage[ExperimentTotalProteinDetection,{
 									Type -> Object,
 									Pattern :> ObjectP[{Object[Container]}]
 								]
-							}
+							},
+							"Model Sample"->Widget[
+								Type -> Object,
+								Pattern :> ObjectP[Model[Sample]],
+								ObjectTypes -> {Model[Sample]}
+							]
 						],
 						Expandable->False
 					},
@@ -74,5 +79,5 @@ DefineUsage[ExperimentTotalProteinDetection,{
 	Tutorials->{
 		"Sample Preparation"
 	},
-	Author->{"andrey.shur", "lei.tian", "jihan.kim", "axu"}
+	Author->{"jireh.sacramento", "andrey.shur", "lei.tian", "jihan.kim", "axu"}
 }];

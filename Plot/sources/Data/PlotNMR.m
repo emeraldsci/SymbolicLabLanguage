@@ -109,6 +109,12 @@ DefineOptions[PlotNMR,
 			ModifyOptions[PlotWaterfall,
 				{ViewVector,ViewAngle,ViewRange},
 				{Category->"Hidden",AllowNull->True}
+			],
+
+			(* To prevent plot label from rotating with the figure *)
+			ModifyOptions[PlotWaterfall,
+				{SphericalRegion},
+				{Default->True}
 			]
 		}
 	}],
@@ -128,7 +134,8 @@ DefineOptions[PlotNMR,
 
 
 Warning::WaterfallAxisFillingNotSupported="The specified Filling method (`1`) is not currently supported when PlotType is set to WaterfallPlot. Defaulting Filling to Bottom.";
-
+Error::NoNMRDataToPlot = "The protocol object does not contain any associated NMR data.";
+Error::NMRProtocolDataNotPlotted = "The data objects linked to the input protocol were not able to be plotted. The data objects may be missing field values that are required for plotting. Please inspect the data objects to ensure that they contain the data to be plotted, and call PlotNMR or PlotObject on an individual data object to identify the missing values.";
 
 (* ::Subsection:: *)
 (*PlotNMR Core Function*)
@@ -181,7 +188,7 @@ plotNMRWaterfall[primaryData:plotInputP|{Plot`Private`sparseStackedDataP..},inpu
 	(* Compile resolved options *)
 	resolvedOptions=ReplaceRule[
 		ToList[inputOptions],
-		{Reflected->reflected,Axes->axes,AxesLabel->axesLabel,PlotLabel->plotLabel,Filling->resolvedFilling}
+		{Reflected->reflected,Axes->axes,AxesLabel->axesLabel,PlotLabel->plotLabel,Filling->resolvedFilling,SphericalRegion -> Lookup[safeOps, SphericalRegion]}
 		];
 
 	(* Call PlotWaterfall to generate plot and resolved options *)
@@ -240,12 +247,85 @@ PlotNMR[primaryData:rawPlotInputP,inputOptions:OptionsPattern[PlotNMR]]:=Module[
 
 ];
 
+(* Protocol Overload *)
+PlotNMR[
+	obj: ObjectP[Object[Protocol, NMR]],
+	ops: OptionsPattern[PlotNMR]
+] := Module[{safeOps, output, data, previewPlot, plots, resolvedOptions, finalResult, outputPlot, outputOptions},
+
+	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
+	safeOps=SafeOptions[PlotNMR, ToList[ops]];
+
+	(* Requested output, either a single value or list of Alternatives[Result,Options,Preview,Tests] *)
+	output = ToList[Lookup[safeOps, Output]];
+
+	(* Download the data from the input protocol *)
+	data = Download[obj, Data];
+
+	(* Return an error if there is no data or it is not the correct data type *)
+	If[!MatchQ[data, {ObjectP[Object[Data, NMR]]..}],
+		Message[Error::NoNMRDataToPlot];
+		Return[$Failed]
+	];
+
+	(* If Preview is requested, return a plot with all of the data objects in the protocol overlaid in one plot *)
+	previewPlot = If[MemberQ[output, Preview],
+		PlotNMR[data, Sequence @@ ReplaceRule[safeOps, Output -> Preview]],
+		Null
+	];
+
+	(* If either Result or Options are requested, map over the data objects. Remove anything that failed from the list of plots to be displayed*)
+	{plots, resolvedOptions} = If[MemberQ[output, (Result | Options)],
+		PlotNMR[data, Sequence @@ ReplaceRule[safeOps, {Output -> {Result, Options}, Map -> True}]] /. $Failed -> Nothing,
+		{{}, {}}
+	];
+
+	(* If all of the data objects failed to plot, return an error *)
+	If[MatchQ[plots, (ListableP[{}] | ListableP[Null])] && MatchQ[previewPlot, (Null | $Failed)],
+		Message[Error::NMRProtocolDataNotPlotted];
+		Return[$Failed],
+		Nothing
+	];
+
+	(* If Result was requested, output the plots in slide view, unless there is only one plot then we can just show it not in slide view. *)
+	outputPlot = If[MemberQ[output, Result],
+		If[Length[plots] > 1,
+			SlideView[plots],
+			First[plots]
+		]
+	];
+
+	(* If Options were requested, just take the first set of options since they are the same for all plots. Make it a List first just in case there is only one option set. *)
+	outputOptions = If[MemberQ[output, Options],
+		First[ToList[resolvedOptions]]
+	];
+
+	(* Prepare our final result *)
+	finalResult = output /. {
+		Result -> outputPlot,
+		Options -> outputOptions,
+		Preview -> previewPlot,
+		Tests -> {}
+	};
+
+	(* Return the result *)
+	If[
+		Length[finalResult] == 1,
+		First[finalResult],
+		finalResult
+	]
+];
+
 (* Main function for Object[Data,NMR] input  *)
 (* PlotNMR[infs:plotInputP,inputOptions:OptionsPattern[PlotNMR]]:= *)
 PlotNMR[infs:ListableP[ObjectP[{Object[Data,NMR],Object[Data, NMR2D]}],2],inputOptions:OptionsPattern[PlotNMR]]:=Module[
-	{safeOps,plotType,resolvedPlotType,objs,fields2D,fields3D,contains2D,contains3D,ellpOutput,nullOps,waterfallOnly=False},
+	{safeOps,plotType,resolvedPlotType,objs,fields2D,fields3D,contains2D,contains3D,ellpOutput,nullOps,
+		waterfallOnly, preResolvedPlotLabel, plotLabelNullOrNone},
 
 	safeOps=SafeOptions[PlotNMR,ToList[inputOptions]];
+
+	(* set this variable to False and we will flip the switch to True if we get to it at the bottom of the resolvedPlotType conditional *)
+	waterfallOnly = False;
 
 	(* Resolve PlotType *)
 	plotType=Lookup[safeOps,PlotType];
@@ -270,12 +350,29 @@ PlotNMR[infs:ListableP[ObjectP[{Object[Data,NMR],Object[Data, NMR2D]}],2],inputO
 		If[!contains2D&&contains3D,waterfallOnly=True;WaterfallPlot,LinePlot]
 	];
 
+	(* pick None or Null for the "empty" PlotLabel value becuase for some ridiculous reason PlotNMR can take Null but sometimes freaks out if it's specified instead of Null *)
+	plotLabelNullOrNone = With[{plotLabelDefinition = FirstCase[OptionDefinition[PlotNMR], KeyValuePattern[{"OptionName" -> "PlotLabel"}], <||>]},
+		If[MatchQ[None, ReleaseHold[Lookup[plotLabelDefinition, "SingletonPattern"]]],
+			None,
+			Null
+		]
+	];
+
+	(* pre resolve the PlotLabel to be Null if we have a single object or multiple objects without Map -> True *)
+	preResolvedPlotLabel = Which[
+		Not[MatchQ[Lookup[safeOps, PlotLabel], Automatic]], Lookup[safeOps, PlotLabel],
+		Not[TrueQ[Lookup[safeOps, Map]]] && ListQ[infs], plotLabelNullOrNone,
+		MatchQ[infs, ObjectP[]], plotLabelNullOrNone,
+		True, Automatic
+	];
+
+
 	(* If PlotType is WaterfallPlot, route to plotNMRWaterfall. Otherwise route to ELLP *)
 	If[SameQ[resolvedPlotType,WaterfallPlot],
-		plotNMRWaterfall[infs,ReplaceRule[ToList[inputOptions],If[TrueQ@waterfallOnly,{PlotType->Null},{PlotType->WaterfallPlot}]]],
+		plotNMRWaterfall[infs,ReplaceRule[ToList[inputOptions],{PlotLabel -> preResolvedPlotLabel, PlotType -> If[TrueQ[waterfallOnly], Null, WaterfallPlot]}]],
 
 		(* Call ELLP, set WaterfallPlot-specific options to Null, then return processed output *)
-		ellpOutput=packetToELLP[infs,PlotNMR,ToList[inputOptions]];
+		ellpOutput=packetToELLP[infs,PlotNMR,ReplaceRule[ToList[inputOptions], PlotLabel -> preResolvedPlotLabel]];
 		nullOps=(#->Null&/@waterfallPlotOps);
 		processELLPOutput[ellpOutput,safeOps,Join[{PlotType->resolvedPlotType},nullOps]]
 	]

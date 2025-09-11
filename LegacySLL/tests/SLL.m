@@ -142,7 +142,7 @@ DefineTests[
 			NamedObject[{Object[Company, Supplier, "id:eGakld01qrkB"], $Failed, Model[Sample,"id:8qZ1VWNmdLBD"], Null}],
 			{Object[Company, Supplier, "Emerald Cloud Lab"], $Failed, Model[Sample,"Milli-Q water"], Null}
 		],
-		Example[{Additional, "Find all Objects at arbitrary depth in an arbitrary expresison and convert to named form where possible:"},
+		Example[{Additional, "Find all Objects at arbitrary depth in an arbitrary expression and convert to named form where possible:"},
 			NamedObject[{
 				{{0.149567 VolumePercent,Link[Model[Molecule,"id:Vrbp1jK4Z9qz"],"pZx9jowMRoxj"]},{99.8504 VolumePercent,Link[Model[Molecule,"id:vXl9j57PmP5D"],"4pO6dMqGZMOr"]},{0.0319179 Mole/Liter,Link[Model[Molecule,"id:WNa4ZjKVdVOD"],"Vrbp1jOlBjbW"]}},
 				{{0.149567 VolumePercent,Link[Model[Molecule,"id:Vrbp1jK4Z9qz"],"GmzlKjr1XlmE"]},{99.8504 VolumePercent,Link[Model[Molecule,"id:vXl9j57PmP5D"],"AEqRl9mwZREp"]},{0.0319179 Mole/Liter,Link[Model[Molecule,"id:WNa4ZjKVdVOD"],"o1k9jAvMq917"]},{1.4036 Mole/Liter,Link[Model[Molecule,"id:BYDOjvG676mq"],"zGj91anMP9Ge"]}}
@@ -163,6 +163,10 @@ DefineTests[
 			SetUp:>{expression = {Object[Company, Supplier, "id:eGakld01qrkB"],Model[Molecule,"id:Vrbp1jK4Z9qz"]}},
 			Variables :> {expression}
 		],
+		Example[{Options, Cache, "Supply a cache to avoid a database trip."},
+			NamedObject[Model[Sample,"id:8qZ1VWNmdLBD"], Cache -> {<|Name->"Milli-Q water",Object->Model[Sample,"id:8qZ1VWNmdLBD"],ID->"id:8qZ1VWNmdLBD",Type->Model[Sample]|>}],
+			Model[Sample,"Milli-Q water"]
+		],
 		Test["If run on an atomic expression, returns input without error (ensure that permissiveness of 'expr_' input pattern doesn't cause issues):",
 			NamedObject["taco"],
 			"taco"
@@ -173,6 +177,28 @@ DefineTests[
 			SetUp:>{obj = Upload[<|Type -> Object[UnitTest, Function], DeveloperObject -> True|>]},
 			TearDown:>EraseObject[obj,Force->True,Verbose->False],
 			Variables :> {obj}
+		],
+		Test["If a packet is provided with the name key, the conversion is fast (a database trip is not required):",
+			RepeatedTiming[NamedObject[<|Name->"Milli-Q water",Object->Model[Sample,"id:8qZ1VWNmdLBD"],ID->"id:8qZ1VWNmdLBD",Type->Model[Sample]|>]],
+			(* This should be more like 0.01 but a database trip will take more than 0.1 *)
+			{LessP[0.1], Model[Sample,"Milli-Q water"]}
+		],
+		Test["If a packet is provided without the name key, the name is obtained from the database and the conversion is successful:",
+			NamedObject[<|Object->Model[Sample,"id:8qZ1VWNmdLBD"],ID->"id:8qZ1VWNmdLBD",Type->Model[Sample]|>],
+			(* This should be more like 0.01 but a database trip will take more than 0.1 *)
+			Model[Sample,"Milli-Q water"]
+		],
+		Test["If a packet containing the object name is supplied, conversion is fast (a database trip is not required):",
+			RepeatedTiming[NamedObject[Model[Sample,"id:8qZ1VWNmdLBD"], Cache -> {<|Name->"Milli-Q water",Object->Model[Sample,"id:8qZ1VWNmdLBD"],ID->"id:8qZ1VWNmdLBD",Type->Model[Sample]|>}]],
+			{LessP[0.1], Model[Sample,"Milli-Q water"]}
+		],
+		Test["If an object is provided in named form, conversion is fast (a database trip is not required):",
+			RepeatedTiming[NamedObject[Model[Sample,"Milli-Q water"]]],
+			{LessP[0.1], Model[Sample,"Milli-Q water"]}
+		],
+		Test["Upload packets don't break the function and remain unevaluated:",
+			NamedObject[<|Type -> Object[Sample], Status -> Available, Name -> "Test Sample"|>],
+			<|Type -> Object[Sample], Status -> Available, Name -> "Test Sample"|>
 		]
 	}
 ];

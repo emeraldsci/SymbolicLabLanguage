@@ -61,6 +61,8 @@ Warning::AllWavelengths="Since a 3D plot was requested, data for all available w
 Warning::Data2D="Since the data is two dimensional, PlotType will be set to ListLinePlot.";
 Warning::WavelengthUnavailable="No data is available at the requested wavelength. Instead the data for `1` will be used.";
 Warning::WavelengthRequired="To plot the data as a ListLinePlot a specific wavelength must be requested.";
+Error::NoAbsorbanceKineticsDataToPlot = "The protocol object does not contain any associated absorbance kinetics data.";
+Error::AbsorbanceKineticsProtocolDataNotPlotted = "The data objects linked to the input protocol were not able to be plotted. The data objects may be missing field values that are required for plotting. Please inspect the data objects to ensure that they contain the data to be plotted, and call PlotAbsorbanceKinetics or PlotObject on an individual data object to identify the missing values.";
 
 
 (* Raw Definition *)
@@ -71,6 +73,77 @@ PlotAbsorbanceKinetics[primaryData:rawPlotInputP,inputOptions:OptionsPattern[Plo
 	SafeOptions[PlotAbsorbanceKinetics, Append[ToList[inputOptions],PrimaryData->AbsorbanceTrajectories]]
 ];
 
+
+(* protocol overload *)
+PlotAbsorbanceKinetics[
+	obj:ObjectP[Object[Protocol,AbsorbanceKinetics]],
+	ops:OptionsPattern[PlotAbsorbanceKinetics]
+] := Module[{safeOps, output, data, previewPlot, plots, resolvedOptions, finalResult, outputPlot, outputOptions},
+
+	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
+	safeOps=SafeOptions[PlotAbsorbanceKinetics, ToList[ops]];
+
+	(* Requested output, either a single value or list of Alternatives[Result,Options,Preview,Tests] *)
+	output = ToList[Lookup[safeOps, Output]];
+
+	(* Download the data from the input protocol *)
+	data = Download[obj, Data];
+
+	(* Return an error if there is no data or it is not the correct data type *)
+	If[!MatchQ[data, {ObjectP[Object[Data, AbsorbanceKinetics]]..}],
+		Message[Error::NoAbsorbanceKineticsDataToPlot];
+		Return[$Failed]
+	];
+
+	(* If Preview is requested, return a plot with all of the data objects in the protocol overlaid in one plot *)
+	previewPlot = If[MemberQ[output, Preview],
+		PlotAbsorbanceKinetics[data, Sequence @@ ReplaceRule[safeOps, Output -> Preview]],
+		Null
+	];
+
+	(* If either Result or Options are requested, map over the data objects. Remove anything that failed from the list of plots to be displayed*)
+	{plots, resolvedOptions} = If[MemberQ[output, (Result | Options)],
+		Transpose[
+			(PlotAbsorbanceKinetics[#, Sequence @@ ReplaceRule[safeOps, Output -> {Result, Options}]]& /@ data) /. $Failed -> Nothing
+		],
+		{{}, {}}
+	];
+
+	(* If all of the data objects failed to plot, return an error *)
+	If[MatchQ[plots, (ListableP[{}] | ListableP[Null])] && MatchQ[previewPlot, (Null | $Failed)],
+		Message[Error::AbsorbanceKineticsProtocolDataNotPlotted];
+		Return[$Failed],
+		Nothing
+	];
+
+	(* If Result was requested, output the plots in slide view, unless there is only one plot then we can just show it not in slide view. *)
+	outputPlot = If[MemberQ[output, Result],
+		If[Length[plots] > 1,
+			SlideView[plots],
+			First[plots]
+		]
+	];
+
+	(* If Options were requested, just take the first set of options since they are the same for all plots. Make it a List first just in case there is only one option set. *)
+	outputOptions = If[MemberQ[output, Options],
+		First[ToList[resolvedOptions]]
+	];
+
+	(* Prepare our final result *)
+	finalResult = output /. {
+		Result -> outputPlot,
+		Options -> outputOptions,
+		Preview -> previewPlot,
+		Tests -> {}
+	};
+
+	(* Return the result *)
+	If[
+		Length[finalResult] == 1,
+		First[finalResult],
+		finalResult
+	]
+];
 
 PlotAbsorbanceKinetics[input:ListableP[ObjectP[Object[Data,AbsorbanceKinetics]]],inputOptions:OptionsPattern[]]:=Module[
 	{
@@ -151,15 +224,23 @@ PlotAbsorbanceKinetics[input:ListableP[ObjectP[Object[Data,AbsorbanceKinetics]]]
 	(* -- Resolve PlotType -- *)
 	resolvedPlotType = Which[
 		(* Resolve Automatic *)
-		MatchQ[requestedPlotType,Automatic]&&MatchQ[resolvedPrimaryData,ListableP[AbsorbanceTrajectory3D|UnblankedAbsorbanceTrajectory3D]]&&!MatchQ[requestedWavelength,DistanceP],ContourPlot,
-		MatchQ[requestedPlotType,Automatic],ListLinePlot,
-
+		MatchQ[requestedPlotType,Automatic]&&MatchQ[resolvedPrimaryData,ListableP[AbsorbanceTrajectory3D|UnblankedAbsorbanceTrajectory3D]]&&!MatchQ[requestedWavelength,DistanceP],
+			ContourPlot,
+		MatchQ[requestedPlotType, Automatic],
+			ListLinePlot,
 		(* No 3D data, can't do a 3D plot, roll on and do a 2D plot. *)
-		MatchQ[absorbanceTrajectory3DLists,{Null..}] && MatchQ[requestedPlotType,plotTypes3D],Module[{},
-			Message[Warning::Data2D];
-			Message[Error::InvalidOption,"PlotType"];
-			ListLinePlot
+		And[
+			Or[
+				MatchQ[absorbanceTrajectory3DLists, {Null..}],
+				MatchQ[First[absorbanceTrajectory3DLists], $Failed]
+			],
+			MatchQ[requestedPlotType, plotTypes3D]
 		],
+			Module[{},
+				Message[Warning::Data2D];
+				Message[Error::InvalidOption,"PlotType"];
+				ListLinePlot
+			],
 
 		True,requestedPlotType
 	];

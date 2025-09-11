@@ -168,7 +168,7 @@ lookupDialog[item:_String,library:{_String..},ops:OptionsPattern[]] := Module[
 
 DefineOptions[nearestString,
 	Options :> {
-		{Unique -> False, BooleanP, "When set to True, will return only one of the nearest strings in teh library rather than a list of nearest strings."},
+		{Unique -> False, BooleanP, "When set to True, will return only one of the nearest strings in the library rather than a list of nearest strings."},
 		{MaxResults -> {1}, _Integer?Positive | {_Integer?Positive}, "Specifies how many of the top matches should be returned. A levelspec, 'L', will return the top L levels, while an integer, 'N', will return the top N results overall."},
 		{ComparisonFunction -> SmithWatermanSimilarity, SmithWatermanSimilarity | EditDistance | DamerauLevenshteinDistance | NeedlemanWunschSimilarity | HammingDistance, "Which string comparison function should be used to determine the best matches."},
 		{IgnoreCase -> True, BooleanP, "Determines whether or not case is taken into account when string similarity/distance is calculated."}

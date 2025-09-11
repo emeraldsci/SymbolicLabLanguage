@@ -182,6 +182,13 @@ DefineObjectType[Model[Item,Lid], {
 			Headers -> {"X dimension","Y dimension"},
 			Category -> "Item Specifications"
 		},
+		RestingOrientation -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> FaceUp | FaceDown,
+			Description -> "Indicates how lid should be placed when it's off the container.",
+			Category -> "Storage & Handling"
+		},
 		Parameterizations -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -197,6 +204,60 @@ DefineObjectType[Model[Item,Lid], {
 			Description -> "Indicates if this lid model is parameterized or if it needs to be parameterized and verified by the ECLs team.",
 			Category -> "Qualifications & Maintenance",
 			Developer -> True
+		},
+		Verified -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the information in this model has been reviewed for accuracy by an ECL employee.",
+			Category -> "Organizational Information"
+		},
+		VerifiedLog -> {
+			Format -> Multiple,
+			Class -> {Boolean, Link, Date},
+			Pattern :> {BooleanP, _Link, _?DateObjectQ},
+			Relation -> {Null, Object[User], Null},
+			Headers -> {"Verified", "Responsible person", "Date"},
+			Description -> "Records the history of changes to the Verified field, along with when the change occured, and the person responsible.",
+			Category -> "Organizational Information"
+		},
+		PendingParameterization -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicate whether this model is awaiting measurement and assessment of physical properties in the lab.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		AdditionalInformation -> {
+			Format -> Multiple,
+			Class -> {String, Date},
+			Pattern :> {_String, _?DateObjectQ},
+			Description -> "Supplementary information recorded from the UploadMolecule function. These information usually records the user supplied input and options, providing additional information for verification.",
+			Headers -> {"Information", "Date Added"},
+			Category -> "Hidden"
+		},
+		Weight -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Gram],
+			Units -> Gram,
+			Description -> "The mean weight of lids of this model. Experimental weights of new lids of this model must be within 5% of this weight.",
+			Category -> "Physical Properties"
+		},
+		WeightDistribution -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> DistributionP[Gram],
+			Description -> "The statistical distribution of the mean weight of lids of this model.",
+			Category -> "Physical Properties"
+		},
+		PreferredBalance -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> BalanceModeP,
+			Description -> "Indicates the recommended balance type for weighing a sample in this type of container.",
+			Category -> "Physical Properties"
 		}
 	}
 }];

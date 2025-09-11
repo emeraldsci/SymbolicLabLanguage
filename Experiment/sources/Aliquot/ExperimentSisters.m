@@ -33,7 +33,7 @@ ValidExperimentAliquotQ[myContainers:{ListableP[ObjectP[Object[Container]]]..}, 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentAliquot *)
@@ -146,7 +146,7 @@ ValidExperimentAliquotQ[mySamples:{ListableP[ObjectP[Object[Sample]]]..},myOptio
 	(* get the options as a list *)
 	listedOptions=ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions=DeleteCases[listedOptions,(Output|Verbose|OutputFormat)->_];
 
 	(* return only the tests for ExperimentAliquot *)
@@ -209,7 +209,7 @@ ExperimentAliquotOptions[myContainers : {ListableP[ObjectP[Object[Container]]]..
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* return only the options for ExperimentAliquot *)
@@ -300,7 +300,7 @@ ExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..},myOpti
 	(* get the options as a list *)
 	listedOptions=ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions=DeleteCases[listedOptions,Alternatives[Output->_,OutputFormat->_]];
 
 	(* return only the options for ExperimentAliquot *)
@@ -364,7 +364,7 @@ ExperimentAliquotPreview[mySamples:{ListableP[ObjectP[Object[Sample]]]..},myOpti
 	(* get the options as a list *)
 	listedOptions=ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions=DeleteCases[listedOptions,Output->_];
 
 	(* return only the options for ExperimentAliquot *)

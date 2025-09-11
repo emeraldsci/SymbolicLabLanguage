@@ -17,6 +17,12 @@ DefineTests[PlotMassSpectrometry,
 			TimeConstraint -> 120
 		],
 		Example[
+			{Basic, "Plot the MassSpectrometry data linked to a MassSpectrometry protocol object:"},
+			PlotMassSpectrometry[Object[Data, MassSpectrometry, "id:vXl9j57Yra3N"][Protocol]],
+			SlideView[{ValidGraphicsP[] ..}],
+			TimeConstraint -> 120
+		],
+		Example[
 			{Basic,"When available, the expected molecular weight is included on the plot by default:"},
 			PlotMassSpectrometry[Object[Data, MassSpectrometry, "id:wqW9BP7LjBl9"]],
 			_?ValidGraphicsQ,

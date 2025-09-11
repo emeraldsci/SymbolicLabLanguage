@@ -1,12 +1,12 @@
 (* ::Package:: *)
 
 (* ::Text:: *)
-(*\[Copyright] 2011-2022 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2024 Emerald Cloud Lab, Inc.*)
 
 (* ::Section:: *)
 (*Source Code*)
 
-DefineObjectType[Object[UnitOperation,SpreadCells],{
+DefineObjectType[Object[UnitOperation, SpreadCells],{
   Description -> "A protocol for spreading microbial cells in a liquid media on an agar gel in order to clonally isolate and quantify the cells in the source sample.",
   CreatePrivileges -> None,
   Cache -> Session,
@@ -24,7 +24,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       ],
       Description -> "The samples that we are spreading on an agar gel.",
       Category -> "General",
-      Migration->SplitField
+      Migration -> SplitField
     },
     SampleString -> {
       Format -> Multiple,
@@ -33,7 +33,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Relation -> Null,
       Description -> "The samples that we are spreading on an agar gel.",
       Category -> "General",
-      Migration->SplitField
+      Migration -> SplitField
     },
     SampleExpression -> {
       Format -> Multiple,
@@ -42,9 +42,8 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Relation -> Null,
       Description -> "The samples that we are spreading on an agar gel.",
       Category -> "General",
-      Migration->SplitField
+      Migration -> SplitField
     },
-
     SampleLabel -> {
       Format -> Multiple,
       Class -> String,
@@ -79,7 +78,13 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       IndexMatching -> SampleLink,
       Category -> "General"
     },
-
+    InoculationSource -> {
+      Format -> Single,
+      Class -> Expression,
+      Pattern :> StreakSpreadInoculationSourceP, (* SolidMedia|LiquidMedia|AgarStab *)
+      Description -> "The type of the media (LiquidMedia, FreezeDried, or FrozenGlycerol) where the source cells are stored before the experiment. For the source type of FreezeDried, the samples are resuspended first by adding a liquid media. For the source type of FrozenGlycerol, the samples are scraped from top and resuspended into liquid media by pipette, while the source tube is chilled to remain frozen.",
+      Category -> "General"
+    },
     Instrument -> {
       Format -> Single,
       Class -> Link,
@@ -88,7 +93,105 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Description -> "The instrument that is used to transfer cells in suspension to a solid agar gel and then evenly spread the suspension across the plate.",
       Category -> "General"
     },
-
+    (* Preparatory Resuspension *)
+    NumberOfSourceScrapes -> {
+      Format -> Multiple,
+      Class -> Real,
+      Pattern :> GreaterP[0],
+      Units -> None,
+      Description -> "For each member of SampleLink, the number of times that the frozen glycerol sample is scraped with the tip before it is dipped into the resuspension media and swirled.",
+      Category -> "Resuspension",
+      IndexMatching -> SampleLink
+    },
+    ResuspensionMediaLink -> {
+      Format -> Multiple,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Alternatives[Object[Sample], Model[Sample]],
+      Description -> "For each member of SampleLink, the liquid media to add to the ResuspensionContainer or source container in order to resuspend the sample. For a source of frozen glycerol, the ResuspensionMedia is added to the ResuspensionContainer before dipping the scraped sample. For a freeze-dried source sample, the ResuspensionMedia is added to the source container directly followed by ResuspensionMix.",
+      IndexMatching -> SampleLink,
+      Category -> "Resuspension",
+      Migration -> SplitField
+    },
+    ResuspensionMediaString -> {
+      Format -> Multiple,
+      Class -> String,
+      Pattern :> _String,
+      Description -> "For each member of SampleLink, the liquid media to add to the ResuspensionContainer or source container in order to resuspend the sample. For a source of frozen glycerol, the ResuspensionMedia is added to the ResuspensionContainer before dipping the scraped sample. For a freeze-dried source sample, the ResuspensionMedia is added to the source container directly followed by ResuspensionMix.",
+      IndexMatching -> SampleLink,
+      Category -> "Resuspension",
+      Migration -> SplitField
+    },
+    ResuspensionMediaVolume -> {
+      Format -> Multiple,
+      Class -> Real,
+      Units -> Microliter,
+      Pattern :> GreaterP[0 Microliter],
+      Description -> "For each member of SampleLink, the amount of the liquid media added to the ResuspensionMediaContainer in order to resuspend the scraped frozen glycerol sample or the amount of the liquid media added to the freeze-dried sample.",
+      IndexMatching -> SampleLink,
+      Category -> "Resuspension"
+    },
+    ResuspensionContainerLink -> {
+      Format -> Multiple,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Alternatives[Object[Container], Model[Container]],
+      Description -> "For each member of SampleLink, the desired container to have cells transferred to.",
+      IndexMatching -> SampleLink,
+      Category -> "Resuspension",
+      Migration -> SplitField
+    },
+    ResuspensionContainerExpression -> {
+      Format -> Multiple,
+      Class -> Expression,
+      Pattern :> {(ObjectP[{Object[Container], Model[Container]}] | {ObjectP[Object[Container]]..})..},
+      Description -> "For each member of SampleLink, the desired container to have cells transferred to.",
+      IndexMatching -> SampleLink,
+      Category -> "Resuspension",
+      Migration -> SplitField
+    },
+    ResuspensionContainerWell -> {
+      Format -> Multiple,
+      Class -> String,
+      Pattern :> WellP,
+      Description -> "For each member of SampleLink, the well of the ResuspensionMediaContainer to contain the cell resuspension.",
+      Category -> "Resuspension",
+      IndexMatching -> SampleLink
+    },
+    ResuspensionMix -> {
+      Format -> Multiple,
+      Class -> Expression,
+      Pattern :> BooleanP,
+      Description -> "For each member of SampleLink, indicates if the cells in resuspension is mixed after combining the ResuspensionMedia and the source sample.",
+      IndexMatching -> SampleLink,
+      Category -> "Resuspension"
+    },
+    ResuspensionMixType -> {
+      Format -> Multiple,
+      Class -> Expression,
+      Pattern :> Alternatives[Pipette],
+      Description -> "For each member of SampleLink, the type of mixing of the cells in resuspension after combining ResuspensionMedia and the source sample. Pipette performs NumberOfSourceMixes aspiration/dispense cycle(s) of SourceMixVolume using a pipette.",
+      IndexMatching -> SampleLink,
+      Category -> "Resuspension"
+    },
+    NumberOfResuspensionMixes -> {
+      Format -> Multiple,
+      Class -> Real,
+      Pattern :> GreaterP[0],
+      Units -> None,
+      Description -> "For each member of SampleLink, the number of times that the cells in resuspension is mixed after combining the ResuspensionMedia and the source sample.",
+      Category -> "Aspirate",
+      IndexMatching -> SampleLink
+    },
+    ResuspensionMixVolume -> {
+      Format -> Multiple,
+      Class -> Real,
+      Units -> Microliter,
+      Pattern :> GreaterP[0 Microliter],
+      Description -> "For each member of SampleLink, the volume that will be repeatedly aspirated and dispensed via pipette from the cells in resuspension in order to mix after combining the ResuspensionMedia and the source sample. For freeze-dried source sample, the same pipette and tips used to add the ResuspensionMedia will be used to mix the cell resuspension. For frozen glycerol source sample, the same pipette and tips used to mix the cell resuspension will be used to deposit it onto the solid media.",
+      IndexMatching -> SampleLink,
+      Category -> "Resuspension"
+    },
     (* Preparatory Dilution *)
     DilutionType -> {
       Format -> Multiple,
@@ -109,8 +212,8 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
     NumberOfDilutions -> {
       Format -> Multiple,
       Class -> Integer,
-      Pattern :> RangeP[1,500,1],
-      Description -> "For each member of SampleLink,, the number of diluted samples to prepare.",
+      Pattern :> RangeP[1, 500, 1],
+      Description -> "For each member of SampleLink, the number of diluted samples to prepare.",
       IndexMatching -> SampleLink,
       Category -> "Preparatory Dilution"
     },
@@ -126,7 +229,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
     CumulativeDilutionFactor -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> ListableP[RangeP[1,10^23] | Null],
+      Pattern :> ListableP[RangeP[1, 10^23] | Null],
       Description -> "For each member of SampleLink, the factor by which the concentration of the TargetAnalyte in the original sample is reduced during the dilution.",
       IndexMatching -> SampleLink,
       Category -> "Preparatory Dilution"
@@ -134,7 +237,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
     SerialDilutionFactor -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> ListableP[RangeP[1,10^23] | Null],
+      Pattern :> ListableP[RangeP[1, 10^23] | Null],
       Description -> "For each member of SampleLink, the factor by which the concentration of the TargetAnalyte in the resulting sample of the previous dilution step is reduced.",
       IndexMatching -> SampleLink,
       Category -> "Preparatory Dilution"
@@ -299,7 +402,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Alternatives@@Join[MixInstrumentModels,MixInstrumentObjects],
+      Relation -> Alternatives@@Join[MixInstrumentModels, MixInstrumentObjects],
       Description -> "For each member of SampleLink, if DilutionType is set to Linear, the instrument used to mix/incubate the sample following the dilution. If DilutionType is set to Serial, the instrument used to mix/incubate the resulting sample after a round of dilution before the next stage of dilution.",
       IndexMatching -> SampleLink,
       Category -> "Preparatory Dilution"
@@ -356,7 +459,6 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       IndexMatching -> SampleLink,
       Category -> "Preparatory Dilution"
     },
-
     (* Mixing *)
     SourceMix -> {
       Format -> Multiple,
@@ -383,7 +485,6 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       IndexMatching -> SampleLink,
       Category -> "Mixing"
     },
-
     (* Spreading *)
     SpreadVolume -> {
       Format -> Multiple,
@@ -400,6 +501,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Pattern :> _Link,
       Relation -> Alternatives[Model[Part, ColonyHandlerHeadCassette], Object[Part, ColonyHandlerHeadCassette]],
       Description -> "For each member of SampleLink, the tool used to spread the suspended cells from the input sample onto the destination plate or into a destination well.",
+      IndexMatching -> SampleLink,
       Category -> "Spreading"
     },
     HeadDiameter -> {
@@ -408,6 +510,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Pattern :> GreaterP[0 Millimeter],
       Units -> Millimeter,
       Description -> "For each member of SampleLink, the width of the metal probe that will spread the cells.",
+      IndexMatching -> SampleLink,
       Category -> "Spreading"
     },
     HeadLength -> {
@@ -416,6 +519,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Pattern :> GreaterP[0 Millimeter],
       Units -> Millimeter,
       Description -> "For each member of SampleLink, the length of the metal probe that will spread the cells.",
+      IndexMatching -> SampleLink,
       Category -> "Spreading"
     },
     NumberOfHeads -> {
@@ -423,6 +527,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Class -> Integer,
       Pattern :> GreaterP[0, 1],
       Description -> "For each member of SampleLink, the number of metal probes on the ColonyHandlerHeadCassette that will spread the cells.",
+      IndexMatching -> SampleLink,
       Category -> "Spreading"
     },
     ColonyHandlerHeadCassetteApplication -> {
@@ -430,6 +535,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Class -> Expression,
       Pattern :> ColonyHandlerHeadCassetteTypeP,
       Description -> "For each member of SampleLink, the designed use of the ColonySpreadingTool.",
+      IndexMatching -> SampleLink,
       Category -> "Spreading"
     },
     DispenseCoordinates -> {
@@ -460,7 +566,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Alternatives[Object[Container],Model[Container]],
+      Relation -> Alternatives[Object[Container], Model[Container]],
       Description -> "For each member of SampleLink, the desired type of container to have suspended cells spread in, with indices indicating grouping of samples in the same plate, if desired.",
       IndexMatching -> SampleLink,
       Category -> "Spreading",
@@ -488,7 +594,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Alternatives[Object[Sample],Model[Sample]],
+      Relation -> Alternatives[Object[Sample], Model[Sample]],
       Description -> "For each member of SampleLink, the media on which the cells are spread.",
       IndexMatching -> SampleLink,
       Category -> "Spreading",
@@ -503,7 +609,6 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Category -> "Spreading",
       Migration -> SplitField
     },
-
     (* Sanitization *)
     PrimaryWash -> {
       Format -> Multiple,
@@ -517,7 +622,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Alternatives[Object[Sample],Model[Sample]],
+      Relation -> Alternatives[Object[Sample], Model[Sample]],
       Description -> "For each member of SampleLink, the first wash solution that is used during the sanitization process prior to each round of spreading.",
       IndexMatching -> SampleLink,
       Category -> "Sanitization",
@@ -535,7 +640,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
     NumberOfPrimaryWashes -> {
       Format -> Multiple,
       Class -> Integer,
-      Pattern :> GreaterP[0,1],
+      Pattern :> GreaterP[0, 1],
       Description -> "For each member of SampleLink, the number of times the ColonyHandlerHeadCassette moves in a circular motion in the PrimaryWashSolution to clean any material off the head.",
       IndexMatching -> SampleLink,
       Category -> "Sanitization"
@@ -561,7 +666,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Alternatives[Object[Sample],Model[Sample]],
+      Relation -> Alternatives[Object[Sample], Model[Sample]],
       Description -> "For each member of SampleLink, the second wash solution that can be used during the sanitization process prior to each round of spreading.",
       IndexMatching -> SampleLink,
       Category -> "Sanitization",
@@ -579,7 +684,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
     NumberOfSecondaryWashes -> {
       Format -> Multiple,
       Class -> Integer,
-      Pattern :> GreaterP[0,1],
+      Pattern :> GreaterP[0, 1],
       Description -> "For each member of SampleLink, the number of times the ColonyHandlerHeadCassette moves in a circular motion in the SecondaryWashSolution to clean any material off the head.",
       IndexMatching -> SampleLink,
       Category -> "Sanitization"
@@ -605,7 +710,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Alternatives[Object[Sample],Model[Sample]],
+      Relation -> Alternatives[Object[Sample], Model[Sample]],
       Description -> "For each member of SampleLink, the third wash solution that can be used during the sanitization process prior to each round of spreading.",
       IndexMatching -> SampleLink,
       Category -> "Sanitization",
@@ -623,7 +728,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
     NumberOfTertiaryWashes -> {
       Format -> Multiple,
       Class -> Integer,
-      Pattern :> GreaterP[0,1],
+      Pattern :> GreaterP[0, 1],
       Description -> "For each member of SampleLink, the number of times the ColonyHandlerHeadCassette moves in a circular motion in the TertiaryWashSolution to clean any material off the head.",
       IndexMatching -> SampleLink,
       Category -> "Sanitization"
@@ -649,7 +754,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Alternatives[Object[Sample],Model[Sample]],
+      Relation -> Alternatives[Object[Sample], Model[Sample]],
       Description -> "For each member of SampleLink, the quaternary wash solution that can be used during the process prior to each round of spreading.",
       IndexMatching -> SampleLink,
       Category -> "Sanitization",
@@ -667,7 +772,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
     NumberOfQuaternaryWashes -> {
       Format -> Multiple,
       Class -> Integer,
-      Pattern :> GreaterP[0,1],
+      Pattern :> GreaterP[0, 1],
       Description -> "For each member of SampleLink, the number of times the ColonyHandlerHeadCassette moves in a circular motion in the QuaternaryWashSolution to clean any material off the head.",
       IndexMatching -> SampleLink,
       Category -> "Sanitization"
@@ -681,10 +786,17 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       IndexMatching -> SampleLink,
       Category -> "Sanitization"
     },
-
     (* Developer *)
     (* NOTE: The fields below will be populated in unit operation objects that function as OutputUnitOperations *)
-    AssayContainerPrimitives -> {
+    ResuspensionUnitOperations -> {
+      Format -> Multiple,
+      Class -> Expression,
+      Pattern :> CellPreparationP,
+      Description -> "A mix of sample preparation primitives to resuspend the input samples if they are FreezeDried or FrozenGlycerol.",
+      Category -> "General",
+      Developer -> True
+    },
+    AssayContainerUnitOperations -> {
       Format -> Multiple,
       Class -> Expression,
       Pattern :> SamplePreparationP,
@@ -723,7 +835,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
     DestinationContainerResourceLengths -> {
       Format -> Multiple,
       Class -> Integer,
-      Pattern :> GreaterP[0,1],
+      Pattern :> GreaterP[0, 1],
       Description -> "Stored batching lengths of the destination container resources.",
       Category -> "General",
       Developer -> True
@@ -741,7 +853,16 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Format -> Single,
       Class -> Expression,
       Pattern :> _List,
-      Description -> "A Nested list of associations storing how the sample packets are physically batched.",
+      Description -> "A Nested list of associations storing how the sample packets are physically batched. For example, in {{{a,b},{c}},{{d,e}}}, abc are from the same physical batch, de are from the same physical batch, ab and c are from different source group.",
+      Category -> "General",
+      Developer -> True
+    },
+    ResuspensionProtocol -> {
+      Format -> Single,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Object[Protocol, ManualCellPreparation],
+      Description -> "The protocol of the resuspension of the input samples before any assay container preparation.",
       Category -> "General",
       Developer -> True
     },
@@ -754,11 +875,20 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Category -> "General",
       Developer -> True
     },
+    CassetteHolderResources -> {
+      Format -> Multiple,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Alternatives[Model[Container, ColonyHandlerHeadCassetteHolder], Object[Container, ColonyHandlerHeadCassetteHolder]],
+      Description -> "The list of ColonyHandlerHeadCassetteHolder used as the container for the ColonyHandlerHeadCassette during the physical batch.",
+      Category -> "General",
+      Developer -> True
+    },
     CarrierAndRiserInitialResources -> {
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Alternatives[Object[Container,Rack],Model[Container,Rack]],
+      Relation -> Alternatives[Object[Container,Rack], Model[Container,Rack]],
       Description -> "The list of carrier and riser objects to pick during the first physical batch of an output unit operation.",
       Category -> "General",
       Developer -> True
@@ -781,36 +911,35 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Category -> "General",
       Developer -> True
     },
-    FinalColonyHandlerHeadCassetteReturns -> {
-      Format -> Multiple,
-      Class -> Link,
-      Pattern :> _Link,
-      Relation -> Alternatives[Object[Part,ColonyHandlerHeadCassette]],
-      Description -> "The ColonyHandlerHeadCassettes that need to be returned at the end of the unit operation loop.",
+    FinalColonyHandlerHeadCassetteReturn -> {
+      Format -> Single,
+      Class -> {Link, Link, String},
+      Pattern :> {_Link, _Link, LocationPositionP},
+      Relation -> {Alternatives[Object[Part,ColonyHandlerHeadCassette],Model[Part,ColonyHandlerHeadCassette]], Alternatives[Object[Container],Model[Container]], Null},
+      Description -> "The placement for removing the final colony handler head cassette at the end of the output unit operation loop.",
       Category -> "General",
-      Developer -> True
+      Developer -> True,
+      Headers->{"Object to Place", "Destination Object","Destination Position"}
     },
     FinalTipRackReturns -> {
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Alternatives[Object[Item,Tips]],
+      Relation -> Alternatives[Object[Item, Tips]],
       Description -> "The Tip Racks that need to be returned at the end of the unit operation loop.",
       Category -> "General",
       Developer -> True
     },
-
     (* BatchedUnitOperation Fields *)
     BatchedUnitOperations -> {
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Alternatives[Object[UnitOperation,SpreadCells]],
+      Relation -> Alternatives[Object[UnitOperation, SpreadCells]],
       Description -> "The physical batches split by source and assay containers that can fit on the deck at once.",
       Category -> "General",
       Developer -> True
     },
-
     (* NOTE: The fields below will only be populated in unit operations that are themselves a BatchedUnitOperation of another SpreadCells unit op *)
     IntermediateSourceContainerDeckPlacements -> {
       Format -> Multiple,
@@ -823,9 +952,10 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
     },
     SourceContainerDeckPlacements -> {
       Format -> Multiple,
-      Class -> {Expression, Expression},
-      Pattern :> {ObjectP[Object[Container]], {LocationPositionP..}},
-      Headers -> {"Object","Position"},
+      Class -> {Link, Expression},
+      Pattern :> {_Link, {LocationPositionP..}},
+      Relation -> {Object[Container], Null},
+      Headers -> {"Source Container Object To Place", "Placement Tree"},
       Description -> "The placement of source containers on the carriers of the qpix for this physical batch.",
       Category -> "General",
       Developer -> True
@@ -843,7 +973,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Alternatives[Object[Container,Plate], Object[Sample], Model[Sample], Model[Container,Plate]],
+      Relation -> Alternatives[Object[Container, Plate], Object[Sample], Model[Sample], Model[Container, Plate]],
       Description -> "A flat list of the destination containers that once batched with the lengths in BatchedDestinationContainerLengths, represents which destination containers go with which routine file.",
       Category -> "General",
       Developer -> True
@@ -852,8 +982,8 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Format -> Multiple,
       Class -> {Link, Expression},
       Pattern :> {_Link, {LocationPositionP..}},
-      Relation -> {Alternatives[Object[Container,Plate], Object[Sample], Model[Sample], Model[Container,Plate]],Null},
-      Headers -> {"Object","Position"},
+      Relation -> {Alternatives[Object[Container, Plate], Object[Sample], Model[Sample], Model[Container, Plate]], Null},
+      Headers -> {"Object", "Position"},
       Description -> "A flat list of the destination container placements that once batched with the lengths in BatchedDestinationContainerLengths, represents which pairs of destination containers should be placed on the deck at the same time.",
       Category -> "General",
       Developer -> True
@@ -878,7 +1008,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
     FlatBatchedTransfers -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> {Alternatives[{_String,_String},{ObjectP[Object[Container]],_String},{}]..},
+      Pattern :> Alternatives[{_String, _String}, {ObjectP[Object[Container]], _String}, {}],
       Description -> "The list of transfer pairs (sample, well) corresponding to flat batched destination samples.",
       Category -> "General",
       Developer -> True
@@ -886,7 +1016,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
     BatchedDestinationContainerLengths -> {
       Format -> Multiple,
       Class -> Integer,
-      Pattern :> GreaterP[0,1],
+      Pattern :> GreaterP[0, 1],
       Description -> "The batching lengths corresponding to FlatBatchedDestinationContainers that are used to partition FlatBatchedDestinationContainers.",
       Category -> "General",
       Developer -> True
@@ -902,7 +1032,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
     FlatBatchedRoutineJSONLengths -> {
       Format -> Multiple,
       Class -> Integer,
-      Pattern :> GreaterP[0,1],
+      Pattern :> GreaterP[0, 1],
       Description -> "The length of the batches of any jsons stored in FlatBatchedRoutineJSONPaths.",
       Category -> "General",
       Developer -> True
@@ -911,8 +1041,8 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Format -> Multiple,
       Class -> {Link, Expression},
       Pattern :> {_Link, {LocationPositionP..}},
-      Relation -> {Alternatives[Object[Container],Model[Container]], Null},
-      Headers -> {"Riser","Placement Location"},
+      Relation -> {Alternatives[Object[Container], Model[Container]], Null},
+      Headers -> {"Riser", "Placement Location"},
       Description -> "A list of deck placements used to place any needed risers on the qpix deck at the beginning of the physical batch.",
       Category -> "General",
       Developer -> True
@@ -921,7 +1051,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Format -> Multiple,
       Class -> {Link, Expression},
       Pattern :> {_Link, {LocationPositionP..}},
-      Relation -> {Alternatives[Object[Container],Model[Container]], Null},
+      Relation -> {Alternatives[Object[Container], Model[Container]], Null},
       Headers -> {"Carrier", "Placement Location"},
       Description -> "A list of deck placements used to place any needed carriers on the qpix deck at the beginning of the physical batch.",
       Category -> "General",
@@ -931,7 +1061,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Alternatives[Object[Container],Model[Container]],
+      Relation -> Alternatives[Object[Container], Model[Container]],
       Description -> "A list of qpix risers to remove from the deck at the beginning of the batch.",
       Category -> "General",
       Developer -> True
@@ -940,7 +1070,7 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Alternatives[Object[Container],Model[Container]],
+      Relation -> Alternatives[Object[Container], Model[Container]],
       Description -> "A list of qpix carriers to remove from the deck at the beginning of the batch.",
       Category -> "General",
       Developer -> True
@@ -949,19 +1079,57 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Format -> Single,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Alternatives[Object[Part,ColonyHandlerHeadCassette],Model[Part,ColonyHandlerHeadCassette]],
+      Relation -> Alternatives[Object[Part, ColonyHandlerHeadCassette], Model[Part, ColonyHandlerHeadCassette]],
       Description -> "The colony handler head cassette that is used for the physical batch.",
       Category -> "General",
       Developer -> True
+    },
+    ColonyHandlerHeadCassetteHolder -> {
+      Format -> Single,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Alternatives[Object[Container, ColonyHandlerHeadCassetteHolder]],
+      Description -> "The colony handler head cassette holder that is used to store the ColonyHandlerHeadCassette for the physical batch.",
+      Category -> "General",
+      Developer -> True
+    },
+    ColonyHandlerHeadCassettePlacement -> {
+      Format -> Single,
+      Class -> {Link, Link, String},
+      Pattern :> {_Link, _Link, LocationPositionP},
+      Relation -> {Alternatives[Object[Part,ColonyHandlerHeadCassette],Model[Part,ColonyHandlerHeadCassette]], Alternatives[Object[Instrument],Model[Instrument]], Null},
+      Description -> "The placement used to place the colony spreading tool for the current batch.",
+      Category -> "General",
+      Developer -> True,
+      Headers->{"Object to Place", "Destination Object","Destination Position"}
     },
     ColonyHandlerHeadCassetteReturn -> {
       Format -> Single,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Alternatives[Object[Part,ColonyHandlerHeadCassette],Model[Part,ColonyHandlerHeadCassette]],
+      Relation -> Alternatives[Object[Part, ColonyHandlerHeadCassette], Model[Part, ColonyHandlerHeadCassette]],
       Description -> "The colony handler head cassette to return to the cart before the new one is placed in the instrument.",
       Category -> "General",
       Developer -> True
+    },
+    ColonyHandlerHeadCassetteReturnHolder -> {
+      Format -> Single,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Alternatives[Object[Container, ColonyHandlerHeadCassetteHolder]],
+      Description -> "The colony handler head cassette holder that is used to store the ColonyHandlerHeadCassetteReturn for the physical batch.",
+      Category -> "General",
+      Developer -> True
+    },
+    ColonyHandlerHeadCassetteReturnPlacement -> {
+      Format -> Single,
+      Class -> {Link, Link, String},
+      Pattern :> {_Link, _Link, LocationPositionP},
+      Relation -> {Alternatives[Object[Part,ColonyHandlerHeadCassette],Model[Part,ColonyHandlerHeadCassette]], Alternatives[Object[Container],Model[Container]], Null},
+      Description -> "The placement used to remove the colony spreading tool from the colony handler and move it back to its holder once this batch is complete.",
+      Category -> "General",
+      Developer -> True,
+      Headers->{"Object to Place", "Destination Object","Destination Position"}
     },
     FlatBatchedSamplesOutStorageConditions -> {
       Format -> Multiple,
@@ -979,11 +1147,11 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Category -> "General",
       Developer -> True
     },
-    TipRackDeckPlacement -> {
-      Format -> Single,
+    TipRackDeckPlacements -> {
+      Format -> Multiple,
       Class -> {Link, Expression},
       Pattern :> {_Link, {LocationPositionP..}},
-      Relation -> {Alternatives[Object[Item, Tips],Model[Item, Tips]], Null},
+      Relation -> {Alternatives[Object[Item, Tips], Model[Item, Tips]], Null},
       Headers -> {"Tip Rack", "Placement Location"},
       Description -> "The deck placement to place the tip rack on the qpix deck at the beginning of the physical batch.",
       Category -> "General",
@@ -993,8 +1161,18 @@ DefineObjectType[Object[UnitOperation,SpreadCells],{
       Format -> Single,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Alternatives[Object[Item,Tips],Model[Item,Tips]],
+      Relation -> Alternatives[Object[Item, Tips], Model[Item, Tips]],
       Description -> "The tip rack to return to the cart before the new one is placed in the instrument for this physical batch.",
+      Category -> "General",
+      Developer -> True
+    },
+    NumberOfTipsRequired -> {
+      Format -> Multiple,
+      Class -> {Link, Integer},
+      Pattern :> {_Link, GreaterP[0]},
+      Relation -> {Alternatives[Object[Item, Tips], Model[Item, Tips]], Null},
+      Headers -> {"Tips Object", "Number Required"},
+      Description -> "The tips and the corresponding number of tips used for this physical batch. This information is used to update the tip counts in parser.",
       Category -> "General",
       Developer -> True
     }

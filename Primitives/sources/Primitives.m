@@ -214,7 +214,7 @@ DefinePrimitive::RequiredMethodResolverFunction="The primitive `1` has multiple 
 DefinePrimitive::RequiredOutputUnitOperationParserFunction="The OutputUnitOperationParserFunction option is required to define a valid primitive for `1` if an ExperimentFunction or WorkCell is given. Please define a OutputUnitOperationParserFunction for your primitive.";
 DefinePrimitive::MissingUnitOperationObject="The type Object[UnitOperation,`1`] was not found. All unit operation primitives that are defined must have a corresponding unit operation object. Please create your unit operation object before calling DefinePrimitive.";
 DefinePrimitive::MissingUnitOperationFields="The type Object[UnitOperation, `1`] is missing the following fields `2` that were specified as non-hidden options to the unit operation primitive (via DefinePrimitive). Please either includes these as fields in the unit operation object or mark them as Hidden. (Hint: The first thing you should do is make sure these symbols are exported in \"Objects'\" via AddManifestSymbols[...].)";
-DefinePrimitive::CannotSpecifyPreparatoryPrimitivesOrUnitOperations="The option(s) PreparatoryPrimitives/PreparatoryUnitOperations were specified as SharedOptions of the primitive `1`. These options cannot be used inside of primitives since they would cause an infinite loop. Please exclude them from your primitive.";
+DefinePrimitive::CannotSpecifyPreparatoryUnitOperations="The option(s) PreparatoryUnitOperations were specified as SharedOptions of the primitive `1`. These options cannot be used inside of primitives since they would cause an infinite loop. Please exclude them from your primitive.";
 
 $NumberOfPrimitiveKeysToShow=3;
 
@@ -256,14 +256,14 @@ DefinePrimitive[
 		Return[$Failed]
 	];
 
-	(* Make sure that if we're given shared options, PreparatoryPrimitives/PreparatoryUnitOperations is not given because that will *)
+	(* Make sure that if we're given shared options, PreparatoryUnitOperations is not given because that will *)
 	(* cause an infinite loop. *)
 	If[MemberQ[
 			{Lookup[listedPrimitiveRules, RequiredSharedOptions, Null],Lookup[listedPrimitiveRules, SharedOptions, Null],Lookup[listedPrimitiveRules, Options, Null]},
-			{_,PreparatoryPrimitives|PreparatoryUnitOperations},
+			{_,PreparatoryUnitOperations},
 			Infinity
 		],
-		Message[DefinePrimitive::CannotSpecifyPreparatoryPrimitivesOrUnitOperations, mySymbol];
+		Message[DefinePrimitive::CannotSpecifyPreparatoryUnitOperations, mySymbol];
 	];
 
 	(* The OutputUnitOperationParserFunction key is required if ExperimentFunction/WorkCell is given. *)
@@ -385,7 +385,7 @@ DefinePrimitive[
 	(* NOTE: Make an exception for PreparatoryUnitOperations -- it should not be in the UOs. *)
 	missingUnitOperationFields=Select[
 		nonHiddenOptions,
-		Function[{symbol},!MatchQ[symbol, PreparatoryUnitOperations|ECL`PreparatoryPrimitives] && !MemberQ[unitOperationFieldStrings, ToString[symbol]]]
+		Function[{symbol},!MatchQ[symbol, PreparatoryUnitOperations] && !MemberQ[unitOperationFieldStrings, ToString[symbol]]]
 	];
 
 	(* Make sure that all of the non-hidden options exist has fields in the unit operation object. *)
@@ -491,7 +491,7 @@ DefinePrimitive[
 	(* otherwise, go with thomas *)
 	specifiedAuthor = Lookup[listedPrimitiveRules, Author, {}];
 	defineUsageAuthors = If[MatchQ[specifiedAuthor, _String|{__String}], ToList[specifiedAuthor],
-		{"thomas"}
+		{"steven"}
 	];
 
 	(* Call DefineUsage on the primitive head for this primitive. *)

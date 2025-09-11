@@ -63,5 +63,5 @@ DefineUsage[ExperimentThawCells,
 	SeeAlso -> {
 		"ExperimentCellPreparation"
 	},
-	Author -> {"tim.pierpont", "thomas"}
+	Author -> {"jireh.sacramento", "tim.pierpont", "thomas"}
 }];

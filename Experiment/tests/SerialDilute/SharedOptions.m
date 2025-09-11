@@ -246,10 +246,10 @@ DefineTests[ResolveDilutionSharedOptions,
         Object[Sample,"Test Sample 2 (5mL Test Oligo 1 in PBS) for ResolveDilutionSharedOptions" <> $SessionUUID],
         DilutionType->Serial,
         NumberOfDilutions -> 3,
-        IncubationInstrument -> Model[Instrument, Shaker, "Genie Temp-Shaker 300"]
+        IncubationInstrument -> Model[Instrument,Vortex,"Microplate Genie"]
       ];
       Lookup[options,IncubationInstrument],
-      ObjectP[Model[Instrument, Shaker, "Genie Temp-Shaker 300"]]
+      ObjectP[Model[Instrument,Vortex,"Microplate Genie"]]
     ],
     Example[{Options,IncubationTemperature,"Specify the temperature to mix each dilution sample between each dilution step:"},
       options = ResolveDilutionSharedOptions[
@@ -299,7 +299,7 @@ DefineTests[ResolveDilutionSharedOptions,
         DilutionType->Serial,
         NumberOfDilutions -> 2,
         MixOscillationAngle -> 8 AngularDegree,
-        IncubationInstrument -> Model[Instrument, Shaker, "Burrell Scientific Wrist Action Shaker"]
+        IncubationInstrument -> Model[Instrument,Vortex,"Microplate Genie"]
       ];
       Lookup[options,MixOscillationAngle],
       8 AngularDegree
@@ -606,7 +606,7 @@ DefineTests[ResolveDilutionSharedOptions,
           },
           {
             {Quantity[100.`, IndependentUnit["VolumePercent"]], Model[Molecule, "Water"]},
-            {Quantity[1.76`, ("Millimoles")/("Liters")], Model[Molecule, "Potassium Phosphate"]},
+            {Quantity[1.76`, ("Millimoles")/("Liters")], Model[Molecule, "Potassium Phosphate (Dibasic)"]},
             {Quantity[8.01`, ("Millimoles")/("Liters")], Model[Molecule, "Dibasic Sodium Phosphate"]},
             {Quantity[2.7`, ("Millimoles")/("Liters")], Model[Molecule, "Potassium Chloride"]},
             {Quantity[0.137`, ("Moles")/("Liters")], Model[Molecule, "Sodium Chloride"]},
@@ -624,7 +624,7 @@ DefineTests[ResolveDilutionSharedOptions,
           },
           {
             {Quantity[100.`, IndependentUnit["VolumePercent"]], Model[Molecule, "Water"]},
-            {Quantity[1.76`, ("Millimoles")/("Liters")], Model[Molecule, "Potassium Phosphate"]},
+            {Quantity[1.76`, ("Millimoles")/("Liters")], Model[Molecule, "Potassium Phosphate (Dibasic)"]},
             {Quantity[8.01`, ("Millimoles")/("Liters")], Model[Molecule, "Dibasic Sodium Phosphate"]},
             {Quantity[2.7`, ("Millimoles")/("Liters")], Model[Molecule, "Potassium Chloride"]},
             {Quantity[0.137`, ("Moles")/("Liters")], Model[Molecule, "Sodium Chloride"]},

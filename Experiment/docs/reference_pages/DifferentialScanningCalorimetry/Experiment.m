@@ -20,12 +20,19 @@ DefineUsage[ExperimentDifferentialScanningCalorimetry,
 						{
 							InputName -> "Samples",
 							Description-> "The samples which will be heated to determine thermodynamic properties. If provided as a list of lists, each group of samples or containers within a single list are combined before the experiment is run.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True
@@ -62,7 +69,7 @@ DefineUsage[ExperimentDifferentialScanningCalorimetry,
 			"ValidExperimentDifferentialScanningCalorimetryQ",
 			"ExperimentDifferentialScanningCalorimetryOptions"
 		},
-		Author -> {"waseem.vali", "lei.tian", "boris.brenerman", "cgullekson", "steven"}
+		Author -> {"malav.desai", "waseem.vali", "lei.tian", "boris.brenerman", "cgullekson", "steven"}
 	}
 ];
 
@@ -84,12 +91,19 @@ DefineUsage[ExperimentDifferentialScanningCalorimetryOptions,
 						{
 							InputName -> "Samples",
 							Description-> "The samples which will be heated to determine thermodynamic properties. If provided as a list of lists, each group of samples or containers within a single list are combined before the experiment is run.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True
@@ -113,7 +127,7 @@ DefineUsage[ExperimentDifferentialScanningCalorimetryOptions,
 			"ExperimentDifferentialScanningCalorimetry",
 			"ValidExperimentDifferentialScanningCalorimetryQ"
 		},
-		Author -> {"waseem.vali", "lei.tian", "boris.brenerman", "cgullekson", "steven"}
+		Author -> {"malav.desai", "waseem.vali", "lei.tian", "boris.brenerman", "cgullekson", "steven"}
 	}];
 
 
@@ -128,12 +142,19 @@ DefineUsage[ExperimentDifferentialScanningCalorimetryPreview,
 						{
 							InputName -> "Samples",
 							Description-> "The samples which will be heated to determine thermodynamic properties. If provided as a list of lists, each group of samples or containers within a single list are combined before the experiment is run.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True
@@ -154,7 +175,7 @@ DefineUsage[ExperimentDifferentialScanningCalorimetryPreview,
 			"ExperimentDifferentialScanningCalorimetry",
 			"ValidExperimentDifferentialScanningCalorimetryQ"
 		},
-		Author -> {"waseem.vali", "ryan.bisbey", "boris.brenerman", "cgullekson", "steven"}
+		Author -> {"malav.desai", "waseem.vali", "ryan.bisbey", "boris.brenerman", "cgullekson", "steven"}
 	}
 ];
 
@@ -174,12 +195,19 @@ DefineUsage[ValidExperimentDifferentialScanningCalorimetryQ,
 						{
 							InputName -> "Samples",
 							Description-> "The samples which will be heated to determine thermodynamic properties. If provided as a list of lists, each group of samples or containers within a single list are combined before the experiment is run.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True
@@ -200,6 +228,6 @@ DefineUsage[ValidExperimentDifferentialScanningCalorimetryQ,
 			"ExperimentDifferentialScanningCalorimetry",
 			"ExperimentDifferentialScanningCalorimetryOptions"
 		},
-		Author -> {"waseem.vali", "ryan.bisbey", "boris.brenerman", "steven"}
+		Author -> {"malav.desai", "waseem.vali", "ryan.bisbey", "boris.brenerman", "steven"}
 	}
 ];

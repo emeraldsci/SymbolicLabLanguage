@@ -46,7 +46,7 @@ DefineOptions[CompatibleMaterialsQ,
 	}
 ];
 
-Warning::IncompatibleMaterials="The provided samples, `1`, are chemically incompatible with the wetted materials in `2`. Please check the IncompatibleMaterials listing in these chemicals, and the WettedMaterials of the instrument, and substitute these samples for chemically compatible ones if possible.";
+Error::IncompatibleMaterials="The provided sample-instrument pairs, `1`, are chemically incompatible. Please check the IncompatibleMaterials of the sample and WettedMaterial of the corresponding instrument or part, and substitute these samples for chemically compatible ones if possible.";
 
 
 (* ::Subsubsection:: *)
@@ -54,35 +54,107 @@ Warning::IncompatibleMaterials="The provided samples, `1`, are chemically incomp
 
 
 (* Single Sample Overload: Pass to Core *)
-CompatibleMaterialsQ[myInstrument:ObjectP[{Model[Instrument],Object[Instrument], Object[Part], Model[Part]}],mySample:(NonSelfContainedSampleP|NonSelfContainedSampleModelP),myOptions:OptionsPattern[]]:=CompatibleMaterialsQ[myInstrument,{mySample},myOptions];
+CompatibleMaterialsQ[myInstrument:ObjectP[{Model[Instrument],Object[Instrument], Object[Part], Model[Part]}],mySample:(NonSelfContainedSampleP|NonSelfContainedSampleModelP),myOptions:OptionsPattern[]]:=Module[
+	{compatibleMaterialsResult},
 
-(* Core function, looks at a single instrument and a list of samples for compatibility *)
+	compatibleMaterialsResult = CompatibleMaterialsQ[{myInstrument},{mySample},myOptions];
+
+	If[MatchQ[OptionValue[OutputFormat], SingleBoolean],
+		compatibleMaterialsResult,
+		First[compatibleMaterialsResult]
+	]
+];
+
+(* Single instrument multiple samples *)
 CompatibleMaterialsQ[myInstrument:ObjectP[{Model[Instrument],Object[Instrument],Object[Part], Model[Part]}],mySamples:{(NonSelfContainedSampleP|NonSelfContainedSampleModelP)...},myOptions:OptionsPattern[]]:=Module[
-	{safeOptions,cache,inheritedCache,simulation,fastTrack,messages,samplePacketSpecs,instrumentPacketSpec,allDownloadObjects,
-		allDownloadFields,allPackets,samplePackets,instrumentModelPacket,instrumentWettedMaterials,
-		incompatibleSamples,testsRule,resultRule,
-		listedOptions,outputSpecification,output,gatherTests,safeOptionTests,incompatiblityTests,outputFormat,compatibleQs
+	{compatibleMaterialsResult, outputOption, outputFormatOption, resultPosition},
+
+	(* this is for backwards compatiblility only; we cannot have {} as an input for the core double listable overload because of MM recursion errors with OptionsPattern *)
+	compatibleMaterialsResult = CompatibleMaterialsQ[{myInstrument}, mySamples /. {{} -> Null},myOptions];
+
+	(* pull out the output option *)
+	outputOption = OptionValue[Output];
+	outputFormatOption = OptionValue[OutputFormat];
+
+	(* get the position of the Result key inside output *)
+	(* we need to take First of the Result key but not of everything else *)
+	resultPosition = Switch[outputOption,
+		_List, FirstPosition[outputOption, Result, Null],
+		Result, 0,
+		_, Null
+	];
+
+	Switch[{outputFormatOption, resultPosition},
+		(* if we have SingleBoolean, we don't need to do anything *)
+		{SingleBoolean, _}, compatibleMaterialsResult,
+		(* if we have Boolean but we just have Result as the Output Option, just take First to remove one level of listedness *)
+		{Boolean, 0}, First[compatibleMaterialsResult],
+		(* if we have Boolean but Result isn't part of the Output option at all, we don't need to do anything *)
+		{Boolean, Null}, compatibleMaterialsResult,
+		(* otherwise, we have Result as one entry of several in the Output option.  We need to take First of _only_ the entry where we have Result *)
+		{Boolean, _List}, ReplacePart[compatibleMaterialsResult, resultPosition -> First[compatibleMaterialsResult[[First[resultPosition]]]]]
+	]
+];
+
+(* Single sample mulitple instruments *)
+CompatibleMaterialsQ[myInstruments: {ObjectP[{Model[Instrument], Object[Instrument], Object[Part], Model[Part]}]..},mySample:(NonSelfContainedSampleP|NonSelfContainedSampleModelP),myOptions:OptionsPattern[]]:=Module[
+	{compatibleMaterialsResult, outputOption, outputFormatOption, resultPosition},
+
+	compatibleMaterialsResult = CompatibleMaterialsQ[myInstruments, {mySample},myOptions];
+
+	(* pull out the output option *)
+	outputOption = OptionValue[Output];
+	outputFormatOption = OptionValue[OutputFormat];
+
+	(* get the position of the Result key inside output *)
+	(* we need to take First of the Result key but not of everything else *)
+	resultPosition = Switch[outputOption,
+		_List, FirstPosition[outputOption, Result, Null],
+		Result, 0,
+		_, Null
+	];
+
+	Switch[{outputFormatOption, resultPosition},
+		(* if we have SingleBoolean, we don't need to do anything *)
+		{SingleBoolean, _}, compatibleMaterialsResult,
+		(* if we have Boolean but we just have Result as the Output Option, just take First to remove one level of listedness *)
+		{Boolean, 0}, First[compatibleMaterialsResult],
+		(* if we have Boolean but Result isn't part of the Output option at all, we don't need to do anything *)
+		{Boolean, Null}, compatibleMaterialsResult,
+		(* otherwise, we have Result as one entry of several in the Output option.  We need to take First of _only_ the entry where we have Result *)
+		{Boolean, _List}, ReplacePart[compatibleMaterialsResult, resultPosition -> First[compatibleMaterialsResult[[First[resultPosition]]]]]
+	]
+];
+
+(* core function; looks at how all samples touch all instruments.  note that this is NOT index matching; it's an all vs all comparison *)
+CompatibleMaterialsQ[myInstruments: {ObjectP[{Model[Instrument], Object[Instrument], Object[Part], Model[Part]}]..},mySamples:{(NonSelfContainedSampleP|NonSelfContainedSampleModelP)..}|Null,myOptions:OptionsPattern[]]:=Module[
+	{safeOptions,cache,inheritedCache,simulation,fastTrack,messages,samplePacketSpecs, instrumentPacketSpec,
+		allDownloadObjects, allDownloadFields,allPackets,samplePackets, allCompatibleQs, incompatiblePairs,
+		testsRule,resultRule, fastAssoc, possibleSamplePackets, possibleInstrumentModelPackets,
+		listedOptions,outputSpecification,output,gatherTests,safeOptionTests,incompatiblityTests,outputFormat,
+		samplesToDownloadFrom, instrumentsToDownloadFrom, sampleInFastAssocQs, instrumentInFastAssocQs,
+		downloadedSamplePackets, downloadedInstrumentPackets, instrumentModelPackets, listedSamples
 	},
 
 	(* Make sure we're working with a list of options *)
-	listedOptions=ToList[myOptions];
+	listedOptions = ToList[myOptions];
+	listedSamples = If[NullQ[mySamples], {}, mySamples];
 
 	(* Determine the requested return value from the function *)
-	outputSpecification=OptionValue[Output];
-	output=ToList[outputSpecification];
+	outputSpecification = OptionValue[Output];
+	output = ToList[outputSpecification];
 
 	(* Determine if we should keep a running list of tests *)
-	gatherTests=MemberQ[output,Tests];
-
+	gatherTests = MemberQ[output, Tests];
 
 	(* Call SafeOptions to make sure all options match pattern *)
-	{safeOptions,safeOptionTests}=If[gatherTests,
-		SafeOptions[CompatibleMaterialsQ,listedOptions,AutoCorrect->False,Output->{Result,Tests}],
-		{SafeOptions[CompatibleMaterialsQ,listedOptions,AutoCorrect->False],Null}
+	{safeOptions, safeOptionTests} = If[gatherTests,
+		SafeOptions[CompatibleMaterialsQ, listedOptions, AutoCorrect -> False, Output -> {Result, Tests}],
+		{SafeOptions[CompatibleMaterialsQ, listedOptions, AutoCorrect -> False], Null}
 	];
 
 	(* If the specified options don't match their patterns, return $Failed *)
-	If[MatchQ[safeOptions,$Failed],
+	If[MatchQ[safeOptions, $Failed],
 		Return[$Failed]
 	];
 
@@ -91,131 +163,155 @@ CompatibleMaterialsQ[myInstrument:ObjectP[{Model[Instrument],Object[Instrument],
 	(* We don't need to resolve or validate any options, but if we did, this is where we would call the resolver *)
 
 	(* assign the option values to local variables *)
-	inheritedCache=Lookup[safeOptions,Cache];
-	simulation=Lookup[safeOptions,Simulation];
-	fastTrack=Lookup[safeOptions,FastTrack];
-	messages=Lookup[safeOptions,Messages];
-	outputFormat=Lookup[safeOptions,OutputFormat];
+	inheritedCache = Lookup[safeOptions, Cache];
+	simulation = Lookup[safeOptions, Simulation];
+	fastTrack = Lookup[safeOptions, FastTrack];
+	messages = Lookup[safeOptions, Messages];
+	outputFormat = Lookup[safeOptions, OutputFormat];
 
 	(* merge inherited cache and simulation into one cache *)
-	cache=If[NullQ[simulation],
+	cache = If[NullQ[simulation],
 		inheritedCache,
-		FlattenCachePackets[{inheritedCache,Lookup[simulation[[1]],Packets]}]
+		FlattenCachePackets[{inheritedCache, Lookup[simulation[[1]], Packets]}]
 	];
-	
-	(* construct field specs for the samples to get their IncompatibleMaterials. always download the IncompatibleMaterials field, regardless of if we have a Model or Object sample. *)
-	samplePacketSpecs=ConstantArray[{Packet[IncompatibleMaterials]},Length[mySamples]];
-	
+
+	(* make a fastAssoc from the cache *)
+	fastAssoc = makeFastAssocFromCache[cache];
+
+	(* pull out the sample packets and the instrument packets (if they're already in the cache) *)
+	possibleSamplePackets = fetchPacketFromFastAssoc[#, fastAssoc]& /@ listedSamples;
+	possibleInstrumentModelPackets = Map[
+		If[MatchQ[#, ObjectP[Model]],
+			fetchPacketFromFastAssoc[#, fastAssoc],
+			fastAssocPacketLookup[fastAssoc, #, Model]
+		]&,
+		myInstruments
+	];
+
+	(* determine if the sample and instrument packets are in the fastAssoc already |*)
+	sampleInFastAssocQs = MatchQ[#, KeyValuePattern[{IncompatibleMaterials -> _List}]]& /@ possibleSamplePackets;
+	instrumentInFastAssocQs = MatchQ[#, KeyValuePattern[{WettedMaterials -> _List}]]& /@ possibleInstrumentModelPackets;
+
+	(* still need to Download from the objects we don't have in the fastAssoc; get those things now *)
+	samplesToDownloadFrom = PickList[listedSamples, sampleInFastAssocQs, False];
+	instrumentsToDownloadFrom = PickList[myInstruments, instrumentInFastAssocQs, False];
+
+	(* construct field specs for the samples to get their IncompatibleMaterials. Always download the IncompatibleMaterials field, regardless of if we have a Model or Object sample. *)
+	samplePacketSpecs = ConstantArray[{Packet[IncompatibleMaterials]}, Length[samplesToDownloadFrom]];
+
 	(* construct a field spec that will give us the WettedMaterials of the instrument or part, depending on whether it's a Model/Object *)
-	instrumentPacketSpec=If[MatchQ[myInstrument,ObjectP[Object]],
-		{Packet[Model[{WettedMaterials}]]},
-		{Packet[WettedMaterials]}
+	instrumentPacketSpec = Map[
+		If[MatchQ[#, ObjectP[Model]],
+			{Packet[WettedMaterials]},
+			{Packet[Model[WettedMaterials]]}
+		]&,
+		instrumentsToDownloadFrom
 	];
-	
+
 	(* join together the object and field spec lists for passing to Download as flat lists *)
-	allDownloadObjects=Append[mySamples,myInstrument];
-	allDownloadFields=Append[samplePacketSpecs,instrumentPacketSpec];
-	
-	(* download material compatibility from the samples/instruments; split the info between the instrument materials and all sample materials *)
-	(*
-	SPEED: Download will still contact database even with a proper cache, because of cache value for the object definition.
-	This becomes terribly slow when we Map call CompatibleMaterialQ.
-	So we try to fetchPacketFromCache first. If it has all the fields we need then just take those values. Otherwise download
-	*)
+	allDownloadObjects = Join[samplesToDownloadFrom, instrumentsToDownloadFrom];
+	allDownloadFields = Join[samplePacketSpecs, instrumentPacketSpec];
 
+	(* Download from the objects that are not already in the fastAssoc *)
+	allPackets = Download[allDownloadObjects, allDownloadFields, Cache -> inheritedCache, Simulation -> simulation];
+	{downloadedSamplePackets, downloadedInstrumentPackets} = TakeDrop[allPackets, Length[samplesToDownloadFrom]];
 
-	allPackets=If[MatchQ[{mySamples,myInstrument,cache},{{PacketP[]..},PacketP[],_}]||MatchQ[cache,Except[{}|Null|{Null..}]],
-		Module[{fetchedSamplePackets,samplePackestFieldQs,fetchedInstrumentPacket,instrumentPacketsFieldQ,neededFieldsExistQ,
-			primaryFetch,primaryWithWettedMaterialQ,secondaryFetch,secondaryWithWettedMaterialQ},
+	(* merge what we Downloaded here with what was already in the fastAssoc *)
+	(* basically, the positions where we don't have anything in the fastAssoc are going to be in the same order as the downloaded values, so we can just straight go in order with ReplacePart *)
+	samplePackets = ReplacePart[possibleSamplePackets, AssociationThread[Position[sampleInFastAssocQs, False], Flatten@downloadedSamplePackets]];
+	instrumentModelPackets = ReplacePart[possibleInstrumentModelPackets, AssociationThread[Position[instrumentInFastAssocQs, False], Flatten@downloadedInstrumentPackets]];
 
-			fetchedSamplePackets=fetchPacketFromCache[#,cache]&/@mySamples;
-			samplePackestFieldQs=AssociationMatchQ[#,<|IncompatibleMaterials->Except[$Failed]|>,AllowForeignKeys->True]&/@fetchedSamplePackets;
+	(* compare sample compatibility with all instruments *)
+	(* do each sample for each instrument *)
+	allCompatibleQs = Map[
+		Function[{instrumentModelPacket},
+			Map[
+				(* get the wetted materials here so we don't get it every time we are sample mapping *)
+				With[{wettedMaterials = Lookup[instrumentModelPacket, WettedMaterials]},
+					Function[{samplePacket},
+						Module[
+							{incompatibleMaterials, overlappingMaterials},
 
-			{fetchedInstrumentPacket,instrumentPacketsFieldQ}=Catch[
-				primaryFetch=fetchPacketFromCache[myInstrument,cache];
-				primaryWithWettedMaterialQ=AssociationMatchQ[primaryFetch,<|WettedMaterials->_List|>,AllowForeignKeys->True];
-				If[primaryWithWettedMaterialQ,
-					Throw[{primaryFetch,primaryWithWettedMaterialQ}],
-					(*ELSE: does not have WettedMaterials field or did not download this field in cache-- look at its model*)
-					secondaryFetch=fetchPacketFromCache[Lookup[primaryFetch,Model,<||>],cache];
-					secondaryWithWettedMaterialQ=AssociationMatchQ[secondaryFetch,<|WettedMaterials->_List|>,AllowForeignKeys->True];
-					Throw[{secondaryFetch,secondaryWithWettedMaterialQ}]
-				]
-			];
-			neededFieldsExistQ=And@@Flatten[{samplePackestFieldQs,instrumentPacketsFieldQ}];
+							(* pull incompatible materials of this sample model *)
+							incompatibleMaterials = Lookup[samplePacket, IncompatibleMaterials];
 
-			If[neededFieldsExistQ,
-				(*If both sample and instrument needed fields can be fetched from cache, then just use the fetched packet*)
-				Append[List/@fetchedSamplePackets,{fetchedInstrumentPacket}],
-				(*ELSE: download*) (*TODO: should we throw a warning here for developers that their cache is no good?*)
-				Download[allDownloadObjects,allDownloadFields,Cache->cache]
+							(* determine overlap between these incompatible materials and the instrument's wetted materials *)
+							overlappingMaterials = Intersection[incompatibleMaterials, wettedMaterials];
+
+							(* if there are overlapping materials, return the original input, as it has an incompatibility *)
+							If[MatchQ[overlappingMaterials, {MaterialP..}],
+								False,
+								True
+							]
+						]
+					]
+				],
+				samplePackets
 			]
 		],
-		(*ELSE: if there's no way we could have used fetchPacketsFromCache either because there's no cache passed or because the mySamples and myInstrument are not packets, then directly go download.*)
-		Download[allDownloadObjects,allDownloadFields,Cache->cache]
+		instrumentModelPackets
 	];
-	samplePackets=Most[allPackets][[All,1]];
-	instrumentModelPacket=First[Last[allPackets]];
-	
-	(* pull the wetted materials of the instruemnt model *)
-	instrumentWettedMaterials=Lookup[instrumentModelPacket,WettedMaterials];
-	
-	(* move through the sample model packets and return those that have an incompatibility *)
-	compatibleQs=Map[
-		Module[{incompatibleMaterials,overlappingMaterials},
 
-			(* pull incompatible materials of this sample model *)
-			incompatibleMaterials=Lookup[#,IncompatibleMaterials];
-
-			(* determine overlap between these incompatible materials and the instrument's wetted materials *)
-			overlappingMaterials=Intersection[incompatibleMaterials,instrumentWettedMaterials];
-
-			(* if there are overlapping materials, return the original input, as it has an incompatibility *)
-			If[MatchQ[overlappingMaterials,{MaterialP..}],
-				False,
-				True
+	(* Pick the sample instrument pairs that are incompatible with the device input *)
+	incompatiblePairs = Join @@ MapThread[
+		Function[{instrumentModelPacket, compatibleQs},
+			MapThread[
+				Function[{samplePacket, compatibleQ},
+					If[compatibleQ,
+						Nothing,
+						{Lookup[samplePacket, Object], Lookup[instrumentModelPacket, Object]}
+					]
+				],
+				{samplePackets, compatibleQs}
 			]
-		]&,
-		samplePackets
+		],
+		{instrumentModelPackets, allCompatibleQs}
 	];
-	(* Pick the sample inputs that are incompatible with the device input *)
-	incompatibleSamples=PickList[mySamples,compatibleQs,False];
 
 	(* throw a message if we are not on the fast track, and have been allowed to throw messages by the Messages option, and we are not collecting tests *)
-	If[!fastTrack&&messages&&!gatherTests&&MatchQ[incompatibleSamples,{ObjectP[]..}],
-		Message[Warning::IncompatibleMaterials,incompatibleSamples,myInstrument]
+	If[!fastTrack&&messages&&!gatherTests&&Not[MatchQ[incompatiblePairs,{}]],
+		Message[Error::IncompatibleMaterials,incompatiblePairs]
 	];
+
 
 	(* if we are collecting tests, make a test *)
 	incompatiblityTests=If[gatherTests,
-		Map[
-			Test[ToString[#]<>" is chemically incompatible with the wetted materials in "<>ToString[myInstrument]<>". Please check the IncompatibleMaterials listing in these samples, and the WettedMaterials of the instrument, and substitute these samples for chemically compatible ones if possible:",
-				MemberQ[incompatibleSamples,#],
-				False
-			]&,mySamples
-		]
+		Flatten[MapThread[
+			Function[{instrumentModelPacket, compatibleQs},
+				MapThread[
+					Function[{samplePacket, compatibleQ},
+						Test[ToString[Lookup[samplePacket, Object]] <> " is chemically compatible with the wetted materials in " <> ToString[Lookup[instrumentModelPacket, Object]] <> ":",
+							compatibleQ,
+							True
+						]
+					],
+					{samplePackets, compatibleQs}
+				]
+			],
+			{instrumentModelPackets, allCompatibleQs}
+		]]
 	];
 
 	(* Prepare the Test result if we were asked to do so *)
-	testsRule=Tests->If[MemberQ[output,Tests],
-	(* Join all exisiting tests generated by helper functions with any additional tests *)
-		Join[safeOptionTests,incompatiblityTests],
+	testsRule = Tests -> If[MemberQ[output, Tests],
+		(* Join all exisiting tests generated by helper functions with any additional tests *)
+		Join[safeOptionTests, incompatiblityTests],
 		Null
 	];
 
 	(* Prepare the standard result if we were asked for it and we can safely do so *)
-	resultRule=Result->If[MemberQ[output,Result],
+	resultRule = Result -> If[MemberQ[output, Result],
 		(*
 		If OutputFormat is SingleBoolean, return a boolean indicating if we found any of the provided samples to be incompatible,
 		If OutputFormat is Boolean, return a list of booleans indicating if each of the provided samples is incompatible,
 		 *)
-		If[MatchQ[outputFormat,SingleBoolean],
-			And@@compatibleQs,
-			compatibleQs
+		If[MatchQ[outputFormat, SingleBoolean],
+			And @@ Flatten[allCompatibleQs],
+			allCompatibleQs
 		]
 	];
 
-	outputSpecification/.{testsRule,resultRule}
+	outputSpecification /. {testsRule, resultRule}
 ];
 
 
@@ -250,7 +346,9 @@ experimentFunctionTypeLookup = <|
 	ExperimentUVMelting -> Object[Protocol, UVMelting],
 	ExperimentAliquot -> {
 		Object[Protocol, ManualSamplePreparation],
-		Object[Protocol, RoboticSamplePreparation]
+		Object[Protocol, ManualCellPreparation],
+		Object[Protocol, RoboticSamplePreparation],
+		Object[Protocol, RoboticCellPreparation]
 	},
 	ExperimentAssembleCrossFlowFiltrationTubing -> Object[Protocol, AssembleCrossFlowFiltrationTubing],
 	ExperimentAutoclave -> Object[Protocol, Autoclave],
@@ -265,9 +363,7 @@ experimentFunctionTypeLookup = <|
 	ExperimentCircularDichroism -> Object[Protocol,CircularDichroism],
 	ExperimentCoulterCount -> Object[Protocol, CoulterCount],
 	ExperimentCountLiquidParticles -> Object[Protocol,CountLiquidParticles],
-	ExperimentCover->Object[Protocol, Cover],
-	ExperimentCOVID19Test -> Object[Protocol, COVID19Test],
-	ExperimentRoboticCOVID19Test -> Object[Protocol, RoboticCOVID19Test],
+	ExperimentCover -> Object[Protocol, Cover],
 	ExperimentCrossFlowFiltration -> Object[Protocol, CrossFlowFiltration],
 	ExperimentCyclicVoltammetry -> Object[Protocol, CyclicVoltammetry],
 	ExperimentDegas -> Object[Protocol,Degas],
@@ -277,17 +373,22 @@ experimentFunctionTypeLookup = <|
 	ExperimentDigitalPCR -> Object[Protocol, DigitalPCR],
 	ExperimentDilute -> {
 		Object[Protocol, ManualSamplePreparation],
-		Object[Protocol, RoboticSamplePreparation]
+		Object[Protocol, ManualCellPreparation],
+		Object[Protocol, RoboticSamplePreparation],
+		Object[Protocol, RoboticCellPreparation]
 	},
 	ExperimentDNASequencing -> Object[Protocol, DNASequencing],
 	ExperimentDNASynthesis -> Object[Protocol, DNASynthesis],
 	ExperimentDynamicFoamAnalysis -> Object[Protocol, DynamicFoamAnalysis],
 	ExperimentDynamicLightScattering -> Object[Protocol, DynamicLightScattering],
+	ExperimentELISA -> Object[Protocol, ELISA],
 	ExperimentEvaporate -> Object[Protocol, Evaporate],
 	ExperimentFillToVolume -> Object[Protocol, FillToVolume],
 	ExperimentFilter -> {
 		Object[Protocol, ManualSamplePreparation],
+		Object[Protocol, ManualCellPreparation],
 		Object[Protocol, RoboticSamplePreparation],
+		Object[Protocol, RoboticCellPreparation],
 		Object[Protocol, Filter]
 	},
 	ExperimentFlashChromatography -> Object[Protocol, FlashChromatography],
@@ -308,16 +409,18 @@ experimentFunctionTypeLookup = <|
 	ExperimentICPMS -> Object[Protocol, ICPMS],
 	ExperimentIncubate -> {
 		Object[Protocol, ManualSamplePreparation],
+		Object[Protocol, ManualCellPreparation],
 		Object[Protocol, RoboticSamplePreparation],
+		Object[Protocol, RoboticCellPreparation],
 		Object[Protocol, Incubate]
 	},
 	ExperimentIncubateCells -> {
-		Object[Protocol, ManualCellPreparation],
-		Object[Protocol, RoboticCellPreparation],
-		Object[Protocol, IncubateCells]
+		Object[Protocol, IncubateCells],
+		Object[Protocol, RoboticCellPreparation]
 	},
 	ExperimentInteractiveTraining -> Object[Protocol, InteractiveTraining],
 	ExperimentImageCells -> Object[Protocol, ImageCells],
+	ExperimentImageColonies -> Object[Protocol, RoboticCellPreparation],
 	ExperimentImageSample -> Object[Protocol, ImageSample],
 	ExperimentIonChromatography -> Object[Protocol,IonChromatography],
 	ExperimentIRSpectroscopy -> Object[Protocol, IRSpectroscopy],
@@ -360,16 +463,22 @@ experimentFunctionTypeLookup = <|
 	ExperimentPNASynthesis -> Object[Protocol, PNASynthesis],
 	ExperimentPowderXRD -> Object[Protocol, PowderXRD],
 	ExperimentqPCR -> Object[Protocol, qPCR],
+	ExperimentQuantifyCells -> Object[Protocol, QuantifyCells],
+	ExperimentQuantifyColonies -> {Object[Protocol, RoboticCellPreparation], Object[Protocol, QuantifyColonies]},
 	ExperimentRamanSpectroscopy -> Object[Protocol, RamanSpectroscopy],
 	ExperimentResuspend -> {
 		Object[Protocol, ManualSamplePreparation],
-		Object[Protocol, RoboticSamplePreparation]
+		Object[Protocol, ManualCellPreparation],
+		Object[Protocol, RoboticSamplePreparation],
+		Object[Protocol, RoboticCellPreparation]
 	},
-	ExperimentSampleManipulation -> Object[Protocol, SampleManipulation],
+	ExperimentSpreadCells -> Object[Protocol, RoboticCellPreparation],
 	ExperimentSolidPhaseExtraction -> Object[Protocol, SolidPhaseExtraction],
 	ExperimentSerialDilute -> {
 		Object[Protocol, ManualSamplePreparation],
+		Object[Protocol, ManualCellPreparation],
 		Object[Protocol, RoboticSamplePreparation],
+		Object[Protocol, RoboticCellPreparation],
 		Object[Protocol, SerialDilute]
 	},
 	ExperimentStockSolution -> Object[Protocol, StockSolution],
@@ -379,7 +488,9 @@ experimentFunctionTypeLookup = <|
 	ExperimentTotalProteinQuantification -> Object[Protocol, TotalProteinQuantification],
 	ExperimentTransfer -> {
 		Object[Protocol, ManualSamplePreparation],
+		Object[Protocol, ManualCellPreparation],
 		Object[Protocol, RoboticSamplePreparation],
+		Object[Protocol, RoboticCellPreparation],
 		Object[Protocol, Transfer]
 	},
 	ExperimentUncover -> Object[Protocol, Uncover],
@@ -388,12 +499,20 @@ experimentFunctionTypeLookup = <|
 	MaintenanceInstallGasCylinder -> Object[Maintenance, InstallGasCylinder],
 	ExperimentPellet -> {
 		Object[Protocol, ManualSamplePreparation],
+		Object[Protocol, ManualCellPreparation],
 		Object[Protocol, RoboticSamplePreparation],
+		Object[Protocol, RoboticCellPreparation],
 		Object[Protocol, Pellet]
 	},
 	ExperimentBioLayerInterferometry -> Object[Protocol, BioLayerInterferometry],
 	ExperimentVapro5600Training -> Object[Protocol, Vapro5600Training],
 	ExperimentVisualInspection -> Object[Protocol, VisualInspection],
-	ExperimentInoculateLiquidMedia -> Object[Protocol, InoculateLiquidMedia]
+	ExperimentInoculateLiquidMedia -> Object[Protocol, InoculateLiquidMedia],
+	ExperimentLiquidLiquidExtraction -> Object[Protocol, RoboticSamplePreparation],
+	ExperimentPickColonies -> Object[Protocol, RoboticCellPreparation],
+	ExperimentSpreadCells -> Object[Protocol, RoboticCellPreparation],
+	ExperimentStreakCells -> Object[Protocol, RoboticCellPreparation],
+	ExperimentLyseCells -> Object[Protocol, RoboticCellPreparation],
+	ExperimentWashCells -> Object[Protocol, RoboticCellPreparation]
 |>
 

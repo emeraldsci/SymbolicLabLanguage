@@ -19,10 +19,19 @@ DefineUsage[ValidExperimentEvaporateQ,
 						{
 							InputName -> "Samples",
 							Description-> "The samples or containers that will be concentrated by evaporation.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Container,Plate],Object[Container,Vessel],Object[Sample]}],
+									Dereference -> {
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True
@@ -47,7 +56,7 @@ DefineUsage[ValidExperimentEvaporateQ,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"dima", "steven", "simon.vu", "axu", "wyatt", "sarah", "stacey.lee"}
+		Author->{"dima", "malav.desai","steven", "simon.vu", "axu", "wyatt", "sarah", "stacey.lee"}
 	}
 ];
 
@@ -68,10 +77,19 @@ DefineUsage[ExperimentEvaporatePreview,
 						{
 							InputName -> "Samples",
 							Description-> "The samples or containers that will be concentrated by evaporation.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Container,Plate],Object[Container,Vessel],Object[Sample]}],
+									Dereference -> {
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True
@@ -97,7 +115,7 @@ DefineUsage[ExperimentEvaporatePreview,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"dima", "steven", "simon.vu", "axu", "wyatt", "sarah", "stacey.lee"}
+		Author->{"dima", "malav.desai","steven", "simon.vu", "axu", "wyatt", "sarah", "stacey.lee"}
 	}
 ];
 
@@ -117,10 +135,19 @@ DefineUsage[ExperimentEvaporateOptions,
 						{
 							InputName -> "Samples",
 							Description-> "The samples or containers that will be concentrated by evaporation.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Container,Plate],Object[Container,Vessel],Object[Sample]}],
+									Dereference -> {
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True
@@ -145,6 +172,6 @@ DefineUsage[ExperimentEvaporateOptions,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"dima", "steven", "simon.vu", "axu", "wyatt", "sarah", "stacey.lee"}
+		Author->{"dima", "malav.desai","steven", "simon.vu", "axu", "wyatt", "sarah", "stacey.lee"}
 	}
 ];

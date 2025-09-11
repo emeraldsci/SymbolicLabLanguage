@@ -27,7 +27,7 @@ DefineOptions[ExperimentCapillaryGelElectrophoresisSDS,
 		{
 			OptionName->Cartridge,
 			Default->Model[Container,ProteinCapillaryElectrophoresisCartridge,"CESDS-Plus"],
-			Description->"The capillary electrophoresis cartridge loaded on the instrument for Capillary gel Electrophoresis-SDS (CESDS) experiments. The cartridge holds a single capillary and the anode's running buffer. CESDS cartridges can run 100 injections in up to 25 batches under optimal conditions, and up to 200 or 500 injections in total for CESDS and CESDS-Plus cartridges, respectively.",
+			Description->"The capillary electrophoresis cartridge loaded on the instrument for Capillary gel Electrophoresis-SDS (CESDS) experiments. The cartridge holds a single capillary and the anode's running buffer. CESDS cartridges can run 100 injections in up to 25 batches.",
 			AllowNull->False,
 			Widget->Widget[
 				Type->Object,
@@ -43,17 +43,6 @@ DefineOptions[ExperimentCapillaryGelElectrophoresisSDS,
 			Widget->Widget[
 				Type->Enumeration,
 				Pattern:>Alternatives[True,False,IfRequired]
-			],
-			Category->"General"
-		},
-		{
-			OptionName->ReplaceCartridgeInsert,
-			Default->True,
-			Description->"Indicates if the cartridge insert should be replaced when needed. The cartridge insert can no longer be used and has to be replaced if it has been soaked with running buffer. While this does not prevent the experiment from running, the cartridge can't be used again until the insert is replaced.",
-			AllowNull->False,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>BooleanP
 			],
 			Category->"General"
 		},
@@ -823,7 +812,7 @@ DefineOptions[ExperimentCapillaryGelElectrophoresisSDS,
 		{
 			OptionName->RunningBuffer,
 			Default->Model[Sample,"CESDS Running Buffer - Bottom"],
-			Description->"The buffer in which the capillary docks for separation. This buffer must be compatible with the running buffer loaded on the CESDS cartridge (see: CEOnBoardRunningBuffer).",
+			Description->"The buffer in which the capillary docks for separation. This buffer must be compatible with the running buffer loaded on the CESDS cartridge (see: OnboardRunningBuffer field of the selected Cartridge).",
 			AllowNull->False,
 			Widget->Widget[
 				Type->Object,
@@ -1489,7 +1478,7 @@ DefineOptions[ExperimentCapillaryGelElectrophoresisSDS,
 			{
 				OptionName->StandardFrequency,
 				Default->Automatic,
-				Description->"Indicates how many injections per standard should be included in this experiment. Sample, Standard, and Blank injection order are resolved according to InjectoinTable.",
+				Description->"Indicates how many injections per standard should be included in this experiment. Sample, Standard, and Blank injection order are resolved according to InjectionTable.",
 				ResolutionDescription->"When StandardFrequency is set to Automatic and IncludeStandards is True, Set Frequency to FirstAnLast.",
 				AllowNull->True,
 				Widget->Widget[
@@ -2435,7 +2424,8 @@ DefineOptions[ExperimentCapillaryGelElectrophoresisSDS,
 		(* Shared Options *)
 		AliquotOptions,
 		SimulationOption,
-		FuntopiaSharedOptions,
+		ModelInputOptions,
+		NonBiologyFuntopiaSharedOptions,
 		SamplesInStorageOptions
 	}
 ];
@@ -2455,38 +2445,37 @@ Warning::NotEnoughOptimalUsesLeftOnCartridge="This protocol requires more inject
 Warning::PreMadeMasterMixWithMakeOwnOptions="Options for both premade MasterMix and modular MasterMix are specified for `1`. These options are exclusive to each other and only premade master mix options will take effect. If you dont wish to use a PremadeMasterMix, make sure to set this option to False.";
 Warning::MissingSampleComposition="Sample composition is missing for `1`. As a result, sample Volume can't be accurately calculated to reach 1 mg/mL protein and defaulted to 25% of the TotalVolume. Please specify the volume if desired.";
 Error::InvalidSupernatantVolume="The volume to transfer after centrifugation is invalid for `1`. Please make sure the volume is specified when pellet sedimentation is True, and that it does not exceed the total volume.";
-Error::CentrifugationForceSpeedMismatch="The specified centrifugation force and speed are not copacetic. Please Make sure that values are in agreement, or set one to Automatic.";
+Error::CentrifugationForceSpeedMismatch="The specified centrifugation force and speed are not compatible. Please Make sure that values are in agreement, or set one to Automatic.";
 Error::CentrifugationForceSpeedNull="While pellet sedimentation is set to True, centrifugation force and/or speed is set to Null. Please set these values to a desired force/speed, or to Automatic.";
-Warning::NotReplacingInsert="The cartridge insert will not be replaced, even if required. This may affect the reliability of this cartridge the next time it is used. It is recommended to replace the insert if and when needed. Please consider setting ReplaceCartridgeInsert to True.";
 (* premade mastermix branch *)
 Error::PremadeMasterMixReagentNull="While premade master mix is True, premade master mix reagent is set to Null for `1`. Please make sure to specify the reagent object that should be used or set premade master mix to False.";
 Error::PremadeMasterMixDilutionFactorNull="While premade master mix is True, its reagent's dilution factor is set to Null for `1`. Please make sure to specify either the dilution factor or the volume.";
 Error::PremadeMasterMixVolumeNull="While premade master mix is set to True, PremadeMasterMixVolume is Null for `1`. Please set a valid volume or Automatic to use premade master mix reagent. Alternatively, Set premade master mix to False.";
-Error::PremadeMasterMixVolumeDilutionFactorMismatch="Specified premade master mix volume and dilution factor are not copacetic. Please make sure that their values are in agreement, or set one to Automatic.";
+Error::PremadeMasterMixVolumeDilutionFactorMismatch="Specified premade master mix volume and dilution factor are not compatible. Please make sure that their values are in agreement, or set one to Automatic.";
 Error::PremadeMasterMixInvalidTotalVolume="Sample Volume and premade master mix volume sum up to more than the total Volume in `1`. Please make sure volumes do not exceed the total volume in the tube.";
 Error::PremadeMasterMixDiluentNull="While premade master mix is True, a Diluent is missing for `1`. Please specify the desired diluent or set to Automatic.";
 (* Make your own mastermix branch *)
 Error::InternalReferenceNull="InternalReference is set to Null while premade master mix is set to False in `1`. Please set InternalReference to the correct object or Automatic.";
 Error::InternalReferenceDilutionFactorNull="the internal reference dilution factor is set to Null while premade master mix is set to False in `1`. Please set the dilution factor to a valid value or Automatic.";
 Error::InternalReferenceVolumeNull="the internal reference volume is set to Null while premade master mix is set to False in `1`. Please set the volume to a valid value or Automatic.";
-Error::InternalReferenceVolumeDilutionFactorMismatch="The specified internal reference dilution factor and volume are not in agreement for `1`. Please make sure the options are copacetic or consider setting one to Automatic.";
+Error::InternalReferenceVolumeDilutionFactorMismatch="The specified internal reference dilution factor and volume are not in agreement for `1`. Please make sure the options are compatible or consider setting one to Automatic.";
 Error::ReducingAgentNull="Reducing agent is set to Null while reduction is set to True for `1`. Please make sure to set the reducing agent to the correct object or to Automatic.";
 Warning::NoReducingAgentIdentified="A reducing agent was not identified in the composition of the reducing agent object specified for `1`. Please make sure that the object has valid composition or specify the approproate reducing agent volume.";
 Error::ReducingAgentTargetConcentrationNull="The reducing agent's target concentration was not specified for `1`. Please specify either reducing agent's target concentration or volume, or set to Automatic.";
 Error::ReducingAgentVolumeNull="The reducing agent volume was not specified for `1`. Please specify either the reducing agent's target concentration or volume, or set to Automatic.";
-Error::ReducingAgentVolumeConcentrationMismatch="The specified reducing agent's target concentration and volume are not in agreement for `1`. Please make sure the options are copacetic or consider setting one to Automatic.";
+Error::ReducingAgentVolumeConcentrationMismatch="The specified reducing agent's target concentration and volume are not in agreement for `1`. Please make sure the options are compatible or consider setting one to Automatic.";
 Error::AlkylatingAgentNull="The alkylating agent is set to Null while alkylation is set to True for `1`. Please make sure to set the alkylating agent to the correct object or to Automatic.";
 Warning::NoAlkylatingAgentIdentified="A alkylating agent was not identified in the composition of the alkylating agent object specified for `1`. Please make sure that the object has valid composition or specify the alkylating agent's volume.";
 Error::AlkylatingAgentTargetConcentrationNull="The alkylating agent's target concentration was not specified for `1`. Please specify either AlkylatingAgentTargetConcentration or AlkylatingAgentTargetVolume, or set to Automatic.";
 Error::AlkylatingAgentVolumeNull="The alkylating agent volume was not specified for `1`. Please specify either the alkylating agent's target concentration or volume, or set to Automatic.";
-Error::AlkylatingAgentVolumeConcentrationMismatch="The specified alkylating agent's target concentration and volume are not in agreement for `1`. Please make sure the options are copacetic or consider setting one to Automatic.";
+Error::AlkylatingAgentVolumeConcentrationMismatch="The specified alkylating agent's target concentration and volume are not in agreement for `1`. Please make sure the options are compatible or consider setting one to Automatic.";
 Error::SDSBufferNull="No buffer containing SDS has been specified for `1`. Please specify an SDS buffer (concentrated or not) to be used in sample preparation, or set to Automatic.";
 Warning::BothSDSBufferOptionsSet="Both Concentrated SDS buffer and SDS buffer options were specified for `1`. Please consider setting one or the other. By default, the Concentrated SDS Buffer option will be used when both options are specified.";
 Error::ConcentratedSDSBufferDilutionFactorNull="The concentrated SDS buffer's dilution factor is set to Null for `1` while Concentrated SDS buffer is specified. Please specify the appropriate dilution factor or the reagent's volume.";
 Warning::InsufficientSDSinSample="The final concentration of SDS in the samples `1` is lower than the recommended 0.5% SDS minimum. Please consider adding more SDSBuffer to your sample or use a more concentrated SDSbuffer.";
 Error::ComponentsDontSumToTotalVolume="The sum of components added to the assay tube is smaller than the specified TotalVolume for `1`. Each assay contains SampleVolume, InternalReferenceVolume, ReducingAgentVolume, AlkylatingAgentVolume, and SDSBufferVolume. Make sure volumes sum to Total Volume or consider setting volumes to Automatic.";
 Error::VolumeGreaterThanTotalVolume="The sum of components added to the assay tube is larger than the specified TotalVolume for `1`. Each assay contains SampleVolume, InternalReferenceVolume, ReducingAgentVolume, AlkylatingAgentVolume, and SDSBufferVolume. Make sure volumes sum to Total Volume or consider setting volumes to Automatic.";
-Error::DiluentNull="Diluent is not specified when using ConcentratedSDSBuffer and components do not sum to the totalVolume for `1`. Please specify teh Diluent, or set to Automatic.";
+Error::DiluentNull="Diluent is not specified when using ConcentratedSDSBuffer and components do not sum to the totalVolume for `1`. Please specify the Diluent, or set to Automatic.";
 Error::TotalVolumeNull="Total volume is set as Null for the following objects `1`. Please specify total volume, or set to Automatic.";
 Error::VolumeNull="The volume is set as Null for the following objects `1`. Please specify the volume, or set to Automatic.";
 Error::LadderDilutionFactorNull="The dilution factor for the ladder reagent is missing for `1`. Please make sure to set either LadderDilutionFactor or LadderVolume.";
@@ -2505,7 +2494,7 @@ ExperimentCapillaryGelElectrophoresisSDS[mySamples:ListableP[ObjectP[Object[Samp
 	{
 		listedSamples,listedOptions,outputSpecification,output,gatherTests,messages,safeOptions,
 		safeOptionTests,mySamplesWithPreparedSamplesNamed,safeOptionsNamed, myOptionsWithPreparedSamplesNamed,
-		validLengths,validLengthTests,upload,confirm,fastTrack,parentProt,inheritedCache,
+		validLengths,validLengthTests,upload,confirm,canaryBranch,fastTrack,parentProt,inheritedCache,
 		unresolvedOptions,specifiedInjectionTable,applyTemplateOptionTests,combinedOptions,expandedCombinedOptions,
 		sampleModelPreparationPacket,samplePreparationPacket,resolveOptionsResult,resolvedOptions,resolutionTests,
 		resolvedOptionsNoHidden,returnEarlyQ,cacheBall,finalizedPacket,userSpecifiedAnalytes,
@@ -2513,8 +2502,7 @@ ExperimentCapillaryGelElectrophoresisSDS[mySamples:ListableP[ObjectP[Object[Samp
 		allTests,protocolObject,testsRule,optionsRule,validQ,specifiedInstrument,
 		specifiedCartridge,allContainerModels,allContainerObjects,allInstrumentObjects,containerFields,
 		containerModelFieldsThroughLinks,containerModelFields,allSampleObjects,sampleContainerFields,
-		sampleContainerModelFields,allReagentsModels,reagentFields,optionsWithObjects,userSpecifiedObjects,simulatedSampleQ,
-		objectsExistQs,objectsExistTests,updatedSimulation,performSimulationQ,simulatedProtocol,simulation
+		sampleContainerModelFields,allReagentsModels,reagentFields,optionsWithObjects,userSpecifiedObjects,updatedSimulation,performSimulationQ,simulatedProtocol,simulation
 	},
 
 	(* Determine the requested return value from the function *)
@@ -2537,7 +2525,7 @@ ExperimentCapillaryGelElectrophoresisSDS[mySamples:ListableP[ObjectP[Object[Samp
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -2554,7 +2542,7 @@ ExperimentCapillaryGelElectrophoresisSDS[mySamples:ListableP[ObjectP[Object[Samp
 	];
 
 	(* Call sanitizeInputs to replace named samples with ids *)
-	{mySamplesWithPreparedSamples,safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples,safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed, myOptionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOptions,$Failed],
@@ -2587,7 +2575,7 @@ ExperimentCapillaryGelElectrophoresisSDS[mySamples:ListableP[ObjectP[Object[Samp
 	];
 
 	(* get assorted hidden options *)
-	{upload,confirm,fastTrack,parentProt,inheritedCache}=Lookup[safeOptions,{Upload,Confirm,FastTrack,ParentProtocol,Cache}];
+	{upload,confirm,canaryBranch,fastTrack,parentProt,inheritedCache}=Lookup[safeOptions,{Upload,Confirm,CanaryBranch,FastTrack,ParentProtocol,Cache}];
 
 	(* Use any template options to get values for options not specified in myOptions *)
 	{unresolvedOptions,applyTemplateOptionTests}=If[gatherTests,
@@ -2606,7 +2594,7 @@ ExperimentCapillaryGelElectrophoresisSDS[mySamples:ListableP[ObjectP[Object[Samp
 		}]
 	];
 
-	(* if a template was applied, we need to make sure not to take its injection table (because it will not apply, by definition) but also need to make sure we dont omit a specified injection table *)
+	(* if a template was applied, we need to make sure not to take its injection table (because it will not apply, by definition) but also need to make sure we don't omit a specified injection table *)
 	specifiedInjectionTable = {InjectionTable->Lookup[safeOptions, InjectionTable]};
 
 	(* Replace our safe options with our inherited options from our template. *)
@@ -2664,7 +2652,7 @@ ExperimentCapillaryGelElectrophoresisSDS[mySamples:ListableP[ObjectP[Object[Samp
 
 	(*fields not in the object: DefaultThawTime, DefaultThawTemperature,MolecularWeight*)
 	(* Set up the samplePreparationPacket using SamplePreparationCacheFields*)
-	samplePreparationPacket=Packet[SamplePreparationCacheFields[Object[Sample],Format->Sequence],IncompatibleMaterials,LiquidHandlerIncompatible,Tablet,TabletWeight,TransportWarmed,TransportChilled];
+	samplePreparationPacket=Packet[SamplePreparationCacheFields[Object[Sample],Format->Sequence],IncompatibleMaterials,LiquidHandlerIncompatible,Tablet,SolidUnitWeight,TransportTemperature];
 	sampleModelPreparationPacket=Packet[Model[Flatten[{Deprecated,Products,ConcentratedBufferDilutionFactor,IncompatibleMaterials,SamplePreparationCacheFields[Model[Sample]]}]]];
 	sampleContainerFields=Packet[Container[{Model,SamplePreparationCacheFields[Object[Container],Format->Sequence]}]];
 	sampleContainerModelFields=Packet[Container[Model][{MaxVolume,Name,Dimensions,DefaultStorageCondition,SamplePreparationCacheFields[Model[Container],Format->Sequence]}]];
@@ -2731,33 +2719,6 @@ ExperimentCapillaryGelElectrophoresisSDS[mySamples:ListableP[ObjectP[Object[Samp
 			ObjectP[]
 		],
 		userSpecifiedAnalytes
-	];
-
-	(* Check that the specified objects exist or are visible to the current user *)
-	simulatedSampleQ=MemberQ[Download[Lookup[updatedSimulation[[1]], Packets],Object], #] &/@userSpecifiedObjects;
-	objectsExistQs=DatabaseMemberQ[PickList[userSpecifiedObjects,simulatedSampleQ,False]];
-
-	(* Build tests for object existence *)
-	objectsExistTests=If[gatherTests,
-		MapThread[
-			Test[StringTemplate["Specified object `1` exists in the database:"][#1],#2,True]&,
-			{PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]
-		];
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->Join[safeOptionTests,validLengthTests,applyTemplateOptionTests,objectsExistTests],
-			Options->$Failed,
-			Preview->Null
-		}]
 	];
 
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
@@ -2885,20 +2846,25 @@ ExperimentCapillaryGelElectrophoresisSDS[mySamples:ListableP[ObjectP[Object[Samp
 	];
 
 	(* Build packets with resources *)
-	{finalizedPacket,resourcePacketTests}=If[gatherTests,
-		capillaryGelElectrophoresisSDSResourcePackets[ToList[mySamplesWithPreparedSamples],unresolvedOptions,
-			resolvedOptions,Output->{Result,Tests},Cache->cacheBall,Simulation->updatedSimulation],
-		{capillaryGelElectrophoresisSDSResourcePackets[ToList[mySamplesWithPreparedSamples],unresolvedOptions,
-			resolvedOptions,Output->Result,Cache->cacheBall,Simulation->updatedSimulation],Null}
+	{finalizedPacket,resourcePacketTests}=Which[
+		returnEarlyQ, {$Failed, {}},
+		gatherTests,
+			capillaryGelElectrophoresisSDSResourcePackets[ToList[mySamplesWithPreparedSamples],unresolvedOptions,
+				resolvedOptions,Output->{Result,Tests},Cache->cacheBall,Simulation->updatedSimulation],
+		True,
+			{capillaryGelElectrophoresisSDSResourcePackets[ToList[mySamplesWithPreparedSamples],unresolvedOptions,
+				resolvedOptions,Output->Result,Cache->cacheBall,Simulation->updatedSimulation],Null}
 	];
 
 	(* If we were asked for a simulation, also return a simulation. *)
-	{simulatedProtocol, simulation} = If[performSimulationQ,
-		simulateExperimentCapillaryGelElectrophoresisSDS[finalizedPacket,ToList[mySamplesWithPreparedSamples],expandedCombinedOptions,Cache->cacheBall,Simulation->updatedSimulation],
-	{Null, Null}
+	{simulatedProtocol, simulation} = Which[
+		MatchQ[finalizedPacket, $Failed], {$Failed, Simulation[]},
+		performSimulationQ,
+			simulateExperimentCapillaryGelElectrophoresisSDS[finalizedPacket,ToList[mySamplesWithPreparedSamples],expandedCombinedOptions,Cache->cacheBall,Simulation->updatedSimulation],
+		True, {Null, updatedSimulation}
 	];
 
-(* get all the tests together *)
+	(* get all the tests together *)
 	allTests=Cases[Flatten[{
 		safeOptionTests,
 		applyTemplateOptionTests,
@@ -2941,11 +2907,12 @@ ExperimentCapillaryGelElectrophoresisSDS[mySamples:ListableP[ObjectP[Object[Samp
 			UploadProtocol[
 				finalizedPacket,
 				Confirm->confirm,
+				CanaryBranch->canaryBranch,
 				Upload->upload,
 				FastTrack->fastTrack,
 				ParentProtocol->parentProt,
 				ConstellationMessage->Object[Protocol,CapillaryGelElectrophoresisSDS],
-				Simulation->updatedSimulation
+				Simulation-> simulation
 			]
 	];
 
@@ -2974,10 +2941,10 @@ ExperimentCapillaryGelElectrophoresisSDS[mySamples:ListableP[ObjectP[Object[Samp
 
 (* ::Subsubsection::Closed:: *)
 (* singleton container input *)
-ExperimentCapillaryGelElectrophoresisSDS[myContainer:(ObjectP[{Object[Container],Object[Sample]}]|_String),myOptions:OptionsPattern[ExperimentCapillaryGelElectrophoresisSDS]]:=ExperimentCapillaryGelElectrophoresisSDS[{myContainer},myOptions];
+ExperimentCapillaryGelElectrophoresisSDS[myContainer:(ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String),myOptions:OptionsPattern[ExperimentCapillaryGelElectrophoresisSDS]]:=ExperimentCapillaryGelElectrophoresisSDS[{myContainer},myOptions];
 
 (* ExperimentCapillaryGelElectrophoresisSDS Main function (container overload). *)
-ExperimentCapillaryGelElectrophoresisSDS[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+ExperimentCapillaryGelElectrophoresisSDS[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{
 		listedContainers,listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
 		updatedSimulation,containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests,containerToSampleSimulation
@@ -3002,7 +2969,7 @@ ExperimentCapillaryGelElectrophoresisSDS[myContainers:ListableP[ObjectP[{Object[
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -3128,7 +3095,7 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 		noAlkylatingAgentIdentifiedTest,noAlkylatingAgentIdentifiedWarning,noAlkylatingAgentIdentifiedWarnings,noReducingAgentIdentifiedInvalidSamples,
 		noReducingAgentIdentifiedOptions,noReducingAgentIdentifiedTest,noReducingAgentIdentifiedWarning,noReducingAgentIdentifiedWarnings,notEnoughOptimalUsesLeftOption,
 		notEnoughOptimalUsesLeftOptionTest,notEnoughSDSinSampleInvalidSamples,notEnoughSDSinSampleNullOptions,notEnoughSDSinSampleTest,notEnoughSDSinSampleWarnings,
-		notEnoughUsesLeftOption,notEnoughUsesLeftOptionTest,notReplacingInsertOption,notReplacingInsertTest,opsDef,
+		notEnoughUsesLeftOption,notEnoughUsesLeftOptionTest,opsDef,
 		optimalUsesLeftOnCartridge,optionObjectModelComposition,optionObjectModelCompositionPackets,
 		optionObjectModelPackets,optionObjectsModels,output,outputSpecification,parentProtocol,precisionTests,preexpandedBlanksOptions,preexpandedLaddersOptions,
 		preexpandedStandardsOptions,premadeMasterMixDiluent,premadeMasterMixDiluentNullErrors,premadeMasterMixDiluentNullInvalidOptions,
@@ -3208,8 +3175,8 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 		totalVolumeNullTests,volumeNullOptions,volumeNullInvalidSamples,volumeNullInvalidOptions,volumeNullTests,specifiedInjectionTable,specifiedNumberOfReplicates,roundedInjectionTableSampleVolumes,
 		injectionTableSampleVolumes,injectionTableLadderVolumes,roundedInjectionTableLadderVolumes,injectionTableStandardVolumes,roundedInjectionTableStandardVolumes,
 		roundedInjectionTableBlankVolumes,injectionTableBlankVolumes,lengthCorrectedInjectionTableLadderVolumes,lengthCorrectedInjectionTableStandardVolumes,
-		lengthCorrectedInjectionTableBlankVolumes,injectionTableSamplesNotCopaceticQ,injectionTableLaddersNotCopaceticQ,
-		injectionTableStandardNotCopaceticQ,injectionTableBlankNotCopaceticQ,incubationOptions,includeIncubationOptionBool,
+		lengthCorrectedInjectionTableBlankVolumes,injectionTableSamplesNotCompatibleQ,injectionTableLaddersNotCompatibleQ,
+		injectionTableStandardNotCompatibleQ,injectionTableBlankNotCompatibleQ,incubationOptions,includeIncubationOptionBool,
 		resolvedIncludeIncubation,simulation,volumeZeroInjectionTableBool,
 		resolvedSampleLabel,resolvedSampleContainerLabel
 	},
@@ -3255,7 +3222,7 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 				samplePrepModelSamples
 			},
 			{
-				{Packet[Container[Model]]},
+				{Packet[Container, Model, Volume, State], Packet[Container[Model]]},
 				{Evaluate[Packet[Name, MaxVolume, DefaultStorageCondition, SamplePreparationCacheFields[Model[Container], Format -> Sequence]]]},
 				{Evaluate[Packet[Deprecated, Products, UsedAsSolvent, ConcentratedBufferDiluent, ConcentratedBufferDilutionFactor, BaselineStock, IncompatibleMaterials, SamplePreparationCacheFields[Model[Sample], Format -> Sequence]]]}
 			},
@@ -3602,12 +3569,12 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 		Nothing
 	];
 
-	(* to make sure we dont use an invalid injection table later, keep this boolean *)
+	(* to make sure we don't use an invalid injection table later, keep this boolean *)
 	injectionTableValidQ = !(MatchQ[specifiedInjectionTable,Except[Automatic]]&&MatchQ[specifiedNumberOfReplicates,Except[Null]])&&!Or@@volumeZeroInjectionTableBool;
 
-	(* Informing volumes from the injection table runs the risk of it not being copacetic with specified samples/ladders/standards/blanks *)
-	(* to avoid this breaking the mapthread, make sure ladders are copacetic, and if not, inform volume from sampleVolume *)
-	injectionTableSamplesNotCopaceticQ=If[MatchQ[specifiedInjectionTable,Except[Automatic]],
+	(* Informing volumes from the injection table runs the risk of it not being compatible with specified samples/ladders/standards/blanks *)
+	(* to avoid this breaking the mapthread, make sure ladders are compatible, and if not, inform volume from sampleVolume *)
+	injectionTableSamplesNotCompatibleQ=If[MatchQ[specifiedInjectionTable,Except[Automatic]],
 		Not[And[
 			ContainsAll[
 				Cases[specifiedInjectionTable,{Sample,ObjectP[],VolumeP|Automatic}][[All,2]],
@@ -3621,17 +3588,17 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 		False
 	];
 
-	injectionTableSampleVolumes=If[Not[injectionTableSamplesNotCopaceticQ]&&injectionTableValidQ,
+	injectionTableSampleVolumes=If[Not[injectionTableSamplesNotCompatibleQ]&&injectionTableValidQ,
 		Switch[specifiedInjectionTable,
 			{{_,ObjectP[],VolumeP|Automatic}..},Cases[specifiedInjectionTable,{Sample,ObjectP[],VolumeP|Automatic}][[All,3]],
 			Automatic,ConstantArray[Automatic,Length[mySamples]]
 		],
-		(* If samples in injection tables dont match samplesIn, dont inform volume, we'll raise an error a bit later *)
+		(* If samples in injection tables don't match samplesIn, don't inform volume, we'll raise an error a bit later *)
 		ToList[Lookup[roundedCapillaryGelElectrophoresisSDSOptions,SampleVolume]]
 	];
 
 	(* we need to account for a situation where the injection table is not in agreement with samplesIn and options.
-	there is an error check later, but we want to make sure we dont break the MapThread *)
+	there is an error check later, but we want to make sure we don't break the MapThread *)
 	injectionTableSampleVolumes=If[Length[injectionTableSampleVolumes]!=Length[mySamples],
 		ConstantArray[Automatic,Length[mySamples]],
 		injectionTableSampleVolumes
@@ -3808,7 +3775,7 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 					True,
 					Module[{compositionProteins,proteinConcentration,calculatedVolume},
 						(* get only proteins in the composition *)
-						compositionProteins=Cases[Lookup[mySample,Composition],{_,ObjectP[Model[Molecule,Protein]]}];
+						compositionProteins=Cases[Lookup[mySample,Composition],{_,ObjectP[Model[Molecule,Protein]],_}];
 						(* get concentrations and add all proteins in sample. If possible convert to mg/ml based on its unit *)
 						proteinConcentration=If[Length[compositionProteins]==0,
 							(* if no proteins in composition, return Null *)
@@ -3976,7 +3943,7 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 							False];
 
 						masterMixDiluent=Lookup[myMapThreadOptions,PremadeMasterMixDiluent]/.Automatic:>Model[Sample,"Milli-Q water"];
-						(* if masterMix Diluent is Null but no need to top off to total volume, dont raise an error, otherwise raise an error *)
+						(* if masterMix Diluent is Null but no need to top off to total volume, don't raise an error, otherwise raise an error *)
 						masterMixDiluentNullError=((totalVolume-sampleVolume-masterMixVolume)>0Microliter)&&MatchQ[masterMixDiluent,Null];
 
 
@@ -4186,7 +4153,7 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 											],
 											reducingAgentCompositionIDs];
 
-										(* pick out cases where the second index in teh list is not null *)
+										(* pick out cases where the second index in the list is not null *)
 										Cases[identifyReducingAgent,{ObjectP[],_,Except[NullP]}]
 									],
 									{}];
@@ -4391,7 +4358,7 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 											],
 											alkylatingAgentCompositionIDs];
 
-										(* pick out cases where the second index in teh list is not null *)
+										(* pick out cases where the second index in the list is not null *)
 										Cases[identifyAlkylatingAgent,{ObjectP[],_,Except[NullP]}]
 									],
 									{}];
@@ -5043,7 +5010,7 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 				]
 			}]
 		],
-		(* not doing standards, dont worry about it *)
+		(* not doing standards, don't worry about it *)
 		0
 	];
 
@@ -5139,9 +5106,9 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 		}
 	];
 
-	(* Informing volumes from the injection table runs the risk of it not being copacetic with specified samples/ladders/standards/blanks *)
-	(* to avoid this breaking the mapthread, make sure ladders are copacetic, and if not, inform volume from sampleVolume *)
-	injectionTableLaddersNotCopaceticQ=If[MatchQ[specifiedInjectionTable,Except[Automatic]],
+	(* Informing volumes from the injection table runs the risk of it not being compatible with specified samples/ladders/standards/blanks *)
+	(* to avoid this breaking the mapthread, make sure ladders are compatible, and if not, inform volume from sampleVolume *)
+	injectionTableLaddersNotCompatibleQ=If[MatchQ[specifiedInjectionTable,Except[Automatic]],
 		Not[Or[
 			MatchQ[resolvedLadders,Null|Automatic|{Automatic..}],
 			And[
@@ -5158,17 +5125,17 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 	];
 
 	(* if there is a user specified an injection table, and if they did, grab volumes to pass to the mapthread  *)
-	injectionTableLadderVolumes=If[Not[injectionTableLaddersNotCopaceticQ],
+	injectionTableLadderVolumes=If[Not[injectionTableLaddersNotCompatibleQ],
 		Switch[specifiedInjectionTable,
 			{{_,ObjectP[],VolumeP|Automatic}..},Cases[specifiedInjectionTable,{Ladder,ObjectP[],VolumeP|Automatic}][[All,3]],
 			Automatic,ConstantArray[Automatic,Length[resolvedLadders]]
 		],
-		(* If samples in injection tables dont match Ladders, dont inform volume, we'll raise an error a bit later *)
+		(* If samples in injection tables don't match Ladders, don't inform volume, we'll raise an error a bit later *)
 		ToList[Lookup[roundedCapillaryGelElectrophoresisSDSOptions,LadderVolume]]
 	];
 
 	(* we need to account for a situation where the injection table is not in agreement with samplesIn and options.
-	there is an error check later, but we want to make sure we dont break the MapThread *)
+	there is an error check later, but we want to make sure we don't break the MapThread *)
 	lengthCorrectedInjectionTableLadderVolumes=If[Length[injectionTableLadderVolumes]!=Length[resolvedLadders],
 		ConstantArray[Automatic,Length[resolvedLadders]],
 		injectionTableLadderVolumes
@@ -5750,7 +5717,7 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 								Null
 							];
 
-							(* if masterMix Diluent is Null but no need to top off to total volume, dont raise an error, otherwise raise an error *)
+							(* if masterMix Diluent is Null but no need to top off to total volume, don't raise an error, otherwise raise an error *)
 							masterMixDiluentNullError=(ladderTotalVolume-ladderVolume-masterMixVolume)>0Microliter&&MatchQ[masterMixDiluent,Null];
 
 							(* Gather all resolved options and errors to return *)
@@ -5980,7 +5947,7 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 												],
 												reducingAgentCompositionIDs];
 
-											(* pick out cases where the second index in teh list is not null *)
+											(* pick out cases where the second index in the list is not null *)
 											Cases[identifyReducingAgent,{ObjectP[],_,Except[NullP]}]
 										],
 										{}];
@@ -6223,7 +6190,7 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 												],
 												alkylatingAgentCompositionIDs];
 
-											(* pick out cases where the second index in teh list is not null *)
+											(* pick out cases where the second index in the list is not null *)
 											Cases[identifyAlkylatingAgent,{ObjectP[],_,Except[NullP]}]
 										],
 										{}];
@@ -6766,7 +6733,7 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 						]
 					];
 
-					(* InjectoinVoltageProfile *)
+					(* InjectionVoltageProfile *)
 					injectionVoltageDurationProfile=Lookup[myLadderOptions,LadderInjectionVoltageDurationProfile]/.
 						Automatic:>Lookup[samplesInOptions,InjectionVoltageDurationProfile];
 
@@ -6983,7 +6950,7 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 				]
 			}]
 		],
-		(* not doing standards, dont worry about it *)
+		(* not doing standards, don't worry about it *)
 		0
 	];
 
@@ -7032,9 +6999,9 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 		}
 	];
 
-	(* Informing volumes from the injection table runs the risk of it not being copacetic with specified samples/ladders/standards/blanks *)
-	(* to avoid this breaking the mapthread, make sure ladders are copacetic, and if not, inform volume from sampleVolume *)
-	injectionTableStandardNotCopaceticQ=If[MatchQ[specifiedInjectionTable,Except[Automatic]],
+	(* Informing volumes from the injection table runs the risk of it not being compatible with specified samples/ladders/standards/blanks *)
+	(* to avoid this breaking the mapthread, make sure ladders are compatible, and if not, inform volume from sampleVolume *)
+	injectionTableStandardNotCompatibleQ=If[MatchQ[specifiedInjectionTable,Except[Automatic]],
 		Not[Or[
 			MatchQ[resolvedStandards,Null|Automatic|{Automatic..}],
 			And[
@@ -7051,17 +7018,17 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 	];
 
 	(* if there is a user specified an injection table, and if they did, grab volumes to pass to the mapthread  *)
-	injectionTableStandardVolumes=If[Not[injectionTableStandardNotCopaceticQ],
+	injectionTableStandardVolumes=If[Not[injectionTableStandardNotCompatibleQ],
 		Switch[specifiedInjectionTable,
 			{{_,ObjectP[],VolumeP|Automatic}..},Cases[specifiedInjectionTable,{Standard,ObjectP[],VolumeP|Automatic}][[All,3]],
 			Automatic,ConstantArray[Automatic,Length[resolvedStandards]]
 		],
-		(* If samples in injection tables dont match Standard, dont inform volume, we'll raise an error a bit later *)
+		(* If samples in injection tables don't match Standard, don't inform volume, we'll raise an error a bit later *)
 		ToList[Lookup[roundedCapillaryGelElectrophoresisSDSOptions,StandardVolume]]
 	];
 
 	(* we need to account for a situation where the injection table is not in agreement with samplesIn and options.
-there is an error check later, but we want to make sure we dont break the MapThread *)
+there is an error check later, but we want to make sure we don't break the MapThread *)
 	lengthCorrectedInjectionTableStandardVolumes=If[Length[injectionTableStandardVolumes]!=Length[resolvedStandards],
 		ConstantArray[Automatic,Length[resolvedStandards]],
 		injectionTableStandardVolumes
@@ -7133,7 +7100,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 				]
 			}]
 		],
-		(* not doing standards, dont worry about it *)
+		(* not doing standards, don't worry about it *)
 		0
 	];
 
@@ -7182,9 +7149,9 @@ there is an error check later, but we want to make sure we dont break the MapThr
 		}
 	];
 
-	(* Informing volumes from the injection table runs the risk of it not being copacetic with specified samples/ladders/standards/blanks *)
-	(* to avoid this breaking the mapthread, make sure blanks are copacetic, and if not, inform volume from sampleVolume *)
-	injectionTableBlankNotCopaceticQ=If[MatchQ[specifiedInjectionTable,Except[Automatic]],
+	(* Informing volumes from the injection table runs the risk of it not being compatible with specified samples/ladders/standards/blanks *)
+	(* to avoid this breaking the mapthread, make sure blanks are compatible, and if not, inform volume from sampleVolume *)
+	injectionTableBlankNotCompatibleQ=If[MatchQ[specifiedInjectionTable,Except[Automatic]],
 		Not[Or[
 			MatchQ[resolvedBlanks,Null|Automatic|{Automatic..}],
 			And[
@@ -7201,17 +7168,17 @@ there is an error check later, but we want to make sure we dont break the MapThr
 	];
 
 	(* if there is a user specified an injection table, and if they did, grab volumes to pass to the mapthread  *)
-	injectionTableBlankVolumes=If[Not[injectionTableBlankNotCopaceticQ],
+	injectionTableBlankVolumes=If[Not[injectionTableBlankNotCompatibleQ],
 		Switch[specifiedInjectionTable,
 			{{_,ObjectP[],VolumeP|Automatic}..},Cases[specifiedInjectionTable,{Blank,ObjectP[],VolumeP|Automatic}][[All,3]],
 			Automatic,ConstantArray[Automatic,Length[resolvedBlanks]]
 		],
-		(* If samples in injection tables dont match Standard, dont inform volume, we'll raise an error a bit later *)
+		(* If samples in injection tables don't match Standard, don't inform volume, we'll raise an error a bit later *)
 		ToList[Lookup[roundedCapillaryGelElectrophoresisSDSOptions,BlankVolume]]
 	];
 
 	(* we need to account for a situation where the injection table is not in agreement with samplesIn and options.
-	there is an error check later, but we want to make sure we dont break the MapThread *)
+	there is an error check later, but we want to make sure we don't break the MapThread *)
 	lengthCorrectedInjectionTableBlankVolumes=If[Length[injectionTableBlankVolumes]!=Length[resolvedBlanks],
 		ConstantArray[Automatic,Length[resolvedBlanks]],
 		injectionTableBlankVolumes
@@ -7505,7 +7472,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 								True,
 								Module[{compositionProteins,proteinConcentration,calculatedVolume},
 									(* get only proteins in the composition *)
-									compositionProteins=Cases[Lookup[mySample,Composition],{_,ObjectP[Model[Molecule,Protein]]}];
+									compositionProteins=Cases[Lookup[mySample,Composition],{_,ObjectP[Model[Molecule,Protein]],_}];
 									(* get concentrations and add all proteins in sample. If possible convert to mg/ml based on its unit *)
 									proteinConcentration=If[Length[compositionProteins]==0,
 										(* if no proteins in composition, return Null *)
@@ -7698,7 +7665,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 
 								(* resolve diluent *)
 								masterMixDiluent=Lookup[myMapThreadOptions,PremadeMasterMixDiluent]/.Automatic:>Model[Sample,"Milli-Q water"];
-								(* if masterMix Diluent is Null but no need to top off to total volume, dont raise an error, otherwise raise an error *)
+								(* if masterMix Diluent is Null but no need to top off to total volume, don't raise an error, otherwise raise an error *)
 								masterMixDiluentNullError=(totalVolume-sampleVolume-masterMixVolume)>0Microliter&&MatchQ[masterMixDiluent,Null];
 
 								(* Gather all resolved options and errors to return *)
@@ -7912,7 +7879,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 													],
 													reducingAgentCompositionIDs];
 
-												(* pick out cases where the second index in teh list is not null *)
+												(* pick out cases where the second index in the list is not null *)
 												Cases[identifyReducingAgent,{ObjectP[],_,Except[NullP]}]
 											],
 											{}];
@@ -8115,7 +8082,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 														}
 													],
 													alkylatingAgentCompositionIDs];
-												(* pick out cases where the second index in teh list is not null *)
+												(* pick out cases where the second index in the list is not null *)
 												Cases[identifyAlkylatingAgent,{ObjectP[],_,Except[NullP]}]
 											],
 											{}];
@@ -8601,7 +8568,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 							]
 						];
 
-						(* InjectoinVoltageProfile *)
+						(* InjectionVoltageProfile *)
 						injectionVoltageDurationProfile=Lookup[myMapThreadOptions,InjectionVoltageDurationProfile]/.
 							Automatic:>First[Commonest[Lookup[roundedCapillaryGelElectrophoresisSDSOptions,InjectionVoltageDurationProfile],1]];
 
@@ -8718,14 +8685,14 @@ there is an error check later, but we want to make sure we dont break the MapThr
 	];
 
 	(* If there is a user specified injection table, check if there is agreement between samples on the injection list and in options,
-	if not, dont bother trying to populate volumes, we're raising an error a bit later *)
+	if not, don't bother trying to populate volumes, we're raising an error a bit later *)
 
 	injectionTableContainsAllQ=If[MatchQ[specifiedInjectionTable,Except[Automatic]]&&NullQ[specifiedNumberOfReplicates],
 		Not[Or@@{
-			injectionTableSamplesNotCopaceticQ,
-			injectionTableLaddersNotCopaceticQ,
-			injectionTableStandardNotCopaceticQ,
-			injectionTableBlankNotCopaceticQ
+			injectionTableSamplesNotCompatibleQ,
+			injectionTableLaddersNotCompatibleQ,
+			injectionTableStandardNotCompatibleQ,
+			injectionTableBlankNotCompatibleQ
 		}],
 		True
 	];
@@ -8734,7 +8701,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 	(* The injection table is a little tricky since we need to figure out if we need to aliquot and consolidate aliquots *)
 	(* Resolve RequiredAliquotContainers *)
 	(* targetContainers is in the form {(Null|ObjectP[Model[Container]])..} and is index-matched to simulatedSamples. *)
-	(* samples will be transferred to a 96 well plate anyways, so we dont need to worry about it here too much, unless they are in a container that's not liquid handler compatible *)
+	(* samples will be transferred to a 96 well plate anyways, so we don't need to worry about it here too much, unless they are in a container that's not liquid handler compatible *)
 	hamiltonCompatibleContainers=Experiment`Private`compatibleSampleManipulationContainers[MicroLiquidHandling];
 
 	(* When you do not want an aliquot to happen for the corresponding simulated sample, make the corresponding index of targetContainers Null. *)
@@ -8809,7 +8776,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 				ToList[resolvedStandardFrequency],1]
 		],
 		(* If there is a user specified injection table, check if there is agreement between samples on the
-		injection list and in options,if not, dont bother trying to populate volumes *)
+		injection list and in options,if not, don't bother trying to populate volumes *)
 		(* But first we need to populate the sampleIndex, we can do this by their order *)
 		MatchQ[Lookup[roundedCapillaryGelElectrophoresisSDSOptions,InjectionTable],Except[Automatic]]&&injectionTableContainsAllQ&&Not[Or@@volumeZeroInjectionTableBool]&&MatchQ[Lookup[roundedCapillaryGelElectrophoresisSDSOptions,NumberOfReplicates], Alternatives[Automatic|Null]],
 		Module[{indexedInjectionTable,sampleInjectionPositions,updatedSampleTuples,ladderInjectionPositions,
@@ -8980,7 +8947,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 			validNameQ,
 			True
 		],
-		Null
+		Nothing
 	];
 
 	(* TooManySamples *)
@@ -9004,7 +8971,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 			sampleCountQ,
 			False
 		],
-		Null
+		Nothing
 	];
 
 	(** number of uses check **)
@@ -9012,10 +8979,10 @@ there is an error check later, but we want to make sure we dont break the MapThr
 	usesLeftOnCartridge=Switch[Lookup[cartridgePacket,Object],
 		(* if object, grab numberOfUses *)
 		ObjectP[Object[Container,ProteinCapillaryElectrophoresisCartridge]],
-		(Lookup[cartridgeModelPacket,MaxNumberOfUses,500])-(Lookup[cartridgePacket,NumberOfUses,0]),
+		(Lookup[cartridgeModelPacket,MaxNumberOfUses,100])-(Lookup[cartridgePacket,NumberOfUses,0]),
 		(* if Model, grab MaxNumberOfUses *)
 		ObjectP[Model[Container,ProteinCapillaryElectrophoresisCartridge]],
-		Lookup[cartridgeModelPacket,MaxNumberOfUses,500]
+		Lookup[cartridgeModelPacket,MaxNumberOfUses,100]
 	];
 
 	notEnoughUsesLeftOption=If[usesLeftOnCartridge<Length[resolvedInjectionTable]&&!sampleCountQ&&!engineQ,
@@ -9046,6 +9013,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 	];
 
 	(* make sure not to raise both this warning and the previous error *)
+	(* Note: Currently our cartridge models all have the same OptimalMaxInjections as MaxNumberOfUses *)
 	notEnoughOptimalUsesLeftOption=If[optimalUsesLeftOnCartridge<Length[resolvedInjectionTable]&&!engineQ&&!(usesLeftOnCartridge<Length[resolvedInjectionTable])&&!sampleCountQ,
 		(
 			Message[Warning::NotEnoughOptimalUsesLeftOnCartridge,ObjectToString[Lookup[cartridgePacket,Object],Cache->inheritedCache],optimalUsesLeftOnCartridge];
@@ -9058,25 +9026,6 @@ there is an error check later, but we want to make sure we dont break the MapThr
 	notEnoughOptimalUsesLeftOptionTest=If[gatherTests,
 		Warning["The number of injections in this protocol does not exceed the number of optimal uses left on the chosen cartridge:",
 			optimalUsesLeftOnCartridge>Length[resolvedInjectionTable]&&!(usesLeftOnCartridge<Length[resolvedInjectionTable])&&!sampleCountQ,
-			True
-		],
-		Nothing
-	];
-
-	(* If ReplaceCartrdigeInsert is False, raise warning that this may be problematic for future experiments with this cartridge *)
-	(* make sure not to raise both this warning and the previous error *)
-	notReplacingInsertOption=If[!Lookup[roundedCapillaryGelElectrophoresisSDSOptions,ReplaceCartridgeInsert]&&!engineQ,
-		(
-			Message[Warning::NotReplacingInsert];
-			{ReplaceCartridgeInsert}
-		),
-		{}
-	];
-
-	(* If we need to gather tests, generate the tests for cartridge check *)
-	notReplacingInsertTest=If[gatherTests,
-		Warning["The cartridge insert can be replaced, if needed:",
-			Lookup[roundedCapillaryGelElectrophoresisSDSOptions,ReplaceCartridgeInsert],
 			True
 		],
 		Nothing
@@ -9341,7 +9290,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided ladders "<>ObjectToString[failingSamples,Cache->inheritedCache]<>",the molecular weight of their Analytes and that specified in AnalyteMolecularWeight is copacetic:",
+				Test["For the provided ladders "<>ObjectToString[failingSamples,Cache->inheritedCache]<>",the molecular weight of their Analytes and that specified in AnalyteMolecularWeight is compatible:",
 					False,
 					True
 				],
@@ -9350,7 +9299,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 
 			(* create a test for the passing inputs *)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided ladders "<>ObjectToString[passingSamples,Cache->inheritedCache]<>",the molecular weight of their Analytes and that specified in AnalyteMolecularWeight is copacetic:",
+				Test["For the provided ladders "<>ObjectToString[passingSamples,Cache->inheritedCache]<>",the molecular weight of their Analytes and that specified in AnalyteMolecularWeight is compatible:",
 					True,
 					True
 				],
@@ -9381,7 +9330,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided ladders "<>ObjectToString[failingSamples,Cache->inheritedCache]<>",the molecular weight specified in their composition is copacetic with that specified in AnalyteMolecularWeight:",
+				Test["For the provided ladders "<>ObjectToString[failingSamples,Cache->inheritedCache]<>",the molecular weight specified in their composition is compatible with that specified in AnalyteMolecularWeight:",
 					False,
 					True
 				],
@@ -9390,7 +9339,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 
 			(* create a test for the passing inputs *)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided ladders "<>ObjectToString[passingSamples,Cache->inheritedCache]<>",the molecular weight specified in their composition is copacetic with that specified in AnalyteMolecularWeight:",
+				Test["For the provided ladders "<>ObjectToString[passingSamples,Cache->inheritedCache]<>",the molecular weight specified in their composition is compatible with that specified in AnalyteMolecularWeight:",
 					True,
 					True
 				],
@@ -9422,7 +9371,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided ladders "<>ObjectToString[failingSamples,Cache->inheritedCache]<>",the molecular weight specific in their composition is copacetic with that of the specific LadderAnalytes:",
+				Test["For the provided ladders "<>ObjectToString[failingSamples,Cache->inheritedCache]<>",the molecular weight specific in their composition is compatible with that of the specific LadderAnalytes:",
 					False,
 					True
 				],
@@ -9431,7 +9380,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 
 			(* create a test for the passing inputs *)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided ladders "<>ObjectToString[passingSamples,Cache->inheritedCache]<>",the molecular weight specific in their composition is copacetic with that of the specific LadderAnalytes:",
+				Test["For the provided ladders "<>ObjectToString[passingSamples,Cache->inheritedCache]<>",the molecular weight specific in their composition is compatible with that of the specific LadderAnalytes:",
 					True,
 					True
 				],
@@ -9650,6 +9599,15 @@ there is an error check later, but we want to make sure we dont break the MapThr
 				],
 				Nothing
 			];
+
+			(* create a test for the passing inputs *)
+			passingSampleTests=If[Length[passingSamples]>0,
+				Warning["For the provided samples "<>passingString<>", protein concentration is specified in Composition, allowing to calculate SampleVolume:",
+					True,
+					True
+				],
+				Nothing
+			];
 			(* return the created tests *)
 			{passingSampleTests,failingSampleTests}
 
@@ -9755,7 +9713,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 
 			(* create a test for the non-passing inputs *)
 			failingTests=If[sedimentationForceSpeedMismatchs,
-				Test["SedimentationCentrifugation Force and Speed are copacetic:",
+				Test["SedimentationCentrifugation Force and Speed are compatible:",
 					False,
 					True
 				],
@@ -9764,7 +9722,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 
 			(* create a test for the passing inputs *)
 			passingTests=If[!sedimentationForceSpeedMismatchs,
-				Test["SedimentationCentrifugation Force and Speed are copacetic:",
+				Test["SedimentationCentrifugation Force and Speed are compatible:",
 					True,
 					True
 				],
@@ -10111,7 +10069,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>failingString<>",MasterMix Volume and Dilution Factor are copacetic:",
+				Test["For the provided samples "<>failingString<>",MasterMix Volume and Dilution Factor are compatible:",
 					False,
 					True
 				],
@@ -10120,7 +10078,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 
 			(* create a test for the passing inputs *)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>passingString<>",MasterMix Volume and Dilution Factor are copacetic:",
+				Test["For the provided samples "<>passingString<>",MasterMix Volume and Dilution Factor are compatible:",
 					True,
 					True
 				],
@@ -10593,7 +10551,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>failingString<>",The InternalReferenceDilutionFactor and Volume are copacetic:",
+				Test["For the provided samples "<>failingString<>",The InternalReferenceDilutionFactor and Volume are compatible:",
 					False,
 					True
 				],
@@ -10602,7 +10560,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 
 			(* create a test for the passing inputs *)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>passingString<>",The InternalReferenceDilutionFactor and Volume are copacetic:",
+				Test["For the provided samples "<>passingString<>",The InternalReferenceDilutionFactor and Volume are compatible:",
 					True,
 					True
 				],
@@ -10993,7 +10951,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>failingString<>",when both the ReducingAgentTargetConcentration and Volume Are Specified, they are copacetic:",
+				Test["For the provided samples "<>failingString<>",when both the ReducingAgentTargetConcentration and Volume Are Specified, they are compatible:",
 					False,
 					True
 				],
@@ -11002,7 +10960,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 
 			(* create a test for the passing inputs *)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>passingString<>",when both the ReducingAgentTargetConcentration and Volume Are Specified, they are copacetic:",
+				Test["For the provided samples "<>passingString<>",when both the ReducingAgentTargetConcentration and Volume Are Specified, they are compatible:",
 					True,
 					True
 				],
@@ -11395,7 +11353,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>failingString<>",when both the AlkylatingAgentTargetConcentration and Volume Are Specified, they are copacetic:",
+				Test["For the provided samples "<>failingString<>",when both the AlkylatingAgentTargetConcentration and Volume Are Specified, they are compatible:",
 					False,
 					True
 				],
@@ -11404,7 +11362,7 @@ there is an error check later, but we want to make sure we dont break the MapThr
 
 			(* create a test for the passing inputs *)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>passingString<>",when both the AlkylatingAgentTargetConcentration and Volume Are Specified, they are copacetic:",
+				Test["For the provided samples "<>passingString<>",when both the AlkylatingAgentTargetConcentration and Volume Are Specified, they are compatible:",
 					True,
 					True
 				],
@@ -12173,10 +12131,16 @@ there is an error check later, but we want to make sure we dont break the MapThr
 		Instrument->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,Instrument],
 		Cartridge->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,Cartridge],
 		PurgeCartridge->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,PurgeCartridge],
-		ReplaceCartridgeInsert->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,ReplaceCartridgeInsert],
-		SampleTemperature->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,SampleTemperature]/.Ambient:>$AmbientTemperature,
-		InjectionTable->resolvedInjectionTable[[All, ;; -2]],
-		MatchedInjectionTable->resolvedInjectionTable,
+		SampleTemperature->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,SampleTemperature],
+		(* giving a fake bad injection table if we have an empty list here because we need to return _something_ that matches the pattern and we will have thrown an error above anyway *)
+		InjectionTable->If[MatchQ[resolvedInjectionTable, {}],
+			{{Sample, First[mySamples], 0 Microliter}},
+			resolvedInjectionTable[[All, ;; -2]]
+		],
+		MatchedInjectionTable->If[MatchQ[resolvedInjectionTable, {}],
+			{{Sample, First[mySamples], 0 Microliter, 1}},
+			resolvedInjectionTable
+		],
 		NumberOfReplicates->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,NumberOfReplicates],
 		ConditioningAcid->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,ConditioningAcid],
 		ConditioningBase->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,ConditioningBase],
@@ -12357,13 +12321,13 @@ there is an error check later, but we want to make sure we dont break the MapThr
 		CartridgeStorageCondition->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,CartridgeStorageCondition],
 		SamplesInStorageCondition->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,SamplesInStorageCondition],
 		PreparatoryUnitOperations->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,PreparatoryUnitOperations],
-		PreparatoryPrimitives->Lookup[roundedCapillaryGelElectrophoresisSDSOptions, PreparatoryPrimitives],
 		Cache->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,Cache],
 		FastTrack->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,FastTrack],
 		Template->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,Template],
 		ParentProtocol->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,ParentProtocol],
 		Operator->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,Operator],
 		Confirm->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,Confirm],
+		CanaryBranch->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,CanaryBranch],
 		Name->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,Name],
 		Upload->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,Upload],
 		Output->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,Output],
@@ -12397,7 +12361,6 @@ there is an error check later, but we want to make sure we dont break the MapThr
 			invalidInjectionTableTest,
 			notEnoughUsesLeftOptionTest,
 			notEnoughOptimalUsesLeftOptionTest,
-			notReplacingInsertTest,
 			premadeMasterMixWithmakeMasterMixOptionsSetInvalidOptionTest,
 			missingSampleCompositionWarningTests,
 			supernatantVolumeTests,
@@ -12523,7 +12486,7 @@ expandNumberOfReplicatesIndexMatchingParent[mySamples_List,myOptions_Association
 (* This function is used to create rules for replacing objects with resources in expanded sample lists (for ladders, standards, and blanks) *)
 sampleResourceRules[mySamplesWithReplicates:{ObjectP[{Model[Sample],Object[Sample]}]...},myExpandedVolumes:{VolumeP...},includeSamples_?BooleanQ]:=Module[
 	{pairedObjectsVolumes,objectVolumeRules,objectResourceReplaceRules},
-	(* NOTE - we dont need to take replicates into account here, since everything has already been expanded and object replace rules will sum up the volume for all replicates *)
+	(* NOTE - we don't need to take replicates into account here, since everything has already been expanded and object replace rules will sum up the volume for all replicates *)
 	(* first, check if we need to include these samples or not *)
 	If[Not[includeSamples],
 		(* not including these, return an empty list *)
@@ -12539,7 +12502,7 @@ sampleResourceRules[mySamplesWithReplicates:{ObjectP[{Model[Sample],Object[Sampl
 		objectVolumeRules=Merge[pairedObjectsVolumes,Total];
 
 		(* Make replace rules for objects and their resources; we are making one resource per sample, for all replicates (adding volume for one more replicate for good measure) *)
-		(* We should always ask for a preferred container for liquid handler compatible purpose. We need to make SamplePreparationPrimitives that is done under MicroLiquidHandling scale  *)
+		(* We should always ask for a preferred container for liquid handler compatible purpose. We need to make SamplePreparationPrimitives that is done under ExperimentRoboticSamplePreparation  *)
 		objectResourceReplaceRules=MapThread[
 			Function[{object,volume},
 				If[(volume*1.05)<20Microliter,
@@ -12847,8 +12810,12 @@ regardless of the number of injections to be made *)
 	conditioningBaseResource=Resource[Sample->Lookup[myResolvedOptions,ConditioningBase],Amount->1.5Milliliter,Container->Model[Container,Vessel,"id:Y0lXejlqEMNE"]];
 	conditioningWashSolutionResource=Resource[Sample->Lookup[myResolvedOptions,ConditioningWashSolution],Amount->1Milliliter,Container->Model[Container,Vessel,"id:Y0lXejlqEMNE"]];
 	separationMatrixResource=Resource[Sample->Lookup[myResolvedOptions,SeparationMatrix],Amount->1Milliliter,Container->Model[Container,Vessel,"id:Y0lXejlqEMNE"]];
-	(* system wash needs to be split two two containers, making two different resources for this *)
-	systemWashSolutionResource=ConstantArray[(Resource[Sample->Lookup[myResolvedOptions,SystemWashSolution],Amount->1Milliliter,Container->Model[Container,Vessel,"id:Y0lXejlqEMNE"]]),3];
+	(* SystemWashSolution corresponds to three different vials on deck, corresponding to 3 WashSolution that the manufacturer required at P5/N1/N2 positions. The first one is 1mL and the other two are 1.5 mL *)
+	systemWashSolutionResource={
+		Resource[Sample->Lookup[myResolvedOptions,SystemWashSolution],Amount->1Milliliter,Container->Model[Container,Vessel,"id:Y0lXejlqEMNE"]],
+		Resource[Sample->Lookup[myResolvedOptions,SystemWashSolution],Amount->1.5Milliliter,Container->Model[Container,Vessel,"id:Y0lXejlqEMNE"]],
+		Resource[Sample->Lookup[myResolvedOptions,SystemWashSolution],Amount->1.5Milliliter,Container->Model[Container,Vessel,"id:Y0lXejlqEMNE"]]
+	};
 	placeholderContainerResource=Resource[Sample->Lookup[myResolvedOptions,PlaceholderContainer]];
 	cartridgeResource=Resource[
 		Sample->Lookup[myResolvedOptions,Cartridge],
@@ -12890,12 +12857,9 @@ regardless of the number of injections to be made *)
 		{Resource[Sample->Model[Container,Plate,"96-Well Full-Skirted PCR Plate"]]}
 	];
 
-	(* this is a resource the will be picked ONLY if the Cartridge Insert needs to be replaced (indicator is red AFTER run *)
-	cartridgeInsertReplacementResource=If[
-		MatchQ[Lookup[myResolvedOptions,ReplaceCartridgeInsert],True],
-		Link[Resource[Sample->Model[Container,ProteinCapillaryElectrophoresisCartridgeInsert,"id:vXl9j57R9wV7"]]],
-		Null
-	];
+	(* This is a resource the will be picked ONLY if CartridgeInsert needs to be replaced (indicator is red AFTER run) *)
+	(* This is mandatory as the CartridgeInsert cannot be used when it is red (not allowed on instrument) *)
+	cartridgeInsertReplacementResource=Link[Resource[Sample->Model[Container,ProteinCapillaryElectrophoresisCartridgeInsert,"id:vXl9j57R9wV7"]]];
 
 	(* Generally resources are made with the following logic: for each sample type, we match reagent and volume and create
 	a resource for each unique reagent across samples, blanks, standards and ladders, by definition, will use every unique combination
@@ -13246,7 +13210,7 @@ regardless of the number of injections to be made *)
 	];
 	(* Template Note: The time in instrument resources is used to charge customers for the instrument time so it's important that this estimate is accurate
 		this will probably look like set-up time + time/sample + tear-down time *)
-	(* to calculate time needed, consider setup time + the sum of injection time and seperation time, for each of samples/standards/blanks/ladders and add an overhead of about 10 seconds in between samples, and add teh cleanup time at the end. *)
+	(* to calculate time needed, consider setup time + the sum of injection time and seperation time, for each of samples/standards/blanks/ladders and add an overhead of about 10 seconds in between samples, and add the cleanup time at the end. *)
 	sampleTimes=Total@MapThread[
 		Function[{injectionTime,separationTime},
 			(* Since we can get up to 20 steps, need to add times for all steps *)
@@ -13345,7 +13309,7 @@ regardless of the number of injections to be made *)
 		RunTime->runTime,
 		Replace[InjectionTable]->injectionTableToUpload,
 		NumberOfReplicates->sampleReplicates,
-		SampleTemperature->Lookup[myResolvedOptions,SampleTemperature],
+		SampleTemperature->Lookup[myResolvedOptions,SampleTemperature]/.Ambient:>$AmbientTemperature,
 		(* instrument setup and general options *)
 		ConditioningAcid->Link[conditioningAcidResource],
 		ConditioningBase->Link[conditioningBaseResource],
@@ -13518,16 +13482,15 @@ regardless of the number of injections to be made *)
 		Replace[BlankInjectionVoltageDurationProfiles]->Lookup[blankOptionsWithReplicatesAssociation,BlankInjectionVoltageDurationProfile,{}],
 		Replace[BlankSeparationVoltageDurationProfiles]->Lookup[blankOptionsWithReplicatesAssociation,BlankSeparationVoltageDurationProfile,{}],
 		Replace[BlankSeparationVoltageDurationProfiles]->Lookup[blankOptionsWithReplicatesAssociation,BlankSeparationVoltageDurationProfile,{}],
-		(*TODO: UPDATE when we have a procedure *)
 		Replace[Checkpoints]->{
-			{"Preparing Samples",1 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->1 Minute]]},
-			{"Picking Resources",30 Minute,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10 Minute]]},
-			{"Preparing Assay Plate",2 Hour,"Reagents such as sample buffer, internal standards, and reducing or alkylating agents, are mixed with samples, ladders, standards, and/or blanks.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->1 Minute]]},
-			{"Returning Materials",15 Minute,"Samples and reagents are returned to storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->15*Minute]]},
-			{"Preparing Instrument",90Minute,"Setting up the instrument by gathering the required reagents, preparing the experiment cartridge and loading required reagents.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->5 Minute]]},
-			{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->1*Hour]]},
-			{"Running Samples",instrumentTime,"Analyzing the loaded samples by capillary gel electrophoresis SDS.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10*Minute]]},
-			{"Instrument Cleanup",60 Minute,"The experiment cartridge is cleaned and stored, and used reagents are disposed of.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10*Minute]]}
+			{"Preparing Samples",30 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->$BaselineOperator,Time->30 Minute]]},
+			{"Picking Resources",3 Hour,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator->$BaselineOperator,Time->3 Hour]]},
+			{"Preparing Assay Plate",2 Hour,"Reagents such as sample buffer, internal standards, and reducing or alkylating agents, are mixed with samples, ladders, standards, and/or blanks.",Link[Resource[Operator->$BaselineOperator,Time->2 Hour]]},
+			{"Preparing Instrument",90 Minute,"Setting up the instrument by preparing the experiment cartridge and loading required reagents.",Link[Resource[Operator->$BaselineOperator,Time->90 Minute]]},
+			{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Link[Resource[Operator->$BaselineOperator,Time->1 Hour]]},
+			{"Running Samples",instrumentTime,"Analyzing the loaded samples by capillary gel electrophoresis SDS.",Link[Resource[Operator->$BaselineOperator,Time->instrumentTime]]},
+			{"Instrument Cleanup",1 Hour,"The experiment cartridge is cleaned and stored, and used reagents are disposed of.",Link[Resource[Operator->$BaselineOperator,Time->1 Hour]]},
+			{"Returning Materials",1 Hour,"Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time ->1 Hour]]}
 		}
 	|>;
 
@@ -13726,7 +13689,7 @@ Module[
 	(* Now we need to make a sham sample in each well we transfer reagents to, so we can use UploadSampleTransfer *)
 	assignedWells = ToString/@Lookup[injectionTableWithWells, Well, {}];
 
-	(* upload a sample to each well in teh assay plate *)
+	(* upload a sample to each well in the assay plate *)
 	assayPlateDestinationSamples = UploadSample[
 		ConstantArray[{{Null,Null}}, Length[assignedWells]],
 		Transpose[{assignedWells, ConstantArray[assayPlate, Length[assignedWells]]}],
@@ -14029,7 +13992,7 @@ Module[
 						],
 						True,Null
 					]],
-				(* we dont need to transfer again when we have replicates, so we're deleting duplicates *)
+				(* we don't need to transfer again when we have replicates, so we're deleting duplicates *)
 				Transpose[DeleteDuplicates[Lookup[injectionTableWithWells,{SedimentationSupernatantVolumes,TotalVolume,Well},Null]]]
 			]
 		],
@@ -14082,7 +14045,7 @@ Module[
 	exportedCartridgePlacement = {{Download[cartridge,Object], {"Cartridge Slot", Object[Instrument, ProteinCapillaryElectrophoresis, "Maurice"]}}};
 
 	(* designate placement for the assay plate loaded on the instrument *)
-	(* taking the last because if we incubate or spin, there would be two plates here, the first is a prep plate and the second is teh assay plate *)
+	(* taking the last because if we incubate or spin, there would be two plates here, the first is a prep plate and the second is the assay plate *)
 	exportedAssayPlatePlacement = {{Download[assayPlate,Object],{"Plate Slot", Object[Instrument, ProteinCapillaryElectrophoresis, "Maurice"]}}};
 
 	(* Collate all placements to two lists for UploadLocation *)
@@ -14158,7 +14121,7 @@ DefineOptions[ExperimentCapillaryGelElectrophoresisSDSOptions,
 
 (*---Main function accepting sample/container objects as sample inputs and sample objects or Nulls as primer pair inputs---*)
 ExperimentCapillaryGelElectrophoresisSDSOptions[
-	mySamples:ListableP[ObjectP[Object[Container]]]|ListableP[(ObjectP[Object[Sample]]|_String)],
+	mySamples:ListableP[(ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String)],
 	myOptions:OptionsPattern[ExperimentCapillaryGelElectrophoresisSDSOptions]
 ]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
@@ -14192,7 +14155,7 @@ DefineOptions[ValidExperimentCapillaryGelElectrophoresisSDSQ,
 	SharedOptions:>{ExperimentCapillaryGelElectrophoresisSDS}
 ];
 
-ValidExperimentCapillaryGelElectrophoresisSDSQ[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentCapillaryGelElectrophoresisSDSQ]]:=Module[
+ValidExperimentCapillaryGelElectrophoresisSDSQ[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentCapillaryGelElectrophoresisSDSQ]]:=Module[
 	{listedOptions,preparedOptions,capillaryGelElectrophoresisSDSTests,initialTestDescription,allTests,verbose,outputFormat},
 
 	(* Get the options as a list *)
@@ -14248,7 +14211,7 @@ DefineOptions[ExperimentCapillaryGelElectrophoresisSDSPreview,
 	SharedOptions:>{ExperimentCapillaryGelElectrophoresisSDS}
 ];
 
-ExperimentCapillaryGelElectrophoresisSDSPreview[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ExperimentCapillaryGelElectrophoresisSDSPreview]]:=Module[
+ExperimentCapillaryGelElectrophoresisSDSPreview[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentCapillaryGelElectrophoresisSDSPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];

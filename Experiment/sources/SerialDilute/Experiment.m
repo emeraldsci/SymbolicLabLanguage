@@ -172,7 +172,15 @@ DefineOptions[ExperimentSerialDilute,
 				Widget-> 
 					Widget[
 						Type->Object,
-						Pattern:>ObjectP[{Object[Sample],Model[Sample]}]
+						Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Reagents",
+								"Water"
+							}
+						}
 					],
 				Category->"General",
 				Description->
@@ -217,8 +225,16 @@ DefineOptions[ExperimentSerialDilute,
 				Default->Null,
 				Widget-> 
 					Widget[
-							Type->Object,
-							Pattern:>ObjectP[{Object[Sample],Model[Sample]}]
+						Type->Object,
+						Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Reagents",
+								"Water"
+							}
+						}
 					],
 				Category->"General",
 				Description->
@@ -278,8 +294,16 @@ DefineOptions[ExperimentSerialDilute,
 				Default->Null,
 				Widget->
 					Widget[
-							Type->Object,
-							Pattern:>ObjectP[{Object[Sample],Model[Sample]}]
+						Type->Object,
+						Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Reagents",
+								"Buffers"
+							}
+						}
 					],
 				Category->"General",
 				Description->
@@ -361,7 +385,13 @@ DefineOptions[ExperimentSerialDilute,
 							Pattern :> ObjectP[{Model[Container], Object[Container]}],
 							ObjectTypes -> {Model[Container], Object[Container]},
 							PreparedSample -> False,
-							PreparedContainer -> True
+							PreparedContainer -> True,
+							OpenPaths -> {
+								{
+									Object[Catalog, "Root"],
+									"Containers"
+								}
+							}
 						]
 					],
 					Adder[{
@@ -381,7 +411,13 @@ DefineOptions[ExperimentSerialDilute,
 								Pattern :> ObjectP[{Model[Container], Object[Container]}],
 								ObjectTypes -> {Model[Container], Object[Container]},
 								PreparedSample -> False,
-								PreparedContainer -> True
+								PreparedContainer -> True,
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Containers"
+									}
+								}
 							],
 							Widget[
 								Type -> Enumeration,
@@ -509,16 +545,22 @@ DefineOptions[ExperimentSerialDilute,
 			Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
 			Description -> "If True, this resolver is being called as part of resolveSerialDiluteMethod, and certain labels are resolved differently.",
 			Category -> "Hidden"
-		}
+		},
+		ModelInputOptions,
+		(* don't actually want this exposed to the customer, but do need it under the hood for ModelInputOptions to work *)
+		ModifyOptions[
+			PreparatoryUnitOperationsOption,
+			Category -> "Hidden"
+		]
 
 	},
 	SharedOptions:>{
 		ProtocolOptions,
+		WorkCellOption,
 		SamplesInStorageOptions,
 		SamplesOutStorageOptions,
-		(*PipettingParameterOptions,*)
 		SimulationOption,
-		PostProcessingOptions
+		NonBiologyPostProcessingOptions
 	}
 ];
 
@@ -530,7 +572,7 @@ ExperimentSerialDilute[mySamples:ObjectP[Object[Sample]],myOptions:OptionsPatter
 ExperimentSerialDilute[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
 	{
 		outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,
-		samplePreparationCache,safeOpsNamed,safeOpsTests,mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples,
+		safeOpsNamed,safeOpsTests,mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples,
 		validLengths,validLengthTests,templatedOptions,templateTests,inheritedOptions,expandedSafeOps,cache,resolvedOptionsResult,
 		resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,resourcePackets,runTime,resourcePacketTests,listedSamples, listedOptions,
 
@@ -539,14 +581,14 @@ ExperimentSerialDilute[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 		containerOutModels,containerOutObjs,preferredContainerModels,sampleFields,modelFields,
 		containerFields,containerModelFields,allDownloadValues,inheritedCache, simulation, updatedSimulation,
 		simulatedProtocol, newSimulation, performSimulationQ, allTests, upload, parentProt, previewRule,
-		testsRule,simulationRule,runTimeRule,resultRule,confirm, fastTrack, optionsRule,
+		testsRule,simulationRule,runTimeRule,resultRule,confirm,canaryBranch, fastTrack, optionsRule, constellationMessageRule,
 
 		allDiluentModels,
 		allDiluentObjs,
 		allBufferDiluentModels,
 		allBufferDiluentObjs,
 		allConcentratedBufferModels,
-		allConcentratedBufferObjs,analyte,diluent,allAnalyteModels,allAnalyteObjs, preparation, samplePrepModelSampleField,
+		allConcentratedBufferObjs,analyte,diluent,allAnalyteModels,allAnalyteObjs, preparation, workCell, samplePrepModelSampleField,
 		samplePrepModelContainerField,
 
 		resourcePacketsResult, simulationResult, validQ,newCache, samplePreparationSimulation
@@ -573,7 +615,7 @@ ExperimentSerialDilute[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 
@@ -591,13 +633,7 @@ ExperimentSerialDilute[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 	];
 
 	(* replace all objects referenced by Name to ID *)
-	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentSerialDilute,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentSerialDilute,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> samplePreparationSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -605,8 +641,15 @@ ExperimentSerialDilute[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 			Result -> $Failed,
 			Tests -> safeOpsTests,
 			Options -> $Failed,
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> samplePreparationSimulation
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentSerialDilute,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentSerialDilute,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -615,7 +658,8 @@ ExperimentSerialDilute[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 			Result -> $Failed,
 			Tests -> Join[safeOpsTests,validLengthTests],
 			Options -> $Failed,
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> samplePreparationSimulation
 		}]
 	];
 
@@ -631,7 +675,8 @@ ExperimentSerialDilute[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 			Result -> $Failed,
 			Tests -> Join[safeOpsTests,validLengthTests,templateTests],
 			Options -> $Failed,
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> samplePreparationSimulation
 		}]
 	];
 
@@ -674,13 +719,19 @@ ExperimentSerialDilute[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 	(* if the Container option is Automatic, we might end up calling PreferredContainer; so we've gotta make sure we download info from all the objects it might spit out *)
 	(* need this because we need to lookup wells *)
 	preferredContainerModels=If[MatchQ[specifiedContainerOut,Automatic]||MemberQ[Flatten[ToList[specifiedContainerOut]],Automatic],
-		PreferredContainer[All,Type->All],
+		DeleteDuplicates[
+			Flatten[{
+				PreferredContainer[All, Type -> All],
+				PreferredContainer[All, Sterile -> True, Type -> All],
+				PreferredContainer[All, Sterile -> True, LiquidHandlerCompatible -> True, Type -> All]
+			}]
+		],
 		{}
 	];
 
 	(* get the Object[Sample], Model[Sample], Object[Container], and Model[Container] fields I need *)
 	sampleFields = Packet[SamplePreparationCacheFields[Object[Sample], Format -> Sequence], MassConcentration, Concentration, StorageCondition,
-		ThawTime, ThawTemperature, TransportWarmed, TransportChilled, LightSensitive];
+		ThawTime, ThawTemperature,TransportTemperature, LightSensitive];
 
 	modelFields = Packet[Model[{SamplePreparationCacheFields[Model[Sample], Format -> Sequence], UsedAsSolvent, ConcentratedBufferDiluent, ConcentratedBufferDilutionFactor, BaselineStock}]];
 
@@ -787,7 +838,13 @@ ExperimentSerialDilute[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 	resolvedOptionsResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
 
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentSerialDiluteOptions[ToList[mySamples],expandedSafeOps,Cache->newCache,Simulation->simulation,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveExperimentSerialDiluteOptions[
+			ToList[mySamples],
+			expandedSafeOps,
+			Cache->newCache,
+			Simulation->samplePreparationSimulation,
+			Output->{Result,Tests}
+		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -797,7 +854,10 @@ ExperimentSerialDilute[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentSerialDiluteOptions[ToList[mySamples],expandedSafeOps,Cache->newCache],{}},
+			{resolvedOptions,resolvedOptionsTests}={
+				resolveExperimentSerialDiluteOptions[ToList[mySamples],expandedSafeOps,Cache->newCache, Simulation->samplePreparationSimulation],
+				{}
+			},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -822,7 +882,7 @@ ExperimentSerialDilute[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 	];
 
 
-	preparation = Lookup[resolvedOptions,Preparation];
+	{preparation, workCell} = Lookup[resolvedOptions, {Preparation, WorkCell}];
 
 	(* Build packets with resources *)
 
@@ -870,7 +930,7 @@ ExperimentSerialDilute[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 
 	resolvedOptions = Normal[resolvedOptions];
 
-	{upload, confirm, fastTrack, parentProt, inheritedCache, simulation} = Lookup[safeOps, {Upload, Confirm, FastTrack, ParentProtocol, Cache, Simulation}];
+	{upload, confirm, canaryBranch, fastTrack, parentProt, inheritedCache, simulation} = Lookup[safeOps, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache, Simulation}];
 
 	performSimulationQ = MemberQ[output, Result|Simulation];
 
@@ -892,89 +952,104 @@ ExperimentSerialDilute[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 
 	optionsRule = Options -> resolvedOptions;
 
+	(* Set a rule for the ConstellationMessage since we can generate different protocol types. *)
+	constellationMessageRule = ConstellationMessage -> {
+		Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualSamplePreparation],
+		Object[Protocol, RoboticCellPreparation], Object[Protocol, ManualCellPreparation]
+	};
+
 	(* generate the Result output rule, but only if we've got a Valid experiment call (determined above) *)
 	(* note that we are NOT calling UploadProtocol here because the ExperimentSamplePreparation call already did that so no need to do it again *)
 	resultRule = Result -> Which[
 		Not[validQ], $Failed,
 		Not[MemberQ[output, Result]], $Failed,
-		MatchQ[$CurrentSimulation, SimulationP],
-		Module[{},
-			UpdateSimulation[$CurrentSimulation, newSimulation],
-
-			If[MatchQ[upload, False],
-				Lookup[newSimulation[[1]], Packets],
-				simulatedProtocol
-			]
-		],
 		(* if we're doing Preparation -> Robotic, return all our unit operation packets without RequireResources called if Upload -> False *)
 		MatchQ[preparation, Robotic] && MatchQ[upload, False],
-		Rest[resourcePackets],
+			Rest[resourcePackets],
 		(* if we are doing Preparation -> Robotic and Upload -> True, then call ExperimentRoboticSamplePreparation on the serial dilute unit operations *)
 		MatchQ[preparation, Robotic],
-		Module[{unitOperation, nonHiddenOptions},
-			unitOperation = SerialDilute @@ Join[
-				{
-					Source -> mySamples
-				},
-				RemoveHiddenPrimitiveOptions[SerialDilute, ToList[resolvedOptions]]
-			];
+			Module[{unitOperation, nonHiddenOptions, samplesMaybeWithModels, experimentFunction},
 
-			(* Remove any hidden options before returning. *)
-			nonHiddenOptions = RemoveHiddenOptions[ExperimentSerialDilute, resolvedOptions];
-
-			(* Memoize the value of ExperimentAliquot so the framework doesn't spend time resolving it again. *)
-			Internal`InheritedBlock[{ExperimentSerialDilute, $PrimitiveFrameworkResolverOutputCache},
-				$PrimitiveFrameworkResolverOutputCache=<||>;
-
-				DownValues[ExperimentSerialDilute]={};
-
-				ExperimentSerialDilute[___, options : OptionsPattern[]] := Module[{frameworkOutputSpecification},
-					(* Lookup the output specification the framework is asking for. *)
-					frameworkOutputSpecification = Lookup[ToList[options], Output];
-
-					frameworkOutputSpecification /. {
-						Result -> Rest[resourcePackets],
-						Options -> nonHiddenOptions,
-						Preview -> Null,
-						Simulation -> newSimulation,
-						RunTime -> runTime
-					}
+				(* convert the samples to models if we had model inputs originally *)
+				(* if we don't have a simulation or a single prep unit op, then we know we didn't have a model input *)
+				(* NOTE: this is important: need to use the samplePreparationSimulation from before the resource packets function to do this sample -> model conversion, because we had to do some label shenanigans in the resource packets function that made the label-deconvolution here _not_ work *)
+				(* otherwise, the same label will point at two different IDs, and that's going to cause problems *)
+				samplesMaybeWithModels = If[NullQ[samplePreparationSimulation] || Not[MatchQ[Lookup[resolvedOptions, PreparatoryUnitOperations], {_[_LabelSample]}]],
+					listedSamples,
+					simulatedSamplesToModels[
+						Lookup[resolvedOptions, PreparatoryUnitOperations][[1, 1]],
+						samplePreparationSimulation,
+						listedSamples
+					]
 				];
 
-				ExperimentRoboticSamplePreparation[
-					unitOperation,
-					Name -> Lookup[safeOps, Name],
-					Upload -> Lookup[safeOps, Upload],
-					Confirm -> Lookup[safeOps, Confirm],
-					ParentProtocol -> Lookup[safeOps, ParentProtocol],
-					Priority -> Lookup[safeOps, Priority],
-					StartDate -> Lookup[safeOps, StartDate],
-					HoldOrder -> Lookup[safeOps, HoldOrder],
-					QueuePosition -> Lookup[safeOps, QueuePosition],
-					ImageSample -> Lookup[resolvedOptions, ImageSample],
-					MeasureVolume -> Lookup[resolvedOptions, MeasureVolume],
-					MeasureWeight -> Lookup[resolvedOptions, MeasureWeight],
-					Cache -> newCache
+				unitOperation = SerialDilute @@ Join[
+					{
+						Source -> samplesMaybeWithModels
+					},
+					RemoveHiddenPrimitiveOptions[SerialDilute, ToList[resolvedOptions]]
+				];
+
+				(* Remove any hidden options before returning. *)
+				nonHiddenOptions = RemoveHiddenOptions[ExperimentSerialDilute, resolvedOptions];
+
+				(* pick the corresponding function from the association above *)
+				experimentFunction = Lookup[$WorkCellToExperimentFunction, workCell];
+
+				(* Memoize the value of ExperimentSerialDilute so the framework doesn't spend time resolving it again. *)
+				Internal`InheritedBlock[{ExperimentSerialDilute, $PrimitiveFrameworkResolverOutputCache},
+					$PrimitiveFrameworkResolverOutputCache=<||>;
+
+					DownValues[ExperimentSerialDilute]={};
+
+					ExperimentSerialDilute[___, options : OptionsPattern[]] := Module[{frameworkOutputSpecification},
+						(* Lookup the output specification the framework is asking for. *)
+						frameworkOutputSpecification = Lookup[ToList[options], Output];
+
+						frameworkOutputSpecification /. {
+							Result -> Rest[resourcePackets],
+							Options -> nonHiddenOptions,
+							Preview -> Null,
+							Simulation -> newSimulation,
+							RunTime -> runTime
+						}
+					];
+
+					experimentFunction[
+						unitOperation,
+						Name -> Lookup[safeOps, Name],
+						Upload -> Lookup[safeOps, Upload],
+						Confirm -> Lookup[safeOps, Confirm],
+						CanaryBranch -> Lookup[safeOps, CanaryBranch],
+						ParentProtocol -> Lookup[safeOps, ParentProtocol],
+						Priority -> Lookup[safeOps, Priority],
+						StartDate -> Lookup[safeOps, StartDate],
+						HoldOrder -> Lookup[safeOps, HoldOrder],
+						QueuePosition -> Lookup[safeOps, QueuePosition],
+						ImageSample -> Lookup[resolvedOptions, ImageSample],
+						MeasureVolume -> Lookup[resolvedOptions, MeasureVolume],
+						MeasureWeight -> Lookup[resolvedOptions, MeasureWeight],
+						Cache -> newCache
+					]
 				]
-			]
-		],
+			],
 		(* don't need to call ExperimentManualSamplePreparation here because we already called it in the resource packet sfunction*)
 		MatchQ[preparation, Manual] && MemberQ[output, Result] && upload && StringQ[Lookup[resolvedOptions, Name]],
-		(
-			Upload[resourcePackets, ConstellationMessage -> {Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualSamplePreparation]}];
-			If[confirm, UploadProtocolStatus[Lookup[First[resourcePackets], Object], OperatorStart, Upload -> True, FastTrack -> True, UpdatedBy -> If[NullQ[parentProt], $PersonID, parentProt]]];
-			Append[Lookup[First[resourcePackets], Type], Lookup[resolvedOptions, Name]]
-		),
+			(
+				Upload[resourcePackets, constellationMessageRule];
+				If[confirm, UploadProtocolStatus[Lookup[First[resourcePackets], Object], OperatorStart, Upload -> True, FastTrack -> True, UpdatedBy -> If[NullQ[parentProt], $PersonID, parentProt]]];
+				Append[Lookup[First[resourcePackets], Type], Lookup[resolvedOptions, Name]]
+			),
 		MatchQ[preparation, Manual] && MemberQ[output, Result] && upload,
-		(
-			Upload[resourcePackets, ConstellationMessage -> {Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualSamplePreparation]}];
-			If[confirm, UploadProtocolStatus[Lookup[First[resourcePackets], Object], OperatorStart, Upload -> True, FastTrack -> True, UpdatedBy -> If[NullQ[parentProt], $PersonID, parentProt]]];
-			Lookup[First[resourcePackets], Object]
-		),
+			(
+				Upload[resourcePackets, constellationMessageRule];
+				If[confirm, UploadProtocolStatus[Lookup[First[resourcePackets], Object], OperatorStart, Upload -> True, FastTrack -> True, UpdatedBy -> If[NullQ[parentProt], $PersonID, parentProt]]];
+				Lookup[First[resourcePackets], Object]
+			),
 		MatchQ[preparation, Manual] && MemberQ[output, Result] && Not[upload],
-		resourcePackets,
+			resourcePackets,
 		True,
-		$Failed
+			$Failed
 	];
 
 	(* return the output as we desire it *)
@@ -986,9 +1061,9 @@ ExperimentSerialDilute[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 
 
 (* Note: The container overload should come after the sample overload. *)
-ExperimentSerialDilute[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ExperimentSerialDilute[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
 	{listedContainers,listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-	samplePreparationCache,containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,containerToSampleTests,updatedSimulation,updatedSimulationNew},
+	containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests,samplePreparationSimulation,containerToSampleSimulation},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -998,18 +1073,18 @@ ExperimentSerialDilute[myContainers:ListableP[ObjectP[{Object[Container],Object[
 	gatherTests=MemberQ[output,Tests];
 
 	(* Remove temporal links. *)
-	{listedContainers, listedOptions}=removeLinks[ToList[myContainers], ToList[myOptions]];
+	{listedContainers, listedOptions}= {ToList[myContainers], ToList[myOptions]};
 
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentSerialDilute,
 			listedContainers,
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -1022,12 +1097,12 @@ ExperimentSerialDilute[myContainers:ListableP[ObjectP[{Object[Container],Object[
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests,containerToSampleSimulation}=containerToSampleOptions[
 			ExperimentSerialDilute,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
 			Output->{Result,Tests,Simulation},
-			Simulation->updatedSimulation
+			Simulation->samplePreparationSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -1038,12 +1113,12 @@ ExperimentSerialDilute[myContainers:ListableP[ObjectP[{Object[Container],Object[
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput,containerToSampleSimulation}=containerToSampleOptions[
 				ExperimentSerialDilute,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
 				Output->{Result,Simulation},
-				Simulation->updatedSimulation
+				Simulation->samplePreparationSimulation
 			],
 			$Failed,
 			{Error::EmptyContainer}
@@ -1060,10 +1135,10 @@ ExperimentSerialDilute[myContainers:ListableP[ObjectP[{Object[Container],Object[
 			Preview->Null
 		},
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{{samples,sampleOptions},updatedSimulationNew}=containerToSampleOutput;
+		{samples,sampleOptions}=containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentSerialDilute[samples,ReplaceRule[sampleOptions,Simulation->updatedSimulationNew]]
+		ExperimentSerialDilute[samples,ReplaceRule[sampleOptions,Simulation->containerToSampleSimulation]]
 	]
 
 ];
@@ -1072,15 +1147,6 @@ ExperimentSerialDilute[myContainers:ListableP[ObjectP[{Object[Container],Object[
 DefineOptions[
 	resolveExperimentSerialDiluteOptions,
 	Options:>{HelperOutputOption,CacheOption,SimulationOption}
-];
-
-(*Helper selectAnalyteFromSample*)
-DefineOptions[selectAnalyteFromSample,
-	Options :> {
-		{Analyte -> Automatic, Automatic | {(ObjectP[List @@ IdentityModelTypeP] | Null | Automatic)..},"The substance already specified as the analyte for this sample."},
-		CacheOption,
-		HelperOutputOption
-	}
 ];
 
 canCalculateDirect[myOptions : _?AssociationQ] :=
@@ -1227,7 +1293,7 @@ Error::ConflictingIncubateTemp = "The Incubation temperature does not correspond
 
 resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentSerialDiluteOptions]]:=Module[
 	{
-		outputSpecification,output,gatherTests,cache,samplePrepOptions,serialDiluteOptions,simulatedSamples,resolvedSamplePrepOptions,simulatedCache,samplePrepTests,
+		outputSpecification,output,gatherTests,cache,samplePrepOptions,serialDiluteOptions,simulatedSamples,resolvedSamplePrepOptions,updatedSimulation,samplePrepTests,
 		serialDiluteOptionsAssociation,invalidInputs,invalidOptions,targetContainers,
 		discardedSamplePackets,discardedInvalidInputs,discardedTest,roundedSerialDiluteOptions,precisionTests,
 		samplePackets,mapThreadFriendlyOptions,mwPackets,resolvedPostProcessingOptions,resolvedOptions,allTests,
@@ -1237,10 +1303,9 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 		containerOut,destinationWells,
 		resolvedContainerOutPre,
 
-		noSerialDiluteFactorsErr,serialDiluteNumberErr,finalVolumeError,transferAmountsError,bufferDilutionStrategyError,
+		noSerialDiluteFactorsErr,serialDiluteNumberErr,transferAmountsError,bufferDilutionStrategyError,
 		bufferDiluentAmountError,concentratedBufferAmountError,diluentAmountError,
 
-		sampleOutLabel,containerOutLabel,
 		transferNumberOfMixes, transferMixType,transferMix,
 
 		(*Resolved Options*)
@@ -1251,18 +1316,13 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 		resolvedSampleLabel,resolvedSampleContainerLabel,resolvedSampleOutLabel,transferTuples,
 		resolvedContainerOutLabel,resolvedDiluentLabel,resolvedConcentratedBufferLabel,
-		resolvedBufferDiluentLabel, resolvedPreparation, resolvedNumberOfMixes, resolvedMixType,
+		resolvedBufferDiluentLabel, resolvedPreparation, allowedWorkCells, resolvedWorkCell, resolvedNumberOfMixes, resolvedMixType,
 
 		autoDestWells, flattenedPreResolvedContainersOut, flattenedPreResolvedDestinationWells, resolvedContainerOutAndWells,
-		resolvedContainerOutNotGrouped, resolvedDestinationWellsNotGrouped,autoContainerOutLabels,
+		resolvedContainerOutNotGrouped, resolvedDestinationWellsNotGrouped,
 
-		noSerialDiluteFactorsTest,
 		serialDiluteNumberTest,
-		finalVolumeTest,
-		transferAmountsTest,
 		bufferDilutionStrategyTest,
-		bufferDiluentAmountTest,
-		diluentAmountTest,
 		concentratedBufferAmountTest,
 
 		simulation,
@@ -1274,9 +1334,7 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 		incubationTime,
 		maxIncubationTime,
 		incubationTemperature,
-		autoSampleOutLabel,
 
-		resolvedBufferDilutionStrategy,incompatibleIncubateOptionLists,
 		incubateOption,incompatibleIncubateOptionErrPre,
 
 		expandedIncubate,expandedIncubateTime,expandedMaxIncubateTime,expandedIncubateTemperature,
@@ -1284,8 +1342,8 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 		incompatibleIncubateTest,expandedIncubateInformation,
 
 
-		conflictingIncubateErr, conflictingIncubateTimeErr, conflictingIncubateMaxTimeErr, confilctingIncubateTempErr,
-		incompatibleIncubateOptionErrPrePre,incubTimeRules, incubMaxTimeRules, incubTempRules,
+		conflictingIncubateErr, conflictingIncubateTimeErr, conflictingIncubateMaxTimeErr,
+		incubTimeRules, incubMaxTimeRules, incubTempRules,
 		conflictingIncubateTimeContainers,conflictingIncubateMaxTimeContainers,
 
 		bufferDiluentOption, concentratedBufferOption, bufferDilutionFactorOption, incubateTemperatureOption,
@@ -1307,9 +1365,10 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 		unevenNumberDiluentAmountInvalidOptions,unevenNumberDiluentAmountTest,
 		unevenNumberBufferDiluentAmountInvalidOptions,unevenNumberBufferDiluentAmountTest,
 		unevenNumberConcentratedBufferAmountInvalidOptions,unevenNumberConcentratedBufferAmountTest,
-		resolvedIncubate,
+		resolvedIncubate,sterileQ,
 
-		listOfJustContainers, objectToNewResolvedLabelLookup, containerOutLabelReplaceRules, sampleOutLabelReplaceRules
+		listOfJustContainers, objectToNewResolvedLabelLookup, containerOutLabelReplaceRules,
+		uniqueContainersOut, uniqueUserLabels, labelPrefix, sampleOutLabelReplaceRules
 
 	},
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -1325,8 +1384,9 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 	(* Fetch our cache from the parent function. *)
 	cache=Lookup[ToList[myResolutionOptions],Cache,{}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Null];
 
-	(* Seperate out our <Type> options from our Sample Prep options. *)
+	(* Separate out our <Type> options from our Sample Prep options. *)
 	{samplePrepOptions,serialDiluteOptions}=splitPrepOptions[myOptions];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
@@ -1384,7 +1444,7 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	(* Set discardedInvalidInputs to the input objects whose statuses are Discarded *)
 	discardedInvalidInputs=If[MatchQ[discardedSamplePackets,{}],
 		{},
-        Lookup[discardedSamplePackets,Object]
+		Lookup[discardedSamplePackets,Object]
 	];
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
@@ -1410,22 +1470,27 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 		Nothing
 	];
 
-	(*Message[Error::noellefakeerrormessage];*)
-
 	(*-- OPTION PRECISION CHECKS --*)
 	{roundedSerialDiluteOptions,precisionTests}=If[gatherTests,
 		RoundOptionPrecision[serialDiluteOptionsAssociation,{FinalVolume,TransferAmounts,DiluentAmount,BufferDiluentAmount,ConcentratedBufferAmount},{10^-1Microliter,10^-1Microliter,10^-1Microliter,10^-1Microliter,10^-1Microliter},Output->{Result,Tests}],
 		{RoundOptionPrecision[serialDiluteOptionsAssociation,{FinalVolume,TransferAmounts,DiluentAmount,BufferDiluentAmount,ConcentratedBufferAmount},{10^-1Microliter,10^-1Microliter,10^-1Microliter,10^-1Microliter,10^-1Microliter}],Null}
 	];
 
-	(*Message[Error::noellefakeerrormessage];*)
 	(*-- CONFLICTING OPTIONS CHECKS --*)
 
 	(*-- RESOLVE EXPERIMENT OPTIONS --*)
 	(* Convert our options into a MapThread friendly version. *)
 	mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentSerialDilute,roundedSerialDiluteOptions];
 	objectToNewResolvedLabelLookup = {};
-	simulation = Lookup[serialDiluteOptionsAssociation,Simulation];
+
+	(* Check if sample is Sterile, contains cells, or require AsepticHandling *)
+	(* Note:ExperimentSerialDilute does not have SterileTechnique or Sterile option yet, so we do not need to check *)
+	sterileQ = Or[
+		MemberQ[Lookup[samplePackets, Sterile], True],
+		MemberQ[Lookup[samplePackets, Living], True],
+		MemberQ[Lookup[samplePackets, CellType], CellTypeP],
+		MemberQ[Lookup[samplePackets, AsepticHandling], True]
+	];
 
 	(* MapThread over each of our samples. *)
 	{
@@ -1496,24 +1561,30 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 
 				(* Resolving Analyte option *)
-				analyte=If[MatchQ[specifiedAnalyte,Except[Automatic]],
+				analyte=If[MatchQ[specifiedAnalyte, ObjectP[IdentityModelTypes]],
 					specifiedAnalyte,
 					(*Analyte is not set by the user*)
 
 					Quiet[selectAnalyteFromSample[mySamplePacket]][[1]]
 				];
-				(*analyte=If[Head[analyte]==List,analyte[[1]],analyte];*)
 
 				(*Resolving serialDilutionFactors and targetConcentrations*)
 				serialDilutionFactors=If[MatchQ[specifiedSerialDilutionFactors,Except[Automatic]],
 
-					specifiedSerialDilutionFactors,
+					(*If serialDilutionFactors is defined, return what the user defined, with possible expansion to the length at NumberOfSerialDilution if that is specified*)
+					If[And[
+						NumberQ[specifiedNumberOfSerialDilutions],
+						!MatchQ[Length[ToList@specifiedSerialDilutionFactors],specifiedNumberOfSerialDilutions]
+					],
+						Flatten[ConstantArray[specifiedSerialDilutionFactors,specifiedNumberOfSerialDilutions]],
+						specifiedSerialDilutionFactors
+					],
 
 					(*serialDilutionFactors is not set by the user*)
 					Module[{sDF},
 
 						(* Here, is specifiedTargetConcentrations specified by user? *)
-						sDF=If[MatchQ[specifiedTargetConcentrations,Automatic],
+						sDF=If[MatchQ[specifiedTargetConcentrations,Automatic] && MatchQ[specifiedNumberOfSerialDilutions,Automatic],
 							Module[{},
 								noSerialDiluteFactorsErr=True;
 								{10}
@@ -1531,8 +1602,8 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 								totalVolume = mySamplePacket[Volume];
 
 								compositionPre = mySamplePacket[Composition];
-								(*get rid of any Null entries in the composition*)
-								composition = DeleteCases[compositionPre,{_,Null}];
+								(*get rid of any Null identity model entries in the composition*)
+								composition = DeleteCases[compositionPre,{_,Null,_}];
 
 								(*Determine if analyte already has a concentration or need to calculate from a liquid*)
 								percentOrConcentration = Select[composition, #[[2]][[1]] == analyte &][[1]][[1]];
@@ -1598,18 +1669,26 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 					Module[{molecularWeightPacket,mw, density, totalVolume, composition,
 						percentOrConcentration,volumePercent,massPercent,concentration, finalConcentration,dividers,compositionPre},
 
-						molecularWeightPacket = First[Select[mwPackets,Lookup[#,Object]==analyte&]];
+						(* If analyte == Null then we just want to return Null for Error catching *)
+						molecularWeightPacket = If[MatchQ[analyte, Null],
+							Null,
+							First[Select[mwPackets,Lookup[#,Object]==analyte&]]
+						];
 						dividers = accMultFunction[serialDilutionFactors];
 
 						mw = molecularWeightPacket[MolecularWeight];
 						density = molecularWeightPacket[Density];
 						totalVolume = mySamplePacket[Volume];
 						compositionPre = mySamplePacket[Composition];
-						(*get rid of any Null entries in the composition*)
-						composition = DeleteCases[compositionPre,{_,Null}];
+						(*get rid of any Null identity model entries in the composition*)
+						composition = DeleteCases[compositionPre,{_,Null,_}];
 
 						(*Determine if analyte already has a concentration or need to calculate from a liquid*)
-						percentOrConcentration = Select[composition, #[[2]][[1]] == analyte &][[1]][[1]];
+						(* If analyte == Null then we just want to return Null for Error catching *)
+						percentOrConcentration = If[MatchQ[analyte, Null],
+							Null,
+							Select[composition, #[[2]][[1]] == analyte &][[1]][[1]]
+						];
 
 						{volumePercent,massPercent,concentration} = Which[
 							(* Volume Percent *)
@@ -1668,7 +1747,6 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 				];
 
-
 				(*Resolving the numberOfSerialDilutions option*)
 				numberOfSerialDilutions=If[MatchQ[specifiedNumberOfSerialDilutions,Except[Automatic]],
 					(*If numberOfSerialDilutions is defined*)
@@ -1683,7 +1761,7 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 								serialDiluteNumberErr=True;
 								Length[serialDilutionFactors],
 
-								(*if it passes all of these, i.e. lengths of both are 1 and they both dont match, expand both*)
+								(*if it passes all of these, i.e. lengths of both are 1 and they both don't match, expand both*)
 								Module[{serialDilutionFactor,targetConcentration,serialDilutionFactorsMultiplied},
 
 									serialDilutionFactor=serialDilutionFactors[[1]];
@@ -1759,7 +1837,6 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 					]
 				];
 
-
 				(*Going into whether BDS is Direct or not*)
 				If[MatchQ[specifiedBufferDilutionStrategy,Direct],
 
@@ -1774,7 +1851,7 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 							(*if not, see whether SamplesIn[Solvent] is populated*)
 							(*this is downloading,mySamplePacket come back and just get from mySample packet*)
 							If[!NullQ[Lookup[mySamplePacket,Solvent]],
-								Lookup[mySamplePacket,Solvent],
+								Download[Lookup[mySamplePacket,Solvent], Object],
 								Model[Sample,"Milli-Q water"]
 							]
 						];
@@ -1918,8 +1995,14 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 				containerOut = If[MatchQ[Lookup[myMapThreadOptions,ContainerOut],Except[Automatic]],
 					(*If containerOut is defined, return what the user defined*)
-					Module[{},
-						Lookup[myMapThreadOptions,ContainerOut]],
+					Module[{specifiedContainerOut},
+						specifiedContainerOut = Lookup[myMapThreadOptions,ContainerOut];
+						(* If what the user specified matches the required length of NumberOfSerialDilutions, use it, otherwise constant array it. If it's not a singleton for constant arraying, we would have mismatched length error thrown already *)
+						If[MatchQ[Length[ToList@specifiedContainerOut],numberOfSerialDilutions],
+							specifiedContainerOut,
+							Flatten[ConstantArray[specifiedContainerOut,numberOfSerialDilutions],1]
+						]
+					],
 					(*If not, map over each addedVolume to get a containerOut for each sampleout*)
 
 					(*containerOut is not user defined*)
@@ -1929,13 +2012,13 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 							Function[{destWell,addedVolume},
 								(*If it is, is it A1?*)
 								If[destWell=="A1",
-									(*If it is, is finanlVolume+transferAmounts>1.9mL?*)
+									(*If it is, is finalVolume+transferAmounts>1.9mL?*)
 									If[addedVolume>1.9Milliliter,
-										PreferredContainer[addedVolume],
-										PreferredContainer[addedVolume,Type->Plate]
+										PreferredContainer[addedVolume, Sterile -> sterileQ],
+										PreferredContainer[addedVolume, Sterile -> sterileQ, Type->Plate]
 									],
 									(*If it's not, use PreferredContainer, Type->Plate*)
-									PreferredContainer[addedVolume,Type->Plate]
+									PreferredContainer[addedVolume,Sterile -> sterileQ, Type->Plate]
 								]
 							],
 							{destinationWells,addedVolumes}
@@ -1945,8 +2028,8 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 						MapThread[
 							Function[{addedVolume},
 								If[addedVolume>1.9Milliliter,
-									PreferredContainer[addedVolume],
-									PreferredContainer[addedVolume,Type->Plate]
+									PreferredContainer[addedVolume, Sterile -> sterileQ],
+									PreferredContainer[addedVolume, Sterile -> sterileQ, Type -> Plate]
 								]
 							],
 							{addedVolumes}
@@ -2144,7 +2227,6 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 	destinationWells = Lookup[serialDiluteOptionsAssociation,DestinationWells];
 
-
 	resolvedContainerOutPre =Map[
 		Function[{listOfModels},
 			(* If we already have index, do not try to add another index. Keep the existing index *)
@@ -2195,26 +2277,51 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 		 (*if it was user defined, take autoDestWells, should be the same*)
 		 autoDestWells
 	 ];
-
+	(* get the unique containers*)
+	uniqueContainersOut = DeleteDuplicates[Flatten[resolvedContainerOut, 1]] /. obj : ObjectReferenceP[] :> Download[obj, Object];
+	(* get the unique strings in user input*)
+	uniqueUserLabels = DeleteDuplicates[DeleteCases[Flatten@Lookup[myOptions, ContainerOutLabel], Automatic | Null]];
+	(*If the specified sample container labels is one string, use it as a label prefix, otherwise use "serial dilute container out" as prefix*)
+	labelPrefix = If[MatchQ[Length@uniqueUserLabels, 1],
+		FirstCase[uniqueUserLabels, _String, "serial dilute container out"],
+		"serial dilute container out"];
 
 	(* make labels for the resolved containers out*)
-	containerOutLabelReplaceRules = Map[
-		Which[
-			MatchQ[simulation, SimulationP] && MatchQ[LookupObjectLabel[simulation, Last[#]], _String],
-			# -> LookupObjectLabel[simulation, Last[#]],
-			(* If we are only called by resolveSerialDiluteMethod, we don't care about this label here. We should make sure we don't use CreateUniqueLabel and increase the counter *)
-			MatchQ[Lookup[serialDiluteOptionsAssociation,ResolveMethod,False],True],
-			# -> CreateUUID[],
-			True,
-			# -> CreateUniqueLabel["serial dilute container out"]
-		]&,
-		DeleteDuplicates[Flatten[resolvedContainerOut,1]]/.obj:ObjectReferenceP[]:>Download[obj,Object]
+	containerOutLabelReplaceRules = If[MatchQ[Length[uniqueContainersOut], Length[uniqueUserLabels]],
+		(* If we were given matching length of containers to labels, mapthread it *)
+		MapThread[
+			Function[{container,label},
+				container -> label
+			],
+			{uniqueContainersOut, uniqueUserLabels}
+		],
+		(* Otherwise map through unique containers out *)
+		Map[
+			Function[uniqueContainer,
+				Which[
+					MatchQ[simulation, SimulationP] && MatchQ[LookupObjectLabel[simulation, Last[uniqueContainer]], _String],
+					(uniqueContainer -> LookupObjectLabel[simulation, Last[uniqueContainer]]),
+					(* If we are only called by resolveSerialDiluteMethod, we don't care about this label here. We should make sure we don't use CreateUniqueLabel and increase the counter *)
+					MatchQ[Lookup[serialDiluteOptionsAssociation, ResolveMethod, False], True],
+					(uniqueContainer -> CreateUUID[]),
+					True,
+					(uniqueContainer -> CreateUniqueLabel[labelPrefix])
+				]
+			],
+			uniqueContainersOut
+		]
 	];
 
 	resolvedContainerOutLabel = MapThread[
 		Function[{containerOut, containerOutLabel},
-			If[Not[MatchQ[containerOutLabel, Automatic]],
+
+			If[And[
+					Not[MatchQ[containerOutLabel, Automatic]],
+					MatchQ[Length[ToList@containerOutLabel],Length[ToList@containerOut]]
+				],
+				(*If the label is given and it matches the container out length, use directly*)
 				containerOutLabel,
+				(* Otherwise use the lookup *)
 				containerOut /. containerOutLabelReplaceRules
 			]
 		],
@@ -2269,6 +2376,11 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 		couldBeMicroQ, Robotic,
 		True, Manual
 	];
+
+	(* Resolve the work cell that we're going to operator on. *)
+	allowedWorkCells = resolveSerialDiluteWorkCell[Flatten[mySamples], {Preparation -> resolvedPreparation, Simulation -> simulation, Cache -> cache, Output -> Result}];
+
+	resolvedWorkCell = FirstOrDefault[allowedWorkCells];
 
 	(*Resolve doing right preparation on resolved containers*)
 	resolvedIncubate = Lookup[serialDiluteOptionsAssociation,Incubate];
@@ -2792,9 +2904,9 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	(*temp testing*)
 
 	(* resolve the sample prep options *)
-	{{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-		resolveSamplePrepOptions[ExperimentSerialDilute,Lookup[samplePackets,Object],samplePrepOptionsWithMasterSwitches,Cache->cache,Output->{Result,Tests}],
-		{resolveSamplePrepOptions[ExperimentSerialDilute,Lookup[samplePackets,Object],samplePrepOptionsWithMasterSwitches,Cache->cache,Output->Result],{}}
+	{{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentSerialDilute,Lookup[samplePackets,Object],samplePrepOptionsWithMasterSwitches,Cache->cache,Simulation -> simulation, Output->{Result,Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentSerialDilute,Lookup[samplePackets,Object],samplePrepOptionsWithMasterSwitches,Cache->cache,Simulation -> simulation, Output->Result],{}}
 	];
 
 
@@ -3102,6 +3214,7 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 			 ConcentratedBufferLabel->resolvedConcentratedBufferLabel,
 			 BufferDiluentLabel->resolvedBufferDiluentLabel,
 			 Preparation->resolvedPreparation,
+			 WorkCell->resolvedWorkCell,
 			 BufferDilutionStrategy->Lookup[roundedSerialDiluteOptions,BufferDilutionStrategy],
 			 TransferNumberOfMixes->resolvedNumberOfMixes,
 			 TransferMixType->resolvedMixType,
@@ -3158,7 +3271,7 @@ convertTransferStepsToPrimitivesSerialDilute[
 	myResolvedOptions:{___Rule},
 	ops:OptionsPattern[convertTransferStepsToPrimitivesSerialDilute]
 ]:=Module[
-	{ resolvedBufferDiluent, resolvedConcentratedBuffer,
+	{resolvedBufferDiluent, resolvedConcentratedBuffer,
 		sampleOutLabelReplaceRules, sampleOutLabelsForTransfer,
 		safeOps, cache, resolvedContainerOut, containerOutModels, containerOutObjs,
 		containerOutPackets, containerOutModelPackets, resolvedContainerOutWithPacket,transferPrimitives,
@@ -3228,7 +3341,7 @@ convertTransferStepsToPrimitivesSerialDilute[
 		discardFinalTransferDestinationLabels,discardFinalTransferDestinationWells, discardFinalTransferMix,discardFinalTransferMixType,
 		discardFinalTransferMixNumber,allPrimitivesWithoutIncubateAndTransferAndWaste,discardFinalTransferAmounts,
 		multiChannelTransferBools,storageConditions, containerOutLabelToContainerOutRules, diluentDestinations,
-		simulation,
+		simulation, resolvedPreparatoryUnitOperations, labelSampleUOToPrepend, sampleToLabelRules, updatedSimulation,
 		expandedDiluentTransferAmounts,expandedTransferSamplesTransferAmountsSubs
 
 	},
@@ -3265,8 +3378,8 @@ convertTransferStepsToPrimitivesSerialDilute[
 		resolvedBufferDilutionStrategy,
 		resolvedPreparation,
 		resolvedIncubate,
-		resolvedDiscardFinalTransfer
-
+		resolvedDiscardFinalTransfer,
+		resolvedPreparatoryUnitOperations
 	} = Lookup[
 		myResolvedOptions,
 		{
@@ -3298,8 +3411,40 @@ convertTransferStepsToPrimitivesSerialDilute[
 			BufferDilutionStrategy,
 			Preparation,
 			Incubate,
-			DiscardFinalTransfer
+			DiscardFinalTransfer,
+			PreparatoryUnitOperations
 		}
+	];
+
+	(* get the LabelSample unit operation we're going to be using here *)
+	labelSampleUOToPrepend = If[MatchQ[resolvedPreparatoryUnitOperations, {_[_LabelSample]}],
+		resolvedPreparatoryUnitOperations[[1, 1]],
+		Null
+	];
+
+	(* get the samples from labels from the LabelSample we're prepending *)
+	sampleToLabelRules = If[NullQ[labelSampleUOToPrepend] || Not[MatchQ[simulation, _Simulation]],
+		{},
+		With[
+			{
+				labelRules = Lookup[simulation[[1]], Labels],
+				prepUOLabels = Flatten[{labelSampleUOToPrepend[Label], labelSampleUOToPrepend[ContainerLabel]}]
+			},
+			Reverse /@ Select[labelRules, MemberQ[prepUOLabels, #[[1]]]&]
+		]
+	];
+
+	(* update the simulation to _not_ have the labels that we are adding above *)
+	updatedSimulation = If[NullQ[simulation],
+		Null,
+		With[{oldLabelRules = Lookup[First[simulation], Labels], labelsToRemove = Values[sampleToLabelRules]},
+			Simulation[
+				Append[
+					First[simulation],
+					Labels -> Select[oldLabelRules, Not[MemberQ[labelsToRemove, #[[1]]]]&]
+				]
+			]
+		]
 	];
 
 	(* get the shape of the sample inputs *)
@@ -3337,7 +3482,7 @@ convertTransferStepsToPrimitivesSerialDilute[
 			MapThread[
 				Function[{samplePacketsInPool, sampleContainerPacketsInPool, sampleLabelsInPool, sampleContainerLabelsInPool,resolvedTransferAmount},
 					MapThread[
-						If[StringQ[#3] && StringQ[#4],
+						If[StringQ[#3] && StringQ[#4] && Not[MemberQ[Values[sampleToLabelRules], #3|#4]],
 							Module[{},
 								LabelSample[
 									Sample -> Lookup[#1, Object],
@@ -3536,7 +3681,7 @@ convertTransferStepsToPrimitivesSerialDilute[
 	];
 
 	(*make Diluent labelsample primitive based on expandedDiluentTransferAmounts*)
-	totalDiluentAmounts = Total/@expandedDiluentTransferAmounts;
+	totalDiluentAmounts = Flatten[Total/@expandedDiluentTransferAmounts];
 
 	diluentLabelRules = If[Length[totalDiluentAmounts]>0,
 		MapThread[
@@ -3701,7 +3846,7 @@ convertTransferStepsToPrimitivesSerialDilute[
 		Function[{destWellFirst,destWellsSubs},
 			If[Length[destWellsSubs]==0,
 				{},
-				Join[destWellFirst,Most[destWellsSubs]]
+				Join[ToList[destWellFirst],Most[destWellsSubs]]
 			]
 		],
 		{transferSamplesDestinationWellsFirst,transferSamplesDestinationWellsSubs}
@@ -3827,7 +3972,7 @@ convertTransferStepsToPrimitivesSerialDilute[
 	(*resolving mix lists*)
 	resolvedDestWellsBySample = MapThread[
 		Function[{firstDestWell,secondDestWells},
-			Flatten[Join[firstDestWell,secondDestWells]]
+			Flatten[Join[ToList[firstDestWell],secondDestWells]]
 		],
 		{transferSamplesDestinationWellsFirst,transferSamplesDestinationWellsSubs}
 	];
@@ -4006,19 +4151,28 @@ convertTransferStepsToPrimitivesSerialDilute[
 
 	incubatePrimitive =
 		Incubate[
-			Sample->containerOutWithLabelPaired[[All,2]],
+			Sample->Flatten[containerOutLabelsIncubate],
 			Temperature->Flatten[containerOutIncubateTemps],
 			Time->Flatten[containerOutIncubateTimes],
 			MaxTime->Flatten[containerOutIncubateMaxTimes]
 		];
 
 	(*if no incubation happening at all, don't include it*)
-	allPrimitives = If[MatchQ[DeleteDuplicates[Flatten[Values[incubRules]]],{False}],
-		DeleteDuplicates[Join[allPrimitivesWithoutIncubateAndTransfer,{transferPrimitives}]],
-		DeleteDuplicates[Join[allPrimitivesWithoutIncubateAndTransfer,{transferPrimitives,incubatePrimitive}]]
+	(* if we're doing a preparatory unit operation model input, we need to remove the simulated IDs here and replace them with the labels in question *)
+	allPrimitives = ReplaceAll[
+		DeleteDuplicates[Flatten[{
+			If[NullQ[labelSampleUOToPrepend], Nothing, labelSampleUOToPrepend],
+			allPrimitivesWithoutIncubateAndTransfer,
+			transferPrimitives,
+			If[MatchQ[DeleteDuplicates[Flatten[Values[incubRules]]], {False}],
+				Nothing,
+				incubatePrimitive
+			]
+		}]],
+		sampleToLabelRules
 	];
 
-	allPrimitives
+	{allPrimitives, updatedSimulation}
 
 ];
 
@@ -4029,32 +4183,17 @@ DefineOptions[
 
 serialDiluteResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{___Rule}, myResolvedOptions:{___Rule},ops:OptionsPattern[]]:=Module[
 	{
-		expandedInputs, expandedResolvedOptions,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,messages,inheritedCache,numReplicates,
-		samplePackets,expandedSamplesWithNumReplicates,minimumVolume,expandedAliquotVolume,sampleVolumes,pairedSamplesInAndVolumes,sampleVolumeRules,
-		sampleResourceReplaceRules,samplesInResources,instrument,instrumentTime,instrumentResource,protocolPacket,sharedFieldPacket,finalizedPacket,
-		allResourceBlobs,fulfillable, frqTests,testsRule,resultRule,
-
-		resolvedDiluent, resolvedConcentratedBuffer, resolvedBufferDiluent, resolvedBufferDilutionFactor, specifiedContainerOut, allBufferModels, allBufferObjs, containerOutModels,
-		containerOutObjs,
-
-		sampleModelPackets,sampleContainerPackets,sampleContainerModelPackets,sampleCompositionPackets,containerOutPackets,containerOutModelPackets,bufferObjectPackets,
-		bufferModelPackets,bufferContainerPackets,bufferContainerModelPackets,
-
-		mapThreadFriendlyOptions,
-
-		resolvedTargetConcentration, resolvedContainerOut, resolvedDestWell, resolvedContainerOutWithPacket,
-
-		sameContainerQs, currentAmounts,
-
-		containerOutIndices, containerOutIndexReplaceRules, definePrimitives, transferDests,
-		resolvedPreparation,
-
-		manualIncubPrim,manualIncubProtocol,manualIncubProtocolTests,labelContainerPrim,manualIncubPrims,
-
-		protocolPackets, protocolTests, runTime, allUnitOperationPackets, updatedSimulation, allPrimitives, experimentFunction, simulatedObjectsToLabel, expandedResolvedOptionsWithLabels,
-		serialDiluteUnitOperationBlobs, serialDiluteUnitOperationPacketsNotLinked, serialDiluteUnitOperationPackets,
-		protPacket, accessoryProtPackets, protPacketFinal, previewRule, optionsRule, simulationRule, simulation,
-		wasteContainersLabels,allLabelContainers,wasteContainers, finalSimulation
+		expandedInputs, expandedResolvedOptions, resolvedOptionsNoHidden, outputSpecification, output, gatherTests, messages,
+		inheritedCache, testsRule, resultRule, resolvedDiluent, resolvedConcentratedBuffer, resolvedBufferDiluent,
+		resolvedBufferDilutionFactor, specifiedContainerOut, allBufferModels, allBufferObjs, containerOutModels,
+		containerOutObjs, resolvedPrepUOs, samplePackets, sampleContainerPackets, sampleContainerModelPackets, containerOutPackets,
+		containerOutModelPackets, bufferObjectPackets, bufferModelPackets, bufferContainerPackets, bufferContainerModelPackets,
+		mapThreadFriendlyOptions, resolvedTargetConcentration, resolvedContainerOut, resolvedDestWell, currentAmounts,
+		containerOutIndices, containerOutIndexReplaceRules, resolvedPreparation, resolvedWorkCell, modelExchangedInputs,
+		protocolPackets, protocolTests, runTime, allUnitOperationPackets, updatedSimulation, allPrimitives, experimentFunction,
+		simulatedObjectsToLabel, expandedResolvedOptionsWithLabels, serialDiluteUnitOperationBlobs, serialDiluteUnitOperationPacketsNotLinked,
+		serialDiluteUnitOperationPackets, protPacket, accessoryProtPackets, protPacketFinal, previewRule, optionsRule,
+		simulationRule, simulation, wasteContainersLabels, allLabelContainers, wasteContainers, finalSimulation
 	},
 
 	(* expand the resolved options if they weren't expanded already *)
@@ -4088,8 +4227,18 @@ serialDiluteResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedO
 		resolvedDiluent,
 		resolvedConcentratedBuffer,
 		resolvedBufferDiluent,
-		resolvedBufferDilutionFactor
-	} = Lookup[expandedResolvedOptions, {Diluent, ConcentratedBuffer, BufferDiluent, BufferDilutionFactor}];
+		resolvedBufferDilutionFactor,
+		resolvedPrepUOs
+	} = Lookup[
+		expandedResolvedOptions,
+		{
+			Diluent,
+			ConcentratedBuffer,
+			BufferDiluent,
+			BufferDilutionFactor,
+			PreparatoryUnitOperations
+		}
+	];
 
 	specifiedContainerOut = Lookup[expandedResolvedOptions,ContainerOut]; (*/. _Integer->Container;*)
 
@@ -4135,13 +4284,27 @@ serialDiluteResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedO
 	];
 
 	(* make the actual primitives we're going to be using *)
-	(*expadedResolvedOptions -> myResolvedOptions for now*)
-	allPrimitives = convertTransferStepsToPrimitivesSerialDilute[
+	(*expandedResolvedOptions -> myResolvedOptions for now*)
+	{allPrimitives, updatedSimulation} = convertTransferStepsToPrimitivesSerialDilute[
 		samplePackets,
 		expandedResolvedOptions,
 		Cache -> inheritedCache,
 		Simulation->simulation
 	];
+
+	(* get the expanded inputs converted to models *)
+	(* it is important to use simulation here and not updatedSimulation because we did shenanigans to mess with the Labels above when we made updatedSimulation, *)
+	(* and while that's important for below, this step needs the pre-shenanigans simulation *)
+	(* note that we do NOT need to use resources here like we do in Dilute/Resuspend/Aliquot because Source can't take resources here *)
+	modelExchangedInputs = If[MatchQ[resolvedPrepUOs, {_[_LabelSample]}],
+		simulatedSamplesToModels[
+			First[allPrimitives],
+			simulation,
+			expandedInputs
+		],
+		expandedInputs
+	];
+
 
 	(*If we are discarding final transfers, get waste container information out of primitives*)
 	(*Normally just have one labelcontainer primitive if not discarding, use that as conditional*)
@@ -4154,54 +4317,53 @@ serialDiluteResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedO
 		{Null,Null}
 	];
 
-	resolvedPreparation = Lookup[myResolvedOptions,Preparation];
+	{resolvedPreparation, resolvedWorkCell} = Lookup[myResolvedOptions, {Preparation, WorkCell}];
+
+	(* Resolve the experiment function (MSP/RSP/MCP/RCP) to call using the shared helper function *)
+	experimentFunction = If[MatchQ[resolvedPreparation, Manual],
+		resolveManualFrameworkFunction[mySamples, myResolvedOptions, Cache -> inheritedCache, Simulation -> simulation, Output -> Function],
+		Lookup[$WorkCellToExperimentFunction, resolvedWorkCell]
+	];
 
 	(* make unit operation packets for the UOs we just made here *)
-	{{allUnitOperationPackets,runTime}, updatedSimulation} = If[MatchQ[resolvedPreparation, Manual],
+	{{allUnitOperationPackets, runTime}, updatedSimulation} = If[MatchQ[resolvedPreparation, Manual],
 		Module[{},
-			{{{},(Length[Flatten[mySamples]] * 20 Second)}, simulation}],
+			{{{}, (Length[Flatten[mySamples]] * 20 Second)}, updatedSimulation}],
 		Module[{},
-		ExperimentRoboticSamplePreparation[
-			allPrimitives,
-			UnitOperationPackets -> True,
-			Output->{Result, Simulation},
-			FastTrack -> Lookup[expandedResolvedOptions, FastTrack],
-			ParentProtocol -> Lookup[expandedResolvedOptions, ParentProtocol],
-			Name -> Lookup[expandedResolvedOptions, Name],
-			Simulation -> simulation,
-			Upload -> False,
-			ImageSample -> Lookup[expandedResolvedOptions, ImageSample],
-			MeasureVolume -> Lookup[expandedResolvedOptions, MeasureVolume],
-			MeasureWeight -> Lookup[expandedResolvedOptions, MeasureWeight],
-			Priority -> Lookup[expandedResolvedOptions, Priority],
-			StartDate -> Lookup[expandedResolvedOptions, StartDate],
-			HoldOrder -> Lookup[expandedResolvedOptions, HoldOrder],
-			QueuePosition -> Lookup[expandedResolvedOptions, QueuePosition],
-			(* We should not cover at the end of SerialDilute, instead, we should cover at the end of the RSP/RCP group. If we have more UOs to run after SerialDilute, the plate should be left uncovered. *)
-			(* This option does not affect the automatic Cover added at the end of the RSP/RCP group handled in the primitive framework. *)
-			CoverAtEnd -> False
-			(*Debug->True*)
+			experimentFunction[
+				allPrimitives,
+				UnitOperationPackets -> True,
+				Output->{Result, Simulation},
+				FastTrack -> Lookup[expandedResolvedOptions, FastTrack],
+				ParentProtocol -> Lookup[expandedResolvedOptions, ParentProtocol],
+				Name -> Lookup[expandedResolvedOptions, Name],
+				Simulation -> updatedSimulation,
+				Upload -> False,
+				ImageSample -> Lookup[expandedResolvedOptions, ImageSample],
+				MeasureVolume -> Lookup[expandedResolvedOptions, MeasureVolume],
+				MeasureWeight -> Lookup[expandedResolvedOptions, MeasureWeight],
+				Priority -> Lookup[expandedResolvedOptions, Priority],
+				StartDate -> Lookup[expandedResolvedOptions, StartDate],
+				HoldOrder -> Lookup[expandedResolvedOptions, HoldOrder],
+				QueuePosition -> Lookup[expandedResolvedOptions, QueuePosition],
+				(* We should not cover at the end of SerialDilute, instead, we should cover at the end of the RSP/RCP group. If we have more UOs to run after SerialDilute, the plate should be left uncovered. *)
+				(* This option does not affect the automatic Cover added at the end of the RSP/RCP group handled in the primitive framework. *)
+				CoverAtEnd -> False
 			]
 		]
 	];
 
-	(* preferably ExperimentSamplePreparation would be able to pick between ExperimentRoboticSamplePreparation and ExperimentManualSamplePreparation but here we are *)
-	experimentFunction = If[MatchQ[resolvedPreparation, Robotic],
-		ExperimentRoboticSamplePreparation,
-		ExperimentManualSamplePreparation
-	];
-
 	(* determine which objects in the simulation are simulated and make replace rules for those *)
-	simulatedObjectsToLabel = If[NullQ[simulation],
+	simulatedObjectsToLabel = If[NullQ[updatedSimulation],
 		{},
 		Module[{allObjectsInSimulation, simulatedQ},
 			(* Get all objects out of our simulation. *)
-			allObjectsInSimulation = Download[Lookup[simulation[[1]], Labels][[All, 2]], Object];
+			allObjectsInSimulation = Download[Lookup[updatedSimulation[[1]], Labels][[All, 2]], Object];
 
 			(* Figure out which objects are simulated. *)
-			simulatedQ = Experiment`Private`simulatedObjectQs[allObjectsInSimulation, simulation];
+			simulatedQ = Experiment`Private`simulatedObjectQs[allObjectsInSimulation, updatedSimulation];
 
-			(Reverse /@ PickList[Lookup[simulation[[1]], Labels], simulatedQ]) /. {link_Link :> Download[link, Object]}
+			(Reverse /@ PickList[Lookup[updatedSimulation[[1]], Labels], simulatedQ]) /. {link_Link :> Download[link, Object]}
 		]
 	];
 
@@ -4211,7 +4373,8 @@ serialDiluteResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedO
 	(* make the serialdilute unit operation blob *)
 	serialDiluteUnitOperationBlobs = If[MatchQ[resolvedPreparation, Robotic],
 		SerialDilute[
-			Source->expandedInputs,
+			(* this is specifically for simulated Object[Sample]s (from a series of UOs) to get converted to their label *)
+			Source->modelExchangedInputs /. simulatedObjectsToLabel,
 			SourceLabel->Lookup[expandedResolvedOptionsWithLabels, SourceLabel],
 			SourceContainerLabel->Lookup[expandedResolvedOptionsWithLabels, SourceContainerLabel],
 			SampleOutLabel->Lookup[expandedResolvedOptionsWithLabels, SampleOutLabel],
@@ -4243,7 +4406,8 @@ serialDiluteResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedO
 			IncubationTime->Lookup[expandedResolvedOptionsWithLabels,IncubationTime],
 			MaxIncubationTime->Lookup[expandedResolvedOptionsWithLabels,MaxIncubationTime],
 			IncubationTemperature->Lookup[expandedResolvedOptionsWithLabels,IncubationTemperature],
-			Preparation->Lookup[expandedResolvedOptionsWithLabels,Preparation],
+			Preparation->resolvedPreparation,
+			WorkCell->resolvedWorkCell,
 			WasteContainers->wasteContainers,
 			WasteContainerLabels->wasteContainersLabels
 			(*DilutionSeriesDirection->Lookup[expandedResolvedOptionsWithLabels,DilutionSeriesDirection]*)
@@ -4252,7 +4416,7 @@ serialDiluteResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedO
 	];
 
 	(* if we're doing robotic sample preparation, then make unit operation packets for the aliquot blob *)
-	serialDiluteUnitOperationPacketsNotLinked = If[MatchQ[experimentFunction, ExperimentRoboticSamplePreparation],
+	serialDiluteUnitOperationPacketsNotLinked = If[MatchQ[resolvedPreparation, Robotic],
 		UploadUnitOperation[
 			serialDiluteUnitOperationBlobs,
 			UnitOperationType -> Input,
@@ -4274,35 +4438,20 @@ serialDiluteResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedO
 		]
 	];
 
+	(* since we are putting this UO inside RSP, we should re-do the LabelFields so they link via RoboticUnitOperations *)
+	updatedSimulation = updateLabelFieldReferences[updatedSimulation, RoboticUnitOperations];
+
 	{protocolPackets, finalSimulation, protocolTests} = Which[
-		MatchQ[experimentFunction, ExperimentRoboticSamplePreparation], {Flatten[{Null, serialDiluteUnitOperationPackets, allUnitOperationPackets}], updatedSimulation, {}},
+		MatchQ[resolvedPreparation, Robotic],
+			{Flatten[{Null, serialDiluteUnitOperationPackets, allUnitOperationPackets}], updatedSimulation, {}},
 		gatherTests,
-		experimentFunction[
-			allPrimitives,
-			FastTrack -> Lookup[expandedResolvedOptionsWithLabels, FastTrack],
-			ParentProtocol -> Lookup[expandedResolvedOptionsWithLabels, ParentProtocol],
-			Name -> Lookup[expandedResolvedOptionsWithLabels, Name],
-			Simulation -> updatedSimulation,
-			Output -> {Result, Simulation, Tests},
-			Upload -> False,
-			ImageSample -> Lookup[expandedResolvedOptionsWithLabels, ImageSample],
-			MeasureVolume -> Lookup[expandedResolvedOptionsWithLabels, MeasureVolume],
-			MeasureWeight -> Lookup[expandedResolvedOptionsWithLabels, MeasureWeight],
-			Priority -> Lookup[expandedResolvedOptionsWithLabels, Priority],
-			StartDate -> Lookup[expandedResolvedOptionsWithLabels, StartDate],
-			HoldOrder -> Lookup[expandedResolvedOptionsWithLabels, HoldOrder],
-			QueuePosition -> Lookup[expandedResolvedOptionsWithLabels, QueuePosition]
-			(*Debug->True*)
-		],
-		True,
-		{
-			Sequence@@experimentFunction[
+			experimentFunction[
 				allPrimitives,
 				FastTrack -> Lookup[expandedResolvedOptionsWithLabels, FastTrack],
 				ParentProtocol -> Lookup[expandedResolvedOptionsWithLabels, ParentProtocol],
 				Name -> Lookup[expandedResolvedOptionsWithLabels, Name],
 				Simulation -> updatedSimulation,
-				Output -> {Result,Simulation},
+				Output -> {Result, Simulation, Tests},
 				Upload -> False,
 				ImageSample -> Lookup[expandedResolvedOptionsWithLabels, ImageSample],
 				MeasureVolume -> Lookup[expandedResolvedOptionsWithLabels, MeasureVolume],
@@ -4311,10 +4460,27 @@ serialDiluteResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedO
 				StartDate -> Lookup[expandedResolvedOptionsWithLabels, StartDate],
 				HoldOrder -> Lookup[expandedResolvedOptionsWithLabels, HoldOrder],
 				QueuePosition -> Lookup[expandedResolvedOptionsWithLabels, QueuePosition]
-				(*Debug->True*)
 			],
-			{}
-		}
+		True,
+			{
+				Sequence@@experimentFunction[
+					allPrimitives,
+					FastTrack -> Lookup[expandedResolvedOptionsWithLabels, FastTrack],
+					ParentProtocol -> Lookup[expandedResolvedOptionsWithLabels, ParentProtocol],
+					Name -> Lookup[expandedResolvedOptionsWithLabels, Name],
+					Simulation -> updatedSimulation,
+					Output -> {Result,Simulation},
+					Upload -> False,
+					ImageSample -> Lookup[expandedResolvedOptionsWithLabels, ImageSample],
+					MeasureVolume -> Lookup[expandedResolvedOptionsWithLabels, MeasureVolume],
+					MeasureWeight -> Lookup[expandedResolvedOptionsWithLabels, MeasureWeight],
+					Priority -> Lookup[expandedResolvedOptionsWithLabels, Priority],
+					StartDate -> Lookup[expandedResolvedOptionsWithLabels, StartDate],
+					HoldOrder -> Lookup[expandedResolvedOptionsWithLabels, HoldOrder],
+					QueuePosition -> Lookup[expandedResolvedOptionsWithLabels, QueuePosition]
+				],
+				{}
+			}
 	];
 
 	(* if the protocol packet generation failed, need to return early here (with the tests, of course) *)
@@ -4332,8 +4498,8 @@ serialDiluteResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedO
 		Append[
 			protPacket,
 			{
-				UnresolvedOptions -> myUnresolvedOptions,
-				ResolvedOptions -> expandedResolvedOptions
+				UnresolvedOptions -> DeleteCases[myUnresolvedOptions, (Verbatim[Cache] -> _) | (Verbatim[Simulation] -> _)],
+				ResolvedOptions -> DeleteCases[expandedResolvedOptions, (Verbatim[Cache] -> _) | (Verbatim[Simulation] -> _)]
 			}
 		]
 	];
@@ -4382,24 +4548,17 @@ DefineOptions[simulateExperimentSerialDilute,
 
 (* very simple simulation function because it is entirely relying on ExperimentRobotic/ManualSamplePreparation to do the heavy lifting *)
 simulateExperimentSerialDilute[
-	myProtocolPacket:PacketP[{Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualSamplePreparation]}]|$Failed,
+	myProtocolPacket:PacketP[{Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticCellPreparation], Object[Protocol, ManualCellPreparation]}]|$Failed,
 	myAccessoryPackets:{PacketP[]...}|$Failed,
 	mySamples:{ObjectP[Object[Sample]]..},
 	myResolvedOptions:{___Rule},
 	ops:OptionsPattern[simulateExperimentSerialDilute]
 ]:=Module[
-	{safeResolutionOps, cache, simulation, preparation, protocolObject, samplePackets, sourcesToTransfer,
-		destinationsToTransferTo, expandedDestWells, amountsToTransfer, allPrimitives, experimentFunction,
-		simulationFromExpFunction, accessoryPacketSimulation,expandedResolvedOptions,expandedInputs,
-
-		sampleOutLabels,
-		containerOutLabels,
-		diluentLabels,
-		concentratedBufferLabels,
-		bufferDiluentLabels,
-
-		sampleOutLabelFields, containerOutLabelFields, diluentLabelFields, concentratedBufferLabelFields,
-		bufferDiluentLabelFields, updatedSimulation
+	{
+		safeResolutionOps, cache, simulation, preparation, workCell, protocolType, protocolObject, samplePackets,
+		accessoryPacketSimulation, expandedResolvedOptions, expandedInputs, sampleOutLabels, containerOutLabels,
+		diluentLabels, concentratedBufferLabels, bufferDiluentLabels, sampleOutLabelFields, containerOutLabelFields,
+		diluentLabelFields, concentratedBufferLabelFields, bufferDiluentLabelFields, updatedSimulation
 	},
 
 	(* pull out the cache and simulation blob now *)
@@ -4413,16 +4572,23 @@ simulateExperimentSerialDilute[
 
 	{expandedInputs, expandedResolvedOptions} = ExpandIndexMatchedInputs[ExperimentSerialDilute, {mySamples}, myResolvedOptions];
 
-	(* pull out the liquid handling scale *)
-	preparation = Lookup[myResolvedOptions, Preparation];
+	(* Get the resolved preparation and resolve the protocol type. *)
+	{preparation, workCell} = Lookup[myResolvedOptions, {Preparation, WorkCell}];
 
-	(* get the protocol object ID *)
-	protocolObject = Which[
-		MatchQ[myProtocolPacket, $Failed] && MatchQ[preparation, Manual], SimulateCreateID[Object[Protocol, ManualSamplePreparation]],
-		MatchQ[myProtocolPacket, $Failed] && MatchQ[preparation, Robotic], SimulateCreateID[Object[Protocol, RoboticSamplePreparation]],
-		True, Lookup[myProtocolPacket, Object]
+	(* If preparation is Robotic, determine the protocol type (RCP vs. RSP) that we want to create an ID for. *)
+	protocolType = If[MatchQ[preparation, Manual],
+		resolveManualFrameworkFunction[mySamples, myResolvedOptions, Cache -> cache, Simulation -> simulation, Output -> Type],
+		Module[{experimentFunction},
+			experimentFunction = Lookup[$WorkCellToExperimentFunction, workCell];
+			Object[Protocol, ToExpression@StringDelete[ToString[experimentFunction], "Experiment"]]
+		]
 	];
 
+	(* get the protocol object ID *)
+	protocolObject = If[MatchQ[myProtocolPacket, $Failed],
+		SimulateCreateID[protocolType],
+		Lookup[myProtocolPacket, Object]
+	];
 
 	(* get the sample packets from the input samples *)
 	samplePackets = Map[
@@ -4450,7 +4616,7 @@ simulateExperimentSerialDilute[
 
 	sampleOutLabelFields = MapIndexed[
 		With[{index = First[#2]},
-			#1 -> Field[SampleOutLink[[index]]]
+			#1 -> Field[DestinationSample[[index]]]
 		]&,
 		Flatten[sampleOutLabels]
 	];
@@ -4501,16 +4667,11 @@ simulateExperimentSerialDilute[
 		],
 		simulation
 	];
-	(* get which experiment call we're going to make *)
-	experimentFunction = If[MatchQ[preparation, Robotic],
-		ExperimentRoboticSamplePreparation,
-		ExperimentManualSamplePreparation
-	];
 
 	(* NOTE: SimulateResources requires you to have a protocol object, so just make a fake one to simulate our unit operation. *)
 	accessoryPacketSimulation = Module[{protocolPacket},
 		protocolPacket = <|
-			Object -> SimulateCreateID[Object[Protocol, If[MatchQ[preparation, Manual], ManualSamplePreparation, RoboticSamplePreparation]]],
+			Object -> SimulateCreateID[protocolType],
 			Replace[OutputUnitOperations] -> Link[
 				Lookup[
 					Cases[
@@ -4582,3 +4743,33 @@ resolveSerialDiluteMethod[mySamples:ObjectP[{Object[Sample], Object[Container]}]
 ];
 
 
+(* ::Subsection:: *)
+(*resolveSerialDiluteWorkCell*)
+
+DefineOptions[resolveSerialDiluteWorkCell,
+	SharedOptions :> {
+		ExperimentSerialDilute,
+		CacheOption,
+		SimulationOption,
+		OutputOption
+	}
+];
+
+resolveSerialDiluteWorkCell[
+	mySamples: ObjectP[{Object[Sample], Object[Container], Model[Sample]}] | {ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}]]..},
+	myOptions: OptionsPattern[]
+] := Module[{safeOptions, cache, simulation, workCell, preparation},
+
+	(* Get our safe options. *)
+	safeOptions = SafeOptions[resolveSerialDiluteWorkCell, ToList[myOptions]];
+	{cache, simulation, workCell, preparation} = Lookup[safeOptions, {Cache, Simulation, WorkCell, Preparation}];
+
+	(* Determine the WorkCell that can be used *)
+	If[MatchQ[workCell, WorkCellP|Null],
+		(* If WorkCell is specified, use that *)
+		{workCell}/.{Null} -> {},
+		(* Otherwise, use helper function to resolve potential work cells based on experiment options and sample properties *)
+		(* Note: there is no Sterile or SterileTechnique for ExperimentSerialDilute *)
+		resolvePotentialWorkCells[Flatten[{mySamples}], {Preparation -> preparation}, Cache -> cache, Simulation -> simulation]
+	]
+];

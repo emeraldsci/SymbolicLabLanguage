@@ -33,6 +33,27 @@ DefineUsage[PlotFluorescenceKinetics,
 			}
 		},
 		{
+			Definition -> {"PlotFluorescenceKinetics[protocol]", "plot"},
+			Description -> "creates a 'plot' of intensity (fluorescence or luminescence) vs time for the data objects found in the Data field of 'protocol'.",
+			Inputs :> {
+				{
+					InputName -> "protocol",
+					Description -> "The protocol object containing fluorescence or luminescence kinetics data objects.",
+					Widget -> Alternatives[
+						"Fluorescence kinetics protocol" -> Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, FluorescenceKinetics]]],
+						"Luminescence kinetics protocol" -> Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, LuminescenceKinetics]]]
+					]
+				}
+			},
+			Outputs :> {
+				{
+					OutputName -> "plot",
+					Description -> "The figure generated from data found in the fluorescence or luminescence kinetics protocol.",
+					Pattern :> ValidGraphicsP[]
+				}
+			}
+		},
+		{
 			Definition->{"PlotFluorescenceKinetics[trajectory]", "plot"},
 			Description->"displays fluorescence intensity vs time when given a raw data 'trajectory'.",
 			Inputs:>{
@@ -56,9 +77,6 @@ DefineUsage[PlotFluorescenceKinetics,
 		"PlotFluorescenceSpectroscopy",
 		"EmeraldListLinePlot"
 	},
-	Author -> {
-		"kevin.hou",
-		"hayley"
-	},
+	Author -> {"yanzhe.zhu", "kevin.hou", "hayley"},
 	Preview->True
 }];

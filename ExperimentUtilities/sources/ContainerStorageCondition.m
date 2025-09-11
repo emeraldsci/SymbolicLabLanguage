@@ -6,7 +6,8 @@
 DefineOptions[ValidContainerStorageConditionQ,
 	Options :> {
 		CacheOption,
-		HelperOutputOption
+		HelperOutputOption,
+		SimulationOption
 	}
 ];
 
@@ -69,15 +70,17 @@ ValidContainerStorageConditionQ[mySamples:ObjectP[{Object[Sample], Model[Sample]
 
 (* Giving sample objects and storage conditions the samples container storage condition needs to be checked for any samples that share the same container. *)
 ValidContainerStorageConditionQ[mySamples:ListableP[ObjectP[Object[Sample]]], myStorageCondition:ListableP[SampleStorageTypeP | Disposal | Null], myOptions:OptionsPattern[]]:=Module[
-	{safeOps, cache, output, gatherTests, containerStorageConditions, containerStorageConditionsNoNulls, containerDefaultStorageConditions, results, invalidSamples, tests, containerContents,
-		uniqueContentsStorageConditions, contentsObjects, containerContentsStorageConditions, additionalSamplesBoolean, samplesObjects, formattedResults
+	{safeOps, cache, output, gatherTests, containerStorageConditions, containerStorageConditionsNoNulls,
+		containerDefaultStorageConditions, results, invalidSamples, tests, containerContents,
+		uniqueContentsStorageConditions, contentsObjects, containerContentsStorageConditions, additionalSamplesBoolean,
+		samplesObjects, formattedResults, simulation
 	},
 
 	(*Look up the safe options*)
 	safeOps=SafeOptions[ValidContainerStorageConditionQ, ToList[myOptions]];
 
 	(*Get the cache for the download call*)
-	cache=Lookup[safeOps, Cache];
+	{cache, simulation}=Lookup[safeOps, {Cache, Simulation}];
 
 	(*Get the output option*)
 	output=Lookup[safeOps, Output];
@@ -86,7 +89,17 @@ ValidContainerStorageConditionQ[mySamples:ListableP[ObjectP[Object[Sample]]], my
 	gatherTests=MemberQ[output, Tests] || MatchQ[output, Tests];
 
 	(*Get the relevant container storage information*)
-	{containerStorageConditions, containerDefaultStorageConditions, containerContents}=Transpose@Download[mySamples, {Container[StorageCondition][StorageCondition], Container[Model][DefaultStorageCondition][StorageCondition], Container[Contents]}, Cache -> cache, Date -> Now];
+	{containerStorageConditions, containerDefaultStorageConditions, containerContents}=Transpose@Download[
+		mySamples,
+		{
+			Container[StorageCondition][StorageCondition],
+			Container[Model][DefaultStorageCondition][StorageCondition],
+			Container[Contents]
+		},
+		Cache -> cache,
+		Simulation -> simulation,
+		Date -> Now
+	];
 
 	(*Check if there are other samples in the container that are not inputs into the function*)
 	(*If the contents are Null because the sample does not have a container, return Null in a list so it wont cause errors. This ultimately wont matter because the contents will only be used if the sample shares its container. Since it doesnt have a container, there is nothing to worry about.*)
@@ -123,7 +136,7 @@ ValidContainerStorageConditionQ[mySamples:ListableP[ObjectP[Object[Sample]]], my
 	];
 
 	(*Return the desired outputs*)
-	(*If there is only a single result output dont return it in a list*)
+	(*If there is only a single result output don't return it in a list*)
 	formattedResults=results /. {x_} :> x;
 	output /. {Result -> formattedResults, Tests -> tests}
 
@@ -170,7 +183,7 @@ ValidContainerStorageConditionQ[mySamples:ListableP[ObjectP[{Object[Sample], Mod
 	];
 
 	(*Return the desired outputs*)
-	(*If there is only a single result output dont return it in a list*)
+	(*If there is only a single result output don't return it in a list*)
 	formattedResults=results /. {x_} :> x;
 	output /. {Result -> formattedResults, Tests -> tests}
 

@@ -636,12 +636,12 @@ DefineTests[ExperimentNephelometry,
 			),
 			Variables:>{options}
 		],
-		Example[{Options,EquilibrationTime,"EquilibrationTime must be specified to the closest 0.1 second:"},
+		Example[{Options,EquilibrationTime,"EquilibrationTime must be specified to the closest 1 second:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],
 				EquilibrationTime->300.58689 Second,
 				Output->Options];
 			Lookup[options,EquilibrationTime],
-			300.6 Second,
+			301 Second,
 			EquivalenceFunction->Equal,
 			Messages:>{
 				Warning::InstrumentPrecision
@@ -731,8 +731,40 @@ DefineTests[ExperimentNephelometry,
 			),
 			Variables:>{options}
 		],
-
-
+		Example[{Options, AtmosphereEquilibrationTime, "AtmosphereEquilibrationTime is automatically set to 5 minute if either TargetOxygenLevel or TargetCarbonDioxideLevel is set:"},
+			Lookup[
+				ExperimentNephelometry[
+					Object[Sample, "ExperimentNephelometry test sample 1"<>$SessionUUID],
+					TargetOxygenLevel -> 4.3 * Percent,
+					Output -> Options
+				],
+				AtmosphereEquilibrationTime
+			],
+			5 * Minute,
+			EquivalenceFunction -> Equal,
+			SetUp :> ($CreatedObjects = {}),
+			TearDown :> (
+				EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
+				Unset[$CreatedObjects]
+			)
+		],
+		Example[{Options, AtmosphereEquilibrationTime, "AtmosphereEquilibrationTime is automatically set to Null if both TargetOxygenLevel and TargetCarbonDioxideLevel are set to Null:"},
+			Lookup[
+				ExperimentNephelometry[
+					Object[Sample, "ExperimentNephelometry test sample 1"<>$SessionUUID],
+					TargetOxygenLevel -> Null,
+					TargetCarbonDioxideLevel -> Null,
+					Output -> Options
+				],
+				AtmosphereEquilibrationTime
+			],
+			Null,
+			SetUp :> ($CreatedObjects = {}),
+			TearDown :> (
+				EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
+				Unset[$CreatedObjects]
+			)
+		],
 		(* --PlateReaderMix-- *)
 		Example[{Options,PlateReaderMix,"Specify the PlateReaderMix in the nephelometry experiment:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],
@@ -1399,7 +1431,7 @@ DefineTests[ExperimentNephelometry,
 			Lookup[options,BlankVolume],
 			17 Microliter,
 			EquivalenceFunction->Equal,
-			Messages:>{Warning::NotEqualBlankVolumesWarning},
+			Messages:>{Warning::NotEqualBlankVolumes},
 			SetUp:>($CreatedObjects={}),
 			TearDown:>(
 				EraseObject[$CreatedObjects,Force->True,Verbose->False];
@@ -1430,7 +1462,7 @@ DefineTests[ExperimentNephelometry,
 			EquivalenceFunction->Equal,
 			Messages:>{
 				Warning::InstrumentPrecision,
-				Warning::NotEqualBlankVolumesWarning
+				Warning::NotEqualBlankVolumes
 			},
 			SetUp:>($CreatedObjects={}),
 			TearDown:>(
@@ -1618,6 +1650,53 @@ DefineTests[ExperimentNephelometry,
 			),
 			Variables:>{options}
 		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentNephelometry[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:n0k9mGzRaaBn"],
+				PreparedModelAmount -> 250 Microliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]] ..},
+				{ObjectP[Model[Container, Plate, "id:n0k9mGzRaaBn"]] ..},
+				{EqualP[250 Microliter] ..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared when Preparation is Robotic:"},
+			roboticProtocol = ExperimentNephelometry[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:n0k9mGzRaaBn"],
+				PreparedModelAmount -> 250 Microliter,
+				Preparation -> Robotic
+			];
+			Download[roboticProtocol, OutputUnitOperations[[1]][{
+				SampleLink,
+				ContainerLink,
+				AmountVariableUnit,
+				Well,
+				ContainerLabel
+			}]],
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]] ..},
+				{ObjectP[Model[Container, Plate, "id:n0k9mGzRaaBn"]] ..},
+				{EqualP[250 Microliter] ..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {roboticProtocol, labelSampleUO}
+		],
 
 
 		(* ----------- *)
@@ -1654,6 +1733,82 @@ DefineTests[ExperimentNephelometry,
 		(* -------------- *)
 		(* -- MESSAGES -- *)
 		(* -------------- *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentNephelometry[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentNephelometry[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentNephelometry[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentNephelometry[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[
+				{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample,"Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+				
+				ExperimentNephelometry[sampleID, AliquotAmount->100 Microliter,Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[
+				{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample,"Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+				
+				ExperimentNephelometry[containerID, AliquotAmount->100 Microliter,Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[{Messages,"DuplicateName","The Name option must not be the name of an already-existing Nephelometry protocol:"},
 			ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],
 				Name->"Already existing name"<>$SessionUUID],
@@ -1668,7 +1823,23 @@ DefineTests[ExperimentNephelometry,
 				Error::InvalidOption
 			}
 		],
-
+		Example[{Messages, "InvalidInput", "Throw an error if one or multiple of the input samples are discarded:"},
+			ExperimentNephelometry[{Object[Sample, "ExperimentNephelometry test sample 1" <> $SessionUUID], Object[Sample, "ExperimentNephelometry test discarded sample" <> $SessionUUID]}],
+			$Failed,
+			Messages :> {Error::DiscardedSamples, Error::InvalidInput},
+			Variables :> {options, protocol}
+		],
+		Example[{Messages, "NonLiquidSamples", "If the provided sample is not Liquid, an error will be thrown:"},
+			ExperimentNephelometry[
+				Object[Sample, "ExperimentNephelometry test solid sample" <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {
+				Error::NonLiquidSample,
+				Warning::AliquotRequired,
+				Error::InvalidInput
+			}
+		],
 		(* NephelometryPreparedPlateInvalidOptions *)
 		Example[{Messages,"NephelometryPreparedPlateInvalidOptions","If PreparedPlate is True, Dilutions, moat options, and BlankVolume cannot be specified:"},
 			ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],
@@ -1847,7 +2018,7 @@ DefineTests[ExperimentNephelometry,
 				Unset[$CreatedObjects]
 			),
 			Messages:>{
-				Error::NephelometryIncompatibleGasLevels,
+				Error::IncompatibleGasLevels,
 				Error::InvalidOption
 			}
 		],
@@ -1863,7 +2034,7 @@ DefineTests[ExperimentNephelometry,
 				Unset[$CreatedObjects]
 			),
 			Messages:>{
-				Error::NephelometryIncompatibleGasLevels,
+				Error::IncompatibleGasLevels,
 				Error::InvalidOption
 			}
 		],
@@ -1977,7 +2148,7 @@ DefineTests[ExperimentNephelometry,
 					{
 						<|
 							Object->Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],
-							Replace[Composition]->{{1 VolumePercent,Link[Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID]]},{99 VolumePercent,Link[Model[Molecule,"Water"]]}}
+							Replace[Composition]->{{1 VolumePercent,Link[Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID]], Now},{99 VolumePercent,Link[Model[Molecule,"Water"]], Now}}
 						|>,
 						<|
 							Object->Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID],
@@ -2036,7 +2207,7 @@ DefineTests[ExperimentNephelometry,
 					{
 						<|
 							Object->Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],
-							Replace[Composition]->{{1 MassPercent,Link[Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID]]},{99 VolumePercent,Link[Model[Molecule,"Water"]]}}
+							Replace[Composition]->{{1 MassPercent,Link[Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID]], Now},{99 VolumePercent,Link[Model[Molecule,"Water"]], Now}}
 						|>,
 						<|
 							Object->Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID],
@@ -2095,7 +2266,7 @@ DefineTests[ExperimentNephelometry,
 					{
 						<|
 							Object->Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],
-							Replace[Composition]->{{1 Gram/Liter,Link[Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID]]},{99 VolumePercent,Link[Model[Molecule,"Water"]]}}
+							Replace[Composition]->{{1 Gram/Liter,Link[Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID]], Now},{99 VolumePercent,Link[Model[Molecule,"Water"]], Now}}
 						|>,
 						<|
 							Object->Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID],
@@ -2154,7 +2325,7 @@ DefineTests[ExperimentNephelometry,
 					{
 						<|
 							Object->Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],
-							Replace[Composition]->{{1 VolumePercent,Link[Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID]]},{99 VolumePercent,Link[Model[Molecule,"Water"]]}}
+							Replace[Composition]->{{1 VolumePercent,Link[Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID]], Now},{99 VolumePercent,Link[Model[Molecule,"Water"]], Now}}
 						|>,
 						<|
 							Object->Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID],
@@ -2213,7 +2384,7 @@ DefineTests[ExperimentNephelometry,
 					{
 						<|
 							Object->Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],
-							Replace[Composition]->{{1 MassPercent,Link[Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID]]},{99 VolumePercent,Link[Model[Molecule,"Water"]]}}
+							Replace[Composition]->{{1 MassPercent,Link[Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID]], Now},{99 VolumePercent,Link[Model[Molecule,"Water"]], Now}}
 						|>,
 						<|
 							Object->Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID],
@@ -2239,6 +2410,20 @@ DefineTests[ExperimentNephelometry,
 			Variables:>{sampleComposition,analyteMW,protocol},
 			Messages:>Warning::NephelometryIncomputableConcentration
 		],
+		Example[{Messages,"TemperatureNoEquilibration","A warning will be shown if Temperature is set above Ambient and EquilibrationTime is set to zero:"},
+			ExperimentNephelometry[
+				Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],
+				Temperature -> 35 Celsius,
+				EquilibrationTime -> 0 Second
+			],
+			ObjectP[Object[Protocol,Nephelometry]],
+			SetUp:>($CreatedObjects={}),
+			TearDown:>(
+				EraseObject[$CreatedObjects,Force->True,Verbose->False];
+				Unset[$CreatedObjects]
+			),
+			Messages:>Warning::TemperatureNoEquilibration
+		],
 
 
 		(*--------------------------------------*)
@@ -2251,7 +2436,6 @@ DefineTests[ExperimentNephelometry,
 			{Lookup[options,Incubate],Lookup[options,Centrifuge],Lookup[options,Filtration],Lookup[options,Aliquot]},
 			{True,True,True,True},
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount},
 			TimeConstraint->240
 		],
 
@@ -2406,35 +2590,35 @@ DefineTests[ExperimentNephelometry,
 			Lookup[options,Filtration],
 			True,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FiltrationType,"The type of filtration method that should be used to perform the filtration:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],FiltrationType->Syringe,Output->Options];
 			Lookup[options,FiltrationType],
 			Syringe,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterInstrument,"The instrument that should be used to perform the filtration:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],FilterInstrument->Model[Instrument,SyringePump,"NE-1010 Syringe Pump"],Output->Options];
 			Lookup[options,FilterInstrument],
 			ObjectP[Model[Instrument,SyringePump,"NE-1010 Syringe Pump"]],
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,Filter,"The filter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],Filter->Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"],Output->Options];
 			Lookup[options,Filter],
 			ObjectP[Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"]],
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterMaterial,"The membrane material of the filter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],FilterMaterial->PES,FilterContainerOut->Model[Container,Vessel,"50mL Tube"],Output->Options];
 			Lookup[options,FilterMaterial],
 			PES,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		(*Note: Put your sample in a 50mL tube for the following test*)
 		Example[{Options,PrefilterMaterial,"The membrane material of the prefilter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
@@ -2442,14 +2626,14 @@ DefineTests[ExperimentNephelometry,
 			Lookup[options,PrefilterMaterial],
 			GxF,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterPoreSize,"The pore size of the filter that should be used when removing impurities from the SamplesIn prior to starting the experiment:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],FilterPoreSize->0.22*Micrometer,Output->Options];
 			Lookup[options,FilterPoreSize],
 			0.22*Micrometer,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		(*Note: Put your sample in a 50mL tube for the following test*)
 		Example[{Options,PrefilterPoreSize,"The pore size of the prefilter that should be used when removing impurities from the SamplesIn prior to starting the experiment:"},
@@ -2457,14 +2641,14 @@ DefineTests[ExperimentNephelometry,
 			Lookup[options,PrefilterPoreSize],
 			1.*Micrometer,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterSyringe,"The syringe used to force that sample through a filter:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],FiltrationType->Syringe,FilterSyringe->Model[Container,Syringe,"20mL All-Plastic Disposable Luer-Lock Syringe"],Output->Options];
 			Lookup[options,FilterSyringe],
 			ObjectP[Model[Container,Syringe,"20mL All-Plastic Disposable Luer-Lock Syringe"]],
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterHousing,"FilterHousing option resolves to Null because it can't be used reasonably for volumes we would use in this experiment:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],FilterHousing->Null,Output->Options];
@@ -2478,7 +2662,7 @@ DefineTests[ExperimentNephelometry,
 			20*Minute,
 			EquivalenceFunction->Equal,
 			Variables:>{options},
-			Messages:>{Warning::AliquotRequired,Warning::UnknownAmount}
+			Messages:>{Warning::AliquotRequired}
 		],
 		(*Note: Put your sample in a 50mL tube for the following test*)
 		Example[{Options,FilterTemperature,"The temperature at which the centrifuge chamber will be held while the samples are being centrifuged during filtration:"},
@@ -2487,7 +2671,7 @@ DefineTests[ExperimentNephelometry,
 			10*Celsius,
 			EquivalenceFunction->Equal,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterIntensity,"The rotational speed or force at which the samples will be centrifuged during filtration:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],FiltrationType->Centrifuge,FilterIntensity->1000*RPM,Output->Options];
@@ -2495,14 +2679,14 @@ DefineTests[ExperimentNephelometry,
 			1000*RPM,
 			EquivalenceFunction->Equal,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterSterile,"Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],FilterSterile->True,Output->Options];
 			Lookup[options,FilterSterile],
 			True,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterAliquot,"The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample in 50mL tube"<>$SessionUUID],FilterAliquot->1*Milliliter,Output->Options];
@@ -2510,28 +2694,28 @@ DefineTests[ExperimentNephelometry,
 			1*Milliliter,
 			EquivalenceFunction->Equal,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterAliquotContainer,"The desired type of container that should be used to prepare and house the filter samples which should be used in lieu of the SamplesIn for the experiment:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],FilterAliquotContainer->{1,Model[Container,Vessel,"2mL Tube"]},Output->Options];
 			Lookup[options,FilterAliquotContainer],
 			{1,ObjectP[Model[Container,Vessel,"2mL Tube"]]},
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterAliquotDestinationWell,"Indicates the desired position in the corresponding FilterAliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],FilterAliquotDestinationWell->"A1",Output->Options];
 			Lookup[options,FilterAliquotDestinationWell],
 			"A1",
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterContainerOut,"The desired container filtered samples should be produced in or transferred into by the end of filtration, with indices indicating grouping of samples in the same plates, if desired:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],FilterContainerOut->{1,Model[Container,Vessel,"2mL Tube"]},Output->Options];
 			Lookup[options,FilterContainerOut],
 			{1,ObjectP[Model[Container,Vessel,"2mL Tube"]]},
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 
 		(*Aliquot options tests*)
@@ -2620,13 +2804,13 @@ DefineTests[ExperimentNephelometry,
 		Example[{Options,AliquotContainer,"The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],AliquotContainer->Model[Container,Plate,"96-well UV-Star Plate"],Output->Options];
 			Lookup[options,AliquotContainer],
-			{1,ObjectP[Model[Container,Plate,"id:n0k9mGzRaaBn"]]},
+			{{1, ObjectP[Model[Container, Plate, "id:n0k9mGzRaaBn"]]}},
 			Variables:>{options}
 		],
 		Example[{Options,DestinationWell,"Indicates the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],DestinationWell->"A1",Output->Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 
@@ -2673,6 +2857,7 @@ DefineTests[ExperimentNephelometry,
 				Object[Container,Plate,"ExperimentNephelometry test 96-well plate 2"<>$SessionUUID],
 				Object[Container,Vessel,"ExperimentNephelometry test 2mL tube"<>$SessionUUID],
 				Object[Container,Vessel,"ExperimentNephelometry test 50mL tube"<>$SessionUUID],
+				Object[Container,Vessel,"ExperimentNephelometry test 2mL tube 2"<>$SessionUUID],
 
 				Object[Analysis,StandardCurve,"ExperimentNephelometry fake standard curve for testing"<>$SessionUUID],
 				Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID],
@@ -2697,6 +2882,7 @@ DefineTests[ExperimentNephelometry,
 				Object[Sample,"ExperimentNephelometry test sample in 50mL tube"<>$SessionUUID],
 
 				Object[Sample,"ExperimentNephelometry test model-less sample"<>$SessionUUID],
+				Object[Sample,"ExperimentNephelometry test solid sample"<>$SessionUUID],
 
 				Object[Protocol,Nephelometry,"Already existing name"<>$SessionUUID]
 
@@ -2759,9 +2945,11 @@ DefineTests[ExperimentNephelometry,
 						Model[Container,Plate,"96-well UV-Star Plate"],
 						Model[Container,Plate,"96-well UV-Star Plate"],
 						Model[Container,Vessel,"2mL Tube"],
-						Model[Container,Vessel,"50mL Tube"]
+						Model[Container,Vessel,"50mL Tube"],
+						Model[Container,Vessel,"2mL Tube"]
 					},
 					{
+						{"Work Surface",testBench},
 						{"Work Surface",testBench},
 						{"Work Surface",testBench},
 						{"Work Surface",testBench},
@@ -2772,6 +2960,7 @@ DefineTests[ExperimentNephelometry,
 							Available,
 							Available,
 							Available,
+							Available,
 							Available
 						},
 					Name->
@@ -2779,7 +2968,8 @@ DefineTests[ExperimentNephelometry,
 							"ExperimentNephelometry test 96-well plate 1"<>$SessionUUID,
 							"ExperimentNephelometry test 96-well plate 2"<>$SessionUUID,
 							"ExperimentNephelometry test 2mL tube"<>$SessionUUID,
-							"ExperimentNephelometry test 50mL tube"<>$SessionUUID
+							"ExperimentNephelometry test 50mL tube"<>$SessionUUID,
+							"ExperimentNephelometry test 2mL tube 2"<>$SessionUUID
 						}
 				];
 
@@ -2854,7 +3044,8 @@ DefineTests[ExperimentNephelometry,
 						{Model[Sample,"ExperimentNephelometry test DNA sample (Deprecated)"<>$SessionUUID]},
 						{Model[Sample,"ExperimentNephelometry test DNA sample with Null composition"<>$SessionUUID]},
 						{Model[Sample,"ExperimentNephelometry test DNA sample with multiple oligomers"<>$SessionUUID]},
-						ConstantArray[Model[Sample,"ExperimentNephelometry test DNA sample"<>$SessionUUID],2]
+						ConstantArray[Model[Sample,"ExperimentNephelometry test DNA sample"<>$SessionUUID],2],
+						{Model[Sample, "Sodium Chloride"]}
 					],
 					{
 						{"A1",Object[Container,Plate,"ExperimentNephelometry test 96-well plate 1"<>$SessionUUID]},
@@ -2867,7 +3058,8 @@ DefineTests[ExperimentNephelometry,
 						{"C1",Object[Container,Plate,"ExperimentNephelometry test 96-well plate 2"<>$SessionUUID]},
 
 						{"A1",Object[Container,Vessel,"ExperimentNephelometry test 2mL tube"<>$SessionUUID]},
-						{"A1",Object[Container,Vessel,"ExperimentNephelometry test 50mL tube"<>$SessionUUID]}
+						{"A1",Object[Container,Vessel,"ExperimentNephelometry test 50mL tube"<>$SessionUUID]},
+						{"A1",Object[Container,Vessel,"ExperimentNephelometry test 2mL tube 2"<>$SessionUUID]}
 
 					},
 					Name->
@@ -2881,11 +3073,13 @@ DefineTests[ExperimentNephelometry,
 							"ExperimentNephelometry test sample multiple oligomers"<>$SessionUUID,
 
 							"ExperimentNephelometry test sample in 2mL tube"<>$SessionUUID,
-							"ExperimentNephelometry test sample in 50mL tube"<>$SessionUUID
+							"ExperimentNephelometry test sample in 50mL tube"<>$SessionUUID,
+							"ExperimentNephelometry test solid sample"<>$SessionUUID
 						},
 					InitialAmount->Join[
 						ConstantArray[200*Microliter,7],
-						{5 Milliliter}
+						{5 Milliliter},
+						{0.5 Gram}
 					]
 				];
 
@@ -2909,11 +3103,12 @@ DefineTests[ExperimentNephelometry,
 					},
 					{Discarded}
 				];
+				UploadLocation[Object[Sample,"ExperimentNephelometry test discarded sample"<>$SessionUUID], Waste, FastTrack->True];
 
 				(*Make a test model-less sample object*)
 				testModellessSample=UploadSample[
 					{{10 Micromolar,Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
-					{"A1",Object[Container,Plate,"ExperimentNephelometry test 96-well plate 2"<>$SessionUUID]},
+					{"C2",Object[Container,Plate,"ExperimentNephelometry test 96-well plate 2"<>$SessionUUID]},
 					Name->"ExperimentNephelometry test model-less sample"<>$SessionUUID,
 					InitialAmount->0.5 Milliliter
 				];
@@ -2950,6 +3145,7 @@ DefineTests[ExperimentNephelometry,
 				Object[Container,Plate,"ExperimentNephelometry test 96-well plate 2"<>$SessionUUID],
 				Object[Container,Vessel,"ExperimentNephelometry test 2mL tube"<>$SessionUUID],
 				Object[Container,Vessel,"ExperimentNephelometry test 50mL tube"<>$SessionUUID],
+				Object[Container,Vessel,"ExperimentNephelometry test 2mL tube 2"<>$SessionUUID],
 
 				Object[Analysis,StandardCurve,"ExperimentNephelometry fake standard curve for testing"<>$SessionUUID],
 				Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID],
@@ -2974,6 +3170,7 @@ DefineTests[ExperimentNephelometry,
 				Object[Sample,"ExperimentNephelometry test sample in 50mL tube"<>$SessionUUID],
 
 				Object[Sample,"ExperimentNephelometry test model-less sample"<>$SessionUUID],
+				Object[Sample,"ExperimentNephelometry test solid sample"<>$SessionUUID],
 
 				Object[Protocol,Nephelometry,"Already existing name"<>$SessionUUID]
 

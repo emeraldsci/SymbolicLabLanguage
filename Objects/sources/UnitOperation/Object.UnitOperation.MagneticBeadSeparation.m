@@ -367,6 +367,23 @@ DefineObjectType[Object[UnitOperation,MagneticBeadSeparation],
 				IndexMatching->Sample,
 				Migration->SplitField
 			},
+			PreWashAspirationPosition -> {
+				Format -> Multiple,
+				Class -> Expression,
+				(* Top | Bottom | LiquidLevel *)
+				Pattern :> ListableP[Alternatives[MagneticBeadSeparationPipettingPositionP,Null]],
+				Description -> "For each member of Sample, the location from which the solution is aspirated after PreWashMagnetizationTime. Top will aspirate PreWashAspirationPositionOffset below the Top of the container, Bottom will aspirate PreWashAspirationPositionOffset above the Bottom of the container, LiquidLevel will aspirate PreWashAspirationPositionOffset below the liquid level of the sample in the container.",
+				IndexMatching->Sample,
+				Category -> "PreWash"
+			},
+			PreWashAspirationPositionOffset -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> ListableP[Alternatives[GreaterEqualP[0 Millimeter],Coordinate[{DistanceP, DistanceP, GreaterEqualP[0 Millimeter]}],Null]],
+				Description -> "For each member of Sample, the distance from the center of the well that the solution is aspirated after PreWashMagnetizationTime. The Z Offset is based on the PreWashAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+				IndexMatching->Sample,
+				Category -> "PreWash"
+			},
 			PreWashCollectionContainer->{
 				Format->Multiple,
 				Class->Expression,
@@ -601,6 +618,23 @@ DefineObjectType[Object[UnitOperation,MagneticBeadSeparation],
 				IndexMatching->Sample,
 				Migration->SplitField
 			},
+			EquilibrationAspirationPosition -> {
+				Format -> Multiple,
+				Class -> Expression,
+				(* Top | Bottom | LiquidLevel *)
+				Pattern :> ListableP[Alternatives[MagneticBeadSeparationPipettingPositionP,Null]],
+				Description -> "For each member of Sample, the location from which the solution is aspirated after EquilibrationMagnetizationTime. Top will aspirate EquilibrationAspirationPositionOffset below the Top of the container, Bottom will aspirate EquilibrationAspirationPositionOffset above the Bottom of the container, LiquidLevel will aspirate EquilibrationAspirationPositionOffset below the liquid level of the sample in the container.",
+				IndexMatching->Sample,
+				Category -> "Equilibration"
+			},
+			EquilibrationAspirationPositionOffset -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> ListableP[Alternatives[GreaterEqualP[0 Millimeter],Coordinate[{DistanceP, DistanceP, GreaterEqualP[0 Millimeter]}],Null]],
+				Description -> "For each member of Sample, the distance from the center of the well that the solution is aspirated after EquilibrationMagnetizationTime. The Z Offset is based on the EquilibrationAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+				IndexMatching->Sample,
+				Category -> "Equilibration"
+			},
 			EquilibrationCollectionContainer->{
 				Format->Multiple,
 				Class->Expression,
@@ -789,6 +823,23 @@ DefineObjectType[Object[UnitOperation,MagneticBeadSeparation],
 				Category->"Loading",
 				IndexMatching->Sample,
 				Migration->SplitField
+			},
+			LoadingAspirationPosition -> {
+				Format -> Multiple,
+				Class -> Expression,
+				(* Top | Bottom | LiquidLevel *)
+				Pattern :> ListableP[Alternatives[MagneticBeadSeparationPipettingPositionP,Null]],
+				Description -> "For each member of Sample, the location from which the solution is aspirated after LoadingMagnetizationTime. Top will aspirate LoadingAspirationPositionOffset below the Top of the container, Bottom will aspirate LoadingAspirationPositionOffset above the Bottom of the container, LiquidLevel will aspirate LoadingAspirationPositionOffset below the liquid level of the sample in the container.",
+				IndexMatching->Sample,
+				Category -> "Loading"
+			},
+			LoadingAspirationPositionOffset -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> ListableP[Alternatives[GreaterEqualP[0 Millimeter],Coordinate[{DistanceP, DistanceP, GreaterEqualP[0 Millimeter]}],Null]],
+				Description -> "For each member of Sample, the distance from the center of the well that the solution is aspirated after LoadingMagnetizationTime. The Z Offset is based on the LoadingAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+				IndexMatching->Sample,
+				Category -> "Loading"
 			},
 			LoadingCollectionContainer->{
 				Format->Multiple,
@@ -1014,6 +1065,23 @@ DefineObjectType[Object[UnitOperation,MagneticBeadSeparation],
 				Category->"Wash",
 				IndexMatching->Sample,
 				Migration->SplitField
+			},
+			WashAspirationPosition -> {
+				Format -> Multiple,
+				Class -> Expression,
+				(* Top | Bottom | LiquidLevel *)
+				Pattern :> ListableP[Alternatives[MagneticBeadSeparationPipettingPositionP,Null]],
+				Description -> "For each member of Sample, the location from which the solution is aspirated after WashMagnetizationTime. Top will aspirate WashAspirationPositionOffset below the Top of the container, Bottom will aspirate WashAspirationPositionOffset above the Bottom of the container, LiquidLevel will aspirate WashAspirationPositionOffset below the liquid level of the sample in the container.",
+				IndexMatching->Sample,
+				Category -> "Wash"
+			},
+			WashAspirationPositionOffset -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> ListableP[Alternatives[GreaterEqualP[0 Millimeter],Coordinate[{DistanceP, DistanceP, GreaterEqualP[0 Millimeter]}],Null]],
+				Description -> "For each member of Sample, the distance from the center of the well that the solution is aspirated after WashMagnetizationTime. The Z Offset is based on the WashAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+				IndexMatching->Sample,
+				Category -> "Wash"
 			},
 			WashCollectionContainer->{
 				Format->Multiple,
@@ -1250,6 +1318,23 @@ DefineObjectType[Object[UnitOperation,MagneticBeadSeparation],
 				IndexMatching->Sample,
 				Migration->SplitField
 			},
+			SecondaryWashAspirationPosition -> {
+				Format -> Multiple,
+				Class -> Expression,
+				(* Top | Bottom | LiquidLevel *)
+				Pattern :> ListableP[Alternatives[MagneticBeadSeparationPipettingPositionP,Null]],
+				Description -> "For each member of Sample, the location from which the solution is aspirated after SecondaryWashMagnetizationTime. Top will aspirate SecondaryWashAspirationPositionOffset below the Top of the container, Bottom will aspirate SecondaryWashAspirationPositionOffset above the Bottom of the container, LiquidLevel will aspirate SecondaryWashAspirationPositionOffset below the liquid level of the sample in the container.",
+				IndexMatching->Sample,
+				Category->"Wash"
+			},
+			SecondaryWashAspirationPositionOffset -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> ListableP[Alternatives[GreaterEqualP[0 Millimeter],Coordinate[{DistanceP, DistanceP, GreaterEqualP[0 Millimeter]}],Null]],
+				Description -> "For each member of Sample, the distance from the center of the well that the solution is aspirated after SecondaryWashMagnetizationTime. The Z Offset is based on the SecondaryWashAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+				IndexMatching->Sample,
+				Category->"Wash"
+			},
 			SecondaryWashCollectionContainer->{
 				Format->Multiple,
 				Class->Expression,
@@ -1484,6 +1569,23 @@ DefineObjectType[Object[UnitOperation,MagneticBeadSeparation],
 				Category->"Wash",
 				IndexMatching->Sample,
 				Migration->SplitField
+			},
+			TertiaryWashAspirationPosition -> {
+				Format -> Multiple,
+				Class -> Expression,
+				(* Top | Bottom | LiquidLevel *)
+				Pattern :> ListableP[Alternatives[MagneticBeadSeparationPipettingPositionP,Null]],
+				Description -> "For each member of Sample, the location from which the solution is aspirated after TertiaryWashMagnetizationTime. Top will aspirate TertiaryWashAspirationPositionOffset below the Top of the container, Bottom will aspirate TertiaryWashAspirationPositionOffset above the Bottom of the container, LiquidLevel will aspirate TertiaryWashAspirationPositionOffset below the liquid level of the sample in the container.",
+				IndexMatching->Sample,
+				Category->"Wash"
+			},
+			TertiaryWashAspirationPositionOffset -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> ListableP[Alternatives[GreaterEqualP[0 Millimeter],Coordinate[{DistanceP, DistanceP, GreaterEqualP[0 Millimeter]}],Null]],
+				Description -> "For each member of Sample, the distance from the center of the well that the solution is aspirated after TertiaryWashMagnetizationTime. The Z Offset is based on the TertiaryWashAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+				IndexMatching->Sample,
+				Category->"Wash"
 			},
 			TertiaryWashCollectionContainer->{
 				Format->Multiple,
@@ -1720,6 +1822,23 @@ DefineObjectType[Object[UnitOperation,MagneticBeadSeparation],
 				IndexMatching->Sample,
 				Migration->SplitField
 			},
+			QuaternaryWashAspirationPosition -> {
+				Format -> Multiple,
+				Class -> Expression,
+				(* Top | Bottom | LiquidLevel *)
+				Pattern :> ListableP[Alternatives[MagneticBeadSeparationPipettingPositionP,Null]],
+				Description -> "For each member of Sample, the location from which the solution is aspirated after QuaternaryWashMagnetizationTime. Top will aspirate QuaternaryWashAspirationPositionOffset below the Top of the container, Bottom will aspirate QuaternaryWashAspirationPositionOffset above the Bottom of the container, LiquidLevel will aspirate QuaternaryWashAspirationPositionOffset below the liquid level of the sample in the container.",
+				IndexMatching->Sample,
+				Category->"Wash"
+			},
+			QuaternaryWashAspirationPositionOffset -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> ListableP[Alternatives[GreaterEqualP[0 Millimeter],Coordinate[{DistanceP, DistanceP, GreaterEqualP[0 Millimeter]}],Null]],
+				Description -> "For each member of Sample, the distance from the center of the well that the solution is aspirated after QuaternaryWashMagnetizationTime. The Z Offset is based on the QuaternaryWashAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+				IndexMatching->Sample,
+				Category->"Wash"
+			},
 			QuaternaryWashCollectionContainer->{
 				Format->Multiple,
 				Class->Expression,
@@ -1954,6 +2073,23 @@ DefineObjectType[Object[UnitOperation,MagneticBeadSeparation],
 				Category->"Wash",
 				IndexMatching->Sample,
 				Migration->SplitField
+			},
+			QuinaryWashAspirationPosition -> {
+				Format -> Multiple,
+				Class -> Expression,
+				(* Top | Bottom | LiquidLevel *)
+				Pattern :> ListableP[Alternatives[MagneticBeadSeparationPipettingPositionP,Null]],
+				Description -> "For each member of Sample, the location from which the solution is aspirated after QuinaryWashMagnetizationTime. Top will aspirate QuinaryWashAspirationPositionOffset below the Top of the container, Bottom will aspirate QuinaryWashAspirationPositionOffset above the Bottom of the container, LiquidLevel will aspirate QuinaryWashAspirationPositionOffset below the liquid level of the sample in the container.",
+				IndexMatching->Sample,
+				Category->"Wash"
+			},
+			QuinaryWashAspirationPositionOffset -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> ListableP[Alternatives[GreaterEqualP[0 Millimeter],Coordinate[{DistanceP, DistanceP, GreaterEqualP[0 Millimeter]}],Null]],
+				Description -> "For each member of Sample, the distance from the center of the well that the solution is aspirated after QuinaryWashMagnetizationTime. The Z Offset is based on the QuinaryWashAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+				IndexMatching->Sample,
+				Category->"Wash"
 			},
 			QuinaryWashCollectionContainer->{
 				Format->Multiple,
@@ -2190,6 +2326,23 @@ DefineObjectType[Object[UnitOperation,MagneticBeadSeparation],
 				IndexMatching->Sample,
 				Migration->SplitField
 			},
+			SenaryWashAspirationPosition -> {
+				Format -> Multiple,
+				Class -> Expression,
+				(* Top | Bottom | LiquidLevel *)
+				Pattern :> ListableP[Alternatives[MagneticBeadSeparationPipettingPositionP,Null]],
+				Description -> "For each member of Sample, the location from which the solution is aspirated after SenaryWashMagnetizationTime. Top will aspirate SenaryWashAspirationPositionOffset below the Top of the container, Bottom will aspirate SenaryWashAspirationPositionOffset above the Bottom of the container, LiquidLevel will aspirate SenaryWashAspirationPositionOffset below the liquid level of the sample in the container.",
+				IndexMatching->Sample,
+				Category->"Wash"
+			},
+			SenaryWashAspirationPositionOffset -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> ListableP[Alternatives[GreaterEqualP[0 Millimeter],Coordinate[{DistanceP, DistanceP, GreaterEqualP[0 Millimeter]}],Null]],
+				Description -> "For each member of Sample, the distance from the center of the well that the solution is aspirated after SenaryWashMagnetizationTime. The Z Offset is based on the SenaryWashAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+				IndexMatching->Sample,
+				Category->"Wash"
+			},
 			SenaryWashCollectionContainer->{
 				Format->Multiple,
 				Class->Expression,
@@ -2425,6 +2578,23 @@ DefineObjectType[Object[UnitOperation,MagneticBeadSeparation],
 				IndexMatching->Sample,
 				Migration->SplitField
 			},
+			SeptenaryWashAspirationPosition -> {
+				Format -> Multiple,
+				Class -> Expression,
+				(* Top | Bottom | LiquidLevel *)
+				Pattern :> ListableP[Alternatives[MagneticBeadSeparationPipettingPositionP,Null]],
+				Description -> "For each member of Sample, the location from which the solution is aspirated after SeptenaryWashMagnetizationTime. Top will aspirate SeptenaryWashAspirationPositionOffset below the Top of the container, Bottom will aspirate SeptenaryWashAspirationPositionOffset above the Bottom of the container, LiquidLevel will aspirate SeptenaryWashAspirationPositionOffset below the liquid level of the sample in the container.",
+				IndexMatching->Sample,
+				Category->"Wash"
+			},
+			SeptenaryWashAspirationPositionOffset -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> ListableP[Alternatives[GreaterEqualP[0 Millimeter],Coordinate[{DistanceP, DistanceP, GreaterEqualP[0 Millimeter]}],Null]],
+				Description -> "For each member of Sample, the distance from the center of the well that the solution is aspirated after SeptenaryWashMagnetizationTime. The Z Offset is based on the SeptenaryWashAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+				IndexMatching->Sample,
+				Category->"Wash"
+			},
 			SeptenaryWashCollectionContainer->{
 				Format->Multiple,
 				Class->Expression,
@@ -2657,6 +2827,23 @@ DefineObjectType[Object[UnitOperation,MagneticBeadSeparation],
 				Category->"Elution",
 				IndexMatching->Sample,
 				Migration->SplitField
+			},
+			ElutionAspirationPosition -> {
+				Format -> Multiple,
+				Class -> Expression,
+				(* Top | Bottom | LiquidLevel *)
+				Pattern :> ListableP[Alternatives[MagneticBeadSeparationPipettingPositionP,Null]],
+				Description -> "For each member of Sample, the location from which the solution is aspirated after ElutionMagnetizationTime. Top will aspirate ElutionAspirationPositionOffset below the Top of the container, Bottom will aspirate ElutionAspirationPositionOffset above the Bottom of the container, LiquidLevel will aspirate ElutionAspirationPositionOffset below the liquid level of the sample in the container.",
+				IndexMatching->Sample,
+				Category -> "Elution"
+			},
+			ElutionAspirationPositionOffset -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> ListableP[Alternatives[GreaterEqualP[0 Millimeter],Coordinate[{DistanceP, DistanceP, GreaterEqualP[0 Millimeter]}],Null]],
+				Description -> "For each member of Sample, the distance from the center of the well that the solution is aspirated after ElutionMagnetizationTime. The Z Offset is based on the ElutionAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+				IndexMatching->Sample,
+				Category -> "Elution"
 			},
 			ElutionCollectionContainer->{
 				Format->Multiple,

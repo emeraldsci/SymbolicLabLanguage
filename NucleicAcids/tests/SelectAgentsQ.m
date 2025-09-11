@@ -351,10 +351,10 @@ DefineTests[SelectAgentsQ,
         Object -> sample,
         Name -> "Test select agents sample " <> uuid,
         Replace[Composition] -> {
-          {10 Millimolar, Link[Model[Molecule, Oligomer, "Test DNA for select agents " <> uuid]]},
-          {20 Millimolar, Link[Model[Molecule, Oligomer, "Test RNA for select agents " <> uuid]]},
-          {30 Millimolar, Link[Model[Molecule, Oligomer, "Test peptide for select agents " <> uuid]]},
-          {100 VolumePercent, Link[Model[Molecule, "Water"]]}
+          {10 Millimolar, Link[Model[Molecule, Oligomer, "Test DNA for select agents " <> uuid]], Null},
+          {20 Millimolar, Link[Model[Molecule, Oligomer, "Test RNA for select agents " <> uuid]], Null},
+          {30 Millimolar, Link[Model[Molecule, Oligomer, "Test peptide for select agents " <> uuid]], Null},
+          {100 VolumePercent, Link[Model[Molecule, "Water"]], Null}
         }
       |>]
     ]

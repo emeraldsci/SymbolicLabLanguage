@@ -15,6 +15,14 @@ DefineObjectType[Model[Container, GrindingContainer], {
 		Relation -> Model[Instrument][AssociatedAccessories,1],
 		Description -> "A list of instruments for which this model is an accompanying accessory.",
 		Category -> "Qualifications & Maintenance"
+		},
+		Aperture -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Meter],
+			Units -> Meter Milli,
+			Description -> "The minimum opening diameter encountered when aspirating from the container.",
+			Category -> "Dimensions & Positions"
 		}
 	}
 }];

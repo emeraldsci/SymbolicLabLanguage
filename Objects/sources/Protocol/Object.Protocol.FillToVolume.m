@@ -9,6 +9,21 @@ DefineObjectType[Object[Protocol, FillToVolume], {
 	CreatePrivileges -> None,
 	Cache -> Download,
 	Fields -> {
+		MaxNumberOfOverfillingRepreparations -> {
+			Format->Single,
+			Class->Integer,
+			Pattern:>GreaterEqualP[1,1],
+			Description->"The maximum number of times the FillToVolume protocol can be repeated in the event of target volume overfilling. When a repreparation is triggered, the same inputs and options are used.",
+			Category->"General"
+		},
+		OverfillingRepreparations -> {
+			Format->Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Protocol,FillToVolume]],
+			Description->"The repeat FillToVolume protocol that is automatically enqueued when target volume overfilling occurs. The new protocol uses the same inputs and options as the original.",
+			Category->"General"
+		},
 		TotalVolumes -> {
 			Format -> Multiple,
 			Class -> Real,
@@ -65,8 +80,8 @@ DefineObjectType[Object[Protocol, FillToVolume], {
 			Format -> Multiple,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			IndexMatching -> Tolerance,
-			Description -> "For each member of Tolerance, indicates if the final volume measured falls within the TotalVolume \[PlusMinus] the Tolerance fields.",
+			IndexMatching -> SamplesIn,
+			Description -> "For each member of SamplesIn, indicates if the final measured volume of the sample falls within the specified TotalVolume +/- Tolerance range. If the sample volume is less than TotalVolume - Tolerance, additional solvent is transferred. At the end of the protocol, if TargetVolumeToleranceAchieved is False, it means that the final sample volume exceeds TotalVolume + Tolerance. In the case of a Volumetric FillToVolume operation, this corresponds to the liquid level in the volumetric flask being above the graduation line.",
 			Category -> "Fill to Volume"
 		},
 
@@ -89,6 +104,23 @@ DefineObjectType[Object[Protocol, FillToVolume], {
 			Description -> "Instruments required for the protocol.",
 			Category -> "Fill to Volume",
 			Developer -> True
+		},
+		SampleImagingProtocol -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Protocol, ImageSample],
+			Description -> "The ImageSample protocol that asks the operator to image the filled volumetric flasks.",
+			Category -> "Sample Post-Processing"
+		},
+		MeniscusImages -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			IndexMatching -> SamplesIn,
+			Description -> "For each member of SamplesIn, the cloud file that stores the images of the filled volumetric flasks, if the sample is not fulfilled by Volumetric FillToVolume method, the corresponding value will be Null.",
+			Category -> "Sample Post-Processing"
 		}
 	}
 }];

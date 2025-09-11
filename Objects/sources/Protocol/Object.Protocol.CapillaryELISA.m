@@ -1609,15 +1609,15 @@ DefineObjectType[Object[Protocol, CapillaryELISA],
 			SamplePreparationPrimitives -> {
 				Format -> Multiple,
 				Class -> Expression,
-				Pattern :> SampleManipulationP,
+				Pattern :> SampleManipulationP | SamplePreparationP,
 				Description -> "A set of instructions specifying the preparation of antibody samples and standard samples for capillary ELISA experiments, including the resuspension and conjugation of the antibody samples and the resuspension of the standard samples.",
 				Category -> "Sample Preparation"
 			},
 			SamplePreparationProtocol -> {
 				Format -> Single,
 				Class -> Link,
-				Pattern :> ObjectP[Object[Protocol, SampleManipulation]],
-				Relation -> Object[Protocol, SampleManipulation],
+				Pattern :> _Link,
+				Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
 				Description -> "The sample manipulation protocol used to prepare antibody samples and standard samples for capillary ELISA experiments.",
 				Category -> "Sample Preparation"
 			},
@@ -1625,15 +1625,15 @@ DefineObjectType[Object[Protocol, CapillaryELISA],
 			SampleManipulationPrimitives -> {
 				Format -> Multiple,
 				Class -> Expression,
-				Pattern :> SampleManipulationP,
+				Pattern :> SampleManipulationP | SamplePreparationP,
 				Description -> "A set of instructions specifying the spiking of input samples, dilution of the input samples and standard samples, dilution of antibody samples for customizable cartridge and loading of all reagents into the capillary ELISA cartridge for ELISA experiment.",
 				Category -> "Sample Preparation"
 			},
 			SampleManipulationProtocol -> {
 				Format -> Single,
 				Class -> Link,
-				Pattern :> ObjectP[Object[Protocol, SampleManipulation]],
-				Relation -> Object[Protocol, SampleManipulation],
+				Pattern :> _Link,
+				Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation],
 				Description -> "The sample manipulation protocol used to spike input samples, dilute samples and load samples into the capillary ELISA cartridge for ELISA experiment.",
 				Category -> "Sample Preparation"
 			},

@@ -69,6 +69,54 @@ DefineObjectType[Object[Instrument, pHMeter], {
 			Category -> "Instrument Specifications",
 			Developer -> True
 		},
+		ProbeReservoir -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container, Vessel],
+			Description -> "The internal chamber container of the Probe that contains the storage solution (usually \"Electrolyte 3 mol/L KCl\") used to maintain stable reference electrode conditions for accurate pH measurement.",
+			Category -> "Instrument Specifications"
+		},
+		SecondaryProbeReservoir -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container, Vessel],
+			Description -> "The internal chamber container of the SecondaryProbe that contains the storage solution (usually \"Electrolyte 3 mol/L KCl\") used to maintain stable reference electrode conditions for accurate pH measurement.",
+			Category -> "Instrument Specifications"
+		},
+		TertiaryProbeReservoir -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container, Vessel],
+			Description -> "The internal chamber container of the TertiaryProbe that contains the storage solution (usually \"Electrolyte 3 mol/L KCl\") used to maintain stable reference electrode conditions for accurate pH measurement.",
+			Category -> "Instrument Specifications"
+		},
+		ProbeStorageContainer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container, Vessel],
+			Description -> "The container filled with storage solution (usually \"Electrolyte 3 mol/L KCl\") secured to the bottom of the Probe to keep the pH probe's glass membrane and reference junction hydrated when not in use.",
+			Category -> "Instrument Specifications"
+		},
+		SecondaryProbeStorageContainer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container, Vessel],
+			Description -> "The container filled with storage solution (usually \"Electrolyte 3 mol/L KCl\") secured to the bottom of the SecondaryProbe to keep the pH probe's glass membrane and reference junction hydrated when not in use.",
+			Category -> "Instrument Specifications"
+		},
+		TertiaryProbeStorageContainer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container, Vessel],
+			Description -> "The container filled with storage solution (usually \"Electrolyte 3 mol/L KCl\") secured to the bottom of the TertiaryProbe to keep the pH probe's glass membrane and reference junction hydrated when not in use.",
+			Category -> "Instrument Specifications"
+		},
 		pHSensor -> {
 			Format -> Single,
 			Class -> Link,

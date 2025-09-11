@@ -251,6 +251,16 @@ validWiringQTests[packet:PacketP[Object[Wiring]]]:=Module[
 	}
 ];
 
+(* ::Subsection:: *)
+(*validWiringCableQTests*)
+
+validWiringCableQTests[packet:PacketP[Object[Wiring,CircuitBreaker]]]:={};
+
+(* ::Subsection:: *)
+(*validWiringCableAdapterQTests*)
+
+validWiringCableAdapterQTests[packet:PacketP[Object[Wiring,CircuitBreaker]]]:={};
+
 
 (* ::Subsection:: *)
 (*validWiringCircuitBreakerQTests*)
@@ -390,6 +400,8 @@ validWiringTransformerQTests[packet:PacketP[Object[Wiring,Transformer]]]:={
 
 
 registerValidQTestFunction[Object[Wiring],validWiringQTests];
+registerValidQTestFunction[Object[Wiring, Cable],validWiringCableQTests];
+registerValidQTestFunction[Object[Wiring, CableAdapter],validWiringCableAdapterQTests];
 registerValidQTestFunction[Object[Wiring,CircuitBreaker],validWiringCircuitBreakerQTests];
 registerValidQTestFunction[Object[Wiring,NetworkHub],validWiringNetworkHubQTests];
 registerValidQTestFunction[Object[Wiring,PLCComponent],validWiringPLCComponentQTests];

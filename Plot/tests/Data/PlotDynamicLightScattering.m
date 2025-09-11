@@ -17,6 +17,12 @@ DefineTests[PlotDynamicLightScattering,
 			],
 			ValidGraphicsP[]
 		],
+		Example[{Basic,"Given a DynamicLightScattering protocol object, creates a plot of the linked data objects:"},
+			PlotDynamicLightScattering[
+				Object[Protocol, DynamicLightScattering, "Protocol for PlotDynamicLightScattering tests"]
+			],
+			ValidGraphicsP[]
+		],
 		(* -- Additional -- *)
 		Example[{Basic,"Return a dynamic figure when Output->Preview:"},
 			PlotDynamicLightScattering[
@@ -174,7 +180,8 @@ DefineTests[PlotDynamicLightScattering,
 					Object[Data, DynamicLightScattering, "Fake data 1 for PlotDynamicLightScattering tests"],
 					Object[Data, DynamicLightScattering, "Fake replicate data 1 for PlotDynamicLightScattering tests"],
 					Object[Data, MeltingCurve, "Good melting curve data for PlotDynamicLightScattering tests"],
-					Object[Data, MeltingCurve, "Bad melting curve data for PlotDynamicLightScattering tests"]
+					Object[Data, MeltingCurve, "Bad melting curve data for PlotDynamicLightScattering tests"],
+					Object[Protocol, DynamicLightScattering, "Protocol for PlotDynamicLightScattering tests"]
 				}],
 				ObjectP[]
 			]];
@@ -185,7 +192,7 @@ DefineTests[PlotDynamicLightScattering,
 			Module[
 				{
 					massDistribution,dataObject1,dataObject2, initialMassDistribution,
-					finalMassDistribution, dataObject3
+					finalMassDistribution, dataObject3, protocol1
 
 				},
 
@@ -308,6 +315,11 @@ DefineTests[PlotDynamicLightScattering,
 					Name -> "Bad melting curve data for PlotDynamicLightScattering tests"
 				|>];
 
+				protocol1 = Upload[<|
+					Type -> Object[Protocol, DynamicLightScattering],
+					Name -> "Protocol for PlotDynamicLightScattering tests",
+					Replace[Data] -> {Link[dataObject1, Protocol]}
+				|>];
 
 			]
 		]
@@ -318,8 +330,9 @@ DefineTests[PlotDynamicLightScattering,
 				Flatten[{
 					Object[Data, DynamicLightScattering, "Fake data 1 for PlotDynamicLightScattering tests"],
 					Object[Data, DynamicLightScattering, "Fake replicate data 1 for PlotDynamicLightScattering tests"],
-					Object[Data, MeltingCurve, "Good melting curve data for PlotDynamicLightScattering tests"]
-					Object[Data, MeltingCurve, "Bad melting curve data for PlotDynamicLightScattering tests"]
+					Object[Data, MeltingCurve, "Good melting curve data for PlotDynamicLightScattering tests"],
+					Object[Data, MeltingCurve, "Bad melting curve data for PlotDynamicLightScattering tests"],
+					Object[Protocol, DynamicLightScattering, "Protocol for PlotDynamicLightScattering tests"]
 				}],
 				ObjectP[]
 			]];

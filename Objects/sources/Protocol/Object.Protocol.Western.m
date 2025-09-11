@@ -230,17 +230,17 @@ DefineObjectType[Object[Protocol, Western], {
 		SamplePlatePrimitives->{
 			Format->Multiple,
 			Class->Expression,
-			Pattern:>SampleManipulationP,
+			Pattern:>SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the loading of the SamplePlate with input samples and LoadingBuffer.",
 			Category -> "Matrix & Sample Loading"
 		},
-		SamplePlateManipulation->{
-			Format->Single,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
-			Description->"A sample manipulation protocol used to load the SamplePlate.",
-			Category->"Matrix & Sample Loading"
+		SamplePlateManipulation -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation],
+			Description -> "A sample manipulation protocol used to load the SamplePlate.",
+			Category -> "Matrix & Sample Loading"
 		},
 		AssayPlate->{
 			Format->Single,
@@ -248,21 +248,6 @@ DefineObjectType[Object[Protocol, Western], {
 			Pattern:>_Link,
 			Relation->Object[Container,Plate,Irregular] | Model[Container,Plate,Irregular],
 			Description->"The plate that is loaded with input samples, antibodies, buffers, and detection reagents, then inserted into the Instrument.",
-			Category->"Matrix & Sample Loading"
-		},
-		AssayPlatePrimitives->{
-			Format->Multiple,
-			Class->Expression,
-			Pattern:>SampleManipulationP,
-			Description -> "A set of instructions specifying the loading of the AssayPlate with denatured input samples, antibodies, buffers, and detection reagents.",
-			Category -> "Matrix & Sample Loading"
-		},
-		AssayPlateManipulation->{
-			Format->Single,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
-			Description->"A sample manipulation protocol used to load the AssayPlate.",
 			Category->"Matrix & Sample Loading"
 		},
 		AssayPlateUnitOperations -> {
@@ -523,7 +508,7 @@ DefineObjectType[Object[Protocol, Western], {
 		AntibodyPlatePrimitives->{
 			Format->Multiple,
 			Class->Expression,
-			Pattern:>SampleManipulationP,
+			Pattern:>SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the loading of the AntibodyPlate used to mix the PrimaryAntibodies, PrimaryAntibodyDiluents, and StandardPrimaryAntibodies.",
 			Category -> "Antibody Labeling"
 		},
@@ -531,7 +516,7 @@ DefineObjectType[Object[Protocol, Western], {
 			Format->Single,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
+			Relation->Object[Protocol,SampleManipulation]|Object[Protocol,ManualSamplePreparation],
 			Description->"A sample manipulation protocol used to load and mix the AntibodyPlate.",
 			Category->"Antibody Labeling"
 		},

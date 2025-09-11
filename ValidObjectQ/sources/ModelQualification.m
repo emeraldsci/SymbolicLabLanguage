@@ -21,7 +21,7 @@ validModelQualificationQTests[packet:PacketP[Model[Qualification]]] := {
 	NotNullFieldTest[packet,{Authors,Purpose}],*)
 
 	(* Additional fields that must be filled in if active*)
-	If[!MemberQ[Lookup[packet,{Deprecated,DeveloperObject}],True],
+	If[!MemberQ[Lookup[packet,{Deprecated,DeveloperObject}],True] && !MatchQ[packet,ObjectP[Model[Qualification,InteractiveTraining]]],
 		NotNullFieldTest[packet,{Targets}],
 		Nothing
 	],
@@ -43,7 +43,10 @@ validModelQualificationAcousticLiquidHandlerQTests[packet:PacketP[Model[Qualific
 		packet,
 		{
 			PreparatoryUnitOperations,
-			InputPrimitives
+			MaxDMSOStandardDeviation,
+			Sources,
+			Destinations,
+			Amounts
 		}
 	],
 
@@ -81,14 +84,29 @@ validModelQualificationAutoclaveQTests[packet:PacketP[Model[Qualification,Autocl
 (*validModelQualificationBiosafetyCabinetQTests*)
 
 
-validModelQualificationBiosafetyCabinetQTests[packet:PacketP[Model[Qualification,BiosafetyCabinet]]]:={
+validModelQualificationBiosafetyCabinetQTests[packet : PacketP[Model[Qualification, BiosafetyCabinet]]] := {
 
 	(* required fields *)
 	NotNullFieldTest[
 		packet,
-		{
-			BufferModel
-		}
+		{TestLight, TestUVLight, TestAlarm, RecordFlowSpeed, RecordLaminarFlowSpeed, ImageCertification}
+	],
+
+	Test["At least one test must be performed:",
+		Lookup[packet, {TestLight, TestUVLight, TestAlarm, RecordFlowSpeed, RecordLaminarFlowSpeed, ImageCertification}],
+		{___, True, ___}
+	],
+
+	Test["If ImageCertification is True, ExampleCertificationImage must be informed:",
+		If[
+			Lookup[packet, ImageCertification],
+			MatchQ[
+				Lookup[packet, ExampleCertificationImage],
+				ObjectP[Object[EmeraldCloudFile]]
+			],
+			True
+		],
+		True
 	]
 };
 
@@ -175,6 +193,24 @@ validModelQualificationCentrifugeQTests[packet:PacketP[Model[Qualification,Centr
 };
 
 
+(* ::Subsection::Closed:: *)
+(*validModelQualificationColonyHandlerQTests*)
+
+
+validModelQualificationColonyHandlerQTests[packet:PacketP[Model[Qualification, ColonyHandler]]]:={
+
+	(* required fields *)
+	NotNullFieldTest[
+		packet,
+		{ImageStrategies, PickColonies, SpreadCells}
+	],
+
+	(* the target should be of the right instrument type *)
+	Test["The target must be a Model[Instrument,ColonyHandler]:",
+		Lookup[packet,Targets],
+		{LinkP[Model[Instrument,ColonyHandler]]...}
+	]
+};
 
 (* ::Subsection::Closed:: *)
 (*validModelQualificationConductivityMeterQTests*)
@@ -194,6 +230,33 @@ validModelQualificationCrossFlowFiltrationQTests[packet:PacketP[Model[Qualificat
 		PreparatoryUnitOperations,
 		CalibrationWeights
 	}]
+};
+
+(* ::Subsection::Closed:: *)
+(*validModelQualificationCryogenicFreezerQTests*)
+
+
+validModelQualificationCryogenicFreezerQTests[packet:PacketP[Model[Qualification,CryogenicFreezer]]]:={
+	
+	(* required fields *)
+	NotNullFieldTest[
+		packet,
+		{
+			AutomaticExecutionFunction,
+			TimePeriod,
+			SamplingRate,
+			MeanTarget,
+			MeanTolerance,
+			StandardDeviationTolerance,
+			MaintenanceRecoveryTime
+		}
+	],
+	
+	(* the target should be of the right instrument type *)
+	Test["The target must be a Model[Instrument,CryogenicFreezer]:",
+		Lookup[packet,Targets],
+		{LinkP[Model[Instrument,CryogenicFreezer]]...}
+	]
 };
 
 (* ::Subsection::Closed:: *)
@@ -258,13 +321,47 @@ validModelQualificationDensityMeterQTests[packet:PacketP[Model[Qualification,Den
 	(* required fields *)
 	NotNullFieldTest[
 		packet,
-		{PreparatoryUnitOperations}
+		{PreparatoryUnitOperations, ExpectedDensity, DensityTolerance}
 	],
 
 	(* the target should be of the right instrument type *)
 	Test["The target must be a Model[Instrument,DensityMeter]:",
 		Lookup[packet,Targets],
 		{LinkP[Model[Instrument,DensityMeter]]...}
+	]
+};
+
+
+
+(* ::Subsection::Closed:: *)
+(* validModelQualificationDesiccatorQTests *)
+
+
+validModelQualificationDesiccatorQTests[packet : PacketP[Model[Qualification, Desiccator]]] := {
+
+	(* required fields *)
+	NotNullFieldTest[
+		packet,
+		{
+			QualificationSample,
+			Amount,
+			Method,
+			Time
+		}
+	],
+
+	RequiredTogetherTest[packet, {Desiccant, DesiccantAmount}],
+
+	Test["Desiccant and DesiccantAmount must be informed only if Method is StandardDesiccant or DesiccantUnderVacuum:",
+		If[
+			Or[
+				NullQ[Lookup[packet, Desiccant]],
+				NullQ[Lookup[packet, DesiccantAmount]]
+			],
+			MatchQ[Lookup[packet, Method], Vacuum],
+			MatchQ[Lookup[packet, Method], StandardDesiccant | DesiccantUnderVacuum]
+		],
+		True
 	]
 };
 
@@ -344,6 +441,7 @@ validModelQualificationDiffractometerQTests[packet:PacketP[Model[Qualification,D
 			TestSamples,
 			LinePositionTestSample,
 			BlankSample,
+			TransferType,
 			LinePositionTestAngles,
 			DetectorRotations,
 			DetectorDistances,
@@ -518,7 +616,30 @@ validModelQualificationEngineBenchmarkQTests[packet:PacketP[Model[Qualification,
 	]
 };
 
+(* ::Subsection::Closed:: *)
+(*validModelQualificationEnvironmentalChamberQTests*)
 
+
+validModelQualificationEnvironmentalChamberQTests[packet:PacketP[Model[Qualification,EnvironmentalChamber]]]:={
+
+	(* required fields *)
+	NotNullFieldTest[
+		packet,
+		{
+			AutomaticExecutionFunction,
+			TimePeriod,
+			SamplingRate,
+			MeanTolerance,
+			StandardDeviationTolerance
+		}
+	],
+
+	(* the target should be of the right instrument type *)
+	Test["The target must be a Model[Instrument,EnvironmentalChamber]:",
+		Lookup[packet,Targets],
+		{LinkP[Model[Instrument,EnvironmentalChamber]]...}
+	]
+};
 
 (* ::Subsection:: *)
 (*validModelQualificationEvaporatorQTests*)
@@ -673,6 +794,91 @@ validModelQualificationFreezerQTests[packet:PacketP[Model[Qualification,Freezer]
 	]
 };
 
+(* ::Subsection::Closed:: *)
+(*validModelQualificationWaterPurifierQTests*)
+
+
+validModelQualificationWaterPurifierQTests[packet : PacketP[Model[Qualification, WaterPurifier]]] := {
+
+	(* required fields *)
+	NotNullFieldTest[
+		packet,
+		{ExpectedTemperature, TemperatureTolerance, ExampleQualityReportImage, DispenseTime}
+	]
+};
+
+(* ::Subsection::Closed:: *)
+(*validModelQualificationFumeHoodQTests*)
+
+
+validModelQualificationFumeHoodQTests[packet : PacketP[Model[Qualification, FumeHood]]] := {
+
+	(* required fields *)
+	NotNullFieldTest[
+		packet,
+		{TestLight, TestAlarm, RecordFlowSpeed, ImageCertification}
+	],
+
+	Test["At least one test must be performed:",
+		Lookup[packet, {TestLight, TestAlarm, RecordFlowSpeed, ImageCertification}],
+		{___, True, ___}
+	],
+
+	Test["If either TestAlarm or RecordFlowSpeed is True, they both must be True:",
+		If[
+			Or[
+				Lookup[packet, TestAlarm],
+				Lookup[packet, RecordFlowSpeed]
+			],
+			And[
+				Lookup[packet, TestAlarm],
+				Lookup[packet, RecordFlowSpeed]
+			],
+			True
+		],
+		True
+	],
+
+	Test["If ImageCertification is True, ExampleCertificationImage must be informed:",
+		If[
+			Lookup[packet, ImageCertification],
+			MatchQ[
+				Lookup[packet, ExampleCertificationImage],
+				ObjectP[Object[EmeraldCloudFile]]
+			],
+			True
+		],
+		True
+	]
+};
+
+(* ::Subsection::Closed:: *)
+(*validModelQualificationRefrigeratorQTests*)
+
+
+validModelQualificationRefrigeratorQTests[packet:PacketP[Model[Qualification,Refrigerator]]]:={
+
+	(* required fields *)
+	NotNullFieldTest[
+		packet,
+		{
+			AutomaticExecutionFunction,
+			TimePeriod,
+			SamplingRate,
+			MeanTarget,
+			MeanTolerance,
+			StandardDeviationTolerance,
+			MaintenanceRecoveryTime
+		}
+	],
+
+	(* the target should be of the right instrument type *)
+	Test["The target must be a Model[Instrument,Refrigerator]:",
+		Lookup[packet,Targets],
+		{LinkP[Model[Instrument,Refrigerator]]...}
+	]
+};
+
 
 (* ::Subsection::Closed:: *)
 (*validModelQualificationGasChromatographyQTests*)
@@ -702,6 +908,38 @@ validModelQualificationGeneticAnalyzerQTests[packet:PacketP[Model[Qualification,
 			SequencingStandard,
 			Solvent
 		}
+	]
+};
+
+(* ::Subsection::Closed:: *)
+(* validModelQualificationGrinderQTests *)
+
+
+validModelQualificationGrinderQTests[packet : PacketP[Model[Qualification, Grinder]]] := {
+	(* required fields *)
+	NotNullFieldTest[
+		packet,
+		{
+			QualificationSample,
+			Amount,
+			BulkDensity,
+			GrindingRate,
+			Time,
+			NumberOfGrindingSteps,
+			CoarsePowderReferenceImage,
+			FinePowderReferenceImage,
+			ImagingDirection
+		}
+	],
+
+	(* CoolingTime must be informed if NumberOfGrindingSteps is greater than 1 *)
+	Test["CoolingTime must be informed if NumberOfGrindingSteps is greater than 1:",
+		If[
+			GreaterQ[Lookup[packet, NumberOfGrindingSteps], 1],
+			MatchQ[CoolingTime, TimeP],
+			True
+		],
+		True
 	]
 };
 
@@ -804,9 +1042,9 @@ validModelQualificationHPLCQTests[packet:PacketP[Model[Qualification,HPLC]]]:=Mo
 	],
 	
 	Test[
-		"When the target is a Waters instrument, Buffer D is required, otherwise it should be Null:",
+		"When the target is a Waters or Agilent instrument, Buffer D is required, otherwise it should be Null:",
 		{
-			MemberQ[models,Alternatives[Model[Instrument,HPLC,"id:GmzlKjY5EOAM"],Model[Instrument,HPLC,"id:1ZA60vw8X5eD"],Model[Instrument,HPLC,"id:Z1lqpMGJmR0O"],Model[Instrument,HPLC,"id:dORYzZn6p31E"],Model[Instrument, HPLC, "id:R8e1Pjp1md8p"]]],
+			MemberQ[models,Alternatives[Model[Instrument,HPLC,"id:GmzlKjY5EOAM"],Model[Instrument,HPLC,"id:1ZA60vw8X5eD"],Model[Instrument,HPLC,"id:Z1lqpMGJmR0O"],Model[Instrument,HPLC,"id:P5ZnEjx1oAAR"],Model[Instrument,HPLC,"id:dORYzZn6p31E"],Model[Instrument, HPLC, "id:R8e1Pjp1md8p"],Model[Instrument, HPLC, "id:dORYzZRWJlDD"], Model[Instrument, HPLC, "id:lYq9jRqD8OpV"], Model[Instrument, HPLC, "id:dORYzZRWmDn5"]]],
 			Lookup[packet,BufferD]
 		},
 		Alternatives[
@@ -826,10 +1064,22 @@ validModelQualificationIncubatorQTests[packet:PacketP[Model[Qualification,Incuba
 
 	NotNullFieldTest[
 		packet,
-		{
-			PreparatoryUnitOperations
-		}
+		If[!TrueQ[Lookup[packet,AutomaticEvaluation]],
+			{
+				PreparatoryUnitOperations
+			},
+			{
+				AutomaticExecutionFunction,
+				TimePeriod,
+				SamplingRate,
+				MeanTarget,
+				MeanTolerance,
+				StandardDeviationTolerance,
+				MaintenanceRecoveryTime
+			}
+		]
 	]
+
 };
 
 
@@ -847,8 +1097,7 @@ validModelQualificationInteractiveTrainingQTests[packet:ObjectP[Model[Qualificat
 	NotNullFieldTest[packet,{
 		TrainingTasks,
 		NumberOfQuestions,
-		PassingPercentage,
-		Targets
+		PassingPercentage
 	}],
 
 	Test["There are no duplicate Targets listed:",
@@ -878,7 +1127,7 @@ validModelQualificationIonChromatographyQTests[packet:PacketP[Model[Qualificatio
 	models=Download[packet,Targets[Object]];
 
 	{
-		NotNullFieldTest[
+		RequiredTogetherTest[
 			packet,
 			{BufferA,BufferB,BufferC,BufferD}
 		],
@@ -1420,6 +1669,25 @@ validModelQualificationpHMeterQTests[packet:PacketP[Model[Qualification,pHMeter]
 	}
 ];
 
+(* ::Subsection::Closed:: *)
+(*validModelQualificationpHTitratorQTests*)
+
+
+validModelQualificationpHTitratorQTests[packet:PacketP[Model[Qualification,pHTitrator]]]:={
+
+	(* required fields *)
+	NotNullFieldTest[
+		packet,
+		{pHMixRate, pHMixImpeller, TitrationContainerCap, AcidVolume, BaseVolume}
+	],
+
+	(* the target should be of the right instrument type *)
+	Test["The target must be a Model[Instrument,pHTitrator]:",
+		Lookup[packet,Targets],
+		{LinkP[Model[Instrument,pHTitrator]]...}
+	]
+};
+
 
 (* ::Subsection::Closed:: *)
 (*validModelQualificationPipetteQTests*)
@@ -1526,7 +1794,7 @@ validModelQualificationPlateReaderQTests[packet:PacketP[Model[Qualification,Plat
 	],
 
 	(* the target should be of the right instrument type *)
-	Test["The target must be a Model[Instrument,PlateReader] or Model[Instrument,Nephelometer]:",
+	Test["The target must be a Model[Instrument,PlateReader], or Model[Instrument,Nephelometer]:",
 		Lookup[packet,Targets],
 		{Alternatives[LinkP[Model[Instrument, PlateReader]], LinkP[Model[Instrument, Nephelometer]]]...}
 	],
@@ -1553,6 +1821,86 @@ validModelQualificationPlateReaderQTests[packet:PacketP[Model[Qualification,Plat
 
 
 };
+
+
+
+(* ::Subsection::Closed:: *)
+(*validModelQualificationDLSPlateReaderQTests*)
+
+
+validModelQualificationDLSPlateReaderQTests[packet:PacketP[Model[Qualification,DLSPlateReader]]]:={
+
+	(* the target should be of the right instrument type *)
+	Test["The target must be a Model[Instrument,DLSPlateReader]:",
+		Lookup[packet,Targets],
+		{LinkP[Model[Instrument,DLSPlateReader]]}
+	],
+
+	(*required fields*)
+	NotNullFieldTest[
+		packet,
+		{
+			LightScatteringValidationSamples,
+			LightScatteringIndependentReplicates,
+			LightScatteringWellReplicates
+		}
+	]
+};
+
+
+
+(* ::Subsection::Closed:: *)
+(*validModelQUalificationPortableCoolerQTests*)
+
+
+validModelQualificationPortableCoolerQTests[packet:PacketP[Model[Qualification, PortableCooler]]] := {
+	
+	(* required fields *)
+	NotNullFieldTest[
+		packet,
+		{
+			AutomaticExecutionFunction,
+			TimePeriod,
+			SamplingRate,
+			MeanTolerance,
+			StandardDeviationTolerance,
+			MaintenanceRecoveryTime
+		}
+	],
+	
+	(* the target should be of the right instrument type *)
+	Test["The target must be a Model[Instrument, PortableCooler]:",
+		Lookup[packet, Targets],
+		{LinkP[Model[Instrument, PortableCooler]]...}
+	]
+};
+
+
+
+(* ::Subsection::Closed:: *)
+(*validModelQUalificationPortableHeaterQTests*)
+
+
+validModelQualificationPortableHeaterQTests[packet:PacketP[Model[Qualification, PortableHeater]]] := {
+	
+	(* required fields *)
+	NotNullFieldTest[
+		packet,
+		{
+			TimePeriod,
+			SamplingRate,
+			MeanTolerance,
+			StandardDeviationTolerance
+		}
+	],
+	
+	(* the target should be of the right instrument type *)
+	Test["The target must be a Model[Instrument, PortableHeater]:",
+		Lookup[packet, Targets],
+		{LinkP[Model[Instrument, PortableHeater]]...}
+	]
+};
+
 
 
 (* ::Subsection::Closed:: *)
@@ -2283,12 +2631,15 @@ registerValidQTestFunction[Model[Qualification, BottleRoller],validModelQualific
 registerValidQTestFunction[Model[Qualification, Balance],validModelQualificationBalanceQTests];
 registerValidQTestFunction[Model[Qualification, CapillaryELISA],validModelQualificationCapillaryELISAQTests];
 registerValidQTestFunction[Model[Qualification, Centrifuge],validModelQualificationCentrifugeQTests];
+registerValidQTestFunction[Model[Qualification, ColonyHandler], validModelQualificationColonyHandlerQTests];
 registerValidQTestFunction[Model[Qualification, ConductivityMeter],validModelQualificationConductivityMeterQTests];
 registerValidQTestFunction[Model[Qualification, ControlledRateFreezer],validModelQualificationControlledRateFreezerQTests];
 registerValidQTestFunction[Model[Qualification, CoulterCounter],validModelQualificationCoulterCounterQTests];
 registerValidQTestFunction[Model[Qualification, CrystalIncubator],validModelQualificationCrystalIncubatorQTests];
+registerValidQTestFunction[Model[Qualification, CryogenicFreezer],validModelQualificationCryogenicFreezerQTests];
 registerValidQTestFunction[Model[Qualification, CrossFlowFiltration],validModelQualificationCrossFlowFiltrationQTests];
 registerValidQTestFunction[Model[Qualification, DensityMeter],validModelQualificationDensityMeterQTests];
+registerValidQTestFunction[Model[Qualification, Desiccator],validModelQualificationDesiccatorQTests];
 registerValidQTestFunction[Model[Qualification, Dewar],validModelQualificationDewarQTests];
 registerValidQTestFunction[Model[Qualification, Dialyzer], validModelQualificationDialyzerQTests];
 registerValidQTestFunction[Model[Qualification, DifferentialScanningCalorimeter],validModelQualificationDifferentialScanningCalorimeterQTests];
@@ -2301,6 +2652,7 @@ registerValidQTestFunction[Model[Qualification, ElectrochemicalReactor],validMod
 registerValidQTestFunction[Model[Qualification, Electrophoresis],validModelQualificationElectrophoresisQTests];
 registerValidQTestFunction[Model[Qualification, FragmentAnalyzer],validModelQualificationFragmentAnalyzerQTests];
 registerValidQTestFunction[Model[Qualification, EngineBenchmark],validModelQualificationEngineBenchmarkQTests];
+registerValidQTestFunction[Model[Qualification, EnvironmentalChamber],validModelQualificationEnvironmentalChamberQTests];
 registerValidQTestFunction[Model[Qualification, Evaporator], validModelQualificationEvaporatorQTests];
 registerValidQTestFunction[Model[Qualification, FilterBlock],validModelQualificationFilterBlockQTests];
 registerValidQTestFunction[Model[Qualification, FilterHousing],validModelQualificationFilterHousingQTests];
@@ -2309,8 +2661,10 @@ registerValidQTestFunction[Model[Qualification, FlowCytometer],validModelQualifi
 registerValidQTestFunction[Model[Qualification, FPLC],validModelQualificationFPLCQTests];
 registerValidQTestFunction[Model[Qualification, FreezePumpThawApparatus],validModelQualificationFreezePumpThawApparatusQTests];
 registerValidQTestFunction[Model[Qualification, Freezer],validModelQualificationFreezerQTests];
+registerValidQTestFunction[Model[Qualification, FumeHood],validModelQualificationFumeHoodQTests];
 registerValidQTestFunction[Model[Qualification, GasChromatography],validModelQualificationGasChromatographyQTests];
 registerValidQTestFunction[Model[Qualification, GeneticAnalyzer],validModelQualificationGeneticAnalyzerQTests];
+registerValidQTestFunction[Model[Qualification, Grinder],validModelQualificationGrinderQTests];
 registerValidQTestFunction[Model[Qualification, HeatBlock],validModelQualificationHeatBlockQTests];
 registerValidQTestFunction[Model[Qualification, Homogenizer],validModelQualificationHomogenizerQTests];
 registerValidQTestFunction[Model[Qualification, HPLC],validModelQualificationHPLCQTests];
@@ -2337,16 +2691,21 @@ registerValidQTestFunction[Model[Qualification, PCR],validModelQualificationPCRQ
 registerValidQTestFunction[Model[Qualification, PeptideSynthesizer],validModelQualificationPeptideSynthesizerQTests];
 registerValidQTestFunction[Model[Qualification, PeristalticPump],validModelQualificationPeristalticPumpQTests];
 registerValidQTestFunction[Model[Qualification, pHMeter],validModelQualificationpHMeterQTests];
+registerValidQTestFunction[Model[Qualification, pHTitrator],validModelQualificationpHTitratorQTests];
 registerValidQTestFunction[Model[Qualification, Pipette],validModelQualificationPipetteQTests];
 registerValidQTestFunction[Model[Qualification, PipettingLinearity],validModelQualificationPipettingLinearityQTests];
 registerValidQTestFunction[Model[Qualification, PlateImager],validModelQualificationPlateImagerQTests];
 registerValidQTestFunction[Model[Qualification, PlateReader],validModelQualificationPlateReaderQTests];
+registerValidQTestFunction[Model[Qualification, DLSPlateReader],validModelQualificationDLSPlateReaderQTests];
 registerValidQTestFunction[Model[Qualification, PlateSealer],validModelQualificationPlateSealerQTests];
+registerValidQTestFunction[Model[Qualification, PortableCooler],validModelQualificationPortableCoolerQTests];
+registerValidQTestFunction[Model[Qualification, PortableHeater],validModelQualificationPortableHeaterQTests];
 registerValidQTestFunction[Model[Qualification, PressureManifold],validModelQualificationPressureManifoldQTests];
 registerValidQTestFunction[Model[Qualification, ProteinCapillaryElectrophoresis],validModelQualificationProteinCapillaryElectrophoresisQTests];
 registerValidQTestFunction[Model[Qualification, qPCR],validModelQualificationqPCRQTests];
 registerValidQTestFunction[Model[Qualification, DigitalPCR],validModelQualificationDigitalPCRQTests];
 registerValidQTestFunction[Model[Qualification, RamanSpectrometer], validModelQualificationRamanSpectrometerQTests];
+registerValidQTestFunction[Model[Qualification, Refrigerator],validModelQualificationRefrigeratorQTests];
 registerValidQTestFunction[Model[Qualification, Rocker],validModelQualificationRockerQTests];
 registerValidQTestFunction[Model[Qualification, Roller],validModelQualificationRollerQTests];
 registerValidQTestFunction[Model[Qualification, RotaryEvaporator],validModelQualificationRotaryEvaporatorQTests];
@@ -2362,6 +2721,7 @@ registerValidQTestFunction[Model[Qualification, VacuumDegasser],validModelQualif
 registerValidQTestFunction[Model[Qualification, Ventilation],validModelQualificationVentilationQTests];
 registerValidQTestFunction[Model[Qualification, Viscometer],validModelQualificationViscometerQTests];
 registerValidQTestFunction[Model[Qualification, Vortex],validModelQualificationVortexQTests];
+registerValidQTestFunction[Model[Qualification, WaterPurifier],validModelQualificationWaterPurifierQTests];
 registerValidQTestFunction[Model[Qualification, Western],validModelQualificationWesternQTests];
 registerValidQTestFunction[Model[Qualification, Tensiometer], validModelQualificationTensiometerQTests];
 registerValidQTestFunction[Model[Qualification, BioLayerInterferometer],validModelQualificationBioLayerInterferometerQTests];

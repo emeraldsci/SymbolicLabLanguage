@@ -124,6 +124,27 @@ validContainerQTests[packet:PacketP[Object[Container]]]:=Module[
 			TimeConstraint -> 120
 		],
 
+
+		Test["If Status is Available or Stocked and AsepticTransportContainerType is Bulk, the container's container must be aseptic bag:",
+			If[MatchQ[Lookup[packet, Status], Available|Stocked] && MatchQ[Lookup[packet, AsepticTransportContainerType], Bulk],
+				MatchQ[Lookup[packet, Container], ObjectP[Object[Container, Bag, Aseptic]]],
+				True
+			],
+			True
+		],
+
+		Test["If Status is Available or Stocked, and the container's container is an aseptic bag, AsepticTransportContainerType must be informed unless it is for training:",
+			If[MatchQ[Lookup[packet, Status], Available|Stocked] && MatchQ[Lookup[packet, Container], ObjectP[Object[Container, Bag, Aseptic]]],
+				(* Note:currently we use Model[Sample, Media, "LB (Solid Agar) Bulk Storage For Training"] for QualificationTrainingAsepticTechnique *)
+				Or[
+					MatchQ[Lookup[packet, AsepticTransportContainerType], AsepticTransportContainerTypeP],
+					!MatchQ[Lookup[packet, Contents], {}] && MemberQ[Download[Lookup[packet, Contents][[All, 2]], Model], ObjectP[Model[Sample, Media, "id:O81aEBv4ZNLO"]]]
+					],
+				True
+			],
+			True
+		],
+
 		(* Cameras *)
 		Test["Positions monitored by the cameras exist on the Container:",
 			Module[{allowedPosition, monitoredLocations},
@@ -265,7 +286,7 @@ validContainerQTests[packet:PacketP[Object[Container]]]:=Module[
 		Test["For medium to large containers, Object[Container] TareWeight is within 5% of the Model[Container] TareWeight, if both are uploaded:",
 			Module[{containerTareWeight, modelContainerTareWeight},
 				containerTareWeight=Lookup[packet, TareWeight];
-				modelContainerTareWeight=Lookup[modelPacket TareWeight, Null];
+				modelContainerTareWeight=Lookup[modelPacket, TareWeight, Null];
 				If[MassQ[containerTareWeight] && MassQ[modelContainerTareWeight],
 					(* both fields are uploaded, so check inequality *)
 					If[modelContainerTareWeight > (2 Gram),
@@ -339,9 +360,9 @@ validContainerQTests[packet:PacketP[Object[Container]]]:=Module[
 			False
 		],
 
-		(* Reusable can only be True if model's Reusability is True *)
-		Test["Reusable is only True if Reusability of Model is also True:",
-			{Lookup[packet, Reusable], Lookup[modelPacket, Reusability]},
+		(* Reusable can only be True if model's Reusable is True *)
+		Test["Reusable is only True if Reusable of Model is also True:",
+			{Lookup[packet, Reusable], Lookup[modelPacket, Reusable]},
 			{True, True} | {Except[True], _}
 		],
 
@@ -642,6 +663,8 @@ validContainerBagDishwasherQTests[packet:PacketP[Object[Container,Bag,Dishwasher
 
 validContainerBagAutoclaveQTests[packet:PacketP[Object[Container,Bag,Autoclave]]]:={};
 
+validContainerBagAsepticQTests[packet:PacketP[Object[Container,Bag,Aseptic]]]:={};
+
 
 (* ::Subsection::Closed:: *)
 (*validContainerBoxQTests*)
@@ -765,10 +788,26 @@ validContainerCentrifugeBucketQTests[packet:PacketP[Object[Container,CentrifugeB
 
 
 (* ::Subsection::Closed:: *)
-(*validContainerColonyHandlerHeadCassetteholderQTests*)
+(*validContainerColonyHandlerHeadCassetteHolderQTests*)
 
 
-validContainerColonyHandlerHeadCassetteholderQTests[packet:PacketP[Object[Container,ColonyHandlerHeadCassetteHolder]]]:={};
+validContainerColonyHandlerHeadCassetteHolderQTests[packet:PacketP[Object[Container,ColonyHandlerHeadCassetteHolder]]]:={
+
+	NotNullFieldTest[
+		packet,
+		{
+			ColonyHandlerHeadCassette
+		}
+	],
+
+	Test["The ColonyHandlerHeadCassetteHolder of the ColonyHandlerHeadCassette must be this object",
+		MatchQ[
+			Download[Lookup[packet,ColonyHandlerHeadCassette,Null],ColonyHandlerHeadCassetteHolder[Object]],
+			ObjectP[Lookup[packet,Object]]
+		],
+		True
+	]
+};
 
 
 (* ::Subsection::Closed:: *)
@@ -914,11 +953,11 @@ validContainerGasCylinderQTests[packet:PacketP[Object[Container,GasCylinder]]]:=
 	],
 
 	Test["If the gas cylinder is InUse the PressureSensor field must be populated:",
-		{Lookup[packet,Status],Lookup[packet,PressureSensor],Lookup[packet,CurrentProtocol]},
+		{Lookup[packet,Status],Lookup[packet,PressureSensor],Lookup[packet, LiquidLevelSensor], Lookup[packet,CurrentProtocol]},
 		(*If a cylinder is InUse by a protocol it should not have a sensor yet. It is resource picked and the sensor is added in the parser*)
-		{InUse,NullP,ObjectP[Object[Maintenance,InstallGasCylinder]]}|
+		{InUse, NullP, NullP, ObjectP[Object[Maintenance,InstallGasCylinder]]} |
 			(*After installation a cylinder should be InUse with a sensor and no current protocol*)
-			{InUse,ObjectP[Object[Sensor,Pressure]],NullP}|{Except[InUse],NullP,NullP}
+			{InUse,ObjectP[Object[Sensor,Pressure]],NullP,NullP} | {InUse,NullP,ObjectP[Object[Sensor,LiquidLevel]],NullP} | {Except[InUse],NullP,NullP,NullP}
 	]
 };
 
@@ -987,10 +1026,10 @@ validContainerNMRSpinnerQTests[packet:PacketP[Object[Container,NMRSpinner]]]:={
 
 
 (* ::Subsection::Closed:: *)
-(*validContainerMagazineParkPositionQTests*)
+(*validContainerMagazineRackQTests*)
 
 
-validContainerMagazineParkPositionQTests[packet:PacketP[Object[Container,MagazineParkPosition]]]:={
+validContainerMagazineRackQTests[packet:PacketP[Object[Container,MagazineRack]]]:={
 	NotNullFieldTest[packet,{
 		Model
 	}]
@@ -1128,7 +1167,7 @@ validContainerPlateQTests[packet:PacketP[Object[Container,Plate]]]:={
 		Or[
 			(* If it is not Available, then we are good *)
 			!MatchQ[Lookup[packet,Status],Available],
-			MatchQ[Lookup[packet,Status],Available]&&(!MatchQ[Lookup[packet,Contents],{}]||MatchQ[Lookup[packet,Restricted],True]||MatchQ[Download[packet[Model],Reusability],True])
+			MatchQ[Lookup[packet,Status],Available]&&(!MatchQ[Lookup[packet,Contents],{}]||MatchQ[Lookup[packet,Restricted],True]||MatchQ[Download[packet[Model],Reusable],True])
 		],
 		True
 	]
@@ -1304,7 +1343,7 @@ validContainerProteinCapillaryElectrophoresisCartridgeInsertQTests[packet:Packet
 
 validContainerRackQTests[packet:PacketP[Object[Container,Rack]]]:={
 	NotNullFieldTest[packet,{
-		Model, StorageCondition
+		Model
 	}],
 
 	(* Make sure parts storage racks can never used for regular storage  *)
@@ -1425,6 +1464,35 @@ validContainerShelfQTests[packet:PacketP[Object[Container,Shelf]]]:={
 		BatchNumber,
 		DateStocked
 		}
+	],
+
+	Test["The ProvidedStorageCondition of the Shelf matches that of its container unless it is a TopLevelStorageDestination:",
+		Module[{providedStorageCondition, container,containerPSC,topLevelStorageDestination,status},
+			{providedStorageCondition, container, topLevelStorageDestination, status}=Lookup[packet,{ProvidedStorageCondition, Container, TopLevelStorageDestination, Status}];
+
+			containerPSC=Download[
+				container,
+				ProvidedStorageCondition
+			];
+
+			Which[
+				(* theres no container or these are freezer shelves. These shelves may need to be ProvidedStorageCondition Null due to defrosting *)
+				MatchQ[container, Null|ObjectP[Object[Container, Freezer]]], True,
+
+				(* the shelf itself is a top level position and does not need to match its container *)
+				MatchQ[topLevelStorageDestination, True], True,
+
+				(* shelf is not in active use for storage *)
+				MatchQ[status, Except[(Stocked|Available)]], True,
+
+				(* shelf and container are not for storage *)
+				MatchQ[{containerPSC, providedStorageCondition}, {Null, Null}], True,
+
+				(* check if the shelf and its container have the same ProvidedStorageCondition *)
+				True, MatchQ[containerPSC, ObjectP[providedStorageCondition]]
+			]
+		],
+		True
 	]
 };
 
@@ -1499,7 +1567,7 @@ validContainerVesselQTests[packet:PacketP[Object[Container,Vessel]]]:={
 		Or[
 			(* If it is not Available, then we are good *)
 			!MatchQ[Lookup[packet,Status],Available],
-			MatchQ[Lookup[packet,Status],Available]&&(!MatchQ[Lookup[packet,Contents],{}]||MatchQ[Lookup[packet,Restricted],True]||MatchQ[Download[packet[Model],Reusability],True])
+			MatchQ[Lookup[packet,Status],Available]&&(!MatchQ[Lookup[packet,Contents],{}]||MatchQ[Lookup[packet,Restricted],True]||MatchQ[Download[packet[Model],Reusable],True])
 		],
 		True
 	]
@@ -1743,7 +1811,7 @@ validContainerPlateCapillaryStripQTests[packet:PacketP[Object[Container, Plate, 
 
 	(*Shared fields*)
 	NotNullFieldTest[packet, {
-		Reusability,
+		Reusable,
 		RecommendedFillVolume
 	}]
 };
@@ -1881,6 +1949,7 @@ validContainerSpillKitQTests[packet:PacketP[Object[Container,SpillKit]]]:={
 registerValidQTestFunction[Object[Container],validContainerQTests];
 registerValidQTestFunction[Object[Container, Bag],validContainerBagQTests];
 registerValidQTestFunction[Object[Container, Bag, Dishwasher],validContainerBagDishwasherQTests];
+registerValidQTestFunction[Object[Container, Bag, Aseptic],validContainerBagAsepticQTests];
 registerValidQTestFunction[Object[Container, Bag, Autoclave],validContainerBagAutoclaveQTests];
 registerValidQTestFunction[Object[Container, Box],validContainerBoxQTests];
 registerValidQTestFunction[Object[Container, Bench],validContainerBenchQTests];
@@ -1894,7 +1963,7 @@ registerValidQTestFunction[Object[Container, Clamp],validContainerClampQTests];
 registerValidQTestFunction[Object[Container, ExtractionCartridge],validContainerExtractionCartridgeQTests];
 registerValidQTestFunction[Object[Container, CentrifugeBucket],validContainerCentrifugeBucketQTests];
 registerValidQTestFunction[Object[Container, CentrifugeRotor],validContainerCentrifugeRotorQTests];
-registerValidQTestFunction[Object[Container, ColonyHandlerHeadCassetteHolder],validContainerColonyHandlerHeadCassetteholderQTests];
+registerValidQTestFunction[Object[Container, ColonyHandlerHeadCassetteHolder],validContainerColonyHandlerHeadCassetteHolderQTests];
 registerValidQTestFunction[Object[Container, Cuvette],validContainerCuvetteQTests];
 registerValidQTestFunction[Object[Container, Deck],validContainerDeckQTests];
 registerValidQTestFunction[Object[Container, DosingHead],validContainerDosingHeadQTests];
@@ -1913,7 +1982,7 @@ registerValidQTestFunction[Object[Container, GrindingContainer],validContainerGr
 registerValidQTestFunction[Object[Container,Hemocytometer],validContainerHemocytometerQTests];
 registerValidQTestFunction[Object[Container,JunctionBox],validContainerJunctionBoxQTests];
 registerValidQTestFunction[Object[Container,LightBox],validContainerLightBoxQTests];
-registerValidQTestFunction[Object[Container,MagazineParkPosition],validContainerMagazineParkPositionQTests];
+registerValidQTestFunction[Object[Container,MagazineRack],validContainerMagazineRackQTests];
 registerValidQTestFunction[Object[Container,MicrofluidicChip],validContainerMicrofluidicChipQTests];
 registerValidQTestFunction[Object[Container,MicroscopeSlide],validContainerMicroscopeSlideQTests];
 registerValidQTestFunction[Object[Container,NMRSpinner],validContainerNMRSpinnerQTests];

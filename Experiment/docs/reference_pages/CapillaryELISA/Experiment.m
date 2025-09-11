@@ -45,7 +45,12 @@ DefineUsage[ExperimentCapillaryELISA,{
 									Type -> Object,
 									Pattern :> ObjectP[{Object[Container]}]
 								]
-							}
+							},
+							"Model Sample"->Widget[
+								Type -> Object,
+								Pattern :> ObjectP[Model[Sample]],
+								ObjectTypes -> {Model[Sample]}
+							]
 						],
 						Expandable->False
 					},
@@ -98,7 +103,7 @@ DefineUsage[ExperimentCapillaryELISA,{
 		"ExperimentELISA",
 		"ExperimentWestern",
 		"ExperimentTotalProteinQuantification",
-		"ExperimentSampleManipulation"
+		"ExperimentSamplePreparation"
 	},
 	Tutorials->{
 		"Sample Preparation"
@@ -149,7 +154,12 @@ DefineUsage[ExperimentCapillaryELISAOptions,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -172,10 +182,7 @@ DefineUsage[ExperimentCapillaryELISAOptions,
 			"ExperimentCapillaryELISA",
 			"ValidExperimentCapillaryELISAQ"
 		},
-		Author->{
-			"clayton.schwarz",
-			"axu"
-		}
+		Author->{"dima", "clayton.schwarz", "axu"}
 	}
 ];
 
@@ -223,7 +230,12 @@ DefineUsage[ValidExperimentCapillaryELISAQ,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -243,10 +255,7 @@ DefineUsage[ValidExperimentCapillaryELISAQ,
 			"ExperimentCapillaryELISA",
 			"ExperimentCapillaryELISAOptions"
 		},
-		Author->{
-			"clayton.schwarz",
-			"axu"
-		}
+		Author->{"dima", "clayton.schwarz", "axu"}
 	}
 ];
 
@@ -290,7 +299,12 @@ DefineUsage[ExperimentCapillaryELISAPreview,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -314,9 +328,6 @@ DefineUsage[ExperimentCapillaryELISAPreview,
 			"ExperimentCapillaryELISAOptions",
 			"ValidExperimentCapillaryELISAQ"
 		},
-		Author->{
-			"clayton.schwarz",
-			"axu"
-		}
+		Author->{"dima", "clayton.schwarz", "axu"}
 	}
 ];

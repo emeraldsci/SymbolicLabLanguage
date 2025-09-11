@@ -13,7 +13,7 @@
 $WellSpecificResources = False;
 
 (* ::Subsubsection:: *)
-(*ExperimentPourPlate Options and Messages*)
+(*ExperimentPlateMedia Options and Messages*)
 (* resolver will need to reject plates that cannot be used with the pourer *)
 
 DefineOptions[ExperimentPlateMedia,
@@ -36,13 +36,14 @@ DefineOptions[ExperimentPlateMedia,
 								"Instruments",
 								"Liquid Handling",
 								"Serological Pipettes"
-							},
+							}(* Add this back if/when plate pourers go online
+							,
 							{
 								Object[Catalog,"Root"],
 								"Instruments",
 								"Cell Culture",
 								"Plate Pourer"
-							}
+							}*)
 						}
 					]
 				],
@@ -93,7 +94,7 @@ DefineOptions[ExperimentPlateMedia,
 				Widget->Alternatives[
 					Widget[
 						Type->Number,
-						Pattern:>GreaterEqualP[0]
+						Pattern:>RangeP[1,10,1]
 					]
 				]
 			},
@@ -158,7 +159,7 @@ DefineOptions[ExperimentPlateMedia,
 			},
 			{
 				OptionName->PrePlatingIncubationTime,
-				Default->15*Minute,
+				Default->40*Minute,
 				Description->"The duration of time for which the media will be heated/cooled with optional stirring to the target PlatingTemperature.",
 				AllowNull->True,
 				Category->"Plating",
@@ -166,7 +167,7 @@ DefineOptions[ExperimentPlateMedia,
 					Widget[
 						Type->Quantity,
 						Pattern:>RangeP[0*Minute,$MaxExperimentTime],
-						Units->{1,{Minute,{Minute,Hour}}}
+						Units->{1,{Hour,{Minute,Hour}}}
 					],
 					Widget[
 						Type->Enumeration,
@@ -184,7 +185,7 @@ DefineOptions[ExperimentPlateMedia,
 					Widget[
 						Type->Quantity,
 						Pattern:>RangeP[0*Minute,$MaxExperimentTime],
-						Units->{1,{Minute,{Minute,Hour}}}
+						Units->{1,{Hour,{Minute,Hour}}}
 					],
 					Widget[
 						Type->Enumeration,
@@ -193,7 +194,8 @@ DefineOptions[ExperimentPlateMedia,
 				],
 				ResolutionDescription->"Automatically set to three times the duration of the PrePlatingIncubationTime setting."
 			},
-			{
+			(* This option is temporarily suspended, but we may bring it back at some point, so we'll keep this portion commented out rather than deleted *)
+			(*{
 				OptionName->PrePlatingMixRate,
 				Default->100*RPM,(*TODO test in lab, may need to calibrate *)
 				Description->"The rate at which the stir bar within the liquid media is rotated prior to pumping the media into incubation plates.",
@@ -210,7 +212,7 @@ DefineOptions[ExperimentPlateMedia,
 						Pattern:>Alternatives[None,Automatic]
 					]
 				]
-			},
+			},*)
 			{
 				OptionName->PlatingTemperature,
 				Default->Automatic,
@@ -222,7 +224,7 @@ DefineOptions[ExperimentPlateMedia,
 					Pattern:>RangeP[$AmbientTemperature,$MaxTemperatureProfileTemperature],
 					Units->{1,{Celsius,{Celsius,Fahrenheit}}}
 				],
-				ResolutionDescription->"Automatically set to the lesser of 75 degrees Celsius or 5 degrees Celsius below the PlateOut model's MaxTemperature if MediaPhase is set to Solid/SemiSolid and/or if GellingAgents is specified."
+				ResolutionDescription->"Automatically set to 1.025 times the melting temperature (in Kelvin) of the GellingAgents if MediaPhase is set to Solid/SemiSolid and/or if GellingAgents is specified."
 			},
 			{
 				OptionName->PumpFlowRate,
@@ -282,7 +284,7 @@ DefineOptions[ExperimentPlateMedia,
 		(* --- Shared Standard Protocol Options --- *)
 		ProtocolOptions,
 		OutputOption,
-		PostProcessingOptions,
+		BiologyPostProcessingOptions,
 		SamplesOutStorageOption,
 		SimulationOption
 	}
@@ -313,17 +315,63 @@ $PreferredPreparatoryContainers = {Model[Container,Vessel,"100 mL Glass Bottle"]
 };
 $MinimumMediaVolume = 20 Milliliter;
 
-resolvePlateMediaOptions[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]..},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolvePlateMediaOptions]]:=Module[{outputSpecification,output,gatherTests,messages,fastTrack,fastAssoc,cache,specifiedInstruments,specifiedPlateOuts,specifiedDestinationWells,specifiedNumbersOfPlates,specifiedPlatingMethods,specifiedPrePlatingIncubationTimes,specifiedMaxPrePlatingIncubationTimes,specifiedPrePlatingMixRates,specifiedPlatingTemperatures,specifiedPlatingVolumes,specifiedPumpFlowRates,specifiedSolidificationTimes,specifiedPlatedMediaShelfLifes,uniqueSpecifiedPlateOutsModels,samplePackets,unindexedPlateOuts,indexedPlateOuts,inconsistentPlateOutFormatErrorQ,resolvedPlateOuts,specifiedPlateOutModels,PlateOutPackets,gellingAgentPackets,sampleContainerPackets,platingMethodPumpInstrumentMismatchErrorQs,platingMethodPumpInstrumentMismatchPositions,platingMethodPumpInstrumentMismatchInputs,platingMethodPumpInstrumentMismatchOptions,platingMethodPumpInstrumentMismatchInvalidOptions,platingMethodPumpFlowRateMismatchErrorQs,platingMethodPumpFlowRateMismatchPositions,platingMethodPumpFlowRateMismatchInputs,platingMethodPumpFlowRateMismatchOptions,platingMethodPumpFlowRateMismatchInvalidOptions,destinationWellPlateOutMismatchErrorQs,destinationWellPlateOutMismatchPositions,destinationWellPlateOutMismatchInputs,destinationWellPlateOutMismatchDestinationWellOptions,destinationWellPlateOutMismatchPlateOutOptions,destinationWellPlateOutMismatchInvalidOptions,containerMaxVolumes,plateOutMissingMaxVolumeErrorQ,plateOutMissingMaxVolumePositions,plateOutMissingMaxVolumeInputs,plateOutMissingMaxVolumeContainers,plateOutMissingMaxVolumeInvalidOptions,platingVolumeExceedsMaxVolumeErrorQs,platingVolumeExceedsMaxVolumePositions,platingVolumeExceedsMaxVolumeInputs,platingVolumeExceedsMaxVolumePlatingVolumes,platingVolumeExceedsMaxVolumePlateOuts,platingVolumeExceedsMaxVolumeMaxVolumes,platingVolumeExceedsMaxVolumeInvalidOptions,platingVolumeExceedsHalfMaxVolumeErrorQs,platingVolumeExceedsHalfMaxVolumePositions,platingVolumeExceedsHalfMaxVolumeInputs,platingVolumeExceedsHalfMaxVolumePlatingVolumes,platingVolumeExceedsHalfMaxVolumePlateOuts,platingVolumeExceedsHalfMaxVolumeMaxVolumes,resolvedInstruments,gellingAgentsPresent,gellingAgentsMeltingPoints,gellingAgentsMaxMeltingPoints,recommendedPlatingTemperatures,resolvedPlatingMethods,resolvedPlatingInstruments,resolvedMaxPrePlatingIncubationTimes,resolvedOptions,invalidOptions,allTests,plateOutResources,resolvedPlatingTemperatures,platingTemperatureLowerThanRecommendedWarningQs,platingTemperatureLowerThanRecommendedPositions,platingTemperatureLowerThanRecommendedInputs,platingTemperatureLowerThanRecommendedTemperatureOptions,platingTemperatureRecommendations,platingTemperatureLowerThanRecommendedGellingAgents,platingTemperatureLowerThanRecommendedRecommendedTemperature,resolvedPlatingVolumes,unspecifiedPlatingVolumeInputs,resolvedDestinationWells,PlateOutWellTuples,gatheredPlateOutWellTuples,needPlatingVolumeOptionErrorQs,optionsForGrouping,inputsAndOptionsForGrouping,inputsGroupedByObject,consolidatedMediaVolumesNeeded,InsufficientMediaVolumeConsolidatedErrorQs,unspecifiedDestinationWellQs,unspecifiedDestinationWellPositions,unspecifiedNumberOfPlatesQs,unspecifiedNumberOfPlatesPositions,sampleVolumes,insufficientMediaVolumeErrorQs,mediaVolumesNeeded,insufficientMediaVolumePositions,insufficientMediaVolumeInputs,insufficientMediaVolumeTotalNeededVolumes,insufficientMediaVolumePlateOutOptions,insufficientMediaVolumeNumberOfPlatesOptions,insufficientMediaVolumeOptions,insufficientMediaVolumeDestinationWellOptions,unspecifiedDestinationWellInputs,possibleWellPositions,resolvedPumpFlowRates},
+resolvePlateMediaOptions[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]..},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolvePlateMediaOptions]]:=Module[{outputSpecification,output,gatherTests,messages,
+	fastTrack,fastAssoc,cache,specifiedInstruments,specifiedPlateOuts,specifiedDestinationWells,specifiedNumbersOfPlates,
+	specifiedPlatingMethods,specifiedPrePlatingIncubationTimes,specifiedMaxPrePlatingIncubationTimes,specifiedPrePlatingMixRates,
+	specifiedPlatingTemperatures,specifiedPlatingVolumes,specifiedPumpFlowRates,specifiedSolidificationTimes,specifiedPlatedMediaShelfLifes,
+	uniqueSpecifiedPlateOutsModels,samplePackets,unindexedPlateOuts,indexedPlateOuts,inconsistentPlateOutFormatErrorQ,resolvedPlateOuts,
+	specifiedPlateOutModels,PlateOutPackets,gellingAgentPackets,sampleContainerPackets,platingMethodPumpInstrumentMismatchErrorQs,
+	platingMethodPumpInstrumentMismatchPositions,platingMethodPumpInstrumentMismatchInputs,platingMethodPumpInstrumentMismatchOptions,platingMethodPumpInstrumentMismatchInvalidOptions,platingMethodPumpFlowRateMismatchErrorQs,platingMethodPumpFlowRateMismatchPositions,
+	platingMethodPumpFlowRateMismatchInputs,platingMethodPumpFlowRateMismatchOptions,platingMethodPumpFlowRateMismatchInvalidOptions,
+	destinationWellPlateOutMismatchErrorQs,destinationWellPlateOutMismatchPositions,destinationWellPlateOutMismatchInputs,
+	destinationWellPlateOutMismatchDestinationWellOptions,destinationWellPlateOutMismatchPlateOutOptions,destinationWellPlateOutMismatchInvalidOptions,
+	containerMaxVolumes,plateOutMissingMaxVolumeErrorQ,plateOutMissingMaxVolumePositions,plateOutMissingMaxVolumeInputs,plateOutMissingMaxVolumeContainers,
+	plateOutMissingMaxVolumeInvalidOptions,platingVolumeExceedsMaxVolumeErrorQs,platingVolumeExceedsMaxVolumePositions,platingVolumeExceedsMaxVolumeInputs,
+	platingVolumeExceedsMaxVolumePlatingVolumes,platingVolumeExceedsMaxVolumePlateOuts,platingVolumeExceedsMaxVolumeMaxVolumes,
+	platingVolumeExceedsMaxVolumeInvalidOptions,platingVolumeExceedsHalfMaxVolumeErrorQs,platingVolumeExceedsHalfMaxVolumePositions,
+	platingVolumeExceedsHalfMaxVolumeInputs,platingVolumeExceedsHalfMaxVolumePlatingVolumes,platingVolumeExceedsHalfMaxVolumePlateOuts,
+	platingVolumeExceedsHalfMaxVolumeMaxVolumes,resolvedInstruments,gellingAgentsPresent,gellingAgentsMeltingPoints,gellingAgentsMaxMeltingPoints,
+	recommendedPlatingTemperatures,resolvedPlatingMethods,resolvedPlatingInstruments,resolvedMaxPrePlatingIncubationTimes,
+	resolvedOptions,invalidOptions,allTests,plateOutResources,resolvedPlatingTemperatures,platingTemperatureLowerThanRecommendedWarningQs,
+	platingTemperatureLowerThanRecommendedPositions,platingTemperatureLowerThanRecommendedInputs,platingTemperatureLowerThanRecommendedTemperatureOptions,
+	platingTemperatureRecommendations,platingTemperatureLowerThanRecommendedGellingAgents,platingTemperatureLowerThanRecommendedRecommendedTemperature,
+	resolvedPlatingVolumes,unspecifiedPlatingVolumeInputs,resolvedDestinationWells,PlateOutWellTuples,gatheredPlateOutWellTuples,
+	needPlatingVolumeOptionErrorQs,optionsForGrouping,inputsAndOptionsForGrouping,inputsGroupedByObject,consolidatedMediaVolumesNeeded,
+	InsufficientMediaVolumeConsolidatedErrorQs,unspecifiedDestinationWellQs,unspecifiedDestinationWellPositions,unspecifiedNumberOfPlatesQs,
+	unspecifiedNumberOfPlatesPositions,sampleVolumes,insufficientMediaVolumeErrorQs,mediaVolumesNeeded,insufficientMediaVolumePositions,
+	insufficientMediaVolumeInputs,insufficientMediaVolumeTotalNeededVolumes,insufficientMediaVolumePlateOutOptions,insufficientMediaVolumeNumberOfPlatesOptions,insufficientMediaVolumeOptions,insufficientMediaVolumeDestinationWellOptions,unspecifiedDestinationWellInputs,possibleWellPositions,optionPrecisions,roundedExperimentOptions,optionPrecisionTests,
+	resolvedPumpFlowRates,email,resolvedPostProcessingOptions, specifiedSite, resolvedSite},
 	(* Determine the requested output format of this function. *)
 	outputSpecification = Quiet[OptionValue[Output]];
 	output = ToList[outputSpecification];
-	
 	(* Determine if we should keep a running list of tests to return to the user. *)
 	gatherTests = MemberQ[output,Tests];
 	messages = Not[gatherTests];
-	cache = Lookup[myResolutionOptions,Cache];
+	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
 	
 	fastAssoc = makeFastAssocFromCache[cache];
+
+	(* - Round the experiment options - *)
+	(* First, define the option precisions that need to be checked for PlateMedia *)
+	optionPrecisions={
+		{PlatingVolume,10^-1*Milliliter},
+		{PrePlatingIncubationTime,10^0*Minute},
+		{MaxPrePlatingIncubationTime,10^0*Minute},
+		{PlatingTemperature,10^-1*Celsius},
+		{SolidificationTime,10^0*Minute},
+		{PumpFlowRate,10^0*(Milliliter/Second)},
+		{PlatedMediaShelfLife,10^0*Day}
+	};
+
+	(* Verify that the experiment options are not overly precise *)
+	{roundedExperimentOptions,optionPrecisionTests}=If[gatherTests,
+
+		(*If we are gathering tests *)
+		RoundOptionPrecision[Association[myOptions],optionPrecisions[[All,1]],optionPrecisions[[All,2]],Output->{Result,Tests}],
+
+		(* Otherwise *)
+		{RoundOptionPrecision[Association[myOptions],optionPrecisions[[All,1]],optionPrecisions[[All,2]]],{}}
+	];
 	
 	(* Pull out the relevant options *)
 	{
@@ -334,13 +382,13 @@ resolvePlateMediaOptions[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}].
 		(*6*)specifiedPlatingMethods,
 		(*7*)specifiedPrePlatingIncubationTimes,
 		(*8*)specifiedMaxPrePlatingIncubationTimes,
-		(*9*)specifiedPrePlatingMixRates,
+		(*9*)(*specifiedPrePlatingMixRates,*)
 		(*10*)specifiedPlatingTemperatures,
 		(*11*)specifiedPlatingVolumes,
 		(*12*)specifiedPumpFlowRates,
 		(*13*)specifiedSolidificationTimes,
 		(*14*)specifiedPlatedMediaShelfLifes
-	} = Lookup[myOptions,
+	} = Lookup[roundedExperimentOptions,
 		{
 			(*1*)Instrument,
 			(*3*)PlateOut,
@@ -349,7 +397,7 @@ resolvePlateMediaOptions[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}].
 			(*6*)PlatingMethod,
 			(*7*)PrePlatingIncubationTime,
 			(*8*)MaxPrePlatingIncubationTime,
-			(*9*)PrePlatingMixRate,
+			(*9*)(*PrePlatingMixRate,*)
 			(*10*)PlatingTemperature,
 			(*11*)PlatingVolume,
 			(*12*)PumpFlowRate,
@@ -361,7 +409,7 @@ resolvePlateMediaOptions[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}].
 	samplePackets = Map[fetchPacketFromFastAssoc[#,fastAssoc]&,myMedia];
 
 	(* We get plates out here by objects and then by models *)
-	resolvedPlateOuts = reIndexContainerOut[myMedia,myOptions];
+	resolvedPlateOuts = reIndexContainerOut[myMedia,roundedExperimentOptions];
 	specifiedPlateOutModels = resolvedPlateOuts[[All,2]];
 	uniqueSpecifiedPlateOutsModels = DeleteDuplicates[specifiedPlateOutModels];
 	PlateOutPackets = Map[fetchPacketFromFastAssoc[#,fastAssoc]&,uniqueSpecifiedPlateOutsModels];
@@ -473,11 +521,11 @@ resolvePlateMediaOptions[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}].
 	gellingAgentsPresent = Flatten[Quiet[Download[myMedia,{Model[GellingAgents][[All,2]][Object],GellingAgents[[All,2]][Object]}],{Download::FieldDoesntExist,Download::NotLinkField}]/.{$Failed->Nothing},1];
 	gellingAgentsMeltingPoints = Map[Function[{gellingAgents},N[Convert[Map[Lookup[Lookup[fastAssoc,#],MeltingPoint]&,gellingAgents],Celsius]]],gellingAgentsPresent];
 	gellingAgentsMaxMeltingPoints = Map[Max[#]&,gellingAgentsMeltingPoints];
-	recommendedPlatingTemperatures = Map[N[Convert[N[Convert[#,Kelvin]*0.95],Celsius]]&,gellingAgentsMaxMeltingPoints];
+	recommendedPlatingTemperatures = Map[N[Convert[N[Convert[#,Kelvin]*1.025],Celsius]]&,gellingAgentsMaxMeltingPoints];
 	resolvedPlatingTemperatures = MapThread[Function[{specifiedPlatingTemperature,recommendedPlatingTemperature},
 		If[MatchQ[specifiedPlatingTemperature,TemperatureP],
 			specifiedPlatingTemperature,
-			recommendedPlatingTemperature
+			RoundOptionPrecision[recommendedPlatingTemperature, 10^-1*Celsius, Round->Up]
 		]
 	],{specifiedPlatingTemperatures,recommendedPlatingTemperatures}];
 	
@@ -566,9 +614,13 @@ resolvePlateMediaOptions[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}].
 		Module[{platingVolume},
 			platingVolume = If[!MatchQ[specifiedPlatingVolume,Automatic],
 				specifiedPlatingVolume,
-				Convert[
-					0.5*containerMaxVolume,
-					Milliliter
+				RoundOptionPrecision[
+					Convert[
+						0.5*containerMaxVolume,
+						Milliliter
+					],
+					10^-1*Milliliter,
+					Round->Up
 				]
 			];
 			Table[platingVolume,Length[destinationWells]]
@@ -582,7 +634,7 @@ resolvePlateMediaOptions[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}].
 	{mediaVolumesNeeded,insufficientMediaVolumeErrorQs} = Transpose[MapThread[Function[{myMedium,sampleVolume,specifiedNumberOfPlates,resolvedPlatingVolume,resolvedDestinationWell},
 		Module[{totalMediaVolumeNeeded,insufficientMediaVolumeErrorQ},
 			totalMediaVolumeNeeded = Convert[
-				specifiedNumberOfPlates*Length[resolvedDestinationWell]*resolvedPlatingVolume / $PercentPlatable,
+				1.15*specifiedNumberOfPlates*Length[resolvedDestinationWell]*resolvedPlatingVolume / $PercentPlatable,
 				Milliliter
 			];
 			insufficientMediaVolumeErrorQ = Which[
@@ -633,15 +685,26 @@ resolvePlateMediaOptions[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}].
 	inputsGroupedByObject = groupByKey[inputsAndOptionsForGrouping,{Object}][[All,2]];
 	
 	(* Resolve MaxPrePlatingIncubationTime option *)
+	(* Don't need to round because PrePlatingIncubationTime is already rounded *)
 	resolvedMaxPrePlatingIncubationTimes = MapThread[
 		If[MatchQ[#2,Automatic],
 			3*#1,
 			#2
 		]&,{specifiedPrePlatingIncubationTimes,specifiedMaxPrePlatingIncubationTimes}
 	];
+
+	(* get the resolved Email option; for this experiment, the default is True if it's a parent protocol, and False if it's a sub *)
+	email = Which[
+		MatchQ[Lookup[roundedExperimentOptions, Email], Automatic] && NullQ[Lookup[roundedExperimentOptions,ParentProtocol]], True,
+		MatchQ[Lookup[roundedExperimentOptions, Email], Automatic] && MatchQ[Lookup[roundedExperimentOptions,ParentProtocol], ObjectP[ProtocolTypes[]]], False,
+		True, Lookup[roundedExperimentOptions, Email]
+	];
+
+	(* Resolve Post Processing Options *)
+	resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions,Sterile->True];
 	
 	resolvedOptions = ReplaceRule[
-		myOptions,
+		Normal[roundedExperimentOptions],
 		Flatten[{
 			Instrument->resolvedInstruments,
 			PlateOut->resolvedPlateOuts,
@@ -650,7 +713,9 @@ resolvePlateMediaOptions[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}].
 			PlatingMethod->resolvedPlatingMethods,
 			PlatingTemperature->resolvedPlatingTemperatures,
 			PumpFlowRate->resolvedPumpFlowRates,
-			MaxPrePlatingIncubationTime->resolvedMaxPrePlatingIncubationTimes
+			MaxPrePlatingIncubationTime->resolvedMaxPrePlatingIncubationTimes,
+			Email->email,
+			resolvedPostProcessingOptions
 		}]
 	];
 	
@@ -772,7 +837,7 @@ sampleResourcesPerPlatePerWell[resourceAssociation:KeyValuePattern[{Sample->mySa
 
 sufficientMediaForPlatingCheck[sampleResourceAssociation:KeyValuePattern[{Sample->myMedia:{ObjectP[{Model[Sample,Media],Object[Sample]}]..},Amount->amounts_}],Cache->cache_]:=Module[{media,totalVolumeNeeded,totalVolumePresent,insufficientMediaQ},
 	media=First[myMedia];
-	totalVolumeNeeded=Total[amounts];
+	totalVolumeNeeded=1.15*Total[amounts];
 	totalVolumePresent=If[MatchQ[media,ObjectP[Model[Sample,Media]]],Null,Download[media,Volume,Cache->cache]];
 	insufficientMediaQ=!Or[NullQ[totalVolumePresent],totalVolumePresent>totalVolumeNeeded];
 	{media,totalVolumeNeeded,totalVolumePresent,insufficientMediaQ}
@@ -782,8 +847,9 @@ resourceSampleContainer[mySample:ObjectP[{Model[Sample,Media],Object[Sample]}],v
 	If[MatchQ[mySample,ObjectP[Model[Sample,Media]]],
 		(
 			preferredPreparatoryContainerPackets=Map[fetchPacketFromCache[#,cache]&,$PreferredPreparatoryContainers];
+			(* Because in the overwhelming majority of cases we will be autoclaving, we need a bottle where the volume of the stock solution is no more than 75% of the volume of the container *)
 			defaultPreparatoryContainerPacket=First[Select[preferredPreparatoryContainerPackets,
-				Lookup[#,MaxVolume]>volume&&Lookup[#,MinVolume]<volume&]
+				Lookup[#,MaxVolume]>(4/3)*volume&&Lookup[#,MinVolume]<volume&]
 			];
 			Lookup[defaultPreparatoryContainerPacket,Object]
 		),
@@ -820,7 +886,8 @@ plateMediaResourcePackets[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]
 	resolvedDestinationWells,resolvedPrePlatingMixRates,resolvedPlatingTemperatures,resolvedPumpFlowRates,resolvedSolidificationTimes,allResourceBlobs,
 	fulfillable,frqTests,resourceSampleContainers,sampleResourceAssociationsPerContainer,invalidOptions,protocolPacket,preview,options,result,tests,
 	resolvedInstruments,resolvedPrePlatingIncubationTimes,resolvedMaxPrePlatingIncubationTimes,instrumentResources,resourcePickingTime,
-	incubationTime,transferTime
+	incubationTime,transferTime,expandedPlatingVolumes,expandedDestinationWells,tipsResources,transferEnvironmentResource,
+	biosafetyWasteBinResource,biosafetyWasteBagResource,flameSourceResource,plateBagsResources
 },
 	
 	(* Determine the requested return value from the function *)
@@ -881,10 +948,6 @@ plateMediaResourcePackets[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]
 		]
 	],myMedia];
 	
-	expandedSamplesInResources = Flatten[MapThread[Function[{samplesInResource,numberOfPlates},
-		Table[samplesInResource,numberOfPlates]
-	],{samplesInResources,numbersOfPlates}]];
-	
 	plateResourceLabels = Map[Table[CreateUUID[],#]&,numbersOfPlates];
 	containerModels = platesOut[[All,2]];
 	platesOutResources = Flatten[MapThread[Function[{containerModel,plateResourceLabel},
@@ -895,7 +958,7 @@ plateMediaResourcePackets[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]
 		resolvedPlatingMethods,
 		resolvedPlatingVolumes,
 		resolvedDestinationWells,
-		resolvedPrePlatingMixRates,
+		(*resolvedPrePlatingMixRates,*)
 		resolvedPlatingTemperatures,
 		resolvedPumpFlowRates,
 		resolvedSolidificationTimes,
@@ -907,7 +970,7 @@ plateMediaResourcePackets[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]
 			PlatingMethod,
 			PlatingVolume,
 			DestinationWell,
-			PrePlatingMixRate,
+			(*PrePlatingMixRate,*)
 			PlatingTemperature,
 			PumpFlowRate,
 			SolidificationTime,
@@ -917,14 +980,55 @@ plateMediaResourcePackets[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]
 		}
 	];
 
+	(* Use expanded plating volume *)
+	{expandedPlatingVolumes,expandedDestinationWells} = Lookup[sampleResourceAssociationsPerSample, #]&/@{Amount, Well};
+
 	(* Instrument resource *)
 	instrumentResources = DeleteDuplicates[Flatten[Resource[Instrument -> #]&/@resolvedInstruments]];
+
+	(* In the majority of cases, we are going to default to the exact same set of the following resources, so we will hardcode them here *)
+	{
+		tipsResources, transferEnvironmentResource, biosafetyWasteBinResource, biosafetyWasteBagResource, flameSourceResource,
+		plateBagsResources
+	} = If[MatchQ[containerModels,{ObjectP[Model[Container,Plate,"id:O81aEBZjRXvx"]]..}] && MatchQ[resolvedPlatingMethods, {Pour..}], (*"Omni Tray Sterile Media Plate"*)
+		{
+			ConstantArray[Link[Resource[Sample->Model[Item, Tips, "id:aXRlGnZmOJdv"]]], Length[samplesInResources]], (*"50 mL glass barrier serological pipets, sterile"*)
+			Link[Resource[Instrument->Model[Instrument, HandlingStation, BiosafetyCabinet, "id:XnlV5jNYpXYP"]]], (*"Biosafety Cabinet Handling Station with Analytical Balance"*)
+			Link[Resource[Sample->Model[Container, WasteBin, "id:1ZA60vzK7jl8"]]], (*"Biohazard Waste Container, BSC (Aseptic Transfer)"*)
+			Link[Resource[Sample->Model[Item, Consumable, "id:7X104v6oeYNJ"]]], (*"Biohazard Waste Bags, 8x12"*)
+			Link[Resource[Sample->Model[Part, Lighter, "id:M8n3rx07ZGa9"]]], (*"BIC Grill Lighter"*)
+			ConstantArray[Link[Resource[Sample ->
+				If[Length[
+					Search[
+						Object[Container, Bag, Aseptic],
+						Model == Model[Container, Bag, Aseptic, "id:BYDOjvRD18Bq"] &&	(*"8x8 inch aseptic bag"*)
+          	Status == (Available | Stocked) &&
+					 	ContentsLog == {} &&
+           	Notebook == (Null | $Notebook)
+						&& Site == $Site
+					]
+				] > Length[platesOutResources],
+					Model[Container, Bag, Aseptic, "id:BYDOjvRD18Bq"],
+					Model[Container, Bag, Aseptic, "id:eGakldea0Kmo"] (*"12x12 inch aseptic bag"*)
+				]
+			]], Length[platesOutResources]]
+		},
+		{
+			ConstantArray[Null, Length[samplesInResources]],
+			Null,
+			Null,
+			Null,
+			Null,
+			ConstantArray[Null, Length[platesOutResources]]
+		}
+	];
 	
 	(* Fulfillable resources check *)
-	allResourceBlobs = DeleteDuplicates[Cases[Flatten[samplesInResources],_Resource, Infinity]];
+	allResourceBlobs = DeleteDuplicates[Cases[Flatten[{samplesInResources,tipsResources,transferEnvironmentResource,biosafetyWasteBinResource,biosafetyWasteBagResource, flameSourceResource,
+		plateBagsResources}],_Resource, Infinity]];
 	{fulfillable,frqTests} = Which[
 		MatchQ[$ECLApplication,Engine], {True,{}},
-		True,{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Messages->messages, Cache->plateMediaResourceCache], {}}
+		True,{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Messages->messages, Cache->plateMediaResourceCache, Simulation->Simulation[plateMediaResourceCache]], {}}
 	];
 	
 	invalidOptions = DeleteDuplicates[Flatten[{insufficientMediaVolumeErrorInvalidOptions}]];
@@ -942,15 +1046,16 @@ plateMediaResourcePackets[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]
 	protocolPacket = <|
 		Object->CreateID[Object[Protocol,PlateMedia]],
 		Type->Object[Protocol,PlateMedia],
-		Replace[SamplesIn]->Map[Link[#,Protocols]&,expandedSamplesInResources],
+		Replace[SamplesIn]->Map[Link[#,Protocols]&,samplesInResources],
 		Replace[PlatesOut]->Map[Link[#]&,platesOutResources],
+		Replace[NumbersOfPlates]->numbersOfPlates,
 		UnresolvedOptions->myUnresolvedOptions,
 		ResolvedOptions->myResolvedOptions,
 		
 		Replace[PlatingMethods]->resolvedPlatingMethods,
-		Replace[Volumes]->resolvedPlatingVolumes,
-		Replace[DestinationWells]->resolvedDestinationWells,
-		Replace[MixRates]->resolvedPrePlatingMixRates,
+		Replace[Volumes]->expandedPlatingVolumes,
+		Replace[DestinationWells]->expandedDestinationWells,
+		(*Replace[MixRates]->resolvedPrePlatingMixRates,*)
 		Replace[Temperatures]->resolvedPlatingTemperatures,
 		Replace[PouringRates]->resolvedPumpFlowRates,
 		Replace[SolidificationTimes]->resolvedSolidificationTimes,
@@ -959,15 +1064,21 @@ plateMediaResourcePackets[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]
 		Replace[MaxPrePlatingIncubationTimes]->resolvedMaxPrePlatingIncubationTimes,
 		Replace[TotalIncubationTimes]->ConstantArray[0*Minute,Length[resolvedPrePlatingIncubationTimes]],
 		Replace[PouringFailed]->ConstantArray[False,Length[resolvedPrePlatingIncubationTimes]],
-		Replace[FullyThawed]->ConstantArray[True,Length[resolvedPrePlatingIncubationTimes]],
-		Replace[Incubators]->ConstantArray[Link[Model[Instrument, Shaker,"id:mnk9jORRwA7Z"]],Length[resolvedPrePlatingIncubationTimes]],(*"Genie Temp-Shaker 300"*)
+		Replace[Incubators]->ConstantArray[Link[Model[Instrument, HeatBlock, "id:eGakldJWknme"]],Length[resolvedPrePlatingIncubationTimes]],(*"Cole-Parmer StableTemp Digital Utility Water Baths, 10 liters"*)
+		Replace[Tips]->tipsResources,
+		TransferEnvironment->transferEnvironmentResource,
+		Replace[BiosafetyWasteBin]->biosafetyWasteBinResource,
+		Replace[BiosafetyWasteBag]->biosafetyWasteBagResource,
+		FlameSource->flameSourceResource,
+		Replace[PlateBags]->plateBagsResources,
 
 		Replace[Checkpoints]->{
 			{"Picking Resources",resourcePickingTime,"Samples, containers, and plates required to execute this protocol are gathered from storage and stock solutions are freshly prepared.",
-				Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> resourcePickingTime]]},
-			{"Incubation",incubationTime,"The media are incubated prior to plating.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> incubationTime]]},
-			{"Plating",transferTime,"The media are poured into plates and allowed to solidify.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> transferTime]]},
-			{"Returning Materials",10 Minute,"Samples are returned to storage.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10*Minute]]}
+				Link[Resource[Operator -> $BaselineOperator, Time -> resourcePickingTime]]},
+			{"Incubation",incubationTime,"The media are incubated prior to plating.",Link[Resource[Operator -> $BaselineOperator, Time -> incubationTime]]},
+			{"Plating",transferTime,"The media are poured into plates and allowed to solidify.",Link[Resource[Operator -> $BaselineOperator, Time -> transferTime]]},
+			{"Sample Post-Processing",30 Minute, "Any measuring of volume, weight, or sample imaging post experiment is performed.",Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]},
+			{"Returning Materials",10 Minute,"Samples are returned to storage.",Link[Resource[Operator -> $BaselineOperator, Time -> 10*Minute]]}
 		}
 	|>;
 	
@@ -1031,7 +1142,18 @@ ExperimentPlateMedia[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]..},m
 	cache = Lookup[safeOptionsPlateMediaNamed,Cache,{}];
 	simulation = Lookup[safeOptionsPlateMediaNamed,Simulation,Null];
 	
-	{listedMedia,safeOptionsPlateMedia} = sanitizeInputs[listedMediaNamed,safeOptionsPlateMediaNamed];
+	{listedMedia,safeOptionsPlateMedia} = sanitizeInputs[listedMediaNamed,safeOptionsPlateMediaNamed, Simulation->simulation];
+
+	(* If the specified options don't match their patterns or if sanitization failed return $Failed *)
+	If[MatchQ[safeOptionsPlateMedia, $Failed],
+		Return[outputSpecification /. {
+			Result->$Failed,
+			Tests->safeOptionsPlateMediaTests,
+			Options->$Failed,
+			Preview->Null,
+			Simulation->Null
+		}]
+	];
 	
 	(* Check that the options are of correct lengths *)
 	{validLengths,validLengthTests} = If[gatherTests,
@@ -1119,7 +1241,7 @@ ExperimentPlateMedia[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]..},m
 	
 	(* Collapse the resolved options *)
 	collapsedResolvedPlateMediaOptions = CollapseIndexMatchedOptions[
-		ExperimentVisualInspection,
+		ExperimentPlateMedia,
 		resolvedPlateMediaOptions,
 		Ignore->listedPlateMediaOptionsNamed,
 		Messages->False
@@ -1149,6 +1271,10 @@ ExperimentPlateMedia[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]..},m
 		(* If our resource packets failed, we can't upload anything. *)
 		MatchQ[protocolPacket, $Failed],
 		$Failed,
+
+		(* If result is not in the output specification, return $Failed *)
+		!MemberQ[listedOutput, Result],
+		$Failed,
 		
 		(* Actually upload our protocol object. *)
 		True,
@@ -1156,6 +1282,7 @@ ExperimentPlateMedia[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]..},m
 			protocolPacket,
 			Upload->Lookup[safeOptionsPlateMedia, Upload],
 			Confirm->Lookup[safeOptionsPlateMedia, Confirm],
+			CanaryBranch -> Lookup[safeOptionsPlateMedia, CanaryBranch],
 			ParentProtocol->Lookup[safeOptionsPlateMedia, ParentProtocol],
 			Priority->Lookup[safeOptionsPlateMedia, Priority],
 			StartDate->Lookup[safeOptionsPlateMedia, StartDate],
@@ -1166,10 +1293,147 @@ ExperimentPlateMedia[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]..},m
 	];
 
 	result = protocolObject;
+
 	outputSpecification /. {
 		Result -> result,
-		Options -> resolvedPlateMediaOptions,
+		Options -> RemoveHiddenOptions[ExperimentPlateMedia,collapsedResolvedPlateMediaOptions],
 		Tests -> resolvedPlateMediaOptionsTests,
 		Preview -> Null
 	}
 ];
+
+(* --- SISTER FUNCTIONS ---*)
+
+(* ::Subsubsection:: *)
+(*ExperimentPlateMediaOptions*)
+
+DefineOptions[ExperimentPlateMediaOptions,
+	Options:>{
+		{
+			OptionName -> OutputFormat,
+			Default -> Table,
+			AllowNull -> False,
+			Widget -> Widget[Type->Enumeration, Pattern:>Alternatives[Table, List]],
+			Description -> "Determines whether the function returns a table or a list of the options."
+		}
+	},
+	SharedOptions:>{ExperimentPlateMedia}
+];
+
+(* --- Overloads --- *)
+
+(* Overload 1: Singleton media model (pass to Overload 2) *)
+ExperimentPlateMediaOptions[myMedium:ObjectP[{Object[Sample],Model[Sample,Media]}],myOptions:OptionsPattern[ExperimentPlateMediaOptions]]:=ExperimentPlateMediaOptions[{myMedium}, myOptions];
+
+(* Overload 2: List of media models *)
+ExperimentPlateMediaOptions[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]..},myOptions:OptionsPattern[ExperimentPlateMediaOptions]]:=Module[
+	{listedOptions, noOutputOptions, options},
+
+	(* get the options as a list *)
+	listedOptions = ToList[myOptions];
+
+	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
+
+	(* return only the options for ExperimentNMR *)
+	options = ExperimentPlateMedia[myMedia, Append[noOutputOptions, Output -> Options]];
+
+	(* Return the option as a list or table *)
+	If[MatchQ[Lookup[listedOptions, OutputFormat, Table], Table],
+		LegacySLL`Private`optionsToTable[options, ExperimentPlateMedia],
+		options
+	]
+
+];
+
+(* ::Subsubsection:: *)
+(*ValidExperimentPlateMediaQ*)
+
+DefineOptions[ValidExperimentPlateMediaQ,
+	Options:>{
+		VerboseOption,
+		OutputFormatOption
+	},
+	SharedOptions:>{ExperimentPlateMedia}
+];
+
+(* --- Overloads --- *)
+
+(* Overload 1: Singleton media model (pass to Overload 2) *)
+ValidExperimentPlateMediaQ[myMedium:ObjectP[{Object[Sample],Model[Sample,Media]}],myOptions:OptionsPattern[ValidExperimentPlateMediaQ]]:=ValidExperimentPlateMediaQ[{myMedium}, myOptions];
+
+(* Overload 2: List of media models *)
+ValidExperimentPlateMediaQ[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]..},myOptions:OptionsPattern[ValidExperimentPlateMediaQ]]:=Module[
+	{listedOptions,optionsWithoutOutput,tests,initialTestDescription,allTests,verbose,outputFormat},
+
+	(* get the options as a list *)
+	listedOptions=ToList[myOptions];
+
+	(* since Output option is in UploadStockSolution options, we want to ignore that if present somehow *)
+	optionsWithoutOutput=DeleteCases[listedOptions,(OutputFormat->_)|(Output->_)|(Verbose->_)];
+
+	(* add back in explicitly just the Tests Output option for passing to core function to get just tests *)
+	tests = ExperimentPlateMedia[myMedia,Append[optionsWithoutOutput,Output->Tests]];
+
+	(* define the general test description *)
+	initialTestDescription = "All provided options and inputs match their provided patterns (no further testing can proceed if this test fails):";
+
+	(* make a list of all the tests, including the blanket test *)
+	allTests = If[MatchQ[tests, $Failed],
+		{Test[initialTestDescription, False, True]},
+		Module[
+			{initialTest, validObjectBooleans, voqWarnings},
+
+			(* generate the initial test, which we know will pass if we got this far (?) *)
+			initialTest = Test[initialTestDescription, True, True];
+
+			(* create warnings for invalid objects *)
+			validObjectBooleans = ValidObjectQ[DeleteCases[ToList[myMedia], _String], OutputFormat -> Boolean];
+			voqWarnings = MapThread[
+				Warning[StringJoin[ToString[#1, InputForm], " is valid (run ValidObjectQ for more detailed information):"],
+					#2,
+					True
+				]&,
+				{DeleteCases[ToList[myMedia], _String], validObjectBooleans}
+			];
+
+			(* get all the tests/warnings *)
+			Flatten[{initialTest, tests, voqWarnings}]
+		]
+	];
+
+	(* determine the Verbose and OutputFormat options; quiet the OptionValue::nodef message in case someone just passed nonsense *)
+	{verbose, outputFormat} = Quiet[OptionDefault[OptionValue[{Verbose, OutputFormat}]], OptionValue::nodef];
+
+	(* Run the tests as requested *)
+	Lookup[RunUnitTest[<|"ValidExperimentPlateMediaQ"->allTests|>,OutputFormat->outputFormat,Verbose->verbose],"ValidExperimentPlateMediaQ"]
+];
+
+(* ::Subsubsection:: *)
+(*ExperimentPlateMediaPreview*)
+
+DefineOptions[ExperimentPlateMediaPreview,
+	Options:>{
+		VerboseOption,
+		OutputFormatOption
+	},
+	SharedOptions:>{ExperimentPlateMedia}
+];
+
+
+(* --- Overloads --- *)
+
+(* Overload 1: Singleton media model (pass to Overload 2) *)
+ExperimentPlateMediaPreview[myMedium:ObjectP[{Object[Sample],Model[Sample,Media]}],myOptions:OptionsPattern[ExperimentPlateMediaPreview]]:=ExperimentPlateMediaPreview[{myMedium}, myOptions];
+
+(* Overload 2: List of media models *)
+ExperimentPlateMediaPreview[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]..},myOptions:OptionsPattern[ExperimentPlateMediaPreview]]:=Module[
+	{listedOptions},
+
+	(* get the options as a list *)
+	listedOptions=ToList[myOptions];
+
+	(* add back in explicitly just the Preview Output option for passing to core function to get just preview *)
+	ExperimentPlateMedia[myMedia,Append[listedOptions,Output->Preview]]
+];
+
