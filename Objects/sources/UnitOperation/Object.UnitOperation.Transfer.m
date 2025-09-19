@@ -366,11 +366,11 @@ DefineObjectType[Object[UnitOperation,Transfer],
 
 			HandlingCondition -> {
 				Format -> Multiple,
-				Class -> Link,
-				Pattern :> _Link,
-				Relation -> Model[HandlingCondition],
+				Class -> Expression,
+				Pattern :> ObjectP[Model[HandlingCondition]] | {ObjectP[Model[HandlingCondition]]...},
 				Description -> "The abstract condition that describes the environment in which the transfer will be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Benchtop Handling Station). This option cannot be set when Preparation->Robotic.",
-				Category -> "General"
+				Category -> "General",
+				Developer -> True
 			},
 
 			BiosafetyWasteBin -> {
@@ -1091,6 +1091,18 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Pattern :> BooleanP,
 				Description -> "Indicates if any residual sample transferred into the intermediate container is transferred back to the source sample.",
 				Category -> "General"
+			},
+			WasteContainer->{
+				Format->Single,
+				Class->Link,
+				Pattern:>_Link,
+				Relation->Alternatives[
+					Model[Container,Vessel],
+					Object[Container,Vessel]
+				],
+				Description->"The container used to temporarily hold any leftover samples removed from the intermediate container and graduated cylinder when IntermediateDecantRecoup is False. The sample in this vessel will be discarded at the end of the protocol.",
+				Category -> "General",
+				Developer -> True
 			},
 			DisplayedDecantAmountAsVolume -> {
 				Format -> Single,
@@ -2199,6 +2211,55 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Pattern :> Alternatives[Wet,Dry,None],
 				Description ->  "Indicates the type of cleaning performed on the balance right before a weighing instance if the operator indicates presence of stray material. Dry indicates the balance pan surface and the balance floor outside of the balance pan is cleared of any stray material using soft and lint-free non-woven wipes. Wet indicates the balance pan surface and the balance floor outside of the balance pan is first cleaned with Dry method, followed by wiping with DI-water moistened wipes, IPA-moistened wipes, and a final dry wipe. None indicates no cleaning is performed prior to initial setup.",
 				Category -> "General"
+			},
+			BalanceCleaningLocation ->{
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> Alternatives[BalancePan,BalanceSurface,Both,None],
+				Description ->  "Indicates the area of the balance that requires cleaning due to presense of stray material. BalancePan indicates presence of stray material on the weighing slot. BalanceSurface indicates presence of stray material on surfaces inside the balance but outside the weighing slot.",
+				Category -> "General"
+			},
+			OperatorMaterialLossAssessment ->{
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description ->  "Indicates whether stray material is observed by the operator on the balance pan, the surface outside of the balance pan or both.",
+				Category -> "General"
+			},
+			MaterialLossAutoDetected ->{
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description ->  "Indicates whether a material loss is detected based on relevant weight data tracked in MaterialLossWeightData field of the unit operation.",
+				Category -> "General"
+			},
+			OverdrawVolume -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Milliliter],
+				Units -> Milliliter,
+				Description -> "When performing a syringe transfer, the amount with which to fill the syringe with to allow for the removal of air from the syringe body, determined by adding the specified Amount and a calculated extra volume based on the needle and syringe used.",
+				Category -> "General"
+			},
+			OverdrawVolumeWasteContainer -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Object[Container, Vessel],
+					Model[Container, Vessel]
+				],
+				Description -> "The vessel to hold any extraneous discarded sample when expelling air or bringing the sample volume to the target amount after overdrawing.",
+				Category -> "General"
+			},
+			SyringeImage -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "An image that imitates what the syringe should look like when filled to the target volume.",
+				Category -> "General",
+				Developer -> True
 			}
 		}
 	}

@@ -360,6 +360,13 @@ DefineObjectType[Model[Sample], {
 			Description->"Indicates if this model is in the form of a small disk or cylinder of compressed solid substance in a measured amount.",
 			Category->"Physical Properties"
 		},
+		Capsule ->{
+			Format->Single,
+			Class->Boolean,
+			Pattern:>BooleanP,
+			Description->"Indicates if this model is in the form of a small cylinder that can be opened containing solid substance in a measured amount.",
+			Category->"Physical Properties"
+		},
 		SolidUnitWeight->{
 			Format->Single,
 			Class->Real,
@@ -398,6 +405,22 @@ DefineObjectType[Model[Sample], {
 			Description->"The viscosity of the substance in pure form at room temperature.",
 			Category->"Physical Properties",
 			Abstract->False
+		},
+		MiscibleLiquids -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Molecule][MiscibleLiquids], Model[Sample][MiscibleLiquids]],
+			Description -> "Solvent or solvent mixtures with which this sample is able to mix with and form a homogenous solution regardless of the ratio.",
+			Category -> "Physical Properties"
+		},
+		LD50 -> {
+			Format -> Multiple,
+			Class -> {Real, Expression, Expression},
+			Pattern :> {GreaterP[0], AnimalP, DosageRouteP},
+			Description -> "The dose for which a half the members of a given population dies. Dose is recorded as a unitless value but corresponds to dosage mass per animal mass.",
+			Category -> "Health & Safety",
+			Headers -> {"Dose", "Animal", "Route"}
 		},
 
 		(* --- Sample History --- *)
@@ -653,6 +676,14 @@ DefineObjectType[Model[Sample], {
 			Relation->Object[EmeraldCloudFile],
 			Description->"PDFs of any product documentation provided by the supplier of this model.",
 			Category->"Inventory"
+		},
+		Icon -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "A simplified image used to represent this sample.",
+			Category -> "Organizational Information"
 		},
 		ConcentratedBufferDiluent->{
 			Format->Single,

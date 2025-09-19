@@ -89,6 +89,20 @@ DefineObjectType[Model[Qualification, pHTitrator], {
       Developer->True,
       Description -> "The pH values specified as the desired target in the qualification with buffer sample.",
       Category -> "General"
+    },
+    AccuracyTest -> {
+      Format -> Single,
+      Class -> Boolean,
+      Pattern :> BooleanP,
+      Description -> "Indicates whether the qualification should test the titrator's transfer ability by adding acid and then base to a water sample.",
+      Category -> "Qualification Parameters"
+    },
+    AdjustpHTest -> {
+      Format -> Single,
+      Class -> Boolean,
+      Pattern :> BooleanP,
+      Description -> "Indicates whether the qualification should test the titrator's ability to perform an AdjustpH protocol.",
+      Category -> "Qualification Parameters"
     }
   }
 }];

@@ -168,7 +168,7 @@ DefineObjectType[Model[Item, Tips], {
 		AscendingGraduationTypes -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> Alternatives[Labeled, Short, Long],
+			Pattern :> GraduationTypeP,
 			Description -> "For each member of AscendingGraduations, indicates if the graduation is labeled with a number, a long unlabeled line, or a short unlabeled line.",
 			Category -> "General",
 			IndexMatching -> AscendingGraduations
@@ -194,7 +194,7 @@ DefineObjectType[Model[Item, Tips], {
 		DescendingGraduationTypes -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> Alternatives[Labeled, Short, Long],
+			Pattern :> GraduationTypeP,
 			Description -> "For each member of DescendingGraduations, indicates if the descending graduation is labeled with a number, a long unlabeled line, or a short unlabeled line.",
 			Category -> "General",
 			IndexMatching -> DescendingGraduations

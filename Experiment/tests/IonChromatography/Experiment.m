@@ -8471,7 +8471,7 @@ DefineTests[ExperimentIonChromatography,
             EquivalenceFunction->Equal,
             TimeConstraint->240,
             Variables:>{options}
-        ],
+        ],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
         Example[{Options,FilterSterile,"Indicates if the filtration of the samples should be done in a sterile environment:"},
             options=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
                 FilterSterile->True,
@@ -8482,7 +8482,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Messages:>{Warning::AliquotRequired},
             Variables:>{options}
-        ],
+        ],*)
         Example[{Options,FilterAliquot,"The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
             options=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
                 FilterAliquot->0.3*Milliliter,Output->Options

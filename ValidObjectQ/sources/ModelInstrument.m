@@ -2868,7 +2868,26 @@ validModelInstrumentIonChromatographyQTests[packet:PacketP[Model[Instrument, Ion
 	FieldComparisonTest[packet, {MinFlowCellpH,MaxFlowCellpH}, LessEqual]
 };
 
+(* ::Subsection::Closed:: *)
+(*validModelInstrumentKarlFischerTiratorQTests*)
 
+
+validModelInstrumentKarlFischerTiratorQTests[packet:PacketP[Model[Instrument, KarlFischerTitrator]]]:={
+	(* Shared fields which should be null *)
+
+	(* Shared fields which should NOT be null *)
+	NotNullFieldTest[packet,{
+		Positions,
+		PositionPlotting,
+		TitrationTechnique,
+		SamplingMethods
+	}
+	],
+
+
+	(* Min/Max tests *)
+	FieldComparisonTest[packet, {MinTemperature,MaxTemperature}, LessEqual]
+};
 
 (* ::Subsection::Closed:: *)
 (*validModelInstrumentLightMeterQTests*)
@@ -5472,6 +5491,7 @@ registerValidQTestFunction[Model[Instrument, HPLC],validModelInstrumentHPLCQTest
 registerValidQTestFunction[Model[Instrument, Incubator],validModelInstrumentIncubatorQTests];
 registerValidQTestFunction[Model[Instrument, InfraredProbe],validModelInstrumentInfraredProbeQTests];
 registerValidQTestFunction[Model[Instrument, IonChromatography],validModelInstrumentIonChromatographyQTests];
+registerValidQTestFunction[Model[Instrument, KarlFischerTitrator],validModelInstrumentKarlFischerTiratorQTests];
 registerValidQTestFunction[Model[Instrument, LightMeter],validModelInstrumentLightMeterQTests];
 registerValidQTestFunction[Model[Instrument, LiquidHandler],validModelInstrumentLiquidHandlerQTests];
 registerValidQTestFunction[Model[Instrument, LiquidHandler,AcousticLiquidHandler],validModelInstrumentAcousticLiquidHandlerQTests];

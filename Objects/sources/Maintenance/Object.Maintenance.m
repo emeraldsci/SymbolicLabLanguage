@@ -1616,6 +1616,14 @@ With[
 				Description -> "The list of video streams associated with this maintenance.",
 				Category -> "General"
 			},
+			StreamErrors -> {
+				Format -> Multiple,
+				Class -> String,
+				Pattern :> _String,
+				Description -> "The error operator encountered when trying to start stream for the protocol.",
+				Category -> "General",
+				Developer -> True
+			},
 			Movements -> {
 				Format -> Multiple,
 				Class -> {Link, Link, String, String, Integer, Integer},

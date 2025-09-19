@@ -83,7 +83,7 @@ DefineOptions[
         Widget->Widget[
           Type->Object,
           Pattern:>ObjectP[{
-            (* NOTE: We can only use frozen samples that come in Footprint->CryogenicVial with this instrument. *)
+            (* NOTE: We can only use frozen samples that come in CryogenicVial with this instrument. Check ExperimentFreezeCell's helper whyCantThisModelBeCryogenicVial *)
             Model[Instrument, CellThaw],
             Object[Instrument, CellThaw],
 
@@ -95,7 +95,7 @@ DefineOptions[
           }]
         ],
         Description->"The instrument used to gently heat the frozen cell sample until it is thawed.",
-        ResolutionDescription->"Automatically set to Model[Instrument, CellThaw, \"ThawSTAR\"], if the samples are in a CryogenicVial. Otherwise, set to Model[Instrument, HeatBlock, \"Cole-Parmer StableTemp Digital Utility Water Baths, 10 liters\"].",
+        ResolutionDescription->"Automatically set to Model[Instrument, CellThaw, \"ThawSTAR\"], if the samples are in a cryogenic vial. Otherwise, set to Model[Instrument, HeatBlock, \"Cole-Parmer StableTemp Digital Utility Water Baths, 10 liters\"].",
         Category->"Thawing"
       },
       {
@@ -687,8 +687,8 @@ resolveThawCellsMethod[mySamples:{ObjectP[{Object[Sample], Model[Sample]}]...}, 
 
   (* Create a list of reasons why we need Preparation->Manual. *)
   manualRequirementStrings={
-    If[MemberQ[Lookup[sampleContainerModelPackets, Footprint, {}], Except[CryogenicVial]],
-      "the sample container footprints "<>ToString[Cases[Transpose[{(ObjectToString[#, Cache->sampleContainerModelPackets]&)/@Lookup[sampleContainerModelPackets, Object, {}], Lookup[sampleContainerModelPackets, Footprint, {}]}], {_, Except[CryogenicVial]}][[All,1]]]<>" are not able to be thawed on the liquid handler",
+    If[MemberQ[Lookup[sampleContainerModelPackets, Footprint, {}], Except[CEVial]],
+      "the sample container footprints "<>ToString[Cases[Transpose[{(ObjectToString[#, Cache->sampleContainerModelPackets]&)/@Lookup[sampleContainerModelPackets, Object, {}], Lookup[sampleContainerModelPackets, Footprint, {}]}], {_, Except[CEVial]}][[All,1]]]<>" are not able to be thawed on the liquid handler",
       Nothing
     ],
     If[MemberQ[Lookup[safeOptions, Instrument], Except[Automatic|ObjectP[{Model[Instrument, HeatBlock, "id:R8e1Pjp1W39a"], Model[Instrument, Shaker, "id:pZx9jox97qNp"], Model[Instrument, Shaker, "id:KBL5Dvw5Wz6x"], Model[Instrument, Shaker, "id:eGakldJkWVnz"]}]]], (* Hamilton Heater Cooler *)

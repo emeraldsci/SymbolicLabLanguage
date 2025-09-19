@@ -227,6 +227,17 @@ DefineObjectType[Object[Maintenance, Flush], {
 			Description -> "The container used to hold waste from rinsing plumbing connections.",
 			Category -> "Cleaning"
 		},
+		CapWashAdapter -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Plumbing],
+				Model[Plumbing]
+			],
+			Description -> "Buffer cap plumbing adapter used to clean the tubing interior of used buffer caps.",
+			Category -> "Prime System"
+		},
 		BufferContainerPlacements -> {
 			Format -> Multiple,
 			Class -> {Link,Expression},
@@ -285,7 +296,7 @@ DefineObjectType[Object[Maintenance, Flush], {
 			Relation -> Object[Data][Maintenance],
 			Description -> "The chromatography traces generated for the system flush run.",
 			Category -> "Experimental Results",
-			Developer->True
+			Developer -> True
 		}
 	}
 }];

@@ -4686,13 +4686,19 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 					modelClause = Model == (Alternatives @@ Lookup[modelPacket, Object]),
 					(*we explicitly forbid reuse of InUse covers so we don't steal covers from other containers while we are fulfilling a Model resource*)
 					(*we also forbid a non-reusable container to be picked as Available, just in case they were used in another protocol with no sample uploaded to it due to it being used as intermediate container or some other bug *)
+					(* if the model is dishwashable, only allowed stocked *)
 					statusClause = Which[
 						MatchQ[Lookup[modelPacket, Object], {ObjectP[Join[CoverModelTypes, {Model[Item, Stopper], Model[Item, Septum]}]]..}],
-						Status == (Available | Stocked),
-						MatchQ[Lookup[modelPacket, Object], {ObjectP[FluidContainerModelTypes]..}] && MatchQ[Lookup[modelPacket, Reusable], {Except[True]..}],
-						Status == Stocked,
+							Status == (Available | Stocked),
+
+						Or[
+							MatchQ[Lookup[modelPacket, CleaningMethod], CleaningMethodP],
+							MatchQ[Lookup[modelPacket, Object], {ObjectP[FluidContainerModelTypes]..}] && MatchQ[Lookup[modelPacket, Reusable], {Except[True]..}]
+						],
+							Status == Stocked,
+
 						True,
-						Status == (Available | Stocked | InUse)
+							Status == (Available | Stocked | InUse)
 					],
 					(*the only time we care about this is when we are looking for public samples*)
 					notebookClause = If[nullNotebookQ,

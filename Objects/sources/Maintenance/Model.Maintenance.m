@@ -90,6 +90,14 @@ DefineObjectType[Model[Maintenance], {
 			Description -> "Indicates if this Maintenance should Always, or Never be enqueued by the automatic maintenance scheduling function, overriding normal scheduling behavior based on frequency and NextMaintenanceDate.",
 			Category-> "Qualifications & Maintenance",
 			Developer -> True
+		},
+		UndergoingMaintenanceOverride -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this Maintenance should be enqueued even if the target instrument's status is UndergoingMaintenance.",
+			Category -> "Qualifications & Maintenance",
+			Developer -> True
 		}
 	}
 }];

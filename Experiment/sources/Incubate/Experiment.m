@@ -1044,23 +1044,7 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
 	(* Get the mix instruments in the lab that are not deprecated. *)
 	instruments=Flatten[{
-		Search[
-			{
-				Model[Instrument,Vortex],
-				Model[Instrument,Shaker],
-				Model[Instrument,BottleRoller],
-				Model[Instrument,Roller],
-				Model[Instrument,OverheadStirrer],
-				Model[Instrument,Sonicator],
-				Model[Instrument,HeatBlock],
-				Model[Instrument,Homogenizer],
-				Model[Instrument,Disruptor],
-				Model[Instrument,Nutator],
-				Model[Instrument,EnvironmentalChamber],
-				Model[Instrument,Thermocycler]
-			},
-			Deprecated==(False|Null) && DeveloperObject != True
-		],
+		mixInstrumentsSearch["Memoization"],
 		Cases[ToList[myOptions],ObjectP[Object[Instrument]],Infinity]
 	}];
 
@@ -1096,7 +1080,8 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 		PreferredContainer[All,Sterile->True,LightSensitive->True,Type->Vessel],
 		PreferredContainer[All,Sterile->False,LightSensitive->True,Type->Vessel],
 		PreferredContainer[All,Sterile->True,LightSensitive->False,Type->Vessel],
-		Model[Container,Plate,"96-well 2mL Deep Well Plate"]
+		Model[Container,Plate,"96-well 2mL Deep Well Plate"],
+		Model[Container, Vessel, "id:xRO9n3vk11mz"] (* 50mL beaker *)
 	}]];
 
 	(* Sample Fields. *)
@@ -1538,14 +1523,14 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 	(* Download variables. *)
 	fullCacheBall,instrumentSearch,vortexes,shakers,bottleRollers,rollers,stirrerModels,stirrerObjects,sonicators,
 	heatBlocks,homogenizers,disruptors,nutators,supportedSonicationContainers,sampleContainerPackets,preferredVesselPackets,
-	vortexInstrumentPackets,shakeInstrumentPackets,rollInstrumentPackets,sonicationInstrumentPackets,heatBlockInstrumentPackets,homogenizerInstrumentPackets,sonicationContainerPackets,
-	samplePackets,sampleContainerModelPackets,bottleRollerInstrumentPackets,stirInstrumentPackets,preferredVessels,instrumentPackets,disruptorInstrumentPackets, nutatorInstrumentPackets,
-	rollerInstrumentPackets,stirInstrumentImpellerPackets,sampleContainerModelCalibrationPackets,samplePipettingMethodPackets,allTipModelPackets,suppliedTipObjectPackets,
+	vortexInstrumentPackets,shakeInstrumentPackets,rollInstrumentPackets,sonicationInstrumentPackets,heatBlockInstrumentPackets,homogenizerInstrumentPackets,
+	samplePackets,sampleContainerModelPackets,bottleRollerInstrumentPackets,stirInstrumentPackets,preferredVessels,disruptorInstrumentPackets, nutatorInstrumentPackets,
+	stirInstrumentImpellerPackets,sampleContainerModelCalibrationPackets,samplePipettingMethodPackets,allTipModelPackets,suppliedTipObjectPackets,
 	environmentalChamberInstrumentPackets,environmentalChambers,thermocyclers,thermocyclerInstrumentPackets,allSyringeModelPackets,
 	allPipetteModelPackets, allAspiratorModelPackets, allBalanceModelPackets, allWeighingContainerModelPackets, allGraduatedCylinderModelPackets,
 	allSpatulaModelPackets, allNeedleModelPackets, allTransportConditionPackets, allFumeHoodPackets, allGloveBoxPackets, allEnclosurePackets,
 	allBiosafetyCabinetPackets, allBenchPackets, allFunnelPackets, allRackModelPackets, allModelConsumablePackets, allGraduatedContainerModelPackets, allHandPumpPackets,allHandPumpAdapaterPackets,suppliedStirBarPackets,
-	allHandlingConditionModelPackets, allHandlingStationPackets,
+	allHandlingConditionModelPackets, allHandlingStationPackets, allDownloadPackets, fastAssoc,
 
 	(* Invalid input variables. *)
 	discardedSamplePackets,discardedInvalidInputs,discardedTest,flattenedMixDutyCycleOptions,typeAndInstrumentMismatches,typerAndInstrumentMismatchOptions,typeAndInstrumentMismatchInputs,
@@ -1656,23 +1641,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 	(*-- DOWNLOAD --*)
 	(* Get the mix instruments in the lab that are not deprecated. *)
 	instruments=Flatten[{
-		Search[
-			{
-				Model[Instrument,Vortex],
-				Model[Instrument,Shaker],
-				Model[Instrument,BottleRoller],
-				Model[Instrument,Roller],
-				Model[Instrument,OverheadStirrer],
-				Model[Instrument,Sonicator],
-				Model[Instrument,HeatBlock],
-				Model[Instrument,Homogenizer],
-				Model[Instrument,Disruptor],
-				Model[Instrument,Nutator],
-				Model[Instrument, EnvironmentalChamber],
-				Model[Instrument,Thermocycler]
-			},
-			Deprecated==(False|Null) && DeveloperObject != True
-		],
+		mixInstrumentsSearch["Memoization"],
 		Cases[ToList[myOptions],ObjectP[Object[Instrument]],Infinity]
 	}];
 
@@ -1863,30 +1832,33 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		suppliedStirBarPackets
 	};
 
-	(* Bundle our instrument packets into a ball together. *)
-	instrumentPackets=Flatten[
-		{
-			vortexInstrumentPackets,
-			shakeInstrumentPackets,
-			bottleRollerInstrumentPackets,
-			rollInstrumentPackets,
-			stirInstrumentPackets,
-			sonicationInstrumentPackets,
-			heatBlockInstrumentPackets,
-			homogenizerInstrumentPackets,
-			disruptorInstrumentPackets,
-			nutatorInstrumentPackets,
-			stirInstrumentImpellerPackets,
-			thermocyclerInstrumentPackets,
-			environmentalChamberInstrumentPackets
-		}
-	];
-
-	(* Bundle our rolling instrument packets together. *)
-	rollerInstrumentPackets=Flatten[{bottleRollerInstrumentPackets,rollInstrumentPackets}];
+	allDownloadPackets = {
+		samplePackets,
+		sampleContainerPackets,
+		sampleContainerModelPackets,
+		sampleContainerModelCalibrationPackets,
+		samplePipettingMethodPackets,
+		vortexInstrumentPackets,
+		shakeInstrumentPackets,
+		bottleRollerInstrumentPackets,
+		rollInstrumentPackets,
+		stirInstrumentPackets,
+		stirInstrumentImpellerPackets,
+		sonicationInstrumentPackets,
+		heatBlockInstrumentPackets,
+		homogenizerInstrumentPackets,
+		disruptorInstrumentPackets,
+		nutatorInstrumentPackets,
+		environmentalChamberInstrumentPackets,
+		thermocyclerInstrumentPackets,
+		preferredVesselPackets,
+		suppliedTipObjectPackets,
+		suppliedStirBarPackets
+	};
 
 	(* Add the rest of our downloaded information to our simulated cache. This is because this function may get called by StockSolution without a full cache ball. *)
-	cacheBall=FlattenCachePackets[{fullCacheBall,samplePackets,sampleContainerPackets,sampleContainerModelPackets,vortexInstrumentPackets,shakeInstrumentPackets,bottleRollerInstrumentPackets,rollInstrumentPackets,stirInstrumentPackets,sonicationInstrumentPackets,heatBlockInstrumentPackets,preferredVesselPackets,homogenizerInstrumentPackets,disruptorInstrumentPackets,nutatorInstrumentPackets,stirInstrumentImpellerPackets,environmentalChamberInstrumentPackets,thermocyclerInstrumentPackets,suppliedStirBarPackets}];
+	cacheBall = FlattenCachePackets[{fullCacheBall, allDownloadPackets, allTipModelPackets}];
+	fastAssoc = makeFastAssocFromCache[cacheBall];
 
 	(*-- INPUT VALIDATION CHECKS --*)
 	(* 1. Get the samples from mySamples that are discarded. *)
@@ -2702,17 +2674,14 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 					(* Lookup our instrument packet. *)
 					(* If given an object, go from the object to the model. *)
 
-					instrumentPacket=If[MatchQ[instrument,ObjectP[Object[Instrument]]],
-						fetchPacketFromCache[
-							Lookup[fetchPacketFromCache[instrument,instrumentPackets],Model],
-							instrumentPackets
-						],
-						fetchPacketFromCache[instrument,instrumentPackets]
+					instrumentPacket = If[MatchQ[instrument, ObjectP[Object[Instrument]]],
+						fastAssocPacketLookup[fastAssoc, instrument, Model],
+						fetchPacketFromFastAssoc[instrument, fastAssoc]
 					];
 
 					(* If we got an empty packet back, either the instrument isn't an object in the database or it's deprecated. *)
 					(* (We don't download the deprecated instruments). Throw an error to let the user know. *)
-					If[MatchQ[instrumentPacket,<||>],
+					If[MatchQ[instrumentPacket, Alternatives[<||>, $Failed]],
 						{{instrument, {MixRate, Temperature}, {rate, temperature}},sample},
 
 						(* Check that the instrument supports the rate/temperature. *)
@@ -2804,15 +2773,11 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 	(* 12. MixVolume, if given, is not more than the volume of our sample. *)
 	volumeOptionMismatches=MapThread[
 		Function[{volume,sample},
-			Module[{samplePacket,sampleVolume},
+			Module[{sampleVolume},
 				(* Is Instrument supplied? *)
 				If[MatchQ[volume,Except[Null|Automatic]],
-					(* Volume is given. Is it more than the volume of our sample? *)
-					(* Get the packet of our sample. *)
-					samplePacket=fetchPacketFromCache[sample,samplePackets];
-
 					(* Get the volume of our sample. *)
-					sampleVolume=Lookup[samplePacket,Volume,0Liter]/.{$Failed|Null->0Liter};
+					sampleVolume = fastAssocLookup[fastAssoc, sample, Volume] /. {$Failed | NullP -> 0 Liter};
 
 					(* Is the volume specified more than the volume of our sample? *)
 					If[volume>sampleVolume,
@@ -2993,20 +2958,12 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 	(* 15. Make sure that if the Temperature/ThawTemperature option is specified, it is not more than the MaxTemperature of our sample's conatiner. *)
 	maxTemperatureMismatches=MapThread[
 		Function[{temperature,thawTemperature,sample},
-			Module[{samplePacket,sampleContainerObject,sampleContainerPacket,sampleContainerModelObject,sampleContainerModelPacket,maxTemperature},
-				(* Get the packet of our sample. *)
-				samplePacket=fetchPacketFromCache[sample,samplePackets];
-
-				(* Get the packet of our sample's container. *)
-				sampleContainerObject=Lookup[samplePacket,Container]/.{link_Link:>Download[link, Object]};
-				sampleContainerPacket=fetchPacketFromCache[sampleContainerObject,sampleContainerPackets]/.{Null-><||>};
-
-				(* Get the packet of our sample's conatiner's model. *)
-				sampleContainerModelObject=Lookup[sampleContainerPacket,Model,Null]/.{link_Link:>Download[link, Object]};
-				sampleContainerModelPacket=fetchPacketFromCache[sampleContainerModelObject,sampleContainerModelPackets]/.{Null-><||>};
+			Module[{sampleContainerModelObject,maxTemperature},
+				(* Get the sample's container's model. *)
+				sampleContainerModelObject = fastAssocLookup[fastAssoc, sample, {Container, Model, Object}];
 
 				(* Get the MaxTemperature of this container. *)
-				maxTemperature=Lookup[sampleContainerModelPacket,MaxTemperature,Null];
+				maxTemperature = fastAssocLookup[fastAssoc, sample, {Container, Model, MaxTemperature}];
 
 				(* Is this Temperature or ThawTemperature above maxTemperature? *)
 				If[(MatchQ[temperature,UnitsP[Celsius]]&&temperature>maxTemperature)||(MatchQ[thawTemperature,UnitsP[Celsius]]&&thawTemperature>maxTemperature),
@@ -3494,7 +3451,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		]
 	];
 	preResolvedSampleContainerLabelRules = Module[{sampleContainersNoDupes, preResolvedSampleContainerLabels},
-		sampleContainersNoDupes = DeleteDuplicates[(Download[Lookup[fetchPacketFromCache[#, cacheBall], Container], Object]&)/@mySimulatedSamples];
+		sampleContainersNoDupes = DeleteDuplicates[fastAssocLookup[fastAssoc, mySimulatedSamples, {Container, Object}]];
 		preResolvedSampleContainerLabels = Table[CreateUniqueLabel["incubation container"], Length[sampleContainersNoDupes]];
 
 		MapThread[
@@ -3573,8 +3530,8 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 					monotonicCorrectionCurveWarning,incompleteCorrectionCurveWarning,invalidZeroCorrectionError,
 					sterileMismatchWarning,sterileContaminationWarning,mixType,mixUntilDissolved,
 					instrument,time,maxTime,rate,numberOfMixes,maxNumberOfMixes,volume,
-					temperature,incubate,annealingTime,potentialAliquotContainers,
-					samplePacket,modelPacket,samplesContainer,containerPacket,otherSamplesInContainer,allOtherMixTypes,
+					temperature,annealingTime,potentialAliquotContainers,
+					samplePacket,samplesContainer,containerPacket,otherSamplesInContainer,allOtherMixTypes,
 					validOtherMixTypes,suitableContainers,samplesContainerModel,thaw,thawTime,maxThawTime,thawTemperature,
 					thawInstrument,mixBoolean,compatibleThawInstruments,givenThawInstrument,thawIncompatibleInstrumentError,
 					thawNoInstrumentError,thawInstrumentModel,amplitude,maxTemperature,dutyCycle,
@@ -3587,7 +3544,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 				transformHeatShockTime,transformPreHeatCoolingTime,transformPostHeatCoolingTime,specifiedTransformOptions,transformQ,
 					mainCellIdentityModel,
 				resolvedInstrumentModel,transformIncompatibleInstrumentError,sampleContainerHeight,transformIncompatibleContainerError,
-				sampleContainerCover, preSonicationTime, alternateInstruments},
+				preSonicationTime, alternateInstruments},
 
 				(* Setup our error tracking variables *)
 				{
@@ -3673,19 +3630,14 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 					Lookup[myMapThreadOptions,Thaw]
 				];
 
-				(* Lookup information about our sample. *)
-				samplePacket=fetchPacketFromCache[mySample,samplePackets];
-
-				(* Lookup information about our sample's container. *)
+				(* Get sample packet *)
+				samplePacket = fetchPacketFromFastAssoc[mySample, fastAssoc];
 
 				(* Get the container object that our sample is in. *)
-				samplesContainer=Lookup[samplePacket,Container,Null]/.{link_Link:>Download[link, Object]};
+				samplesContainer = fastAssocLookup[fastAssoc, mySample, {Container, Object}] /. {$Failed | NullP -> Null};
 
 				(* Get the model of this container object. *)
-				samplesContainerModel=If[NullQ[samplesContainer],
-					Null,
-					Lookup[fetchPacketFromCache[samplesContainer,sampleContainerPackets],Model]
-				];
+				samplesContainerModel = fastAssocLookup[fastAssoc, samplesContainer, {Model, Object}];
 
 				(* Get the packet that corresponds to the model of the container object. *)
 				containerPacket=fetchPacketFromCache[samplesContainerModel,sampleContainerModelPackets];
@@ -3764,9 +3716,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 						givenThawInstrument=Lookup[myMapThreadOptions,ThawInstrument];
 
 						(* Get the instrument model of the thaw instrument. (We may be given an object.) *)
-						thawInstrumentModel=If[MatchQ[givenThawInstrument,ObjectP[Object[Instrument]]],
-							Lookup[fetchPacketFromCache[givenThawInstrument,cacheBall],Model]/.{link_Link:>Download[link, Object]},
-							Lookup[fetchPacketFromCache[givenThawInstrument,cacheBall],Object]
+						thawInstrumentModel = If[MatchQ[givenThawInstrument, ObjectP[Object[Instrument]]],
+							fastAssocLookup[fastAssoc, givenThawInstrument, {Model, Object}],
+							fastAssocLookup[fastAssoc, givenThawInstrument, Object]
 						];
 
 						(* Check to make sure that the sample can fit on the given instrument. *)
@@ -4237,7 +4189,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									suitableContainers=PreferredContainer[Lookup[samplePacket,Volume,0 Liter],Messages->False,All->True,Type->Vessel]/.{$Failed->{}};
 
 									(* Lookup these containers from our cache. *)
-									containerPackets=fetchPacketFromCache[#,preferredVesselPackets]&/@suitableContainers;
+									containerPackets = fetchPacketFromFastAssoc[suitableContainers, fastAssoc];
 
 									(* Get the containers that are closed and that are under 4 Liter MaxVolume. *)
 									filteredContainerPackets=Cases[
@@ -4598,12 +4550,13 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										MatchQ[Lookup[myMapThreadOptions, CorrectionCurve], Except[Automatic]],
 										Lookup[myMapThreadOptions, CorrectionCurve],
 										(* if not provided, then store default*)
-										Module[{pipettingMethod},
+										Module[{pipettingMethod, correctionCurve},
 											(* Is there a correction curve from the pipetting method? *)
-											pipettingMethod=Lookup[samplePacket, PipettingMethod];
+											pipettingMethod = Lookup[samplePacket, PipettingMethod];
+											correctionCurve = fastAssocLookup[fastAssoc, pipettingMethod, CorrectionCurve];
 
-											If[MatchQ[pipettingMethod, ObjectP[]] && !MatchQ[Lookup[fetchPacketFromCache[pipettingMethod, samplePipettingMethodPackets], CorrectionCurve], Null],
-												Round[Lookup[fetchPacketFromCache[pipettingMethod, samplePipettingMethodPackets], CorrectionCurve],0.01 Microliter],
+											If[MatchQ[pipettingMethod, ObjectP[]] && !MatchQ[correctionCurve, $Failed | Null],
+												Round[correctionCurve, 0.01 Microliter],
 												Null
 											]
 										]
@@ -4707,36 +4660,39 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										Which[
 											(*When myTips is an Object*)
 											MatchQ[myTips, ObjectP[Object[Item, Tips]]],
-											(*Look up each value of the {WideBore, Filtered, Aspirator, GelLoading} in the selected myTips object packet*)
-											(*If there are more than one True, (i.e. {WideBore,Filtered} or {Aspirator, Filtered}), display the first one as the resolved type*)
-											First@(
-											(If[MatchQ[Lookup[
-												fetchPacketFromCache[
-													Lookup[fetchPacketFromCache[myTips, suppliedTipObjectPackets], Model], allTipModelPackets], #],
-												True],
-												(*If the looked up value is True, append the TipTypeP to the resolved myTipType*)
-												#,
-												Nothing
-												(*Map over the following field names in Model[Item,Tips], Replace Filtered(field name) with Barrier(TipTypeP), strip the list of single item, and return Normal for empty list *)
-											] & /@ {WideBore, Aspirator, Filtered, GelLoading}) /. {Filtered->Barrier, {} -> {Normal}}),
+												(*Look up each value of the {WideBore, Filtered, Aspirator, GelLoading} in the selected myTips object packet*)
+												(*If there are more than one True, (i.e. {WideBore,Filtered} or {Aspirator, Filtered}), display the first one as the resolved type*)
+												First[
+													Map[
+														(*If the looked up value is True, append the TipTypeP to the resolved myTipType*)
+														If[MatchQ[fastAssocLookup[fastAssoc, myTips, {Model, #}], True],
+															#,
+															Nothing
+														]&,
+														(*Map over the following field names in Model[Item,Tips], Replace Filtered(field name) with Barrier(TipTypeP), strip the list of single item, and return Normal for empty list *)
+														{WideBore, Aspirator, Filtered, GelLoading}
+													] /. {Filtered -> Barrier, {} -> {Normal}}
+												],
 
 											(*When myTips is a Model*)
 											MatchQ[myTips, ObjectP[Model[Item, Tips]]],
-											(*Similarly, Look up each value of the {WideBore, Filter, Aspirator, GelLoading} in the selected myTips model packet*)
-											(*If there are more than one True, (i.e. {WideBore,Filtered} or {Aspirator,Filtered}), display the first one as the resolved type*)
-											First@(
-											(If[MatchQ[
-												Lookup[fetchPacketFromCache[myTips, allTipModelPackets], #],
-												True],
-												(*If the looked up value is True, append the TipTypeP to the resolved myTipType*)
-												#,
-												Nothing
-												(*Map over the following field names in Model[Item,Tips], Replace Filtered(field name) with Barrier(TipTypeP), strip the list of single item, and return Normal for empty list *)
-											] & /@ {WideBore, Aspirator, Filtered, GelLoading}) /. {Filtered->Barrier, {} -> {Normal}}),
+												(*Similarly, Look up each value of the {WideBore, Filter, Aspirator, GelLoading} in the selected myTips model packet*)
+												(*If there are more than one True, (i.e. {WideBore,Filtered} or {Aspirator,Filtered}), display the first one as the resolved type*)
+												First[
+													Map[
+														If[MatchQ[fastAssocLookup[fastAssoc, myTips, #], True],
+															(*If the looked up value is True, append the TipTypeP to the resolved myTipType*)
+															#,
+															Nothing
+														]&,
+														(*Map over the following field names in Model[Item,Tips], Replace Filtered(field name) with Barrier(TipTypeP), strip the list of single item, and return Normal for empty list *)
+														{WideBore, Aspirator, Filtered, GelLoading}
+													] /. {Filtered -> Barrier, {} -> {Normal}}
+												],
 
 											(*When myTips is neither Object nor Model, resolve to Null *)
 											True,
-											Null
+												Null
 										],
 										Lookup[myMapThreadOptions, TipType]
 									];
@@ -4745,17 +4701,11 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									myTipMaterial=If[MatchQ[Lookup[myMapThreadOptions, TipMaterial],Automatic],
 										Which[
 											MatchQ[myTips, ObjectP[Object[Item, Tips]]],
-											Lookup[
-												fetchPacketFromCache[
-													Lookup[fetchPacketFromCache[myTips, suppliedTipObjectPackets], Model],
-													allTipModelPackets
-												],
-												Material
-											],
+												fastAssocLookup[fastAssoc, myTips, {Model, Material}] /. {$Failed | NullP -> Null},
 											MatchQ[myTips, ObjectP[Model[Item, Tips]]],
-											Lookup[fetchPacketFromCache[myTips, allTipModelPackets], Material],
+												fastAssocLookup[fastAssoc, myTips, Material] /. {$Failed | NullP -> Null},
 											True,
-											Null
+												Null
 										],
 										Lookup[myMapThreadOptions, TipMaterial]
 									];
@@ -4831,36 +4781,39 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										Which[
 											(*When myTips is an Object*)
 											MatchQ[myTips, ObjectP[Object[Item, Tips]]],
-											(*Look up each value of the {WideBore, Filter, Aspirator, GelLoading} in the selected myTips object packet*)
-											(*If there are more than one True, (i.e. {WideBore,Filtered} or {Aspirator,Filtered}), display the first as the resolved type*)
-											First@(
-											(If[MatchQ[Lookup[
-												fetchPacketFromCache[
-													Lookup[fetchPacketFromCache[myTips, suppliedTipObjectPackets], Model], allTipModelPackets], #],
-												True],
-												(*If the looked up value is True, append the TipTypeP to the resolved myTipType*)
-												#,
-												Nothing
-												(*Map over the following field names in Model[Item,Tips], Replace Filtered(field name) with Barrier(TipTypeP), strip the list of single item, and return Normal for empty list *)
-											] & /@ {WideBore, Aspirator, Filtered, GelLoading}) /. {Filtered->Barrier, {} -> {Normal}}),
+												(*Look up each value of the {WideBore, Filter, Aspirator, GelLoading} in the selected myTips object packet*)
+												(*If there are more than one True, (i.e. {WideBore,Filtered} or {Aspirator,Filtered}), display the first as the resolved type*)
+												First[
+													Map[
+														(*If the looked up value is True, append the TipTypeP to the resolved myTipType*)
+														If[MatchQ[fastAssocLookup[fastAssoc, myTips, {Model, #}], True],
+															#,
+															Nothing
+														]&,
+														(*Map over the following field names in Model[Item,Tips], Replace Filtered(field name) with Barrier(TipTypeP), strip the list of single item, and return Normal for empty list *)
+														{WideBore, Aspirator, Filtered, GelLoading}
+													] /. {Filtered -> Barrier, {} -> {Normal}}
+												],
 
 											(*When myTips is a Model*)
 											MatchQ[myTips, ObjectP[Model[Item, Tips]]],
-											(*Similarly, Look up each value of the {WideBore, Filter, Aspirator, GelLoading} in the selected myTips model packet*)
-											(*If there are more than one True, (i.e. {WideBore,Filtered} or {Aspirator,Filtered}), display the first one as the resolved type*)
-											First@(
-											(If[MatchQ[
-												Lookup[fetchPacketFromCache[myTips, allTipModelPackets], #],
-												True],
-												(*If the looked up value is True, append the TipTypeP to the resolved myTipType*)
-												#,
-												Nothing
-												(*Map over the following field names in Model[Item,Tips], Replace Filtered(field name) with Barrier(TipTypeP), strip the list of single item, and return Normal for empty list *)
-											] & /@ {WideBore, Aspirator, Filtered, GelLoading}) /. {Filtered->Barrier, {} -> {Normal}}),
+												(*Similarly, Look up each value of the {WideBore, Filter, Aspirator, GelLoading} in the selected myTips model packet*)
+												(*If there are more than one True, (i.e. {WideBore,Filtered} or {Aspirator,Filtered}), display the first one as the resolved type*)
+												First[
+													Map[
+														If[MatchQ[fastAssocLookup[fastAssoc, myTips, #], True],
+															(*If the looked up value is True, append the TipTypeP to the resolved myTipType*)
+															#,
+															Nothing
+														]&,
+														(*Map over the following field names in Model[Item,Tips], Replace Filtered(field name) with Barrier(TipTypeP), strip the list of single item, and return Normal for empty list *)
+														{WideBore, Aspirator, Filtered, GelLoading}
+													] /. {Filtered -> Barrier, {} -> {Normal}}
+												],
 
 											(*When myTips is neither Object nor Model, resolve to Null *)
 											True,
-											Null
+												Null
 										],
 										Lookup[myMapThreadOptions, TipType]
 									];
@@ -4869,17 +4822,11 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									myTipMaterial=If[MatchQ[Lookup[myMapThreadOptions, TipMaterial],Automatic],
 										Which[
 											MatchQ[myTips, ObjectP[Object[Item, Tips]]],
-											Lookup[
-												fetchPacketFromCache[
-													Lookup[fetchPacketFromCache[myTips, suppliedTipObjectPackets], Model],
-													allTipModelPackets
-												],
-												Material
-											],
+												fastAssocLookup[fastAssoc, myTips, {Model, Material}] /. {$Failed | NullP -> Null},
 											MatchQ[myTips, ObjectP[Model[Item, Tips]]],
-											Lookup[fetchPacketFromCache[myTips, allTipModelPackets], Material],
+												fastAssocLookup[fastAssoc, myTips, Material] /. {$Failed | NullP -> Null},
 											True,
-											Null
+												Null
 										],
 										Lookup[myMapThreadOptions, TipMaterial]
 									];
@@ -4897,8 +4844,8 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								True,
 									Module[{tipsModel, potentialPipettes},
 										(* Convert our tips to a model. *)
-										tipsModel=If[MatchQ[tips, ObjectP[Object[Item, Tips]]],
-											Lookup[fetchPacketFromCache[tips, suppliedTipObjectPackets], Model],
+										tipsModel = If[MatchQ[tips, ObjectP[Object[Item, Tips]]],
+											fastAssocLookup[fastAssoc, tips, {Model, Object}],
 											tips
 										];
 
@@ -4999,11 +4946,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								instrument=Lookup[myMapThreadOptions,Instrument];
 
 								(* Get the model of the instrument. *)
-								instrumentModel=If[MatchQ[instrument,ObjectP[Model[Instrument,Vortex]]],
-									(* We already have the model. *)
+								instrumentModel = If[MatchQ[instrument, ObjectP[Model[Instrument, Vortex]]],
 									instrument,
-									(* Go from the object to the model. *)
-									Download[Lookup[fetchPacketFromCache[instrument,vortexInstrumentPackets],Model,Null],Object]
+									fastAssocLookup[fastAssoc, instrument, {Model, Object}] /. {$Failed | NullP -> Null}
 								];
 
 								(* Did the user supply a rate? *)
@@ -5015,7 +4960,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										],
 										Lookup[samplePacket,ThawMixRate],
 										(* Resolve to the average RPM of the set instrument. *)
-										vortexPacket=fetchPacketFromCache[instrumentModel,vortexInstrumentPackets];
+										vortexPacket = fetchPacketFromFastAssoc[instrumentModel, fastAssoc];
 
 										(* Round to the nearest RPM. *)
 										Round[Mean[Lookup[vortexPacket,{MinRotationRate,MaxRotationRate},1RPM]],1RPM]
@@ -5034,7 +4979,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								];
 
 								(* Is the user-specified instrument part of this list? *)
-								compatibleFootprintQ=MemberQ[potentialInstruments,Lookup[fetchPacketFromCache[instrumentModel,vortexInstrumentPackets],Object,Null]];
+								compatibleFootprintQ = MemberQ[potentialInstruments, fastAssocLookup[fastAssoc, instrumentModel, Object]];
 
 								(* Figure out if we need to aliquot our sample into another container. *)
 								potentialAliquotContainers=If[compatibleFootprintQ,
@@ -5116,7 +5061,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									(* Resolve rate (if we have to) to be the average rate of our first instrument. *)
 									rate=If[MatchQ[preResolvedRate,Automatic],
 										(* Resolve to the average RPM of the set instrument. *)
-										vortexPacket=fetchPacketFromCache[First[potentialInstruments],vortexInstrumentPackets];
+										vortexPacket = fetchPacketFromFastAssoc[First[potentialInstruments], fastAssoc];
 
 										(* Round to the nearest RPM. *)
 										Round[Mean[Lookup[vortexPacket,{MinRotationRate,MaxRotationRate},{1RPM,1RPM}]],1RPM],
@@ -5293,7 +5238,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									(* We already have the model. *)
 									instrument,
 									(* Go from the object to the model. *)
-									Download[Lookup[fetchPacketFromCache[instrument,rollerInstrumentPackets],Model,Null],Object]
+									fastAssocLookup[fastAssoc, instrument, {Model, Object}] /. {$Failed | NullP -> Null}
 								];
 
 								(* Did the user supply a rate? *)
@@ -5305,7 +5250,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										],
 										Lookup[samplePacket,ThawMixRate],
 										(* Resolve to the average RPM of the set instrument. *)
-										rollPacket=fetchPacketFromCache[instrumentModel,rollerInstrumentPackets];
+										rollPacket = fetchPacketFromFastAssoc[instrumentModel, fastAssoc];
 
 										(* Round to the nearest RPM. *)
 										Round[Mean[Lookup[rollPacket,{MinRotationRate,MaxRotationRate},1RPM]],1RPM]
@@ -5324,7 +5269,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								];
 
 								(* Is the user-specified instrument part of this list? *)
-								compatibleFootprintQ=MemberQ[potentialInstruments,Lookup[fetchPacketFromCache[instrumentModel,rollerInstrumentPackets],Object,Null]];
+								compatibleFootprintQ = MemberQ[potentialInstruments, fastAssocLookup[fastAssoc, instrumentModel, Object]];
 
 								(* Figure out if we need to aliquot our sample into another container. *)
 								potentialAliquotContainers=If[compatibleFootprintQ,
@@ -5404,7 +5349,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									(* Resolve rate (if we have to) to be the average rate of our first instrument. *)
 									rate=If[MatchQ[preResolvedRate,Automatic],
 										(* Resolve to the average RPM of the set instrument. *)
-										rollPacket=fetchPacketFromCache[First[potentialInstruments],rollerInstrumentPackets];
+										rollPacket = fetchPacketFromFastAssoc[First[potentialInstruments], fastAssoc];
 
 										(* Round to the nearest RPM. *)
 										Round[Mean[Lookup[rollPacket,{MinRotationRate,MaxRotationRate},{1RPM,1RPM}]],1RPM],
@@ -5625,7 +5570,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										(* We already have the model. *)
 										instrument,
 										(* Go from the object to the model. *)
-										Download[Lookup[fetchPacketFromCache[instrument,shakeInstrumentPackets],Model,Null],Object]
+										fastAssocLookup[fastAssoc, instrument, {Model, Object}] /. {$Failed | NullP -> Null}
 									];
 
 									(* Did the user supply a rate? *)
@@ -5637,7 +5582,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 											],
 											Lookup[samplePacket,ThawMixRate],
 											(* Resolve to the average RPM of the set instrument. *)
-											shakePacket=fetchPacketFromCache[instrumentModel,shakeInstrumentPackets];
+											shakePacket = fetchPacketFromFastAssoc[instrumentModel, fastAssoc];
 
 											(* Round to the nearest RPM, unless we're using a LabRAM. *)
 											If[MatchQ[Lookup[shakePacket,MaxForce], UnitsP[GravitationalAcceleration]],
@@ -5660,7 +5605,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									];
 
 									(* Is the user-specified instrument part of this list? *)
-									compatibleFootprintQ=MemberQ[potentialInstruments,Lookup[fetchPacketFromCache[instrumentModel,shakeInstrumentPackets],Object,Null]];
+									compatibleFootprintQ = MemberQ[potentialInstruments, fastAssocLookup[fastAssoc, instrumentModel, Object]];
 
 									(* Figure out if we need to aliquot our sample into another container. *)
 									potentialAliquotContainers=If[compatibleFootprintQ,
@@ -5787,7 +5732,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										rate=If[MatchQ[preResolvedRate,Automatic],
 											If[!MatchQ[Lookup[myMapThreadOptions,MixRateProfile], _List],
 												(* Resolve to the average RPM of the set instrument. *)
-												shakePacket=fetchPacketFromCache[First[potentialInstruments],shakeInstrumentPackets];
+												shakePacket = fetchPacketFromFastAssoc[First[potentialInstruments], fastAssoc];
 
 												(* Round to the nearest RPM, unless we're using a LabRAM. *)
 												If[MatchQ[Lookup[shakePacket,MaxForce], UnitsP[GravitationalAcceleration]],
@@ -6037,11 +5982,11 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								If[Or[
 										(* Torrey Pines Orbital Shaker *)
 										MatchQ[instrument, ObjectP[Model[Instrument, Shaker, "id:N80DNj15vreD"]]],
-										MatchQ[instrument, ObjectP[Lookup[fetchPacketFromCache[Model[Instrument, Shaker, "id:N80DNj15vreD"], cacheBall], Objects]]],
+										MatchQ[instrument, ObjectP[fastAssocLookup[fastAssoc, Model[Instrument, Shaker, "id:N80DNj15vreD"], Objects]]],
 
 										(* Wrist Action Shaker *)
-										MatchQ[instrument,ObjectP[Model[Instrument,Shaker,"id:Vrbp1jG80JAw"]]],
-										MatchQ[instrument,ObjectP[Lookup[fetchPacketFromCache[Model[Instrument,Shaker,"id:Vrbp1jG80JAw"],cacheBall],Objects]]]
+										MatchQ[instrument, ObjectP[Model[Instrument, Shaker, "id:Vrbp1jG80JAw"]]],
+										MatchQ[instrument,ObjectP[fastAssocLookup[fastAssoc, Model[Instrument, Shaker, "id:Vrbp1jG80JAw"], Objects]]]
 									],
 									(* 15 AngularDegree is our maximum angle of shaking. *)
 									15 AngularDegree,
@@ -6133,7 +6078,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									(* We already have the model. *)
 									instrument,
 									(* Go from the object to the model. *)
-									Download[Lookup[fetchPacketFromCache[instrument,stirInstrumentPackets],Model,Null],Object]
+									fastAssocLookup[fastAssoc, instrument, {Model, Object}] /. {$Failed | NullP -> Null}
 								];
 
 								(* We need this variable populated for stir bar resolver, since it is specified, it just contains the model of the supplied instrument *)
@@ -6148,7 +6093,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										],
 										Lookup[samplePacket,ThawMixRate],
 										(* Resolve to 20% of max RPM of the set instrument. *)
-										stirPacket=fetchPacketFromCache[instrumentModel,stirInstrumentPackets];
+										stirPacket = fetchPacketFromFastAssoc[instrumentModel, fastAssoc];
 										(* find out the containerSafeMixRate *)
 										containerSafeMixRate = Lookup[sourceContainerModelPacket, MaxOverheadMixRate, Null];
 
@@ -6174,7 +6119,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								];
 
 								(* Is the user-specified instrument part of this list? *)
-								compatibleFootprintQ=MemberQ[potentialInstruments,Lookup[fetchPacketFromCache[instrumentModel,stirInstrumentPackets],Object,Null]];
+								compatibleFootprintQ = MemberQ[potentialInstruments, fastAssocLookup[fastAssoc, instrumentModel, Object]];
 
 								(* Figure out if we need to aliquot our sample into another container. *)
 								potentialAliquotContainers=If[compatibleFootprintQ,
@@ -6259,7 +6204,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									(* Resolve rate (if we have to) to be the average rate of our first instrument. *)
 									rate=If[MatchQ[preResolvedRate,Automatic],
 										(* Resolve to 20% of max RPM of the set instrument. *)
-										stirPacket=fetchPacketFromCache[First[potentialInstruments],stirInstrumentPackets];
+										stirPacket = fetchPacketFromFastAssoc[First[potentialInstruments], fastAssoc];
 										(* Round to the nearest RPM. *)
 										(* Include magnetic stir rates if instrument allows for it *)
 										If[
@@ -6274,7 +6219,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 														compatibleImpeller[mySample, Lookup[stirPacket, Object], Cache->cacheBall, Simulation->simulation],
 														Null
 													],
-													NullQ[Lookup[fetchPacketFromCache[sourceContainerModelPacket, cacheBall], MaxOverheadMixRate, Null]]
+													NullQ[Lookup[fetchPacketFromFastAssoc[sourceContainerModelPacket, fastAssoc], MaxOverheadMixRate, Null]]
 												]
 											],
 											Round[0.2 * Lookup[stirPacket, MaxStirBarRotationRate, 1000RPM], 1RPM],
@@ -6433,12 +6378,12 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										],
 										(* StirBarControl can be Null or False, so need to use a MatchQ just in case *)
 										MatchQ[
-											Lookup[fetchPacketFromCache[instrumentModel, stirInstrumentPackets], StirBarControl],
+											fastAssocLookup[fastAssoc, instrumentModel, StirBarControl],
 											True
 										],
 										MatchQ[
 											rate,
-											GreaterP[Lookup[fetchPacketFromCache[instrumentModel, stirInstrumentPackets], MinStirBarRotationRate]]
+											GreaterP[fastAssocLookup[fastAssoc, instrumentModel, MinStirBarRotationRate]]
 										],
 										(* Need to use stir bar if there's no compatibleImpeller, or there is impeller found but MaxOverheadMixRate is not populated for the container, or smaller than mix rate *)
 										Or[
@@ -6451,13 +6396,13 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 											],
 											NullQ[
 												If[MatchQ[exampleAliquotContainer, ObjectP[Model[Container]]],
-													Lookup[fetchPacketFromCache[exampleAliquotContainer, cacheBall], MaxOverheadMixRate, Null],
-													Lookup[fetchPacketFromCache[sourceContainerModelPacket, cacheBall], MaxOverheadMixRate, Null]
+													Lookup[fetchPacketFromFastAssoc[exampleAliquotContainer, fastAssoc], MaxOverheadMixRate, Null],
+													Lookup[fetchPacketFromFastAssoc[sourceContainerModelPacket, fastAssoc], MaxOverheadMixRate, Null]
 												]
 											],
 											If[MatchQ[exampleAliquotContainer, ObjectP[Model[Container]]],
-												rate > Lookup[fetchPacketFromCache[exampleAliquotContainer, cacheBall], MaxOverheadMixRate],
-												rate > Lookup[fetchPacketFromCache[sourceContainerModelPacket, cacheBall], MaxOverheadMixRate]
+												rate > fastAssocLookup[fastAssoc, exampleAliquotContainer, MaxOverheadMixRate],
+												rate > fastAssocLookup[fastAssoc, sourceContainerModelPacket, MaxOverheadMixRate]
 											]
 										]
 									],
@@ -6471,7 +6416,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									And[
 										MatchQ[exampleAliquotContainer, ObjectP[Model[Container]]],
 										MemberQ[
-											Lookup[fetchPacketFromCache[#, stirInstrumentPackets], StirBarControl]& /@ Keys[potentialAliquotInstruments],
+											fastAssocLookup[fastAssoc, Keys[potentialAliquotInstruments], StirBarControl],
 											True
 										],
 										(* but we want to prefer using impeller, so here we check we have no impeller *)
@@ -6578,7 +6523,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										(* We already have the model. *)
 										instrument,
 										(* Go from the object to the model. *)
-										Download[Lookup[fetchPacketFromCache[instrument,homogenizerInstrumentPackets],Model,Null],Object]
+										fastAssocLookup[fastAssoc, instrument, {Model, Object}] /. {$Failed | NullP -> Null}
 									];
 
 									(* Does instrument support the footprint of mySample? *)
@@ -6592,7 +6537,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									];
 
 									(* Is the user-specified instrument part of this list? *)
-									compatibleFootprintQ=MemberQ[potentialInstruments,Lookup[fetchPacketFromCache[instrumentModel,homogenizerInstrumentPackets],Object,Null]];
+									compatibleFootprintQ = MemberQ[potentialInstruments, fastAssocLookup[fastAssoc, instrumentModel, Object]];
 
 									(* Figure out if we need to aliquot our sample into another container. *)
 									potentialAliquotContainers=If[compatibleFootprintQ,
@@ -6854,7 +6799,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									(* We already have the model. *)
 									instrument,
 									(* Go from the object to the model. *)
-									Download[Lookup[fetchPacketFromCache[instrument,sonicationInstrumentPackets],Model,Null],Object]
+									fastAssocLookup[fastAssoc, instrument, {Model, Object}] /. {$Failed | NullP -> Null}
 								];
 
 								(* Does instrument support the footprint of mySample? *)
@@ -6868,7 +6813,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								];
 
 								(* Is the user-specified instrument part of this list? *)
-								compatibleFootprintQ=MemberQ[potentialInstruments,Lookup[fetchPacketFromCache[instrumentModel,sonicationInstrumentPackets],Object,Null]];
+								compatibleFootprintQ = MemberQ[potentialInstruments, fastAssocLookup[fastAssoc, instrumentModel, Object]];
 
 								(* Figure out if we need to aliquot our sample into another container. *)
 								potentialAliquotContainers=If[compatibleFootprintQ,
@@ -7092,7 +7037,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								(* We already have the model. *)
 								instrument,
 								(* Go from the object to the model. *)
-								Download[Lookup[fetchPacketFromCache[instrument,disruptorInstrumentPackets],Model,Null],Object]
+								fastAssocLookup[fastAssoc, instrument, {Model, Object}] /. {$Failed | NullP -> Null}
 							];
 
 							(* Did the user supply a rate? *)
@@ -7104,7 +7049,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									],
 									Lookup[samplePacket,ThawMixRate],
 									(* Resolve to the average RPM of the set instrument. *)
-									disruptorPacket=fetchPacketFromCache[instrumentModel,disruptorInstrumentPackets];
+									disruptorPacket = fetchPacketFromFastAssoc[instrumentModel, fastAssoc];
 
 									(* Round to the nearest RPM. *)
 									Round[Mean[Lookup[disruptorPacket,{MinRotationRate,MaxRotationRate},1RPM]],1RPM]
@@ -7123,7 +7068,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 							];
 
 							(* Is the user-specified instrument part of this list? *)
-							compatibleFootprintQ=MemberQ[potentialInstruments,Lookup[fetchPacketFromCache[instrumentModel,disruptorInstrumentPackets],Object,Null]];
+							compatibleFootprintQ = MemberQ[potentialInstruments, fastAssocLookup[fastAssoc, instrumentModel, Object]];
 
 							(* Figure out if we need to aliquot our sample into another container. *)
 							potentialAliquotContainers=If[compatibleFootprintQ,
@@ -7192,7 +7137,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								(* Resolve rate (if we have to) to be the average rate of our first instrument. *)
 								rate=If[MatchQ[preResolvedRate,Automatic],
 									(* Resolve to the average RPM of the set instrument. *)
-									disruptorPacket=fetchPacketFromCache[First[potentialInstruments],disruptorInstrumentPackets];
+									disruptorPacket = fetchPacketFromFastAssoc[First[potentialInstruments], fastAssoc];
 
 									(* Round to the nearest RPM. *)
 									Round[Mean[Lookup[disruptorPacket,{MinRotationRate,MaxRotationRate},{1RPM,1RPM}]],1RPM],
@@ -7257,11 +7202,11 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										(* We already have the model. *)
 										instrument,
 										(* Go from the object to the model. *)
-										Download[Lookup[fetchPacketFromCache[instrument,disruptorInstrumentPackets],Model,Null],Object]
+										fastAssocLookup[fastAssoc, instrument, {Model, Object}] /. {$Failed | NullP -> Null}
 									];
 
 									(* Get the packet. *)
-									disruptorPacket=fetchPacketFromCache[instrumentModel,disruptorInstrumentPackets];
+									disruptorPacket = fetchPacketFromFastAssoc[instrumentModel, fastAssoc];
 
 									(* Round to the nearest RPM. *)
 									Round[Mean[Lookup[disruptorPacket,{MinRotationRate,MaxRotationRate},1RPM]],1RPM]
@@ -7391,7 +7336,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								(* We already have the model. *)
 								instrument,
 								(* Go from the object to the model. *)
-								Download[Lookup[fetchPacketFromCache[instrument,nutatorInstrumentPackets],Model,Null],Object]
+								fastAssocLookup[fastAssoc, instrument, {Model, Object}] /. {$Failed | NullP -> Null}
 							];
 
 							(* Did the user supply a rate? *)
@@ -7403,7 +7348,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									],
 									Lookup[samplePacket,ThawMixRate],
 									(* Resolve to the average RPM of the set instrument. *)
-									nutatorPacket=fetchPacketFromCache[instrumentModel,nutatorInstrumentPackets];
+									nutatorPacket = fetchPacketFromFastAssoc[instrumentModel, fastAssoc];
 
 									(* Round to the nearest RPM. *)
 									Round[Mean[Lookup[nutatorPacket,{MinRotationRate,MaxRotationRate},1RPM]],1RPM]
@@ -7422,7 +7367,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 							];
 
 							(* Is the user-specified instrument part of this list? *)
-							compatibleFootprintQ=MemberQ[potentialInstruments,Lookup[fetchPacketFromCache[instrumentModel,nutatorInstrumentPackets],Object,Null]];
+							compatibleFootprintQ = MemberQ[potentialInstruments, Lookup[nutatorPacket, Object, Null]];
 
 							(* Figure out if we need to aliquot our sample into another container. *)
 							potentialAliquotContainers=If[compatibleFootprintQ,
@@ -7502,7 +7447,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								(* Resolve rate (if we have to) to be the average rate of our first instrument. *)
 								rate=If[MatchQ[preResolvedRate,Automatic],
 									(* Resolve to the average RPM of the set instrument. *)
-									nutatorPacket=fetchPacketFromCache[First[potentialInstruments],nutatorInstrumentPackets];
+									nutatorPacket = fetchPacketFromFastAssoc[First[potentialInstruments], fastAssoc];
 
 									(* Round to the nearest RPM. *)
 									Round[Mean[Lookup[nutatorPacket,{MinRotationRate,MaxRotationRate},{1RPM,1RPM}]],1RPM],
@@ -7938,8 +7883,8 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 										(* Get the instrument model of the thaw instrument. (We may be given an object.) *)
 										instrumentModel=If[MatchQ[givenThawInstrument,ObjectP[Object[Instrument]]],
-											Lookup[fetchPacketFromCache[givenThawInstrument,cacheBall],Model]/.{link_Link:>Download[link, Object]},
-											Lookup[fetchPacketFromCache[givenThawInstrument,cacheBall],Object]
+											fastAssocLookup[fastAssoc, givenThawInstrument, {Model, Object}],
+											fastAssocLookup[fastAssoc, givenThawInstrument, Object]
 										];
 
 										(* Check to make sure that the sample can fit on the given instrument. *)
@@ -8040,7 +7985,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 					Lookup[preResolvedSampleLabelRules, Download[mySample, Object, Cache->cacheBall]]
 				];
 
-				sampleContainerObject=Download[Lookup[fetchPacketFromCache[mySample, cacheBall], Container], Object];
+				sampleContainerObject = fastAssocLookup[fastAssoc, mySample, {Container, Object}];
 
 				sampleContainerLabel=Which[
 					MatchQ[Lookup[myMapThreadOptions, SampleContainerLabel], Except[Automatic]],
@@ -8143,11 +8088,11 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 					(* The instrument is a specific object - get its model *)
 					MatchQ[instrument,ObjectP[Object[Instrument]]],
-						Lookup[fetchPacketFromCache[instrument,cacheBall],Model]/.{link_Link:>Download[link, Object]},
+						fastAssocLookup[fastAssoc, instrument, {Model, Object}] /. {$Failed | NullP -> Null},
 
 					(* The instrument is a model - it's already what we want *)
 					True,
-						Lookup[fetchPacketFromCache[instrument,cacheBall],Object]
+						fastAssocLookup[fastAssoc, instrument, Object] /. {$Failed | NullP -> Null}
 				];
 				transformIncompatibleInstrumentError = transformQ && MatchQ[resolvedInstrumentModel, ObjectP[$TransformInstruments]];
 
@@ -8254,12 +8199,12 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 			][[pipetteIndices]];
 
 			(* Figure out containers our pipette samples are in. *)
-			pipetteSampleContainers=Download[
-				(If[MatchQ[#, ObjectP[Object[Sample]]],
-					Lookup[fetchPacketFromCache[#, samplePackets], Container],
-					#
-				]&)/@mySamples,
-				Object
+			pipetteSampleContainers = Map[
+				If[MatchQ[#, ObjectP[Object[Sample]]],
+					fastAssocLookup[fastAssoc, #, {Container, Object}],
+					fastAssocLookup[fastAssoc, #, Object]
+				]&,
+				mySamples
 			];
 
 			(* We ALWAYS set MultichannelMix->True if we have more than one transfer that we're performing. *)
@@ -8570,7 +8515,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 			invertVolumeInvalidSamples=PickList[mySimulatedSamples,invertSampleVolumeErrors];
 
 			(* Get the volumes of these samples. *)
-			sampleVolumes=(Lookup[fetchPacketFromCache[#,samplePackets],Volume,0 Liter]&)/@invertVolumeInvalidSamples;
+			sampleVolumes = fastAssocLookup[fastAssoc, invertVolumeInvalidSamples, Volume] /. {NullP -> 0 Liter};
 
 			(* Throw the corresponding error. *)
 			Message[Error::VolumeTooLargeForInversion,ObjectToString[sampleVolumes],ObjectToString[invertVolumeInvalidSamples,Cache->cacheBall]];
@@ -9263,15 +9208,16 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 	];
 
 	(* Check for residual incubation on shaker errors. *)
-	instrumentModels=Map[
+	instrumentModels = Map[
 		Which[
-			NullQ[#],Null,
-			MatchQ[#,ObjectP[Model[Instrument]]],
+			NullQ[#],
+				Null,
 			(* We already have the model. *)
-			Download[#,Object],
+			MatchQ[#, ObjectP[Model[Instrument]]],
+				fastAssocLookup[fastAssoc, #, Object],
 			(* Go from the object to the model. *)
 			True,
-			Download[Lookup[fetchPacketFromCache[#,cacheBall],Model,Null],Object]
+				fastAssocLookup[fastAssoc, # {Model, Object}] /. {$Failed | NullP -> Null}
 		]&,
 		instruments
 	];
@@ -9944,12 +9890,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								(* If not, we may need to resolve rate, depending on our chosen instrument. *)
 								resolvedRate=If[MatchQ[rates[[index]],Automatic],
 									(* Resolve to the average RPM of the set instrument. *)
-									instrumentPacket=If[MatchQ[chosenInstrument,ObjectP[Object[Instrument]]],
-										fetchPacketFromCache[
-											Lookup[fetchPacketFromCache[chosenInstrument,instrumentPackets],Model],
-											instrumentPackets
-										],
-										fetchPacketFromCache[chosenInstrument,instrumentPackets]
+									instrumentPacket = If[MatchQ[chosenInstrument, ObjectP[Object[Instrument]]],
+										fastAssocPacketLookup[fastAssoc, chosenInstrument, Model],
+										fetchPacketFromFastAssoc[chosenInstrument, fastAssoc]
 									];
 
 									(* Get the instrument rates. *)
@@ -10384,7 +10327,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 					(* If given an object, fetch the model. *)
 					givenStirBarModel=If[MatchQ[stirBar, ObjectP[Object[Part]]],
-						Download[Lookup[fetchPacketFromCache[stirBar, cacheBall], Model], Object],
+						fastAssocLookup[fastAssoc, stirBar, {Model, Object}],
 						stirBar
 					];
 
@@ -10649,7 +10592,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 				Module[{samples, packets, deviceChannels, multichannelMixNames},
 					{samples, deviceChannels, multichannelMixNames} = Transpose[group];
 
-					packets = (fetchPacketFromCache[#, cacheBall]&)/@samples;
+					packets = fetchPacketFromFastAssoc[samples, fastAssoc];
 
 					If[And[
 							MatchQ[deviceChannels, {MultiProbeHead..}],
@@ -14716,6 +14659,72 @@ instrumentInstrumentToSettingFunction[modelInstrumentInstrument:(ObjectP[Model[I
 	]
 ];
 
+(* ::Subsubsection::Closed:: *)
+(*mixInstrumentsSearch*)
+
+(* Memoize the search for mix instruments in the lab that are not deprecated *)
+mixInstrumentsSearch[fakeString: _String] := mixInstrumentsSearch[fakeString] = Module[{},
+	If[!MemberQ[$Memoization, Experiment`Private`mixInstrumentsSearch],
+		AppendTo[$Memoization, Experiment`Private`mixInstrumentsSearch]
+	];
+
+	Search[
+		{
+			Model[Instrument, Vortex],
+			Model[Instrument, Shaker],
+			Model[Instrument, BottleRoller],
+			Model[Instrument, Roller],
+			Model[Instrument, OverheadStirrer],
+			Model[Instrument, Sonicator],
+			Model[Instrument, HeatBlock],
+			Model[Instrument, Homogenizer],
+			Model[Instrument, Disruptor],
+			Model[Instrument, Nutator],
+			Model[Instrument, EnvironmentalChamber],
+			Model[Instrument, Thermocycler]
+		},
+		Deprecated == (False | Null) && DeveloperObject != True
+	]
+];
+
+
+(* Memoize the search for integrated mix instruments in the lab that are not deprecated *)
+mixDevicesIntegratedInstrumentsSearch[fakeString: _String] := mixDevicesIntegratedInstrumentsSearch[fakeString] = Module[{},
+	If[!MemberQ[$Memoization, Experiment`Private`mixDevicesIntegratedInstrumentsSearch],
+		AppendTo[$Memoization, Experiment`Private`mixDevicesIntegratedInstrumentsSearch]
+	];
+
+	Search[
+		{
+			Model[Instrument, Shaker]
+		},
+		IntegratedLiquidHandlers != Null && Deprecated == (False | Null) && DeveloperObject != True
+	]
+];
+
+
+(* Memoize the search for non-integrated mix instruments in the lab that are not deprecated *)
+mixDevicesNonIntegratedInstrumentsSearch[fakeString: _String] := mixDevicesNonIntegratedInstrumentsSearch[fakeString] = Module[{},
+	If[!MemberQ[$Memoization, Experiment`Private`mixDevicesNonIntegratedInstrumentsSearch],
+		AppendTo[$Memoization, Experiment`Private`mixDevicesNonIntegratedInstrumentsSearch]
+	];
+
+	Search[
+		{
+			Model[Instrument, Vortex],
+			Model[Instrument, Shaker],
+			Model[Instrument, BottleRoller],
+			Model[Instrument, Roller],
+			Model[Instrument, OverheadStirrer],
+			Model[Instrument, Sonicator],
+			Model[Instrument, Homogenizer],
+			Model[Instrument, Disruptor],
+			Model[Instrument, Nutator]
+		},
+		IntegratedLiquidHandlers == Null && Deprecated == (False | Null) && DeveloperObject != True
+	]
+];
+
 
 (* ::Subsection::Closed:: *)
 (*Execute Tasks*)
@@ -15006,15 +15015,16 @@ MixDevices[myContainer:ObjectReferenceP[Model[Container]], mySampleVolume:Volume
 MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,outputSpecification,output,safeOps,types,rate,temperature,amplitude,maxTemperature,cache,instrumentSearch,instruments,
 	groupedInstruments,vortexes,shakers,bottleRollers,rollers,stirrers,sonicators,homogenizers,
-	supportedSonicationContainers,preferredVessels,preferredVesselPackets,shakeAdpaterPackets,
-	samplePackets,sampleContainerPackets,sampleSolventPackets,vortexInstrumentPackets,shakeInstrumentPackets,
+	supportedSonicationContainers,preferredVessels,preferredVesselPackets,shakeAdapterPackets,
+	samplePackets,sampleCompositionPackets,sampleContainerPackets,sampleSolventPackets,vortexInstrumentPackets,shakeInstrumentPackets,
 	bottleRollerInstrumentPackets,homogenizerInstrumentPackets,sonicationHornPackets,
 	rollInstrumentPackets,stirInstrumentPackets,impellerPackets,sonicationInstrumentPackets,sonicationContainerPackets,
 	cacheBall,sampleContainerModel,sampleContainerWeight,sampleContainerMaxVolume,simulation,oscillationAngle,programmableTemperatureControl,programmableMixControl,
 	wiggleRoom,modelDimensions,sterile,lightSensitive,sampleVolume,sampleMass,sampleDensity,solventDensity,
 	estimatedSampleDensity,estimatedSampleMass,estimatedTotalWeight,devicesAndContainersResult,
 	potentialAliquotContainers,instrumentResult,containerModelMaxVolume,disruptors,nutators,
-	disruptorInstrumentPackets, nutatorInstrumentPackets, integratedLiquidHandler, stirBar},
+	disruptorInstrumentPackets, nutatorInstrumentPackets, integratedLiquidHandler, stirBar,
+	fastAssoc, sampleContainerModelPacket, samplePacket},
 
 	(* Make sure we're working with a list of options *)
 	listedOptions=ToList[myOptions];
@@ -15048,30 +15058,12 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 	simulation=Lookup[safeOps,Simulation];
 
 	(* Get the mix instruments in the lab that are not deprecated. *)
-	instruments=If[NullQ[instrumentSearch],
+	instruments = If[NullQ[instrumentSearch],
 		If[MatchQ[integratedLiquidHandler, True],
-			Search[
-				{
-					Model[Instrument,Shaker]
-				},
-				IntegratedLiquidHandlers != Null && Deprecated==(False|Null) && DeveloperObject != True
-			],
-			Search[
-				{
-					Model[Instrument,Vortex],
-					Model[Instrument,Shaker],
-					Model[Instrument,BottleRoller],
-					Model[Instrument,Roller],
-					Model[Instrument,OverheadStirrer],
-					Model[Instrument,Sonicator],
-					Model[Instrument,Homogenizer],
-					Model[Instrument, Disruptor],
-					Model[Instrument, Nutator]
-				},
-				IntegratedLiquidHandlers == Null && Deprecated==(False|Null) && DeveloperObject != True
-			]
+			mixDevicesIntegratedInstrumentsSearch["Memoization"],
+			mixDevicesNonIntegratedInstrumentsSearch["Memoization"]
 		],
-		instrumentSearch
+		mixInstrumentsSearch["Memoization"]
 	];
 
 	(* Separate out these instruments by instrument type. *)
@@ -15103,11 +15095,12 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 	{
 		{
 			samplePackets,
+			sampleCompositionPackets,
 			sampleContainerPackets,
 			sampleSolventPackets,
 			vortexInstrumentPackets,
 			shakeInstrumentPackets,
-			shakeAdpaterPackets,
+			shakeAdapterPackets,
 			bottleRollerInstrumentPackets,
 			rollInstrumentPackets,
 			stirInstrumentPackets,
@@ -15122,6 +15115,7 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 	}=Quiet[Flatten[Download[
 		{
 			(* Download {WettedMaterials, Positions, MaxRotationRate, MinRotationRate} from our instruments. *)
+			{mySample},
 			{mySample},
 			{mySample},
 			{mySample},
@@ -15140,7 +15134,8 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 			preferredVessels
 		},
 		{
-			{Packet[Object,Volume,Mass,Sterile,Container,Fuming,Density,Solvent]},
+			{Packet[Object,Volume,Mass,Sterile,Container,Fuming,Ventilated,Flammable,Density,Solvent]},
+			{Packet[Composition[[All, 2]][{Fuming, Ventilated, Flammable}]]},
 			{Packet[Container[Model][{Aperture,InternalDepth,InternalDimensions,InternalDiameter,SelfStanding,OpenContainer,MinVolume,MaxVolume,Dimensions,Footprint, SelfStanding, TareWeight, MaxOverheadMixRate}]]},
 			{Packet[Solvent[{Density}]]},
 			{Packet[WettedMaterials, Positions, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature]},
@@ -15161,21 +15156,34 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 		Simulation->simulation
 	],{3}],{Download::FieldDoesntExist, Download::ObjectDoesNotExist}];
 
-	(* Ball up our cache. *)
+	(* Ball up our cache & make fast assoc. *)
 	cacheBall=FlattenCachePackets[{samplePackets,sampleContainerPackets,vortexInstrumentPackets,shakeInstrumentPackets,rollInstrumentPackets,stirInstrumentPackets,sonicationInstrumentPackets,disruptorInstrumentPackets, nutatorInstrumentPackets,preferredVesselPackets,cache}];
+	fastAssoc = makeFastAssocFromCache[cacheBall];
 
 	(* Get the sample's container's model. *)
 	sampleContainerModel=Lookup[First[Flatten[sampleContainerPackets]],Object];
+
+	(* Get the packet of the sample's container's model processed by FlattenCachePackets. *)
+	sampleContainerModelPacket = fetchPacketFromFastAssoc[sampleContainerModel, fastAssoc];
+
 	(* Get the sample's container's weight *)
 	sampleContainerWeight=Lookup[First[Flatten[sampleContainerPackets]],TareWeight];
+
 	(* Get the sample's container's max volume *)
 	sampleContainerMaxVolume=Lookup[First[Flatten[sampleContainerPackets]],MaxVolume];
+
+	(* Get the flattened packet of the sample *)
+	samplePacket = fetchPacketFromFastAssoc[mySample, fastAssoc];
+
 	(* Get the sample's volume *)
-	sampleVolume = Lookup[fetchPacketFromCache[mySample, samplePackets], Volume, Null];
+	sampleVolume = Lookup[samplePacket, Volume, Null];
+
 	(* Get the sample's mass *)
-	sampleMass = Lookup[fetchPacketFromCache[mySample, samplePackets], Mass, Null];
+	sampleMass = Lookup[samplePacket, Mass, Null];
+
 	(* Get the sample's density *)
-	sampleDensity = Lookup[fetchPacketFromCache[mySample, samplePackets], Density, Null];
+	sampleDensity = Lookup[samplePacket, Density, Null];
+
 	(* Get the sample's solvent's density  *)
 	solventDensity = If[MatchQ[sampleSolventPackets,PacketP..],
 		Lookup[First[Flatten[sampleSolventPackets]], Density, Null],
@@ -15303,7 +15311,7 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 				Shake,
 					shakeInstrumentPackets,
 				Stir,
-					If[MatchQ[Lookup[First@samplePackets, Fuming], True],
+					If[MemberQ[Flatten[{Lookup[Flatten@samplePackets, {Fuming, Ventilated, Flammable}],Lookup[Flatten@sampleCompositionPackets, {Fuming, Ventilated, Flammable}]}], True],
 						Cases[stirInstrumentPackets, KeyValuePattern[{Object->ObjectP[Model[Instrument, OverheadStirrer, "id:Z1lqpMzavMN9"]]}]],
 						stirInstrumentPackets
 					],
@@ -15324,51 +15332,105 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 			If[Length[filteredInstrumentPackets]==0,
 				(* There are no filtered instruments. *)
 				Nothing,
+
 				(* There are filtered instruments. Do footprint checks. *)
-				compatibleFootprintsQ=If[MatchQ[Lookup[#,Object], ObjectP[Model[Instrument, Roller]]],
-					(* If we are dealing with Roller, we need to check if the footprint of sample match with any of the compatible racks *)
-					Module[{compatibleRacks},
-						compatibleRacks = Lookup[#,CompatibleRacks];
-						(* if we can find one model rack that can fit the sample container, return Ture for this roller *)
-						Or@@Map[
-							Function[{rack},
-								CompatibleFootprintQ[
-									rack,
-									sampleContainerModel,
-									ExactMatch -> True,
-									Cache->cacheBall
+				compatibleFootprintsQ = Module[
+					{
+						locations, minWidths, exactMatchQs,
+						expandedLocations, expandedMinWidths, expandedExactMatchQs,
+						flattenedLocations, flattenedMinWidths, flattenedExactMatchQs,
+						flattenedCompatibleFootprintQs, expandedCompatibleFootprintQs
+					},
+
+					(* Preprocess variable inputs/options for listable CompatibleFootprintQ call *)
+					{locations, minWidths, exactMatchQs} = Transpose[
+						Map[Module[
+							{filteredInstrumentObject},
+
+							filteredInstrumentObject = Lookup[#, Object];
+
+							{
+								(* Input: location *)
+								(* If we are dealing with Roller, we need to check if the footprint of sample match with any of the compatible racks *)
+								If[MatchQ[filteredInstrumentObject, ObjectP[Model[Instrument, Roller]]],
+									Lookup[#, CompatibleRacks],
+									filteredInstrumentObject
+								],
+
+								(* Option: minWidth *)
+								(* Set MinWidth if we're dealing with a bottle roller. *)
+								If[MatchQ[filteredInstrumentObject, ObjectP[Model[Instrument, BottleRoller]]],
+									Lookup[#, RollerSpacing],
+									Null
+								],
+
+								(* Option: exactMatchQ *)
+								Which[
+									MatchQ[filteredInstrumentObject, ObjectP[Model[Instrument, Roller]]],
+										True,
+									(* for torrey pine and incu shaker, we only want to use the container with exact footprint *)
+									MatchQ[filteredInstrumentObject, ObjectP[{
+										Model[Instrument, Shaker, "id:N80DNj15vreD"],
+										Model[Instrument, Shaker, "id:6V0npvmNnOrw"]
+									}]],
+										True,
+									(* Set ExactMatch->False if we're dealing with a sonicator, bottle roller, shaker, nutator, homogenizer or overhead stirrer. *)
+									(* for genie temp shaker, we allow it to use with or without adapter. *)
+									MatchQ[filteredInstrumentObject, ObjectP[{
+										Model[Instrument, Sonicator],
+										Model[Instrument, BottleRoller],
+										Model[Instrument, Shaker],
+										Model[Instrument, Nutator],
+										Model[Instrument, OverheadStirrer],
+										Model[Instrument, Homogenizer]
+									}]],
+									False,
+									(* otherwise set to True *)
+									True,
+										True
 								]
-							],
-							compatibleRacks
+							}]&,
+							filteredInstrumentPackets
 						]
-					],
-					CompatibleFootprintQ[
-						Lookup[#,Object],
+					];
+
+					(* Expand inputs for listable CompatibleFootprintQ call *)
+					{expandedLocations, expandedMinWidths, expandedExactMatchQs} = Transpose[
+						MapThread[Function[{location, minWidth, exactMatchQ},
+							If[ListQ[location],
+								(* Lists (of compatible racks) correspond to Rollers; expand options to index match to compatible racks *)
+								{location, ConstantArray[minWidth, Length[location]], ConstantArray[exactMatchQ, Length[location]]},
+								(* ToList atomic elements to singletons for downstream TakeList *)
+								{{location}, {minWidth}, {exactMatchQ}}
+							]],
+							{locations, minWidths, exactMatchQs}
+						]
+					];
+
+					(* Flatten inputs for listable CompatibleFootprintQ call since CompatibleFootprintQ cannot take mixed (ex. {x, {x}}) inputs *)
+					{flattenedLocations, flattenedMinWidths, flattenedExactMatchQs} = Flatten /@ {expandedLocations, expandedMinWidths, expandedExactMatchQs};
+
+					(* Listable CompatibleFootprintQ call for all filtered instruments *)
+					flattenedCompatibleFootprintQs = CompatibleFootprintQ[
+						flattenedLocations,
 						sampleContainerModel,
+						MinWidth -> flattenedMinWidths,
+						ExactMatch -> flattenedExactMatchQs,
+						Cache -> cacheBall
+					];
 
-						(* Set MidWidth if we're dealing with a bottle roller. *)
-						MinWidth->(
-							If[MatchQ[Lookup[#,Object],ObjectP[Model[Instrument,BottleRoller]]],
-								Lookup[#,RollerSpacing],
-								Null
-							]),
+					(* Output is either a flattened list, {p1, p2, p3, ...}, or a single boolean, p1, corresponding to a single non-list input *)
+					If[ListQ[flattenedCompatibleFootprintQs],
+						(* Group outputs of listable call, each sublist corresponding to the index-matched location; {p1, p2, p3, ...} -> {{p1}, {p2, p3}, ...} *)
+						expandedCompatibleFootprintQs = TakeList[flattenedCompatibleFootprintQs, Length /@ expandedLocations];
 
-						ExactMatch->(
-							Which[
-							(* for torrey pine and incu shaker, we only want to use the container with exact footprint *)
-							MatchQ[Lookup[#,Object], ObjectP[{Model[Instrument, Shaker, "id:N80DNj15vreD"], Model[Instrument, Shaker, "id:6V0npvmNnOrw"]}]],
-							True,
-							(* Set ExactMatch\[Rule]False if we're dealing with a sonicator, bottle roller, shaker, nutator, homogenizer or overhead stirrer. *)
-							(* for genie temp shaker, we allow it to use with or without adapter. *)
-							MatchQ[Lookup[#,Object],ObjectP[{Model[Instrument,Sonicator],Model[Instrument,BottleRoller],Model[Instrument,Shaker],Model[Instrument,Nutator],Model[Instrument,OverheadStirrer], Model[Instrument,Homogenizer]}]],
-							False,
-							(* otherwise set to True *)
-							True,
-							True
-						]),
-						Cache->cacheBall
+						(* For rollers, the footprint has to be compatible with any of the compatible racks. Or-ing singletons for non-rollers *)
+						(Or @@ #)& /@ expandedCompatibleFootprintQs,
+
+						(* If the output is a single boolean, return that *)
+						flattenedCompatibleFootprintQs
 					]
-				]&/@filteredInstrumentPackets;
+				];
 
 				(* Filter our instruments based on compatible footprints. *)
 				compatibleInstruments=PickList[
@@ -15389,12 +15451,12 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 								And[
 									(* Self-standing check *)
 									MatchQ[
-										Lookup[fetchPacketFromCache[sampleContainerModel,sampleContainerPackets],SelfStanding,False],
+										Lookup[sampleContainerModelPacket, SelfStanding, False],
 										True
 									],
 									(* About as large as a 250mL vessel in order to fit a sonciation weight. *)
 									MatchQ[
-										Lookup[fetchPacketFromCache[sampleContainerModel,sampleContainerPackets],Dimensions,{0Meter,0Meter,0Meter}],
+										Lookup[sampleContainerModelPacket, Dimensions, {0 Meter, 0 Meter, 0 Meter}],
 										{GreaterEqualP[0.068 Meter], GreaterEqualP[0.068 Meter], GreaterEqualP[.13 Meter]}
 									]
 								],
@@ -15410,7 +15472,7 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 							If[And[
 									MatchQ[sampleContainerModel, ObjectP[Model[Container, Plate]]],
 									MatchQ[
-										Lookup[fetchPacketFromCache[sampleContainerModel,sampleContainerPackets],Dimensions,{0Meter,0Meter,0Meter}],
+										Lookup[sampleContainerModelPacket, Dimensions, {0 Meter, 0 Meter, 0 Meter}],
 										{LessEqualP[0.1376 Meter], LessEqualP[0.0955 Meter], LessEqualP[0.0544 Meter]}
 									]
 								],
@@ -15444,13 +15506,13 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 
 											If[And[
 													If[MatchQ[#, ObjectP[Model[Instrument, Shaker, "id:bq9LA0JYrN66"]]],
-														MatchQ[Lookup[fetchPacketFromCache[sampleContainerModel, cacheBall], SelfStanding], True],
+														MatchQ[Lookup[sampleContainerModelPacket, SelfStanding], True],
 														True
 													],
 													MatchQ[Lookup[packet, GripperDiameter], GreaterP[0 Millimeter]],
 													!MatchQ[
 														Lookup[packet, GripperDiameter],
-														GreaterEqualP[Lookup[fetchPacketFromCache[sampleContainerModel, cacheBall], Aperture]]
+														GreaterEqualP[Lookup[sampleContainerModelPacket, Aperture]]
 													]
 												],
 												Nothing,
@@ -15466,33 +15528,43 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 						Which[
 							(* If we are considering aliquot, we can loosen some container constraints, the only absolutely-no condition is our sample volume is too low *)
 							MemberQ[output,Containers] && LessQ[sampleVolume, 20*Milliliter],
-							{},
+								{},
 							(* if we want the sample in the current container and does not want it to use StirBar *)
-							!MemberQ[output,Containers] && MatchQ[stirBar, False] && Or[
-								NullQ[Lookup[fetchPacketFromCache[sampleContainerModel, cacheBall], MaxOverheadMixRate, Null]],
-								rate > Lookup[fetchPacketFromCache[sampleContainerModel, cacheBall], MaxOverheadMixRate]
+							And[
+								!MemberQ[output, Containers],
+								MatchQ[stirBar, False],
+								Or[
+									(* No Stir if the sample container is missing MaxOverheadMixRate *)
+									NullQ[Lookup[sampleContainerModelPacket, MaxOverheadMixRate, Null]],
+
+									(* No Stir if the sample container is the mix rate is over MaxOverheadMixRate *)
+									rate > Lookup[sampleContainerModelPacket, MaxOverheadMixRate]
+								]
 							],
-							(* No Stir if the sample container is missing MaxOverheadMixRate *)
-							(* No Stir if the sample container is the mix rate is over MaxOverheadMixRate *)
-							{},
+								{},
 							(* We just want to know if sample in the current container can be stirred or not*)
-							!MemberQ[output,Containers] && Or[
-								MatchQ[sampleContainerModel, ObjectP[Model[Container, Vessel, VolumetricFlask]]],
-								LessQ[sampleVolume, 20*Milliliter],
-								LessQ[FirstCase[
-									{
-										sampleVolume / Lookup[fetchPacketFromCache[sampleContainerModel, sampleContainerPackets], MaxVolume, Null],
-										0.39
-									}, NumericP
-								], 0.4]
+							And[
+								!MemberQ[output,Containers],
+								Or[
+									(* No Stir for volumetric flask *)
+									MatchQ[sampleContainerModel, ObjectP[Model[Container, Vessel, VolumetricFlask]]],
+
+									(* No Stir for sample volume below 20mL *)
+									LessQ[sampleVolume, 20*Milliliter],
+
+									(* No Stir for sample to container max volume ratio below 40% *)
+									LessQ[FirstCase[
+										{
+											sampleVolume / Lookup[sampleContainerModelPacket, MaxVolume, Null],
+											0.39
+										}, NumericP
+									], 0.4]
+								]
 							],
-							(* No Stir for volumetric flask *)
-							(* No Stir for sample volume below 20mL *)
-							(* No Stir for sample to container max volume ratio below 40% *)
-							{},
+								{},
 							True,
 							(* Assume that as long as we do not have the combination of no aliquot allowed and sample volume below 20mL, there is an either an impeller or stirbar that is compatible. *)
-							compatibleInstruments
+								compatibleInstruments
 						],
 					Homogenize,
 						If[MatchQ[sampleContainerModel,ObjectP[Model[Container,Vessel,VolumetricFlask]]],
@@ -15503,7 +15575,7 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 								Map[
 									Function[{instrument},
 										(* Get the sample's volume and the container's max volume. *)
-										containerModelMaxVolume=Lookup[fetchPacketFromCache[sampleContainerModel,sampleContainerPackets],MaxVolume,2 Milliliter];
+										containerModelMaxVolume = Lookup[sampleContainerModelPacket, MaxVolume, 2 Milliliter];
 
 										(* Filter out the sample if it has a volume that's within 95% of the container's max volume. *)
 										(* This is so that the sample doesn't get displaced out of the container. *)
@@ -15518,13 +15590,28 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 											If[MatchQ[bestSonicationHorn,Null],
 												Nothing,
 												(* If we have a compatible sonication horn, make sure the container of the sample is also self-standing, or has an approved holder (2mL, 15mL, or 50mL tube). *)
-												If[TrueQ[Lookup[fetchPacketFromCache[sampleContainerModel,sampleContainerPackets],SelfStanding,False]]||MatchQ[sampleContainerModel,ObjectP[{Model[Container,Vessel,"id:3em6Zv9NjjN8"],Model[Container,Vessel,"id:xRO9n3vk11pw"],Model[Container,Vessel,"id:bq9LA0dBGGR6"]}]],
+												If[TrueQ[
+													Or[
+														Lookup[sampleContainerModelPacket, SelfStanding, False],
+														MatchQ[sampleContainerModel, ObjectP[{
+															Model[Container, Vessel, "id:3em6Zv9NjjN8"],
+															Model[Container, Vessel, "id:xRO9n3vk11pw"],
+															Model[Container, Vessel, "id:bq9LA0dBGGR6"]
+														}]]
+													]],
+
 													(* If we were given an Amplitude over 70 Percent, the sonication horn used can't be one of the small ones. *)
 													(* The object we have listed is the large sonication horn. There is only one large sonication horn. *)
 													If[MatchQ[amplitude,GreaterP[70 Percent]]&&!MatchQ[bestSonicationHorn,ObjectP[Model[Part, SonicationHorn, "id:WNa4ZjKzw8p4"]]],
 														Nothing,
+
 														(* If we were given a MaxTemperature, there has to be at least 1 CM of clearance between the container aperture and the sonication horn's diameter *)
-														If[MatchQ[maxTemperature,TemperatureP]&&MatchQ[Lookup[fetchPacketFromCache[sampleContainerModel,sampleContainerPackets],Aperture]-Lookup[fetchPacketFromCache[bestSonicationHorn,cacheBall],HornDiameter],LessEqualP[1 Centimeter]],
+														If[And[
+															MatchQ[maxTemperature, TemperatureP],
+															MatchQ[
+																Lookup[sampleContainerModelPacket, Aperture] - fastAssocLookup[fastAssoc, bestSonicationHorn, HornDiameter],
+																LessEqualP[1 Centimeter]
+															]],
 															Nothing,
 															instrument
 														]
@@ -15592,12 +15679,12 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 									If[And[
 											(* Self-standing check *)
 											MatchQ[
-												Lookup[fetchPacketFromCache[#,preferredVesselPackets],SelfStanding,False],
+												fastAssocLookup[fastAssoc, #, SelfStanding],
 												True
 											],
 											(* About as large as a 250mL vessel in order to fit a sonciation weight. *)
 											MatchQ[
-												Lookup[fetchPacketFromCache[#,preferredVesselPackets],Dimensions,{0Meter,0Meter,0Meter}],
+												fastAssocLookup[fastAssoc, #, Dimensions],
 												{GreaterEqualP[0.06985 Meter], GreaterEqualP[0.06985 Meter], GreaterEqualP[0.0762 Meter]}
 											]
 										],
@@ -15618,12 +15705,12 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 						Stir,
 						(* Only allow containers that have a compatible impeller or stir bar, when sampleVolume >= 20mL and  sample to container max volume ratio is no less than 40%*)
 						(* Among containers fulfilling our requirements, we prefer larger ones for stir to minimum spillage *)
-							ReverseSortBy[Lookup[fetchPacketFromCache[#, preferredVesselPackets], MaxVolume]&] /@
+							ReverseSortBy[Lookup[fetchPacketFromFastAssoc[#, fastAssoc], MaxVolume]&] /@
 								Map[
 									(If[GreaterEqualQ[sampleVolume,20*Milliliter] &&
 										GreaterEqualQ[FirstCase[
 											{
-												sampleVolume / Lookup[fetchPacketFromCache[#, preferredVesselPackets], MaxVolume, Null],
+												sampleVolume / Lookup[fetchPacketFromFastAssoc[#, fastAssoc], MaxVolume, Null],
 												0.39
 											}, NumericP
 										], 0.4] &&
@@ -15636,8 +15723,8 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 													],
 													Cases[Lookup[filteredInstrumentPackets, Object], ObjectP[Model[Instrument, OverheadStirrer]]]
 												],
-												!NullQ[Lookup[fetchPacketFromCache[#, cacheBall], MaxOverheadMixRate, Null]],
-												rate < Lookup[fetchPacketFromCache[#, cacheBall], MaxOverheadMixRate]
+												!NullQ[Lookup[fetchPacketFromFastAssoc[#, fastAssoc], MaxOverheadMixRate, Null]],
+												rate < fastAssocLookup[fastAssoc, #, MaxOverheadMixRate]
 											],
 											(* it can find a stir bar and we allow using stir bar*)
 											And[
@@ -15657,7 +15744,7 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 								(* TODO: We only have one homogenizer now so this is okay. Will need to double map when we have multiple instrument models. *)
 								Function[{container},
 									(* Get the sample's volume and the container's max volume. *)
-									containerModelMaxVolume=Lookup[fetchPacketFromCache[container,cacheBall],MaxVolume,2 Milliliter];
+									containerModelMaxVolume = Lookup[fetchPacketFromFastAssoc[container, fastAssoc], MaxVolume, 2 Milliliter];
 
 									(* Filter out the container if it has a volume that's within 95% of the container's max volume (with relation to the sample's volume). *)
 									(* Let the container pass through if the sample doesn't have a volume (it is a solid). *)
@@ -15672,12 +15759,27 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 										If[MatchQ[bestSonicationHorn,Null],
 											Nothing,
 											(* If we have a compatible sonication horn, make sure the container of the sample is also self-standing, or has an approved holder (2mL, 15mL, or 50mL tube). *)
-											If[TrueQ[Lookup[fetchPacketFromCache[container,preferredVesselPackets],SelfStanding,False]]||MatchQ[container,ObjectP[{Model[Container,Vessel,"id:3em6Zv9NjjN8"],Model[Container,Vessel,"id:xRO9n3vk11pw"],Model[Container,Vessel,"id:bq9LA0dBGGR6"]}]],
+											If[TrueQ[
+												Or[
+													Lookup[fetchPacketFromFastAssoc[container, fastAssoc], SelfStanding, False],
+													MatchQ[container, ObjectP[{
+														Model[Container, Vessel, "id:3em6Zv9NjjN8"],
+														Model[Container, Vessel, "id:xRO9n3vk11pw"],
+														Model[Container, Vessel, "id:bq9LA0dBGGR6"]
+													}]]
+												]],
+
 												(* If we were given an Amplitude over 70 Percent, the sonication horn used can't be one of the small ones. *)
 												If[MatchQ[amplitude,GreaterP[70 Percent]]&&!MatchQ[bestSonicationHorn,ObjectP[Model[Part, SonicationHorn, "id:WNa4ZjKzw8p4"]]],
 													Nothing,
+
 													(* If we were given a MaxTemperature, there has to be at least 1 CM of clearance between the container aperture and the sonication horn's diameter *)
-													If[MatchQ[maxTemperature,TemperatureP]&&MatchQ[Lookup[fetchPacketFromCache[container,preferredVesselPackets],Aperture]-Lookup[fetchPacketFromCache[bestSonicationHorn,cacheBall],HornDiameter],LessEqualP[1 Centimeter]],
+													If[And[
+														MatchQ[maxTemperature, TemperatureP],
+														MatchQ[
+															fastAssocLookup[fastAssoc, container, Aperture] - fastAssocLookup[fastAssoc, bestSonicationHorn, HornDiameter],
+															LessEqualP[1 Centimeter]
+														]],
 														Nothing,
 														container
 													]

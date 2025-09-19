@@ -52,6 +52,13 @@ ECL`Authors[CellQuantificationUnitP]:={"lei.tian"};
 ECL`Authors[MultiMethodAliquotsP]:={"lei.tian"};
 
 
+(* ::Subsubsection::Closed:: *)
+(* AnimalP *)
+AnimalP = Alternatives[Human, Rat, Mouse, Monkey, Cat, Dog];
+
+(* ::Subsubsection::Closed:: *)
+(* DosageRouteP *)
+DosageRouteP = Alternatives[Oral, Intravenous, Subcutaneous, Inhalation, SkinAbsorption, Intraperitoneal];
 
 (* ::Subsubsection::Closed:: *)
 (* MagneticBeadSeparationModeP *)
@@ -5155,7 +5162,7 @@ SensorMaintenanceTypeP=Alternatives[maintenance[CalibrateCarbonDioxide],maintena
 (*SensorLogTypeP*)
 
 
-SensorLogTypeP=Alternatives["60SecondsLog", "5SecondsLog","0.5SecondsLog","remoteTempLog","60SecondsStringLog","0.25SecondsLogA","0.1SecondsLog"];
+SensorLogTypeP=Alternatives["60SecondsLog", "5SecondsLog","0.5SecondsLog","remoteTempLog","60SecondsStringLog","0.1SecondsLog","0.1SecondsLogB","0.1SecondsLogC"];
 
 
 
@@ -5334,6 +5341,12 @@ GasWashingBottlePorosityP=(Coarse|ExtraCoarse);
 
 PAGEDataTypeP=(Analyte|Standard|Ladder);
 
+
+(* ::Subsubsection::Closed:: *)
+(*KarlFischerTitrationDataTypeP*)
+
+
+KarlFischerTitrationDataTypeP=(Analyte|Standard|Blank);
 
 
 (* ::Subsubsection::Closed:: *)
@@ -5705,7 +5718,7 @@ $IncubatorStorageConditions={
 (*CellStorageTypeP*)
 
 
-CellStorageTypeP=Alternatives[Freezer,DeepFreezer,CryogenicStorage];
+CellStorageTypeP=Alternatives[DeepFreezer,CryogenicStorage];
 
 
 
@@ -6189,7 +6202,7 @@ MetricThreadP = Alternatives["M0.25x0.075","M0.3x0.08","M0.3x0.09","M0.35x0.09",
 (*MeasurementMethodP*)
 
 
-MeasurementMethodP = Alternatives[Temperature, CarbonDioxide, UltrasonicDistance, RelativeHumidity, Weight, pH, Conductivity, LiquidLevel, Pressure, Counter, FlowRate, Moisture, Oxygen, Light, Distance, Continuity];
+MeasurementMethodP = Alternatives[Temperature, CarbonDioxide, UltrasonicDistance, RelativeHumidity, Weight, pH, Conductivity, LiquidLevel, Pressure, Counter, FlowRate, Moisture, Oxygen, Light, Distance, Continuity, Vibration];
 
 
 
@@ -6914,7 +6927,8 @@ PolymerArrangementP=Alternating|Periodic|Statistical|Block|Grafted;
 (*CountP*)
 
 
-CountP=_Integer;
+(* note that this MUST not be _Integer because count should be allowed to be 4 Unit, and while that matches GreaterEqualP[0, 1], it does NOT match _Integer *)
+CountP=GreaterEqualP[0., 1.];
 
 
 (* ::Subsubsection::Closed:: *)
@@ -9722,7 +9736,8 @@ FootprintP = Alternatives[
 	Tube50mLRack15,
 	Tube50mLRack24,
 	MagnumHopperBin17x24x11,
-    StrongHold48InchCabinetShelf,
+	StrongHold48InchCabinetShelf,
+	Aseptic24x24Bag,
 	(*Container Holders*)
 	SmallVessel,
 	MediumVessel,
@@ -9903,7 +9918,11 @@ FootprintP = Alternatives[
 	ID41mmTorus,
 	ID51mmTorus,
 	ID56mmTorus,
-	ID70mmTorus
+	ID70mmTorus,
+	(* KarlFischerTitratino Molecular Sieve Tubes *)
+	MolecularSieveNarrowTube,
+	MolecularSieveUShapedTube,
+	MolecularSieveRotatableTube
 ];
 
 (*CellIncubatorDeckP*)
@@ -10987,7 +11006,7 @@ CoverFootprintP = Alternatives[
 	CapCrimp23x43,Cap42x32,Cap22x8,
 	CapScrewBottle36x29, CapSnap8x23, CapSnap8x38, CapSnap9x25, CapScrewBottle60x15, CapScrewBottle64x37, CapScrewBottle123x19,
 	CapGL14Cuvette, CapGL45, CapPlace1x4, CapPlace4x8, CapPlace7x6,CapPlace7x8,
-	CapPlace8x126,CapPlace8x4, CapPlace8x7, CapPlace12x2, CapPlace104x7, CapPlace12x33, CapPlace12x47, CapPlace20x56,
+	CapPlace8x126,CapPlace8x4, CapPlace8x5, CapPlace8x6, CapPlace8x7, CapPlace12x2, CapPlace104x7, CapPlace12x33, CapPlace12x47, CapPlace20x56,
 	CapPlace25x30, CapPlace29x32, CapPlace30x33, CapPlace36x40,
 	CapPlace37x8, CapPlace38x8, CapPlace51x125, CapPlace94x85, CapPlace94x7,CapPlace95x6, 
 	CapPlaceBottle64x68, CapPlaceTube16x15, CapPlaceTube26x18,CapScrewBottle32x149,
@@ -11000,7 +11019,7 @@ CoverFootprintP = Alternatives[
 	CapScrewBottle19x26, CapScrewBottle21x11, CapScrewBottle21x12,
 	CapScrewBottle21x13, CapScrewBottle21x15, CapScrewBottle21x16,
 	CapScrewBottle21x21, CapScrewBottle22x10, CapScrewBottle22x11, CapScrewBottle22x12,
-	CapScrewBottle22x15, CapScrewBottle22x16, CapScrewBottle22x40, CapScrewBottle23x11,
+	CapScrewBottle22x15, CapScrewBottle22x16, CapScrewBottle22x22, CapScrewBottle22x40, CapScrewBottle23x11,
 	CapScrewBottle23x12, CapScrewBottle23x14, CapScrewBottle23x15,
 	CapScrewBottle24x11, CapScrewBottle24x15, CapScrewBottle24x16,
 	CapScrewBottle24x17, CapScrewBottle24x18, CapScrewBottle24x19, CapScrewBottle24x20,
@@ -11043,13 +11062,13 @@ CoverFootprintP = Alternatives[
 	CapScrewBottle52x25, CapScrewBottle52x38, CapScrewBottle53x18, CapScrewBottle54x34,
 	CapScrewBottle54x19, CapScrewBottle54x26, CapScrewBottle55x12, CapScrewBottle55x19,
 	CapScrewBottle55x31, CapScrewBottle57x17, CapScrewBottle58x17,
-	CapScrewBottle58x79, CapScrewBottle59x11, CapScrewBottle59x39,
+	CapScrewBottle58x79, CapScrewBottle59x11, CapScrewBottle59x30, CapScrewBottle59x39,
 	CapScrewBottle60x13, CapScrewBottle60x19, CapScrewBottle60x30,CapScrewBottle60x36,
 	CapScrewBottle60x38, CapScrewBottle61x21, CapScrewBottle61x22, CapScrewBottle62x21,
 	CapScrewBottle63x22, CapScrewBottle64x27, CapScrewBottle65x18,
 	CapScrewBottle66x27, CapScrewBottle67x11, CapScrewBottle68x17, CapScrewBottle68x18,
 	CapScrewBottle68x27, CapScrewBottle68x37, CapScrewBottle70x40, CapScrewBottle72x12,
-	CapScrewBottle73x12, CapScrewBottle78x30, CapScrewBottle78x32,
+	CapScrewBottle73x12, CapScrewBottle75x46, CapScrewBottle78x30, CapScrewBottle78x32,
 	CapScrewBottle79x28, CapScrewBottle80x30, CapScrewBottle84x43,
 	CapScrewBottle86x27, CapScrewBottle87x28, CapScrewBottle87x30,
 	CapScrewBottle92x15, CapScrewBottle92x18, CapScrewBottle92x21,
@@ -11112,7 +11131,8 @@ CoverFootprintP = Alternatives[
 	Septum2440Flask, Septum31x16, TubeCap50mL, CrossFlowContainerCap50mL,
 	CrossFlowContainerCap250mL,CrossFlowContainerCap500mL, SIQualCap,CapSnap27x21,CapScrewTube18x14,Cap11x27,CapSnap38x6,
 	Cap57x83, CapScrewSpigotCarboy20L, Cap13x3, CapScrewBottle24x12,
-	SmallBeakerLid, MediumBeakerLid, LargeBeakerLid
+	SmallBeakerLid, MediumBeakerLid, LargeBeakerLid,
+	MoledularSieveNarrowTubeCap, MolecularSieveRotatableTubeCap
 ];
 
 
@@ -12357,6 +12377,9 @@ PricingCategoryP=Alternatives[
 	"Integrated Incubator",
 	"Liquid Nitrogen Dewar",
 
+	(* Karl Fischer Titration *)
+	"Karl Fischer Titration",
+
 	(* Liquid Handler Robotics *)
 	"Buffer Prep Robotics",
 	"Post-Processing Robotics",
@@ -12643,6 +12666,10 @@ ComputerComponentP = Alternatives[
 
 
 ComputerTypeP = Alternatives[InstrumentComputer, WorkstationComputer, TabletComputer];
+
+(* ::Subsubsection::Closed:: *)
+(*MathematicaVersionP*)
+ManifoldMathematicaVersionsP = Alternatives["13.3.1","14.2.0"];
 
 
 (* ::Subsubsection::Closed:: *)
@@ -12985,6 +13012,7 @@ InstrumentSoftwareP = Alternatives[AcqirisSoftware,
 	GilsonTRILUTIONLH30ServicePack2,
 	GilsonTRILUTIONLH30ServicePack3,
 	GilsonTRILUTIONLH30Special2417,
+	GilsonTRILUTIONLH40,
 	GilsonUSBDrivers64,
 	GilsonVERITY4000SeriesSyringePumpGEARSPlugins,
 	HamiltonAgilentCentrifugeVenusDriver,
@@ -13078,6 +13106,7 @@ InstrumentSoftwareP = Alternatives[AcqirisSoftware,
 	NucleofectorSwitch,
 	OctetDataAcquisition,
 	Omega,
+	OMNIS,
 	OndaxSAMSpectraAnalyzerandMapper,
 	OndaxSpectraXplorer,
 	OndaxWPS,
@@ -13752,7 +13781,9 @@ SupportTicketStatusP = Alternatives[
 	ShiftManagerSupport,
 	SciOpsSupport,
 	BlockingRequested,
-	VerificationRequested
+	VerificationRequested,
+	Blocked,
+	Resolved
 ];
 
 
@@ -13876,7 +13907,26 @@ KarlFischerTechniqueP = Coulometric | Volumetric;
 
 KarlFischerSamplingMethodP = Liquid | Headspace;
 
+(* ::Subsubsection::Closed:: *)
+(*KarlFischerReagentP*)
 
+KarlFischerReagentP = Alternatives[
+	HydranalCoulomatAGOven,
+	HydranalCoulomatAG,
+	HydranalComposite5,
+	HydranalComposite5K,
+	HydranalComposite2,
+	HydranalComposite1
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*KarlFischerTitrationMediumP*)
+
+KarlFischerTitrationMediumP = Alternatives[
+	MethanolDry,
+	MethanolRapid
+];
 
 (* ::Subsubsection::Closed:: *)
 (* DLSSolventNameP *)
@@ -13892,3 +13942,36 @@ HandlingAtmosphereP = Alternatives[
 	LowVacuum,
 	HighVacuum
 ];
+
+(* ::Subsubsection::Closed:: *)
+(* GraduationTypeP *)
+
+GraduationTypeP = Alternatives[
+	Labeled,
+	Short,
+	Long
+];
+
+(* ::Subsubsection::Closed:: *)
+(*USPCategorizationP*)
+
+USPCategorizationP = Alternatives[
+	"Group A",
+	"Group B",
+	"Group C"
+];
+
+(* ::Subsubsection::Closed:: *)
+(*USPCategorizationJustificationP*)
+
+USPCategorizationJustificationP = Alternatives[
+	"No measurement capability",
+	"Provides measurement",
+	"Provides experimental condition",
+	"Provides storage condition",
+	"Provides cleaning/sterilization",
+	"Complex analytical instrument",
+	"Complex non-analytical instrument"
+];
+
+

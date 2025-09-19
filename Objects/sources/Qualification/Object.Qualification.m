@@ -251,7 +251,10 @@ With[
 				Format -> Single,
 				Class -> Link,
 				Pattern :> _Link,
-				Relation -> Object[Instrument],
+				Relation -> Alternatives[
+					Model[Instrument],
+					Object[Instrument]
+				],
 				Description -> "The instrument that this qualification is intended to test.",
 				Category -> "General"
 			},
@@ -1529,6 +1532,14 @@ With[
 				Relation -> Object[Stream][Protocol],
 				Description -> "The list of video streams associated with this qualification.",
 				Category -> "General"
+			},
+			StreamErrors -> {
+				Format -> Multiple,
+				Class -> String,
+				Pattern :> _String,
+				Description -> "The error operator encountered when trying to start stream for the protocol.",
+				Category -> "General",
+				Developer -> True
 			},
 			AutomatedStorage -> {
 				Format -> Single,

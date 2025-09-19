@@ -1038,12 +1038,12 @@ DefineTests[
 		Example[{Options,FilterSterile,"Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options=ExperimentAcousticLiquidHandling[
 				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
-				FilterSterile->True,
-				FilterInstrument->Model[Instrument,Centrifuge,"id:WNa4ZjKxm86R"],
+				FilterSterile->False,
+				FilterInstrument->Model[Instrument,Centrifuge,"id:9RdZXv1XwWex"],(*"Avanti J-15R with JA-10.100 Fixed Angle Rotor"*)
 				Output->Options
 			];
 			Lookup[options,FilterSterile],
-			True,
+			False,
 			Variables:>{options},
 			Messages:>{Warning::AliquotRequired}
 		],

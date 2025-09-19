@@ -12,31 +12,44 @@ DefineUsage[ExperimentFreezeCells,
 	{
 		BasicDefinitions -> {
 			{
-				Definition -> {"ExperimentFreezeCells[Samples]","Protocol"},
-				Description -> "creates a 'Protocol' to freeze the provided 'Samples'.",
+				Definition -> {"ExperimentFreezeCells[Samples]", "Protocol"},
+				Description -> "creates a 'Protocol' to generate frozen cells stocks from 'Samples' containing mammalian, yeast, or bacterial cells.",
 				Inputs :> {
 					IndexMatching[
 						{
 							InputName -> "Samples",
-							Description-> "The cell samples whose contents are to be frozen for long-term cryogenic storage.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								},
-								PreparedSample->False
+							Description -> "The cell samples whose contents are to be frozen for long-term cryogenic storage.",
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Container with Well Position" -> {
+									"Well" -> Widget[
+										Type -> Enumeration,
+										Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> $MaxNumberOfWells]],
+										PatternTooltip -> "Enumeration must be any well from A1 to " <> $MaxWellPosition <> "."
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								}
 							],
-							Expandable->False
+							Expandable -> False
 						},
-						IndexName->"experiment samples"
+						IndexName -> "experiment samples"
 					]
 				},
-				Outputs:>{
+				Outputs :> {
 					{
 						OutputName -> "Protocol",
-						Description -> "Protocol generated to freeze the input samples.",
-						Pattern :> ObjectP[Object[Protocol,FreezeCells]]
+						Description -> "A protocol object for preparing and freezing cell stocks.",
+						Pattern :> ObjectP[Object[Protocol, FreezeCells]]
 					}
 				}
 			}
@@ -45,9 +58,12 @@ DefineUsage[ExperimentFreezeCells,
 		SeeAlso -> {
 			"ValidExperimentFreezeCellsQ",
 			"ExperimentFreezeCellsOptions",
+			"PlotFreezeCells",
+			"ExperimentCellPreparation",
+			"ExperimentTransfer",
 			"StoreSamples"
 		},
-		Author -> {"tyler.pabst", "eunbin.go", "jihan.kim", "gokay.yamankurt"}
+		Author -> {"lige.tonggu", "tyler.pabst", "harrison.gronlund"}
 	}
 ];
 
@@ -55,29 +71,42 @@ DefineUsage[ValidExperimentFreezeCellsQ,
 	{
 		BasicDefinitions -> {
 			{
-				Definition -> {"ValidExperimentFreezeCellsQ[Samples]","Boolean"},
+				Definition -> {"ValidExperimentFreezeCellsQ[Samples]", "Booleans"},
 				Description -> "checks whether the provided 'Samples' and specified options are valid for calling ExperimentFreezeCells.",
 				Inputs :> {
 					IndexMatching[
 						{
 							InputName -> "Samples",
-							Description ->"The cell samples whose contents are to be frozen for long-term cryogenic storage.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								},
-								PreparedSample->False
+							Description -> "The cell samples whose contents are to be frozen for long-term cryogenic storage.",
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Container with Well Position" -> {
+									"Well" -> Widget[
+										Type -> Enumeration,
+										Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> $MaxNumberOfWells]],
+										PatternTooltip -> "Enumeration must be any well from A1 to " <> $MaxWellPosition <> "."
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								}
 							],
 							Expandable -> False
 						},
-						IndexName->"experiment samples"
+						IndexName -> "experiment samples"
 					]
 				},
-				Outputs:>{
+				Outputs :> {
 					{
-						OutputName -> "Boolean",
+						OutputName -> "Booleans",
 						Description -> "Whether or not the ExperimentFreezeCells call is valid. Return value can be changed via the OutputFormat option.",
 						Pattern :> _EmeraldTestSummary|BooleanP
 					}
@@ -89,91 +118,118 @@ DefineUsage[ValidExperimentFreezeCellsQ,
 			"ExperimentFreezeCells",
 			"ExperimentFreezeCellsOptions"
 		},
-		Author -> {"tyler.pabst", "eunbin.go", "jihan.kim", "gokay.yamankurt"}
+		Author -> {"lige.tonggu", "tyler.pabst", "harrison.gronlund"}
 	}
 ];
 
 DefineUsage[ExperimentFreezeCellsOptions,
 	{
-		BasicDefinitions->{
+		BasicDefinitions -> {
 			{
-				Definition->{"ExperimentFreezeCellsOptions[Samples]","ResolvedOptions"},
-				Description->"outputs the resolved options of ExperimentFreezeCells with the provided inputs and specified options.",
-				Inputs:>{
+				Definition -> {"ExperimentFreezeCellsOptions[Samples]", "ResolvedOptions"},
+				Description -> "outputs the resolved options of ExperimentFreezeCells with the provided inputs 'Samples' and specified options.",
+				Inputs :> {
 					IndexMatching[
 						{
-							InputName->"Samples",
-							Description->"The cell samples whose contents are to be frozen for long-term cryogenic storage.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								},
-								PreparedSample->False
+							InputName -> "Samples",
+							Description -> "The cell samples whose contents are to be frozen for long-term cryogenic storage.",
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Container with Well Position" -> {
+									"Well" -> Widget[
+										Type -> Enumeration,
+										Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> $MaxNumberOfWells]],
+										PatternTooltip -> "Enumeration must be any well from A1 to " <> $MaxWellPosition <> "."
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								}
 							],
-							Expandable->False
+							Expandable -> False
 						},
-						IndexName->"experiment samples"
+						IndexName -> "experiment samples"
 					]
 				},
-				Outputs:>{
+				Outputs :> {
 					{
-						OutputName->"ResolvedOptions",
-						Description->"Resolved options when ExperimentFreezeCells is called on the input sample(s).",
-						Pattern:>_List
+						OutputName -> "ResolvedOptions",
+						Description -> "Resolved options when ExperimentFreezeCells is called on the input samples.",
+						Pattern :> {Rule[_Symbol, Except[Automatic|$Failed]]|RuleDelayed[_Symbol, Except[Automatic|$Failed]]...}
 					}
 				}
 			}
 		},
-		MoreInformation->{},
-		SeeAlso->{
+		MoreInformation -> {},
+		SeeAlso -> {
 			"ExperimentFreezeCells",
 			"ValidExperimentFreezeCellsQ"
 		},
-		Author -> {"tyler.pabst", "eunbin.go", "jihan.kim", "gokay.yamankurt"}
+		Author -> {"lige.tonggu", "tyler.pabst", "harrison.gronlund"}
 	}
 ];
 
 DefineUsage[ExperimentFreezeCellsPreview,
 	{
-		BasicDefinitions->{
+		BasicDefinitions -> {
 			{
-				Definition->{"ExperimentFreezeCellsPreview[Samples]","plots"},
-				Description->"outputs temperature plots as a function of time for ExperimentFreezeCells with the provided inputs and specified options.",
-				Inputs:>{
+				Definition -> {"ExperimentFreezeCellsPreview[Samples]", "Preview"},
+				Description -> "returns the graphical 'Preview' for ExperimentIncubateCells when it is called on 'Samples'.",
+				Inputs :> {
 					IndexMatching[
 						{
-							InputName->"Samples",
-							Description->"The cell samples whose contents are to be frozen for long-term cryogenic storage.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								},
-								PreparedSample->False
+							InputName -> "Samples",
+							Description -> "The cell samples whose contents are to be frozen for long-term cryogenic storage.",
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Container with Well Position" -> {
+									"Well" -> Widget[
+										Type -> Enumeration,
+										Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> $MaxNumberOfWells]],
+										PatternTooltip -> "Enumeration must be any well from A1 to " <> $MaxWellPosition <> "."
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								}
 							],
-							Expandable->False
+							Expandable -> False
 						},
-						IndexName->"experiment samples"
+						IndexName -> "experiment samples"
 					]
 				},
-				Outputs:>{
+				Outputs :> {
 					{
-						OutputName->"plots",
-						Description->"Temperature vs time plots for each resolved batch when ExperimentFreezeCells is called on the input sample(s).",
-						Pattern:>{_Graphics..}
+						OutputName -> "Preview",
+						Description -> "Graphical preview representing the output of ExperimentFreezeCells. This value is always Null.",
+						Pattern :> Null
 					}
 				}
 			}
 		},
-		MoreInformation->{},
-		SeeAlso->{
+		MoreInformation -> {},
+		SeeAlso -> {
 			"ExperimentFreezeCells",
 			"ValidExperimentFreezeCellsQ",
-			"ExperimentFreezeCellsOptions"
+			"ExperimentFreezeCellsOptions",
+			"PlotFreezeCells"
 		},
-		Author -> {"tyler.pabst", "eunbin.go", "jihan.kim", "gokay.yamankurt"}
+		Author -> {"lige.tonggu", "tyler.pabst", "harrison.gronlund"}
 	}
 ];

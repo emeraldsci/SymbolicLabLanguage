@@ -73,7 +73,7 @@ DefineTests[ExperimentCoverOptions,
 				OutputFormat -> List
 			],
 			KeyValuePattern[{
-				Environment -> ObjectP[Model[Instrument, BiosafetyCabinet]]
+				Environment -> ObjectP[Model[Instrument, HandlingStation, BiosafetyCabinet]]
 			}]
 		],
 		Example[{Additional, "When covering a container with a built in cover, doesn't generate any resources for caps:"},

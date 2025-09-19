@@ -137,18 +137,17 @@ Error::DensityRecoupSampleMismatch = "In ExperimentMeasureVolume, if MeasureDens
 Error::DensityMeasurementVolumeMismatch = "In ExperimentMeasureVolume, if MeasureDensity -> False, then the option MeasurementVolume will be ignored.";
 Error::MeasureDensityRequired = "The following samples have Method -> Gravimetric but have no Density: `1`. Please set MeasureDensity -> True or Automatic.";
 Error::InsufficientMeasureDensityVolume = "The following samples require MeasureDensity to conduct this experiment but do not have enough volume (`1`) to use in ExperimentMeasureDensity: `2`. Please add volume before beginning this experiment.";
+Error::UnsafeMeasureDensity = "The following samples require MeasureDensity to conduct this experiment but their densities cannot be measured in ExperimentMeasureDensity due to safety reasons (Fuming, Ventilated, InertHandling or Pyrophoric being True): `1`. Please populate the sample density to continue.";
 Error::SampleUltrasonicIncompatible = "The following samples are UltrasonicIncompatible and cannot be measured with our Ultrasonic volume measurement instruments: `1`. Please use Method -> Gravimetric if possible.";
+Error::SampleEHSUltrasonicIncompatible = "The following samples are not safe to uncover for ultrasonic measurements in the Ambient environment and cannot be measured ultrasonically: `1`. Please use Method -> Gravimetric if possible.";
 Error::UnmeasurableContainer = "The following samples have containers that are incompatible with the Method `1`: `2`. For a sample's volume to be measured gravimetrically, its container or its container's Model must have the TareWeight field populated, its container must not be an Object[Container, Plate], and its container must have only one sample inside. Please transfer the samples to containers that meet those criteria or consider measuring the volumes ultrasonically.";
 Error::VolumeCalibrationsMissing = "The following samples have containers that are not calibrated for Ultrasonic volume measurement: `1`. Please select Gravimetric volume measurement if possible, or request the containers' model be volume calibrated by submitting a Troubleshooting Report.";
-Error::UnmeasurableSample = "The following samples, `1`, have Volume, Density and/or UltrasonicIncompatible information that prohibits them from having their volume measured in the lab.";
+Error::UnmeasurableSample = "The following samples, `1`, have Volume, Density, UltrasonicIncompatible or EHS (Fuming, Ventilated, InertHandling, Pyrophoric) information that prohibits them from having their volume measured in the lab.";
 Warning::CentrifugeRecommended = "Because the following samples will have their volumes Ultrasonically measured, we recommend preparing the samples with Centrifuge -> True to reduce errant volume measurements caused by material left on the sides of the container: `1`.";
 Error::InvalidInSituMethod = "With InSitu -> True, the measurement methods, `1`, aren't compatible with the location and state of the samples `2`.";
 Error::InvalidInSituMeasureDensity = "With InSitu -> True, you may not set MeasureDensity -> True.";
 Error::InSituImpossible = "Because of the location of the sample, InSitu measurement is not possible. Please make sure the samples `1` are on the appropriate instruments and in compatible racks if necessary.";
 Warning::LivingOrSterileSamplesQueuedForMeasureVolume = "The following samples,`1`, are marked Living->True, and the following samples, `2`, are marked Sterile->True. MeasureVolume on these samples will require opening the cover and therefore pose contamination risks. We recommend removing these samples from input list.";
-
-(* TODO: This is a temporary feature flag allowing us to quickly turn container exempting on or off based on the UltrasonicIncompatible flag added to Model[Container] *)
-containerExemptionCheckFlag = False;
 
 
 
@@ -166,7 +165,7 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 		simulatedProtocol,finalSimulation,aliquotAdjustedOptions,cache,inSituOp,packets,metaContainers,metaContainerParents,
 		samplePackets,sampleModels,containerPackets, containerModels,volumeCalibrations,filteredSamplesIn,filteredExpandedOptions,metaMetaContainerParents,
 		objectSampleFields,modelSampleFields,containerFields,modelContainerFields,rackPackets,mySamplesWithPreparedSamplesNamed,
-		myOptionsWithPreparedSamplesNamed,safeOptionsNamed, numberOfReplicates,parentProtocolPacket,parentPostProcessingBool
+		myOptionsWithPreparedSamplesNamed,safeOptionsNamed, numberOfReplicates,parentProtocolPacket,parentPostProcessingBool,storageMeasurements
 	},
 
 	(* Determine the requested return value from the function *)
@@ -294,7 +293,7 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 	(* Container Model fields *)
 	modelContainerFields = Packet[Container[Model][Flatten[{
 		(* Necessary for MeasureVol *)
-		VolumeCalibrations,MinVolume,TareWeight,Immobile,Ampoule,UltrasonicIncompatible,
+		VolumeCalibrations,MinVolume,MaxVolume,TareWeight,Immobile,Ampoule,UltrasonicIncompatible,
 		(* Cache required *)
 		SamplePreparationCacheFields[Model[Container]]
 	}]]];
@@ -381,10 +380,14 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 	(*Check if the parent protocol specified ImageSample -> True. If parent protocol called for MeasureVolume, we will not filter it out for living/sterile*)
 	parentPostProcessingBool = Lookup[Replace[fetchPacketFromCache[parentProtocol,cacheBall],{Null -> <||>}],MeasureVolume,Null];
 
-	(* IF we are in a Subprotocol, this section will filter out samples that are incapable of being volume measured *)
-	{filteredSamplesIn,filteredExpandedOptions} = If[MatchQ[parentProtocol,ObjectP[]],
+	(* Determine if we are doing storage measurements *)
+	storageMeasurements = Lookup[safeOps, StorageMeasurements, False];
 
-		(* If we ARE in a Subprotocol, we need to filter out Solid and Discarded samples *)
+	(* If we are in a subprotocol for post-processing, this section will filter out samples that are incapable of being volume measured *)
+	(* Note that for other subprotocols, we will proceed as normal since the parent protocol must be requesting volume measurements for a valid reason. *)
+	{filteredSamplesIn,filteredExpandedOptions} = If[MatchQ[parentProtocol,ObjectP[Object[]]]&&TrueQ[storageMeasurements],
+
+		(* If we ARE in a subprotocol for post-processing, we need to filter out Solid and Discarded samples *)
 		Module[
 			{invalidBools,invalidPositions,validSamples,measureVolumeOptionNames,lengthOfInput,indexMatchedOptions,validOptions,aliquotRaw,
 				trimmedAliquotOption,aliquotDestinationWellRaw,trimmedAliquotDestinationWellOption},
@@ -440,21 +443,21 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 									]
 								]&/@volumeCals),
 								(* If the Container is exempt from Ultrasonic measurement due to being incompatible with our liquid level detectors *)
-								TrueQ[Lookup[containerMod,UltrasonicIncompatible]]
+								TrueQ[Lookup[containerMod,UltrasonicIncompatible]],
+								(* There is safety concern uncovering the sample for ultrasonic measurements. Ultrasonic measurements can only happen in Ambient environment and require the container to be uncovered *)
+								(* Note that we don't do the same check for gravimetric measurements as MeasureWeight won't uncover and also it can select the balance in the corresponding handling environment *)
+								(* We also don't care if the sample volume is small enough, like in a plate, or MaxVolume of the container < 2mL. These containers are going into plate volume check instruments (VC50, VC100, VC384) *)
+								And[
+									!MatchQ[containerMod,ObjectP[{Model[Container,Plate],Model[Container, MicrofluidicChip], Model[Container,ProteinCapillaryElectrophoresisCartridge]}]],
+									MatchQ[Lookup[containerMod,MaxVolume],GreaterP[2Milliliter]],
+									MemberQ[Lookup[samplePack, {Fuming, Ventilated, InertHandling, Pyrophoric}, Null], True]
+								]
 							],
 							(* Cannot be measured gravimetrically *)
+							(* Note that we are only here if we have StorageMeasurements->True, and we will always estimate density with solventEstimatedDensities in this case, we should not care about missing density *)
 							Or[
 								(* in a plate or other multi-position fluid containers *)
 								MatchQ[containerMod,ObjectP[{Model[Container,Plate],Model[Container, MicrofluidicChip], Model[Container,ProteinCapillaryElectrophoresisCartridge]}]],
-								(* If the sample, which has no density and cannot measure density due to volume, is in a tube that has no valid VolumeCalibrations *)
-								And[
-									NullQ[Lookup[samplePack,Density,Null]],
-									Or[
-										NullQ[sampleModPack],
-										(!NullQ[sampleModPack]&&NullQ[Lookup[sampleModPack,Density,Null]])
-									],
-									MatchQ[Lookup[samplePack,Volume],LessP[50Microliter]]
-								],
 								(* container has tare weight *)
 								!Or[
 									MatchQ[Lookup[containerPack,TareWeight],MassP],
@@ -526,7 +529,7 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 			{validSamples,ReplaceRule[expandedSafeOps,Join[validOptions, {AliquotContainer -> trimmedAliquotOption,DestinationWell -> trimmedAliquotDestinationWellOption}]]}
 		],
 
-		(* If we're not in a sub protocol, just return the samples we're working with and the options we already expanded *)
+		(* If we're not in a sub protocol for post-processing, just return the samples we're working with and the options we already expanded *)
 		{samplePackets,expandedSafeOps}
 	];
 
@@ -534,7 +537,8 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 	If[
 		And[
 			SameQ[filteredSamplesIn,{}],
-			MatchQ[parentProtocol,ObjectP[Object[]]]
+			MatchQ[parentProtocol,ObjectP[Object[]]],
+			TrueQ[storageMeasurements]
 		],
 		Return[outputSpecification/.{
 			Result -> $Failed,
@@ -840,11 +844,13 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 		imageSample,methods,measureDensityOps,measurementVolumes,recoupSampleOps,(*numMeasureDensityReplicatesOps,*)
 		sampleLabels,sampleContainerLabels,
 		unmeasurableSampleErrors,unmeasurableContainerErrors,measureDensityRequiredErrors,sampleUltrasonicIncompatibleErrors,
-		centrifugeRecommendedWarnings,insufficientMeasureDensityVolumeErrors,lookupP,resolvedAliquotOptions,aliquotTests,
-		unmeasurableContainerInvalidOptions,insufficientMeasureDensityVolumeInvalidInputs,inSitu,
+		unsafeUltrasonicMeasurementErrors,insufficientMeasureDensityVolumeErrors,unsafeMeasureDensityErrors,centrifugeRecommendedWarnings,
+		lookupP,resolvedAliquotOptions,aliquotTests,unmeasurableContainerInvalidOptions,insufficientMeasureDensityVolumeInvalidInputs,inSitu,
 		sampleUltrasonicIncompatibleInvalidOptions,unmeasurableContainerTest,samplePrepOpsWithCentrifuge,
 		sampleUltrasonicIncompatibleTests,centrifugeRecommendedTests,insufficientMeasureDensityVolumeTests,
 		unmeasurableSampleInvalidInputs,unmeasurableSampleTest,measureDensityRequiredInvalidOptions,volCals,
+		unsafeUltrasonicMeasurementInvalidOptions,unsafeUltrasonicMeasurementTests,
+		unsafeMeasureDensityInvalidOptions,unsafeMeasureDensityTests,
 		measureDensityRequiredTest,invalidInputs,invalidOptions,metaContainers,metaContainerParents,inSituBools,
 		inSituMethodErrors,inSituMeasureDensityError,inSituQ,inSituInvalidOptions,inSituMethodInvalidOptions,
 		inSituMeasureDensityInvalidOptions,inSituMeasureDensityErrors,uncalibratedContainerErrors,metaMetaContainerParents,
@@ -904,7 +910,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 			{
 				(* Sample packet information *)
 				(* Light Sensitive and Sterile used for PreferredContainer options *)
-				Packet[Name,Status,Volume,Density,Container,Position,Composition,Count,State,UltrasonicIncompatible,LightSensitive,Sterile, StorageCondition],
+				Packet[Name,Status,Volume,Density,Container,Position,Composition,Count,State,UltrasonicIncompatible,LightSensitive,Sterile, StorageCondition,Fuming,Ventilated,InertHandling,Pyrophoric],
 
 				Packet[Model[{Density}]],
 
@@ -912,7 +918,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 				Packet[Container[{Model,Status,TareWeight,Contents,Container,Position, StorageCondition}]],
 
 				(* Model information of the Sample's Container*)
-				Packet[Container[Model][{TareWeight,Immobile}]],
+				Packet[Container[Model][{TareWeight,Immobile,MaxVolume,MinVolume}]],
 
 				(* Container of the Container info - Used for InSitu *)
 				Packet[Container[Container][{Model,Container,Position}]],
@@ -1437,7 +1443,9 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 		unmeasurableContainerErrors,
 		measureDensityRequiredErrors,
 		sampleUltrasonicIncompatibleErrors,
+		unsafeUltrasonicMeasurementErrors,
 		insufficientMeasureDensityVolumeErrors,
+		unsafeMeasureDensityErrors,
 		centrifugeRecommendedWarnings,
 		inSituMethodErrors,
 		inSituMeasureDensityErrors,
@@ -1454,7 +1462,9 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 					unmeasurableContainerError,
 					measureDensityRequiredError,
 					sampleUltrasonicIncompatibleError,
+					unsafeUltrasonicMeasurementError,
 					insufficientMeasureDensityVolumeError,
+					unsafeMeasureDensityError,
 					centrifugeRecommendedWarning,
 					inSituMethodError,
 					inSituMeasureDensityError,
@@ -1465,7 +1475,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 				},
 
 					(* Setup our error tracking variables *)
-					{unmeasurableSampleError,unmeasurableContainerError,uncalibratedContainerError,measureDensityRequiredError,sampleUltrasonicIncompatibleError,insufficientMeasureDensityVolumeError,centrifugeRecommendedWarning,inSituMethodError,inSituMeasureDensityError}=ConstantArray[False,9];
+					{unmeasurableSampleError,unmeasurableContainerError,uncalibratedContainerError,measureDensityRequiredError,sampleUltrasonicIncompatibleError,unsafeUltrasonicMeasurementError,insufficientMeasureDensityVolumeError,unsafeMeasureDensityError,centrifugeRecommendedWarning,inSituMethodError,inSituMeasureDensityError}=ConstantArray[False,11];
 
 					(* Store our SafeOps options in their variables *)
 					{
@@ -1528,7 +1538,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 							],
 
 						(* Case 1: Everything works with Gravimetric
-							 - The sample has a Density OR MeasureDensity -> True and the Volume is over 50 Microliter (min MeasureDensity requirement)
+							 - The sample has a Density OR MeasureDensity -> True AND the Volume is over 50 Microliter (min MeasureDensity requirement) AND there is no safety concern uncovering the sample in Ambient environment for density measurements
 							 - The sample's container only has one thing in Contents
 							 - The sample's container has a TareWeight
 						*)
@@ -1539,14 +1549,15 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 								MatchQ[compositionDensity,{DensityP}],
 								And[
 									TrueQ[measureDensity],
-									GreaterEqual[Lookup[mySample,Volume],50*Microliter]
+									GreaterEqual[Lookup[mySample,Volume],50*Microliter],
+									!MemberQ[Lookup[mySample, {Fuming, Ventilated, InertHandling, Pyrophoric}, Null], True]
 								]
 							],
 							Or[
 								MatchQ[Lookup[myContainer,TareWeight],MassP],
 								MatchQ[Lookup[myContainerModel,TareWeight],MassP]
 							],
-							!MatchQ[myContainerModel,ObjectP[Model[Container,Plate]]],
+							!MatchQ[myContainerModel,ObjectP[{Model[Container,Plate],Model[Container, MicrofluidicChip], Model[Container,ProteinCapillaryElectrophoresisCartridge]}]],
 							MatchQ[myContents,{ObjectP[Lookup[mySample,Object]]}]
 						],
 							Gravimetric,
@@ -1555,12 +1566,18 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 							 - EITHER:
 							 		- We are FastTrack -> True so we ignore UltrasonicIncompatible
 							 		- The sample is NOT UltrasonicIncompatible
+							- There is no safety concern uncovering the sample in Ambient environment for ultrasonic measurement - {Fuming,Ventilated,InertHandling,Pyrophoric} (skipped for plate volume check instrument for plates or small tubes)
 							 - The sample's container has a valid volume calibration
 						*)
 						And[
 							Or[
 								TrueQ[fastTrack],
 								!TrueQ[Lookup[mySample,UltrasonicIncompatible]]
+							],
+							Or[
+								MatchQ[myContainer,ObjectP[{Object[Container,Plate],Object[Container, MicrofluidicChip], Object[Container,ProteinCapillaryElectrophoresisCartridge]}]],
+								MatchQ[Lookup[myContainerModel,MaxVolume],LessEqualP[2Milliliter]],
+								!MemberQ[Lookup[mySample,{Fuming,Ventilated,InertHandling,Pyrophoric},Null],True]
 							],
 							MatchQ[Download[Lookup[myContainer,Model],Object],Alternatives@@ultrasonicCompatibleContainerModels]
 						],
@@ -1569,24 +1586,32 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 						(* Case 3: The sample is only missing Density information and we could run ExperimentMeasureDensity
 							- The sample has no Density
 							- There is no corresponding Object[IntensiveProperty,Density] that could provide a density for the sample
-							- MeasureDensity -> Automatic
 							- The sample is in a single-content container that has a TareWeight
-							- Volume is over 50 uL (Min measurable volume for MeasureDensity)
+							EITHER
+								- MeasureDensity -> Automatic
+								- Volume is over 50 uL (Min measurable volume for MeasureDensity)
+								- There is no safety concern uncovering the sample for density measurements. The density measurement uses Micro balance, which is currently only available in Ambient environment
+							OR
+								- The sample has estimated density (from solventEstimatedDensities)
 						*)
-						(* NOTE: We put this AFTER the Ultrasonic tests for the sake of speed. Gravimetric is the most accurate
-							measurement method but we don't want to MeasureDensity every sample we test in the lab. Quicker to go to
-							Ultrasonic if Gravimetric isn't easily doable. If Ultrasonic isn't immediately doable we can default to
-							Gravimetric via ExperimentMeasureDensity *)
+						(* NOTE: We put this AFTER the Ultrasonic tests for the sake of speed. Gravimetric is the most accurate measurement method but we don't want to MeasureDensity every sample we test in the lab. Quicker to go to Ultrasonic if Gravimetric isn't easily doable. If Ultrasonic isn't immediately doable we can default to Gravimetric via ExperimentMeasureDensity *)
+						(* We only put solventDensity consideration here after Ultrasonic, as it is estimated and may not be as accurate as Ultrasonic either *)
 						And[
 							MatchQ[mySample,ObjectP[{Object[Sample]}]],
-							MatchQ[measureDensity,Automatic],
-							GreaterEqual[Lookup[mySample,Volume],50*Microliter],
 							Or[
 								MatchQ[Lookup[myContainer,TareWeight],MassP],
 								MatchQ[Lookup[myContainerModel,TareWeight],MassP]
 							],
-							!MatchQ[myContainerModel,ObjectP[Model[Container,Plate]]],
-							MatchQ[myContents,{ObjectP[Lookup[mySample,Object]]}]
+							!MatchQ[myContainerModel,ObjectP[{Model[Container,Plate],Model[Container, MicrofluidicChip], Model[Container,ProteinCapillaryElectrophoresisCartridge]}]],
+							MatchQ[myContents,{ObjectP[Lookup[mySample,Object]]}],
+							Or[
+								And[
+									MatchQ[measureDensity,Automatic],
+									GreaterEqual[Lookup[mySample,Volume],50*Microliter],
+									!MemberQ[Lookup[mySample,{Fuming,Ventilated,InertHandling,Pyrophoric},Null],True]
+								],
+								MatchQ[solventDensity,DensityP]
+							]
 						],
 							Gravimetric,
 
@@ -1594,7 +1619,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 							- The sample has no Density
 							- There is no corresponding Object[IntensiveProperty,Density] that could provide a density for the sample
 							- We ARE allowed to MeasureDensity
-							- But its Density cannot be measured (vol too low)
+							- But its Density cannot be measured (vol too low or safety concern)
 							- And the sample is UltrasonicIncompatible
 						*)
 						And[
@@ -1614,7 +1639,8 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 								If[
 									And[
 										!MatchQ[Download[Lookup[myContainer,Model],Object],Alternatives@@ultrasonicCompatibleContainerModels],
-										!TrueQ[Lookup[mySample,UltrasonicIncompatible]]
+										!TrueQ[Lookup[mySample,UltrasonicIncompatible]],
+										!MemberQ[Lookup[mySample,{Fuming,Ventilated,InertHandling,Pyrophoric},Null],True]
 									],
 
 									(* Stash an uncalibratedContainerError *)
@@ -1655,6 +1681,18 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 										sampleUltrasonicIncompatibleError = True;
 										methodX
 									),
+
+								(* If the User asks for Ultrasonic but the sample has safety concerns for ambient uncover, prepare an Error *)
+								(* This is skipped for plate volume check instrument for plates or small tubes due to their small volumes *)
+								And[
+									MemberQ[Lookup[mySample,{Fuming,Ventilated,InertHandling,Pyrophoric},Null],True],
+									!MatchQ[myContainer,ObjectP[{Object[Container,Plate],Object[Container, MicrofluidicChip], Object[Container,ProteinCapillaryElectrophoresisCartridge]}]],
+									MatchQ[Lookup[myContainerModel,MaxVolume],GreaterP[2Milliliter]]
+								],
+								(
+									unsafeUltrasonicMeasurementError = True;
+									methodX
+								),
 
 								(* If the User gives us a sample that's in a Ultrasonic compatible container, return *)
 								MatchQ[Download[Lookup[myContainer,Model],Object],Alternatives@@ultrasonicCompatibleContainerModels],
@@ -1699,16 +1737,18 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 										MatchQ[Lookup[mySample,Density],DensityP],
 										!NullQ[mySampleModel]&&MatchQ[Lookup[mySampleModel,Density],DensityP],
 										MatchQ[compositionDensity,{DensityP}],
+										MatchQ[solventDensity,DensityP],
 										And[
 											MatchQ[measureDensity,Alternatives[True,Automatic]],
-											GreaterEqual[Lookup[mySample,Volume],50*Microliter]
+											GreaterEqual[Lookup[mySample,Volume],50*Microliter],
+											!MemberQ[Lookup[mySample,{Fuming,Ventilated,InertHandling,Pyrophoric},Null],True]
 										]
 									],
 									Or[
 										MatchQ[Lookup[myContainer,TareWeight],MassP],
 										MatchQ[Lookup[myContainerModel,TareWeight],MassP]
 									],
-									!MatchQ[myContainerModel,ObjectP[Model[Container,Plate]]],
+									!MatchQ[myContainerModel,ObjectP[{Model[Container,Plate],Model[Container, MicrofluidicChip], Model[Container,ProteinCapillaryElectrophoresisCartridge]}]],
 									MatchQ[myContents,{ObjectP[Lookup[mySample,Object]]}]
 								],
 									methodX,
@@ -1717,7 +1757,8 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 								And[
 									NullQ[Lookup[mySample,Density]],
 									NullQ[mySampleModel]||NullQ[Lookup[mySampleModel,Density]],
-									!MatchQ[compositionDensity,{DensityP}]
+									!MatchQ[compositionDensity,{DensityP}],
+									!MatchQ[solventDensity,DensityP]
 								],
 
 									(* This might be ok if we can measure density, but if we can't decide which of two errors to throw*)
@@ -1726,6 +1767,11 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 										(* We don't have enough volume to MeasureDensity *)
 										Less[Replace[Lookup[mySample,Volume],Null->0Microliter],50*Microliter],
 											insufficientMeasureDensityVolumeError = True;
+											methodX,
+
+										(* We have safety concerns measuring the density of the sample *)
+										MemberQ[Lookup[mySample,{Fuming,Ventilated,InertHandling,Pyrophoric},Null],True],
+											unsafeMeasureDensityError = True;
 											methodX,
 
 										(* MeasureDensity is set to False *)
@@ -1924,7 +1970,9 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 						unmeasurableContainerError,
 						measureDensityRequiredError,
 						sampleUltrasonicIncompatibleError,
+						unsafeUltrasonicMeasurementError,
 						insufficientMeasureDensityVolumeError,
+						unsafeMeasureDensityError,
 						centrifugeRecommendedWarning,
 						inSituMethodError,
 						inSituMeasureDensityError,
@@ -1956,9 +2004,9 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 	unmeasurableSampleInvalidInputs=If[Or@@unmeasurableSampleErrors&&!gatherTests,
 		Module[{invalidSamples},
 		(* Get the samples that correspond to this error. *)
-			invalidSamples=PickList[simulatedSamples,unmeasurableSampleErrors];
+			invalidSamples=Download[PickList[simulatedSamples,unmeasurableSampleErrors],Object];
 
-			(* Throw the corresopnding error. *)
+			(* Throw the corresponding error. *)
 			Message[Error::UnmeasurableSample,ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]];
 
 			(* Return our invalid options. *)
@@ -2002,13 +2050,13 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 	(* Unmeasurable container error check *)
 	unmeasurableContainerInvalidOptions=If[Or@@unmeasurableContainerErrors&&!gatherTests,
 		Module[{invalidSamples,sampleMethods},
-		(* Get the samples that correspond to this error. *)
-			invalidSamples=PickList[simulatedSamples,unmeasurableContainerErrors];
+			(* Get the samples that correspond to this error. *)
+			invalidSamples=Download[PickList[simulatedSamples,unmeasurableContainerErrors],Object];
 
 			(* Get the volumes of these samples. *)
 			sampleMethods=PickList[methods,unmeasurableContainerErrors];
 
-			(* Throw the corresopnding error. *)
+			(* Throw the corresponding error. *)
 			Message[Error::UnmeasurableContainer,ToString[sampleMethods],ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]];
 
 			(* Return our invalid options. *)
@@ -2021,9 +2069,9 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 	uncalibratedContainerInvalidInputs = If[Or@@uncalibratedContainerErrors&&!gatherTests,
 		Module[{invalidSamples},
 			(* Get the samples that correspond to this error. *)
-			invalidSamples = PickList[simulatedSamples,uncalibratedContainerErrors];
+			invalidSamples=Download[PickList[simulatedSamples,uncalibratedContainerErrors],Object];
 
-			(* Throw the corresopnding error. *)
+			(* Throw the corresponding error. *)
 			Message[Error::VolumeCalibrationsMissing,ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]];
 
 			(* Return our invalid options. *)
@@ -2099,10 +2147,10 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 	(* MeasureDensity required error check *)
 	measureDensityRequiredInvalidOptions=If[Or@@measureDensityRequiredErrors&&!gatherTests,
 		Module[{invalidSamples},
-		(* Get the samples that correspond to this error. *)
-			invalidSamples=PickList[simulatedSamples,measureDensityRequiredErrors];
+			(* Get the samples that correspond to this error. *)
+			invalidSamples=Download[PickList[simulatedSamples,measureDensityRequiredErrors],Object];
 
-			(* Throw the corresopnding error. *)
+			(* Throw the corresponding error. *)
 			Message[Error::MeasureDensityRequired,ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]];
 
 			(* Return our invalid options. *)
@@ -2146,10 +2194,10 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 	(* Sample UltraonicIncompatible error check *)
 	sampleUltrasonicIncompatibleInvalidOptions=If[Or@@sampleUltrasonicIncompatibleErrors&&!gatherTests,
 		Module[{invalidSamples,sampleMethods},
-		(* Get the samples that correspond to this error. *)
-			invalidSamples=PickList[simulatedSamples,sampleUltrasonicIncompatibleErrors];
+			(* Get the samples that correspond to this error. *)
+			invalidSamples=Download[PickList[simulatedSamples,sampleUltrasonicIncompatibleErrors],Object];
 
-			(* Throw the corresopnding error. *)
+			(* Throw the corresponding error. *)
 			Message[Error::SampleUltrasonicIncompatible,ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]];
 
 			(* Return our invalid options. *)
@@ -2190,6 +2238,53 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 		{}
 	];
 
+	(* Sample EHS error check *)
+	unsafeUltrasonicMeasurementInvalidOptions=If[Or@@unsafeUltrasonicMeasurementErrors&&!gatherTests,
+		Module[{invalidSamples,sampleMethods},
+			(* Get the samples that correspond to this error. *)
+			invalidSamples=Download[PickList[simulatedSamples,unsafeUltrasonicMeasurementErrors],Object];
+
+			(* Throw the corresponding error. *)
+			Message[Error::SampleEHSUltrasonicIncompatible,ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]];
+
+			(* Return our invalid options. *)
+			{Method}
+		],
+		{}
+	];
+
+	(* Create the corresponding test for the UltraonicIncompatible error. *)
+	unsafeUltrasonicMeasurementTests=If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{failingInputs,passingInputs,passingInputsTest,failingInputTest},
+			(* Get the inputs that fail this test. *)
+			failingInputs=PickList[simulatedSamples,unsafeUltrasonicMeasurementErrors];
+
+			(* Get the inputs that pass this test. *)
+			passingInputs=Complement[simulatedSamples,failingInputs];
+
+			(* Create a test for the non-passing inputs. *)
+			failingInputTest=If[Length[failingInputs]>0,
+				Test["Samples that are being Ultrasonically volume measured ("<>ObjectToString[failingInputs,Cache->fullCache,Simulation->updatedSimulation]<>") are safe to handle at Ambient environment (Fuming, Ventilated, InertHandling and Pyrophoric are not True):",True,False],
+				Nothing
+			];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest=If[Length[passingInputs]>0,
+				Test["The following samples, "<>ObjectToString[passingInputs,Cache->fullCache,Simulation->updatedSimulation]<>", are either being measured Gravimetrically or are safe to handle at Ambient environment (Fuming, Ventilated, InertHandling and Pyrophoric are not True):",True,True],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				failingInputTest
+			}
+		],
+		(* We aren't gathering tests. No tests to create. *)
+		{}
+	];
+
 	(* Insufficient MeasureDensity volume error check *)
 	insufficientMeasureDensityVolumeInvalidInputs=If[Or@@insufficientMeasureDensityVolumeErrors&&!gatherTests,
 		Module[{invalidSamples,lookupPatterns,sampleVolumes},
@@ -2202,7 +2297,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 			(* Get the volumes of these samples. *)
 			sampleVolumes = Lookup[FirstCase[samplePackets,KeyValuePattern[#]],Volume,0 Liter]&/@lookupPatterns;
 
-			(* Throw the corresopnding error. *)
+			(* Throw the corresponding error. *)
 			Message[Error::InsufficientMeasureDensityVolume,sampleVolumes,ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]];
 
 			(* Return our invalid samples. *)
@@ -2243,13 +2338,60 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 		{}
 	];
 
+	(* Insufficient MeasureDensity volume error check *)
+	unsafeMeasureDensityInvalidOptions=If[Or@@unsafeMeasureDensityErrors&&!gatherTests,
+		Module[{invalidSamples},
+			(* Get the samples that correspond to this error. *)
+			invalidSamples = Lookup[PickList[simulatedSamples,unsafeMeasureDensityErrors],Object];
+
+			(* Throw the corresponding error. *)
+			Message[Error::UnsafeMeasureDensity,ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]];
+
+			(* Return our invalid options. *)
+			{Method}
+		],
+		{}
+	];
+
+	(* Create the corresponding test for the unmeasurable container error. *)
+	unsafeMeasureDensityTests=If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{failingInputs,passingInputs,passingInputsTest,failingInputTest},
+			(* Get the inputs that fail this test. *)
+			failingInputs=PickList[simulatedSamples,unsafeMeasureDensityErrors];
+
+			(* Get the inputs that pass this test. *)
+			passingInputs=Complement[simulatedSamples,failingInputs];
+
+			(* Create a test for the non-passing inputs. *)
+			failingInputTest=If[Length[failingInputs]>0,
+				Test["The following samples, "<>ObjectToString[failingInputs,Cache->fullCache,Simulation->updatedSimulation]<>", are safe to handle at Ambient environment to have their Density measured (Fuming, Ventilated, InertHandling and Pyrophoric are not True):",True,False],
+				Nothing
+			];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest=If[Length[passingInputs]>0,
+				Test["The following samples, "<>ObjectToString[failingInputs,Cache->fullCache,Simulation->updatedSimulation]<>", are being measured Gravimetrically, have their Density information populated, or are safe to handle at Ambient environment to have their Density measured (Fuming, Ventilated, InertHandling and Pyrophoric are not True):",True,True],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				failingInputTest
+			}
+		],
+		(* We aren't gathering tests. No tests to create. *)
+		{}
+	];
+
 	(* Centrifuge recommended Warning *)
 	If[Or@@centrifugeRecommendedWarnings&&!gatherTests&&!MatchQ[$ECLApplication,Engine],
 		Module[{invalidSamples},
 		(* Get the samples that correspond to this error. *)
-			invalidSamples=PickList[simulatedSamples,centrifugeRecommendedWarnings];
+			invalidSamples=Download[PickList[simulatedSamples,centrifugeRecommendedWarnings],Object];
 
-			(* Throw the corresopnding error. *)
+			(* Throw the corresponding error. *)
 			Message[Warning::CentrifugeRecommended,ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]]
 		],
 
@@ -2292,12 +2434,12 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 	inSituMethodInvalidOptions = If[Or@@inSituMethodErrors&&!gatherTests,
 		Module[{invalidSamples,invalidMethods},
 			(* Get the samples that correspond to this error. *)
-			invalidSamples = PickList[simulatedSamples,inSituMethodErrors];
+			invalidSamples = Download[PickList[simulatedSamples,inSituMethodErrors],Object];
 
 			(* Get the list of invalid methods *)
 			invalidMethods = ToString/@PickList[methods,inSituMethodErrors];
 
-			(* Throw the corresopnding error. *)
+			(* Throw the corresponding error. *)
 			Message[Error::InvalidInSituMethod,invalidMethods,ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]];
 
 			{InSitu,Method}
@@ -2309,9 +2451,9 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 	inSituMeasureDensityInvalidOptions = If[Or@@inSituMeasureDensityErrors&&!gatherTests,
 		Module[{invalidSamples},
 		(* Get the samples that correspond to this error. *)
-			invalidSamples = PickList[simulatedSamples,inSituMeasureDensityErrors];
+			invalidSamples =Download[PickList[simulatedSamples,inSituMeasureDensityErrors],Object];
 
-			(* Throw the corresopnding error. *)
+			(* Throw the corresponding error. *)
 			Message[Error::InvalidInSituMeasureDensity,ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]];
 
 			{InSitu,MeasureDensity}
@@ -2338,6 +2480,8 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 			unmeasurableContainerInvalidOptions,
 			measureDensityRequiredInvalidOptions,
 			sampleUltrasonicIncompatibleInvalidOptions,
+			unsafeUltrasonicMeasurementInvalidOptions,
+			unsafeMeasureDensityInvalidOptions,
 			inSituInvalidOptions,
 			inSituMethodInvalidOptions,
 			inSituMeasureDensityInvalidOptions,
@@ -2441,7 +2585,9 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 			unmeasurableSampleTest,
 			unmeasurableContainerTest,
 			sampleUltrasonicIncompatibleTests,
+			unsafeUltrasonicMeasurementTests,
 			measureDensityRequiredTest,
+			unsafeMeasureDensityTests,
 			insufficientMeasureDensityVolumeTests,
 			centrifugeRecommendedTests,
 			aliquotTests,

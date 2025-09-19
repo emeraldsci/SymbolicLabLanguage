@@ -135,6 +135,14 @@ DefineObjectType[Object[Instrument], {
 			Description -> "Theoretical model that this object can also be defined as in addition to the Model field.  If two instruments are almost identical save for small differences, then the Model field of these two instruments will be shared. The AlternativeModel field, however, will be populated as well with the model that completely accurately describes the instrument object if that is not what is in the Model field.",
 			Category -> "Organizational Information"
 		},
+		GMPQualified -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this object currently meets the requirements for Good Manufacturing Practices.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
 		LocalCacheStorage -> {
 			Format -> Single,
 			Class -> Boolean,

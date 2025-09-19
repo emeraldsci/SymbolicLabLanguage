@@ -12,6 +12,7 @@
 
 (* ::Subsubsection::Closed:: *)
 (*Options*)
+
 DefineOptions[ExperimentFreezeCells,
 	Options :> {
 		{
@@ -33,7 +34,7 @@ DefineOptions[ExperimentFreezeCells,
 				Type -> Number,
 				Pattern :> RangeP[2, 48, 1]
 			],
-			Description -> "Specifies how many identical frozen cell stock samples are prepared from each provided sample(s). For example, if NumberOfReplicates is set to 2, two cryogenic vials with identical contents are generated as a result of this experiment. This also indicates that the samples are transferred into new cryogenic vials. If NumberOfReplicates is set to Null, one and only one CryogenicSampleContainer is generated.",
+			Description -> "Specifies how many identical frozen cell stock samples are prepared from each provided sample. For example, if NumberOfReplicates is set to 2, two cryogenic vials with identical contents are generated as a result of this experiment. This also indicates that the samples are transferred into new cryogenic vials. If NumberOfReplicates is set to Null, one and only one CryogenicSampleContainer is generated.",
 			Category -> "General"
 		},
 		{
@@ -45,17 +46,25 @@ DefineOptions[ExperimentFreezeCells,
 				Pattern :> FreezeCellMethodP (* InsulatedCooler | ControlledRateFreezer *)
 			],
 			Description -> "The manner in which the cell sample(s) are frozen. ControlledRateFreezer employs a programmable instrument that electronically controls the sample temperature to freeze the cell sample(s), allowing the user to specify a multi-stage TemperatureProfile if desired. InsulatedCooler employs a rack submerged in a coolant solution, which is placed in a freezer to freeze the cell sample(s).",
-			ResolutionDescription -> "If either Coolant or InsulatedCoolerFreezingTime is specified, or a static temperature freezer is specified as Freezer, or CryogenicSampleContainer is set to a container with MaxVolume larger than 2 Milliliter, automatically set to InsulatedCooler. Otherwise, automatically set to ControlledRateFreezer.",
+			ResolutionDescription -> "If either Coolant or InsulatedCoolerFreezingTime is specified, or an ultra-low temperature freezer is specified as Freezer, or CryogenicSampleContainer is set to a cryogenic vial model with MaxVolume larger than 2 Milliliter, automatically set to InsulatedCooler. Otherwise, automatically set to ControlledRateFreezer.",
 			Category -> "General"
 		},
 		IndexMatching[
 			IndexMatchingInput -> "experiment samples",
 			(* ---------- General Options ---------- *)
-			CellTypeOption, (* Bacterial | Yeast | Mammalian *)
-			CultureAdhesionOption, (* Suspension | Adherent | SolidMedia *)
+			ModifyOptions[ExperimentIncubateCells,
+				OptionName -> CellType,
+				ResolutionDescription -> "Automatically set to match the value of CellType of the input sample if it is populated, otherwise set to Bacterial.",
+				Category -> "General"
+			],
+			ModifyOptions[ExperimentIncubateCells,
+				OptionName -> CultureAdhesion,
+				ResolutionDescription -> "Automatically set to match the CultureAdhesion value of the input sample if it is populated, otherwise set to Suspension.",
+				Category -> "General"
+			],
 			ModifyOptions[InSituOption,
 				Default -> Automatic,
-				Description -> "For each sample, whether to freeze the input sample in its current container rather than transferring them to new cryogenic vial(s).",
+				Description -> "Whether to freeze the input sample in its current container rather than transferring them to new cryogenic vial(s).",
 				ResolutionDescription -> "If the input sample is not in a container with a CryogenicVial Footprint, or either Aliquot options or NumberOfReplicates are specified, automatically set to False. If Aliquot is set to False, automatically set to True.",
 				IndexMatching -> True,
 				IndexMatchingOptions -> {}
@@ -71,7 +80,7 @@ DefineOptions[ExperimentFreezeCells,
 						{Object[Catalog, "Root"], "Containers", "Cryogenic Vials"}
 					}
 				],
-				Description -> "For each sample, the desired container model for freezing the cell stock(s). Or in cases where samples are frozen in situ, the original container holding the input sample. All resulting containers are subsequently frozen, and stored under cryogenic conditions.",
+				Description -> "The desired container model for freezing the cell stock, or, if samples are frozen in situ, the original container holding the input sample. All resulting containers are frozen and stored under cryogenic conditions.",
 				ResolutionDescription -> "If Aliquot is False, automatically set to the original container holding the input sample. If Aliquot is True and FreezingStrategy is set to ControlledRateFreezer, automatically set to Model[Container, Vessel, \"2mL Cryogenic Vial\"]. If Aliquot is True and FreezingStrategy is set to InsulatedCooler, automatically set to a container with a CryogenicVial Footprint and sufficient capacity to hold the cell stock(s), accounting for ice expansion by limiting fill volume to 75% to prevent vial rupture.",
 				Category -> "General"
 			},
@@ -98,22 +107,30 @@ DefineOptions[ExperimentFreezeCells,
 					Type -> Enumeration,
 					Pattern :> Alternatives[ChangeMedia, AddCryoprotectant, None]
 				],
-				Description -> "The manner in which the cell sample(s) are processed prior to freezing in order to protect the cells from detrimental ice formation. If ChangeMedia is selected, the entire input sample is pelleted, the existing media is removed and replaced with CryoprotectantSolution, resulting in cell stocks suspended in cryoprotectant solution. If AddCryoprotectant is selected, the CryoprotectantSolution and a portion of the input sample is added directly to the CryogenicSampleContainer when Aliquot is True, or the CryoprotectantSolution is added directly to the input sample if freezing samples in situ is desired. In both cases, the resulting cell stocks consist of cells in the original medium supplemented with cryoprotectant solution. If None is selected, the existing media is left unchanged. The sample is simply mixed to ensure a uniform suspension.",
+				Description -> "The manner in which the cell sample(s) are processed prior to freezing in order to protect the cells from detrimental ice formation. If ChangeMedia is selected, the entire input sample is pelleted, the existing media is removed and replaced with CryoprotectantSolution, resulting in cell stocks suspended in CryoprotectantSolution. If AddCryoprotectant is selected, the CryoprotectantSolution and a portion of the input sample is added directly to the CryogenicSampleContainer when Aliquot is True, or the CryoprotectantSolution is added directly to the input sample if freezing samples in situ is desired. In both cases, the resulting cell stocks consist of cells in the original medium supplemented with CryoprotectantSolution. If None is selected, the existing media is left unchanged, and the sample is mixed before being put inside of Freezer to ensure a uniform suspension.",
 				ResolutionDescription -> "Automatically set to ChangeMedia if any of CellPelletCentrifuge, CellPelletTime, CellPelletIntensity, or CellPelletSupernatantVolume are specified. Otherwise, automatically set to AddCryoprotectant.",
 				Category -> "General"
 			},
 			(* ---------- ChangeMedia Options ---------- *)
-			ModifyOptions[ExperimentWashCells,
-				CellIsolationInstrument,
+			ModifyOptions[ExperimentPellet,
+				Instrument,
 				OptionName -> CellPelletCentrifuge,
 				Default -> Automatic,
 				AllowNull -> True,
-				Description -> "The centrifuge used to pellet the cell sample(s) in order to remove the existing media and replace with cryoprotectant media.",
-				ResolutionDescription -> "Automatically set to a centrifuge that can attain the specified CellPelletIntensity and is compatible with the sample in its current container if CryoprotectionStrategy is set to ChangeMedia. For more information on compatible centrifuges, see the function CentrifugeDevices.",
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[{Model[Instrument, Centrifuge], Object[Instrument, Centrifuge]}],
+					OpenPaths -> {
+						{Object[Catalog, "Root"], "Instruments", "Centrifugation", "Centrifuges"},
+						{Object[Catalog, "Root"], "Instruments", "Centrifugation", "Microcentrifuges"}
+					}
+				],
+				Description -> "The centrifuge used to pellet the cell sample(s) in order to remove the existing media and replace with CryoprotectantSolution. See Figure 3.1 for CellPelletCentrifuge models compatible with common container footprints. For complete details on all CellPelletCentrifuge models, refer to the \"Instrumentation\" section of the ExperimentCentrifuge helpfile.",
+				ResolutionDescription -> "Automatically set to a centrifuge that can attain the specified CellPelletIntensity and is compatible with the sample in its current container if CryoprotectionStrategy is set to ChangeMedia.",
 				Category -> "Media Changing"
 			],
-			ModifyOptions[ExperimentWashCells,
-				CellIsolationTime,
+			ModifyOptions[ExperimentPellet,
+				Time,
 				OptionName -> CellPelletTime,
 				Default -> Automatic,
 				AllowNull -> True,
@@ -121,29 +138,17 @@ DefineOptions[ExperimentFreezeCells,
 				ResolutionDescription -> "Automatically set to 5 Minute if CryoprotectionStrategy is set to ChangeMedia.",
 				Category -> "Media Changing"
 			],
-			ModifyOptions[ExperimentWashCells,
-				CellPelletIntensity,
-				Default -> Automatic,
+			ModifyOptions[ExperimentPellet,
+				Intensity,
+				OptionName -> CellPelletIntensity,
 				AllowNull -> True,
 				Description -> "The rotational speed or force applied to the cell sample(s) by centrifugation in order to create a pellet, enabling removal of existing media.",
-				ResolutionDescription -> "If CryoprotectionStrategy is set to ChangeMedia, automatically set to an intensity typical for centrifugation of the given CellType due to its effectiveness in pelleting that CellType: "<>ToString[$LivingMammalianCentrifugeIntensity]<>" if the CellType is Mammalian, "<>ToString[$LivingBacterialCentrifugeIntensity]<>" if the CellType is Bacterial, or "<>ToString[$LivingYeastCentrifugeIntensity]<>" if the CellType is Yeast.",
+				ResolutionDescription -> "If CryoprotectionStrategy is set to ChangeMedia, automatically set to the default value effective for pelleting the given CellType option: for Mammalian is 300 g, for Bacterial is 2000 g, and for Yeast is 1000 g.",
 				Category -> "Media Changing"
 			],
-			ModifyOptions[ExperimentWashCells,
-				CellAspirationVolume,
+			ModifyOptions[ExperimentPellet,
+				SupernatantVolume,
 				OptionName -> CellPelletSupernatantVolume,
-				Default -> Automatic,
-				Widget -> Alternatives[
-					Widget[
-						Type -> Quantity,
-						Pattern :> RangeP[0 Microliter, $MaxTransferVolume],
-						Units :> {1, {Milliliter, {Microliter, Milliliter, Liter}}}
-					],
-					Widget[
-						Type -> Enumeration,
-						Pattern :> Alternatives[All]
-					]
-				],
 				AllowNull -> True,
 				Description -> "The volume of supernatant to be removed from the cell sample(s) following pelleting.",
 				ResolutionDescription -> "Automatically set to All if CryoprotectionStrategy is set to ChangeMedia.",
@@ -161,7 +166,7 @@ DefineOptions[ExperimentFreezeCells,
 						{Object[Catalog, "Root"], "Materials", "Cell Culture", "Cryoprotectants"}
 					}
 				],
-				Description -> "The solution which contains high concentration of cryoprotective agents, such as glycerol and DMSO. The cryoprotectant solution protects the cells during freezing and thawing by preventing ice crystals from forming inside or around cells. See Figure 3.1 for more information about suggested cryoprotectant solutions for different cell types and strategies.",
+				Description -> "The solution which contains high concentration of cryoprotective agents, such as glycerol and DMSO. The cryoprotectant solution protects the cells during freezing and thawing by preventing ice crystals from forming inside or around cells. See Figure 3.2 for more information about suggested cryoprotectant solutions for different cell types and strategies.",
 				ResolutionDescription -> "If CryoprotectionStrategy is set to AddCryoprotectant, CryoprotectantSolution is automatically set to Model[Sample, StockSolution, \"50% Glycerol in Milli-Q water, Autoclaved\"] for bacterial and yeast cells, and to Model[Sample, StockSolution, \"30% Glycerol in Milli-Q water, Autoclaved\"] for mammalian cells. If CryoprotectionStrategy is set to ChangeMedia, CryoprotectantSolution is automatically set to Model[Sample, \"Gibco Recovery Cell Culture Freezing Medium\"] for mammalian cells, to Model[Sample, StockSolution, \"15% glycerol, 0.5% sodium chloride, Autoclaved\"] for bacterial cells, and to Model[Sample, StockSolution, \"30% Glycerol in Milli-Q water, Autoclaved\"] for yeast cells.",
 				Category -> "Cryoprotection"
 			},
@@ -174,20 +179,16 @@ DefineOptions[ExperimentFreezeCells,
 						Pattern :> RangeP[0 Milliliter, 180 Milliliter], (* 180 mL corresponds to three full 5 mL Mr Frosty racks with all vials at full capacity *)
 						Units -> {Milliliter, {Microliter, Milliliter}}
 				],
-				Description -> "The amount of CryoprotectantSolution to be added to the cell sample(s).",
+				Description -> "The amount of CryoprotectantSolution to be added to the cell sample.",
 				ResolutionDescription -> "If CryoprotectionStrategy is set to ChangeMedia, the volume is automatically set to match the CellPelletSupernatantVolume that is removed following pelleting. This volume is used to resuspend the cell pellet obtained from the entire sample, prior to aliquoting into cryogenic vials, if applicable. If CryoprotectionStrategy is set to AddCryoprotectant, the volume is automatically set to 50% of the sample volume to be mixed with. When Aliquot is True, this corresponds to 50% of the AliquotVolume. When Aliquot is False, this corresponds to 50% of the total input sample volume.",
 				Category -> "Cryoprotection"
 			},
 			(* ---------- Aliquoting Options ---------- *)
-			{
+			ModifyOptions[AliquotOptions,
 				OptionName -> Aliquot,
-				Default -> Automatic,
-				AllowNull -> False,
-				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-				Description -> "For each sample, indicates whether to prepare cell stock(s) in new cryogenic vial(s) rather than in the current container of the provided sample. If CryoprotectionStrategy is set to ChangeMedia, aliquoting occurs after pelleting the entire sample and replacing the existing media with CryoprotectantSolution. If CryoprotectionStrategy is set to AddCryoprotectant or None, aliquoting occurs before the addition of CryoprotectantSolution. See Figure 1 of freeze cells for more information.",
-				ResolutionDescription -> "Automatically set to True if AliquotVolume, NumberOfReplicates, or a new CryogenicSampleContainer is specified, if the sample's current container has a Footprint other than CryogenicVial, or if the total volume of the cell stock exceeds 75% of the current container's maximum capacity. Otherwise, set to False.",
-				Category -> "Aliquoting"
-			},
+				Description -> "Indicates whether to prepare cell stocks in new cryogenic vials rather than in the current container of the provided sample. If CryoprotectionStrategy is set to ChangeMedia, aliquoting occurs after pelleting the entire sample and replacing the existing media with CryoprotectantSolution. If CryoprotectionStrategy is set to AddCryoprotectant or None, aliquoting occurs before the addition of CryoprotectantSolution. See Figure 1.1 and 1.2 in the \"Experimental Principles\" section of the ExperimentFreezeCells helpfile for more information.",
+				ResolutionDescription -> "Automatically set to True if AliquotVolume, NumberOfReplicates, or a new CryogenicSampleContainer is specified, if the sample's current container has a Footprint other than CryogenicVial, or if the total volume of the cell stock exceeds 75% of the current container's maximum capacity. Otherwise, set to False."
+			],
 			{
 				OptionName -> AliquotVolume,
 				Default -> Automatic,
@@ -203,7 +204,7 @@ DefineOptions[ExperimentFreezeCells,
 						Pattern :> Alternatives[All]
 					]
 				],
-				Description -> "The volume of suspended cell sample that is transferred into new cryogenic sample container(s). If CryoprotectionStrategy is set to ChangeMedia, the entire input sample is first pelleted and resuspended in CryoprotectantSolution. In this case, the AliquotVolume refers to the specified amount of the resuspended cells being transferred into new cryogenic sample container(s). If CryoprotectionStrategy is set to AddCryoprotectant or None, AliquotVolume refers to the specified amount of the well-mixed original input sample that is transferred into new cryogenic container(s).",
+				Description -> "The volume of suspended cell sample that is transferred into new cryogenic sample containers. If CryoprotectionStrategy is set to ChangeMedia, the entire input sample is pelleted and resuspended in CryoprotectantSolution. In this case, the AliquotVolume refers to the specified amount of the resuspended cells being transferred into new cryogenic sample containers. If CryoprotectionStrategy is set to AddCryoprotectant or None, AliquotVolume refers to the specified amount of the well-mixed original input sample that is transferred into new cryogenic containers.",
 				ResolutionDescription -> "If Aliquot is True and CryoprotectionStrategy is set to ChangeMedia or None, automatically set to the lesser of 75% of the volume of the CryogenicSampleContainer (to account for ice expansion and prevent vial rupture) or the total volume of the suspended cell sample divided equally among the number of frozen cell stocks being prepared. If Aliquot is True and CryoprotectionStrategy is set to AddCryoprotectant, automatically set to the lesser of 75% of the volume of the CryogenicSampleContainer minus the volume of CryoprotectantSolution or the total volume of the suspended cell sample divided equally among the number of frozen cell stocks being prepared.",
 				Category -> "Aliquoting"
 			},
@@ -214,13 +215,13 @@ DefineOptions[ExperimentFreezeCells,
 				AllowNull -> False,
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Model[Container, Rack], Object[Container, Rack]}],
+					Pattern :> ObjectP[{Model[Container, Rack], Object[Container, Rack], Model[Container, Rack, InsulatedCooler], Object[Container, Rack, InsulatedCooler]}],
 					OpenPaths -> {
 						{Object[Catalog, "Root"], "Containers", "Cell Freezing Containers"}
 					}
 				],
-				Description -> "The insulated cooler rack or controlled rate freezer-compatible sample rack used to freeze the cell sample(s).",
-				ResolutionDescription -> "Automatically set to Model[Container, Rack, \"2mL Cryo Rack for VIA Freeze\"] if FreezingStrategy is set to ControlledRateFreezer. If FreezingStrategy is set to InsulatedCooler, automatically set to a rack that can accommodate the vials containing the experiment samples. Refer to Figure 3.2 for more information on freezing racks for InsulatedCooler.",
+				Description -> "The insulated cooler rack or controlled rate freezer-compatible sample rack used to freeze the cell sample(s). See Figure 3.3 or Figure 2.1 and 2.2 in the \"Instrumentation\" section of the ExperimentFreezeCells helpfile for more information.",
+				ResolutionDescription -> "Automatically set to Model[Container, Rack, \"2mL Cryo Rack for VIA Freeze\"] if FreezingStrategy is set to ControlledRateFreezer. If FreezingStrategy is set to InsulatedCooler, automatically set to a rack that can accommodate the vials containing the experiment samples.",
 				Category -> "Cell Freezing"
 			},
 			{
@@ -236,11 +237,11 @@ DefineOptions[ExperimentFreezeCells,
 					}],
 					OpenPaths -> {
 						{Object[Catalog, "Root"], "Instruments", "Cell Culture", "Cell Freezing"},
-						{Object[Catalog, "Root"], "Instruments", "Storage Devices", "Freezers"}
+						{Object[Catalog, "Root"], "Instruments", "Storage Devices", "Freezers", "-80 Celsius"}
 					}
 				],
-				Description -> "The device used to cool the cell sample(s).",
-				ResolutionDescription -> "Automatically set to Model[Instrument, ControlledRateFreezer, \"VIA Freeze Research\"] if FreezingStrategy is set to ControlledRateFreezer. Otherwise, automatically set to a Model[Instrument, Freezer] maintained at -80 Celsius. In order to maximize the efficiency of freezer storage in the laboratory, user specification of a particular Object[Instrument, Freezer] is not supported.",
+				Description -> "The device supplies low temperatures and either electronically regulates the TemperatureProfile or drives the cooling process of an insulated cooler placed inside to cool the cell sample(s). A controlled-rate freezer allows user-programmable cooling TemperatureProfile with cooling rates from 0.01 Celsius/Minute to 2 Celsius/Minute, whereas an ultra-low temperature freezer holds an insulated cooler filled with Coolant, providing an approximate cooling rate of of 1 Celsius/Minute. See \"Instrumentation\" section of the ExperimentFreezeCells helpfile for more information.",
+				ResolutionDescription -> "Automatically set to Model[Instrument, ControlledRateFreezer, \"VIA Freeze Research\"] if FreezingStrategy is set to ControlledRateFreezer. Otherwise, automatically set to Model[Instrument, Freezer, \"Stirling UltraCold SU780UE\"] maintained at -80 Celsius. In order to maximize the efficiency of freezer storage in the laboratory, user specification of a particular Object[Instrument, Freezer] is not supported.",
 				Category -> "Cell Freezing"
 			},
 			(* ---------- InsulatedCooler Options ---------- *)
@@ -264,15 +265,9 @@ DefineOptions[ExperimentFreezeCells,
 				OptionName -> SamplesOutStorageCondition,
 				Default -> CryogenicStorage,
 				AllowNull -> False,
-				Widget -> Alternatives[
-					"Storage Type" -> Widget[
-						Type -> Enumeration,
-						Pattern :> CellStorageTypeP
-					],
-					"Storage Object" -> Widget[
-						Type -> Object,
-						Pattern :> ObjectP[Model[StorageCondition]]
-					]
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> CellStorageTypeP
 				],
 				Description -> "The long-term storage condition for the cell sample(s) after freezing.",
 				Category -> "Storage"
@@ -284,10 +279,10 @@ DefineOptions[ExperimentFreezeCells,
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Quantity,
-				Pattern :> RangeP[0 Minute, $MaxExperimentTime],
-				Units -> {Hour, {Minute, Hour, Day}}
+				Pattern :> RangeP[4 Hour, $MaxExperimentTime],(* Consider the phase transition and cooling rate at -1C/min outside of melting zone, 4 hour is the minimum *)
+				Units -> {Hour, {Minute, Hour}}
 			],
-			Description -> "The duration for which the cell stock(s) within an insulated cooler are kept within the Freezer to freeze the cells prior to being transported to SamplesOutStorageCondition.",
+			Description -> "The minimum duration for which the cell stock(s) within an insulated cooler are kept within the Freezer to freeze the cells prior to being transported to SamplesOutStorageCondition.",
 			ResolutionDescription -> "Automatically set to 12 Hour if FreezingStrategy is set to InsulatedCooler.",
 			Category -> "Cell Freezing"
 		},
@@ -372,7 +367,6 @@ ExperimentFreezeCells[myInputs:ListableP[ObjectP[{Object[Sample], Object[Contain
 	If[MatchQ[validSamplePreparationResult, $Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];
 		Return[$Failed]
 	];
 
@@ -431,15 +425,17 @@ ExperimentFreezeCells[myInputs:ListableP[ObjectP[{Object[Sample], Object[Contain
 ExperimentFreezeCells[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:OptionsPattern[ExperimentFreezeCells]] := Module[
 	{
 		(* General *)
-		outputSpecification, output, gatherTests, messages, listedSamples, listedOptions, mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed,
-		updatedSimulation, validSamplePreparationResult, safeOpsNamed, safeOpsTests, mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples,
-		validLengths, validLengthTests, templatedOptions, templateTests, inheritedOptions, upload, confirm, canaryBranch, fastTrack, parentProtocol, cache, expandedSafeOps,
+		outputSpecification, output, gatherTests, messages, listedSamples, listedOptions, mySamplesWithPreparedSamplesNamed,
+		myOptionsWithPreparedSamplesNamed, updatedSimulation, validSamplePreparationResult, safeOpsNamed, safeOpsTests,
+		mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples, validLengths, validLengthTests, templatedOptions,
+		templateTests, inheritedOptions, upload, confirm, canaryBranch, fastTrack, parentProtocol, cache, expandedSafeOps,
 
 		(* Download *)
-		optionsWithObjects, objectsFromOptions, defaultSampleModels, defaultContainerModels, defaultInstrumentModels, allPotentialSamples, allPotentialContainers,
-		allPotentialInstruments, sampleObjects, modelSampleObjects, instrumentObjects, modelInstrumentObjects, objectContainerObjects, modelContainerObjects,
-		modelFreezerFields, modelControlledRateFreezerFields, modelCentrifugeFields, objectSampleFields, modelSampleFields, objectContainerFields, modelContainerFields,
-		modelInstrumentFields, cellModelFields, downloadedCache, parentProtocolStack, cacheBall,
+		optionsWithObjects, objectsFromOptions, defaultSampleModels, defaultContainerModels, defaultCryogenicVials, defaultInstrumentModels,
+		allPotentialSamples, allPotentialContainers, allPotentialInstruments, sampleObjects, modelSampleObjects, instrumentObjects,
+		modelInstrumentObjects, objectContainerObjects, modelContainerObjects, modelFreezerFields, modelControlledRateFreezerFields,
+		modelCentrifugeFields, objectSampleFields, modelSampleFields, objectContainerFields, modelContainerFields, modelInstrumentFields,
+		cellModelFields, downloadedCache, parentProtocolStack, cacheBall,
 
 		(* Options, Simulation, Resource Packets, and Result *)
 		resolvedOptionsResult, resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions, optionsResolverOnly, returnEarlyBecauseOptionsResolverOnly,
@@ -568,11 +564,12 @@ ExperimentFreezeCells[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:Op
 
 	(* Get the default container and instrument models. *)
 	defaultContainerModels = Experiment`Private`freezeCellsContainerSearch["Memoization"];
+	defaultCryogenicVials = Experiment`Private`freezeCellsCryogenicVialSearch["Memoization"];
 	defaultInstrumentModels = Experiment`Private`freezeCellsInstrumentSearch["Memoization"];
 
 	(* Gather all of the objects which may contain samples, containers, and instruments. *)
 	allPotentialSamples = DeleteDuplicates[Link[Flatten[{mySamplesWithPreparedSamples, objectsFromOptions, defaultSampleModels}]]];
-	allPotentialContainers = DeleteDuplicates[Link[Flatten[{objectsFromOptions, defaultContainerModels}]]];
+	allPotentialContainers = DeleteDuplicates[Link[Flatten[{objectsFromOptions, defaultContainerModels, defaultCryogenicVials}]]];
 	allPotentialInstruments = DeleteDuplicates[Link[Flatten[{objectsFromOptions, defaultInstrumentModels}]]];
 
 	(* Group the objects by Type. *)
@@ -846,38 +843,45 @@ ExperimentFreezeCells[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:Op
 
 (* ::Subsubsection::Closed:: *)
 (* Errors and warnings *)
-
 (* Invalid Inputs *)
-Error::FreezeCellsUnsupportedCellType = "The CellType option of sample `1` at indices `2` is set to `3`. Currently, only Mammalian, Bacterial and Yeast cell culture are supported. Please contact us if you have a sample that falls outside our current support.";
-Error::FreezeCellsUnsupportedCultureAdhesion = "The CultureAdhesion option of sample `1` at indices `2` is set to `3`. Currently, only Suspension samples are supported for ExperimentFreezeCells. Please contact us if you have a sample that falls outside our current support.";
-Error::InvalidChangeMediaSamples = "Sample(s) `1` are found in the same container as input sample(s) `2` but they are not specified as input samples. Since a plate is pelleted as a whole during media change, please transfer sample(s) into an empty container beforehand.";
+Error::FreezeCellsNonLiquidSamples = "ExperimentFreezeCells only supports liquid samples. `1` not in liquid state and cannot be processed. `2`.";
+Error::FreezeCellsDuplicatedSamples = "`1`. `2`. Please `3`.";
+Error::InvalidChangeMediaSamples = "ExperimentFreezeCells centrifuges the prepared plates directly during the pelleting step, keeping all samples in each plate together. `1`. Please use ExperimentTransfer to transfer `2` to avoid spinning down additional samples or specify `3`.";
 (* Invalid Options *)
-Warning::FreezeCellsAliquotingRequired = "`2`. `1`.";
+Warning::FreezeCellsAliquotingRequired = "`1`. `2`. `3`";
 Warning::FreezeCellsReplicateLabels = "The NumberOfReplicates option is set to `1`, so each of the input samples will be partitioned into `1` identical samples with the following unique CryogenicSampleContainerLabels: `2`";
-Warning::FreezeCellsUnusedSample = "The sample(s) `1` are expected to have a total volume of `2` prior to aliquoting, factoring in any media change. Currently, the AliquotVolume is set to `3` and the NumberOfReplicates option is set to `4`. Under these conditions, `5` of the sample(s) will not be aliquoted and will therefore not be frozen. Consider adjusting the AliquotVolume and/or the NumberOfReplicates to increase the amount of sample that will be frozen in the protocol.";
-Error::ConflictingChangeMediaOptionsForSameContainer = "`1` during media changing step, but are in the same container as another sample. For these sample(s), either transfer to separate containers, allow the cell pelleting in individual containers, or ensure that all samples in the same container have identical cell pellet settings.";
-Error::CryogenicVialAliquotingRequired = "`2`. `1`. Please set Aliquot be True.";
-Error::FreezeCellsConflictingTemperatureProfile = "The FreezingStrategy option is set to `1`, but the TemperatureProfile option is specified as `2`. Please specify the TemperatureProfile option if and only if the FreezingStrategy is ControlledRateFreezer in order to submit a valid experiment.";
-Error::ConflictingCryoprotectantSolutionTemperature = "The CryoprotectantSolutionTemperature is set to `1`, but the CryoprotectionStrategy is None at all indices. Please adjust these options such that the CryoprotectantSolutionTemperature is specified if and only if the CryoprotectionStrategy is set to ChangeMedia or AddCryoprotectant for at least one index.";
-Error::FreezeCellsConflictingAliquotOptions = "The sample(s) `1` at indices `4` have the Aliquot option set to `3` while the AliquotVolume option is `4`. Please adjust these options such that Aliquot is True if and only if AliquotVolume is specified in order to submit a valid experiment.";
-Error::FreezeCellsReplicatesAliquotRequired = "`3`, Aliquot is required. The sample(s) `1` have Aliquot option set to False. `2`. Please set the Aliquot option to True or allow the option to set automatically in order to submit a valid experiment.";
-Error::InsufficientVolumeForAliquoting = "The sample(s) `1` at indices `2` have the AliquotVolume option set to `3` for a total number of `4` cryogenic sample containers. When the NumberOfReplicates is 2 or greater, or when they are duplicated manually in inputs, please specify the AliquotVolume as a volume quantity or allow the option to set automatically in order to submit a valid experiment.";
-Error::CryoprotectantSolutionOverfill = "The container(s) of sample(s) `1` at indices `5` would have total volume(s) `3` upon addition of CryoprotectantSolutionVolume `2`. This would result in overflowing the sample input container(s) factoring in any media removal, which have MaxVolume(s) of `4`. Please either decrease the CryoprotectantSolutionVolume or increase the CellPelletSupernatantVolume in order to submit a valid experiment.";
-Error::ExcessiveCryogenicSampleVolume = "Under the currently specified experimental conditions, the cell stocks being prepared for sample(s) `1` at indices `5` would have total volume(s) `3`, which exceeds 75% of the MaxVolume of `4` of the CryogenicSampleContainers `2`. Consider using the NumberOfReplicates option to distribute the cell sample(s) across multiple CryogenicSampleContainers. Note that the largest CryogenicVial kept in stock at ECL is Model[Container, Vessel, \"id:o1k9jAG1Nl57\"], with a MaxVolume of 5 Milliliter.";
-Error::UnsuitableCryogenicSampleContainerFootprint = "The container model of CryogenicSampleContainer(s) `2` specified for the sample(s) `1` at indices `4` have Footprint(s) equal to `3`. Please either specify a container whose Footprint is CryogenicVial or allow the CryogenicSampleContainer option to set automatically in order to submit a valid experiment.";
-Error::UnsuitableFreezingRack = "The FreezingRack(s) `2` specified for the sample(s) `1` at indices `4` are not a rack for cryogenic vials. Please either specify a FreezingRack from `3` or allow the FreezingRack option to set automatically in order to submit a valid experiment.";
-Error::FreezeCellsUnsupportedFreezerModel = "The sample(s) `1` at indices `4` have the Freezer option set to `2` whose DefaultTemperature is `3`. When FreezingStrategy is InsulatedCooler, all static temperature Freezer Models must have a DefaultTemperature within 5 Celsius of -80 Celsius or -20 Celsius. Please select a different Freezer or allow the option to set automatically in order to submit a valid experiment.";
-Error::FreezeCellsConflictingHardware = "The sample(s) `1` at indices `6` have the `2` option set to `3` and the `4` option set to `5`. Please adjust these options or allow them to set automatically such that the Freezer, FreezingRack, and CryogenicSampleContainer options are compatible with each other and with the FreezingStrategy.";
-Error::FreezeCellsConflictingInsulatedCoolerFreezingTime = "The FreezingStrategy option is set to `1`, but the InsulatedCoolerFreezingTime option is specified as `2`. Please specify the InsulatedCoolerFreezingTime option if and only if the FreezingStrategy is InsulatedCooler in order to submit a valid experiment.";
-Error::FreezeCellsConflictingCoolant = "The sample(s) `1` at indices `4` have the Coolant option specified as `2` while the FreezingStrategy option is specified as `3`. Please specify the Coolant option if and only if the FreezingStrategy is InsulatedCooler in order to submit a valid experiment.";
-Error::FreezeCellsUnsupportedTemperatureProfile = "The specified TemperatureProfile `1` is invalid since `2`. Please adjust the TemperatureProfile in order to submit a valid experiment.";
-Error::FreezeCellsInsufficientChangeMediaOptions = "The sample(s) `1` at indices `3` have the CryoprotectionStrategy option set to ChangeMedia, but the option(s) `2` are specified as Null for the sample(s). Please specify the option(s) or allow the options to set automatically in order to submit a valid experiment.";
-Error::FreezeCellsExtraneousChangeMediaOptions = "The sample(s) `1` at indices `5` have the CryoprotectionStrategy option set to `2`, but the option(s) `3` are specified as `4` for the sample(s). Please specify the option(s) as Null or allow the options to set automatically in order to submit a valid experiment.";
-Error::FreezeCellsInsufficientCryoprotectantOptions = "The sample(s) `1` at indices `5` have the CryoprotectionStrategy option set to `2`, but the option(s) `3` are specified as `4` for the sample(s). Please specify the option(s) or allow the options to set automatically in order to submit a valid experiment.";
-Error::FreezeCellsExtraneousCryoprotectantOptions = "The sample(s) `1` at indices `4` have the CryoprotectionStrategy option set to None, but the option(s) `2` are specified as `3` for the sample(s). Please specify the option(s) as Null or allow the options to set automatically in order to submit a valid experiment.";
-Error::FreezeCellsNoCompatibleCentrifuge = "The sample(s) `1` at indices `5` are in container Model(s) `2` with the CellPelletIntensity option set to `3` and the CellPelletTime option set to `4`. No centrifuge instrument currently at ECL is compatible with this combination of container and options. Please adjust the options or transfer the sample to a different container as needed. Consider using the function CentrifugeDevices[] to learn more about available centrifuge instruments and their capabilities.";
-Error::TooManyControlledRateFreezerBatches = "Under the currently specified experimental conditions with `1` unique input samples and the NumberOfReplicates option set to `2`, `3` total samples will be frozen in this protocol, which exceeds the maximum capacity (48 samples) of a single rack for the ControlledRateFreezer instrument. As such, the experiment requires `4` cell freezing batches. Due to equipment and time constraints, a single protocol is limited to no more than one freezing batch when the FreezingStrategy is ControlledRateFreezer. Please distribute the samples across multiple protocols such that multiple batches are not required.";
-Error::TooManyInsulatedCoolerBatches = "Under the currently specified experimental conditions, FreezingStrategy is set to InsulatedCooler and `7` total FreezingRacks are required. Due to equipment and time constraints, a single protocol is limited to no more than three batches utilizing the InsulatedCooler strategy. The current experiment, if allowed, would require FreezingRacks of type `1`, which have a maximum capacity of `2` samples per rack including replicates. Because there are currently `3` unique sets of freezing conditions with `4` unique input samples each, and the NumberOfReplicates option is set to `5`, the sample count in each type of FreezingRack is `6`. Please distribute the samples across multiple protocols or adjust the Coolant, Freezer, and FreezingRack options (or allow these to set automatically) to improve the consolidation of batches such that no more than three batches are required.";
+Warning::FreezeCellsUnusedSample = "`1` expected to have a total volume of `2` prior to aliquoting, factoring in any media change. Under these conditions, `3` of the sample(s) will not be aliquoted and will therefore not be frozen. Consider adjusting the AliquotVolume and/or the NumberOfReplicates to increase the amount of sample that will be frozen in the protocol.";
+Error::CryogenicVialAliquotingRequired = "`1`. `2`. For `3`, please set the Aliquot option be True to allow transferring samples to cryogenic vials in order to submit a valid experiment.";
+Error::FreezeCellsConflictingAliquotOptions = "The option AliquotVolume applies only when the option Aliquot is set to True. `1`. For `2`, please adjust these options in order to submit a valid experiment.";
+Error::FreezeCellsReplicatesAliquotRequired = "`1`, the option Aliquot is required to be True. `2` the Aliquot option set to False, while `3`. Please set the Aliquot option to True or allow the option to be set automatically in order to submit a valid experiment.";
+Error::InsufficientVolumeForAliquoting = "`1`. `2`.";
+Error::SupernatantOveraspiratedTransfer = "`1`. `2`, please lower the CellPelletSupernatantVolume or specify All to submit a valid experiment.";
+Error::CryoprotectantSolutionOverfill = "`1`. `2`. `3` in order to submit a valid experiment.";
+Error::ExcessiveCryogenicSampleVolume = "When preparing frozen cell stocks, the final volume must remain below 75% of the cryogenic containers' MaxVolume to account for ice expansion and prevent rupture. Under the currently specified experimental conditions, `1`. `2`";
+Error::FreezeCellsNoCompatibleCentrifuge = "`1`. `2`. No centrifuge instrument currently at ECL is compatible with this combination. Please `3` to submit a valid experiment. Consider using the function CentrifugeDevices[] to learn more about available centrifuge instruments and their capabilities.";
+Error::CellPelletCentrifugeIsIncompatible = "The Specified CellPelletCentrifuge option is not valid since `1`. `2`. `3` or let the options be set automatically. Consider using the function CentrifugeDevices[] to learn more about available centrifuge instruments and their capabilities.";
+Error::ConflictingChangeMediaOptionsForSameContainer = "ExperimentFreezeCells centrifuges the prepared plates directly during the pelleting step, keeping all samples in each plate together. `1`. For these sample(s), please `2`.";
+Error::InvalidFreezingRack = "`1`. Please either specify `2` or allow the FreezingRack option to be set automatically in order to submit a valid experiment.";
+Error::InvalidCryogenicSampleContainer = "`1`. `2`. Please either specify an alternative CryogenicSampleContainer or allow the CryogenicSampleContainer option to be set automatically in order to submit a valid experiment. Please check the \"Preferred Input Containers\" section of the ExperimentFreezeCells helpfile for a list of acceptable cryogenic vials.";
+Error::InvalidFreezerModel = "When FreezingStrategy is InsulatedCooler, all ultra-low temperature freezer Models must have a DefaultTemperature within 5 Celsius of -80 Celsius. `1`. Please select a different Freezer or allow the option to be set automatically in order to submit a valid experiment.";
+Error::FreezeCellsUnsupportedTemperatureProfile = "`1`. The specified TemperatureProfile is invalid since `2`. Please adjust the TemperatureProfile in order to submit a valid experiment.";
+
+(* Master switch FreezingStrategy *)
+Error::ConflictingCellFreezingOptions = "`1`. `2`. `3` in order to submit a valid experiment.";
+Error::FreezeCellsConflictingTemperatureProfile = "The option TemperatureProfile defines the cooling program of a controlled rate freezer and applies only when the option FreezingStrategy is set to ControlledRateFreezer. The FreezingStrategy option is set to `1`, but the TemperatureProfile option is `2`. Please adjust these options in order to submit a valid experiment.";
+Error::FreezeCellsConflictingInsulatedCoolerFreezingTime = "The option InsulatedCoolerFreezingTime defines the minimum duration inside of an ultra-low temperature freezer and applies only when the option FreezingStrategy is set to InsulatedCooler. The FreezingStrategy option is set to `1`, but the InsulatedCoolerFreezingTime option is `2`. Please adjust these options in order to submit a valid experiment.";
+Error::FreezeCellsConflictingHardware = "`1`. `2`. Please adjust these options or allow them to be set automatically.";
+Error::FreezeCellsConflictingCoolant = "The option Coolant defines the liquid that fills the chamber of an insulated cooler and applies only when the option FreezingStrategy is set to InsulatedCooler. The option FreezingStrategy is set to `1` but `2`. Please adjust these options in order to submit a valid experiment.";
+Error::TooManyControlledRateFreezerBatches = "Due to equipment and time constraints, a single protocol is limited to no more than one freezing batch when the FreezingStrategy is ControlledRateFreezer. Under the currently specified experimental conditions with `2` unique input samples and the NumberOfReplicates option set to `1`, `3` total samples will be frozen in this protocol, which exceeds the maximum capacity (48 samples) of a single rack for the ControlledRateFreezer instrument. As such, the experiment requires `4` cell freezing batches.  Please distribute the samples across multiple protocols such that multiple batches are not required.";
+Error::TooManyInsulatedCoolerBatches = "Due to equipment and time constraints, a single protocol is limited to no more than three batches utilizing the InsulatedCooler strategy. Under the currently specified experimental conditions, FreezingStrategy is set to InsulatedCooler and `7` total FreezingRacks are required. The current experiment, if allowed, would require FreezingRacks `1`, which have a maximum capacity of `2` samples per rack including replicates. But there are currently `3` unique set(s) of freezing conditions with `4` unique input samples each, and the NumberOfReplicates option is set to `5`. Please distribute the samples across multiple protocols or adjust the Coolant, Freezer, and FreezingRack options (or allow these to be set automatically) to improve the consolidation of batches such that no more than three batches are required.";
+
+(* Master switch CryoprotectionStrategy *)
+Error::ConflictingCryoprotectionOptions = "`1`. `2`. `3` in order to submit a valid experiment.";
+Warning::ConflictingCryoprotectantSolutionTemperature = "The option CryoprotectantSolutionTemperature applies only when the option CryoprotectionStrategy is ChangeMedia or AddCryoprotectant. For `1`, the CryoprotectantSolutionTemperature option is set to `2`, but the option CryoprotectionStrategy is None. ExperimentFreezeCells will process these sample(s) without any cryoprotectant solutions. If this is not desired, please change the option CryoprotectionStrategy to either ChangeMedia or AddCryoprotectant.";
+Error::FreezeCellsInsufficientChangeMediaOptions = "When the CryoprotectionStrategy option is set to ChangeMedia, cell pelleting parameters must be specified to to enable separation of cells from existing media. `1` the CryoprotectionStrategy option set to ChangeMedia and `2` left unspecified. Please specify `3` to be set automatically in order to submit a valid experiment.";
+Error::FreezeCellsExtraneousChangeMediaOptions = "When the CryoprotectionStrategy option is not ChangeMedia, cell pelleting parameters are not relevant. `1`. Please specify `2` to be set automatically in order to submit a valid experiment.";
+Error::FreezeCellsInsufficientCryoprotectantOptions = "When the CryoprotectionStrategy option is not None, all cryoprotection options must be specified to define how to prepare cryoprotectant solutions and mix them with the samples. `1` while `2` left unspecified. Please specify the option CryoprotectionStrategy to None or allow the cryoprotection `3` to be set automatically in order to submit a valid experiment.";
+Error::FreezeCellsExtraneousCryoprotectantOptions = "When the CryoprotectionStrategy option is None, all cryoprotection options are not relevant. `1` the CryoprotectionStrategy option set to None while `2` specified. Please specify a non-None CryoprotectionStrategy or allow the cryoprotection `3` to be set automatically in order to submit a valid experiment.";
 
 
 (* ::Subsubsection::Closed:: *)
@@ -891,69 +895,78 @@ DefineOptions[
 resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myOptions: {_Rule...}, myResolutionOptions: OptionsPattern[resolveExperimentFreezeCellsOptions]] := Module[
 	{
 		(* Setup and pre-resolve options *)
-		outputSpecification, output, gatherTests, messages, notInEngine, cacheBall, simulation, fastAssoc,  confirm, canaryBranch, template,
-		fastTrack, operator, parentProtocol, upload, outputOption, samplePackets, sampleModelPackets, sampleContainerPackets,
-		sampleContainerModelPackets, fastAssocKeysIDOnly, staticFreezerModelPackets, controlledRateFreezerPackets,
-		controlledRateFreezerModelPackets, centrifugeModelPackets, freezingRackModelPackets, allPossibleFreezingRacks,
-		expandedSuppliedOptions, resolvedNumberOfReplicates, numericNumberOfReplicates, resolvedCryogenicSampleContainerLabels,
-		expandedSuppliedAliquot, expandedSuppliedAliquotVolume, expandedSuppliedCryogenicSampleContainers,
-		expandedSuppliedCryoprotectantSolutionVolumes, expandedSuppliedCryoprotionStrategies, expandedSuppliedCentrifugues,
+		outputSpecification, output, gatherTests, messages, notInEngine, cacheBall, simulation, fastAssoc, samplePackets,
+		sampleModelPackets, sampleContainerPackets, sampleContainerModelPackets, sampleVolumeQuantities, inputContainerMaxVolumes,
+		fastAssocKeysIDOnly, staticFreezerModelPackets, controlledRateFreezerPackets, controlledRateFreezerModelPackets,
+		centrifugeModelPackets, freezingRackModelPackets, allPossibleFreezingRacks, whyCantThisModelBeCryogenicVial, expandedSuppliedOptions,
+		resolvedNumberOfReplicates, numericNumberOfReplicates, resolvedCryogenicSampleContainerLabels, expandedSuppliedAliquot,
+		expandedSuppliedAliquotVolumes, expandedSuppliedCryogenicSampleContainers, expandedSuppliedCryoprotectantSolutions,
+		expandedSuppliedCryoprotectantSolutionVolumes, expandedSuppliedCryoprotectionStrategies, expandedSuppliedCentrifuges,
 		expandedSuppliedPelletTimes, expandedSuppliedCentrifugeIntensities, expandedSuppliedSupernatantVolumes, userSpecifiedLabels,
-		resolvedCryoprotectionStrategies, specifiedAliquotQs, semiresolvedInSitus, resolvedFreezingStrategy, resolvedInSitus,
-		resolvedAliquotBools, talliedSamplesWithStrategies, uniqueSampleToFinalCellStockNumsLookup, preResolvedLabels,
-		correctNumberOfReplicates,
+		resolvedCryoprotectionStrategies, specifiedAliquotQs, finalInSituVolumes, semiresolvedInSitus, expandedSuppliedCryogenicSampleContainerPackets,
+		resolvedFreezingStrategy, resolvedInSitus, resolvedAliquotBools, talliedSamplesWithStrategies, uniqueSampleToFinalCellStockNumsLookup,
+		preResolvedLabels, frameworkNumberOfReplicates, correctNumberOfReplicates,
 
 		(* Input invalidation check *)
 		discardedSamplePackets, discardedInvalidInputs, discardedTest, deprecatedSampleModelPackets, deprecatedSampleModelInputs,
 		deprecatedSampleInputs, deprecatedTest, mainCellIdentityModels, sampleCellTypes, validCellTypeQs, invalidCellTypeSamples,
-		invalidCellTypeIndices, invalidCellTypeCellTypes, invalidCellTypeTest, sampleCultureAdhesions, invalidCultureAdhesionIndices,
-		invalidCultureAdhesionSamples, invalidCultureAdhesionValues, invalidCultureAdhesionTest, duplicateSamples, duplicateSamplesTest,
-		inputContainerContents, stowawaySamples, invalidPlateSampleInputs, invalidPlateSampleTest,
+		invalidCellTypeCellTypes, invalidCellTypeTest, duplicateSamplesCases, duplicatedSampleInputs, duplicateSamplesTest,
+		inputContainerContents, stowawaySamples, uniqueStowawaySamples, invalidPlateSampleInputs, invalidPlateSampleTest,
+		invalidPlateSampleContainers, sampleStates, nonLiquidSampleInvalidInputs, nonLiquidSampleTest, missingVolumeInvalidCases,
+		missingVolumeTest, talliedSamplesWithNonChangeMediaOptions,
 
 		(* Option precision check *)
-		freezeCellsOptionsAssociation, roundedFreezeCellsOptions, precisionTests,
+		roundedFreezeCellsOptions, precisionTests,
 
 		(* Pre-MapThread option resolutions *)
 		resolvedPreparation, resolvedInsulatedCoolerFreezingTime, resolvedTemperatureProfile, resolvedCryoprotectantSolutionTemperature,
 		resolvedGeneralOptions,
 
 		(* Conflicting Options Checks I *)
-		freezeCellsAliquotingRequiredCases, conflictingAliquotingErrors, conflictingAliquotingCases, conflictingAliquotingTest,
-		conflictingTemperatureProfileCases, conflictingTemperatureProfileTest, conflictingCryoprotectantSolutionTemperatureCases,
-		conflictingCryoprotectantSolutionTemperatureTest, conflictingInsulatedCoolerFreezingTimeCases, conflictingInsulatedCoolerFreezingTimeTest,
+		freezeCellsAliquotingRequiredCases, freezeCellsAliquotingRequiredTests, conflictingAliquotingErrors, conflictingAliquotingCases,
+		conflictingAliquotingOptions, conflictingAliquotingTest, conflictingCryoprotectantSolutionTemperatureCases,
+		conflictingCryoprotectantSolutionTemperatureTests, insufficientChangeMediaOptionsTests, insufficientChangeMediaOptions,
+		extraneousChangeMediaOptions, extraneousChangeMediaOptionsTests, insufficientCryoprotectantOptions, insufficientCryoprotectantOptionsTests,
+		extraneousCryoprotectantOptions, extraneousCryoprotectantOptionsTests, conflictingPelletOptionsForSameContainerAcrossSampleOptions,
+		conflictingPelletOptionsForSameContainerAcrossSampleTests, conflictingCryoprotectionStrategyOptions,
+		conflictingCryoprotectionStrategySamples, conflictingCryoprotectionStrategyTests,
 
 		(* MapThread options and errors *)
-		mapThreadFriendlyOptions, resolvedCellTypes, resolvedCultureAdhesions, resolvedCellPelletIntensities, resolvedCellPelletTimes,
-		resolvedCellPelletSupernatantVolumes, resolvedCryoprotectantSolutions, resolvedCryoprotectantSolutionVolumes,
-		resolvedFreezers, resolvedFreezingRacks, resolvedCryogenicSampleContainers, resolvedAliquotVolumes, resolvedCoolants,
-		resolvedSamplesOutStorageConditions, conflictingCellTypeWarnings,
-		cellTypeNotSpecifiedBools, conflictingCultureAdhesionBools,
-		overAspirationErrors, invalidRackBools, overFillDestinationErrors, overFillSourceErrors, cultureAdhesionNotSpecifiedBools,
-		aliquotVolumeQuantities, containerInVolumesBeforeAliquoting,
+		mapThreadFriendlyOptionsNotPropagated, indexMatchingChangeMediaOptionNames, indexMatchingChangeMediaSampleQ,
+		nonAutomaticOptionsPerContainer, mergedNonAutomaticOptionsPerContainer, mapThreadFriendlyOptions, resolvedCellTypes,
+		resolvedCultureAdhesions, resolvedCellPelletIntensities, resolvedCellPelletTimes, resolvedCellPelletSupernatantVolumes,
+		resolvedCryoprotectantSolutions, resolvedCryoprotectantSolutionVolumes, resolvedFreezers, resolvedFreezingRacks,
+		resolvedCryogenicSampleContainers, resolvedAliquotVolumes, resolvedCoolants, resolvedSamplesOutStorageConditions,
+		conflictingCellTypeWarnings, conflictingCellTypeErrors, cellTypeNotSpecifiedBools, conflictingCultureAdhesionBools,
+		overAspirationErrors, invalidRackBools, suggestedRackLists, overFillDestinationErrors, overFillSourceErrors,
+		cultureAdhesionNotSpecifiedBools, aliquotVolumeQuantities, containerInVolumesBeforeAliquoting,
 
 		(* Post-MapThread option resolutions *)
-		centrifugeIndices, containerModelsAtCentrifugeIndices, specifiedCentrifugesForChangeMedia, possibleCentrifuges,
-		noCompatibleCentrifugeIndices, centrifugesRankedByPreference, preResolvedCellPelletCentrifuges, resolvedCellPelletCentrifuges,
-		email, resolvedOptions, resolvedMapThreadOptions, talliedSampleWithVolume, uniqueSampleToUsedVolLookup,
+		allCentrifugeIndices, noModelContainerIndices, centrifugeIndices, containerModelsAtCentrifugeIndices, possibleCentrifuges,
+		possibleCentrifugesWithoutSpeed, specifiedCentrifugesForChangeMedia, incompatibleCentrifugeIndices, noCompatibleCentrifugeIndices,
+		centrifugesRankedByPreference, updatedCentrifugeForOptions, preResolvedCellPelletCentrifuges, resolvedCellPelletCentrifuges,
+		resolvedCellPelletCentrifugeModels, template, fastTrack, operator, outputOption, email, resolvedOptions, resolvedMapThreadOptions,
+		talliedSampleWithVolume, uniqueSampleToUsedVolLookup,
 
 		(* Conflicting Options Checks II *)
-		replicatesQ, replicateLabelWarningString, unknownCellTypeCases, unknownCultureAdhesionCases, unusedSampleCases,
-		conflictingAliquotOptionsCases, conflictingAliquotOptionsTest, replicatesWithoutAliquotCases, replicatesWithoutAliquotTest,
-		aliquotVolumeReplicatesMismatchCases, aliquotVolumeReplicatesMismatchTest, overaspirationTest, overaspirationWarnings,
-		cryoprotectantSolutionOverfillCases, cryoprotectantSolutionOverfillTest, excessiveCryogenicSampleVolumeCases,
+		replicatesQ, replicateLabelWarningString, replicatesWithoutAliquotCases, replicatesWithoutAliquotTest, cellTypeNotSpecifiedTests,
+		conflictingCellTypeErrorOptions, conflictingCellTypeTest, conflictingCultureAdhesionCases, conflictingCultureAdhesionTest,
+		cultureAdhesionNotSpecifiedTests, sampleCultureAdhesions, invalidCultureAdhesionSamples, unsupportedCellCultureTypeCases,
+		invalidCultureAdhesionTest, unusedSampleCases, unusedSampleTests, conflictingAliquotOptionsCases, conflictingAliquotOptionsTest,
+		aliquotVolumeReplicatesMismatchCases, aliquotVolumeReplicatesMismatchTest, overaspirationTest, cryoprotectantSolutionOverfillCases,
+		cryoprotectantSolutionOverfillTest, excessiveCryogenicSampleVolumeCases, excessiveCryogenicSampleVolumeOptions,
 		excessiveCryogenicSampleVolumeTest, unsuitableCryogenicSampleContainerErrors, unsuitableCryogenicSampleContainerCases,
-		unsuitableCryogenicSampleContainerTest, unsuitableFreezingRackCases, unsuitableFreezingRackTest, resolvedFreezingRackModels,
-		resolvedFreezerModels, unsupportedFreezerCases, unsupportedFreezerTest, conflictingHardwareCases, conflictingHardwareTest,
-		conflictingCellTypeTest, conflictingCultureAdhesionCases, conflictingCultureAdhesionTest,
-		conflictingCoolantCases, conflictingCoolantTest, unsupportedTemperatureProfileCases, unsupportedTemperatureProfileTest,
-		insufficientChangeMediaOptionsCases, insufficientChangeMediaOptionsTest, extraneousChangeMediaOptionsCases,
-		extraneousChangeMediaOptionsTest, insufficientCryoprotectantOptionsCases, insufficientCryoprotectantOptionsTest,
-		extraneousCryoprotectantOptionsCases, extraneousCryoprotectantOptionsTest, noCompatibleCentrifugeCases,
-		noCompatibleCentrifugeTest, groupedSamplesContainersAndOptions, inconsistentOptionsPerContainer,
-		samplesWithSameContainerConflictingOptions, samplesWithSameContainerConflictingErrors,
+		unsuitableCryogenicSampleContainerTest, unsuitableFreezingRackCases, unsuitableFreezingRackTest, resolvedFreezerModels,
+		unsupportedFreezerCases, unsupportedFreezerTests, conflictingHardwareCases, conflictingHardwareTests,
+		conflictingCoolantCases, conflictingCoolantTests, conflictingTemperatureProfileCases, conflictingTemperatureProfileTests,
+		conflictingInsulatedCoolerFreezingTimeCases, conflictingInsulatedCoolerFreezingTimeTests, unsupportedTemperatureProfileCases,
+		unsupportedTemperatureProfileTest, conflictingCellFreezingOptions, conflictingCellFreezingTests, noCompatibleCentrifugeCases,
+		noCompatibleCentrifugeTest, incompatibleCentrifugeCases, incompatibleCentrifugeTest, groupedSamplesContainersAndOptions,
+		inconsistentOptionsPerContainer, samplesWithSameContainerConflictingOptions, samplesWithSameContainerConflictingErrors,
 		conflictingPelletOptionsForSameContainerOptions, conflictingPelletOptionsForSameContainerTests,
 		tooManyControlledRateFreezerBatches, tooManyControlledRateFreezerBatchesTest, tooManyInsulatedCoolerBatches,
 		tooManyInsulatedCoolerBatchesTest,
+
 		(* Wrap up *)
 		invalidInputs, invalidOptions, allTests
 	},
@@ -976,17 +989,37 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 	fastAssoc = makeFastAssocFromCache[cacheBall];
 
-	(* Get the options that do not need to be resolved directly from SafeOptions. *)
-	{confirm, canaryBranch, template, fastTrack, operator, parentProtocol, upload, outputOption} = Lookup[
-		myOptions,
-		{Confirm, CanaryBranch, Template, FastTrack, Operator, ParentProtocol, Upload, Output}
-	];
-
 	(* Pull out packets from the fast association *)
+	(* Replacing Null with <||> so packets we fetch are immune to Lookup::invrl error *)
 	samplePackets = fetchPacketFromFastAssoc[#, fastAssoc]& /@ mySamples;
-	sampleModelPackets = fastAssocPacketLookup[fastAssoc, #, Model]& /@ mySamples;
-	sampleContainerPackets = fastAssocPacketLookup[fastAssoc, #, Container]& /@ mySamples;
-	sampleContainerModelPackets = fastAssocPacketLookup[fastAssoc, #, {Container, Model}]& /@ mySamples;
+	sampleModelPackets = Replace[fastAssocPacketLookup[fastAssoc, #, Model]& /@ mySamples, NullP -> <||>, {1}];
+	sampleContainerPackets = Replace[fastAssocPacketLookup[fastAssoc, #, Container]& /@ mySamples, NullP -> <||>, {1}];
+	sampleContainerModelPackets = Replace[(fastAssocPacketLookup[fastAssoc, #, {Container, Model}]& /@ mySamples)/.$Failed -> Null, NullP -> <||>, {1}];
+	(* Extract volume from samplePackets and set the volume of a sample to 0 Microliters if it is not informed. This will allow us to error out in a predictable way instead of breaking everything. *)
+	sampleVolumeQuantities = Map[
+		Function[{samplePacket},
+			Which[
+				MatchQ[Lookup[samplePacket, Volume], GreaterP[1 Milliliter]],
+					SafeRound[Convert[Lookup[samplePacket, Volume], Milliliter], 1 Microliter],
+				MatchQ[Lookup[samplePacket, Volume], VolumeP],
+					SafeRound[Convert[Lookup[samplePacket, Volume], Microliter], 1 Microliter],
+				True,
+					0 Microliter
+			]
+		],
+		samplePackets
+	];
+	(* Pull out the MaxVolume of Sample input Container *)
+	(* Set the volume to 1ml if it is not informed. This will allow us to error out in a predictable way instead of breaking everything. *)
+	inputContainerMaxVolumes = MapThread[
+		Function[{sampleVolumeQuantity, containerModelPacket},
+			If[!MatchQ[containerModelPacket, PacketP[Model[Container]]],
+				Max[sampleVolumeQuantity, 1 Milliliter],
+				Lookup[containerModelPacket, MaxVolume] /. Null -> 0 Microliter
+			]
+		],
+		{sampleVolumeQuantities, sampleContainerModelPackets}
+	];
 
 	(* Build all packets which can be safely matched on the Type. *)
 	fastAssocKeysIDOnly = Select[Keys[fastAssoc], StringMatchQ[Last[#], ("id:"~~___)]&];
@@ -997,15 +1030,56 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 	freezingRackModelPackets = fetchPacketFromFastAssoc[#, fastAssoc]& /@ Cases[fastAssocKeysIDOnly, ObjectP[Model[Container, Rack]]];
 	allPossibleFreezingRacks = Lookup[Cases[freezingRackModelPackets, KeyValuePattern[{Footprint -> ControlledRateFreezerRack|MrFrostyRack}]], Object];
 
+	(* A local helper to check container model packet why it cannot be CryogenicSampleContainer. If a container can be cryogenic vial, return <||> *)
+	whyCantThisModelBeCryogenicVial[
+		containerModelPacket: Null|<||>|PacketP[Model[Container]]
+	] := Module[
+		{noModelQ, minContainerTemperature, containerCoverTypes, containerFootprint, containerMaterials},
+		(* Check if the model packet is valid *)
+		noModelQ = !MatchQ[containerModelPacket, PacketP[Model[Container]]];
+		{minContainerTemperature, containerCoverTypes, containerFootprint, containerMaterials} = If[TrueQ[noModelQ],
+			{Null, Null, Null, Null},
+			Lookup[containerModelPacket, {MinTemperature, CoverTypes, Footprint, ContainerMaterials}, Null]
+		];
+		(* To be used as cryogenic vial, the containers have to 1)MinTemperature<-170C 2)use screw cap 3)Footprint is CEVial 4)ContainerMaterial is not glass *)
+		<|
+			If[TrueQ[noModelQ],
+				Model -> Null,
+				Nothing
+			],
+			(* the container must endure at least -170C to be able to used as cryogenic vial *)
+			If[NullQ[minContainerTemperature] || GreaterQ[minContainerTemperature, -170 Celsius],
+				MinTemperature -> minContainerTemperature,
+				Nothing
+			],
+			(* No Snap cap or seal is allowed in cryogenic storage to avoid leakage *)
+			If[MatchQ[containerCoverTypes, Null|{}] || !MemberQ[containerCoverTypes, Screw],
+				CoverTypes -> joinClauses[containerCoverTypes],
+				Nothing
+			],
+			(* FreezingRacks have CEVial positions only *)
+			If[MatchQ[containerFootprint, Except[CEVial]],
+				Footprint -> containerFootprint,
+				Nothing
+			],
+			(* Broken glass is a safety hazard in cryogenic storage, forbid using glass containers *)
+			If[MatchQ[containerMaterials, Null|{}] || MemberQ[containerMaterials, Glass],
+				ContainerMaterials -> containerMaterials/.{___,Glass,___}->Glass,
+				Nothing
+			]
+		|>
+	];
+
 	expandedSuppliedOptions = OptionsHandling`Private`mapThreadOptions[ExperimentFreezeCells, KeyDrop[myOptions, {Simulation, Cache}]];
 	(* Pull out some supplied option values to help determining index-matching master switches *)
 	{
 		expandedSuppliedAliquot,
-		expandedSuppliedAliquotVolume,
+		expandedSuppliedAliquotVolumes,
 		expandedSuppliedCryogenicSampleContainers,
+		expandedSuppliedCryoprotectantSolutions,
 		expandedSuppliedCryoprotectantSolutionVolumes,
-		expandedSuppliedCryoprotionStrategies,
-		expandedSuppliedCentrifugues,
+		expandedSuppliedCryoprotectionStrategies,
+		expandedSuppliedCentrifuges,
 		expandedSuppliedPelletTimes,
 		expandedSuppliedCentrifugeIntensities,
 		expandedSuppliedSupernatantVolumes,
@@ -1017,6 +1091,7 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 				Aliquot,
 				AliquotVolume,
 				CryogenicSampleContainer,
+				CryoprotectantSolution,
 				CryoprotectantSolutionVolume,
 				CryoprotectionStrategy,
 				CellPelletCentrifuge,
@@ -1036,23 +1111,60 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 
 	(* Pre-resolve master switch options CryoprotectionStrategy, InSitu and FreezingStrategy. *)
 	resolvedCryoprotectionStrategies = MapThread[
-		Which[
-			(* If the user specified the option at this index, use the specified value. *)
-			MatchQ[#1, Except[Automatic]],
-				#1,
-			(* If any of the changeMediaOptionSet are specified, set this to ChangeMedia. *)
-			MemberQ[{#2, #3, #4, #5}, Except[Automatic | Null]],
-				ChangeMedia,
-			(* Otherwise, default to AddCryoprotectant. *)
-			True,
-				AddCryoprotectant
-		]&,
+		Function[
+			{
+				(*1*)cryoprotectionStrategy,
+				(*2*)centrifuge,
+				(*3*)cellPelletTime,
+				(*4*)centrifugeIntensity,
+				(*5*)supernatantVolume,
+				(*6*)cryoprotectantSolution,
+				(*7*)cryoprotectantSolutionVolume,
+				(*8*)sampleContainerPacket
+			},
+			Which[
+				(* If the user specified the option at this index, use the specified value. *)
+				MatchQ[cryoprotectionStrategy, Except[Automatic]],
+					cryoprotectionStrategy,
+				(* If any of the MediaChanging options are specified, set this to ChangeMedia. *)
+				MemberQ[{centrifuge, cellPelletTime, centrifugeIntensity, supernatantVolume}, Except[Automatic | Null]],
+					ChangeMedia,
+				(* If any of the Cryoprotection options are specified as Null, set this to None. *)
+				Or[
+					NullQ[Lookup[myOptions, CryoprotectantSolutionTemperature, Automatic]],
+					NullQ[cryoprotectantSolution],
+					NullQ[cryoprotectantSolutionVolume]
+				],
+					None,
+				(* If the sample is in a plate and other samples in the plate have ChangeMedia specified *)
+				MatchQ[sampleContainerPacket, ObjectP[]] && Length[Cases[sampleContainerPackets, ObjectP[Lookup[sampleContainerPacket, Object]]]] > 1,
+					Module[{positionOfSameContainer},
+						positionOfSameContainer = Position[sampleContainerPackets, PacketP[Lookup[sampleContainerPacket, Object]]];
+						If[!MemberQ[{centrifuge, cellPelletTime, centrifugeIntensity, supernatantVolume}, Null] &&
+						Or[
+							MemberQ[Extract[expandedSuppliedCentrifuges, positionOfSameContainer],  Except[Automatic | Null]],
+							MemberQ[Extract[expandedSuppliedPelletTimes, positionOfSameContainer], Except[Automatic | Null]],
+							MemberQ[Extract[expandedSuppliedCentrifugeIntensities, positionOfSameContainer], Except[Automatic | Null]],
+							MemberQ[Extract[expandedSuppliedSupernatantVolumes, positionOfSameContainer], Except[Automatic | Null]]
+						],
+							ChangeMedia,
+							AddCryoprotectant
+						]
+					],
+				(* Otherwise, default to AddCryoprotectant. *)
+				True,
+					AddCryoprotectant
+			]
+		],
 		{
-			expandedSuppliedCryoprotionStrategies,
-			expandedSuppliedCentrifugues,
-			expandedSuppliedPelletTimes,
-			expandedSuppliedCentrifugeIntensities,
-			expandedSuppliedSupernatantVolumes
+			(*1*)expandedSuppliedCryoprotectionStrategies,
+			(*2*)expandedSuppliedCentrifuges,
+			(*3*)expandedSuppliedPelletTimes,
+			(*4*)expandedSuppliedCentrifugeIntensities,
+			(*5*)expandedSuppliedSupernatantVolumes,
+			(*6*)expandedSuppliedCryoprotectantSolutions,
+			(*7*)expandedSuppliedCryoprotectantSolutionVolumes,
+			(*8*)sampleContainerPackets
 		}
 	];
 
@@ -1065,7 +1177,8 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 				(*2*)sampleContainerModelPacket,
 				(*3*)suppliedAliquot,
 				(*4*)suppliedAliquotVolume,
-				(*5*)suppliedCryogenicSampleContainer
+				(*5*)suppliedCryogenicSampleContainer,
+				(*6*)sample
 			},
 			Which[
 				(* If the user specified the Aliquot option, use it. *)
@@ -1078,8 +1191,31 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 				MatchQ[Lookup[myOptions, NumberOfReplicates], _Integer],
 					True,
 				(* If either the specified CryogenicSampleContainer is not the sample's input container, set this to True. *)
-				MatchQ[suppliedCryogenicSampleContainer, Except[Automatic]] && !MatchQ[suppliedCryogenicSampleContainer, ObjectP[{Lookup[sampleContainerPacket, Object], Lookup[sampleContainerModelPacket, Object]}]],
+				And[
+					MatchQ[suppliedCryogenicSampleContainer, Except[Automatic]],
+					Or[
+						!MatchQ[sampleContainerModelPacket, PacketP[Model[Container]]] && !MatchQ[suppliedCryogenicSampleContainer, ObjectP[Lookup[sampleContainerPacket, Object]]],
+						MatchQ[sampleContainerModelPacket, PacketP[Model[Container]]] && !MatchQ[suppliedCryogenicSampleContainer, ObjectP[{Lookup[sampleContainerPacket, Object], Lookup[sampleContainerModelPacket, Object]}]]
+					]
+				],
 					True,
+				(* If the same input sample is specified multiple times in the input and other instance has Aliquot (AliquotVolume/CryogenicSampleContainer) specified, use the same Aliquot *)
+				Length[Cases[mySamples, ObjectP[sample]]] > 1,
+					Module[{positionOfSample},
+						positionOfSample = Position[mySamples, ObjectP[sample]];
+						Which[
+							MemberQ[Extract[expandedSuppliedAliquot, positionOfSample], BooleanP] && SameQ @@ Cases[Extract[expandedSuppliedAliquot, positionOfSample], BooleanP],
+								FirstCase[Extract[expandedSuppliedAliquot, positionOfSample], BooleanP],
+							MemberQ[Extract[expandedSuppliedAliquotVolumes, positionOfSample], Except[Automatic | Null]],
+								True,
+							!MatchQ[sampleContainerModelPacket, PacketP[Model[Container]]] && MemberQ[Extract[expandedSuppliedCryogenicSampleContainers, positionOfSample], Except[Automatic]] && MatchQ[Cases[Extract[expandedSuppliedCryogenicSampleContainers, positionOfSample], Except[Automatic]], {Except[ObjectP[Lookup[sampleContainerPacket, Object]]]..}],
+								True,
+							MatchQ[sampleContainerModelPacket, PacketP[Model[Container]]] && MemberQ[Extract[expandedSuppliedCryogenicSampleContainers, positionOfSample], Except[Automatic]] && MatchQ[Cases[Extract[expandedSuppliedCryogenicSampleContainers, positionOfSample], Except[Automatic]], {Except[ObjectP[{Lookup[sampleContainerPacket, Object], Lookup[sampleContainerModelPacket, Object]}]]..}],
+								True,
+							True,
+								Automatic
+						]
+					],
 				(* Otherwise, we set it as Automatic for now. *)
 				True,
 					Automatic
@@ -1089,132 +1225,160 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 			(*1*)sampleContainerPackets,
 			(*2*)sampleContainerModelPackets,
 			(*3*)expandedSuppliedAliquot,
-			(*4*)expandedSuppliedAliquotVolume,
-			(*5*)expandedSuppliedCryogenicSampleContainers
+			(*4*)expandedSuppliedAliquotVolumes,
+			(*5*)expandedSuppliedCryogenicSampleContainers,
+			(*6*)mySamples
 		}
 	];
 
-	semiresolvedInSitus = MapThread[
+	{semiresolvedInSitus, finalInSituVolumes} = Transpose@MapThread[
 		Function[
 			{
-				(*1*)samplePacket,
+				(*1*)sampleVolumeQuantity,
 				(*2*)sampleContainerModelPacket,
 				(*3*)specifiedAliquotQ,
 				(*4*)suppliedCryoprotectantSolutionVolume,
 				(*5*)suppliedSupernatantVolume,
-				(*6*)suppliedCryoprotionStrategy
+				(*6*)suppliedCryoprotionStrategy,
+				(*7*)inputContainerMaxVolume
 			},
 			Which[
 				(* If the user specified the Aliquot related options at this index as True, set this to False. *)
 				MatchQ[specifiedAliquotQ, BooleanP],
-					!specifiedAliquotQ,
-				(* or the input container does not have CryogenicVial as footprint, set this to False *)
-				!MatchQ[Lookup[sampleContainerModelPacket, Footprint], CryogenicVial],
-					False,
+					{!specifiedAliquotQ, Null},
+				(* or the input container does not any model info or is not a valid cryogenic container, set this to False *)
+				!MatchQ[whyCantThisModelBeCryogenicVial[sampleContainerModelPacket], <||>],
+					{False, Null},
 				(* If CryoprotectionStrategy is ChangeMedia, and the specified CryoprotectantSolutionVolume with remaining sample after aspiration is exceeding 75% of the sample's input container, set this to False *)
 				(* Here we assume the SampleVolume is informed, since FreezeCellsUnsupportedCultureAdhesion will catch the case where input sample is solid media *)
 				And[
 					MatchQ[suppliedCryoprotionStrategy, ChangeMedia],
-					MatchQ[Lookup[samplePacket, Volume], VolumeP],
 					Or[
 						(* If CryoprotectantSolutionVolume is not specified, precalculate with the sample volume *)
-						!MatchQ[suppliedCryoprotectantSolutionVolume, VolumeP] && GreaterQ[Lookup[samplePacket, Volume], 0.75*Lookup[sampleContainerModelPacket, MaxVolume]],
+						!MatchQ[suppliedCryoprotectantSolutionVolume, VolumeP] && GreaterQ[sampleVolumeQuantity, 0.75*inputContainerMaxVolume],
 						(* If SupernatantVolume is All or Automatic, assume all existing media is aspirated *)
-						MatchQ[suppliedCryoprotectantSolutionVolume, Except[Automatic|Null]] && !MatchQ[suppliedSupernatantVolume, VolumeP] && GreaterQ[suppliedCryoprotectantSolutionVolume, 0.75*Lookup[sampleContainerModelPacket, MaxVolume]],
+						MatchQ[suppliedCryoprotectantSolutionVolume, Except[Automatic|Null]] && !MatchQ[suppliedSupernatantVolume, VolumeP] && GreaterQ[suppliedCryoprotectantSolutionVolume, 0.75*inputContainerMaxVolume],
 						(* Precalucalte the resuspended sample volume with CryoprotectantSolutionVolume, SupernatantVolume and SampleVolume *)
-						MatchQ[suppliedCryoprotectantSolutionVolume, Except[Automatic|Null]] && MatchQ[suppliedSupernatantVolume, VolumeP] && GreaterQ[Lookup[samplePacket, Volume] - suppliedSupernatantVolume + suppliedCryoprotectantSolutionVolume, 0.75*Lookup[sampleContainerModelPacket, MaxVolume]]
+						MatchQ[suppliedCryoprotectantSolutionVolume, Except[Automatic|Null]] && MatchQ[suppliedSupernatantVolume, VolumeP] && GreaterQ[sampleVolumeQuantity - suppliedSupernatantVolume + suppliedCryoprotectantSolutionVolume, 0.75*inputContainerMaxVolume]
 					]
 				],
-					False,
+					{
+						False,
+						Which[
+							(* If CryoprotectantSolutionVolume is not specified, precalculate with the sample volume *)
+							!MatchQ[suppliedCryoprotectantSolutionVolume, VolumeP],
+								sampleVolumeQuantity,
+							(* If SupernatantVolume is All or Automatic, assume all existing media is aspirated *)
+							MatchQ[suppliedCryoprotectantSolutionVolume, Except[Automatic|Null]] && !MatchQ[suppliedSupernatantVolume, VolumeP],
+								SafeRound[suppliedCryoprotectantSolutionVolume, 1 Microliter],
+							(* Precalculate the resuspended sample volume with CryoprotectantSolutionVolume, SupernatantVolume and SampleVolume *)
+							True,
+								SafeRound[sampleVolumeQuantity - suppliedSupernatantVolume + suppliedCryoprotectantSolutionVolume, 1 Microliter]
+						]
+					},
 				(* If CryoprotectionStrategy is AddCryoprotectant, the specified CryoprotectantSolutionVolume plus original sample volume is exceeding 75% of the sample's input container, set this to False *)
 				(* Here we assume the SampleVolume is informed, since FreezeCellsUnsupportedCultureAdhesion will catch the case where input sample is solid media *)
 				And[
 					MatchQ[suppliedCryoprotionStrategy, AddCryoprotectant],
-					MatchQ[Lookup[samplePacket, Volume], VolumeP],
 					Or[
 						(* If CryoprotectantSolutionVolume is not specified, precalculate as 50% of with the sample volume *)
-						!MatchQ[suppliedCryoprotectantSolutionVolume, VolumeP] && GreaterQ[1.5*Lookup[samplePacket, Volume], 0.75*Lookup[sampleContainerModelPacket, MaxVolume]],
-						(* Precalucalte the cell sample with cryoprotectant added total volume with CryoprotectantSolutionVolume and SampleVolume *)
-						MatchQ[suppliedCryoprotectantSolutionVolume, VolumeP] && GreaterQ[Lookup[samplePacket, Volume] + suppliedCryoprotectantSolutionVolume, 0.75*Lookup[sampleContainerModelPacket, MaxVolume]]
+						!MatchQ[suppliedCryoprotectantSolutionVolume, VolumeP] && GreaterQ[1.5*sampleVolumeQuantity, 0.75*inputContainerMaxVolume],
+						(* Precalculate the cell sample with cryoprotectant added total volume with CryoprotectantSolutionVolume and SampleVolume *)
+						MatchQ[suppliedCryoprotectantSolutionVolume, VolumeP] && GreaterQ[sampleVolumeQuantity + suppliedCryoprotectantSolutionVolume, 0.75*inputContainerMaxVolume]
 					]
 				],
-					False,
+					{
+						False,
+						If[!MatchQ[suppliedCryoprotectantSolutionVolume, VolumeP],
+							SafeRound[1.5*sampleVolumeQuantity, 1 Microliter],
+							SafeRound[sampleVolumeQuantity + suppliedCryoprotectantSolutionVolume, 1 Microliter]
+						]
+					},
 				(* If CryoprotectionStrategy is None, check if original sample volume is exceeding 75% of the sample's input container, set this to False *)
 				(* Here we assume the SampleVolume is informed, since FreezeCellsUnsupportedCultureAdhesion will catch the case where input sample is solid media *)
-				And[
-					MatchQ[Lookup[samplePacket, Volume], VolumeP],
-					GreaterQ[Lookup[samplePacket, Volume], 0.75*Lookup[sampleContainerModelPacket, MaxVolume]]
-				],
-					False,
+				GreaterQ[sampleVolumeQuantity, 0.75*inputContainerMaxVolume],
+					{
+						False,
+						sampleVolumeQuantity
+					},
 				(* Otherwise, we can freeze input sample at this index inside of its original container. *)
 				True,
-					Automatic
+					{Automatic, Null}
 			]
 		],
 		{
-			(*1*)samplePackets,
+			(*1*)sampleVolumeQuantities,
 			(*2*)sampleContainerModelPackets,
 			(*3*)specifiedAliquotQs,
 			(*4*)expandedSuppliedCryoprotectantSolutionVolumes,
 			(*5*)expandedSuppliedSupernatantVolumes,
-			(*6*)resolvedCryoprotectionStrategies
+			(*6*)resolvedCryoprotectionStrategies,
+			(*7*)inputContainerMaxVolumes
 		}
 	];
 
+
 	(* Resolve the FreezingStrategy *)
+	expandedSuppliedCryogenicSampleContainerPackets = Map[
+		Which[
+			!MatchQ[#, ObjectP[]],
+				<||>,
+			MatchQ[#, ObjectP[Model[Container]]],
+				fetchPacketFromFastAssoc[#, fastAssoc],
+			MatchQ[#, ObjectP[Object[Container]]] && MatchQ[fastAssocLookup[fastAssoc, #, Model], ObjectP[Model[Container]]],
+				fastAssocPacketLookup[fastAssoc, #, Model],
+			True,
+				<||>
+		]&,
+		expandedSuppliedCryogenicSampleContainers
+	];
 	resolvedFreezingStrategy = Which[
 		(* If the user specified it, use the user-specified value. *)
 		MatchQ[Lookup[myOptions, FreezingStrategy], Except[Automatic]],
 			Lookup[myOptions, FreezingStrategy],
 		(* If the user specified a TemperatureProfile, set this to ControlledRateFreezer. *)
-		MatchQ[Lookup[myOptions, TemperatureProfile], Except[Automatic]],
+		MatchQ[Lookup[myOptions, TemperatureProfile], Except[Automatic|Null]],
 			ControlledRateFreezer,
 		(* If the user specified an InsulatedCoolerFreezingTime or any Coolants, set this to InsulatedCooler. *)
-		MemberQ[
-			{
-				MatchQ[Lookup[myOptions, InsulatedCoolerFreezingTime], Except[Automatic]],
-				MemberQ[Lookup[myOptions, Coolant], Except[Automatic]]
-			},
-			True
+		Or[
+			MatchQ[Lookup[myOptions, TemperatureProfile], Null],
+			MatchQ[Lookup[myOptions, InsulatedCoolerFreezingTime], Except[Automatic|Null]],
+			MemberQ[Lookup[myOptions, Coolant], Except[Automatic|Null]]
 		],
 			InsulatedCooler,
 		(* If the user specified a ControlledRateFreezer instrument Object or Model for the Freezer option, set this to ControlledRateFreezer. *)
-		MatchQ[
-			Lookup[myOptions, Freezer],
-			ObjectP[{Object[Instrument, ControlledRateFreezer], Model[Instrument, ControlledRateFreezer]}]
-		],
+		MatchQ[Lookup[myOptions, Freezer], ObjectP[{Object[Instrument, ControlledRateFreezer], Model[Instrument, ControlledRateFreezer]}]],
 			ControlledRateFreezer,
-		(* If the user specified a static temperature freezer instrument Object or Model for the Freezer option, set this to InsulatedCooler. *)
-		MemberQ[
-			Lookup[myOptions, Freezer],
-			ObjectP[{Object[Instrument, Freezer], Model[Instrument, Freezer]}]
-		],
+		(* If the user specified an ultra-low temperature freezer instrument Object or Model for the Freezer option, set this to InsulatedCooler. *)
+		MemberQ[Lookup[myOptions, Freezer], ObjectP[{Object[Instrument, Freezer], Model[Instrument, Freezer]}]],
 			InsulatedCooler,
 		(* If the user specified a FreezingRack with an InsulatedCooler subtype, set this to InsulatedCooler. *)
-		MemberQ[
-			Lookup[myOptions, FreezingRack],
-			ObjectP[{Object[Container, Rack, InsulatedCooler], Model[Container, Rack, InsulatedCooler]}]
-		],
+		MemberQ[Lookup[myOptions, FreezingRack], ObjectP[{Object[Container, Rack, InsulatedCooler], Model[Container, Rack, InsulatedCooler]}]],
 			InsulatedCooler,
 		(* If the user specified a FreezingRack WITHOUT an InsulatedCooler subtype, set this to ControlledRateFreezer. *)
 		And[
-			MemberQ[
-				Lookup[myOptions, FreezingRack],
-				ObjectP[{Object[Container, Rack], Model[Container, Rack]}]
-			],
-			!MemberQ[
-				Lookup[myOptions, FreezingRack],
-				ObjectP[{Object[Container, Rack, InsulatedCooler], Model[Container, Rack, InsulatedCooler]}]
-			]
+			MemberQ[Lookup[myOptions, FreezingRack], ObjectP[{Object[Container, Rack], Model[Container, Rack]}]],
+			!MemberQ[Lookup[myOptions, FreezingRack], ObjectP[{Object[Container, Rack, InsulatedCooler], Model[Container, Rack, InsulatedCooler]}]]
 		],
 			ControlledRateFreezer,
+		(* If the user specified Coolant, set this to InsulatedCooler *)
+		MemberQ[Lookup[myOptions, Coolant], ObjectP[]],
+			InsulatedCooler,
 		(* If the user specified a CryogenicSampleContainer model larger than 2 Milliliter, set this to InsulatedCooler. *)
 		(* If InSitu is not False and sample Container model is larger than 2 Milliliter, set this to InsulatedCooler. *)
-		(* This is because we can't fit vials larger than 2 Milliliter in the VIA Freeze. *)
+		(* If AliquotVolume or CryoprotectantSolutionVolume(AddCryoprotectant only) is larger than 1.5 Milliliter, set this to InsulatedCooler.*)
+		(* This is because we can't fit vials larger than 2 Milliliter tube in the VIA Freeze. And we should only fill 75% of the cryogenic vial's MaxVolume. *)
 		Or[
-			MemberQ[Lookup[myOptions, CryogenicSampleContainer], ObjectP[Model[Container, Vessel, "id:o1k9jAG1Nl57"]]], (*5mL Cryogenic Vial*)
-			MemberQ[PickList[Lookup[sampleContainerModelPackets, Object], semiresolvedInSitus, True], ObjectP[Model[Container, Vessel, "id:o1k9jAG1Nl57"]]]
+			MemberQ[Lookup[expandedSuppliedCryogenicSampleContainerPackets, MaxVolume], GreaterP[2 Milliliter]],
+			MemberQ[PickList[inputContainerMaxVolumes, semiresolvedInSitus, True], GreaterP[2 Milliliter]],
+			MemberQ[expandedSuppliedAliquotVolumes, GreaterP[1.5 Milliliter]],
+			MemberQ[PickList[expandedSuppliedCryoprotectantSolutionVolumes, Transpose@{semiresolvedInSitus, resolvedCryoprotectionStrategies}, {False, AddCryoprotectant}], GreaterP[1.5 Milliliter]]
 		],
+			InsulatedCooler,
+		(* If the user has not specified a CryogenicSampleContainer but the input sample is already in a CryogenicSampleContainer *)
+		(* and the max volume is larger than 2 Milliliter, prefer InsulatedCooler so aliquot can be skipped. *)
+		(* ControlledRateFreezer is okay if Aliquot is True for this case *)
+		MemberQ[PickList[inputContainerMaxVolumes, semiresolvedInSitus, Automatic], GreaterP[2 Milliliter]],
 			InsulatedCooler,
 		(* Otherwise, default to ControlledRateFreezer. *)
 		True,
@@ -1222,21 +1386,23 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 	];
 
 	(* Resolve InSitu *)
-	resolvedInSitus = Map[
-		Which[
-			(* If we have preresolved value, use it. *)
-			MatchQ[#, Except[Automatic]],
-				#,
-			(* If FreezingStrategy is ControlledRateFreezer and input container is 5mL Cryogenic Vial *)
-			And[
-				MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
-				MemberQ[Lookup[sampleContainerModelPackets, Object], ObjectP[Model[Container, Vessel, "id:o1k9jAG1Nl57"]]](*5mL Cryogenic Vial*)
-			],
-				False,
-			True,
-				True
-		]&,
-		semiresolvedInSitus
+	resolvedInSitus = MapThread[
+		Function[{semiResolvedInSitu, inputContainerMaxVolume},
+			Which[
+				(* If we have preresolved value, use it. *)
+				MatchQ[semiResolvedInSitu, Except[Automatic]],
+					semiResolvedInSitu,
+				(* If FreezingStrategy is ControlledRateFreezer and input container has MaxVolume>2ml (such as 5mL Cryogenic Vial) *)
+				And[
+					MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
+					MatchQ[inputContainerMaxVolume, GreaterP[2 Milliliter]]
+				],
+					False,
+				True,
+					True
+			]
+		],
+		{semiresolvedInSitus, inputContainerMaxVolumes}
 	];
 	resolvedAliquotBools = (Not/@resolvedInSitus);
 
@@ -1285,12 +1451,10 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 
 			MapThread[
 				Function[{sampleLabel, replicateNumber},
-					Which[
+					If[MatchQ[sampleLabel, Null],
 						(* If the label is Null, just keep it *)
-						MatchQ[sampleLabel, Null],
 						sampleLabel,
 						(* Otherwise, designate it as a replicate *)
-						True,
 						(sampleLabel <> " replicate " <> ToString[replicateNumber])
 					]
 				],
@@ -1299,7 +1463,7 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		]
 	];
 
-	correctNumberOfReplicates = If[
+	frameworkNumberOfReplicates = If[
 		And[
 			MatchQ[preResolvedLabels, {_String..}],
 			AllTrue[preResolvedLabels, StringContainsQ[#, "replicate "]&],
@@ -1307,8 +1471,11 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		],
 		(* If we're running MCP with a FreezeCells unit operation as input, we have auto-expanded labels and we can extract the number from these. *)
 		Max@ToExpression[StringSplit[#, "replicate "][[-1]] & /@ preResolvedLabels],
-		(* Otherwise, we haven't resolved any options yet, and we should only have an integer if the user specified it. *)
-		numericNumberOfReplicates
+		Null
+	];
+	correctNumberOfReplicates = If[NullQ[frameworkNumberOfReplicates],
+		numericNumberOfReplicates,
+		frameworkNumberOfReplicates
 	];
 
 	(*-- INPUT VALIDATION CHECKS --*)
@@ -1318,7 +1485,25 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs] > 0 && messages,
-		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Cache -> cacheBall, Simulation -> simulation]];
+		Module[{reasonClause, actionClause},
+			reasonClause = StringJoin[
+				Capitalize@samplesForMessages[discardedInvalidInputs, mySamples, Cache -> cacheBall, Simulation -> simulation],
+				" ",
+				hasOrHave[DeleteDuplicates@discardedInvalidInputs],
+				" a Status of Discarded and cannot be used for this experiment."
+			];
+			actionClause = StringJoin[
+				"Please provide ",
+				If[Length[discardedInvalidInputs] > 1,
+					"alternative non-discarded samples to use.",
+					"an alternative non-discarded sample to use."
+				]
+			];
+			Message[Error::DiscardedSample,
+				reasonClause,
+				actionClause
+			]
+		]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1348,9 +1533,32 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		{}
 	];
 
-	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
+	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs. *)
 	If[Length[deprecatedSampleModelInputs] > 0 && messages,
-		Message[Error::DeprecatedModels, ObjectToString[deprecatedSampleModelInputs, Cache -> cacheBall, Simulation -> simulation]];
+		Module[{uniqueDeprecatedModels, reasonClause, actionClause},
+			uniqueDeprecatedModels = DeleteDuplicates[deprecatedSampleModelInputs];
+			reasonClause = StringJoin[
+				Capitalize@samplesForMessages[deprecatedSampleInputs, mySamples, Cache -> cacheBall, Simulation -> simulation],
+				" ",
+				hasOrHave[DeleteDuplicates@deprecatedSampleInputs],
+				If[Length[deprecatedSampleInputs] > 1,
+					" deprecated models,",
+					" a deprecated model,"
+				],
+				" and cannot be used for this experiment."
+			];
+			actionClause = StringJoin[
+				"Please check the Deprecated field of ",
+				If[Length[deprecatedSampleModelInputs] > 1,
+					"the sample models and use alternative samples with non-deprecated models.",
+					"the sample model and use an alternative sample with a non-deprecated model."
+				]
+			];
+			Message[Error::DeprecatedModel,
+				reasonClause,
+				actionClause
+			]
+		]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1382,11 +1590,22 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 	(* Note here that Null is acceptable because we're going to assume it's Bacterial later *)
 	validCellTypeQs = MatchQ[#, Mammalian|Yeast|Bacterial|Null]& /@ sampleCellTypes;
 	invalidCellTypeSamples = Lookup[PickList[samplePackets, validCellTypeQs, False], Object, {}];
-	invalidCellTypeIndices = First /@ Position[validCellTypeQs, False];
 	invalidCellTypeCellTypes = PickList[sampleCellTypes, validCellTypeQs, False];
 
 	If[Length[invalidCellTypeSamples] > 0 && messages,
-		Message[Error::FreezeCellsUnsupportedCellType, ObjectToString[invalidCellTypeSamples, Cache -> cacheBall, Simulation -> simulation], invalidCellTypeIndices, invalidCellTypeCellTypes]
+		Message[
+			Error::UnsupportedCellTypes,
+			(*1*)"ExperimentFreezeCells only supports cryopreservation of mammalian, bacterial and yeast cells",
+			(*2*)StringJoin[
+			Capitalize@samplesForMessages[invalidCellTypeSamples, mySamples, Cache -> cacheBall, Simulation -> simulation],(* Potentially collapse to the sample or all samples instead of ID here *)
+				" ",
+				hasOrHave[DeleteDuplicates@invalidCellTypeSamples],
+				" CellType detected as ",
+				joinClauses@invalidCellTypeCellTypes,
+				" from the CellType field of the ",
+				pluralize[invalidCellTypeSamples, "object", "objects"]
+			]
+		]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1407,71 +1626,42 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		Nothing
 	];
 
-	(* 4. Get whether the input culture adhesions are supported *)
 
-	(* Determine the CultureAdhesion of all the input samples.  *)
-	sampleCultureAdhesions = MapThread[
-		Function[{samplePacket, mainCellIdentityModel},
-			Which[
-				MatchQ[Lookup[samplePacket, CultureAdhesion], CultureAdhesionP],
-					Lookup[samplePacket, CultureAdhesion],
-				MatchQ[mainCellIdentityModel, ObjectP[Model[Cell]]],
-					fastAssocLookup[fastAssoc, mainCellIdentityModel, CultureAdhesion],
-				True,
-					Null
-			]
-		],
-		{samplePackets, mainCellIdentityModels}
-	];
-
-	(* Any CultureAdhesion which is not Suspension is not currently supported because we don't have DissociateCells yet. *)
-	invalidCultureAdhesionIndices = Flatten @ Position[sampleCultureAdhesions, Alternatives[Adherent, SolidMedia]];
-	invalidCultureAdhesionSamples = mySamples[[invalidCultureAdhesionIndices]];
-	invalidCultureAdhesionValues = sampleCultureAdhesions[[invalidCultureAdhesionIndices]];
-
-	If[MatchQ[Length[invalidCultureAdhesionSamples], GreaterP[0]] && messages,
-		Message[Error::FreezeCellsUnsupportedCultureAdhesion, ObjectToString[invalidCultureAdhesionSamples, Cache -> cacheBall, Simulation -> simulation], invalidCultureAdhesionIndices, invalidCultureAdhesionValues]
-	];
-
-	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-	invalidCultureAdhesionTest = If[gatherTests,
-		Module[{failingTest, passingTest},
-			failingTest = If[Length[invalidCultureAdhesionSamples] == 0,
-				Nothing,
-				Test["Our input samples " <> ObjectToString[invalidCultureAdhesionSamples, Cache -> cacheBall, Simulation -> simulation] <> " are of supported CultureAdhesions (Suspension):", True, False]
-			];
-
-			passingTest = If[Length[invalidCultureAdhesionSamples] == Length[mySamples],
-				Nothing,
-				Test["Our input samples " <> ObjectToString[Complement[mySamples, invalidCultureAdhesionSamples], Cache -> cacheBall, Simulation -> simulation] <> " are of supported CultureAdhesions (Suspension):", True, True]
-			];
-
-			{failingTest, passingTest}
-		],
-		Nothing
-	];
-
-	(* 5. Throw an error if we have duplicated samples provided for some cases, but allow it if the original samples are aliquoted before further treatment (i.g. pelleting, freezing). *)
+	(* 4. Throw an error if we have duplicated samples provided for some cases, but allow it if the original samples are aliquoted before further treatment (i.g. pelleting, freezing). *)
 	(* and at least one option if different from each other. We allow reusing the same samples for several cases: *)
-	(* Case1: NumberOfReplicates is set to a number. In this case, all options are the same *)
+	(* Case1: NumberOfReplicates(either from experiment or from framework) is set to a number. In this case, all options are the same *)
 	(* Case2: the same sample go through different option sets. In this case, ChangeMedia can not be specified as CryoprotectionStrategy. *)
 	(* Case3: Any combination of case1 and case2 *)
-	duplicateSamples = Map[
+	talliedSamplesWithNonChangeMediaOptions = Tally[
+		Transpose@{
+			mySamples,
+			Thread[Join[{specifiedAliquotQs, resolvedCryoprotectionStrategies, Lookup[expandedSuppliedOptions, {CryogenicSampleContainer, CryoprotectantSolution, CryoprotectantSolutionVolume, AliquotVolume}]}]]
+		}
+	];
+	duplicateSamplesCases = Map[
 		Function[{uniqueSample},
 			Which[
-				(* If there the number Of the same sample with the same specified option set is larger than the numberOfReplica, this is not possible for FreezeCells experiment *)
-				(* Basically, we need to differentiate between expanded inputs from framework and use-specified duplicated inputs *)
-				GreaterQ[Max[Cases[Tally[Transpose@{mySamples, KeyDrop[expandedSuppliedOptions, CryogenicSampleContainerLabel]}], {{ObjectP[uniqueSample], _}, _}][[All, 2]]], correctNumberOfReplicates],
-					uniqueSample,
-				(* If there the number Of ChangeMedia is larger than the numberOfReplica, this is not possible for FreezeCells experiment *)
-				GreaterQ[Total[Cases[talliedSamplesWithStrategies, {{ObjectP[uniqueSample], ChangeMedia}, count_}:>count]], correctNumberOfReplicates],
-					uniqueSample,
 				(* If besides ChangeMedia, there is another strategy, this is not possible for FreezeCells experiment since ChangeMedia pellet all the sample before aliquotting *)
 				And[
 					MemberQ[talliedSamplesWithStrategies, {{ObjectP[uniqueSample], ChangeMedia}, _Integer}],
 					MemberQ[talliedSamplesWithStrategies,  {{ObjectP[uniqueSample], Except[ChangeMedia]}, _Integer}]
 				],
-					uniqueSample,
+					{uniqueSample, CryoprotectionStrategy},
+				(* If the number Of the same sample with the same specified option set is larger than the NumberOfReplicates, this is not possible for FreezeCells experiment *)
+				(* We are throwing FreezeCellsReplicatesAliquotRequired later for Aliquot options if it is a mix of True and False, no need to check here *)
+				Or[
+					GreaterQ[frameworkNumberOfReplicates, 1] && GreaterQ[Max[Cases[talliedSamplesWithNonChangeMediaOptions, {{ObjectP[uniqueSample], {_, Except[ChangeMedia], _}}, _}][[All, 2]]], correctNumberOfReplicates],
+					GreaterQ[numericNumberOfReplicates, 1] && GreaterQ[Max[Cases[talliedSamplesWithNonChangeMediaOptions, {{ObjectP[uniqueSample], {_, Except[ChangeMedia], _}}, _}][[All, 2]]], 1],
+					EqualQ[correctNumberOfReplicates, 1] && GreaterQ[Max[Cases[talliedSamplesWithNonChangeMediaOptions, {{ObjectP[uniqueSample], {_, Except[ChangeMedia], _}}, _}][[All, 2]]], 1]
+				],
+					{uniqueSample, NumberOfReplicates},
+				(* If there the number Of ChangeMedia is larger than the NumberOfReplicates, this is not possible for FreezeCells experiment *)
+				Or[
+					GreaterQ[frameworkNumberOfReplicates, 1] && GreaterQ[Total[Cases[talliedSamplesWithStrategies, {{ObjectP[uniqueSample], ChangeMedia}, count_}:>count]], correctNumberOfReplicates],
+					GreaterQ[numericNumberOfReplicates, 1] && GreaterQ[Total[Cases[talliedSamplesWithStrategies, {{ObjectP[uniqueSample], ChangeMedia}, count_}:>count]], 1],
+					EqualQ[correctNumberOfReplicates, 1] && GreaterQ[Total[Cases[talliedSamplesWithStrategies, {{ObjectP[uniqueSample], ChangeMedia}, count_}:>count]], 1]
+				],
+					{uniqueSample, ChangeMedia},
 				True,
 					Nothing
 			]
@@ -1479,27 +1669,128 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		DeleteDuplicates@mySamples
 	];
 
-	If[Length[duplicateSamples] > 0 && messages,
-		Message[Error::DuplicatedSamples, ObjectToString[duplicateSamples, Cache -> cacheBall, Simulation -> simulation], "ExperimentFreezeCells"]
+	duplicatedSampleInputs = duplicateSamplesCases[[All, 1]];
+
+	If[Length[duplicateSamplesCases] > 0 && messages,
+		Module[{captureSentence, groupedErrorDetails, reasonClause, actionClause},
+			groupedErrorDetails = GroupBy[duplicateSamplesCases, Rest];
+			captureSentence = joinClauses[
+				{
+					If[MemberQ[Flatten@Keys[groupedErrorDetails], ChangeMedia|CryoprotectionStrategy],
+						StringJoin[
+							"If the option CryoprotectionStrategy is set to ChangeMedia for a sample, the entire sample is pelleted",
+							If[GreaterQ[correctNumberOfReplicates, 1],
+								" and then aliquoted to ",
+								" and then used to prepare "
+							],
+							IntegerName[correctNumberOfReplicates, "English"],
+							If[GreaterQ[correctNumberOfReplicates, 1],
+								" (specified with the option NumberOfReplicates) ",
+								" (default to one when the option NumberOfReplicates is not specified) "
+							],
+							If[EqualQ[correctNumberOfReplicates, 1], "frozen cell stock", "identical frozen cell stocks"]
+						],
+						Nothing
+					],
+					If[MemberQ[Flatten@Keys[groupedErrorDetails], NumberOfReplicates],
+						"The same input sample cannot be specified multiple times with the same CryoprotectionStrategy unless the duplication is created using the NumberOfReplicates option",
+						Nothing
+					]
+				},
+				CaseAdjustment -> True
+			];
+			reasonClause = joinClauses[
+				{
+					If[MemberQ[Flatten@Keys[groupedErrorDetails], NumberOfReplicates],
+						Module[{groupedCases},
+							groupedCases = Lookup[groupedErrorDetails, Key[{NumberOfReplicates}]];
+								StringJoin[
+									(* Do not collapse the samples since it is confusing when the same sample is entered as input multiple times and we are detecting this issue for this message *)
+									samplesForMessages[groupedCases[[All, 1]], CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation],
+									" ",
+									hasOrHave[DeleteDuplicates@groupedCases[[All, 1]]],
+									Which[
+										GreaterQ[numericNumberOfReplicates, 1],
+											" both duplicated entries in the input samples as well as NumberOfReplicates specified",
+										GreaterQ[frameworkNumberOfReplicates, 1],
+											" more number of entries in the input samples than the specified NumberOfReplicates",
+										True,
+											" duplicated entries in the input samples and NumberOfReplicates is not specified"
+									]
+								]
+						],
+						Nothing
+					],
+					If[MemberQ[Flatten@Keys[groupedErrorDetails], ChangeMedia],
+						Module[{groupedCases},
+							groupedCases = Lookup[groupedErrorDetails, Key[{ChangeMedia}]];
+							StringJoin[
+								(* Do not collapse the samples since it is confusing when the same sample is entered as input multiple times and we are detecting this issue for this message *)
+								samplesForMessages[groupedCases[[All, 1]], CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation],
+								" ",
+								hasOrHave[DeleteDuplicates@groupedCases[[All, 1]]],
+								" the CryoprotectionStrategy option specified as ChangeMedia while duplicated entries are detected in the input samples"
+							]
+						],
+						Nothing
+					],
+					If[MemberQ[Flatten@Keys[groupedErrorDetails], CryoprotectionStrategy],
+						Module[{groupedCases},
+							groupedCases = Lookup[groupedErrorDetails, Key[{CryoprotectionStrategy}]];
+							StringJoin[
+								(* Do not collapse the samples since it is confusing when the same sample is entered as input multiple times and we are detecting this issue for this message *)
+								samplesForMessages[groupedCases[[All, 1]], CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation],
+								" ",
+								hasOrHave[DeleteDuplicates@groupedCases[[All, 1]]],
+								" multiple CryoprotectionStrategy specified including ChangeMedia"
+							]
+						],
+						Nothing
+					]
+				},
+				CaseAdjustment -> True
+			];
+			actionClause = joinClauses[
+				{
+					If[MemberQ[Flatten@Keys[groupedErrorDetails], ChangeMedia | NumberOfReplicates],
+						If[EqualQ[correctNumberOfReplicates, 1],
+							"use NumberOfReplicates to make identical copies of frozen cell stocks instead of re-specifying the same sample in the input",
+							"increase NumberOfReplicates instead of re-specifying the same sample in the input"
+						],
+						Nothing
+					],
+					If[MemberQ[Flatten@Keys[groupedErrorDetails], CryoprotectionStrategy],
+						"ensure that when multiple CryoprotectionStrategy values are specified for the same input sample, none of them is ChangeMedia",
+						Nothing
+					]
+				}
+			];
+			Message[
+				Error::FreezeCellsDuplicatedSamples,
+				captureSentence,
+				reasonClause,
+				actionClause
+			]
+		]
 	];
 
 	duplicateSamplesTest = If[gatherTests,
 		Module[{failingTest, passingTest},
-			failingTest = If[Length[duplicateSamples] == 0,
+			failingTest = If[Length[duplicateSamplesCases] == 0,
 				Nothing,
-				Test["The input samples " <> ObjectToString[duplicateSamples, Cache -> cacheBall, Simulation -> simulation] <> " have not been specified more than once if using it all:", True, False]
+				Test["The input samples " <> ObjectToString[duplicatedSampleInputs, Cache -> cacheBall, Simulation -> simulation] <> " have not been specified more than once if using it all:", True, False]
 			];
 
-			passingTest = If[Length[invalidCellTypeSamples] == Length[mySamples],
+			passingTest = If[Length[duplicateSamplesCases] == Length[mySamples],
 				Nothing,
-				Test["The input samples " <> ObjectToString[Complement[mySamples, duplicateSamples], Cache -> cacheBall, Simulation -> simulation] <> " have not been specified in more than one freezing strategy if using it all:", True, True]
+				Test["The input samples " <> ObjectToString[Complement[mySamples, duplicatedSampleInputs], Cache -> cacheBall, Simulation -> simulation] <> " have not been specified more than once if using it all:", True, True]
 			];
 
 			{failingTest, passingTest}
 		]
 	];
 
-	(* 6. Get whether there are stowaway samples inside the input plates. We're forbidding users from pelleting samples when there are other samples in the plate already *)
+	(* 5. Get whether there are stowaway samples inside the input plates. We're forbidding users from pelleting samples when there are other samples in the plate already *)
 	inputContainerContents = Lookup[sampleContainerPackets, Contents, {}];
 	stowawaySamples = MapThread[
 		Function[{sample, contents},
@@ -1507,21 +1798,84 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 				allChangeMediaSamples = Cases[talliedSamplesWithStrategies, {{changeMediaSample_, ChangeMedia}, _}:>changeMediaSample];
 				contentsObjects = Download[contents[[All, 2]], Object];
 				If[MemberQ[allChangeMediaSamples, ObjectP[sample]],
-					Select[contentsObjects, Not[MemberQ[allChangeMediaSamples, ObjectP[#]]]&],
+					Select[contentsObjects, Not[MemberQ[mySamples, ObjectP[#]]]&],
 					{}
 				]
 			]
 		],
 		{mySamples, inputContainerContents}
 	];
+	uniqueStowawaySamples = DeleteDuplicates@DeleteCases[stowawaySamples, {}];
 	invalidPlateSampleInputs = Lookup[
-		PickList[samplePackets, stowawaySamples, Except[{}]],
+		DeleteDuplicates@PickList[samplePackets, stowawaySamples, Except[{}]],
 		Object,
 		{}
 	];
+	invalidPlateSampleContainers = If[!MatchQ[invalidPlateSampleInputs, {}],
+		DeleteDuplicates@MapThread[
+			If[MemberQ[invalidPlateSampleInputs, ObjectP[#1]],
+				Lookup[#2, Object],
+				Nothing
+			]&,
+			{mySamples, sampleContainerPackets}
+		],
+		{}
+	];
 
+	(* Following new format of error message and detects singular/plural and flatten all values *)
 	If[Length[invalidPlateSampleInputs] > 0 && messages,
-		Message[Error::InvalidChangeMediaSamples, ObjectToString[#, Cache -> cacheBall, Simulation -> simulation]& /@ DeleteCases[stowawaySamples, {}], ObjectToString[invalidPlateSampleInputs, Cache -> cacheBall, Simulation -> simulation]]
+		Module[{reasonClause},
+			(* Here we try to not have a super long message by not displaying either sample or container IDs *)
+			reasonClause = StringJoin[
+				Capitalize@samplesForMessages[invalidPlateSampleInputs, mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
+				" ",
+				pluralize[invalidPlateSampleInputs, "reside"],
+				Which[
+					Length[invalidPlateSampleContainers] == 1, " in container ",
+					Length[invalidPlateSampleContainers] > $MaxNumberOfErrorDetails, " in containers",
+					True, " in containers "
+				],
+				If[Length[invalidPlateSampleContainers] > $MaxNumberOfErrorDetails,
+					"",(* if too many containers (currently >3), do not display their ids *)
+					(* we have to display all the containers ID since invalid inputs do not display container id *)
+					samplesForMessages[invalidPlateSampleContainers, CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation]
+				],
+				Which[
+					Length[invalidPlateSampleContainers] == 1 && Length[Flatten@uniqueStowawaySamples] == 1,
+						StringJoin[
+							" with 1 additional sample ",
+							ObjectToString[Flatten[uniqueStowawaySamples][[1]], Cache -> cacheBall, Simulation -> simulation],
+							", which is not specified as input sample"
+						],
+					Length[invalidPlateSampleContainers] == 1,
+						StringJoin[
+							" with ",
+							ToString[Length[Flatten@uniqueStowawaySamples]],
+							" additional samples, which are not specified as input samples"
+						],
+					Length[invalidPlateSampleContainers] > $MaxNumberOfErrorDetails,
+						" with additional samples, which are not specified as input samples",
+					True,
+						StringJoin[
+							" with each container holding ",
+							joinClauses[Map[Length[#]&, uniqueStowawaySamples], DuplicatesRemoval -> False],
+							" additional samples, respectively"
+						]
+				]
+			];
+			Message[
+				Error::InvalidChangeMediaSamples,
+				reasonClause,
+				If[Length[invalidPlateSampleInputs] == 1,
+					"the input sample into an empty container",
+					"the input samples into empty containers"
+				],
+				If[Length[invalidPlateSampleContainers] == 1 && Length[Flatten@uniqueStowawaySamples] == 1,
+					"the additional sample as input sample as well",
+					"all of the additional samples as input samples as well"
+				]
+			]
+		]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1542,32 +1896,150 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		Nothing
 	];
 
-	(* Combine the original options with resolved options so far *)
-	freezeCellsOptionsAssociation = Join[
-		(* dropping these two keys because they are often huge and make variables unnecessarily take up memory + become unreadable *)
-		KeyDrop[Association[myOptions], {Cache, Simulation, InSitu, CryoprotectionStrategy, FreezingStrategy}],
-		<|
-			NumberOfReplicates -> resolvedNumberOfReplicates,
-			Aliquot -> resolvedAliquotBools,
-			CryoprotectionStrategy -> resolvedCryoprotectionStrategies,
-			FreezingStrategy -> resolvedFreezingStrategy
-		|>
+
+	(* 6. Throw an error is we have non-liquid samples *)
+	(* Get the samples that are not liquids, cannot freeze those *)
+	sampleStates = Lookup[samplePackets, State];
+
+	(* Keep track of samples that are not liquid *)
+	nonLiquidSampleInvalidInputs = PickList[mySamples, sampleStates, Except[Liquid]];
+
+	(* If there are invalid inputs and we are throwing messages,do so *)
+	If[Length[nonLiquidSampleInvalidInputs] > 0 && messages,
+		Message[
+			Error::FreezeCellsNonLiquidSamples,
+			(*1*)StringJoin[
+				Capitalize@samplesForMessages[nonLiquidSampleInvalidInputs, mySamples, Cache -> cacheBall, Simulation -> simulation],
+				" ",
+				isOrAre[nonLiquidSampleInvalidInputs]
+			],
+			(*2*)Which[
+				MatchQ[sampleStates, {(Liquid|Solid|Gas)..}],
+					"Please provide alternative liquid sample(s)",
+				MatchQ[sampleStates, {(Liquid|Null)..}],
+					"Please use UploadSampleProperties to define the State field of the sample(s) if it is missing",
+				True,
+					"Please provide alternative liquid sample(s), or define the State field using UploadSampleProperties if it is missing"
+			]
+		]
 	];
+
+	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
+	nonLiquidSampleTest = If[gatherTests,
+		Module[{failingTest, passingTest},
+			failingTest = If[Length[nonLiquidSampleInvalidInputs] == 0,
+				Nothing,
+				Test["Our input samples " <> ObjectToString[nonLiquidSampleInvalidInputs, Cache -> cacheBall, Simulation -> simulation] <> " have a Liquid State:", True, False]
+			];
+
+			passingTest = If[Length[nonLiquidSampleInvalidInputs] == Length[mySamples],
+				Nothing,
+				Test["Our input samples " <> ObjectToString[Complement[mySamples, nonLiquidSampleInvalidInputs], Cache -> cacheBall, Simulation -> simulation] <> " have a Liquid State:", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Nothing
+	];
+
+	(* 7. Throw a warning is we have liquid samples without volume (or low volume) *)
+	(* Note:for gaseous or solid samples, no need to throw more error *)
+	missingVolumeInvalidCases = MapThread[
+		Function[{samplePacket, sampleContainerModelPacket},
+			Module[{maxVol, lowLiquidVol},
+				maxVol = Lookup[sampleContainerModelPacket, MaxVolume, 1 Milliliter];
+				(* 100 Microliter is defined in individualStorageItems in ProcedureFramework for determine empty samples *)
+				lowLiquidVol = If[MatchQ[maxVol, VolumeP],
+					SafeRound[Min[0.01*maxVol, 100 Microliter], 1 Microliter],
+					100 Microliter
+				];
+				Which[
+					MatchQ[Lookup[samplePacket, {State, Volume}], {Liquid, LessP[lowLiquidVol]}],
+						{Lookup[samplePacket, Object], Liquid, Low},
+					MatchQ[Lookup[samplePacket, {State, Volume}], {Liquid, Null}],
+						{Lookup[samplePacket, Object], Liquid, Null},
+					True,
+						Nothing
+				]
+			]
+		],
+		{samplePackets, sampleContainerModelPackets}
+	];
+
+	If[Length[missingVolumeInvalidCases] > 0 && messages,
+		Module[{groupedErrorDetails, reasonClause, actionClause},
+			groupedErrorDetails = GroupBy[missingVolumeInvalidCases, Rest];
+			reasonClause = If[Length[Keys[groupedErrorDetails]] > $MaxNumberOfErrorDetails,
+				StringJoin[
+					Capitalize@samplesForMessages[missingVolumeInvalidCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+					" either have missing or low volume"
+				],
+				joinClauses[
+					Map[
+						StringJoin[
+							Capitalize@samplesForMessages[groupedErrorDetails[#][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+							" ",
+							hasOrHave[DeleteDuplicates@groupedErrorDetails[#]],
+							If[MatchQ[groupedErrorDetails[#][[All, 3]], {Low..}],
+								" low amount recorded in the field ",
+								" missing "
+							],
+							"Volume",
+							If[MatchQ[groupedErrorDetails[#][[All, 3]], {Null..}],
+								" information",
+								""
+							]
+						]&,
+						Keys[groupedErrorDetails]
+					],
+					CaseAdjustment -> True
+				]
+			];
+			actionClause = If[Length[missingVolumeInvalidCases] > 1,
+				"ExperimentFreezeCells will still freeze these samples, but very small volumes freeze and thaw rapidly, increasing the risk of temperature-shock-induced cell damage.",
+				"ExperimentFreezeCells will still freeze this sample, but very small volumes freeze and thaw rapidly, increasing the risk of temperature-shock-induced cell damage."
+			];
+			Message[
+				Warning::EmptySamples,
+				reasonClause,
+				actionClause
+			]
+		]
+	];
+
+	missingVolumeTest = If[gatherTests,
+		Module[{failingTest, passingTest},
+			failingTest = If[Length[missingVolumeInvalidCases] == 0,
+				Nothing,
+				Warning["The input samples " <> ObjectToString[missingVolumeInvalidCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation] <> " have valid volume information:", True, False]
+			];
+
+			passingTest = If[Length[missingVolumeInvalidCases] == Length[mySamples],
+				Nothing,
+				Warning["The input samples " <> ObjectToString[Complement[mySamples, missingVolumeInvalidCases[[All, 1]]], Cache -> cacheBall, Simulation -> simulation] <> " have valid volume information:", True, True]
+			];
+
+			{failingTest, passingTest}
+		]
+	];
+
 
 	(*--- OPTION PRECISION CHECKS ---*)
 	(* Round the options that have precision. *)
 	{roundedFreezeCellsOptions, precisionTests} = If[gatherTests,
 		RoundOptionPrecision[
-			freezeCellsOptionsAssociation,
-			{CellPelletTime, InsulatedCoolerFreezingTime, CellPelletSupernatantVolume, CryoprotectantSolutionVolume, AliquotVolume},
-			{1 Minute, 1 Minute, 1 Microliter, 1 Microliter, 1 Microliter},
+			(* dropping these two keys because they are often huge and make variables unnecessarily take up memory + become unreadable *)
+			KeyDrop[Association[myOptions], {Cache, Simulation}],
+			{CellPelletIntensity, TemperatureProfile, CellPelletTime, InsulatedCoolerFreezingTime, CellPelletSupernatantVolume, CryoprotectantSolutionVolume, AliquotVolume},
+			{{10 RPM, 10 GravitationalAcceleration}, {1 Celsius, 1 Minute}, 1 Minute, 0.1 Hour, 1 Microliter, 1 Microliter, 1 Microliter},
 			Output -> {Result, Tests}
 		],
 		{
 			RoundOptionPrecision[
-				freezeCellsOptionsAssociation,
-				{CellPelletTime, InsulatedCoolerFreezingTime, CellPelletSupernatantVolume, CryoprotectantSolutionVolume, AliquotVolume},
-				{1 Minute, 1 Minute, 1 Microliter, 1 Microliter, 1 Microliter}
+				(* dropping these two keys because they are often huge and make variables unnecessarily take up memory + become unreadable *)
+				KeyDrop[Association[myOptions], {Cache, Simulation}],
+				{CellPelletIntensity, TemperatureProfile, CellPelletTime, InsulatedCoolerFreezingTime, CellPelletSupernatantVolume, CryoprotectantSolutionVolume, AliquotVolume},
+				{{10 RPM, 10 GravitationalAcceleration}, {1 Celsius, 1 Minute}, 1 Minute, 0.1 Hour, 1 Microliter, 1 Microliter, 1 Microliter}
 			],
 			Null
 		}
@@ -1609,99 +2081,287 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 	(* Resolve the CryoprotectantSolutionTemperature. *)
 	resolvedCryoprotectantSolutionTemperature = Which[
 		(* If the user specified it, use the user-specified value. *)
-		MatchQ[Lookup[roundedFreezeCellsOptions, CryoprotectantSolutionTemperature], Except[Automatic]], Lookup[roundedFreezeCellsOptions, CryoprotectantSolutionTemperature],
+		MatchQ[Lookup[roundedFreezeCellsOptions, CryoprotectantSolutionTemperature], Except[Automatic]],
+			Lookup[roundedFreezeCellsOptions, CryoprotectantSolutionTemperature],
 		(* Set this to Null if the CryoprotectionStrategy is None at all indices. *)
-		!MemberQ[resolvedCryoprotectionStrategies, Except[None]], Null,
+		!MemberQ[resolvedCryoprotectionStrategies, Except[None]],
+			Null,
 		(* Otherwise, default to Chilled. *)
-		True, Chilled
+		True,
+			Chilled
 	];
 
 	(* Gather the resolved options above together in a list. *)
-	resolvedGeneralOptions = {
-		Preparation -> resolvedPreparation,
-		NumberOfReplicates -> resolvedNumberOfReplicates,
-		Aliquot -> resolvedAliquotBools,
-		CryoprotectionStrategy -> resolvedCryoprotectionStrategies,
-		FreezingStrategy -> resolvedFreezingStrategy,
-		InsulatedCoolerFreezingTime -> resolvedInsulatedCoolerFreezingTime,
-		TemperatureProfile -> resolvedTemperatureProfile,
-		CryoprotectantSolutionTemperature -> resolvedCryoprotectantSolutionTemperature
-	};
+	resolvedGeneralOptions = ReplaceRule[
+		Normal[roundedFreezeCellsOptions, Association],
+		{
+			Preparation -> resolvedPreparation,
+			NumberOfReplicates -> resolvedNumberOfReplicates,
+			Aliquot -> resolvedAliquotBools,
+			CryoprotectionStrategy -> resolvedCryoprotectionStrategies,
+			FreezingStrategy -> resolvedFreezingStrategy,
+			InsulatedCoolerFreezingTime -> resolvedInsulatedCoolerFreezingTime,
+			TemperatureProfile -> resolvedTemperatureProfile,
+			CryoprotectantSolutionTemperature -> resolvedCryoprotectantSolutionTemperature
+		}
+	];
 
 	(*--- CONFLICTING OPTIONS CHECKS I ---*)
-	(*Warning::FreezeCellsAliquotingRequired*)
-	(* 1. Throw a warning if Aliquot automatically resolves to True at any index while non related Aliquot options were specified. *)
+	(* 1.Warning::FreezeCellsAliquotingRequired *)
+	(* Throw a warning if Aliquot automatically resolves to True at any index while non related Aliquot options were specified. *)
 	(* Note if Aliquot, AliquotVolume, NumberOfReplicates, or CryogenicSampleContainer is specified, *)
 	(* we do not throw warning since specifying those options indicates the user knows they are aliquoting *)
 	freezeCellsAliquotingRequiredCases = DeleteDuplicates@MapThread[
-		Which[
-			MatchQ[#2, BooleanP] || TrueQ[#3],
-				Nothing,
-			MatchQ[#2, Automatic] && MatchQ[#3, False] && !MatchQ[Lookup[#4, Footprint], CryogenicVial],
-				{#1, Lookup[#4, Object], " with Footprint ", ToString[Lookup[#4, Footprint]], "Only cryogenic vials are accepted for in situ sample preparation"},
-			MatchQ[#2, Automatic] && MatchQ[#3, False] && MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
-				{#1, Lookup[#4, Object], " which is not compatible with ", "ControlledRateFreezer FreezingStrategy", "The ControlledRateFreezer FreezingStrategy is only compatible with cryogenic vials up to 2 Milliliter in volume"},
-			True,
-				{#1, Lookup[#4, Object], " with 75% MaxVolume at ", ToString[0.75*Lookup[#4, MaxVolume]], "If prepared in situ, total volume of the cell stock will exceed 75% of the current container's maximum capacity with risk of vial rupture"}
-		]&,
-		{mySamples, specifiedAliquotQs, resolvedInSitus, sampleContainerModelPackets}
+		Function[{sample, aliquotQ, inSituQ, sampleContainerModelPacket, sampleContainerPacket, sampleVolumeQuantity, inputContainerMaxVolume, cryoprotectionStrategy, finalInSituVolume},
+			Which[
+				MatchQ[aliquotQ, BooleanP] || TrueQ[inSituQ],
+					Nothing,
+				MatchQ[aliquotQ, Automatic] && !MatchQ[sampleContainerModelPacket, PacketP[Model[Container]]],
+					{Model, sample, Lookup[sampleContainerPacket, Object], Null, finalInSituVolume},
+				MatchQ[aliquotQ, Automatic] && MatchQ[inSituQ, False] && !MatchQ[whyCantThisModelBeCryogenicVial[sampleContainerModelPacket], <||>],
+					{Footprint, sample, Lookup[sampleContainerModelPacket, Object], ToString[Lookup[sampleContainerModelPacket, Footprint]], finalInSituVolume},
+				MatchQ[aliquotQ, Automatic] && MatchQ[inSituQ, Automatic] && MatchQ[sampleContainerModelPacket, PacketP[Model[Container, Vessel, "id:o1k9jAG1Nl57"]]] && MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],(*5mL Cryogenic Vial*)
+					{FreezingStrategy, sample, Lookup[sampleContainerModelPacket, Object], Null, finalInSituVolume},
+				MatchQ[aliquotQ, Automatic] && MatchQ[inSituQ, False] && GreaterQ[sampleVolumeQuantity, 0.75*inputContainerMaxVolume] && !MatchQ[cryoprotectionStrategy, ChangeMedia],
+					{Sample, sample, Lookup[sampleContainerModelPacket, Object], ToString[Round[0.75*inputContainerMaxVolume, 0.01 Milliliter]], finalInSituVolume},
+				MatchQ[aliquotQ, Automatic] && MatchQ[inSituQ, False],
+					{MaxVolume, sample, Lookup[sampleContainerModelPacket, Object], ToString[Round[0.75*inputContainerMaxVolume, 0.01 Milliliter]], finalInSituVolume},
+				True,
+					Nothing
+			]
+		],
+		{mySamples, specifiedAliquotQs, semiresolvedInSitus, sampleContainerModelPackets, sampleContainerPackets, sampleVolumeQuantities, inputContainerMaxVolumes, resolvedCryoprotectionStrategies, finalInSituVolumes}
 	];
 
 	If[Length[freezeCellsAliquotingRequiredCases] > 0 && messages && notInEngine,
+		Module[{groupedErrorDetails, captureSentence, reasonClause, actionClause},
+			groupedErrorDetails = GroupBy[freezeCellsAliquotingRequiredCases, First];
+			captureSentence = If[Length[Keys[groupedErrorDetails]] > $MaxNumberOfErrorDetails,
+				"Aliquot is required for the samples to prepare valid frozen cell stock",
+				joinClauses[
+					{
+						If[MemberQ[Keys[groupedErrorDetails], Footprint|Model],
+							Module[{suggestedCryoVialList},
+								suggestedCryoVialList = If[MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
+									{Model[Container, Vessel, "id:vXl9j5qEnnOB"], Model[Container, Vessel, "id:AEqRl9KEBOXp"]},
+									{Model[Container, Vessel, "id:vXl9j5qEnnOB"], Model[Container, Vessel, "id:AEqRl9KEBOXp"], Model[Container, Vessel, "id:o1k9jAG1Nl57"]}
+								];
+								StringJoin[
+									"Only cryogenic vials such as ",
+									samplesForMessages[suggestedCryoVialList, CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation],
+									" are accepted for in situ sample preparation"
+								]
+							],
+							Nothing
+						],
+						If[MemberQ[Keys[groupedErrorDetails], FreezingStrategy],
+							ObjectToString[Model[Container, Vessel, "5mL Cryogenic Vial"]] <> " is not accepted for in situ sample preparation when FreezingStrategy is set to ControlledRateFreezer",
+							Nothing
+						],
+						If[MemberQ[Keys[groupedErrorDetails], MaxVolume|Sample],
+							"If prepared in situ, the total volume of the cell stock must be kept below 75% of the containers' maximum capacity to avoid the risk of vial rupture",
+							Nothing
+						]
+					},
+					CaseAdjustment -> True
+				]
+			];
+			reasonClause = joinClauses[
+				Map[
+					Function[{groupedKey},
+						Module[{groupedCases},
+							groupedCases = Lookup[groupedErrorDetails, Key[groupedKey]];
+							StringJoin[
+								samplesForMessages[groupedCases[[All, 2]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+								" ",
+								isOrAre[DeleteDuplicates@groupedCases[[All, 2]]],
+								" in ",
+								If[MemberQ[Keys[groupedErrorDetails], Model],
+									pluralize[DeleteDuplicates@groupedCases[[All, 3]], "a container ", "containers "],
+									pluralize[DeleteDuplicates@groupedCases[[All, 3]], "a model container ", "model containers "]
+								],
+								samplesForMessages[groupedCases[[All, 3]], Cache -> cacheBall, Simulation -> simulation],
+								Which[
+									MatchQ[groupedKey, Footprint],
+										" which " <> pluralize[DeleteDuplicates@groupedCases[[All, 3]], "is not a cryogenic vial", "are not cryogenic vials"],
+									MatchQ[groupedKey, Model],
+										" without model information",
+									MatchQ[groupedKey, FreezingStrategy],
+										"",
+									True,
+										StringJoin[
+											" with 75% MaxVolume at ",
+											joinClauses[groupedCases[[All, 4]]],
+											" and total volume of the ",
+											pluralize[DeleteDuplicates@groupedCases[[All, 2]], "cell stock", "cell stocks"],
+											" would be ",
+											joinClauses[groupedCases[[All, 5]]],
+											" if Aliquot is set to False"
+										]
+								]
+							]
+						]
+					],
+					Keys[groupedErrorDetails]
+				],
+				CaseAdjustment -> True
+			];
+			actionClause = StringJoin[
+				"For ",
+				pluralize[DeleteDuplicates@freezeCellsAliquotingRequiredCases[[All, 2]], "this sample", "these samples"],
+				", the option Aliquot will default to True automatically",
+				Which[
+					MemberQ[Keys[groupedErrorDetails], FreezingStrategy],
+						". If this is not desired, please change the option FreezingStrategy to InsulatedCooler which allows bigger cryogenic vial(s).",
+					MemberQ[Keys[groupedErrorDetails], MaxVolume] && MemberQ[Keys[groupedErrorDetails], Sample],
+					". If this is not desired, please either decrease the value for option CryoprotectantSolutionVolume or use ExperimentTransfer to transfer some of the sample(s) out to ensure the final cell stock volume before freezing is kept below 75% of the containers' maximum capacity.",
+					MemberQ[Keys[groupedErrorDetails], MaxVolume] && !MemberQ[Keys[groupedErrorDetails], Sample],
+						". If this is not desired, please decrease the value for option CryoprotectantSolutionVolume to ensure the final cell stock volume before freezing is kept below 75% of the containers' maximum capacity.",
+					MemberQ[Keys[groupedErrorDetails], Sample],
+						StringJoin[
+							". If this is not desired, please use ExperimentTransfer to transfer part of ",
+							pluralize[DeleteDuplicates@freezeCellsAliquotingRequiredCases[[All, 2]], "the sample", "the samples"],
+							" out to ensure the final cell stock volume before freezing is kept below 75% of the containers' maximum capacity."
+						],
+					True,
+						"."
+				]
+			];
 		(* Here we use the new recommended error message format where we expand the error message instead of using index *)
 		(* The helper function joinClauses is defined in Experiment/PrimitiveFramework/Helpers.m *)
 		Message[
 			Warning::FreezeCellsAliquotingRequired,
-			joinClauses@Map[
-				StringJoin[
-					ObjectToString[#[[1]], Cache -> cacheBall, Simulation -> simulation],
-					" is in model container ",
-					ObjectToString[#[[2]], Cache -> cacheBall, Simulation -> simulation],
-					#[[3]],
-					#[[4]]
-					]&,
-					freezeCellsAliquotingRequiredCases
-				],
-			joinClauses[freezeCellsAliquotingRequiredCases[[All, 5]]]
-		];
+			captureSentence,
+			reasonClause,
+			actionClause
+			]
+		]
 	];
 
-	(*Error::SpecificCryogenicVialRequired*)
-	(* 2. Throw an error if Aliquot is False while containersIn is not a cryo vial, or not the same as specified CryogenicSampleContainer. *)
+	freezeCellsAliquotingRequiredTests = If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{passingInputsTest, failingInputTest},
+			(* Create a test for the non-passing inputs. *)
+			failingInputTest = If[Length[freezeCellsAliquotingRequiredCases] > 0,
+				Warning["The following samples, " <> ObjectToString[freezeCellsAliquotingRequiredCases[[All, 2]], Cache -> cacheBall, Simulation -> simulation] <> " do not specify Aliquot option while Aliquot is required:", True, False],
+				Nothing
+			];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest = If[Length[freezeCellsAliquotingRequiredCases] == 0,
+				Warning["The following samples, " <> ObjectToString[mySamples, Cache -> cacheBall, Simulation -> simulation] <> " have specified Aliquot option as True when Aliquot is required:", True, True],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				failingInputTest
+			}
+		],
+		(* We aren't gathering tests. No tests to create. *)
+		{}
+	];
+
+
+	(* 2. Error::CryogenicVialAliquotingRequired *)
+	(* Throw an error if Aliquot is False while containersIn is not a cryo vial, or not the same as specified CryogenicSampleContainer. *)
 	conflictingAliquotingErrors = MapThread[
-		Which[
-			MatchQ[#2, False] && !MatchQ[Lookup[#4, Footprint], CryogenicVial],
-				{#1, " is in model container ", Lookup[#4, Object], " with Footprint ", ToString[Lookup[#4, Footprint]], "Only cryogenic vials are accepted for in situ sample preparation"},
-			And[
-				MatchQ[#2, False],
-				MatchQ[#3, ObjectP[]],
-				!MatchQ[#3, ObjectP[Lookup[Join[{#4, #5}], Object]]]
-			],
-				{#1, " is in container ", Lookup[#5, Object], " while CryogenicSampleContainer is set to ", ObjectToString[#3, Cache -> cacheBall, Simulation -> simulation], "Frozen cell stocks should be transferred to the specified CryogenicSampleContainer"},
-			True,
-				Null
-		]&,
+		Function[{sample, aliquotQ, cryogenicSampleContainer, sampleContainerModelPacket, sampleContainerPacket},
+			Which[
+				MatchQ[aliquotQ, False] && !MatchQ[sampleContainerModelPacket, PacketP[Model[Container]]],
+					{Model, sample, Lookup[sampleContainerPacket, Object], Null},
+				MatchQ[aliquotQ, False] && !MatchQ[whyCantThisModelBeCryogenicVial[sampleContainerModelPacket], <||>],
+					{Footprint, sample, Lookup[sampleContainerModelPacket, Object], Lookup[sampleContainerModelPacket, Footprint]},
+				And[
+					MatchQ[aliquotQ, False],
+					MatchQ[cryogenicSampleContainer, ObjectP[]],
+					!MatchQ[cryogenicSampleContainer, ObjectP[Lookup[Join[{sampleContainerModelPacket, sampleContainerPacket}], Object]]]
+				],
+					{CryogenicSampleContainer, sample, Lookup[sampleContainerPacket, Object], cryogenicSampleContainer},
+				True,
+					Null
+			]
+		],
 		{mySamples, specifiedAliquotQs, expandedSuppliedCryogenicSampleContainers, sampleContainerModelPackets, sampleContainerPackets}
 	];
 	conflictingAliquotingCases = DeleteDuplicates@DeleteCases[conflictingAliquotingErrors, Null];
+	conflictingAliquotingOptions = If[Length[conflictingAliquotingCases] > 0,
+		{Aliquot, CryogenicSampleContainer},
+		{}
+	];
 
 	If[Length[conflictingAliquotingCases] > 0 && messages && notInEngine,
-		(* Here we use the new recommended error message format where we expand the error message instead of using index *)
-		(* The helper function joinClauses is defined in Experiment/PrimitiveFramework/Helpers.m *)
-		Message[
-			Error::CryogenicVialAliquotingRequired,
-			joinClauses@Map[
-				StringJoin[
-					ObjectToString[#[[1]], Cache -> cacheBall, Simulation -> simulation],
-					#[[2]],
-					ObjectToString[#[[3]], Cache -> cacheBall, Simulation -> simulation],
-					#[[4]],
-					#[[5]]
-				]&,
-				conflictingAliquotingCases
-			],
-			joinClauses[conflictingAliquotingCases[[All, 6]]]
-		];
+		Module[{groupedErrorDetails, captureSentence, reasonClause},
+			groupedErrorDetails = GroupBy[conflictingAliquotingCases, First];
+			captureSentence = If[Length[Keys[groupedErrorDetails]] > $MaxNumberOfErrorDetails,
+				"Aliquot is required for the samples to prepare valid frozen cell stock",
+				joinClauses[
+					{
+						If[MemberQ[Keys[groupedErrorDetails], Footprint|Model],
+							Module[{suggestedCryoVialList},
+								suggestedCryoVialList = If[MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
+									{Model[Container, Vessel, "id:vXl9j5qEnnOB"], Model[Container, Vessel, "id:AEqRl9KEBOXp"]},
+									{Model[Container, Vessel, "id:vXl9j5qEnnOB"], Model[Container, Vessel, "id:AEqRl9KEBOXp"], Model[Container, Vessel, "id:o1k9jAG1Nl57"]}
+								];
+								StringJoin[
+									"Only cryogenic vials such as ",
+									samplesForMessages[suggestedCryoVialList, CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation],
+									" are accepted for in situ sample preparation"
+								]
+							],
+							Nothing
+						],
+						If[MemberQ[Keys[groupedErrorDetails], CryogenicSampleContainer],
+							"Frozen cell stocks should be transferred to the specified CryogenicSampleContainer(s)",
+							Nothing
+						]
+					},
+					CaseAdjustment -> True
+				]
+			];
+			reasonClause = joinClauses[
+				Map[
+					Function[{groupedKey},
+						Module[{groupedCases},
+							groupedCases = Lookup[groupedErrorDetails, Key[groupedKey]];
+							StringJoin[
+								samplesForMessages[groupedCases[[All, 2]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+								" ",
+								isOrAre[DeleteDuplicates@groupedCases[[All, 2]]],
+								" in ",
+								If[MemberQ[Keys[groupedErrorDetails], Footprint],
+									pluralize[DeleteDuplicates@groupedCases[[All, 3]], "a model container ", "model containers "],
+									pluralize[DeleteDuplicates@groupedCases[[All, 3]], "a container ", "containers "]
+								],
+								samplesForMessages[groupedCases[[All, 3]], CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation],
+								Which[
+									MatchQ[groupedKey, Footprint],
+										" which " <> pluralize[DeleteDuplicates@groupedCases[[All, 4]], "is not a cryogenic vial", "are not cryogenic vials"],
+									MatchQ[groupedKey, Model],
+										" without model information",
+									True,
+										StringJoin[
+											" while the option CryogenicSampleContainer is set to ",
+											samplesForMessages[groupedCases[[All, 4]], CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation]
+										]
+								]
+							]
+						]
+					],
+					Keys[groupedErrorDetails]
+				],
+				CaseAdjustment -> True
+			];
+			(* Here we use the new recommended error message format where we expand the error message instead of using index *)
+			(* The helper function joinClauses is defined in Experiment/PrimitiveFramework/Helpers.m *)
+			Message[
+				Error::CryogenicVialAliquotingRequired,
+				captureSentence,
+				reasonClause,
+				pluralize[DeleteDuplicates@conflictingAliquotingCases[[All, 1]], "this sample", "these samples"]
+			]
+		]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1712,118 +2372,918 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		]
 	];
 
-	(*Error::FreezeCellsConflictingTemperatureProfile*)
-	(* 3. Throw an error is TemperatureProfile is set if while FreezingStrategy is not ControlledRateFreezer, or vice versa. *)
-	conflictingTemperatureProfileCases = If[
-		Or[
-			MatchQ[resolvedFreezingStrategy, ControlledRateFreezer] && MatchQ[resolvedTemperatureProfile, Null],
-			MatchQ[resolvedFreezingStrategy, InsulatedCooler] && MatchQ[resolvedTemperatureProfile, Except[Null]]
+
+	(* 3. ConflictingCryoprotectionOptions error check *)
+	(* This has 2 tiers that will eventually throw different messages: *)
+	(* 1. If index-matching CryoprotectionStrategy is specified directly by user for a sample, and there is conflict with other options for the same index, suggest alternatives. *)
+	(* 2. If index-matching CryoprotectionStrategy is not specified directly by user but there is conflict with specified options or the same input or container at different index, suggest change options *)
+
+	(* Tier1/2 warning *)
+	{
+		conflictingCryoprotectantSolutionTemperatureCases,
+		conflictingCryoprotectantSolutionTemperatureTests,
+		insufficientChangeMediaOptions,
+		insufficientChangeMediaOptionsTests,
+		extraneousChangeMediaOptions,
+		extraneousChangeMediaOptionsTests,
+		insufficientCryoprotectantOptions,
+		insufficientCryoprotectantOptionsTests,
+		extraneousCryoprotectantOptions,
+		extraneousCryoprotectantOptionsTests,
+		conflictingPelletOptionsForSameContainerAcrossSampleOptions,
+		conflictingPelletOptionsForSameContainerAcrossSampleTests
+	} = If[MemberQ[expandedSuppliedCryoprotectionStrategies, Except[Automatic]],
+		(* Tier1 error *)
+		Module[
+			{
+				conflictingCryoprotectantSolutionTemperatureCase, conflictingCryoprotectantSolutionTemperatureTest, insufficientChangeMediaOptionsCase,
+				insufficientChangeMediaSamples, insufficientSpecifiedChangeMediaOptions, insufficientChangeMediaOptionsTest,
+				extraneousChangeMediaOptionsCase, extraneousChangeMediaSamples, extraneousSpecifiedChangeMediaOptions, extraneousChangeMediaOptionsTest,
+				insufficientCryoprotectantOptionsCase, insufficientCryoprotectantSamples, insufficientSpecifiedCryoprotectantOptions,
+				insufficientCryoprotectantOptionsTest, extraneousCryoprotectantOptionsCase, extraneousCryoprotectantSamples,
+				extraneousSpecifiedCryoprotectantOptions, extraneousCryoprotectantOptionsTest, samplesWithSpecifiedStrategy,
+				talliedContainersWithSpecifiedStrategies, containersWithChangeMediaSpecifiedAtOtherIndex, changeMediaContainers,
+				conflictingPelletOptionsForSameContainerSamples, conflictingPelletOptionsForSameContainerOption, conflictingPelletOptionsForSameContainerTest
+			},
+
+			(* 3a. Warning::ConflictingCryoprotectantSolutionTemperature *)
+			(* Throw a warning if CryoprotectantSolutionTemperature is set while CryoprotectionStrategy is specified None at all index *)
+			conflictingCryoprotectantSolutionTemperatureCase = If[
+				MatchQ[resolvedCryoprotectantSolutionTemperature, (Ambient|Chilled)] && MatchQ[expandedSuppliedCryoprotectionStrategies, {None..}],
+				{mySamples, resolvedCryoprotectantSolutionTemperature},
+				{}
+			];
+
+			If[Length[conflictingCryoprotectantSolutionTemperatureCase] > 0 && messages,
+				Message[
+					Warning::ConflictingCryoprotectantSolutionTemperature,
+					samplesForMessages[conflictingCryoprotectantSolutionTemperatureCase[[1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+					ToString[conflictingCryoprotectantSolutionTemperatureCase[[2]]]
+				]
+			];
+
+			conflictingCryoprotectantSolutionTemperatureTest = If[gatherTests,
+				Module[{affectedSamples, failingTest, passingTest},
+					affectedSamples = If[MatchQ[conflictingCryoprotectantSolutionTemperatureCase, {}], {}, mySamples];
+
+					failingTest = If[Length[affectedSamples] == 0,
+						Nothing,
+						Warning["CryoprotectantSolutionTemperature is specified for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if and only if the CryoprotectionStrategy is not None at all indices:", True, False]
+					];
+
+					passingTest = If[Length[affectedSamples] == Length[mySamples],
+						Nothing,
+						Warning["CryoprotectantSolutionTemperature is specified for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if and only if the CryoprotectionStrategy is not None at all indices:", True, True]
+					];
+
+					{failingTest, passingTest}
+				],
+				Null
+			];
+
+
+			(* 3b. Error::FreezeCellsInsufficientChangeMediaOptions *)
+			(* The four pelleting options must not be Null if CryoprotectionStrategy is ChangeMedia. *)
+			insufficientChangeMediaOptionsCase = MapThread[
+				Function[{sample, cryoprotectionStrategy, cellPelletCentrifuge, cellPelletTime, cellPelletIntensity, cellPelletSupernatantVolume},
+					{
+						sample,
+						{
+							If[MatchQ[cryoprotectionStrategy, ChangeMedia] && MatchQ[cellPelletCentrifuge, Null],
+								CellPelletCentrifuge,
+								Nothing
+							],
+							If[MatchQ[cryoprotectionStrategy, ChangeMedia] && MatchQ[cellPelletTime, Null],
+								CellPelletTime,
+								Nothing
+							],
+							If[MatchQ[cryoprotectionStrategy, ChangeMedia] && MatchQ[cellPelletIntensity, Null],
+								CellPelletIntensity,
+								Nothing
+							],
+							If[MatchQ[cryoprotectionStrategy, ChangeMedia] && MatchQ[cellPelletSupernatantVolume, Null],
+								CellPelletSupernatantVolume,
+								Nothing
+							]
+						}
+					}
+				],
+				{mySamples, expandedSuppliedCryoprotectionStrategies, expandedSuppliedCentrifuges, expandedSuppliedPelletTimes, expandedSuppliedCentrifugeIntensities, expandedSuppliedSupernatantVolumes}
+			];
+			insufficientChangeMediaSamples = DeleteCases[insufficientChangeMediaOptionsCase, {ObjectP[], {}}][[All, 1]];
+			insufficientSpecifiedChangeMediaOptions = DeleteDuplicates[Flatten@insufficientChangeMediaOptionsCase[[All, 2]]];
+
+			If[!MatchQ[insufficientChangeMediaSamples, {}] && messages,
+				Message[
+					Error::FreezeCellsInsufficientChangeMediaOptions,
+					StringJoin[
+						Capitalize@samplesForMessages[insufficientChangeMediaSamples, mySamples, Cache -> cacheBall, Simulation -> simulation],
+						" ",
+						hasOrHave[DeleteDuplicates@insufficientChangeMediaSamples]
+					],
+					joinClauses@insufficientSpecifiedChangeMediaOptions,
+					If[Length[insufficientSpecifiedChangeMediaOptions] > 1,
+						"the cell pelleting options or allow them",
+						"the option " <> ToString[insufficientSpecifiedChangeMediaOptions[[1]]] <> " or allow it"
+					]
+				]
+			];
+
+			insufficientChangeMediaOptionsTest = If[gatherTests,
+				Module[{affectedSamples, failingTest, passingTest},
+					affectedSamples = insufficientChangeMediaSamples;
+
+					failingTest = If[Length[affectedSamples] == 0,
+						Nothing,
+						Test["None of CellPelletCentrifuge, CellPelletTime, CellPelletIntensity, or CellPelletSupernatantVolume are Null for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if the CryoprotectionStrategy is ChangeMedia:", True, False]
+					];
+
+					passingTest = If[Length[affectedSamples] == Length[mySamples],
+						Nothing,
+						Test["None of CellPelletCentrifuge, CellPelletTime, CellPelletIntensity, or CellPelletSupernatantVolume are Null for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if the CryoprotectionStrategy is ChangeMedia:", True, True]
+					];
+
+					{failingTest, passingTest}
+				],
+				Null
+			];
+
+
+			(* 3c. Error::FreezeCellsExtraneousChangeMediaOptions *)
+			(* The four pelleting options must be Null if CryoprotectionStrategy is NOT ChangeMedia. *)
+			extraneousChangeMediaOptionsCase = MapThread[
+				Function[{sample, cryoprotectionStrategy, cellPelletCentrifuge, cellPelletTime, cellPelletIntensity, cellPelletSupernatantVolume},
+					{
+						sample,
+						{
+							If[MatchQ[cryoprotectionStrategy, AddCryoprotectant|None] && MatchQ[cellPelletCentrifuge, Except[Null|Automatic]],
+								{cryoprotectionStrategy, CellPelletCentrifuge},
+								Nothing
+							],
+							If[MatchQ[cryoprotectionStrategy, AddCryoprotectant|None] && MatchQ[cellPelletTime, Except[Null|Automatic]],
+								{cryoprotectionStrategy, CellPelletTime},
+								Nothing
+							],
+							If[MatchQ[cryoprotectionStrategy, AddCryoprotectant|None] && MatchQ[cellPelletIntensity, Except[Null|Automatic]],
+								{cryoprotectionStrategy, CellPelletIntensity},
+								Nothing
+							],
+							If[MatchQ[cryoprotectionStrategy, AddCryoprotectant|None] && MatchQ[cellPelletSupernatantVolume, Except[Null|Automatic]],
+								{cryoprotectionStrategy, CellPelletSupernatantVolume},
+								Nothing
+							]
+						}
+					}
+				],
+				{mySamples, expandedSuppliedCryoprotectionStrategies, expandedSuppliedCentrifuges, expandedSuppliedPelletTimes, expandedSuppliedCentrifugeIntensities, expandedSuppliedSupernatantVolumes}
+			];
+			extraneousChangeMediaSamples = DeleteCases[extraneousChangeMediaOptionsCase, {ObjectP[], {}}][[All, 1]];
+			extraneousSpecifiedChangeMediaOptions = DeleteDuplicates[Cases[Flatten@extraneousChangeMediaOptionsCase[[All, 2]], Except[ChangeMedia|AddCryoprotectant|None]]];
+
+			If[!MatchQ[extraneousChangeMediaSamples, {}] && messages,
+				Message[
+					Error::FreezeCellsExtraneousChangeMediaOptions,
+					StringJoin[
+						Capitalize@samplesForMessages[extraneousChangeMediaSamples, mySamples, Cache -> cacheBall, Simulation -> simulation],
+						" ",
+						hasOrHave[DeleteDuplicates@extraneousChangeMediaSamples],
+						" the option CryoprotectionStrategy set to ",
+						joinClauses[Cases[Flatten@extraneousChangeMediaOptionsCase[[All, 2]], ChangeMedia|AddCryoprotectant|None]],
+						" and ",
+						If[Length[extraneousSpecifiedChangeMediaOptions] > 1,
+							"the cell pelleting options " <> joinClauses[extraneousSpecifiedChangeMediaOptions] <> " specified",
+							"the option " <> ToString[extraneousSpecifiedChangeMediaOptions[[1]]] <> " specified"
+						]
+					],
+					If[Length[extraneousSpecifiedChangeMediaOptions] > 1,
+						"the cell pelleting options as Null or allow them",
+						"the option " <> ToString[extraneousSpecifiedChangeMediaOptions[[1]]] <> " as Null or allow it"
+					]
+				]
+			];
+
+			extraneousChangeMediaOptionsTest = If[gatherTests,
+				Module[{affectedSamples, failingTest, passingTest},
+					affectedSamples = extraneousChangeMediaSamples;
+
+					failingTest = If[Length[affectedSamples] == 0,
+						Nothing,
+						Test["All of CellPelletCentrifuge, CellPelletTime, CellPelletIntensity, and CellPelletSupernatantVolume are Null for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if the CryoprotectionStrategy is not ChangeMedia:", True, False]
+					];
+
+					passingTest = If[Length[affectedSamples] == Length[mySamples],
+						Nothing,
+						Test["All of CellPelletCentrifuge, CellPelletTime, CellPelletIntensity, and CellPelletSupernatantVolume are Null for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if the CryoprotectionStrategy is not ChangeMedia:", True, True]
+					];
+
+					{failingTest, passingTest}
+				],
+				Null
+			];
+
+
+			(* 3d. Error::FreezeCellsInsufficientCryoprotectantOptions *)
+			(* The three options related to CryoprotectantSolutions must not be Null unless CryoprotectionStrategy is None. *)
+			insufficientCryoprotectantOptionsCase = MapThread[
+				Function[{sample, cryoprotectionStrategy, cryoprotectantSolution, cryoprotectantSolutionVolume},
+					{
+						sample,
+						{
+							If[MatchQ[cryoprotectionStrategy, ChangeMedia|AddCryoprotectant] && MatchQ[cryoprotectantSolution, Null],
+								{cryoprotectionStrategy, CryoprotectantSolution},
+								Nothing
+							],
+							If[MatchQ[cryoprotectionStrategy, ChangeMedia|AddCryoprotectant] && MatchQ[cryoprotectantSolutionVolume, Null],
+								{cryoprotectionStrategy, CryoprotectantSolutionVolume},
+								Nothing
+							],
+							If[MatchQ[cryoprotectionStrategy, ChangeMedia|AddCryoprotectant] && MatchQ[resolvedCryoprotectantSolutionTemperature, Null],
+								{cryoprotectionStrategy, CryoprotectantSolutionTemperature},
+								Nothing
+							]
+						}
+					}
+				],
+				{mySamples, expandedSuppliedCryoprotectionStrategies, expandedSuppliedCryoprotectantSolutions, expandedSuppliedCryoprotectantSolutionVolumes}
+			];
+			insufficientCryoprotectantSamples = DeleteCases[insufficientCryoprotectantOptionsCase, {ObjectP[], {}}][[All, 1]];
+			insufficientSpecifiedCryoprotectantOptions = DeleteDuplicates[Cases[Flatten@insufficientCryoprotectantOptionsCase[[All, 2]], Except[ChangeMedia|AddCryoprotectant|None]]];
+
+
+			If[!MatchQ[insufficientCryoprotectantSamples, {}] && messages,
+				Message[
+					Error::FreezeCellsInsufficientCryoprotectantOptions,
+					StringJoin[
+						Capitalize@samplesForMessages[insufficientCryoprotectantSamples, mySamples, Cache -> cacheBall, Simulation -> simulation],
+						" ",
+						hasOrHave[DeleteDuplicates@insufficientCryoprotectantSamples],
+						" the option CryoprotectionStrategy set to ",
+						If[Length[DeleteDuplicates@Cases[Flatten@insufficientCryoprotectantOptionsCase[[All, 2]], ChangeMedia|AddCryoprotectant]] > 1,
+							"non-None strategies",
+							joinClauses@Cases[Flatten@insufficientCryoprotectantOptionsCase[[All, 2]], ChangeMedia|AddCryoprotectant]
+						]
+					],
+					StringJoin[
+						pluralize[insufficientSpecifiedCryoprotectantOptions, "the option ", "the options "],
+						joinClauses@insufficientSpecifiedCryoprotectantOptions,
+						" ",
+						isOrAre[insufficientSpecifiedCryoprotectantOptions]
+					],
+					If[Length[insufficientSpecifiedCryoprotectantOptions] > 1,
+						"the cryoprotection options or allow them",
+						"the option " <> ToString[insufficientSpecifiedCryoprotectantOptions[[1]]] <> " or allow it"
+					]
+				];
+			];
+
+			insufficientCryoprotectantOptionsTest = If[gatherTests,
+				Module[{affectedSamples, failingTest, passingTest},
+					affectedSamples = insufficientCryoprotectantSamples;
+
+					failingTest = If[Length[affectedSamples] == 0,
+						Nothing,
+						Test["None of CryoprotectantSolution, CryoprotectantSolutionVolume, or CryoprotectantSolutionTemperature are Null for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if the CryoprotectionStrategy is not None:", True, False]
+					];
+
+					passingTest = If[Length[affectedSamples] == Length[mySamples],
+						Nothing,
+						Test["None of CryoprotectantSolution, CryoprotectantSolutionVolume, or CryoprotectantSolutionTemperature are Null for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if the CryoprotectionStrategy is not None:", True, True]
+					];
+
+					{failingTest, passingTest}
+				],
+				Null
+			];
+
+
+			(* 3e. Error::FreezeCellsExtraneousCryoprotectantOptions *)
+			(* The three options related to CryoprotectantSolutions must be Null if CryoprotectionStrategy is None. *)
+			extraneousCryoprotectantOptionsCase = MapThread[
+				Function[{sample, cryoprotectionStrategy, cryoprotectantSolution, cryoprotectantSolutionVolume},
+					{
+						sample,
+						{
+							If[MatchQ[cryoprotectionStrategy, None] && MatchQ[cryoprotectantSolution, Except[Null|Automatic]],
+								CryoprotectantSolution,
+								Nothing
+							],
+							If[MatchQ[cryoprotectionStrategy, None] && MatchQ[cryoprotectantSolutionVolume, Except[Null|Automatic]],
+								CryoprotectantSolutionVolume,
+								Nothing
+							]
+						}
+					}
+				],
+				{mySamples, expandedSuppliedCryoprotectionStrategies, expandedSuppliedCryoprotectantSolutions, expandedSuppliedCryoprotectantSolutionVolumes}
+			];
+			extraneousCryoprotectantSamples = DeleteCases[extraneousCryoprotectantOptionsCase, {ObjectP[], {}}][[All, 1]];
+			extraneousSpecifiedCryoprotectantOptions = DeleteDuplicates[Flatten@extraneousCryoprotectantOptionsCase[[All, 2]]];
+
+			If[!MatchQ[extraneousCryoprotectantSamples, {}] && messages,
+				Message[
+					Error::FreezeCellsExtraneousCryoprotectantOptions,
+					StringJoin[
+						Capitalize@samplesForMessages[extraneousCryoprotectantSamples, mySamples, Cache -> cacheBall, Simulation -> simulation],
+						" ",
+						hasOrHave[DeleteDuplicates@extraneousCryoprotectantSamples]
+					],
+					StringJoin[
+						pluralize[extraneousSpecifiedCryoprotectantOptions, "the option ", "the options "],
+						joinClauses@extraneousSpecifiedCryoprotectantOptions,
+						" ",
+						isOrAre[extraneousSpecifiedCryoprotectantOptions]
+					],
+					If[Length[extraneousSpecifiedCryoprotectantOptions] > 1,
+						"options",
+						"option " <> ToString[extraneousSpecifiedCryoprotectantOptions[[1]]]
+					]
+				]
+			];
+
+			extraneousCryoprotectantOptionsTest = If[gatherTests,
+				Module[{affectedSamples, failingTest, passingTest},
+					affectedSamples = extraneousCryoprotectantSamples;
+
+					failingTest = If[Length[affectedSamples] == 0,
+						Nothing,
+						Test["All of CryoprotectantSolution, CryoprotectantSolutionVolume, and CryoprotectantSolutionTemperature are Null for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if the CryoprotectionStrategy is None:", True, False]
+					];
+
+					passingTest = If[Length[affectedSamples] == Length[mySamples],
+						Nothing,
+						Test["All of CryoprotectantSolution, CryoprotectantSolutionVolume, and CryoprotectantSolutionTemperature are Null for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if the CryoprotectionStrategy is None:", True, True]
+					];
+
+					{failingTest, passingTest}
+				],
+				Null
+			];
+
+
+			(* 3f. Error::ConflictingChangeMediaOptionsForSameContainer *)
+			(* Gather the samples that are in the same container together with their options *)
+			(* We need to cross reference specified CryoprotectionStrategy for the same container *)
+			(* Check which input sample has no specified CryoprotectionStrategy *)
+			samplesWithSpecifiedStrategy = MapThread[
+				If[MatchQ[#3, Except[Automatic]], {#1, Lookup[#2, Object], #3}, Nothing]&,
+				{mySamples, sampleContainerPackets, expandedSuppliedCryoprotectionStrategies}
+			];
+			talliedContainersWithSpecifiedStrategies = Tally[samplesWithSpecifiedStrategy];
+			(* First, check if other instances of the same input container have specified ChangeMedia as strategy *)
+			containersWithChangeMediaSpecifiedAtOtherIndex = MapThread[
+				(MatchQ[#2, ObjectP[]] && MemberQ[talliedContainersWithSpecifiedStrategies, {{Except[#1], ObjectP[#2], ChangeMedia}, _}])&,
+				{samplesWithSpecifiedStrategy[[All, 1]], samplesWithSpecifiedStrategy[[All, 2]]}
+			];
+			changeMediaContainers = DeleteDuplicates@PickList[samplesWithSpecifiedStrategy[[All, 2]], containersWithChangeMediaSpecifiedAtOtherIndex];
+			conflictingPelletOptionsForSameContainerSamples = Map[
+				Which[
+					MatchQ[#[[3]], ChangeMedia],
+						Nothing,
+					MemberQ[changeMediaContainers, ObjectP[#[[2]]]] && !MemberQ[duplicatedSampleInputs, ObjectP[#[[2]]]],
+						{#[[1]], #[[2]]},
+					True,
+						Nothing
+				]&,
+				samplesWithSpecifiedStrategy
+			];
+
+			(* Throw an error if we have these same-container samples with different CryoprotectionStrategy specified and one of them is ChangeMedia *)
+			(* Here we use the new recommended error message format where we expand the error message instead of using index *)
+			(* The helper function joinClauses is defined in Experiment/PrimitiveFramework/Helpers.m *)
+			conflictingPelletOptionsForSameContainerOption = If[!MatchQ[conflictingPelletOptionsForSameContainerSamples, {}] && messages,
+				(
+					Message[
+						Error::ConflictingChangeMediaOptionsForSameContainer,
+						StringJoin[
+							Capitalize@samplesForMessages[conflictingPelletOptionsForSameContainerSamples[[All, 1]], Cache -> cacheBall, Simulation -> simulation],
+							" ",
+							hasOrHave[DeleteDuplicates@conflictingPelletOptionsForSameContainerSamples[[All, 1]]],
+							" the option CryoprotectionStrategy set to a non-ChangeMedia strategy while ",
+							samplesForMessages[Cases[talliedContainersWithSpecifiedStrategies, {{Except[conflictingPelletOptionsForSameContainerSamples[[All, 1]]], ObjectP[conflictingPelletOptionsForSameContainerSamples[[All, 2]]], ChangeMedia}, _}][[All, 1]][[All,  1]], Cache -> cacheBall, Simulation -> simulation],
+							" in the same container specified to ChangeMedia"
+						],
+						"transfer to separate containers to allow a mix of non-ChangeMedia and ChangeMedia strategy or specify the same CryoprotectionStrategy"
+					];
+					{CryoprotectionStrategy}
+				),
+				{}
+			];
+			conflictingPelletOptionsForSameContainerTest = If[gatherTests,
+				(* We're gathering tests. Create the appropriate tests. *)
+				Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
+					(* Get the inputs that fail this test. *)
+					failingInputs = PickList[mySamples, conflictingPelletOptionsForSameContainerSamples];
+
+					(* Get the inputs that pass this test. *)
+					passingInputs = Complement[mySamples, failingInputs];
+
+					(* Create a test for the non-passing inputs. *)
+					failingInputTest = If[Length[failingInputs]>0,
+						Test["The following samples, " <> ObjectToString[failingInputs, Cache -> cacheBall, Simulation -> simulation] <> ",have the same ChangeMedia strategy as all other samples in the same container:", True, False],
+						Nothing
+					];
+
+					(* Create a test for the passing inputs. *)
+					passingInputsTest = If[Length[passingInputs]>0,
+						Test["The following samples, " <> ObjectToString[passingInputs, Cache -> cacheBall, Simulation -> simulation] <> ",have the same ChangeMedia strategy as all other samples in the same container:", True, True],
+						Nothing
+					];
+
+					(* Return our created tests. *)
+					{
+						passingInputsTest,
+						failingInputTest
+					}
+				],
+				(* We aren't gathering tests. No tests to create. *)
+				{}
+			];
+
+			(* Return *)
+			{
+				conflictingCryoprotectantSolutionTemperatureCase,
+				conflictingCryoprotectantSolutionTemperatureTest,
+				insufficientSpecifiedChangeMediaOptions,
+				insufficientChangeMediaOptionsTest,
+				extraneousSpecifiedChangeMediaOptions,
+				extraneousChangeMediaOptionsTest,
+				insufficientSpecifiedCryoprotectantOptions,
+				insufficientCryoprotectantOptionsTest,
+				extraneousSpecifiedCryoprotectantOptions,
+				extraneousCryoprotectantOptionsTest,
+				conflictingPelletOptionsForSameContainerOption,
+				conflictingPelletOptionsForSameContainerTest
+			}
 		],
-		{resolvedFreezingStrategy, resolvedTemperatureProfile},
-		{}
+		ConstantArray[{}, 12]
 	];
 
-	If[Length[conflictingTemperatureProfileCases] > 0 && messages,
-		Message[
-			Error::FreezeCellsConflictingTemperatureProfile,
-			ObjectToString[conflictingTemperatureProfileCases[[1]], Cache -> cacheBall, Simulation -> simulation],
-			ObjectToString[conflictingTemperatureProfileCases[[2]], Cache -> cacheBall, Simulation -> simulation]
-		];
-	];
 
-	conflictingTemperatureProfileTest = If[gatherTests,
-		Module[{affectedSamples, failingTest, passingTest},
-			affectedSamples = If[MatchQ[conflictingTemperatureProfileCases, {}], {}, mySamples];
+	{
+		conflictingCryoprotectionStrategySamples,
+		conflictingCryoprotectionStrategyOptions,
+		conflictingCryoprotectionStrategyTests
+	} = If[MemberQ[expandedSuppliedCryoprotectionStrategies, Automatic],
+		(* Tier2 error *)
+		Module[
+			{
+				whyThisSampleCantPickThisCryoprotectionStrategy, samplesWithoutSpecifiedStrategy, talliedContainersWithSpecifiedStrategies,
+				containersWithChangeMediaSpecifiedAtOtherIndex, changeMediaContainers, conflictingCryoprotectionStrategyCase,
+				captureSentence, reasonClause, actionClause, conflictingCryoprotectionStrategyOption, conflictingCryoprotectionStrategyTest
+			},
+			(* Local helper to determine which CryoprotectionStrategy *)
+			(* Output an association <|Object->sample, Valid->BooleanP, desiredCryoprotectionStrategy ->{validOptions,change of options}, OtherCryoprotectionStrategies -> {{OtherCryoprotectionStrategy, validOptions,change of options}..}|> *)
+			whyThisSampleCantPickThisCryoprotectionStrategy[
+				sample: ObjectP[Object[Sample]],
+				desiredCryoprotectionStrategy: Alternatives[ChangeMedia, AddCryoprotectant, None],
+				userOptionsAssociation_Association
+			] := Module[
+				{
+					userOptions, changeMediaSpecifiedKeys, changeOrAddSpecifiedKeys, userSpecifiedKeys, userSpecifiedChangeMediaKeys,
+					invalidChangeMediaKeys, userSpecifiedAddCryoprotectantKeys, invalidAddCryoprotectantKeys, userSpecifiedNoneKeys,
+					invalidNoneKeys, validSpecifiedKeys, invalidSpecifiedKeys, otherCryoprotectionStrategies
+				},
 
-			failingTest = If[Length[affectedSamples] == 0,
-				Nothing,
-				Test["A TemperatureProfile is specified for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if and only if the FreezingStrategy is ControlledRateFreezer:", True, False]
+				(* Specific keys *)
+				changeMediaSpecifiedKeys = {CellPelletCentrifuge, CellPelletTime, CellPelletIntensity, CellPelletSupernatantVolume};
+				changeOrAddSpecifiedKeys = {CryoprotectantSolutionTemperature, CryoprotectantSolution, CryoprotectantSolutionVolume};
+
+				(* User input keys *)
+				userOptions = Normal[userOptionsAssociation, Association];
+				userSpecifiedKeys = Keys[Select[userOptions, MatchQ[Values[#], Except[ListableP[Automatic]]] &]];
+				userSpecifiedChangeMediaKeys = Map[
+					Which[
+						MatchQ[#, Alternatives @@ changeMediaSpecifiedKeys] && MatchQ[Lookup[userOptions, #], Except[Null]],
+							#,
+						MatchQ[#, Alternatives @@ changeOrAddSpecifiedKeys] && MatchQ[Lookup[userOptions, #], Except[Null]],
+							#,
+						True,
+							Nothing
+					]&,
+					userSpecifiedKeys
+				];
+				invalidChangeMediaKeys = Map[
+					Which[
+						MatchQ[#, Alternatives @@ changeMediaSpecifiedKeys] && MatchQ[Lookup[userOptions, #], Null],
+							#,
+						MatchQ[#, Alternatives @@ changeOrAddSpecifiedKeys] && MatchQ[Lookup[userOptions, #], Null],
+							#,
+						True,
+							Nothing
+					]&,
+					userSpecifiedKeys
+				];
+				userSpecifiedAddCryoprotectantKeys = Map[
+					Which[
+						MatchQ[#, Alternatives @@ changeOrAddSpecifiedKeys] && MatchQ[Lookup[userOptions, #], Except[Null]],
+							#,
+						MatchQ[#, Alternatives @@ changeMediaSpecifiedKeys] && MatchQ[Lookup[userOptions, #], Null],
+							#,
+						True,
+							Nothing
+					]&,
+					userSpecifiedKeys
+				];
+				invalidAddCryoprotectantKeys = Map[
+					Which[
+						MatchQ[#, Alternatives @@ changeOrAddSpecifiedKeys] && MatchQ[Lookup[userOptions, #], Null],
+						#,
+						MatchQ[#, Alternatives @@ changeMediaSpecifiedKeys] && MatchQ[Lookup[userOptions, #], Except[Null]],
+						#,
+						True,
+						Nothing
+					]&,
+					userSpecifiedKeys
+				];
+				userSpecifiedNoneKeys = Map[
+					Which[
+						MatchQ[#, Alternatives @@ changeOrAddSpecifiedKeys] && MatchQ[Lookup[userOptions, #], Null],
+						#,
+						MatchQ[#, Alternatives @@ changeMediaSpecifiedKeys] && MatchQ[Lookup[userOptions, #], Null],
+						#,
+						True,
+						Nothing
+					]&,
+					userSpecifiedKeys
+				];
+				invalidNoneKeys = Map[
+					Which[
+						MatchQ[#, Alternatives @@ changeOrAddSpecifiedKeys] && MatchQ[Lookup[userOptions, #], Except[Null]],
+						#,
+						MatchQ[#, Alternatives @@ changeMediaSpecifiedKeys] && MatchQ[Lookup[userOptions, #], Except[Null]],
+						#,
+						True,
+						Nothing
+					]&,
+					userSpecifiedKeys
+				];
+				validSpecifiedKeys = Which[
+					MatchQ[desiredCryoprotectionStrategy, ChangeMedia], userSpecifiedChangeMediaKeys,
+					MatchQ[desiredCryoprotectionStrategy, AddCryoprotectant], userSpecifiedAddCryoprotectantKeys,
+					True, userSpecifiedNoneKeys
+				];
+				invalidSpecifiedKeys = Which[
+					MatchQ[desiredCryoprotectionStrategy, ChangeMedia], invalidChangeMediaKeys,
+					MatchQ[desiredCryoprotectionStrategy, AddCryoprotectant], invalidAddCryoprotectantKeys,
+					True, invalidNoneKeys
+				];
+				(* Check if any of other CryoprotectionStrategies are possible with given options *)
+				otherCryoprotectionStrategies = Which[
+					MatchQ[desiredCryoprotectionStrategy, ChangeMedia],
+						{
+							If[!MatchQ[userSpecifiedAddCryoprotectantKeys, {}], {AddCryoprotectant, userSpecifiedAddCryoprotectantKeys, invalidAddCryoprotectantKeys}, Nothing],
+							If[!MatchQ[userSpecifiedNoneKeys, {}], {None, userSpecifiedNoneKeys, invalidNoneKeys}, Nothing]
+						},
+					MatchQ[desiredCryoprotectionStrategy, AddCryoprotectant],
+						{
+							If[!MatchQ[userSpecifiedChangeMediaKeys, {}], {ChangeMedia, userSpecifiedChangeMediaKeys, invalidChangeMediaKeys}, Nothing],
+							If[!MatchQ[userSpecifiedNoneKeys, {}], {None, userSpecifiedNoneKeys, invalidNoneKeys}, Nothing]
+						},
+					True,
+						{
+							If[!MatchQ[userSpecifiedChangeMediaKeys, {}], {ChangeMedia, userSpecifiedChangeMediaKeys, invalidChangeMediaKeys}, Nothing],
+							If[!MatchQ[userSpecifiedAddCryoprotectantKeys, {}], {AddCryoprotectant, userSpecifiedAddCryoprotectantKeys, invalidAddCryoprotectantKeys}, Nothing]
+						}
+				];
+				(* return *)
+				<|
+					Object -> sample,
+					Valid -> MatchQ[invalidSpecifiedKeys, {}],
+					desiredCryoprotectionStrategy -> {validSpecifiedKeys, invalidSpecifiedKeys},
+					OtherCryoprotectionStrategies -> SortBy[otherCryoprotectionStrategies, (Length[#[[2]]]+Length[#[[3]]])&]
+				|>
 			];
-
-			passingTest = If[Length[affectedSamples] == Length[mySamples],
-				Nothing,
-				Test["A TemperatureProfile is specified for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if and only if the FreezingStrategy is ControlledRateFreezer:", True, True]
+			(* We need to cross reference specified/default CryoprotectionStrategy for the same container *)
+			(* Check which input sample has no specified CryoprotectionStrategy *)
+			samplesWithoutSpecifiedStrategy = MapThread[
+				If[MatchQ[#3, Automatic], {#1, Lookup[#2, Object]}, Nothing]&,
+				{mySamples, sampleContainerPackets, expandedSuppliedCryoprotectionStrategies}
 			];
+			talliedContainersWithSpecifiedStrategies = Tally[Transpose@{mySamples, Lookup[sampleContainerPackets, Object], expandedSuppliedCryoprotectionStrategies}];
+			(* First, check if other instances of the same input container have specified ChangeMedia as strategy *)
+			containersWithChangeMediaSpecifiedAtOtherIndex = MapThread[
+				(MatchQ[#2, ObjectP[]] && MemberQ[talliedContainersWithSpecifiedStrategies, {{Except[#1], ObjectP[#2], ChangeMedia}, _}])&,
+				{samplesWithoutSpecifiedStrategy[[All, 1]], samplesWithoutSpecifiedStrategy[[All, 2]]}
+			];
+			changeMediaContainers = DeleteDuplicates@PickList[samplesWithoutSpecifiedStrategy[[All, 2]], containersWithChangeMediaSpecifiedAtOtherIndex];
+			conflictingCryoprotectionStrategyCase = MapThread[
+				Function[{sample, container, specifiedCryoprotectionStrategy, finalCryoprotectionStrategy, suppliedOptions},
+					Which[
+						(* If user has specified CryoprotectionStrategy, this sample has gone through tier1 check *)
+						MatchQ[specifiedCryoprotectionStrategy, Except[Automatic]],
+							Nothing,
+						(* If we have thrown FreezeSamplesDuplicatesSamples, no need to throw again here *)
+						!MatchQ[finalCryoprotectionStrategy, ChangeMedia] && MemberQ[duplicatedSampleInputs, ObjectP[sample]],
+							Nothing,
+						!MatchQ[finalCryoprotectionStrategy, ChangeMedia] && MemberQ[changeMediaContainers, ObjectP[container]],
+							Module[{conflictCheckForThisSample},
+								conflictCheckForThisSample = whyThisSampleCantPickThisCryoprotectionStrategy[sample, ChangeMedia, suppliedOptions];
+								{sample, container, Lookup[conflictCheckForThisSample, ChangeMedia][[2]], finalCryoprotectionStrategy, SpecifiedChangeMediaForSameContainer}
+							],
+						!MatchQ[finalCryoprotectionStrategy, ChangeMedia],
+							Module[{samplesForSameContainerAtOtherIndex, conflictCheckForThisSample, secondChoiceOfStrategy},
+								samplesForSameContainerAtOtherIndex = If[!MatchQ[Cases[samplesWithoutSpecifiedStrategy, {Except[ObjectP[sample]], ObjectP[container]}], {}],
+									{#[[1]]}& /@ Cases[samplesWithoutSpecifiedStrategy, {Except[ObjectP[sample]], ObjectP[container]}],
+									{}
+								];
+								conflictCheckForThisSample = whyThisSampleCantPickThisCryoprotectionStrategy[sample, finalCryoprotectionStrategy, suppliedOptions];
+								secondChoiceOfStrategy = If[MatchQ[Lookup[conflictCheckForThisSample, OtherCryoprotectionStrategies], {}],
+									Null,
+									Last[Lookup[conflictCheckForThisSample, OtherCryoprotectionStrategies]]
+								];
+								Which[
+									MatchQ[samplesForSameContainerAtOtherIndex, {}] && TrueQ[Lookup[conflictCheckForThisSample, Valid]],
+										Nothing,
+									MatchQ[samplesForSameContainerAtOtherIndex, {}],
+										{sample, secondChoiceOfStrategy, Lookup[conflictCheckForThisSample, finalCryoprotectionStrategy], finalCryoprotectionStrategy, OwnOption},
+									True,
+										Module[{positionOfSameContainer, samplesWithCellPelletOptions, otherSamplesWithCellPelletOptions},
+											positionOfSameContainer = Position[sampleContainerPackets, PacketP[container]];
+											samplesWithCellPelletOptions = PickList[
+												Extract[mySamples, positionOfSameContainer],
+												Transpose@{
+													Extract[expandedSuppliedCentrifuges, positionOfSameContainer],
+													Extract[expandedSuppliedPelletTimes, positionOfSameContainer],
+													Extract[expandedSuppliedCentrifugeIntensities, positionOfSameContainer],
+													Extract[expandedSuppliedSupernatantVolumes, positionOfSameContainer]
+												},
+												{___, Except[Automatic | Null], ___}
+											];
+											otherSamplesWithCellPelletOptions = DeleteCases[samplesWithCellPelletOptions, ObjectP[sample]];
+											Which[
+												!MatchQ[otherSamplesWithCellPelletOptions, {}],
+													{sample, samplesWithCellPelletOptions, Lookup[whyThisSampleCantPickThisCryoprotectionStrategy[sample, ChangeMedia, suppliedOptions], ChangeMedia][[2]], finalCryoprotectionStrategy, DefaultChangeMediaForSameContainer},
+												!TrueQ[Lookup[conflictCheckForThisSample, Valid]],
+													{sample, secondChoiceOfStrategy, Lookup[conflictCheckForThisSample, finalCryoprotectionStrategy], finalCryoprotectionStrategy, OwnOption},
+												True,
+													Nothing
+											]
+										]
+								]
+							],
+						True,
+							Module[{conflictCheckForThisSample, secondChoiceOfStrategy},
+								conflictCheckForThisSample = whyThisSampleCantPickThisCryoprotectionStrategy[sample, finalCryoprotectionStrategy, suppliedOptions];
+								secondChoiceOfStrategy = If[MatchQ[Lookup[conflictCheckForThisSample, OtherCryoprotectionStrategies], {}],
+									Null,
+									Last[Lookup[conflictCheckForThisSample, OtherCryoprotectionStrategies]]
+								];
+								If[!TrueQ[Lookup[conflictCheckForThisSample, Valid]],
+									{sample, secondChoiceOfStrategy, Lookup[conflictCheckForThisSample, finalCryoprotectionStrategy], finalCryoprotectionStrategy, OwnOption},
+									Nothing
+								]
+							]
+					]
+				],
+				{mySamples, Lookup[sampleContainerPackets, Object], expandedSuppliedCryoprotectionStrategies, resolvedCryoprotectionStrategies, expandedSuppliedOptions}
+			];
+			captureSentence = If[MatchQ[conflictingCryoprotectionStrategyCase, {}],
+				Null,
+				Capitalize@joinClauses[
+					{
+						If[MemberQ[conflictingCryoprotectionStrategyCase[[All, -1]], SpecifiedChangeMediaForSameContainer|DefaultChangeMediaForSameContainer],
+							"ExperimentFreezeCells centrifuges the prepared plates directly during the pelleting step, keeping all samples in each plate together",
+							Nothing
+						],
+						If[MemberQ[conflictingCryoprotectionStrategyCase[[All, -1]], OwnOption] && MemberQ[Flatten@conflictingCryoprotectionStrategyCase[[All, 3]], CellPelletCentrifuge|CellPelletTime|CellPelletIntensity|CellPelletSupernatantVolume],
+							"Cell pelleting options define how to separate of cells from existing media and only relevant when CryoprotectionStrategy is ChangeMedia",
+							Nothing
+						],
+						If[MemberQ[conflictingCryoprotectionStrategyCase[[All, -1]], OwnOption] && MemberQ[Flatten@conflictingCryoprotectionStrategyCase[[All, 3]], CryoprotectantSolutionTemperature|CryoprotectantSolution|CryoprotectantSolutionVolume],
+							"Cryoprotection options define how to prepare cryoprotectant solutions and mix them with the samples and only relevant when CryoprotectionStrategy is not None",
+							Nothing
+						]
+					}
+				]
+			];
+			reasonClause = If[!MatchQ[conflictingCryoprotectionStrategyCase, {}],
+				Module[{groupedErrorDetails},
+					groupedErrorDetails = GroupBy[conflictingCryoprotectionStrategyCase, Last];
+					joinClauses[
+						Flatten@Map[Function[{errorCode},
+							Which[
+								MatchQ[errorCode, SpecifiedChangeMediaForSameContainer],
+									StringJoin[
+										samplesForMessages[groupedErrorDetails[errorCode][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+										" ",
+										pluralize[DeleteDuplicates@groupedErrorDetails[errorCode][[All, 1]], "resides in ", "reside in "],
+										samplesForMessages[groupedErrorDetails[errorCode][[All, 2]], Cache -> cacheBall, Simulation -> simulation],
+										" which ",
+										hasOrHave[DeleteDuplicates@groupedErrorDetails[errorCode][[All, 2]]],
+										" CryoprotectionStrategy specified as ChangeMedia for other sample(s) inside"
+									],
+								MatchQ[errorCode, DefaultChangeMediaForSameContainer],
+									StringJoin[
+										samplesForMessages[groupedErrorDetails[errorCode][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+										" ",
+										pluralize[DeleteDuplicates@groupedErrorDetails[errorCode][[All, 1]], "resides in the same container as ", "reside in the same containers as "],
+										samplesForMessages[Flatten[groupedErrorDetails[errorCode][[All, 2]]], Cache -> cacheBall, Simulation -> simulation],
+										" which ",
+										hasOrHave[DeleteDuplicates@Flatten[groupedErrorDetails[errorCode][[All, 2]]]],
+										" cell pelleting options specified"
+									],
+								True,
+									Module[{allOwnErrorEntries, groupedOnTargetStrategy},
+										allOwnErrorEntries = Most /@ groupedErrorDetails[errorCode];
+										groupedOnTargetStrategy = GroupBy[allOwnErrorEntries, Last];
+										Map[
+											StringJoin[
+												samplesForMessages[groupedOnTargetStrategy[#][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
+												" ",
+												hasOrHave[DeleteDuplicates@groupedOnTargetStrategy[#][[All, 1]]],
+												" specified valid ",
+												pluralize[DeleteDuplicates@Flatten[groupedOnTargetStrategy[#][[All, 3]][[All, 1]]], "option ", "options "],
+												joinClauses[DeleteDuplicates@Flatten[groupedOnTargetStrategy[#][[All, 3]][[All, 1]]]],
+												" and invalid ",
+												pluralize[DeleteDuplicates@Flatten[groupedOnTargetStrategy[#][[All, 3]][[All, 2]]], "option ", "options "],
+												joinClauses[DeleteDuplicates@Flatten[groupedOnTargetStrategy[#][[All, 3]][[All, 2]]]],
+												" for ",
+												ToString[#],
+												" CryoprotectionStrategy"
+											]&,
+											Keys[groupedOnTargetStrategy]
+										]
+									]
+							]],
+							Keys[groupedErrorDetails]
+						],
+						CaseAdjustment -> True
+					]
+				]
+			];
+			actionClause = If[!MatchQ[conflictingCryoprotectionStrategyCase, {}],
+				Module[{groupedErrorDetails},
+					groupedErrorDetails = GroupBy[conflictingCryoprotectionStrategyCase, Last];
+					joinClauses[
+						Flatten@Map[Function[{errorCode},
+							Which[
+								MatchQ[errorCode, SpecifiedChangeMediaForSameContainer],
+									StringJoin[
+										"for ",
+										samplesForMessages[groupedErrorDetails[errorCode][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+										", please specify CryoprotectionStrategy as ChangeMedia",
+										" and adjust ",
+										pluralize[DeleteDuplicates@Flatten[groupedErrorDetails[errorCode][[All, 3]]], "option ", "options "],
+										joinClauses[DeleteDuplicates@Flatten[groupedErrorDetails[errorCode][[All, 3]]]]
+									],
+								MatchQ[errorCode, DefaultChangeMediaForSameContainer],
+									StringJoin[
+										"for ",
+										samplesForMessages[groupedErrorDetails[errorCode][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+										", please either specify CryoprotectionStrategy as ChangeMedia and adjust ",
+										pluralize[DeleteDuplicates@Flatten[groupedErrorDetails[errorCode][[All, 3]]], "option ", "options "],
+										joinClauses[DeleteDuplicates@Flatten[groupedErrorDetails[errorCode][[All, 3]]]],
+										" or specify a non-ChangeMedia CryoprotectionStrategy for ",
+										samplesForMessages[Flatten[groupedErrorDetails[errorCode][[All, 2]]], Cache -> cacheBall, Simulation -> simulation],
+										", or transfer them out to separate containers to allow different cell pellet settings beforehand"
+									],
+								True,
+									Module[{allOwnErrorEntries, groupedOnTargetStrategy},
+										allOwnErrorEntries = Most /@ groupedErrorDetails[errorCode];
+										groupedOnTargetStrategy = GroupBy[allOwnErrorEntries, Last];
+										Map[
+											StringJoin[
+												"for ",
+												samplesForMessages[groupedOnTargetStrategy[#][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
+												", please either adjust ",
+												pluralize[DeleteDuplicates@Flatten[groupedOnTargetStrategy[#][[All, 3]][[All, 2]]], "option ", "options "],
+												joinClauses[DeleteDuplicates@Flatten[groupedOnTargetStrategy[#][[All, 3]][[All, 2]]]],
+												" if ",
+												ToString[#],
+												" CryoprotectionStrategy is desired or adjust ",
+												pluralize[DeleteDuplicates@Flatten[groupedOnTargetStrategy[#][[All, 2]][[All, 2]]], "option ", "options "],
+												joinClauses[DeleteDuplicates@Flatten[groupedOnTargetStrategy[#][[All, 2]][[All, 2]]]],
+												" if ",
+												joinClauses[DeleteDuplicates@Flatten[groupedOnTargetStrategy[#][[All, 2]][[All, 1]]]],
+												" CryoprotectionStrategy ",
+												isOrAre[DeleteDuplicates@Flatten[groupedOnTargetStrategy[#][[All, 2]][[All, 1]]]],
+												" desired"
+											]&,
+											Keys[groupedOnTargetStrategy]
+										]
+									]
+							]],
+							Keys[groupedErrorDetails]
+						],
+						CaseAdjustment -> True
+					]
+				]
+			];
+			If[!MatchQ[conflictingCryoprotectionStrategyCase, {}] && messages,
+				Message[
+					Error::ConflictingCryoprotectionOptions,
+					captureSentence,
+					reasonClause,
+					actionClause
+				]
+			];
+			conflictingCryoprotectionStrategyOption = If[MatchQ[conflictingCryoprotectionStrategyCase, {}],
+				{},
+				Flatten@Join[
+					conflictingCryoprotectionStrategyCase[[All, 3]],
+					{
+						If[MemberQ[conflictingCryoprotectionStrategyCase[[All, -1]], SpecifiedChangeMediaForSameContainer],
+							CryoprotectionStrategy,
+							Nothing
+						],
+						If[MemberQ[conflictingCryoprotectionStrategyCase[[All, -1]], DefaultChangeMediaForSameContainer],
+							{CellPelletCentrifuge, CellPelletTime, CellPelletIntensity, CellPelletSupernatantVolume},
+							Nothing
+						]
+					}
+				]
+			];
+			conflictingCryoprotectionStrategyTest = If[gatherTests,
+				Module[{affectedSamples, failingTest, passingTest},
+					affectedSamples = If[MatchQ[conflictingCryoprotectionStrategyCase, {}], {}, conflictingCryoprotectionStrategyCase[[All, 1]]];
 
-			{failingTest, passingTest}
+					failingTest = If[Length[affectedSamples] == 0,
+						Nothing,
+						Test["All media changing and cryoprotection options specified for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " are not conflicting:", True, False]
+					];
+
+					passingTest = If[Length[affectedSamples] == Length[mySamples],
+						Nothing,
+						Test["All media changing and cryoprotection options specified for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " are not conflicting:", True, True]
+					];
+
+					{failingTest, passingTest}
+				],
+				Null
+			];
+			(* Return *)
+			{
+				conflictingCryoprotectionStrategyCase[[All, 1]],
+				conflictingCryoprotectionStrategyOption,
+				conflictingCryoprotectionStrategyTest
+			}
 		],
-		Null
+		ConstantArray[{}, 3]
 	];
 
-	(*Error::ConflictingCryoprotectantSolutionTemperature*)
-	(* 4. Throw an error if CryoprotectantSolutionTemperature is set while CryoprotectionStrategy is None at all index *)
-	conflictingCryoprotectantSolutionTemperatureCases = If[
-		MatchQ[resolvedCryoprotectantSolutionTemperature, (Ambient|Chilled)] && MatchQ[resolvedCryoprotectionStrategies, {None..}],
-		ToList @ resolvedCryoprotectantSolutionTemperature,
-		{}
-	];
-
-	If[Length[conflictingCryoprotectantSolutionTemperatureCases] > 0 && messages,
-		Message[
-			Error::ConflictingCryoprotectantSolutionTemperature,
-			ObjectToString[resolvedCryoprotectantSolutionTemperature, Cache -> cacheBall, Simulation -> simulation]
-		];
-	];
-
-	conflictingCryoprotectantSolutionTemperatureTest = If[gatherTests,
-		Module[{affectedSamples, failingTest, passingTest},
-			affectedSamples = If[MatchQ[conflictingCryoprotectantSolutionTemperatureCases, {}], {}, mySamples];
-
-			failingTest = If[Length[affectedSamples] == 0,
-				Nothing,
-				Test["CryoprotectantSolutionTemperature is specified for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if and only if the CryoprotectionStrategy is not None at all indices:", True, False]
-			];
-
-			passingTest = If[Length[affectedSamples] == Length[mySamples],
-				Nothing,
-				Test["CryoprotectantSolutionTemperature is specified for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if and only if the CryoprotectionStrategy is not None at all indices:", True, True]
-			];
-
-			{failingTest, passingTest}
-		],
-		Null
-	];
-
-	(*Error::FreezeCellsConflictingInsulatedCoolerFreezingTime*)
-	(* 5. InsulatedCoolerFreezingTime must be set if and only if FreezingStrategy is InsulatedCooler. *)
-	conflictingInsulatedCoolerFreezingTimeCases = If[
-		Or[
-			MatchQ[resolvedFreezingStrategy, InsulatedCooler] && MatchQ[resolvedInsulatedCoolerFreezingTime, Null],
-			MatchQ[resolvedFreezingStrategy, ControlledRateFreezer] && MatchQ[resolvedInsulatedCoolerFreezingTime, Except[Null]]
-		],
-		{resolvedFreezingStrategy, resolvedInsulatedCoolerFreezingTime},
-		{}
-	];
-
-	If[MatchQ[Length[conflictingInsulatedCoolerFreezingTimeCases], GreaterP[0]] && messages,
-		Message[
-			Error::FreezeCellsConflictingInsulatedCoolerFreezingTime,
-			ToString[conflictingInsulatedCoolerFreezingTimeCases[[1]]],
-			ToString[conflictingInsulatedCoolerFreezingTimeCases[[2]]]
-		];
-	];
-
-	conflictingInsulatedCoolerFreezingTimeTest = If[gatherTests,
-		Module[{affectedSamples, failingTest, passingTest},
-			affectedSamples = If[MatchQ[conflictingInsulatedCoolerFreezingTimeCases, {}], {}, mySamples];
-
-			failingTest = If[Length[affectedSamples] == 0,
-				Nothing,
-				Test["An InsulatedCoolerFreezingTime is specified for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if and only if the FreezingStrategy is InsulatedCooler:", True, False]
-			];
-
-			passingTest = If[Length[affectedSamples] == Length[mySamples],
-				Nothing,
-				Test["An InsulatedCoolerFreezingTime is specified for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if and only if the FreezingStrategy is InsulatedCooler:", True, True]
-			];
-
-			{failingTest, passingTest}
-		],
-		Null
-	];
 
 	(* Convert our options into a MapThread friendly version. *)
-	mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentFreezeCells, roundedFreezeCellsOptions];
+	mapThreadFriendlyOptionsNotPropagated = OptionsHandling`Private`mapThreadOptions[ExperimentFreezeCells, resolvedGeneralOptions];
+
+	(* When ChangeMedia, Pellet uo is applied on the whole input container, not individual sample *)
+	(* Make rules associating a given input container with the suite of specified options *)
+	indexMatchingChangeMediaOptionNames = {CellPelletCentrifuge, CellPelletTime, CellPelletIntensity};
+
+	indexMatchingChangeMediaSampleQ = Map[
+		MemberQ[talliedSamplesWithStrategies, {{ObjectP[#], ChangeMedia}, _Integer}]&,
+		mySamples
+	];
+
+	nonAutomaticOptionsPerContainer = MapThread[
+		Function[{sample, propagateQ, options},
+			If[TrueQ[propagateQ],
+				(* this is a weird use of Select *)
+				(* basically select all the instances of our index matching options that don't have Automatic and return that association *)
+				fastAssocLookup[fastAssoc, sample, {Container, Object}] -> Select[
+					KeyTake[options, indexMatchingChangeMediaOptionNames],
+					Not[MatchQ[#, Automatic]]&
+				],
+				Nothing
+			]
+		],
+		{mySamples, indexMatchingChangeMediaSampleQ, mapThreadFriendlyOptionsNotPropagated}
+	];
+
+	(* Merging them together is super weird because we call Merge twice! *)
+	(* This is the same logic used in ExperimentIncubateCells to propagate container options *)
+	mergedNonAutomaticOptionsPerContainer = Merge[nonAutomaticOptionsPerContainer, Merge[#, First] &];
+
+	(* Propagate the options I am dealing with out *)
+	mapThreadFriendlyOptions = MapThread[
+		Function[{sample, options},
+			(* Join the options we already have with the ones we're propagating out *)
+			(* the Join will cause the second set of options to replace the first set if possible *)
+			Join[
+				options,
+				Module[{container, containerOptions},
+					(* get the container of the sample in question, and the associated options we want to propagate across this container that we calculated above *)
+					container = fastAssocLookup[fastAssoc, sample, {Container, Object}];
+					containerOptions = Lookup[mergedNonAutomaticOptionsPerContainer, container, <||>];
+
+					(* for each option, if *)
+					(* 1.) The specified value for that option is Automatic for the given sample *)
+					(* 2.) A different sample in the same container has a value that is not Automatic *)
+					(* then we propagate the non-Automatic value in the same container to this sample too *)
+					Association[Map[
+						Function[{optionName},
+							If[MatchQ[Lookup[options, optionName], Automatic] && KeyExistsQ[containerOptions, optionName],
+								optionName -> Lookup[containerOptions, optionName],
+								Nothing
+							]
+						],
+						indexMatchingChangeMediaOptionNames
+					]]
+
+				]
+			]
+		],
+		{mySamples, mapThreadFriendlyOptionsNotPropagated}
+	];
 
 	(* MapThread over each of our samples. *)
 	{
@@ -1841,42 +3301,37 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		(*11*)resolvedAliquotVolumes,
 		(*12*)resolvedCoolants,
 		(*13*)resolvedSamplesOutStorageConditions,
-		(* Errors *)
-		(*14*)conflictingCellTypeWarnings,
+		(* Errors and warnings *)
+		(*14a*)conflictingCellTypeWarnings,
+		(*14b*)conflictingCellTypeErrors,
 		(*15*)conflictingCultureAdhesionBools,
 		(*16*)overAspirationErrors,
-		(*17*)invalidRackBools,
+		(*17a*)invalidRackBools,
+		(*17b*)suggestedRackLists,
 		(*18*)overFillDestinationErrors,
 		(*19*)overFillSourceErrors,
-		(* Warnings *)
 		(*20*)cellTypeNotSpecifiedBools,
 		(*21*)cultureAdhesionNotSpecifiedBools,
 		(* Other internal variables *)
 		(*22*)aliquotVolumeQuantities,
 		(*23*)containerInVolumesBeforeAliquoting
 	} = Transpose[MapThread[
-		Function[{sample, options, samplePacket, modelPacket, containerPacket, containerModelPacket, mainCellType, mainCellIdentityModel, index},
+		Function[{sample, options, samplePacket, sampleVolumeQuantity, modelPacket, containerPacket, containerModelPacket, inputContainerMaxVolume, mainCellType, mainCellIdentityModel},
 			Module[
 				{
-					mainCellIdentityModelPacket, sampleVolumeQuantity, inputContainerMaxVolume, resolvedCryoprotectionStrategy,
-					resolvedAliquotBool, resolvedCellType, conflictingCellTypeWarningBool, cellTypeNotSpecifiedBool,
+					mainCellIdentityModelPacket, resolvedCryoprotectionStrategy,
+					resolvedAliquotBool, resolvedCellType, conflictingCellTypeWarningBool, conflictingCellTypeErrorBool, cellTypeNotSpecifiedBool,
 					cultureAdhesionFromSample, resolvedCultureAdhesion, conflictingCultureAdhesionBool, cultureAdhesionNotSpecifiedBool,
 					resolvedCellPelletIntensity, resolvedCellPelletTime, resolvedCellPelletSupernatantVolume, overAspirationError,
 					cellPelletSupernatantVolumeQuantity, resolvedCryoprotectantSolution, resolvedFreezer, semiresolvedFreezingRack,
-					resolvedCryogenicSampleContainer, cryogenicSampleContainerModelMaxVolume, resolvedFreezingRack, invalidRackBool,
-					resolvedCryoprotectantSolutionVolume, cryoprotectantSolutionVolumeQuantity, resolvedAliquotVolume,
-					aliquotVolumeQuantity, finalVolumeBeforeFreezing, finalVolumeBeforeAliquoting, overFillDestinationError, overFillSourceError,
-					resolvedCoolant, resolvedSamplesOutStorageCondition
+					resolvedCryogenicSampleContainer, cryogenicSampleContainerModel, cryogenicSampleContainerModelMaxVolume,
+					resolvedFreezingRack, invalidRackBool, suggestedRackList, resolvedCryoprotectantSolutionVolume,
+					cryoprotectantSolutionVolumeQuantity, resolvedAliquotVolume, aliquotVolumeQuantity, finalVolumeBeforeFreezing,
+					finalVolumeBeforeAliquoting, overFillDestinationError, overFillSourceError, resolvedCoolant, resolvedSamplesOutStorageCondition
 				},
 
 				(* Lookup information about our sample and container packets *)
 				mainCellIdentityModelPacket = fetchPacketFromFastAssoc[mainCellIdentityModel, fastAssoc];
-
-				(* Set the volume of a sample to 0 Microliters if it is not informed. This will allow us to error out in a predictable way instead of breaking everything. *)
-				sampleVolumeQuantity = SafeRound[Lookup[samplePacket, Volume], 1 Microliter] /. Null -> 0 Microliter;
-
-				(* Pull out the MaxVolume of Sample input Container *)
-				inputContainerMaxVolume = Lookup[containerModelPacket, MaxVolume] /. Null -> 0 Microliter;
 
 				(* Extract the resolved CryoprotectionStrategy and Aliquot options. *)
 				{resolvedCryoprotectionStrategy, resolvedAliquotBool} = Lookup[options, {CryoprotectionStrategy, Aliquot}];
@@ -1886,24 +3341,42 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 					(* if CellType was specified, use it *)
 					MatchQ[Lookup[options, CellType], CellTypeP], Lookup[options, CellType],
 					(* if CellType was not specified but we could figure it out from the sample, go with that *)
-					MatchQ[mainCellType, CellTypeP],
-						mainCellType,
+					MatchQ[mainCellType, CellTypeP], mainCellType,
 					(* if CellType was not specified and we couldn't figure it out from the sample, default to Bacterial *)
-					True,
-						Bacterial
+					True, Bacterial
 				];
-				(* if CellType was specified but it conflicts with the fields in the Sample, go with what was specified but flip warning switch *)
-				conflictingCellTypeWarningBool = If[And[
+				(* if CellType was specified but it conflicts with the fields in the Sample, go with what was specified but flip error/warning switch *)
+				conflictingCellTypeErrorBool = If[And[
 					MatchQ[Lookup[options, CellType], CellTypeP],
-					MatchQ[mainCellType, CellTypeP],
-					!MatchQ[Lookup[options, CellType], mainCellType]
+					MatchQ[mainCellType, Mammalian|Bacterial|Yeast],
+					Or[
+						MatchQ[Lookup[options, CellType], Mammalian] && MatchQ[mainCellType, MicrobialCellTypeP],
+						MatchQ[mainCellType, Mammalian] && MatchQ[Lookup[options, CellType], MicrobialCellTypeP]
+					]
 				],
 					True,
 					False
 				];
+				(* For microbial cells, we use the same BSC model and pipette model. So no need to throw warning is CryoprotectionStrategy is None *)
+				conflictingCellTypeWarningBool = If[And[
+					MatchQ[Lookup[options, CellType], CellTypeP],
+					MatchQ[mainCellType, Mammalian|Bacterial|Yeast],
+					Or[
+						MatchQ[resolvedCryoprotectionStrategy, AddCryoprotectant] && MatchQ[Lookup[options, CryoprotectantSolution], Automatic],
+						MatchQ[resolvedCryoprotectionStrategy, ChangeMedia] && (MatchQ[Lookup[options, CryoprotectantSolution], Automatic] || MatchQ[Lookup[options, CellPelletIntensity], Automatic])
+					],
+					Or[
+						MatchQ[Lookup[options, CellType], Yeast] && MatchQ[mainCellType, Bacterial],
+						MatchQ[mainCellType, Yeast] && MatchQ[Lookup[options, CellType], Bacterial]
+					]
+				],
+					True,
+						False
+				];
 				(* if CellType was not specified and we couldn't figure it out from the sample, default to Bacterial and flip warning switch *)
+				(* If we have already thrown non-liquid sample error, do not need to throw this warning *)
 				cellTypeNotSpecifiedBool = If[And[
-					!MatchQ[Lookup[samplePacket, State], Gas],
+					MatchQ[Lookup[samplePacket, State], Liquid],
 					!MatchQ[Lookup[options, CellType], CellTypeP],
 					!MatchQ[mainCellType, CellTypeP]
 				],
@@ -1937,11 +3410,11 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 					True, Suspension
 				];
 				(* if CultureAdhesion was specified but it conflicts with the fields in the Sample, go with what was specified but flip error switch *)
+				(* If we have already thrown non-liquid sample error, do not need to throw this error *)
 				conflictingCultureAdhesionBool = If[And[
 					MatchQ[Lookup[options, CultureAdhesion], CultureAdhesionP],
 					Or[
 						MatchQ[cultureAdhesionFromSample, CultureAdhesionP] && !MatchQ[Lookup[options, CultureAdhesion], cultureAdhesionFromSample],
-						MatchQ[Lookup[samplePacket, State], Solid] && MatchQ[Lookup[options, CultureAdhesion], Suspension|Adherent],
 						MatchQ[Lookup[samplePacket, State], Liquid] && MatchQ[Lookup[options, CultureAdhesion], SolidMedia]
 					]
 				],
@@ -1949,8 +3422,9 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 					False
 				];
 				(* if CultureAdhesion was not specified and we couldn't figure it out from the sample, flip warning switch *)
+				(* If we have already thrown non-liquid sample error, do not need to throw this warning *)
 				cultureAdhesionNotSpecifiedBool = If[And[
-					!MatchQ[Lookup[samplePacket, State], Gas],
+					MatchQ[Lookup[samplePacket, State], Liquid],
 					!MatchQ[Lookup[options, CultureAdhesion], CultureAdhesionP],
 					!MatchQ[cultureAdhesionFromSample, CultureAdhesionP]
 				],
@@ -2014,7 +3488,7 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 				(* Note if CellPelletSupernatantVolume is specified while CryoprotectionStrategy is Not ChangeMedia, an error will thrown downstream not here *)
 				overAspirationError = If[
 					MatchQ[resolvedCryoprotectionStrategy, ChangeMedia] && GreaterQ[cellPelletSupernatantVolumeQuantity, sampleVolumeQuantity],
-					{sample, cellPelletSupernatantVolumeQuantity, sampleVolumeQuantity, index},
+					{sample, cellPelletSupernatantVolumeQuantity, sampleVolumeQuantity},
 					Null
 				];
 
@@ -2035,7 +3509,7 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 								Model[Sample, StockSolution, "id:Vrbp1jbnEBPw"], (* Model[Sample, StockSolution, "15% glycerol, 0.5% sodium chloride, Autoclaved"] *)
 							{ChangeMedia, Yeast},
 								Model[Sample, StockSolution, "id:1ZA60vAO7xla"], (* Model[Sample, StockSolution, "30% Glycerol in Milli-Q water, Autoclaved"] *)
-							(* Otheriwise, the CryoprotectionStrategy is AddCryoprotectant. For mammalian cells, add autoclaved 30% glycerol to the sample. *)
+							(* Otherwise, the CryoprotectionStrategy is AddCryoprotectant. For mammalian cells, add autoclaved 30% glycerol to the sample. *)
 							{_, Mammalian},
 								Model[Sample, StockSolution, "id:1ZA60vAO7xla"], (* Model[Sample, StockSolution, "30% Glycerol in Milli-Q water, Autoclaved"] *)
 							(* Otherwise, the CryoprotectionStrategy is AddCryoprotectant and the cell type is yeast or bacterial, add autoclaved 50% glycerol*)
@@ -2122,6 +3596,8 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 						MatchQ[Lookup[options, AliquotVolume], All] && GreaterQ[sampleVolumeQuantity, 1.5 Milliliter],
 						EqualQ[Lookup[uniqueSampleToFinalCellStockNumsLookup, sample], 1] && GreaterQ[sampleVolumeQuantity, 1.5 Milliliter],
 						(* For AddCryoprotectant case. If CryoprotectantSolutionVolume is specified, use it. Otherwise, set to 50% of AliquotVolume *)
+						(* If the same sample has only been specified once in the entire input sample list, we try to use it up and check if it is possible to use 5ml vial *)
+						MatchQ[Lookup[options, CryoprotectantSolutionVolume], VolumeP] && GreaterQ[Lookup[options, CryoprotectantSolutionVolume], 1.5 Milliliter],
 						MatchQ[Lookup[options, CryoprotectantSolutionVolume], VolumeP] && MatchQ[Lookup[options, AliquotVolume], VolumeP] && GreaterQ[Total@Lookup[options, {AliquotVolume, CryoprotectantSolutionVolume}], 1.5 Milliliter],
 						MatchQ[Lookup[options, CryoprotectantSolutionVolume], VolumeP] && MatchQ[Lookup[options, AliquotVolume], All] && GreaterQ[Lookup[options, CryoprotectantSolutionVolume] + sampleVolumeQuantity, 1.5 Milliliter],
 						MatchQ[Lookup[options, CryoprotectantSolutionVolume], VolumeP] && EqualQ[Lookup[uniqueSampleToFinalCellStockNumsLookup, sample], 1] && GreaterQ[Lookup[options, CryoprotectantSolutionVolume] + sampleVolumeQuantity, 1.5 Milliliter],
@@ -2136,27 +3612,63 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 				];
 
 				(* Pull out the MaxVolume of CryogenicSampleContainer *)
-				cryogenicSampleContainerModelMaxVolume = If[MatchQ[resolvedCryogenicSampleContainer, ObjectP[Object[Container]]],
-					fastAssocLookup[fastAssoc, resolvedCryogenicSampleContainer, {Model, MaxVolume}]/. Null -> 0 Microliter,
-					fastAssocLookup[fastAssoc, resolvedCryogenicSampleContainer, MaxVolume]/. Null -> 0 Microliter
+				cryogenicSampleContainerModel = Which[
+					MatchQ[resolvedCryogenicSampleContainer, ObjectP[Lookup[containerPacket, Object]]],
+						Lookup[containerModelPacket, Object, Null],
+					MatchQ[resolvedCryogenicSampleContainer, ObjectP[Object[Container]]],
+						fastAssocLookup[fastAssoc, resolvedCryogenicSampleContainer, Model],
+					True,
+						resolvedCryogenicSampleContainer
+				];
+				cryogenicSampleContainerModelMaxVolume = Which[
+					MatchQ[resolvedCryogenicSampleContainer, ObjectP[Lookup[containerPacket, Object]]],
+						inputContainerMaxVolume,
+					MatchQ[resolvedCryogenicSampleContainer, ObjectP[Object[Container]]],
+						fastAssocLookup[fastAssoc, resolvedCryogenicSampleContainer, {Model, MaxVolume}]/. Null -> 0 Microliter,
+					True,
+						fastAssocLookup[fastAssoc, resolvedCryogenicSampleContainer, MaxVolume]/. Null -> 0 Microliter
 				];
 
-				(* Resolve the FreezingRack. *)
-				{resolvedFreezingRack, invalidRackBool} = Which[
+				(* Resolve the FreezingRack and track InvalidFreezingRack errors *)
+				{resolvedFreezingRack, invalidRackBool, suggestedRackList} = Which[
 					(* if FreezingRack was specified but it is not one of the rack models from search, mark invalidRackBool as True *)
 					Or[
 						MatchQ[semiresolvedFreezingRack, ObjectP[Object[Container]]] && !MatchQ[fastAssocLookup[fastAssoc, semiresolvedFreezingRack, Model], ObjectP[allPossibleFreezingRacks]],
 						MatchQ[semiresolvedFreezingRack, ObjectP[Model[Container]]] && !MatchQ[semiresolvedFreezingRack, ObjectP[allPossibleFreezingRacks]]
 					],
-						{semiresolvedFreezingRack, True},
-					(* If the user specified the option at this index as one of the rack models from search, use the specified value. *)
+						{semiresolvedFreezingRack, True, allPossibleFreezingRacks},
+					(* FreezingStrategy specific rack is checked by FreezeCellsConflictingHardware and ConflictingCellFreezingOptions, do not track here with InvalidFreezingRack *)
+					 Or[
+						MatchQ[resolvedFreezingStrategy, InsulatedCooler] && MatchQ[semiresolvedFreezingRack, ObjectP[]] && !MatchQ[semiresolvedFreezingRack, ObjectP[{Model[Container, Rack, InsulatedCooler], Object[Container, Rack, InsulatedCooler]}]],
+						MatchQ[resolvedFreezingStrategy, ControlledRateFreezer] && MatchQ[semiresolvedFreezingRack, ObjectP[{Model[Container, Rack, InsulatedCooler], Object[Container, Rack, InsulatedCooler]}]],
+						MatchQ[resolvedFreezingStrategy, ControlledRateFreezer] && MatchQ[semiresolvedFreezingRack, ObjectP[]] && MatchQ[cryogenicSampleContainerModel, ObjectP[Model[Container, Vessel, "id:o1k9jAG1Nl57"]]](*5mL Cryogenic Vial*)
+					],
+						{semiresolvedFreezingRack, False, {}},
+					(* If the user specified the option at this index as one of the rack models from search, but mismatched with cryovial (5ml rack/2ml vial or vice versa). *)
+					And[
+						Or[
+							MatchQ[semiresolvedFreezingRack, ObjectP[Model[Container]]] && MatchQ[semiresolvedFreezingRack, Except[ObjectP[{Model[Container, Rack, InsulatedCooler, "id:7X104vnMk93w"], Model[Container, Rack, "id:pZx9jo8ZVNW0"]}]]],(*"2mL Mr. Frosty Rack" and "2mL Cryo Rack for VIA Freeze"*)
+							MatchQ[semiresolvedFreezingRack, ObjectP[Object[Container]]] && !MatchQ[fastAssocLookup[fastAssoc, semiresolvedFreezingRack, Model], ObjectP[{Model[Container, Rack, InsulatedCooler, "id:7X104vnMk93w"], Model[Container, Rack, "id:pZx9jo8ZVNW0"]}]]
+						],
+						MatchQ[cryogenicSampleContainerModel, ObjectP[Model[Container, Vessel, "id:vXl9j5qEnnOB"]]](*2mL Cryogenic Vial*)
+					],
+						{semiresolvedFreezingRack, False, {If[MatchQ[resolvedFreezingStrategy, InsulatedCooler], Model[Container, Rack, InsulatedCooler, "id:7X104vnMk93w"], Model[Container, Rack, "id:pZx9jo8ZVNW0"]]}},
+					And[
+						Or[
+							MatchQ[semiresolvedFreezingRack, ObjectP[Model[Container]]] && MatchQ[semiresolvedFreezingRack, Except[ObjectP[Model[Container, Rack, InsulatedCooler, "id:N80DNj1WLYPX"]]]],(*"5mL Mr. Frosty Rack"*)
+							MatchQ[semiresolvedFreezingRack, ObjectP[Object[Container]]] && !MatchQ[fastAssocLookup[fastAssoc, semiresolvedFreezingRack, Model], ObjectP[Model[Container, Rack, InsulatedCooler, "id:N80DNj1WLYPX"]]]
+						],
+						MatchQ[cryogenicSampleContainerModel, ObjectP[Model[Container, Vessel, "id:o1k9jAG1Nl57"]]](*5mL Cryogenic Vial*)
+					],
+						{semiresolvedFreezingRack, False, {Model[Container, Rack, InsulatedCooler, "id:N80DNj1WLYPX"]}},
+					(* If the user specified the option at this index as one of the rack models from search, and either CryogenicSampleContainer is not a cryovial or is compatible with the specified rack. *)
 					MatchQ[semiresolvedFreezingRack, Except[Automatic]],
-						{semiresolvedFreezingRack, False},
+						{semiresolvedFreezingRack, False, {}},
 					(* If the CryogenicSampleContainer's max volume is NOT 2 mL or less, use the Mr. Frosty rack for 5 mL vials. *)
 					GreaterQ[cryogenicSampleContainerModelMaxVolume, 2 Milliliter],
-						{Model[Container, Rack, InsulatedCooler, "id:N80DNj1WLYPX"], False},(* Model[Container, Rack, InsulatedCooler, "5mL Mr. Frosty Rack"] *)
+						{Model[Container, Rack, InsulatedCooler, "id:N80DNj1WLYPX"], False, {}},(* Model[Container, Rack, InsulatedCooler, "5mL Mr. Frosty Rack"] *)
 					True,
-						{Model[Container, Rack, InsulatedCooler, "id:7X104vnMk93w"], False} (* Model[Container, Rack, InsulatedCooler, "2mL Mr. Frosty Rack"] *)
+						{Model[Container, Rack, InsulatedCooler, "id:7X104vnMk93w"], False, {}} (* Model[Container, Rack, InsulatedCooler, "2mL Mr. Frosty Rack"] *)
 				];
 
 				(* Resolve the CryoprotectantSolutionVolume. *)
@@ -2167,18 +3679,23 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 					(* If CryoprotectionStrategy is None, set this to Null. *)
 					MatchQ[resolvedCryoprotectionStrategy, None],
 						Null,
-					(* If CryoprotectionStrategy is ChangeMedia, check the sample volume or supernant volume and resolve to 100% of the lesser. *)
+					(* If CryoprotectionStrategy is ChangeMedia, check the sample volume or supernatant volume and resolve to 100% of the lesser. *)
 					MatchQ[resolvedCryoprotectionStrategy, ChangeMedia],
 						SafeRound[Min[sampleVolumeQuantity, cellPelletSupernatantVolumeQuantity], 1 Microliter],
 					(* If InSitu is True (Aliquot is False) and CryoprotectionStrategy is AddCryoprotectant, check the sample volume and resolve to 50%. *)
+					(* If the sample volume is lower than 100 ul, use 100ul instead *)
+					(* 100 Microliter and 100 Milligram are defined in individualStorageItems in ProcedureFramework for determine empty samples *)
 					MatchQ[resolvedAliquotBool, False],
-						SafeRound[0.50 * sampleVolumeQuantity, 1 Microliter],
+						Max[100 Microliter, SafeRound[0.50 * sampleVolumeQuantity, 1 Microliter]],
 					(* If InSitu is False and CryoprotectionStrategy is AddCryoprotectant, check if AliquotVolume is specified. If not, precalculate it. *)
 					True,
 						Which[
-							MatchQ[Lookup[options, AliquotVolume], VolumeP], SafeRound[0.50 * Lookup[options, AliquotVolume], 1 Microliter],
-							MatchQ[Lookup[options, AliquotVolume], All], SafeRound[0.50 * sampleVolumeQuantity, 1 Microliter],
-							True, SafeRound[Min[0.5 * sampleVolumeQuantity, 0.25 * cryogenicSampleContainerModelMaxVolume], 1 Microliter]
+							MatchQ[Lookup[options, AliquotVolume], VolumeP],
+								Max[100 Microliter, SafeRound[0.50 * Lookup[options, AliquotVolume], 1 Microliter]],
+							MatchQ[Lookup[options, AliquotVolume], All],
+								Max[100 Microliter, SafeRound[0.50 * sampleVolumeQuantity, 1 Microliter]],
+							True,
+								Max[100 Microliter, SafeRound[Min[0.5 * sampleVolumeQuantity, 0.25 * cryogenicSampleContainerModelMaxVolume], 1 Microliter]]
 						]
 				];
 
@@ -2186,11 +3703,14 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 				cryoprotectantSolutionVolumeQuantity = resolvedCryoprotectantSolutionVolume/. Null -> 0 Microliter;
 
 				(* Calculate the total volume in input sample container before aliquotting. *)
-				finalVolumeBeforeAliquoting = If[
+				finalVolumeBeforeAliquoting = Which[
 					MatchQ[resolvedCryoprotectionStrategy, ChangeMedia],
-					(* If over aspirate, use 0 Microliter *)
-					Max[sampleVolumeQuantity - cellPelletSupernatantVolumeQuantity + cryoprotectantSolutionVolumeQuantity, 0 Microliter],
-					sampleVolumeQuantity
+						(* If over aspirate, use 0 Microliter *)
+						Max[sampleVolumeQuantity - cellPelletSupernatantVolumeQuantity + cryoprotectantSolutionVolumeQuantity, 0 Microliter],
+					MatchQ[resolvedAliquotBool, False],
+						sampleVolumeQuantity + cryoprotectantSolutionVolumeQuantity,
+					True,
+						sampleVolumeQuantity
 				];
 
 				(* Resolve the AliquotVolume. *)
@@ -2203,17 +3723,21 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 						Null,
 					(* Check if there are any replicates/parallel sample input the same as current sample. *)
 					(* If Aliquot is True and CryoprotectionStrategy is set to ChangeMedia, use lesser of 75% of the volume of the CryogenicSampleContainer or All *)
-					(* If there is no duplicates and the resupsended sample volume is less than 75% of cryogenic vial max vol, set to All instead of quanitity*)
+					(* If there is no duplicates and the resuspended sample volume is less than 75% of cryogenic vial max vol, set to All instead of quantity *)
 					EqualQ[Lookup[uniqueSampleToFinalCellStockNumsLookup, sample], 1] && MatchQ[resolvedCryoprotectionStrategy, ChangeMedia],
 						If[GreaterQ[finalVolumeBeforeAliquoting, 0.75 * cryogenicSampleContainerModelMaxVolume],
 							SafeRound[0.75 * cryogenicSampleContainerModelMaxVolume, 1 Microliter],
 							All
 						],
-					(* If there is no duplicate, use All or 50% of max volume whichever is smaller *)
+					(* If there is no duplicate, use All or 50% of max volume or 75% - specified CryoprotectantSolutionVolume whichever is smaller *)
 					EqualQ[Lookup[uniqueSampleToFinalCellStockNumsLookup, sample], 1] && MatchQ[resolvedCryoprotectionStrategy, AddCryoprotectant],
-						If[GreaterQ[sampleVolumeQuantity, 0.5 * cryogenicSampleContainerModelMaxVolume],
-							SafeRound[0.5 * cryogenicSampleContainerModelMaxVolume, 1 Microliter],
-							All
+						Which[
+							EqualQ[Min[{(0.75*cryogenicSampleContainerModelMaxVolume - cryoprotectantSolutionVolumeQuantity)/.vol:LessP[0Microliter] -> Nothing, 0.5*cryogenicSampleContainerModelMaxVolume, sampleVolumeQuantity}], sampleVolumeQuantity],
+								All,
+							GreaterQ[0.75*cryogenicSampleContainerModelMaxVolume - cryoprotectantSolutionVolumeQuantity, 0.5 * cryogenicSampleContainerModelMaxVolume] || LessQ[0.75*cryogenicSampleContainerModelMaxVolume - cryoprotectantSolutionVolumeQuantity, 0 Microliter],
+								SafeRound[0.5 * cryogenicSampleContainerModelMaxVolume, 1 Microliter],
+							True,
+								SafeRound[0.75*cryogenicSampleContainerModelMaxVolume - cryoprotectantSolutionVolumeQuantity, 1 Microliter]
 						],
 					(* If there is no duplicate, use All or 50% of max volume whichever is smaller *)
 					EqualQ[Lookup[uniqueSampleToFinalCellStockNumsLookup, sample], 1] && MatchQ[resolvedCryoprotectionStrategy, None],
@@ -2223,11 +3747,11 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 						],
 					(* If there are duplicates, divide input sample volume equally among them *)
 					(* If Aliquot is True and CryoprotectionStrategy is set to ChangeMedia, automatically set to the lesser of 75% of the volume of the CryogenicSampleContainer or the total volume of the suspended cell sample *)
-					(* If there is no duplicates and the resupsended sample volume is less than 75% of cryogenic vial max vol, set to All instead of quanitity*)
+					(* If there is no duplicates and the resuspended sample volume is less than 75% of cryogenic vial max vol, set to All instead of quantity *)
 					MatchQ[resolvedCryoprotectionStrategy, ChangeMedia],
 						SafeRound[Min[0.75 * cryogenicSampleContainerModelMaxVolume, finalVolumeBeforeAliquoting/Lookup[uniqueSampleToFinalCellStockNumsLookup, sample]], 1 Microliter],
 					MatchQ[resolvedCryoprotectionStrategy, AddCryoprotectant],
-						SafeRound[Min[0.5 * cryogenicSampleContainerModelMaxVolume, sampleVolumeQuantity/Lookup[uniqueSampleToFinalCellStockNumsLookup, sample]], 1 Microliter],
+						SafeRound[Min[{(0.75*cryogenicSampleContainerModelMaxVolume - cryoprotectantSolutionVolumeQuantity)/.vol:LessP[0Microliter] -> Nothing, 0.5 * cryogenicSampleContainerModelMaxVolume, sampleVolumeQuantity/Lookup[uniqueSampleToFinalCellStockNumsLookup, sample]}], 1 Microliter],
 					True,
 						SafeRound[Min[0.75 * cryogenicSampleContainerModelMaxVolume, sampleVolumeQuantity/Lookup[uniqueSampleToFinalCellStockNumsLookup, sample]], 1 Microliter]
 				];
@@ -2250,18 +3774,28 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 				];
 
 				(* Check if the finalVolumeBeforeFreezing is beyond 75% of MaxVolume of CryogenicSampleContainer *)
+				(* When Aliquot is False, we have thrown Error::CryoprotectantSolutionOverfill, no need to throw OverFillDestinationError again *)
 				overFillDestinationError = If[TrueQ[resolvedAliquotBool] && GreaterQ[finalVolumeBeforeFreezing, 0.75 * cryogenicSampleContainerModelMaxVolume],
 					{finalVolumeBeforeFreezing, cryogenicSampleContainerModelMaxVolume},
 					Null
 				];
 				(* When we add cryoprotectant to sample container to resuspend during ChangeMedia step, use 100% as limit since state is liquid *)
-				overFillSourceError = If[And[
-					TrueQ[resolvedAliquotBool],
-					MatchQ[resolvedCryoprotectionStrategy, ChangeMedia],
-					GreaterQ[finalVolumeBeforeAliquoting, inputContainerMaxVolume]
-				],
-					{finalVolumeBeforeAliquoting, inputContainerMaxVolume},
-					Null
+				(* When we add cryoprotectant to sample container if Aliquot is False, use 75% as limit since state is liquid *)
+				overFillSourceError = Which[
+					And[
+						TrueQ[resolvedAliquotBool],
+						MatchQ[resolvedCryoprotectionStrategy, ChangeMedia],
+						GreaterQ[finalVolumeBeforeAliquoting, inputContainerMaxVolume]
+					],
+						{finalVolumeBeforeAliquoting, inputContainerMaxVolume, ChangeMedia},
+					And[
+						MatchQ[resolvedAliquotBool, False],
+						MatchQ[resolvedCryoprotectionStrategy, AddCryoprotectant],
+						GreaterQ[finalVolumeBeforeAliquoting, 0.75*inputContainerMaxVolume]
+					],
+						{finalVolumeBeforeAliquoting, inputContainerMaxVolume, AddCryoprotectant},
+					True,
+						Null
 				];
 
 				(* Resolve the Coolant. *)
@@ -2272,6 +3806,9 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 					(* If the FreezingStrategy is ControlledRateFreezer, set this to Null. *)
 					MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
 						Null,
+					(* If the user specified the option at other index, use the specified value. *)
+					MemberQ[Lookup[myOptions, Coolant], ObjectP[]],
+						FirstCase[Lookup[myOptions, Coolant], ObjectP[]],
 					(* Otherwise, set this to isopropyl alcohol. *)
 					True,
 						Model[Sample, "id:jLq9jXY4k6da"] (* Model[Sample, "Isopropanol"] *)
@@ -2303,14 +3840,15 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 					(*11*)resolvedAliquotVolume,
 					(*12*)resolvedCoolant,
 					(*13*)resolvedSamplesOutStorageCondition,
-					(* Errors *)
-					(*14*)conflictingCellTypeWarningBool,
+					(* Errors and warnings *)
+					(*14a*)conflictingCellTypeWarningBool,
+					(*14b*)conflictingCellTypeErrorBool,
 					(*15*)conflictingCultureAdhesionBool,
 					(*16*)overAspirationError,
-					(*17*)invalidRackBool,
+					(*17a*)invalidRackBool,
+					(*17b*)suggestedRackList,
 					(*18*)overFillDestinationError,
 					(*19*)overFillSourceError,
-					(* Warnings *)
 					(*20*)cellTypeNotSpecifiedBool,
 					(*21*)cultureAdhesionNotSpecifiedBool,
 					(* Other internal variables *)
@@ -2319,13 +3857,15 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 				}
 			]
 		],
-		{mySamples, mapThreadFriendlyOptions, samplePackets, sampleModelPackets, sampleContainerPackets, sampleContainerModelPackets, sampleCellTypes, mainCellIdentityModels, Range[Length[mySamples]]}
+		{mySamples, mapThreadFriendlyOptions, samplePackets, sampleVolumeQuantities, sampleModelPackets, sampleContainerPackets, sampleContainerModelPackets, inputContainerMaxVolumes, sampleCellTypes, mainCellIdentityModels}
 	]];
+
+	(*--- Post-MapThread option resolutions ---*)
 
 	(* Next, we resolve the CellPelletCentrifuges based on the other centrifugation options. *)
 
 	(* First, find the indices at which CryoprotectionStrategy is ChangeMedia or where a centrifuge is already specified. *)
-	centrifugeIndices = Sort @ DeleteDuplicates[
+	allCentrifugeIndices = Sort @ DeleteDuplicates[
 		Flatten @ {
 			Position[resolvedCryoprotectionStrategies, ChangeMedia],
 			Position[
@@ -2334,28 +3874,78 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 			]
 		}
 	];
+	noModelContainerIndices = Map[
+		If[!MatchQ[Extract[sampleContainerModelPackets, ToList@#], PacketP[Model[Container]]],
+			#,
+			Nothing
+		]&,
+		allCentrifugeIndices
+	];
+	centrifugeIndices = DeleteCases[allCentrifugeIndices, Alternatives@@noModelContainerIndices];
 
 	(* Get the container model at each of these indices to use as input for CentrifugeDevices. *)
-	containerModelsAtCentrifugeIndices = Lookup[sampleContainerModelPackets, Object][[centrifugeIndices]];
+	containerModelsAtCentrifugeIndices = Download[Extract[sampleContainerModelPackets, ToList[#]& /@centrifugeIndices], Object];
 
 	(* Get the specified values of CellPelletCentrifuge at each of these indices, too. *)
 	specifiedCentrifugesForChangeMedia = Lookup[mapThreadFriendlyOptions, CellPelletCentrifuge][[centrifugeIndices]];
 
 	(* Call CentrifugeDevices to find all compatible centrifuges, unless there is no need to centrifuge anything. *)
-	{possibleCentrifuges, noCompatibleCentrifugeIndices} = If[
-		MatchQ[centrifugeIndices, {}],
-		{{}, {}},
-		{
-			CentrifugeDevices[
-				containerModelsAtCentrifugeIndices,
-				Intensity -> resolvedCellPelletIntensities[[centrifugeIndices]] /. {Null -> 1000 RPM}, (* Need to remove Nulls so this doesn't break *)
-				Time -> resolvedCellPelletTimes[[centrifugeIndices]] /. {Null -> 10 Minute}, (* Need to remove Nulls so this doesn't break *)
-				Preparation -> Manual,
-				Cache -> cacheBall,
-				Simulation -> simulation
+	possibleCentrifuges = If[MatchQ[centrifugeIndices, {}],
+		{},
+		CentrifugeDevices[
+			containerModelsAtCentrifugeIndices,
+			Intensity -> resolvedCellPelletIntensities[[centrifugeIndices]] /. {Null -> Automatic}, (* Need to remove Nulls so this doesn't break *)
+			Time -> resolvedCellPelletTimes[[centrifugeIndices]] /. {Null -> Automatic}, (* Need to remove Nulls so this doesn't break *)
+			Preparation -> Manual,
+			Cache -> cacheBall,
+			Simulation -> simulation
+		]
+	];
+	possibleCentrifugesWithoutSpeed = If[MatchQ[centrifugeIndices, {}],
+		{},
+		CentrifugeDevices[
+			containerModelsAtCentrifugeIndices,
+			Intensity -> Automatic,
+			Time -> resolvedCellPelletTimes[[centrifugeIndices]] /. {Null -> Automatic}, (* Need to remove Nulls so this doesn't break *)
+			Preparation -> Manual,
+			Cache -> cacheBall,
+			Simulation -> simulation
+		]
+	];
+	incompatibleCentrifugeIndices = If[MatchQ[centrifugeIndices, {}],
+		{},
+		MapThread[
+			Function[{index, specifiedCentrifuge, compatibleCentrifugesWithSpeed, compatibleCentrifugesWithFootprint},
+				Which[
+					And[
+						MatchQ[specifiedCentrifuge, ObjectP[Model[Instrument]]],
+						Or[
+							MemberQ[compatibleCentrifugesWithFootprint, ObjectP[specifiedCentrifuge]] && !MemberQ[compatibleCentrifugesWithSpeed, ObjectP[specifiedCentrifuge]],
+							!MatchQ[compatibleCentrifugesWithFootprint, {}] && !MemberQ[compatibleCentrifugesWithFootprint, ObjectP[specifiedCentrifuge]]
+						]
+					],
+						index,
+					And[
+						MatchQ[specifiedCentrifuge, ObjectP[Object[Instrument]]],
+						Or[
+							MemberQ[compatibleCentrifugesWithFootprint, ObjectP[fastAssocLookup[fastAssoc, specifiedCentrifuge, Model]]] && !MemberQ[compatibleCentrifugesWithSpeed, ObjectP[fastAssocLookup[fastAssoc, specifiedCentrifuge, Model]]],
+							!MatchQ[compatibleCentrifugesWithFootprint, {}] && !MemberQ[compatibleCentrifugesWithFootprint, ObjectP[fastAssocLookup[fastAssoc, specifiedCentrifuge, Model]]]
+						]
+					],
+						index,
+					True,
+						Nothing
+				]
 			],
-			PickList[centrifugeIndices, possibleCentrifuges, {}]
-		}
+			{centrifugeIndices, specifiedCentrifugesForChangeMedia, possibleCentrifuges, possibleCentrifugesWithoutSpeed}
+		]
+	];
+	noCompatibleCentrifugeIndices = If[MatchQ[centrifugeIndices, {}],
+		{},
+		DeleteCases[
+			Join[PickList[centrifugeIndices, possibleCentrifuges, {}], noModelContainerIndices],
+			Alternatives@@incompatibleCentrifugeIndices
+		]
 	];
 
 	(* Try to minimize the number of centrifuges we need by creating a hierarchy based on their prevalence in possibleCentrifuges. *)
@@ -2378,6 +3968,12 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		sortedCentrifuges /. {centrifugesToExclude -> Nothing}
 	];
 
+	(* If potential centrifuges is {} due to not compatible footprint, then there are no compatible centrifuges. Set this to Avanti J-15R and throw an error later. *)
+	updatedCentrifugeForOptions = ReplacePart[
+		Lookup[mapThreadFriendlyOptions, CellPelletCentrifuge],
+		AssociationThread[noModelContainerIndices, ConstantArray[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Length@noModelContainerIndices]](* Model[Instrument, Centrifuge, "Avanti J-15R"] *)
+	];
+
 	(* Resolve the centrifuge list based on the information we had above from CentrifugeDevices and the MapThread. *)
 	preResolvedCellPelletCentrifuges = MapThread[
 		Function[{specifiedCentrifuge, possibleCentrifugesPerSample},
@@ -2397,15 +3993,21 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 	];
 
 	(* Now insert these resolved Centrifuges into a NullP list to preserve index-matching. *)
-	resolvedCellPelletCentrifuges = Flatten @ ReplacePart[
-		ConstantArray[Null, Length[mySamples]],
-		GroupBy[
-			Transpose[{centrifugeIndices, preResolvedCellPelletCentrifuges}],
-			First -> Last
-		]
+	resolvedCellPelletCentrifuges = ReplacePart[
+		updatedCentrifugeForOptions,
+		AssociationThread[centrifugeIndices, preResolvedCellPelletCentrifuges]
+	]/.Automatic -> Null;
+	resolvedCellPelletCentrifugeModels = Map[
+		If[MatchQ[#, ObjectP[Object[Instrument]]],
+			fastAssocLookup[fastAssoc, #, Model],
+			#
+		]&,
+		resolvedCellPelletCentrifuges
 	];
 
 
+	(* Get the options that do not need to be resolved directly from SafeOptions. *)
+	{template, fastTrack, operator, outputOption} = Lookup[myOptions, {Template, FastTrack, Operator, Output}];
 
 	(* Get the resolved Email option; for this experiment, the default is True *)
 	email = If[MatchQ[Lookup[myOptions, Email], Automatic],
@@ -2415,9 +4017,12 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 
 	(* Combine the resolved options together at this point; everything after is error checking, and for the warning below I need this for better error checking *)
 	resolvedOptions = ReplaceRule[
-		myOptions,
 		Join[
 			resolvedGeneralOptions,
+			(* explicitly overriding these options to be {} and Null to make things more manageable to pass around and also more readable *)
+			{Cache -> {}, Simulation -> Null}
+		],
+		Join[
 			Flatten[{
 				CellType -> resolvedCellTypes,
 				CultureAdhesion -> resolvedCultureAdhesions,
@@ -2435,16 +4040,9 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 				SamplesOutStorageCondition -> resolvedSamplesOutStorageConditions,
 				CryogenicSampleContainerLabel -> resolvedCryogenicSampleContainerLabels,
 				Email -> email,
-				Confirm -> confirm,
-				CanaryBranch -> canaryBranch,
 				Template -> template,
-				(* explicitly overriding these options to be {} and Null to make things more manageable to pass around and also more readable *)
-				Cache -> cacheBall,
-				Simulation -> simulation,
 				FastTrack -> fastTrack,
 				Operator -> operator,
-				ParentProtocol -> parentProtocol,
-				Upload -> upload,
 				Output -> outputOption
 			}]
 		]
@@ -2485,8 +4083,8 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 	(*-- CONFLICTING OPTION CHECKS II --*)
 
 	(* WARNINGS *)
-	(*Warning::FreezeCellsReplicateLabels*)
-	(* 1. Throw a warning informing the user of the replicate labels if there are replicates. *)
+	(* 1. Warning::FreezeCellsReplicateLabels *)
+	(* Throw a warning informing the user of the replicate labels if there are replicates. *)
 	(* Note:if we are not in a global framework, we assume we are not calling option resolver from ExperimentManualCellPreparation or ExperimentCellPreparation *)
 	(* since CryogenicSampleContainerLabel is unit operation option, we do not throw warning if we are on CCD from ExperimentFreezeCells *)
 	(* We only throw this warning we are calling ExperimentManualCellPreparation or ExperimentCellPreparation with FreezeCells primitive *)
@@ -2494,7 +4092,7 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 	replicatesQ = And[
 		GreaterQ[correctNumberOfReplicates, 1],
 		(* Don't do this error check if there are duplicate samples. *)
-		MatchQ[duplicateSamples, {}],
+		MatchQ[duplicateSamplesCases, {}],
 		(* Framework populates Labels and if resolver expands the label, throw a warning *)
 		And[
 			MemberQ[userSpecifiedLabels, _String],
@@ -2513,7 +4111,7 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 			];
 			(* Generate strings which clearly indicate which sample is being partitioned into which labels. *)
 			StringJoin @ Map[
-				"The replicates of "<>ObjectToString[#, Cache -> cacheBall, Simulation -> simulation]<>" have CryogenicSampleContainerLabel set to "<>ToString[Lookup[sampleToLabelsRules, #]]<>". "&,
+				"The replicates of " <> ObjectToString[#, Cache -> cacheBall, Simulation -> simulation] <> " have CryogenicSampleContainerLabel set to "<>ToString[Lookup[sampleToLabelsRules, #]]<>". "&,
 				mySamples
 			]
 		],
@@ -2528,178 +4126,32 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		];
 	];
 
-	(*Warning::CellTypeNotSpecified*)
-	(* 2. Throw a warning if the CellType is neither specified by the user nor known from the sample object. In these cases, we default to Bacterial. *)
-	unknownCellTypeCases = PickList[mySamples, cellTypeNotSpecifiedBools];
 
-	If[!MatchQ[unknownCellTypeCases, {}] && messages && notInEngine,
-		Message[
-			Warning::CellTypeNotSpecified,
-			(*1*)(* Potentially collapse to the sample or all samples instead of ID here *)
-			Which[
-				Length[unknownCellTypeCases] == Length[mySamples],
-					StringJoin[
-						Capitalize@samplesForMessages[unknownCellTypeCases, mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
-						If[Length[mySamples] == 1,
-							" has",
-							" have"
-						]
-					],
-				Length[unknownCellTypeCases] == 1,
-					StringJoin["One of the input samples ", samplesForMessages[unknownCellTypeCases, Cache -> cacheBall, Simulation -> simulation], " has"],
-				Length[unknownCellTypeCases] <= $MaxNumberOfErrorDetails,
-					StringJoin["The input samples ", samplesForMessages[unknownCellTypeCases, Cache -> cacheBall, Simulation -> simulation], " have"],
-				True,
-					"	Some of the input samples have"(* If there are too many invalid samples, collapse the error details *)
-			],
-			(*2*)If[Length[unknownCellTypeCases] > 1,
-				"these samples",
-				"this sample"
-			]
-		]
-	];
-
-	(*CultureAdhesionNotSpecified*)
-	(* 3. Throw a warning if the CultureAdhesion is neither specified by the user nor known from the sample object. In these cases, we default to Suspension. *)
-	unknownCultureAdhesionCases = PickList[mySamples, cultureAdhesionNotSpecifiedBools];
-
-	If[!MatchQ[unknownCultureAdhesionCases, {}] && messages && notInEngine,
-		Module[{reasonClause, actionClause},
-			reasonClause = Which[
-				Length[PickList[mySamples, cultureAdhesionNotSpecifiedBools]] == Length[mySamples],
-					StringJoin[
-						Capitalize@samplesForMessages[PickList[mySamples, cultureAdhesionNotSpecifiedBools], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
-						If[Length[mySamples] == 1,
-							" has",
-							" have"
-						]
-					],
-				Length[PickList[mySamples, cultureAdhesionNotSpecifiedBools]] == 1,
-					StringJoin["One of the input samples ", samplesForMessages[PickList[mySamples, cultureAdhesionNotSpecifiedBools], Cache -> cacheBall, Simulation -> simulation], " has"],
-				Length[PickList[mySamples, cultureAdhesionNotSpecifiedBools]] <= $MaxNumberOfErrorDetails,
-					StringJoin["The input samples ", samplesForMessages[PickList[mySamples, cultureAdhesionNotSpecifiedBools], Cache -> cacheBall, Simulation -> simulation], " have"],
-				True,
-					"	Some of the input samples have"(* If there are too many invalid samples, collapse the error details *)
-			];
-			actionClause = StringJoin[
-				"For ",
-				If[Length[unknownCultureAdhesionCases] == 1,
-						"these samples, ",
-						"this sample, "
-					],
-				"the CultureAdhesion option will default to Suspension"
-			];
-			Message[
-				Warning::CultureAdhesionNotSpecified,
-				"ExperimentFreezeCells only supports Suspension cell samples",
-				reasonClause,
-				actionClause
-			]
-		]
-	];
-
-	(*Warning::FreezeCellsUnusedSample*)
-	(* 4. Throw a warning to tell the user how much sample will not be frozen under the current conditions. *)
-	(* Note: we allow parallel samples (duplicated samples) if we are using AddCryoprotectant and None strategies or Aliquot is False *)
-	(* Throw a warning to tell the user how much sample will not be frozen under the current conditions. Allow for up to 50 Microliter *)
-	(* to not be frozen; otherwise this would be tripped for rounded values and would be super annoying without adding value. *)
-	unusedSampleCases = MapThread[
-		Function[{sample, aliquotVolume, totalVolume, index},
-			Sequence @@ {
-				If[
-					And[
-						!NullQ[aliquotVolume],
-						GreaterQ[Lookup[uniqueSampleToUsedVolLookup, sample], 50 Microliter]
-					],
-					{sample, totalVolume, aliquotVolume, resolvedNumberOfReplicates, Lookup[uniqueSampleToUsedVolLookup, sample], index},
-					Nothing
-				]
-			}
-		],
-		{mySamples, resolvedAliquotVolumes, containerInVolumesBeforeAliquoting, Range[Length[mySamples]]}
-	];
-
-	If[Length[unusedSampleCases] > 0 && messages && notInEngine,
-		Message[
-			Warning::FreezeCellsUnusedSample,
-			ObjectToString[unusedSampleCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation],
-			unusedSampleCases[[All, 2]],
-			unusedSampleCases[[All, 3]],
-			unusedSampleCases[[All, 4]],
-			unusedSampleCases[[All, 5]]
-		];
-	];
-
-	(* ERRORS *)
-
-	(*Error::FreezeCellsConflictingAliquotOptions*)
-	(* Throw an error AliquotVolume must be set if and only if Aliquot is True. *)
-	conflictingAliquotOptionsCases = MapThread[
-		Function[{sample, aliquotVolume, aliquotBool, index},
-			Sequence @@ {
-				If[MatchQ[aliquotBool, False] && MatchQ[aliquotVolume, Except[Null]],
-					{sample, aliquotVolume, aliquotBool, index},
-					Nothing
-				],
-				If[MatchQ[aliquotBool, True] && MatchQ[aliquotVolume, Null],
-					{sample, aliquotVolume, aliquotBool, index},
-					Nothing
-				]
-			}
-		],
-		{mySamples, resolvedAliquotVolumes, resolvedAliquotBools, Range[Length[mySamples]]}
-	];
-
-	If[Length[conflictingAliquotOptionsCases] > 0 && messages,
-		Message[
-			Error::FreezeCellsConflictingAliquotOptions,
-			ObjectToString[conflictingAliquotOptionsCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation],
-			conflictingAliquotOptionsCases[[All, 2]],
-			conflictingAliquotOptionsCases[[All, 3]],
-			conflictingAliquotOptionsCases[[All, 4]]
-		];
-	];
-
-	conflictingAliquotOptionsTest = If[gatherTests,
-		Module[{affectedSamples, failingTest, passingTest},
-			affectedSamples = conflictingAliquotOptionsCases[[All,1]];
-
-			failingTest = If[Length[affectedSamples] == 0,
-				Nothing,
-				Test["Aliquot is True for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if and only if AliquotVolume is not Null:", True, False]
-			];
-
-			passingTest = If[Length[affectedSamples] == Length[mySamples],
-				Nothing,
-				Test["Aliquot is True for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if and only if AliquotVolume is not Null:", True, True]
-			];
-
-			{failingTest, passingTest}
-		],
-		Null
-	];
-
-	(*Error::FreezeCellsReplicatesAliquotRequired*)
+	(* 2. Error::FreezeCellsReplicatesAliquotRequired *)
 	(* Aliquot must be True for all samples if NumberOfReplicates is greater than 1 or if parallel samples are set *)
 	(* We allow reusing the same samples for several cases: *)
 	(* Case1: NumberOfReplicates are set to a number. In this case, the same CryoprotectionStrategy is specified *)
-	(* Case2: the same sample go through different CryoprotectionStrategies. In this case, InSitu can not be True, and AliquotVolume cannot be All. *)
+	(* Case2: the same sample go through different CryoprotectionStrategies(AddCryoprotectant or None) or different CryoprotectionSolution(Volume). *)
+	(* In this case2, InSitu can not be True, and AliquotVolume cannot be All. *)
 	(* Case3: Any combination of case1 and case2 *)
+	(* Note: if we have thrown FreezeSamplesDuplicatedSample on them before, do not need to throw again *)
 	replicatesWithoutAliquotCases = Map[
 		Function[{sample},
 			Which[
 				And[
 					MemberQ[talliedSampleWithVolume, {{ObjectP[sample], _, False, _}, _}],
-					GreaterQ[numericNumberOfReplicates, 1],
-					EqualQ[numericNumberOfReplicates, Lookup[uniqueSampleToFinalCellStockNumsLookup, sample]]
+					GreaterQ[correctNumberOfReplicates, 1],
+					EqualQ[correctNumberOfReplicates, Lookup[uniqueSampleToFinalCellStockNumsLookup, sample]],
+					!MemberQ[duplicatedSampleInputs, ObjectP[sample]]
 				],
-					{sample, " has NumberOfReplicates set to ", numericNumberOfReplicates, "when the NumberOfReplicates is 2 or greater"},
+					{NumberOfReplicates, sample, correctNumberOfReplicates},
 				And[
 					MemberQ[talliedSampleWithVolume, {{ObjectP[sample], _, False, _}, _}],
 					GreaterQ[Lookup[uniqueSampleToFinalCellStockNumsLookup, sample], 1],
-					!EqualQ[correctNumberOfReplicates, Lookup[uniqueSampleToFinalCellStockNumsLookup, sample]]
+					!EqualQ[correctNumberOfReplicates, Lookup[uniqueSampleToFinalCellStockNumsLookup, sample]],
+					!MemberQ[duplicatedSampleInputs, ObjectP[sample]]
 				],
-				{sample, " appears at indices ", Flatten@Position[mySamples, sample], "when there are duplicated samples in the inputs"},
+					{Multiple, sample, Length@Position[mySamples, sample]},
 				True,
 					Nothing
 			]
@@ -2708,26 +4160,46 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 	];
 
 	If[Length[replicatesWithoutAliquotCases] > 0 && messages,
-		(* Here we use the new recommended error message format where we expand the error message instead of using index *)
-		(* The helper function joinClauses is defined in Experiment/PrimitiveFramework/Helpers.m *)
-		Message[
-			Error::FreezeCellsReplicatesAliquotRequired,
-			ObjectToString[replicatesWithoutAliquotCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation],
-			joinClauses@Map[
-				StringJoin[
-					ObjectToString[#[[1]], Cache -> cacheBall, Simulation -> simulation],
-					#[[2]],
-					ToString[#[[3]]]
-				]&,
-				replicatesWithoutAliquotCases
-			],
-			joinClauses[replicatesWithoutAliquotCases[[All, 4]], ConjunctionWord -> "or"]
-		];
+		Module[{captureSentence, reasonClausePart1, reasonClausePart2},
+			captureSentence = If[MemberQ[replicatesWithoutAliquotCases[[All, 1]], NumberOfReplicates],
+				"When the NumberOfReplicates is set to 2 or greater",
+				"When there are duplicated samples in the inputs"
+			];
+			reasonClausePart1 = StringJoin[
+				Capitalize@samplesForMessages[replicatesWithoutAliquotCases[[All, 2]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+				" ",
+				hasOrHave[DeleteDuplicates@replicatesWithoutAliquotCases[[All, 2]]]
+			];
+			reasonClausePart2 = If[MemberQ[replicatesWithoutAliquotCases[[All, 1]], NumberOfReplicates],
+				"the option NumberOfReplicates is set to " <> ToString[correctNumberOfReplicates],
+				Module[{repeatedTimes},
+					repeatedTimes = DeleteDuplicates[replicatesWithoutAliquotCases[[All, 3]]];
+					StringJoin[
+						pluralize[replicatesWithoutAliquotCases[[All, 2]], "this sample appears ", "these samples appear "],
+						Which[
+							Length[repeatedTimes] == 1 && EqualQ[repeatedTimes[[1]], 2],
+								"twice",
+							Length[repeatedTimes] == 1,
+								IntegerName[repeatedTimes, "English"] <> " times",
+							True,
+								"from " <> ToString[Min[repeatedTimes]] <> " to " <> ToString[Max[repeatedTimes]] <> " times"
+						],
+						" in the input samples"
+					]
+				]
+			];
+			Message[
+				Error::FreezeCellsReplicatesAliquotRequired,
+				captureSentence,
+				reasonClausePart1,
+				reasonClausePart2
+			]
+		]
 	];
 
 	replicatesWithoutAliquotTest = If[gatherTests,
 		Module[{affectedSamples, failingTest, passingTest},
-			affectedSamples = replicatesWithoutAliquotCases[[All,1]];
+			affectedSamples = replicatesWithoutAliquotCases[[All, 2]];
 
 			failingTest = If[Length[affectedSamples] == 0,
 				Nothing,
@@ -2744,44 +4216,132 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		Null
 	];
 
-	(*Error::InsufficientVolumeForAliquoting*)
-	(* Check if any unused volume is lower than 0 Microliter *)
-	(* To avoid rounding error, we use 1 Microliter times numberNumberOfReplicates*)
-	aliquotVolumeReplicatesMismatchCases = Map[
-		Function[{sample},
-			If[LessQ[Lookup[uniqueSampleToUsedVolLookup, sample], - numericNumberOfReplicates Microliter],
-				Module[{posOfSample},
-					posOfSample = Flatten@Position[mySamples, sample];
-					{sample, Flatten@Position[mySamples, sample], resolvedAliquotVolumes[[posOfSample]], numericNumberOfReplicates*Length[posOfSample]}
-				],
-				Nothing
-			]
-		],
-		DeleteDuplicates@mySamples
-	];
 
-	If[MatchQ[Length[aliquotVolumeReplicatesMismatchCases], GreaterP[0]] && messages,
+	(* 3.Warning::CellTypeNotSpecified *)
+	(* Throw a warning if the CellType is neither specified by the user nor known from the sample object. In these cases, we default to Bacterial. *)
+	If[Or@@cellTypeNotSpecifiedBools && messages && notInEngine,
 		Message[
-			Error::InsufficientVolumeForAliquoting,
-			ObjectToString[aliquotVolumeReplicatesMismatchCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation],
-			aliquotVolumeReplicatesMismatchCases[[All, 2]],
-			aliquotVolumeReplicatesMismatchCases[[All, 3]],
-			aliquotVolumeReplicatesMismatchCases[[All, 4]]
-		];
+			Warning::CellTypeNotSpecified,
+			(*1*)(* Potentially collapse to the sample or all samples instead of ID here *)
+			StringJoin[
+				Capitalize@samplesForMessages[PickList[mySamples, cellTypeNotSpecifiedBools], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
+				" ",
+				hasOrHave[DeleteDuplicates@PickList[mySamples, cellTypeNotSpecifiedBools]]
+			],
+			(*2*)pluralize[DeleteDuplicates@PickList[mySamples, cellTypeNotSpecifiedBools], "this sample", "these samples"]
+		]
 	];
 
-	aliquotVolumeReplicatesMismatchTest = If[gatherTests,
+	(* Create the corresponding test for the invalid options. *)
+	cellTypeNotSpecifiedTests = If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
+			(* Get the inputs that fail this test. *)
+			failingInputs = PickList[mySamples, cellTypeNotSpecifiedBools];
+
+			(* Get the inputs that pass this test. *)
+			passingInputs = Complement[mySamples, failingInputs];
+
+			(* Create a test for the non-passing inputs. *)
+			failingInputTest = If[Length[failingInputs] > 0,
+				Warning["The following samples, " <> ObjectToString[failingInputs, Cache -> cacheBall, Simulation -> simulation] <> ", have a CellType specified (as an option or in the Model)", True, False],
+				Nothing
+			];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest = If[Length[passingInputs] > 0,
+				Warning["The following samples, " <> ObjectToString[passingInputs, Cache -> cacheBall, Simulation -> simulation] <> ", have a CellType specified (as an option or in the Model)", True, True],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				failingInputTest
+			}
+		],
+		(* We aren't gathering tests. No tests to create. *)
+		{}
+	];
+
+	(* 4. ConflictingCellType Warning and Error *)
+	If[MemberQ[conflictingCellTypeWarnings, True] && messages,
+		Module[{captureSentence},
+			(* Throw the corresponding warning *)
+			captureSentence = Which[
+				(* Check if CellPelletIntensity/CryoprotectantSolution is specified or by default *)
+				MemberQ[PickList[resolvedCryoprotectionStrategies, conflictingCellTypeWarnings], None] || !MatchQ[Flatten@PickList[Lookup[mapThreadFriendlyOptions, {CellPelletIntensity, CryoprotectantSolution}], conflictingCellTypeWarnings], {(Automatic|Null)..}],
+					"Bacterial and yeast cells require different preparing environment during transfer",
+				MemberQ[PickList[resolvedCryoprotectionStrategies, conflictingCellTypeWarnings], ChangeMedia] && MatchQ[PickList[Lookup[mapThreadFriendlyOptions, CellPelletIntensity], conflictingCellTypeWarnings], {Automatic..}] && MemberQ[PickList[Lookup[mapThreadFriendlyOptions, CryoprotectantSolution], conflictingCellTypeWarnings], Except[Automatic]],
+					"Bacterial and yeast cells require slightly different CryoprotectantSolution when changing media",
+				MemberQ[PickList[resolvedCryoprotectionStrategies, conflictingCellTypeWarnings], ChangeMedia] && MatchQ[PickList[Lookup[mapThreadFriendlyOptions, CryoprotectantSolution], conflictingCellTypeWarnings], {Automatic..}] && MemberQ[PickList[Lookup[mapThreadFriendlyOptions, CellPelletIntensity], conflictingCellTypeWarnings], Except[Automatic]],
+					"Bacterial and yeast cells require slightly different CellPelletIntensity when changing media",
+				MemberQ[PickList[resolvedCryoprotectionStrategies, conflictingCellTypeWarnings], ChangeMedia],
+					"Bacterial and yeast cells require different CellPelletIntensity and CryoprotectantSolution when changing media",
+				True,
+					"Bacterial and yeast cells require slightly different CryoprotectantSolution"
+			];
+			Message[
+				Warning::ConflictingCellType,
+				captureSentence,
+				StringJoin[
+					Capitalize@samplesForMessages[PickList[mySamples, conflictingCellTypeWarnings], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
+					" ",
+					hasOrHave[DeleteDuplicates@PickList[mySamples, conflictingCellTypeWarnings]]
+				],
+				joinClauses[PickList[resolvedCellTypes, conflictingCellTypeWarnings]],
+				joinClauses[PickList[sampleCellTypes, conflictingCellTypeWarnings]]
+			]
+		]
+	];
+
+	conflictingCellTypeErrorOptions = If[Or @@ conflictingCellTypeErrors && !gatherTests,
+		Module[{captureSentence},
+			(* Throw the corresponding error. *)
+			captureSentence = Which[
+				(* Check if CellPelletIntensity/CryoprotectantSolution is specified or by default *)
+				MemberQ[PickList[resolvedCryoprotectionStrategies, conflictingCellTypeErrors], None] || !MatchQ[Flatten@PickList[Lookup[mapThreadFriendlyOptions, {CellPelletIntensity, CryoprotectantSolution}], conflictingCellTypeErrors], {(Automatic|Null)..}],
+					"Mammalian and microbial cells require different preparing environment during transfer",
+				MemberQ[PickList[resolvedCryoprotectionStrategies, conflictingCellTypeErrors], ChangeMedia] && MatchQ[PickList[Lookup[mapThreadFriendlyOptions, CellPelletIntensity], conflictingCellTypeErrors], {Automatic..}] && MemberQ[PickList[Lookup[mapThreadFriendlyOptions, CryoprotectantSolution], conflictingCellTypeErrors], Except[Automatic]],
+					"Mammalian and microbial cells require different CryoprotectantSolution when changing media",
+				MemberQ[PickList[resolvedCryoprotectionStrategies, conflictingCellTypeErrors], ChangeMedia] && MatchQ[PickList[Lookup[mapThreadFriendlyOptions, CryoprotectantSolution], conflictingCellTypeErrors], {Automatic..}] && MemberQ[PickList[Lookup[mapThreadFriendlyOptions, CellPelletIntensity], conflictingCellTypeErrors], Except[Automatic]],
+					"Mammalian and microbial cells require different CellPelletIntensity when changing media",
+				MemberQ[PickList[resolvedCryoprotectionStrategies, conflictingCellTypeErrors], ChangeMedia],
+					"Mammalian and microbial cells require different CellPelletIntensity and CryoprotectantSolution when changing media",
+				MatchQ[PickList[resolvedCryoprotectionStrategies, conflictingCellTypeErrors], {None..}],
+					"Mammalian and microbial cells require different preparing environment during aliquotting",
+				True,
+					"Mammalian and microbial cells require different CryoprotectantSolution"
+			];
+			Message[Error::ConflictingCellType,
+				captureSentence,
+				StringJoin[
+					Capitalize@samplesForMessages[PickList[mySamples, conflictingCellTypeErrors], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
+					" ",
+					hasOrHave[DeleteDuplicates@PickList[mySamples, conflictingCellTypeErrors]]
+				],
+				joinClauses[PickList[resolvedCellTypes, conflictingCellTypeErrors]],
+				joinClauses[PickList[sampleCellTypes, conflictingCellTypeErrors]]
+			];
+
+			(* Return our invalid options. *)
+			{CellType}
+		],
+		{}
+	];
+
+	conflictingCellTypeTest = If[gatherTests,
 		Module[{affectedSamples, failingTest, passingTest},
-			affectedSamples = aliquotVolumeReplicatesMismatchCases[[All,1]];
+			affectedSamples = PickList[mySamples, conflictingCellTypeWarnings];
 
 			failingTest = If[Length[affectedSamples] == 0,
 				Nothing,
-				Test["AliquotVolume is a volume quantity for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if NumberOfReplicates is not Null:", True, False]
+				Test["The specified CellType(s) for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " matches the CellType information in the sample object(s):", True, False]
 			];
 
 			passingTest = If[Length[affectedSamples] == Length[mySamples],
 				Nothing,
-				Test["AliquotVolume is a volume quantity for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if NumberOfReplicates is not Null:", True, True]
+				Test["The specified CellType(s) for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " matches the CellType information in the sample object(s):", True, True]
 			];
 
 			{failingTest, passingTest}
@@ -2789,51 +4349,557 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		Null
 	];
 
-	(*Warning::OveraspiratedTransfer*)
-	(* Note: the warning is defined in ExperimentTransfer. Although it is a warning, we throw InvalidOptions and return $Failed *)
-	(* Overaspiration checks. *)
-	overaspirationTest = If[MatchQ[overAspirationErrors, {Null..}],
-		Warning["There are no overaspirations from the source samples:", True, True],
-		Warning["There are no overaspirations from the source samples:", False, True]
+
+	(* 5. Error::ConflictingCultureAdhesion *)
+	(* The specified CultureAdhesion must not conflict with the CultureAdhesion information in Object[Sample]. *)
+	(* We have already thrown FreezeCellsNonLiquidSamples so no need to check State and CultureAdhesion conflicts *)
+	conflictingCultureAdhesionCases = If[MemberQ[conflictingCultureAdhesionBools, True],
+		MapThread[
+			If[TrueQ[#3],
+				{Lookup[#1, Object], CultureAdhesion, #4, #2},
+				Nothing
+			]&,
+			{samplePackets, resolvedCultureAdhesions, conflictingCultureAdhesionBools, Lookup[samplePackets, CultureAdhesion, {}]}
+		],
+		{}
 	];
-	overaspirationWarnings = DeleteCases[overAspirationErrors, Null];
-	If[!MatchQ[overaspirationWarnings, {}] && messages,
-		Message[
-			Warning::OveraspiratedTransfer,
-			ObjectToString[overaspirationWarnings[[All, 1]], Cache -> cacheBall, Simulation -> simulation],
-			overaspirationWarnings[[All, 2]],
-			overaspirationWarnings[[All, 3]],
-			overaspirationWarnings[[All, 4]]
+
+	If[!MatchQ[conflictingCultureAdhesionCases, {}] && messages,
+		Module[{errorMessage},
+			(* Error-type specific error description *)
+			errorMessage = StringJoin[
+				Capitalize@samplesForMessages[conflictingCultureAdhesionCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
+				" ",
+				hasOrHave[DeleteDuplicates@conflictingCultureAdhesionCases[[All, 1]]],
+				" the CultureAdhesion option specified as ",
+				joinClauses[conflictingCultureAdhesionCases[[All, 4]]],
+				" while the ",
+				joinClauses[conflictingCultureAdhesionCases[[All, 2]]],
+				" field detected in the object as ",
+				joinClauses[conflictingCultureAdhesionCases[[All, 3]]]
+			];
+			Message[
+				Error::ConflictingCultureAdhesion,
+				"The specified CultureAdhesion option should match the values in the CultureAdhesion field",
+				errorMessage,
+				"the CultureAdhesion field of the sample(s)"
+			]
 		]
 	];
 
-	(*Error::CryoprotectantSolutionOverfill*)
+	conflictingCultureAdhesionTest = If[gatherTests,
+		Module[{affectedSamples, failingTest, passingTest},
+			affectedSamples = conflictingCultureAdhesionCases[[All, 1]];
+
+			failingTest = If[Length[affectedSamples] == 0,
+				Nothing,
+				Test["The specified CultureAdhesion(s) for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " matches the CultureAdhesion information in the sample object(s):", True, False]
+			];
+
+			passingTest = If[Length[affectedSamples] == Length[mySamples],
+				Nothing,
+				Test["The specified CultureAdhesion(s) for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " matches the CultureAdhesion information in the sample object(s):", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Null
+	];
+
+
+	(* 6. CultureAdhesionNotSpecified *)
+	(* Throw a warning if the CultureAdhesion is neither specified by the user nor known from the sample object. In these cases, we default to Suspension. *)
+	If[Or @@ cultureAdhesionNotSpecifiedBools && messages && notInEngine,
+		Module[{reasonClause, actionClause},
+			reasonClause =StringJoin[
+				Capitalize@samplesForMessages[PickList[mySamples, cultureAdhesionNotSpecifiedBools], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
+				" ",
+				hasOrHave[DeleteDuplicates@PickList[mySamples, cultureAdhesionNotSpecifiedBools]]
+			];
+			actionClause = StringJoin[
+				"For ",
+				pluralize[DeleteDuplicates@PickList[mySamples, cultureAdhesionNotSpecifiedBools], "this sample, ", "these samples, "],
+				"the CultureAdhesion option will default to Suspension"
+			];
+			Message[
+				Warning::CultureAdhesionNotSpecified,
+				"ExperimentFreezeCells only supports Suspension cell samples",
+				reasonClause,
+				actionClause
+			]
+		]
+	];
+	(* Create the corresponding test for the invalid options. *)
+	cultureAdhesionNotSpecifiedTests = If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
+			(* Get the inputs that fail this test. *)
+			failingInputs = PickList[mySamples, cultureAdhesionNotSpecifiedBools];
+
+			(* Get the inputs that pass this test. *)
+			passingInputs = Complement[mySamples, failingInputs];
+
+			(* Create a test for the non-passing inputs. *)
+			failingInputTest = If[Length[failingInputs] > 0,
+				Warning["The following samples, " <> ObjectToString[failingInputs, Cache -> cacheBall, Simulation -> simulation] <> ", have a CultureAdhesion specified (as an option or in the Model)", True, False],
+				Nothing
+			];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest = If[Length[passingInputs] > 0,
+				Warning["The following samples, " <> ObjectToString[passingInputs, Cache -> cacheBall, Simulation -> simulation] <> ", have a CultureAdhesion specified (as an option or in the Model)", True, True],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				failingInputTest
+			}
+		],
+		(* We aren't gathering tests. No tests to create. *)
+		{}
+	];
+
+
+	(* 7. Get whether the input culture adhesions are supported *)
+	(* Determine the CultureAdhesion of all the input samples.  *)
+	sampleCultureAdhesions = MapThread[
+		Function[{samplePacket, mainCellIdentityModel},
+			Which[
+				MatchQ[Lookup[samplePacket, CultureAdhesion], CultureAdhesionP],
+					Lookup[samplePacket, CultureAdhesion],
+				MatchQ[mainCellIdentityModel, ObjectP[Model[Cell]]],
+					fastAssocLookup[fastAssoc, mainCellIdentityModel, CultureAdhesion],
+				True,
+					Null
+			]
+		],
+		{samplePackets, mainCellIdentityModels}
+	];
+
+	(* Any CultureAdhesion which is not Suspension is not currently supported because we don't have DissociateCells yet. *)
+	invalidCultureAdhesionSamples = PickList[mySamples, resolvedCultureAdhesions, Adherent|SolidMedia];
+
+	(* Distinguish whether the Suspension value is inherited from Object or from specified option *)
+	unsupportedCellCultureTypeCases = MapThread[
+		Which[
+			MatchQ[#3, Adherent|SolidMedia], {#1, CultureAdhesion},
+			MatchQ[#2, Adherent|SolidMedia], {#1, Object},
+			True, Nothing
+		]&,
+		{mySamples, sampleCultureAdhesions, Lookup[expandedSuppliedOptions, CultureAdhesion]}
+	];
+
+	If[!MatchQ[invalidCultureAdhesionSamples, {}] && messages,
+		Module[{groupedErrorDetails, errorClause},
+			(* Group by how CultureAdhesion is determined *)
+			groupedErrorDetails = GroupBy[unsupportedCellCultureTypeCases, Last];
+			(* Return the joined clauses stating what's wrong *)
+			errorClause = joinClauses[
+				Map[
+					StringJoin[
+						Capitalize@samplesForMessages[groupedErrorDetails[#][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
+						" ",
+						hasOrHave[DeleteDuplicates@groupedErrorDetails[#][[All, 1]]],
+						" non-Suspension cell culture type",
+						If[MatchQ[groupedErrorDetails[#][[All, 2]], {Object..}],
+							" detected from the CultureAdhesion field of the " <> pluralize[DeleteDuplicates@groupedErrorDetails[#][[All, 1]], "sample", "samples"],
+							" specified for the CultureAdhesion option"
+						]
+					]&,
+					Keys[groupedErrorDetails]
+				],
+				CaseAdjustment -> True
+			];
+			Message[
+				Error::UnsupportedCellCultureType,
+				"ExperimentFreezeCells only supports freezing cells with suspension cell culture type",
+				errorClause,
+				"Please contact Scientific Solutions team if you have a sample that falls outside current support"
+			]
+		]
+	];
+
+	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
+	invalidCultureAdhesionTest = If[gatherTests,
+		Module[{failingTest, passingTest},
+			failingTest = If[Length[invalidCultureAdhesionSamples] == 0,
+				Nothing,
+				Test["Our input samples " <> ObjectToString[invalidCultureAdhesionSamples, Cache -> cacheBall, Simulation -> simulation] <> " are of supported CultureAdhesions (Suspension):", True, False]
+			];
+
+			passingTest = If[Length[invalidCultureAdhesionSamples] == Length[mySamples],
+				Nothing,
+				Test["Our input samples " <> ObjectToString[Complement[mySamples, invalidCultureAdhesionSamples], Cache -> cacheBall, Simulation -> simulation] <> " are of supported CultureAdhesions (Suspension):", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Nothing
+	];
+
+
+	(* 8. Warning::FreezeCellsUnusedSample *)
+	(* Throw a warning to tell the user how much sample will not be frozen under the current conditions. *)
+	(* Note: we allow parallel samples (duplicated samples) if we are using AddCryoprotectant and None strategies or Aliquot is False *)
+	(* Throw a warning to tell the user how much sample will not be frozen under the current conditions. Allow for up to $MinConsolidationVolume(50 Microliter) *)
+	(* to not be frozen; otherwise this would be tripped for rounded values and would be super annoying without adding value. *)
+	unusedSampleCases = MapThread[
+		Function[{sample, aliquotVolume, totalVolume, index},
+			Sequence @@ {
+				If[
+					And[
+						!NullQ[aliquotVolume],
+						GreaterQ[Lookup[uniqueSampleToUsedVolLookup, sample], $MinConsolidationVolume]
+					],
+					{sample, totalVolume, Lookup[uniqueSampleToUsedVolLookup, sample], index},
+					Nothing
+				]
+			}
+		],
+		{mySamples, resolvedAliquotVolumes, containerInVolumesBeforeAliquoting, Range[Length[mySamples]]}
+	];
+
+	If[Length[unusedSampleCases] > 0 && messages && notInEngine,
+		Message[
+			Warning::FreezeCellsUnusedSample,
+			(*1*)StringJoin[
+				Capitalize@samplesForMessages[unusedSampleCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+				" ",
+				isOrAre[DeleteDuplicates@unusedSampleCases[[All, 1]]]
+			],
+			(*2*)joinClauses[unusedSampleCases[[All, 2]]],
+			(*3*)joinClauses[unusedSampleCases[[All, 3]]]
+		]
+	];
+
+	unusedSampleTests = If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{passingInputsTest, failingInputTest},
+			(* Create a test for the non-passing inputs. *)
+			failingInputTest = If[Length[unusedSampleCases] > 0,
+				Warning["The following samples, " <> ObjectToString[unusedSampleCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation] <> " do not have unused amount by the end of experiment:", True, False],
+				Nothing
+			];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest = If[Length[unusedSampleCases] == 0,
+				Warning["The following samples, " <> ObjectToString[unusedSampleCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation] <> " do not have unused amount by the end of experiment:", True, True],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				failingInputTest
+			}
+		],
+		(* We aren't gathering tests. No tests to create. *)
+		{}
+	];
+
+
+	(* 9. Error::FreezeCellsConflictingAliquotOptions *)
+	(* Throw an error AliquotVolume must be set if and only if Aliquot is True. *)
+	conflictingAliquotOptionsCases = MapThread[
+		Function[{sample, aliquotVolume, aliquotBool},
+			Sequence @@ {
+				If[MatchQ[aliquotBool, False] && MatchQ[aliquotVolume, Except[Null]],
+					{sample, aliquotVolume, aliquotBool},
+					Nothing
+				],
+				If[MatchQ[aliquotBool, True] && MatchQ[aliquotVolume, Null],
+					{sample, aliquotVolume, aliquotBool},
+					Nothing
+				]
+			}
+		],
+		{mySamples, resolvedAliquotVolumes, resolvedAliquotBools}
+	];
+
+	If[Length[conflictingAliquotOptionsCases] > 0 && messages,
+		Module[{groupedErrorDetails, reasonClause},
+			(* Group by how Aliquot is determined *)
+			groupedErrorDetails = GroupBy[conflictingAliquotOptionsCases, Last];
+			reasonClause = joinClauses[
+				{
+					If[MemberQ[Keys[groupedErrorDetails], True],
+						StringJoin[
+							samplesForMessages[groupedErrorDetails[True][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+							" ",
+							hasOrHave[DeleteDuplicates@groupedErrorDetails[True][[All, 1]]],
+							" the Aliquot option set to True while the AliquotVolume option is not specified"
+						],
+						Nothing
+					],
+					If[MemberQ[Keys[groupedErrorDetails], False],
+						StringJoin[
+							samplesForMessages[groupedErrorDetails[False][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+							" ",
+							hasOrHave[DeleteDuplicates@groupedErrorDetails[False][[All, 1]]],
+							" the Aliquot option set to False while the AliquotVolume option is specified"
+						],
+						Nothing
+					]
+				},
+				CaseAdjustment -> True
+			];
+			Message[
+				Error::FreezeCellsConflictingAliquotOptions,
+				reasonClause,
+				pluralize[DeleteDuplicates@conflictingAliquotOptionsCases, "this sample", "these samples"]
+			]
+		]
+	];
+
+	conflictingAliquotOptionsTest = If[gatherTests,
+		Module[{affectedSamples, failingTest, passingTest},
+			affectedSamples = conflictingAliquotOptionsCases[[All, 1]];
+
+			failingTest = If[Length[affectedSamples] == 0,
+				Nothing,
+				Test["Aliquot is True for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if and only if AliquotVolume is not Null:", True, False]
+			];
+
+			passingTest = If[Length[affectedSamples] == Length[mySamples],
+				Nothing,
+				Test["Aliquot is True for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if and only if AliquotVolume is not Null:", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Null
+	];
+
+
+	(* 10. Error::InsufficientVolumeForAliquoting *)
+	(* Check if any unused volume is lower than 0 Microliter *)
+	(* To avoid rounding error, we use 1 Microliter times numberNumberOfReplicates *)
+	aliquotVolumeReplicatesMismatchCases = Map[
+		Function[{samplePacket},
+			If[LessQ[Lookup[uniqueSampleToUsedVolLookup, Lookup[samplePacket, Object]], - correctNumberOfReplicates Microliter],
+				Module[{posOfSample, sampleVolumeQuantity},
+					posOfSample = Flatten@Position[mySamples, Lookup[samplePacket, Object]];
+					(* Set the volume of a sample to 0 Microliters if it is not informed. This will allow us to error out in a predictable way instead of breaking everything. *)
+					sampleVolumeQuantity = Which[
+						MatchQ[Lookup[samplePacket, Volume], GreaterP[1 Milliliter]],
+							SafeRound[Convert[Lookup[samplePacket, Volume], Milliliter], 1 Microliter],
+						MatchQ[Lookup[samplePacket, Volume], VolumeP],
+							SafeRound[Convert[Lookup[samplePacket, Volume], Microliter], 1 Microliter],
+						True,
+							0 Microliter
+					];
+					{Lookup[samplePacket, Object], Flatten@Position[mySamples, Lookup[samplePacket, Object]], resolvedAliquotVolumes[[posOfSample]], numericNumberOfReplicates*Length[posOfSample], sampleVolumeQuantity}
+				],
+				Nothing
+			]
+		],
+		DeleteDuplicates@samplePackets
+	];
+
+	If[!MatchQ[aliquotVolumeReplicatesMismatchCases, {}] && messages,
+		Module[{errorDetails, actionClause},
+			errorDetails = If[Length[aliquotVolumeReplicatesMismatchCases] > $MaxNumberOfErrorDetails,
+				StringJoin[
+					Capitalize@samplesForMessages[aliquotVolumeReplicatesMismatchCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+					" have the AliquotVolume option set to ",
+					joinClauses[aliquotVolumeReplicatesMismatchCases[[All, 3]]],
+					If[correctNumberOfReplicates > 1,
+						" and the NumberOfReplicates set to " <> ToString[correctNumberOfReplicates],
+						""
+					],
+					", which exceed the available sample volumes."
+				],
+				joinClauses[
+					Map[
+						StringJoin[
+							samplesForMessages[ToList@#[[1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+							" has the AliquotVolume option set to ",
+							joinClauses[#[[3]]],
+							If[#[[4]] > 1,
+								" for a total number of " <> ToString[#[[4]]] <> " cryogenic sample containers",
+								" for a single cryogenic sample container"
+							],
+							", which exceed the available sample volume at ",
+							ToString[#[[5]]]
+						]&,
+						aliquotVolumeReplicatesMismatchCases
+					],
+					CaseAdjustment -> True
+				]
+			];
+			actionClause = StringJoin[
+				pluralize[aliquotVolumeReplicatesMismatchCases[[All, 1]], "For this sample,", "For these samples,"],
+				If[correctNumberOfReplicates > 1,
+					" please adjust the AliquotVolume and/or the NumberOfReplicates to decrease the amount of sample used in the protocol",
+					" please adjust the AliquotVolume to decrease the amount of sample used in the protocol"
+				]
+			];
+			Message[
+				Error::InsufficientVolumeForAliquoting,
+				errorDetails,
+				actionClause
+			]
+		]
+	];
+
+	aliquotVolumeReplicatesMismatchTest = If[gatherTests,
+		Module[{affectedSamples, failingTest, passingTest},
+			affectedSamples = aliquotVolumeReplicatesMismatchCases[[All, 1]];
+
+			failingTest = If[Length[affectedSamples] == 0,
+				Nothing,
+				Test["AliquotVolume is not exceeding for volume of the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> ":", True, False]
+			];
+
+			passingTest = If[Length[affectedSamples] == Length[mySamples],
+				Nothing,
+				Test["AliquotVolume is not exceeding for volume of the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> ":", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Null
+	];
+
+
+	(* 11. Error::SupernatantOveraspiratedTransfer *)
+	(* Overaspiration checks during media change *)
+	overAspirationErrors = DeleteDuplicates@DeleteCases[overAspirationErrors, Null];
+	If[!MatchQ[overAspirationErrors, {}] && messages,
+		Module[{groupedErrorDetails, errorDetails},
+			groupedErrorDetails = GroupBy[overAspirationErrors, Rest];
+			errorDetails = If[Length[Keys[groupedErrorDetails]] > $MaxNumberOfErrorDetails,
+				StringJoin[
+					Capitalize@samplesForMessages[overAspirationErrors[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+					" have the CellPelletSupernatantVolume option set to ",
+					joinClauses[overAspirationErrors[[All, 2]]],
+					", which exceed the total sample volumes"
+				],
+				joinClauses[
+					Map[
+						StringJoin[
+							samplesForMessages[groupedErrorDetails[#][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+							" ",
+							hasOrHave[groupedErrorDetails[#]],
+							" the CellPelletSupernatantVolume option set to ",
+							ToString[groupedErrorDetails[#][[All, 2]][[1]]],
+							" but only ",
+							hasOrHave[groupedErrorDetails[#]],
+							" ",
+							ToString[groupedErrorDetails[#][[All, 3]][[1]]],
+							" at the time of media changing"
+						]&,
+						Keys[groupedErrorDetails]
+					],
+					CaseAdjustment -> True
+				]
+			];
+			Message[
+				Error::SupernatantOveraspiratedTransfer,
+				errorDetails,
+				pluralize[overAspirationErrors[[All, 1]], "For this sample", "For these samples"]
+			]
+		]
+	];
+
+	overaspirationTest = If[gatherTests,
+		Module[{affectedSamples, failingTest, passingTest},
+			affectedSamples = overAspirationErrors[[All, 1]];
+
+			failingTest = If[Length[affectedSamples] == 0,
+				Nothing,
+				Test["CellPelletSupernatantVolume is not exceeding for volume of the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> ":", True, False]
+			];
+
+			passingTest = If[Length[affectedSamples] == Length[mySamples],
+				Nothing,
+				Test["CellPelletSupernatantVolume is not exceeding for volume of the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> ":", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Null
+	];
+
+
+	(* 12. Error::CryoprotectantSolutionOverfill *)
 	(* The addition of CryoprotectantSolution cannot cause the sample's current container to overfill. *)
 	cryoprotectantSolutionOverfillCases = MapThread[
-		Function[{sample, cryoprotectantSolutionVolume, overFillSourceInfo, index},
+		Function[{sample, cryoprotectantSolutionVolume, overFillSourceInfo, suppliedCryoprotectantSolutionVolume, suppliedSupernatantVolume, sampleVolumeQuantity},
 			If[!NullQ[overFillSourceInfo],
 				{
 					sample,
 					cryoprotectantSolutionVolume,
 					overFillSourceInfo[[1]],
 					overFillSourceInfo[[2]],
-					index
+					overFillSourceInfo[[3]],
+					{
+						If[MatchQ[suppliedCryoprotectantSolutionVolume, VolumeP], CryoprotectantSolutionVolume, Nothing],
+						If[MatchQ[suppliedSupernatantVolume, VolumeP] && LessQ[suppliedSupernatantVolume, sampleVolumeQuantity], CellPelletSupernatantVolume, Nothing]
+					}
 				},
 				Nothing
 			]
 		],
-		{mySamples, resolvedCryoprotectantSolutionVolumes, overFillSourceErrors, Range[Length[mySamples]]}
+		{mySamples, resolvedCryoprotectantSolutionVolumes, overFillSourceErrors, expandedSuppliedCryoprotectantSolutionVolumes, expandedSuppliedSupernatantVolumes, sampleVolumeQuantities}
 	];
 
 	If[Length[cryoprotectantSolutionOverfillCases] > 0 && messages,
-		Message[
-			Error::CryoprotectantSolutionOverfill,
-			ObjectToString[cryoprotectantSolutionOverfillCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation],
-			cryoprotectantSolutionOverfillCases[[All, 2]],
-			cryoprotectantSolutionOverfillCases[[All, 3]],
-			cryoprotectantSolutionOverfillCases[[All, 4]],
-			cryoprotectantSolutionOverfillCases[[All, 5]]
-		];
+		Module[{groupedErrorDetails, captureSentence, errorDetails, actionClause},
+			groupedErrorDetails = GroupBy[cryoprotectantSolutionOverfillCases, Last];
+			captureSentence = Which[
+				MatchQ[Keys[groupedErrorDetails], {AddCryoprotectant..}],
+					"When preparing frozen cell stocks in situ in the input containers, the volume must remain below 75% of the containers' MaxVolume to account for ice expansion and prevent rupture",
+				MatchQ[Keys[groupedErrorDetails], {ChangeMedia..}],
+					"When adding CryoprotectantSolution after media removal, the total volume upon addition of CryoprotectantSolution should not overfill the containers",
+				True,
+					"When preparing frozen cell stocks in situ in the input containers, the volume must remain below 75% of the containers' MaxVolume to account for ice expansion and prevent rupture. And when adding CryoprotectantSolution after media removal for ChangeMedia strategy, the total volume upon addition of CryoprotectantSolution should not overfill the containers"
+			];
+			errorDetails = If[Length[Keys[groupedErrorDetails]] > $MaxNumberOfErrorDetails,
+				StringJoin[
+					Capitalize@samplesForMessages[cryoprotectantSolutionOverfillCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+					" have the CryoprotectantSolutionVolume option set to ",
+					joinClauses[cryoprotectantSolutionOverfillCases[[All, 2]]],
+					", which overfill the containers"
+				],
+				joinClauses[
+					Map[
+						StringJoin[
+							samplesForMessages[groupedErrorDetails[#][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+							" would have",
+							pluralize[DeleteDuplicates@groupedErrorDetails[#][[All, 1]], " a total volume at ", " total volumes at "],
+							joinClauses[groupedErrorDetails[#][[All, 3]]],
+							If[!MemberQ[#, CellPelletSupernatantVolume],
+								"",
+								" factoring in the specified CellPelletSupernatantVolume at " <> joinClauses[groupedErrorDetails[#][[All, 2]]]
+							],
+							" upon addition of CryoprotectantSolution and ",
+							pluralize[DeleteDuplicates@groupedErrorDetails[#][[All, 1]], "but the sample container ", "but the sample containers "],
+							hasOrHave[DeleteDuplicates@groupedErrorDetails[#][[All, 1]]],
+							" MaxVolume at ",
+							joinClauses[groupedErrorDetails[#][[All, 4]]]
+						]&,
+						Keys[groupedErrorDetails]
+					],
+					CaseAdjustment -> True
+				]
+			];
+			actionClause = StringJoin[
+				pluralize[DeleteDuplicates@cryoprotectantSolutionOverfillCases[[All, 1]], "For this sample, ", "For these samples, "],
+				If[MemberQ[Flatten@cryoprotectantSolutionOverfillCases, ChangeMedia] && MemberQ[Flatten@cryoprotectantSolutionOverfillCases, CellPelletSupernatantVolume],
+					"please either decrease the CryoprotectantSolutionVolume or increase the CellPelletSupernatantVolume",
+					"please lower the CryoprotectantSolutionVolume"
+				]
+			];
+			Message[
+				Error::CryoprotectantSolutionOverfill,
+				captureSentence,
+				errorDetails,
+				actionClause
+			]
+		]
 	];
 
 	cryoprotectantSolutionOverfillTest = If[gatherTests,
@@ -2855,33 +4921,97 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		Null
 	];
 
-	(*Error::ExcessiveCryogenicSampleVolume*)
+
+	(* 13. Error::ExcessiveCryogenicSampleVolume *)
 	(* The total volume to be frozen cannot exceed the volume of the CryogenicSampleContainer. *)
 	excessiveCryogenicSampleVolumeCases = MapThread[
-		Function[{sample, cryogenicVial, overFillDestinationInfo, index},
+		Function[{sample, cryogenicVial, specifiedCryogenicVial, overFillDestinationInfo, suppliedAliquotVolume, suppliedCryoprotectantSolutionVolume},
 			If[!NullQ[overFillDestinationInfo],
 				{
 					sample,
 					cryogenicVial,
 					overFillDestinationInfo[[1]],
-					overFillDestinationInfo[[2]],
-					index
+					0.75*overFillDestinationInfo[[2]],
+					{
+						If[MatchQ[suppliedAliquotVolume, VolumeP|All], AliquotVolume, Nothing],
+						If[MatchQ[suppliedCryoprotectantSolutionVolume, VolumeP], CryoprotectantSolutionVolume, Nothing],
+						If[MatchQ[specifiedCryogenicVial, ObjectP[]] && LessQ[overFillDestinationInfo[[2]], 4 Milliliter] && MatchQ[Lookup[myOptions, FreezingStrategy], InsulatedCooler|Automatic], CryogenicSampleContainer, Nothing]
+					}
 				},
 				Nothing
 			]
 		],
-		{mySamples, resolvedCryogenicSampleContainers, overFillDestinationErrors, Range[Length[mySamples]]}
+		{mySamples, resolvedCryogenicSampleContainers, expandedSuppliedCryogenicSampleContainers, overFillDestinationErrors, expandedSuppliedAliquotVolumes, expandedSuppliedCryoprotectantSolutionVolumes}
 	];
 
+	excessiveCryogenicSampleVolumeOptions = If[Length[excessiveCryogenicSampleVolumeCases] > 0,
+		If[MemberQ[excessiveCryogenicSampleVolumeCases, {ObjectP[], _, _, _, Except[{}]}],
+			DeleteDuplicates[Flatten@excessiveCryogenicSampleVolumeCases[[All, 5]]],
+			{AliquotVolume, CryogenicSampleContainer}
+		],
+		{}
+	];
 	If[Length[excessiveCryogenicSampleVolumeCases] > 0 && messages,
-		Message[
-			Error::ExcessiveCryogenicSampleVolume,
-			ObjectToString[excessiveCryogenicSampleVolumeCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation],
-			ObjectToString[excessiveCryogenicSampleVolumeCases[[All, 2]], Cache -> cacheBall, Simulation -> simulation],
-			excessiveCryogenicSampleVolumeCases[[All, 3]],
-			excessiveCryogenicSampleVolumeCases[[All, 4]],
-			excessiveCryogenicSampleVolumeCases[[All, 5]]
-		];
+		Module[{groupedErrorDetails, reasonClause, actionClause},
+			groupedErrorDetails = GroupBy[excessiveCryogenicSampleVolumeCases, First];
+			reasonClause = joinClauses@Map[
+				Function[{uniqueSample},
+					Module[{groupedOverfillPerSample},
+						groupedOverfillPerSample = groupedErrorDetails[uniqueSample];
+						StringJoin[
+							pluralize[groupedOverfillPerSample, "the cell stock ", "the cell stocks "],
+							"being prepared for ",
+							samplesForMessages[ToList@uniqueSample, mySamples, Cache -> cacheBall, Simulation -> simulation],
+							" would have total ",
+							pluralize[groupedOverfillPerSample, "volume of ", "volumes of "],
+							joinClauses@groupedOverfillPerSample[[All, 3]],
+							" which exceeds 75% of the MaxVolume of the CryogenicSampleContainer ",
+							samplesForMessages[groupedOverfillPerSample[[All, 2]], CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation],
+							" at ",
+							joinClauses@groupedOverfillPerSample[[All, 4]],
+							" factoring in the specified ",
+							pluralize[DeleteDuplicates[DeleteCases[Flatten@groupedOverfillPerSample[[All, 5]], CryogenicSampleContainer]], "option ", "options "],
+							joinClauses[DeleteCases[Flatten@groupedOverfillPerSample[[All, 5]], CryogenicSampleContainer]]
+						]
+					]
+				],
+				Keys[groupedErrorDetails]
+			];
+			actionClause = StringRiffle[
+				{
+					If[EqualQ[correctNumberOfReplicates, 1],
+						"Consider using the NumberOfReplicates option to distribute the cell sample(s) across multiple CryogenicSampleContainers.",
+						Nothing
+					],
+					If[MemberQ[excessiveCryogenicSampleVolumeCases, {ObjectP[], _, _, _, Except[{}]}],
+						StringJoin[
+							"For ",
+							pluralize[DeleteDuplicates@Cases[excessiveCryogenicSampleVolumeCases, {ObjectP[], _, _, _, Except[{}]}][[All, 1]], "this sample", "these samples"],
+							", please adjust ",
+							pluralize[DeleteDuplicates[Flatten@excessiveCryogenicSampleVolumeCases[[All, 5]]], "option ", "options "],
+							joinClauses[Flatten@excessiveCryogenicSampleVolumeCases[[All, 5]]],
+							" or allow",
+							pluralize[DeleteDuplicates@Cases[excessiveCryogenicSampleVolumeCases, {ObjectP[], _, _, _, Except[{}]}][[All, 1]], " the option", " the options"],
+							" to be set automatically in order to submit a valid experiment."
+						],
+						Nothing
+					],
+					If[And[
+						MatchQ[Lookup[myOptions, FreezingStrategy], InsulatedCooler|Automatic],
+						MemberQ[Flatten@excessiveCryogenicSampleVolumeCases[[All, 5]], CryogenicSampleContainer]
+					],
+						"Note that the largest CryogenicVial kept in stock at ECL is Model[Container, Vessel, \"5mL Cryogenic Vial\"], with a MaxVolume of 5 Milliliter.",
+						Nothing
+					]
+				},
+				" "
+			];
+			Message[
+				Error::ExcessiveCryogenicSampleVolume,
+				reasonClause,
+				actionClause
+			]
+		]
 	];
 
 	excessiveCryogenicSampleVolumeTest = If[gatherTests,
@@ -2903,48 +5033,126 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		Null
 	];
 
-	(*Error::UnsuitableCryogenicSampleContainerFootprint*)
-	(* All CryogenicSampleContainers must have a CryogenicVial footprint. *)
+
+	(* 14. Error::InvalidCryogenicSampleContainer *)
+	(* All CryogenicSampleContainers must be a CryogenicVial *)
 	(* Note: we have thrown Error::CryogenicVialAliquotingRequired for Aliquot->False cases earlier *)
 	unsuitableCryogenicSampleContainerErrors = MapThread[
-		Function[{sample, cryogenicSampleContainer, aliquotQ, index},
-			Module[{footPrint},
-				footPrint = If[MatchQ[cryogenicSampleContainer, ObjectP[Model[Container]]],
-					fastAssocLookup[fastAssoc, cryogenicSampleContainer, Footprint],
-					fastAssocLookup[fastAssoc, cryogenicSampleContainer, {Model, Footprint}]
+		Function[{sample, cryogenicSampleContainer, aliquotQ, specifiedCryogenicSampleContainer},
+			Module[{cryoVialModelPacket, validCryovialAssoc},
+				cryoVialModelPacket = If[MatchQ[cryogenicSampleContainer, ObjectP[Model[Container]]],
+					fetchPacketFromFastAssoc[cryogenicSampleContainer, fastAssoc],
+					fastAssocPacketLookup[fastAssoc, cryogenicSampleContainer, Model]
 				];
-				If[TrueQ[aliquotQ] && MatchQ[footPrint, Except[CryogenicVial]],
-					{sample, cryogenicSampleContainer, footPrint, index},
-					Null
+				validCryovialAssoc = whyCantThisModelBeCryogenicVial[cryoVialModelPacket];
+				(* Check user-specified CryogenicSampleContainer. There are 2 cases: *)
+				(* Case1: Aliquot is specified(semi-resolved) to False and input sample container is used as CryogenicSampleContainer *)
+				(* Case2: Aliquot is True and CryogenicSampleContainer is directly specified *)
+				Which[
+					MatchQ[aliquotQ, False] && MatchQ[specifiedCryogenicSampleContainer, Automatic] && !MatchQ[validCryovialAssoc, <||>],
+						{sample, cryogenicSampleContainer, validCryovialAssoc, If[MemberQ[Keys[validCryovialAssoc], Model], {Model}, Keys[validCryovialAssoc]]},
+					MatchQ[specifiedCryogenicSampleContainer, ObjectP[]] && !MatchQ[validCryovialAssoc, <||>],
+						{sample, cryogenicSampleContainer, validCryovialAssoc, If[MemberQ[Keys[validCryovialAssoc], Model], {Model}, Keys[validCryovialAssoc]]},
+					True,
+						Null
 				]
 			]
 		],
-		{mySamples, resolvedCryogenicSampleContainers, resolvedAliquotBools, Range[Length[mySamples]]}
+		{mySamples, resolvedCryogenicSampleContainers, resolvedAliquotBools, expandedSuppliedCryogenicSampleContainers}
 	];
 	unsuitableCryogenicSampleContainerCases = DeleteCases[unsuitableCryogenicSampleContainerErrors, Null];
 
 	If[Length[unsuitableCryogenicSampleContainerCases] > 0 && messages,
-		Message[
-			Error::UnsuitableCryogenicSampleContainerFootprint,
-			ObjectToString[unsuitableCryogenicSampleContainerCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation],
-			ObjectToString[unsuitableCryogenicSampleContainerCases[[All, 2]], Cache -> cacheBall, Simulation -> simulation],
-			unsuitableCryogenicSampleContainerCases[[All, 3]],
-			unsuitableCryogenicSampleContainerCases[[All, 4]]
-		];
+		Module[{captureSentence, groupedErrorDetails, reasonClause},
+			captureSentence = joinClauses[
+				{
+					If[MemberQ[Flatten@unsuitableCryogenicSampleContainerCases[[All, 4]], Model],
+						"acceptable cryogenic vial must correspond to a model that has been pressure-tested for safe handling in cryogenic storage",
+						Nothing
+					],
+					If[MemberQ[Flatten@unsuitableCryogenicSampleContainerCases[[All, 4]], ContainerMaterials],
+						"glass containers can be unsafe when handled in cryogenic storage due to risk of cracking or shattering",
+						Nothing
+					],
+					Which[
+						MemberQ[Flatten@unsuitableCryogenicSampleContainerCases[[All, 4]], CoverTypes] && !MemberQ[Flatten@unsuitableCryogenicSampleContainerCases[[All, 4]], Footprint|MinTemperature],
+							"acceptable cryogenic vial models must feature a secure screw cap",
+						MemberQ[Flatten@unsuitableCryogenicSampleContainerCases[[All, 4]], MinTemperature|CoverTypes] && !MemberQ[Flatten@unsuitableCryogenicSampleContainerCases[[All, 4]], Footprint],
+							"acceptable cryogenic vial models must withstand storage at cryogenic temperatures (below -170 Celsius) and feature a secure screw cap",
+						!MemberQ[Flatten@unsuitableCryogenicSampleContainerCases[[All, 4]], MinTemperature|CoverTypes] && MemberQ[Flatten@unsuitableCryogenicSampleContainerCases[[All, 4]], Footprint],
+							"acceptable cryogenic vial models must have Footprint as CEVial to be compatible with FreezingRack",
+						MemberQ[Flatten@unsuitableCryogenicSampleContainerCases[[All, 4]], MinTemperature|CoverTypes] && MemberQ[Flatten@unsuitableCryogenicSampleContainerCases[[All, 4]], Footprint],
+							"acceptable cryogenic vial models must withstand storage at cryogenic temperatures, have footprint compatible with freezing rack (CEVial), and feature a secure screw cap",
+						True,
+							Nothing
+					]
+				},
+				CaseAdjustment -> True
+			];
+			groupedErrorDetails = GroupBy[unsuitableCryogenicSampleContainerCases, Last];
+			reasonClause = If[Length[Keys[groupedErrorDetails]] > $MaxNumberOfErrorDetails,
+				StringJoin[
+					"For ",
+					samplesForMessages[unsuitableCryogenicSampleContainerCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+					", the option CryogenicSampleContainer ",
+					isOrAre[DeleteDuplicates@unsuitableCryogenicSampleContainerCases[[All, 1]]],
+					" specified as ",
+					samplesForMessages[unsuitableCryogenicSampleContainerCases[[All, 2]], CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation],
+					" which ",
+					isOrAre[DeleteDuplicates@unsuitableCryogenicSampleContainerCases[[All, 2]]],
+					" not acceptable ",
+					pluralize[DeleteDuplicates@unsuitableCryogenicSampleContainerCases[[All, 2]], "cryogenic vial", "cryogenic vials"]
+				],
+				joinClauses[
+					Map[
+						Function[{invalidContainerFields},
+							StringJoin[
+								Capitalize@samplesForMessages[groupedErrorDetails[invalidContainerFields][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+								" ",
+								hasOrHave[DeleteDuplicates@groupedErrorDetails[invalidContainerFields][[All, 1]]],
+								" the option CryogenicSampleContainer set to ",
+								samplesForMessages[groupedErrorDetails[invalidContainerFields][[All, 2]], CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation],
+								", which ",
+								If[MemberQ[invalidContainerFields, Model],
+									isOrAre[DeleteDuplicates@groupedErrorDetails[invalidContainerFields][[All, 2]]] <> " missing Model information",
+									StringJoin[
+										hasOrHave[DeleteDuplicates@groupedErrorDetails[invalidContainerFields][[All, 2]]],
+										pluralize[invalidContainerFields, " the field ", " the fields "],
+										joinClauses[invalidContainerFields],
+										" as ",
+										joinClauses@Map[
+											joinClauses[Lookup[groupedErrorDetails[invalidContainerFields][[All, 3]], #]]&,
+											invalidContainerFields
+										]
+									]
+								]
+							]
+						],
+						Keys[groupedErrorDetails]
+					],
+					CaseAdjustment -> True
+				]
+			];
+			Message[
+				Error::InvalidCryogenicSampleContainer,
+				captureSentence,
+				reasonClause
+			]
+		]
 	];
 
 	unsuitableCryogenicSampleContainerTest = If[gatherTests,
 		Module[{affectedSamples, failingTest, passingTest},
-			affectedSamples = unsuitableCryogenicSampleContainerCases[[All,1]];
+			affectedSamples = unsuitableCryogenicSampleContainerCases[[All, 1]];
 
 			failingTest = If[Length[affectedSamples] == 0,
 				Nothing,
-				Test["The Model[Container] of the CryogenicSampleContainer specified for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " has a CryogenicVial Footprint:", True, False]
+				Test["The Model[Container] of the CryogenicSampleContainer specified for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " is a valid cryogenic vial:", True, False]
 			];
 
 			passingTest = If[Length[affectedSamples] == Length[mySamples],
 				Nothing,
-				Test["The Model[Container] of the CryogenicSampleContainer specified for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " has a CryogenicVial Footprint:", True, True]
+				Test["The Model[Container] of the CryogenicSampleContainer specified for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " is a valid cryogenic vial:", True, True]
 			];
 
 			{failingTest, passingTest}
@@ -2952,30 +5160,78 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		Null
 	];
 
-	(*Error::UnsuitableFreezingRack*)
+
+	(* 15. Error::InvalidFreezingRack *)
 	unsuitableFreezingRackCases = MapThread[
-		Function[{sample, freezingRack, invalidQ, index},
-			If[TrueQ[invalidQ],
-				{sample, freezingRack, index},
-				Nothing
+		Function[{sample, freezingRack, invalidQ, unsuitableList, cryoVial},
+			Which[
+				TrueQ[invalidQ],
+					{sample, Null, Null, freezingRack},
+				!MatchQ[unsuitableList, {}],
+					{sample, cryoVial, unsuitableList, freezingRack},
+				True,
+					Nothing
 			]
 		],
-		{mySamples, resolvedFreezingRacks, invalidRackBools, Range[Length[mySamples]]}
+		{mySamples, resolvedFreezingRacks, invalidRackBools, suggestedRackLists, resolvedCryogenicSampleContainers}
 	];
 
 	If[Length[unsuitableFreezingRackCases] > 0 && messages,
-		Message[
-			Error::UnsuitableFreezingRack,
-			ObjectToString[unsuitableFreezingRackCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation],
-			ObjectToString[unsuitableFreezingRackCases[[All, 2]], Cache -> cacheBall, Simulation -> simulation],
-			ObjectToString[allPossibleFreezingRacks, Cache -> cacheBall, Simulation -> simulation],
-			unsuitableFreezingRackCases[[All, 3]]
-		];
+		Module[{groupedErrorDetails, errorDetails, actionClause},
+			groupedErrorDetails = GroupBy[unsuitableFreezingRackCases, Last];
+			actionClause = Module[{allowedFreezingRacks},
+				allowedFreezingRacks = Which[
+					MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
+						{Model[Container, Rack, "id:pZx9jo8ZVNW0"]}, (*"2mL Cryo Rack for VIA Freeze"*)
+					MatchQ[resolvedFreezingStrategy, InsulatedCooler] && MemberQ[Flatten@unsuitableFreezingRackCases[[All, 3]], ObjectP[]],
+						Cases[Flatten@unsuitableFreezingRackCases[[All, 3]], ObjectP[Model[Container, Rack, InsulatedCooler]]],
+					True,
+						allPossibleFreezingRacks
+				];
+				StringJoin[
+					If[Length[allowedFreezingRacks] > 1 ,
+						"a FreezingRack from ",
+						"the option FreezingRack as "
+					],
+					samplesForMessages[allowedFreezingRacks, CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation]
+				]
+			];
+			errorDetails = If[Length[Keys[groupedErrorDetails]] > $MaxNumberOfErrorDetails,
+				StringJoin[
+					"The FreezingRack specified for ",
+					samplesForMessages[unsuitableFreezingRackCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+					" are not a suitable rack for cryogenic vials"
+				],
+				joinClauses[
+					Map[
+						StringJoin[
+							samplesForMessages[groupedErrorDetails[#][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+							" ",
+							hasOrHave[groupedErrorDetails[#]],
+							" the option FreezingRack specified as ",
+							samplesForMessages[groupedErrorDetails[#][[All, 4]], CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation],
+							", which is not a rack ",
+							If[MatchQ[groupedErrorDetails[#][[All, 2]], {Null..}],
+								"for cryogenic vials",
+								"for CryogenicSampleContainer " <> samplesForMessages[DeleteCases[groupedErrorDetails[#][[All, 2]], Null], CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation]
+							]
+						]&,
+						Keys[groupedErrorDetails]
+					],
+					CaseAdjustment -> True
+				]
+			];
+			Message[
+				Error::InvalidFreezingRack,
+				errorDetails,
+				actionClause
+			]
+		]
 	];
 
 	unsuitableFreezingRackTest = If[gatherTests,
 		Module[{affectedSamples, failingTest, passingTest},
-			affectedSamples = unsuitableFreezingRackCases[[All,1]];
+			affectedSamples = unsuitableFreezingRackCases[[All, 1]];
 
 			failingTest = If[Length[affectedSamples] == 0,
 				Nothing,
@@ -2992,7 +5248,6 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		Null
 	];
 
-	(* Throw an error if the static freezer instrument has a DefaultTemperature other than -80+- 5 Celsius or -20+- 5 Celsius *)
 	resolvedFreezerModels = Map[
 		If[MatchQ[#, ObjectP[Object]],
 			fetchPacketFromCache[#, Join[staticFreezerModelPackets, controlledRateFreezerModelPackets]],
@@ -3000,443 +5255,857 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		]&,
 		resolvedFreezers
 	];
-	unsupportedFreezerCases = If[
-		!MemberQ[ToList[resolvedFreezers], ObjectP[{Object[Instrument, Freezer], Model[Instrument, Freezer]}]],
-		{},
-		MapThread[
-			Function[
-				{
-					sample,
-					freezerModel,
-					defaultTemperature,
-					index
-				},
-				Sequence @@ {
-					If[
-						And[
-							MatchQ[resolvedFreezingStrategy, InsulatedCooler],
-							!MatchQ[defaultTemperature, RangeP[-85 Celsius, -75 Celsius]],
-							!MatchQ[defaultTemperature, RangeP[-25 Celsius, -15 Celsius]]
-						],
-						{sample, freezerModel, defaultTemperature, index},
-						Nothing
-					]
-				}
-			],
+
+	(* 16. ConflictingCellFreezingOptions error check *)
+	(* This has 2 tiers that will eventually throw different messages: *)
+	(* 1. If FreezingStrategy is specified directly by user, and there is conflict with container max volume or options, suggest alternatives. *)
+	(* 2. If FreezingStrategy is not specified directly by user but there is conflict with specified options linked to different FreezingStrategy , suggest change options *)
+
+
+	(* Tier1/2 error *)
+	{
+		conflictingTemperatureProfileCases,
+		conflictingTemperatureProfileTests,
+		conflictingInsulatedCoolerFreezingTimeCases,
+		conflictingInsulatedCoolerFreezingTimeTests,
+		conflictingHardwareCases,
+		conflictingHardwareTests,
+		conflictingCoolantCases,
+		conflictingCoolantTests,
+		unsupportedFreezerCases,
+		unsupportedFreezerTests,
+		conflictingCellFreezingOptions,
+		conflictingCellFreezingTests
+	} = If[MatchQ[Lookup[myOptions, FreezingStrategy], FreezeCellMethodP],
+		(* Tier1 error *)
+		Module[
 			{
-				mySamples,
-				resolvedFreezers,
-				fastAssocLookup[fastAssoc, #, DefaultTemperature] & /@ resolvedFreezerModels,
-				Range[Length[mySamples]]
-			}
-		]
-	];
-
-	If[MatchQ[Length[unsupportedFreezerCases], GreaterP[0]] && messages,
-		Message[
-			Error::FreezeCellsUnsupportedFreezerModel,
-			ObjectToString[unsupportedFreezerCases[[All,1]], Cache -> cacheBall, Simulation -> simulation],
-			ObjectToString[unsupportedFreezerCases[[All,2]], Cache -> cacheBall, Simulation -> simulation],
-			ObjectToString[unsupportedFreezerCases[[All,3]], Cache -> cacheBall, Simulation -> simulation],
-			unsupportedFreezerCases[[All,4]]
-		];
-	];
-
-	unsupportedFreezerTest = If[gatherTests,
-		Module[{affectedSamples, failingTest, passingTest},
-			affectedSamples = unsupportedFreezerCases[[All,1]];
-
-			failingTest = If[Length[affectedSamples] == 0,
-				Nothing,
-				Test["If the FreezingStrategy is InsulatedCooler, the Freezer for sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " has a DefaultTemperature that is within 5 Celsius of either -80 Celsius or -20 Celsius:", True, False]
-			];
-
-			passingTest = If[Length[affectedSamples] == Length[mySamples],
-				Nothing,
-				Test["If the FreezingStrategy is InsulatedCooler, the Freezer for sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " has a DefaultTemperature that is within 5 Celsius of either -80 Celsius or -20 Celsius:", True, True]
-			];
-
-			{failingTest, passingTest}
-		],
-		Null
-	];
-
-	(*Error::FreezeCellsConflictingHardware*)
-	(* The FreezingStrategy, Freezer, FreezingRack, and CryogenicSampleContainer must be compatible. *)
-	resolvedFreezingRackModels = Map[
-		If[MatchQ[#, ObjectP[Object]],
-			fetchPacketFromCache[#, freezingRackModelPackets],
-			#
-		]&,
-		resolvedFreezingRacks
-	];
-	conflictingHardwareCases = MapThread[
-		Function[{sample, freezer, freezingRack, cryogenicVial, index, invalidRackQ, invalidCryogenicVialQ, unsuitableCryogenicVialQ},
-			Sequence @@ {
-				If[
-					And[
-						MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
-						MatchQ[freezer, ObjectP[{Model[Instrument, Freezer], Object[Instrument, Freezer]}]]
-					],
-					{sample, FreezingStrategy, resolvedFreezingStrategy, Freezer, freezer, index},
-					Nothing
+				conflictingTemperatureProfileCase, conflictingTemperatureProfileTest, conflictingInsulatedCoolerFreezingTimeCase,
+				conflictingInsulatedCoolerFreezingTimeTest, resolvedFreezingRackModels, conflictingHardwareCase, conflictingHardwareTest,
+				conflictingCoolantCase, conflictingCoolantTest, unsupportedFreezerCase, unsupportedFreezerTest
+			},
+			(* a. FreezeCellsConflictingTemperatureProfile *)
+			(* Throw an error is TemperatureProfile is set if while FreezingStrategy is not ControlledRateFreezer, or vice versa. *)
+			conflictingTemperatureProfileCase = If[
+				Or[
+					MatchQ[resolvedFreezingStrategy, ControlledRateFreezer] && MatchQ[resolvedTemperatureProfile, Null],
+					MatchQ[resolvedFreezingStrategy, InsulatedCooler] && MatchQ[resolvedTemperatureProfile, Except[Null]]
 				],
-				If[
-					And[
-						MatchQ[resolvedFreezingStrategy, InsulatedCooler],
-						MatchQ[freezer, ObjectP[{Model[Instrument, ControlledRateFreezer], Object[Instrument, ControlledRateFreezer]}]]
-					],
-					{sample, FreezingStrategy, resolvedFreezingStrategy, Freezer, freezer, index},
-					Nothing
-				],
-				(* Note:If invalidRackQ is True, we have thrown UnsuitableFreezingRack earlier *)
-				If[
-					And[
-						MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
-						MatchQ[freezingRack, ObjectP[{Model[Container, Rack, InsulatedCooler], Object[Container, Rack, InsulatedCooler]}]],
-						!TrueQ[invalidRackQ]
-					],
-					{sample, FreezingStrategy, resolvedFreezingStrategy, FreezingRack, freezingRack, index},
-					Nothing
-				],
-				If[
-					And[
-						MatchQ[resolvedFreezingStrategy, InsulatedCooler],
-						!MatchQ[freezingRack, ObjectP[{Model[Container, Rack, InsulatedCooler], Object[Container, Rack, InsulatedCooler]}]],
-						!TrueQ[invalidRackQ]
-					],
-					{sample, FreezingStrategy, resolvedFreezingStrategy, FreezingRack, freezingRack, index},
-					Nothing
-				],
-				(* Note:If invalidCryogenicVialQ is NOT Null, we have thrown CryogenicVialAliquotingRequired earlier *)
-				(* Similarly, if unsuitableCryogenicVialQ is NOT Null, we have thrown UnsuitableCryogenicSampleContainerFootprint earlier *)
-				If[
-					And[
-						NullQ[invalidCryogenicVialQ],
-						NullQ[unsuitableCryogenicVialQ],
-						MatchQ[
-							freezingRack,
-							(* These are the 2 mL racks for the VIA Freeze and Mr. Frosty, respectively. *)
-							ObjectP[{Model[Container, Rack, "id:pZx9jo8ZVNW0"], Model[Container, Rack, InsulatedCooler, "id:7X104vnMk93w"]}]
-						],
-						MatchQ[
-							fastAssocLookup[fastAssoc, cryogenicVial, MaxVolume],
-							GreaterP[2 Milliliter]
-						]
-					],
-					{sample, CryogenicVial, cryogenicVial, FreezingRack, freezingRack, index},
-					Nothing
-				],
-				If[
-					And[
-						NullQ[invalidCryogenicVialQ],
-						NullQ[unsuitableCryogenicVialQ],
-						MatchQ[
-							freezingRack,
-							ObjectP[Model[Container, Rack, InsulatedCooler, "id:N80DNj1WLYPX"]] (* Model[Container, Rack, InsulatedCooler, "5mL Mr. Frosty Rack"] *)
-						],
-						MatchQ[
-							fastAssocLookup[fastAssoc, cryogenicVial, MaxVolume],
-							LessP[3.6 Milliliter] (* The minimum vial size recommended for these is 3.6 mL, though we don't stock those vials. *)
-						]
-					],
-					{sample, CryogenicVial, cryogenicVial, FreezingRack, freezingRack, index},
-					Nothing
-				]
-			}
-		],
-		{mySamples, resolvedFreezers, resolvedFreezingRackModels, resolvedCryogenicSampleContainers, Range[Length[mySamples]], invalidRackBools, conflictingAliquotingErrors, unsuitableCryogenicSampleContainerErrors}
-	];
-
-	If[Length[conflictingHardwareCases] > 0 && messages,
-		Message[
-			Error::FreezeCellsConflictingHardware,
-			ObjectToString[conflictingHardwareCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation],
-			ObjectToString[conflictingHardwareCases[[All, 2]], Cache -> cacheBall, Simulation -> simulation],
-			ObjectToString[conflictingHardwareCases[[All, 3]], Cache -> cacheBall, Simulation -> simulation],
-			ObjectToString[conflictingHardwareCases[[All, 4]], Cache -> cacheBall, Simulation -> simulation],
-			ObjectToString[conflictingHardwareCases[[All, 5]], Cache -> cacheBall, Simulation -> simulation],
-			conflictingHardwareCases[[All, 6]]
-		];
-	];
-
-	conflictingHardwareTest = If[gatherTests,
-		Module[{affectedSamples, failingTest, passingTest},
-			affectedSamples = conflictingHardwareCases[[All,1]];
-
-			failingTest = If[Length[affectedSamples] == 0,
-				Nothing,
-				Test["The Freezer and FreezingRack for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " are consistent with the FreezingStrategy:", True, False]
+				{resolvedFreezingStrategy, resolvedTemperatureProfile},
+				{}
 			];
-
-			passingTest = If[Length[affectedSamples] == Length[mySamples],
-				Nothing,
-				Test["The Freezer and FreezingRack for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " are consistent with the FreezingStrategy:", True, True]
-			];
-
-			{failingTest, passingTest}
-		],
-		Null
-	];
-
-	(* Error::ConflictingCellType *)
-	(* Note: for FreezeCells, cryoprotectant is different for yeast and bacterial, so only hard error *)
-	If[MemberQ[conflictingCellTypeWarnings, True] && messages,
-		Message[
-			Warning::ConflictingCellType,
-			Which[
-				Length[PickList[mySamples, conflictingCellTypeWarnings]] == Length[mySamples],
-					StringJoin[
-						Capitalize@samplesForMessages[PickList[mySamples, conflictingCellTypeWarnings], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
-						If[Length[mySamples] == 1,
-							" has",
-							" have"
-						]
-					],
-				Length[PickList[mySamples, conflictingCellTypeWarnings]] == 1,
-					StringJoin["One of the input samples ", samplesForMessages[PickList[mySamples, conflictingCellTypeWarnings], Cache -> cacheBall, Simulation -> simulation], " has"],
-				Length[PickList[mySamples, conflictingCellTypeWarnings]] <= $MaxNumberOfErrorDetails,
-					StringJoin["The input samples ", samplesForMessages[PickList[mySamples, conflictingCellTypeWarnings], Cache -> cacheBall, Simulation -> simulation], " have"],
-				True,
-					"Some of the input samples have"(* If there are too many invalid samples, collapse the error details *)
-			],
-			joinClauses[PickList[resolvedCellTypes, conflictingCellTypeWarnings]],
-			joinClauses[PickList[sampleCellTypes, conflictingCellTypeWarnings]],
-			"When freezing cells, different cell types have different CellPelletIntensity and CryoprotectantSolution if CryoprotectionStrategy is ChangeMedia."
-		];
-	];
-
-	conflictingCellTypeTest = If[gatherTests,
-		Module[{affectedSamples, failingTest, passingTest},
-			affectedSamples = PickList[mySamples, conflictingCellTypeWarnings];
-
-			failingTest = If[Length[affectedSamples] == 0,
-				Nothing,
-				Warning["The specified CellType(s) for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " matches the CellType information in the sample object(s):", True, False]
-			];
-
-			passingTest = If[Length[affectedSamples] == Length[mySamples],
-				Nothing,
-				Warning["The specified CellType(s) for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " matches the CellType information in the sample object(s):", True, True]
-			];
-
-			{failingTest, passingTest}
-		],
-		Null
-	];
-
-	(*Error::ConflictingCultureAdhesion*)
-	(* The specified CultureAdhesion must not conflict with the CultureAdhesion information in Object[Sample]. *)
-	conflictingCultureAdhesionCases = If[MemberQ[conflictingCultureAdhesionBools, True],
-		MapThread[
-			Which[
-				TrueQ[#3] && (MatchQ[#2, #4] || !MatchQ[#4, CultureAdhesionP]),
-					{Lookup[#1, Object], State, Lookup[#1, State], #2},
-				TrueQ[#3] && MatchQ[Lookup[#1, State], Solid] && MatchQ[#2, SolidMedia] && !MatchQ[#2, #4],
-					{Lookup[#1, Object], CultureAdhesion, #4, #2},
-				TrueQ[#3] && MatchQ[Lookup[#1, State], Liquid] && MatchQ[#2, Adherent|Suspension] && !MatchQ[#2, #4],
-					{Lookup[#1, Object], CultureAdhesion, #4, #2},
-				True,
-					{Lookup[#1, Object], {State, CultureAdhesion}, {Lookup[#1, State], #4}, #2}
-			]&,
-			{samplePackets, resolvedCultureAdhesions, conflictingCultureAdhesionBools, Lookup[samplePackets, CultureAdhesion, {}]}
-		],
-		{}
-	];
-
-	If[!MatchQ[conflictingCultureAdhesionCases, {}] && messages,
-		Module[{groupedErrorSamples, briefMessage, errorMessage},
-			groupedErrorSamples = GroupBy[conflictingCultureAdhesionCases, Rest];
-			(* Error-type specific brief description *)
-			briefMessage = If[Length[Keys[groupedErrorSamples]] > $MaxNumberOfErrorDetails,
-				"The CultureAdhesion option should match the values specified in the CultureAdhesion field and be consistent with the objects' State",
-				joinClauses[
-					Flatten@{
-						If[MemberQ[Flatten[conflictingCultureAdhesionCases[[All, 2]]], State],
-							Map[
-								Which[
-									MemberQ[ToList@#[[2]], State] && MatchQ[#[[4]], Adherent],
-										"Adherent cell culture adhesion type is only valid when State is Liquid",
-									MemberQ[ToList@#[[2]], State] && MatchQ[#[[4]], Suspension],
-										"Suspension cell culture adhesion type is only valid when State is Liquid",
-									MemberQ[ToList@#[[2]], State] && MatchQ[#[[4]], SolidMedia],
-										"SolidMedia cell culture adhesion type is only valid when State is Solid",
-									True, Nothing
-								]&,
-								conflictingCultureAdhesionCases
-							],
-							Nothing
-						],
-						If[MemberQ[Flatten[conflictingCultureAdhesionCases[[All, 2]]], CultureAdhesion],
-							"the cell culture adhesion type detected in the CultureAdhesion field and the specified CultureAdhesion option should match with each other",
-							Nothing
-						]
-					},
-					CaseAdjustment -> True
-				]
-			];
-			(* Error-type specific error description *)
-			errorMessage = If[Length[Keys[groupedErrorSamples]] > $MaxNumberOfErrorDetails,
-				StringJoin[
-					(* Potentially collapse to the sample or all samples instead of ID here *)
-					Which[
-						Length[conflictingCultureAdhesionCases] == Length[mySamples],
-							StringJoin[
-								Capitalize@samplesForMessages[conflictingCultureAdhesionCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
-								If[Length[mySamples] == 1,
-									" has",
-									" have"
-								]
-							],
-						Length[conflictingCultureAdhesionCases] == 1,
-							StringJoin["One of the input samples ", samplesForMessages[conflictingCultureAdhesionCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation], " has"],
-						Length[conflictingCultureAdhesionCases] <= $MaxNumberOfErrorDetails,
-							StringJoin["The input samples ", samplesForMessages[conflictingCultureAdhesionCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation], " have"],
-						True,
-							"Some of the input samples have"(* If there are too many invalid samples, collapse the error details *)
-					],
-					Which[
-						MemberQ[Flatten[conflictingCultureAdhesionCases[[All, 2]]], State] && MemberQ[Flatten[conflictingCultureAdhesionCases[[All, 2]]], CultureAdhesion],
-							" inconsistencies between the CultureAdhesion option and the values in the CultureAdhesion and State fields",
-						Length[conflictingCultureAdhesionCases] == 1,
-							" an inconsistency between the CultureAdhesion option and the field " <> ToString[conflictingCultureAdhesionCases[[All, 2]][[1]]],
-						True,
-							" inconsistencies between the CultureAdhesion option and the field " <> ToString[conflictingCultureAdhesionCases[[All, 2]][[1]]]
+	
+			If[Length[conflictingTemperatureProfileCase] > 0 && messages,
+				Message[
+					Error::FreezeCellsConflictingTemperatureProfile,
+					ToString[conflictingTemperatureProfileCase[[1]]],
+					If[NullQ[conflictingTemperatureProfileCase[[2]]],
+						"not specified",
+						StringJoin["set to ", ToString[conflictingTemperatureProfileCase[[2]]]]
 					]
+				]
+			];
+	
+			conflictingTemperatureProfileTest = If[gatherTests,
+				Module[{affectedSamples, failingTest, passingTest},
+					affectedSamples = If[MatchQ[conflictingTemperatureProfileCase, {}], {}, mySamples];
+	
+					failingTest = If[Length[affectedSamples] == 0,
+						Nothing,
+						Test["A TemperatureProfile is specified for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if and only if the FreezingStrategy is ControlledRateFreezer:", True, False]
+					];
+	
+					passingTest = If[Length[affectedSamples] == Length[mySamples],
+						Nothing,
+						Test["A TemperatureProfile is specified for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if and only if the FreezingStrategy is ControlledRateFreezer:", True, True]
+					];
+	
+					{failingTest, passingTest}
 				],
-				joinClauses[
-					Map[
-						Function[{groupedKey},
-							Module[{groupedCases},
-								groupedCases = Lookup[groupedErrorSamples, Key[groupedKey]];
-								If[MatchQ[groupedKey[[1]], {State, CultureAdhesion}],
-									StringJoin[
-										If[Length[groupedCases[[All, 1]]] != Length[mySamples],
-											Which[
-												Length[groupedCases[[All, 1]]] == 1,
-													StringJoin["One of the input samples ", samplesForMessages[groupedCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation]],
-												Length[groupedCases[[All, 1]]] <= $MaxNumberOfErrorDetails,
-													StringJoin["The input samples ", samplesForMessages[groupedCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation]],
-												True,
-													"Some of the input samples"(* If there are too many invalid samples, collapse the error details *)
-											],
-											samplesForMessages[groupedCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation](* Collapse the samples *)
-										],
-										If[GreaterQ[Length[groupedCases[[All, 1]]], 1], " have", " has"],
-										" the CultureAdhesion option specified as ",
-										joinClauses[groupedCases[[All, 4]]],
-										" while the ",
-										joinClauses[groupedCases[[All, 2]][[1]]],
-										" fields detected in the object as ",
-										joinClauses[groupedCases[[All, 3]][[1]]]
-									],
-									StringJoin[
-										If[Length[groupedCases[[All, 1]]] != Length[mySamples],
-											Which[
-												Length[groupedCases[[All, 1]]] == 1,
-													StringJoin["One of the input samples ", samplesForMessages[groupedCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation]],
-												Length[groupedCases[[All, 1]]] <= $MaxNumberOfErrorDetails,
-													StringJoin["The input samples ", samplesForMessages[groupedCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation]],
-												True,
-													"Some of the input samples"(* If there are too many invalid samples, collapse the error details *)
-											],
-											samplesForMessages[groupedCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation](* Collapse the samples *)
-										],
-										If[GreaterQ[Length[groupedCases[[All, 1]]], 1], " have", " has"],
-										" the CultureAdhesion option specified as ",
-										joinClauses[groupedCases[[All, 4]]],
-										" while the ",
-										joinClauses[groupedCases[[All, 2]]],
-										" field detected in the object as ",
-										joinClauses[groupedCases[[All, 3]]]
-									]
+				Null
+			];
+
+			(* b. Error::FreezeCellsConflictingInsulatedCoolerFreezingTime *)
+			(* InsulatedCoolerFreezingTime must be set if and only if FreezingStrategy is InsulatedCooler. *)
+			conflictingInsulatedCoolerFreezingTimeCase = If[
+				Or[
+					MatchQ[resolvedFreezingStrategy, InsulatedCooler] && MatchQ[resolvedInsulatedCoolerFreezingTime, Null],
+					MatchQ[resolvedFreezingStrategy, ControlledRateFreezer] && MatchQ[resolvedInsulatedCoolerFreezingTime, Except[Null]]
+				],
+				{resolvedFreezingStrategy, resolvedInsulatedCoolerFreezingTime},
+				{}
+			];
+	
+			(* Note: both options are not index-matching so we do not need to loop based on cases *)
+			If[MatchQ[Length[conflictingInsulatedCoolerFreezingTimeCase], GreaterP[0]] && messages,
+				Message[
+					Error::FreezeCellsConflictingInsulatedCoolerFreezingTime,
+					ToString[conflictingInsulatedCoolerFreezingTimeCase[[1]]],
+					If[NullQ[conflictingInsulatedCoolerFreezingTimeCase[[2]]],
+						"not specified",
+						StringJoin["set to ", ToString[conflictingInsulatedCoolerFreezingTimeCase[[2]]]]
+					]
+				]
+			];
+
+		conflictingInsulatedCoolerFreezingTimeTest = If[gatherTests,
+			Module[{affectedSamples, failingTest, passingTest},
+				affectedSamples = If[MatchQ[conflictingInsulatedCoolerFreezingTimeCase, {}], {}, mySamples];
+
+				failingTest = If[Length[affectedSamples] == 0,
+					Nothing,
+					Test["An InsulatedCoolerFreezingTime is specified for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if and only if the FreezingStrategy is InsulatedCooler:", True, False]
+				];
+
+				passingTest = If[Length[affectedSamples] == Length[mySamples],
+					Nothing,
+					Test["An InsulatedCoolerFreezingTime is specified for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if and only if the FreezingStrategy is InsulatedCooler:", True, True]
+				];
+
+				{failingTest, passingTest}
+			],
+			Null
+		];
+
+			(* c.Error::FreezeCellsConflictingHardware *)
+			(* The FreezingStrategy and Freezer/FreezingRack/CryogenicSampleContainer must be compatible. *)
+			resolvedFreezingRackModels = Map[
+				If[MatchQ[#, ObjectP[Object]],
+					fastAssocLookup[fastAssoc, #, Model],
+					#
+				]&,
+				resolvedFreezingRacks
+			];
+
+			conflictingHardwareCase = MapThread[
+				Function[{sample, freezer, freezingRack, cryogenicVial, invalidRackQ, invalidCryogenicVialQ, unsuitableCryogenicVialQ},
+					Sequence @@ {
+						If[
+							And[
+								MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
+								MatchQ[freezer, ObjectP[{Model[Instrument, Freezer], Object[Instrument, Freezer]}]]
+							],
+							{sample, resolvedFreezingStrategy, freezer, {FreezingStrategy, Freezer}},
+							Nothing
+						],
+						If[
+							And[
+								MatchQ[resolvedFreezingStrategy, InsulatedCooler],
+								MatchQ[freezer, ObjectP[{Model[Instrument, ControlledRateFreezer], Object[Instrument, ControlledRateFreezer]}]]
+							],
+							{sample, resolvedFreezingStrategy, freezer, {FreezingStrategy, Freezer}},
+							Nothing
+						],
+						(* Note:If invalidRackQ is True, we have thrown InvalidFreezingRack earlier *)
+						If[
+							And[
+								MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
+								MatchQ[freezingRack, ObjectP[{Model[Container, Rack, InsulatedCooler], Object[Container, Rack, InsulatedCooler]}]]
+							],
+							{sample, resolvedFreezingStrategy, freezingRack, {FreezingStrategy, FreezingRack}},
+							Nothing
+						],
+						If[
+							And[
+								MatchQ[resolvedFreezingStrategy, InsulatedCooler],
+								!MatchQ[freezingRack, ObjectP[{Model[Container, Rack, InsulatedCooler], Object[Container, Rack, InsulatedCooler]}]]
+							],
+							{sample, resolvedFreezingStrategy, freezingRack, {FreezingStrategy, FreezingRack}},
+							Nothing
+						],
+						(* Note:If invalidCryogenicVialQ is NOT Null, we have thrown CryogenicVialAliquotingRequired earlier *)
+						(* Similarly, if unsuitableCryogenicVialQ is NOT Null, we have thrown InvalidCryogenicSampleContainerType earlier *)
+						If[
+							And[
+								NullQ[invalidCryogenicVialQ],
+								NullQ[unsuitableCryogenicVialQ],
+								!TrueQ[invalidRackQ],
+								MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
+								MatchQ[
+									fastAssocLookup[fastAssoc, cryogenicVial, MaxVolume],
+									GreaterP[2 Milliliter]
 								]
+							],
+							{sample, cryogenicVial, freezingRack, {CryogenicSampleContainer, FreezingStrategy}},
+							Nothing
+						]
+					}
+				],
+				{mySamples, resolvedFreezers, resolvedFreezingRackModels, resolvedCryogenicSampleContainers, invalidRackBools, conflictingAliquotingErrors, unsuitableCryogenicSampleContainerErrors}
+			];
+
+			If[Length[conflictingHardwareCase] > 0 && messages,
+				Module[{captureSentence, groupedErrorDetails, reasonClause},
+					groupedErrorDetails = GroupBy[conflictingHardwareCase, Last];
+					captureSentence = If[Length[Keys[groupedErrorDetails]] > $MaxNumberOfErrorDetails,
+						"The Freezer, FreezingRack, and CryogenicSampleContainer options should be compatible with the FreezingStrategy option",
+						StringJoin[
+							If[MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
+								"When FreezingStrategy is set to ControlledRateFreezer, ",
+								"When FreezingStrategy is set to InsulatedCooler, "
+							],
+							joinClauses[
+								{
+									If[MemberQ[Keys[groupedErrorDetails], {FreezingStrategy, Freezer}],
+										If[!MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
+											StringJoin[
+												"only ultra-low temperature freezer ",
+												samplesForMessages[{Model[Instrument, Freezer, "id:01G6nvkKr3dA"]}, Cache -> cacheBall, Simulation -> simulation],
+												" can be specified for the option Freezer"
+											],
+											StringJoin[
+												"only controlled rate freezer ",
+												samplesForMessages[{Model[Instrument, ControlledRateFreezer, "id:kEJ9mqaVPPWz"]}, Cache -> cacheBall, Simulation -> simulation],
+												" can be specified for the option Freezer"
+											]
+										],
+										Nothing
+									],
+									If[MemberQ[Keys[groupedErrorDetails], {FreezingStrategy, FreezingRack}],
+										If[!MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
+											StringJoin[
+												"only insulated cooler racks ",
+												samplesForMessages[{Model[Container, Rack, InsulatedCooler, "id:7X104vnMk93w"], Model[Container, Rack, InsulatedCooler, "id:N80DNj1WLYPX"]}, Cache -> cacheBall, Simulation -> simulation],
+												" can be specified for the option FreezingRack"
+											],
+											"only " <> ObjectToString[Model[Container, Rack, "id:pZx9jo8ZVNW0"], Cache -> cacheBall, Simulation -> simulation] <> " can be specified for the option FreezingRack"
+										],
+										Nothing
+									],
+									If[MemberQ[Keys[groupedErrorDetails], {CryogenicSampleContainer, FreezingStrategy}],
+										StringJoin[
+											"the largest CryogenicSampleContainer that can fit into the controlled rate freezer is ",
+											samplesForMessages[{Model[Container, Vessel, "id:vXl9j5qEnnOB"]}, Cache -> cacheBall, Simulation -> simulation],
+											" with the MaxVolume at 2 milliliters"
+										],
+										Nothing
+									]
+								}
+							]
+						]
+					];
+					(* Regroup the error based on the sample *)
+					reasonClause = Module[{groupedErrorDetailsPerSample},
+						groupedErrorDetailsPerSample = GroupBy[conflictingHardwareCase, First];
+						joinClauses[
+							Map[
+								StringJoin[
+									samplesForMessages[groupedErrorDetailsPerSample[#][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+									" ",
+									hasOrHave[DeleteDuplicates@groupedErrorDetailsPerSample[#][[All, 1]]],
+									pluralize[DeleteDuplicates@DeleteCases[Flatten[groupedErrorDetailsPerSample[#][[All, 4]]], FreezingStrategy], " the option "," the options "],
+									joinClauses[DeleteCases[Flatten[groupedErrorDetailsPerSample[#][[All, 4]]], FreezingStrategy]],
+									" conflicting with the option FreezingStrategy"
+								]&,
+								Keys[groupedErrorDetailsPerSample]
+							],
+							CaseAdjustment -> True
+						]
+					];
+					Message[
+						Error::FreezeCellsConflictingHardware,
+						captureSentence,
+						reasonClause
+					]
+				]
+			];
+
+			conflictingHardwareTest = If[gatherTests,
+				Module[{affectedSamples, failingTest, passingTest},
+					affectedSamples = conflictingHardwareCase[[All, 1]];
+	
+					failingTest = If[Length[affectedSamples] == 0,
+						Nothing,
+						Test["The Freezer and FreezingRack for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " are consistent with the FreezingStrategy:", True, False]
+					];
+	
+					passingTest = If[Length[affectedSamples] == Length[mySamples],
+						Nothing,
+						Test["The Freezer and FreezingRack for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " are consistent with the FreezingStrategy:", True, True]
+					];
+	
+					{failingTest, passingTest}
+				],
+				Null
+			];
+
+
+			(* d.Error::FreezeCellsConflictingCoolant *)
+			(* Coolant must be set if and only if FreezingStrategy is InsulatedCooler. *)
+			conflictingCoolantCase = MapThread[
+				Function[{sample, coolant},
+					Sequence @@ {
+						If[MatchQ[resolvedFreezingStrategy, InsulatedCooler] && MatchQ[coolant, Null],
+							{sample, coolant, resolvedFreezingStrategy},
+							Nothing
+						],
+						If[MatchQ[resolvedFreezingStrategy, ControlledRateFreezer] && MatchQ[coolant, Except[Null]],
+							{sample, coolant, resolvedFreezingStrategy},
+							Nothing
+						]
+					}
+				],
+				{mySamples, resolvedCoolants}
+			];
+
+			If[Length[conflictingCoolantCase] > 0 && messages,
+				Module[{groupedErrorDetails, errorDetails},
+					groupedErrorDetails = GroupBy[conflictingCoolantCase, Last];
+					errorDetails = joinClauses[
+						Map[
+							StringJoin[
+								samplesForMessages[groupedErrorDetails[#][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+								" ",
+								hasOrHave[groupedErrorDetails[#]],
+								" the option Coolant ",
+								If[MatchQ[groupedErrorDetails[#][[All, 2]], {Null..}],
+									" not specified",
+									" specified as " <> samplesForMessages[groupedErrorDetails[#][[All, 2]], Cache -> cacheBall, Simulation -> simulation]
+								]
+							]&,
+							Keys[groupedErrorDetails]
+						]
+					];
+					Message[
+						Error::FreezeCellsConflictingCoolant,
+						ToString[resolvedFreezingStrategy],
+						errorDetails
+					]
+				]
+			];
+
+			conflictingCoolantTest = If[gatherTests,
+				Module[{affectedSamples, failingTest, passingTest},
+					affectedSamples = conflictingCoolantCases[[All, 1]];
+
+					failingTest = If[Length[affectedSamples] == 0,
+						Nothing,
+						Test["A Coolant is specified for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if and only if the FreezingStrategy is InsulatedCooler:", True, False]
+					];
+
+					passingTest = If[Length[affectedSamples] == Length[mySamples],
+						Nothing,
+						Test["A Coolant is specified for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if the FreezingStrategy is InsulatedCooler:", True, True]
+					];
+
+					{failingTest, passingTest}
+				],
+				Null
+			];
+
+			(* e. Error::InvalidFreezerModel, *)
+			(* Throw an error if the ultra-low temperature freezer instrument has a DefaultTemperature other than -80+- 5 Celsius *)
+			unsupportedFreezerCase = If[!MemberQ[ToList[resolvedFreezers], ObjectP[{Object[Instrument, Freezer], Model[Instrument, Freezer]}]],
+				{},
+				MapThread[
+					Function[
+						{sample, freezerModel, defaultTemperature},
+						Sequence @@ {
+							If[
+								And[
+									MatchQ[resolvedFreezingStrategy, InsulatedCooler],
+									!MatchQ[defaultTemperature, RangeP[-85 Celsius, -75 Celsius]]
+								],
+								{sample, freezerModel, defaultTemperature},
+								Nothing
+							]
+						}
+					],
+					{mySamples, resolvedFreezers, fastAssocLookup[fastAssoc, #, DefaultTemperature] & /@ resolvedFreezerModels}
+				]
+			];
+
+			If[MatchQ[Length[unsupportedFreezerCase], GreaterP[0]] && messages,
+				Module[{groupedErrorDetails, errorDetails},
+					groupedErrorDetails = GroupBy[unsupportedFreezerCase, Rest];
+					errorDetails = If[Length[Keys[groupedErrorDetails]] > $MaxNumberOfErrorDetails,
+						StringJoin[
+							"The Freezer specified for ",
+							samplesForMessages[unsupportedFreezerCase[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+							" have DefaultTemperature out of the allowed range"
+						],
+						joinClauses[
+							Map[
+								StringJoin[
+									samplesForMessages[groupedErrorDetails[#][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
+									" ",
+									hasOrHave[groupedErrorDetails[#]],
+									" the option Freezer specified as ",
+									samplesForMessages[groupedErrorDetails[#][[All, 2]], CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation],
+									" with DefaultTemperature ",
+									If[MatchQ[groupedErrorDetails[#][[All, 3]], {Null..}],
+										" not specified in the model",
+										" at " <> ToString[SafeRound[groupedErrorDetails[#][[All, 3]][[1]], 1 Celsius]]
+									]
+								]&,
+								Keys[groupedErrorDetails]
+							],
+							CaseAdjustment -> True
+						]
+					];
+					Message[
+						Error::InvalidFreezerModel,
+						errorDetails
+					]
+				]
+			];
+
+			unsupportedFreezerTest = If[gatherTests,
+				Module[{affectedSamples, failingTest, passingTest},
+					affectedSamples = unsupportedFreezerCase[[All, 1]];
+
+					failingTest = If[Length[affectedSamples] == 0,
+						Nothing,
+						Test["If the FreezingStrategy is InsulatedCooler, the Freezer for sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " has a DefaultTemperature that is within 5 Celsius of either -80 Celsius:", True, False]
+					];
+
+					passingTest = If[Length[affectedSamples] == Length[mySamples],
+						Nothing,
+						Test["If the FreezingStrategy is InsulatedCooler, the Freezer for sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " has a DefaultTemperature that is within 5 Celsius of either -80 Celsius:", True, True]
+					];
+
+					{failingTest, passingTest}
+				],
+				Null
+			];
+
+
+			(* Return *)
+			{
+				conflictingTemperatureProfileCase,
+				conflictingTemperatureProfileTest,
+				conflictingInsulatedCoolerFreezingTimeCase,
+				conflictingInsulatedCoolerFreezingTimeTest,
+				conflictingHardwareCase,
+				conflictingHardwareTest,
+				conflictingCoolantCase,
+				conflictingCoolantTest,
+				unsupportedFreezerCase,
+				unsupportedFreezerTest,
+				{},
+				{}
+			}
+		],
+		(* Tier2 error *)
+		Module[
+			{
+				whyCantIPickThisFreezingStrategy, specifiedOrInsituCryogenicSampleContainers, specifiedAliquotVolumes,
+				specifiedCryoprotectantSolutionPerCopy, conflictingCellFreezingCase, captureSentence, reasonClause, actionClause, conflictingCellFreezingTest
+			},
+			whyCantIPickThisFreezingStrategy[
+				desiredFreezingStrategy: FreezeCellMethodP,
+				userOptions: {(_Rule)...},
+				semiResolvedCryogenicSampleContainers: {(ObjectP[{Model[Container], Object[Container]}]|Automatic)..},
+				semiResolvedAliquotVolumes: {(VolumeP|Automatic|Null)..},
+				semiResolvedCryoprotectantSolutionVolumes: {(VolumeP|Automatic|Null)..}
+			] := Module[
+				{
+					controlledRateSpecificOptions, insulatedCoolerSpecificOptions, insulatedCoolerVolumeOptions, allAliquotVolumeInNewContainers,
+					allCryoprotectantSolutionVolumeInNewContainers, dualStrategyOptions, cryogenicSampleContainerModelsOptions,
+					allCryogenicSampleContainerModels, userSpecifiedKeys, userSpecifiedControlledRateKeys, userSpecifiedInsulatedCoolerKeys,
+					validSpecifiedKeys, invalidSpecifiedKeys
+				},
+				controlledRateSpecificOptions = {TemperatureProfile};
+				insulatedCoolerSpecificOptions = {InsulatedCoolerFreezingTime, Coolant};
+				insulatedCoolerVolumeOptions = {AliquotVolume, CryoprotectantSolutionVolume};
+				allAliquotVolumeInNewContainers = Flatten@MapThread[
+					Function[{aliquotQ, specifiedAliquotVolume},
+						If[!MatchQ[aliquotQ, False] && MatchQ[specifiedAliquotVolume, VolumeP|Automatic],
+							Cases[specifiedAliquotVolume, GreaterP[1.5 Milliliter]],
+							{}
+						]
+					],
+					{Lookup[userOptions, Aliquot], semiResolvedAliquotVolumes}
+				];
+				allCryoprotectantSolutionVolumeInNewContainers = Flatten@MapThread[
+					Function[{aliquotQ, specifiedCryoprotectantSolutionVolume, specifiedAliquotVolume},
+						If[!MatchQ[aliquotQ, False] && MatchQ[specifiedAliquotVolume, VolumeP|Automatic],
+							Cases[specifiedCryoprotectantSolutionVolume, GreaterP[1.5 Milliliter]],
+							{}
+						]
+					],
+					{Lookup[userOptions, Aliquot], semiResolvedCryoprotectantSolutionVolumes, semiResolvedAliquotVolumes}
+				];
+				dualStrategyOptions = {Freezer, FreezingRack};
+				cryogenicSampleContainerModelsOptions = {Aliquot, CryogenicSampleContainer};
+				allCryogenicSampleContainerModels = Map[
+					Which[
+						MatchQ[#, Automatic],
+							Automatic,
+						MatchQ[#, ObjectP[Model]],
+							#,
+						MatchQ[#, ObjectP[Object]] && MatchQ[fastAssocLookup[fastAssoc, #, Model], ObjectP[Model]],
+							fastAssocLookup[fastAssoc, #, Model],
+						True,
+							Automatic
+					]&,
+					semiResolvedCryogenicSampleContainers
+				];
+				(* User input keys *)
+				userSpecifiedKeys = Keys[Select[userOptions, MatchQ[Values[#], Except[ListableP[Automatic]]] &]];
+				userSpecifiedControlledRateKeys = Map[
+					Which[
+						MatchQ[#, Alternatives @@ controlledRateSpecificOptions] && MatchQ[Lookup[userOptions, #], Except[Null]],
+							#,
+						MatchQ[#, Alternatives @@ insulatedCoolerSpecificOptions] && MatchQ[Lookup[userOptions, #], Null],
+							#,
+						MatchQ[#, Alternatives @@ dualStrategyOptions],
+							Which[
+								MatchQ[#, Freezer],
+									If[MemberQ[ToList@Lookup[userOptions, Freezer], ObjectP[{Model[Instrument, ControlledRateFreezer], Object[Instrument, ControlledRateFreezer]}]],
+										#,
+										Nothing
+									],
+								MatchQ[#, FreezingRack],
+									(* InvalidFreezingRack has checked if normal rack is selected, here we only check if insulated cooler has been specified *)
+									If[MemberQ[ToList@Lookup[userOptions, FreezingRack], Except[Automatic|ObjectP[{Model[Container, Rack, InsulatedCooler], Object[Container, Rack, InsulatedCooler]}]]],
+										#,
+										Nothing
+									],
+								True,
+									Nothing
+							],
+						True,
+							Nothing
+					]&,
+					userSpecifiedKeys
+				];
+				userSpecifiedInsulatedCoolerKeys = Map[
+					Which[
+						MatchQ[#, Alternatives @@ insulatedCoolerSpecificOptions] && MatchQ[Lookup[userOptions, #], Except[Null]],
+							#,
+						MatchQ[#, Alternatives @@ controlledRateSpecificOptions] && MatchQ[Lookup[userOptions, #], Null],
+							#,
+						MatchQ[#, Alternatives @@ dualStrategyOptions],
+							Which[
+								MatchQ[#, Freezer],
+									If[MemberQ[ToList@Lookup[userOptions, Freezer], ObjectP[{Model[Instrument, Freezer], Object[Instrument, Freezer]}]],
+										#,
+										Nothing
+									],
+								MatchQ[#, FreezingRack],
+									If[MemberQ[ToList@Lookup[userOptions, FreezingRack], ObjectP[{Model[Container, Rack, InsulatedCooler], Object[Container, Rack, InsulatedCooler]}]],
+										#,
+										Nothing
+									],
+								True,
+									Nothing
+							],
+						MatchQ[#, Alternatives @@ cryogenicSampleContainerModelsOptions],
+							If[MemberQ[allCryogenicSampleContainerModels, ObjectP[Model[Container, Vessel, "id:o1k9jAG1Nl57"]]],(* Model[Container, Vessel, "5mL Cryogenic Vial"] *)
+								#,
+								Nothing
+							],
+						MatchQ[#, AliquotVolume],
+							If[!MatchQ[allAliquotVolumeInNewContainers, {}],
+								#,
+								Nothing
+							],
+					MatchQ[#, CryoprotectantSolutionVolume],
+						If[!MatchQ[allCryoprotectantSolutionVolumeInNewContainers, {}],
+							#,
+							Nothing
+						],
+						True,
+							Nothing
+					]&,
+					userSpecifiedKeys
+				];
+				validSpecifiedKeys = If[MatchQ[desiredFreezingStrategy, ControlledRateFreezer],
+					userSpecifiedControlledRateKeys,
+					userSpecifiedInsulatedCoolerKeys
+				];
+				invalidSpecifiedKeys = If[MatchQ[desiredFreezingStrategy, ControlledRateFreezer],
+					userSpecifiedInsulatedCoolerKeys,
+					userSpecifiedControlledRateKeys
+				];
+				(* Output a pair of {options, options} *)
+				If[MatchQ[invalidSpecifiedKeys, {}],
+					{},
+					{validSpecifiedKeys, invalidSpecifiedKeys}
+				]
+			];
+			specifiedOrInsituCryogenicSampleContainers = MapThread[
+				Which[
+					MatchQ[#1, ObjectP[]],
+						#1,
+					MatchQ[#2, False],
+						Lookup[#3, Object],
+					True,
+						Automatic
+				]&,
+				{expandedSuppliedCryogenicSampleContainers, specifiedAliquotQs, sampleContainerPackets}
+			];
+			specifiedAliquotVolumes = MapThread[
+				Which[
+					MatchQ[#1, VolumeP], #1,
+					MatchQ[#1, All], #3,
+					True, #1
+				]&,
+				{expandedSuppliedAliquotVolumes, specifiedAliquotQs, sampleVolumeQuantities}
+			];
+			(* For changeMedia, we need to divide the CryoprotectantSolution by the copies of frozen stock generated since *)
+			(* CryoprotectantSolution is added directly to input sample container, then the resuspended sample is aliquoted out with aliquot volume *)
+			(* so CryoprotectantSolutionVolume is not directly-relevant to determine the CryogenicSampleContainer *)
+			specifiedCryoprotectantSolutionPerCopy = MapThread[
+				If[MatchQ[#2, Except[AddCryoprotectant]], Null, #1]&,
+				{expandedSuppliedCryoprotectantSolutionVolumes, resolvedCryoprotectionStrategies}
+			];
+			conflictingCellFreezingCase = whyCantIPickThisFreezingStrategy[
+				resolvedFreezingStrategy,
+				myOptions,
+				specifiedOrInsituCryogenicSampleContainers,
+				specifiedAliquotVolumes,
+				specifiedCryoprotectantSolutionPerCopy
+			];
+			captureSentence = If[MatchQ[conflictingCellFreezingCase, {}],
+				Null,
+				Module[{appliesOnlyWithInsulatedCooler, appliesOnlyWithControlledRateFreezer},
+					(* we will have two versions in the list, {short version, long version} for some of the cases *)
+					appliesOnlyWithInsulatedCooler = {
+						If[MemberQ[Flatten@conflictingCellFreezingCase, Aliquot|CryogenicSampleContainer|AliquotVolume|CryoprotectantSolutionVolume],
+							ConstantArray[ObjectToString[Model[Container, Vessel, "5mL Cryogenic Vial"]], 2],
+							Nothing
+						],
+						If[MemberQ[Flatten@conflictingCellFreezingCase, InsulatedCoolerFreezingTime],
+							{"the option InsulatedCoolerFreezingTime", "the option InsulatedCoolerFreezingTime defines the minimum duration inside of an ultra-low temperature freezer and"},
+							Nothing
+						],
+						If[MemberQ[Flatten@conflictingCellFreezingCase, Coolant],
+							{"the option Coolant", "the option Coolant defines the liquid that fills the chamber of an insulated cooler and"},
+							Nothing
+						],
+						If[And[
+								MemberQ[Flatten@conflictingCellFreezingCase, Freezer],
+								Or[
+									MatchQ[resolvedFreezingStrategy, InsulatedCooler] && MemberQ[conflictingCellFreezingCase[[1]], Freezer],
+									MatchQ[resolvedFreezingStrategy, ControlledRateFreezer] && MemberQ[conflictingCellFreezingCase[[2]], Freezer]
+								]
+							],
+							ConstantArray["ultra-low temperature freezer as Freezer", 2],
+							Nothing
+						],
+						If[And[
+								MemberQ[Flatten@conflictingCellFreezingCase, FreezingRack],
+								Or[
+									MatchQ[resolvedFreezingStrategy, InsulatedCooler] && MemberQ[conflictingCellFreezingCase[[1]], FreezingRack],
+									MatchQ[resolvedFreezingStrategy, ControlledRateFreezer] && MemberQ[conflictingCellFreezingCase[[2]], FreezingRack]
+								]
+							],
+							ConstantArray["insulated cooler racks as FreezingRack", 2],
+							Nothing
+						]
+					};
+					appliesOnlyWithControlledRateFreezer = {
+						If[MemberQ[Flatten@conflictingCellFreezingCase, TemperatureProfile],
+							{"the option TemperatureProfile", "the option TemperatureProfile defines the cooling program of a controlled rate freezer and"},
+							Nothing
+						],
+						If[And[
+								MemberQ[Flatten@conflictingCellFreezingCase, Freezer],
+								Or[
+									MatchQ[resolvedFreezingStrategy, ControlledRateFreezer] && MemberQ[conflictingCellFreezingCase[[1]], Freezer],
+									MatchQ[resolvedFreezingStrategy, InsulatedCooler] && MemberQ[conflictingCellFreezingCase[[2]], Freezer]
+								]
+							],
+							ConstantArray["controlled rate freezer as Freezer", 2],
+							Nothing
+						],
+						If[And[
+							MemberQ[Flatten@conflictingCellFreezingCase, FreezingRack],
+							Or[
+								MatchQ[resolvedFreezingStrategy, InsulatedCooler] && MemberQ[conflictingCellFreezingCase[[2]], FreezingRack],
+								MatchQ[resolvedFreezingStrategy, ControlledRateFreezer] && MemberQ[conflictingCellFreezingCase[[1]], FreezingRack]
 							]
 						],
-						Keys[groupedErrorSamples]
-					],
-					CaseAdjustment -> True
+							ConstantArray["Model[Instrument, ControlledRateFreezer, \"VIA Freeze Research\"] as FreezingRack", 2],
+							Nothing
+						]
+					};
+					(* Combine the sentences *)
+					Which[
+						Length[appliesOnlyWithInsulatedCooler] == 0 && Length[appliesOnlyWithControlledRateFreezer] == 0,
+							"All cell freezing options should be compatible with the same FreezingStrategy",
+						Length[appliesOnlyWithInsulatedCooler] == 0,
+							Capitalize@StringJoin[
+								If[Length[appliesOnlyWithControlledRateFreezer] == 1,
+									joinClauses[appliesOnlyWithControlledRateFreezer[[All, 2]]],(*long version*)
+									joinClauses[appliesOnlyWithControlledRateFreezer[[All, 1]]](*short version*)
+								],
+								" ",
+								pluralize[appliesOnlyWithControlledRateFreezer, "applies", "apply"],
+								" only for ControlledRateFreezer FreezingStrategy"
+							],
+						Length[appliesOnlyWithControlledRateFreezer] == 0,
+							Capitalize@StringJoin[
+								If[Length[appliesOnlyWithInsulatedCooler] == 1,
+									joinClauses[appliesOnlyWithInsulatedCooler[[All, 2]]],(*long version*)
+									joinClauses[appliesOnlyWithInsulatedCooler[[All, 1]]](*short version*)
+								],
+								" ",
+								pluralize[appliesOnlyWithInsulatedCooler, "applies", "apply"],
+								" only for InsulatedCooler FreezingStrategy"
+							],
+						True,
+							Capitalize@StringJoin[
+								If[Length[appliesOnlyWithControlledRateFreezer] == 1,
+									joinClauses[appliesOnlyWithControlledRateFreezer[[All, 2]]],(*long version*)
+									joinClauses[appliesOnlyWithControlledRateFreezer[[All, 1]]](*short version*)
+								],
+								" ",
+								pluralize[appliesOnlyWithControlledRateFreezer, "applies", "apply"],
+								" only for ControlledRateFreezer FreezingStrategy, and ",
+								If[Length[appliesOnlyWithInsulatedCooler] == 1,
+									joinClauses[appliesOnlyWithInsulatedCooler[[All, 2]]],(*long version*)
+									joinClauses[appliesOnlyWithInsulatedCooler[[All, 1]]](*short version*)
+								],
+								" ",
+								pluralize[appliesOnlyWithControlledRateFreezer, "applies", "apply"],
+								" only for InsulatedCooler FreezingStrategy"
+							]
+					]
 				]
 			];
-			actionMessage = If[MemberQ[Flatten[conflictingCultureAdhesionCases[[All, 2]]], State] && MemberQ[Flatten[conflictingCultureAdhesionCases[[All, 2]]], CultureAdhesion],
-				"the CultureAdhesion and State fields of the sample(s)",
-				"the " <> ToString[conflictingCultureAdhesionCases[[All, 2]][[1]]] <> " field of the sample(s)"
+			reasonClause = If[!MatchQ[conflictingCellFreezingCase, {}],
+				Module[{selfConflictingOptions},
+					(* Check if there is any index-matching options that are self-conflicting *)
+					selfConflictingOptions = Intersection[conflictingCellFreezingCase[[1]], conflictingCellFreezingCase[[2]]];
+					Which[
+						MatchQ[selfConflictingOptions, {}],
+							StringJoin[
+								"The specified ",
+								pluralize[conflictingCellFreezingCase[[1]], "option ", "options "],
+								joinClauses[conflictingCellFreezingCase[[1]]],
+								" ",
+								isOrAre[conflictingCellFreezingCase[[1]]],
+								" valid for the ",
+								ToString[resolvedFreezingStrategy],
+								" FreezingStrategy,",
+								" while the specified ",
+								pluralize[conflictingCellFreezingCase[[2]], "option ", "options "],
+								joinClauses[conflictingCellFreezingCase[[2]]],
+								" ",
+								isOrAre[conflictingCellFreezingCase[[2]]],
+								" valid for the ",
+								ToString[FirstCase[List@@FreezeCellMethodP, Except[resolvedFreezingStrategy]]],
+								" FreezingStrategy"
+							],
+						MatchQ[Sort@conflictingCellFreezingCase[[1]], Sort@selfConflictingOptions] && MatchQ[Sort@conflictingCellFreezingCase[[2]], Sort@selfConflictingOptions],
+							StringJoin[
+								"The specified ",
+								pluralize[selfConflictingOptions, "option ", "options "],
+								joinClauses[selfConflictingOptions],
+								" ",
+								hasOrHave[selfConflictingOptions],
+								" conflicting values"
+							],
+						True,
+							joinClauses[{
+								If[MatchQ[Sort@conflictingCellFreezingCase[[1]], Sort@selfConflictingOptions],
+									Nothing,
+									StringJoin[
+										"the specified ",
+										pluralize[DeleteCases[conflictingCellFreezingCase[[1]], Alternatives@@selfConflictingOptions], "option ", "options "],
+										joinClauses[DeleteCases[conflictingCellFreezingCase[[1]], Alternatives@@selfConflictingOptions]],
+										" ",
+										isOrAre[DeleteCases[conflictingCellFreezingCase[[1]], Alternatives@@selfConflictingOptions]],
+										" valid for the ",
+										ToString[resolvedFreezingStrategy],
+										" FreezingStrategy,"
+									]
+								],
+								If[MatchQ[Sort@conflictingCellFreezingCase[[2]], Sort@selfConflictingOptions],
+									Nothing,
+									StringJoin[
+										"the specified ",
+										pluralize[DeleteCases[conflictingCellFreezingCase[[2]], Alternatives@@selfConflictingOptions], "option ", "options "],
+										joinClauses[DeleteCases[conflictingCellFreezingCase[[2]], Alternatives@@selfConflictingOptions]],
+										" ",
+										isOrAre[DeleteCases[conflictingCellFreezingCase[[2]], Alternatives@@selfConflictingOptions]],
+										" valid for the ",
+										ToString[FirstCase[List@@FreezeCellMethodP, Except[resolvedFreezingStrategy]]],
+										" FreezingStrategy, and "
+									]
+								],
+								StringJoin[
+									"the specified ",
+									pluralize[selfConflictingOptions, "option ", "options "],
+									joinClauses[selfConflictingOptions],
+									" ",
+									hasOrHave[selfConflictingOptions],
+									" conflicting values"
+								]},
+								CaseAdjustment -> True
+								]
+							]
+					]
 			];
-			Message[Error::ConflictingCultureAdhesion,
-				briefMessage,
-				errorMessage,
-				actionMessage
-			]
+			actionClause = If[!MatchQ[conflictingCellFreezingCase, {}],
+				StringJoin[
+					"Please either adjust ",
+					pluralize[conflictingCellFreezingCase[[2]], "option ", "options "],
+					joinClauses[conflictingCellFreezingCase[[2]]],
+					" or allow the ",
+					pluralize[conflictingCellFreezingCase[[2]], "option ", "options "],
+					"to be set automatically if ",
+					ToString[resolvedFreezingStrategy],
+					" is desired",
+					", or adjust ",
+					pluralize[conflictingCellFreezingCase[[1]], "option ", "options "],
+					joinClauses[conflictingCellFreezingCase[[1]]],
+					" or allow the ",
+					pluralize[conflictingCellFreezingCase[[1]], "option ", "options "],
+					"to be set automatically if ",
+					ToString[FirstCase[List@@FreezeCellMethodP, Except[resolvedFreezingStrategy]]],
+					" is desired"
+				]
+			];
+			If[!MatchQ[conflictingCellFreezingCase, {}] && messages,
+				Message[
+					Error::ConflictingCellFreezingOptions,
+					captureSentence,
+					reasonClause,
+					actionClause
+				]
+			];
+			conflictingCellFreezingTest = If[gatherTests,
+				Module[{affectedSamples, failingTest, passingTest},
+					affectedSamples = If[MatchQ[conflictingCellFreezingCase, {}], {}, mySamples];
+
+					failingTest = If[Length[affectedSamples] == 0,
+						Nothing,
+						Test["All cell freezing options specified for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " are not conflicting:", True, False]
+					];
+
+					passingTest = If[Length[affectedSamples] == Length[mySamples],
+						Nothing,
+						Test["All cell freezing options specified for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " are not conflicting:", True, True]
+					];
+
+					{failingTest, passingTest}
+				],
+				Null
+			];
+			(* Return *)
+			{
+				{},
+				{},
+				{},
+				{},
+				{},
+				{},
+				{},
+				{},
+				{},
+				{},
+				conflictingCellFreezingCase,
+				conflictingCellFreezingTest
+			}
 		]
 	];
 
-	conflictingCultureAdhesionTest = If[gatherTests,
-		Module[{affectedSamples, failingTest, passingTest},
-			affectedSamples = conflictingCultureAdhesionCases[[All,1]];
 
-			failingTest = If[Length[affectedSamples] == 0,
-				Nothing,
-				Test["The specified CultureAdhesion(s) for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " matches the CultureAdhesion information in the sample object(s):", True, False]
-			];
-
-			passingTest = If[Length[affectedSamples] == Length[mySamples],
-				Nothing,
-				Test["The specified CultureAdhesion(s) for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " matches the CultureAdhesion information in the sample object(s):", True, True]
-			];
-
-			{failingTest, passingTest}
-		],
-		Null
-	];
-
-	(*Error::FreezeCellsConflictingCoolant*)
-	(* Coolant must be set if and only if FreezingStrategy is InsulatedCooler. *)
-	conflictingCoolantCases = MapThread[
-		Function[{sample, coolant, index},
-			Sequence @@ {
-				If[MatchQ[resolvedFreezingStrategy, InsulatedCooler] && MatchQ[coolant, Null],
-					{sample, coolant, resolvedFreezingStrategy, index},
-					Nothing
-				],
-				If[MatchQ[resolvedFreezingStrategy, ControlledRateFreezer] && MatchQ[coolant, Except[Null]],
-					{sample, coolant, resolvedFreezingStrategy, index},
-					Nothing
-				]
-			}
-		],
-		{mySamples, resolvedCoolants, Range[Length[mySamples]]}
-	];
-
-	If[Length[conflictingCoolantCases] > 0 && messages,
-		Message[
-			Error::FreezeCellsConflictingCoolant,
-			ObjectToString[conflictingCoolantCases[[All, 1]], Cache -> cacheBall, Simulation -> simulation],
-			ObjectToString[conflictingCoolantCases[[All, 2]], Cache -> cacheBall, Simulation -> simulation],
-			conflictingCoolantCases[[All, 3]],
-			conflictingCoolantCases[[All, 4]]
-		];
-	];
-
-	conflictingCoolantTest = If[gatherTests,
-		Module[{affectedSamples, failingTest, passingTest},
-			affectedSamples = conflictingCoolantCases[[All, 1]];
-
-			failingTest = If[Length[affectedSamples] == 0,
-				Nothing,
-				Test["A Coolant is specified for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if and only if the FreezingStrategy is InsulatedCooler:", True, False]
-			];
-
-			passingTest = If[Length[affectedSamples] == Length[mySamples],
-				Nothing,
-				Test["A Coolant is specified for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if the FreezingStrategy is InsulatedCooler:", True, True]
-			];
-
-			{failingTest, passingTest}
-		],
-		Null
-	];
-
-	(*Error::FreezeCellsUnsupportedTemperatureProfile*)
+	(* 17. Error::FreezeCellsUnsupportedTemperatureProfile *)
 	(* Throw an error if the TemperatureProfile is invalid. This only matters if we are using a ControlledRateFreezer strategy. *)
 	unsupportedTemperatureProfileCases = If[
 		Or[
@@ -3445,40 +6114,52 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 			MatchQ[resolvedFreezingStrategy, InsulatedCooler]
 		],
 		{},
-		(* Otherwise, we need to look at the individual legs of the profile and check for 1) cumulative timepoints *)
+		(* Otherwise, we need to look at the individual legs of the profile and check for 1) cumulative time/temperature points *)
 		(* and 2) segments with cooling/heating rates which are too fast for slow for the instrument. *)
 		Module[
 			{
-				fullProfile, temperatureDiffs, timeDiffs, nonCumulativeTimeQ, suggestedCumulativeProfile,
-				controlledRateFreezerModel, minCoolingRate, maxCoolingRate, flaggedEndPoints, flaggedRates
+				fullProfile, fullCelsiusProfile, temperatureDiffs, timeDiffs, nonCumulativeTimeQ, nonCumulativeTempQ, targetTempTooHighQ,
+				suggestedCumulativeProfile, controlledRateFreezerModel, minCoolingRate, maxCoolingRate, flaggedEndPoints, flaggedRates
 			},
 
 			(* The initial point is always RT at 0 Minutes. Prepend this to the profile from the protocol object, unless the user already inserted this point manually. *)
-			fullProfile = If[MatchQ[resolvedTemperatureProfile[[1]], {EqualP[25 Celsius], EqualP[0 Minute]}],
+			fullProfile = If[MatchQ[resolvedTemperatureProfile[[1]][[2]], EqualP[0 Minute]],
 				resolvedTemperatureProfile,
 				Prepend[resolvedTemperatureProfile, {25 Celsius, 0 Minute}]
 			];
 
+			(* If the user input temperature is not in Celsius, or time not in minute, convert them *)
+			fullCelsiusProfile = Map[
+				{Convert[#[[1]], Celsius], Convert[#[[2]], Minute]}&,
+				fullProfile
+			];
+
 			(* Get the differences between each of the temperatures and times. *)
-			{temperatureDiffs, timeDiffs} = Differences /@ Transpose[fullProfile];
+			{temperatureDiffs, timeDiffs} = Differences /@ Transpose[fullCelsiusProfile];
 
 			(* If any of these time differences is negative or 0, the user entered the temperature profile incorrectly. *)
 			nonCumulativeTimeQ = MemberQ[timeDiffs, LessEqualP[0 Minute]];
+			nonCumulativeTempQ = MemberQ[temperatureDiffs, GreaterP[0.1 Celsius]];
+			targetTempTooHighQ = GreaterQ[Last[fullCelsiusProfile][[1]], -75 Celsius];
 
 			(* If the times are non-cumulative, try to help the user out and suggest the correct format. *)
 			suggestedCumulativeProfile = If[
 				nonCumulativeTimeQ,
 				Transpose[{
-					resolvedTemperatureProfile[[All,1]],
-					Accumulate[resolvedTemperatureProfile[[All,2]]]
+					resolvedTemperatureProfile[[All, 1]],
+					Accumulate[resolvedTemperatureProfile[[All, 2]]]
 				}],
 				{}
 			];
 
 			(* Make sure we are dealing with the controlled rate freezer as a Model rather than an Object. *)
-			controlledRateFreezerModel = If[MemberQ[resolvedFreezers, ObjectP[Model[Instrument, ControlledRateFreezer]]],
-				FirstCase[resolvedFreezers, ObjectP[Model[Instrument, ControlledRateFreezer]]],
-				fastAssocLookup[fastAssoc, resolvedFreezers[[1]], Model]
+			controlledRateFreezerModel = Which[
+				MemberQ[resolvedFreezers, ObjectP[Model[Instrument, ControlledRateFreezer]]],
+					FirstCase[resolvedFreezers, ObjectP[Model[Instrument, ControlledRateFreezer]]],
+				MemberQ[resolvedFreezers, ObjectP[Object[Instrument, ControlledRateFreezer]]],
+					fastAssocLookup[fastAssoc, resolvedFreezers[[1]], Model],
+				True,
+					Model[Instrument, ControlledRateFreezer, "id:kEJ9mqaVPPWz"](*Model[Instrument, ControlledRateFreezer, VIA Freeze Research] *)
 			];
 
 			(* Get the MinCoolingRate and MaxCoolingRate of the ControlledRateFreezer instrument. *)
@@ -3489,7 +6170,7 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 			(* Map over the legs and pick out any problematic ones. Don't run this check if we have already flagged the *)
 			(* profile as having incorrect time, since the rates are going to be meaningless if that's the case. *)
 			(* This also prevents us from having to worry about dividing by zero: timeDiff = 0 Minute trips nonCumulativeTimeQ *)
-			{flaggedEndPoints, flaggedRates} = If[nonCumulativeTimeQ,
+			{flaggedEndPoints, flaggedRates} = If[nonCumulativeTimeQ || nonCumulativeTempQ,
 				{{}, {}},
 				Module[
 					{rates},
@@ -3514,29 +6195,103 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 								{Null, Null}
 							]
 						],
-						{resolvedTemperatureProfile, rates}
+						{Rest[fullCelsiusProfile], rates}
 					]
 				]
 			] /. {Null -> Nothing};
 
 			(* Populate the info we need to surface in the error message. *)
-			Which[
+			{
 				(* If the times are noncumulative, tell the user and suggest what they may have wanted. *)
-				nonCumulativeTimeQ, {"The specified time components are non-cumulative. Each time point must represent the total time elapsed since the beginning of the temperature profile rather than the time elapsed from the previous time point. Based on the specified TemperatureProfile, it is possible that the following TemperatureProfile is intended: "<>ToString[suggestedCumulativeProfile]},
+				If[nonCumulativeTimeQ,
+					{NonCumulativeTime, suggestedCumulativeProfile},
+					Nothing
+				],
+				(* If the temperatures are noncumulative, tell the user and suggest what they may have wanted. *)
+				If[nonCumulativeTempQ,
+					{NonCumulativeTemp, Null},
+					Nothing
+				],
+				(* If the last temperature is too high, tell the user and suggest what they may have wanted. *)
+				If[targetTempTooHighQ,
+					{TargetTemp, Null},
+					Nothing
+				],
 				(* If any of the rates are outside of the bounds of the instrument, indicate this. *)
-				GreaterQ[Length[flaggedRates], 0], {"The segment(s) of the specified TemperatureProfile which conclude with the endpoint(s) "<>ToString[flaggedEndPoints]<>" require heating or cooling at rates of "<>ToString[flaggedRates]<>", but the instrument "<>ObjectToString[resolvedFreezers[[1]], Cache -> cacheBall, Simulation -> simulation]<>" can only heat or cool at rates between "<>ToString[minCoolingRate]<>" and "<>ToString[maxCoolingRate]},
-				(* Otherwise this TemperatureProfile is fine. *)
-				True, {}
-			]
+				If[GreaterQ[Length[flaggedRates], 0],
+					{CoolingRate, {flaggedRates, minCoolingRate, maxCoolingRate, controlledRateFreezerModel}},
+					Nothing
+				]
+			}
 		]
 	];
 
-	If[MatchQ[Length[unsupportedTemperatureProfileCases], GreaterP[0]] && messages,
-		Message[
-			Error::FreezeCellsUnsupportedTemperatureProfile,
-			resolvedTemperatureProfile,
-			unsupportedTemperatureProfileCases[[1]]
-		];
+	(* Both options are not index-matching *)
+	If[!MatchQ[unsupportedTemperatureProfileCases, {}] && messages,
+		Module[{captureSentence, errorDetails},
+			captureSentence = joinClauses[
+				{
+					(* If the times are noncumulative, tell the user and suggest what they may have wanted. *)
+					If[MemberQ[unsupportedTemperatureProfileCases[[All, 1]], NonCumulativeTime],
+						"each time point must represent the total time elapsed since the beginning of the temperature profile rather than the time elapsed from the previous time point",
+						Nothing
+					],
+					If[MemberQ[unsupportedTemperatureProfileCases[[All, 1]], NonCumulativeTemp|TargetTemp],
+						"each successive temperature point must be less than or equal to the preceding temperature point with the endpoint in the range of -20 Celsius to -80 Celsius",
+						Nothing
+					],
+					(* If any of the rates are outside of the bounds of the instrument, indicate this. *)
+					If[MemberQ[unsupportedTemperatureProfileCases[[All, 1]], CoolingRate],
+						StringJoin[
+							ObjectToString[FirstCase[unsupportedTemperatureProfileCases, {CoolingRate, _}][[2]][[4]], Cache -> cacheBall, Simulation -> simulation],
+							" can only cool at rates between ",
+							ToString[FirstCase[unsupportedTemperatureProfileCases, {CoolingRate, _}][[2]][[2]]],
+							" and ",
+							ToString[FirstCase[unsupportedTemperatureProfileCases, {CoolingRate, _}][[2]][[3]]]
+						],
+						Nothing
+					]
+				},
+				CaseAdjustment -> True
+			];
+			errorDetails = joinClauses[
+				{
+					(* If the times are noncumulative, tell the user and suggest what they may have wanted. *)
+					If[MemberQ[unsupportedTemperatureProfileCases[[All, 1]], NonCumulativeTime],
+						StringJoin[
+							"the specified time components are non-cumulative and it is possible that the following TemperatureProfile is intended: ",
+							ToString[FirstCase[unsupportedTemperatureProfileCases, {NonCumulativeTime, _}][[2]]]
+						],
+						Nothing
+					],
+					(* If the temperatures are noncumulative, tell the user and suggest what they may have wanted. *)
+					If[MemberQ[unsupportedTemperatureProfileCases[[All, 1]], NonCumulativeTemp],
+						"the specified temperature components are non-cumulative",
+						Nothing
+					],
+					(* If the last temperature is too high, tell the user and suggest what they may have wanted. *)
+					If[MemberQ[unsupportedTemperatureProfileCases[[All, 1]], TargetTemp],
+						StringJoin[
+						"the last specified temperature component is above -20 Celsius"
+						],
+						Nothing
+					],
+					(* If any of the rates are outside of the bounds of the instrument, indicate this. *)
+					If[MemberQ[unsupportedTemperatureProfileCases[[All, 1]], CoolingRate],
+						StringJoin[
+							"the segment(s) of the specified TemperatureProfile require heating or cooling at rates of ",
+							joinClauses[FirstCase[unsupportedTemperatureProfileCases, {CoolingRate, _}][[2]][[1]]]
+						],
+						Nothing
+					]
+				}
+			];
+			Message[
+				Error::FreezeCellsUnsupportedTemperatureProfile,
+				captureSentence,
+				errorDetails
+			]
+		]
 	];
 
 	unsupportedTemperatureProfileTest = If[gatherTests,
@@ -3558,248 +6313,135 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		Null
 	];
 
-	(*Error::FreezeCellsInsufficientChangeMediaOptions*)
-	(* The four pelleting options must not be Null if CryoprotectionStrategy is ChangeMedia. *)
-	insufficientChangeMediaOptionsCases = MapThread[
-		Function[{sample, cryoprotectionStrategy, cellPelletCentrifuge, cellPelletTime, cellPelletIntensity, cellPelletSupernatantVolume, index},
-			Sequence @@ {
-				If[MatchQ[cryoprotectionStrategy, ChangeMedia] && MatchQ[cellPelletCentrifuge, Null],
-					{sample, CellPelletCentrifuge, index},
-					Nothing
-				],
-				If[MatchQ[cryoprotectionStrategy, ChangeMedia] && MatchQ[cellPelletTime, Null],
-					{sample, CellPelletTime, index},
-					Nothing
-				],
-				If[MatchQ[cryoprotectionStrategy, ChangeMedia] && MatchQ[cellPelletIntensity, Null],
-					{sample, CellPelletIntensity, index},
-					Nothing
-				],
-				If[MatchQ[cryoprotectionStrategy, ChangeMedia] && MatchQ[cellPelletSupernatantVolume, Null],
-					{sample, CellPelletSupernatantVolume, index},
-					Nothing
-				]
-			}
-		],
-		{mySamples, resolvedCryoprotectionStrategies, resolvedCellPelletCentrifuges, resolvedCellPelletTimes, resolvedCellPelletIntensities, resolvedCellPelletSupernatantVolumes, Range[Length[mySamples]]}
-	];
 
-	If[MatchQ[Length[insufficientChangeMediaOptionsCases], GreaterP[0]] && messages,
-		Message[
-			Error::FreezeCellsInsufficientChangeMediaOptions,
-			ObjectToString[insufficientChangeMediaOptionsCases[[All,1]], Cache -> cacheBall, Simulation -> simulation],
-			ToString[insufficientChangeMediaOptionsCases[[All,2]]],
-			insufficientChangeMediaOptionsCases[[All,3]]
-		];
-	];
-
-	insufficientChangeMediaOptionsTest = If[gatherTests,
-		Module[{affectedSamples, failingTest, passingTest},
-			affectedSamples = insufficientChangeMediaOptionsCases[[All,1]];
-
-			failingTest = If[Length[affectedSamples] == 0,
-				Nothing,
-				Test["None of CellPelletCentrifuge, CellPelletTime, CellPelletIntensity, or CellPelletSupernatantVolume are Null for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if the CryoprotectionStrategy is ChangeMedia:", True, False]
-			];
-
-			passingTest = If[Length[affectedSamples] == Length[mySamples],
-				Nothing,
-				Test["None of CellPelletCentrifuge, CellPelletTime, CellPelletIntensity, or CellPelletSupernatantVolume are Null for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if the CryoprotectionStrategy is ChangeMedia:", True, True]
-			];
-
-			{failingTest, passingTest}
-		],
-		Null
-	];
-
-	(*Error::FreezeCellsExtraneousChangeMediaOptions*)
-	(* The four pelleting options must be Null if CryoprotectionStrategy is NOT ChangeMedia. *)
-	extraneousChangeMediaOptionsCases = MapThread[
-		Function[{sample, cryoprotectionStrategy, cellPelletCentrifuge, cellPelletTime, cellPelletIntensity, cellPelletSupernatantVolume, index},
-			Sequence @@ {
-				If[MatchQ[cryoprotectionStrategy, Except[ChangeMedia]] && MatchQ[cellPelletCentrifuge, Except[Null]],
-					{sample, cryoprotectionStrategy, CellPelletCentrifuge, cellPelletCentrifuge, index},
-					Nothing
-				],
-				If[MatchQ[cryoprotectionStrategy, Except[ChangeMedia]] && MatchQ[cellPelletTime, Except[Null]],
-					{sample, cryoprotectionStrategy, CellPelletTime, cellPelletTime, index},
-					Nothing
-				],
-				If[MatchQ[cryoprotectionStrategy, Except[ChangeMedia]] && MatchQ[cellPelletIntensity, Except[Null]],
-					{sample, cryoprotectionStrategy, CellPelletIntensity, cellPelletIntensity, index},
-					Nothing
-				],
-				If[MatchQ[cryoprotectionStrategy, Except[ChangeMedia]] && MatchQ[cellPelletSupernatantVolume, Except[Null]],
-					{sample, cryoprotectionStrategy, CellPelletSupernatantVolume, cellPelletSupernatantVolume, index},
-					Nothing
-				]
-			}
-		],
-		{mySamples, resolvedCryoprotectionStrategies, resolvedCellPelletCentrifuges, resolvedCellPelletTimes, resolvedCellPelletIntensities, resolvedCellPelletSupernatantVolumes, Range[Length[mySamples]]}
-	];
-
-	If[MatchQ[Length[extraneousChangeMediaOptionsCases], GreaterP[0]] && messages,
-		Message[
-			Error::FreezeCellsExtraneousChangeMediaOptions,
-			ObjectToString[extraneousChangeMediaOptionsCases[[All,1]], Cache -> cacheBall, Simulation -> simulation],
-			ToString[extraneousChangeMediaOptionsCases[[All,2]]],
-			ToString[extraneousChangeMediaOptionsCases[[All,3]]],
-			ToString[extraneousChangeMediaOptionsCases[[All,4]]],
-			extraneousChangeMediaOptionsCases[[All,5]]
-		];
-	];
-
-	extraneousChangeMediaOptionsTest = If[gatherTests,
-		Module[{affectedSamples, failingTest, passingTest},
-			affectedSamples = extraneousChangeMediaOptionsCases[[All,1]];
-
-			failingTest = If[Length[affectedSamples] == 0,
-				Nothing,
-				Test["All of CellPelletCentrifuge, CellPelletTime, CellPelletIntensity, and CellPelletSupernatantVolume are Null for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if the CryoprotectionStrategy is not ChangeMedia:", True, False]
-			];
-
-			passingTest = If[Length[affectedSamples] == Length[mySamples],
-				Nothing,
-				Test["All of CellPelletCentrifuge, CellPelletTime, CellPelletIntensity, and CellPelletSupernatantVolume are Null for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if the CryoprotectionStrategy is not ChangeMedia:", True, True]
-			];
-
-			{failingTest, passingTest}
-		],
-		Null
-	];
-
-	(*Error::FreezeCellsInsufficientCryoprotectantOptions*)
-	(* The three options related to CryoprotectantSolutions must not be Null unless CryoprotectionStrategy is None. *)
-	insufficientCryoprotectantOptionsCases = MapThread[
-		Function[{sample, cryoprotectionStrategy, cryoprotectantSolution, cryoprotectantSolutionVolume, index},
-			Sequence @@ {
-				If[MatchQ[cryoprotectionStrategy, Except[None]] && MatchQ[cryoprotectantSolution, Null],
-					{sample, cryoprotectionStrategy, CryoprotectantSolution, cryoprotectantSolution, index},
-					Nothing
-				],
-				If[MatchQ[cryoprotectionStrategy, Except[None]] && MatchQ[cryoprotectantSolutionVolume, Null],
-					{sample, cryoprotectionStrategy, CryoprotectantSolutionVolume, cryoprotectantSolutionVolume, index},
-					Nothing
-				],
-				If[MatchQ[cryoprotectionStrategy, Except[None]] && MatchQ[resolvedCryoprotectantSolutionTemperature, Null],
-					{sample, cryoprotectionStrategy, CryoprotectantSolutionTemperature, resolvedCryoprotectantSolutionTemperature, index},
-					Nothing
-				]
-			}
-		],
-		{mySamples, resolvedCryoprotectionStrategies, resolvedCryoprotectantSolutions, resolvedCryoprotectantSolutionVolumes, Range[Length[mySamples]]}
-	];
-
-	If[MatchQ[Length[insufficientCryoprotectantOptionsCases], GreaterP[0]] && messages,
-		Message[
-			Error::FreezeCellsInsufficientCryoprotectantOptions,
-			ObjectToString[insufficientCryoprotectantOptionsCases[[All,1]], Cache -> cacheBall, Simulation -> simulation],
-			ToString[insufficientCryoprotectantOptionsCases[[All,2]]],
-			ToString[insufficientCryoprotectantOptionsCases[[All,3]]],
-			ToString[insufficientCryoprotectantOptionsCases[[All,4]]],
-			insufficientCryoprotectantOptionsCases[[All,5]]
-		];
-	];
-
-	insufficientCryoprotectantOptionsTest = If[gatherTests,
-		Module[{affectedSamples, failingTest, passingTest},
-			affectedSamples = insufficientCryoprotectantOptionsCases[[All,1]];
-
-			failingTest = If[Length[affectedSamples] == 0,
-				Nothing,
-				Test["None of CryoprotectantSolution, CryoprotectantSolutionVolume, or CryoprotectantSolutionTemperature are Null for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if the CryoprotectionStrategy is not None:", True, False]
-			];
-
-			passingTest = If[Length[affectedSamples] == Length[mySamples],
-				Nothing,
-				Test["None of CryoprotectantSolution, CryoprotectantSolutionVolume, or CryoprotectantSolutionTemperature are Null for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if the CryoprotectionStrategy is not None:", True, True]
-			];
-
-			{failingTest, passingTest}
-		],
-		Null
-	];
-
-	(*Error::FreezeCellsExtraneousCryoprotectantOptions*)
-	(* The three options related to CryoprotectantSolutions must be Null if CryoprotectionStrategy is None. *)
-	extraneousCryoprotectantOptionsCases = MapThread[
-		Function[{sample, cryoprotectionStrategy, cryoprotectantSolution, cryoprotectantSolutionVolume, index},
-			Sequence @@ {
-				If[MatchQ[cryoprotectionStrategy, None] && MatchQ[cryoprotectantSolution, Except[Null]],
-					{sample, CryoprotectantSolution, cryoprotectantSolution, index},
-					Nothing
-				],
-				If[MatchQ[cryoprotectionStrategy, None] && MatchQ[cryoprotectantSolutionVolume, Except[Null]],
-					{sample, CryoprotectantSolutionVolume, cryoprotectantSolutionVolume, index},
-					Nothing
-				]
-			}
-		],
-		{mySamples, resolvedCryoprotectionStrategies, resolvedCryoprotectantSolutions, resolvedCryoprotectantSolutionVolumes, Range[Length[mySamples]]}
-	];
-
-	If[MatchQ[Length[extraneousCryoprotectantOptionsCases], GreaterP[0]] && messages,
-		Message[
-			Error::FreezeCellsExtraneousCryoprotectantOptions,
-			ObjectToString[extraneousCryoprotectantOptionsCases[[All,1]], Cache -> cacheBall, Simulation -> simulation],
-			ToString[extraneousCryoprotectantOptionsCases[[All,2]]],
-			ObjectToString[extraneousCryoprotectantOptionsCases[[All,3]], Cache -> cacheBall, Simulation -> simulation],
-			extraneousCryoprotectantOptionsCases[[All,4]]
-		];
-	];
-
-	extraneousCryoprotectantOptionsTest = If[gatherTests,
-		Module[{affectedSamples, failingTest, passingTest},
-			affectedSamples = extraneousCryoprotectantOptionsCases[[All,1]];
-
-			failingTest = If[Length[affectedSamples] == 0,
-				Nothing,
-				Test["All of CryoprotectantSolution, CryoprotectantSolutionVolume, and CryoprotectantSolutionTemperature are Null for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if the CryoprotectionStrategy is None:", True, False]
-			];
-
-			passingTest = If[Length[affectedSamples] == Length[mySamples],
-				Nothing,
-				Test["All of CryoprotectantSolution, CryoprotectantSolutionVolume, and CryoprotectantSolutionTemperature are Null for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if the CryoprotectionStrategy is None:", True, True]
-			];
-
-			{failingTest, passingTest}
-		],
-		Null
-	];
-
-	(*Error::FreezeCellsNoCompatibleCentrifuge*)
+	(* 18. Error::FreezeCellsNoCompatibleCentrifuge *)
 	(* Throw an error if we need a centrifuge but there are none compatible with the given container and conditions. *)
-	noCompatibleCentrifugeCases = If[
-		MatchQ[Length[noCompatibleCentrifugeIndices], GreaterP[0]],
+	noCompatibleCentrifugeCases = If[MatchQ[Length[noCompatibleCentrifugeIndices], GreaterP[0]],
 		MapThread[
-			Function[{sample, containerModel, intensity, time, index},
-				{sample, containerModel, intensity, time, index}
+			Function[{sample, containerModelPacket, intensity},
+				Module[{containerModel, possibleCentrifugesForContainer},
+					containerModel = Lookup[containerModelPacket, Object, Null];
+					possibleCentrifugesForContainer = If[!NullQ[containerModel],
+						CentrifugeDevices[
+							containerModel,
+							Intensity -> Automatic,
+							Time -> Automatic,
+							Preparation -> Manual,
+							Cache -> cacheBall,
+							Simulation -> simulation
+						],
+						{}
+					];
+					Which[
+						NullQ[containerModel],
+							{sample, containerModel, intensity, ContainerModel},
+						MatchQ[possibleCentrifugesForContainer, {}],
+							{sample, containerModel, intensity, Footprint},
+						True,
+							{sample, intensity, containerModel, CellPelletIntensity}
+					]
+				]
 			],
 			{
 				mySamples[[noCompatibleCentrifugeIndices]],
-				Lookup[sampleContainerModelPackets[[noCompatibleCentrifugeIndices]], Object],
-				resolvedCellPelletIntensities[[noCompatibleCentrifugeIndices]],
-				resolvedCellPelletTimes[[noCompatibleCentrifugeIndices]],
-				centrifugeIndices[[noCompatibleCentrifugeIndices]]
+				sampleContainerModelPackets[[noCompatibleCentrifugeIndices]],
+				resolvedCellPelletIntensities[[noCompatibleCentrifugeIndices]]
 			}
 		],
 		{}
 	];
 
-	If[MatchQ[Length[noCompatibleCentrifugeCases], GreaterP[0]] && messages,
-		Message[
-			Error::FreezeCellsNoCompatibleCentrifuge,
-			ObjectToString[noCompatibleCentrifugeCases[[All,1]], Cache -> cacheBall, Simulation -> simulation],
-			ObjectToString[noCompatibleCentrifugeCases[[All,2]], Cache -> cacheBall, Simulation -> simulation],
-			ToString[noCompatibleCentrifugeCases[[All,3]]],
-			ToString[noCompatibleCentrifugeCases[[All,4]]],
-			noCompatibleCentrifugeCases[[All,5]]
-		];
+	If[MatchQ[Length[noCompatibleCentrifugeIndices], GreaterP[0]] && messages,
+		Module[{captureSentence, groupedErrorDetails, reasonClause, actionClause},
+			groupedErrorDetails = GroupBy[DeleteDuplicates@noCompatibleCentrifugeCases, Last];
+			captureSentence = joinClauses[
+				{
+					If[MemberQ[Flatten@noCompatibleCentrifugeCases, Footprint|ContainerModel],
+						"ExperimentFreezeCells does not accept intermediate containers during media changing so the input sample containers must have centrifuge-compatible Footprints such as " <> joinClauses[List @@ {Plate, CEVial, MicrocentrifugeTube, Conical15mLTube, Conical50mLTube}, ConjunctionWord -> "or"],
+						Nothing
+					],
+					If[MemberQ[Flatten@noCompatibleCentrifugeCases, CellPelletIntensity],
+						"CellPelletCentrifuge can only be operated within the defined MaxRotationRate and MinRotationRate range",
+						Nothing
+					]
+				},
+				CaseAdjustment -> True
+			];
+			reasonClause = joinClauses[
+				Map[
+					Function[{errorCode},
+						Module[{groupedCases},
+							groupedCases = Lookup[groupedErrorDetails, Key[errorCode]];
+							StringJoin[
+								samplesForMessages[groupedCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
+								Which[
+									MatchQ[errorCode, Footprint],
+										pluralize[groupedCases[[All, 1]], " is in a container with Footprint as ", " are in containers with Footprint as "] <> joinClauses[fastAssocLookup[fastAssoc, #, Footprint]& /@groupedCases[[All, 2]]],
+									MatchQ[errorCode, ContainerModel],
+										pluralize[groupedCases[[All, 1]], " is in a container ", " are in containers "] <> "without model information",
+									True,
+										" " <> hasOrHave[groupedCases[[All, 1]]] <> " the option CellPelletIntensity set to " <> joinClauses[groupedCases[[All, 2]]]
+								],
+								If[MatchQ[errorCode, Footprint|ContainerModel],
+									"",
+									Module[{groupedContainerModels},
+										groupedContainerModels = GroupBy[groupedCases, #[[3]]&];
+										Map[
+											Module[{allCentrifuges, allowedMaxIntensities, allowedMinIntensities},
+												allCentrifuges = CentrifugeDevices[
+													groupedContainerModels[#][[All, 3]][[1]],
+													Intensity -> Automatic,
+													Time -> Automatic,
+													Preparation -> Manual,
+													Cache -> cacheBall,
+													Simulation -> simulation
+												];
+												allowedMaxIntensities = Max[fastAssocLookup[fastAssoc, #, MaxRotationRate]& /@ allCentrifuges];
+												allowedMinIntensities = Min[fastAssocLookup[fastAssoc, #, MinRotationRate]& /@ allCentrifuges];
+												StringJoin[
+													" and the range of centrifuge rotation rate allowed for the container model ",
+													samplesForMessages[groupedContainerModels[#][[All, 3]], Cache -> cacheBall, Simulation -> simulation],
+													" is from ",
+													ToString[allowedMinIntensities],
+													" to ",
+													ToString[allowedMaxIntensities]
+												]
+											]&,
+											Keys[groupedContainerModels]
+										]
+									]
+								]
+							]
+						]
+					],
+					Keys[groupedErrorDetails]
+				],
+				CaseAdjustment -> True
+			];
+			actionClause = joinClauses[
+				{
+					If[MemberQ[Flatten@Keys[groupedErrorDetails], Footprint|ContainerModel],
+						"check the \"Preferred Input Containers\" section of the ExperimentFreezeCells helpfile for a list of centrifuge compatible containers and transfer the input sample(s) to the acceptable containers beforehand",
+						Nothing
+					],
+					If[MemberQ[Flatten@Keys[groupedErrorDetails], CellPelletIntensity],
+						"adjust the CellPelletIntensity",
+						Nothing
+					]
+				}
+			];
+			Message[
+				Error::FreezeCellsNoCompatibleCentrifuge,
+				captureSentence,
+				reasonClause,
+				actionClause
+			]
+		]
 	];
 
 	noCompatibleCentrifugeTest = If[gatherTests,
 		Module[{affectedSamples, failingTest, passingTest},
-			affectedSamples = noCompatibleCentrifugeCases[[All,1]];
+			affectedSamples = noCompatibleCentrifugeCases[[All, 1]];
 
 			failingTest = If[Length[affectedSamples] == 0,
 				Nothing,
@@ -3816,6 +6458,160 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		Null
 	];
 
+
+	(* 19. Error::CellPelletCentrifugeIsIncompatible *)
+	(* Throw an error if user specify a centrifuge but it is not compatible with the given container and conditions. *)
+	incompatibleCentrifugeCases = If[MatchQ[Length[incompatibleCentrifugeIndices], GreaterP[0]],
+		MapThread[
+			Function[{sample, containerModelPacket, intensity, centrifuge},
+				Module[
+					{
+						footprint, containerModel, possibleCentrifugesForContainer, possibleCentrifugesForContainerAtSpeed, centrifugeModelPacket,
+						minSpeed, MaxSpeed
+					},
+					footprint = Lookup[containerModelPacket, Footprint];
+					containerModel = Lookup[containerModelPacket, Object, Null];
+					possibleCentrifugesForContainer = CentrifugeDevices[
+						containerModel,
+						Intensity -> Automatic,
+						Time -> Automatic,
+						Preparation -> Manual,
+						Cache -> cacheBall,
+						Simulation -> simulation
+					];
+					possibleCentrifugesForContainerAtSpeed = CentrifugeDevices[
+						containerModel,
+						Intensity -> intensity,
+						Time -> Automatic,
+						Preparation -> Manual,
+						Cache -> cacheBall,
+						Simulation -> simulation
+					];
+					centrifugeModelPacket = If[MatchQ[centrifuge, ObjectP[Model[Instrument]]],
+						fetchPacketFromCache[centrifuge, centrifugeModelPackets],
+						fastAssocPacketLookup[fastAssoc, centrifuge, Model]
+					];
+					{minSpeed, MaxSpeed} = Lookup[centrifugeModelPacket, {MinRotationRate, MaxRotationRate}];
+					If[MemberQ[possibleCentrifugesForContainer, ObjectP[centrifuge]] && !MemberQ[possibleCentrifugesForContainerAtSpeed, ObjectP[centrifuge]],
+						{sample, containerModel, footprint, {minSpeed, MaxSpeed}, {intensity, centrifuge}, CellPelletIntensity},
+						{sample, containerModel, footprint, possibleCentrifugesForContainer, {footprint, centrifuge}, CellPelletCentrifuge}
+					]
+				]
+			],
+			{
+				mySamples[[incompatibleCentrifugeIndices]],
+				sampleContainerModelPackets[[incompatibleCentrifugeIndices]],
+				resolvedCellPelletIntensities[[incompatibleCentrifugeIndices]],
+				resolvedCellPelletCentrifugeModels[[incompatibleCentrifugeIndices]]
+			}
+		],
+		{}
+	];
+
+	If[MatchQ[Length[incompatibleCentrifugeIndices], GreaterP[0]] && messages,
+		Module[{captureSentence, groupedErrorDetails, reasonClause, actionClause},
+			groupedErrorDetails = GroupBy[DeleteDuplicates@incompatibleCentrifugeCases, Last];
+			captureSentence = joinClauses[
+				{
+					If[MemberQ[Flatten@incompatibleCentrifugeCases, CellPelletIntensity],
+						"centrifuge can only be operated within the defined MaxRotationRate and MinRotationRate range",
+						Nothing
+					],
+					If[MemberQ[Flatten@incompatibleCentrifugeCases, CellPelletCentrifuge],
+						StringJoin[
+							"containers with the Footprint of ",
+							joinClauses[Flatten@Cases[incompatibleCentrifugeCases, {_, _, currentFootprint_, _, _, CellPelletCentrifuge}:>currentFootprint]],
+							" can only be fit in CellPelletCentrifuge ",
+							samplesForMessages[Flatten@Cases[incompatibleCentrifugeCases, {_, _, _, listOfCentrifuges_, _, CellPelletCentrifuge}:>listOfCentrifuges], CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation]
+						],
+						Nothing
+					]
+				},
+				CaseAdjustment -> False
+			];
+			reasonClause = joinClauses[
+				Flatten@Map[
+					Function[{errorCode},
+						Module[{groupedCases, groupedOnValues},
+							groupedCases = Most /@ Lookup[groupedErrorDetails, Key[errorCode]];
+							groupedOnValues = GroupBy[groupedCases, Last];
+							Map[
+								StringJoin[
+									samplesForMessages[groupedOnValues[#][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
+									" ",
+									hasOrHave[DeleteDuplicates@groupedOnValues[#][[All, 1]]],
+									" the option CellPelletCentrifuge set to ",
+									samplesForMessages[Cases[#, ObjectP[]], CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation],
+									If[MatchQ[errorCode, CellPelletIntensity],
+										" with operating rotation rate from " <> joinClauses[groupedOnValues[#][[All, 4]][[All, 1]]] <> " to " <> joinClauses[groupedOnValues[#][[All, 4]][[All, 2]]],
+										""
+									],
+									If[MatchQ[errorCode, CellPelletCentrifuge],
+										pluralize[groupedCases[[All, 1]], " but is in a container with Footprint as ", " but are in containers with Footprint of "] <> joinClauses[Cases[#, FootprintP]],
+										" and the option CellPelletIntensity set to " <> joinClauses[Cases[#, Except[ObjectP[]]]]
+									]
+								]&,
+								Keys[groupedOnValues]
+							]
+						]
+					],
+					Keys[groupedErrorDetails]
+				],
+				CaseAdjustment -> True
+			];
+			actionClause = joinClauses[
+				Flatten@Map[
+					Function[{errorCode},
+						Module[{groupedCases, groupedOnValues},
+							groupedCases = Most /@ Lookup[groupedErrorDetails, Key[errorCode]];
+							groupedOnValues = GroupBy[groupedCases, Last];
+							Map[
+								StringJoin[
+									"for ",
+									samplesForMessages[groupedOnValues[#][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
+									If[MatchQ[errorCode, CellPelletIntensity],
+										", please adjust the CellPelletIntensity",
+										", please specify an alternative centrifuge such as " <> samplesForMessages[groupedOnValues[#][[All, 4]][[1]], CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation]
+									]
+								]&,
+								Keys[groupedOnValues]
+							]
+						]
+					],
+					Keys[groupedErrorDetails]
+				],
+				CaseAdjustment -> True
+			];
+			Message[
+				Error::CellPelletCentrifugeIsIncompatible,
+				captureSentence,
+				reasonClause,
+				actionClause
+			]
+		]
+	];
+
+	incompatibleCentrifugeTest = If[gatherTests,
+		Module[{affectedSamples, failingTest, passingTest},
+			affectedSamples = noCompatibleCentrifugeCases[[All, 1]];
+
+			failingTest = If[Length[affectedSamples] == 0,
+				Nothing,
+				Test["The specified centrifuge is compatible with the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall, Simulation -> simulation] <> " if the CryoprotectionStrategy is ChangeMedia:", True, False]
+			];
+
+			passingTest = If[Length[affectedSamples] == Length[mySamples],
+				Nothing,
+				Test["The specified centrifuge is compatible with the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall, Simulation -> simulation] <> " if the CryoprotectionStrategy is ChangeMedia:", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Null
+	];
+
+	
+	(* 20. Error::ConflictingChangeMediaOptionsForSameContainer *)
 	(* Gather the samples that are in the same container together with their options *)
 	groupedSamplesContainersAndOptions = GatherBy[
 		Transpose[{mySamples, sampleContainerPackets, resolvedMapThreadOptions}],
@@ -3825,33 +6621,35 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 	(* Get the options that are not the same across the board for each container *)
 	inconsistentOptionsPerContainer = Map[
 		Function[{samplesContainersAndOptions},
-			Module[{optionsToPullOut},
-				optionsToPullOut = {CellPelletCentrifuge, CellPelletTime, CellPelletIntensity};
-			Map[
-				Function[{optionToCheck},
-					If[SameQ @@ Lookup[samplesContainersAndOptions[[All, 3]], optionToCheck],
-						Nothing,
-						optionToCheck
-					]
-				],
-				Append[optionsToPullOut, SamplesOutStorageCondition]
-			]
+			(* If some samples in the container have ChangeMedia strategy, some do not, we have thrown error in earlier *)
+			If[MemberQ[Lookup[samplesContainersAndOptions[[All, 3]], CryoprotectionStrategy], Except[ChangeMedia]],
+				{},
+				Map[
+					Function[{optionToCheck},
+						If[SameQ @@ Lookup[samplesContainersAndOptions[[All, 3]], optionToCheck],
+							Nothing,
+							optionToCheck
+						]
+					],
+					indexMatchingChangeMediaOptionNames
+				]
 			]
 		],
 		groupedSamplesContainersAndOptions
 	];
 
 	(* Get the samples that have conflicting options for the same container *)
+	(* Do not include samples in DuplicatedSamples invalid inputs *)
 	samplesWithSameContainerConflictingOptions = MapThread[
 		Function[{samplesContainersAndOptions, inconsistentOptions},
 			If[MatchQ[inconsistentOptions, {}],
-				Nothing,
-				samplesContainersAndOptions[[All, 1]]
+				{},
+				Cases[samplesContainersAndOptions[[All, 1]], Except[ObjectP[Join[duplicatedSampleInputs, conflictingCryoprotectionStrategySamples]]]]
 			]
 		],
 		{groupedSamplesContainersAndOptions, inconsistentOptionsPerContainer}
 	];
-	samplesWithSameContainerConflictingErrors = Not[MatchQ[#, {}]]& /@ inconsistentOptionsPerContainer;
+	samplesWithSameContainerConflictingErrors = Not[MatchQ[#, {}]]& /@ samplesWithSameContainerConflictingOptions;
 
 	(* Throw an error if we have these same-container samples with different options specified *)
 	(* Here we use the new recommended error message format where we expand the error message instead of using index *)
@@ -3860,13 +6658,22 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		(
 			Message[
 				Error::ConflictingChangeMediaOptionsForSameContainer,
-				joinClauses@MapThread[
-					StringJoin["The samples ", ObjectToString[#1, Cache -> cacheBall, Simulation -> simulation], "have different cell pellet setting option(s):", ToString@#2]&,
-					{
-						PickList[samplesWithSameContainerConflictingOptions, samplesWithSameContainerConflictingErrors],
-						PickList[inconsistentOptionsPerContainer, samplesWithSameContainerConflictingErrors]
-					}
-				]
+				joinClauses[
+					MapThread[
+						StringJoin[
+							samplesForMessages[#1, mySamples, Cache -> cacheBall, Simulation -> simulation],
+							" have different cell pellet setting(s): ",
+							joinClauses@#2,
+							", but are in the same container as other sample(s)"
+						]&,
+						{
+							PickList[samplesWithSameContainerConflictingOptions, samplesWithSameContainerConflictingErrors],
+							PickList[inconsistentOptionsPerContainer, samplesWithSameContainerConflictingErrors]
+						}
+					],
+					CaseAdjustment -> True
+				],
+				"either transfer to separate containers, allow the cell pelleting in individual containers, or ensure that all samples in the same container have identical cell pellet settings"
 			];
 			DeleteDuplicates[Flatten[inconsistentOptionsPerContainer]]
 		),
@@ -3883,13 +6690,13 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest = If[Length[failingInputs]>0,
-				Test["The following samples, "<>ObjectToString[failingInputs, Cache -> cacheBall, Simulation -> simulation]<>",have the same cell pellet options as all other samples in the same container:", True, False],
+				Test["The following samples, " <> ObjectToString[failingInputs, Cache -> cacheBall, Simulation -> simulation] <> ",have the same cell pellet options as all other samples in the same container:", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs]>0,
-				Test["The following samples, "<>ObjectToString[passingInputs, Cache -> cacheBall, Simulation -> simulation]<>",have the same cell pellet options as all other samples in the same container:", True, True],
+				Test["The following samples, " <> ObjectToString[passingInputs, Cache -> cacheBall, Simulation -> simulation] <> ",have the same cell pellet options as all other samples in the same container:", True, True],
 				Nothing
 			];
 
@@ -3903,12 +6710,13 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		{}
 	];
 
-	(*Error::TooManyControlledRateFreezerBatches*)
+
+	(* 21. Error::TooManyControlledRateFreezerBatches *)
 	(* We don't allow more than one ControlledRateFreezer freezing batch per protocol due to equipment constraints and timing challenges. *)
 	(* Since all of the options associated with this FreezingStrategy are non-index matching, we only have to check if we're exceeding 48 samples. *)
 	tooManyControlledRateFreezerBatches = If[
 		MatchQ[numericNumberOfReplicates * Length[mySamples], GreaterP[48]] && MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
-		{resolvedNumberOfReplicates, Length[mySamples], numericNumberOfReplicates * Length[mySamples], Length[PartitionRemainder[Range[numericNumberOfReplicates * Length[mySamples]], 48]]},
+		{resolvedNumberOfReplicates, Length[DeleteDuplicates@mySamples], numericNumberOfReplicates * Length[mySamples], Length[PartitionRemainder[Range[numericNumberOfReplicates * Length[mySamples]], 48]]},
 		{}
 	];
 
@@ -3941,7 +6749,8 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		Null
 	];
 
-	(*Error::TooManyInsulatedCoolerBatches*)
+
+	(* 22. Error::TooManyInsulatedCoolerBatches *)
 	(* We're not allowing more than three batches per protocol for InsulatedCooler methods due to equipment constraints and timing challenges. *)
 	tooManyInsulatedCoolerBatches = If[
 		(* If the FreezingStrategy is ControlledRateFreezer, skip all of this. *)
@@ -3962,7 +6771,7 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 			(* Tally to delete duplicates and to determine how many of each unique condition set we have. *)
 			relevantConditionSetsTallied = Tally[relevantConditionSets];
 			(* Get an index-matched list of the Tally counts. *)
-			relevantConditionSetCounts = relevantConditionSetsTallied[[All,2]];
+			relevantConditionSetCounts = relevantConditionSetsTallied[[All, 2]];
 			(* Multiply these counts by the NumberOfReplicates to get the number of samples to be frozen per rack. *)
 			samplesPerRack = numericNumberOfReplicates * relevantConditionSetCounts;
 			(* Pull out the FreezingRacks. *)
@@ -3981,23 +6790,22 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 				(* We have to get rid of any zeroes to avoid false positives. *)
 			] & /@ Range[Length[relevantConditionSetCounts]] /. {0 -> Nothing};
 			(* Now assess the number of batches and output the info for the error message if there are more than 3 batches. *)
-			If[
-				MatchQ[Length[Flatten[partitionedSampleCountsPerConditionSet]], GreaterP[3]],
+			If[MatchQ[Length[Flatten[partitionedSampleCountsPerConditionSet]], GreaterP[3]],
 				{
-					freezingRacks,
-					numberOfPositionsByRack,
+					samplesForMessages[freezingRacks, CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation],
+					joinClauses@numberOfPositionsByRack,
 					Length[relevantConditionSetCounts],
-					relevantConditionSetCounts,
+					joinClauses@relevantConditionSetCounts,
 					resolvedNumberOfReplicates,
 					partitionedSampleCountsPerConditionSet,
 					Length[Flatten[partitionedSampleCountsPerConditionSet]]
 				},
-				Nothing
+				{}
 			]
 		]
 	];
 
-	If[MatchQ[Length[tooManyInsulatedCoolerBatches], GreaterP[0]] && messages,
+	If[!MatchQ[tooManyInsulatedCoolerBatches, {}] && messages,
 		Message[
 			Error::TooManyInsulatedCoolerBatches,
 			tooManyInsulatedCoolerBatches[[1]],
@@ -4032,22 +6840,23 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 	(* -- MESSAGE AND RETURN -- *)
 
 	(* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
-	invalidInputs = DeleteDuplicates[Flatten[
+	invalidInputs = DeleteDuplicates@Flatten[
 		{
 			discardedInvalidInputs,
 			deprecatedSampleInputs,
 			invalidCellTypeSamples,
-			invalidCultureAdhesionSamples,
-			duplicateSamples,
-			invalidPlateSampleInputs
+			duplicatedSampleInputs,
+			invalidPlateSampleInputs,
+			nonLiquidSampleInvalidInputs
 		}
-	]
 	];
 	invalidOptions = DeleteDuplicates[
 		Flatten[
 			{
-				If[MatchQ[Length[conflictingAliquotingCases], GreaterP[0]],
-					{Aliquot, CryogenicSampleContainer},
+				conflictingAliquotingOptions,
+				conflictingCellTypeErrorOptions,
+				If[!MatchQ[unsupportedCellCultureTypeCases, {}],
+					{CultureAdhesion},
 					{}
 				],
 				If[MatchQ[Length[conflictingCultureAdhesionCases], GreaterP[0]],
@@ -4086,32 +6895,27 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 					{Aliquot, NumberOfReplicates},
 					{}
 				],
-				If[MatchQ[Length[overaspirationWarnings], GreaterP[0]],
+				If[MatchQ[Length[overAspirationErrors], GreaterP[0]],
 					{CellPelletSupernatantVolume},
 					{}
 				],
-				If[MatchQ[Length[insufficientChangeMediaOptionsCases], GreaterP[0]],
-					{CryoprotectionStrategy, CellPelletCentrifuge, CellPelletIntensity, CellPelletTime, CellPelletSupernatantVolume},
-					{}
-				],
-				If[MatchQ[Length[extraneousChangeMediaOptionsCases], GreaterP[0]],
-					{CryoprotectionStrategy, CellPelletCentrifuge, CellPelletIntensity, CellPelletTime, CellPelletSupernatantVolume},
-					{}
-				],
-				If[MatchQ[Length[insufficientCryoprotectantOptionsCases], GreaterP[0]],
-					{CryoprotectionStrategy, CryoprotectantSolution, CryoprotectantSolutionVolume, CryoprotectantSolutionTemperature},
-					{}
-				],
-				If[MatchQ[Length[extraneousCryoprotectantOptionsCases], GreaterP[0]],
-					{CryoprotectionStrategy, CryoprotectantSolution, CryoprotectantSolutionVolume, CryoprotectantSolutionTemperature},
-					{}
-				],
+				insufficientChangeMediaOptions,
+				extraneousChangeMediaOptions,
+				insufficientCryoprotectantOptions,
+				extraneousCryoprotectantOptions,
+				conflictingPelletOptionsForSameContainerAcrossSampleOptions,
+				conflictingPelletOptionsForSameContainerOptions,
+				conflictingCryoprotectionStrategyOptions,
 				If[MatchQ[Length[aliquotVolumeReplicatesMismatchCases], GreaterP[0]],
-					{AliquotVolume, NumberOfReplicates},
+					{AliquotVolume, If[GreaterQ[correctNumberOfReplicates, 1], NumberOfReplicates, Nothing]},
 					{}
 				],
 				If[MatchQ[Length[noCompatibleCentrifugeCases], GreaterP[0]],
 					{CellPelletIntensity, CellPelletTime},
+					{}
+				],
+				If[MatchQ[Length[incompatibleCentrifugeIndices], GreaterP[0]],
+					{CellPelletIntensity, CellPelletCentrifuge},
 					{}
 				],
 				conflictingPelletOptionsForSameContainerOptions,
@@ -4119,10 +6923,8 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 					{FreezingStrategy, Freezer, FreezingRack, CryogenicSampleContainer},
 					{}
 				],
-				If[MatchQ[Length[excessiveCryogenicSampleVolumeCases], GreaterP[0]],
-					{AliquotVolume, CryogenicVial},
-					{}
-				],
+				conflictingCellFreezingOptions,
+				excessiveCryogenicSampleVolumeOptions,
 				If[MatchQ[Length[tooManyControlledRateFreezerBatches], GreaterP[0]],
 					{NumberOfReplicates, FreezingStrategy},
 					{}
@@ -4133,10 +6935,6 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 				],
 				If[MatchQ[Length[cryoprotectantSolutionOverfillCases], GreaterP[0]],
 					{CryoprotectantSolutionVolume, CellPelletSupernatantVolume},
-					{}
-				],
-				If[MatchQ[Length[conflictingCryoprotectantSolutionTemperatureCases], GreaterP[0]],
-					{CryoprotectantSolutionTemperature, CryoprotectionStrategy},
 					{}
 				],
 				If[MatchQ[Length[unsupportedFreezerCases], GreaterP[0]],
@@ -4153,31 +6951,41 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		invalidCellTypeTest,
 		invalidCultureAdhesionTest,
 		duplicateSamplesTest,
+		nonLiquidSampleTest,
+		missingVolumeTest,
 		precisionTests,
+		freezeCellsAliquotingRequiredTests,
 		conflictingAliquotingTest,
+		cellTypeNotSpecifiedTests,
 		conflictingCellTypeTest,
 		conflictingCultureAdhesionTest,
-		conflictingTemperatureProfileTest,
-		conflictingInsulatedCoolerFreezingTimeTest,
-		conflictingCoolantTest,
+		cultureAdhesionNotSpecifiedTests,
+		conflictingTemperatureProfileTests,
+		conflictingInsulatedCoolerFreezingTimeTests,
+		conflictingCoolantTests,
 		unsupportedTemperatureProfileTest,
 		unsuitableCryogenicSampleContainerTest,
 		conflictingAliquotOptionsTest,
 		replicatesWithoutAliquotTest,
-		insufficientChangeMediaOptionsTest,
-		extraneousChangeMediaOptionsTest,
-		insufficientCryoprotectantOptionsTest,
-		extraneousCryoprotectantOptionsTest,
+		insufficientChangeMediaOptionsTests,
+		extraneousChangeMediaOptionsTests,
+		insufficientCryoprotectantOptionsTests,
+		extraneousCryoprotectantOptionsTests,
+		conflictingPelletOptionsForSameContainerAcrossSampleTests,
+		conflictingPelletOptionsForSameContainerTests,
+		conflictingCryoprotectionStrategyTests,
 		aliquotVolumeReplicatesMismatchTest,
 		overaspirationTest,
 		noCompatibleCentrifugeTest,
-		conflictingHardwareTest,
+		incompatibleCentrifugeTest,
+		conflictingHardwareTests,
+		conflictingCellFreezingTests,
 		excessiveCryogenicSampleVolumeTest,
 		tooManyControlledRateFreezerBatchesTest,
 		tooManyInsulatedCoolerBatchesTest,
 		cryoprotectantSolutionOverfillTest,
-		conflictingCryoprotectantSolutionTemperatureTest,
-		unsupportedFreezerTest
+		conflictingCryoprotectantSolutionTemperatureTests,
+		unsupportedFreezerTests
 	};
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
@@ -4226,9 +7034,8 @@ freezeCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 		expandedCellTypes, expandedCultureAdhesions, expandedCryogenicSampleContainers, expandedCryoprotectionStrategies,
 		expandedCellPelletCentrifuges, expandedCellPelletTimes, expandedCellPelletIntensities, expandedCellPelletSupernatantVolumes,
 		expandedCryoprotectantSolutions, expandedCryoprotectantSolutionVolumes, expandedAliquots, expandedAliquotVolumes,
-		expandedFreezingRacks, expandedFreezers, expandedCoolants, expandedSamplesOutStorageConditions,
-		expandedSampleVolumes, expandedSamplesOutStorageConditionSymbols, expandedCellPelletSupernatantVolumesWithNoAlls,
-		expandedAliquotVolumesWithNoAlls, allOptionsExpandedForReplicates,
+		expandedFreezingRacks, expandedFreezers, expandedCoolants, expandedSampleVolumes, expandedSamplesOutStorageConditionSymbols,
+		expandedCellPelletSupernatantVolumesWithNoAlls, expandedAliquotVolumesWithNoAlls, allOptionsExpandedForReplicates,
 
 		(* Generate Unit Operations *)
 		cryoprotectantSolutionToVolumeLookup, cryoprotectantSolutionChillingTime, estimatedProcessingTime, pelletUnitOperation,
@@ -4346,7 +7153,7 @@ freezeCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 		expandedFreezingRacks,
 		expandedFreezers,
 		expandedCoolants,
-		expandedSamplesOutStorageConditions
+		expandedSamplesOutStorageConditionSymbols
 	} = expandForNumReplicates[
 		myResolvedOptions,
 		{
@@ -4421,15 +7228,6 @@ freezeCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 		}
 	];
 
-	(* Get the samples out storage condition symbol *)
-	expandedSamplesOutStorageConditionSymbols = Map[
-		If[MatchQ[#, ObjectP[Model[StorageCondition]]],
-			fastAssocLookup[fastAssoc, #, StorageCondition],
-			#
-		]&,
-		expandedSamplesOutStorageConditions
-	];
-
 	(* Get all of the resolved singleton options that we need for the protocol object. *)
 	{
 		resolvedCryoprotectantSolutionTemperature,
@@ -4459,13 +7257,13 @@ freezeCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 		},
 		(* Options without index-matching do not need to be expanded for number of replicates. *)
 		{
-			CryoprotectantSolutionTemperature -> Lookup[myResolvedOptions, CryoprotectantSolutionTemperature],
-			FreezingStrategy -> Lookup[myResolvedOptions, FreezingStrategy],
-			TemperatureProfile -> Lookup[myResolvedOptions, TemperatureProfile],
-			InsulatedCoolerFreezingTime -> Lookup[myResolvedOptions, InsulatedCoolerFreezingTime],
-			NumberOfReplicates -> Lookup[myResolvedOptions, NumberOfReplicates],
-			Preparation -> Lookup[myResolvedOptions, Preparation],
-			ParentProtocol -> Lookup[myResolvedOptions, ParentProtocol],
+			CryoprotectantSolutionTemperature -> resolvedCryoprotectantSolutionTemperature,
+			FreezingStrategy -> resolvedFreezingStrategy,
+			TemperatureProfile -> resolvedTemperatureProfile,
+			InsulatedCoolerFreezingTime -> resolvedInsulatedCoolerFreezingTime,
+			NumberOfReplicates -> Null,(* Change NumberOfReplicates to Null since samples/options have been expanded at this point *)
+			Preparation -> resolvedPreparation,
+			ParentProtocol -> resolvedParentProtocol,
 			Email -> Lookup[myResolvedOptions, Email]
 		},
 		(* Remaining options were expanded for number of replicates earlier in the resource packets function *)
@@ -4485,7 +7283,7 @@ freezeCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 			FreezingRack -> expandedFreezingRacks,
 			Freezer -> expandedFreezers,
 			Coolant -> expandedCoolants,
-			SamplesOutStorageCondition -> expandedSamplesOutStorageConditions
+			SamplesOutStorageCondition -> expandedSamplesOutStorageConditionSymbols
 		}
 	];
 
@@ -4498,7 +7296,7 @@ freezeCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 					Nothing,
 				MatchQ[#3, ChangeMedia],
 				(* Note:when we have NumberOfReplicates for ChangeMedia, cryoprotectant solution is only added once with CryoprotectantSolutionVolume. *)
-					#1 -> #2/numericNumberOfReplicates,
+					#1 -> #2/correctedNumberOfReplicates,
 				True,
 					#1 -> #2
 			]&,
@@ -4578,24 +7376,22 @@ freezeCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 		timeForUniqueSamples = Extract[resolvedCellPelletTimes, uniquePelletSampleIndices];
 		volumeForUniqueSamples = Extract[resolvedCellPelletSupernatantVolumes, uniquePelletSampleIndices];
 
-		(* Generate the Pellet UO unless we don't have any pelleting to do. *)
-		(* In this Pellet uo, we perform Centrifuge+Aspiration supernatant. We do not resuspend pellets with Resuspension buffer. *)
-		If[
-			MatchQ[Length[pelletIndices], GreaterP[0]],
-			Pellet @ {
+		(* Generate the Pellet/Centrifuge UO unless we don't have any pelleting to do. *)
+		(* In this uo, we perform Centrifuge only. We do not aspirate supernatant or resuspend pellets with Resuspension buffer since *)
+		(* to avoid setting up BSC multiple times, we are removing SupernatantVolume and SupernatantDestination and put aspiration into FreezeCellsTransferUnitOperations *)
+		(* For Pellet UO, removing supernatant is mandatory, so we are using Centrifuge UO here *)
+		If[MatchQ[Length[pelletIndices], GreaterP[0]],
+			Centrifuge[
 				Sample -> uniquePelletSamples,
 				Instrument -> instrumentForUniqueSamples,
 				Time -> timeForUniqueSamples,
 				Intensity -> intensityForUniqueSamples,
-				SupernatantVolume -> volumeForUniqueSamples,
-				SupernatantDestination -> Waste,
-				SterileTechnique -> True,
 				Preparation -> Manual,
 				Aliquot -> False,
 				ImageSample -> False,
 				MeasureWeight -> False,
 				MeasureVolume -> False
-			},
+			],
 			Null
 		]
 	];
@@ -4627,10 +7423,9 @@ freezeCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 		MapThread[
 			Function[
 				{conditionSet, vialGroup, numberOfSamplesInSet, maxVialsPerRack},
-				If[
+				If[MatchQ[numberOfSamplesInSet, LessEqualP[maxVialsPerRack]],
 					(* If there is enough space in the rack for every vial with that condition set, put all of the vials in that rack. *)
-					MatchQ[numberOfSamplesInSet, LessEqualP[maxVialsPerRack]],
-						{conditionSet, vialGroup},
+					{conditionSet, vialGroup},
 					(* Otherwise, split this group of vials over multiple racks of the same Model. *)
 					Sequence @@ (
 						{conditionSet, vialGroup[[#]]} & /@ PartitionRemainder[Range[numberOfSamplesInSet], maxVialsPerRack]
@@ -4665,8 +7460,7 @@ freezeCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 
 	(* Pull out the unique racks and coolants we need resources for so they are index-matched. *)
 	freezingRacksByBatch = Cases[Flatten @ freezingBatches, ObjectP[{Object[Container, Rack], Model[Container, Rack]}]];
-	coolantsByRack = If[
-		MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
+	coolantsByRack = If[MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
 		ConstantArray[Null, Length[expandedSamplesWithReplicates]], (* This is to avoid breaking the MapThread used to construct the Batched unit ops below. *)
 		Cases[Flatten @ freezingBatches, ObjectP[{Object[Sample], Model[Sample]}]]
 	];
@@ -4695,49 +7489,54 @@ freezeCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 	];
 
 	(* Now that we know what our batches are, resolve the InsulatedCoolerContainers field. *)
-	insulatedCoolerContainers = If[
-		MatchQ[resolvedFreezingStrategy, ControlledRateFreezer], (* The controlled rate freezer doesn't need this container. *)
+	insulatedCoolerContainers = If[MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
+		(* The controlled rate freezer doesn't need this container. *)
 		ConstantArray[Null, Length[expandedSamplesWithReplicates]],
-		Switch[#,
-			ObjectP[Model[Container, Rack, InsulatedCooler, "id:7X104vnMk93w"]], (* Model[Container, Rack, InsulatedCooler, "2mL Mr. Frosty Rack"] *)
-				Model[Container, Vessel, "id:eGakldJWoGaq"], (* Model[Container, Vessel, "2mL Mr. Frosty Container"] *)
-			ObjectP[Model[Container, Rack, InsulatedCooler, "id:N80DNj1WLYPX"]], (* Model[Container, Rack, InsulatedCooler, "5mL Mr. Frosty Rack"] *)
-				Model[Container, Vessel, "id:pZx9jo8edZx9"] (* Model[Container, Vessel, "5mL Mr. Frosty Container"] *)
-		] & /@ uniqueFreezingRacksByBatch
+		Map[
+			Switch[#,
+				ObjectP[Model[Container, Rack, InsulatedCooler, "id:7X104vnMk93w"]], (* Model[Container, Rack, InsulatedCooler, "2mL Mr. Frosty Rack"] *)
+					Model[Container, Vessel, "id:eGakldJWoGaq"], (* Model[Container, Vessel, "2mL Mr. Frosty Container"] *)
+				ObjectP[Model[Container, Rack, InsulatedCooler, "id:N80DNj1WLYPX"]], (* Model[Container, Rack, InsulatedCooler, "5mL Mr. Frosty Rack"] *)
+					Model[Container, Vessel, "id:pZx9jo8edZx9"] (* Model[Container, Vessel, "5mL Mr. Frosty Container"] *)
+			]&,
+			uniqueFreezingRacksByBatch
+		]
 	];
 
 	(* Determine the volume of coolant to be added to each Mr. Frosty container. Note that the 2mL size Mr. Frosty always needs *)
 	(* 250 mL coolant regardless of how many samples we put into the rack. Similarly, the 5mL Mr Frosty always needs 500 mL coolant. *)
-	coolantVolumes = If[
-		MatchQ[resolvedFreezingStrategy, ControlledRateFreezer], (* The controlled rate freezer doesn't need coolant. *)
+	coolantVolumes = If[MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
+		(* The controlled rate freezer doesn't need coolant. *)
 		ConstantArray[Null, Length[expandedSamplesWithReplicates]],
-		Switch[#,
-			ObjectP[Model[Container, Vessel, "id:eGakldJWoGaq"]], (* Model[Container, Vessel, "2mL Mr. Frosty Container"] *)
-				250 Milliliter,
-			ObjectP[Model[Container, Vessel, "id:pZx9jo8edZx9"]], (* Model[Container, Vessel, "5mL Mr. Frosty Container"] *)
-				500 Milliliter
-		] & /@ insulatedCoolerContainers
+		Map[
+			Switch[#,
+				ObjectP[Model[Container, Vessel, "id:eGakldJWoGaq"]], (* Model[Container, Vessel, "2mL Mr. Frosty Container"] *)
+					250 Milliliter,
+				ObjectP[Model[Container, Vessel, "id:pZx9jo8edZx9"]], (* Model[Container, Vessel, "5mL Mr. Frosty Container"] *)
+					500 Milliliter
+			]&,
+			insulatedCoolerContainers
+		]
 	];
 
 	(* Expand the insulated cooler containers and coolant volumes for replicates but use the correct sample indices. *)
-	{expandedInsulatedCoolerContainers, expandedCoolantVolumes} = If[
-		MatchQ[resolvedFreezingStrategy, ControlledRateFreezer], (* The controlled rate freezer doesn't need either of these. *)
+	{expandedInsulatedCoolerContainers, expandedCoolantVolumes} = If[MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
+		(* The controlled rate freezer doesn't need either of these. *)
 		{
 			ConstantArray[Null, Length[expandedSamplesWithReplicates]],
 			ConstantArray[Null, Length[expandedSamplesWithReplicates]]
 		},
-		Flatten /@ Transpose[
-			MapThread[
-				Function[
-					{insulatedCoolerContainer, volume, indexGroupLength},
-					{ConstantArray[insulatedCoolerContainer, indexGroupLength], ConstantArray[volume, indexGroupLength]}
-				],
-				{
-					insulatedCoolerContainers,
-					coolantVolumes,
-					Length /@ expandedSampleIndicesByFreezingBatch
-				}
-			]
+		Transpose@Map[
+			Function[{sampleIndex},
+				Module[{batchNumber},
+					batchNumber = Position[expandedSampleIndicesByFreezingBatch, _?(MemberQ[#, sampleIndex]&)][[1]];
+					{
+						Extract[insulatedCoolerContainers, batchNumber],
+						Extract[coolantVolumes, batchNumber]
+					}
+				]
+			],
+			Range[Length@expandedCoolants]
 		]
 	];
 
@@ -4794,34 +7593,18 @@ freezeCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 	];
 
 	(* Generate insulatedCoolerFreezingConditions by mapping from Model[Freezer] to the appropriate storage condition models. *)
-	insulatedCoolerFreezingConditions = If[
+	insulatedCoolerFreezingConditions = If[MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
 		(* Do this only if we're using an insulatedCooler FreezingStrategy since it doesn't apply for ControlledRateFreezer. *)
-		MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
 		ConstantArray[Null, Length[expandedSamplesWithReplicates]],
-
-		Module[
-			{freezerModelPackets, freezerModelDefaultTemps},
-			(* Get the FreezerModel packets from the FastAssoc and then find their default temperatures. *)
-			freezerModelPackets = fetchPacketFromFastAssoc[#, fastAssoc]& /@ expandedFreezers;
-			freezerModelDefaultTemps = Lookup[freezerModelPackets, DefaultTemperature];
-			(* For each freezer, get a storage condition model that matches the freezer's default temperature. *)
-			Map[
-				If[
-					MatchQ[#, RangeP[-85 Celsius, -75 Celsius]],
-					Link[Model[StorageCondition, "id:xRO9n3BVOe3z"]], (* Model[StorageCondition, "Deep Freezer"]: a -80 Celsius Freezer *)
-					Link[Model[StorageCondition, "id:n0k9mG8Bv96n"]] (* Model[StorageCondition, "Freezer, Flammable"]: a -20 Celsius Freezer, Flammable materials rated *)
-				]&, freezerModelDefaultTemps
-			]
-		]
+		ConstantArray[Link[Model[StorageCondition, "id:xRO9n3BVOe3z"]], Length[expandedSamplesWithReplicates]](* Model[StorageCondition, "Deep Freezer"]: a -80 Celsius Freezer *)
 	];
 
 	(* Generate the freezer resource if we're using a ControlledRateFreezer. No need to make freezer resources if *)
 	(* we're using InsulatedCoolers, since the storage task will make the freezer resources in that case. *)
-	freezerResourcesLink = If[
-		MatchQ[resolvedFreezingStrategy, InsulatedCooler],
+	freezerResourcesLink = If[MatchQ[resolvedFreezingStrategy, InsulatedCooler],
 		Link /@ expandedFreezers,
 		Link /@ Map[
-			Resource[Instrument -> #, Time -> Max[resolvedTemperatureProfile[[All,2]]], Name -> ToString[#]]&,
+			Resource[Instrument -> #, Time -> Max[resolvedTemperatureProfile[[All, 2]]], Name -> ToString[#]]&,
 			ToList[expandedFreezers]
 		]
 	];
@@ -4832,15 +7615,18 @@ freezeCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 		uniqueFreezingRacksByBatch
 	];
 
-	freezingRackResourcesLink = Link /@ Flatten[MapThread[
-		Function[{rackResource, indexGroup},
-			ConstantArray[rackResource, Length[indexGroup]]
+	freezingRackResourcesLink = Link /@ Map[
+		Function[{sampleIndex},
+			Module[{batchNumber},
+				batchNumber = Position[expandedSampleIndicesByFreezingBatch, _?(MemberQ[#, sampleIndex]&)][[1]];
+				Extract[freezingRackResources, batchNumber]
+			]
 		],
-		{freezingRackResources, expandedSampleIndicesByFreezingBatch}
-	]];
+		Range[Length@expandedFreezingRacks]
+	];
 
 	freezingCellTime = If[MatchQ[resolvedFreezingStrategy, ControlledRateFreezer],
-		Max[resolvedTemperatureProfile[[All,2]]] + 15 Minute,
+		Max[resolvedTemperatureProfile[[All, 2]]] + 15 Minute,
 		resolvedInsulatedCoolerFreezingTime + 15 Minute
 	];
 	(* If we have any samples that will be stored in CryogenicStorage, make a resource for Model[Item, Glove, "Cryo Glove, Medium"]. *)
@@ -4921,7 +7707,8 @@ freezeCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 	(* 6."Cell Pelleting" -> "4283b132-6702-4787-b960-db038bb33886" (1 condition task in) *)
 	(* 7."Preparing CryogenicSampleContainer" (main protocol procedure), consists of aliquoting, cryoprotect tarnsfer and mix *)
 	(* 8."Freezing Cells" (main protocol procedure) *)
-	(* 9."Returning Materials" (main protocol procedure)*)
+	(* 9."Storing CryogenicSampleContainer" (main protocol procedure) *)
+	(* 10."Returning Materials" (main protocol procedure)*)
 	checkpoints = {
 		{"Preparing Cryoprotectant Solutions", 1 Hour, "CryoprotectantSolutions required for this protocol are prepared and autoclaved.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 Hour]]},
 		(* If there are CryoprotectantSolutions, they have to be prepared, autoclaved, and potentially chilled. *)
@@ -4940,12 +7727,13 @@ freezeCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 		{"Picking Sample Resources", 10 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 Minute]]},
 		(* Optional Pelleting *)
 		If[MemberQ[ToList[expandedCryoprotectionStrategies], ChangeMedia],
-			{"Cell Pelleting", Max[Cases[ToList[expandedCellPelletTimes], TimeP]], "Cell samples are centrifuged to enable removal of existing media.", Link[Resource[Operator -> $BaselineOperator, Time -> Max[Cases[ToList[expandedCellPelletTimes], TimeP]]]]},
+			{"Cell Pelleting", Max[Cases[ToList[expandedCellPelletTimes], TimeP]] + 30 Minute, "Cell samples are centrifuged.", Link[Resource[Operator -> $BaselineOperator, Time -> Max[Cases[ToList[expandedCellPelletTimes], TimeP]] + 30 Minute]]},
 			Nothing
 		],
 		(* ChangeMedia,Aspirate, AddCryoprotectant, Aliquot and Mix in biosafety cabinet. *)
 		{"Preparing CryogenicSampleContainer", 1 Hour, "Original samples are mixed or media exchanged and resuspended, then aliquoted to CryogenicSampleContainer together with CryoprotectantSolutions.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 Minute]]},
 		{"Freezing Cells", freezingCellTime, "Samples are placed in a freezer.", Link[Resource[Operator -> $BaselineOperator, Time -> freezingCellTime]]},
+		{"Storing CryogenicSampleContainer", 30 Minute, "CryogenicSamplesContainers are stored in either DeepFreezer or CryogenicStorage for long term storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]},
 		(* Return materials. *)
 		{"Returning Materials", 10 Minute, "Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 Minute]]}
 	};
@@ -5351,13 +8139,23 @@ simulateExperimentFreezeCells[
 
 (* Memoize the results of these searches after first execution to avoid repeated database trips within a single kernel session. *)
 
-(* Find all cryogenic vials, insulated coolers and racks, and racks for the controlled rate freezer. *)
+(* Find all insulated coolers and racks, and racks for the controlled rate freezer. *)
 freezeCellsContainerSearch[testString: _String] := freezeCellsContainerSearch[testString] = Module[{},
 	(* Add freezeCellsContainerSearch to list of Memoized functions. *)
 	AppendTo[$Memoization, Experiment`Private`freezeCellsContainerSearch];
 	Search[
 		Model[Container],
-		Footprint == Alternatives[CryogenicVial, ControlledRateFreezerRack, MrFrostyContainer, MrFrostyRack] && Deprecated != True
+		Footprint == Alternatives[ControlledRateFreezerRack, MrFrostyContainer, MrFrostyRack] && Deprecated != True
+	]
+];
+
+(* Find all cryogenic vials. This is the same criteria in whyCantThisModelBeCryogenicVial. *)
+freezeCellsCryogenicVialSearch[testString: _String] := freezeCellsCryogenicVialSearch[testString] = Module[{},
+	(* Add freezeCellsContainerSearch to list of Memoized functions. *)
+	AppendTo[$Memoization, Experiment`Private`freezeCellsCryogenicVialSearch];
+	Search[
+		Model[Container, Vessel],
+		Footprint == CEVial && MinTemperature < -170 Celsius && ContainerMaterials != Glass && Deprecated != True
 	]
 ];
 
@@ -5365,7 +8163,8 @@ freezeCellsContainerSearch[testString: _String] := freezeCellsContainerSearch[te
 freezeCellsInstrumentSearch[testString: _String] := freezeCellsInstrumentSearch[testString] = Module[{},
 	(* Add freezeCellsInstrumentSearch to list of Memoized functions. *)
 	AppendTo[$Memoization, Experiment`Private`freezeCellsInstrumentSearch];
-	Search[
+
+	Flatten@Search[
 		{Model[Instrument, Freezer], Model[Instrument, ControlledRateFreezer], Model[Instrument, Centrifuge]},
 		Notebook == Null && DeveloperObject != True && Deprecated != True
 	]

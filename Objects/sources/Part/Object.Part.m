@@ -197,6 +197,14 @@ DefineObjectType[Object[Part], {
 			Category -> "Organizational Information",
 			Headers -> {"Date","Dishwash Protocol"}
 		},
+		GMPQualified -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this object currently meets the requirements for Good Manufacturing Practices.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
 
 		(* --- Quality Assurance --- *)
 		Certificates -> {

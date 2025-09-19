@@ -76,7 +76,17 @@ DefineTests[ExperimentCover,
 				Output -> Options
 			],
 			KeyValuePattern[{
-				Environment -> ObjectP[Model[Instrument, BiosafetyCabinet]]
+				Environment -> ObjectP[Model[Instrument, HandlingStation, BiosafetyCabinet]]
+			}]
+		],
+		Example[{Basic, "Resolve options to cover an uncovered container that's already inside a handling station:"},
+			ExperimentCover[
+				Object[Container, Vessel, "Uncovered 0.3mL High-Recovery Crimp Top Vial (13mm) 2 for ExperimentCover Testing" <> $SessionUUID],
+				Output -> Options
+			],
+			KeyValuePattern[{
+				Cover -> _?(MatchQ[Download[#, {Model[CoverType], Model[CoverFootprint]}], {Crimp, Crimped13mmCap}]&),
+				Environment -> ObjectP[Object[Instrument, HandlingStation, Ambient, "Test handling station for ExperimentCover tests" <> $SessionUUID]]
 			}]
 		],
 		Example[{Basic, "When covering a container with a built in cover, doesn't generate any resources for caps:"},
@@ -271,7 +281,7 @@ DefineTests[ExperimentCover,
 				Output -> Options
 			],
 			KeyValuePattern[
-				Environment -> Model[Instrument, BiosafetyCabinet, "id:dORYzZJzEBdE"] (* Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet (Tissue Culture) *)
+				Environment -> Model[Instrument, HandlingStation, BiosafetyCabinet, "id:AEqRl9xveX7p"] (* "Biosafety Cabinet Handling Station for Tissue Culture" *)
 			]
 		],
 		Example[{Additional, "If given a container (plate) that contains samples with live cells, the SterileTechnique option resolves True:"},
@@ -790,7 +800,7 @@ DefineTests[ExperimentCover,
 		Example[{Messages, "SterileTechniqueConflict", "Throws an error if SterileTechnique is specified as False given a container (plate) that contains live cells:"},
 			ExperimentCover[
 				Object[Container, Plate, "Uncovered tissue culture plate for ExperimentCover Testing" <> $SessionUUID],
-				Environment -> Model[Instrument, BiosafetyCabinet, "id:dORYzZJzEBdE"],
+				Environment -> Model[Instrument, HandlingStation, BiosafetyCabinet, "id:AEqRl9xveX7p"],
 				SterileTechnique -> False
 			],
 			$Failed,
@@ -823,9 +833,11 @@ DefineTests[ExperimentCover,
 		Module[{allObjects, existingObjects},
 			(*Gather all the objects and models created in SymbolSetUp*)
 			allObjects={
+				Object[Instrument, HandlingStation, Ambient, "Test handling station for ExperimentCover tests" <> $SessionUUID],
 				Object[Container, Bench, "Fake bench for ExperimentCover tests" <> $SessionUUID],
 				Object[Container, Vessel, "Covered 0.3mL High-Recovery Crimp Top Vial (13mm) for ExperimentCover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Uncovered 0.3mL High-Recovery Crimp Top Vial (13mm) for ExperimentCover Testing" <> $SessionUUID],
+				Object[Container, Vessel, "Uncovered 0.3mL High-Recovery Crimp Top Vial (13mm) 2 for ExperimentCover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "0.6 Microcentrifuge Tube for ExperimentCover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Uncovered 50mL Tube for ExperimentCover Testing 1" <> $SessionUUID],
 				Object[Container, Vessel, "Uncovered 50mL Tube for ExperimentCover Testing 2" <> $SessionUUID],
@@ -834,6 +846,7 @@ DefineTests[ExperimentCover,
 				Object[Container, Vessel, "Uncovered 50mL Tube for ExperimentCover Testing 5" <> $SessionUUID],
 				Object[Item, Cap, "Covered Flip Off 13mm Cap on Vial for ExperimentCover Testing" <> $SessionUUID],
 				Object[Item, Cap, "Uncovered Flip Off 13mm Cap on Vial for ExperimentCover Testing" <> $SessionUUID],
+				Object[Item, Cap, "Uncovered Flip Off 13mm Cap 2 on Vial for ExperimentCover Testing" <> $SessionUUID],
 				Object[Item, Cap, "Cap for a 2 mL Tube on a cap rack for ExperimentCover Testing" <> $SessionUUID],
 				Model[Container, Plate, "Plate model for ExperimentCover Testing" <> $SessionUUID],
 				Object[Container, Plate, "Uncovered large plate for ExperimentCover Testing" <> $SessionUUID],
@@ -883,12 +896,19 @@ DefineTests[ExperimentCover,
 		];
 
 		Block[{$DeveloperUpload = True},
-			Module[{allObjects, fakeBench, containerModel},
+			Module[{fakeBench, handlingStation, containerModel},
 
 				fakeBench=Upload[<|
 					Type -> Object[Container, Bench],
 					Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
 					Name -> "Fake bench for ExperimentCover tests" <> $SessionUUID,
+					Site -> Link[$Site]
+				|>];
+
+				handlingStation = Upload[<|
+					Type -> Object[Instrument, HandlingStation, Ambient],
+					Model -> Link[Model[Instrument, HandlingStation, Ambient, "Half Benchtop Handling Station with Analytical Balance"], Objects],
+					Name -> "Test handling station for ExperimentCover tests" <> $SessionUUID,
 					Site -> Link[$Site]
 				|>];
 
@@ -952,9 +972,17 @@ DefineTests[ExperimentCover,
 						(*36*)Model[Container, Plate, "96-well Greiner Tissue Culture Plate"],
 						(*37*)Model[Container, Plate, "Omni Tray Sterile Media Plate"],
 						(*38*)Model[Container, Plate, "Omni Tray Sterile Media Plate"],
-						(*39*)Model[Container, Vessel, "250mL Erlenmeyer Flask"]
+						(*39*)Model[Container, Vessel, "250mL Erlenmeyer Flask"],
+						(*40*)Model[Container, Vessel, "2 mL clear glass vial, sterile with septum and aluminum crimp top"],
+						(*41*)Model[Item, Cap, "VWR Flip Off 13mm Cap"]
 					},
-					ConstantArray[{"Work Surface", fakeBench}, 39],
+					Join[
+						ConstantArray[{"Work Surface", fakeBench}, 39],
+						{
+							{"Working Zone Slot", handlingStation},
+							{"Working Zone Slot", handlingStation}
+						}
+					],
 					Name -> {
 						(*1*)"Covered 0.3mL High-Recovery Crimp Top Vial (13mm) for ExperimentCover Testing" <> $SessionUUID,
 						(*2*)"Uncovered 0.3mL High-Recovery Crimp Top Vial (13mm) for ExperimentCover Testing" <> $SessionUUID,
@@ -994,7 +1022,9 @@ DefineTests[ExperimentCover,
 						(*36*)"Uncovered tissue culture plate for ExperimentCover Testing" <> $SessionUUID,
 						(*37*)"Uncovered OmniTray plate with live cell samples (liquid culture) for ExperimentCover Testing" <> $SessionUUID,
 						(*38*)"Uncovered OmniTray plate with live cell samples (solid culture) for ExperimentCover Testing" <> $SessionUUID,
-						(*39*)"Uncovered Erlenmeyer flask with live cell samples for ExperimentCover Testing" <> $SessionUUID
+						(*39*)"Uncovered Erlenmeyer flask with live cell samples for ExperimentCover Testing" <> $SessionUUID,
+						(*40*)"Uncovered 0.3mL High-Recovery Crimp Top Vial (13mm) 2 for ExperimentCover Testing" <> $SessionUUID,
+						(*41*)"Uncovered Flip Off 13mm Cap 2 on Vial for ExperimentCover Testing" <> $SessionUUID
 					}
 				];
 
@@ -1070,6 +1100,10 @@ DefineTests[ExperimentCover,
 					<|
 						Object -> Object[Container, Plate, "Uncovered DWP 2 for ExperimentCover Testing" <> $SessionUUID],
 						PreviousCover -> Link[Object[Item, Lid, "Universal black lid 2 for ExperimentCover testing"<> $SessionUUID]]
+					|>,
+					<|
+						Object -> Object[Container, Vessel, "Uncovered 0.3mL High-Recovery Crimp Top Vial (13mm) 2 for ExperimentCover Testing" <> $SessionUUID],
+						PreviousCover -> Link[Object[Item, Cap, "Uncovered Flip Off 13mm Cap 2 on Vial for ExperimentCover Testing"<> $SessionUUID]]
 					|>
 				}];
 
@@ -1097,9 +1131,11 @@ DefineTests[ExperimentCover,
 			(*Gather all the objects and models created in SymbolSetUp*)
 			allObjects=Cases[Flatten[{
 				$CreatedObjects,
+				Object[Instrument, HandlingStation, Ambient, "Test handling station for ExperimentCover tests" <> $SessionUUID],
 				Object[Container, Bench, "Fake bench for ExperimentCover tests" <> $SessionUUID],
 				Object[Container, Vessel, "Covered 0.3mL High-Recovery Crimp Top Vial (13mm) for ExperimentCover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Uncovered 0.3mL High-Recovery Crimp Top Vial (13mm) for ExperimentCover Testing" <> $SessionUUID],
+				Object[Container, Vessel, "Uncovered 0.3mL High-Recovery Crimp Top Vial (13mm) 2 for ExperimentCover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "0.6 Microcentrifuge Tube for ExperimentCover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Uncovered 50mL Tube for ExperimentCover Testing 1" <> $SessionUUID],
 				Object[Container, Vessel, "Uncovered 50mL Tube for ExperimentCover Testing 2" <> $SessionUUID],
@@ -1108,6 +1144,7 @@ DefineTests[ExperimentCover,
 				Object[Container, Vessel, "Uncovered 50mL Tube for ExperimentCover Testing 5" <> $SessionUUID],
 				Object[Item, Cap, "Covered Flip Off 13mm Cap on Vial for ExperimentCover Testing" <> $SessionUUID],
 				Object[Item, Cap, "Uncovered Flip Off 13mm Cap on Vial for ExperimentCover Testing" <> $SessionUUID],
+				Object[Item, Cap, "Uncovered Flip Off 13mm Cap 2 on Vial for ExperimentCover Testing" <> $SessionUUID],
 				Object[Item, Cap, "Cap for a 2 mL Tube on a cap rack for ExperimentCover Testing" <> $SessionUUID],
 				Model[Container, Plate, "Plate model for ExperimentCover Testing" <> $SessionUUID],
 				Object[Container, Plate, "Uncovered large plate for ExperimentCover Testing" <> $SessionUUID],

@@ -1833,7 +1833,7 @@ DefineOptions[lookUpCellTypes,
 
 
 (* The helper function is used in IncubateCells,FreezeCells,ImageColonies and QuantifyColonies *)
-lookUpCellTypes[mySamplePackets: {PacketP[Object[Sample]]..}, mySampleModelPackets: {(PacketP[Model[Sample]]|Null)..}, myCellModels: {(ObjectP[Model[Cell]]|Null)..}, ops: OptionsPattern[]] := Module[
+lookUpCellTypes[mySamplePackets: {PacketP[Object[Sample]]..}, mySampleModelPackets: {(PacketP[Model[Sample]]|Null|<||>)..}, myCellModels: {(ObjectP[Model[Cell]]|Null)..}, ops: OptionsPattern[]] := Module[
   {
     safeOps, cache, outputSpecification, specifiedCellTypes, output, gatherTests, messages
   },
@@ -1851,7 +1851,7 @@ lookUpCellTypes[mySamplePackets: {PacketP[Object[Sample]]..}, mySampleModelPacke
     Function[{samplePacket, modelPacket, mainCellIdentityModel},
       Which[
         MatchQ[Lookup[samplePacket, CellType], CellTypeP], Lookup[samplePacket, CellType],
-        !NullQ[modelPacket] && MatchQ[Lookup[modelPacket, CellType], CellTypeP] && MatchQ[modelPacket, PacketP[]], Lookup[modelPacket, CellType],
+        !MatchQ[modelPacket, Null|<||>] && MatchQ[Lookup[modelPacket, CellType], CellTypeP] && MatchQ[modelPacket, PacketP[Model[Sample]]], Lookup[modelPacket, CellType],
         MatchQ[mainCellIdentityModel, ObjectP[Model[Cell]]], Lookup[fetchPacketFromCache[mainCellIdentityModel, cache], CellType],
         True, Null
       ]

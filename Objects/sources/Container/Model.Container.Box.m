@@ -18,6 +18,13 @@ DefineObjectType[Model[Container, Box], {
 			Headers -> {"Width","Depth","Height"},
 			Description -> "Interior size of the box.",
 			Category -> "Dimensions & Positions"
+		},
+		PermanentStorage  -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the model box has sufficient storage density to be used as a compact long term storage solution. Items in PermanentStorage boxes can be stored in these boxes, while items in non-PermanentStorage boxes must be removed from the box during Storage, StoreAll, and ProcessingStorage tasks.",
+			Category -> "Operating Limits"
 		}
 	}
 }];

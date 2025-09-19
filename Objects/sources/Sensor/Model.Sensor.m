@@ -50,6 +50,14 @@ DefineObjectType[Model[Sensor], {
 			Description -> "A photo of this sensor model.",
 			Category -> "Organizational Information"
 		},
+		Icon -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "A simplified image used to represent this sensor.",
+			Category -> "Organizational Information"
+		},
 		UserManualFiles -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -57,6 +65,15 @@ DefineObjectType[Model[Sensor], {
 			Relation -> Object[EmeraldCloudFile],
 			Description -> "PDFs for the manuals or instruction guides for this model of sensor.",
 			Category -> "Organizational Information"
+		},
+		USPCategorization -> {
+			Format -> Single,
+			Class -> {Expression, Expression},
+			Pattern :> {USPCategorizationP, USPCategorizationJustificationP},
+			Description -> "The USP Group, as outlined in USP 1058, with which this sensor is associated and the justification for that classification. Group A represents the least complex instruments that do not have measurement capability or require calibration. Group B represents instruments that may provide a measurement or an experimental condition that can affect measurement. Group C represents complex analytical instruments with a significant degree of computerization.",
+			Headers -> {"USP Group", "Justification"},
+			Category -> "Organizational Information",
+			Developer -> True
 		},
 		SensorOutputSignal -> {
 			Format -> Single,

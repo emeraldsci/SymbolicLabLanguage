@@ -234,6 +234,14 @@ DefineObjectType[Model[Container], {
 			Description -> "The scale relating pixels of ImageFile to real world distance.",
 			Category -> "Container Specifications"
 		},
+		Icon -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "A simplified image used to represent this container.",
+			Category -> "Container Specifications"
+		},
 		Schematics -> {
 			Format -> Multiple,
 			Class -> {Link,String},

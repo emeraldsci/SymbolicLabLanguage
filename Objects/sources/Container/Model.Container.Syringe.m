@@ -82,6 +82,32 @@ DefineObjectType[Model[Container, Syringe], {
 			Relation->Model[Container,Rack],
 			Description->"Model of a container capable of holding this type of syringe upright.",
 			Category->"Compatibility"
+		},
+		Graduations->{
+			Format->Multiple,
+			Class->Real,
+			Pattern :> GreaterEqualP[0 Milliliter],
+			Units -> Milliliter,
+			Description -> "The markings on this syringe model used to indicate the fluid's fill level.",
+			Abstract->True,
+			Category -> "Container Specifications"
+		},
+		GraduationTypes -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> GraduationTypeP,
+			Description -> "For each member of Graduations, indicates if the graduation is labeled with a number, a long unlabeled line, or a short unlabeled line.",
+			Category -> "Container Specifications",
+			IndexMatching -> Graduations
+		},
+		GraduationLabels -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "For each member of Graduations, if GraduationTypes is Labeled, exactly matches the labeling text. Otherwise, Null.",
+			Category -> "Container Specifications",
+			IndexMatching -> Graduations,
+			Developer -> True
 		}
 	}
 }];

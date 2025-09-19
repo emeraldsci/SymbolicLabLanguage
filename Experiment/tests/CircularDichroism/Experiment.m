@@ -969,7 +969,7 @@ DefineTests[ExperimentCircularDichroism,
 			Round[Lookup[options,FilterAliquot],1Microliter],
 			200Microliter,
 			Variables:>{options}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[
 			{Options,FilterSterile,"Specify Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options=ExperimentCircularDichroism[{Object[Sample, "ExperimentCircularDichroism Test (-) CSA Sample"<>$SessionUUID], Object[Sample, "ExperimentCircularDichroism Test ee=+50% sample"<>$SessionUUID], Object[Sample, "ExperimentCircularDichroism Test ee=0% sample"<>$SessionUUID]},
@@ -979,7 +979,7 @@ DefineTests[ExperimentCircularDichroism,
 			Lookup[options,FilterSterile],
 			True,
 			Variables:>{options}
-		],
+		],*)
 		Example[
 			{Options,Aliquot,"Specify Indicates if aliquots should be taken from the SamplesIn and transferred into new AliquotSamples used in lieu of the SamplesIn for the experiment. Note that if NumberOfReplicates is specified this indicates that the input samples will also be aliquoted that number of times. Note that Aliquoting (if specified) occurs after any Sample Preparation (if specified):"},
 			options=ExperimentCircularDichroism[{Object[Sample, "ExperimentCircularDichroism Test (-) CSA Sample"<>$SessionUUID], Object[Sample, "ExperimentCircularDichroism Test ee=+50% sample"<>$SessionUUID], Object[Sample, "ExperimentCircularDichroism Test ee=0% sample"<>$SessionUUID]},

@@ -3784,7 +3784,7 @@ containerAndPositionGraphics[
 						Or[
 							Not[MatchQ[requiredPositions, All]] && Not[MemberQ[requiredPositions, posName]],
 							And[
-								MatchQ[focalPacket, ObjectP[Object[Instrument, BiosafetyCabinet]]],
+								MatchQ[focalPacket, ObjectP[{Object[Instrument, BiosafetyCabinet], Object[Instrument, HandlingStation, BiosafetyCabinet]}]],
 								MatchQ[posName, "Work Surface" | "Clean Zone Slot" | "Working Zone Slot" | "Dirty Zone Slot"],
 								With[{packetsInTree = Cases[contentsItem, PacketP[], All]},
 									Not[MemberQ[Lookup[packetsInTree, Object, {}], Alternatives @@ objsToHighlight]]

@@ -18,7 +18,6 @@ DefineOptions[
 		PreparationOption,
 		BiologyWorkCellOption,
 		{
-
 			OptionName -> Time,
 			Default -> Automatic,
 			AllowNull -> False,
@@ -39,7 +38,6 @@ DefineOptions[
 				"If Preparation is set to Robotic, automatically set to " <> ToString[$MaxRoboticIncubationTime] <> ". If Preparation is set to Manual and IncubationStrategy is set to Time, automatically set to the shorter time between " <> ToString[$MaxCellIncubationTime] <> " and 36 times the shortest DoublingTime of the cells in the sample. If Preparation is set to Manual and IncubationStrategy is set to QuantificationTarget, automatically set to 12 Hour."],
 			Category -> "General"
 		},
-
 		(* Quantification Non-Index matching options *)
 		{
 			OptionName -> IncubationStrategy,
@@ -1252,7 +1250,7 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 (* Invalid Inputs - New style for shared messages *)
 Error::DiscardedSample = "`1` `2`";
 Error::DeprecatedModel = "`1` `2`";
-Error::GaseousSamples = "`1` `2` `3`";
+Error::GaseousSamples = "`1` `2`";
 Warning::EmptySamples = "`1`. `2`";
 Error::ConflictingIncubationWorkCells = "Robotic IncubateCells protocol or unit operation requires a single WorkCell for all input samples. `1`. `2`. Please `3` in order to submit a valid IncubateCells protocol or unit operation.";
 (* Invalid Inputs *)
@@ -1265,18 +1263,17 @@ Error::InvalidIncubationConditions = "The supported default incubation condition
 Error::TooManyIncubationSamples = "`1`. Please split the experiment call into multiple in order to not exceed the capacity of the incubator(s).";
 (* Invalid Options *)
 Error::IncubationMaxTemperature = "Temperature cannot be set above the MaxTemperature of cell culture vessels. `1` `2``3` MaxTemperature(s) of `4`. Please lower the Temperature to specify a valid protocol.";
-Warning::ConflictingCellType = "`4`. `1` the CellType option specified as `2` but the CellType field is `3`. For these sample(s), the specified CellType option will be used. If this is not desired, please set the CellType option to match the CellType field or let it set automatically.";
-Error::ConflictingCellType = "Mammalian and microbial cells are not cultured together due to their differing incubation requirements and the need to avoid contamination. `1` the CellType option specified as `2` but the CellType field is `3`. For these sample(s), please ensure the CellType option match the CellType field in the objects or use UploadSampleProperties to define the CellType field of the sample(s), or let the option be set automatically.";
+Warning::ConflictingCellType = "`1`. `2` the CellType option specified as `3` but the CellType field is `4`. For these sample(s), the specified CellType option will be used. If this is not desired, please set the CellType option to match the CellType field or let it set automatically.";
+Error::ConflictingCellType = "`1`. `2` the CellType option specified as `3` but the CellType field is `4`. For these sample(s), please ensure the CellType option match the CellType field in the objects or use UploadSampleProperties to define the CellType field of the sample(s), or let the option be set automatically.";
 Error::ConflictingCultureAdhesion = "`1`. `2`. For these sample(s), please ensure the CultureAdhesion option matches `3` or use UploadSampleProperties to define `3`.";
 Error::ConflictingShakingConditions = "There are conflicts detected in shaking options. `1`. `2` Please change `3` settings to a valid combination or let them be set automatically.";
-Error::UnsupportedCellCultureType = "ExperimentIncubateCells only supports adherent cell culture type for mammalian samples. `1`. `2`.";
+Error::UnsupportedCellCultureType = "`1`. `2`. `3`";
 Error::ConflictingCellTypeWithCultureAdhesion = "`1`. `2`. For these sample(s), `3`.";
 Error::ConflictingCultureAdhesionWithContainer = "`1`. `2` CultureAdhesion specified in the option as `3` and `4`. For these sample(s), `5`.";
 Error::ConflictingIncubationConditionsForSameContainer = "`1`. `2`. Please use ExperimentTransfer to transfer the input samples into different containers if different incubation or storage conditions are desired or allow the conflicting options to be set automatically, or specify the same options for each sample in the same container.";
 Warning::ConflictingCellTypeWithStorageCondition = "`1` If this is undesired, please specify an alternative SamplesOutStorageCondition or let it be set automatically.";
 Error::ConflictingCellTypeWithStorageCondition = "If stored in incubators, mammalian and microbial cells are kept separate to prevent contamination. `1` If this is undesired, please specify an alternative SamplesOutStorageCondition or let it be set automatically.";
 Warning::ShakingRecommendedForStorageCondition = "In suspension cultures, shaking helps prevent cell settling, improves gas exchange, and ensures uniform nutrient availability. `1` CultureAdhesion specified in the option as Suspension and SamplesOutStorageCondition specified in the option as `2`. If this is not desired, please specify SamplesOutStorageCondition to `3`.";
-
 (* Incubator Errors and warnings *)
 Error::TooManyCustomIncubationConditions = "`1` `2`. Please either use default incubation conditions to allow the use of shared incubator devices, or split the experiment call into separate protocols.";
 Warning::CustomIncubationConditionNotSpecified = "Custom incubators can be configured with specific temperature, carbon dioxide percentage, relative humidity percentage, and shaking conditions. `1` the IncubationCondition specified as Custom and `2` are left unspecified and default value(s) will be used. If this is not desired, please specify `2`.";
@@ -1324,7 +1321,8 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 		quantificationAliquotingOptions, samplePackets, sampleModelPackets, sampleContainerPackets, sampleContainerModelPackets,
 		sampleContainerHeights, sampleContainerFootprints, fastAssocKeysIDOnly, incubatorPackets, rackPackets, deckPackets,
 		storageConditionPackets, plateReaderInstrumentPacket, incubationConditionOptionDefinition, incubationConditionSymbols,
-		allowedStorageConditionSymbols, customIncubatorPackets, customIncubators, incubationConditionIncubatorLookup,incubatorIncubationConditionLookup,
+		allowedStorageConditionSymbols, customIncubatorPackets, customIncubators, incubationConditionIncubatorLookup,
+		incubatorIncubationConditionLookup,
 		(* Input invalidation check *)
 		discardedSamplePackets, discardedInvalidInputs, discardedTest, deprecatedSampleModelPackets, deprecatedSampleModelInputs,
 		deprecatedSampleInputs, deprecatedTest, gaseousSampleInputs, gaseousSampleTest, mainCellIdentityModels, sampleCellTypes,
@@ -1548,10 +1546,8 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 		Module[{reasonClause, actionClause},
 			reasonClause = StringJoin[
 				Capitalize@samplesForMessages[discardedInvalidInputs, mySamples, Cache -> cacheBall, Simulation -> simulation],
-				If[Length[discardedInvalidInputs] > 1,
-					" have",
-					" has"
-				],
+				" ",
+				hasOrHave[discardedInvalidInputs],
 				" a Status of Discarded and cannot be used for this experiment."
 			];
 			actionClause = StringJoin[
@@ -1597,15 +1593,17 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 		{}
 	];
 
-	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
+	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs. *)
 	If[Length[deprecatedSampleModelInputs] > 0 && messages,
 		Module[{uniqueDeprecatedModels, reasonClause, actionClause},
 			uniqueDeprecatedModels = DeleteDuplicates[deprecatedSampleModelInputs];
 			reasonClause = StringJoin[
 				Capitalize@samplesForMessages[deprecatedSampleInputs, mySamples, Cache -> cacheBall, Simulation -> simulation],
+				" ",
+				hasOrHave[deprecatedSampleInputs],
 				If[Length[deprecatedSampleInputs] > 1,
-					" have deprecated models,",
-					" has a deprecated model,"
+					" deprecated models,",
+					" a deprecated model,"
 				],
 				" and cannot be used for this experiment."
 			];
@@ -1653,30 +1651,12 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	];
 
 	If[Length[gaseousSampleInputs] > 0 && messages,
-		Module[{captureSentence, reasonClause, actionClause},
-			captureSentence = StringJoin[
-				Which[
-					(* We only have 1 sample in the call*)
-					Length[mySamples] == 1, "The sample has",
-					(* We have more than 1 sample in the call and all are invalid *)
-					Length[mySamples] == Length[gaseousSampleInputs], "The samples have",
-					(* Only one sample among all input is invalid *)
-					Length[gaseousSampleInputs] == 1, "One of the input samples has",
-					True, "Some of the input samples have"
-				],
+		Module[{reasonClause, actionClause},
+			reasonClause = StringJoin[
+				Capitalize@samplesForMessages[gaseousSampleInputs, mySamples, Cache -> cacheBall, Simulation -> simulation],
+				" ",
+				hasOrHave[gaseousSampleInputs],
 				" a State of Gas and cannot be used for this experiment."
-			];
-			reasonClause = If[Length[mySamples] == Length[gaseousSampleInputs],
-				(* If all of the sample(s) are gaseous. The capture sentence already explains it clearly. No need to expand and point out the objects *)
-				"",
-				StringJoin[
-					Capitalize@@samplesForMessages[gaseousSampleInputs, mySamples, Cache -> cacheBall, Simulation -> simulation],
-					If[Length[gaseousSampleInputs] > 1,
-						" are ",
-						" is "
-					],
-					"gaseous."
-				]
 			];
 			actionClause = StringJoin[
 				"Please provide ",
@@ -1687,7 +1667,6 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 			];
 			Message[
 				Error::GaseousSamples,
-				captureSentence,
 				reasonClause,
 				actionClause
 			]
@@ -1719,13 +1698,12 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 			(*1*)"ExperimentIncubateCells only supports mammalian, bacterial and yeast cell cultures",
 			(*2*)StringJoin[
 				Capitalize@samplesForMessages[invalidCellTypeSamples, mySamples, Cache -> cacheBall, Simulation -> simulation],(* Potentially collapse to the sample or all samples instead of ID here *)
-				If[Length[invalidCellTypeSamples] == 1,
-					" has",
-					" have"
-				],
+				" ",
+				hasOrHave[invalidCellTypeSamples],
 				" CellType detected as ",
 				joinClauses@invalidCellTypeCellTypes,
-				" from the CellType field of the object(s)"
+			" from the CellType field of the ",
+			pluralize[invalidCellTypeSamples, "object", "objects"]
 			]
 		]
 	];
@@ -1783,11 +1761,12 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 			(* Here we try to not have a super long message by not displaying either sample or container IDs *)
 			reasonClause = StringJoin[
 				Capitalize@samplesForMessages[invalidPlateSampleInputs, mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
+				" ",
+				pluralize[invalidPlateSampleInputs, "reside"],
 				Which[
-					Length[invalidPlateSampleContainers] == 1 && Length[invalidPlateSampleInputs] == 1, " resides in container ",
-					Length[invalidPlateSampleContainers] == 1, " reside in container ",
-					Length[invalidPlateSampleContainers] > $MaxNumberOfErrorDetails, " reside in containers",
-					True, " reside in containers "
+					Length[invalidPlateSampleContainers] == 1, " in container ",
+					Length[invalidPlateSampleContainers] > $MaxNumberOfErrorDetails, " in containers",
+					True, " in containers "
 				],
 				If[Length[invalidPlateSampleContainers] > $MaxNumberOfErrorDetails,
 					"",(* if too many containers (currently >3), do not display their ids *)
@@ -1855,7 +1834,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	duplicateSamples = Cases[talliedSamples, {sample_, tally:GreaterEqualP[2]} :> sample];
 
 	If[Length[duplicateSamples] > 0 && messages,
-		Message[Error::DuplicatedSamples, ObjectToString[duplicateSamples, Cache -> cacheBall, Simulation -> simulation], "ExperimentIncubateCells"]
+		Message[Error::DuplicatedSamples, samplesForMessages[duplicateSamples, CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation], "ExperimentIncubateCells"]
 	];
 
 	duplicateSamplesTest = If[gatherTests,
@@ -1919,10 +1898,8 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 					Map[
 						StringJoin[
 							samplesForMessages[groupedErrorDetails[#][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],
-							If[Length[groupedErrorDetails[#]] == 1,
-								" has",
-								" have"
-							],
+							" ",
+							hasOrHave[groupedErrorDetails[#]],
 							If[MatchQ[groupedErrorDetails[#][[All, 3]], {Low..}],
 								" low amount recorded in the field ",
 								" missing "
@@ -4978,17 +4955,17 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 			Message[
 				Error::IncubationMaxTemperature,
 				(*1*)Capitalize@samplesForMessages[PickList[mySamples, temperatureAboveMaxTemperatureQs], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Potentially collapse to the sample or all samples instead of ID here *)
-				(*2*)Which[
-					Length[PickList[mySamples, temperatureAboveMaxTemperatureQs]] == 1 && Length[temperatureAboveMaxTemperatureContainers] == 1, "resides in container ",
-					Length[temperatureAboveMaxTemperatureContainers] == 1, "reside in container ",
-					True, "reside in containers "
+				(*2*)StringJoin[
+					pluralize[PickList[mySamples, temperatureAboveMaxTemperatureQs], "reside"],
+					If[Length[temperatureAboveMaxTemperatureContainers] == 1,
+						" in container ",
+						" in containers "
+					]
 				],
 				(*3*)StringJoin[
-				samplesForMessages[temperatureAboveMaxTemperatureContainers, CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation],(* we have to display all the containers ID since invalid inputs do not display container id*)
-					If[Length[temperatureAboveMaxTemperatureContainers] > 1,
-						", which have",
-						", which has"
-					]
+					samplesForMessages[temperatureAboveMaxTemperatureContainers, CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> simulation],(* we have to display all the containers ID since invalid inputs do not display container id*)
+					", which ",
+					hasOrHave[temperatureAboveMaxTemperatureContainers]
 				],
 				(*4*)joinClauses[Map[fastAssocLookup[fastAssoc, #, {Model, MaxTemperature}]&, temperatureAboveMaxTemperatureContainers]]
 			];
@@ -5047,7 +5024,8 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 			Warning::CustomIncubationConditionNotSpecified,
 			StringJoin[
 				Capitalize@samplesForMessages[customIncubationWarningSamples, mySamples, Cache -> cacheBall, Simulation -> simulation], (* Potentially collapse the samples *)
-				If[Length[customIncubationWarningSamples] == 1, " has", " have"]
+				" ",
+				hasOrHave[customIncubationWarningSamples]
 			],
 			joinClauses@DeleteDuplicates[Flatten@customIncubationWarningUnspecifiedOptionNames],
 			Which[
@@ -5221,12 +5199,11 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	conflictingCellTypeErrorOptions = If[Or @@ conflictingCellTypeErrors && !gatherTests,
 		(* Throw the corresponding error. *)
 		Message[Error::ConflictingCellType,
+			"Mammalian and microbial cells are not cultured together due to their differing incubation requirements and the need to avoid contamination",
 			StringJoin[
 				Capitalize@samplesForMessages[PickList[mySamples, conflictingCellTypeErrors], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
-				If[Length[PickList[mySamples, conflictingCellTypeErrors]] == 1,
-					" has",
-					" have"
-				]
+				" ",
+				hasOrHave[PickList[mySamples, conflictingCellTypeErrors]]
 			],
 			joinClauses[PickList[cellTypes, conflictingCellTypeErrors]],
 			joinClauses[PickList[cellTypesFromSample, conflictingCellTypeErrors]]
@@ -5239,16 +5216,14 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 
 	If[MemberQ[conflictingCellTypeWarnings, True] && messages,
 		Message[Warning::ConflictingCellType,
+			"Bacterial and yeast cells require slightly different incubation conditions",
 			StringJoin[
 				Capitalize@samplesForMessages[PickList[mySamples, conflictingCellTypeWarnings], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
-				If[Length[PickList[mySamples, conflictingCellTypeWarnings]] == 1,
-					" has",
-					" have"
-				]
+				" ",
+				hasOrHave[PickList[mySamples, conflictingCellTypeWarnings]]
 			],
 			joinClauses[PickList[cellTypes, conflictingCellTypeWarnings]],
-			joinClauses[PickList[cellTypesFromSample, conflictingCellTypeWarnings]],
-			"Bacterial and yeast cells require slightly different incubation conditions"
+			joinClauses[PickList[cellTypesFromSample, conflictingCellTypeWarnings]]
 		]
 	];
 
@@ -5293,15 +5268,10 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 			(*1*)(* Potentially collapse to the sample or all samples instead of ID here *)
 				StringJoin[
 					Capitalize@samplesForMessages[PickList[mySamples, cellTypeNotSpecifiedWarnings], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
-					If[Length[PickList[mySamples, cellTypeNotSpecifiedWarnings]] == 1,
-						" has",
-						" have"
-					]
+					" ",
+					hasOrHave[PickList[mySamples, cellTypeNotSpecifiedWarnings]]
 				],
-			(*2*)If[Length[PickList[mySamples, cellTypeNotSpecifiedWarnings]] > 1,
-				"these samples",
-				"this sample"
-			]
+			(*2*)pluralize[PickList[mySamples, cellTypeNotSpecifiedWarnings], "this sample", "these samples"]
 		]
 	];
 
@@ -5399,10 +5369,8 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 					(* Potentially collapse to the sample or all samples instead of ID here *)
 					StringJoin[
 						Capitalize@samplesForMessages[conflictingCultureAdhesionCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
-						If[Length[conflictingCultureAdhesionCases[[All, 1]]] == 1,
-							" has",
-							" have"
-						]
+						" ",
+						hasOrHave[conflictingCultureAdhesionCases[[All, 1]]]
 					],
 					Which[
 						MemberQ[Flatten[conflictingCultureAdhesionCases[[All, 2]]], State] && MemberQ[Flatten[conflictingCultureAdhesionCases[[All, 2]]], CultureAdhesion],
@@ -5421,25 +5389,27 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 								If[MatchQ[groupedKey[[1]], {State, CultureAdhesion}],
 									StringJoin[
 										samplesForMessages[groupedCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
-										If[GreaterQ[Length[groupedCases[[All, 1]]], 1], " have", " has"],
+										" ",
+										hasOrHave[groupedCases[[All, 1]]],
 										" the CultureAdhesion option specified as ",
 										joinClauses[groupedCases[[All, 4]]],
 										" while the ",
 										joinClauses[groupedCases[[All, 2]][[1]]],
 										" fields for the ",
-										If[GreaterQ[Length[groupedCases[[All, 1]]], 1], " samples", " sample"],
+										pluralize[groupedCases[[All, 1]], " sample", " samples"],
 										" are",
 										joinClauses[groupedCases[[All, 3]][[1]]]
 									],
 									StringJoin[
 										samplesForMessages[groupedCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
-										If[GreaterQ[Length[groupedCases[[All, 1]]], 1], " have", " has"],
+										" ",
+										hasOrHave[groupedCases[[All, 1]]],
 										" the CultureAdhesion option specified as ",
 										joinClauses[groupedCases[[All, 4]]],
 										" while the ",
 										joinClauses[groupedCases[[All, 2]]],
 										" field for the ",
-										If[GreaterQ[Length[groupedCases[[All, 1]]], 1], " samples", " sample"],
+										pluralize[groupedCases[[All, 1]], " sample", " samples"],
 										" is",
 										joinClauses[groupedCases[[All, 3]]]
 									]
@@ -5513,19 +5483,14 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 			];
 			reasonClause = StringJoin[
 				Capitalize@samplesForMessages[PickList[mySamples, cultureAdhesionNotSpecifiedWarnings], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
-				If[Length[PickList[mySamples, cultureAdhesionNotSpecifiedWarnings]] == 1,
-					" has",
-					" have"
-				]
+				" ",
+				hasOrHave[PickList[mySamples, cultureAdhesionNotSpecifiedWarnings]]
 			];
 			actionClause = Which[
 				Length[Keys[groupedDefaultCultureAdhesions]] == 1,
 					StringJoin[
 						"For ",
-						If[Length[PickList[mySamples, cultureAdhesionNotSpecifiedWarnings]] > 1,
-							"these samples, ",
-							"this sample, "
-						],
+						pluralize[PickList[mySamples, cultureAdhesionNotSpecifiedWarnings], "this sample, ", "these samples, "],
 						"the CultureAdhesion option will default to ",
 						ToString[Keys[groupedDefaultCultureAdhesions][[1]]]
 					],
@@ -5634,10 +5599,8 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 					(* Potentially collapse to the sample or all samples instead of ID here *)
 					StringJoin[
 						Capitalize@samplesForMessages[errorCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
-						If[Length[errorCases] == 1,
-							" has",
-							" have"
-						]
+						" ",
+						hasOrHave[errorCases]
 					],
 					" conflicts between the CultureAdhesion and CellType"
 				],
@@ -5650,7 +5613,8 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 									MatchQ[groupedKey, {Object, Object}],
 										StringJoin[
 											samplesForMessages[groupedCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
-											If[GreaterQ[Length[groupedCases[[All, 1]]], 1], " have", " has"],
+											" ",
+											hasOrHave[groupedCases[[All, 1]]],
 											" the CultureAdhesion detected in the object as ",
 											joinClauses[groupedCases[[All, 2]]],
 											" while the CellType detected in the object as ",
@@ -5659,7 +5623,8 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 									MatchQ[groupedKey, {Object, CellType}],
 										StringJoin[
 											samplesForMessages[groupedCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
-											If[GreaterQ[Length[groupedCases[[All, 1]]], 1], " have", " has"],
+											" ",
+											hasOrHave[groupedCases[[All, 1]]],
 											" the CultureAdhesion detected in the object as ",
 											joinClauses[groupedCases[[All, 2]]],
 											" while the CellType option specified as ",
@@ -5668,7 +5633,8 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 									MatchQ[groupedKey, {CultureAdhesion, Object}],
 										StringJoin[
 											samplesForMessages[groupedCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
-											If[GreaterQ[Length[groupedCases[[All, 1]]], 1], " have", " has"],
+											" ",
+											hasOrHave[groupedCases[[All, 1]]],
 											" the CultureAdhesion option specified as ",
 											joinClauses[groupedCases[[All, 2]]],
 											" while the CellType detected in the object as ",
@@ -5677,7 +5643,8 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 									True,
 										StringJoin[
 											samplesForMessages[groupedCases[[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
-											If[GreaterQ[Length[groupedCases[[All, 1]]], 1], " have", " has"],
+											" ",
+											hasOrHave[groupedCases[[All, 1]]],
 											" the CultureAdhesion option specified as ",
 											joinClauses[groupedCases[[All, 2]]],
 											" while the CellType option specified as ",
@@ -5777,7 +5744,8 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 						samplesForMessages[invalidSamples, Cache -> cacheBall, Simulation -> simulation],
 						Capitalize@samplesForMessages[invalidSamples, mySamples, Cache -> cacheBall, Simulation -> simulation](* potentially collapse samples *)
 					],
-					If[Length[invalidSamples] == 1, " has", " have"]
+					" ",
+					hasOrHave[invalidSamples]
 				],
 				joinClauses@PickList[cultureAdhesions, conflictingCultureAdhesionWithContainerErrors],
 				StringJoin[
@@ -5832,10 +5800,8 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 				Error::InvalidIncubationConditions,
 				StringJoin[
 					Capitalize@samplesForMessages[PickList[mySamples, invalidIncubationConditionErrors], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
-					If[Length[PickList[mySamples, invalidIncubationConditionErrors]] == 1,
-						" has",
-						" have"
-					]
+					" ",
+					hasOrHave[PickList[mySamples, invalidIncubationConditionErrors]]
 				],
 				joinClauses[Map[ObjectToString[#, Cache -> cacheBall, Simulation -> simulation]&, PickList[incubationCondition, invalidIncubationConditionErrors]]]
 			];
@@ -5897,10 +5863,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 				Map[
 					StringJoin[
 						Capitalize@samplesForMessages[groupedErrorDetails[#][[All, 1]], mySamples, Cache -> cacheBall, Simulation -> simulation],(* Collapse the samples *)
-						If[Length[groupedErrorDetails[#]] == 1,
-							" requires mammalian suspension cell culture",
-							" require mammalian suspension cell culture"
-						],
+						pluralize[groupedErrorDetails[#], " requires mammalian suspension cell culture", " require mammalian suspension cell culture"],
 						" since CultureAdhesion is",
 						Which[
 							MatchQ[groupedErrorDetails[#][[All, 2]], {Object..}],
@@ -5922,6 +5885,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 
 			Message[
 				Error::UnsupportedCellCultureType,
+				"ExperimentIncubateCells only supports adherent cell culture type for mammalian samples",
 				errorClause,
 				actionClause
 			];
@@ -5994,30 +5958,25 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 				Function[{storageCondition, tuple},
 					StringJoin[
 						Capitalize@samplesForMessages[tuple[[All, 2]], mySamples, Cache -> cacheBall, Simulation -> simulation],
-						If[Length[tuple[[All, 2]]] > 1,
-							" are ",
-							" is "
-						],
+						" ",
+						isOrAre[tuple[[All, 2]]],
 						(* whether the cell types were specified or detected *)
 						Module[{invalidSamplesSpecifiedConflictingCellTypeQs},
 							invalidSamplesSpecifiedConflictingCellTypeQs = PickList[specifiedConflictingCellTypeQs, mySamples, ObjectP[tuple[[All, 2]]]];
 							Which[
 								(* all were specified conflicting with sample *)
 								AllTrue[invalidSamplesSpecifiedConflictingCellTypeQs, TrueQ],
-									"specified to have a " <> joinClauses[tuple[[All, 3]], CaseAdjustment -> True] <> " CellType",
+									" specified to have a " <> joinClauses[tuple[[All, 3]], CaseAdjustment -> True] <> " CellType",
 								(* some specified conflicting with sample *)
 								AnyTrue[invalidSamplesSpecifiedConflictingCellTypeQs, TrueQ],
-									"specified or detected to have a " <> joinClauses[tuple[[All, 3]], CaseAdjustment -> True] <> " CellType",
+									" specified or detected to have a " <> joinClauses[tuple[[All, 3]], CaseAdjustment -> True] <> " CellType",
 								(* none were specified conflicting with sample *)
 								True,
-									"detected to have a " <> joinClauses[tuple[[All, 3]], CaseAdjustment -> True] <> " CellType"
+									" detected to have a " <> joinClauses[tuple[[All, 3]], CaseAdjustment -> True] <> " CellType"
 							]
 						],
 						", but ",
-						If[Length[tuple[[All, 2]]] > 1,
-							"are",
-							"is"
-						],
+						isOrAre[tuple[[All, 2]]],
 						" specified to be stored under ",
 						If[MatchQ[storageCondition, ObjectP[]],
 							ObjectToString[storageCondition, Cache -> cacheBall, Simulation -> simulation],
@@ -6093,30 +6052,25 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 					Function[{storageCondition, tuple},
 						StringJoin[
 							Capitalize@samplesForMessages[tuple[[All, 2]], mySamples, Cache -> cacheBall, Simulation -> simulation],
-							If[Length[tuple[[All, 2]]] > 1,
-								" are ",
-								" is "
-							],
+							" ",
+							isOrAre[tuple[[All, 2]]],
 							(* whether the cell types were specified or detected *)
 							Module[{invalidSamplesSpecifiedConflictingCellTypeQs},
 								invalidSamplesSpecifiedConflictingCellTypeQs = PickList[specifiedConflictingCellTypeQs, mySamples, ObjectP[tuple[[All, 2]]]];
 								Which[
 									(* all were specified conflicting with sample *)
 									AllTrue[invalidSamplesSpecifiedConflictingCellTypeQs, TrueQ],
-										"specified to have a " <> joinClauses[tuple[[All, 3]], CaseAdjustment -> True] <> " CellType",
+										" specified to have a " <> joinClauses[tuple[[All, 3]], CaseAdjustment -> True] <> " CellType",
 									(* some specified conflicting with sample *)
 									AnyTrue[invalidSamplesSpecifiedConflictingCellTypeQs, TrueQ],
-										"specified or detected to have a " <> joinClauses[tuple[[All, 3]], CaseAdjustment -> True] <> " CellType",
+										" specified or detected to have a " <> joinClauses[tuple[[All, 3]], CaseAdjustment -> True] <> " CellType",
 									(* none were specified conflicting with sample *)
 									True,
-										"detected to have a " <> joinClauses[tuple[[All, 3]], CaseAdjustment -> True] <> " CellType"
+										 "detected to have a " <> joinClauses[tuple[[All, 3]], CaseAdjustment -> True] <> " CellType"
 								]
 							],
 							", but ",
-							If[Length[tuple[[All, 2]]] > 1,
-								"are",
-								"is"
-							],
+							isOrAre[tuple[[All, 2]]],
 							" specified to be stored under ",
 							If[MatchQ[storageCondition, ObjectP[]],
 								ObjectToString[storageCondition, Cache -> cacheBall, Simulation -> simulation],
@@ -6185,7 +6139,8 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 				Warning::ShakingRecommendedForStorageCondition,
 				StringJoin[
 					Capitalize@samplesForMessages[PickList[mySamples, recommendedSCForSuspension, BacterialShakingIncubation | YeastShakingIncubation], mySamples, Cache -> cacheBall, Simulation -> simulation], (* potentially collapse samples *)
-					If[Length[PickList[mySamples, recommendedSCForSuspension, BacterialShakingIncubation | YeastShakingIncubation]] == 1, " has", " have"]
+					" ",
+					hasOrHave[PickList[mySamples, recommendedSCForSuspension, BacterialShakingIncubation | YeastShakingIncubation]]
 				],
 				joinClauses@PickList[samplesOutStorageCondition, recommendedSCForSuspension, BacterialShakingIncubation | YeastShakingIncubation],
 				joinClauses@DeleteCases[recommendedSCForSuspension, Null]
@@ -6259,7 +6214,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 			Cases[incubatorChangesTuples, {ObjectP[specifiedIncubationConditionAllowedIncubators], _}],
 			{}
 		];
-		(* Calculate top-N minimal changes requried incubator tuples *)
+		(* Calculate top-N minimal changes required incubator tuples *)
 		minimalChangesIncompatibleIncubators =  MinimalBy[incubatorChangesTuples, Length[Last[#]]&, UpTo[numberOfExamples]];
 
 		(* Return tuples selectively *)
@@ -6383,7 +6338,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 							Nothing
 						]
 					],
-					(* Shake is a bit werid, it is not a field in incubator packet. For default incubators, if ShakingRate is populated, Shake has to be True, otherwise Shake has to be False. For custom incubators, the ShakingRate is a range, but can be turned off, so shake can be anything. *)
+					(* Shake is a bit weird, it is not a field in incubator packet. For default incubators, if ShakingRate is populated, Shake has to be True, otherwise Shake has to be False. For custom incubators, the ShakingRate is a range, but can be turned off, so shake can be anything. *)
 					Shake,
 					Module[{incubatorDefaultShakingRate, incubatorDefaultShakingRadius},
 						incubatorDefaultShakingRate = Lookup[defaultRules, ShakingRate];
@@ -6775,7 +6730,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	incubationConditionIsIncompatibleUseAlternativesInvalidOptions = If[Length[incubationConditionIsIncompatibleUseAlternativesAssocs] > 0 && !gatherTests,
 		Module[
 			{
-				uniqueIncompatibleSpecifiedIncubationConditions, failingCellTypeSamplePositions, cellTypeFailureSamples,
+				uniqueIncompatibleSpecifiedIncubationConditions, cellTypeFailureSamples,
 				captureSentence, firstClauseGroups, firstClause, secondClause, secondClauseGroups,
 				invalidSamples, invalidIncubationConditions, sampleCompatibilityPairs, compatibleIncubationConditions
 			},
@@ -6938,9 +6893,9 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 								(* cell type *)
 								If[MatchQ[sampleCompatibilityConditionTuple[[All, 2, 2]], ListableP[{Null, Null}]],
 									Nothing,
-									Module[{invalidCellTypeSamples, invalidCellTypes, invalidCellTypeWasSpecifiedQs},
+									Module[{conflictingCellTypeSamples, invalidCellTypes, invalidCellTypeWasSpecifiedQs},
 										(* Pick the samples that fails because of the cell type is not allowed. We need this because it is possible that a sample only fails because of container *)
-										invalidCellTypeSamples = PickList[
+										conflictingCellTypeSamples = PickList[
 											(* samples *)
 											sampleCompatibilityConditionTuple[[All, 1]],
 											(* corresponding cell type compatibility tuple*)
@@ -6948,7 +6903,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 											Except[{Null, Null}]
 										];
 										invalidCellTypes = Flatten[DeleteCases[sampleCompatibilityConditionTuple[[All, 2, 2, 2]], Null]];
-										invalidCellTypeWasSpecifiedQs = PickList[specifiedConflictingCellTypeQs, mySamples, ObjectP[invalidCellTypeSamples]];
+										invalidCellTypeWasSpecifiedQs = PickList[specifiedConflictingCellTypeQs, mySamples, ObjectP[conflictingCellTypeSamples]];
 										(* Write the string *)
 										StringJoin[
 											Which[
@@ -6956,19 +6911,19 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 												Length[mySamples] == 1,
 													"the sample is ",
 												(* We have more than 1 sample in the call and all are invalid this way *)
-												Length[mySamples] == Length[invalidCellTypeSamples],
+												Length[mySamples] == Length[conflictingCellTypeSamples],
 													"all samples are ",
 												(* same set of samples already spelled out in container one above *)
-												Length[invalidCellTypeSamples] == 1 && !MatchQ[sampleCompatibilityConditionTuple[[All, 2, 1]], ListableP[{Null, Null}]],
+												Length[conflictingCellTypeSamples] == 1 && !MatchQ[sampleCompatibilityConditionTuple[[All, 2, 1]], ListableP[{Null, Null}]],
 													"this sample is ",
 												(* We have one of the input samples failing this way, need to point out which object(s) *)
-												Length[invalidCellTypeSamples] == 1,
-													samplesForMessages[invalidCellTypeSamples, Cache -> cacheBall, Simulation -> simulation] <> " is ",
+												Length[conflictingCellTypeSamples] == 1,
+													samplesForMessages[conflictingCellTypeSamples, Cache -> cacheBall, Simulation -> simulation] <> " is ",
 												(* We have some of input samples failing this way but the container one already listed out the samples *)
 												!MatchQ[sampleCompatibilityConditionTuple[[All, 2, 1]], ListableP[{Null, Null}]],
 													"these samples are ",
 												True,
-													samplesForMessages[invalidCellTypeSamples, Cache -> cacheBall, Simulation -> simulation] <> " are "
+													samplesForMessages[conflictingCellTypeSamples, Cache -> cacheBall, Simulation -> simulation] <> " are "
 											],
 											If[MemberQ[invalidCellTypeWasSpecifiedQs, True],
 												"specified to be ",
@@ -7236,10 +7191,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 							],
 							"update the ",
 							joinClauses[optionKeys],
-							If[Length[optionKeys] == 1,
-								" setting",
-								" settings"
-							],
+							pluralize[optionKeys, " setting", " settings"],
 							(* If we have compatible IC recommendation, also list them out *)
 							If[MatchQ[sampleKeyCompatibleICsTuple[[All, 2]], {{}..}],
 								". ",
@@ -7593,10 +7545,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 									True,
 										samplesForMessages[sampleFootprintTuple[[All, 1]], Cache -> cacheBall, Simulation -> simulation]
 								],
-								If[Length[sampleFootprintTuple[[All, 1]]] > 1,
-									" are in containers",
-									" is in a container"
-								],
+								pluralize[sampleFootprintTuple[[All, 1]], " is in a container", " are in containers"],
 								" with a ",
 								ToString[footprint],
 								" Footprint"
@@ -7769,17 +7718,11 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 							True,
 								Capitalize @ samplesForMessages[sampleFootprintOptionsTuple[[All, 1]], Cache -> cacheBall, Simulation -> simulation]
 						],
-						If[Length[sampleFootprintOptionsTuple[[All, 1]]] > 1,
-							" are in containers",
-							" is in a container"
-						],
+						pluralize[sampleFootprintOptionsTuple[[All, 1]], " is in a container", " are in containers"],
 						" with a ",
 						joinClauses[sampleFootprintOptionsTuple[[All, 2]]],
 						" Footprint, which ",
-						If[Length[sampleFootprintOptionsTuple[[All, 2]]] > 1,
-							"have",
-							"has"
-						],
+						hasOrHave[sampleFootprintOptionsTuple[[All, 2]]],
 						" compatible incubator(s) but they do not support the specified ",
 						joinClauses[specifiedOptionKeys],
 						" setting(s). "
@@ -7983,10 +7926,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 									True,
 										samplesForMessages[sampleFootprintTuple[[All, 1]], Cache -> cacheBall, Simulation -> simulation]
 								],
-								If[Length[sampleFootprintTuple[[All, 1]]] > 1,
-									" are in containers",
-									" is in a container"
-								],
+								pluralize[sampleFootprintTuple[[All, 1]], " is in a container", " are in containers"],
 								" with a ",
 								ToString[footprint],
 								" Footprint"
@@ -8238,9 +8178,11 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	incubatorIsIncompatibleAssocs = Lookup[groupedIncubatorIsIncompatibleAllAssocs, "IncubatorIsIncompatible", {}];
 
 	incubatorIsIncompatibleInvalidOptions = If[Length[incubatorIsIncompatibleAssocs] > 0 && !gatherTests,
-		Module[{captureSentence, firstClauseGroups, firstClause, secondClause, secondClauseGroups,
-			invalidSamples, invalidIncubators, sampleCompatibilityPairs, compatibleIncubators,
-			cellTypeFailureSamples, cultureAdhesionFailureSamples},
+		Module[
+			{
+				captureSentence, firstClauseGroups, firstClause, secondClause, secondClauseGroups, invalidSamples, invalidIncubators,
+				sampleCompatibilityPairs, compatibleIncubators, cellTypeFailureSamples, cultureAdhesionFailureSamples
+			},
 
 			(* Pull samples and additional info from the associations *)
 			{invalidSamples, invalidIncubators, sampleCompatibilityPairs, compatibleIncubators} = Transpose@Lookup[
@@ -8350,10 +8292,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 										"the incubator allows containers with a Footprint of ",
 										joinClauses[DeleteCases[Flatten[sampleCompatibilityIncubatorTuple[[All, 2, 1, 1]]], Null]],
 										" but ",
-										If[Length[sampleCompatibilityIncubatorTuple[[All, 1]]] > 1,
-											"the samples are in containers ",
-											"the sample is in a container "
-										],
+										pluralize[sampleCompatibilityIncubatorTuple[[All, 1]], "the sample is in a container ", "the samples are in containers "],
 										"with a ",
 										joinClauses[DeleteCases[sampleCompatibilityIncubatorTuple[[All, 2, 1, 2]], Null]],
 										" Footprint"
@@ -8366,9 +8305,9 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 										"the incubator allows ",
 										joinClauses[DeleteCases[Flatten[sampleCompatibilityIncubatorTuple[[All, 2, 2, 1]]], Null]],
 										" samples but ",
-										Module[{invalidCellTypeSamples, invalidCellTypes, invalidCellTypeWasSpecifiedQs},
+										Module[{conflictingCellTypeSamples, invalidCellTypes, invalidCellTypeWasSpecifiedQs},
 											(* Pick the samples that fails because of the cell type is not allowed. We need this because it is possible that a sample only fails because of container *)
-											invalidCellTypeSamples = PickList[
+											conflictingCellTypeSamples = PickList[
 												(* samples *)
 												sampleCompatibilityIncubatorTuple[[All, 1]],
 												(* corresponding cell type compatibility tuple*)
@@ -8376,17 +8315,15 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 												Except[{Null, Null}]
 											];
 											invalidCellTypes = Flatten[DeleteCases[sampleCompatibilityIncubatorTuple[[All, 2, 2, 2]], Null]];
-											invalidCellTypeWasSpecifiedQs = PickList[specifiedConflictingCellTypeQs, mySamples, ObjectP[invalidCellTypeSamples]];
+											invalidCellTypeWasSpecifiedQs = PickList[specifiedConflictingCellTypeQs, mySamples, ObjectP[conflictingCellTypeSamples]];
 											(* Write the string *)
 											StringJoin[
-												samplesForMessages[invalidCellTypeSamples, mySamples, Cache -> cacheBall, Simulation -> simulation],
-												If[Length[invalidCellTypeSamples] > 1,
-													" are ",
-													" is "
-												],
+												samplesForMessages[conflictingCellTypeSamples, mySamples, Cache -> cacheBall, Simulation -> simulation],
+												" ",
+												isOrAre[conflictingCellTypeSamples],
 												If[MemberQ[invalidCellTypeWasSpecifiedQs, True],
-													"specified to be ",
-													""
+													" specified to be ",
+													" "
 												],
 												joinClauses[invalidCellTypes]
 											]
@@ -8414,13 +8351,11 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 											(* Write the string *)
 											StringJoin[
 												samplesForMessages[invalidCultureAdhesionSamples, mySamples, Cache -> cacheBall, Simulation -> simulation],
-												If[Length[invalidCultureAdhesionSamples] > 1,
-													" are ",
-													" is "
-												],
+												" ",
+												isOrAre[invalidCultureAdhesionSamples],
 												If[MemberQ[invalidCultureAdhesionWasSpecifiedQs, True],
-													"specified to be ",
-													""
+													" specified to be ",
+													" "
 												],
 												joinClauses[invalidCultureAdhesions]
 											]
@@ -8547,10 +8482,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 			(* Capture sentence that does not have details *)
 			captureSentence = StringJoin[
 				"Specified ",
-				If[Length[allUniqueSpecifiedIncubators] > 1,
-					"cell incubators do ",
-					"cell incubator does "
-				],
+				pluralize[allUniqueSpecifiedIncubators, "cell incubator does ", "cell incubators do "],
 				"not support the specified incubation setting(s) for ",
 				Which[
 					(* We only have 1 sample in the call*)
@@ -8926,11 +8858,8 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 							]
 						],
 						", but ",
-						If[Length[tuple[[All, 2]]] > 1,
-							"are ",
-							"is "
-						],
-						"specified to be incubated under ",
+						isOrAre[tuple[[All, 2]]],
+						" specified to be incubated under ",
 						If[MatchQ[incubationCondition, ObjectP[]],
 							ObjectToString[incubationCondition, Cache -> cacheBall, Simulation -> simulation],
 							ToString[incubationCondition]
