@@ -67,8 +67,9 @@ DefineOptionSet[BaseComputationKernelOptions :> {
 	(** Hidden options for developers only **)
 	{
 		OptionName->SLLVersion,
-		Default->Null,
+		Default->Automatic,
 		Description->"If computing on the cloud, the version of SLL which computations should use.",
+		ResolutionDescription -> "Automatically set to the current branch if loading from local checkout, or the Branch field of the Model of the current $Distro if loading from a built distro.",
 		AllowNull->True,
 		Widget->Alternatives[
 			Widget[Type->Enumeration,Pattern:>Alternatives[Stable,Develop]],
@@ -78,8 +79,9 @@ DefineOptionSet[BaseComputationKernelOptions :> {
 	},
 	{
 		OptionName->SLLCommit,
-		Default->Null,
+		Default->Automatic,
 		Description->"If computing on the cloud, the SHA-1 hash indicating which SLL commit this Manifold job should run.",
+		ResolutionDescription -> "Automatically set to the current commit if loading from local checkout, or the Commit field of the current $Distro if loading from a built distro.",
 		AllowNull->True,
 		Widget->Widget[Type->String,Pattern:>_String,Size->Line],
 		Category->"Hidden"
@@ -123,7 +125,7 @@ DefineOptionSet[BaseComputationKernelOptions :> {
 		Default->Null,
 		Description->"Specify which Mathematica version should be used to run this Manifold job. Null defaults to 13.3.1.",
 		AllowNull->True,
-		Widget->Widget[Type->Enumeration,Pattern:>Alternatives["13.3.1"]],
+		Widget->Widget[Type->Enumeration,Pattern:>ManifoldMathematicaVersionsP],
 		Category->"Hidden"
 	},
 	{
@@ -422,7 +424,9 @@ Compute[computeInput_, ops:OptionsPattern[Compute]]:=Module[
 (* ::Subsection::Closed:: *)
 (*Option Resolver*)
 
-resolveDeveloperOnlyOptions[originalOps_] := Module[{superUserQ, userSetDevOps, resolvedCluster, developerOps},
+resolveDeveloperOnlyOptions[originalOps_] := Module[
+	{superUserQ, userSetDevOps, resolvedCluster, developerOps, localSLLCommit, localSLLVersion, resolvedSLLCommit,
+		resolvedSLLVersion, specifiedSLLCommit, specifiedSLLVersion},
 	(* True if the current user has superuser privileges *)
 	superUserQ=MatchQ[$PersonID,ObjectP[Object[User,Emerald]]];
 
@@ -439,6 +443,31 @@ resolveDeveloperOnlyOptions[originalOps_] := Module[{superUserQ, userSetDevOps, 
 		Message[Warning::DeveloperOnlyOptions,First/@userSetDevOps];
 	];
 
+	(* resolve SLLVersion and SLLCommit *)
+	(* weirdly we didn't pass SafeOptions in order to forbid non-developers from specifying the developer options *)
+	(* the consequence here is that SLLVersion/SLLCommit might be missing and that is the same as being unspecified/automatic *)
+	{specifiedSLLCommit, specifiedSLLVersion} = Lookup[originalOps, {SLLCommit, SLLVersion}];
+	{localSLLCommit, localSLLVersion} = localSllVersionAndCommit[];
+	resolvedSLLVersion = If[MatchQ[specifiedSLLVersion, Automatic|_Missing],
+		localSLLVersion,
+		specifiedSLLVersion
+	];
+
+	(* resolving SLLCommit is a little bit different.  Namely, if the user explicitly specified SLLVersion, then we want to auto-resolve to Null, NOT the current local commit *)
+	(* the reason for this is if someone says Compute[1 + 1, SLLVersion -> "feature/kf"] but is not actually on "feature/kf" (could happen locally, and could easily happen on manifold in ParallelReadyCheck, *)
+	(* then we'd end up an SLLCommit from the local branch, _not_ from the SLLVersion branch.  Then Compute will never find the distro because "feature/kf" might not have the most up to date "stable" commit, say *)
+	(* if both things are unspecified then it matters less because the current branch inherently already has the current commit *)
+	(* we don't have to go the other direction because if someone sets SLLCommit but NOT SLLVersion, that's kind of weird and you assume they know what they're doing and guessing the SLLVersion is going to be innacurate no matter what, so might as well pick the local one *)
+	resolvedSLLCommit = Which[
+		(* if the user specified it, just go for it *)
+		Not[MatchQ[specifiedSLLCommit, Automatic|_Missing]], specifiedSLLCommit,
+		(* if the user specified SLLVersion (and not SLLCommit), then we're resolving to Null *)
+		Not[MatchQ[specifiedSLLVersion, Automatic|_Missing]], Null,
+		(* otherwise, go with the local commit *)
+		True, localSLLCommit
+	];
+
+
 	(* If ZDrive paths were set but the cluster wasn't, default the cluster to develop *)
 	resolvedCluster=Lookup[userSetDevOps,FargateCluster,Null]/.{
 		(* If the cluster wasn't set, default it to the developer cluster based on $PersonID *)
@@ -448,7 +477,14 @@ resolveDeveloperOnlyOptions[originalOps_] := Module[{superUserQ, userSetDevOps, 
 
 	(* Developer only options. Empty list (resolves to defaults) if user does not have permissions. *)
 	developerOps=If[superUserQ,
-		ReplaceRule[userSetDevOps,{FargateCluster->resolvedCluster, SLLPackage->Lookup[userSetDevOps,SLLPackage,Developer]}],
+		ReplaceRule[
+			userSetDevOps,
+			{
+				FargateCluster->resolvedCluster,
+				SLLPackage->Lookup[userSetDevOps,SLLPackage,Developer],
+				SLLCommit -> resolvedSLLCommit,
+				SLLVersion -> resolvedSLLVersion
+			}],
 		{}
 	];
 	developerOps
@@ -465,9 +501,7 @@ resolveOptionsDownload[safeOps_,originalOps_,notebookQ_, Hold[computeInput_]]:=M
 		resolvedTrackedObjects,resolvedObjectFields,jobOps,resolvedFinancingTeam,
 		name,destinationNotebook,destinationNotebookNamingFunction,
 		scheduleOption,repeatOption,pastDates,listedRepeats,resolvedSchedule,resolvedRepeats,
-		superUserQ,userSetDevOps,resolvedCluster,developerOps, 
-		userNotebooks, defaultNotebooks, failOutput, assetFile, sandboxQ
-
+		developerOps, userNotebooks, defaultNotebooks, failOutput, assetFile, sandboxQ
 	},
 
 	(* 
@@ -811,7 +845,9 @@ resolveOptionsDownload[safeOps_,originalOps_,notebookQ_, Hold[computeInput_]]:=M
 				developerOps,
 				notebookDropOps
 			]
-		],
+			(* if we have Automatics at this point, they should be Null *)
+			(* these are most likely going to be SLLVersion and SLLCommit, which will still be Automatic at this stage if a non-superuser called Compute *)
+		] /. {Automatic -> Null},
 		(* also returning these two things as they are needed later *)
 		userNotebooks, 
 		defaultNotebooks,

@@ -277,6 +277,22 @@ loadCombinedSymbols[metadata_Association]:=Module[
 				Lookup[metadata,"Mathematica13.2AdditionalSymbols",{}],
 				(* otherwise... *)
 				{}
+			],
+
+			If[$VersionNumber < 14.2,
+				(* symbols we don't need to define after 14.2 *)
+				Lookup[metadata, "Mathematica14.2ConflictSymbols", {}],
+				(* otherwise... *)
+				{}
+			],
+
+			(* symbols we don't need to define after 14.2 if we're not on a windows machine *)
+			(* as in, we do need to define them before 14.2, and we also need to define them if we are after 14.2 but on Windows *)
+			If[$VersionNumber < 14.2 || MatchQ[$OperatingSystem, "Windows"],
+				(* this is super weird but it seems like some packages get loaded on mac/linux that aren't loaded on windows and that can cause shadowing *)
+				Lookup[metadata, "Mathematica14.2NonWindowsConflictSymbols", {}],
+				(* otherwise... *)
+				{}
 			]
 		]
 	]
@@ -1241,51 +1257,51 @@ revertQuantityUnitsPaclet[sllDir_]:=
 		Protect[Quantity];
 
 
-	(*
-		Solve with units doesn't work because it relies on stuff in new unit paclet and stuff outside of units paclet.		
-		Tmp patch by turning quantities into magnitudes * unit-terms, solveing, and then swapping units back in.  
-		Just be careful about real-ness of solutions and independent untis
-	*)
-	Unprotect[Solve];
-	Solve[expr_, vars_] /; Not[FreeQ[expr, _Quantity]] := unitlessSolve[expr, vars];
-	Protect[Solve];
-
-	unitlessSolve[exprOrig_,vars_] := Module[{expr, exprSubbed, unitlessSol, indepStrings},
-		
-		(* make problem easier by converting to base units first *)
-		expr = exprOrig /. q_Quantity:>UnitConvert[q];
-		(* Replace Quantity[mag, unit] with Times[mag,unit], leaving 'unit' as an algebraic expression of strings and _IndependentUnits	*)
-		(* Zero is a special case because 0 * units resolves to 0, we substitute it back in the end when we return quantities *)
-		exprSubbed = ReplaceAll[
-			expr,
-			{
-				Quantity[0, x_] -> "ZeroIntegerPlaceholder" * x,
-				Quantity[0., x_] -> "ZeroRealPlaceholder" * x,
-				Quantity->Times
-			}
-		];
-		(* 
-			solve this unitless expression, removing non-real solutions.
+		(*
+			Solve with units doesn't work because it relies on stuff in new unit paclet and stuff outside of units paclet.
+			Tmp patch by turning quantities into magnitudes * unit-terms, solveing, and then swapping units back in.
+			Just be careful about real-ness of solutions and independent untis
 		*)
-		unitlessSol = Quiet[
-			DeleteCases[Solve[exprSubbed,vars],MemberQ[#,_Complex,Infinity]&],
-			Solve::nongen
+		Unprotect[Solve];
+		Solve[expr_, vars_] /; Not[FreeQ[expr, _Quantity]] := unitlessSolve[expr, vars];
+		Protect[Solve];
+
+		unitlessSolve[exprOrig_,vars_] := Module[{expr, exprSubbed, unitlessSol, indepStrings},
+
+			(* make problem easier by converting to base units first *)
+			expr = exprOrig /. q_Quantity:>UnitConvert[q];
+			(* Replace Quantity[mag, unit] with Times[mag,unit], leaving 'unit' as an algebraic expression of strings and _IndependentUnits	*)
+			(* Zero is a special case because 0 * units resolves to 0, we substitute it back in the end when we return quantities *)
+			exprSubbed = ReplaceAll[
+				expr,
+				{
+					Quantity[0, x_] -> "ZeroIntegerPlaceholder" * x,
+					Quantity[0., x_] -> "ZeroRealPlaceholder" * x,
+					Quantity->Times
+				}
+			];
+			(*
+				solve this unitless expression, removing non-real solutions.
+			*)
+			unitlessSol = Quiet[
+				DeleteCases[Solve[exprSubbed,vars],MemberQ[#,_Complex,Infinity]&],
+				Solve::nongen
+			];
+
+			(* replace the strings and independent units wtih unity-magnitude quantities of that unit *)
+			(* need a little extra care to get IndependentUnits correct, since they contain strings *)
+			indepStrings = Alternatives @@ Union[Cases[exprSubbed,IndependentUnit[s_]:>s,Infinity]];
+
+			ReplaceAll[
+				unitlessSol,
+				{
+					"ZeroIntegerPlaceholder" :> 0,
+					"ZeroRealPlaceholder" :> 0.,
+					s:Except[indepStrings, _String] :> Quantity[1,s],
+					iu_IndependentUnit :> Quantity[1,iu]
+				}
+			]
 		];
-		
-		(* replace the strings and independent units wtih unity-magnitude quantities of that unit *)
-		(* need a little extra care to get IndependentUnits correct, since they contain strings *)
-		indepStrings = Alternatives @@ Union[Cases[exprSubbed,IndependentUnit[s_]:>s,Infinity]];
-		
-		ReplaceAll[
-			unitlessSol, 
-			{
-				"ZeroIntegerPlaceholder" :> 0,
-				"ZeroRealPlaceholder" :> 0.,
-				s:Except[indepStrings, _String] :> Quantity[1,s],
-				iu_IndependentUnit :> Quantity[1,iu]
-			}
-		]
-	];
 
 
 
@@ -2011,7 +2027,7 @@ LoadDistro[configFile_String, options:OptionsPattern[]]:=Module[
 
 	Scan[loadPaclet[#,sllDir];&,pacletVersions];
 
-(* reload any new paclets *)
+	(* reload any new paclets *)
 	If[$VersionNumber< 12.2,
 			RebuildPacletData[];,
 			PacletDataRebuild[];
@@ -2022,13 +2038,14 @@ LoadDistro[configFile_String, options:OptionsPattern[]]:=Module[
 	tocPaclets = AbsoluteTime[];
 
 	ticPatch13 = AbsoluteTime[];
-	If[Not[ValueQ[ $MM13$RevertQuantityUnits]],
+	If[Not[ValueQ[$MM13$RevertQuantityUnits]],
 		$MM13$RevertQuantityUnits = True;
 	];
 
 	If[
 		$VersionNumber >= 13.2`,
-		If[True,
+		(* revertQuantityUnitsPaclet is not compatible with MM 14.2 because it reads the QuantityUnits.m file differently than 13.3 and I can't edit the source code since the file is encoded and I don't have the source of where the encoding came from *)
+		If[$VersionNumber < 14.2`,
 			revertQuantityUnitsPaclet[sllDir],
 			installUnitConversionPatch[]
 		];
@@ -2039,7 +2056,7 @@ LoadDistro[configFile_String, options:OptionsPattern[]]:=Module[
 
 
 
-		(* top-level SLL, for now *)
+	(* top-level SLL, for now *)
 	packagesRoot = OptionValue[PackagesRoot];
 	packagesRoot = If[packagesRoot === Automatic,
 		ParentDirectory[DirectoryName[configFile]],

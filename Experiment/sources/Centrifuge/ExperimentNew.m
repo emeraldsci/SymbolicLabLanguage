@@ -501,9 +501,12 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 	allCentrifugeEquipmentPackets = nonDeprecatedCentrifugeModelPackets["Memoization"];
 
 	(* Get a list of preferred container models which we potential transfer sample in order to centrifuge. *)
+	(* Also download preferred containers for Incubate sample prep options *)
 	allPreferredContainers = DeleteDuplicates@Join[
 		PreferredContainer[All, Type -> All],
-		PreferredContainer[All, UltracentrifugeCompatible -> True]
+		PreferredContainer[All, UltracentrifugeCompatible -> True],
+		PreferredContainer[All, LightSensitive -> True],
+		PreferredContainer[All, Sterile -> True]
 	];
 
 	(* Format the list of things to download *)
@@ -539,7 +542,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 		centrifugeFields,
 		centrifugeRotorFields,
 		{counterweightModelFields},
-		{{Packet[Footprint, Dimensions, Name]}}
+		{{Evaluate[Packet@@SamplePreparationCacheFields[Model[Container]]]}}
 	];
 
 	cacheToUse = ToList[Lookup[expandedSafeOps, Cache, {}]];

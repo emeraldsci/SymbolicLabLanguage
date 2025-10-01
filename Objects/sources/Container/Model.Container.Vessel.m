@@ -290,7 +290,7 @@ DefineObjectType[Model[Container, Vessel], {
 		GraduationTypes -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> Alternatives[Labeled, Short, Long],
+			Pattern :> GraduationTypeP,
 			Description -> "For each member of Graduations, indicates if the graduation is labeled with a number, a long unlabeled line, or a short unlabeled line.",
 			Category -> "Container Specifications",
 			IndexMatching -> Graduations

@@ -137,6 +137,13 @@ DefineObjectType[Object[UnitTest, Suite], {
       ],
       Description -> "The Symbolic Lab Language (SLL) functions that failed in the last unit testing run and should be run multiple times in the current unit testing run in order to make sure that they are passing robustly. These functions will be run up to 10 times (stopping early if they fail), as long as there is enough time in the unit testing suite to run additional tests.",
       Category -> "Test Results"
+    },
+    Databases -> {
+      Format -> Multiple,
+      Class -> Integer,
+      Pattern :> _Integer,
+      Description -> "The Constellation unit testing database (https://constellation-neutrino(integer).emeraldcloudlab.com) that this test ran on. The unit testing databases are numbered 0-5; Engineering neutrino cluster has base pattern of https://constellation-platform-neutrino(integer).emeraldcloudlab.com and is denoted by indecies of 50-53, even though the actual integer used in the URL is 0-3. This is critical to have available to attach the tests to the correct databases.",
+      Category -> "Organizational Information"
     }
   }
 }]

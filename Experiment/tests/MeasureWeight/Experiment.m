@@ -86,10 +86,57 @@ DefineTests[
 				$EmailEnabled=False
 			}
 		],
-		Test[{Additional, "Scout balance is set to PA224 for cap/lid/plate seal with unknown balance type:"},
+		Test["Balance is set to Analytical for cap/lid/plate seal with unknown balance type:",
 			prot = ExperimentMeasureWeight[Object[Item, Cap, "Test cap 1 for ExperimentMeasureWeight testing" <> $SessionUUID]];
-			Lookup[Download[prot, Batching][[1]], ScoutBalance],
-			LinkP[Model[Instrument, Balance, "id:KBL5DvYl3zGN"]],
+			Download[Lookup[Download[prot, Batching][[1]], Balance], Mode],
+			Analytical,
+			Stubs :> {
+				$PersonID = Object[User, "Test user for notebook-less test protocols"],
+				$EmailEnabled = False
+			},
+			Variables :> {prot}
+		],
+
+		Test["Populate CoveredContainer key in Batching field if we are measuring a cover that is currently on a container:",
+			prot = ExperimentMeasureWeight[Object[Item, Cap, "Test cap 2 for ExperimentMeasureWeight testing" <> $SessionUUID]];
+			Lookup[Download[prot, Batching][[1]], CoveredContainer],
+			LinkP[Object[Container, Vessel, "Test covered container 1 for ExperimentMeasureWeight testing" <> $SessionUUID]],
+			Stubs :> {
+				$PersonID = Object[User, "Test user for notebook-less test protocols"],
+				$EmailEnabled = False
+			},
+			Variables :> {prot}
+		],
+		Test["Need a fumehood handling environment, if we are transferring a fuming/ventilated sample to TransferContainer:",
+			prot = ExperimentMeasureWeight[
+				Object[Container, Vessel, "Test covered container 1 for ExperimentMeasureWeight testing" <> $SessionUUID],
+				TransferContainer -> Automatic
+			];
+			Lookup[Download[prot, Batching][[1]], {TransferContainer, HandlingEnvironment}],
+			{LinkP[Model[Container, Vessel]], LinkP[Model[Instrument, HandlingStation, FumeHood]]},
+			Stubs :> {
+				$PersonID = Object[User, "Test user for notebook-less test protocols"],
+				$EmailEnabled = False
+			},
+			Variables :> {prot}
+		],
+		Test["Need a fumehood handling environment, if we are measuring cap that is currently covering a container that has fuming/ventilated sample in it:",
+			prot = ExperimentMeasureWeight[Object[Item, Cap, "Test cap 2 for ExperimentMeasureWeight testing" <> $SessionUUID]];
+			Lookup[Download[prot, Batching][[1]], HandlingEnvironment],
+			LinkP[Model[Instrument, HandlingStation, FumeHood]],
+			Stubs :> {
+				$PersonID = Object[User, "Test user for notebook-less test protocols"],
+				$EmailEnabled = False
+			},
+			Variables :> {prot}
+		],
+		Test["Allow a list of fumehoods to be selected, if we are given a balance model that is not inside any of the current fumehood handling stations:",
+			prot = ExperimentMeasureWeight[
+				Object[Container, Vessel, "Test covered container 2 for ExperimentMeasureWeight testing" <> $SessionUUID],
+				TransferContainer -> Automatic
+			];
+			FirstCase[Download[prot, RequiredResources], {obj_, Batching, _, HandlingEnvironment} :> Download[obj, InstrumentModels]],
+			{ObjectP[Model[Instrument, HandlingStation, FumeHood]]..}?(Length[#] > 1&),
 			Stubs :> {
 				$PersonID = Object[User, "Test user for notebook-less test protocols"],
 				$EmailEnabled = False
@@ -323,12 +370,12 @@ DefineTests[
 			Lookup[
 				ExperimentMeasureWeight[
 					Object[Container,Vessel,"50ml container 1 for ExperimentMeasureWeight testing"<> $SessionUUID],
-					Instrument->Model[Instrument,Balance,"id:vXl9j5qEnav7"],
+					Instrument->Model[Instrument,Balance,"id:rea9jl5Vl1ae"],
 					Output->Options
 				],
 				Instrument
 			],
-			ObjectP[Model[Instrument,Balance,"id:vXl9j5qEnav7"]]
+			ObjectP[Model[Instrument,Balance,"id:rea9jl5Vl1ae"]]
 		],
 		Example[{Options,Instrument,"Instrument can be specified to a Microbalance if TransferContainer is being used (since then a weighboat is used which fits on the balance):"},
 			ExperimentMeasureWeight[
@@ -372,12 +419,12 @@ DefineTests[
 					ExperimentMeasureWeight[
 						(* this is a sample in a 50 ml tube so the preferred balance is Analytical *)
 						Object[Sample,"Available liquid sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID],
-						Instrument->Model[Instrument,Balance,"id:vXl9j5qEnav7"],
+						Instrument->Model[Instrument,Balance,"id:rea9jl5Vl1ae"],
 						Output->Options
 					],
 					Instrument
 				];
-				{Download[mySpecifiedInstrument,Mode],Download[Model[Instrument,Balance,"id:vXl9j5qEnav7"],Mode]}
+				{Download[mySpecifiedInstrument,Mode],Download[Model[Instrument,Balance,"id:rea9jl5Vl1ae"],Mode]}
 				],
 			{Analytical,Analytical}
 		],
@@ -392,6 +439,15 @@ DefineTests[
 				{Download[mySpecifiedInstrument,Mode],Download[Object[Container,Vessel,"Empty 50ml container for ExperimentMeasureWeight testing"<> $SessionUUID],Model[PreferredBalance]]}
 				],
 			{Analytical,Analytical}
+		],
+		Test["Resolve to SnR bench balance object automatically if we are in receiving:",
+			testReceiving = Upload[<|Type -> Object[Maintenance, ReceiveInventory]|>];
+			prot = ExperimentMeasureWeight[
+				Object[Container, Vessel, "Empty 50ml container for ExperimentMeasureWeight testing" <> $SessionUUID],
+				ParentProtocol -> testReceiving
+			];
+			Download[prot, Batching[[All, Balance]]],
+			{ObjectP[Object[Instrument, Balance]]}
 		],
 		Example[{Options,Instrument,"Instrument will automatically resolve to the PreferredBalance of the input lid model:"},
 			Module[{mySpecifiedInstrument},
@@ -725,13 +781,6 @@ DefineTests[
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages,"VentilatedSample","It is not currently possible to weigh samples which require a transfer container and must be handled in a fume hood:"},
-			ExperimentMeasureWeight[Object[Sample,"Ventilated sample for ExperimentMeasureWeight testing"<> $SessionUUID]],
-			$Failed,
-			Messages:>{Error::VentilatedSamples,Error::InvalidInput}
-		],
-
-
 
 		(* === Test that the batching fields are populated properly === *)
 
@@ -836,7 +885,7 @@ DefineTests[
 						},
 						TransferContainer->{Automatic,Automatic,Object[Container,Vessel,"Empty 50ml container 2 for ExperimentMeasureWeight testing"<> $SessionUUID],Automatic,Automatic},
 						CalibrateContainer->{Automatic,Automatic,Automatic,True,Automatic},
-						Instrument->{Model[Instrument,Balance,"id:vXl9j5qEnav7"],Automatic,Automatic,Automatic,Automatic}
+						Instrument->{Model[Instrument,Balance,"id:rea9jl5Vl1ae"],Automatic,Automatic,Automatic,Automatic}
 				];
 				{Download[myProtocol,Batching],Lookup[Download[myProtocol,Batching],Index]}
 			],
@@ -846,87 +895,94 @@ DefineTests[
 				{
 					(* 5 *)
 					<|
-						WorkingContainerIn->Null,
-						ContainerIn->ObjectP[Object[Container,Vessel,"50ml container without PreferredBalance for ExperimentMeasureWeight testing"<> $SessionUUID]],
-						ScoutBalance->ObjectP[Model[Instrument,Balance,"id:aXRlGn6V7Jov"]],
-						Balance->Null,
-						Pipette->Null,
-						PipetteTips->Null,
-						WeighPaper->Null,
-						WeighBoat->Null,
-						TransferContainer->Null,
-						Holder->ObjectP[Model[Container, Rack]],
-						CalibrateContainer->False,
-						SortingIndex->5,
-						Index->1
+						WorkingContainerIn -> Null,
+						ContainerIn -> ObjectP[Object[Container, Vessel, "50ml container without PreferredBalance for ExperimentMeasureWeight testing" <> $SessionUUID]],
+						ScoutBalance -> ObjectP[Model[Instrument, Balance, "id:aXRlGn6V7Jov"]],
+						Balance -> Null,
+						Pipette -> Null,
+						PipetteTips -> Null,
+						WeighPaper -> Null,
+						WeighBoat -> Null,
+						TransferContainer -> Null,
+						Holder -> ObjectP[Model[Container, Rack]],
+						CalibrateContainer -> False,
+						SortingIndex -> 5,
+						Index -> 1,
+						HandlingEnvironment -> Null,
+						CoveredContainer -> Null
 					|>,
-					(* Make these 4 orderless *)
-					OrderlessPatternSequence[
-						(* 2 *)
-						<|
-							WorkingContainerIn->Null,
-							ContainerIn->ObjectP[Object[Container, Vessel, "50ml container 1 for ExperimentMeasureWeight testing"<> $SessionUUID]],
-							ScoutBalance->Null,
-							Balance->ObjectP[Model[Instrument,Balance,"id:vXl9j5qEnav7"]],
-							Pipette->Null,
-							PipetteTips->Null,
-							WeighPaper->ObjectP[Model[Item,Consumable,"id:3em6Zv9Njj5W"]],
-							WeighBoat->Null,
-							TransferContainer->ObjectP[Model[Container,Vessel,"id:bq9LA0dBGGR6"]],
-							Holder->ObjectP[Model[Container,Rack]],
-							CalibrateContainer->False,
-							SortingIndex->2,
-							Index->_Integer
-						|>,
-						(* 4 *)
-						<|
-							WorkingContainerIn->Null,
-							ContainerIn->ObjectP[Object[Container,Vessel,"50ml container 3 for ExperimentMeasureWeight testing"<> $SessionUUID]],
-							ScoutBalance->Null,
-							Balance->ObjectP[Model[Instrument,Balance,"id:vXl9j5qEnav7"]],
-							Pipette->Null,
-							PipetteTips->Null,
-							WeighPaper->Null,
-							WeighBoat->Null,
-							TransferContainer->Null,
-							Holder->ObjectP[Model[Container, Rack]],
-							CalibrateContainer->True,
-							SortingIndex->4,
-							Index->_Integer
-						|>,
-						(* 3 *)
-						<|
-							WorkingContainerIn->Null,
-							ContainerIn->ObjectP[Object[Container,Vessel,"50ml container 9 for ExperimentMeasureWeight testing"<> $SessionUUID]],
-							ScoutBalance->Null,
-							Balance->ObjectP[Model[Instrument,Balance,"id:vXl9j5qEnav7"]],
-							Pipette->Null,
-							PipetteTips->Null,
-							WeighPaper->ObjectP[Model[Item,Consumable,"id:3em6Zv9Njj5W"]],
-							WeighBoat->Null,
-							TransferContainer->ObjectP[Object[Container,Vessel,"Empty 50ml container 2 for ExperimentMeasureWeight testing"<> $SessionUUID]],
-							Holder->ObjectP[Model[Container, Rack]],
-							CalibrateContainer->False,
-							SortingIndex->3,
-							Index->_Integer
-						|>,
-						(* 1 *)
-						<|
-							WorkingContainerIn->Null,
-							ContainerIn->ObjectP[Object[Container,Vessel,"Empty 50ml container for ExperimentMeasureWeight testing"<> $SessionUUID]],
-							ScoutBalance->Null,
-							Balance->ObjectP[Model[Instrument,Balance,"id:vXl9j5qEnav7"]],
-							Pipette->Null,
-							PipetteTips->Null,
-							WeighPaper->Null,
-							WeighBoat->Null,
-							TransferContainer->Null,
-							Holder->ObjectP[Model[Container, Rack]],
-							CalibrateContainer->True,
-							SortingIndex->1,
-							Index->_Integer
-						|>
-					]
+					(* 1 *)
+					<|
+						WorkingContainerIn -> Null,
+						ContainerIn -> ObjectP[Object[Container, Vessel, "Empty 50ml container for ExperimentMeasureWeight testing" <> $SessionUUID]],
+						ScoutBalance -> Null,
+						Balance -> ObjectP[Model[Instrument, Balance, "id:rea9jl5Vl1ae"]],
+						Pipette -> Null,
+						PipetteTips -> Null,
+						WeighPaper -> Null,
+						WeighBoat -> Null,
+						TransferContainer -> Null,
+						Holder -> ObjectP[Model[Container, Rack]],
+						CalibrateContainer -> True,
+						SortingIndex -> 1,
+						Index -> 2,
+						HandlingEnvironment -> ObjectP[],
+						CoveredContainer -> Null
+					|>,
+					(* 2 *)
+					<|
+						WorkingContainerIn -> Null,
+						ContainerIn -> ObjectP[Object[Container, Vessel, "50ml container 1 for ExperimentMeasureWeight testing" <> $SessionUUID]],
+						ScoutBalance -> Null,
+						Balance -> ObjectP[Model[Instrument, Balance]],
+						Pipette -> Null,
+						PipetteTips -> Null,
+						WeighPaper -> ObjectP[Model[Item, Consumable, "id:3em6Zv9Njj5W"]],
+						WeighBoat -> Null,
+						TransferContainer -> ObjectP[Model[Container, Vessel, "id:bq9LA0dBGGR6"]],
+						Holder -> ObjectP[Model[Container, Rack]],
+						CalibrateContainer -> False,
+						SortingIndex -> 2,
+						Index -> 3,
+						HandlingEnvironment -> ObjectP[],
+						CoveredContainer -> Null
+					|>,
+					(* 3 *)
+					<|
+						WorkingContainerIn -> Null,
+						ContainerIn -> ObjectP[Object[Container, Vessel, "50ml container 9 for ExperimentMeasureWeight testing" <> $SessionUUID]],
+						ScoutBalance -> Null,
+						Balance -> ObjectP[Model[Instrument, Balance]],
+						Pipette -> Null,
+						PipetteTips -> Null,
+						WeighPaper -> ObjectP[Model[Item, Consumable, "id:3em6Zv9Njj5W"]],
+						WeighBoat -> Null,
+						TransferContainer -> ObjectP[Object[Container, Vessel, "Empty 50ml container 2 for ExperimentMeasureWeight testing" <> $SessionUUID]],
+						Holder -> ObjectP[Model[Container, Rack]],
+						CalibrateContainer -> False,
+						SortingIndex -> 3,
+						Index -> 4,
+						HandlingEnvironment -> ObjectP[],
+						CoveredContainer -> Null
+					|>,
+					(* 4 *)
+					<|
+						WorkingContainerIn -> Null,
+						ContainerIn -> ObjectP[Object[Container, Vessel, "50ml container 3 for ExperimentMeasureWeight testing" <> $SessionUUID]],
+						ScoutBalance -> Null,
+						Balance -> ObjectP[Model[Instrument, Balance]],
+						Pipette -> Null,
+						PipetteTips -> Null,
+						WeighPaper -> Null,
+						WeighBoat -> Null,
+						TransferContainer -> Null,
+						Holder -> ObjectP[Model[Container, Rack]],
+						CalibrateContainer -> True,
+						SortingIndex -> 4,
+						Index -> 5,
+						HandlingEnvironment -> ObjectP[],
+						CoveredContainer -> Null
+					|>
 				},
 				{1,2,3,4,5}
 			},
@@ -1002,28 +1058,28 @@ DefineTests[
 			}
     ],
 
-    Example[{Options,Template,"Indicate that all the same options used for a previous protocol should be used again for the current protocol:"},
-      Module[{templateMWProtocol,repeatProtocol},
-      (* Create an initial protocol *)
-        templateMWProtocol=ExperimentMeasureWeight[Object[Sample,"Available solid sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID],TransferContainer->Model[Container, Vessel, "id:bq9LA0dBGGR6"]];
+		Example[{Options, Template, "Indicate that all the same options used for a previous protocol should be used again for the current protocol:"},
+			Module[{templateMWProtocol, repeatProtocol},
+				(* Create an initial protocol *)
+				templateMWProtocol = ExperimentMeasureWeight[Object[Sample, "Available solid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID], TransferContainer -> Model[Container, Vessel, "id:bq9LA0dBGGR6"]];
 
-        (* Create another protocol which will exactly repeat the first, for a different sample though *)
-        repeatProtocol=ExperimentMeasureWeight[Object[Sample,"Available solid sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID],Template->templateMWProtocol];
+				(* Create another protocol which will exactly repeat the first, for a different sample though *)
+				repeatProtocol = ExperimentMeasureWeight[Object[Sample, "Available solid sample 2 for ExperimentMeasureWeight testing" <> $SessionUUID], Template -> templateMWProtocol];
 
-        Lookup[
-          Download[{templateMWProtocol,repeatProtocol},ResolvedOptions],
-         {Instrument,TransferContainer,CalibrateContainer}
-        ]
-      ],
-      {
-        {ObjectP[Model[Instrument, Balance, "id:vXl9j5qEnav7"]],ObjectP[Model[Container, Vessel, "id:bq9LA0dBGGR6"]],False},
-        {ObjectP[Model[Instrument, Balance, "id:vXl9j5qEnav7"]],ObjectP[Model[Container, Vessel, "id:bq9LA0dBGGR6"]],False}
-      },
-			Stubs:>{
+				MapThread[
+					MatchQ[#1, #2]&,
+					Lookup[
+						Download[{templateMWProtocol, repeatProtocol}, ResolvedOptions],
+						{Instrument, TransferContainer, CalibrateContainer}
+					]
+				]
+			],
+			{True, True, True},
+			Stubs :> {
 				$PersonID = Object[User, "Test user for notebook-less test protocols"],
-				$EmailEnabled=False
+				$EmailEnabled = False
 			}
-    ],
+		],
 
     Example[{Options,SamplesInStorageCondition,"Indicates how the input samples of the experiment should be stored:"},
       Lookup[ExperimentMeasureWeight[Object[Sample,"Available liquid sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID],
@@ -1369,7 +1425,7 @@ DefineTests[
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
-		(* note that FilterSterile needs to be run with a sample of a volume above 50mL (Jan 2019) *)
+(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options, FilterSterile, "Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options = ExperimentMeasureWeight[Object[Sample,"Available liquid sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID], FilterSterile -> True, Output -> Options];
 			Lookup[options, FilterSterile],
@@ -1391,7 +1447,7 @@ DefineTests[
 					|>
 				];
 			)
-		],
+		],*)
 		Example[{Options, FilterAliquot, "The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options = ExperimentMeasureWeight[Object[Sample,"Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing"<> $SessionUUID], FilterAliquot -> 1.5*Milliliter, Output -> Options];
 			Lookup[options, FilterAliquot],
@@ -1823,11 +1879,12 @@ DefineTests[
 				 Object[Sample,"Sample without container for ExperimentMeasureWeight testing"<> $SessionUUID],
 				 Object[Sample,"Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing"<> $SessionUUID],
 				 Object[Sample,"Sample in immobile container for ExperimentMeasureWeight testing"<> $SessionUUID],
-				 Object[Sample,"Ventilated sample for ExperimentMeasureWeight testing"<> $SessionUUID],
 				 Object[Sample,"Sample in ampoule for InSitu ExperimentMeasureWeight testing"<> $SessionUUID],
 				 Object[Sample,"Sample on balance for InSitu ExperimentMeasureWeight testing"<> $SessionUUID],
 				 Object[Sample,"Sample in rack on balance for InSitu ExperimentMeasureWeight testing"<> $SessionUUID],
 				 Object[Sample,"Sample in rack not on balance for InSitu ExperimentMeasureWeight testing"<> $SessionUUID],
+				 Object[Sample,"Fuming sample in covered container for ExperimentMeasureWeight testing" <> $SessionUUID],
+				 Object[Sample,"Fuming sample 2 in covered container for ExperimentMeasureWeight testing" <> $SessionUUID],
 				 (* other objects *)
 				 Object[Protocol,MeasureWeight,"My Favorite Weight Measurement Protocol"<> $SessionUUID],
 				 Object[Protocol,HPLC,"HPLC Parent for ExperimentMeasureWeight testing"<> $SessionUUID],
@@ -1839,8 +1896,13 @@ DefineTests[
 				 (* model *)
 				 Model[Container,Vessel,"Model container without PreferredBalance for ExperimentMeasureWeight testing"<> $SessionUUID],
 				 Model[Container,Vessel,"Model container without tare weight for ExperimentMeasureWeight testing"<> $SessionUUID],
+				 Model[Container,Vessel,"Model container without tare weight prefer Bulk for ExperimentMeasureWeight testing"<> $SessionUUID],
 				 Model[Item, Cap, "Test cap model 1 for ExperimentMeasureWeight testing" <> $SessionUUID],
+				 Object[Container, Vessel, "Test covered container 1 for ExperimentMeasureWeight testing" <> $SessionUUID],
+				 Object[Container, Vessel, "Test covered container 2 for ExperimentMeasureWeight testing" <> $SessionUUID],
 				 Object[Item, Cap, "Test cap 1 for ExperimentMeasureWeight testing" <> $SessionUUID],
+				 Object[Item, Cap, "Test cap 2 for ExperimentMeasureWeight testing" <> $SessionUUID],
+				 Object[Item, Cap, "Test cap 3 for ExperimentMeasureWeight testing" <> $SessionUUID],
 				 Model[Item, Lid, "Test lid model 1 for ExperimentMeasureWeight testing" <> $SessionUUID],
 				 Object[Item, Lid, "Test lid 1 for ExperimentMeasureWeight testing" <> $SessionUUID]
 			 };
@@ -1852,52 +1914,53 @@ DefineTests[
 			 Quiet[EraseObject[existingObjects, Force -> True, Verbose -> False]]
 		 ];
 
-      Module[{
-				fakeBench,emptyContainer,secondEmptyContainer,thirdEmptyContainer,emptyContainer1,emptyContainer2,
-				emptyContainer3,emptyContainer4,emptyContainer5,emptyContainer6,emptyContainer7,emptyContainer8,
-				emptyContainer9,emptyContainer10,emptyContainer11,emptyContainer12,emptyContainer13,emptyMicroContainer1,
-				emptyMicroContainer2,emptyMicroContainer3,selfStandingContainer,immobileContainer,ampouleContainer,
-				emptyPlate,fakeRack1,fakeRack2,
-				fakeBalance1,fakeBalance2,noPreContainerModel,noTareContainerModel,containerWithoutPrefBalance,noTareContainer,
-				cap1, lid1, capModel1, lidModel1
-				},
+		Block[{$DeveloperUpload = True},
+			Module[{
+				fakeBench, emptyContainer, secondEmptyContainer, thirdEmptyContainer, emptyContainer1, emptyContainer2,
+				emptyContainer3, emptyContainer4, emptyContainer5, emptyContainer6, emptyContainer7, emptyContainer8,
+				emptyContainer9, emptyContainer10, emptyContainer11, emptyContainer12, emptyContainer13, emptyMicroContainer1,
+				emptyMicroContainer2, emptyMicroContainer3, selfStandingContainer, immobileContainer, ampouleContainer,
+				emptyPlate, fakeRack1, fakeRack2,
+				fakeBalance1, fakeBalance2, noPreContainerModel, noTareContainerModel, noTareContainerModel2, containerWithoutPrefBalance, noTareContainer,
+				cap1, cap2, cap3, lid1, capModel1, lidModel1, containerToBeCovered1, containerToBeCovered2
+			},
 
 
-		  (* upload to make cover models *)
-		  {capModel1, lidModel1} = Upload[{
-			  <|
-				  Type -> Model[Item, Cap],
-				  Name -> "Test cap model 1 for ExperimentMeasureWeight testing" <> $SessionUUID,
-				  DefaultStorageCondition -> Link[Model[StorageCondition, "id:7X104vnR18vX"]],
-				  DeveloperObject -> True
-			  |>,
-			  <|
-				  Type -> Model[Item, Lid],
-				  Name -> "Test lid model 1 for ExperimentMeasureWeight testing" <> $SessionUUID,
-				  PreferredBalance -> Analytical,
-				  DefaultStorageCondition -> Link[Model[StorageCondition, "id:7X104vnR18vX"]],
-				  DeveloperObject -> True
-			  |>
-		  }];
+				(* upload to make cover models *)
+				{capModel1, lidModel1} = Upload[{
+					<|
+						Type -> Model[Item, Cap],
+						Name -> "Test cap model 1 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						DefaultStorageCondition -> Link[Model[StorageCondition, "id:7X104vnR18vX"]],
+						DeveloperObject -> True
+					|>,
+					<|
+						Type -> Model[Item, Lid],
+						Name -> "Test lid model 1 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						PreferredBalance -> Analytical,
+						DefaultStorageCondition -> Link[Model[StorageCondition, "id:7X104vnR18vX"]],
+						DeveloperObject -> True
+					|>
+				}];
 
 				(* Create fake bench and rack for vessels *)
-				fakeBench=Upload[<|
+				fakeBench = Upload[<|
 					Type -> Object[Container, Bench],
 					Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
 					Name -> "Fake bench for MeasureWeight testing" <> $SessionUUID,
 					DeveloperObject -> True,
 					Site -> Link[$Site]
 				|>];
-				fakeRack1=Upload[<|
-					Type -> Object[Container,Rack],
+				fakeRack1 = Upload[<|
+					Type -> Object[Container, Rack],
 					Model -> Link[Model[Container, Rack, "50mL Tube Stand"], Objects],
 					Name -> "Fake Rack 1 Testing MeasureWeight" <> $SessionUUID,
 					DeveloperObject -> True,
 					Site -> Link[$Site]
 				|>];
-				Upload[<|Object->fakeRack1,Position->"Weighing Slot"|>];
-				fakeRack2=Upload[<|
-					Type -> Object[Container,Rack],
+				Upload[<|Object -> fakeRack1, Position -> "Weighing Slot"|>];
+				fakeRack2 = Upload[<|
+					Type -> Object[Container, Rack],
 					Model -> Link[Model[Container, Rack, "50mL Tube Stand"], Objects],
 					Name -> "Fake Rack 2 Testing MeasureWeight" <> $SessionUUID,
 					DeveloperObject -> True,
@@ -1908,20 +1971,20 @@ DefineTests[
 				{
 					fakeBalance1,
 					fakeBalance2
-				}=Upload[
+				} = Upload[
 					{
 						<|Type -> Object[Instrument, Balance],
 							Model -> Link[Model[Instrument, Balance, "Mettler Toledo XP6"], Objects],
-							Name -> "Fake Balance 1 Testing MeasureWeight"<> $SessionUUID,
+							Name -> "Fake Balance 1 Testing MeasureWeight" <> $SessionUUID,
 							Status -> Running,
 							Site -> Link[$Site],
 							DeveloperObject -> True|>,
 						<|Type -> Object[Instrument, Balance],
 							Model -> Link[Model[Instrument, Balance, "Ohaus Pioneer PA124"], Objects],
-							Name -> "Fake Balance 2 Testing MeasureWeight"<> $SessionUUID,
+							Name -> "Fake Balance 2 Testing MeasureWeight" <> $SessionUUID,
 							Status -> Running,
 							Site -> Link[$Site],
-							Append[Contents]->{{"Weighing Slot",Link[fakeRack1,Container]}},
+							Append[Contents] -> {{"Weighing Slot", Link[fakeRack1, Container]}},
 							DeveloperObject -> True|>
 					}
 				];
@@ -1929,15 +1992,16 @@ DefineTests[
 				(* Create container models. *)
 				{
 					noPreContainerModel,
-					noTareContainerModel
-				} =Upload[{
-					<|Type->Model[Container,Vessel],
-						DeveloperObject->True,
-						MaxVolume->50*Milliliter,
-						SelfStanding->False,
-						DisposableCaps->True,
-						Replace[Positions]->{<|Name->"A1",Footprint->Null,MaxWidth->0.02*Meter,MaxDepth->0.02*Meter,MaxHeight->0.02*Meter|>},
-						Name->"Model container without PreferredBalance for ExperimentMeasureWeight testing"<> $SessionUUID|>,
+					noTareContainerModel,
+					noTareContainerModel2
+				} = Upload[{
+					<|Type -> Model[Container, Vessel],
+						DeveloperObject -> True,
+						MaxVolume -> 50 * Milliliter,
+						SelfStanding -> False,
+						DisposableCaps -> True,
+						Replace[Positions] -> {<|Name -> "A1", Footprint -> Null, MaxWidth -> 0.02 * Meter, MaxDepth -> 0.02 * Meter, MaxHeight -> 0.02 * Meter|>},
+						Name -> "Model container without PreferredBalance for ExperimentMeasureWeight testing" <> $SessionUUID|>,
 					<|Type -> Model[Container, Vessel],
 						DeveloperObject -> True,
 						MaxVolume -> 50 * Milliliter,
@@ -1946,64 +2010,81 @@ DefineTests[
 						PreferredBalance -> Analytical,
 						DefaultStorageCondition -> Link[Model[StorageCondition, "id:7X104vnR18vX"]],
 						Replace[Positions] -> {<|Name -> "A1", Footprint -> Null, MaxWidth -> Quantity[0.028575, "Meters"], MaxDepth -> Quantity[0.028575, "Meters"], MaxHeight -> Quantity[0.1143, "Meters"]|>},
-						Name -> "Model container without tare weight for ExperimentMeasureWeight testing" <> $SessionUUID|>
+						Name -> "Model container without tare weight for ExperimentMeasureWeight testing" <> $SessionUUID|>,
+					<|Type -> Model[Container, Vessel],
+						DeveloperObject -> True,
+						MaxVolume -> 20 Liter,
+						SelfStanding -> False,
+						DisposableCaps -> True,
+						PreferredBalance -> Bulk,
+						DefaultStorageCondition -> Link[Model[StorageCondition, "id:7X104vnR18vX"]],
+						Replace[Positions] -> {<|Name -> "A1", Footprint -> Null, MaxWidth -> Quantity[0.028575, "Meters"], MaxDepth -> Quantity[0.028575, "Meters"], MaxHeight -> Quantity[0.1143, "Meters"]|>},
+						Name -> "Model container without tare weight prefer Bulk for ExperimentMeasureWeight testing" <> $SessionUUID|>
 				}];
 
 				(* Create containers from newly generated container models *)
-				{containerWithoutPrefBalance,noTareContainer}=Upload[{
-					<|Type->Object[Container,Vessel],TareWeight->1*Gram,Model->Link[noPreContainerModel,Objects],DeveloperObject->True,Name->"50ml container without PreferredBalance for ExperimentMeasureWeight testing"<> $SessionUUID, Site -> Link[$Site]|>,
-					<|Type->Object[Container,Vessel],Model->Link[noTareContainerModel,Objects],DeveloperObject->True,Name->"50ml container 14 for ExperimentMeasureWeight testing"<> $SessionUUID, Site -> Link[$Site]|>
+				{containerWithoutPrefBalance, noTareContainer} = Upload[{
+					<|Type -> Object[Container, Vessel], TareWeight -> 1 * Gram, Model -> Link[noPreContainerModel, Objects], DeveloperObject -> True, Name -> "50ml container without PreferredBalance for ExperimentMeasureWeight testing" <> $SessionUUID, Site -> Link[$Site]|>,
+					<|Type -> Object[Container, Vessel], Model -> Link[noTareContainerModel, Objects], DeveloperObject -> True, Name -> "50ml container 14 for ExperimentMeasureWeight testing" <> $SessionUUID, Site -> Link[$Site]|>
 				}];
 
-					(* Create empty containers. *)
+				(* Create empty containers. *)
+				{
+					emptyContainer,
+					secondEmptyContainer,
+					thirdEmptyContainer,
+					emptyContainer1,
+					emptyContainer2,
+					emptyContainer3,
+					emptyContainer4,
+					emptyContainer5,
+					emptyContainer6,
+					emptyContainer7,
+					emptyContainer8,
+					emptyContainer9,
+					emptyContainer10,
+					emptyContainer11,
+					emptyContainer12,
+					emptyContainer13,
+					emptyMicroContainer1,
+					immobileContainer,
+					ampouleContainer,
+					emptyPlate,
+					containerToBeCovered1,
+					containerToBeCovered2,
+					cap1,
+					cap2,
+					cap3,
+					lid1
+				} = UploadSample[
 					{
-						emptyContainer,
-						secondEmptyContainer,
-						thirdEmptyContainer,
-						emptyContainer1,
-						emptyContainer2,
-						emptyContainer3,
-						emptyContainer4,
-						emptyContainer5,
-						emptyContainer6,
-						emptyContainer7,
-						emptyContainer8,
-						emptyContainer9,
-						emptyContainer10,
-						emptyContainer11,
-						emptyContainer12,
-						emptyContainer13,
-						emptyMicroContainer1,
-						immobileContainer,
-						ampouleContainer,
-						emptyPlate,
-						cap1,
-						lid1
-					}=UploadSample[
-						{
-							noTareContainerModel,
-							noTareContainerModel,
-							noTareContainerModel,
-							noTareContainerModel,
-							noTareContainerModel,
-							noTareContainerModel,
-							noTareContainerModel,
-							noTareContainerModel,
-							noTareContainerModel,
-							noTareContainerModel,
-							noTareContainerModel,
-							noTareContainerModel,
-							noTareContainerModel,
-							Model[Container,Vessel,"50mL Tube"],
-							Model[Container,Vessel,"50mL Tube"],
-							Model[Container,Vessel,"50mL Tube"],
-							Model[Container,Vessel,"2mL Glass CE Vials"],
-							Model[Container,Vessel,"SymphonyX Main Solvent Tank"],
-							Model[Container,Vessel,"1mL clear glass ampule"],
-							Model[Container, Plate, "96-well 2mL Deep Well Plate"],
-							capModel1,
-							lidModel1
-						},
+						noTareContainerModel,
+						noTareContainerModel,
+						noTareContainerModel,
+						noTareContainerModel,
+						noTareContainerModel,
+						noTareContainerModel,
+						noTareContainerModel,
+						noTareContainerModel,
+						noTareContainerModel,
+						noTareContainerModel,
+						noTareContainerModel,
+						noTareContainerModel,
+						noTareContainerModel,
+						Model[Container, Vessel, "50mL Tube"],
+						Model[Container, Vessel, "50mL Tube"],
+						Model[Container, Vessel, "50mL Tube"],
+						Model[Container, Vessel, "2mL Glass CE Vials"],
+						Model[Container, Vessel, "SymphonyX Main Solvent Tank"],
+						Model[Container, Vessel, "1mL clear glass ampule"],
+						Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+						noTareContainerModel,
+						noTareContainerModel2,
+						capModel1,
+						capModel1,
+						capModel1,
+						lidModel1
+					},
 					{
 						{"Work Surface", fakeBench},
 						{"Work Surface", fakeBench},
@@ -2026,55 +2107,66 @@ DefineTests[
 						{"Work Surface", fakeBench},
 						{"Work Surface", fakeBench},
 						{"Work Surface", fakeBench},
+						{"Work Surface", fakeBench},
+						{"Work Surface", fakeBench},
+						{"Work Surface", fakeBench},
+						{"Work Surface", fakeBench},
 						{"Work Surface", fakeBench}
 					},
-				Name -> {
-						"Empty 50ml container for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Empty 50ml container 2 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Empty 50ml container 3 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"50ml container 1 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"50ml container 2 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"50ml container 3 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"50ml container 4 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"50ml container 5 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"50ml container 6 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"50ml container 7 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"50ml container 8 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"50ml container 9 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"50ml container 10 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"50ml container 11 with Model TareWeight for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"50ml container 12 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"50ml container 13 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Micro container 1 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Immobile container for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Ampoule container 1 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"96-well plate for ExperimentMeasureWeight testing"<> $SessionUUID,
+					Name -> {
+						"Empty 50ml container for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Empty 50ml container 2 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Empty 50ml container 3 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"50ml container 1 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"50ml container 2 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"50ml container 3 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"50ml container 4 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"50ml container 5 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"50ml container 6 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"50ml container 7 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"50ml container 8 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"50ml container 9 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"50ml container 10 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"50ml container 11 with Model TareWeight for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"50ml container 12 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"50ml container 13 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Micro container 1 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Immobile container for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Ampoule container 1 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"96-well plate for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Test covered container 1 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Test covered container 2 for ExperimentMeasureWeight testing" <> $SessionUUID,
 						"Test cap 1 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Test cap 2 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Test cap 3 for ExperimentMeasureWeight testing" <> $SessionUUID,
 						"Test lid 1 for ExperimentMeasureWeight testing" <> $SessionUUID
 					}
 				];
 
-				(* Make all the test objects and models developer objects *)
-				Upload[<|Object -> #, DeveloperObject -> True|>& /@{emptyContainer,secondEmptyContainer,thirdEmptyContainer,emptyContainer1,emptyContainer2,emptyContainer3,emptyContainer4,emptyContainer5,emptyContainer6, emptyContainer7, emptyContainer8, emptyContainer9, emptyContainer10, emptyContainer11, emptyContainer12, emptyContainer13, emptyMicroContainer1, immobileContainer, ampouleContainer, emptyPlate}];
+				(* cover the container! *)
+				UploadCover[
+					{containerToBeCovered1, containerToBeCovered2},
+					Cover -> {cap2, cap3}
+				];
 
 				(* Create empty containers with tare weight 1 gram. *)
 				{
 					emptyMicroContainer2,
 					emptyMicroContainer3,
 					selfStandingContainer
-				}=Upload[{
-					<|Type->Object[Container,Vessel],Model->Link[Model[Container,Vessel,"2mL Glass CE Vials"],Objects],TareWeight->1*Gram,DeveloperObject->True,Name->"Micro container 2 for ExperimentMeasureWeight testing"<> $SessionUUID,Site->Link[$Site]|>,
-					<|Type->Object[Container,Vessel],Model->Link[Model[Container,Vessel,"2mL Glass CE Vials"],Objects],TareWeight->1*Gram,DeveloperObject->True,Name->"Micro container 3 for ExperimentMeasureWeight testing"<> $SessionUUID,Site->Link[$Site]|>,
-					<|Type->Object[Container,Vessel],Model->Link[Model[Container,Vessel,"2mL Glass CE Vials"],Objects],TareWeight->1*Gram,DeveloperObject->True,Name->"Micro container 4 for ExperimentMeasureWeight testing"<> $SessionUUID,Site->Link[$Site]|>
+				} = Upload[{
+					<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "2mL Glass CE Vials"], Objects], TareWeight -> 1 * Gram, DeveloperObject -> True, Name -> "Micro container 2 for ExperimentMeasureWeight testing" <> $SessionUUID, Site -> Link[$Site]|>,
+					<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "2mL Glass CE Vials"], Objects], TareWeight -> 1 * Gram, DeveloperObject -> True, Name -> "Micro container 3 for ExperimentMeasureWeight testing" <> $SessionUUID, Site -> Link[$Site]|>,
+					<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "2mL Glass CE Vials"], Objects], TareWeight -> 1 * Gram, DeveloperObject -> True, Name -> "Micro container 4 for ExperimentMeasureWeight testing" <> $SessionUUID, Site -> Link[$Site]|>
 				}];
 
 				(* Add position to some container objects *)
 				Upload[{
-					<|Object->emptyContainer12,Position->"A1"|>,
-					<|Object->emptyContainer13,Position->"A1"|>,
-					<|Object->selfStandingContainer,Position->"A1"|>
+					<|Object -> emptyContainer12, Position -> "A1"|>,
+					<|Object -> emptyContainer13, Position -> "A1"|>,
+					<|Object -> selfStandingContainer, Position -> "A1"|>
 				}];
-				Upload[<|Object->fakeBalance1,Replace[Contents]->{{"Weighing Slot",Link[selfStandingContainer,Container]}}|>];
+				Upload[<|Object -> fakeBalance1, Replace[Contents] -> {{"Weighing Slot", Link[selfStandingContainer, Container]}}|>];
 
 				(* Create other objects for testing. *)
 				Upload[{
@@ -2086,127 +2178,137 @@ DefineTests[
 						Name -> "Receiving protocol for ExperimentMeasureWeight testing" <> $SessionUUID,
 						DeveloperObject -> True|>,
 					<|Type -> Object[Protocol, HPLC],
-						Name -> "HPLC Parent for ExperimentMeasureWeight testing"<> $SessionUUID,
+						Name -> "HPLC Parent for ExperimentMeasureWeight testing" <> $SessionUUID,
 						DeveloperObject -> True|>,
 					<|Type -> Object[Item, Cap],
 						Name -> "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID,
-					DeveloperObject -> True|>
+						DeveloperObject -> True|>
 				}];
 
 
 				(* Create some samples in those containers *)
 				(* create a sample without container *)
-				Upload[<|Type->Object[Sample],DeveloperObject->True,Model->Link[Model[Sample,"Fake salt chemical model for ExperimentMeasureWeight testing"],Objects],Name->"Sample without container for ExperimentMeasureWeight testing"<> $SessionUUID,Site->Link[$Site]|>];
+				Upload[<|Type -> Object[Sample], DeveloperObject -> True, Model -> Link[Model[Sample, "Fake salt chemical model for ExperimentMeasureWeight testing"], Objects], Name -> "Sample without container for ExperimentMeasureWeight testing" <> $SessionUUID, Site -> Link[$Site]|>];
 				(* create samples in containers *)
 				(* Note sample test models exist in database and do not get deleted each time *)
 				UploadSample[
 					{
-						Model[Sample,"Fake salt chemical model for ExperimentMeasureWeight testing"],
-						Model[Sample,"Fake salt chemical model for ExperimentMeasureWeight testing"],
-						Model[Sample,"Fake Acetonitrile HPLC grade model for ExperimentMeasureWeight testing"],
-						Model[Sample,"Fake Acetonitrile HPLC grade model for ExperimentMeasureWeight testing"],
-						Model[Sample,StockSolution,"Fake 70% Ethanol model for ExperimentMeasureWeight testing"],
-						Model[Sample,"Test Count Model 1 for MeasureCount"],
-						Model[Sample,"Test Count Model 1 for MeasureCount"],
-						Model[Sample,"Fake salt chemical model for ExperimentMeasureWeight testing"],
-						Model[Sample,"Fake salt chemical model for ExperimentMeasureWeight testing"],
-						Model[Sample,"Fake salt chemical model for ExperimentMeasureWeight testing"],
-						Model[Sample,"Fake salt chemical model for ExperimentMeasureWeight testing"],
-						Model[Sample,"Fake salt chemical model for ExperimentMeasureWeight testing"],
-						Model[Sample,"Fake salt chemical model for ExperimentMeasureWeight testing"],
-						Model[Sample,"Fake salt chemical model for ExperimentMeasureWeight testing"],
-						Model[Sample,"Fake salt chemical model for ExperimentMeasureWeight testing"],
-						Model[Sample,"Fake salt chemical model for ExperimentMeasureWeight testing"],
-						Model[Sample,"Fake Acetonitrile HPLC grade model for ExperimentMeasureWeight testing"],
-						Model[Sample,"Fake salt chemical model for ExperimentMeasureWeight testing"],
-						Model[Sample,"Fake salt chemical model for ExperimentMeasureWeight testing"],
-						Model[Sample,"Fake salt chemical model for ExperimentMeasureWeight testing"],
-						Model[Sample,"Fake salt chemical model for ExperimentMeasureWeight testing"],
-						Model[Sample,"Isoprene"],
-						Model[Sample,"Fake salt chemical model for ExperimentMeasureWeight testing"]
-						},
-					{
-						{"A1",emptyContainer1},
-						{"A1",emptyContainer2},
-						{"A1",thirdEmptyContainer},
-						{"A1",emptyContainer3},
-						{"A1",emptyContainer4},
-						{"A1",emptyContainer5},
-						{"A1",emptyContainer6},
-						(* discarded sample: *)
-						{"A1",emptyContainer7},
-						{"A1",emptyPlate},
-						{"A1",emptyContainer8},
-						{"A1",emptyContainer9},
-						{"A1",containerWithoutPrefBalance},
-						{"A1",emptyMicroContainer1},
-						{"A1",emptyMicroContainer2},
-						{"A1",emptyMicroContainer3},
-						{"A1",emptyContainer10},
-						{"A1",emptyContainer11},
-						{"A1",immobileContainer},
-						{"A1",selfStandingContainer},
-						{"A1",emptyContainer12},
-						{"A1",emptyContainer13},
-						{"A1",noTareContainer},
-						{"A1",ampouleContainer}
+						Model[Sample, "Fake salt chemical model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Fake salt chemical model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Fake Acetonitrile HPLC grade model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Fake Acetonitrile HPLC grade model for ExperimentMeasureWeight testing"],
+						Model[Sample, StockSolution, "Fake 70% Ethanol model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Test Count Model 1 for MeasureCount"],
+						Model[Sample, "Test Count Model 1 for MeasureCount"],
+						Model[Sample, "Fake salt chemical model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Fake salt chemical model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Fake salt chemical model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Fake salt chemical model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Fake salt chemical model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Fake salt chemical model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Fake salt chemical model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Fake salt chemical model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Fake salt chemical model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Fake Acetonitrile HPLC grade model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Fake salt chemical model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Fake salt chemical model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Fake salt chemical model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Fake salt chemical model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Isoprene"],
+						Model[Sample, "Fake salt chemical model for ExperimentMeasureWeight testing"],
+						Model[Sample, "Trifluoroethanol, 99.8%"],
+						Model[Sample, "Trifluoroethanol, 99.8%"]
 					},
-					Name->{
-						"Available solid sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Available solid sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Special liquid sample without a model for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Available liquid sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Available liquid sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Available counted sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Available counted sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Discarded sample for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Available sample in plate for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Sample with no Mass for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Sample with Trusted Mass for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Sample without PreferredBalance for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Sample in Microcontainer with Trusted Large Mass for ExperimentMeasureWeight testing"<>$SessionUUID,
-						"Sample in Microcontainer with Trusted Mass for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Sample in Microcontainer with Non-Trusted Mass for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Sample in 50ml container with super-heavy Mass for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Sample in immobile container for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Sample on balance for InSitu ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Sample in rack on balance for InSitu ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Sample in rack not on balance for InSitu ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Ventilated sample for ExperimentMeasureWeight testing"<> $SessionUUID,
-						"Sample in ampoule for InSitu ExperimentMeasureWeight testing"<> $SessionUUID
+					{
+						{"A1", emptyContainer1},
+						{"A1", emptyContainer2},
+						{"A1", thirdEmptyContainer},
+						{"A1", emptyContainer3},
+						{"A1", emptyContainer4},
+						{"A1", emptyContainer5},
+						{"A1", emptyContainer6},
+						(* discarded sample: *)
+						{"A1", emptyContainer7},
+						{"A1", emptyPlate},
+						{"A1", emptyContainer8},
+						{"A1", emptyContainer9},
+						{"A1", containerWithoutPrefBalance},
+						{"A1", emptyMicroContainer1},
+						{"A1", emptyMicroContainer2},
+						{"A1", emptyMicroContainer3},
+						{"A1", emptyContainer10},
+						{"A1", emptyContainer11},
+						{"A1", immobileContainer},
+						{"A1", selfStandingContainer},
+						{"A1", emptyContainer12},
+						{"A1", emptyContainer13},
+						{"A1", noTareContainer},
+						{"A1", ampouleContainer},
+						{"A1", containerToBeCovered1},
+						{"A1", containerToBeCovered2}
+					},
+					Name -> {
+						"Available solid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Available solid sample 2 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Special liquid sample without a model for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Available liquid sample 2 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Available counted sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Available counted sample 2 for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Discarded sample for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Available sample in plate for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Sample with no Mass for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Sample with Trusted Mass for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Sample without PreferredBalance for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Sample in Microcontainer with Trusted Large Mass for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Sample in Microcontainer with Trusted Mass for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Sample in Microcontainer with Non-Trusted Mass for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Sample in 50ml container with super-heavy Mass for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Sample in immobile container for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Sample on balance for InSitu ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Sample in rack on balance for InSitu ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Sample in rack not on balance for InSitu ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Ventilated sample for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Sample in ampoule for InSitu ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Fuming sample in covered container for ExperimentMeasureWeight testing" <> $SessionUUID,
+						"Fuming sample 2 in covered container for ExperimentMeasureWeight testing" <> $SessionUUID
 					}
 				];
 
-					(* Make some changes to our samples for testing purposes *)
+				(* Make some changes to our samples for testing purposes *)
 				Upload[
 					{
-						<|Object->Object[Sample,"Available solid sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->2.5*Gram|>,
-						<|Object->Object[Sample,"Available solid sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->2.5*Gram|>,
-						<|Object->Object[Sample,"Special liquid sample without a model for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Model->Null|>,
-						<|Object->Object[Sample,"Available liquid sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->2.5*Gram,Volume->2*Milliliter,Concentration->1*Millimolar|>,
-						<|Object->Object[Sample,"Available liquid sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->2.5*Gram,Volume->50*Milliliter,Replace[Composition]->{{1Molar,Link[Model[Molecule,"Ethanol"]], Now}}|>,
-						<|Object->Object[Sample,"Available counted sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->2.5*Gram|>,
-						<|Object->Object[Sample,"Available counted sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->2.5*Gram|>,
-						<|Object->Object[Sample,"Discarded sample for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Discarded,Mass->2.5*Gram|>,
-						<|Object->Object[Sample,"Available sample in plate for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->2.5*Gram|>,
-						<|Object->Object[Sample,"Sample with no Mass for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available|>,
-						<|Object->Object[Sample,"Sample with Trusted Mass for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->5.0*Gram,Replace[MassLog]->{{Now,5.0*Gram,Link[Object[Maintenance,ReceiveInventory,"Receiving protocol for ExperimentMeasureWeight testing"<>$SessionUUID]],UserSpecified}}|>,
-						<|Object->Object[Sample,"Sample without PreferredBalance for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->2.5*Gram|>,
-						<|Object->Object[Sample,"Sample in Microcontainer with Trusted Large Mass for ExperimentMeasureWeight testing"<>$SessionUUID],DeveloperObject->True,Status->Available,Mass->50*Gram,Replace[MassLog]->{{Now,50*Gram,Link[Object[Maintenance,ReceiveInventory,"Receiving protocol for ExperimentMeasureWeight testing"<>$SessionUUID]],UserSpecified}}|>,
-						<|Object->Object[Sample,"Sample in Microcontainer with Trusted Mass for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->0.01*Gram,Replace[MassLog]->{{Now,0.01*Gram,Link[Object[Maintenance,ReceiveInventory,"Receiving protocol for ExperimentMeasureWeight testing"<>$SessionUUID]],UserSpecified}}|>,
-						<|Object->Object[Sample,"Sample in Microcontainer with Non-Trusted Mass for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->0.01*Gram|>,
-						<|Object->Object[Sample,"Sample in 50ml container with super-heavy Mass for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->4000*Gram,Replace[MassLog]->{{Now,4000*Gram,Link[Object[Maintenance,ReceiveInventory,"Receiving protocol for ExperimentMeasureWeight testing"<>$SessionUUID]],UserSpecified}}|>,
-						<|Object->Object[Sample,"Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->2.5*Gram,Volume->2*Milliliter,Concentration->1*Millimolar,Replace[Composition] -> {{1 Millimolar, Link[Model[Molecule, "Sodium Chloride"]], Now}, {99 MassPercent, Link[Model[Molecule, "Water"]], Now}}|>,
-						<|Object->Object[Sample,"Sample in immobile container for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True|>,
-						<|Object->Object[Sample,"Sample on balance for InSitu ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True|>,
-						<|Object->Object[Sample,"Sample in rack on balance for InSitu ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True|>,
-						<|Object->Object[Sample,"Sample in rack not on balance for InSitu ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True|>,
-						<|Object->Object[Sample,"Ventilated sample for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->Null|>,
-						<|Object->Object[Sample,"Sample in ampoule for InSitu ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True|>
+						<|Object -> Object[Sample, "Available solid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available, Mass -> 2.5 * Gram|>,
+						<|Object -> Object[Sample, "Available solid sample 2 for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available, Mass -> 2.5 * Gram|>,
+						<|Object -> Object[Sample, "Special liquid sample without a model for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available, Model -> Null|>,
+						<|Object -> Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available, Mass -> 2.5 * Gram, Volume -> 2 * Milliliter, Concentration -> 1 * Millimolar|>,
+						<|Object -> Object[Sample, "Available liquid sample 2 for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available, Mass -> 2.5 * Gram, Volume -> 50 * Milliliter, Replace[Composition] -> {{1Molar, Link[Model[Molecule, "Ethanol"]], Now}}|>,
+						<|Object -> Object[Sample, "Available counted sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available, Mass -> 2.5 * Gram|>,
+						<|Object -> Object[Sample, "Available counted sample 2 for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available, Mass -> 2.5 * Gram|>,
+						<|Object -> Object[Sample, "Discarded sample for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Discarded, Mass -> 2.5 * Gram|>,
+						<|Object -> Object[Sample, "Available sample in plate for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available, Mass -> 2.5 * Gram|>,
+						<|Object -> Object[Sample, "Sample with no Mass for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available|>,
+						<|Object -> Object[Sample, "Sample with Trusted Mass for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available, Mass -> 5.0 * Gram, Replace[MassLog] -> {{Now, 5.0 * Gram, Link[Object[Maintenance, ReceiveInventory, "Receiving protocol for ExperimentMeasureWeight testing" <> $SessionUUID]], UserSpecified}}|>,
+						<|Object -> Object[Sample, "Sample without PreferredBalance for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available, Mass -> 2.5 * Gram|>,
+						<|Object -> Object[Sample, "Sample in Microcontainer with Trusted Large Mass for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available, Mass -> 50 * Gram, Replace[MassLog] -> {{Now, 50 * Gram, Link[Object[Maintenance, ReceiveInventory, "Receiving protocol for ExperimentMeasureWeight testing" <> $SessionUUID]], UserSpecified}}|>,
+						<|Object -> Object[Sample, "Sample in Microcontainer with Trusted Mass for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available, Mass -> 0.01 * Gram, Replace[MassLog] -> {{Now, 0.01 * Gram, Link[Object[Maintenance, ReceiveInventory, "Receiving protocol for ExperimentMeasureWeight testing" <> $SessionUUID]], UserSpecified}}|>,
+						<|Object -> Object[Sample, "Sample in Microcontainer with Non-Trusted Mass for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available, Mass -> 0.01 * Gram|>,
+						<|Object -> Object[Sample, "Sample in 50ml container with super-heavy Mass for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available, Mass -> 4000 * Gram, Replace[MassLog] -> {{Now, 4000 * Gram, Link[Object[Maintenance, ReceiveInventory, "Receiving protocol for ExperimentMeasureWeight testing" <> $SessionUUID]], UserSpecified}}|>,
+						<|Object -> Object[Sample, "Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available, Mass -> 2.5 * Gram, Volume -> 2 * Milliliter, Concentration -> 1 * Millimolar, Replace[Composition] -> {{1 Millimolar, Link[Model[Molecule, "Sodium Chloride"]], Now}, {99 MassPercent, Link[Model[Molecule, "Water"]], Now}}|>,
+						<|Object -> Object[Sample, "Sample in immobile container for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True|>,
+						<|Object -> Object[Sample, "Sample on balance for InSitu ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True|>,
+						<|Object -> Object[Sample, "Sample in rack on balance for InSitu ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True|>,
+						<|Object -> Object[Sample, "Sample in rack not on balance for InSitu ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True|>,
+						<|Object -> Object[Sample, "Ventilated sample for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available, Mass -> Null|>,
+						<|Object -> Object[Sample, "Sample in ampoule for InSitu ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True|>,
+						<|Object -> Object[Sample, "Fuming sample in covered container for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available, Mass -> 2.5 * Gram, Volume -> 2 * Milliliter, Concentration -> 1 * Millimolar|>,
+						<|Object -> Object[Sample, "Fuming sample 2 in covered container for ExperimentMeasureWeight testing" <> $SessionUUID], DeveloperObject -> True, Status -> Available, Mass -> 7000 * Gram, Volume -> 2 * Milliliter, Concentration -> 1 * Millimolar|>
 					}
 				];
-	]),
+			]
+		]
+	),
 
 	SymbolTearDown:> (
 		Module[{allObjects},
@@ -2267,11 +2369,12 @@ DefineTests[
 				Object[Sample,"Sample without container for ExperimentMeasureWeight testing"<> $SessionUUID],
 				Object[Sample,"Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing"<> $SessionUUID],
 				Object[Sample,"Sample in immobile container for ExperimentMeasureWeight testing"<> $SessionUUID],
-				Object[Sample,"Ventilated sample for ExperimentMeasureWeight testing"<> $SessionUUID],
 				Object[Sample,"Sample in ampoule for InSitu ExperimentMeasureWeight testing"<> $SessionUUID],
 				Object[Sample,"Sample on balance for InSitu ExperimentMeasureWeight testing"<> $SessionUUID],
 				Object[Sample,"Sample in rack on balance for InSitu ExperimentMeasureWeight testing"<> $SessionUUID],
 				Object[Sample,"Sample in rack not on balance for InSitu ExperimentMeasureWeight testing"<> $SessionUUID],
+				Object[Sample,"Fuming sample in covered container for ExperimentMeasureWeight testing" <> $SessionUUID],
+				Object[Sample,"Fuming sample 2 in covered container for ExperimentMeasureWeight testing" <> $SessionUUID],
 				(* other objects *)
 				Object[Protocol,MeasureWeight,"My Favorite Weight Measurement Protocol"<> $SessionUUID],
 				Object[Protocol,HPLC,"HPLC Parent for ExperimentMeasureWeight testing"<> $SessionUUID],
@@ -2283,8 +2386,13 @@ DefineTests[
 				(* model *)
 				Model[Container,Vessel,"Model container without PreferredBalance for ExperimentMeasureWeight testing"<> $SessionUUID],
 				Model[Container,Vessel,"Model container without tare weight for ExperimentMeasureWeight testing"<> $SessionUUID],
+				Model[Container,Vessel,"Model container without tare weight prefer Bulk for ExperimentMeasureWeight testing"<> $SessionUUID],
 				Model[Item, Cap, "Test cap model 1 for ExperimentMeasureWeight testing" <> $SessionUUID],
+				Object[Container, Vessel, "Test covered container 1 for ExperimentMeasureWeight testing" <> $SessionUUID],
+				Object[Container, Vessel, "Test covered container 2 for ExperimentMeasureWeight testing" <> $SessionUUID],
 				Object[Item, Cap, "Test cap 1 for ExperimentMeasureWeight testing" <> $SessionUUID],
+				Object[Item, Cap, "Test cap 2 for ExperimentMeasureWeight testing" <> $SessionUUID],
+				Object[Item, Cap, "Test cap 3 for ExperimentMeasureWeight testing" <> $SessionUUID],
 				Model[Item, Lid, "Test lid model 1 for ExperimentMeasureWeight testing" <> $SessionUUID],
 				Object[Item, Lid, "Test lid 1 for ExperimentMeasureWeight testing" <> $SessionUUID]
 			}],ObjectP[]];

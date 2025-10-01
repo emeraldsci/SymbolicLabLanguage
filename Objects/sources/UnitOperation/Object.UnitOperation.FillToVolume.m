@@ -584,6 +584,18 @@ DefineObjectType[Object[UnitOperation, FillToVolume], {
 			Category -> "General",
 			IndexMatching -> SolventLink
 		},
+		WasteContainer->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[
+				Model[Container,Vessel],
+				Object[Container,Vessel]
+			],
+			Description->"The container used to temporarily hold the excess samples removed from the intermediate containers and graduated cylinders after the sample is filled to the target volume. The sample in this vessel will be discarded at the end of the protocol.",
+			Category -> "General",
+			Developer -> True
+		},
 		SourceTemperatureReal -> {
 			Format -> Multiple,
 			Class -> Real,

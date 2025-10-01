@@ -8334,11 +8334,25 @@ resolveMixIncubateStockSolutionOptions[
 	mixedIncubators = PickList[preResolvedIncubators, mixOrIncubateBools];
 
 	(* make the simulated samples that we are going to pass into resolveMixOptions *)
-	allSimulatedSampleValues = MapThread[
-		SimulateSample[{Model[Sample, "Milli-Q water"]}, CreateUUID[], {"A1"}, #2, {State -> Liquid, LightSensitive -> #3, Volume -> #1, Mass -> Null, Count -> Null}]&,
-		{mixedStockSolutionPrepVolumes, mixedStockSolutionContainers, mixedStockSolutionLightSensitives}
+	(* If we didnt resolve a prep container, then this simulation can be skipped, and return an empty list *)
+	allSimulatedSampleValues = If[Length[mixedStockSolutionContainers]>0,
+		MapThread[
+			(* If we have a stock solution model, we should use that for our simulation. else, use water *)
+		If[ObjectQ[#4],
+			SimulateSample[{#4}, CreateUUID[], {"A1"}, #2, {State -> Liquid, LightSensitive -> #3, Volume -> #1, Mass -> Null, Count -> Null}],
+			SimulateSample[{Model[Sample, "Milli-Q water"]}, CreateUUID[], {"A1"}, #2, {State -> Liquid, LightSensitive -> #3, Volume -> #1, Mass -> Null, Count -> Null}]
+		]&,
+		{mixedStockSolutionPrepVolumes, mixedStockSolutionContainers, mixedStockSolutionLightSensitives,Lookup[stockSolutionModelPackets,Object]}
+	], {}
 	];
-
+	(*	(* make the simulated samples that we are going to pass into resolveMixOptions *)
+	allSimulatedSampleValues = MapThread[
+		If[ObjectQ[#4],
+			SimulateSample[{#4}, CreateUUID[], {"A1"}, #2, {State -> Liquid, LightSensitive -> #3, Volume -> #1, Mass -> Null, Count -> Null}],
+			SimulateSample[{Model[Sample, "Milli-Q water"]}, CreateUUID[], {"A1"}, #2, {State -> Liquid, LightSensitive -> #3, Volume -> #1, Mass -> Null, Count -> Null}]
+		]&,
+			{mixedStockSolutionPrepVolumes, mixedStockSolutionContainers, mixedStockSolutionLightSensitives,Lookup[stockSolutionModelPackets,Object]}
+	];*)
 	(* get the simulated samples and the container values *)
 	mixSimulatedSamplePackets = Flatten[allSimulatedSampleValues[[All, 1]]];
 	mixSimulatedSampleContainers = allSimulatedSampleValues[[All, 2]];
@@ -8373,7 +8387,7 @@ resolveMixIncubateStockSolutionOptions[
 	potentialMixDevices = MapThread[
 		Function[{simulatedSamplePacket, mixType, mixRate, temperature},
 			(* if MixType is Invert or Pipette (or Null) it's not going to have devices (and as of this comment's writing, it doesn't take those anyway) *)
-			If[MatchQ[mixType, Null|Invert|Pipette],
+			If[MatchQ[mixType, Null|Invert|Pipette|Swirl],
 				{},
 				MixDevices[simulatedSamplePacket, Types -> If[MatchQ[mixTypeOption,PostAutoclaveMixType],{Stir},{mixType}], Rate -> mixRate, Temperature -> (temperature /. {Automatic -> Null}), Cache -> Flatten[allSimulatedSampleValues]]
 			]

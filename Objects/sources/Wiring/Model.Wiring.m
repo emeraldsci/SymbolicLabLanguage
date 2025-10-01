@@ -84,6 +84,15 @@ DefineObjectType[Model[Wiring], {
 			Description -> "A photo of this model of wiring component.",
 			Category -> "Wiring Information"
 		},
+
+		Icon -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "A simplified image used to represent this wiring component.",
+			Category -> "Wiring Information"
+		},
 		
 		ProductDocumentationFiles -> {
 			Format -> Multiple,

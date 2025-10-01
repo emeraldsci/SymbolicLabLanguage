@@ -85,7 +85,6 @@ DefineObjectType[Object[UnitOperation, ThawCells],{
       Class -> Link,
       Pattern :> _Link,
       Relation -> Alternatives[
-        (* NOTE: We can only use frozen samples that come in Footprint->CryogenicVial with this instrument. *)
         Model[Instrument, CellThaw],
         Object[Instrument, CellThaw],
 

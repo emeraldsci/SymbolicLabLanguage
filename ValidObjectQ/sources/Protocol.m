@@ -4194,14 +4194,47 @@ validProtocolIonChromatographyQTests[packet:PacketP[Object[Protocol,IonChromatog
 
 };
 
+(* ::Subsection::Closed:: *)
+(*validProtocolKarlFischerTitrationQTests*)
+
+
+validProtocolKarlFischerTitrationQTests[packet : PacketP[Object[Protocol, KarlFischerTitration]]] := Flatten[{
+
+	(* shared fields NotNull *)
+	NotNullFieldTest[packet, {
+		ContainersIn,
+		Instrument,
+		Technique,
+		KarlFischerReagent,
+		Temperatures,
+		Standard,
+		StandardWaterContent
+	}],
+
+	(* shared fieldsNull *)
+	NullFieldTest[packet, {
+		SamplesOut,
+		ContainersOut,
+		CO2PressureLog,
+		ArgonPressureLog,
+		InitialArgonPressure,
+		InitialCO2Pressure
+	}],
+
+	Test["Unless the protocol is doing preparatory primitives, Samples In should be Informed if the Protocol is not Canceled or Aborted:",
+		Lookup[packet, {SamplesIn, PreparatoryUnitOperations, Status}],
+		{{ObjectP[Object[Sample]]..}, _, _} | {{(ObjectP[{Model[Sample], Object[Sample]}] | Null)..}, {Except[Null]..}, _} | {_, _, Canceled | Aborted}
+	]
+
+}];
 
 (* ::Subsection::Closed:: *)
 (*validProtocolIRSpectroscopyQTests*)
 
 
-validProtocolIRSpectroscopyQTests[packet:PacketP[Object[Protocol,IRSpectroscopy]]] := Flatten[{
+validProtocolIRSpectroscopyQTests[packet : PacketP[Object[Protocol, IRSpectroscopy]]] := Flatten[{
 
-(* shared fields Null *)
+	(* shared fields Null *)
 	NotNullFieldTest[packet, {
 		ContainersIn,
 		Instrument,
@@ -4210,8 +4243,8 @@ validProtocolIRSpectroscopyQTests[packet:PacketP[Object[Protocol,IRSpectroscopy]
 		WavenumberResolution
 	}],
 
-(* shared fields NotNull *)
-	NullFieldTest[packet,{
+	(* shared fields NotNull *)
+	NullFieldTest[packet, {
 		SamplesOut,
 		ContainersOut,
 		NitrogenPressureLog,
@@ -4224,8 +4257,8 @@ validProtocolIRSpectroscopyQTests[packet:PacketP[Object[Protocol,IRSpectroscopy]
 
 	Test[
 		"Unless the protocol is doing preparatory primitives, Samples In should be Informed if the Protocol is not Canceled or Aborted:",
-		Lookup[packet,{SamplesIn,PreparatoryUnitOperations,Status}],
-		{{ObjectP[Object[Sample]]..},_,_}|{{(ObjectP[{Model[Sample],Object[Sample]}]|Null)..},{Except[Null]..},_}|{_,_,Canceled|Aborted}
+		Lookup[packet, {SamplesIn, PreparatoryUnitOperations, Status}],
+		{{ObjectP[Object[Sample]]..}, _, _} | {{(ObjectP[{Model[Sample], Object[Sample]}] | Null)..}, {Except[Null]..}, _} | {_, _, Canceled | Aborted}
 	]
 
 }
@@ -9904,6 +9937,7 @@ registerValidQTestFunction[Object[Protocol, ImageSample],validProtocolImageSampl
 registerValidQTestFunction[Object[Protocol, IncubateCells],validProtocolIncubateCellsQTests];
 registerValidQTestFunction[Object[Protocol, IonChromatography],validProtocolIonChromatographyQTests];
 registerValidQTestFunction[Object[Protocol, IRSpectroscopy],validProtocolIRSpectroscopyQTests];
+registerValidQTestFunction[Object[Protocol, KarlFischerTitration],validProtocolKarlFischerTitrationQTests];
 registerValidQTestFunction[Object[Protocol, LCMS],validProtocolLCMSQTests];
 registerValidQTestFunction[Object[Protocol, Lyophilize],validProtocolLyophilizeQTests];
 registerValidQTestFunction[Object[Protocol, MagneticBeadSeparation],validProtocolMagneticBeadSeparationQTests];

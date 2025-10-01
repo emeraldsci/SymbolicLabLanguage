@@ -399,7 +399,7 @@ DefineTests[Compute,
 				Analysis`Private`stripAppendReplaceKeyHeads@Compute[Print["Hello World"], Upload -> False],
 				{ZDriveFilePaths, SLLVersion, SLLPackage, RunAsUser, FargateCluster, DisablePaclets, MathematicaVersion}
 			] /. {lnk : _Link | _Object :> lnk[Object]},
-			{_Missing..}
+			{(Automatic | _Missing)..}
 		],
 		Test["Setting developer-only options is possible when signed in with superuser privileges:",
 			Lookup[
@@ -409,12 +409,12 @@ DefineTests[Compute,
 					SLLPackage -> Developer,
 					RunAsUser -> Object[User, "Test user for notebook-less test protocols"],
 					DisablePaclets -> True,
-					MathematicaVersion -> "13.3.1",
+					MathematicaVersion -> "14.2.0",
 					Upload -> False
 				],
 				{ZDriveFilePaths, SLLVersion, SLLPackage, RunAsUser, FargateCluster, DisablePaclets, MathematicaVersion}
 			] /. {lnk : _Link | _Object :> lnk[Object]},
-			{{"Z://testDirectory"}, Develop, Developer, Object[User, "id:n0k9mG8AXZP6"], "manifold-mm-cluster", True, "13.3.1"},
+			{{"Z://testDirectory"}, Develop, Developer, Object[User, "id:n0k9mG8AXZP6"], "manifold-mm-cluster", True, "14.2.0"},
 			Stubs :> {$PersonID = Object[User, Emerald, Developer, "hendrik"]}
 		],
 		Test["FargateCluster defaults to manifold-mm-cluster when run as a superuser:",
@@ -637,6 +637,64 @@ DefineTests[Compute,
 				$PersonID = Object[User, Emerald, Developer, "id:P5ZnEjdYnVmr"],
 				$Notebook = Object[LaboratoryNotebook, "id:rea9jlRZkrjx"]
 			}
+		],
+		Test["If running from a distro, set the SLLVersion and SLLCommit based on fields in that distro:",
+			Lookup[
+				Compute[
+					1 + 1,
+					Upload -> False
+				],
+				{SLLVersion, SLLCommit}
+			],
+			{
+				"test-distro-branch",
+				"0123456789"
+			},
+			Stubs :> {
+				$PersonID = Object[User, Emerald, Developer, "id:P5ZnEjdYnVmr"],
+				$Distro = Object[Software, Distro, "Test Distro 1 for Compute unit tests" <> $SessionUUID],
+				GitCommitHash[_] := Null,
+				GitBranchName[_] := Null
+			}
+		],
+		Test["If running from a local checkout, set the SLLVersion and SLLCommit based on fields pulled from the local git branch:",
+			Lookup[
+				Compute[
+					1 + 1,
+					Upload -> False
+				],
+				{SLLVersion, SLLCommit}
+			],
+			{
+				"test-local-branch",
+				"123456789"
+			},
+			Stubs :> {
+				$PersonID = Object[User, Emerald, Developer, "id:P5ZnEjdYnVmr"],
+				$Distro = $Failed, (* this is a little weird but ultimately what is supposed to happen if you're loading locally *)
+				GitCommitHash[_] := "123456789",
+				GitBranchName[_] := "test-local-branch"
+			}
+		],
+		Test["If running from a distro, and SLLVersion is explicitly populated but SLLCommit is not, don't resolve SLLCommit because we could end up with a commit that is not actually on that branch:",
+			Lookup[
+				Compute[
+					1 + 1,
+					SLLVersion -> "stable",
+					Upload -> False
+				],
+				{SLLVersion, SLLCommit}
+			],
+			{
+				"stable",
+				_Missing
+			},
+			Stubs :> {
+				$PersonID = Object[User, Emerald, Developer, "id:P5ZnEjdYnVmr"],
+				$Distro = Object[Software, Distro, "Test Distro 1 for Compute unit tests" <> $SessionUUID],
+				GitCommitHash[_] := Null,
+				GitBranchName[_] := Null
+			}
 		]
 	},
 
@@ -651,18 +709,24 @@ DefineTests[Compute,
 		EraseObject[$CreatedObjects, Force -> True];
 		Unset[$CreatedObjects]
 	),
-	SymbolSetUp :> Module[{allTestObjects, existingObjects, notebookPacket},
+	SymbolSetUp :> Module[{allTestObjects, existingObjects, notebookPacket, distroModelID,
+		distroID, distroPackets},
 		(* Initiate object tracking *)
 		$CreatedObjects = {};
 
 		(* All named objects used by these unit tests *)
 		allTestObjects = {
 			Object[Notebook, Job, "Test Job for Name Option"],
-			Object[LaboratoryNotebook,"Compute Test CC Notebook "<>$SessionUUID]
+			Object[LaboratoryNotebook,"Compute Test CC Notebook "<>$SessionUUID],
+			Object[Software, Distro, "Test Distro 1 for Compute unit tests" <> $SessionUUID],
+			Model[Software, Distro, "Test Distro Model 1 for Compute unit tests" <> $SessionUUID]
 		};
 
 		(* Grab any test objects which are already in database *)
 		existingObjects = PickList[allTestObjects, DatabaseMemberQ[allTestObjects]];
+
+		(* Erase any objects which we failed to erase from the last unit test *)
+		Quiet[EraseObject[existingObjects, Force -> True, Verbose -> False]];
 
 		(* Make a little test notebook *)
 		notebookPacket=<|
@@ -671,10 +735,24 @@ DefineTests[Compute,
 			Name->"Compute Test CC Notebook "<>$SessionUUID
 		|>;
 
-		Upload[notebookPacket];
+		{distroModelID, distroID} = CreateID[{Model[Software, Distro], Object[Software, Distro]}];
+		distroPackets = {
+			<|
+				Object -> distroModelID,
+				Name -> "Test Distro Model 1 for Compute unit tests" <> $SessionUUID,
+				Branch -> "test-distro-branch"
+			|>,
+			<|
+				Object -> distroID,
+				Name -> "Test Distro 1 for Compute unit tests" <> $SessionUUID,
+				Model -> Link[distroModelID, Objects],
+				Commit -> "0123456789"
+			|>
+		};
 
-		(* Erase any objects which we failed to erase from the last unit test *)
-		Quiet[EraseObject[existingObjects, Force -> True, Verbose -> False]];
+		Upload[Flatten[{notebookPacket, distroPackets}]];
+
+
 	],
 
 	SymbolTearDown :> Module[{},
@@ -682,7 +760,9 @@ DefineTests[Compute,
 		(* All named objects used by these unit tests *)
 		allTestObjects = {
 			Object[Notebook, Job, "Test Job for Name Option"],
-			Object[LaboratoryNotebook,"Compute Test CC Notebook "<>$SessionUUID]
+			Object[LaboratoryNotebook,"Compute Test CC Notebook "<>$SessionUUID],
+			Object[Software, Distro, "Test Distro 1 for Compute unit tests" <> $SessionUUID],
+			Model[Software, Distro, "Test Distro Model 1 for Compute unit tests" <> $SessionUUID]
 		};
 
 		(* Grab any test objects which are already in database *)

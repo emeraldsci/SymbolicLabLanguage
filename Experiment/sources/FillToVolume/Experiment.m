@@ -195,6 +195,7 @@ DefineOptions[ExperimentFillToVolume,
 		TransferDestinationWellOption,
 		TransferInstrumentOption,
 		TransferEnvironmentOption,
+		EquivalentTransferEnvironmentsOption,
 		TransferTipOptions,
 		TransferNeedleOption,
 		TransferFunnelOption,
@@ -204,6 +205,27 @@ DefineOptions[ExperimentFillToVolume,
 		AspirationMixOptions,
 		DispenseMixOptions,
 		IntermediateDecantOptions,
+		{
+			OptionName -> WasteContainer,
+			Default->Automatic,
+			Description->"The container used to temporarily hold the excess samples removed from the intermediate containers and graduated cylinders after the samples are filled to the target volumes. The sample in this vessel will be discarded at the end of the protocol.",
+			ResolutionDescription -> "Automatically set to Model[Container, Vessel, \"250mL Glass Bottle\"] if any sample is filled with Volumetric method.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Object,
+				Pattern:>ObjectP[{
+					Model[Container],
+					Object[Container]
+				}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Containers"
+					}
+				}
+			],
+			Category -> "Hidden"
+		},
 		SourceTemperatureOptions,
 		DestinationTemperatureOptions,
 		SterileTechniqueOption,
@@ -2076,7 +2098,7 @@ fillToVolumeResourcePackets[mySamples : {ObjectP[{Object[Sample], Object[Contain
 		resourcesWithoutName, resourceToNameReplaceRules, allResourceBlobs, transferUnitOperationPacketsMissingFields,
 		availablePipetteObjectsAndModels, resourcesNotToPickUpFront, containersInResources, protPacketFinal,
 		splitLiquidLevelDetector, liquidLevelDetectorResources, liquidLevelDetectorResourceNoNulls,
-		sharedInstrumentTypes,resolvedIntermediateContainers,solventResourceToIntermediateContainerAssoc, intermediateContainerResources, transferUnitOperations, transferUnitOperationPackets,
+		sharedInstrumentTypes,resolvedIntermediateContainers,solventResourceToIntermediateContainerAssoc, intermediateContainerResources, wasteContainerResource, transferUnitOperations, transferUnitOperationPackets,
 		combinedMapThreadFriendlyOptionsNoHidden, fillToVolumeUnitOperations, fillToVolumeUnitOperationPackets,
 		fillToVolumeUnitOperationPacketsNotLinked, currentSimulation, aliquotPacket, protPacket, aliquotDestinationLabel,
 		aliquotQ, aliquotSamples, sampleOrContainerPacketsPreAliquot, samplePacketsPreAliquot, rawResourceBlobsWithoutAliquotSamples,
@@ -2424,14 +2446,11 @@ fillToVolumeResourcePackets[mySamples : {ObjectP[{Object[Sample], Object[Contain
 	combinedMapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentFillToVolume, myResolvedOptions];
 	combinedMapThreadFriendlyOptionsNoHidden = OptionsHandling`Private`mapThreadOptions[ExperimentFillToVolume, RemoveHiddenOptions[ExperimentFillToVolume, myResolvedOptions]];
 
-	(* If multiple transfer environment resources are the same back to back, they should be the same resource object for BSCs and Glove Boxes. *)
-	(* This is because only 1 operator can use a BSC or glove box at the same time. We don't have the same restriction for fume hoods and *)
-	(* benches so these will be globally assigned to the same resource. *)
-
-	(* NOTE: Benches and fume hoods will be immediately released after they're instrument selected so multiple people can use *)
-	(* them at the same time. *)
-
-	splitTransferEnvironments = Split[Download[Lookup[combinedMapThreadFriendlyOptions, TransferEnvironment], Object]];
+	(* try to group adjacent transfers as much as possible now that we know each transfer has a specific list of "real" equivalent environments that we can do transfers on no problem
+	 given a list: list = {{a, b, c}, {a, b}, {a, c}, {d}, {a, d}}
+	 the goal is get this output: {{{a}, {a}, {a}}, {{d}, {d}}} (the first set will use TransferEnvironment a, the next one uses TransferEnvironment d)
+	 such that we have the longest group that shares the same TransferEnvironment resource *)
+	splitTransferEnvironments = splitByCommonElements[Lookup[combinedMapThreadFriendlyOptions, EquivalentTransferEnvironments]];
 
 	(* Create our index matched transfer environment resources. *)
 	transferEnvironmentResources = Map[
@@ -2439,7 +2458,11 @@ fillToVolumeResourcePackets[mySamples : {ObjectP[{Object[Sample], Object[Contain
 		Function[{groupedTransferEnvironments},
 			Sequence @@ ConstantArray[
 				Resource[
-					Instrument -> First[groupedTransferEnvironments],
+					(* InstrumentResourceP only accepts a single instrument OBJECT/MODEL, or a list of instrument MODELs, but not a list of OBJECTs, so we have to branch here *)
+					Instrument -> If[MatchQ[First[groupedTransferEnvironments], {ObjectP[Model[Instrument]]..}],
+						First[groupedTransferEnvironments],
+						First[First[groupedTransferEnvironments]]
+					],
 					Time -> 30 * Minute * Length[groupedTransferEnvironments],
 					Name -> CreateUUID[]
 				],
@@ -2618,6 +2641,16 @@ fillToVolumeResourcePackets[mySamples : {ObjectP[{Object[Sample], Object[Contain
 	
 	intermediateContainerResources = solventResources/.solventResourceToIntermediateContainerAssoc;
 
+	(* Single WasteContainer resource *)
+	wasteContainerResource = If[MatchQ[Lookup[myResolvedOptions, WasteContainer], ObjectP[]],
+		Resource[
+			Sample -> Lookup[myResolvedOptions, WasteContainer],
+			Name -> CreateUUID[],
+			Rent -> True
+		],
+		Null
+	];
+
 	(* make our Transfer unit operations.  each one will go into a different FillToVolume unit operation *)
 	(* everything is a list, annoyingly, because if FastTrack -> True in UploadUnitOperation then we have to have expanded unit operation keys *)
 	transferUnitOperations = MapThread[
@@ -2680,6 +2713,11 @@ fillToVolumeResourcePackets[mySamples : {ObjectP[{Object[Sample], Object[Contain
 				IntermediateDecant -> {Lookup[options, IntermediateDecant]},
 				IntermediateContainer -> {intermediateContainerResource},
 				IntermediateFunnel -> {Null},
+				(* Only need WasteContainer for Volumetric *)
+				WasteContainer -> If[MatchQ[Lookup[options,Method],Volumetric],
+					wasteContainerResource,
+					Null
+				],
 				SourceTemperature -> {Lookup[options, SourceTemperature]},
 				SourceEquilibrationTime -> {Lookup[options, SourceEquilibrationTime]},
 				MaxSourceEquilibrationTime -> {Lookup[options, MaxSourceEquilibrationTime]},
@@ -2770,6 +2808,11 @@ fillToVolumeResourcePackets[mySamples : {ObjectP[{Object[Sample], Object[Contain
 						BackfillNeedle -> {backfillNeedleResource},
 						VentingNeedle -> {ventingNeedleResource},
 						IntermediateContainer -> {intermediateContainerResource},
+						(* Only need WasteContainer for Volumetric *)
+						WasteContainer -> If[MatchQ[Lookup[options,Method],Volumetric],
+							wasteContainerResource,
+							Null
+						],
 						TipRinseSolution -> {If[MatchQ[Lookup[options, TipRinseSolution], ObjectP[]],
 							Lookup[tipRinseSolutionResources, Download[Lookup[options, TipRinseSolution], Object]],
 							Null
@@ -2960,6 +3003,7 @@ fillToVolumeResourcePackets[mySamples : {ObjectP[{Object[Sample], Object[Contain
 				Except[Alternatives @@ resourcesNotToPickUpFront]
 			]
 		]),
+		WasteContainer -> wasteContainerResource,
 		ImageSample -> Lookup[expandedResolvedOptions, ImageSample],
 		MeasureVolume -> Lookup[expandedResolvedOptions, MeasureVolume],
 		MeasureWeight -> Lookup[expandedResolvedOptions, MeasureWeight]

@@ -155,7 +155,7 @@ DefineOptions[
 				Type->Object,
 				Pattern:>ObjectP[{Object[Sample],Model[Sample]}]
 			],
-			Description->"The low pH buffer that should be used to calibrate the pH probe. Only SensorNet-based probes can have non-standard calibration buffers.",
+			Description->"The low pH buffer that should be used to calibrate the pH probe.",
 			Category->"Calibration"
 		},
 		{
@@ -177,7 +177,7 @@ DefineOptions[
 				Type->Number,
 				Pattern:>RangeP[0,14]
 			],
-			Description->"The pH of the LowCalibrationBuffer that should be used to calibrate the pH probe. Only SensorNet-based probes can have non-standard calibration buffers.",
+			Description->"The pH of the LowCalibrationBuffer that should be used to calibrate the pH probe.",
 			ResolutionDescription->"Resolves to the pH of the LowCalibrationBuffer, if known.",
 			Category->"Calibration"
 		},
@@ -211,7 +211,7 @@ DefineOptions[
 				Type->Number,
 				Pattern:>RangeP[0,14]
 			],
-			Description->"The pH of the MediumCalibrationBuffer, if provided, that should be used to calibrate the pH probe. Only SensorNet-based probes can have non-standard calibration buffers.",
+			Description->"The pH of the MediumCalibrationBuffer, if provided, that should be used to calibrate the pH probe.",
 			ResolutionDescription->"Resolves to the pH of the MediumCalibrationBuffer, if known.",
 			Category->"Calibration"
 		},
@@ -223,7 +223,7 @@ DefineOptions[
 				Type->Object,
 				Pattern:>ObjectP[{Object[Sample],Model[Sample]}]
 			],
-			Description->"The high pH buffer that should be used to calibrate the pH probe. Only SensorNet-based probes can have non-standard calibration buffers.",
+			Description->"The high pH buffer that should be used to calibrate the pH probe.",
 			Category->"Calibration"
 		},
 		{
@@ -245,7 +245,7 @@ DefineOptions[
 				Type->Number,
 				Pattern:>RangeP[0,14]
 			],
-			Description->"The pH of the HighCalibrationBuffer, if provided, that should be used to calibrate the pH probe. Only SensorNet-based probes can have non-standard calibration buffers.",
+			Description->"The pH of the HighCalibrationBuffer, if provided, that should be used to calibrate the pH probe.",
 			ResolutionDescription->"Resolves to the pH of the HighCalibrationBuffer, if known.",
 			Category->"Calibration"
 		},
@@ -325,6 +325,55 @@ DefineOptions[
 			Description -> "A sample used to clean and acclimate the probe prior to measuring the pH of the VerificationStandard.",
 			Category -> "Calibration"
 		},
+		{
+			OptionName -> CalibrationBufferSetName,
+			Default -> Automatic,
+			Description -> "The name of the calibration buffer set to use on the seven excellence pH meter.",
+			AllowNull -> True,
+			Pattern :> _String|Automatic,
+			Category -> "Hidden"
+		},
+		{
+			OptionName -> CalibrationMethodName,
+			Default -> Automatic,
+			Description -> "The name of the calibration method to use on the seven excellence pH meter.",
+			AllowNull -> True,
+			Pattern :> _String|Automatic,
+			Category -> "Hidden"
+		},
+		{
+			OptionName -> CalibrationMethod,
+			Default -> Automatic,
+			Widget->Widget[
+				Type->Object,
+				Pattern:>ObjectP[{Object[Method, pHCalibration]}]
+			],
+			Description -> "The pH calibration method (including calibration buffer set name, method file and pHs) used to perform calibration on seven excellence pH meter.",
+			AllowNull -> True,
+			Category -> "Hidden"
+		},
+		{
+			OptionName -> CalibrationBufferRack,
+			Default -> Model[Container, Rack, "id:dORYzZda6Yrb"], (*Model[Container, Rack, "3 Slot Sachet Holder Sleeve"]*)
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{Object[Container, Rack], Model[Container, Rack]}]
+			],
+			Description -> "The rack used to hold calibration buffer sachet for pH probe calibration.",
+			Category -> "Hidden"
+		},
+		{
+			OptionName -> CalibrationWashSolutionRack,
+			Default -> Model[Container, Rack, "id:dORYzZda6Yrb"], (*Model[Container, Rack, "3 Slot Sachet Holder Sleeve"]*)
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{Object[Container, Rack], Model[Container, Rack]}]
+			],
+			Description -> "The rack used to hold calibration wash solution sachet for pH probe calibration.",
+			Category -> "Hidden"
+		},
 		ModifyOptions[
 			ModelInputOptions,
 			PreparedModelAmount,
@@ -376,7 +425,6 @@ Error::MediumCalibrationOptionsRequiredTogether="The options `1` must either bot
 Error::LowAndHighpHValuesMustBeSpecified="The options {LowCalibrationBufferpH,HighCalibrationBufferpH} are current set to `1`. These options cannot be set to Null. Please either inform the pH field in the Model[Sample] of your reference solutions (for the function to automatically resolve the values) or manually specify them.";
 Error::pHProbeConflict="The specified pH Probe `1` is not available with the specified instrument `2`. Consider allowing one or both options to automatically set.";
 Error::TemperatureCorrectionConflict="TemperatureCorrection can not be set for the current instrument `1`. Consider letting the Instrument option set automatically.";
-Error::CertainpHCalibrationRequired="The SevenExcellence instrument requires 3 calibration buffers with pH values of 4, 7, and 10. Please use a different instrument or allow the Calibration buffers to set.";
 Error::RecoupSampleAliquotConflict="Aliquot must not be False if RecoupSample is True. Consider allowing Aliquot to automatically set.";
 Error::WashSolutionNotEnough = "There is not enough volume of `1` to be used for washing probe. We need 4 Milliliter of sample to wash probe each time. If this sample will be measured pH after washing probe, please make sure the remaining sample volume is still greater than MinSampleVolume of pH probe after washing.";
 
@@ -491,7 +539,7 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 		(*Everything needed for downloading*)
 		mySamplesList,pHInstrumentsModels,instrumentLookup,specifiedInstrumentObjects,potentialContainers,aliquotContainerLookup,
 		potentialContainersWAliquot,referenceBuffers,specifiedProbeObjects, specifiedProbeModels, probeLookup, listedSamples,
-		mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed, washSolutions,parentProtocol
+		mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed, washSolutions,parentProtocol, instrumentsObjects
 	},
 
 	(* Determine the requested return value from the function *)
@@ -594,6 +642,9 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 	pHInstrumentsModels=Search[Model[Instrument,pHMeter],Deprecated!=True];
 	allInstrumentModels=Join[pHInstrumentsModels,specifiedInstrumentModels];
 
+	(* Get all seven excellence pH meter objects, for buffer sets checking. *)
+	instrumentsObjects=Search[Object[Instrument,pHMeter],Model == (Model[Instrument, pHMeter, "SevenExcellence (for pH)"]|Model[Instrument, pHMeter, "SevenExcellence (for pH) for Robotic Titration"])];
+
 	(* Get all the potential preferred containers*)
 	potentialContainers=preferredpHContainer[All];
 
@@ -626,7 +677,8 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 				Cases[referenceBuffers,ObjectP[Object[Sample]]],
 				Cases[referenceBuffers,ObjectP[Model[Sample]]],
 				washSolutions,
-				Cases[parentProtocol, ObjectP[Object[Protocol, AdjustpH]]]
+				Cases[parentProtocol, ObjectP[Object[Protocol, AdjustpH]]],
+				instrumentsObjects
 			},
 			{
 				{
@@ -665,6 +717,9 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 				},
 				{
 					Packet[WasteBeaker]
+				},
+				{
+					Packet[CalibrationBufferSets]
 				}
 			},
 			Cache -> Lookup[safeOps, Cache, {}],
@@ -777,7 +832,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 		(*download variables*)
 		cacheFailedRemoved,probeLookup,specifiedProbeObjects, specifiedProbeModels,
 		specifiedInstrumentObjects,potentialContainers,potentialContainersWAliquot,referenceBuffers,
-		samplePackets,containerModelPackets,allDownloadValues,allSampleDownloadValues,allInstrumentObjDownloadValues,allInstrumentModelDownloadValues,potentialContainerDownloadValues,
+		samplePackets,containerModelPackets,allDownloadValues,allSampleDownloadValues,allInstrumentObjDownloadValues,allInstrumentModelDownloadValues,potentialContainerDownloadValues, calibrationBufferValues,
 		referenceObjectDownloadValues,referenceModelDownloadValues,lowBufferLookup,mediumBufferLookup,highBufferLookup,
 		instrumentObjectPackets,volumeCalibrationPackets,latestVolumeCalibrationPacket,combinedContainerPackets,instrumentModelPackets,potentialContainerPackets,
 		potentialContainerModelPackets,firstPotentialCalibration,combinedPotentialContainerPackets,incompatibleWithInstrumentBool,pHProbeConflictBool,
@@ -806,12 +861,13 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 		resolvableVerificationStandardpHTest,
 
 		(*for the mapping*)
-		probeTypeList,acquisitionTimeList,defaultInstrument,nonstandardCalibrantsQ,
+		probeTypeList,acquisitionTimeList,defaultInstrument,
 		aliquotContainerLookup,aliquotVolumeList,potentialAliquotContainersList,instrumentList,incompatibleWInstrumentErrorList,
 		noSuitableInstrumentErrorList,immersionInstrumentModels,immersionGlobalMinDepth,immersionGlobalMinVol,
 		surfaceInstrumentModels, surfaceGlobalMinVol,
 		resolvedProbeList, resolvedTemperatureCorrectionList, acquisitionTimeConflictBool,
-		temperatureCorrectionConflictBool,temperatureCorrectionLookup,resolvedMaxpHSlope, resolvedMinpHSlope, resolvedMinpHOffset, resolvedMaxpHOffset,
+		temperatureCorrectionConflictBool,temperatureCorrectionLookup,resolvedMaxpHSlope, resolvedMinpHSlope, resolvedMinpHOffset, resolvedMaxpHOffset, allDefinedBufferSets, matchedBufferSets, calibrationBufferSet,
+		calibrationBufferSetName, calibrationBufferMethod, calibrationBufferMethodName,
 
 		targetContainers,resolvedAliquotOptions,
 		incompatibleWInstrumentInputs,incompatibleWInstrumentOptions,noSuitableInstrumentInputs,immersionGlobalMinReach,
@@ -831,7 +887,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 		calibrationFunction,minDepthToVolume,minVolume,requiredAliquotAmounts,
 		name, confirm, canaryBranch, template, samplesInStorageCondition, originalCache, operator, parentProtocol, upload, outputOption, email, imageSample,resolvedEmail,resolvedImageSample,
 		surfaceRecoupWarningSamples, numberOfReplicates,allTests,testsRule,resolvedOptions,resultRule,resolvedPostProcessingOptions,
-		recoupAliquotConflictBool, recoupAliquotConflictOptions, recoupAliquotConflictTests, recoupProbeConflictTest, simulation, resolvedWashSolutions, resolvedSecondaryWashSolutions,  groupedWashSolutions, washSolutionNotEnoughQ
+		recoupAliquotConflictBool, recoupAliquotConflictOptions, recoupAliquotConflictTests, recoupProbeConflictTest, simulation, resolvedWashSolutions, resolvedSecondaryWashSolutions,  groupedWashSolutions, washSolutionNotEnoughQ, instrumentsObjects
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -865,6 +921,9 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 
 	(* Get all non deprecated pH models including the developer ones, for testing purposes. *)
 	pHInstrumentsModels=Search[Model[Instrument,pHMeter],Deprecated!=True];
+
+	(* Get all seven excellence pH meter objects, for buffer sets checking. *)
+	instrumentsObjects=Search[Object[Instrument,pHMeter],Model == (Model[Instrument, pHMeter, "SevenExcellence (for pH)"]|Model[Instrument, pHMeter, "SevenExcellence (for pH) for Robotic Titration"])];
 
 	(*check if the user supplied a instrument that's not in our list (e.g. a developer object)*)
 	{instrumentLookup,probeLookup}=Lookup[myOptions,{Instrument,Probe}];
@@ -912,7 +971,8 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				potentialContainersWAliquot,
 				Cases[referenceBuffers,ObjectP[Object[Sample]]],
 				Cases[referenceBuffers,ObjectP[Model[Sample]]],
-				washSolutions
+				washSolutions,
+				instrumentsObjects
 			},
 			{
 				{
@@ -949,6 +1009,9 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				},
 				{
 					Packet[Model,Volume]
+				},
+				{
+					Packet[CalibrationBufferSets]
 				}
 			},
 			Cache -> cacheFailedRemoved,
@@ -965,7 +1028,8 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 		potentialContainerDownloadValues,
 		referenceObjectDownloadValues,
 		referenceModelDownloadValues,
-		washSolutionDownloadValues
+		washSolutionDownloadValues,
+		calibrationBufferValues
 	}=allDownloadValues;
 
 	(*pull out all the sample/sample model/container/container model packets*)
@@ -1643,17 +1707,8 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 		Test["The pH field of VerificationStandard must be informed for automatic resolution of MinVerificationStandardpH and MaxVerificationStandardpH:", True, True]
 	];
 
-	(*indicate the nonstandard calibration being used *)
-	nonstandardCalibrantsQ=If[!MemberQ[{lowpHValue,mediumpHValue,highpHValue},Null],
-		!And[ MatchQ[resolvedLowpHValue,RangeP[3.99,4.02]], MatchQ[resolvedMediumpHValue,RangeP[6.99,7.01]], MatchQ[resolvedHighpHValue,RangeP[9.99,10.02]]],
-		True
-	];
-
 	(*define the default instrument if available*)
-	defaultInstrument= Which[
-		nonstandardCalibrantsQ,Download[Model[Instrument, pHMeter, "Mettler Toledo InLab Micro"], Object],
-		True,Download[Model[Instrument, pHMeter, "SevenExcellence (for pH)"], Object]
-	];
+	defaultInstrument= Download[Model[Instrument, pHMeter, "SevenExcellence (for pH)"], Object];
 
 	(* Resolve MaxpHSlope, MinpHSlope, MinpHOffset, MaxpHOffset for based on instrument *)
 	resolvedMaxpHSlope = If[MatchQ[Lookup[myOptions,MaxpHSlope],Except[Automatic]],
@@ -1774,7 +1829,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				(* Resolve aliquot and instrument options. *)
 				{aliquotVolumeRes,aliquotContainerResolve,instrumentModelRes,probeResolution,instrumentSelectionProblems}= Module[{desiredAliquotVolume,resolvedAliquotVolume,resolvedAliquotContainer,resolvedContainerPacket,relevantInstrumentModels,resolvedInstrument,instrumentResolutionProblems,
 							returnedInstruments,returnedProbeLists,issuesWInstruments,resolvedProbe, instrumentModelPreselectionPackets,volumeToPass,
-							defaultProbe,secondInstrumentPreselectionPackets},
+							defaultProbe},
 							(* Pre-resolve AliquotVolume and AliquotContainer based on the information that we were given. *)
 							{desiredAliquotVolume,resolvedAliquotContainer}= If[aliquotOption,
 								Switch[{resolvedProbeType,MatchQ[aliquotVolume, GreaterP[0 Milliliter]], MatchQ[aliquotContainer, ObjectP[{Object[Container], Model[Container]}]]},
@@ -1879,12 +1934,6 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 								True,relevantInstrumentModels
 							];
 
-							(*do another preselection -- we don't want the seven excellence if doing non-standard calibration*)
-							secondInstrumentPreselectionPackets=If[nonstandardCalibrantsQ,
-								DeleteCases[instrumentModelPreselectionPackets,KeyValuePattern[Object->ObjectP[Model[Instrument, pHMeter, "SevenExcellence (for pH)"]]]],
-								instrumentModelPreselectionPackets
-							];
-
 							(*get the volume to send, if aliquotVolume send that; otherwise, send the sample volume*)
 							volumeToPass=If[MatchQ[resolvedAliquotVolume,Automatic|Null],Lookup[samplePacket,Volume],resolvedAliquotVolume];
 
@@ -1894,7 +1943,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 								resolvedContainerPacket,
 								If[MatchQ[instrument,ObjectP[{Object[Instrument,pHMeter],Model[Instrument,pHMeter]}]],
 									{instrument},
-									Lookup[secondInstrumentPreselectionPackets,Object]
+									Lookup[instrumentModelPreselectionPackets,Object]
 								],
 								If[MatchQ[probe,Automatic|Null],
 									resolvedProbeType,
@@ -2323,26 +2372,41 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 		Nothing
 	];
 
-	(*The SevenExcellence must have 3 calibration buffers and all of them must be pH 4, 7, and 10*)
-	certainCalibrationRequiredOptions=If[
-		And[
-			MemberQ[Download[resolvedInstrumentModelPackets,Object],Download[Model[Instrument, pHMeter, "SevenExcellence (for pH)"],Object]],
-			nonstandardCalibrantsQ
-		],
-		{Instrument,LowCalibrationBufferpH,MediumCalibrationBufferpH,HighCalibrationBufferpH},
-		{}
+	(* if we are using nonstandard calibrants, define the specified buffersets *)
+	allDefinedBufferSets = DeleteDuplicates[Flatten[Lookup[Flatten[calibrationBufferValues],CalibrationBufferSets]]];
+	(* find out the buffer sets with the pH required *)
+	matchedBufferSets = Cases[allDefinedBufferSets, KeyValuePattern[{LowCalibrationBufferpH -> EqualP[lowpHValue], MediumCalibrationBufferpH -> EqualP[mediumpHValue], HighCalibrationBufferpH -> EqualP[highpHValue]}]];
+	(* check if we can find our buffer sets in pre defined sets *)
+	calibrationBufferSet = If[Length[matchedBufferSets]>0,
+		(* The default calibration buffer set is pre-set on all pH meters: CalibrationBufferSetName -> "METTLER TOLEDO USA (Ref . 25 °C)", CalibrationMethodName -> "M001-US"*)
+		First[matchedBufferSets],
+		(* otherwise, create a new buffer set *)
+		Module[{methodID, newCalibrationName},
+			(* CreateID for Object[Method, pHCalibration] -- make it public in compiler *)
+			methodID = CreateID[Object[Method, pHCalibration]];
+			(* Create number + name *)
+			newCalibrationName = StringDelete[ExternalInventory`Private`generateNumberAndWord[Download[methodID, ID]], " "];
+			(* Here is the association we will upload to instrument object in compiler *)
+			<|
+				Calibration -> newCalibrationName, Method -> ToUpperCase[StringTake[newCalibrationName, 5]],
+				LowCalibrationBufferpH -> lowpHValue, MediumCalibrationBufferpH -> mediumpHValue, HighCalibrationBufferpH -> highpHValue, pHCalibration -> Link[methodID]
+			|>
+		]
 	];
 
-	If[Length[certainCalibrationRequiredOptions]>0&&!gatherTests,
-		Message[Error::CertainpHCalibrationRequired]
+	(* extract fields from CalibrationBufferSets *)
+	(* if specified CalibrationMethod, CalibrationBufferSetName and CalibrationMethodName are inherited from AdjustpH, then it must be an ID generated by ExperimentMeasurepH option resolver already, so we can just take it to use *)
+	calibrationBufferMethod = If[MatchQ[Lookup[myOptions,CalibrationMethod],Except[Automatic]],
+		Lookup[myOptions,CalibrationMethod],
+		Download[Lookup[calibrationBufferSet, pHCalibration], Object]
 	];
-
-	certainCalibrationRequiredTests=If[gatherTests,
-		Test["If the SevenExcellence system is used, all three calibration buffers are used with pH values of 4, 7, and 10:",
-			Length[certainCalibrationRequiredOptions]>0,
-			False
-		],
-		Nothing
+	calibrationBufferSetName = If[MatchQ[Lookup[myOptions,CalibrationBufferSetName],Except[Automatic]],
+		Lookup[myOptions,CalibrationBufferSetName],
+		Lookup[calibrationBufferSet, Calibration]
+	];
+	calibrationBufferMethodName =  If[MatchQ[Lookup[myOptions,CalibrationMethodName],Except[Automatic]],
+		Lookup[myOptions,CalibrationMethodName],
+		Lookup[calibrationBufferSet, Method]
 	];
 
 	(* Error checking for objects in the Options *)
@@ -2397,7 +2461,14 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 			volume = Lookup[samplePacket, Volume, Null];
 
 			(* Does the sample have sufficient volume to be used in the options it was specified as a value? *)
-			sampleInOptionsInsufficientVolumeQ = If[NullQ[volume], Null,
+			sampleInOptionsInsufficientVolumeQ = Which[
+				NullQ[volume],
+				Null,
+
+				MatchQ[sample, ObjectP[Object[Sample]]],
+				Null,
+
+				True,
 				MatchQ[volume, LessP[Lookup[sampleVolumeRequiredLookup, sample]]]
 			];
 
@@ -2493,7 +2564,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 	invalidInputs=DeleteDuplicates[Flatten[{discardedInvalidInputs,noVolumeInputs,incompatibleInputsAnyInstrument,incompatibleInputsSpecificInstrument,lowVolumeInvalidInputs,incompatibleWInstrumentInputs,noSuitableInstrumentInputs,acquisitionConflictInvalidInputs, sampleInputsAsOptionsInvalidInputs}]];
 
 	invalidOptions=DeleteDuplicates[Flatten[{deprecatedInstrumentOptions,incompatibleInputsSpecificInstrumentOptions,incompatibleInputsRoboticInstrumentOptions, probeInstrumentConflictOptions,incompatibleWInstrumentOptions,acquisitionConflictInvalidOptions,invalidpHOptions,invalidMediumCalibrationOptions,invalidLowHighpHOptions,
-		temperatureCorrectionConflictOptions,pHProbeConflictOptions,certainCalibrationRequiredOptions, recoupAliquotConflictOptions, washSolutionConflictOptions, invalidVerificationStandardpHRangeOptions, invalidAutomaticVerificationpHOptions, invalidNonNullVerificationStandardSubOptions,
+		temperatureCorrectionConflictOptions,pHProbeConflictOptions, recoupAliquotConflictOptions, washSolutionConflictOptions, invalidVerificationStandardpHRangeOptions, invalidAutomaticVerificationpHOptions, invalidNonNullVerificationStandardSubOptions,
 		invalidRequiredVerificationStandardSubOptions, sampleInputsAsOptionsInvalidOptions, optionSampleWithNullVolumeInvalidOptions, optionSampleWithInsufficientVolumeInvalidOptions, incompatibleOptionsSampleInvalidOptions}]];
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
@@ -2631,6 +2702,9 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				MinpHSlope -> resolvedMinpHSlope,
 				MinpHOffset -> resolvedMinpHOffset,
 				MaxpHOffset -> resolvedMaxpHOffset,
+				CalibrationBufferSetName -> calibrationBufferSetName,
+				CalibrationMethodName -> calibrationBufferMethodName,
+				CalibrationMethod -> calibrationBufferMethod,
 				WashSolution -> resolvedWashSolutions,
 				SecondaryWashSolution -> resolvedSecondaryWashSolutions,
 				MinVerificationStandardpH -> resolvedMinVerificationStandardpH,
@@ -2726,10 +2800,11 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 	{outputSpecification, output, gatherTests, safeOps, cache, samplesWithoutLinks, probeTypes, instruments, instrumentObjects,
 		probePositions, aquisitionTimes, probeSamples, probeInstruments, groupedProbeResult, groupedProbeSamples, probeNumberOfAcquisitions,
 		groupedProbeInstruments, groupedProbePositions, probeResult, batchSamples, batchLengths, uuid, id, instrumentResource, optionsWithReplicates, instrumentResources, probeBatchLengths,
-		probeInstrumentResources, insitu, lowCalibrationBufferProbe, mediumCalibrationBufferProbe, highCalibrationBufferProbe, protocolPacket, probeRecoupSample, recoupSample, numberOfReplicates, samplesWithReplicates, washSolutions, secondaryWashSolutions, secondaryWashSolutionResources, resourceIndices, probeRelease, probeSelect, allResourceBlobs,
+		probeInstrumentResources, insitu, lowCalibrationBuffer, mediumCalibrationBuffer, highCalibrationBuffer, protocolPacket, probeRecoupSample, recoupSample, numberOfReplicates, samplesWithReplicates, washSolutions, secondaryWashSolutions, secondaryWashSolutionResources, resourceIndices, probeRelease, probeSelect, allResourceBlobs,
 		fulfillable, frqTests, resultRule, testsRule, probes, temperatureCorrections, probeSampleNames, probeObjects, groupedProbes, probesForUpload, probeForGroup,
 		probeMeasurementOrder, orderedProbeSamples, wasteBeaker, wasteBeakerResource, simulation,parentProtocol, parentProtocolPacket,
-		verificationStandardResource, verificationStandardWashSolutionResource, lowCalibrationWashSolution, mediumCalibrationWashSolution, highCalibrationWashSolution, washSolutionResources, postStorageWashSolution, preStorageWashSolution, washProbe
+		verificationStandardResource, verificationStandardWashSolutionResource, lowCalibrationWashSolution, mediumCalibrationWashSolution, highCalibrationWashSolution, washSolutionResources, postStorageWashSolution, preStorageWashSolution, washProbe, calibrationBufferRack, calibrationWashSolutionRack,
+		calibrationBufferPlacements, calibrationWashSolutionPlacements
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -2848,17 +2923,17 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 	washProbe = Lookup[myResolvedOptions,WashProbe];
 
 	(* Create resources for our probe reference solutions. *)
-	lowCalibrationBufferProbe=If[Length[probeBatchLengths]>0&&!insitu,
+	lowCalibrationBuffer=If[Length[probeBatchLengths]>0&&!insitu,
 		Resource[Sample->Lookup[myResolvedOptions,LowCalibrationBuffer],Amount->20 Milliliter],
 		Null
 	];
 
-	mediumCalibrationBufferProbe=If[Length[probeBatchLengths]>0&&!MatchQ[Lookup[myResolvedOptions,MediumCalibrationBuffer],Null]&&!insitu,
+	mediumCalibrationBuffer=If[Length[probeBatchLengths]>0&&!MatchQ[Lookup[myResolvedOptions,MediumCalibrationBuffer],Null]&&!insitu,
 		Resource[Sample->Lookup[myResolvedOptions,MediumCalibrationBuffer],Amount->20 Milliliter],
 		Null
 	];
 
-	highCalibrationBufferProbe=If[Length[probeBatchLengths]>0&&!insitu,
+	highCalibrationBuffer=If[Length[probeBatchLengths]>0&&!insitu,
 		Resource[Sample->Lookup[myResolvedOptions,HighCalibrationBuffer],Amount -> 20 Milliliter],
 		Null
 	];
@@ -2879,6 +2954,34 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 		Null
 	];
 
+	(*Create placements for calibration buffers and wash solutions*)
+	calibrationBufferRack=If[Length[probeBatchLengths] > 0 && !insitu,
+		Resource[Sample -> Lookup[myResolvedOptions, CalibrationBufferRack], Name->"Calibration Buffer Rack"],
+		Null
+	];
+
+	calibrationWashSolutionRack=If[Length[probeBatchLengths] > 0 && !insitu,
+		Resource[Sample -> Lookup[myResolvedOptions, CalibrationWashSolutionRack], Name->"Calibration WashSolution Rack"],
+		Null
+	];
+
+	calibrationBufferPlacements = If[Length[probeBatchLengths] > 0 && !insitu,
+		{
+			{Link[lowCalibrationBuffer], Link[calibrationBufferRack], "Slot 1"},
+			{Link[mediumCalibrationBuffer], Link[calibrationBufferRack], "Slot 2"},
+			{Link[highCalibrationBuffer], Link[calibrationBufferRack], "Slot 3"}
+		},
+		Null
+	];
+	calibrationWashSolutionPlacements = If[Length[probeBatchLengths] > 0 && !insitu,
+		{
+			{Link[lowCalibrationWashSolution], Link[calibrationWashSolutionRack], "Slot 1"},
+			{Link[mediumCalibrationWashSolution], Link[calibrationWashSolutionRack], "Slot 2"},
+			{Link[highCalibrationWashSolution], Link[calibrationWashSolutionRack], "Slot 3"}
+		},
+		Null
+	];
+
 	(* Create resources for PostStorageWashSolution and PreStorageWashSolution *)
 	postStorageWashSolution = If[Length[probeBatchLengths] > 0 && !insitu,
 		Resource[Sample -> Lookup[myResolvedOptions, PostStorageWashSolution], Amount -> $MeasurepHWashSolutionMinVolume, Container-> Model[Container, Vessel, "15mL Tube"], Name->ToString[Unique[]]],
@@ -2893,6 +2996,10 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 		Which[
 			NullQ[Lookup[myResolvedOptions, VerificationStandard, Null]],
 			Null,
+
+			MatchQ[Lookup[myResolvedOptions, 	VerificationStandard], ObjectP[Object[Sample]]],
+			Resource[Sample -> Lookup[myResolvedOptions, 	VerificationStandard]],
+
 			True,
 			Resource[Sample -> Lookup[myResolvedOptions, 	VerificationStandard], Amount -> 20 Milliliter, Container -> Model[Container, Vessel, "id:bq9LA0dBGGR6"]]
 		],
@@ -2902,6 +3009,10 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 		Which[
 			NullQ[Lookup[myResolvedOptions, VerificationStandardWashSolution, Null]],
 			Null,
+
+			MatchQ[Lookup[myResolvedOptions, 	VerificationStandardWashSolution], ObjectP[Object[Sample]]],
+			Resource[Sample -> Lookup[myResolvedOptions, 	VerificationStandardWashSolution]],
+
 			True,
 			Resource[Sample -> Lookup[myResolvedOptions, 	VerificationStandardWashSolution], Amount -> 5 Milliliter, Container -> Model[Container, Vessel, "id:xRO9n3vk11pw"]]
 		],
@@ -2950,9 +3061,13 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Model[Sample]]]&&washProbe,
 				Link[Resource[Sample -> washSolution, Amount -> $MeasurepHWashSolutionMinVolume, Container-> Model[Container, Vessel, "15mL Tube"], Name->ToString[Unique[]]]],
 
-				(* if given sample object, aliquot 4 mL for washing *)
+				(* If given an Object[Sample] that is one of the input samples, aliquot 4 mL of the sample into a new container for washing *)
 				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Object[Sample]]]&&MemberQ[probeSamples, ObjectP[washSolution]]&&washProbe,
 				Link[Resource[Sample -> washSolution, Amount -> $MeasurepHWashSolutionMinVolume, Container-> Model[Container, Vessel, "15mL Tube"], Name->ToString[Unique[]], ExactAmount->True]],
+
+				(* If given an Object[Sample] that is NOT one of the input samples, generate a resource for that sample and do not aliquot it. *)
+				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Object[Sample]]]&&!MemberQ[probeSamples, ObjectP[washSolution]]&&washProbe,
+				Link[Resource[Sample -> washSolution, Name->ToString[Unique[]]]],
 
 				(* otherwise, do not make a resource *)
 				True,
@@ -2971,9 +3086,13 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Model[Sample]]]&&washProbe,
 				Link[Resource[Sample -> washSolution, Amount -> $MeasurepHWashSolutionMinVolume, Container-> Model[Container, Vessel, "15mL Tube"], Name->ToString[Unique[]]]],
 
-				(* if given sample object, aliquot 4 mL for washing *)
+				(* If given an Object[Sample] that is one of the input samples, aliquot 4 mL of the sample into a new container for washing *)
 				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Object[Sample]]]&&MemberQ[probeSamples, ObjectP[washSolution]]&&washProbe,
 				Link[Resource[Sample -> washSolution, Amount -> $MeasurepHWashSolutionMinVolume, Container-> Model[Container, Vessel, "15mL Tube"], Name->ToString[Unique[]], ExactAmount->True]],
+
+				(* If given an Object[Sample] that is NOT one of the input samples, generate a resource for that sample and do not aliquot it. *)
+				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Object[Sample]]]&&!MemberQ[probeSamples, ObjectP[washSolution]]&&washProbe,
+				Link[Resource[Sample -> washSolution, Name->ToString[Unique[]]]],
 
 				(* otherwise, do not make a resource *)
 				True,
@@ -3001,12 +3120,16 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 			Replace[ProbeIndices]->probePositions[[probeMeasurementOrder]],
 			Replace[ProbeBatchLength]->probeBatchLengths,
 			Replace[ProbeInstruments]->probeInstrumentResources,
-			Replace[ProbeLowCalibrationBuffer]->lowCalibrationBufferProbe,
-			Replace[ProbeMediumCalibrationBuffer]->mediumCalibrationBufferProbe,
-			Replace[ProbeHighCalibrationBuffer]->highCalibrationBufferProbe,
+			Replace[ProbeLowCalibrationBuffer]->lowCalibrationBuffer,
+			Replace[ProbeMediumCalibrationBuffer]->mediumCalibrationBuffer,
+			Replace[ProbeHighCalibrationBuffer]->highCalibrationBuffer,
 			Replace[ProbeLowCalibrationWashSolution]->lowCalibrationWashSolution,
 			Replace[ProbeMediumCalibrationWashSolution]->mediumCalibrationWashSolution,
 			Replace[ProbeHighCalibrationWashSolution]->highCalibrationWashSolution,
+			CalibrationBufferRack -> Link[calibrationBufferRack],
+			CalibrationWashSolutionRack -> Link[calibrationWashSolutionRack],
+			Replace[CalibrationBufferPlacements] -> calibrationBufferPlacements,
+			Replace[CalibrationWashSolutionPlacements] -> calibrationWashSolutionPlacements,
 			Replace[PostStorageWashSolution]->postStorageWashSolution,
 			Replace[PreStorageWashSolution]->preStorageWashSolution,
 			Replace[ProbeRecoupSample]->probeRecoupSample[[probeMeasurementOrder]],
@@ -3031,6 +3154,12 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 			MinpHSlope->Lookup[myResolvedOptions,MinpHSlope],
 			MaxpHOffset->Lookup[myResolvedOptions,MaxpHOffset],
 			MinpHOffset->Lookup[myResolvedOptions,MinpHOffset],
+			CalibrationBufferSetName -> Lookup[myResolvedOptions,CalibrationBufferSetName],
+			CalibrationMethodName -> Lookup[myResolvedOptions,CalibrationMethodName],
+			CalibrationMethod -> Link[Lookup[myResolvedOptions,CalibrationMethod]],
+			LowCalibrationBufferpH -> Lookup[myResolvedOptions,LowCalibrationBufferpH],
+			MediumCalibrationBufferpH -> Lookup[myResolvedOptions,MediumCalibrationBufferpH],
+			HighCalibrationBufferpH -> Lookup[myResolvedOptions,HighCalibrationBufferpH],
 			WasteBeaker-> wasteBeakerResource,
 			VerificationStandard -> Link[verificationStandardResource],
 			VerificationStandardWashSolution -> Link[verificationStandardWashSolutionResource],

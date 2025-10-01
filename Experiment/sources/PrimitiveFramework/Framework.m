@@ -556,8 +556,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     userInputtedUnitOperationPackets=Download[userInputtedUnitOperationObjects, Packet[All], Simulation -> simulation];
 
     (* Convert each of these packets into a primitive. *)
+    (* WasteContainer is a hidden option in FillToVolume and in Transfer. There is no need to allow users to set this option so it is hidden, but we need to pass this down. Include this hidden option *)
     userInputtedUnitOperationObjectToPrimitive=(
-      Lookup[#, Object]->ConstellationViewers`Private`UnitOperationPrimitive[#, IncludeCompletedOptions->False, IncludeEmptyOptions->False]
+      Lookup[#, Object]->ConstellationViewers`Private`UnitOperationPrimitive[#, IncludeCompletedOptions->False, IncludeEmptyOptions->False, IncludedHiddenOptions -> {WasteContainer}]
     &)/@userInputtedUnitOperationPackets;
 
     (sanitizeInputs[userInputtedUnitOperationObjectsWithoutBoxForms/.userInputtedUnitOperationObjectToPrimitive, Simulation -> simulation]/.{link:LinkP[] :> Download[link, Object]})
@@ -8773,7 +8774,7 @@ ValidateUnitOperationsJSON[myPrimitives_List, myOptions:OptionsPattern[]]:=Modul
     userInputtedUnitOperationPackets=Download[userInputtedUnitOperationObjects, Packet[All]];
 
     (* Convert each of these packets into a primitive. *)
-    userInputtedUnitOperationObjectToPrimitive=(Lookup[#, Object]->ConstellationViewers`Private`UnitOperationPrimitive[#, IncludeCompletedOptions->False, IncludeEmptyOptions->False]&)/@userInputtedUnitOperationPackets;
+    userInputtedUnitOperationObjectToPrimitive=(Lookup[#, Object]->ConstellationViewers`Private`UnitOperationPrimitive[#, IncludeCompletedOptions->False, IncludeEmptyOptions->False,IncludedHiddenOptions -> {WasteContainer}]&)/@userInputtedUnitOperationPackets;
 
     (sanitizeInputs[sanitizedPrimitivesWithUnitOperationObjects/.userInputtedUnitOperationObjectToPrimitive]/.{link:LinkP[] :> Download[link, Object]})
   ];

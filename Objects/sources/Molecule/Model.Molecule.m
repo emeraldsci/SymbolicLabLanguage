@@ -627,6 +627,31 @@ DefineObjectType[Model[Molecule], {
 			Description -> "Supplementary information recorded from the UploadMolecule function. These information usually records the user supplied input and options, providing additional information for verification.",
 			Headers -> {"Information", "Date Added"},
 			Category -> "Hidden"
+		},
+		MiscibleLiquids -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Molecule][MiscibleLiquids], Model[Sample][MiscibleLiquids]],
+			Description -> "Solvent or solvent mixtures with which this molecule is able to mix with and form a homogenous solution regardless of the ratio.",
+			Category -> "Physical Properties"
+		},
+		WaterSolubility -> {
+			Format -> Multiple,
+			Class -> {Real, Real},
+			Pattern :> {GreaterP[0 Kelvin], GreaterP[0 Gram/Milliliter]},
+			Units -> {Celsius, Gram/Milliliter},
+			Description -> "The thermodynamic upper-bound for dissolution of this molecule in pure water at the specified temperature.",
+			Category -> "Physical Properties",
+			Headers -> {"Temperature", "Solubility"}
+		},
+		LD50 -> {
+			Format -> Multiple,
+			Class -> {Real, Expression, Expression},
+			Pattern :> {GreaterP[0], AnimalP, DosageRouteP},
+			Description -> "The dose for which a half the members of a given population dies. Dose is recorded as a unitless value but corresponds to dosage mass per animal mass.",
+			Category -> "Health & Safety",
+			Headers -> {"Dose", "Animal", "Route"}
 		}
 	}
 }];

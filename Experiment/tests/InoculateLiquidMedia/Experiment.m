@@ -3103,7 +3103,7 @@ DefineTests[ExperimentInoculateLiquidMedia,
     ],
     Example[{Options, Preparation, "Preparation is automatically set to Manual when input container is not liquid handler compatible:"},
       options = ExperimentInoculateLiquidMedia[
-        Object[Sample, "ExperimentInoculateLiquidMedia test liquid Mammalian sample in cryoVial " <> $SessionUUID],
+        Object[Sample, "ExperimentInoculateLiquidMedia test liquid Mammalian sample in 15mL tube " <> $SessionUUID],
         Output -> Options
       ];
       Lookup[options, Preparation],
@@ -3896,7 +3896,7 @@ DefineTests[ExperimentInoculateLiquidMedia,
     ],
     Example[{Messages, "ConflictingUnitOperationMethodRequirements", "If Preparation is set to Robotic for LiquidMedia sample but input container is not liquid handler compatible:"},
       ExperimentInoculateLiquidMedia[
-        Object[Sample, "ExperimentInoculateLiquidMedia test liquid Mammalian sample in cryoVial " <> $SessionUUID],
+        Object[Sample, "ExperimentInoculateLiquidMedia test liquid Mammalian sample in 15mL tube " <> $SessionUUID],
         Preparation -> Robotic
       ],
       $Failed,
@@ -5455,6 +5455,7 @@ inoculateLiquidMediaObjectErasure[functionName_String, tearDownBool: BooleanP] :
       Object[Container, Vessel, functionName <> " test cryoVial 9 " <> $SessionUUID],
       Object[Container, Vessel, functionName <> " test cryoVial 10 " <> $SessionUUID],
       Object[Container, Vessel, functionName <> " test cryoVial 11 " <> $SessionUUID],
+      Object[Container, Vessel, functionName <> " test 15mL Tube " <> $SessionUUID],
       Object[Container, Vessel, functionName <> " test destination 5mL tube 1 " <> $SessionUUID],
       Object[Container, Vessel, functionName <> " test destination 5mL tube 2 " <> $SessionUUID],
       Object[Container, Vessel, functionName <> " test destination 5mL tube 3 " <> $SessionUUID],
@@ -5529,7 +5530,7 @@ inoculateLiquidMediaObjectErasure[functionName_String, tearDownBool: BooleanP] :
       Object[Sample, functionName <> " test Mammalian sample in omniTray " <> $SessionUUID],
       Object[Sample, functionName <> " test liquid Mammalian sample in dwp " <> $SessionUUID],
       Object[Sample, functionName <> " test FreezeDried Mammalian sample in ampoule " <> $SessionUUID],
-      Object[Sample, functionName <> " test liquid Mammalian sample in cryoVial " <> $SessionUUID],
+      Object[Sample, functionName <> " test liquid Mammalian sample in 15mL tube " <> $SessionUUID],
       Object[Sample, functionName <> " test Mammalian sample in frozen glycerol in cryoVial " <> $SessionUUID],
       Object[Sample, functionName <> " test wash solution (MilliQ) " <> $SessionUUID],
       Object[Sample, functionName <> " test Insect pellet sample in dwp " <> $SessionUUID],
@@ -5580,7 +5581,7 @@ inoculateLiquidMediaSymbolSetUp[functionName_String] := Block[{$DeveloperUpload 
       (* Containers *)
       dwp1, dwp2, dwp3, dwp4, dwp5, dwp6, dwp7, dwp8, omniTray1, omniTray2, omniTray3, omniTray4, omniTray5, omniTray6, 
       omniTray7, omniTray8, omniTray9, omniTray10, omniTray11, omniTray12, flask500mL1, flask500mL2, plate24Well, plate24DeepWell,
-      cryoVial1, cryoVial2, cryoVial3, cryoVial4, cryoVial5, cryoVial6, cryoVial7, cryoVial8, cryoVial9, cryoVial10, cryoVial11,
+      cryoVial1, cryoVial2, cryoVial3, cryoVial4, cryoVial5, cryoVial6, cryoVial7, cryoVial8, cryoVial9, cryoVial10, cryoVial11,manualTube1,
       destTube1, destTube2, destTube3 ,destTube4, washSolutionTube, unaspiratable2mLTube, undispensable2mLTube,
       amberGlassBottle4L1, amberGlassBottle4L2, ampoule1, ampoule2, ampoule3, ampoule4,
       (* Media *)
@@ -5646,6 +5647,7 @@ inoculateLiquidMediaSymbolSetUp[functionName_String] := Block[{$DeveloperUpload 
       cryoVial9,
       cryoVial10,
       cryoVial11,
+      manualTube1,
       destTube1,
       destTube2,
       destTube3,
@@ -5702,6 +5704,11 @@ inoculateLiquidMediaSymbolSetUp[functionName_String] := Block[{$DeveloperUpload 
         |>,
         {i,1,11}
       ],
+      <|
+        Type -> Object[Container, Vessel],
+        Model -> Link[Model[Container, Vessel, "id:xRO9n3vk11pw"], Objects], (* Model[Container, Vessel, "15mL Tube"] *)
+        Name -> functionName <> " test 15mL Tube " <> $SessionUUID
+      |>,
       Sequence@@Table[
         <|
           Type -> Object[Container, Vessel],
@@ -6089,7 +6096,7 @@ inoculateLiquidMediaSymbolSetUp[functionName_String] := Block[{$DeveloperUpload 
         (*32*){"A1", omniTray12},
         (*33*){"A1", dwp6},
         (*34*){"A1", ampoule4},
-        (*35*){"A1", cryoVial8},
+        (*35*){"A1", manualTube1},
         (*36*){"A1", cryoVial9},
         (*Other*)
         (*37*){"A1", washSolutionTube},
@@ -6139,7 +6146,7 @@ inoculateLiquidMediaSymbolSetUp[functionName_String] := Block[{$DeveloperUpload 
           functionName <> " test Mammalian sample in omniTray " <> $SessionUUID,
           functionName <> " test liquid Mammalian sample in dwp " <> $SessionUUID,
           functionName <> " test FreezeDried Mammalian sample in ampoule " <> $SessionUUID,
-          functionName <> " test liquid Mammalian sample in cryoVial " <> $SessionUUID,
+          functionName <> " test liquid Mammalian sample in 15mL tube " <> $SessionUUID,
           functionName <> " test Mammalian sample in frozen glycerol in cryoVial " <> $SessionUUID,
           functionName <> " test wash solution (MilliQ) " <> $SessionUUID,
           functionName <> " test Insect pellet sample in dwp " <> $SessionUUID

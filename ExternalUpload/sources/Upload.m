@@ -573,10 +573,14 @@ cleanUpHTMLString[_] := Null;
 
 (* ::Subsubsection::Closed:: *)
 (*new parser using pyECL*)
+
+Authors[parseProductURL] := {"hanming.yang"};
+
 parseProductURL[url:(Null | _String)] := Module[
 	{
 		pyECLReturn, supplierInput, cleanedName, cleanedDescription, cleanedAssoc, result,
-		cleanedPrice, cleanedAmount, cleanedNumberOfItems, firstAttemptResults, correctedPrice
+		cleanedPrice, cleanedAmount, cleanedNumberOfItems, firstAttemptResults, correctedPrice,
+		timeLimit
 	},
 
 	supplierInput = Switch[url,
@@ -625,12 +629,15 @@ parseProductURL[url:(Null | _String)] := Module[
 
 			(* $UseAIProductParser == Last: Try regular parser first *)
 			{Last, _},
-				firstAttemptResults = Quiet[
-					PyECLRequest[
-						"/ccd/extract-product",
-						<|"url" -> url, "supplier" -> supplierInput|>,
-						Retries -> 3
-					]
+				firstAttemptResults = TimeConstrained[
+					Quiet[
+						PyECLRequest[
+							"/ccd/extract-product",
+							<|"url" -> url, "supplier" -> supplierInput|>,
+							Retries -> 3
+						]
+					],
+					40
 				];
 				If[MatchQ[firstAttemptResults, _Association],
 					firstAttemptResults,
@@ -645,12 +652,15 @@ parseProductURL[url:(Null | _String)] := Module[
 
 			(* $UseAIProductParser == First: Try ai parser first *)
 			{First, _},
-				firstAttemptResults = Quiet[
-					PyECLRequest[
-						"/ccd/ai/extract-product",
-						<|"url" -> url|>,
-						Retries -> 3
-					]
+				firstAttemptResults = TimeConstrained[
+					Quiet[
+						PyECLRequest[
+							"/ccd/ai/extract-product",
+							<|"url" -> url|>,
+							Retries -> 3
+						]
+					],
+					40
 				];
 				If[MatchQ[firstAttemptResults, _Association],
 					firstAttemptResults,
@@ -673,7 +683,7 @@ parseProductURL[url:(Null | _String)] := Module[
 					]
 				]
 		],
-		30
+		80
 	];
 
 	If[!MatchQ[pyECLReturn, _Association],

@@ -85,8 +85,8 @@ DefineObjectType[Object[Qualification,Training,TabletCrushing], {
 			Description -> "Container used to hold the tablet for weight measurements before it has been crushed.",
 			Category -> "Tablet Crushing Skills"
 		},
-		TabletSpatula -> {
-			Format -> Single,
+		TabletSpatulas -> {
+			Format -> Multiple,
 			Class -> Link,
 			Pattern :> Link,
 			Relation -> Alternatives[

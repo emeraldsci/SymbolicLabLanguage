@@ -33,6 +33,15 @@ DefineTests[ExperimentUncover,
 				Environment -> ObjectP[Object[Container, Bench, "Bench for ExperimentUncover tests"<>$SessionUUID]]
 			}]
 		],
+		Example[{Basic, "Resolve options to uncover a covered container that's already inside a handling station:"},
+			ExperimentUncover[
+				Object[Container, Vessel, "Covered 2mL Tube 4 for ExperimentUncover Testing"<>$SessionUUID],
+				Output -> Options
+			],
+			KeyValuePattern[{
+				Environment -> ObjectP[Object[Instrument, HandlingStation, Ambient, "Handling Station for ExperimentUncover tests" <> $SessionUUID]]
+			}]
+		],
 		Example[{Basic, "Splits up containers into batches based on their environment and instrument:"},
 			Module[{protocol},
 				protocol=ExperimentUncover[
@@ -78,7 +87,7 @@ DefineTests[ExperimentUncover,
 				Output -> Options
 			],
 			KeyValuePattern[{
-				Environment -> ObjectP[Model[Instrument, BiosafetyCabinet]]
+				Environment -> ObjectP[Model[Instrument, HandlingStation, BiosafetyCabinet]]
 			}]
 		],
 		Example[{Basic, "Test Robotic version:"},
@@ -328,15 +337,18 @@ DefineTests[ExperimentUncover,
 
 			(*Gather all the objects and models created in SymbolSetUp*)
 			allObjects = {
+				Object[Instrument, HandlingStation, Ambient, "Handling Station for ExperimentUncover tests" <> $SessionUUID],
 				Object[Container, Bench, "Bench for ExperimentUncover tests" <> $SessionUUID],
 				Object[Container, Vessel, "Covered 0.3mL High-Recovery Crimp Top Vial (13mm) for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "Covered Flip Off 13mm Cap on Vial for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Covered 2mL Tube 1 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Covered 2mL Tube 2 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Covered 2mL Tube 3 for ExperimentUncover Testing" <> $SessionUUID],
+				Object[Container, Vessel, "Covered 2mL Tube 4 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "2mL Tube Cap 1 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "2mL Tube Cap 2 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "2mL Tube Cap 3 for ExperimentUncover Testing" <> $SessionUUID],
+				Object[Item, Cap, "2mL Tube Cap 4 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "50mL Tube Covered with Barcoded Cap for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "50mL Tube Degas Cap with Barcode for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Plate, "Covered DWP for ExperimentUncover Testing" <> $SessionUUID],
@@ -365,9 +377,9 @@ DefineTests[ExperimentUncover,
 			Quiet[EraseObject[existingObjects, Force -> True, Verbose -> False]]
 		];
 
-		Module[{unitTestBench, unitTestBag, numberOfExtraCovers, newObjects, containersAndCovers, containers, covers, extraCovers, ventilatedSample},
+		Module[{unitTestBench, unitTestBag, unitTestHandlingStation, numberOfExtraCovers, newObjects, containersAndCovers, containers, covers, extraCovers, ventilatedSample},
 
-			{unitTestBench, unitTestBag} = Upload[{
+			{unitTestBench, unitTestBag, unitTestHandlingStation} = Upload[{
 				<|
 					Type->Object[Container, Bench],
 					Model->Link[Model[Container, Bench, "The Bench of Testing"], Objects],
@@ -378,6 +390,13 @@ DefineTests[ExperimentUncover,
 				<|
 					Type->Object[Container, Bag],
 					Model->Link[Model[Container, Bag, "Small inventory bag"], Objects],
+					DeveloperObject->True,
+					Site -> Link[$Site]
+				|>,
+				<|
+					Type->Object[Instrument, HandlingStation, Ambient],
+					Model->Link[Model[Instrument, HandlingStation, Ambient, "Half Benchtop Handling Station with Analytical Balance"], Objects],
+					Name->"Handling Station for ExperimentUncover tests"<>$SessionUUID,
 					DeveloperObject->True,
 					Site -> Link[$Site]
 				|>
@@ -416,6 +435,9 @@ DefineTests[ExperimentUncover,
 					Model[Item, Cap, "2 mL tube cap, standard"],
 
 					(* For discard cover test *)
+					Model[Container, Vessel, "2mL Tube"],
+					Model[Item, Cap, "2 mL tube cap, standard"],
+
 					Model[Container, Vessel, "2mL Tube"],
 					Model[Item, Cap, "2 mL tube cap, standard"],
 
@@ -467,6 +489,8 @@ DefineTests[ExperimentUncover,
 					{"Work Surface", unitTestBench},
 					{"Work Surface", unitTestBench},
 					{"Work Surface", unitTestBench},
+					{"Working Zone Slot", unitTestHandlingStation},
+					{"Working Zone Slot", unitTestHandlingStation},
 					{"Work Surface", unitTestBench},
 					{"Work Surface", unitTestBench},
 					{"Work Surface", unitTestBench},
@@ -503,6 +527,8 @@ DefineTests[ExperimentUncover,
 					"2mL Tube Cap 2 for ExperimentUncover Testing"<>$SessionUUID,
 					"Covered 2mL Tube 3 for ExperimentUncover Testing"<>$SessionUUID,
 					"2mL Tube Cap 3 for ExperimentUncover Testing"<>$SessionUUID,
+					"Covered 2mL Tube 4 for ExperimentUncover Testing"<>$SessionUUID,
+					"2mL Tube Cap 4 for ExperimentUncover Testing"<>$SessionUUID,
 					"50mL Tube Covered with Barcoded Cap for ExperimentUncover Testing"<>$SessionUUID,
 					"50mL Tube Degas Cap with Barcode for ExperimentUncover Testing"<>$SessionUUID,
 					"Covered 2L Glass Bottle 1 for ExperimentUncover Testing" <> $SessionUUID,
@@ -555,15 +581,18 @@ DefineTests[ExperimentUncover,
 
 			(*Gather all the objects and models created in SymbolSetUp*)
 			allObjects = {
+				Object[Instrument, HandlingStation, Ambient, "Handling Station for ExperimentUncover tests" <> $SessionUUID],
 				Object[Container, Bench, "Bench for ExperimentUncover tests" <> $SessionUUID],
 				Object[Container, Vessel, "Covered 0.3mL High-Recovery Crimp Top Vial (13mm) for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "Covered Flip Off 13mm Cap on Vial for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Covered 2mL Tube 1 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Covered 2mL Tube 2 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Covered 2mL Tube 3 for ExperimentUncover Testing" <> $SessionUUID],
+				Object[Container, Vessel, "Covered 2mL Tube 4 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "2mL Tube Cap 1 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "2mL Tube Cap 2 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "2mL Tube Cap 3 for ExperimentUncover Testing" <> $SessionUUID],
+				Object[Item, Cap, "2mL Tube Cap 4 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "50mL Tube Covered with Barcoded Cap for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "50mL Tube Degas Cap with Barcode for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Plate, "Covered DWP for ExperimentUncover Testing" <> $SessionUUID],

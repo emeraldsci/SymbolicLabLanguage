@@ -1730,13 +1730,13 @@ DefineTests[
 			10*Celsius,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options, FilterSterile, "Set the FilterSterile option:"},
 			options = ExperimentqPCR[{Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID]}, {{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}}, FilterSterile -> True, Output -> Options];
 			Lookup[options, FilterSterile],
 			True,
 			Variables :> {options}
-		],
+		],*)
 		Example[{Options, FilterAliquot, "Set the FilterAliquot option:"},
 			options = ExperimentqPCR[{Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID]}, {{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}}, FilterAliquot -> 80*Microliter, Output -> Options];
 			Lookup[options, FilterAliquot],

@@ -348,7 +348,7 @@ DefineTests[
 				$PersonID = Object[User, "Test user for notebook-less test protocols"],
 				$EmailEnabled = False
 			}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options, FilterSterile, "Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options = ExperimentCentrifuge[Object[Sample, "10 mL sample in 50 mL tube for ExperimentCentrifuge testing (1)" <> $SessionUUID], FilterSterile -> True, Output -> Options];
 			Lookup[options, FilterSterile],
@@ -359,7 +359,7 @@ DefineTests[
 				$PersonID = Object[User, "Test user for notebook-less test protocols"],
 				$EmailEnabled = False
 			}
-		],
+		],*)
 		Example[{Options, FilterAliquot, "The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options = ExperimentCentrifuge[Object[Sample, "10 mL sample in 50 mL tube for ExperimentCentrifuge testing (1)" <> $SessionUUID], FilterAliquot -> 1.5 * Milliliter, Output -> Options];
 			Lookup[options, FilterAliquot],
@@ -3881,7 +3881,7 @@ DefineTests[
 	{
 		Example[{Basic, "Find all centrifuges that can be used to centrifuge the input with the desired settings:"},
 			CentrifugeDevices[Model[Container, Vessel, "1.5mL Tube with 2mL Tube Skirt"]],
-			{Model[Instrument, Centrifuge, "id:O81aEB4kJYLO"], Model[Instrument, Centrifuge, "id:jLq9jXY4kGJx"], Model[Instrument, Centrifuge, "id:6V0npvmZ1l3Z"], Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:WNa4ZjKxm86R"], Model[Instrument, Centrifuge, "id:9RdZXv1XwWex"]}
+			{Model[Instrument, Centrifuge, "id:O81aEB4kJYLO"], Model[Instrument, Centrifuge, "id:jLq9jXY4kGJx"], Model[Instrument, Centrifuge, "id:6V0npvmZ1l3Z"], Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:9RdZXv1XwWex"]}
 		],
 		Example[{Basic, "Find all centrifuges that can be used to centrifuge each if the inputs with the desired settings:"},
 			CentrifugeDevices[{
@@ -3894,11 +3894,10 @@ DefineTests[
 					Model[Instrument, Centrifuge, "id:jLq9jXY4kGJx"],
 					Model[Instrument, Centrifuge, "id:6V0npvmZ1l3Z"],
 					Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"],
-					Model[Instrument, Centrifuge, "id:WNa4ZjKxm86R"],
 					Model[Instrument, Centrifuge, "id:9RdZXv1XwWex"]]},
-				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:WNa4ZjKxm86R"], Model[Instrument, Centrifuge, "id:eGakldJEz14E"]]},
-				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:WNa4ZjKxm86R"], Model[Instrument, Centrifuge, "id:9RdZXv1XwWex"]]},
-				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:WNa4ZjKxm86R"], Model[Instrument, Centrifuge, "id:9RdZXv1XwWex"]]}
+				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:eGakldJEz14E"]]},
+				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:9RdZXv1XwWex"]]},
+				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:9RdZXv1XwWex"]]}
 			}
 		],
 		Example[{Basic, "Find all centrifuges and required container models that can be used to centrifuge at the desired settings:"},
@@ -3935,7 +3934,6 @@ DefineTests[
 					{Model[Instrument, Centrifuge, "id:6V0npvmZ1l3Z"], {ObjectP[{Model[Container, Plate], Model[Container, Vessel]}]..}},
 					{Model[Instrument, Centrifuge, "id:9RdZXv1XwWex"], {ObjectP[{Model[Container, Plate], Model[Container, Vessel]}]..}},
 					{Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], {ObjectP[{Model[Container, Plate], Model[Container, Vessel]}]..}},
-					{Model[Instrument, Centrifuge, "id:WNa4ZjKxm86R"], {ObjectP[{Model[Container, Plate], Model[Container, Vessel]}]..}},
 					{Model[Instrument, Centrifuge, "id:eGakldJEz14E"], {ObjectP[{Model[Container, Plate], Model[Container, Vessel]}]..}},
 					{Model[Instrument, Centrifuge, "id:lYq9jRxY9RzA"], {ObjectP[{Model[Container, Plate], Model[Container, Vessel]}]..}},
 					{Model[Instrument, Centrifuge, "id:3em6ZvLEbvP7"], {ObjectP[{Model[Container, Plate], Model[Container, Vessel]}]..}},
@@ -3947,7 +3945,6 @@ DefineTests[
 					{Model[Instrument, Centrifuge, "id:6V0npvmZ1l3Z"], {ObjectP[{Model[Container, Plate], Model[Container, Vessel]}]..}},
 					{Model[Instrument, Centrifuge, "id:9RdZXv1XwWex"], {ObjectP[{Model[Container, Plate], Model[Container, Vessel]}]..}},
 					{Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], {ObjectP[{Model[Container, Plate], Model[Container, Vessel]}]..}},
-					{Model[Instrument, Centrifuge, "id:WNa4ZjKxm86R"], {ObjectP[{Model[Container, Plate], Model[Container, Vessel]}]..}},
 					{Model[Instrument, Centrifuge, "id:eGakldJEz14E"], {ObjectP[{Model[Container, Plate], Model[Container, Vessel]}]..}},
 					{Model[Instrument, Centrifuge, "id:lYq9jRxY9RzA"], {ObjectP[{Model[Container, Plate], Model[Container, Vessel]}]..}},
 					{Model[Instrument, Centrifuge, "id:3em6ZvLEbvP7"], {ObjectP[{Model[Container, Plate], Model[Container, Vessel]}]..}},
@@ -3975,10 +3972,10 @@ DefineTests[
 				Time -> {1Hour, Automatic, 10000Hour, Automatic}
 			],
 			{
-				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:O81aEB4kJYLO"], Model[Instrument, Centrifuge, "id:jLq9jXY4kGJx"], Model[Instrument, Centrifuge, "id:6V0npvmZ1l3Z"], Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:WNa4ZjKxm86R"], Model[Instrument, Centrifuge, "id:9RdZXv1XwWex"]]},
-				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:O81aEB4kJYLO"], Model[Instrument, Centrifuge, "id:jLq9jXY4kGJx"], Model[Instrument, Centrifuge, "id:6V0npvmZ1l3Z"], Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:WNa4ZjKxm86R"], Model[Instrument, Centrifuge, "id:9RdZXv1XwWex"]]},
+				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:O81aEB4kJYLO"], Model[Instrument, Centrifuge, "id:jLq9jXY4kGJx"], Model[Instrument, Centrifuge, "id:6V0npvmZ1l3Z"], Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:9RdZXv1XwWex"]]},
+				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:O81aEB4kJYLO"], Model[Instrument, Centrifuge, "id:jLq9jXY4kGJx"], Model[Instrument, Centrifuge, "id:6V0npvmZ1l3Z"], Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:9RdZXv1XwWex"]]},
 				{},
-				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:WNa4ZjKxm86R"], Model[Instrument, Centrifuge, "id:eGakldJEz14E"]]}
+				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:eGakldJEz14E"]]}
 			}
 		],
 		Example[{Options, Temperature, "Find centrifuges that will work with the desired temperatures:"},
@@ -3990,10 +3987,10 @@ DefineTests[
 				Temperature -> {30Celsius, Automatic, 30Celsius, Automatic}
 			],
 			{
-				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:6V0npvmZ1l3Z"], Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:WNa4ZjKxm86R"], Model[Instrument, Centrifuge, "id:9RdZXv1XwWex"]]},
-				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:O81aEB4kJYLO"], Model[Instrument, Centrifuge, "id:jLq9jXY4kGJx"], Model[Instrument, Centrifuge, "id:6V0npvmZ1l3Z"], Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:WNa4ZjKxm86R"], Model[Instrument, Centrifuge, "id:9RdZXv1XwWex"]]},
-				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:WNa4ZjKxm86R"], Model[Instrument, Centrifuge, "id:eGakldJEz14E"]]},
-				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:WNa4ZjKxm86R"], Model[Instrument, Centrifuge, "id:eGakldJEz14E"]]}
+				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:6V0npvmZ1l3Z"], Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:9RdZXv1XwWex"]]},
+				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:O81aEB4kJYLO"], Model[Instrument, Centrifuge, "id:jLq9jXY4kGJx"], Model[Instrument, Centrifuge, "id:6V0npvmZ1l3Z"], Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:9RdZXv1XwWex"]]},
+				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:eGakldJEz14E"]]},
+				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:eGakldJEz14E"]]}
 			}
 		],
 		Example[{Options, Intensity, "Find centrifuges that will work with the desired force or rate:"},
@@ -4002,7 +3999,7 @@ DefineTests[
 				Model[Container, Plate, "96-well 2mL Deep Well Plate"]},
 				Intensity -> {500 GravitationalAcceleration, 5000 GravitationalAcceleration}],
 			{
-				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:WNa4ZjKxm86R"], Model[Instrument, Centrifuge, "id:eGakldJEz14E"]]},
+				{OrderlessPatternSequence[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"], Model[Instrument, Centrifuge, "id:eGakldJEz14E"]]},
 				{}
 			}
 		],

@@ -854,17 +854,26 @@ uploadSampleModelAuxilliaryPackets[myType_, myInputs_List, myOptionsList_List, m
 										optionSymbol = First[optionRule];
 										optionValue = Last[optionRule];
 
-										(* Append the time to the end of the composition *)
-										If[MatchQ[optionSymbol, Composition] && !MatchQ[optionValue, Null | {Null}],
-											optionSymbol -> Map[
-												Function[{myEntry},
-													{myEntry[[1]], Link[myEntry[[2]]], timeOfUpdate}
+										Which[
+											(* Append the time to the end of the composition *)
+											MatchQ[optionSymbol, Composition] && !MatchQ[optionValue, Null | {Null}],
+												optionSymbol -> Map[
+													Function[{myEntry},
+														{myEntry[[1]], Link[myEntry[[2]]], timeOfUpdate}
+													],
+													optionValue
 												],
-												optionValue
-											],
-
+											(* NFPA special field should be {} instead of Null *)
+											MatchQ[optionSymbol, NFPA] && MatchQ[Lookup[optionValue, Special], Null],
+												optionSymbol -> {
+													Health -> Lookup[optionValue, Health],
+													Flammability -> Lookup[optionValue, Flammability],
+													Reactivity -> Lookup[optionValue, Reactivity],
+													Special -> {}
+												},
 											(* Otherwise just pass through the option *)
-											optionSymbol -> If[MatchQ[optionValue, {Null}], Null, optionValue]
+											True,
+												optionSymbol -> If[MatchQ[optionValue, {Null}], Null, optionValue]
 										]
 									]
 								],

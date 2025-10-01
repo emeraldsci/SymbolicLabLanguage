@@ -353,14 +353,14 @@ resolvePlateMediaOptions[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}].
 
 	(* - Round the experiment options - *)
 	(* First, define the option precisions that need to be checked for PlateMedia *)
-	optionPrecisions={
-		{PlatingVolume,10^-1*Milliliter},
-		{PrePlatingIncubationTime,10^0*Minute},
-		{MaxPrePlatingIncubationTime,10^0*Minute},
-		{PlatingTemperature,10^-1*Celsius},
-		{SolidificationTime,10^0*Minute},
-		{PumpFlowRate,10^0*(Milliliter/Second)},
-		{PlatedMediaShelfLife,10^0*Day}
+	optionPrecisions = {
+		{PlatingVolume, 10^-1 * Milliliter},
+		{PrePlatingIncubationTime, {10^0 * Minute, 10^-1 Hour}},
+		{MaxPrePlatingIncubationTime, {10^0 * Minute, 10^-1 Hour}},
+		{PlatingTemperature, 10^-1 * Celsius},
+		{SolidificationTime, {10^0 * Minute, 10^-1 Hour}},
+		{PumpFlowRate, 10^0 * (Milliliter / Second)},
+		{PlatedMediaShelfLife, {10^0 * Day, 10^0 * Month}}
 	};
 
 	(* Verify that the experiment options are not overly precise *)
@@ -938,12 +938,20 @@ plateMediaResourcePackets[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]
 	];
 	
 	samplesInResources = Map[Function[{media},
-		Module[{mediaResourceAssociation,container,amount,name},
+		Module[{mediaResourceAssociation, liquidMedia, container, amount, name},
 			mediaResourceAssociation = Lookup[samplesInResourceAssociations,media];
+			liquidMedia = Quiet[FirstOrDefault@Download[fastAssocLookup[plateMediaResourceFastAssoc, media, LiquidMedia], Object]];
 			{container,amount,name} = Lookup[mediaResourceAssociation,{Container,Volume,Name}];
-			If[MatchQ[media,ObjectP[Model[Sample]]],
-				Resource[Sample->media,Container->container,Amount->amount,Name->name],
-				Resource[Sample->media,Amount->amount,Name->name]
+			Which[
+				(* If the media has LiquidMedia field populated, it is a MediaPhase->Solid and this resource will ask for its liquid form*)
+				MatchQ[liquidMedia, ObjectP[Model[Sample, Media]]],
+					Resource[Sample -> liquidMedia, Container -> container, Amount -> amount, Name -> name],
+				(* It is otherwise a media model, request the resource in an appropriate container *)
+				MatchQ[media, ObjectP[Model[Sample, Media]]],
+					Resource[Sample -> media, Container -> container, Amount -> amount, Name -> name],
+				(* Otherwise requesting an object *)
+				True,
+					Resource[Sample->media,Amount->amount,Name->name]
 			]
 		]
 	],myMedia];
@@ -1211,9 +1219,9 @@ ExperimentPlateMedia[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]..},m
 		},
 		{
 			{
-				Packet[Model,Container,Volume,GellingAgents],
+				Packet[Model, Container, Volume, GellingAgents, LiquidMedia],
 				Packet[Container][Model][Dimensions],
-				Packet[Model][GellingAgents],
+				Packet[Model[GellingAgents, LiquidMedia]],
 				Packet[Model][GellingAgents[[All,2]]][Object,MeltingPoint],
 				Packet[GellingAgents[[All,2]][Object,MeltingPoint]]
 			},

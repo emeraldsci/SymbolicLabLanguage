@@ -196,7 +196,7 @@ DefineUsage[ExperimentIncubateCellsPreview,
 		BasicDefinitions -> {
 			{
 				Definition -> {"ExperimentIncubateCellsPreview[Samples]", "Preview"},
-				Description -> "returns the preview for ExperimentIncubateCells when it is called on 'Samples'.",
+				Description -> "returns the graphical 'Preview' for ExperimentIncubateCells when it is called on 'Samples'.",
 				Inputs :> {
 					IndexMatching[
 						{

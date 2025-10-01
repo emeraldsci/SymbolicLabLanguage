@@ -557,6 +557,42 @@ DefineObjectType[Object[UnitOperation,CountLiquidParticles],
 				Pattern:>FilePathP,
 				Description -> "The folder and the final file name that will be generated for the videos to be saved in.",
 				Category -> "Data Processing"
+			},
+			StirBarWashSolutions -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Object[Sample],
+					Model[Sample]
+				],
+				Description -> "The solvent used for washing the stir bar.",
+				Category -> "Washing"
+			},
+			WasteBeaker->{
+				Format->Single,
+				Class->Link,
+				Pattern:>_Link,
+				Relation->Object[Container,Vessel]|Model[Container,Vessel],
+				Description->"A vessel that is used to catch any residual water that comes off the stir bar washer when it is washed.",
+				Category->"Washing"
+			},
+			StirBarWasher -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[Model[Part],Object[Part]],
+				Description -> "The stir bar washer that is used to wash the stir bar after it is taken out of the zip bag and to transfer it to sample container.",
+				Category -> "Washing"
+			},
+			Pipettes -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[Object[Item, Consumable],Model[Item, Consumable]],
+				IndexMatching->SamplesIn,
+				Description -> "The pipette used to wash the stir bar after it is taken out of the zip bag.",
+				Category -> "Washing"
 			}
 		}
 	}

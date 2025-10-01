@@ -1271,7 +1271,8 @@ SimulateResources[
 	simulatedProtocolPacket=Quiet[Download[myProtocol, Packet[SamplesIn, ResolvedOptions], Simulation->currentSimulation]];
 
 	(* Get our experiment function we're being called from. *)
-	experimentFunction = If[MemberQ[Flatten[Values[If[MatchQ[$ECLApplication,CommandCenter],Experiment`Private`experimentFunctionTypeLookup,ProcedureFramework`Private`experimentFunctionTypeLookup]]], Lookup[simulatedProtocolPacket, Type]],
+	experimentFunction = If[MemberQ[Flatten[Values[If[ValueQ[ProcedureFramework`Private`experimentFunctionTypeLookup], ProcedureFramework`Private`experimentFunctionTypeLookup,
+		Experiment`Private`experimentFunctionTypeLookup]]], Lookup[simulatedProtocolPacket, Type]],
 		FirstCase[
 			Normal@If[MatchQ[$ECLApplication,CommandCenter],Experiment`Private`experimentFunctionTypeLookup,ProcedureFramework`Private`experimentFunctionTypeLookup],
 			(Verbatim[Rule][function_, Lookup[simulatedProtocolPacket, Type]|{___, Lookup[simulatedProtocolPacket, Type], ___}]:>function)
@@ -1873,11 +1874,11 @@ samplesForMessages[inputSamples: {ObjectP[]..}, ops: OptionsPattern[samplesForMe
 (*pluralize*)
 
 (* Shortcuts overloads *)
-hasOrHave[inputSamples: {ObjectP[]..}] := pluralize[inputSamples, "have"];
-isOrAre[inputSamples: {ObjectP[]..}] := pluralize[inputSamples, "be"];
+hasOrHave[inputSamples: _List] := pluralize[inputSamples, "have"];
+isOrAre[inputSamples: _List] := pluralize[inputSamples, "be"];
 
 (* Overload for verb takes a list of Object[Sample]s and adjust verb based on hard-coded list accordingly *)
-pluralize[inputSamples: {ObjectP[]..}, verb: _String] := Module[
+pluralize[inputSamples: _List, verb: _String] := Module[
 	{verbFormLookup, singularForm, pluralForm},
 
 	(* Common verbs used in error messages *)
@@ -1904,7 +1905,7 @@ pluralize[inputSamples: {ObjectP[]..}, verb: _String] := Module[
 	pluralize[inputSamples, singularForm, pluralForm]
 ];
 (* Main Overload *)
-pluralize[inputSamples: {ObjectP[]..}, singularForm: _String, pluralForm: _String] := Module[{},
+pluralize[inputSamples: _List, singularForm: _String, pluralForm: _String] := Module[{},
 
 	(* Return either singular or plural form based on the length of input samples *)
 	If[Length[inputSamples] > 1,

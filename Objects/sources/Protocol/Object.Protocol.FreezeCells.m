@@ -5,7 +5,7 @@
 
 
 DefineObjectType[Object[Protocol, FreezeCells], {
-	Description -> "A protocol for the freezing of cells for long-term storage cryogenic storage.",
+	Description -> "A protocol for the freezing of cells for long-term cryogenic storage.",
 	CreatePrivileges -> None,
 	Cache -> Session,
 	Fields -> {
@@ -14,7 +14,7 @@ DefineObjectType[Object[Protocol, FreezeCells], {
 			Format -> Multiple,
 			Class -> Expression,
 			Pattern :> CellTypeP,
-			Description -> "For each member of SamplesIn, the taxon of the organism or cell line from which the cell sample originates. Options include Bacterial, Mammalian, and Yeast.",
+			Description -> "For each member of SamplesIn, the type of the most abundant cells that are thought to be present in this sample.",
 			Category -> "General",
 			IndexMatching -> SamplesIn
 		},
@@ -22,7 +22,7 @@ DefineObjectType[Object[Protocol, FreezeCells], {
 			Format -> Multiple,
 			Class -> Expression,
 			Pattern :> CultureAdhesionP,
-			Description -> "For each member of SamplesIn, indicates how the input cell sample physically interacts with its container.",
+			Description -> "For each member of SamplesIn, the manner of cell growth the cells in the sample are thought to employ (i.e., SolidMedia, Suspension, and Adherent). SolidMedia cells grow in colonies on a nutrient rich substrate, suspended cells growing free floating in liquid media, and adherent cells grow as a monolayer attached to a substrate.",
 			Category -> "General",
 			IndexMatching -> SamplesIn
 		},
@@ -49,7 +49,7 @@ DefineObjectType[Object[Protocol, FreezeCells], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[Model[Instrument], Object[Instrument]],
-			Description -> "For each member of SamplesIn, the centrifuge used to pellet the cell sample in order to remove the existing media and replace with cryoprotectant media.",
+			Description -> "For each member of SamplesIn, the instrument which pellets the cells in the sample in order to remove the existing media and replace with cryoprotectant media.",
 			Category -> "Pelleting",
 			IndexMatching -> SamplesIn
 		},
@@ -94,8 +94,7 @@ DefineObjectType[Object[Protocol, FreezeCells], {
 			Pattern :> _Link,
 			Relation -> Alternatives[Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation]],
 			Description -> "The protocol used to pellet the cell sample(s) to remove existing media in a cell freezing experiment.",
-			Category -> "Pelleting",
-			Developer -> True
+			Category -> "Pelleting"
 		},
 		(* ---------- Cryoprotection Fields ---------- *)
 		CryoprotectantSolutions -> {
@@ -166,8 +165,7 @@ DefineObjectType[Object[Protocol, FreezeCells], {
 			Pattern :> _Link,
 			Relation -> Alternatives[Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation]],
 			Description -> "The protocol specifying the aliquoting of the input cell sample(s) to CryogenicSampleContainers, resuspending the cells, and transferring of CryoprotectantSolutions to CryogenicSampleContainers prior to freezing.",
-			Category -> "Cryoprotection",
-			Developer -> True
+			Category -> "Cryoprotection"
 		},
 		(* ---------- General Cell Freezing Fields ---------- *)
 		CryogenicSampleContainers -> {
@@ -207,7 +205,7 @@ DefineObjectType[Object[Protocol, FreezeCells], {
 				Model[Instrument, Freezer],
 				Object[Instrument, Freezer]
 			],
-			Description -> "For each member of SamplesIn, the device used to cool the cell sample.",
+			Description -> "For each member of SamplesIn, the device supplies low temperatures and either electronically regulates the TemperatureProfile or drives the cooling process of an insulated cooler placed inside to cool the sample.",
 			Category -> "Cell Freezing",
 			IndexMatching -> SamplesIn,
 			Abstract -> True
@@ -302,8 +300,7 @@ DefineObjectType[Object[Protocol, FreezeCells], {
 			Pattern :> _Link,
 			Relation -> Alternatives[Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation]],
 			Description -> "The transfer protocol used to fill InsulatedCoolerContainers with Coolants in a cell freezing experiment.",
-			Category -> "Cell Freezing",
-			Developer -> True
+			Category -> "Cell Freezing"
 		},
 		InsulatedCoolerFreezingTime -> {
 			Format -> Single,
@@ -378,7 +375,6 @@ DefineObjectType[Object[Protocol, FreezeCells], {
 			Category -> "Sample Storage",
 			Developer -> True
 		}
-
 	}
 }];
 

@@ -79,6 +79,14 @@ DefineObjectType[Object[Instrument, Balance], {
 			Relation -> Object[Item,Consumable],
 			Description -> "The wipes used to wipe off any stray material from the balance.",
 			Category -> "Cleaning"
+		},
+		Enclosed -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Relation -> None,
+			Description -> "Indicates if this balance is enclosed on all sides meant to keep away dust or draft.",
+			Category -> "General"
 		}
 	}
 }];

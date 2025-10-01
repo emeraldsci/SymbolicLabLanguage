@@ -12,12 +12,13 @@
 
 (* NOTE: We assume that we have all the fields that we need in this packet already. *)
 UnitOperationPrimitive[myUnitOperationPacket_, myOptions:OptionsPattern[]]:=Module[
-	{includeCompletedOptions,includeEmptyOptions,collapseOptionsQ,splitFieldsLookup,nonSplitFieldsFromPacket,recombinedSplitFields,
+	{includeCompletedOptions,includeEmptyOptions,includedHiddenOptions,collapseOptionsQ,splitFieldsLookup,nonSplitFieldsFromPacket,recombinedSplitFields,
 		allValuesFromPacket,finalValuesFromPacket,unitOperationHead,filteredValuesFromPacket},
 
-	(* Should we include completed options? *)
+	(* Should we include completed options or keep some hidden options? *)
 	includeCompletedOptions=Lookup[ToList[myOptions], IncludeCompletedOptions, True];
 	includeEmptyOptions=Lookup[ToList[myOptions], IncludeEmptyOptions, False];
+	includedHiddenOptions=Lookup[ToList[myOptions], IncludedHiddenOptions, {}];
 
 	(* Should we collapse options? *)
 	collapseOptionsQ=Lookup[ToList[myOptions], CollapseOptions, False];
@@ -79,7 +80,7 @@ UnitOperationPrimitive[myUnitOperationPacket_, myOptions:OptionsPattern[]]:=Modu
 	(* Filter, if we're not supposed to include the completed options. *)
 	filteredValuesFromPacket=If[MatchQ[includeCompletedOptions, True],
 		finalValuesFromPacket,
-		RemoveHiddenPrimitiveOptions[unitOperationHead,finalValuesFromPacket]
+		RemoveHiddenPrimitiveOptions[unitOperationHead,finalValuesFromPacket,Exclude->includedHiddenOptions]
 	];
 
 	(* Put it into primitive form . *)

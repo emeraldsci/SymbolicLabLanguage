@@ -43,6 +43,14 @@ DefineObjectType[Model[Part], {
 			Description -> "An example photo of this model of part.",
 			Category -> "Organizational Information"
 		},
+		Icon -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "A simplified image used to represent this part.",
+			Category -> "Part Specifications"
+		},
 		DeveloperObject -> {
 			Format -> Single,
 			Class -> Expression,
@@ -59,6 +67,15 @@ DefineObjectType[Model[Part], {
 			Description -> "Detailed drawings of the part that explain its capabilities and limitations.",
 			Category -> "Part Specifications",
 			Headers -> {"Schematic","Caption"}
+		},
+		USPCategorization -> {
+			Format -> Single,
+			Class -> {Expression, Expression},
+			Pattern :> {USPCategorizationP, USPCategorizationJustificationP},
+			Description -> "The USP Group, as outlined in USP 1058, with which this part is associated and the justification for that classification. Group A represents the least complex instruments that do not have measurement capability or require calibration. Group B represents instruments that may provide a measurement or an experimental condition that can affect measurement. Group C represents complex analytical instruments with a significant degree of computerization.",
+			Headers -> {"USP Group", "Justification"},
+			Category -> "Organizational Information",
+			Developer -> True
 		},
 
 		(* --- Quality Assurance --- *)

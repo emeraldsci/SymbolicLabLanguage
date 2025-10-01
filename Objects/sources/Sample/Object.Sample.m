@@ -597,6 +597,13 @@ DefineObjectType[Object[Sample], {
 			Description->"Indicates if this model is in the form of a small disk or cylinder of compressed solid substance in a measured amount.",
 			Category->"Physical Properties"
 		},
+		Capsule ->{
+			Format->Single,
+			Class->Boolean,
+			Pattern:>BooleanP,
+			Description->"Indicates if this model is in the form of a small cylinder that can be opened containing solid substance in a measured amount.",
+			Category->"Physical Properties"
+		},
 		SolidUnitWeight->{
 			Format->Single,
 			Class->Real,

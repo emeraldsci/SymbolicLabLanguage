@@ -66,6 +66,15 @@ DefineObjectType[Object[Protocol, Grind], {
 			Description -> "For each member of SamplesIn, the container that the sample is transferred into during the grinding process. Refer to Instrumentation Table in help files for more information about the containers that are used for each model of grinders.",
 			Category -> "General"
 		},
+		GrindingContainerTransfer -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			IndexMatching -> SamplesIn,
+			Description -> "For each member of SamplesIn, indicates if the input samples must be transferred to the GrindingContainers prior to grinding.",
+			Developer -> True,
+			Category -> "General"
+		},
 		GrindingBeads -> {
 			Format -> Multiple,
 			Class -> Link,

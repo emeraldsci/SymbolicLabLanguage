@@ -102,6 +102,14 @@ DefineObjectType[Object[User], {
 			Category -> "Personal Information",
 			Abstract -> True
 		},
+		Certifications->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Certification][User],
+			Description->"The skill sets this person has or is working on obtaining.",
+			Category->"Operations Information"
+		},
 
 		(* --- Team Information --- *)
 		FinancingTeams -> {
@@ -634,7 +642,7 @@ DefineObjectType[Object[User], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates if this user has passed its most recent qualification.",
+			Description -> "Indicates if this user has passed their most recent qualification.",
 			Category -> "Qualifications & Maintenance",
 			Developer -> True
 		},

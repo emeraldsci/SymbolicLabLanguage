@@ -1194,13 +1194,13 @@ Warning::ItemsContainerless="The DiscardContainer option will be ignored for the
 
 
 (* Singleton Input Overload *)
-DiscardSamples[mySample:(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object[Container]]),myOptions:OptionsPattern[]]:=DiscardSamples[{mySample},myOptions];
+DiscardSamples[mySample:ObjectP[{Object[Sample],Object[Item], Object[Container], Object[Part]}],myOptions:OptionsPattern[]]:=DiscardSamples[{mySample},myOptions];
 
 
 (* Core Overload: Listed Input - Pass to UploadStorageCondition for Disposal *)
-DiscardSamples[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object[Container]])..},myOptions:OptionsPattern[]]:=Module[
+DiscardSamples[mySamples:{ObjectP[{Object[Sample],Object[Item], Object[Container],Object[Part]}]..},myOptions:OptionsPattern[]]:=Module[
 	{
-		listedSamples, listedOptions,
+		listedOptions,
 		outputSpecification, output, gatherTests, safeOptions, safeOptionTests,
 		validLengths, validLengthTests,
 		cache, inputPacketSpecs,inputDownloadTuples, newCache,
@@ -1211,7 +1211,6 @@ DiscardSamples[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object
 	},
 
 	(* Make sure we're working with a list of options *)
-	listedSamples=ToList[mySamples];
 	listedOptions=ToList[myOptions];
 
 	(* Determine the requested return value from the function *)
@@ -1241,8 +1240,8 @@ DiscardSamples[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object
 	(* Silence the missing option errors *)
 	{validLengths,validLengthTests}=Quiet[
 		If[gatherTests,
-			ValidInputLengthsQ[DiscardSamples,{listedSamples},safeOptions, Output -> {Result, Tests}],
-			{ValidInputLengthsQ[DiscardSamples,{listedSamples},safeOptions],Null}
+			ValidInputLengthsQ[DiscardSamples,{mySamples},safeOptions, Output -> {Result, Tests}],
+			{ValidInputLengthsQ[DiscardSamples,{mySamples},safeOptions],Null}
 		],
 		Warning::IndexMatchingOptionMissing
 	];
@@ -1286,17 +1285,17 @@ DiscardSamples[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object
 					Packet[Field[Container[Contents][[All,2]][{AwaitingDisposal,Status,Container,StorageCondition,RequestedResources, Notebook}]]],
 					Packet[RequestedResources[{Status}]]
 				},
-			MatchQ[#,SelfContainedSampleP],
+			MatchQ[#,(SelfContainedSampleP|ObjectP[Object[Part]])],
 				{
 					Packet[AwaitingDisposal,Status,Container,StorageCondition,RequestedResources, Notebook],
 					Packet[RequestedResources[{Status}]]
 				}
 		]&,
-		Join[{$PersonID}, listedSamples]
+		Join[{$PersonID}, mySamples]
 	];
 
 	(* download information from the input samples according to these packet specs. Pass the cache *)
-	allDownloadTuples=Download[Join[{$PersonID}, listedSamples],inputPacketSpecs, Cache -> cache, Simulation -> simulation];
+	allDownloadTuples=Download[Join[{$PersonID}, mySamples],inputPacketSpecs, Cache -> cache, Simulation -> simulation];
 
 	(* the rest of the download information is purely for UploadStorageCondition's cache; just flatten and remove duplicates on everything *)
 	newCache = Flatten[{cache, DeleteDuplicatesBy[Cases[Flatten[allDownloadTuples],PacketP[]],Lookup[#,Object]&]}];
@@ -1309,8 +1308,8 @@ DiscardSamples[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object
 	(* Check will return $Failed if InvalidInput/InvalidOption is thrown, indicating we can't actually return the standard result *)
 	resolvedOptionsResult=Check[
 		{{resolvedOptions,resolvedPackets}, resolvedOptionsTests}=If[gatherTests,
-			resolveDiscardSamplesOptions[listedSamples, inputDownloadTuples, safeOptions, Output->{Result,Tests}, Cache -> newCache, Simulation->simulation],
-			{resolveDiscardSamplesOptions[listedSamples, inputDownloadTuples, safeOptions, Cache -> newCache, Simulation->simulation],{}}
+			resolveDiscardSamplesOptions[mySamples, inputDownloadTuples, safeOptions, Output->{Result,Tests}, Cache -> newCache, Simulation->simulation],
+			{resolveDiscardSamplesOptions[mySamples, inputDownloadTuples, safeOptions, Cache -> newCache, Simulation->simulation],{}}
 		],
 		$Failed,
 		{Error::InvalidInput,Error::InvalidOption}
@@ -1341,7 +1340,7 @@ DiscardSamples[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object
 	resultRule = Result -> If[MemberQ[output,Result],
 		If[MatchQ[resolvedOptionsResult,$Failed],
 			$Failed,
-			discardSamplesResult[listedSamples, resolvedPackets, resolvedOptions]
+			discardSamplesResult[mySamples, resolvedPackets, resolvedOptions]
 		],
 		Null
 	];
@@ -1357,7 +1356,7 @@ DiscardSamples[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object
 
 
 (* check result and upload if requested *)
-discardSamplesResult[listedSamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object[Container]])..}, resolvedPackets: {(PacketP[]|$Failed)..}, resolvedOps:OptionsPattern[]]:=Module[
+discardSamplesResult[listedSamples:{ObjectP[{Object[Sample],Object[Item], Object[Container], Object[Part]}]..}, resolvedPackets: {(PacketP[]|$Failed)..}, resolvedOps:OptionsPattern[]]:=Module[
 	{
 
 		upload, uploadReturn
@@ -1395,7 +1394,7 @@ DefineOptions[resolveDiscardSamplesOptions,
 
 (* resolves the options for DiscardSamples *)
 (* NOTE: Output \[Rule] Result will return {options,packets} *)
-resolveDiscardSamplesOptions[mySamples:{ObjectP[{Object[Sample],Object[Item],Object[Container]}]..},inputDownloadTuples_, myOptions:{(_Rule|_RuleDelayed)..},ops:OptionsPattern[]]:=Module[
+resolveDiscardSamplesOptions[mySamples:{ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}]..},inputDownloadTuples_, myOptions:{(_Rule|_RuleDelayed)..},ops:OptionsPattern[]]:=Module[
 	{
 		safeOps,
 		output, cache, listedOutput, collectTestsBoolean,
@@ -1406,7 +1405,8 @@ resolveDiscardSamplesOptions[mySamples:{ObjectP[{Object[Sample],Object[Item],Obj
 		selfContainedSamplesWithDiscardContainerTests, selfContainedSamplesWithDiscardContainer,
 		discardUpdatePackets, uniqueDiscardUpdatePackets,
 		storageConditionUpdatePackets,storageConditionTests,
-		allTests,resolvedOptions,collapsedOptions, uploadPackets, simulation
+		allTests,resolvedOptions,collapsedOptions, uploadPackets, simulation,
+		containerlessTypes
 	},
 
 	(* Make sure the input Options are safe to use *)
@@ -1426,10 +1426,13 @@ resolveDiscardSamplesOptions[mySamples:{ObjectP[{Object[Sample],Object[Item],Obj
 	(* assign the core input packets (always at index 1 of packet spec) to a sensible local variable *)
 	inputPackets=inputDownloadTuples[[All,1]];
 
+	(* make a list of containerless types *)
+	containerlessTypes = Append[SelfContainedSampleTypes,Object[Part]];
+
 	(* assign the container model packets to a sensible local variable; be conscious of self-contained samples not having a container model packet; leave Null *)
 	containerModelPackets=MapThread[
 		Function[{inputPacket,downloadTuple},
-			If[MatchQ[inputPacket,PacketP[SelfContainedSampleTypes]],
+			If[MatchQ[inputPacket,PacketP[containerlessTypes]],
 				Null,
 				downloadTuple[[2]]
 			]
@@ -1493,7 +1496,7 @@ resolveDiscardSamplesOptions[mySamples:{ObjectP[{Object[Sample],Object[Item],Obj
 		MapThread[
 			Function[{inputPacket,discardContainer},
 				Warning[ToString[Lookup[inputPacket,Object], InputForm]<>" should not have DiscardContainer -> True if it is a self-contained sample.",
-					!( TrueQ[discardContainer] && MatchQ[inputPacket,PacketP[SelfContainedSampleTypes]]),
+					!(TrueQ[discardContainer] && MatchQ[inputPacket,PacketP[containerlessTypes]]),
 					True
 				]
 			],
@@ -1505,7 +1508,7 @@ resolveDiscardSamplesOptions[mySamples:{ObjectP[{Object[Sample],Object[Item],Obj
 	(* pick out any self-contained samples that have DiscardContainer set; these will be ignored *)
 	selfContainedSamplesWithDiscardContainer=MapThread[
 		Function[{inputPacket,discardContainer},
-			If[TrueQ[discardContainer]&&MatchQ[inputPacket,PacketP[SelfContainedSampleTypes]],
+			If[TrueQ[discardContainer]&&MatchQ[inputPacket,PacketP[containerlessTypes]],
 				Lookup[inputPacket,Object],
 				Nothing
 			]
@@ -1527,7 +1530,7 @@ resolveDiscardSamplesOptions[mySamples:{ObjectP[{Object[Sample],Object[Item],Obj
 						<|Object->Lookup[inputPacket,Object],Reusable->False|>,
 					MatchQ[inputPacket,PacketP[NonSelfContainedSampleTypes]],
 						<|Object->Download[Lookup[inputPacket,Container],Object],Reusable->False|>,
-					MatchQ[inputPacket,PacketP[SelfContainedSampleTypes]],
+					MatchQ[inputPacket,PacketP[containerlessTypes]],
 						Nothing
 				],
 				Nothing
@@ -1585,11 +1588,11 @@ DefineOptions[DiscardSamplesOptions,
 
 
 (* Singleton Input Overload *)
-DiscardSamplesOptions[mySample:(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object[Container]]), ops:OptionsPattern[]]:=DiscardSamplesOptions[{mySample}, ops];
+DiscardSamplesOptions[mySample:ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}], ops:OptionsPattern[]]:=DiscardSamplesOptions[{mySample}, ops];
 
 
 (* Core Overload: return the options for this function *)
-DiscardSamplesOptions[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object[Container]])..}, ops:OptionsPattern[]]:=Module[
+DiscardSamplesOptions[mySamples:{ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}]..}, ops:OptionsPattern[]]:=Module[
 	{listedOptions, noOutputOptions, options},
 
 	(* get the options as a list *)
@@ -1624,11 +1627,11 @@ DefineOptions[DiscardSamplesPreview,
 
 
 (* Singleton Input Overload *)
-DiscardSamplesPreview[mySample:(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object[Container]]), ops:OptionsPattern[]]:=DiscardSamplesPreview[{mySample}, ops];
+DiscardSamplesPreview[mySample:ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}], ops:OptionsPattern[]]:=DiscardSamplesPreview[{mySample}, ops];
 
 
 (* Core Overload: return the options for this function *)
-DiscardSamplesPreview[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object[Container]])..}, ops:OptionsPattern[]]:=Module[
+DiscardSamplesPreview[mySamples:{ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}]..}, ops:OptionsPattern[]]:=Module[
 	{listedOptions, noOutputOptions},
 
 	(* get the options as a list *)
@@ -1657,11 +1660,11 @@ DefineOptions[ValidDiscardSamplesQ,
 
 
 (* Singleton Input Overload *)
-ValidDiscardSamplesQ[mySample:(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object[Container]]), ops:OptionsPattern[]]:=ValidDiscardSamplesQ[{mySample}, ops];
+ValidDiscardSamplesQ[mySample:ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}], ops:OptionsPattern[]]:=ValidDiscardSamplesQ[{mySample}, ops];
 
 
 (* Core Overload: return the options for this function *)
-ValidDiscardSamplesQ[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object[Container]])..}, ops:OptionsPattern[]]:=Module[
+ValidDiscardSamplesQ[mySamples:{ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}]..}, ops:OptionsPattern[]]:=Module[
 	{listedOptions, preparedOptions, discardSamplesTests, initialTestDescription, allTests, verbose, outputFormat},
 
 	(* get the options as a list *)
@@ -1738,11 +1741,11 @@ Warning::ContainerConflict="Based on the provided input sample(s), all samples i
 
 
 (* Singleton Input Overload *)
-CancelDiscardSamples[mySample:(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object[Container]]), myOptions:OptionsPattern[]]:=CancelDiscardSamples[{mySample},myOptions];
+CancelDiscardSamples[mySample:ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}], myOptions:OptionsPattern[]]:=CancelDiscardSamples[{mySample},myOptions];
 
 
 (* Core Overload: Listed Input - Pass to UploadStorageCondition for Disposal *)
-CancelDiscardSamples[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object[Container]])..}, myOptions:OptionsPattern[]]:=Module[
+CancelDiscardSamples[mySamples:{ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}]..}, myOptions:OptionsPattern[]]:=Module[
 	{
 		listedSamples, listedOptions, outputSpecification, output,
 		gatherTests, safeOptions, safeOptionTests, validLengths, validLengthTests,
@@ -1888,12 +1891,12 @@ DefineOptions[cancelDiscardSamplesResult,
 ];
 
 
-cancelDiscardSamplesResult[listedSamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object[Container]])..}, inputDownloadTuples_, resolvedOps:OptionsPattern[]]:=Module[
+cancelDiscardSamplesResult[listedSamples:{ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}]..}, inputDownloadTuples_, resolvedOps:OptionsPattern[]]:=Module[
 	{
 		expandedOptions, expandedListedSamples,
 		upload, cache, fastTrack,
 		inputPackets, alreadyDiscardedSamplePackets, nonDiscardedInputDownloadTuples,
-		allObjectsToUpdate, uploadPackets, uploadReturn
+		allObjectsToUpdate, uploadPackets, uploadReturn,containerlessTypes
 	},
 
 	(* expand options to match mySamples. In this case expandedMySamples is same as mySamples *)
@@ -1904,6 +1907,7 @@ cancelDiscardSamplesResult[listedSamples:{(ObjectP[{Object[Sample],Object[Item]}
 
 	(* assign the core input packets (always at index 1 of packet spec) to a sensible local variable *)
 	inputPackets=inputDownloadTuples[[All,1]];
+	containerlessTypes = Append[SelfContainedSampleTypes,Object[Part]];
 
 	(* pick out any discarded samples; these will be ignored *)
 	alreadyDiscardedSamplePackets = Select[inputPackets,MatchQ[Lookup[#,Status],Discarded]&];
@@ -1919,7 +1923,7 @@ cancelDiscardSamplesResult[listedSamples:{(ObjectP[{Object[Sample],Object[Item]}
 					Prepend[Download[Lookup[inputPacket,Contents][[All,2]],Object],Lookup[inputPacket,Object]],
 				MatchQ[inputPacket,PacketP[NonSelfContainedSampleTypes]], (* Object[Sample] *)
 					{Download[Lookup[inputPacket,Container][Contents][[All,2]],Object], Lookup[inputPacket,Container][Object]},
-				MatchQ[inputPacket,PacketP[SelfContainedSampleTypes]], (* Object[Item] *)
+				MatchQ[inputPacket,PacketP[containerlessTypes]], (* Object[Item]/Object[Part] *)
 					Lookup[inputPacket,Object]
 			]
 		],
@@ -1960,7 +1964,7 @@ DefineOptions[resolveCancelDiscardSamplesOptions,
 
 
 (* resolves the options/errors for CancelDiscardSamples *)
-resolveCancelDiscardSamplesOptions[mySamples:{ObjectP[{Object[Sample],Object[Item],Object[Container]}]..},inputDownloadTuples_, myOptions:{(_Rule|_RuleDelayed)..},ops:OptionsPattern[]]:=Module[
+resolveCancelDiscardSamplesOptions[mySamples:{ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}]..},inputDownloadTuples_, myOptions:{(_Rule|_RuleDelayed)..},ops:OptionsPattern[]]:=Module[
 	{
 		safeOps,
 		output, cache, listedOutput, collectTestsBoolean,
@@ -2072,11 +2076,11 @@ DefineOptions[CancelDiscardSamplesOptions,
 
 
 (* Singleton Input Overload *)
-CancelDiscardSamplesOptions[mySample:(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object[Container]]), ops:OptionsPattern[]]:=CancelDiscardSamplesOptions[{mySample}, ops];
+CancelDiscardSamplesOptions[mySample:ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}], ops:OptionsPattern[]]:=CancelDiscardSamplesOptions[{mySample}, ops];
 
 
 (* Core Overload: return the options for this function *)
-CancelDiscardSamplesOptions[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object[Container]])..}, ops:OptionsPattern[]]:=Module[
+CancelDiscardSamplesOptions[mySamples:{ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}]..}, ops:OptionsPattern[]]:=Module[
 	{listedOptions, noOutputOptions, options},
 
 	(* get the options as a list *)
@@ -2111,11 +2115,11 @@ DefineOptions[CancelDiscardSamplesPreview,
 
 
 (* Singleton Input Overload *)
-CancelDiscardSamplesPreview[mySample:(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object[Container]]), ops:OptionsPattern[]]:=CancelDiscardSamplesPreview[{mySample}, ops];
+CancelDiscardSamplesPreview[mySample:ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}], ops:OptionsPattern[]]:=CancelDiscardSamplesPreview[{mySample}, ops];
 
 
 (* Core Overload: return the options for this function *)
-CancelDiscardSamplesPreview[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object[Container]])..}, ops:OptionsPattern[]]:=Module[
+CancelDiscardSamplesPreview[mySamples:{ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}]..}, ops:OptionsPattern[]]:=Module[
 	{listedOptions, noOutputOptions},
 
 	(* get the options as a list *)
@@ -2144,11 +2148,11 @@ DefineOptions[ValidCancelDiscardSamplesQ,
 
 
 (* Singleton Input Overload *)
-ValidCancelDiscardSamplesQ[mySample:(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object[Container]]), ops:OptionsPattern[]]:=ValidCancelDiscardSamplesQ[{mySample}, ops];
+ValidCancelDiscardSamplesQ[mySample:ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}], ops:OptionsPattern[]]:=ValidCancelDiscardSamplesQ[{mySample}, ops];
 
 
 (* Core Overload: return the options for this function *)
-ValidCancelDiscardSamplesQ[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object[Container]])..}, ops:OptionsPattern[]]:=Module[
+ValidCancelDiscardSamplesQ[mySamples:{ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}]..}, ops:OptionsPattern[]]:=Module[
 	{listedOptions, preparedOptions, discardSamplesTests, initialTestDescription, allTests, verbose, outputFormat},
 
 	(* get the options as a list *)

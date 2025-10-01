@@ -44,7 +44,7 @@ DefineObjectType[Object[UnitOperation, FreezeCells], {
 			Format -> Multiple,
 			Class -> Expression,
 			Pattern :> CellTypeP,
-			Description -> "For each member of SampleLink, the taxon of the organism or cell line from which the cell sample originates. Options include Bacterial, Mammalian, and Yeast.",
+			Description -> "For each member of SampleLink, the type of the most abundant cells that are thought to be present in this sample.",
 			Category -> "General",
 			IndexMatching -> SampleLink
 		},
@@ -52,7 +52,7 @@ DefineObjectType[Object[UnitOperation, FreezeCells], {
 			Format -> Multiple,
 			Class -> Expression,
 			Pattern :> CultureAdhesionP,
-			Description -> "For each member of SampleLink, indicates how the input cell sample physically interacts with its container.",
+			Description -> "For each member of SampleLink, the manner of cell growth the cells in the sample are thought to employ (i.e., SolidMedia, Suspension, and Adherent). SolidMedia cells grow in colonies on a nutrient rich substrate, suspended cells growing free floating in liquid media, and adherent cells grow as a monolayer attached to a substrate.",
 			Category -> "General",
 			IndexMatching -> SampleLink
 		},
@@ -106,7 +106,7 @@ DefineObjectType[Object[UnitOperation, FreezeCells], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[Model[Instrument], Object[Instrument]],
-			Description -> "For each member of SampleLink, the centrifuge used to pellet the cell sample in order to remove the existing media and replace with cryoprotectant media.",
+			Description -> "For each member of SampleLink, the instrument which pellets the cells in the sample in order to remove the existing media and replace with cryoprotectant media.",
 			Category -> "Pelleting",
 			IndexMatching -> SampleLink
 		},
@@ -223,7 +223,7 @@ DefineObjectType[Object[UnitOperation, FreezeCells], {
 				Model[Instrument, Freezer],
 				Object[Instrument, Freezer]
 			],
-			Description -> "For each member of SampleLink, the device used to cool the cell sample.",
+			Description -> "For each member of SampleLink, the device supplies low temperatures and either electronically regulates the TemperatureProfile or drives the cooling process of an insulated cooler placed inside to cool the sample.",
 			Category -> "Cell Freezing",
 			IndexMatching -> SampleLink
 		},

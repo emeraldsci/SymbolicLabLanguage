@@ -858,11 +858,22 @@ zoomableButton[inputPlot_] := DynamicModule[{plotButton},
 
 
 (*unitFormDistribution*)
+
+DefineOptions[unitFormDistribution,
+    Options :> {
+        {Resolution -> 0.01, GreaterP[0] | GreaterP[0 Gram], "The resolution to which to round the distribution values."}
+    }
+];
+
 unitFormDistribution[distribution:NullP]:="N/A";
 
-unitFormDistribution[distribution:(_QuantityDistribution|_DataDistribution)]:=Module[
+unitFormDistribution[distribution:(_QuantityDistribution|_DataDistribution), myOptions:OptionsPattern[unitFormDistribution]]:=Module[
     (* local variables *)
-    {scaledDistribution, mean, stdev, unitString, roundedUnitlessMean, roundedUnitlessSTDEV},
+    {safeOps, resolution, scaledDistribution, mean, stdev, quantityUnit, unitString, roundedUnitlessMean, roundedUnitlessSTDEV},
+
+    (* Get the Resolution option. *)
+    safeOps = SafeOptions[unitFormDistribution, ToList[myOptions]];
+    resolution = Lookup[safeOps, Resolution, 0.01];
 
     (* Scale the value so that it's in a reasonable unit level *)
     scaledDistribution = UnitScale[distribution];
@@ -870,16 +881,26 @@ unitFormDistribution[distribution:(_QuantityDistribution|_DataDistribution)]:=Mo
     (* Let's get the Mean and standard Deviation *)
     mean = Mean[scaledDistribution];
     stdev = StandardDeviation[scaledDistribution];
+    quantityUnit = QuantityUnit[mean];
 
     (* Get the units as a string *)
-    unitString = If[MatchQ[QuantityUnit[mean], Except["DimensionlessUnit"]],
-        ToString[QuantityForm[QuantityUnit[mean], "Abbreviation"]],
+    unitString = If[MatchQ[quantityUnit, Except["DimensionlessUnit"]],
+        ToString[QuantityForm[quantityUnit, "Abbreviation"]],
         Nothing
     ];
 
-    (* Round the values *)
-    roundedUnitlessMean = SafeRound[Unitless[mean], 0.01];
-    roundedUnitlessSTDEV = SafeRound[Unitless[stdev], 0.001];
+    (* Round the values. If the resolution option is set as a mass, we round *)
+    (* differently such that we can reflect a balance's resolution in the outputs. *)
+    {roundedUnitlessMean, roundedUnitlessSTDEV} = If[MassQ[resolution],
+        {
+            Unitless[SafeRound[mean, resolution]],
+            N @ SignificantFigures[Unitless[stdev], 1]
+        },
+        {
+            SafeRound[Unitless[mean], resolution],
+            N @ SignificantFigures[Unitless[stdev], 1]
+        }
+    ];
 
     (* Put the string together *)
     StringRiffle[{
@@ -4636,7 +4657,7 @@ Authors[measureWeightPrimaryData]:={"melanie.reschke"};
 measureWeightPrimaryData[protocol: ObjectP[Object[Protocol, MeasureWeight]]] := Module[
     {
         gridFormat, dataPacketsFields, dataPackets, dataObjects, dataDates, sampleModels, samples, weights, tareWeights,
-        headings, sampleTables, balanceModelPackets, weightAppearanceObjects, weightAppearances
+        headings, sampleTables, balanceModelPackets, balanceResolutions, weightAppearanceObjects, weightAppearances
     },
 
     (** Initial setup: Setup grid formatting options **)
@@ -4679,12 +4700,14 @@ measureWeightPrimaryData[protocol: ObjectP[Object[Protocol, MeasureWeight]]] := 
     {
         dataPackets,
         balanceModelPackets,
+        balanceResolutions,
         weightAppearanceObjects
     } = Download[
         protocol,
         {
             Data[dataPacketsFields],
             Packet[Data][Instrument][Model][Name],
+            Data[Instrument][Resolution],
             Data[WeightAppearance][UncroppedImageFile][Object]
         }
     ];
@@ -4762,6 +4785,7 @@ measureWeightPrimaryData[protocol: ObjectP[Object[Protocol, MeasureWeight]]] := 
                 sampleModel,
                 dataObj,
                 tareWeight,
+                balanceResolution,
                 weightDist,
                 balanceType,
                 instrument,
@@ -4774,7 +4798,7 @@ measureWeightPrimaryData[protocol: ObjectP[Object[Protocol, MeasureWeight]]] := 
             Module[{formattedWeightDist, allTableContent, finalTableContent, title},
 
                 (* format the weight distribution for display and set up a button to copy the quantity dist value *)
-                formattedWeightDist = customButton[unitFormDistribution[weightDist],
+                formattedWeightDist = customButton[unitFormDistribution[weightDist, Resolution -> balanceResolution],
                     CopyContent -> weightDist
                 ];
 
@@ -4835,6 +4859,7 @@ measureWeightPrimaryData[protocol: ObjectP[Object[Protocol, MeasureWeight]]] := 
             sampleModels,
             dataObjects,
             tareWeights,
+            balanceResolutions,
             Sequence@@Transpose[Lookup[dataPackets, {WeightDistribution, BalanceType, Instrument, Sensor, SampleContainer, ContainerModel}]],
             weightAppearances,
             weightAppearanceObjects
@@ -7208,16 +7233,20 @@ measurepHPrimaryData[protocol:ObjectP[Object[Protocol, MeasurepH]]] := Module[
     {
         gridFormat, protocolFields, samplesIn, samplesInModels, containersIn, containersInModels,
         pHValues, resolvedOptions, temperatureCorrections, probeRecoupSampleBools, incubateSamplePrep, aliquotSamplePrep,
+        verificationStandard, verificationStandardModel, verificationStandardWashSolution, verificationStandardWashSolutionModel,
+        minVerificationStandardpH, maxVerificationStandardpH, verificationStandardpH, verificationStandardData, verificationDataReferenceTemperature,
+        washSolutions, washSolutionModels, secondaryWashSolutions, secondaryWashSolutionModels,
         calibrationFields, calibrationDataPackets, calibrationsIndexMatched, probesIndexMatched, instrumentsIndexMatched,
-        probeModelsIndexMatched, instrumentModelsIndexMatched, data, splitSamples,
+        probeModelsIndexMatched, instrumentModelsIndexMatched, data, measurementReferenceTemperatures, splitSamples,
         incubationTemperatures, incubationTimes, mixTypes, incubationInstruments, aliquotAmounts, aliquotContainerModels,
         splitpHValues, splitCalibrations, splitProbes, splitInstruments, splitCorrections, splitRecoupSampleBools, splitSamplesInModels,
         splitIncubationTemperatures, splitIncubationTimes, splitMixTypes, splitIncubationInstruments, splitAliquotAmounts, splitAliquotContainerModels,
-        splitProbeModels, splitInstrumentModels, splitData, numbersOfReplicates, meanpHValues, stdDevpHValues, sampleIndices, barAssociation,
+        splitProbeModels, splitInstrumentModels, splitData, splitWashSolutions, splitWashSolutionModels, splitSecondaryWashSolutions,
+        splitSecondaryWashSolutionModels, splitMeasurementTemperatures, numbersOfReplicates, meanpHValues, stdDevpHValues, sampleIndices, barAssociation,
         barChartOptions, barChart, instrumentsFromResolvedOptions, sampleButtons, containerButtons, probeButtons, instrumentButtons,
-        measurementDataTables, calibrationObjects, lowCalTargetpH, medCalTargetpH, highCalTargetpH,
+        washSolutionButtons, secondaryWashSolutionButtons, measurementDataTables, calibrationObjects, lowCalTargetpH, medCalTargetpH, highCalTargetpH,
         lowCalTemp, medCalTemp, highCalTemp, absoluteSlope, pHOffsetValue, lowCalBuffer, medCalBuffer, highCalBuffer,
-        lowCalBufferObjects, medCalBufferObjects, highCalBufferObjects, numberOfCalibrations, calibrationDataTables, calibrationDataSlides
+        lowCalBufferObjects, medCalBufferObjects, highCalBufferObjects, numberOfCalibrations, calibrationDataTables, calibrationDataSlides, verificationTable
     },
 
     (* Setup grid formatting options *)
@@ -7249,7 +7278,20 @@ measurepHPrimaryData[protocol:ObjectP[Object[Protocol, MeasurepH]]] := Module[
         TemperatureCorrection,
         ProbeRecoupSample,
         IncubateSamplePreparation,
-        AliquotSamplePreparation
+        AliquotSamplePreparation,
+        VerificationStandard,
+        VerificationStandard[Model],
+        VerificationStandardWashSolution,
+        VerificationStandardWashSolution[Model],
+        MinVerificationStandardpH,
+        MaxVerificationStandardpH,
+        VerificationStandardpH,
+        VerificationStandardData[Object],
+        VerificationStandardData[ReferenceTemperature],
+        WashSolutions,
+        WashSolutions[Model],
+        SecondaryWashSolutions,
+        SecondaryWashSolutions[Model]
     };
 
     (* Get the fields we want from the calibration object(s). *)
@@ -7279,7 +7321,20 @@ measurepHPrimaryData[protocol:ObjectP[Object[Protocol, MeasurepH]]] := Module[
             temperatureCorrections,
             probeRecoupSampleBools,
             incubateSamplePrep,
-            aliquotSamplePrep
+            aliquotSamplePrep,
+            verificationStandard,
+            verificationStandardModel,
+            verificationStandardWashSolution,
+            verificationStandardWashSolutionModel,
+            minVerificationStandardpH,
+            maxVerificationStandardpH,
+            verificationStandardpH,
+            verificationStandardData,
+            verificationDataReferenceTemperature,
+            washSolutions,
+            washSolutionModels,
+            secondaryWashSolutions,
+            secondaryWashSolutionModels
         },
         calibrationDataPackets,
         calibrationsIndexMatched,
@@ -7287,7 +7342,8 @@ measurepHPrimaryData[protocol:ObjectP[Object[Protocol, MeasurepH]]] := Module[
         instrumentsIndexMatched,
         probeModelsIndexMatched,
         instrumentModelsIndexMatched,
-        data
+        data,
+        measurementReferenceTemperatures
     } = Flatten[#, 1]& /@ Download[protocol,
         {
             {protocolFields},
@@ -7297,7 +7353,8 @@ measurepHPrimaryData[protocol:ObjectP[Object[Protocol, MeasurepH]]] := Module[
             {Data[Instrument][Object]},
             {Data[Probe][Model][Object]},
             {Data[Instrument][Model][Object]},
-            {Data[Object]}
+            {Data[Object]},
+            {Data[ReferenceTemperature]}
         }
     ];
 
@@ -7358,7 +7415,12 @@ measurepHPrimaryData[protocol:ObjectP[Object[Protocol, MeasurepH]]] := Module[
         splitAliquotContainerModels,
         splitProbeModels,
         splitInstrumentModels,
-        splitData
+        splitData,
+        splitWashSolutions,
+        splitWashSolutionModels,
+        splitSecondaryWashSolutions,
+        splitSecondaryWashSolutionModels,
+        splitMeasurementTemperatures
     } = Unflatten[#, splitSamples]& /@ {
         Round[pHValues, 0.001],
         calibrationsIndexMatched,
@@ -7375,7 +7437,12 @@ measurepHPrimaryData[protocol:ObjectP[Object[Protocol, MeasurepH]]] := Module[
         aliquotContainerModels,
         probeModelsIndexMatched,
         instrumentModelsIndexMatched,
-        data
+        data,
+        washSolutions,
+        washSolutionModels,
+        secondaryWashSolutions,
+        secondaryWashSolutionModels,
+        measurementReferenceTemperatures
     };
 
     (* Take the average and standard deviation of each sample's measured values. *)
@@ -7557,6 +7624,34 @@ measurepHPrimaryData[protocol:ObjectP[Object[Protocol, MeasurepH]]] := Module[
         ],
         {splitInstruments[[All, 1]], If[NullQ[instrumentsFromResolvedOptions], NamedObject[splitInstrumentModels[[All, 1]]], instrumentsFromResolvedOptions]}
     ];
+    washSolutionButtons = MapThread[
+        Function[
+            {sample, sampleModel},
+            Which[
+                MatchQ[sampleModel, ObjectP[Model[Sample]]],
+                    customButton[sample, CopyContent -> sample, Tooltip -> Column[{ToString[sampleModel], "Click to copy Object[Sample]"}, Alignment -> {Center, Baseline}]],
+                MatchQ[sample, ObjectP[Object[Sample]]],
+                    sample,
+                True,
+                    Null
+            ]
+        ],
+        {splitWashSolutions[[All, 1]], NamedObject[splitWashSolutionModels[[All, 1]]]}
+    ];
+    secondaryWashSolutionButtons = MapThread[
+        Function[
+            {sample, sampleModel},
+            Which[
+                MatchQ[sampleModel, ObjectP[Model[Sample]]],
+                    customButton[sample, CopyContent -> sample, Tooltip -> Column[{ToString[sampleModel], "Click to copy Object[Sample]"}, Alignment -> {Center, Baseline}]],
+                MatchQ[sample, ObjectP[Object[Sample]]],
+                    sample,
+                True,
+                    Null
+            ]
+        ],
+        {splitSecondaryWashSolutions[[All, 1]], NamedObject[splitSecondaryWashSolutionModels[[All, 1]]]}
+    ];
 
     (* Set up the pH measurement data tables. *)
     measurementDataTables = MapThread[
@@ -7571,6 +7666,9 @@ measurepHPrimaryData[protocol:ObjectP[Object[Protocol, MeasurepH]]] := Module[
                 dataObject,
                 instrumentButton,
                 probeButton,
+                washSolutionButton,
+                secondaryWashSolutionButton,
+                temps,
                 tempCorrection,
                 calibrationObject,
                 mixTemp,
@@ -7625,6 +7723,21 @@ measurepHPrimaryData[protocol:ObjectP[Object[Protocol, MeasurepH]]] := Module[
                     ],
                     If[!NullQ[probeButton],
                         {"Probe", probeButton},
+                        Nothing
+                    ],
+
+                    (* Display the buttons for wash and secondary wash solutions, if applicable. *)
+                    If[!NullQ[washSolutionButton],
+                        {"Wash Solution", washSolutionButton},
+                        Nothing
+                    ],
+                    If[!NullQ[secondaryWashSolutionButton],
+                        {"Secondary Wash Solution", secondaryWashSolutionButton},
+                        Nothing
+                    ],
+
+                    If[MatchQ[temps, ListableP[TemperatureP]],
+                        {"Temperature", Column[UnitForm[#, Brackets -> False]&/@temps]},
                         Nothing
                     ],
 
@@ -7688,6 +7801,9 @@ measurepHPrimaryData[protocol:ObjectP[Object[Protocol, MeasurepH]]] := Module[
             splitData,
             instrumentButtons,
             probeButtons,
+            washSolutionButtons,
+            secondaryWashSolutionButtons,
+            splitMeasurementTemperatures,
             splitCorrections[[All, 1]],
             splitCalibrations[[All, 1]],
             splitIncubationTemperatures[[All, 1]],
@@ -7745,7 +7861,7 @@ measurepHPrimaryData[protocol:ObjectP[Object[Protocol, MeasurepH]]] := Module[
             },
 
             Module[
-                {tableContent},
+                {tableContent, grid},
 
                 (* Generate the table for each pH calibration according to the available information. *)
                 (* We will usually have ALL of these values, but we wrap If[] around everything *)
@@ -7798,19 +7914,21 @@ measurepHPrimaryData[protocol:ObjectP[Object[Protocol, MeasurepH]]] := Module[
                     ]
                 };
 
-                (* Set up the grid and label it *)
-                Labeled[
-                    Grid[Replace[tableContent, {objectValue:ObjectP[] :> customButton[objectValue]}, {2}],
-                        Sequence@@gridFormat,
-                        ItemSize -> {{All, 25}}
-                    ],
-                    If[
-                        GreaterQ[numberOfCalibrations, 1],
+                (* Set up the grid and label it. *)
+                grid = Grid[Replace[tableContent, {objectValue:ObjectP[] :> customButton[objectValue]}, {2}],
+                    Sequence@@gridFormat,
+                    ItemSize -> {{All, 25}}
+                ];
+
+                (* We only need to add the subtitles e.g. "pH Calibration 1" if there are multiple calibrations. *)
+                If[GreaterQ[numberOfCalibrations, 1],
+                    Labeled[
+                        grid,
                         "pH Calibration "<>ToString[calibrationIndex],
-                        "pH Calibration"
+                        Top,
+                        LabelStyle -> Directive[Bold, FontFamily -> "Helvetica"]
                     ],
-                    Top,
-                    LabelStyle -> Directive[Bold, FontFamily -> "Helvetica"]
+                    grid
                 ]
             ]
 
@@ -7850,6 +7968,69 @@ measurepHPrimaryData[protocol:ObjectP[Object[Protocol, MeasurepH]]] := Module[
             {}
     ];
 
+    (* There should only be one set of data for the verification standard. Generate a table for this if verification was performed. *)
+    verificationTable = If[!MatchQ[verificationStandard, ObjectP[{Object[Sample], Model[Sample]}]],
+        Null,
+        Module[
+            {standardObjectNamed, standardModelNamed, washSolutionObjectNamed, washSolutionModelNamed, verificationStandardButton, verificationStandardWashSolutionButton, tableContent},
+
+            (* Run NamedObject on the relevant objects. *)
+            {
+                standardObjectNamed,
+                standardModelNamed,
+                washSolutionObjectNamed,
+                washSolutionModelNamed
+            } = NamedObject[{
+                verificationStandard,
+                verificationStandardModel,
+                verificationStandardWashSolution,
+                verificationStandardWashSolutionModel
+            }];
+
+            (* Make a button for the verification standard and the wash solution, displaying the Model in the ToolTip if available. *)
+            verificationStandardButton = If[MatchQ[standardModelNamed, ObjectP[Model[Sample]]],
+                customButton[standardObjectNamed,
+                    CopyContent -> standardObjectNamed,
+                    Tooltip -> Column[{ToString[standardModelNamed], "Click to copy Object[Sample]"}, Alignment -> {Center, Baseline}]
+                ],
+                standardObjectNamed
+            ];
+
+            (* Make a button for the verification standard, displaying the Model in the ToolTip if available. *)
+            verificationStandardWashSolutionButton = Which[
+                (* If there isn't a VerificationWashSolution specified, return Null and omit this from the table below. *)
+                !MatchQ[washSolutionObjectNamed, ObjectP[]],
+                    Null,
+                (* If we know the Model, make the fancy button which displays the Model in the ToolTip but copies the object. *)
+                MatchQ[washSolutionModelNamed, ObjectP[Model[Sample]]],
+                    customButton[washSolutionObjectNamed,
+                        CopyContent -> washSolutionObjectNamed,
+                        Tooltip -> Column[{ToString[washSolutionModelNamed], "Click to copy Object[Sample]"}, Alignment -> {Center, Baseline}]
+                    ],
+                (* Otherwise, use the object or model stored in the VerificationStandardWashSolution field. *)
+                True,
+                    washSolutionObjectNamed
+            ];
+
+            (* Generate the table for the pH verification according to the available information. *)
+            tableContent = {
+                {"Verification Standard", verificationStandardButton},
+                If[!NullQ[verificationStandardWashSolutionButton], {"Verification Wash Solution", verificationStandardWashSolutionButton}, Nothing],
+                If[NumericQ[minVerificationStandardpH], {"Minimum Verification pH", minVerificationStandardpH}, Nothing],
+                If[NumericQ[maxVerificationStandardpH], {"Maximum Verification pH", maxVerificationStandardpH}, Nothing],
+                If[MemberQ[verificationStandardpH, _Real], {"Measured Verification pH", Column[verificationStandardpH]}, Nothing],
+                If[MatchQ[verificationDataReferenceTemperature[[1]], TemperatureP], {"Temperature", UnitForm[verificationDataReferenceTemperature[[1]], Brackets -> False]}, Nothing],
+                If[MemberQ[verificationStandardData, ObjectP[Object[Data, pH]]], {"Data Object", verificationStandardData[[1]]}, Nothing]
+            };
+
+            (* Set up the grid and label it *)
+            Grid[Replace[tableContent, {objectValue:ObjectP[] :> customButton[objectValue]}, {2}],
+                Sequence@@gridFormat,
+                ItemSize -> {{All, 25}}
+            ]
+        ]
+    ];
+
     (*
         If we only have 1 unique sample, we will take the first table and output it.
         If we have more than one sample, we will create a dynamic output that includes a summary table with radio
@@ -7870,12 +8051,35 @@ measurepHPrimaryData[protocol:ObjectP[Object[Protocol, MeasurepH]]] := Module[
                 Top,
                 LabelStyle -> Directive[Bold, 16, FontFamily -> "Helvetica"]
             ],
-            calibrationDataSlides
+            If[MatchQ[calibrationDataSlides, {}],
+                Nothing,
+                Labeled[
+                    Framed[
+                        calibrationDataSlides,
+                        FrameStyle -> Lighter[Gray, 0.4]
+                    ],
+                    "Calibration Data",
+                    Top,
+                    LabelStyle -> Directive[Bold, 15, FontFamily -> "Helvetica"]
+                ]
+            ],
+            If[NullQ[verificationTable],
+                Nothing,
+                Labeled[
+                    Framed[
+                        verificationTable,
+                        FrameStyle -> Lighter[Gray, 0.4]
+                    ],
+                    "Verification Data",
+                    Top,
+                    LabelStyle -> Directive[Bold, 15, FontFamily -> "Helvetica"]
+                ]
+            ]
         },
             Dividers -> {False, {False, True, True}},
             FrameStyle -> Lighter[Gray, 0.4],
             Alignment -> Center,
-            Spacings -> 2
+            Spacings -> 3
         ]},
         (* generate our dynamic output *)
         {Column[{
@@ -7970,12 +8174,24 @@ measurepHPrimaryData[protocol:ObjectP[Object[Protocol, MeasurepH]]] := Module[
                     Top,
                     LabelStyle -> Directive[Bold, 15, FontFamily -> "Helvetica"]
                 ]
+            ],
+            If[NullQ[verificationTable],
+                Nothing,
+                Labeled[
+                    Framed[
+                        verificationTable,
+                        FrameStyle -> Lighter[Gray, 0.4]
+                    ],
+                    "Verification Data",
+                    Top,
+                    LabelStyle -> Directive[Bold, 15, FontFamily -> "Helvetica"]
+                ]
             ]
         },
             Dividers -> {False, {False, True, True}},
             FrameStyle -> Lighter[Gray, 0.4],
             Alignment -> Center,
-            Spacings -> 2
+            Spacings -> 3
         ]}
     ]
 
@@ -8055,7 +8271,7 @@ spPrimaryData[protocol:ObjectP[{Object[Protocol, ManualSamplePreparation], Objec
     unitOpSubprotocolPacketsAssocs = Replace[unitOpSubprotocolPackets, Null -> <||>, {1}];
 
     (* Get list of all unit operation types for use in making info tables and in labeling the tabs in the final TabView. *)
-    outputUnitOpTypeList = Lookup[mspPacket, OutputUnitOperations][Type][[All, -1]];
+    outputUnitOpTypeList = Download[Lookup[mspPacket, OutputUnitOperations], Type][[All, -1]];
 
     (* make tables of relevent information from each unit operation type *)
     infoTables = MapThread[Function[
@@ -8478,18 +8694,27 @@ transferUnitOperationPrimaryData[
     outputUnitOpPacket_Association
 ] := Module[
     {
-        gridFormat, sourceLinks, sourceLabels, destinationLinks, destinationLabels, sourceContainerLabels, destinationContainerLabels,
-        sourceContainers, destinationContainers, sourceWells, destinationWells, transferEnvironments, balances, weighingContainers, measuredTransferWeightData,
-        quantitativeTransferWashSolutions, quantitativeTransferWashVolumes, numbersOfQuantitativeTransferWashes,
-        funnels, instruments, tips, intermediateContainers, intermediateFunnels, backfillGases, backfillNeedles, needles,
-        transferAmounts, actualTransferAmounts, weightAppearanceObjects, weightAppearances, sourceModels, destinationModels,
-        transferEnvironmentModels, balanceModels, weighingContainerModels, funnelModels, instrumentModels, tipModels, intermediateContainerModels,
-        intermediateFunnelModels, quantitativeTransferWashSolutionModels, backfillNeedleModels, needleModels, massTransferIndices,
-        mapThreadFriendlyWeightAppearances, mapThreadFriendlyWeightAppearanceObjects, mapThreadFriendlyQuantitativeTransferWashSolutionModels,
+        gridFormat, protocol, preparation, sourceLinks, sourceLabels, destinationLinks, destinationLabels, sourceContainerLabels, destinationContainerLabels,
+        sourceContainers, destinationContainers, sourceWells, destinationWells, transferEnvironments, balances, weighingContainers,
+        tareWeights, tareData, tareWeightAppearances, emptyContainerWeights, emptyContainerWeightData, emptyContainerWeightAppearances,
+        measuredTransferWeights, measuredTransferWeightData, measuredTransferWeightAppearances,
+        residueWeights, residueWeightData, residueWeightAppearances, materialLossWeights, materialLossWeightData, materialLossWeightAppearances, percentTransferred,
+        quantitativeTransferBools, quantitativeTransferWashSolutions, quantitativeTransferWashVolumes, numbersOfQuantitativeTransferWashes,
+        funnels, instruments, tips, intermediateContainers, intermediateFunnels, backfillGases, backfillNeedles, needles, transferAmounts, massTransferIndices,
+        padWeightList, paddedTareWeights, paddedTransferWeights, paddedContainerWeights, paddedResidueWeights, paddedMaterialLossWeights, roboticQ, actualTransferAmounts,
+        streamPackets, tareWeightAppearancePackets, emptyContainerWeightAppearancePackets, measuredTransferWeightAppearancePackets, residueWeightAppearancePackets, materialLossWeightAppearancePackets,
+        sourceModels, destinationModels, transferEnvironmentModels, balanceModels, balanceResolutions, weighingContainerModels, funnelModels, instrumentModels, tipModels, intermediateContainerModels,
+        intermediateFunnelModels, quantitativeTransferWashSolutionModels, backfillNeedleModels, needleModels,
+        tareWeightAppearanceObjects, emptyContainerWeightAppearanceObjects, measuredTransferWeightAppearanceObjects, residueWeightAppearanceObjects, materialLossWeightAppearanceObjects,
+        paddedTareWeightAppearanceObjects, paddedContainerWeightAppearanceObjects, paddedTransferWeightAppearanceObjects, paddedResidueWeightAppearanceObjects, paddedMaterialLossAppearanceObjects,
+        paddedTareData, paddedEmptyContainerWeightData, paddedMeasuredTransferWeightData, paddedResidueWeightData, paddedMaterialLossWeightData,
+        paddedQuantitativeTransferWashSolutionModels, getWeightAppearance, tareWeightImages, emptyContainerImages, measuredTransferWeightImages, residueWeightImages, materialLossImages,
+        actualTransferAmountsFormatted, dateRangeToStreamLookup, streamToStartTimeLookup, buildStreamTuples,
+        tareWeightStreamTuples, containerWeightStreamTuples, measuredTransferWeightStreamTuples, residueWeightStreamTuples, materialLossWeightStreamTuples,
         autogeneratedSampleLabelP, autogeneratedContainerLabelP, transferDataTables, clickableSourcesForSummary, clickableDestinationsForSummary
     },
 
-    (** Initial setup: Setup grid formatting options **)
+    (* Initial setup: Setup grid formatting options *)
     gridFormat = {
         Background -> Experiment`Private`tableBackground[2, IncludeHeader -> False],
         Alignment -> {{Right, {Left}}},
@@ -8510,6 +8735,8 @@ transferUnitOperationPrimaryData[
     (* Get the relevant info from the transfer output unit op packet. *)
     {
         (* Basic info *)
+        protocol,
+        preparation,
         sourceLinks,
         sourceLabels,
         destinationLinks,
@@ -8524,8 +8751,25 @@ transferUnitOperationPrimaryData[
         (* Weighing *)
         balances,
         weighingContainers,
+        tareWeights,
+        tareData,
+        tareWeightAppearances,
+        emptyContainerWeights,
+        emptyContainerWeightData,
+        emptyContainerWeightAppearances,
+        measuredTransferWeights,
         measuredTransferWeightData,
+        measuredTransferWeightAppearances,
+        residueWeights,
+        residueWeightData,
+        residueWeightAppearances,
+        materialLossWeights,
+        materialLossWeightData,
+        materialLossWeightAppearances,
+        (* Liquid percent transferred *)
+        percentTransferred,
         (* Quantitative Transfer *)
+        quantitativeTransferBools,
         quantitativeTransferWashSolutions,
         quantitativeTransferWashVolumes,
         numbersOfQuantitativeTransferWashes,
@@ -8542,6 +8786,8 @@ transferUnitOperationPrimaryData[
     } = Lookup[outputUnitOpPacket,
         {
             (* Basic info *)
+            Subprotocol,
+            Preparation,
             SourceLink,
             SourceLabel,
             DestinationLink,
@@ -8556,8 +8802,24 @@ transferUnitOperationPrimaryData[
             (* Weighing *)
             Balance,
             WeighingContainerLink,
+            TareWeights,
+            TareData,
+            TareWeightAppearances,
+            EmptyContainerWeights,
+            EmptyContainerWeightData,
+            EmptyContainerWeightAppearances,
+            MeasuredTransferWeights,
             MeasuredTransferWeightData,
+            MeasuredTransferWeightAppearances,
+            ResidueWeights,
+            ResidueWeightData,
+            ResidueWeightAppearances,
+            MaterialLossWeights,
+            MaterialLossWeightData,
+            MaterialLossWeightAppearances,
+            PercentTransferred,
             (* Quantitative Transfer *)
+            QuantitativeTransfer,
             QuantitativeTransferWashSolutionLink,
             QuantitativeTransferWashVolume,
             NumberOfQuantitativeTransferWashes,
@@ -8574,76 +8836,131 @@ transferUnitOperationPrimaryData[
         }
     ];
 
+    (* Get the requested transfer amounts, accounting for split fields. *)
     transferAmounts = Module[{allAmountFormats},
         allAmountFormats = Lookup[outputUnitOpPacket, {AmountExpression, AmountInteger, AmountVariableUnit}];
-        FirstCase[allAmountFormats, Except[NullP]]
+        Map[FirstCase[#, Except[Null]]&, Transpose[allAmountFormats]]
     ];
 
-    actualTransferAmounts = If[MatchQ[Lookup[outputUnitOpPacket, Preparation], Robotic],
+    (* Get the indices at which mass is being transferred. *)
+    massTransferIndices = MapThread[
+        Function[
+            {requestedTransferAmount, balance, index},
+            (* If the requested amount is a mass, or if there is a balance object or model at this index, return the index. *)
+            If[MassQ[requestedTransferAmount] || !NullQ[balance],
+                index,
+                Nothing
+            ]
+        ],
+        {transferAmounts, balances, Range[Length[transferAmounts]]}
+    ];
+
+    (* If any of the weight variables are not the correct length, pad them appropriately so that we can map over them as needed. *)
+    padWeightList[myList_List, myReferenceList_List] := If[EqualQ[Length[myList], Length[myReferenceList]],
+        myList,
+        Module[
+            {notNullElements},
+
+            (* Find any non-Null items in the list, which we expect to be either weights or images. *)
+            notNullElements = Cases[myList, Except[Null]];
+
+            (* Make a flat list of Nulls and then insert the weights or images at the mass transfer indices. *)
+            ReplacePart[
+                ConstantArray[Null, Length[myReferenceList]],
+                massTransferIndices -> notNullElements
+            ] /. {{} -> Null}
+        ]
+    ];
+
+    (* Pad out all of the weight lists. *)
+    {
+        paddedTareWeights,
+        paddedTransferWeights,
+        paddedContainerWeights,
+        paddedResidueWeights,
+        paddedMaterialLossWeights
+    } = Map[
+        padWeightList[ToList[#], quantitativeTransferBools]&,
+        {
+            tareWeights,
+            measuredTransferWeights,
+            emptyContainerWeights,
+            residueWeights,
+            materialLossWeights
+        }
+    ];
+
+    (* Set a flag for whether this is a robotic transfer. *)
+    roboticQ = MatchQ[preparation, Robotic];
+
+    (* Determine the actual transfer amounts for solid and liquid transfers. *)
+    actualTransferAmounts = If[roboticQ,
 
         (* if it is robotic, there is no actual transfer amount measured so skip this *)
         ConstantArray[Null, Length[transferAmounts]],
 
         (* If it is not robotic, we can get either the percent transferred (liquid) or the measured weight of the transferred material (solid) *)
-        Module[{percentTransferred, balances, measuredTransferWeights, residueWeights, weightMeans, weightTransferPositions, weightPositionMap, measuredWeightsExpanded},
+        Module[
+            {calculatedWeights},
 
-            {percentTransferred, balances, measuredTransferWeights, residueWeights} = Lookup[outputUnitOpPacket, {PercentTransferred, Balance, MeasuredTransferWeights, ResidueWeights}];
-
-            (* If the measured transfer weights are distributions, just use the mean *)
-            weightMeans = If[MatchQ[Length[residueWeights], Length[measuredTransferWeights]],
-                (* If there are residue weights, take those into consideration too *)
-                MapThread[
-                    (* if we measured something, take residue weight into consideration *)
-                    If[MatchQ[#1, _DataDistribution],
-                        (Mean[#1] - If[MatchQ[#2, _DataDistribution], Mean[#2], 0 Gram]),
-                        (* otherwise this means there is no measured weight, just put Null *)
-                        Null
-                    ]&,
-                    {measuredTransferWeights, residueWeights}
+            (* The mass calculations differ according to whether quantitative transfer was used. *)
+            calculatedWeights = Flatten @ MapThread[
+                Function[
+                    {quantitativeTransferQ, measuredTransferWeight, emptyContainerWeight, residueWeight},
+                    Which[
+                        (* If QuantitativeTransfer is True, subtract the container weight from the weight of container and sample together. *)
+                        TrueQ[quantitativeTransferQ], measuredTransferWeight - emptyContainerWeight,
+                        (* If there is no measured transfer weight, this is either Amount -> All or it's not a mass transfer. Return Null. *)
+                        NullQ[measuredTransferWeight], Null,
+                        (* If there is no empty container weight or residue weight, this is an old protocol that didn't use those fields. *)
+                        (* For backwards compatibility, just use the MeasuredTransferWeight, which previously used to provide the actual weight. *)
+                        NullQ[emptyContainerWeight] && NullQ[residueWeight], measuredTransferWeight,
+                        (* If there is a transfer weight but no residue weight, we're weighing directly into the destination without a weigh boat/funnel. *)
+                        NullQ[residueWeight], measuredTransferWeight - emptyContainerWeight,
+                        (* Otherwise, this is a mass transfer with QuantitativeTransfer turned off. Subtract residue weight from the transfer weight. *)
+                        True, measuredTransferWeight - residueWeight
+                    ]
                 ],
-                (* Otherwise if there are no residue weights then only use the measured weight *)
-                Map[
-                    If[MatchQ[#, _DataDistribution],
-                        Mean[#],
-                        #
-                    ]&,
-                    measuredTransferWeights
-                ]
+                {quantitativeTransferBools, paddedTransferWeights, paddedContainerWeights, paddedResidueWeights}
             ];
 
-            (* Set up rules so that for any transfer that used a balance, the rounded mean of the weight is shown *)
-            (* First get the positions in the list of transfers that have balances (non weight transfers will be Null) *)
-            weightTransferPositions = Position[balances, ObjectP[{Object[Instrument], Model[Instrument]}], 1];
-
-            (* Map the positions to the measured weights *)
-            weightPositionMap = Thread[weightTransferPositions -> weightMeans];
-
-            (* use the balances list to expand the list of weights to include Nulls where the transfer was not solid *)
-            measuredWeightsExpanded = ReplacePart[balances, weightPositionMap];
-
             (* Make the list of Actual transfer amounts for liquid and solid transfers. *)
-            (* For mass transfers, express the actual mass in the same units as the requested mass. *)
             MapThread[Function[{percent, weight, requestedAmount},
                 Which[
-                    MatchQ[weight, Except[Null]],
+                    (* If the user requested All for a mass transfer and weight data is known, use the calculated weight without adjusting the units. *)
+                    MatchQ[requestedAmount, All] && !NullQ[weight],
+                        weight,
+                    (* If the user requested All for a mass transfer WITHOUT using a balance, return All. *)
+                    MatchQ[requestedAmount, All],
+                        All,
+                    (* If there is a requested quantity for a mass transfer, express the actual mass in the desired units. *)
+                    !NullQ[weight],
                         Convert[weight, Units[requestedAmount]],
+                    (* If we have a percent for a liquid transfer, use that. *)
                     MatchQ[percent, PercentP],
                         percent,
+                    (* We shouldn't end up here, but just in case. *)
                     True,
                         Null
                 ]],
-                {percentTransferred, measuredWeightsExpanded, transferAmounts}
+                {percentTransferred, calculatedWeights, transferAmounts}
             ]
         ]
     ];
 
     (* Download info from the weight data and download Models for various fields that we want to display. *)
     {
-        weightAppearanceObjects,
+        streamPackets,
+        tareWeightAppearancePackets,
+        emptyContainerWeightAppearancePackets,
+        measuredTransferWeightAppearancePackets,
+        residueWeightAppearancePackets,
+        materialLossWeightAppearancePackets,
         sourceModels,
         destinationModels,
         transferEnvironmentModels,
         balanceModels,
+        balanceResolutions,
         weighingContainerModels,
         funnelModels,
         instrumentModels,
@@ -8656,10 +8973,16 @@ transferUnitOperationPrimaryData[
     } = Flatten /@ Quiet[
         Download[
             {
-                measuredTransferWeightData,
+                {protocol},
+                tareWeightAppearances,
+                emptyContainerWeightAppearances,
+                measuredTransferWeightAppearances,
+                residueWeightAppearances,
+                materialLossWeightAppearances,
                 sourceLinks,
                 destinationLinks,
                 transferEnvironments,
+                balances,
                 balances,
                 weighingContainers,
                 funnels,
@@ -8672,11 +8995,17 @@ transferUnitOperationPrimaryData[
                 needles
             },
             {
-                {WeightAppearance[UncroppedImageFile][Object]},
+                {Packet[Streams[{StartTime, EndTime}]]},
+                {Packet[UncroppedImageFile, DateCreated]},
+                {Packet[UncroppedImageFile, DateCreated]},
+                {Packet[UncroppedImageFile, DateCreated]},
+                {Packet[UncroppedImageFile, DateCreated]},
+                {Packet[UncroppedImageFile, DateCreated]},
                 {Model},
                 {Model},
                 {Model},
                 {Model},
+                {Resolution},
                 {Model},
                 {Model},
                 {Model},
@@ -8691,36 +9020,171 @@ transferUnitOperationPrimaryData[
         {Download::FieldDoesntExist}
     ];
 
-    (* Import images and shrink them to display in tooltips *)
-    weightAppearances = If[MemberQ[weightAppearanceObjects, ObjectP[Object[EmeraldCloudFile]]],
+    (* Get the objects from the weighing packets *)
+    {
+        tareWeightAppearanceObjects,
+        emptyContainerWeightAppearanceObjects,
+        measuredTransferWeightAppearanceObjects,
+        residueWeightAppearanceObjects,
+        materialLossWeightAppearanceObjects
+    } = Lookup[# /. Null -> <||>, UncroppedImageFile, Null]& /@ {
+        tareWeightAppearancePackets,
+        emptyContainerWeightAppearancePackets,
+        measuredTransferWeightAppearancePackets,
+        residueWeightAppearancePackets,
+        materialLossWeightAppearancePackets
+    };
+
+    (* Pad out the image and weight data objects. Also pad out the quantitative transfer wash solutions while we're here. *)
+    {
+        paddedTareWeightAppearanceObjects,
+        paddedContainerWeightAppearanceObjects,
+        paddedTransferWeightAppearanceObjects,
+        paddedResidueWeightAppearanceObjects,
+        paddedMaterialLossAppearanceObjects,
+        paddedTareData,
+        paddedEmptyContainerWeightData,
+        paddedMeasuredTransferWeightData,
+        paddedResidueWeightData,
+        paddedMaterialLossWeightData,
+        paddedQuantitativeTransferWashSolutionModels
+    } = Map[
+        padWeightList[ToList[#], quantitativeTransferBools]&,
+        {
+            tareWeightAppearanceObjects,
+            emptyContainerWeightAppearanceObjects,
+            measuredTransferWeightAppearanceObjects,
+            residueWeightAppearanceObjects,
+            materialLossWeightAppearanceObjects,
+            tareData,
+            emptyContainerWeightData,
+            measuredTransferWeightData,
+            residueWeightData,
+            materialLossWeightData,
+            quantitativeTransferWashSolutionModels
+        }
+    ];
+
+    (* Quick helper to import images and shrink them to display in tooltips *)
+    getWeightAppearance[imageList_List] := If[MemberQ[imageList, ObjectP[Object[EmeraldCloudFile]]],
         Map[
             If[NullQ[#], #, ImageResize[#, $ReviewImageSize]]&,
-            ImportCloudFile[weightAppearanceObjects]
+            ImportCloudFile[imageList]
         ],
-        {}
+        ConstantArray[Null, Length[imageList]]
     ];
 
-    (* Find the positions at which masses were transferred. *)
-    massTransferIndices = Flatten @ Position[transferAmounts, MassP, {1}];
+    (* Map the helpers over the various types of weight appearances. *)
+    {
+        tareWeightImages,
+        emptyContainerImages,
+        measuredTransferWeightImages,
+        residueWeightImages,
+        materialLossImages
+    } = Map[
+        getWeightAppearance,
+        {
+            paddedTareWeightAppearanceObjects,
+            paddedContainerWeightAppearanceObjects,
+            paddedTransferWeightAppearanceObjects,
+            paddedResidueWeightAppearanceObjects,
+            paddedMaterialLossAppearanceObjects
+        }
+    ];
 
-    (* Make MapThread-friendly lists for fields which may not have the correct length. *)
-    mapThreadFriendlyWeightAppearances = If[EqualQ[Length[massTransferIndices], Length[weightAppearances]],
-        Flatten @ ReplacePart[
-            ConstantArray[Null, Length[sourceContainerLabels]],
-            GroupBy[Transpose[{massTransferIndices, weightAppearances}], First -> Last]
+    (* Get the actual amounts in the correct format using UnitForm or unitFormDistribution. *)
+    actualTransferAmountsFormatted = MapThread[
+        Function[
+            {recordedAmount, balanceResolution},
+            Which[
+                (* If this is a quantity rather than a distribution, use UnitForm. *)
+                QuantityQ[recordedAmount], UnitForm[recordedAmount, Brackets -> False],
+                (* If the balance resolution is known, this is a solid transfer; use unitFormDistribution and consider the balance resolution. *)
+                !NullQ[balanceResolution], Experiment`Private`unitFormDistribution[recordedAmount, Resolution -> balanceResolution],
+                (* Otherwise, we don't have anything to put here. *)
+                True, "N/A"
+            ]
         ],
-        ConstantArray[Null, Length[sourceContainerLabels]]
+        {actualTransferAmounts, balanceResolutions}
     ];
-    mapThreadFriendlyWeightAppearanceObjects = If[EqualQ[Length[massTransferIndices], Length[weightAppearanceObjects]],
-        Flatten @ ReplacePart[
-            ConstantArray[Null, Length[sourceContainerLabels]],
-            GroupBy[Transpose[{massTransferIndices, weightAppearanceObjects}], First -> Last]
-        ],
-        ConstantArray[Null, Length[sourceContainerLabels]]
+
+    (* Establish threads between (1) the date range of each stream object and the object itself and (2) the stream object to its start date. *)
+    dateRangeToStreamLookup = If[MatchQ[streamPackets, {Null...}],
+        {},
+        MapThread[
+            (RangeP[#1, #2 + 5 Minute] -> #3)&,
+            Transpose @ Lookup[streamPackets, {StartTime, EndTime, Object}]
+        ]
     ];
-    mapThreadFriendlyQuantitativeTransferWashSolutionModels = If[EqualQ[Length[sourceContainerLabels], Length[quantitativeTransferWashSolutionModels]],
-        quantitativeTransferWashSolutionModels,
-        ConstantArray[Null, Length[sourceContainerLabels]]
+    streamToStartTimeLookup = If[MatchQ[streamPackets, {Null...}],
+        {},
+        MapThread[
+            (#1 -> #2)&,
+            Transpose @ Lookup[streamPackets, {Object, StartTime}]
+        ]
+    ];
+
+    (* Quick helper to generate tuples of stream objects and time stamps which open the relevant stream *)
+    (* while a weighing event occurs. We only do this if we have streams AND weight appearance objects. *)
+    buildStreamTuples[myWeightAppearancePackets:{(PacketP[Object[Data, Appearance]]|Null)...}] := If[FreeQ[myWeightAppearancePackets, PacketP[]] || MatchQ[streamPackets, {}],
+        ConstantArray[{Null, Null}, Length[actualTransferAmountsFormatted]],
+        Module[
+            {weightAppearanceDatesCreated, streamsByIndex, streamVideoTimes},
+
+            (* Get the DateCreated for each weight appearance object and the start times for each stream. *)
+            weightAppearanceDatesCreated = Lookup[myWeightAppearancePackets /. Null -> <||>, DateCreated, Null];
+
+            (* Use the date range to stream object thread to get the relevant streams at each index. *)
+            (* If we don't find a stream, we'll have a date object instead. Replace that with Null. *)
+            streamsByIndex = Map[
+                If[DateObjectQ[#], Null, #]&,
+                weightAppearanceDatesCreated /. dateRangeToStreamLookup
+            ];
+
+            (* Get the time elapsed from the start of the stream in seconds for each weighing event. *)
+            streamVideoTimes = MapThread[
+                Function[
+                    {stream, weightDateCreated},
+                    (* If we didn't find a stream for this weighing event, leave this as Null. *)
+                    If[NullQ[stream],
+                        Null,
+                        Module[
+                            {streamStartTimeByIndex, watchProtocolTime},
+
+                            (* Find the time at which the relevant stream started. *)
+                            streamStartTimeByIndex = stream /. streamToStartTimeLookup;
+
+                            (* Subtract the date created from the weight appearance object from the stream start date and convert *)
+                            (* this value to seconds before stripping the units off. This is for the time argument to WatchProtocol. *)
+                            (* Finally subtract 5 seconds, since the weight appearance object is created shortly after weighing. *)
+                            watchProtocolTime = Floor[Unitless[Convert[weightDateCreated - streamStartTimeByIndex, Second]]] - 5
+                        ]
+                    ]
+                ],
+                {streamsByIndex, weightAppearanceDatesCreated}
+            ];
+
+            (* Return the {object, time} tuples. *)
+            Transpose[{streamsByIndex, streamVideoTimes}]
+        ]
+    ];
+
+    (* Build all the stream tuples, which we'll feed into WatchProtocol. *)
+    {
+        tareWeightStreamTuples,
+        containerWeightStreamTuples,
+        measuredTransferWeightStreamTuples,
+        residueWeightStreamTuples,
+        materialLossWeightStreamTuples
+    } = Map[
+        buildStreamTuples,
+        {
+            tareWeightAppearancePackets,
+            emptyContainerWeightAppearancePackets,
+            measuredTransferWeightAppearancePackets,
+            residueWeightAppearancePackets,
+            materialLossWeightAppearancePackets
+        }
     ];
 
     (* Generate patterns for automatically generated labels so that we can filter these out of the tables. *)
@@ -8752,8 +9216,32 @@ transferUnitOperationPrimaryData[
                 (* Weighing *)
                 balanceModel,
                 weighingContainerModel,
-                weightAppearance,
-                weightAppearanceObject,
+                tareWeight,
+                tareWeightAppearanceObject,
+                tareWeightImage,
+                tareWeightDataObject,
+                tareWeightStreamTuple,
+                emptyContainerWeight,
+                emptyContainerWeightAppearanceObject,
+                emptyContainerWeightImage,
+                emptyContainerWeightDataObject,
+                emptyContainerStreamTuple,
+                measuredTransferWeight,
+                measuredTransferWeightAppearanceObject,
+                measuredTransferWeightImage,
+                measuredTransferWeightDataObject,
+                measuredTransferWeightStreamTuple,
+                residueWeight,
+                residueWeightAppearanceObject,
+                residueWeightImage,
+                residueWeightDataObject,
+                residueWeightStreamTuple,
+                materialLossWeight,
+                materialLossWeightAppearanceObject,
+                materialLossWeightImage,
+                materialLossWeightDataObject,
+                materialLossStreamTuple,
+                balanceResolution,
 
                 (* Transfer aids *)
                 funnelModel,
@@ -8776,16 +9264,60 @@ transferUnitOperationPrimaryData[
             Module[
                 {tableContent},
 
-                (* Set up the image button if we have an image. Null will be omitted *)
-                balanceImage = If[MatchQ[weightAppearanceObject, ObjectP[]],
+                (* Set up the image tabs if this is a mass transfer index. *)
+                balanceImageTabs = If[And[
+                    MemberQ[massTransferIndices, index],
+                    MemberQ[{tareWeightImage, emptyContainerWeightImage, measuredTransferWeightImage, residueWeightImage, materialLossWeightImage}, Except[Null]]
+                ],
                     With[
-                        {explicitAppearance = weightAppearance, explicitObject = weightAppearanceObject},
-                        Tooltip[
-                            Button[explicitAppearance, OpenCloudFile[explicitObject],
-                                Appearance -> "Frameless",
-                                Method -> "Queued"
-                            ],
-                            "Open Image"
+                        {
+                            weights = {tareWeight, emptyContainerWeight, measuredTransferWeight, materialLossWeight, residueWeight},
+                            appearanceObjects = {tareWeightAppearanceObject, emptyContainerWeightAppearanceObject, measuredTransferWeightAppearanceObject, materialLossWeightAppearanceObject, residueWeightAppearanceObject},
+                            images = {tareWeightImage, emptyContainerWeightImage, measuredTransferWeightImage, materialLossWeightImage, residueWeightImage},
+                            weightData = {tareWeightDataObject, emptyContainerWeightDataObject, measuredTransferWeightDataObject, materialLossWeightDataObject, residueWeightDataObject},
+                            streamObjects = {tareWeightStreamTuple, emptyContainerStreamTuple, measuredTransferWeightStreamTuple, materialLossStreamTuple, residueWeightStreamTuple}[[All, 1]],
+                            streamTimes = {tareWeightStreamTuple, emptyContainerStreamTuple, measuredTransferWeightStreamTuple, materialLossStreamTuple, residueWeightStreamTuple}[[All, 2]]
+                        },
+
+                        Module[
+                            {headings, tabs},
+
+                            (* Define the headings. *)
+                            headings = {"Zero", "Container Tare", "Sample", "Material Loss", "Residue"};
+
+                            (* Generate the tabs *)
+                            tabs = MapThread[
+                                Function[
+                                    {heading, weight, object, image, weightDataObject, streamObject, streamTime},
+                                    If[!NullQ[image] && !NullQ[object],
+                                            heading -> Column[
+                                            {
+                                                ActionMenu[
+                                                    Show[image, ImageSize -> $ReviewImageSize],
+                                                    {
+                                                        "Open Image" :> OpenCloudFile[object],
+                                                        "Copy Weight Data Object" :> CopyToClipboard[weightDataObject[Object]],
+                                                        If[!NullQ[streamObject],
+                                                            "Play Stream" :> WatchProtocol[streamObject, streamTime],
+                                                            Nothing
+                                                        ]
+                                                    },
+                                                    Appearance -> None,
+                                                    Method -> "Queued"
+                                                ],
+                                                Style["Weight:", Bold, 12, FontFamily -> "Helvetica"],
+                                                Experiment`Private`unitFormDistribution[weight, Resolution -> balanceResolution]
+                                            },
+                                            Alignment -> Center,
+                                            Spacings -> 0.5
+                                        ],
+                                        Nothing
+                                    ]
+                                ],
+                                {headings, weights, appearanceObjects, images, weightData, streamObjects, streamTimes}
+                            ];
+
+                            TabView[tabs, ControlPlacement -> {Left, Center}, ContinuousAction -> False]
                         ]
                     ],
                     Null
@@ -8866,9 +9398,12 @@ transferUnitOperationPrimaryData[
                         Nothing
                     ],
 
-                    If[!NullQ[requestedTransferAmount], {"Requested Amount", UnitForm[requestedTransferAmount, Brackets -> False]}, Nothing],
+                    If[!NullQ[requestedTransferAmount],
+                    {"Requested Amount", If[MatchQ[requestedTransferAmount, All], All, UnitForm[requestedTransferAmount, Brackets -> False]]},
+                        Nothing
+                    ],
 
-                    If[!NullQ[actualTransferAmount], {"Actual Amount", UnitForm[actualTransferAmount, Brackets -> False]}, Nothing],
+                    If[!NullQ[actualTransferAmount] && !MatchQ[actualTransferAmount, "N/A"], {"Actual Amount", actualTransferAmount}, Nothing],
 
                     If[!NullQ[transferEnvironmentModel], {"Transfer Environment", transferEnvironmentModel}, Nothing],
 
@@ -8886,11 +9421,11 @@ transferUnitOperationPrimaryData[
 
                     (* === Quantitative transfer === *)
 
-                    If[!NullQ[quantitativeTransferWashSolutionModel], {"Quantiative Transfer Wash Solution", quantitativeTransferWashSolutionModel}, Nothing],
+                    If[!NullQ[quantitativeTransferWashSolutionModel], {"Quantitative Transfer Wash Solution", quantitativeTransferWashSolutionModel}, Nothing],
 
                     If[!NullQ[quantitativeTransferWashVolume], {"Quantitative Transfer Wash Volume", UnitForm[quantitativeTransferWashVolume, Brackets -> False]}, Nothing],
 
-                    If[!NullQ[numberOfQuantitativeTransferWashes], {"Number of Quantitative Transfer Washes", numberOfQuantitativeTransferWashes}, Nothing],
+                    If[!NullQ[numberOfQuantitativeTransferWashes], {"Quantitative Transfer Washes", numberOfQuantitativeTransferWashes}, Nothing],
 
                     (* === Weighing === *)
 
@@ -8898,7 +9433,7 @@ transferUnitOperationPrimaryData[
 
                     If[!NullQ[weighingContainerModel], {"Weighing Container", weighingContainerModel}, Nothing],
 
-                    If[!NullQ[balanceImage], {"Balance Image", balanceImage}, Nothing],
+                    If[!NullQ[balanceImageTabs], {"Balance Images", balanceImageTabs}, Nothing],
 
                     (* === Hermetic === *)
 
@@ -8940,14 +9475,38 @@ transferUnitOperationPrimaryData[
             sourceModels,
             destinationModels,
             transferAmounts,
-            actualTransferAmounts,
+            actualTransferAmountsFormatted,
             transferEnvironmentModels,
 
             (* Weighing *)
             balanceModels,
             weighingContainerModels,
-            mapThreadFriendlyWeightAppearances,
-            mapThreadFriendlyWeightAppearanceObjects,
+            paddedTareWeights,
+            paddedTareWeightAppearanceObjects,
+            tareWeightImages,
+            paddedTareData,
+            tareWeightStreamTuples,
+            paddedContainerWeights,
+            paddedContainerWeightAppearanceObjects,
+            emptyContainerImages,
+            paddedEmptyContainerWeightData,
+            containerWeightStreamTuples,
+            paddedTransferWeights,
+            paddedTransferWeightAppearanceObjects,
+            measuredTransferWeightImages,
+            paddedMeasuredTransferWeightData,
+            measuredTransferWeightStreamTuples,
+            paddedResidueWeights,
+            paddedResidueWeightAppearanceObjects,
+            residueWeightImages,
+            paddedResidueWeightData,
+            residueWeightStreamTuples,
+            paddedMaterialLossWeights,
+            paddedMaterialLossAppearanceObjects,
+            materialLossImages,
+            paddedMaterialLossWeightData,
+            materialLossWeightStreamTuples,
+            balanceResolutions,
 
             (* Transfer aids *)
             funnelModels,
@@ -8957,7 +9516,7 @@ transferUnitOperationPrimaryData[
             intermediateFunnelModels,
 
             (* Quantitative Transfer *)
-            mapThreadFriendlyQuantitativeTransferWashSolutionModels,
+            paddedQuantitativeTransferWashSolutionModels,
             quantitativeTransferWashVolumes,
             numbersOfQuantitativeTransferWashes,
 
@@ -9077,11 +9636,12 @@ transferUnitOperationPrimaryData[
                         With[{explicitValue = #1}, Row[{explicitValue, "   ", RadioButton[Dynamic[transferDisplayIndex, TrackedSymbols :> {transferDisplayIndex}], explicitValue]}]],
                         #2,
                         #3,
-                        UnitForm[#4, Brackets -> False]
+                        If[MatchQ[#4, All], All, UnitForm[#4, Brackets -> False]],
+                        If[roboticQ, Nothing, #5]
                     }, NullP -> Nothing, {1}]&,
-                    {Range[Length[sourceContainers]], clickableSourcesForSummary, clickableDestinationsForSummary, transferAmounts}
+                    {Range[Length[sourceContainers]], clickableSourcesForSummary, clickableDestinationsForSummary, transferAmounts, actualTransferAmountsFormatted}
                 ];
-                summaryHeadings = {Tooltip["Index", "Click radio button to show detailed transfer data below"], "Source", "Destination", "Requested Amount"};
+                summaryHeadings = {Tooltip["Index", "Click radio button to show detailed transfer data below"], "Source", "Destination", "Requested Amount", If[roboticQ, Nothing, "Actual Amount"]};
 
                 (* put together the data for summary table *)
                 summaryTableData = NamedObject[

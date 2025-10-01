@@ -772,7 +772,42 @@ DefineObjectType[Object[Protocol, CountLiquidParticles], {
 			Description -> "For each member of VideoFilePaths, the video recording for each liquid particle reading process.",
 			Category -> "Data Processing",
 			IndexMatching -> VideoFilePaths
+		},
+		StirBarWashSolutions -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Sample],
+				Model[Sample]
+			],
+			IndexMatching->SamplesIn,
+			Description -> "The solvent used for washing the stir bar.",
+			Category -> "Washing"
+		},
+		WasteBeaker->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Container,Vessel]|Model[Container,Vessel],
+			Description->"A vessel that is used to catch any residual water that comes off the stir bar washer when it is washed.",
+			Category->"Washing"
+		},
+		StirBarWasher -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Part],Object[Part]],
+			Description -> "The stir bar washer that is used to wash the stir bar after it is taken out of the zip bag and to transfer it to sample container.",
+			Category -> "Washing"
+		},
+		Pipettes -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Item, Consumable],Model[Item, Consumable]],
+			Description -> "The pipette used to wash the stir bar after it is taken out of the zip bag.",
+			Category -> "Washing"
 		}
-
 	}
 }];

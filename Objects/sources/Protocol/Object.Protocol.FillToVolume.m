@@ -121,6 +121,18 @@ DefineObjectType[Object[Protocol, FillToVolume], {
 			IndexMatching -> SamplesIn,
 			Description -> "For each member of SamplesIn, the cloud file that stores the images of the filled volumetric flasks, if the sample is not fulfilled by Volumetric FillToVolume method, the corresponding value will be Null.",
 			Category -> "Sample Post-Processing"
+		},
+		WasteContainer->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[
+				Model[Container,Vessel],
+				Object[Container,Vessel]
+			],
+			Description->"The container used to temporarily hold the excess samples removed from the intermediate containers and graduated cylinders after the samples are filled to the target volumes. The sample in this vessel will be discarded at the end of the protocol.",
+			Category->"Intermediate Decanting",
+			Developer -> True
 		}
 	}
 }];

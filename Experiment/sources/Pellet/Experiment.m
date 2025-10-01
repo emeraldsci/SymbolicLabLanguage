@@ -2907,9 +2907,10 @@ simulateExperimentPellet[
 							Source->{sample, Lookup[options, ResuspensionSource]},
 							Destination->{supernatantDestinationProxy, sample},
 							Amount->{supernatantVolumeProxy, Lookup[options, ResuspensionVolume]},
-							Supernatant -> If[MatchQ[resolvedPreparation, Manual],
-								{True, False},
-								Automatic
+							SterileTechnique -> {Lookup[options, SterileTechnique], Lookup[options, SterileTechnique]},
+							If[MatchQ[resolvedPreparation, Manual],
+								Supernatant -> {True, False},
+								Nothing
 							],
 							Instrument -> {
 								Lookup[options, SupernatantTransferInstrument],
@@ -2936,9 +2937,10 @@ simulateExperimentPellet[
 							Source->{sample},
 							Destination->{supernatantDestinationProxy},
 							Amount->{supernatantVolumeProxy},
-							Supernatant -> If[MatchQ[resolvedPreparation, Manual],
-								{True},
-								Automatic
+							SterileTechnique -> {Lookup[options, SterileTechnique]},
+							If[MatchQ[resolvedPreparation, Manual],
+								Supernatant -> {True},
+								Nothing
 							],
 							Instrument -> {Lookup[options, SupernatantTransferInstrument]},
 							SourceLabel -> {Lookup[options, SampleLabel]},

@@ -659,7 +659,7 @@ DefineTests[ExperimentMeasureCount,
 			Download[myProtocol, {Tweezer, Balance, WeighBoat}],
 			{
 				LinkP[Model[Item, Tweezer, "id:8qZ1VWNwNDVZ"]],
-				LinkP[Model[Instrument, Balance, "id:vXl9j5qEnav7"]],
+				LinkP[Model[Instrument, Balance, "id:rea9jl5Vl1ae"]],
 				LinkP[Model[Item, WeighBoat, "id:N80DNj1N7GLX"]]
 			},
 			Stubs :> {

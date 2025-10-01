@@ -1372,10 +1372,11 @@ measureCountResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedO
 	parameterizationQ = MemberQ[parameterizeSolidUnitsBool,True];
 
 	(* If we are parameterizing, we need balance, tweezers, and weighboats - otherwise we can leave these empty since ExperimentMeasureWeight will take care of its own resources *)
-	balance=If[parameterizationQ,
+	balance = If[parameterizationQ,
 		Resource[
-			Instrument->Model[Instrument,Balance,"Ohaus Pioneer PA124"],
-			Time->estimatedWeighingTime
+			(* Model[Instrument, Balance, "Ohaus EX225AD"] *)
+			Instrument -> Model[Instrument, Balance, "id:rea9jl5Vl1ae"],
+			Time -> estimatedWeighingTime
 		],
 		Null
 	];

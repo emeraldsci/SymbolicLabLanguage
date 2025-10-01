@@ -107,6 +107,13 @@ DefineObjectType[Object[Data, Weight], {
 			Description -> "The side on image of the weighing surface of the balance and its contents, captured immediately following the weight measurement by the integrated camera.",
 			Category -> "Experimental Results"
 		},
+		WeightStability -> {
+			Format -> Multiple,
+			Class -> Compressed,
+			Pattern :> {_?DateObjectQ, UnitsP[Gram]},
+			Description -> "Trace of weight vs date/time from -60 to +60 seconds relative to the weight measurement timepoint.",
+			Category -> "Experimental Results"
+		},
 		TareData -> {
 			Format -> Single,
 			Class -> Link,

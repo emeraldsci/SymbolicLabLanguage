@@ -251,7 +251,10 @@ With[
 				Format -> Single,
 				Class -> Link,
 				Pattern :> _Link,
-				Relation -> Object[Instrument],
+				Relation -> Alternatives[
+					Model[Instrument],
+					Object[Instrument]
+				],
 				Description -> "The instrument that this qualification is intended to test.",
 				Category -> "General"
 			},
@@ -459,6 +462,16 @@ With[
 				Pattern :> _Link,
 				Relation -> Object[SupportTicket][SourceProtocol],
 				Description -> "Support tickets that were encountered during execution of this particular qualification (parent or subprotocol as the case may be).",
+				Category -> "Protocol Support",
+				Developer -> True,
+				AdminViewOnly -> True
+			},
+			SupportNotebook -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Notebook, Page],
+				Description -> "The record of manual intervention steps performed during scientific support of this qualification.",
 				Category -> "Protocol Support",
 				Developer -> True,
 				AdminViewOnly -> True
@@ -1529,6 +1542,14 @@ With[
 				Relation -> Object[Stream][Protocol],
 				Description -> "The list of video streams associated with this qualification.",
 				Category -> "General"
+			},
+			StreamErrors -> {
+				Format -> Multiple,
+				Class -> String,
+				Pattern :> _String,
+				Description -> "The error operator encountered when trying to start stream for the protocol.",
+				Category -> "General",
+				Developer -> True
 			},
 			AutomatedStorage -> {
 				Format -> Single,

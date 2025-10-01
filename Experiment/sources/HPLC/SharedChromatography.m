@@ -1117,7 +1117,7 @@ resolveInjectionTable[mySamples_,partiallyResolvedOptions:_Association,experimen
 
       (*for the gradients, we always want to associate the method to the appropriate column. accordingly, we need a dictionary*)
       columnPrimeDictionary = Which[
-        NullQ[resolvedColumnSelectorPosition],
+        experimentHPLCQ && NullQ[resolvedColumnSelectorPosition],
         {},
         experimentHPLCQ,
         Quiet[MapThread[
@@ -1132,7 +1132,7 @@ resolveInjectionTable[mySamples_,partiallyResolvedOptions:_Association,experimen
       ];
 
       columnFlushDictionary = Which[
-        NullQ[resolvedColumnSelectorPosition],
+        experimentHPLCQ && NullQ[resolvedColumnSelectorPosition],
         {},
         experimentHPLCQ,
         Quiet[MapThread[

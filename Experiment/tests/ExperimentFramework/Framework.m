@@ -7159,7 +7159,7 @@ DefineTests[
 				LiquidHandlerIncompatible, Site, RequestedResources, Conductivity, IncompatibleMaterials, pH, KitComponents,
 				AsepticHandling, Density, Fuming, InertHandling, ParticleWeight, PipettingMethod, Pyrophoric,
 				ReversePipetting, RNaseFree, TransferTemperature, TransportCondition, Ventilated, Well, SurfaceTension,
-				AluminumFoil, Parafilm, Anhydrous, ExtinctionCoefficients, Notebook
+				AluminumFoil, Parafilm, Anhydrous, ExtinctionCoefficients, Notebook, Flammable
 			}
 		],
 		Example[{Basic, "SamplePreparationCacheFields returns the fields associated with a Model[Sample] input:"},
@@ -7170,7 +7170,7 @@ DefineTests[
 				Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, Sachet, SolidUnitWeight, State, MolecularWeight, MeltingPoint,
 				ThawTime, ThawTemperature, Dimensions, ExtinctionCoefficients, UsedAsSolvent, AsepticHandling, Density, Fuming, InertHandling,
 				ParticleWeight, PipettingMethod, Pyrophoric, ReversePipetting, RNaseFree, TransferTemperature, TransportCondition, Ventilated, SurfaceTension,
-				Parafilm, AluminumFoil, Living
+				Parafilm, AluminumFoil, Living, Flammable
 			}
 		],
 		Example[{Basic, "SamplePreparationCacheFields returns the fields associated with an Object[Container] input:"},

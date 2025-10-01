@@ -99,6 +99,20 @@ DefineTests[
 			ExperimentIncubate[Object[Sample,"Test water sample in 50mL tube for ExperimentIncubate"<>$SessionUUID], MixType->Swirl, NumberOfMixes->10, MaxNumberOfMixes->30, MixUntilDissolved->True],
 			ObjectP[Object[Protocol]]
 		],
+		Test["Populate HandlingEnvironment key if we are swirling/inverting",
+			mspProtocol = Upload[<|Type -> Object[Protocol, ManualSamplePreparation]|>];
+			incubateProtocol = ExperimentIncubate[{Object[Sample, "Test water sample in 50mL tube for ExperimentIncubate" <> $SessionUUID], Object[Sample, "Test water sample in 1L Glass Bottle for ExperimentIncubate" <> $SessionUUID]}, MixType -> {Swirl, Invert}, ParentProtocol -> mspProtocol];
+			Download[
+				DeleteDuplicates@Cases[
+					Download[incubateProtocol, RequiredResources],
+					{res_, SwirlParameters | InvertParameters, _, HandlingEnvironment} | {res_, HandlingEnvironment, _, _} :> Download[res, Object]
+				],
+				InstrumentModels
+			],
+			(* we should only create one resource for invert/swirling, so only one inner list, and we should be able to use any ambient handling station in lab, so the length of inner list is greater than 1 *)
+			{{(ObjectP[Model[Instrument, HandlingStation, Ambient]]..)?(Length[#] > 1&)}},
+			Variables :> {mspProtocol, incubateProtocol}
+		],
 		Example[
 			{Additional,"Mix via nutation:"},
 			ExperimentIncubate[Object[Sample,"Test water sample in 50mL tube for ExperimentIncubate"<>$SessionUUID], MixType->Nutate, MixUntilDissolved->True],
@@ -1430,13 +1444,13 @@ DefineTests[
 			22*Celsius,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options,FilterSterile,"Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options=ExperimentIncubate[Object[Sample,"Test water sample in 50mL tube for ExperimentIncubate"<>$SessionUUID],FilterContainerOut->Model[Container,Vessel,"100 mL Glass Bottle"],FilterSterile->False,Output->Options];
 			Lookup[options,FilterSterile],
 			False,
 			Variables:>{options}
-		],
+		],*)
 		Example[{Options,FilterAliquot,"The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options=ExperimentIncubate[Object[Sample,"Test water sample in 50mL tube for ExperimentIncubate"<>$SessionUUID],FilterContainerOut->Model[Container,Vessel,"50mL Tube"],FilterAliquot->10*Milliliter,Output->Options];
 			Lookup[options,FilterAliquot],

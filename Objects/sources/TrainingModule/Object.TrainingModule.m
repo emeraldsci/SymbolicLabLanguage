@@ -49,6 +49,14 @@ DefineObjectType[Object[TrainingModule], {
 			Description->"The operator to whom this training module has been assigned.",
 			Category->"General"
 		},
+		Certifications->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Certification][ActiveTrainingModules, 3],
+			Description->"The broader skill sets earned by completing this training module.",
+			Category->"General"
+		},
 		Quizzes->{
 			Format->Multiple,
 			Class->Link,

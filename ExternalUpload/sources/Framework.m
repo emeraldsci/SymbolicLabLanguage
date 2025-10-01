@@ -6567,7 +6567,7 @@ resolveDefaultUploadFunctionOptions[myType_, myInput:ObjectP[], myOptions_, rawO
 	(* For each of our options, see if it exists as a field of the same name in the object. *)
 	resolvedOptions=Association@KeyValueMap[
 		Function[{fieldSymbol, fieldValue},
-			Module[{fieldDefinition, formattedOptionSymbol, formattedFieldValue},
+			Module[{fieldDefinition, formattedFieldValue},
 				(* If field does not exist as an option do not include it in the resolved options *)
 				If[!KeyExistsQ[myOptions, fieldSymbol],
 					Nothing,
@@ -6583,11 +6583,13 @@ resolveDefaultUploadFunctionOptions[myType_, myInput:ObjectP[], myOptions_, rawO
 						formattedFieldValue=ReplaceAll[fieldValue, link_Link :> RemoveLinkID[link]];
 
 						(* Based on the class of our field, we have to format the values differently. *)
-						Switch[Lookup[fieldDefinition, Class],
-							Computable,
+						Switch[{fieldSymbol, Lookup[fieldDefinition, Class]},
+							{_, Computable},
 							Nothing,
-							{_Rule..}, (* Named Multiple *)
+							{_, {_Rule..}}, (* Named Multiple *)
 							fieldSymbol -> ReplaceAll[formattedFieldValue[[All, 2]], {} -> Null],
+							{NFPA, _},
+							fieldSymbol -> formattedFieldValue,
 							_,
 							fieldSymbol -> ReplaceAll[formattedFieldValue, {} -> Null]
 						]

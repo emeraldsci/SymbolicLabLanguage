@@ -1301,6 +1301,16 @@ With[
 				Developer -> True,
 				AdminViewOnly -> True
 			},
+			SupportNotebook -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Notebook, Page],
+				Description -> "The record of manual intervention steps performed during scientific support of this protocol.",
+				Category -> "Protocol Support",
+				Developer -> True,
+				AdminViewOnly -> True
+			},
 
 			(* ===== *)
 
@@ -2469,6 +2479,14 @@ With[
 				Relation -> Object[Stream][Protocol],
 				Description -> "The list of video streams associated with this protocol.",
 				Category -> "General"
+			},
+			StreamErrors -> {
+				Format -> Multiple,
+				Class -> String,
+				Pattern :> _String,
+				Description -> "The error operator encountered when trying to start stream for the protocol.",
+				Category -> "General",
+				Developer -> True
 			},
 			Movements -> {
 				Format -> Multiple,

@@ -2311,9 +2311,9 @@ measureDensityResourcePackets[mySamples:{PacketP[Object[Sample]]..},myResolvedOp
 	(*Sample syringe needles*)
 	(*currently reusuable stainless steel needles, could change to disposable ones in the future if washing ends up being time-intensive*)
 	(*TODO:Possibly change to different longer needles using similar logic to pipette tip picking to see if they reach container bottoms if we encounter any very large containers (> 6-8" deep with narrow apertures*)
-	densityMeterSampleNeedles=PadRight[
+	densityMeterSampleNeedles = PadRight[
 		Table[
-			Link[Resource[Sample->Model[Item, Needle, "id:L8kPEjNLDD1A"],Name->ToString[Unique[]],Rent->True]],
+			Link[Resource[Sample -> Model[Item, Needle, "id:Y0lXejrKm0Po"], Name -> ToString[Unique[]]]],(*"14Ga x 10.7In Disposable Blunt Tip Lure Lock Dispensing Needle"*)
 			(*Need only one needle per sample measured with the density meter, so look at how many samples are being measured with the densitymeter method*)
 			Length[myExpandedDensityMeterSamples]
 		],

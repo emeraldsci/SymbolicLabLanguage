@@ -1211,7 +1211,7 @@ resolveExperimentICPMSOptions[myInputSamples:{ObjectP[Object[Sample]]...},myOpti
 		digestionPrimitives, sweepPart, needQuantificationNucleiGrouped, isotopeAbundance, lowAbundanceIsotopesForQuantificationCheck,
 		noAbundantIsotopeForQuantificationOptions, noAbundantIsotopeForQuantificationTest, standardVolumeOverflows, sampleVolumeOverflows,
 		invalidSampleVolumeOptions, invalidSampleVolumeTest, invalidStandardVolumeOptions, invalidStandardVolumeTest, multipleGasQ, multipleGasOptions,
-		multipleGasTest, defaultCCTGas
+		multipleGasTest, defaultCCTGas, emptyNucleiQ, unflattenedSemiresolvedNuclei
 	},
 	(* Determine the requested output format of this function. *)
 	outputSpecification = Quiet[OptionValue[Output]];
@@ -1544,7 +1544,7 @@ resolveExperimentICPMSOptions[myInputSamples:{ObjectP[Object[Sample]]...},myOpti
 	(*Step 2 - Resolve Elements*)
 	(* Reason why these variables named as semiresolvedBLAH is because some Elements and options index-matched to Elements *)
 	(* Can be added after InternalStandard is resolved, if InternalStandard -> True and no Element has InternalStandardElement -> True *)
-	{unflattenedresolvedNuclei, belowThresholdIsotopes, invalidElements, unsupportedElements} = Which[
+	{unflattenedSemiresolvedNuclei, belowThresholdIsotopes, invalidElements, unsupportedElements} = Which[
 		(*If Element is specified and NucleusSpecifiedQ is False, semiresolvedElement set to input, semiresolvedNucleus set to semiresolvedElement replaced by mostAbundantIsotopes*)
 		!MatchQ[unresolvedElements, {} | Automatic] && !nucleusSpecifiedQ,
 		ICPMSDefaultIsotopes[unresolvedElements, Flatten -> False, IsotopeAbundanceThreshold -> resolvedIsotopeAbundanceThreshold, Message->False, Cache -> cacheBall, Instrument -> resolvedInstrument],
@@ -1556,6 +1556,14 @@ resolveExperimentICPMSOptions[myInputSamples:{ObjectP[Object[Sample]]...},myOpti
 		(*If Element is not specified, find all metallic elements from the composition field and take union*)
 		MatchQ[unresolvedElements, Automatic],
 		ICPMSDefaultIsotopes[Append[findICPMSElements[samplePackets, Cache -> cacheBall], Sweep], Flatten -> False, IsotopeAbundanceThreshold -> resolvedIsotopeAbundanceThreshold, Message->False, Cache -> cacheBall, Instrument -> resolvedInstrument]
+	];
+
+	(* Qtegra does not allow an experiment without any elements. If the unflattenedSemiresolvedNuclei is {} or contains only Sweep, add a dummy isotope 208Pb *)
+	emptyNucleiQ = MatchQ[unflattenedSemiresolvedNuclei, {} | {{Sweep}}];
+
+	unflattenedresolvedNuclei = If[emptyNucleiQ,
+		Join[{{"208Pb"}}, unflattenedSemiresolvedNuclei],
+		unflattenedSemiresolvedNuclei
 	];
 
 	(* unflattenedresolvedNuclei is in the following format (N = nucleus, E = Element) : {{N1E1}, {N1E2, N2E2}, {N1E3}...} *)
@@ -1922,6 +1930,8 @@ resolveExperimentICPMSOptions[myInputSamples:{ObjectP[Object[Sample]]...},myOpti
 						BooleanQ[unresolvedQuantifyConcentration], unresolvedQuantifyConcentration,
 						(* If QuantifyConcentration is not specified and nucleus == Sweep, make it False *)
 						MatchQ[unresolvedQuantifyConcentration, Automatic] && MatchQ[nucleus, Sweep], False,
+						(* If we was not able to resolve any nucleus before and had to add dummy nuclei, set to False *)
+						TrueQ[emptyNucleiQ], False,
 						(* If QuantifyConcentration is not specified and nucleus != Sweep, make it opposite of InternalStandardElement *)
 						MatchQ[unresolvedQuantifyConcentration, Automatic], !resolvedInternalStandardElement
 					];

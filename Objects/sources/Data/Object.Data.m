@@ -89,6 +89,8 @@ DefineObjectType[Object[Data], {
 				Object[Protocol, FragmentAnalysis][LadderData],
 				Object[Protocol, FragmentAnalysis][BlankData],
 				Object[Protocol, FragmentAnalysis][SeparationRequiredRetries],
+				Object[Protocol, KarlFischerTitration][BlankData],
+				Object[Protocol, KarlFischerTitration][StandardData],
 				Object[Protocol, MassSpectrometry][MatrixData],
 				Object[Protocol, MassSpectrometry][CalibrantData],
 				Object[Protocol, MassSpectrometry][RawCalibrantData],

@@ -6872,7 +6872,7 @@ simulateExperimentSpreadAndStreakCells[
     fulfilledDestinationContainerResources,fulfilledResuspensionMedias, fulfilledResuspensionContainers,
     postResuspensionSamples,resolvedInoculationSource,resolvedResuspensionContainerWells,resolvedResuspensionMediaVolumes,
     resolvedNumberOfSourceScrapes, destinationContainers, destinationSamples,destinationSampleBatchLengths,platingVolume,dispenses,
-    sanitizedDestinationSamples,transferTuples,uploadSampleTransferPackets,simulatedLabels, coverSimulation
+    sanitizedDestinationSamples,transferTuples,uploadSampleTransferPackets,samplePropertyPackets,simulatedLabels, coverSimulation
   },
 
   (* Get simulation and cache *)
@@ -7171,6 +7171,21 @@ simulateExperimentSpreadAndStreakCells[
 
   (* UpdateSimulation *)
   currentSimulation = UpdateSimulation[currentSimulation, Simulation[uploadSampleTransferPackets]];
+
+  (* Make sure our destination samples are solid and have SolidMedia CultureAdhesion *)
+  samplePropertyPackets = Map[
+    Function[{destinationSample},
+      <|
+          Object -> destinationSample,
+          CultureAdhesion -> SolidMedia,
+          State -> Solid
+      |>
+    ],
+    transferTuples[[All,2]]
+  ];
+
+  (* Update Simulation *)
+  currentSimulation = UpdateSimulation[currentSimulation, Simulation[samplePropertyPackets]];
 
   (* Make sure we have cover simulated so that when called in framework, next UO will not yell about cover *)
   coverSimulation = ExperimentCover[

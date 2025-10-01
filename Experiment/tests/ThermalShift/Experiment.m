@@ -2146,7 +2146,7 @@ DefineTests[ExperimentThermalShift,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
-		(* note that FilterSterile needs to be run with a sample of a volume above 50mL (Jan 2019) *)
+(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options, FilterSterile, "Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options = ExperimentThermalShift[Object[Sample, "ExperimentThermalShift 50mL test sample 1 in 50mL tube" <> $SessionUUID],
 				FilterSterile -> True,
@@ -2154,7 +2154,7 @@ DefineTests[ExperimentThermalShift,
 			Lookup[options, FilterSterile],
 			True,
 			Variables :> {options}
-		],
+		],*)
 		Example[{Options, FilterAliquot, "The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options = ExperimentThermalShift[{Object[Sample, "ExperimentThermalShift test sample 1" <> $SessionUUID], Object[Sample, "ExperimentThermalShift test sample 2" <> $SessionUUID]},
 				FilterAliquot -> 250 * Microliter,

@@ -1122,6 +1122,17 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Units -> Percent,
 			Description -> "The percentage of buffer volumes that met the qualification passing criteria.",
 			Category -> "General"
+		},
+		WasteContainer->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[
+				Model[Container,Vessel],
+				Object[Container,Vessel]
+			],
+			Description->"The vessel used to temporarily hold the water sample removed from the weighing container after each pipette test. The water sample in this vessel will be discarded at the end of the training. This is currently used only in MicropipetteP1000 and SerologicalPipettePipetus trainings.",
+			Category -> "General"
 		}
 	}
 }]

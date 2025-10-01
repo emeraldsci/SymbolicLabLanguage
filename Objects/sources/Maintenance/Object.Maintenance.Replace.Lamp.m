@@ -33,6 +33,14 @@ DefineObjectType[Object[Maintenance, Replace, Lamp], {
 			Units -> Hour,
 			Description -> "Length of time the lamp should be turned on for before new protocols are run on the instrument.",
 			Category -> "General"
+		},
+		LampDataFilePath->{
+			Format -> Single,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The raw data files in xps format of the Lamp History Report from MassLynx software for the Waters instruments.",
+			Category -> "General",
+			Developer -> True
 		}
 	}
 }];

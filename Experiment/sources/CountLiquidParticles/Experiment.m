@@ -4148,7 +4148,7 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 		diluent,dilutionContainer,dilutionCurve,dilutionMixRate,dilutionMixVolume,dilutionNumberOfMixes,dilutionStorageCondition,equilibrationTime,
 		instrument,maxAcquisitionMixRate,maxStirAttempts,method,minAcquisitionMixRate,numberOfPrimes,numberOfReadings,numberOfWashes,
 		particleSizes,preparation,preRinseVolume,primeEquilibrationTime,primeSolutions,primeSolutionTemperatures,primeWaitTimes,readingVolume,
-		sampleTemperature,sensor,serialDilutionCurve,stirBar,syringe,syringeSize,washEquilibrationTime,washSolution,
+		sampleTemperature,sensor,serialDilutionCurve,stirBars,syringe,syringeSize,washEquilibrationTime,washSolution,
 		washSolutionTemperature,washWaitTime,resourcePacketDownload,samplePackets,syringePacket,numAspirations,sampleLoadingVolumes,
 		sampleVolumes,syringeDownloadFields,pairedSamplesInAndVolumes,sampleVolumeRules,sampleResourceReplaceRules,samplesInResources,
 		requiredDiluentVolumes,pairedDiluentsAndVolumes,diluentVolumeRules,uniqueDiluentResources,uniqueDiluentObjects,uniqueDiluentReplaceRules,
@@ -4158,7 +4158,9 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 		resultRule,instrumentResource,sharedFieldPacket,finalizedPacket,simulationRule,allMethodPackets,methodPacketsToUpload, resolvedMethodsForProtocol,
 		methodPacketForProtocolUpload,expandedSerialDilutions,expandedDilutions,dilutionContainerList,discardFirstRuns,flowRate,estimatedPrimeTime,
 		estimatedRunTime,fillLiquidResource,expandedMethodPackets,rinseWaterVolume,rinseWaterResource,acquisitionMixType,numberOfMixes,
-		waitTimeBeforeReading,samplingHeights,solidSamplePackets,solidInvalidInputs
+		waitTimeBeforeReading,samplingHeights,solidSamplePackets,solidInvalidInputs, stirBarWasherResource, stirBarCount, stirBarWashSolutionResource,
+		wasteBeakerResource, pipettesResources, stirBarWashSolutionResourceLookup, uniqueStirBarWashSolutionResource
+		, quotientRemainder, stirBarCutOff
 	},
 	
 	(* expand the resolved options if they weren't expanded already *)
@@ -4227,7 +4229,7 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 		(*30*)sampleTemperature,
 		(*31*)sensor,
 		(*32*)serialDilutionCurve,
-		(*33*)stirBar,
+		(*33*)stirBars,
 		(*34*)syringe,
 		(*36*)syringeSize,
 		(*37*)washEquilibrationTime,
@@ -4497,11 +4499,59 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 	(* Generate the resource, we need a stir bar for each container, we cannot only generate unique stir bar here *)
 	stirBarResources=Map[
 		If[NullQ[#],Null,Link[Resource[Sample->#,Name->CreateUUID[],Rent->True]]]&,
-		stirBar
+		stirBars
 	];
 	
 	(*-- If we need stir bar we also need a stir bar retriever to retrieve the stir bar from the container --*)
-	stirBarRetrieverResource=If[NullQ[stirBar],Null,Link[Resource[Sample->Model[Part, StirBarRetriever, "18 Inch Stir Bar Retriever"],Name->CreateUUID[],Rent->True]]];
+	stirBarRetrieverResource=If[
+		NullQ[stirBars],
+		Null,
+		Link[Resource[Sample->Model[Part, StirBarRetriever, "18 Inch Stir Bar Retriever"],Name->CreateUUID[],Rent->True]]
+	];
+
+	(*-- If we need stir bar we need a stir bar washer to clean and transfer the stir bar --*)
+	stirBarWasherResource = If[
+		NullQ[stirBars],
+		Null,
+		Link[Resource[Sample -> Model[Part, "50 mL Tube Stir Bar Washer with 3/16in hole"], Name -> CreateUUID[], Rent->True]]
+	];
+
+	(* resource the wash solution for cleaning stir bar *)
+	stirBarCount = Count[stirBars,ObjectP[]];
+
+	(* set the cut off of stir bar counts to be 10, corresponding to stir bar wash solution of 100 mL *)
+	stirBarCutOff = 10;
+	quotientRemainder = QuotientRemainder[stirBarCount, stirBarCutOff];
+
+	(* generate all the wash solution resources we need for all the stir bar *)
+	uniqueStirBarWashSolutionResource = Flatten[Join[
+		(* for the quotient, we generate one 100 mL water resource for every 10 stir bars *)
+		ConstantArray[
+			Resource[Sample->Model[Sample, "Milli-Q water"],Name->CreateUUID[],Amount-> 10 Milliliter * stirBarCutOff,Container->PreferredContainer[10 Milliliter * stirBarCutOff]],
+			stirBarCutOff
+		]&/@Range[quotientRemainder[[1]]],
+		(* for the reminder *)
+		ConstantArray[
+			Resource[Sample->Model[Sample, "Milli-Q water"],Name->CreateUUID[],Amount-> 10 Milliliter * quotientRemainder[[2]],Container->PreferredContainer[10 Milliliter * quotientRemainder[[2]]]],
+			quotientRemainder[[2]]
+		]
+	]];
+
+	(* generate look up for stir bar wash solution *)
+	stirBarWashSolutionResourceLookup = If[stirBarCount > 0,
+		AssociationThread[DeleteCases[stirBarResources, Null], uniqueStirBarWashSolutionResource],
+		<||>
+	];
+	stirBarWashSolutionResource = stirBarResources/.stirBarWashSolutionResourceLookup;
+
+	(* resource Model[Container, Vessel, "1000mL Glass Beaker"] for stir bar cleaning*)
+	wasteBeakerResource = If[NullQ[stirBars], Null, Link[Resource[Sample -> Model[Container, Vessel, "id:O81aEB4kJJJo"], Name -> CreateUUID[], Rent -> True]]];
+
+	(* resource pipettes Model[Item, Consumable, "VWR Disposable Transfer Pipet"] for each stir bar *)
+	pipettesResources = Map[
+		If[NullQ[#],Null,Link[Resource[Sample->Model[Item, Consumable, "id:bq9LA0J1xmBd"],Name->CreateUUID[],Rent->True]]]&,
+		stirBars
+	];
 
 	(*-- Syringe --*)
 	(* SyringeResources, not sure if we need this one, but in case we still have multiple syringes, so I will just add one here *)
@@ -4615,7 +4665,7 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 	]];
 	
 	rinseWaterResource=Link[Resource[Sample->Model[Sample, "Milli-Q water"],Name->CreateUUID[],Amount->rinseWaterVolume,Container->PreferredContainer[rinseWaterVolume]]];
-	
+
 	(*-- Check points --*)
 	checkpoints={
 		{"Preparing Samples", 1 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> 1 Minute]]},
@@ -4679,6 +4729,7 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 		Replace[WashIndexes]->(Range/@numberOfWashes),
 		Replace[NumberOfReadings]->numberOfReadings,
 		Replace[ParticleSizes]->particleSizes,
+		Replace[Pipettes] -> pipettesResources,
 		Replace[PreRinseVolumes]->preRinseVolume,
 		Replace[PreRinseVolumeStrings]->(ToString[Round[Unitless[#,Milliliter],0.001]]&/@preRinseVolume),
 		Replace[PrimeEquilibrationTimes]->primeEquilibrationTime,
@@ -4689,10 +4740,13 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 		Replace[SampleLoadingVolumes]->sampleLoadingVolumes,
 		Replace[SampleTemperatures]->(sampleTemperature/.{Ambient->$AmbientTemperature}),
 		Replace[StirBars]->stirBarResources,
+		StirBarWasher->stirBarWasherResource,
+		Replace[StirBarWashSolutions] -> stirBarWashSolutionResource,
 		Replace[WashEquilibrationTimes]->Replace[washEquilibrationTime, {Null -> 0Minute}],
 		Replace[WashSolutions]->washSolutionsResources,
 		Replace[WashSolutionTemperatures]->(washSolutionTemperature/.{Ambient->$AmbientTemperature}),
-		Replace[WashWaitTimes]->Replace[washWaitTime, {Null -> 0Minute}]
+		Replace[WashWaitTimes]->Replace[washWaitTime, {Null -> 0Minute}],
+		WasteBeaker -> wasteBeakerResource
 	|>;
 	
 	(* generate a packet with the shared fields *)

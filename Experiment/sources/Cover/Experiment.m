@@ -1739,7 +1739,10 @@ resolveExperimentCoverOptions[
 						],
 						(* Never re-use aspiration caps, unless it's specified. We don't have a specific field informing whether the cap is aspiration caps or not, so we look at the following two criteria: *)
 						(* Model Name should not container 'Aspiration' *)
-						!StringContainsQ[Lookup[fetchPacketFromCache[Download[previousCoverModel, Object], previousCoverObjectPackets], Name], "Aspiration", IgnoreCase -> True],
+						Or[
+							!StringContainsQ[Lookup[fetchPacketFromCache[Download[previousCoverModel, Object], previousCoverObjectPackets], Name], "Aspiration", IgnoreCase -> True],
+							NullQ[Lookup[fetchPacketFromCache[Download[previousCoverModel, Object], previousCoverObjectPackets], Name]]
+						],
 						(* Does not have any Connectors defined *)
 						Length[Lookup[fetchPacketFromCache[Download[previousCoverModel, Object], previousCoverObjectPackets], Connectors]] == 0,
 						Or[
@@ -2382,7 +2385,7 @@ resolveExperimentCoverOptions[
 						Lookup[options, SterileTechnique],
 
 					(* If the user has told us to use a BSC, use sterile technique. *)
-					MatchQ[environment, ObjectP[{Model[Instrument, BiosafetyCabinet], Object[Instrument, BiosafetyCabinet]}]],
+					MatchQ[environment, ObjectP[{Model[Instrument, BiosafetyCabinet], Object[Instrument, BiosafetyCabinet], Model[Instrument, HandlingStation, BiosafetyCabinet], Object[Instrument, HandlingStation, BiosafetyCabinet]}]],
 						True,
 
 					(* Otherwise, no sterile technique. *)
@@ -2736,7 +2739,7 @@ resolveExperimentCoverOptions[
 		{},
 		MapThread[
 			Function[{sterileTechnique, environment, index},
-				If[MatchQ[sterileTechnique, True] && !MatchQ[environment, ObjectP[{Model[Instrument, BiosafetyCabinet], Object[Instrument, BiosafetyCabinet]}]],
+				If[MatchQ[sterileTechnique, True] && !MatchQ[environment, ObjectP[{Model[Instrument, BiosafetyCabinet], Object[Instrument, BiosafetyCabinet], Model[Instrument, HandlingStation, BiosafetyCabinet], Object[Instrument, HandlingStation, BiosafetyCabinet]}]],
 					{sterileTechnique, environment, index},
 					Nothing
 				]
@@ -3504,13 +3507,18 @@ coverResourcePackets[
 
 			(* Create resources for each of our environments. *)
 			uniqueEnvironmentResources=(#->Which[
+				(* special treatment for fumehood, we do not really care which model to use for uncovering if we are really going to use a fumehood, so just allow all models *)
+				MatchQ[#, ObjectP[Model[Instrument, HandlingStation, FumeHood, "id:1ZA60vzEmYv0"]]],
+					With[{currentFumeHoodModels= UnsortedComplement[Cases[transferModelsSearch["Memoization"][[23]], ObjectP[Model[Instrument, HandlingStation, FumeHood]]], $SpecializedHandlingStationModels]},
+						Resource[Instrument -> currentFumeHoodModels]
+					],
 				MatchQ[#, ObjectP[{Model[Container], Object[Container]}]],
 					Resource[Sample->#],
 				MatchQ[#, ObjectP[{Model[Instrument], Object[Instrument]}]],
 					Resource[Instrument->#],
 				True,
 					Null
-			]&)/@Lookup[myResolvedOptions, Environment];
+			]&)/@DeleteDuplicates[Lookup[myResolvedOptions, Environment]];
 
 			(* Create PlateSealAdapter resources. *)
 			uniquePlateSealAdapterResources=(#->Which[

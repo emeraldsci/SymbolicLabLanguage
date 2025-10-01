@@ -266,6 +266,17 @@ DefineTests[UploadMedia,
 				{Sterile, AsepticHandling}
 			],
 			{True, True}
+		],
+		Test["If MediaPhase is solid used for PlateMedia, a liquid form of it is populated as LiquidMedia:",
+			Download[
+				UploadMedia[
+					Model[Sample,Media,"LB Broth, Miller"],
+					MediaPhase->Solid,
+					GellingAgents->{{20Gram,Model[Sample,"Agar for UploadMedia"<>$SessionUUID]}}
+				],
+				LiquidMedia
+			],
+			{{ObjectP[Model[Sample, Media]]}}
 		]
 	},
 	Stubs:>{

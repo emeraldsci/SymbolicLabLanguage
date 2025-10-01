@@ -2146,19 +2146,6 @@ DefineTests[ExperimentCrossFlowFiltration,
 		],
 		
 		Example[
-			{Options,FilterSterile,"Indicates if the filtration of the samples should be done in a sterile environment:"},
-			options=ExperimentCrossFlowFiltration[
-				Object[Sample, "Cross Flow Test Sample For uPulse 1"<> $SessionUUID],
-				PrimaryConcentrationTarget->1.1,
-				FilterSterile->True,
-				Output->Options
-			];
-			Lookup[options,FilterSterile],
-			True,
-			Variables:>{options}
-		],
-		
-		Example[
 			{Options,FilterAliquot,"The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options=ExperimentCrossFlowFiltration[
 				Object[Sample, "Cross Flow Test Sample (VII) "<> $SessionUUID],

@@ -4479,6 +4479,37 @@ DefineTests[ExperimentHPLC,
 			20*1/Second,
 			Variables:>{options}
 		],
+		Test["Ensure that in most cases, a centrifugation subprotocol can be generated:",
+			{minTemperature, maxTemperature} = Lookup[First[Cases[Lookup[FirstCase[OptionDefinition[ExperimentHPLC], KeyValuePattern["OptionName" -> "SampleTemperature"]], "Widget"], KeyValuePattern[Type -> Quantity], Infinity]], {Min, Max}];
+			containers = Flatten[{
+				$ChromatographyLCCompatibleVials,
+				Model[Container, Plate, "id:L8kPEjkmLbvW"],(*96-well 2mL Deep Well Plate*)
+				Model[Container, Vessel, "id:xRO9n3vk11pw"],(*15mL Tube*)
+				Model[Container, Vessel, "id:bq9LA0dBGGR6"](*50mL Tube*)
+			}];
+			containerVolumes = Download[containers, MaxVolume];
+			options = Download[ExperimentHPLC[Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID]], InjectionSampleCentrifugeOptions];
+			{
+				ExperimentCentrifuge[
+					ConstantArray[Model[Sample, "id:8qZ1VWNmdLBD"](*Milli-Q water*), Length[containers]],
+					PreparedModelContainer -> containers,
+					PreparedModelAmount -> containerVolumes,
+					Sequence@@ReplaceRule[options, Temperature -> minTemperature],
+					Output -> Options
+				],
+				ExperimentCentrifuge[
+					ConstantArray[Model[Sample, "id:8qZ1VWNmdLBD"](*Milli-Q water*), Length[containers]],
+					PreparedModelContainer -> containers,
+					PreparedModelAmount -> containerVolumes,
+					Sequence@@ReplaceRule[options, Temperature -> maxTemperature],
+					Output -> Options
+				]
+			},
+			{{_Rule..}, {_Rule..}},
+			(* No messages should be thrown except the instrument precision message thrown in sample preparation *)
+			Messages :> {Warning::InstrumentPrecision},
+			Variables :> {options, minTemperature, maxTemperature, containers, containerVolumes}
+		],
 
 		(* === Shared Options - General === *)
 		Example[{Options,ImageSample, "Indicate whether samples should be imaged afterwards:"},
@@ -4772,14 +4803,14 @@ DefineTests[ExperimentHPLC,
 			EquivalenceFunction -> Equal,
 			Variables :> {options},
 			Messages:>{Warning::AliquotRequired}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options,FilterSterile, "Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options = ExperimentHPLC[Object[Sample,"Large Container Sample for ExperimentHPLC" <> $SessionUUID], FilterSterile -> True, Output -> Options];
 			Lookup[options, FilterSterile],
 			True,
 			Variables :> {options},
 			Messages:>{Warning::AliquotRequired}
-		],
+		],*)
 		Example[{Options,FilterAliquot, "The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options = ExperimentHPLC[Object[Sample,"Large Container Sample for ExperimentHPLC" <> $SessionUUID], FilterAliquot -> 200 Milliliter, Output -> Options];
 			Lookup[options, FilterAliquot],

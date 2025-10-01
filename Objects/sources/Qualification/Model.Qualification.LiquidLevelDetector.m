@@ -22,6 +22,14 @@ DefineObjectType[Model[Qualification,LiquidLevelDetector], {
 			Description->"The length of the longest dimension of the blocks of standard length used to qualify the target.",
 			Category->"Qualification Parameters"
 		},
+		SensorArmHeights -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Millimeter],
+			Units -> Millimeter,
+			Description -> "The list of sensor heights utilized for ultrasonic distance measurement.",
+			Category -> "Qualification Parameters"
+		},
 		TareDistanceTolerance->{
 			Format->Single,
 			Class->Real,
@@ -36,6 +44,14 @@ DefineObjectType[Model[Qualification,LiquidLevelDetector], {
 			Pattern:>GreaterEqualP[0 Millimeter],
 			Units->Millimeter,
 			Description->"The amount above or below the expected height that the gage block readings may deviate by to be considered a pass.",
+			Category->"Passing Criteria"
+		},
+		SensorArmDistanceTolerance -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Millimeter],
+			Units -> Millimeter,
+			Description -> "The amount above or below the expected height by which the readings may deviate is considered a pass.",
 			Category->"Passing Criteria"
 		},
 		(* Plate reader LLD *)

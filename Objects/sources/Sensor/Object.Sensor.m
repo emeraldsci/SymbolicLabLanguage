@@ -209,6 +209,14 @@ DefineObjectType[Object[Sensor], {
 			Category -> "Organizational Information",
 			Developer -> True
 		},
+		GMPQualified -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this object currently meets the requirements for Good Manufacturing Practices.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
 
 		(* --- Quality Assurance --- *)
 		Certificates -> {
@@ -291,6 +299,9 @@ DefineObjectType[Object[Sensor], {
 				Object[Instrument, MassSpectrometer][CollisionCellGasDeliveryPressureSensor],
 				Object[Instrument, Spectrophotometer][PurgeGasTankPressureSensor],
 				Object[Instrument, Spectrophotometer][PurgeGasDeliveryPressureSensor],
+				Object[Instrument, PortableCooler][TemperatureSensor],
+				Object[Instrument, KarlFischerTitrator][KarlFischerReagentWeightSensor],
+				Object[Instrument, KarlFischerTitrator][MediumWeightSensor],
 				Object[Instrument, PortableCooler][TemperatureSensor]
 			],
 			Description -> "All instruments and/or sensors that are being directly monitored by this sensor.",

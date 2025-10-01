@@ -1370,7 +1370,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> Real,
 			Pattern :> GreaterEqualP[0 * Kelvin],
 			Units -> Celsius,
-			Description -> "The nominal temperature of the chamber input samples are incubated in prioInjectionSampleVolumeMeasurementr to injection into the column.",
+			Description -> "The nominal temperature of the chamber input samples are incubated in prior to injection into the column.",
 			Category -> "Sample Preparation"
 		},
 		InjectionVolumes -> {
@@ -3861,6 +3861,14 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Units -> None,
 			Description -> "The set of options for each potential, alternate instrument.",
 			Category -> "Option Handling",
+			Developer -> True
+		},
+		InjectionSampleCentrifugeOptions -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> {_Rule...},
+			Description -> "The set of options for centrifuging samples, standards, and blanks prior to being loaded on the autosampler. An empty list indicates that options should take their default values for ExperimentCentrifuge. Null indicates that no centrifugation is to take place.",
+			Category -> "Sample Preparation",
 			Developer -> True
 		}
 	}
