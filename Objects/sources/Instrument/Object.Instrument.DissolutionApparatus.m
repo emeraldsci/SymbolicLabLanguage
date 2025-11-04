@@ -33,8 +33,17 @@ DefineObjectType[Object[Instrument, DissolutionApparatus], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Instrument, PeristalticPump][DissolutionApparatus],
-			Description -> "Waste pump that drains waste liquid into the carboy.",
+			Description -> "Peristaltic pump that is used to drain waste liquid into the carboy after the experiment is completed.",
 			Category -> "Instrument Specifications"
+		},
+
+		AutosamplerDeck -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container, Deck][Instruments],
+			Description -> "The platform that contains the vials where the samples taken during the experiment are deposited.",
+			Category -> "Dimensions & Positions"
 		},
 
 		(*gas information*)
@@ -43,7 +52,7 @@ DefineObjectType[Object[Instrument, DissolutionApparatus], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Container, GasCylinder],
-			Description -> "The gas cylinder used to degas the dissolution medium.",
+			Description -> "The Helium gas cylinder used to degas the dissolution medium before the experiment.",
 			Category -> "Instrument Specifications"
 		},
 		HeliumDeliveryPressureSensor -> {
@@ -53,6 +62,16 @@ DefineObjectType[Object[Instrument, DissolutionApparatus], {
 			Relation -> Object[Sensor][DevicesMonitored],
 			Description -> "The digital gauge measuring the pressure on the instrument side of the regulator for the Helium gas tank.",
 			Category -> "Sensor Information"
+		},
+
+		DissolutionVesselCaps -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item,Cap],
+			Description -> "The caps for the dissolution vessels.",
+			Category -> "Instrument Specifications",
+			Developer -> True
 		}
 	}
 }];

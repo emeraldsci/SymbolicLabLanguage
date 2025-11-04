@@ -89,7 +89,8 @@ DefineOptions[PlotPeaksTable,
 (* PlotPeaksTable Errors *)
 
 Warning::NoPeaksInAnalysis = "The analysis objects, `1`, at indices, `2`, do not have any identified peaks and thus will be excluded from the generated peak tables.";
-Warning::InvalidColumns = "The analysis objects, `1`, at indices, `2`, have columns/fields specified that are invalid, `3`, because NMR-specific fields were specified for non-NMR analysis objects or vice versa based on the NMR option, `4`. Invalid fields will not be displayed in the peaks table.";
+Warning::InvalidColumnInformation = "The analysis objects, `1`, at indices, `2`, have columns/fields specified that are invalid, `3`, because they are not populated with information for each peak. Invalid fields will not be displayed in the peaks table.";
+Warning::InvalidNMRColumns = "The analysis objects, `1`, at indices, `2`, have columns/fields specified that are invalid, `3`, because NMR-specific fields were specified for non-NMR analysis objects or vice versa based on the NMR option, `4`. Invalid fields will not be displayed in the peaks table.";
 Warning::NoNMRAnalysisToDisplay = "The analysis objects, `1`, at indices, `2`, do not have NMR peak splitting information, so they will display a traditional peak information table.";
 
 
@@ -117,9 +118,10 @@ PlotPeaksTable[myAnalysisObjects: ListableP[ObjectP[Object[Analysis, Peaks]]], m
     outputSpecification, output, gatherTests, messages, listedOptions, safeOptions, safeOptionTests, cache, simulation,
     inputColumnFields, dynamicQ, debugQ, inputMaxHeights, nmrInformationQ, convertHeadingsQ, peakAnalysisFields, listedAnalysisObjects,
     peakAnalysisPackets, findDefaultFields, expandedColumnFields, expandedMaxHeights, resolvedColumnFields,
-    resolvedMaxHeights, stylizeText, formatFieldHeaders, buildPeaksTable, peakAnalysisTables,
-    analysisObjectsWithoutPeaks, analysisObjectPeakTest, analysesWithInvalidColumns, invalidColumns,
-    invalidColumnTest, missingNMRPeakAnalysisObjects, missingNMRPeakTest, resolvedOptions, collapsedResolvedOptions,
+    resolvedMaxHeights, stylizeText, formatFieldHeaders, buildPeaksTable, peakAnalysisTables, allInvalidInputColumns, 
+    analysisObjectsWithoutPeaks, analysisObjectPeakTest, analysesWithInvalidColumnInformation, invalidInputColumns,
+    invalidColumnInformationTest, analysesWithInvalidNMRColumns, invalidNMRColumns,
+    invalidNMRColumnTest, missingNMRPeakAnalysisObjects, missingNMRPeakTest, resolvedOptions, collapsedResolvedOptions,
     previewRule, optionsRule, testsRule, resultRule
   },
 
@@ -209,7 +211,7 @@ PlotPeaksTable[myAnalysisObjects: ListableP[ObjectP[Object[Analysis, Peaks]]], m
     Function[{inputColumns, peakAnalysisPacket},
       If[MatchQ[inputColumns, Automatic],
         findDefaultFields[peakAnalysisPacket, nmrInformationQ],
-        inputColumns
+        ToList[inputColumns]
       ]
     ],
     {expandedColumnFields, peakAnalysisPackets}
@@ -424,10 +426,15 @@ PlotPeaksTable[myAnalysisObjects: ListableP[ObjectP[Object[Analysis, Peaks]]], m
 
   (* Helper that sets up the table given one peak analysis object and the initial table fields. *)
   buildPeaksTable[
-    analysisObjectPacket: ObjectP[Object[Analysis, Peaks]],
+    analysisObjectPacket: PacketP[Object[Analysis, Peaks]],
     initialColumnFields: {Alternatives[Sequence @@ PeaksFields]..},
     maxHeight: (GreaterEqualP[100] | Null)
-  ] := Module[{peakLabels, peakUnits, peakReferenceDataObjects, nmrTableQ, allPeakFieldOptions, filteredInitialColumnFields},
+  ] := Module[
+    {
+      peakLabels, peakUnits, peakReferenceDataObjects, nmrTableQ, allPeakFieldOptions, numberOfPeaks,
+      possiblePeakFields, filteredInitialColumnFields, invalidInputFields, peaksTable
+    },
+
     (* Look up the peak labels which are automatically displayed. *)
     (* NOTE: If peak labels are not found, then put in placeholders. *)
     peakLabels = If[MatchQ[Lookup[analysisObjectPacket, PeakLabel], {}],
@@ -455,10 +462,42 @@ PlotPeaksTable[myAnalysisObjects: ListableP[ObjectP[Object[Analysis, Peaks]]], m
       $NonNMRPeaksFields
     ];
 
-    (* Filter out invalid, specified column fields. A warning will be thrown about this later if there are discrepancies. *)
-    filteredInitialColumnFields = UnsortedIntersection[initialColumnFields, allPeakFieldOptions];
+    (* Determine which fields have information to dislay as options for the selection menu. *)
+    numberOfPeaks = If[nmrTableQ,
+      Length[Lookup[analysisObjectPacket, NMRChemicalShift]],
+      Length[Lookup[analysisObjectPacket, PeakLabel]]
+    ];
 
-    Which[
+    possiblePeakFields = MapThread[
+      Function[{field, fieldValue},
+        If[
+          And[
+            (* PeakLabel is already represented in the first column, so don't need to have it as a data field here. *)
+            MatchQ[field, Except[PeakLabel]],
+            (* Don't need to use fields that don't have any data. *)
+            MatchQ[fieldValue, Except[Null|{}]],
+            (* Can't display fields that are not index-matched to the data. *)
+            Length[fieldValue] == numberOfPeaks
+          ],
+          field,
+          Nothing
+        ]
+      ],
+      {
+        allPeakFieldOptions,
+        Lookup[analysisObjectPacket, allPeakFieldOptions]
+      }
+    ];
+
+    (* Filter out invalid, specified column fields. Are handled by separate error-checking. *)
+    filteredInitialColumnFields = UnsortedIntersection[initialColumnFields, possiblePeakFields];
+
+    (* Gather invalid input columns/fields due to not being populated. *) 
+    (* A warning will be thrown later saying that they weren't able to be displayed. *)
+    invalidInputFields = Complement[filteredInitialColumnFields, possiblePeakFields];
+
+    (* Generate our dynamic or static peaks table. *)
+    peaksTable = Which[
       (* If there are no peaks are in the analysis, then return no table. *)
       MatchQ[Lookup[analysisObjectPacket, Position], {}],
         Null,
@@ -466,7 +505,7 @@ PlotPeaksTable[myAnalysisObjects: ListableP[ObjectP[Object[Analysis, Peaks]]], m
       dynamicQ,
         DynamicModule[
           {
-            maxTableHeight, currentlyDisplayedColumns, possiblePeakFields,
+            maxTableHeight, currentlyDisplayedColumns, possibleFields,
             columnSetter, cachedPeakLabels, currentPeakLabels, uploadFunction,
             resetLabel, resetAllLabels, debugSection, columnSetterSection,
             peakTable, uploadButton
@@ -478,13 +517,8 @@ PlotPeaksTable[myAnalysisObjects: ListableP[ObjectP[Object[Analysis, Peaks]]], m
           (* Start with the default columns in view *)
           currentlyDisplayedColumns = filteredInitialColumnFields;
 
-          (* Determine which fields have information (not Null nor {}) to dislay as options for the selection menu. *)
-          (* NOTE: PeakLabel is already represented in the first column, so don't need to have it as a data field here. *)
-          (* NOTE: BaselineFunction is the same across the board and not index-matched, so we don't display it. *)
-          possiblePeakFields = ReplaceAll[
-            PickList[allPeakFieldOptions, Lookup[analysisObjectPacket, allPeakFieldOptions], Except[Null|{}]],
-            {PeakLabel -> Nothing, BaselineFunction -> Nothing}
-          ];
+          (* Store the possible peak fields that can be selected in the Dynamic Module. *)
+          possibleFields = possiblePeakFields;
 
           (* Create a setter bar for the columns *)
           columnSetter = TogglerBar[
@@ -492,10 +526,10 @@ PlotPeaksTable[myAnalysisObjects: ListableP[ObjectP[Object[Analysis, Peaks]]], m
             MapThread[
               #1 -> #2&,
               {
-                possiblePeakFields,
+                possibleFields,
                 Map[
                   stylizeText,
-                  formatFieldHeaders[possiblePeakFields, analysisObjectPacket, convertHeadingsQ]
+                  formatFieldHeaders[possibleFields, analysisObjectPacket, convertHeadingsQ]
                 ]
               }
             ],
@@ -572,7 +606,7 @@ PlotPeaksTable[myAnalysisObjects: ListableP[ObjectP[Object[Analysis, Peaks]]], m
                 True,
                   (* Can't use length of peak labels here because it may not match number of NMR peaks. *)
                   (* This acts as a buffer in case no columns are selected. *)
-                  ConstantArray[{}, Length[Lookup[analysisObjectPacket, First[possiblePeakFields]]]]
+                  ConstantArray[{}, Length[Lookup[analysisObjectPacket, First[possibleFields]]]]
               ];
 
               (* Prepend the row names to each row *)
@@ -770,15 +804,26 @@ PlotPeaksTable[myAnalysisObjects: ListableP[ObjectP[Object[Analysis, Peaks]]], m
             UnitForm -> False
           ]
         ]
-    ]
+    ];
+
+    (* Return the generated peaks table and the input columns that weren't able to be displayed. *)
+    {
+      peaksTable,
+      invalidInputFields
+    }
   ];
 
   (* Tables are assembled for each peak analysis object with the resolved table labels. *)
-  peakAnalysisTables = MapThread[
-    Function[{analysisPacket, columnFields, maxHeight},
-      buildPeaksTable[analysisPacket, columnFields, maxHeight]
-    ],
-    {peakAnalysisPackets, resolvedColumnFields, resolvedMaxHeights}
+  {
+    peakAnalysisTables,
+    allInvalidInputColumns
+  } = Transpose[
+    MapThread[
+      Function[{analysisPacket, columnFields, maxHeight},
+        buildPeaksTable[analysisPacket, columnFields, maxHeight]
+      ],
+      {peakAnalysisPackets, resolvedColumnFields, resolvedMaxHeights}
+    ]
   ];
 
   (* Error-checking *)
@@ -818,8 +863,56 @@ PlotPeaksTable[myAnalysisObjects: ListableP[ObjectP[Object[Analysis, Peaks]]], m
     Null
   ];
 
-  (* If input analysis objects have invalid columns specified, then warn the user. *)
-  {analysesWithInvalidColumns, invalidColumns} = Map[Flatten, Transpose[
+  (* If input analysis objects have invalid columns specified because the fields are not populated with the correct *)
+  (* amount of information, then warn the user that they weren't displayed. *)
+  {analysesWithInvalidColumnInformation, invalidInputColumns} = If[Length[Flatten[allInvalidInputColumns]] > 0,
+    Transpose[PickList[
+      Transpose[{Lookup[peakAnalysisPackets, Object], allInvalidInputColumns}],
+      allInvalidInputColumns,
+      Except[{}]
+    ]],
+    {{}, {}}
+  ];
+
+  If[Length[analysesWithInvalidColumnInformation] > 0,
+    Module[{invalidColumnInformationIndices},
+      (* Need to pick out input indices for warning. *)
+      invalidColumnInformationIndices = PickList[
+        Range[Length[listedAnalysisObjects]],
+        listedAnalysisObjects,
+        ObjectP[analysesWithInvalidColumnInformation]
+      ];
+
+      Message[
+        Warning::InvalidColumnInformation,
+        analysesWithInvalidColumnInformation,
+        invalidColumnInformationIndices,
+        invalidInputColumns
+      ]
+    ]
+  ];
+
+  invalidColumnInformationTest = If[gatherTests,
+    Module[{affectedObjects, failingTest, passingTest},
+      affectedObjects = analysesWithInvalidColumnInformation;
+
+      failingTest = If[Length[affectedObjects] == 0,
+        Nothing,
+        Test["The peak analysis object(s) " <> ObjectToString[affectedObjects, Cache -> cache] <> " have valid columns specified that have information for each peak:", True, False]
+      ];
+
+      passingTest = If[Length[affectedObjects] == Length[myAnalysisObjects],
+        Nothing,
+        Test["The peak analysis object(s) " <> ObjectToString[Complement[myAnalysisObjects, affectedObjects], Cache -> cache] <> " have valid columns specified that have information for each peak:", True, True]
+      ];
+
+      {failingTest, passingTest}
+    ],
+    Null
+  ];
+
+  (* If input analysis objects have invalid NMR columns specified, then warn the user that they weren't displayed. *)
+  {analysesWithInvalidNMRColumns, invalidNMRColumns} = Map[Flatten, Transpose[
     MapThread[
       Function[{analysisObjectPacket, columnFields},
         Module[{nmrReferenceQ, nmrColumns, nonNMRColumns},
@@ -844,37 +937,37 @@ PlotPeaksTable[myAnalysisObjects: ListableP[ObjectP[Object[Analysis, Peaks]]], m
     ]
   ]];
 
-  If[Length[analysesWithInvalidColumns] > 0,
-    Module[{invalidColumnIndices},
+  If[Length[analysesWithInvalidNMRColumns] > 0,
+    Module[{invalidNMRColumnIndices},
       (* Need to pick out input indices for warning. *)
-      invalidColumnIndices = PickList[
+      invalidNMRColumnIndices = PickList[
         Range[Length[listedAnalysisObjects]],
         listedAnalysisObjects,
-        ObjectP[analysesWithInvalidColumns]
+        ObjectP[analysesWithInvalidNMRColumns]
       ];
 
       Message[
-        Warning::InvalidColumns,
-        analysesWithInvalidColumns,
-        invalidColumnIndices,
-        invalidColumns,
+        Warning::InvalidNMRColumns,
+        analysesWithInvalidNMRColumns,
+        invalidNMRColumnIndices,
+        invalidNMRColumns,
         nmrInformationQ
       ]
     ]
   ];
 
-  invalidColumnTest = If[gatherTests,
+  invalidNMRColumnTest = If[gatherTests,
     Module[{affectedObjects, failingTest, passingTest},
-      affectedObjects = analysesWithInvalidColumns;
+      affectedObjects = analysesWithInvalidNMRColumns;
 
       failingTest = If[Length[affectedObjects] == 0,
         Nothing,
-        Test["The peak analysis object(s) " <> ObjectToString[affectedObjects, Cache -> cache] <> " have valid columns specified:", True, False]
+        Test["The peak analysis object(s) " <> ObjectToString[affectedObjects, Cache -> cache] <> " have valid columns specified based on whether the data was NMR data or not:", True, False]
       ];
 
       passingTest = If[Length[affectedObjects] == Length[myAnalysisObjects],
         Nothing,
-        Test["The peak analysis object(s) " <> ObjectToString[Complement[myAnalysisObjects, affectedObjects], Cache -> cache] <> " have valid columns specified:", True, True]
+        Test["The peak analysis object(s) " <> ObjectToString[Complement[myAnalysisObjects, affectedObjects], Cache -> cache] <> " have valid columns specified based on whether the data was NMR data or not:", True, True]
       ];
 
       {failingTest, passingTest}
@@ -983,7 +1076,8 @@ PlotPeaksTable[myAnalysisObjects: ListableP[ObjectP[Object[Analysis, Peaks]]], m
       Flatten[
         {
           analysisObjectPeakTest,
-          invalidColumnTest,
+          invalidColumnInformationTest,
+          invalidNMRColumnTest,
           missingNMRPeakTest
         }
       ]

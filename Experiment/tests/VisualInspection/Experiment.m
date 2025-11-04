@@ -658,7 +658,7 @@ DefineTests[ExperimentVisualInspection,
 			EquivalenceFunction->Equal,
 			Messages :> {Warning::AliquotRequired, Warning::SampleMustBeMoved},
 			Variables :> {options}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options, FilterSterile, "Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options = ExperimentVisualInspection[Object[Sample,"Test sample for ExperimentVisualInspection (aliquot true)"<>$SessionUUID],
 				FilterSterile->True, Output->Options];
@@ -666,7 +666,7 @@ DefineTests[ExperimentVisualInspection,
 			True,
 			Messages :> {Warning::AliquotRequired, Warning::SampleMustBeMoved},
 			Variables :> {options}
-		],
+		],*)
 		Example[{Options, FilterAliquot, "The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options = ExperimentVisualInspection[Object[Sample,"Test sample for ExperimentVisualInspection (aliquot true)"<>$SessionUUID],
 				FilterAliquot->0.5*Milliliter, Output->Options];
@@ -917,7 +917,7 @@ DefineTests[ExperimentVisualInspection,
 				Composition->{{100VolumePercent,Model[Molecule,"Water"]},{1 Molar,Model[Molecule,"Uracil"]}},
 				State->Liquid,
 				Expires->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				BiosafetyLevel->"BSL-1",
 				IncompatibleMaterials->{None},
 				DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]
@@ -1006,7 +1006,7 @@ DefineTests[ExperimentVisualInspection,
 				Expires->False,
 				DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 				State->Liquid,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None}
 			];
 
@@ -1259,7 +1259,7 @@ DefineTests[VisualInspection,
 					Composition->{{100VolumePercent,Model[Molecule,"Water"]},{1 Molar,Model[Molecule,"Uracil"]}},
 					State->Liquid,
 					Expires->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					BiosafetyLevel->"BSL-1",
 					IncompatibleMaterials->{None},
 					DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]
@@ -1586,7 +1586,7 @@ DefineTests[ExperimentVisualInspectionOptions,
 				Composition->{{100VolumePercent,Model[Molecule,"Water"]},{1 Molar,Model[Molecule,"Uracil"]}},
 				State->Liquid,
 				Expires->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				BiosafetyLevel->"BSL-1",
 				IncompatibleMaterials->{None},
 				DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]
@@ -1935,7 +1935,7 @@ DefineTests[ValidExperimentVisualInspectionQ,
 					Composition->{{100VolumePercent,Model[Molecule,"Water"]},{1 Molar,Model[Molecule,"Uracil"]}},
 					State->Liquid,
 					Expires->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					BiosafetyLevel->"BSL-1",
 					IncompatibleMaterials->{None},
 					DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]

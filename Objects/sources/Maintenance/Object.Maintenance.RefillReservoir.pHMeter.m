@@ -43,6 +43,15 @@ DefineObjectType[Object[Maintenance, RefillReservoir, pHMeter], {
 			Description -> "The samples in ReservoirContainers and ProbeStorageContainers that are refilled during this maintenance.",
 			Category -> "General",
 			Developer -> True
+		},
+		ReplacementProbeStorageContainers -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container, Vessel]|Model[Container, Vessel],
+			Description -> "For each member of Probes, the containers secured to the bottom of the pH meter Target's probes to be filled with storage solution (usually \"Electrolyte 3 mol/L KCl\") to keep the pH probe's glass membrane and reference junction hydrated when not in use.",
+			Category -> "Refilling",
+			IndexMatching -> Probes
 		}
 	}
 }];

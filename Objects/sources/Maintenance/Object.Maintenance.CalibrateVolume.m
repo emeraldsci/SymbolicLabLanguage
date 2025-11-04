@@ -88,8 +88,8 @@ DefineObjectType[Object[Maintenance, CalibrateVolume], {
 		SensorArmHeight -> {
 			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterP[0*Centi*Meter],
-			Units -> Centi Meter,
+			Pattern :> GreaterP[0*Milli*Meter],
+			Units -> Milli Meter,
 			Description -> "The height at which the sensor arm was set initially to bring the liquid level sensor as close as possible to the neck of the vessel.",
 			Category -> "Sample Preparation",
 			Developer -> True

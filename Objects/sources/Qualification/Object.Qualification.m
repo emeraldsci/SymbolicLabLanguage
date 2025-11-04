@@ -251,7 +251,10 @@ With[
 				Format -> Single,
 				Class -> Link,
 				Pattern :> _Link,
-				Relation -> Object[Instrument],
+				Relation -> Alternatives[
+					Model[Instrument],
+					Object[Instrument]
+				],
 				Description -> "The instrument that this qualification is intended to test.",
 				Category -> "General"
 			},
@@ -459,6 +462,16 @@ With[
 				Pattern :> _Link,
 				Relation -> Object[SupportTicket][SourceProtocol],
 				Description -> "Support tickets that were encountered during execution of this particular qualification (parent or subprotocol as the case may be).",
+				Category -> "Protocol Support",
+				Developer -> True,
+				AdminViewOnly -> True
+			},
+			SupportNotebook -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Notebook, Page],
+				Description -> "The record of manual intervention steps performed during scientific support of this qualification.",
 				Category -> "Protocol Support",
 				Developer -> True,
 				AdminViewOnly -> True
@@ -1172,8 +1185,8 @@ With[
 				Format -> Single,
 				Class -> Link,
 				Pattern :> _Link,
-				Relation -> Object[User, Emerald] |  Model[User, Emerald],
-				Description -> "Indicates the operator allowed to run this Qualification.  If not populated, then all operators are allowed.",
+				Relation -> Object[User] | Model[User],
+				Description -> "Indicates the person allowed to run this Qualification. If not populated, then all users are allowed.",
 				Category -> "Operations Information",
 				Developer -> True
 			},
@@ -1530,6 +1543,14 @@ With[
 				Description -> "The list of video streams associated with this qualification.",
 				Category -> "General"
 			},
+			StreamErrors -> {
+				Format -> Multiple,
+				Class -> String,
+				Pattern :> _String,
+				Description -> "The error operator encountered when trying to start stream for the protocol.",
+				Category -> "General",
+				Developer -> True
+			},
 			AutomatedStorage -> {
 				Format -> Single,
 				Class -> Boolean,
@@ -1704,6 +1725,42 @@ With[
 				Description -> "Lists all movements from an aseptic source into an aspetic destination that the indicated task is currently performing.  This field is only populated during the process of any sort of movement task, and is emptied once it is complete.",
 				Developer -> True,
 				Category -> "Placements"
+			},
+			ErrorRecoveryLog -> {
+				Format -> Multiple,
+				Class -> {
+					Date -> Date,
+					Procedure -> String,
+					TaskID -> String,
+					Subprotocol -> Link,
+					ResponsibleOperator -> Link
+				},
+				Pattern :> {
+					Date -> _?DateObjectQ,
+					Procedure -> _String,
+					TaskID -> _String,
+					Subprotocol -> _Link,
+					ResponsibleOperator -> _Link
+				},
+				Relation -> {
+					Date -> Null,
+					Procedure -> Null,
+					TaskID -> Null,
+					Subprotocol -> Alternatives[Object[Protocol], Object[Maintenance], Object[Qualification]],
+					ResponsibleOperator -> Object[User, Emerald][ErrorRecoveryEvents, RootProtocol]
+				},
+				Description -> "The error recovery procedures triggered during execution of this protocol.",
+				Category -> "Organizational Information"
+			},
+			GloveChangeLog -> {
+				Format -> Multiple,
+				Class -> {Date, Link, Link},
+				Pattern :> {_?DateObjectQ, _Link, _Link},
+				Relation -> {None, Object[Item, Consumable], Object[User]},
+				Description -> "The history of glove replacements during this protocol in the form: {Date, Glove Box, Operator}. This field records when gloves were replaced, which gloves  were used, and who performed the replacement.",
+				Headers -> {"Date", "Glove Box", "Operator"},
+				Category -> "Health & Safety",
+				Developer -> True
 			},
 
 			insertMe

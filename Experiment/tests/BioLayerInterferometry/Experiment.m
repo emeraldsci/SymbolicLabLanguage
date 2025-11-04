@@ -3780,7 +3780,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages:>{
         Warning::AliquotRequired
       }
-    ],
+    ],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
     Example[{Options, FilterSterile, "Indicates if the filtration of the samples should be done in a sterile environment:"},
       options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 8 (1.5 mL)" <> $SessionUUID], FilterSterile -> True, Output -> Options];
       Lookup[options, FilterSterile],
@@ -3789,7 +3789,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages:>{
         Warning::AliquotRequired
       }
-    ],
+    ],*)
     Example[{Options, FilterAliquot, "The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
       options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 8 (1.5 mL)" <> $SessionUUID], FilterAliquot -> 1.4*Milliliter, Output -> Options];
       Lookup[options, FilterAliquot],

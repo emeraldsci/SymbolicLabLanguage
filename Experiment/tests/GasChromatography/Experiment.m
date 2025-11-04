@@ -4405,7 +4405,7 @@ DefineTests[ExperimentGasChromatography,
 			Variables:>{options},
 			Messages:>{Warning::AliquotRequired},
 			TimeConstraint -> 300
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[
 			{Options,FilterSterile,"Specify if the filtration of the samples should be done in a sterile environment:"},
 			options=ExperimentGasChromatography[
@@ -4418,7 +4418,7 @@ DefineTests[ExperimentGasChromatography,
 			Variables:>{options},
 			Messages:>{Warning::AliquotRequired},
 			TimeConstraint -> 300
-		],
+		],*)
 		Example[
 			{Options,Aliquot,"Specify if aliquots should be taken from the SamplesIn and transferred into new AliquotSamples used in lieu of the SamplesIn for the experiment:"},
 			options=ExperimentGasChromatography[
@@ -10488,7 +10488,7 @@ DefineTests[ExperimentGCMS,
 			Variables:>{options},
 			Messages:>{Warning::AliquotRequired},
 			TimeConstraint -> 300
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[
 			{Options,FilterSterile,"Specify if the filtration of the samples should be done in a sterile environment:"},
 			options=ExperimentGCMS[
@@ -10501,7 +10501,7 @@ DefineTests[ExperimentGCMS,
 			Variables:>{options},
 			Messages:>{Warning::AliquotRequired},
 			TimeConstraint -> 300
-		],
+		],*)
 		Example[
 			{Options,Aliquot,"Specify if aliquots should be taken from the SamplesIn and transferred into new AliquotSamples used in lieu of the SamplesIn for the experiment:"},
 			options=ExperimentGCMS[

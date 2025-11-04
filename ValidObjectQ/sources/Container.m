@@ -1584,6 +1584,16 @@ validContainerVesselBagQTests[packet:PacketP[Object[Container,Vessel,Bag]]]:={
 
 
 (* ::Subsection::Closed:: *)
+(* validContainerBasketQTests *)
+
+validContainerBasketQTests[packet:PacketP[Object[Container,Basket]]]:={
+	NotNullFieldTest[packet,{
+		CleanRack,
+		DirtyRack
+	}]
+};
+
+(* ::Subsection::Closed:: *)
 (* validContainerVesselBufferCartridgeQTests *)
 
 
@@ -1622,6 +1632,20 @@ validContainerVesselVolumetricFlaskQTests[packet:PacketP[Object[Container,Vessel
 validContainerVesselGasWashingBottleQTests[packet:PacketP[Object[Container,Vessel,GasWashingBottle]]]:={
 };
 
+(* ::Subsection::Closed:: *)
+(* validContainerSinkerQTests *)
+
+validContainerSinkerQTests[packet:PacketP[Object[Container,Sinker]]]:={
+	NotNullFieldTest[packet,{
+		CleanRack,
+		DirtyRack
+	}]
+};
+
+(* ::Subsection::Closed:: *)
+(* validContainerDosageDispensingUnitQTests *)
+
+validContainerDosageDispensingUnitQTests[packet:PacketP[Object[Container,DosageDispensingUnit]]]:={};
 
 (* ::Subsection::Closed:: *)
 (*validContainerWashBathQTests*)
@@ -1941,6 +1965,14 @@ validContainerSpillKitQTests[packet:PacketP[Object[Container,SpillKit]]]:={
 };
 
 
+(* ::Subsection::Closed:: *)
+(*validContainerDissolutionShaftQTests*)
+
+
+validContainerDissolutionShaftQTests[packet:PacketP[Object[Container,DissolutionShaft]]]:={
+};
+
+
 
 (* ::Subsection:: *)
 (*Test Registration *)
@@ -2011,11 +2043,14 @@ registerValidQTestFunction[Object[Container,Safe],validContainerSafeQTests];
 registerValidQTestFunction[Object[Container,Shelf],validContainerShelfQTests];
 registerValidQTestFunction[Object[Container,ShelvingUnit],validContainerShelvingUnitQTests];
 registerValidQTestFunction[Object[Container,Shipping],validContainerShippingQTests];
+registerValidQTestFunction[Object[Container,Sinker],validContainerSinkerQTests];
+registerValidQTestFunction[Object[Container,DosageDispensingUnit],validContainerDosageDispensingUnitQTests];
 registerValidQTestFunction[Object[Container,Stand],validContainerStandQTests];
 registerValidQTestFunction[Object[Container,Syringe],validContainerSyringeQTests];
 registerValidQTestFunction[Object[Container,SyringeTool],validContainerSyringeToolQTests];
 registerValidQTestFunction[Object[Container,Vessel],validContainerVesselQTests];
 registerValidQTestFunction[Object[Container,Vessel,Bag],validContainerVesselBagQTests];
+registerValidQTestFunction[Object[Container,Basket],validContainerBasketQTests];
 registerValidQTestFunction[Object[Container,Vessel,BufferCartridge],validContainerVesselBufferCartridgeQTests];
 registerValidQTestFunction[Object[Container,Vessel,CrossFlowContainer],validContainerVesselCrossFlowQTests];
 registerValidQTestFunction[Object[Container,Vessel,CrossFlowWashContainer],validWashContainerVesselCrossFlowQTests];
@@ -2035,3 +2070,4 @@ registerValidQTestFunction[Object[Container,ProteinCapillaryElectrophoresisCartr
 registerValidQTestFunction[Object[Container,ProteinCapillaryElectrophoresisCartridgeInsert],validContainerProteinCapillaryElectrophoresisCartridgeInsertQTests];
 registerValidQTestFunction[Object[Container,PhaseSeparator],validContainerPhaseSeparatorQTests];
 registerValidQTestFunction[Object[Container,SpillKit],validContainerSpillKitQTests];
+registerValidQTestFunction[Object[Container,DissolutionShaft],validContainerDissolutionShaftQTests];

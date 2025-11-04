@@ -71,6 +71,22 @@ DefineObjectType[Object[Company], {
 			Headers -> {"Product Type","Manufacturing Specification"},
 			Category -> "Organizational Information"
 		},
+		Verified -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the information in this model has been reviewed for accuracy by an ECL employee.",
+			Category -> "Organizational Information"
+		},
+		VerifiedLog -> {
+			Format -> Multiple,
+			Class -> {Boolean, Link, Date},
+			Pattern :> {BooleanP, _Link, _?DateObjectQ},
+			Relation -> {Null, Object[User], Null},
+			Headers -> {"Verified", "Responsible person", "Date"},
+			Description -> "Records the history of changes to the Verified field, along with when the change occurred, and the person responsible.",
+			Category -> "Organizational Information"
+		},
 		(* --- Migration Support --- *)
 		LegacyID -> {
 			Format -> Single,

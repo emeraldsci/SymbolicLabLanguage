@@ -38,6 +38,14 @@ DefineObjectType[Model[Instrument, KarlFischerTitrator], {
 			Units -> Celsius,
 			Description -> "Indicates the highest temperature that this instrument can heat the sample when using the Headspace sampling method.",
 			Category -> "Instrument Specifications"
+		},
+		ReactionVesselModel -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Container, Vessel],
+			Description -> "The container model in which the actual Karl Fischer Titration takes place on this instrument.",
+			Category -> "Dimensions & Positions"
 		}
 	}
 }];

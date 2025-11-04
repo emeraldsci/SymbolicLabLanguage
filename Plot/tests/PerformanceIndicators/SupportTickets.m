@@ -459,6 +459,10 @@ DefineTests[PlotSupportTimeline, {
 			PlotSupportTimeline[Object[Protocol,ImageSample], Today-7 Day, Today-1 Day, 1 Day, Display -> Both],
 			_Pane
 		],
+	Example[{Options, RootProtocol, "Only consider root protocols when True, and use InternalCommunications instead of ProtocolSpecificInternalCommunications:"},
+		PlotSupportTimeline[Object[Protocol,ImageSample], Today-7 Day, Today-1 Day, 1 Day, RootProtocol->True],
+		ValidGraphicsP[]
+	],
 		Example[{Options, ExcludeCanaryProtocols, "Indicates if the tickets generated for a root canary protocol should be shown:"},
 			PlotSupportTimeline[Object[Protocol,ManualSamplePreparation], Today-7 Day, Today-1 Day, 1 Day, ExcludeCanaryProtocols -> True],
 			ValidGraphicsP[]

@@ -515,6 +515,22 @@ DefineObjectType[Object[Protocol, MeasureViscosity], {
 			Description->"An image taken of the software window when an error is encountered.",
 			Category->"General",
 			Developer->True
+		},
+		PistonCleaningWipes -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Item,Consumable],Object[Item,Consumable]],
+			Description -> "The cleaning material used to wipe off unwanted impurities from the piston part of the target.",
+			Category -> "Cleaning"
+		},
+		PistonCleaningSolution -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Sample],Object[Sample]],
+			Description -> "The cleaning solution used to clean uff unwanted impurities from the piston part of the target.",
+			Category -> "Cleaning"
 		}
 	}
 }];

@@ -603,6 +603,14 @@ DefineObjectType[Object[Protocol, MeasureDensity], {
 			IndexMatching->BatchedSamplesIn,
 			Developer->True
 		},
+		BalanceLog -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data, Weight],
+			Description -> "The trace of balance reading vs date recorded from the beginning of first weight measurement (BatchedTareWeights) to the very last weight measurement (BatchedSampleWeights).",
+			Category -> "General"
+		},
 		TareWeights->{
 			Format -> Multiple,
 			Class -> Link,
@@ -699,6 +707,42 @@ DefineObjectType[Object[Protocol, MeasureDensity], {
 			Relation->Object[Data][Protocol],
 			Description->"The density data created by the water check.",
 			Category->"Experimental Results"
+		},
+		WeightStabilityDurations -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Second],
+			Units -> Second,
+			Description -> "For each member of SamplesIn, the duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable and captured when measuring the weight of the samples of interest.",
+			Category -> "General",
+			IndexMatching -> SamplesIn
+		},
+		MaxWeightVariations -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Milligram],
+			Units -> Milligram,
+			Description -> "For each member of SamplesIn, the max allowed amplitude the balance readings can fluctuate with for a duration defined by WeightStabilityDuration before being considered stable and captured when measuring the weight of the samples of interest.",
+			Category -> "General",
+			IndexMatching -> SamplesIn
+		},
+		BatchedWeightStabilityDurations -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Second],
+			Units -> Second,
+			Description -> "For each member of BatchedSamplesIn, the duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable and captured when measuring the weight of the samples of interest.",
+			Category -> "General",
+			IndexMatching -> BatchedSamplesIn
+		},
+		BatchedMaxWeightVariations -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Milligram],
+			Units -> Milligram,
+			Description -> "For each member of BatchedSamplesIn, the max allowed amplitude the balance readings can fluctuate with for a duration defined by WeightStabilityDuration before being considered stable and captured when measuring the weight of the samples of interest.",
+			Category -> "General",
+			IndexMatching -> BatchedSamplesIn
 		}
 	}
 }];

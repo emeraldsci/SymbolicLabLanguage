@@ -118,7 +118,7 @@ DefineTests[ExperimentNephelometryOptions,
 					ShelfLife->ConstantArray[2 Year,1],
 					UnsealedShelfLife->ConstantArray[90 Day,1],
 					DefaultStorageCondition->ConstantArray[Model[StorageCondition,"Ambient Storage"],1],
-					MSDSRequired->ConstantArray[False,1],
+					MSDSFile->ConstantArray[NotApplicable,1],
 					BiosafetyLevel->ConstantArray["BSL-1",1],
 					State->ConstantArray[Liquid,1]
 				];
@@ -293,7 +293,7 @@ DefineTests[ExperimentNephelometryPreview,
 					ShelfLife->ConstantArray[2 Year,1],
 					UnsealedShelfLife->ConstantArray[90 Day,1],
 					DefaultStorageCondition->ConstantArray[Model[StorageCondition,"Ambient Storage"],1],
-					MSDSRequired->ConstantArray[False,1],
+					MSDSFile->ConstantArray[NotApplicable,1],
 					BiosafetyLevel->ConstantArray["BSL-1",1],
 					State->ConstantArray[Liquid,1]
 				];
@@ -487,7 +487,7 @@ DefineTests[ValidExperimentNephelometryQ,
 					ShelfLife->ConstantArray[2 Year,1],
 					UnsealedShelfLife->ConstantArray[90 Day,1],
 					DefaultStorageCondition->ConstantArray[Model[StorageCondition,"Ambient Storage"],1],
-					MSDSRequired->ConstantArray[False,1],
+					MSDSFile->ConstantArray[NotApplicable,1],
 					BiosafetyLevel->ConstantArray["BSL-1",1],
 					State->ConstantArray[Liquid,1]
 				];

@@ -706,3 +706,32 @@ DefineUsage[ValidObjectQ,
 	},
 	Author -> {"hayley", "mohamad.zandian", "cheri", "frezza", "alex"}
 }];
+
+(* ::Subsubsection::Closed:: *)
+(*fetchPacketFromCacheOrDownload*)
+
+DefineUsage[fetchPacketFromCacheOrDownload,
+	{
+		BasicDefinitions -> {
+			{"fetchPacketFromCacheOrDownload[{{fieldList}..}, packet, cache]", "results", "find objects according to the 'packet' and 'fieldList', then either fetch packets from the provided 'cache' if they are available, or download packets from Constellation."},
+			{"fetchPacketFromCacheOrDownload[{fieldList}, packet, cache]", "results", "find object according to the 'packet' and 'fieldList', then either fetch packets from the provided 'cache' if they are available, or download packets from Constellation."}
+		},
+		MoreInformation -> {
+			"This function is only supposed to be used in ValidObjectQ framework to fetch packets from provided cache."
+		},
+		Input :> {
+			{"fieldList", {(_Packet | _Symbol | _Field | _Repeated?(MatchQ[First[#1], (_Field | _Symbol)] &))...}, "List of field to travel through from the 'packet' input in order to determine packets from which objects need to be fetched or downloaded."},
+			{"packet", PacketP[], "The packet of the main object, in most cases it's the object that's running ValidObjectQ tests."},
+			{"cache", {PacketP[]...}, "All cached packets provided. The function will first try to fetch the desired packets from this cache input, whenever possible."}
+		},
+		Output :> {
+			{"results", ListableP[PacketP[]], "The desired packets as indicated by the 'fieldList' input, either from 'cache' or downloaded from Constellation."}
+		},
+		SeeAlso -> {
+			"ValidObjectQ",
+			"Experiment`Private`fetchPacketFromFastAssoc",
+			"Experiment`Private`fastAssocLookup"
+		},
+		Author -> {"hanming.yang"}
+	}
+];

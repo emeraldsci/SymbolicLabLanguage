@@ -1223,7 +1223,7 @@ UploadMedia[
 	mySolvents:{ObjectP[{Model[Sample]}]..},
 	myFinalVolumes:{VolumeP..},
 	myOptions:OptionsPattern[UploadMedia]
-]:=Module[{outputSpecification,listedOutput,gatherTests,formulaSpecsWithoutTemporalLinks,solventsWithoutTemporalLinks,optionsWithoutTemporalLinks,safeOptionsUploadMediaWithNames,safeOptionsUploadMediaTests,safeOptionsUploadMedia,fastTrack,cache,upload,uploadStockSolutionOptions,myTemplateMediaModels,resolvedUploadMediaOptionsResult,resolvedUploadMediaTests,collapsedResolvedUploadMediaOptions,unexpandedUploadStockSolutionOptions,expandedUploadStockSolutionOptions,resolvedUploadMediaInputs,resolvedUploadMediaOptions,preliminaryUploadMediaPackets,uploadMediaOptions,finalUploadMediaPackets,allTests,result,options,tests},
+]:=Module[{outputSpecification,listedOutput,gatherTests,formulaSpecsWithoutTemporalLinks,solventsWithoutTemporalLinks,optionsWithoutTemporalLinks,safeOptionsUploadMediaWithNames,safeOptionsUploadMediaTests,safeOptionsUploadMedia,fastTrack,cache,upload,uploadStockSolutionOptions,myTemplateMediaModels,resolvedUploadMediaOptionsResult,resolvedUploadMediaTests,collapsedResolvedUploadMediaOptions,unexpandedUploadStockSolutionOptions,expandedUploadStockSolutionOptions,resolvedUploadMediaInputs,resolvedUploadMediaOptions,preliminaryUploadMediaPackets,uploadMediaOptions,finalUploadMediaPackets, additionalPackets, allTests,result,options,tests, mediaNewObjectIDs, liquidMediaNewObjectIDs},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]],OptionValue::nodef];
@@ -1326,9 +1326,19 @@ UploadMedia[
 		]
 	],{resolvedUploadMediaInputs,expandedUploadStockSolutionOptions}]];
 
+	(* CreateID reaches out to database, do we make a call to generate a pool of IDs to use if needed *)
+	(* For the media final upload packet, we need a new ID from here only when there was a base model *)
+	(* For the additional packet, we only need it for corresponding liquid media packet of a solid media model*)
+	{mediaNewObjectIDs, liquidMediaNewObjectIDs} = With[{length = Length[preliminaryUploadMediaPackets]},
+		TakeDrop[
+			CreateID[Table[Model[Sample, Media], 2 * length]],
+			length
+		]
+	];
+
 	(* Garnishing the packets for UploadMedia with the field values for Supplements,DropOuts,GellingAgents,PlateMedia *)
-	finalUploadMediaPackets = MapThread[
-		Function[{packet,options},
+	{finalUploadMediaPackets, additionalPackets} = Transpose@MapThread[
+		Function[{packet,options, mediaNewObjectID, liquidMediaNewObjectID},
 			Module[{name,plateMedia,mediaPhase,gellingAgents,baseMedia,packetWithNewObject},
 				{name,plateMedia,mediaPhase} = Lookup[options,{MediaName,PlateMedia,MediaPhase}];
 				gellingAgents = Map[convertCompositionToAmount[#,Lookup[packet,TotalVolume]]&,Lookup[options,GellingAgents]];
@@ -1342,35 +1352,80 @@ UploadMedia[
 
 				(* Due to some weirdness with how the packets get spit out of USS, we need to make a new Object here if our base media is populated *)
 				packetWithNewObject = If[!NullQ[baseMedia],
-					Association[Normal[ReplaceRule[packet, Object -> CreateID[Model[Sample,Media]]], Association]],
+					Association[Normal[ReplaceRule[packet, Object -> mediaNewObjectID], Association]],
 					packet
 				];
 
-				Append[packetWithNewObject,
+				(* If this is an upload of a solid media for plating, we need to also upload a liquid form of it with everything the same only State->Liquid, for use in ExperimentPlateMedia samplesInResource. Because out of the StockSolution protocol that prepares the resource, the state is liquid. *)
+				If[MatchQ[mediaPhase, Solid],
+					Module[{liquidFormPacket, solidFormPacket},
+						(* Create its packet *)
+						liquidFormPacket = Association[
+							Normal[
+								ReplaceRule[
+									packet,
+									{
+										Object -> liquidMediaNewObjectID,
+										State -> Liquid,
+										Name -> Null
+									}
+								],
+								Association
+							]
+						];
+						solidFormPacket = Append[packetWithNewObject,
+							{
+								(* If Name or BaseMedia is Null, we are not going to change anything *)
+								If[!NullQ[name],
+									Name->name,
+									Nothing
+								],
+								If[!NullQ[baseMedia],
+									BaseMedia -> baseMedia,
+									Nothing
+								],
+								PlateMedia -> plateMedia,
+								Replace[LiquidMedia] -> {Link[liquidMediaNewObjectID, SolidMedia]}
+							}
+						];
+						(* Return both packets *)
+						{solidFormPacket, liquidFormPacket}
+					],
+					(* Otherwise just a regular non-plating media *)
 					{
-						(* If Name or BaseMedia is Null, we are not going to change anything *)
-						If[!NullQ[name],
-							Name->name,
-							Nothing
+						Append[packetWithNewObject,
+							{
+								(* If Name or BaseMedia is Null, we are not going to change anything *)
+								If[!NullQ[name],
+									Name -> name,
+									Nothing
+								],
+								If[!NullQ[baseMedia],
+									BaseMedia -> baseMedia,
+									Nothing
+								],
+								PlateMedia -> plateMedia
+							}
 						],
-						If[!NullQ[baseMedia],
-							BaseMedia -> baseMedia,
-							Nothing
-						],
-						PlateMedia -> plateMedia
+						{}
 					}
 				]
 			]
 		],
-		{preliminaryUploadMediaPackets,OptionsHandling`Private`mapThreadOptions[UploadMedia,resolvedUploadMediaOptions]}
+		{preliminaryUploadMediaPackets,OptionsHandling`Private`mapThreadOptions[UploadMedia,resolvedUploadMediaOptions], mediaNewObjectIDs, liquidMediaNewObjectIDs}
 	];
 
 	allTests = Flatten[{safeOptionsUploadMediaTests,resolvedUploadMediaTests}];
 
 	result = If[MemberQ[listedOutput,Result] && !MemberQ[preliminaryUploadMediaPackets, <|Object -> $Failed|>],
-		If[upload,
-			Upload[finalUploadMediaPackets],
-			finalUploadMediaPackets
+		Which[
+			upload && Length[Flatten[additionalPackets]] > 0,
+				Upload[Flatten[{finalUploadMediaPackets, additionalPackets}]];
+				Download[finalUploadMediaPackets, Object],
+			upload,
+				Upload[finalUploadMediaPackets],
+			True,
+				Flatten[{finalUploadMediaPackets, additionalPackets}]
 		],
 		$Failed
 	];
@@ -1400,7 +1455,7 @@ UploadMedia[
 UploadMedia[
 	myMediaModels:{ObjectP[Model[Sample,Media]]..},
 	myOptions:OptionsPattern[UploadMedia]
-]:=Module[{outputSpecification,listedOutput,gatherTests,messages,mediaModelsWithoutTemporalLinks,optionsWithoutTemporalLinks,safeOptionsUploadMediaWithNames,safeOptionsUploadMediaTests,safeOptionsUploadMedia,fastTrack,cache,upload,allDownloads,mediaSets,cacheBall,resolvedUploadMediaOptionsResult,resolvedUploadMediaTests,collapsedResolvedUploadMediaOptions,resolvedUploadMediaInputs,resolvedUploadMediaOptions,preliminaryUploadMediaPackets,uploadMediaOptions,unexpandedUploadStockSolutionOptions,expandedUploadStockSolutionOptions,finalUploadMediaPackets,allTests,result,options,tests,preResolvedNames},
+]:=Module[{outputSpecification,listedOutput,gatherTests,messages,mediaModelsWithoutTemporalLinks,optionsWithoutTemporalLinks,safeOptionsUploadMediaWithNames,safeOptionsUploadMediaTests,safeOptionsUploadMedia,fastTrack,cache,upload,allDownloads,mediaSets,cacheBall,resolvedUploadMediaOptionsResult,resolvedUploadMediaTests,collapsedResolvedUploadMediaOptions,resolvedUploadMediaInputs,resolvedUploadMediaOptions,preliminaryUploadMediaPackets,uploadMediaOptions,unexpandedUploadStockSolutionOptions,expandedUploadStockSolutionOptions,finalUploadMediaPackets, additionalPackets, allTests,result,options,tests,preResolvedNames, mediaNewObjectIDs, liquidMediaNewObjectIDs},
 
 	(* Determine the requested output format of this function. *)
 	outputSpecification = Quiet[OptionValue[Output]];
@@ -1518,8 +1573,18 @@ UploadMedia[
 		]
 	],{resolvedUploadMediaInputs,expandedUploadStockSolutionOptions}]];
 
+	(* CreateID reaches out to database, do we make a call to generate a pool of IDs to use if needed *)
+	(* For the media final upload packet, we need a new ID from here only when there was a base model *)
+	(* For the additional packet, we only need it for corresponding liquid media packet of a solid media model*)
+	{mediaNewObjectIDs, liquidMediaNewObjectIDs} = With[{length = Length[myMediaModels]},
+		TakeDrop[
+			CreateID[Table[Model[Sample, Media], 2 * length]],
+			length
+		]
+	];
+
 	(* Garnishing the packets for UploadMedia with the field values for Supplements,DropOuts,PlateMedia *)
-	finalUploadMediaPackets = MapThread[Function[{templateModel,packet,options},
+	{finalUploadMediaPackets, additionalPackets} = Transpose@MapThread[Function[{templateModel,packet,options, mediaNewObjectID, liquidMediaNewObjectID},
 		Module[{name,plateMedia,mediaPhase,baseMedia,packetWithNewObject},
 			{name,plateMedia,mediaPhase} = Lookup[options,{MediaName,PlateMedia,MediaPhase}];
 			baseMedia = Which[
@@ -1532,34 +1597,77 @@ UploadMedia[
 
 			(* Due to some weirdness with how the packets get spit out of USS, we need to make a new Object here if our base media is populated *)
 			packetWithNewObject = If[!NullQ[baseMedia],
-				Association[Normal[ReplaceRule[packet, Object -> CreateID[Model[Sample,Media]]], Association]],
+				Association[Normal[ReplaceRule[packet, Object -> mediaNewObjectID], Association]],
 				packet
 			];
 
-			(* Re-return the basic <|Object->Model[Sample,Media,id]|> packet if not creating a new media model, aka not updating any fields from the template media model *)
-			Append[packetWithNewObject,
+			(* If this is an upload of a solid media for plating, we need to also upload a liquid form of it with everything the same only State->Liquid, for use in ExperimentPlateMedia samplesInResource. Because out of the StockSolution protocol that prepares the resource, the state is liquid. *)
+			If[MatchQ[mediaPhase, Solid],
+				Module[{liquidFormPacket, solidFormPacket},
+					(* Create its packet *)
+					liquidFormPacket = Association[
+						Normal[
+							ReplaceRule[
+								packet,
+								{
+									Object -> liquidMediaNewObjectID,
+									State -> Liquid,
+									Name -> Null
+								}
+							],
+							Association
+						]
+					];
+					solidFormPacket = Append[packetWithNewObject,
+						{
+							(* If Name or BaseMedia is Null, we are not going to change anything *)
+							If[!NullQ[name],
+								Name->name,
+								Nothing
+							],
+							If[!NullQ[baseMedia],
+								BaseMedia -> baseMedia,
+								Nothing
+							],
+							PlateMedia -> plateMedia,
+							Replace[LiquidMedia] -> {Link[liquidMediaNewObjectID, SolidMedia]}
+						}
+					];
+					(* Return both packets *)
+					{solidFormPacket, liquidFormPacket}
+				],
+				(* Otherwise just a regular non-plating media *)
 				{
-					(* If Name -> Null, we are not going to change anything *)
-					If[!NullQ[name],
-						Name->name,
-						Nothing
+					Append[packetWithNewObject,
+						{
+							(* If Name or BaseMedia is Null, we are not going to change anything *)
+							If[!NullQ[name],
+								Name -> name,
+								Nothing
+							],
+							If[!NullQ[baseMedia],
+								BaseMedia -> baseMedia,
+								Nothing
+							],
+							PlateMedia -> plateMedia
+						}
 					],
-					If[!NullQ[baseMedia],
-						BaseMedia -> baseMedia,
-						Nothing
-					],
-					PlateMedia -> plateMedia
+					{}
 				}
 			]
 		]
-	],{myMediaModels,preliminaryUploadMediaPackets,OptionsHandling`Private`mapThreadOptions[UploadMedia,resolvedUploadMediaOptions]}];
+	],{myMediaModels,preliminaryUploadMediaPackets,OptionsHandling`Private`mapThreadOptions[UploadMedia,resolvedUploadMediaOptions], mediaNewObjectIDs, liquidMediaNewObjectIDs}];
 
 	allTests = Flatten[{safeOptionsUploadMediaTests,resolvedUploadMediaTests}];
-
 	result = If[MemberQ[listedOutput,Result] && !MemberQ[preliminaryUploadMediaPackets, <|Object -> $Failed|>],
-		If[upload,
-			Upload[finalUploadMediaPackets],
-			finalUploadMediaPackets
+		Which[
+			upload && Length[Flatten[additionalPackets]] > 0,
+				Upload[Flatten[{finalUploadMediaPackets, additionalPackets}]];
+				Download[finalUploadMediaPackets, Object],
+			upload,
+				Upload[finalUploadMediaPackets],
+			True,
+				Flatten[{finalUploadMediaPackets, additionalPackets}]
 		],
 		$Failed
 	];
@@ -1832,8 +1940,8 @@ resolveUploadMediaOptions[
 			{specifiedMediaPhase,specifiedPlateMediaQ} = Lookup[options,{MediaPhase,PlateMedia}];
 
 			(* Check #1: that PlateMedia is set to True if the MediaPhase is set to Solid. *)
-			plateMediaFalseForSolidMediaQ = MatchQ[Lookup[options,{PlateMedia}],{False,Solid}];
-			plateMediaTrueForLiquidMediaQ = MatchQ[Lookup[options,{PlateMedia,MediaPhase}],{True,Liquid}];
+			plateMediaFalseForSolidMediaQ = MatchQ[Lookup[options,{PlateMedia, MediaPhase}],{False,Solid}];
+			plateMediaTrueForLiquidMediaQ = MatchQ[Lookup[options,{PlateMedia, MediaPhase}],{True,Liquid}];
 
 			(* If the user has not specifically set the PlateMedia option, automatically set to False since there is no harm in keeping around solid media in the bottle that it was originally prepared in. *)
 			(* If the MediaPhase is specified as either Solid or SemiSolid but GellingAgents is not specified, default to the appropriate concentration of Agar for each MediaPhase. *)
@@ -1859,7 +1967,7 @@ resolveUploadMediaOptions[
 					ConstantArray[specifiedGellingAgents/.{{}->None}, 2]
 			];
 			resolvedMediaPhase = specifiedMediaPhase/.{Automatic->If[
-				MatchQ[specifiedGellingAgents,{}],
+				MatchQ[specifiedGellingAgents, {} | None],
 				Liquid,
 				Solid
 			]};

@@ -74,13 +74,39 @@ DefineObjectType[Model[Container], {
 			Description -> "Records the history of changes to the Verified field, along with when the change occured, and the person responsible.",
 			Category -> "Organizational Information"
 		},
-		AdditionalInformation -> {
+		UnresolvedInputs -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> _List,
+			Description -> "The raw inputs provided by the user when creating this container model via the UploadContainerModel function.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		UnresolvedOptions -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> {(_Rule | _RuleDelayed)...},
+			Description -> "The options provided by the user when creating this container model via the UploadContainerModel function.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		ReplacementObject -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Container][DeprecatedModels],
+			Description -> "The new container model object created by ECL personnel that replaces the current one. User-created container model can potentially be replaced entirely during the verification process if an alternative container model Type is deemed more appropriate.",
+			Category -> "Organizational Information",
+			AdminWriteOnly -> True
+		},
+		DeprecatedModels -> {
 			Format -> Multiple,
-			Class -> {String, Date},
-			Pattern :> {_String, _?DateObjectQ},
-			Description -> "Supplementary information recorded from the UploadMolecule function. These information usually records the user supplied input and options, providing additional information for verification.",
-			Headers -> {"Information", "Date Added"},
-			Category -> "Hidden"
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Container][ReplacementObject],
+			Description -> "User-created container models that have been replaced by this current container model by ECL personnel.",
+			Category -> "Organizational Information",
+			AdminWriteOnly -> True
 		},
 
 		(*--- Cover Information ---*)
@@ -88,7 +114,7 @@ DefineObjectType[Model[Container], {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates if the container has a cover that is physically attached and cannot be physically separated from the container (ex. centrifuge tube).",
+			Description -> "Indicates if the container has a cap that is physically attached and cannot be physically separated from the container (e.g. centrifuge tube with tethered cap).",
 			Category -> "Cover Information"
 		},
 		CutCoverTether -> {
@@ -103,7 +129,7 @@ DefineObjectType[Model[Container], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates if this container uses interchangeable caps that are disposable; i.e. the cap on the container could be changed to another equivalent cap at any time.",
+			Description -> "Indicates if this container uses interchangeable caps, lids, seals or other coverings that are disposable; i.e. the covering on the container could be changed to another equivalent one at any time.",
 			Category -> "Cover Information"
 		},
 		OpenContainer -> {
@@ -118,7 +144,7 @@ DefineObjectType[Model[Container], {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates if this model of container is permanently sealed closed and can not be opened to transfer anything into or out of it.",
+			Description -> "Indicates if this model of container is sealed closed and can not be opened to transfer anything into or out of it.",
 			Category -> "Cover Information"
 		},
 
@@ -127,7 +153,7 @@ DefineObjectType[Model[Container], {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates a sealed vessel containing a measured quantity of substance, meant for single-use.",
+			Description -> "Indicates if this model is a sealed vessel containing a measured quantity of substance, meant for single-use. Ampoule will be cracked open to retrieve its contents, and discarded after use.",
 			Category -> "Container Specifications"
 		},
 		Aspiratable -> {
@@ -190,7 +216,7 @@ DefineObjectType[Model[Container], {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates if the container should not be used for holding detergent-containing solutions and should be hand washed using a detergent-free procedure, for example containers for samples or solutions used in liquid chromatography coupled to mass spectrometry (LCMS) experiments in order to avoid contamination of the LCMS system.",
+			Description -> "Indicates if the container is intended to hold contents that may be used in applications that may be sensitive to cleaning detergents and should be handwashed instead of machine washed. For example containers used in applications in liquid chromatography coupled to mass spectrometry (LCMS) experiments should be handwashed in order to avoid contamination of the LCMS system.",
 			Category -> "Container Specifications",
 			Abstract -> True
 		},
@@ -198,7 +224,7 @@ DefineObjectType[Model[Container], {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates if this container has an airtight seal at its aperture.",
+			Description -> "Indicates if this container has an inner septum that makes it airtight at its aperture, which can be penetrated by a sharp needle and can be resealed multiple times.",
 			Category -> "Container Specifications"
 		},
 		InstrumentSchematics -> {
@@ -223,7 +249,7 @@ DefineObjectType[Model[Container], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
-			Description -> "A photo of this model of container.",
+			Description -> "A photo of this model of container. This will be used to help identify this type of container in lab operations. If possible, please provide stock image from manufacturer. If no image is provided, the container model will be imaged by ECL upon receiving in lab.",
 			Category -> "Container Specifications"
 		},
 		ImageFileScale -> {
@@ -232,6 +258,14 @@ DefineObjectType[Model[Container], {
 			Pattern :> GreaterEqualP[(0 Pixel)/(Centi Meter)],
 			Units -> (Pixel / (Centi Meter)),
 			Description -> "The scale relating pixels of ImageFile to real world distance.",
+			Category -> "Container Specifications"
+		},
+		Icon -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "A simplified image used to represent this container.",
 			Category -> "Container Specifications"
 		},
 		Schematics -> {
@@ -279,7 +313,7 @@ DefineObjectType[Model[Container], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates if this container is capable of staying upright when placed on a flat surface and does not require a rack.",
+			Description -> "Indicates if this container is capable of staying upright when placed on a stationary flat surface and does not require a rack. Note that SelfStanding containers are not necessarily TransportStable, which requires the container to be able to stay upright while being transported on an operator cart.",
 			Category -> "Container Specifications"
 		},
 		TransportStable -> {
@@ -293,7 +327,7 @@ DefineObjectType[Model[Container], {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates if the rack can be selected instead of individually scanning its contents during resource picking, storage, and movement tasks, and used to transport its contents to specified locations.",
+			Description -> "Indicates if this container is capable of staying upright without assistance when being transported on an operator cart. Containers that are stable for transport can tolerate cart motion and accidental contact without falling, while those that are not must be placed into a rack. TransportStable containers are always SelfStanding, but the opposite is not true.",
 			Category -> "Container Specifications"
 		},
 		Immobile -> {
@@ -328,7 +362,7 @@ DefineObjectType[Model[Container], {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates this container must be squeezed in order to have its contents removed.",
+			Description -> "Indicates if this container are easily deformed and intended to be squeezed to dispense its contents. Squeezable container cannot be aspirated from but can be dispensed directly.",
 			Category -> "Container Specifications"
 		},
 		TareWeight -> {
@@ -350,7 +384,7 @@ DefineObjectType[Model[Container], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> WellTreatmentP,
-			Description -> "The treatment, if any, on the interior of this container.",
+			Description -> "The surface modification, if any, on the interior of this container. Option include LowBinding, TissueCultureTreated, Glass, GlassFilter, PolyethersulfoneFilter (PES Filter) and HydrophilicPolypropyleneFilter.",
 			Category -> "Container Specifications"
 		},
 
@@ -378,7 +412,7 @@ DefineObjectType[Model[Container], {
 			Class -> Real,
 			Pattern :> GreaterP[0*Micro*Liter],
 			Units -> Liter Milli,
-			Description -> "The minimum volume required to create a uniform layer at the bottom of the container, indicating the smallest volume needed to reliably aspirate from the container, measure spectral properties, etc.",
+			Description -> "The minimum volume of water required to create a uniform layer at the bottom of the container, indicating the smallest volume needed to reliably aspirate from the container, measure spectral properties, etc.",
 			Category -> "Operating Limits"
 		},
 		MaxVolume -> {
@@ -386,7 +420,7 @@ DefineObjectType[Model[Container], {
 			Class -> Real,
 			Pattern :> GreaterP[0*Micro*Liter],
 			Units -> Liter Milli,
-			Description -> "Maximum volume of fluid the vessel can hold.",
+			Description -> "Maximum volume of fluid the container is designed to hold.",
 			Category -> "Operating Limits"
 		},
 		CoveredVolume -> {
@@ -421,7 +455,7 @@ DefineObjectType[Model[Container], {
 			Class -> {Real, Real, Real},
 			Pattern :> {GreaterEqualP[0*Meter],GreaterEqualP[0*Meter],GreaterEqualP[0*Meter]},
 			Units ->{Meter,Meter,Meter},
-			Description -> "The external dimensions of this model of container.",
+			Description -> "The external length measurements of this model of container when it's standing upright.",
 			Category -> "Dimensions & Positions",
 			Headers -> {"X Direction (Width)","Y Direction (Depth)","Z Direction (Height)"}
 		},
@@ -438,21 +472,21 @@ DefineObjectType[Model[Container], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> CrossSectionalShapeP,
-			Description -> "The shape of the outside of this container in the X-Y plane.",
+			Description -> "The closest match to the type of shape of this container's horizontal cross-section would take. Options include: Circle, Rectangle, Oval and Triangle. CrossSectionalShape is used for diagrammatically plotting the container.",
 			Category -> "Dimensions & Positions"
 		},
 		Footprint -> {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> FootprintP,
-			Description -> "Standard form factor of the exterior bottom portion of this model of container used to seat the container in an open position.",
+			Description -> "A standardized symbol representing the shape of exterior bottom portion of this model of container used to seat the container in an open position. In lab operations when a container is to be moved to a destination, if both the container and destination position has Footprint, then the move is only allowed if their Footprint match with each other.",
 			Category -> "Dimensions & Positions"
 		},
 		TopFootprints -> {
 			Format -> Multiple,
 			Class -> Expression,
 			Pattern :> FootprintP,
-			Description -> "Standard form factors of the exterior top portion of this model of container used to seat a container stacked above.",
+			Description -> "A list of standardized symbols representing the shape of top portion of this model of container to stack other containers. Stacking of containers is only allowed if the Footprint of top container matches one of the TopFootprints of bottom container.",
 			Category -> "Dimensions & Positions"
 		},
 		Positions -> {
@@ -460,7 +494,7 @@ DefineObjectType[Model[Container], {
 			Class -> {Name->String,Footprint->Expression,MaxWidth->Real,MaxDepth->Real,MaxHeight->Real},
 			Pattern :> {Name->LocationPositionP,Footprint->(FootprintP|Open),MaxWidth->GreaterP[0 Centimeter],MaxDepth->GreaterP[0 Centimeter],MaxHeight->GreaterP[0 Centimeter]},
 			Units -> {Name->None,Footprint->None,MaxWidth->Meter,MaxDepth->Meter,MaxHeight->Meter},
-			Description -> "Spatial definitions of the positions that exist in this model of container, where MaxWidth and MaxDepth are the x and y dimensions of the maximum size of object that will fit in this position. MaxHeight is defined as the maximum height of object that can fit in this position without either encountering a barrier or creating a functional impediment to an experiment procedure.",
+			Description -> "Spatial definitions of the contents-holding cavities that exist in this model of container, where MaxWidth and MaxDepth are the x and y dimensions of the maximum size of object that will fit in this position. MaxHeight is defined as the maximum height of object that can fit in this position without either encountering a barrier or creating a functional impediment to an experiment procedure.",
 			Headers->{Name->"Name of Position",Footprint->"Footprint",MaxWidth->"Max Width",MaxDepth->"Max Depth",MaxHeight->"Max Height"},
 			Category -> "Dimensions & Positions"
 		},
@@ -469,7 +503,7 @@ DefineObjectType[Model[Container], {
 			Class -> {Name->String,XOffset->Real,YOffset->Real,ZOffset->Real,CrossSectionalShape->Expression,Rotation->Real},
 			Pattern :> {Name->LocationPositionP,XOffset->GreaterEqualP[0 Meter],YOffset->GreaterEqualP[0 Meter],ZOffset->GreaterEqualP[0 Meter],CrossSectionalShape->CrossSectionalShapeP,Rotation->GreaterEqualP[-180]},
 			Units -> {Name->None,XOffset->Meter,YOffset->Meter,ZOffset->Meter,CrossSectionalShape->None,Rotation->None},
-			Description -> "For each member of Positions, the parameters required to plot the position, where the offsets refer to the location of the center of the position relative to the close, bottom, left hand corner of the container model's dimensions.",
+			Description -> "For each member of Positions, The parameters required to plot the position, where the offsets refer to the location of the center of the position relative to the close, bottom, left hand corner of the container model's dimensions.",
 			IndexMatching -> Positions,
 			Headers->{Name->"Name of Position",XOffset->"XOffset",YOffset->"YOffset",ZOffset->"ZOffset",CrossSectionalShape->"Cross Sectional Shape",Rotation->"Rotation"},
 			Category -> "Dimensions & Positions",
@@ -526,7 +560,7 @@ DefineObjectType[Model[Container], {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates if the container is designed for multiple uses or if it is discarded after a single use. Reusable containers typically requiring cleaning and are hand washed or dishwashed after each use.",
+			Description -> "Indicates if the container is designed for multiple uses or if it is discarded after a single use. Reusable containers typically requiring cleaning and are hand washed or dishwashed after each use. If the container is Reusable, cleaning conditions are set by CleaningMethod and DetergentSensitive fields.",
 			Category -> "Physical Properties"
 		},
 
@@ -536,7 +570,7 @@ DefineObjectType[Model[Container], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Model[StorageCondition],
-			Description -> "The condition in which containers of this model are stored when not in use by an experiment; this condition may be overridden by the specific storage condition of any given container.",
+			Description -> "The environment in which an empty new container of this model is stored when not in use by an experiment; whenever the container has contents, its storage condition will be overwritten by the contents. For reusable containers, when they are emptied and cleaned, their storage condition will be restored to this DefaultStorageCondition.",
 			Category -> "Storage & Handling"
 		},
 		StoragePositions -> {
@@ -554,7 +588,7 @@ DefineObjectType[Model[Container], {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates if objects of this model are likely to be damaged if they are stored in a homogeneous pile. Fragile objects are stored by themselves or in positions for which the objects are unlikely to contact each other.",
+			Description -> "Indicates if objects of this model are likely to be damaged if they are stored in a pile. Fragile objects must be stored upright if they are SelfStanding, or stored in a rack if not.",
 			Category -> "Storage & Handling",
 			Developer->True
 		},
@@ -562,7 +596,7 @@ DefineObjectType[Model[Container], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> StorageOrientationP,
-			Description -> "Indicates how the object is situated while in storage. Upright indicates that the footprint dimension of the stored object is Width x Depth, Side indicates Depth x Height, Face indicates Width x Height, and Null indicates that there is no preferred orientation during storage.",
+			Description -> "Indicates how the object is situated while in storage. Upright indicates that at storage the opening of container is pointing up, Side indicates the Depth and Height dimensions are in the XY plane, Face indicates Width and Height are in the XY plane, and Any indicates that there is no preferred orientation during storage.",
 			Category -> "Storage & Handling",
 			Developer->True
 		},
@@ -729,7 +763,7 @@ DefineObjectType[Model[Container], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
-			Description -> "PDFs of product documentation provided by the supplier of this model.",
+			Description -> "Specification sheets of this product provided by the supplier or manufacturer of this model.",
 			Category -> "Organizational Information"
 		},
 		ProductURL -> {
@@ -751,7 +785,7 @@ DefineObjectType[Model[Container], {
 			Format->Single,
 			Class->Boolean,
 			Pattern:>BooleanP,
-			Description->"Indicates if the empty containers of this model are kept in stock for use on demand in experiments.",
+			Description->"Indicates if this item is a candidate to be kept in stock at the site in which it's being used.",
 			Abstract->True,
 			Category -> "Container Specifications"
 		},
@@ -785,14 +819,6 @@ DefineObjectType[Model[Container], {
 			Pattern :> _Link,
 			Relation -> Object[Product][KitComponents, ProductModel],
 			Description -> "Products ordering information for this filter plate container with its supplied storage buffer solution as part of one or more kits.",
-			Category -> "Inventory"
-		},
-		MixedBatchProducts -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Product][MixedBatchComponents, ProductModel],
-			Description -> "Products ordering information for this model if this model is part of one or more mixed batches.",
 			Category -> "Inventory"
 		},
 		ServiceProviders-> {
@@ -870,13 +896,22 @@ DefineObjectType[Model[Container], {
 			Description -> "Indicates if this container should be 'rented' from the ECL rather than purchased when it is needed during the course of an experiment.",
 			Category -> "Inventory"
 		},
+		StickerPositionImage -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description ->  "An image of this model that indicates the correct position for affixing barcode stickers.",
+			Category -> "Inventory",
+			Developer->True
+		},
 
 		(* --- Health & Safety --- *)
 		Sterile -> {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates that this model of container arrives free of microbial contamination from the manufacturer or is sterilized upon receiving.",
+			Description -> "Indicates if this model of container arrives free of microbial contamination from the manufacturer or is sterilized upon receiving.",
 			Category -> "Health & Safety"
 		},
 		Sterilized -> {
@@ -897,21 +932,21 @@ DefineObjectType[Model[Container], {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates that this model of container is free of any RNases when received from the manufacturer.",
+			Description -> "Indicates if this model of container is verified to be free of any enzymes that break down ribonucleic acid (RNA), when received from the manufacturer.",
 			Category -> "Health & Safety"
 		},
 		NucleicAcidFree -> {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates if this model of container is tested to be not contaminated with DNA and RNA by the manufacturer.",
+			Description -> "Indicates if samples of this model are verified to be free from ribonucleic acid (RNA) or deoxyribonucleic acid (DNA) when received from manufacturer.",
 			Category -> "Health & Safety"
 		},
 		PyrogenFree -> {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates if this model of container is tested to be not contaminated with endotoxin by the manufacturer.",
+			Description -> "Indicates if samples of this model are verified to be free from compounds that induce fever when introduced into the bloodstream, such as Endotoxins.",
 			Category -> "Health & Safety"
 		},
 		ExpirationHazard -> {
@@ -927,14 +962,14 @@ DefineObjectType[Model[Container], {
 			Format -> Multiple,
 			Class -> Expression,
 			Pattern :> CoverFootprintP,
-			Description -> "The cover footprint that can fit on top of this container.",
+			Description -> "The list of shape and size of cap, seal or other coverings, represented by standardized symbols, that can fit on top of this container. Only coverings with matching CoverFootprint will be used to cover this container model in lab operations.",
 			Category -> "Compatibility"
 		},
 		CoverTypes -> {
 			Format -> Multiple,
 			Class -> Expression,
 			Pattern :> CoverTypeP,
-			Description -> "The types of covers that are compatible with this container.",
+			Description -> "The types of cap, seal or other coverings that are compatible with this container, which can be Crimp, Seal, Screw, Snap, Place, Pry and/or AluminumFoil. Only coverings with matching CoverType will be used to cover this container model in lab operations.",
 			Category -> "Compatibility"
 		},
 		CompatibleCameras -> {

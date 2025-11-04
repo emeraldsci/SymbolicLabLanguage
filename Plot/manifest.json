@@ -52,6 +52,7 @@
 		"Visualize/PlotProtocolTimeline.m",
 		"Visualize/PlotSerologicalPipette.m",
 		"Visualize/PlotSubprotocols.m",
+		"Visualize/PlotSyringe.m",
 		"Visualize/PlotTranscript.m",
 		"Visualize/PlotVirus.m",
 		"Visualize/PlotWaterfall.m",
@@ -159,6 +160,9 @@
 	"Mathematica13.2AdditionalSymbols":[
 		"Value"
 	],
+	"Mathematica14.2ConflictSymbols":[
+		"ContourLabelStyle"
+	],
 	"legacySymbols":[
 		"RowLabels"
 	],
@@ -211,7 +215,6 @@
 		"ConfidenceBands",
 		"ConfidenceInterval",
 		"ContourLabelPositions",
-		"ContourLabelStyle",
 		"ContourSpacing",
 		"ContrastImage1",
 		"ContrastImage2",
@@ -502,6 +505,7 @@
 		"PlotSupportRate",
 		"PlotSupportTimeline",
 		"PlotSurfaceTension",
+		"PlotSyringe",
 		"PlotTable",
 		"PlotTableOptions",
 		"PlotTablePreview",

@@ -13,15 +13,22 @@ DefineObjectType[Object[Protocol, FillToVolume], {
 			Format->Single,
 			Class->Integer,
 			Pattern:>GreaterEqualP[1,1],
-			Description->"The maximum number of times the FillToVolume protocol can be repeated in the event of target volume overfilling. When a repreparation is triggered, the same inputs and options are used.",
+			Description->"The maximum number of times the FillToVolume protocol (and the parent ManualSamplePreparation protocol, if applicable) can be repeated in the event of target volume overfilling. When a repreparation is triggered, the identical inputs and options from the overfilled preparation are used.",
 			Category->"General"
 		},
 		OverfillingRepreparations -> {
 			Format->Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Alternatives[Object[Protocol,FillToVolume]],
-			Description->"The repeat FillToVolume protocol that is automatically enqueued when target volume overfilling occurs. The new protocol uses the same inputs and options as the original.",
+			Relation -> Alternatives[Object[Protocol,FillToVolume], Object[Protocol,ManualSamplePreparation], Object[Protocol,ManualCellPreparation]],
+			Description->"The repeat FillToVolume or ManualSamplePreparation protocol that is automatically enqueued when target volume overfilling occurs. The new protocol uses the the identical inputs and options from the overfilled preparations.",
+			Category->"General"
+		},
+		OverfillingRepreparationUnitOperations -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> SamplePreparationP,
+			Description -> "A list of ManualSamplePreparation or ManualCellPreparation unit operations in order that is be performed to repeat the preparation and FillToVolume of the samples for which target volume overfilling occurs.",
 			Category->"General"
 		},
 		TotalVolumes -> {
@@ -121,6 +128,18 @@ DefineObjectType[Object[Protocol, FillToVolume], {
 			IndexMatching -> SamplesIn,
 			Description -> "For each member of SamplesIn, the cloud file that stores the images of the filled volumetric flasks, if the sample is not fulfilled by Volumetric FillToVolume method, the corresponding value will be Null.",
 			Category -> "Sample Post-Processing"
+		},
+		WasteContainer->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[
+				Model[Container,Vessel],
+				Object[Container,Vessel]
+			],
+			Description->"The container used to temporarily hold the excess samples removed from the intermediate containers and graduated cylinders after the samples are filled to the target volumes. The sample in this vessel will be discarded at the end of the protocol.",
+			Category->"Intermediate Decanting",
+			Developer -> True
 		}
 	}
 }];

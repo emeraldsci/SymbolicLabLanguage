@@ -151,6 +151,15 @@ DefineObjectType[Object[Instrument, pHMeter], {
 			Category -> "Instrument Specifications",
 			Developer->True,
 			Abstract -> True
+		},
+		CalibrationBufferSets -> {
+			Format -> Multiple,
+			Class -> {Calibration -> String, Method -> String, LowCalibrationBufferpH -> Real, MediumCalibrationBufferpH -> Real, HighCalibrationBufferpH -> Real, pHCalibration -> Link},
+			Pattern :> {Calibration -> _String, Method -> _String, LowCalibrationBufferpH -> RangeP[0,14], MediumCalibrationBufferpH -> RangeP[0,14], HighCalibrationBufferpH -> RangeP[0,14], pHCalibration -> _Link},
+			Relation -> {Calibration -> Null, Method -> Null, LowCalibrationBufferpH -> Null, MediumCalibrationBufferpH -> Null, HighCalibrationBufferpH -> Null, pHCalibration -> Object[Method, pHCalibration]},
+			Description -> "The calibration buffer sets that have been defined on the seven excellence pH meter.",
+			Category -> "Instrument Specifications",
+			Headers -> {Calibration->"Calibration Buffer Set Name", Method -> "Method Name", LowCalibrationBufferpH->"Low Calibration Buffer pH", MediumCalibrationBufferpH -> "Medium Calibration Buffer pH", HighCalibrationBufferpH -> "High Calibration Buffer pH", pHCalibration -> "pH Calibration Method"}
 		}
 	}
 }];

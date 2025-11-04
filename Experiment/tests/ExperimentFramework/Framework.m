@@ -5522,6 +5522,91 @@ DefineTests[simulateSamplePreparationPacketsNew,
 	},
 	HardwareConfiguration -> HighRAM
 ];
+(* ::Subsection::Closed:: *)
+(*sanitizeInputs*)
+
+(* ObjectDoesNotExist is tested in all experiment functions *)
+DefineTests[sanitizeInputs,
+	{
+		Example[{Messages, "Throw a warning if any option is specified to use an object that is missing:"},
+			sanitizeInputs[
+				{Model[Sample, "Milli-Q water"]},
+				SafeOptions[ExperimentFilter, {Filter -> Object[Item, Filter, "Test Missing Filter for sanitizeInputs tests " <> $SessionUUID]}],
+				{Filter -> Object[Item, Filter, "Test Missing Filter for sanitizeInputs tests " <> $SessionUUID]}
+			],
+			{
+				{ObjectP[Model[Sample]]},
+				{_Rule..},
+				{_Rule..}
+			},
+			Messages :> {Warning::OptionContainsUnusableObject},
+			SetUp :> (
+				Upload[<|
+					Type -> Object[Item, Filter],
+					Name -> "Test Missing Filter for sanitizeInputs tests " <> $SessionUUID,
+					Model -> Link[Model[Item, Filter, "id:lYq9jRxnrKxY"], Objects], (*"Membrane Filter, Cellulose, 0.45um, 142mm"*)
+					Missing -> True,
+					Status -> Stocked,
+					DeveloperObject -> True
+				|>]
+			),
+			TearDown :> (
+				EraseObject[
+					Object[Item, Filter, "Test Missing Filter for sanitizeInputs tests " <> $SessionUUID],
+					Force -> True,
+					Verbose -> False
+				]
+			)
+		],
+		(* This is actually a test for sanitizeInputs *)
+		Example[{Messages, "Throw a warning if any option is specified to use an object that is expired:"},
+			sanitizeInputs[
+				{Model[Sample, "Milli-Q water"]},
+				SafeOptions[ExperimentFilter, {Filter -> Object[Item, Filter, "Test Expired Filter for sanitizeInputs tests " <> $SessionUUID]}],
+				{Filter -> Object[Item, Filter, "Test Expired Filter for sanitizeInputs tests " <> $SessionUUID]}
+			],
+			{
+				{ObjectP[Model[Sample]]},
+				{_Rule..},
+				{_Rule..}
+			},
+			Messages :> {Warning::OptionContainsUnusableObject},
+			SetUp :> (
+				Upload[<|
+					Type -> Object[Item, Filter],
+					Name -> "Test Expired Filter for sanitizeInputs tests " <> $SessionUUID,
+					Model -> Link[Model[Item, Filter, "id:lYq9jRxnrKxY"], Objects], (*"Membrane Filter, Cellulose, 0.45um, 142mm"*)
+					ExpirationDate -> (Now - 1 Year),
+					DeveloperObject -> True
+				|>]
+			),
+			TearDown :> (
+				EraseObject[
+					Object[Item, Filter, "Test Expired Filter for sanitizeInputs tests " <> $SessionUUID],
+					Force -> True,
+					Verbose -> False
+				]
+			)
+		]},
+	SymbolSetUp :> (
+		Off[Warning::DeprecatedProduct];
+		Off[Warning::SamplesOutOfStock];
+		Off[Warning::InstrumentUndergoingMaintenance];
+
+		$CreatedObjects = {};
+	),
+	SymbolTearDown :> (
+		On[Warning::DeprecatedProduct];
+		On[Warning::SamplesOutOfStock];
+		On[Warning::InstrumentUndergoingMaintenance];
+
+		EraseObject[$CreatedObjects, Force -> True]
+	),
+	Stubs :> {
+		$PersonID = Object[User, "Test user for notebook-less test protocols"]
+	}
+];
+
 
 (* ::Subsection::Closed:: *)
 (*populateWorkingAndAliquotSamples*)
@@ -7159,18 +7244,18 @@ DefineTests[
 				LiquidHandlerIncompatible, Site, RequestedResources, Conductivity, IncompatibleMaterials, pH, KitComponents,
 				AsepticHandling, Density, Fuming, InertHandling, ParticleWeight, PipettingMethod, Pyrophoric,
 				ReversePipetting, RNaseFree, TransferTemperature, TransportCondition, Ventilated, Well, SurfaceTension,
-				AluminumFoil, Parafilm, Anhydrous, ExtinctionCoefficients, Notebook
+				AluminumFoil, Parafilm, Anhydrous, ExtinctionCoefficients, Missing, ExpirationDate, Notebook, Flammable, DOTHazardClass
 			}
 		],
 		Example[{Basic, "SamplePreparationCacheFields returns the fields associated with a Model[Sample] input:"},
 			SamplePreparationCacheFields[Model[Sample]],
 			{
-				Conductivity, IncompatibleMaterials, pH, KitComponents, RequestedResources, Products, KitProducts, MixedBatchProducts,
+				Conductivity, IncompatibleMaterials, pH, KitComponents, RequestedResources, Products, KitProducts,
 				MaxThawTime, Solvent, SampleHandling, CellType, CultureAdhesion, BiosafetyLevel, Composition, Analytes, TransportTemperature,
 				Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, Sachet, SolidUnitWeight, State, MolecularWeight, MeltingPoint,
 				ThawTime, ThawTemperature, Dimensions, ExtinctionCoefficients, UsedAsSolvent, AsepticHandling, Density, Fuming, InertHandling,
 				ParticleWeight, PipettingMethod, Pyrophoric, ReversePipetting, RNaseFree, TransferTemperature, TransportCondition, Ventilated, SurfaceTension,
-				Parafilm, AluminumFoil, Living
+				Parafilm, AluminumFoil, Living, Flammable, DOTHazardClass
 			}
 		],
 		Example[{Basic, "SamplePreparationCacheFields returns the fields associated with an Object[Container] input:"},
@@ -7179,7 +7264,7 @@ DefineTests[
 				Type, Object, Name, Status, Model, Container, Contents, Container, Sterile, TareWeight, StorageCondition, RequestedResources, KitComponents, Site,
 				Ampoule, Hermetic, MaxTemperature, MaxVolume, MinTemperature, Opaque, RNaseFree, Squeezable, InertHandling, AsepticHandling,
 				ParticleWeight, PipettingMethod, Pyrophoric, ReversePipetting, TransferTemperature, TransportCondition, Ventilated,
-				PreviousCover, Cover, Septum, KeepCovered, AluminumFoil, Parafilm
+				PreviousCover, Cover, Septum, KeepCovered, AluminumFoil, Parafilm, Missing, ExpirationDate
 			}
 		],
 		Example[{Basic, "SamplePreparationCacheFields returns the fields associated with an Model[Container] input:"},
@@ -7194,7 +7279,7 @@ DefineTests[
 				AluminumFoil, Ampoule, BuiltInCover, CoverTypes, Counterweights, EngineDefault, Hermetic, Opaque, Parafilm,
 				RequestedResources, Reusable, RNaseFree, Squeezable, StorageBuffer, StorageBufferVolume,
 				TareWeight, VolumeCalibrations, Columns,HorizontalPitch,LiquidHandlerPrefix, MultiProbeHeadIncompatible, VerticalPitch, MaxPressure,
-				DestinationContainerModel,RetentateCollectionContainerModel,ConnectionType, KitProducts, Products, MixedBatchProducts, MaxOverheadMixRate
+				DestinationContainerModel,RetentateCollectionContainerModel,ConnectionType, KitProducts, Products, MaxOverheadMixRate
 			}
 		],
 		Example[{Basic, "SamplePreparationCacheFields returns the fields associated with an Object[User] input:"},
@@ -7562,7 +7647,7 @@ DefineTests[
 					Morphology -> Cocci,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					CellType -> Bacterial,
 					CultureAdhesion -> Suspension
@@ -7577,7 +7662,7 @@ DefineTests[
 					State -> Liquid,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					CellType -> Bacterial,
 					CultureAdhesion -> Suspension,
@@ -7998,7 +8083,7 @@ DefineTests[
 					Morphology -> Cocci,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					CellType -> Bacterial,
 					CultureAdhesion -> Suspension
@@ -8013,7 +8098,7 @@ DefineTests[
 					State -> Liquid,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					CellType -> Bacterial,
 					CultureAdhesion -> Suspension,

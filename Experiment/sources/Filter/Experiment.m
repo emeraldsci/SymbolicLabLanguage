@@ -1498,7 +1498,7 @@ ExperimentFilter[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions: Optio
 		multipleMultipleExpandedOptions, allCounterweights, protocolPacketWithResources, resourcePacketTests, simulatedProtocol,
 		simulation, resolvedPreparation, resolvedWorkCell, result, buchnerFunnels, filterAdapters, samplesWithPreparedSamplesNamed, optionsWithPreparedSamplesNamed,
 		safeOptionsNamed, allContainerModels, transferRequiredField, transferModelContainerRequiredField, transferObjectContainerRequiredField,
-		postProcessingOptions, times, filterLabel, uniqueTimes, totalTimesEstimate, allTips
+		postProcessingOptions, times, filterLabel, uniqueTimes, totalTimesEstimate, allTips, disposableNeedles
 	},
 
 	(* Determine the requested return value from the function *)
@@ -1631,7 +1631,8 @@ ExperimentFilter[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions: Optio
 		(*7*)syringes,
 		(*8*)filterHousings,
 		(*9*)buchnerFunnels,
-		(*10*)filterAdapters
+		(*10*)filterAdapters,
+		(*11*)disposableNeedles
 	} = Search[
 		{
 			(*1*){Model[Instrument, SyringePump], Model[Instrument, VacuumPump], Model[Instrument, PeristalticPump], Model[Instrument, Centrifuge], Model[Instrument, PressureManifold]},
@@ -1643,7 +1644,8 @@ ExperimentFilter[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions: Optio
 			(*7*){Model[Container, Syringe]},
 			(*8*){Model[Instrument, FilterBlock], Model[Instrument, FilterHousing]},
 			(*9*){Model[Part, Funnel]},
-			(*10*){Model[Part, FilterAdapter]}
+			(*10*){Model[Part, FilterAdapter]},
+			(*11*){Model[Item, Needle]}
 		},
 		{
 			Deprecated != True && DeveloperObject != True,
@@ -1657,7 +1659,8 @@ ExperimentFilter[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions: Optio
 			Deprecated != True && DeveloperObject != True,
 			(* only get the funnels that are for filter flasks (i.e., buchner funnels) *)
 			Deprecated != True && FunnelType == Filter && FunnelMaterial == Porcelain && DeveloperObject != True,
-			Deprecated != True && DeveloperObject != True
+			Deprecated != True && DeveloperObject != True,
+			Deprecated != True && DeveloperObject != True && Reusable != True
 		}
 	];
 
@@ -1873,7 +1876,8 @@ ExperimentFilter[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions: Optio
 			(*24*)specifiedCollectionContainerObjs,
 			(*25*)specifiedBufferObjs,
 			(*26*)specifiedBufferModels,
-			(*27*)allTips[[All, 1]]
+			(*27*)allTips[[All, 1]],
+			(*28*)disposableNeedles
 		},
 		Evaluate[{
 			(* samples *)
@@ -1969,7 +1973,9 @@ ExperimentFilter[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions: Optio
 			(* buffer samples model *)
 			{Packet[Sequence @@ modelSampleFields]},
 			(*27*)
-			tipFields
+			tipFields,
+			(* allNeedleModelPackets *)
+			(*28*){Packet[Name, Sterile, ConnectionType, Gauge, NeedleLength, Bevel, DeveloperObject]}
 		}],
 		Cache -> cache,
 		Simulation -> updatedSimulation,
@@ -5104,7 +5110,10 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 					];
 
 					(* Make sure that if Sterile -> True and Instrument -> ObjectP[], that the AsepticHandling of the instrument is True *)
-					sterileInstrumentMismatchError = Module[{instrumentAsepticQ},
+					(* 9/5/2025 Note we do not have any sterile Centrifuge model in lab that is not deprecated *)
+					(* and for capped tube/sealed plate, sterility of instrument does not matter, quiet this error for now *)
+					(* we will revisit this and change SterileTechnique to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true *)
+					sterileInstrumentMismatchError = False(*Module[{instrumentAsepticQ},
 						instrumentAsepticQ = fastAssocLookup[fastAssoc, instrumentModel, AsepticHandling];
 						And[
 							MatchQ[instrument, ObjectP[]],
@@ -5115,7 +5124,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 								And[MatchQ[sterile,False], TrueQ[instrumentAsepticQ]]
 							]
 						]
-					];
+					]*);
 
 					(* Make sure that if the FiltrationType is Centrifuge, Intensity is not Null *)
 					typeAndCentrifugeIntensityMismatchError = Or[
@@ -9290,7 +9299,8 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 		expandedWashFlowThroughDestinationWell, expandedWashFlowThroughStorageCondition,
 		expandedWashFlowThroughContainerObjs, washFlowThroughResources, collectOccludingRetentate, occludingRetentateContainer,
 		occludingRetentateDestinationWell, occludingRetentateContainerLabel, occludingRetentateContainerResourceReplaceRules,
-		occludingRetentateContainerResources, numberOfFilterPrewettings, prewetFilterBufferVolumeWithReplicates
+		occludingRetentateContainerResources, numberOfFilterPrewettings, prewetFilterBufferVolumeWithReplicates,
+		fastAssocKeysIDOnly, allNeedleModelPackets, samplesInSampleHandling
 	},
 
 	(* Get the safe options for this function *)
@@ -9518,23 +9528,42 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 	(* Samples out *)
 	samplesOut = Link[#, Protocols]& /@ Lookup[myResolvedOptions, SampleOut];
 
-	(* If doing syringe filtration, we'll need a needle to extract the sample from the source container
+	(* get the fastAssoc Keys, but only the ones in the ID form (not the name form) *)
+	fastAssocKeysIDOnly = Select[Keys[fastAssoc], StringMatchQ[Last[#], ("id:"~~___)]&];
+	(* Fetch all needles packets *)
+	allNeedleModelPackets = fetchPacketFromFastAssoc[#, fastAssoc]& /@ Cases[fastAssocKeysIDOnly, ObjectReferenceP[Model[Item, Needle]]];
+	samplesInSampleHandling = fastAssocLookup[fastAssoc, #, SampleHandling]& /@ mySamples;
+	(* If doing syringe filtration, we'll need a blunt needle to extract the sample from the source container
 	 figure out which needle to use to get the sample out of the source container  *)
 	needles = MapThread[
-		If[MatchQ[#1, Syringe],
-			Switch[#2,
-				(* Reusable Stainless Steel Non-Coring 4 in x 18G Needle *)
-				RangeP[0 Inch, 4 Inch], Model[Item, Needle, "id:XnlV5jmbZZpn"],
-				(* Reusable Stainless Steel Non-Coring 6 in x 18G Needle *)
-				RangeP[4 Inch, 6 Inch], Model[Item, Needle, "id:L8kPEjNLDD1A"],
-				(* Reusable Stainless Steel Non-Coring 12 in x 18G Needle *)
-				GreaterP[6 Inch], Model[Item, Needle, "id:rea9jl1orrdx"],
-				(* If it's a plate, use the short needle *)
-				_, Model[Item, Needle, "id:rea9jl1orrdx"]
-			],
-			Null
-		]&,
-		{filtrationType, containersInInternalDepth}
+		Function[{filtrationType, sampleContainerModel, sampleContainerDepth, sampleHandling},
+			Which[
+				(* Container is a plate, use the short disposable one *)
+				MatchQ[filtrationType, Syringe] && MatchQ[containersInModels, ObjectP[Model[Container, Plate]]],
+				Model[Item, Needle, "id:4pO6dMmv9pnM"],(*"14Ga x 2In Disposable Blunt Tip Lure Lock Dispensing Needle"*)
+				(* Container is not a plate, use compatibleNeedles to find one *)
+				MatchQ[filtrationType, Syringe],
+					FirstOrDefault[
+						compatibleNeedles[
+							allNeedleModelPackets,
+							ConnectionType -> LuerLock,
+							MinimumLength -> If[MatchQ[sampleContainerDepth, DistanceP],
+								sampleContainerDepth,
+								Null
+							],
+							Viscous -> MatchQ[sampleHandling, Viscous],
+							(* Current procedure uses the needles to dip and extract all liquid from source container, so no need to consider piercing through hermetic cap. *)
+							Blunt -> True
+						],
+						(* Default to use the longest one to be safe *)
+						Model[Item, Needle, "id:Y0lXejrKm0Po"](*"14Ga x 10.7In Disposable Blunt Tip Lure Lock Dispensing Needle"*)
+					],
+				(* Not doing syringe filtration, no needle involved *)
+				True,
+					Null
+			]
+		],
+		{filtrationType, containersInModels, containersInInternalDepth, samplesInSampleHandling}
 	];
 
 	(* For Manual preparation, make a list of tags for each unique instrument *)
@@ -9720,7 +9749,7 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 
 	(* Make resources for the syringes and needles *)
 	syringeResources = Map[If[NullQ[#], Null, Link[Resource[Name -> ToString[Unique[]], Sample -> #]]]&, syringes];
-	needleResources = Map[If[NullQ[#], Null, Link[Resource[Name -> ToString[Unique[]], Sample -> #, Rent -> True]]]&, needles];
+	needleResources = Map[If[NullQ[#], Null, Link[Resource[Name -> ToString[Unique[]], Sample -> #]]]&, needles];
 
 	(* NOTE: linking later since need this for the batching field (it's 2way link in ContainerIn/SampleIn and 1way link in the batching field *)
 	samplesInResources = (Resource[Sample -> Download[#, Object]]&) /@ mySamples;

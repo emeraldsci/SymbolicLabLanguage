@@ -338,7 +338,7 @@ DefineOptions[UploadCountLiquidParticlesMethod,
 					"Indicates the method used to mix the sample. If this option is set to Stir, a StirBar will be transferred into the sample container and stir the sample during the entire data collection process."
 				],
 				ResolutionDescription->"Automatically set to Stir if AcquisitionMixType is True.",
-				Widget-> Widget[Type->Enumeration,Pattern:>If[$CountLiquidParticlesAllowHandSwirl, Alternatives[Stir, Swirl],Alternatives[Stir]]],
+				Widget-> Widget[Type->Enumeration,Pattern:>MixTypeP],
 				Category->"Particle Size Measurements"
 			},
 			{
@@ -382,7 +382,7 @@ DefineOptions[UploadCountLiquidParticlesMethod,
 				AllowNull->True,
 				Description->"Indicates the rate at which the samples should be mixed with a stir bar during data acquisition.",
 				ResolutionDescription -> "Automatically set AcquisitionMixRate 400 RPM.",
-				Widget-> Widget[Type->Quantity,Pattern:>RangeP[50 RPM,350 RPM],Units->RPM],
+				Widget-> Widget[Type->Quantity,Pattern:>RangeP[$MinMixRate, $MaxMixRate],Units->RPM],
 				ResolutionDescription -> "Automatically set 500 RPM if AcquisitionMixType is Stir.",
 				Category->"Particle Size Measurements"
 			},
@@ -429,6 +429,34 @@ DefineOptions[UploadCountLiquidParticlesMethod,
 				Description->"Indicates the maximum number of attempts to mix the samples with a stir bar. One attempt designates each time AdjustMixRate changes the AcquisitionMixRate (i.e. each decrease/increase is equivalent to 1 attempt.",
 				ResolutionDescription->"If AdjustMixRate is True, automatically sets to 10.",
 				Widget->Widget[Type->Number,Pattern:>RangeP[1,40]],
+				Category->"Particle Size Measurements"
+			},
+			{
+				OptionName->AcquisitionMixTime,
+				Default->Automatic,
+				AllowNull->True,
+				Widget->Widget[Type->Quantity, Pattern :> RangeP[0 Minute,$MaxExperimentTime], Units->{1,{Hour,{Second,Minute,Hour}}}],
+				Description->"Duration of time for which the samples will be mixed before acquisition.",
+				ResolutionDescription->"Automatically resolves based on the mix type and container of the sample. Resolved to Null if a stir bar is used because sample will be mixed during acquisition",
+				Category->"Particle Size Measurements"
+			},
+			{
+				OptionName->AcquisitionMixInstrument,
+				Default->Automatic,
+				AllowNull->True,
+				Widget->Widget[
+					Type->Object,
+					Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Mixing Devices"
+						}
+					}
+				],
+				Description->"The instrument used to perform the Mix and/or Incubation.",
+				ResolutionDescription->"Automatically resolves based on the options AcquisitionMix, AcquisitionMixType and container of the sample.",
 				Category->"Particle Size Measurements"
 			},
 			
@@ -652,6 +680,8 @@ UploadCountLiquidParticlesMethod[mySamples:ListableP[ObjectP[Object[Sample]]|Nul
 				WashWaitTime->Lookup[safeOptions,WashWaitTime],
 				NumberOfWashes->Lookup[safeOptions,NumberOfWash],
 				SamplingHeight->Lookup[safeOptions,SamplingHeight],
+				AcquisitionMixTime -> Lookup[safeOptions,AcquisitionMixTime],
+				AcquisitionMixInstrument -> Lookup[safeOptions,AcquisitionMixInstrument],
 				Cache->Lookup[safeOptions,Cache],
 				Simulation->Lookup[safeOptions,Simulation],
 				Output->{Options,Tests}
@@ -701,6 +731,8 @@ UploadCountLiquidParticlesMethod[mySamples:ListableP[ObjectP[Object[Sample]]|Nul
 					WashWaitTime->Lookup[safeOptions,WashWaitTime],
 					NumberOfWashes->Lookup[safeOptions,NumberOfWash],
 					SamplingHeight->Lookup[safeOptions,SamplingHeight],
+					AcquisitionMixTime -> Lookup[safeOptions,AcquisitionMixTime],
+					AcquisitionMixInstrument -> Lookup[safeOptions,AcquisitionMixInstrument],
 					Cache->Lookup[safeOptions,Cache],
 					Simulation->Lookup[safeOptions,Simulation],
 					Output->Options
@@ -754,7 +786,9 @@ UploadCountLiquidParticlesMethod[mySamples:ListableP[ObjectP[Object[Sample]]|Nul
 			WashEquilibrationTime->Lookup[resolvedExperimentOptions,WashEquilibrationTime],
 			WashWaitTime->Lookup[resolvedExperimentOptions,WashWaitTime],
 			NumberOfWash->Lookup[resolvedExperimentOptions,NumberOfWashes],
-			SamplingHeight->Lookup[resolvedExperimentOptions,SamplingHeight]
+			SamplingHeight->Lookup[resolvedExperimentOptions,SamplingHeight],
+			AcquisitionMixTime -> Lookup[resolvedExperimentOptions,AcquisitionMixTime],
+			AcquisitionMixInstrument -> Lookup[resolvedExperimentOptions,AcquisitionMixInstrument]
 		}
 	
 	];
@@ -816,6 +850,8 @@ UploadCountLiquidParticlesMethod[mySamples:ListableP[ObjectP[Object[Sample]]|Nul
 					WashWaitTime->Lookup[valueRules,WashWaitTime],
 					NumberOfWash->Lookup[valueRules,NumberOfWash],
 					SamplingHeight->Lookup[valueRules,SamplingHeight],
+					AcquisitionMixTime -> Lookup[valueRules,AcquisitionMixTime],
+					AcquisitionMixInstrument -> Link[Lookup[valueRules,AcquisitionMixInstrument]],
 					Name->Lookup[valueRules,Name,Null],
 					DateCreated->Now
 				|>;

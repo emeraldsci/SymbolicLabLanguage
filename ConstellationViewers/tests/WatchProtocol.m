@@ -20,12 +20,40 @@ DefineTests[
 			}
 		],
 		Example[{Basic, "Watch a stream, but start from a particular second offset:"},
-            WatchProtocol[Object[Stream, "id:abc"], 100],
-            Null,
-            Stubs :> {
-                WatchProtocol[Object[Stream, "id:abc"], 100] = Null
-            }
-        ],
+			WatchProtocol[Object[Stream, "id:abc"], 100],
+			Null,
+			Stubs :> {
+					WatchProtocol[Object[Stream, "id:abc"], 100] = Null
+			}
+		],
+		Test["Watch a stream, but start from a particular second offset with a specific playback speed:",
+			WatchProtocol[Object[Stream, "id:abc"], 100, PlaySpeed -> 2],
+			Null,
+			Stubs :> {
+				WatchProtocol[Object[Stream, "id:abc"], 100, PlaySpeed -> 2] = Null
+			}
+		],
+		Test["Watch a stream, but a particular range in seconds:",
+			WatchProtocol[Object[Stream, "id:abc"], 100, 110],
+			Null,
+			Stubs :> {
+				WatchProtocol[Object[Stream, "id:abc"], 100, 110] = Null
+			}
+		],
+		Test["Watch a stream, but a particular range in seconds and a default playback speed:",
+			WatchProtocol[Object[Stream, "id:abc"], 100, 110, PlaySpeed -> 2],
+			Null,
+			Stubs :> {
+				WatchProtocol[Object[Stream, "id:abc"], 100, 110, PlaySpeed -> 2] = Null
+			}
+		],
+		Test["Watch a stream, but a particular range specified in time object:",
+			WatchProtocol[Object[Stream, "id:abc"], DateObject[{2024, 12, 1, 1, 1}], DateObject[{2024, 12, 1, 1, 5}], PlaySpeed -> 2],
+			Null,
+			Stubs :> {
+				WatchProtocol[Object[Stream, "id:abc"], DateObject[{2024, 12, 1, 1, 1}], DateObject[{2024, 12, 1, 1, 5}], PlaySpeed -> 2] = Null
+			}
+		],
 		Example[{Additional, "Watch a stream from a stream object:"},
 			WatchProtocol[Object[Stream, "id:abc"]],
 			Null,
@@ -43,14 +71,28 @@ DefineTests[
 			}
 		],
 		Example[{Messages, "CannotOffset", "Returns $Failed if no video associated with the stream using offset:"},
-            WatchProtocol[stream, 100],
-            $Failed,
-            Messages :> {Message[WatchProtocol::CannotOffset]},
-            Variables :> {stream},
-            SetUp :> {
-                stream = Upload[<|Type -> Object[Stream]|>]
-            }
-        ]
+			WatchProtocol[stream, 100],
+			$Failed,
+			Messages :> {Message[WatchProtocol::CannotOffset]},
+			Variables :> {stream},
+			SetUp :> {
+					stream = Upload[<|Type -> Object[Stream]|>]
+			}
+		],
+		Example[{Messages, "SpecifiedTimeNotValid", "Returns $Failed if specified start or end time is not valid:"},
+			WatchProtocol[stream, DateObject[{2024, 12, 1, 1, 3}], DateObject[{2024, 12, 1, 1, 1}]],
+			$Failed,
+			Messages :> {Message[WatchProtocol::SpecifiedTimeNotValid]},
+			Variables :> {stream},
+			SetUp :> {
+				stream = Upload[<|
+					Type -> Object[Stream],
+					VideoFile -> Link[Object[EmeraldCloudFile, "id:D8KAEvD4D90m"]],
+					StartTime -> DateObject[{2024, 12, 1, 1, 1}],
+					EndTime -> DateObject[{2024, 12, 1, 1, 10}]
+				|>]
+			}
+		]
 	}
 ];
 

@@ -177,10 +177,25 @@ DefineObjectType[Object[UnitOperation, Cover], {
 				Model[Instrument, Crimper],
 				Object[Instrument, Crimper],
 
+				Model[Part, Crimper],
+				Object[Part, Crimper],
+
 				Model[Instrument, PlateSealer],
 				Object[Instrument, PlateSealer]
 			],
 			Description -> "For each member of SampleLink, the device used to help secure the cover to the top of the container.",
+			Category -> "General",
+			IndexMatching -> SampleLink
+		},
+		Decrimper -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Part, Decrimper],
+				Object[Part, Decrimper]
+			],
+			Description -> "For each member of SampleLink, the device used to remove the crimped cap if it was not placed on the container securely.",
 			Category -> "General",
 			IndexMatching -> SampleLink
 		},

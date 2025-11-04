@@ -15,6 +15,14 @@ DefineObjectType[Model[Qualification,Balance], {
 			],
 			Description -> "The calibration weights used to qualify the balance.",
 			Category -> "General"
+		},
+		NumberOfReplicates -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterP[0, 1],
+			Units -> None,
+			Description -> "The number of times each calibration weight is measured during the qualification.",
+			Category -> "Sample Preparation"
 		}
 	}
 }];

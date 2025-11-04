@@ -272,12 +272,36 @@ DefineObjectType[Object[Qualification,ELISA],{
 			Description -> "The data object containing the weight of the plate that has been used qualify the ELISA NIMBUS plate washer.",
 			Category -> "Plate Washer Test"
 		},
+		TareData -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data],
+			Description -> "The weight measurement of the balance when nothing is on it, that was measured for this data.",
+			Category -> "Experimental Results"
+		},
 		FullyWashed -> {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
 			Description -> "Indicates if all of the wells in the plate is free of any unwashed dye by visual inspection.",
 			Category -> "Plate Washer Test"
+		},
+		WeightStabilityDuration -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Second],
+			Units -> Second,
+			Description -> "The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable and measured.",
+			Category -> "General"
+		},
+		MaxWeightVariation -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Milligram],
+			Units -> Milligram,
+			Description -> "The max allowed amplitude the balance readings can fluctuate with for a duration defined by WeightStabilityDuration before being considered stable and measured.",
+			Category -> "General"
 		}
 	}
 }

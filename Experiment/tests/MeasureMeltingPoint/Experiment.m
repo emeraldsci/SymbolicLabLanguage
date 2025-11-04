@@ -4090,7 +4090,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				testMoleculeModelPacket = UploadMolecule[
 					{
 						"InChI=1S/ClH.Na/h1H;/q;+1/p-1",
-						PubChem["14778"],
+						PubChem[14778],
 						"InChI=1S/He"
 					},
 					Name -> {
@@ -4099,7 +4099,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 						"Test Helium Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID
 					},
 					IncompatibleMaterials -> {{None}, {None}, {None}},
-					MSDSRequired -> {False, False, False},
+					MSDSFile -> {NotApplicable, NotApplicable, NotApplicable},
 					State -> {Solid, Solid, Gas},
 					CAS -> Null,
 					Force -> True
@@ -4109,7 +4109,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Composition -> {
 						{100 MassPercent, Model[Molecule, "Test Molecule with melting point of 99 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
 					Acid -> False,
@@ -4128,7 +4128,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Composition -> {
 						{100 MassPercent, Model[Molecule, "Test Molecule with melting point of 350 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
 					Acid -> False,
@@ -4149,7 +4149,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 						{89 MassPercent, Model[Molecule, "Test Molecule with melting point of 152 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]},
 						{1 MassPercent, Model[Molecule, "Test Molecule with melting point of 99 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
 					Acid -> False,
@@ -4168,7 +4168,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Composition -> {
 						{100 MassPercent, Model[Molecule, "Test NaCl Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
 					Acid -> False,
@@ -4187,7 +4187,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Composition -> {
 						{100 MassPercent, Model[Molecule, "Test CaO Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
 					Acid -> False,
@@ -4206,7 +4206,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Composition -> {
 						{100 MassPercent, Model[Molecule, "Test Helium Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
 					Acid -> False,
@@ -4225,7 +4225,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Composition -> {
 						{100 MassPercent, Model[Molecule, "Test NaCl Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
 					Acid -> False,
@@ -4244,7 +4244,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Composition -> {
 						{100 MassPercent, Model[Molecule, "Test NaCl Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
 					Acid -> False,
@@ -4263,7 +4263,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Composition -> {
 						{100 VolumePercent, Model[Molecule, "Water"]}
 					},
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
 					Acid -> False,

@@ -161,12 +161,12 @@ DefineOptions[AdvancedAnalyzePeaks,
 			{
 				OptionName -> PeakThresholds,
 				Default -> {},
-				Description -> "Specify threshold regions for peak searching, in the form of { {xL, xR}, y}. ",
+				Description -> "Specify threshold regions for peak searching.",
 				AllowNull -> True,
 				Category -> "Method",
 				Widget -> Alternatives[
 					Adder[{
-						"Domain" -> Widget[Type->Expression, Size->Line, Pattern:>{_?NumericQ,_?NumericQ}],
+						"Domain" -> Widget[Type->Expression, Size->Word, Pattern:>{_?NumericQ,_?NumericQ}],
 						"Height" -> Widget[Type->Number, Pattern:>RangeP[-Infinity, Infinity]]
 					}],
 					Widget[Type -> Enumeration, Pattern :> Alternatives[{}]]
@@ -175,12 +175,12 @@ DefineOptions[AdvancedAnalyzePeaks,
 			{
 				OptionName -> UnknownPeakThresholds,
 				Default -> {},
-				Description -> "Specify threshold regions for peak searching, in the form of { {xL, xR}, y}. ",
+				Description -> "Specify threshold regions for finding unexpected peaks. ",
 				AllowNull -> True,
 				Category -> "Method",
 				Widget -> Alternatives[
 					Adder[{
-						"Domain" -> Widget[Type->Expression, Size->Line, Pattern:>{_?NumericQ,_?NumericQ}],
+						"Domain" -> Widget[Type->Expression, Size->Word, Pattern:>{_?NumericQ,_?NumericQ}],
 						"Height" -> Widget[Type->Number, Pattern:>RangeP[-Infinity, Infinity]]
 					}],
 					Widget[Type -> Enumeration, Pattern :> Alternatives[{}]]
@@ -189,19 +189,20 @@ DefineOptions[AdvancedAnalyzePeaks,
 			{
 				OptionName -> ManualPeaks,
 				Default -> {},
-				Description -> "Specify the exact location of peaks, in the form of { {xL,yL}, {xR,yR} }.",
+				Description -> "Manually specify the left and right boundaries of a peak, including its baseline.",
 				AllowNull -> True,
 				Category -> "Method",
-				Widget -> Alternatives[
+				Widget -> Alternatives[Adder[Alternatives[
 					Adder[{
-						"Left" -> Widget[Type->Expression, Size->Line, Pattern:>{_?NumericQ,_?NumericQ}],
-						"Right" -> Widget[Type->Expression, Size->Line, Pattern:>{_?NumericQ,_?NumericQ}]
+						"Left" -> Widget[Type->Expression, Size->Word, Pattern:>{_?NumericQ,_?NumericQ}],
+						"Right" -> Widget[Type->Expression, Size->Word, Pattern:>{_?NumericQ,_?NumericQ}],
+						"Assignment" -> (Widget[Type -> String, Size -> Word, Pattern :> _String] |
+							Widget[Type -> Object, Pattern :> ObjectP[Model[Molecule]]])
 					}],
 					Widget[Type -> Enumeration, Pattern :> Alternatives[{}]]
-				]
+				]], Widget[Type -> Enumeration, Pattern :> Alternatives[{}]]]
 			},
 			{
-				(* TODO: add Assignment into here *)
 				OptionName -> ExpectedPeaks,
 				Default -> {},
 				Description -> "Specify the name and location of expected peaks.",
@@ -209,7 +210,8 @@ DefineOptions[AdvancedAnalyzePeaks,
 				Category -> "Method",
 				Widget -> Alternatives[
 					Adder[{
-						"Name" -> Widget[Type->String, Size->Word, Pattern:>_String],
+						"Assignment" -> (Widget[Type -> String, Size -> Word, Pattern :> _String] |
+							Widget[Type -> Object, Pattern :> ObjectP[Model[Molecule]]]),
 						"ApexPosition" -> Widget[Type->Number, Pattern:>RangeP[-Infinity,Infinity]],
 						"ApexDomain" -> Widget[Type->Expression, Size->Word, Pattern:>{_?NumericQ,_?NumericQ}]
 					}],
@@ -217,12 +219,8 @@ DefineOptions[AdvancedAnalyzePeaks,
 				]
 			},
 		AnalysisPreviewSymbolOption,
-		AnalysisTemplateOption,
 		OutputOption,
-		UploadOption,
-		{OptionName -> PeakLabels,Default -> Null,AllowNull->True,Description -> "", Category->"Hidden", Pattern -> _},
-		{OptionName -> PeakAssignments,Default -> Null,AllowNull->True,Description -> "",Category->"Hidden",Pattern -> 	_ },
-		{OptionName -> ParentPeaks,Default -> Null, AllowNull->True,Description -> "",Category->"Hidden",Pattern -> _}
+		UploadOption
 	}
 ];
 
@@ -241,11 +239,66 @@ AdvancedAnalyzePeaks[in:ObjectP[peakProtocolTypes],ops:OptionsPattern[AdvancedAn
 	AdvancedAnalyzePeaks[listedInputs, ops]
 ];
 
+setupPippyFromDataOptions[rawDataExpanded_List, options_List] := Module[{dids},
+	$Pippy = Pippy`Private`PeakPicking[];
+
+	dids = Pippy`Private`AddDataset[$Pippy, rawDataExpanded];
+
+	MapIndexed[
+		Function[{peaksSpec, datasetIndex},
+			Map[
+				With[{labObj = If[MatchQ[#[[3]],ObjectP[]], {Download[#[[3]],Name],#[[3]]}, {#[[3]],Null}]},
+					Block[{methodID=0},
+						methodID=Pippy`Private`DefineMethod[
+							$Pippy,
+							<|"Method"->"Manual","Boundary" -> {#[[1,1]],#[[2,1]]}, "Baseline" -> {#[[1,2]],#[[2,2]]}|>,
+							datasetIndex
+						];
+						Pippy`Private`ApplyMethod[$Pippy, methodID -> datasetIndex[[1]]];
+						(*Here methodID is the same as peakID*)
+						Pippy`Private`AddLabelingRule[$Pippy, methodID -> <|"Label"->labObj[[1]], "Assignment"->labObj[[2]]|>];
+					]
+				]&,
+				peaksSpec
+			]
+		]
+		,
+		Lookup[options, ManualPeaks]
+	];
+
+	Map[Pippy`Private`DefineMethod[
+		$Pippy,
+		<|"Method"->"Threshold","ThresholdDomain" -> #[[1]], "ThresholdHeight" -> #[[2]]|>]&,
+		Lookup[options, PeakThresholds]
+	];
+
+	Map[Pippy`Private`DefineMethod[
+		$Pippy,
+		<|"Method"->"Unknown","ThresholdDomain" -> First[#], "ThresholdHeight" -> Last[#]|>]&,
+		Lookup[options, UnknownPeakThresholds]
+	];
+
+	Map[
+		With[
+			{labObj = If[MatchQ[#[[1]],ObjectP[]], {Download[#[[1]],Name],#[[1]]}, {#[[1]],Null}]},
+			Pippy`Private`DefineLabelingRule[$Pippy, <|"Label" -> labObj[[1]], "Assignment" -> labObj[[2]], "ApexPosition"-> #[[2]], "ApexDomain" -> #[[3]], "SourcePeakID" -> Null|>]
+		]&,
+		Lookup[options, ExpectedPeaks]
+	];
+
+	Pippy`Private`ApplyMethod[$Pippy];
+
+	{$Pippy, dids}
+];
+
 
 (* -------------------------- *)
 (* --- MAIN FUNCTION BODY --- *)
 (* -------------------------- *)
-AdvancedAnalyzePeaks[in:ListableP[inputAnalyzePeaksP],ops:OptionsPattern[AdvancedAnalyzePeaks]]:=Module[
+AdvancedAnalyzePeaks[
+	in:ListableP[ObjectP[Object[Data, Chromatography]]] | CoordinatesP,
+	ops:OptionsPattern[AdvancedAnalyzePeaks]
+]:=Module[
 	{
 		listedData,objListedData,listedOptions,rulesRequiringUnnecessaryList,analysisPacketStart,outputSpecification,output,gatherTests,
 		safeOptions,safeOptionTests,rawTemplateOptions,templateTests,templateOptions,combinedOptions,
@@ -342,7 +395,8 @@ AdvancedAnalyzePeaks[in:ListableP[inputAnalyzePeaksP],ops:OptionsPattern[Advance
 
 	(* Resolve inputs, storing reference field, physical units, raw xy data, and other fields *)
 	resolvedInputsResult=Check[
-		{refField,xyUnits,rawData,samples,wavelength,slicingOps,image,inputWLTests}=resolveAnalyzePeaksInputs[listedData,combinedOptions,gatherTests],
+		{refField,xyUnits,rawData,samples,wavelength,slicingOps,image,inputWLTests}=
+			resolveAnalyzePeaksInputs[listedData,combinedOptions,gatherTests],
 		$Failed,
 		{Error::InvalidInput,Error::InvalidOption}
 	];
@@ -396,9 +450,6 @@ AdvancedAnalyzePeaks[in:ListableP[inputAnalyzePeaksP],ops:OptionsPattern[Advance
 		}]
 	];
 
-
-
-	
 	(* Expand fields to account for multiple reference fields for a single object *)
 	{rawDataExpanded,listedDataExpanded,samplesExpanded,imagesExpanded,xyUnitsExpanded}=Transpose@MapThread[
 		If[MatchQ[#1,{CoordinatesP..}],
@@ -409,29 +460,7 @@ AdvancedAnalyzePeaks[in:ListableP[inputAnalyzePeaksP],ops:OptionsPattern[Advance
 	];
 
 	(* set up pippy session -- even if not using the preview app *)
-	pippy = Pippy`Private`PeakPicking[];
-	$Pippy = pippy;
-	
-	dids = Pippy`Private`AddDataset[pippy, rawDataExpanded];
-
-	thresholds = Lookup[combinedOptions, PeakThresholds];
-	Map[Pippy`Private`DefineMethod[pippy, <|"Method"->"Threshold","ThresholdDomain" -> #[[1]], "ThresholdHeight" -> #[[2]]|>]&, thresholds];
-
-	manualPeaks = Lookup[combinedOptions, ManualPeaks];
-	Map[Pippy`Private`DefineMethod[pippy, <|"Method"->"Manual","Boundary" -> {#[[1,1]],#[[2,1]]}, "Baseline" -> {#[[1,2]],#[[2,2]]}|>]&, manualPeaks];
-
-	thresholdsUnknown = Lookup[combinedOptions, UnknownPeakThresholds];
-	Map[Pippy`Private`DefineMethod[pippy, <|"Method"->"Unknown","ThresholdDomain" -> First[#], "ThresholdHeight" -> Last[#]|>]&, thresholdsUnknown];
-
-	expectedPeaks = Lookup[combinedOptions, ExpectedPeaks];
-	Map[	
-		With[
-			{labObj = If[MatchQ[#[[1]],ObjectP[]], {Download[#[[1]],Name],#[[1]]}, {#[[1]],Null}]},
-			Pippy`Private`DefineLabelingRule[pippy, <|"Label" -> labObj[[1]], "Assignment" -> labObj[[2]], "ApexPosition"-> #[[2]], "ApexDomain" -> #[[3]], "SourcePeakID" -> Null|>]
-		]&, 
-		expectedPeaks
-	];
-	
+	{pippy, dids} = setupPippyFromDataOptions[rawDataExpanded, combinedOptions];
 
 	(* Compute peak fields (position, height, area, etc.) and baseline functions for each input *)
 	findPeaksResult=Check[
@@ -491,7 +520,7 @@ AdvancedAnalyzePeaks[in:ListableP[inputAnalyzePeaksP],ops:OptionsPattern[Advance
 				rOps = First[resolvedOptions];
 				makeNewAdvancedPeaksPreview[pippy, rOps, xyDataSets, unitBlock, compositionList]
 			],
-			
+
 			Message["Should redirect to AnalyzePeaks before this point"];
 		],
 		Null
@@ -572,6 +601,7 @@ findPeaksAdvanced[xy_, resolvedOps_, dataID_, pippy_] := Module[
 	(* Delete any peaks which have been doubly specified, i.e., have overlapping ranges *)
 	peakCoreNoDuplicates=deletePeakDuplicates[peakCoreFields];
 
+
 	(* If tangents have not been calculated, ensure that tangent fields are populated with empty lists *)
 	correctedPeakCoreFields=If[MemberQ[Lookup[peakCoreNoDuplicates,TangentWidth],Null],
 		ReplaceRule[peakCoreNoDuplicates,{TangentWidth->{},TangentWidthLines->{},TangentWidthLineRanges->{}}],
@@ -580,23 +610,11 @@ findPeaksAdvanced[xy_, resolvedOps_, dataID_, pippy_] := Module[
 
 	peakAllFields=correctedPeakCoreFields;
 
+
 	{peakAllFields,baselineFunction, baselineRanges}
 ];
 
-newInteractivePreviewSupported[{
-	Repeated[Null]
-		| Repeated[Object[Data, Chromatography]]
-		| Repeated[Object[Data, AbsorbanceSpectroscopy]]
-		| Repeated[Object[Data, CapillaryIsoelectricFocusing]]
-		| Repeated[Object[Data, MassSpectrometry]]
-		| Repeated[Object[Data, CapillaryGelElectrophoresisSDS]]
-		| Repeated[Object[Data, IRSpectroscopy]]
-		| Repeated[Object[Data, DynamicLightScattering]]
-		| Repeated[Object[Data, ChromatographyMassSpectra]]
-		| Repeated[Object[Data, MeltingCurve]]
-		| Repeated[Object[Data, XRayDiffraction]]
-		| Repeated[Object[Data, PAGE]]
-}] := True;
+newInteractivePreviewSupported[{Repeated[Null] | Repeated[Object[Data, Chromatography]]}] := True;
 newInteractivePreviewSupported[_] := False;
 
 makeNewAdvancedPeaksPreview[pippy_, rOps_, xyDataSets_, unitBlock_, compositionList_] := Module[{},
@@ -667,14 +685,14 @@ DefineOptions[AdvancedAnalyzePeaksOptions,
 ];
 
 
-AdvancedAnalyzePeaksOptions[in: ObjectP[peakProtocolTypes], ops: OptionsPattern[AdvancedAnalyzePeaksOptions]] := Module[
+AdvancedAnalyzePeaksOptions[in: ObjectP[{Object[Protocol, HPLC], Object[Protocol, FPLC]}], ops: OptionsPattern[AdvancedAnalyzePeaksOptions]] := Module[
 	{inList},
 	inList = resolveAnalyzePeaksListInput[in];
 	AdvancedAnalyzePeaksOptions[inList, ops]
 ];
 
 
-AdvancedAnalyzePeaksOptions[in: ListableP[inputAnalyzePeaksP], ops: OptionsPattern[AdvancedAnalyzePeaksOptions]] := Module[
+AdvancedAnalyzePeaksOptions[in: ListableP[ObjectP[Object[Data,Chromatography]]] | CoordinatesP, ops: OptionsPattern[AdvancedAnalyzePeaksOptions]] := Module[
 	{listedOptions, noOutputOptions, options},
 
 	listedOptions = ToList[ops];
@@ -702,14 +720,14 @@ DefineOptions[AdvancedAnalyzePeaksPreview,
 ];
 
 
-AdvancedAnalyzePeaksPreview[in: ObjectP[peakProtocolTypes], ops: OptionsPattern[AdvancedAnalyzePeaksPreview]] := Module[
+AdvancedAnalyzePeaksPreview[in: ObjectP[{Object[Protocol, HPLC], Object[Protocol, FPLC]}], ops: OptionsPattern[AdvancedAnalyzePeaksPreview]] := Module[
 	{inList},
 	inList = resolveAnalyzePeaksListInput[in];
 	AdvancedAnalyzePeaksPreview[inList, ops]
 ];
 
 
-AdvancedAnalyzePeaksPreview[in: ListableP[inputAnalyzePeaksP], ops: OptionsPattern[AdvancedAnalyzePeaksPreview]] :=
+AdvancedAnalyzePeaksPreview[in: ListableP[ObjectP[Object[Data,Chromatography]]] | CoordinatesP, ops: OptionsPattern[AdvancedAnalyzePeaksPreview]] :=
 	AdvancedAnalyzePeaks[in, ReplaceRule[ToList[ops],{Output->Preview}]];
 
 
@@ -726,14 +744,14 @@ DefineOptions[ValidAdvancedAnalyzePeaksQ,
 ];
 
 
-ValidAdvancedAnalyzePeaksQ[in: ObjectP[peakProtocolTypes], ops: OptionsPattern[ValidAdvancedAnalyzePeaksQ]] := Module[
+ValidAdvancedAnalyzePeaksQ[in: ObjectP[{Object[Protocol, HPLC], Object[Protocol, FPLC]}], ops: OptionsPattern[ValidAdvancedAnalyzePeaksQ]] := Module[
 	{inList},
 	inList = resolveAnalyzePeaksListInput[in];
 	ValidAdvancedAnalyzePeaksQ[inList, ops]
 ];
 
 
-ValidAdvancedAnalyzePeaksQ[in: ListableP[inputAnalyzePeaksP], ops: OptionsPattern[ValidAdvancedAnalyzePeaksQ]] := Module[
+ValidAdvancedAnalyzePeaksQ[in: ListableP[ObjectP[Object[Data,Chromatography]]] | CoordinatesP, ops: OptionsPattern[ValidAdvancedAnalyzePeaksQ]] := Module[
 	{preparedOptions,functionTests,initialTestDescription,allTests, verbose, outputFormat},
 
 	(* Remove the Verbose option and add Output->Tests to get the options ready for <Function> *)
@@ -778,14 +796,14 @@ ValidAdvancedAnalyzePeaksQ[in: ListableP[inputAnalyzePeaksP], ops: OptionsPatter
 
 computePeaksFieldsAdvanced[pippy:Pippy[pv_Symbol], dataID_Integer] := Module[
 	{
-		 domains, peakFieldsByMethod, mergedPeaks, baselineFunctions,
+		domains, peakFieldsByMethod, mergedPeaks, baselineFunctions,
 		mergedBLF,  baselineRanges,	methodIDs, xy, methods
 	},
 
 	xy = Lookup[First[Pippy`Private`PippySelect[pippy, "Datasets",#DatasetID===dataID&],<||>],"Coordinates",$Failed];
 	If[ xy === $Failed, Return[$Failed]];
 
-	(* all methods, but order is important.  
+	(* all methods, but order is important.
 		1) Manual
 		2) Threshold
 		3) Unknown
@@ -795,6 +813,9 @@ computePeaksFieldsAdvanced[pippy:Pippy[pv_Symbol], dataID_Integer] := Module[
 		{"Manual","Threshold","Unknown"},
 		{}
 	]];
+
+	(*Manual peaks are set on a dataset-by-dataset basis.  So we remove those that are not applied to dataset dataID *)
+	methods = Select[methods, #["Method"] =!= "Manual" || MemberQ[#["DatasetTargets"], dataID] &];
 	methodIDs = Lookup[methods, "MethodID",{}];
 
 	domains = If[methodIDs === {},
@@ -831,24 +852,24 @@ computePeaksFieldsAdvanced[pippy:Pippy[pv_Symbol], dataID_Integer] := Module[
 
 (* Get parameters from peaks *)
 getAdvancedPeakParameters[]:={
-		Position->{},
-		Height->{},
-		HalfHeightWidth->{},
-		Area->{},
-		PeakRangeStart->{},
-		PeakRangeEnd->{},
-		WidthRangeStart->{},
-		WidthRangeEnd->{},
-		BaselineIntercept->{},
-		BaselineSlope->{},
-		AsymmetryFactor->{},
-		TailingFactor->{},
-		TangentWidth -> {},
-		TangentWidthLines -> {},
-		TangentWidthLineRanges -> {},
-		BaselinePeakRanges->{},
-		PeakAssignment->{}
-	};
+	Position->{},
+	Height->{},
+	HalfHeightWidth->{},
+	Area->{},
+	PeakRangeStart->{},
+	PeakRangeEnd->{},
+	WidthRangeStart->{},
+	WidthRangeEnd->{},
+	BaselineIntercept->{},
+	BaselineSlope->{},
+	AsymmetryFactor->{},
+	TailingFactor->{},
+	TangentWidth -> {},
+	TangentWidthLines -> {},
+	TangentWidthLineRanges -> {},
+	BaselinePeakRanges->{},
+	PeakAssignment->{}
+};
 getAdvancedPeakParameters[pippy_, dataID_Integer, methodID_Integer]:=Module[
 	{
 		pks, boundaryInds, baselinePoints,
@@ -857,11 +878,10 @@ getAdvancedPeakParameters[pippy_, dataID_Integer, methodID_Integer]:=Module[
 		tgStuff, baselineFunction, missingPeaks
 	},
 
-	pkIDs = Pippy`Private`ApplyMethod[pippy, methodID -> dataID];
-	pks = Lookup[pippy[[1]]["Peaks"],pkIDs];
+	pks = Select[Values[pippy[[1]]["Peaks"]], #["MethodID"] === methodID && #["DatasetID"] ===dataID &] (*Lookup[pippy[[1]]["Peaks"],pkIDs]*);
 	missingPeaks = Pippy`Private`MissingPeaks[pippy, dataID];
-	
-	If[pks==={}, 
+
+	If[pks==={},
 		Return[getAdvancedPeakParameters[]]
 	];
 
@@ -875,7 +895,7 @@ getAdvancedPeakParameters[pippy_, dataID_Integer, methodID_Integer]:=Module[
 	baselineFunction = Lookup[baselineRules, BaselineFunction];
 
 	{centers, maxes} = Transpose[Lookup[pks, "ApexPoint"]];
-	
+
 	widthRanges = MapThread[getPeakWidthRanges[#1, #2] &, {dataSplit, centers}];
 
 	areas = Lookup[pks,"Area"];
@@ -936,7 +956,7 @@ getAdvancedPeakParameters[pippy_, dataID_Integer, methodID_Integer]:=Module[
 		BaselinePeakRanges->peakRanges,
 		PeakLabel -> Lookup[pks, "Label"],
 		(* MissingPeaks -> Lookup[missingPeaks,"Label"], *)
-		PeakAssignment -> Lookup[pks, "Assignment"],
+		PeakAssignment -> Lookup[pks, "Assignment"] /. obj:ObjectP[] :> ECL`Link[obj],
 		RelativeArea -> Lookup[pks,"RelativeArea",Null],
 		ParentPeak -> Lookup[pks, ParekPeaks,Null]
 	};
@@ -945,6 +965,21 @@ getAdvancedPeakParameters[pippy_, dataID_Integer, methodID_Integer]:=Module[
 
 ];
 
+
+getModelMoleculesForFEFromProtocol[protocol: ObjectP[Object[Protocol]]] := Module[{dataObjects},
+	Quiet[
+		Check[
+			DeleteDuplicates[
+				DeleteCases[Flatten[
+					Download[protocol,SamplesIn[Composition][[All, 2]][{Name, Object}]],
+					1
+				],Null]
+			],
+			{}
+		],
+		{Download::ObjectDoesNotExist,Download::MismatchedType}
+	]
+];
 
 (*
 getModelMoleculesForFEFromData returns a list of the form:
@@ -979,13 +1014,13 @@ getModelMoleculesForFEFromData[listedDataExpanded_] := Module[{dataObjects, comp
 
 
 optsToFEPacket[pippy_] := Module[{manualPeaks},
-	(* 
+	(*
 		pippy has already loaded the manual peaks
-		and handled the labeling and assignments, 
+		and handled the labeling and assignments,
 		so pull straight from pippy
 	*)
 	manualPeaks = Pippy`Private`PippySelect[pippy, "Peaks", #Method === "Manual" &];
-	
+
 	Map[
 		<|
 			"XFirst" -> #BoundaryPoints[[1,1]],
@@ -1005,16 +1040,16 @@ syncPeakWidgets[pippy_, dv_] := Module[{thresholds, bogeyThresholds, manualPeaks
 
 	thresholds = Pippy`Private`PippySelect[pippy, "Methods", #Method==="Threshold"&];
 	bogeyThresholds = Pippy`Private`PippySelect[pippy, "Methods", #Method==="Unknown"&];
-	
+
 	manualPeaks = Pippy`Private`PippySelect[pippy, "Peaks", #Method==="Manual"&];
 
 	expectedPeaks = Lookup[
 		Pippy`Private`PippyLookup[pippy,"Peaks"],
 		Lookup[Values@Pippy`Private`PippyLookup[pippy,"Library"],"SourcePeakID",{}]
 	];
-	
+
 	LogPreviewChanges[dv,{
-		ManualPeaks -> Map[pippyPeakToManualPeakOption, manualPeaks],
+		ManualPeaks -> (Range[Length[$Pippy[[1]]["Datasets"]]] /. Append[Normal[GroupBy[Map[pippyPeakToManualPeakOption, manualPeaks], First->Rest],Association], _Integer->{}]),
 		ExpectedPeaks -> Map[pippyPeakToExpectedPeakOption, expectedPeaks],
 		PeakThresholds -> Map[pippyThresholdToPeakThresholdsOption, thresholds],
 		UnknownPeakThresholds -> Map[pippyThresholdToPeakThresholdsOption, bogeyThresholds]
@@ -1022,22 +1057,25 @@ syncPeakWidgets[pippy_, dv_] := Module[{thresholds, bogeyThresholds, manualPeaks
 ];
 
 pippyPeakToManualPeakOption[KeyValuePattern[{
-		"BoundaryPoints"->{{xL_,_},{xR_,_}}, 
-		"BaselinePoints" ->{{_,yL_},{_,yR_}}
-	 }]] := {{xL,yL},{xR,yR}};
+	"DatasetID"->id_,
+	"Label"->label_,
+	"Assignment"->assignment_,
+	"BoundaryPoints"->{{xL_,_},{xR_,_}},
+	"BaselinePoints" ->{{_,yL_},{_,yR_}}
+}]] := {id,{xL,yL},{xR,yR},assignment/.{Null -> label}};
 
-(* TODO: fill in assignment *)
 pippyPeakToExpectedPeakOption[KeyValuePattern[{
-		"BoundaryPoints"->{{xL_,_},{xR_,_}}, 
-		"ApexPoint" -> {xA_,_},
-		"Label" -> label_,
-		"Assignment" -> assignment_
-	 }]] := {label,  xA, {xL,xR}};
+	"BoundaryPoints"->{{xL_,_},{xR_,_}},
+	"ApexPoint" -> {xA_,_},
+	"Label" -> label_,
+	"Assignment" -> assignment_
+}]] := {assignment/.Null->label,  xA, {xL,xR}};
 
 pippyThresholdToPeakThresholdsOption[KeyValuePattern[{
-		"ThresholdDomain"->{xL_,xR_}, 
-		"ThresholdHeight" -> yTh_
-	 }]] := {{xL,xR}, yTh};
+	"ThresholdDomain"->{xL_,xR_},
+	"ThresholdHeight" -> yTh_
+}]] := {{xL,xR}, yTh};
+
 
 
 
@@ -1058,7 +1096,7 @@ calculateBaselineSpecAdvanced[ baselinePoints_]:=Module[{baselineIntercept,basel
 
 peakReplaceFields = {Position,Height,Area,HalfHeightWidth,
 	PeakRangeStart, PeakRangeEnd, PeakLabel,ParentPeak,
-	WidthRangeStart, WidthRangeEnd, RelativeArea, 
+	WidthRangeStart, WidthRangeEnd, RelativeArea,
 	PeakAssignment,BaselineIntercept,BaselineSlope,AsymmetryFactor,TailingFactor,
 	RelativePosition,PeakAssignmentLibrary,HalfHeightResolution,
 	AdjacentResolution,HalfHeightNumberOfPlates, 	NMRFunctionalGroup
@@ -1073,7 +1111,7 @@ formatPeakPacketAdvanced[in_, peakParameters0_, baselineFunction_, standardField
 	If[Or[MatchQ[resolvedOps,Null],MatchQ[peakParameters0,Null]],
 		Return[Null]
 	];
-	
+
 	numPeaks=Length[Lookup[peakParameters0,Position]];
 
 
@@ -1083,22 +1121,22 @@ formatPeakPacketAdvanced[in_, peakParameters0_, baselineFunction_, standardField
 	mergedParameters = Map[
 		Which[
 			MemberQ[peakReplaceFields,#[[1]] ],
-				Replace[#[[1]]] -> If[MatchQ[#[[2]],Null|{}], Table[Null, numPeaks], #[[2]]],
+			Replace[#[[1]]] -> If[MatchQ[#[[2]],Null|{}], Table[Null, numPeaks], #[[2]]],
 			MemberQ[{TangentNumberOfPlates, TangentWidth,TangentResolution,TangentWidthLineRanges, TangentWidthLines}, #[[1]]],
-				Replace[#[[1]]]->#[[2]],
+			Replace[#[[1]]]->#[[2]],
 			True,
-				#
+			#
 		]&,
 		peakParameters
 	];
-	
+
 	dataNotInPeaks=Fold[Analysis`Private`selectInclusiveMatrixPointsOutsideRangeC[#1,Sequence @@ #2]&,xy,Transpose[Lookup[mergedParameters,Replace/@{PeakRangeStart,PeakRangeEnd}]]];
 
 	globalBaseline=LinearModelFit[dataNotInPeaks,x,x]["Function"];
 
 
 	purity = computePurity[Lookup[mergedParameters,Replace@Area],xy,globalBaseline,Lookup[mergedParameters,Replace@PeakLabel]];
-	
+
 	(* Data reference resolution *)
 	dataRef = If[MatchQ[in, ObjectP[]], in[Object], Null];
 
@@ -1109,12 +1147,12 @@ formatPeakPacketAdvanced[in_, peakParameters0_, baselineFunction_, standardField
 	Association[Join[
 		{Type -> Object[Analysis, Peaks]},
 		{Name -> If[MatchQ[Lookup[resolvedOps, Name], Null],
-					Null,
-					If[cntForName==1,
-						Lookup[resolvedOps, Name],
-						Lookup[resolvedOps, Name] <> " " <> ToString[cntForName]
-					]
-				]},
+			Null,
+			If[cntForName==1,
+				Lookup[resolvedOps, Name],
+				Lookup[resolvedOps, Name] <> " " <> ToString[cntForName]
+			]
+		]},
 
 		standardFieldsStart,
 		mergedParameters,
@@ -1142,7 +1180,7 @@ formatPeakPacketAdvanced[in_, peakParameters0_, baselineFunction_, standardField
 
 (* Resolve all options which do not require identification of peaks *)
 resolveAdvancedAnalyzePeaksOptions[rawData_, listedData_, xyUnits_, refField_, wavelength_, sliceOps_, combinedOptions_, safeOptions_, ops: OptionsPattern[resolveAnalyzePeaksOptions]] := Module[
-	{output, listedOutput, collectTestsBoolean, messagesBoolean, resolvedOptions, tests},
+	{manualPeaksOpt, newCombinedOptions, output, listedOutput, collectTestsBoolean, messagesBoolean, resolvedOptions, tests},
 
 	(* From resolveTacoPreparationOptions's options, get Output value *)
 	output = OptionDefault[OptionValue[Output]];
@@ -1150,23 +1188,41 @@ resolveAdvancedAnalyzePeaksOptions[rawData_, listedData_, xyUnits_, refField_, w
 	collectTestsBoolean = MemberQ[listedOutput, Tests];
 	messagesBoolean = !collectTestsBoolean;
 
-	{resolvedOptions,tests}=Transpose@MapThread[
-		resolveAdvancedAnalyzePeaksOptionsSingle[#1,#2,#3,#4,#5,#6,combinedOptions,safeOptions,collectTestsBoolean,#7]&,
-		{rawData,listedData,xyUnits,refField,wavelength,sliceOps,Range[Length[wavelength]]}
+	manualPeaksOpt = Replace[ManualPeaks, combinedOptions];
+	newCombinedOptions = DeleteCases[combinedOptions, ManualPeaks->_];
+
+	If[MatchQ[manualPeaksOpt, {}|Null],
+		{resolvedOptions,tests}=Transpose@MapThread[
+			resolveAdvancedAnalyzePeaksOptionsSingle[#1,#2,#3,#4,#5,#6,manualPeaksOpt,newCombinedOptions,safeOptions,collectTestsBoolean,#7]&,
+			{rawData,listedData,xyUnits,refField,wavelength,sliceOps,Range[Length[wavelength]]}
+		];,
+
+		{resolvedOptions,tests}=Transpose@MapThread[
+			resolveAdvancedAnalyzePeaksOptionsSingle[#1,#2,#3,#4,#5,#6,{#7},newCombinedOptions,safeOptions,collectTestsBoolean,#8]&,
+			{rawData,listedData,xyUnits,refField,wavelength,sliceOps,manualPeaksOpt,Range[Length[wavelength]]}
+		];
 	];
 
 	output /. {Tests -> Flatten[tests], Result -> resolvedOptions}
 ];
 
 (* Handle the case where a single data object resolves multiple reference fields *)
-resolveAdvancedAnalyzePeaksOptionsSingle[xySets:{CoordinatesP..}, in_, xyUnits_, refFields:{_Symbol..}, wavelengths_, sliceOps_, combinedOps_, safeOps_, collectTestsBoolean_, index_] := Module[
+resolveAdvancedAnalyzePeaksOptionsSingle[xySets:{CoordinatesP..}, in_, xyUnits_, refFields:{_Symbol..}, wavelengths_, sliceOps_, manualPeakOps_, combinedOps_, safeOps_, collectTestsBoolean_, index_] := Module[
 	{resolvedOps,tests,updatedOps},
 
 	(* Split up the input when there are multiple reference fields for a single input *)
-	{resolvedOps,tests}=Transpose@MapThread[
-		resolveAdvancedAnalyzePeaksOptionsSingle[#1,in,#2,#3,#4,#5,combinedOps,safeOps,collectTestsBoolean,index]&,
-		{xySets,xyUnits,refFields,wavelengths,sliceOps}
+	If[MatchQ[manualPeakOps, {}|Null],
+		{resolvedOps,tests}=Transpose@MapThread[
+			resolveAdvancedAnalyzePeaksOptionsSingle[#1,in,#2,#3,#4,#5,manualPeakOps,combinedOps,safeOps,collectTestsBoolean,index]&,
+			{xySets,xyUnits,refFields,wavelengths,sliceOps}
+		];,
+
+		{resolvedOps,tests}=Transpose@MapThread[
+			resolveAdvancedAnalyzePeaksOptionsSingle[#1,in,#2,#3,#4,#5,{#6},combinedOps,safeOps,collectTestsBoolean,index]&,
+			{xySets,xyUnits,refFields,wavelengths,sliceOps,manualPeakOps}
+		];
 	];
+
 
 	(* Return the paired options and tests as a sequence *)
 	Sequence@@MapThread[
@@ -1176,46 +1232,23 @@ resolveAdvancedAnalyzePeaksOptionsSingle[xySets:{CoordinatesP..}, in_, xyUnits_,
 ];
 
 (* Single overload *)
-resolveAdvancedAnalyzePeaksOptionsSingle[xy: CoordinatesP, in_, {xUnit_, yUnit_}, refField_, wavelength_, sliceOps_, combinedOptions_, safeOptions_, collectTestsBoolean_, index_] := Module[
+resolveAdvancedAnalyzePeaksOptionsSingle[xy: CoordinatesP, in_, {xUnit_, yUnit_}, refField_, wavelength_, sliceOps_, manualPeakOps_, combinedOptions_, safeOptions_, collectTestsBoolean_, index_] := Module[
 	{
 		name, nameTestDescription, nameTest,
-		dataQuality,  dataType, manualOverlapQ,	mostlyResolvedOptions,resolvedPeakType,slicingOptions, manualPeaks
+		dataQuality,  dataType, manualOverlapQ,	mostlyResolvedOptions,resolvedPeakType,slicingOptions,
+		manualRanges
 	},
 
 	(* Resolve the data type of the input *)
 	dataType=If[ObjectQ[in],in[Type], Null];
 	dataQuality=Null;
 
-	
+
 	(* --- Check if Name existed in DB --- *)
 	name = Lookup[combinedOptions, Name];
 	nameTestDescription="Check if the given Name already existed in the database:";
 	nameTest = peaksTestOrNull[Name, collectTestsBoolean, nameTestDescription,
 		NullQ[name] || Length[Search[Object[Analysis, Peaks], Name=name]] == 0];
-
-
-	(* Pre-resolved values of the manual range and position options *)
-	manualPeaks = Lookup[combinedOptions, ManualPeaks];
-	manualRanges = Map[{#[[1,1]],#[[-1,1]]}&,manaulPeaks];
-
-	
-	(* If manual ranges were provided, check if any of them overlap *)
-	manualOverlapQ = If[MatchQ[resolvedPeakType,Manual]&&MatchQ[manualRanges,{_Span...}]&&Length[manualRanges]>1,
-		And@@Map[
-			overlappingRangesQ[#[[1]],#[[2]]]&,
-			(* Map over adjacent pairs of sorted intervals *)
-			Partition[List@@@SortBy[manualRanges,First], 2, 1]
-		],
-		False
-	];
-
-	(* Hard error if manual ranges were specified and overlapping *)
-	If[manualOverlapQ,
-		Message[Error::InvalidManualPeaks,manualRanges];
-		Message[Error::InvalidOption, ManualPeaks];
-		Return[{$Failed,{}}];
-	];
-
 
 
 	(* Options from slicing 3D data/input resolution *)
@@ -1237,10 +1270,11 @@ resolveAdvancedAnalyzePeaksOptionsSingle[xy: CoordinatesP, in_, {xUnit_, yUnit_}
 		combinedOptions,
 		Join[
 			slicingOptions,
-      	{
+			{
 				ReferenceField -> refField,
-				Wavelength -> wavelength
-		}
+				Wavelength -> wavelength,
+				ManualPeaks -> manualPeakOps
+			}
 		]
 	];
 

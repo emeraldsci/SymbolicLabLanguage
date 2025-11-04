@@ -85,7 +85,7 @@ DefineObjectType[Model[Container, Plate], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates if this container has walls that extend below the vessel's well geometry to allow the vessel to stand upright on a flat surface without use of a rack.",
+			Description -> "Indicates if this container has walls that extend below the vessel's well geometry to allow the vessel to stand upright on a flat surface without use of a rack. For liquid handler compatible plates, this is used to calculate additional parameters for liquid handler applications.",
 			Category -> "Container Specifications"
 		},
 		SkirtHeight -> {
@@ -239,7 +239,7 @@ DefineObjectType[Model[Container, Plate], {
 			Class -> Integer,
 			Pattern :> GreaterP[0, 1],
 			Units -> None,
-			Description -> "The number of rows of wells in the plate.",
+			Description -> "The number of wells in the plate from front to back - in the shorter horizontal direction if the plate is not square.",
 			Category -> "Dimensions & Positions"
 		},
 		Columns -> {
@@ -247,7 +247,7 @@ DefineObjectType[Model[Container, Plate], {
 			Class -> Integer,
 			Pattern :> GreaterP[0, 1],
 			Units -> None,
-			Description -> "The number of columns of wells in the plate.",
+			Description -> "The number of wells in the plate from left to right - in the longer horizontal direction if the plate is not square.",
 			Category -> "Dimensions & Positions"
 		},
 		NumberOfWells -> {
@@ -255,7 +255,7 @@ DefineObjectType[Model[Container, Plate], {
 			Class -> Integer,
 			Pattern :> GreaterP[0, 1],
 			Units -> None,
-			Description -> "Number of individual wells the plate has.",
+			Description -> "Number of individual contents-holding cavities the plate has.",
 			Category -> "Dimensions & Positions"
 		},
 		AspectRatio -> {
@@ -421,6 +421,68 @@ DefineObjectType[Model[Container, Plate], {
 			Description -> "Products representing regularly ordered items that are delivered in this type of container by default.",
 			Category -> "Inventory",
 			Developer->True
+		},
+		(* --- Quality Assurance --- *)
+		CalibrationPlate -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates whether this plate model is used for calibrating instruments.",
+			Category -> "Quality Assurance"
+		},
+		ReceivingBatchInformation -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> FieldP[Object[Report,Certificate,Analysis], Output->Short],
+			Description -> "A list of the required fields populated by receiving.",
+			Category -> "Quality Assurance"
+		},
+		InstrumentsCalibrated -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Instrument],
+			Description -> "If the plate is used for calibration, a list of instrument models that can be calibrated by this plate; must be informed if CalibrationPlate is True.",
+			Category -> "Quality Assurance"
+		},
+		(* Fields for spectral calibration *)
+		CalibrationWavelengths -> {
+			Format -> Multiple,
+			Class -> {Wavelength->VariableUnit, Tolerance->VariableUnit, Source->Link},
+			Pattern :> {Wavelength->GreaterP[0*Nanometer],Tolerance->GreaterP[0*Nanometer], Source->_Link|Null},
+			Relation -> {Wavelength->Null, Tolerance->Null, Source->Model[Sample]|Model[Molecule]|Null},
+			Description -> "If the plate is used for calibration, a list of the wavelength(s) used for instrument calibration with their allowed tolerances and the source of the wavelength (sample or molecule); use Null if the source of the wavelength is the plate material itself.",
+			Category -> "Quality Assurance"
+		},
+		(* Health and Safety *)
+		MSDSRequired->{
+			Format->Single,
+			Class->Expression,
+			Pattern:>BooleanP,
+			Description->"Indicates if an MSDS is applicable for this container model.",
+			Category->"Health & Safety"
+		},
+		MSDSFile->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[EmeraldCloudFile],
+			Description->"A PDF file of the MSDS (Materials Safety Data Sheet) of this plate model.",
+			Category->"Health & Safety"
+		},
+		NFPA->{
+			Format->Single,
+			Class->Expression,
+			Pattern:>NFPAP,
+			Description->"The National Fire Protection Association (NFPA) 704 hazard diamond classification for this plate model. The NFPA diamond standard is maintained by the United States National Fire Protection Association and summarizes, clockwise from top, Fire Hazard, Reactivity, Specific Hazard and Health Hazard of a substance.",
+			Category->"Health & Safety"
+		},
+		DOTHazardClass->{
+			Format->Single,
+			Class->String,
+			Pattern:>DOTHazardClassP,
+			Description->"The Department of Transportation hazard classification of this plate model.",
+			Category->"Health & Safety"
 		}
 	}
 }];

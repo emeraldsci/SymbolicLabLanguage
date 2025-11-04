@@ -23,8 +23,9 @@ DefineOptions[UploadLyseCellsMethod,
 
       {
         OptionName -> CellType,
-        Default -> Null,
+        Default -> Automatic,
         Description->"The taxon of the organism or cell line from which the cell sample originates. Options include Bacterial, Mammalian, Insect, Plant, and Yeast.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         AllowNull -> True,
         Widget -> Widget[
           Type -> Enumeration,
@@ -34,9 +35,10 @@ DefineOptions[UploadLyseCellsMethod,
       },
       {
         OptionName -> TargetCellularComponent,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Description -> "The class of biomolecule whose purification is desired following lysis of the cell sample and any subsequent extraction operations. Options include CytosolicProtein, PlasmaMembraneProtein, NuclearProtein, SecretoryProtein, TotalProtein, RNA, GenomicDNA, PlasmidDNA, Organelle, Virus and Unspecified.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[CellularComponentP, Unspecified]],
         Category -> "General"
       },
@@ -45,10 +47,11 @@ DefineOptions[UploadLyseCellsMethod,
 
       {
         OptionName -> NumberOfLysisSteps,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[1, 2, 3]],
         Description -> "The number of times that the cell sample is subjected to a unique set of conditions for disruption of the cell membranes. These conditions include the LysisSolution, LysisSolutionVolume, MixType, MixRate, NumberOfMixes, MixVolume, MixTemperature, MixInstrument, LysisTime, LysisTemperature, and IncubationInstrument.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "General"
       },
 
@@ -56,15 +59,16 @@ DefineOptions[UploadLyseCellsMethod,
 
       {
         OptionName -> PreLysisPellet,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
         Description -> "Indicates if the cell sample is centrifuged to remove unwanted media prior to addition of LysisSolution.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Pelleting"
       },
       {
         OptionName -> PreLysisPelletingIntensity,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Alternatives[
           "Revolutions per Minute" -> Widget[
@@ -79,11 +83,12 @@ DefineOptions[UploadLyseCellsMethod,
           ]
         ],
         Description -> "The rotational speed or force applied to the cell sample to facilitate separation of the cells from the media.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Pelleting"
       },
       {
         OptionName -> PreLysisPelletingTime,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[
           Type -> Quantity,
@@ -91,6 +96,7 @@ DefineOptions[UploadLyseCellsMethod,
           Units -> {Minute, {Second, Minute, Hour}}
         ],
         Description -> "The duration for which the cell sample is centrifuged at PreLysisPelletingIntensity to facilitate separation of the cells from the media.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Pelleting"
       },
 
@@ -98,7 +104,7 @@ DefineOptions[UploadLyseCellsMethod,
 
       {
         OptionName -> LysisSolution,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[
           Type -> Object,
@@ -108,27 +114,30 @@ DefineOptions[UploadLyseCellsMethod,
           }
         ],
         Description -> "The solution employed for disruption of cell membranes, including enzymes, detergents, and chaotropics.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Lysis Solution Addition"
       },
       {
         OptionName -> MixType,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[Shake, Pipette, None]],
         Description -> "The manner in which the sample is mixed following combination of cell sample and LysisSolution.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Mixing"
       },
       {
         OptionName -> MixRate,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[Type -> Quantity, Pattern :> RangeP[0 RPM, $MaxMixRate], Units -> RPM],
         Description -> "The rate at which the sample is mixed by the selected MixType during the MixTime.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Mixing"
       },
       {
         OptionName -> MixTime,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[
           Type -> Quantity,
@@ -136,19 +145,21 @@ DefineOptions[UploadLyseCellsMethod,
           Units -> {Minute, {Second, Minute, Hour}}
         ],
         Description -> "The duration for which the sample is mixed by the selected MixType following combination of the cell sample and the LysisSolution.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Mixing"
       },
       {
         OptionName -> NumberOfMixes,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[Type -> Number, Pattern :> RangeP[1, $MaxNumberOfMixes, 1]],
         Description -> "The number of times that the sample is mixed by pipetting the MixVolume up and down following combination of the cell sample and the LysisSolution.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Mixing"
       },
       {
         OptionName -> MixTemperature,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Alternatives[
           "Temperature" -> Widget[
@@ -159,11 +170,12 @@ DefineOptions[UploadLyseCellsMethod,
           "Ambient" -> Widget[Type -> Enumeration, Pattern :> Alternatives[Ambient]]
         ],
         Description -> "The temperature at which the instrument heating or cooling the cell sample is maintained during the MixTime, which occurs immediately before the LysisTime.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Mixing"
       },
       {
         OptionName -> LysisTime,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[
           Type -> Quantity,
@@ -171,11 +183,12 @@ DefineOptions[UploadLyseCellsMethod,
           Units -> {Minute, {Second, Minute, Hour}}
         ],
         Description -> "The minimum duration for which the IncubationInstrument is maintained at the LysisTemperature to facilitate the disruption of cell membranes and release of cellular contents. The LysisTime occurs immediately after addition of LysisSolution and optional mixing.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Cell Lysis"
       },
       {
         OptionName -> LysisTemperature,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Alternatives[
           "Temperature" -> Widget[
@@ -186,6 +199,7 @@ DefineOptions[UploadLyseCellsMethod,
           "Ambient" -> Widget[Type -> Enumeration, Pattern :> Alternatives[Ambient]]
         ],
         Description -> "The temperature at which the IncubationInstrument is maintained during the LysisTime, following the mixing of the cell sample and LysisSolution.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Cell Lysis"
       },
 
@@ -193,7 +207,7 @@ DefineOptions[UploadLyseCellsMethod,
 
       {
         OptionName -> SecondaryLysisSolution,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[
           Type -> Object,
@@ -203,19 +217,21 @@ DefineOptions[UploadLyseCellsMethod,
           }
         ],
         Description -> "The solution employed for disruption of cell membranes, including enzymes, detergents, and chaotropics in an optional second lysis step.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Lysis Solution Addition"
       },
       {
         OptionName -> SecondaryMixType,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[Shake, Pipette, None]],
         Description -> "The manner in which the sample is mixed following combination of cell sample and SecondaryLysisSolution in an optional second lysis step.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Mixing"
       },
       {
         OptionName -> SecondaryMixRate,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[
           Type -> Quantity,
@@ -223,11 +239,12 @@ DefineOptions[UploadLyseCellsMethod,
           Units -> RPM
         ],
         Description -> "The rate at which the sample is mixed by the selected SecondaryMixType during the SecondaryMixTime in an optional second lysis step.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Mixing"
       },
       {
         OptionName -> SecondaryMixTime,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[
           Type -> Quantity,
@@ -235,19 +252,21 @@ DefineOptions[UploadLyseCellsMethod,
           Units -> {Minute, {Second, Minute, Hour}}
         ],
         Description -> "The duration for which the sample is mixed by the selected SecondaryMixType following combination of the cell sample and the SecondaryLysisSolution in an optional second lysis step.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Mixing"
       },
       {
         OptionName -> SecondaryNumberOfMixes,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[Type -> Number, Pattern :> RangeP[1, $MaxNumberOfMixes, 1]],
         Description -> "The number of times that the sample is mixed by pipetting the SecondaryMixVolume up and down following combination of the cell sample and the SecondaryLysisSolution in an optional second lysis step.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Mixing"
       },
       {
         OptionName -> SecondaryMixTemperature,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Alternatives[
           "Temperature" -> Widget[
@@ -258,11 +277,12 @@ DefineOptions[UploadLyseCellsMethod,
           "Ambient" -> Widget[Type -> Enumeration, Pattern :> Alternatives[Ambient]]
         ],
         Description -> "The temperature at which the instrument heating or cooling the cell sample is maintained during the SecondaryMixTime, which occurs immediately before the SecondaryLysisTime in an optional second lysis step.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Mixing"
       },
       {
         OptionName -> SecondaryLysisTime,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[
           Type -> Quantity,
@@ -270,11 +290,12 @@ DefineOptions[UploadLyseCellsMethod,
           Units -> {Minute, {Second, Minute, Hour}}
         ],
         Description -> "The minimum duration for which the SecondaryIncubationInstrument is maintained at the SecondaryLysisTemperature to facilitate the disruption of cell membranes and release of cellular contents in an optional second lysis step. The SecondaryLysisTime occurs immediately after addition of SecondaryLysisSolution and optional mixing.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Cell Lysis"
       },
       {
         OptionName -> SecondaryLysisTemperature,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Alternatives[
           "Temperature" -> Widget[
@@ -285,6 +306,7 @@ DefineOptions[UploadLyseCellsMethod,
           "Ambient" -> Widget[Type -> Enumeration, Pattern :> Alternatives[Ambient]]
         ],
         Description -> "The temperature at which the SecondaryIncubationInstrument is maintained during the SecondaryLysisTime, following the mixing of the cell sample and SecondaryLysisSolution in an optional second lysis step.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Cell Lysis"
       },
 
@@ -292,7 +314,7 @@ DefineOptions[UploadLyseCellsMethod,
 
       {
         OptionName -> TertiaryLysisSolution,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[
           Type -> Object,
@@ -302,27 +324,30 @@ DefineOptions[UploadLyseCellsMethod,
           }
         ],
         Description -> "The solution employed for disruption of cell membranes, including enzymes, detergents, and chaotropics in an optional third lysis step.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Lysis Solution Addition"
       },
       {
         OptionName -> TertiaryMixType,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[Shake, Pipette, None]],
         Description -> "The manner in which the sample is mixed following combination of cell sample and TertiaryLysisSolution in an optional third lysis step.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Mixing"
       },
       {
         OptionName -> TertiaryMixRate,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[Type -> Quantity, Pattern :> RangeP[0 RPM, $MaxMixRate], Units -> RPM],
         Description -> "The rate at which the sample is mixed by the selected TertiaryMixType during the TertiaryMixTime in an optional third lysis step.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Mixing"
       },
       {
         OptionName -> TertiaryMixTime,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[
           Type -> Quantity,
@@ -330,19 +355,21 @@ DefineOptions[UploadLyseCellsMethod,
           Units -> {Minute, {Second, Minute, Hour}}
         ],
         Description -> "The duration for which the sample is mixed by the selected TertiaryMixType following combination of the cell sample and the TertiaryLysisSolution in an optional third lysis step.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Mixing"
       },
       {
         OptionName -> TertiaryNumberOfMixes,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[Type -> Number, Pattern :> RangeP[1, $MaxNumberOfMixes, 1]],
         Description -> "The number of times that the sample is mixed by pipetting the TertiaryMixVolume up and down following combination of the cell sample and the TertiaryLysisSolution in an optional third lysis step.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Mixing"
       },
       {
         OptionName -> TertiaryMixTemperature,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Alternatives[
           "Temperature" -> Widget[
@@ -353,11 +380,12 @@ DefineOptions[UploadLyseCellsMethod,
           "Ambient" -> Widget[Type -> Enumeration, Pattern :> Alternatives[Ambient]]
         ],
         Description -> "The temperature at which the instrument heating or cooling the cell sample is maintained during the TertiaryMixTime, which occurs immediately before the TertiaryLysisTime in an optional third lysis step.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Mixing"
       },
       {
         OptionName -> TertiaryLysisTime,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[
           Type -> Quantity,
@@ -365,11 +393,12 @@ DefineOptions[UploadLyseCellsMethod,
           Units -> {Minute, {Second, Minute, Hour}}
         ],
         Description -> "The minimum duration for which the TertiaryIncubationInstrument is maintained at the TertiaryLysisTemperature to facilitate the disruption of cell membranes and release of cellular contents in an optional third lysis step. The TertiaryLysisTime occurs immediately after addition of TertiaryLysisSolution and optional mixing.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Cell Lysis"
       },
       {
         OptionName -> TertiaryLysisTemperature,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Alternatives[
           "Temperature" -> Widget[
@@ -380,6 +409,7 @@ DefineOptions[UploadLyseCellsMethod,
           "Ambient" -> Widget[Type -> Enumeration, Pattern :> Alternatives[Ambient]]
         ],
         Description -> "The temperature at which the TertiaryIncubationInstrument is maintained during the TertiaryLysisTime, following the mixing of the cell sample and TertiaryLysisSolution in an optional third lysis step.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Cell Lysis"
       },
 
@@ -387,15 +417,16 @@ DefineOptions[UploadLyseCellsMethod,
 
       {
         OptionName -> ClarifyLysate,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
         Description -> "Indicates if the lysate is centrifuged to remove cellular debris following incubation in the presence of LysisSolution.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Lysate Clarification"
       },
       {
         OptionName -> ClarifyLysateIntensity,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Alternatives[
           "Revolutions per Minute" -> Widget[
@@ -410,11 +441,12 @@ DefineOptions[UploadLyseCellsMethod,
           ]
         ],
         Description -> "The rotational speed or force applied to the lysate to facilitate separation of insoluble cellular debris from the lysate solution following incubation in the presence of LysisSolution.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Lysate Clarification"
       },
       {
         OptionName -> ClarifyLysateTime,
-        Default -> Null,
+        Default -> Automatic,
         AllowNull -> True,
         Widget -> Widget[
           Type -> Quantity,
@@ -422,6 +454,7 @@ DefineOptions[UploadLyseCellsMethod,
           Units -> {Minute, {Second, Minute, Hour}}
         ],
         Description -> "The duration for which the lysate is centrifuged at ClarifyLysateIntensity to facilitate separation of insoluble cellular debris from the lysate solution following incubation in the presence of LysisSolution.",
+        ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
         Category -> "Lysate Clarification"
       }
     ]
@@ -431,6 +464,6 @@ DefineOptions[UploadLyseCellsMethod,
   }
 ];
 
-InstallDefaultUploadFunction[UploadLyseCellsMethod, Object[Method, LyseCells]];
-InstallValidQFunction[UploadLyseCellsMethod, Object[Method, LyseCells]];
-InstallOptionsFunction[UploadLyseCellsMethod, Object[Method, LyseCells]];
+installDefaultUploadFunction[UploadLyseCellsMethod, Object[Method, LyseCells]];
+installDefaultValidQFunction[UploadLyseCellsMethod, Object[Method, LyseCells]];
+installDefaultOptionsFunction[UploadLyseCellsMethod, Object[Method, LyseCells]];

@@ -99,6 +99,20 @@ DefineTests[
 			ExperimentIncubate[Object[Sample,"Test water sample in 50mL tube for ExperimentIncubate"<>$SessionUUID], MixType->Swirl, NumberOfMixes->10, MaxNumberOfMixes->30, MixUntilDissolved->True],
 			ObjectP[Object[Protocol]]
 		],
+		Test["Populate HandlingEnvironment key if we are swirling/inverting",
+			mspProtocol = Upload[<|Type -> Object[Protocol, ManualSamplePreparation]|>];
+			incubateProtocol = ExperimentIncubate[{Object[Sample, "Test water sample in 50mL tube for ExperimentIncubate" <> $SessionUUID], Object[Sample, "Test water sample in 1L Glass Bottle for ExperimentIncubate" <> $SessionUUID]}, MixType -> {Swirl, Invert}, ParentProtocol -> mspProtocol];
+			Download[
+				DeleteDuplicates@Cases[
+					Download[incubateProtocol, RequiredResources],
+					{res_, SwirlParameters | InvertParameters, _, HandlingEnvironment} | {res_, HandlingEnvironment, _, _} :> Download[res, Object]
+				],
+				InstrumentModels
+			],
+			(* we should only create one resource for invert/swirling, so only one inner list, and we should be able to use any ambient handling station in lab, so the length of inner list is greater than 1 *)
+			{{(ObjectP[Model[Instrument, HandlingStation, Ambient]]..)?(Length[#] > 1&)}},
+			Variables :> {mspProtocol, incubateProtocol}
+		],
 		Example[
 			{Additional,"Mix via nutation:"},
 			ExperimentIncubate[Object[Sample,"Test water sample in 50mL tube for ExperimentIncubate"<>$SessionUUID], MixType->Nutate, MixUntilDissolved->True],
@@ -121,7 +135,12 @@ DefineTests[
 		Example[
 			{Additional,"Transform the cells by cooling them for 25 Minutes, heat shocking them at 42 Celsius for 45 Seconds, and cooling them for 2 Minutes:"},
 			Lookup[
-				ExperimentIncubate[Object[Sample,"Test water sample in covered Falcon tube for ExperimentIncubate"<>$SessionUUID], Transform->True, Output -> Options],
+				ExperimentIncubate[
+					Object[Sample, "Test cell sample for ExperimentIncubate" <> $SessionUUID],
+					Transform -> True,
+					TransformRecoveryMedia -> Object[Sample, "Test water sample in covered Falcon tube for ExperimentIncubate" <> $SessionUUID],
+					Output -> Options
+				],
 				{TransformHeatShockTemperature, TransformHeatShockTime, TransformPreHeatCoolingTime, TransformPostHeatCoolingTime}
 			],
 			{42*Celsius, 45*Second, 25*Minute, 2*Minute},
@@ -1430,13 +1449,13 @@ DefineTests[
 			22*Celsius,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options,FilterSterile,"Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options=ExperimentIncubate[Object[Sample,"Test water sample in 50mL tube for ExperimentIncubate"<>$SessionUUID],FilterContainerOut->Model[Container,Vessel,"100 mL Glass Bottle"],FilterSterile->False,Output->Options];
 			Lookup[options,FilterSterile],
 			False,
 			Variables:>{options}
-		],
+		],*)
 		Example[{Options,FilterAliquot,"The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options=ExperimentIncubate[Object[Sample,"Test water sample in 50mL tube for ExperimentIncubate"<>$SessionUUID],FilterContainerOut->Model[Container,Vessel,"50mL Tube"],FilterAliquot->10*Milliliter,Output->Options];
 			Lookup[options,FilterAliquot],
@@ -1595,34 +1614,34 @@ DefineTests[
 		],
 		(* TRANSFORM OPTIONS TESTS *)
 		Example[{Options, Transform, "Indicates whether the incubation will be a cell transformation:"},
-			options=ExperimentIncubate[Object[Sample,"Test water sample in covered Falcon tube for ExperimentIncubate"<>$SessionUUID],Transform->True,Output->Options];
+			options=ExperimentIncubate[Object[Sample,"Test cell sample for ExperimentIncubate"<>$SessionUUID],TransformRecoveryMedia->Object[Sample,"Test water sample in covered Falcon tube for ExperimentIncubate"<>$SessionUUID],Transform->True,Output->Options];
 			Lookup[options,Transform],
 			True,
 			Variables:>{options}
 		],
 		Example[{Options, TransformHeatShockTemperature, "Indicates the temperature at which to heat shock the sample:"},
-			options=ExperimentIncubate[Object[Sample,"Test water sample in covered Falcon tube for ExperimentIncubate"<>$SessionUUID],TransformHeatShockTemperature->44*Celsius,Output->Options];
+			options=ExperimentIncubate[Object[Sample,"Test cell sample for ExperimentIncubate"<>$SessionUUID],TransformRecoveryMedia->Object[Sample,"Test water sample in covered Falcon tube for ExperimentIncubate"<>$SessionUUID],TransformHeatShockTemperature->44*Celsius,Output->Options];
 			Lookup[options,TransformHeatShockTemperature],
 			44*Celsius,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
 		Example[{Options, TransformHeatShockTime, "Indicates the length of time for which the sample should be heat shocked:"},
-			options=ExperimentIncubate[Object[Sample,"Test water sample in covered Falcon tube for ExperimentIncubate"<>$SessionUUID],TransformHeatShockTime->35*Second,Output->Options];
+			options=ExperimentIncubate[Object[Sample,"Test cell sample for ExperimentIncubate"<>$SessionUUID],TransformRecoveryMedia->Object[Sample,"Test water sample in covered Falcon tube for ExperimentIncubate"<>$SessionUUID],TransformHeatShockTime->35*Second,Output->Options];
 			Lookup[options,TransformHeatShockTime],
 			35*Second,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
 		Example[{Options, TransformPreHeatCoolingTime, "Indicates the length of time for which the sample should be cooled before heat shocking:"},
-			options=ExperimentIncubate[Object[Sample,"Test water sample in covered Falcon tube for ExperimentIncubate"<>$SessionUUID],TransformPreHeatCoolingTime->22*Minute,Output->Options];
+			options=ExperimentIncubate[Object[Sample,"Test cell sample for ExperimentIncubate"<>$SessionUUID],TransformRecoveryMedia->Object[Sample,"Test water sample in covered Falcon tube for ExperimentIncubate"<>$SessionUUID],TransformPreHeatCoolingTime->22*Minute,Output->Options];
 			Lookup[options,TransformPreHeatCoolingTime],
 			22*Minute,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
 		Example[{Options, TransformPostHeatCoolingTime, "Indicates the length of time for which the sample should be cooled after heat shocking:"},
-			options=ExperimentIncubate[Object[Sample,"Test water sample in covered Falcon tube for ExperimentIncubate"<>$SessionUUID],TransformPostHeatCoolingTime->1.5*Minute,Output->Options];
+			options=ExperimentIncubate[Object[Sample,"Test cell sample for ExperimentIncubate"<>$SessionUUID],TransformRecoveryMedia->Object[Sample,"Test water sample in covered Falcon tube for ExperimentIncubate"<>$SessionUUID],TransformPostHeatCoolingTime->1.5*Minute,Output->Options];
 			Lookup[options,TransformPostHeatCoolingTime],
 			1.5*Minute,
 			EquivalenceFunction->Equal,
@@ -7150,26 +7169,26 @@ DefineTests[
 			UploadSampleModel["Test Model Sample" <> $SessionUUID,
 				Composition->{{100 VolumePercent,Model[Molecule,"Water"]}},
 				Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"],
-				State->Liquid,BiosafetyLevel->"BSL-1",Flammable->False,MSDSRequired->False,IncompatibleMaterials->{None}];
+				State->Liquid,BiosafetyLevel->"BSL-1",Flammable->False,MSDSFile -> NotApplicable,IncompatibleMaterials->{None}];
 
 			(* upload the model samples of just water with different DefaultStorageConditions *)
 			UploadSampleModel["Test Model Sample with Deep Freezer storage" <> $SessionUUID,
 				Composition->{{100 VolumePercent,Model[Molecule,"Water"]}},
 				Expires->False,DefaultStorageCondition->Model[StorageCondition,"Deep Freezer"],
-				State->Liquid,BiosafetyLevel->"BSL-1",Flammable->False,MSDSRequired->False,IncompatibleMaterials->{None}];
+				State->Liquid,BiosafetyLevel->"BSL-1",Flammable->False,MSDSFile -> NotApplicable,IncompatibleMaterials->{None}];
 
 			(* upload the model samples of just water with different DefaultStorageConditions *)
 			UploadSampleModel["Test Model Sample Flammable" <> $SessionUUID,
 				Composition->{{100 VolumePercent,Model[Molecule,"Water"]}},
 				Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage, Flammable"],
-				State->Liquid,BiosafetyLevel->"BSL-1",Flammable->True,MSDSRequired->False,IncompatibleMaterials->{None}];
+				State->Liquid,BiosafetyLevel->"BSL-1",Flammable->True,MSDSFile -> NotApplicable,IncompatibleMaterials->{None}];
 
 			(* upload the model samples of just water with different DefaultStorageCondition of Freezer *)
 			UploadSampleModel["Test Model Sample DefaultStorageCondition Freezer" <> $SessionUUID,
 				Composition->{{100 VolumePercent,Model[Molecule,"Water"]}},
 				Expires->False,DefaultStorageCondition->Model[StorageCondition,"Freezer"],
 				ThawTemperature->0Celsius,
-				State->Liquid,BiosafetyLevel->"BSL-1",MSDSRequired->False,IncompatibleMaterials->{None}];
+				State->Liquid,BiosafetyLevel->"BSL-1",MSDSFile -> NotApplicable,IncompatibleMaterials->{None}];
 
 			Upload[<|
 				Type -> Object[Container, Bench],

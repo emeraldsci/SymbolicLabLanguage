@@ -102,6 +102,13 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Description -> "Indicates that RNase free technique was followed when performing the transfer (spraying RNase away on surfaces/containers, using RNaseFree tips, and using sterile instruments/transfer environments).",
 			Category -> "Transfer Technique"
 		},
+		CountAsPassages->{
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if cell models found in the Composition of the destination samples are recorded to have an increase of 1 in passage number in CellPassageLog. CountAsPassage flag should only be set to True when the transfer is used to inoculate a cell sample for initiating a subculture.",
+			Category -> "General"
+		},
 		Balances->{
 			Format -> Multiple,
 			Class -> Link,
@@ -568,7 +575,20 @@ DefineObjectType[Object[Protocol, Transfer], {
 				Object[Part, Funnel]
 			],
 			Description -> "The funnel that is used to guide the source sample into the intermediate container when pouring.",
-			Category->"Instrument Specifications"
+			Category->"Intermediate Decanting"
+		},
+
+		WasteContainer->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[
+				Model[Container,Vessel],
+				Object[Container,Vessel]
+			],
+			Description->"The container used to temporarily hold any leftover samples removed from the intermediate containers and graduated cylinders. The sample in this vessel will be discarded at the end of the protocol.",
+			Category->"Intermediate Decanting",
+			Developer -> True
 		},
 
 		SourceTemperatures->{
@@ -1228,7 +1248,6 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Category->"Pipetting Parameters"
 		},
 
-		(* NOTE: These are all resource picked at once so that we can minimize trips to the VLM. DO NOT COPY THIS. *)
 		RequiredObjects -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -1358,14 +1377,14 @@ DefineObjectType[Object[Protocol, Transfer], {
 				OperatorMaterialLossAssessment -> None,
 				MeasuredTransferWeightAppearance -> Object[Data, Appearance],
 				MaterialLossAutoDetected -> None,
-				MaterialLossWeight -> Milligram,
+				MaterialLossWeight -> None,
 				MaterialLossWeightAppearance -> Object[Data, Appearance],
 				Sample -> Alternatives[
 					Object[Sample],
 					Object[Container]
 				],
 				UnitOperation -> Object[UnitOperation],
-				Operator -> Object[User,Emerald,Operator]
+				Operator -> Object[User,Emerald]
 			},
 			Description -> "The information regarding stray material during a weighing instance. OperatorMaterialLossAssessment indicates the response of the operator as to whether stray material is after weighing. MeasuredTransferWeightAppearance is the image immediately taken after the weighing step. MaterialLossAutoDetected indicates whether a material loss is detected based on relevant weight data tracked. MaterialLossWeight is the weight that is not effectively transferred to the weighing container. MeasuredTransferWeightAppearance is the image immediately taken after material loss is autodetected. UnitOperation is the unit operation the log is associated with. Sample is the material ends up in the destination container. UnitOperation is the object pertaining to the transfer by weighing that is performed. Operator is the lab operator who performed the weighing.",
 			Category -> "General"

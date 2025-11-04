@@ -1725,7 +1725,7 @@ resolveExperimentUVMeltingOptions[myPooledSamples:ListableP[{ObjectP[Object[Samp
 						Null,
 						If[MatchQ[targetContainer,ObjectP[Model[Container]]],
 							targetContainer,
-							fastAsscLookup[fastAssoc,targetContainer,Model]
+							fastAssocLookup[fastAssoc,targetContainer,Model]
 						]
 					];
 

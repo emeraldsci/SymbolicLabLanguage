@@ -11683,10 +11683,10 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 	pHCalibrationStorageBufferSyringeResource = Resource[Sample -> relevantSyringe];
 
 	(* make needle resources for the pH detector calibrations *)
-	lowpHBufferNeedle = Resource[Sample -> Model[Item, Needle, "21g x 1 Inch Single-Use Needle"]];
-	highpHBufferNeedle = Resource[Sample -> Model[Item, Needle, "21g x 1 Inch Single-Use Needle"]];
-	calibrationWashSolutionNeedle = Resource[Sample -> Model[Item, Needle, "21g x 1 Inch Single-Use Needle"]];
-	pHCalibrationStorageBufferSyringeNeedleResource = Resource[Sample -> Model[Item, Needle, "21g x 1 Inch Single-Use Needle"]];
+	lowpHBufferNeedle = Resource[Sample -> Model[Item, Needle, "14Ga x 4In Disposable Blunt Tip Lure Lock Dispensing Needle"]];
+	highpHBufferNeedle = Resource[Sample -> Model[Item, Needle, "14Ga x 4In Disposable Blunt Tip Lure Lock Dispensing Needle"]];
+	calibrationWashSolutionNeedle = Resource[Sample -> Model[Item, Needle, "14Ga x 4In Disposable Blunt Tip Lure Lock Dispensing Needle"]];
+	pHCalibrationStorageBufferSyringeNeedleResource = Resource[Sample -> Model[Item, Needle, "14Ga x 4In Disposable Blunt Tip Lure Lock Dispensing Needle"]];
 
 
 	(* --- Generate the protocol packet --- *)

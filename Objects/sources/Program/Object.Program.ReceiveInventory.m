@@ -286,6 +286,82 @@ DefineObjectType[Object[Program, ReceiveInventory], {
 			Description -> "Small plastic bags used to hold printed stickers for items that need to be stickered inside a biosafety cabinet, until the stickers are applied.",
 			Category -> "Inventory",
 			Developer -> True
+		},
+		Certificate -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Report, Certificate, Analysis],
+			Description -> "The quality assurance documentation and data for the samples grouped in this program.",
+			Category -> "Quality Assurance"
+		},
+		BarcodeTiming -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> BarcodeTimingP,
+			Description -> "Indicates the timing when SLL object stickers will be placed onto the item. Delayed indicates a standalone BarcodeInventory maintenance will be created to perform the stickering. Instant indicates stickers will be printed and affixed within the ReceiveInventory maintenance. None indicates the stickers will not be printed at all. This does not affect stickers of the inventory bag.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		BarcodingItems -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Object[Instrument],
+				Object[Part],
+				Object[Item],
+				Object[Plumbing],
+				Object[Wiring],
+				Object[Sensor]
+			],
+			Description -> "Indicates the items whose SLL object stickers will be printed and affixed within the ReceiveInventory maintenance.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		DeferredBarcodeItems -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Object[Instrument],
+				Object[Part],
+				Object[Item],
+				Object[Plumbing],
+				Object[Wiring],
+				Object[Sensor]
+			],
+			Description -> "Indicates the items whose SLL object stickers will be printed and affixed in a separate BarcodeInventory maintenance.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		StorageCondition -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[StorageCondition],
+			Description -> "If items need to be labeled or qualified after receiving, indicate the storage condition of all items in this program while they are in the waiting area.",
+			Category -> "Inventory"
+		},
+		CollectionBin -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Container, Rack], Object[Container, Rack]],
+			Description -> "The collection bins to hold the items for receiving, that will later be sent for labeling and/or qualification after this receiving is complete.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		Destination -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Container], Object[Instrument]],
+			Description -> "Indicate where the incoming items, together with their CollectionBin will be temporarily segregated for SLL object sticker labeling and/or for qualifications.",
+			Category -> "Inventory",
+			Developer -> True
 		}
 	}
 }];

@@ -157,7 +157,7 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 			Class->Link,
 			Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
 			Relation->Object[Sample]|Model[Sample],
-			Description->"The low pH reference buffer (pH 4) used to calibrate the pH instruments.",
+			Description->"The low pH reference buffer used to calibrate the pH instruments.",
 			Category->"General"
 		},
 		MediumCalibrationBuffer->{
@@ -165,7 +165,7 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 			Class->Link,
 			Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
 			Relation->Object[Sample]|Model[Sample],
-			Description->"The medium pH reference buffer (pH 7) used to calibrate the pH instruments.",
+			Description->"The medium pH reference buffer used to calibrate the pH instruments.",
 			Category->"General"
 		},
 		HighCalibrationBuffer->{
@@ -173,7 +173,7 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 			Class->Link,
 			Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
 			Relation->Object[Sample]|Model[Sample],
-			Description->"The high pH reference buffer (pH 10) used to calibrate the pH instruments.",
+			Description->"The high pH reference buffer used to calibrate the pH instruments.",
 			Category->"General"
 		},
 		LowCalibrationWashSolution->{
@@ -182,7 +182,7 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 			Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
 			Relation->Object[Sample]|Model[Sample],
 			Developer->True,
-			Description->"The low pH reference buffer (pH 4) used to wash the probe before calibrating the pH instruments.",
+			Description->"The low pH reference buffer used to wash the probe before calibrating the pH instruments.",
 			Category->"General"
 		},
 		MediumCalibrationWashSolution->{
@@ -191,7 +191,7 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 			Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
 			Relation->Object[Sample]|Model[Sample],
 			Developer->True,
-			Description->"The medium pH reference buffer (pH 7) used to wash the probe before calibrating the pH instruments.",
+			Description->"The medium pH reference buffer used to wash the probe before calibrating the pH instruments.",
 			Category->"General"
 		},
 		HighCalibrationWashSolution->{
@@ -200,7 +200,7 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 			Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
 			Relation->Object[Sample]|Model[Sample],
 			Developer->True,
-			Description->"The high pH reference buffer (pH 10) used to wash the probe before calibrating the pH instruments.",
+			Description->"The high pH reference buffer used to wash the probe before calibrating the pH instruments.",
 			Category->"General"
 		},
 		PostStorageWashSolution->{
@@ -1013,6 +1013,89 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 			Relation->Object[Sample]|Model[Sample],
 			Description->"The samples that are used to perform the first washing of the probe.",
 			Category->"Cleaning"
+		},
+		CalibrationBufferSetName -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Developer-> True,
+			Description -> "The name of the calibration buffer set to use on the seven excellence pH meter.",
+			Category -> "General"
+		},
+		CalibrationMethodName -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Developer-> True,
+			Description -> "The name of the calibration method to use on the seven excellence pH meter.",
+			Category -> "General"
+		},
+		CalibrationMethod -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Method, pHCalibration],
+			Description -> "The pH calibration method (including calibration buffer set name, method file and pHs) used to perform calibration on seven excellence pH meter.",
+			Category -> "General"
+		},
+		LowCalibrationBufferpH -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> RangeP[0,14],
+			Description -> "The pH of the low calibration buffer that should be used to calibrate the pH probe.",
+			Category -> "General"
+		},
+		MediumCalibrationBufferpH -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> RangeP[0,14],
+			Description -> "The pH of the medium calibration buffer that should be used to calibrate the pH probe.",
+			Category -> "General"
+		},
+		HighCalibrationBufferpH -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> RangeP[0,14],
+			Description -> "The pH of the high calibration buffer that should be used to calibrate the pH probe.",
+			Category -> "General"
+		},
+		CalibrationBufferRack -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Container, Rack], Model[Container, Rack]],
+			Description -> "The rack used to hold calibration buffer sachet for pH probe calibration.",
+			Category -> "General",
+			Developer->True
+		},
+		CalibrationWashSolutionRack -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Container, Rack], Model[Container, Rack]],
+			Description -> "The rack used to hold calibration wash solution sachet for pH probe calibration.",
+			Category -> "General",
+			Developer->True
+		},
+		CalibrationBufferPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container]|Object[Container]|Object[Sample]|Model[Sample], Model[Container, Rack]|Object[Container, Rack], Null},
+			Description -> "A list of placements used to hold calibration buffer sachet for pH probe calibration.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Placements",
+			Developer -> True
+		},
+		CalibrationWashSolutionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container]|Object[Container]|Object[Sample]|Model[Sample], Model[Container, Rack]|Object[Container, Rack], Null},
+			Description -> "A list of placements used to hold calibration wash solution sachet for pH probe calibration.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Placements",
+			Developer -> True
 		}
 	}
 }];

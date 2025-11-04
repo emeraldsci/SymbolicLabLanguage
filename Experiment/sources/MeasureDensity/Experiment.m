@@ -176,7 +176,9 @@ DefineOptions[ExperimentMeasureDensity,
 					Type -> Enumeration,
 					Pattern :> BooleanP
 				]
-			}
+			},
+			WeightStabilityDurationOption,
+			MaxWeightVariationOption
 		],
 		ModelInputOptions,
 		NonBiologyFuntopiaSharedOptions,
@@ -441,7 +443,8 @@ ExperimentMeasureDensity[myInputs:{ObjectP[{Object[Sample],Model[Sample]}]..},my
 	};
 
 	(* get any specified balance models *)
-	specifiedBalanceModels = DeleteDuplicates[Cases[expandedSafeOps, ObjectReferenceP[Model[Instrument, Balance]], Infinity]];
+	(* include Model[Instrument,Balance,"id:54n6evKx08XN"] since this the resolution default *)
+	specifiedBalanceModels = DeleteDuplicates[Flatten[{Cases[expandedSafeOps, ObjectReferenceP[Model[Instrument, Balance]], Infinity], Model[Instrument,Balance,"id:54n6evKx08XN"]}]];
 	specifiedBalanceObjs = DeleteDuplicates[Cases[expandedSafeOps, ObjectReferenceP[Object[Instrument, Balance]], Infinity]];
 
 	(* Download all the needed things *)
@@ -454,10 +457,10 @@ ExperimentMeasureDensity[myInputs:{ObjectP[{Object[Sample],Model[Sample]}]..},my
 			},
 			{
 				allSamplePackets,
-				{Packet[Mode]},
+				{Packet[Mode, AllowedMaxVariation]},
 				{
 					Packet[Model],
-					Packet[Model[Mode]]
+					Packet[Model[Mode, AllowedMaxVariation]]
 				}
 			},
 			Cache->cacheOption,
@@ -605,7 +608,7 @@ resolveMeasureDensityOptions[mySamples:ListableP[PacketP[{Object[Sample]}]],myUn
 		resolvedPostProcessingOptions,requiredAliquotAmounts,densityMeterModel,fastAssoc,compatibleMaterialsInvalidInputs,
 		compatibleMaterialsBool,compatibleMaterialsTests,viscosityCorrections,measurementMethods,measurementTemperatures,instruments,
 		firstWashSolutions,secondaryWashSolutions,tertiaryWashSolutions,washCycles,washVolumes,airWaterChecks,invalidAirWaterCheckErrors,
-		invalidAirWaterCheckOptions,invalidAirWaterCheckTests
+		invalidAirWaterCheckOptions,invalidAirWaterCheckTests,weightStabilityDurations,maxWeightVariations
 	},
 
 	(* Determine the requested output format of this function. *)
@@ -956,7 +959,9 @@ resolveMeasureDensityOptions[mySamples:ListableP[PacketP[{Object[Sample]}]],myUn
 		washVolumes,
 		measurementVolumes,
 		invalidAirWaterCheckErrors,
-		airWaterChecks
+		airWaterChecks,
+		weightStabilityDurations,
+		maxWeightVariations
 	}=Transpose[
 		MapThread[
 			Function[{mySample,myMapThreadOptions},
@@ -964,7 +969,7 @@ resolveMeasureDensityOptions[mySamples:ListableP[PacketP[{Object[Sample]}]],myUn
 					invalidTemperatureError,incompatibleInstrumentError,incompatibleVolumeError,unResolvedMeasurementVolume,sampleVol,numberOfReplicates,methodVentilatedError,instrumentVentilatedError,
 					viscosityCorrection,unResolvedMethod,resolvedMethod, microBalanceSpecifiedQ, measurementTemperature,
 					unResolvedInstrument,resolvedInstrument,firstWashSolution,secondaryWashSolution, tertiaryWashSolution,
-					washCycle,washVolume, invalidAirWaterCheckError, airWaterCheck},
+					washCycle,washVolume, invalidAirWaterCheckError, airWaterCheck, weightStabilityDuration, maxWeightVariation},
 
 					(* Setup our error tracking variables *)
 					(* Set to a constant array of False to conserve functionality between resolvers in case options and errors expand here *)
@@ -1182,6 +1187,24 @@ resolveMeasureDensityOptions[mySamples:ListableP[PacketP[{Object[Sample]}]],myUn
 						MatchQ[Lookup[myMapThreadOptions,AirWaterCheck],Automatic]&&MatchQ[resolvedMethod,FixedVolumeWeight],Null
 					];
 
+					(* resolve max variation and weight stability duration *)
+					weightStabilityDuration = Which[
+						MatchQ[Lookup[myMapThreadOptions, WeightStabilityDuration], Except[Automatic]],
+							Lookup[myMapThreadOptions, WeightStabilityDuration],
+						MatchQ[resolvedInstrument, ObjectP[{Object[Instrument, Balance], Model[Instrument, Balance]}]],
+							10 Second,
+						True,
+							Null
+					];
+					maxWeightVariation = Which[
+						MatchQ[Lookup[myMapThreadOptions, MaxWeightVariation], Except[Automatic]],
+							Lookup[myMapThreadOptions, MaxWeightVariation],
+						MatchQ[resolvedInstrument, ObjectP[{Object[Instrument, Balance], Model[Instrument, Balance]}]],
+							If[MatchQ[resolvedInstrument, ObjectP[Object[Instrument, Balance]]], 5 * fastAssocLookup[fastAssoc, resolvedInstrument, {Model, AllowedMaxVariation}], 5 * fastAssocLookup[fastAssoc, resolvedInstrument, AllowedMaxVariation]],
+						True,
+							Null
+					];
+
 					(* Resolve recoupSample *)
 					recoupSample=Which[
 						(*If the user specified recoup sample, use whatever they picked*)
@@ -1265,7 +1288,9 @@ resolveMeasureDensityOptions[mySamples:ListableP[PacketP[{Object[Sample]}]],myUn
 						washVolume,
 						measurementVolume,
 						invalidAirWaterCheckError,
-						airWaterCheck
+						airWaterCheck,
+						weightStabilityDuration,
+						maxWeightVariation
 					}
 				]
 			],
@@ -1950,7 +1975,9 @@ resolveMeasureDensityOptions[mySamples:ListableP[PacketP[{Object[Sample]}]],myUn
 				TertiaryWashSolution->tertiaryWashSolutions,
 				WashCycles->washCycles,
 				WashVolume->washVolumes,
-				AirWaterCheck -> airWaterChecks
+				AirWaterCheck -> airWaterChecks,
+				WeightStabilityDuration -> weightStabilityDurations,
+				MaxWeightVariation -> maxWeightVariations
 			},
 			resolvedAliquotOptions,
 			{
@@ -2093,11 +2120,11 @@ measureDensityResourcePackets[mySamples:{PacketP[Object[Sample]]..},myResolvedOp
 	(*First get all the index-matched options in order*)
 	densityMeterSampleOptionsNoKeys=If[MatchQ[densityMeterSamplePositions,{}],
 		(*To preserve threading capability, give a list of empty lists matching the number of options if no density meter samples are present*)
-		Repeat[{},12],
+		Repeat[{},14],
 		Partition[Flatten[
 			Map[
 				Function[{optionValues}, Extract[optionValues, densityMeterSamplePositions]],
-				Lookup[myResolvedOptions, {Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck}]
+				Lookup[myResolvedOptions, {Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck,WeightStabilityDuration,MaxWeightVariation}]
 			]],
 			Length[densityMeterSamplePositions]
 		]
@@ -2105,11 +2132,11 @@ measureDensityResourcePackets[mySamples:{PacketP[Object[Sample]]..},myResolvedOp
 	(*Now recombine with the keys to form the correct list of options*)
 	densityMeterSampleOptions=If[MatchQ[densityMeterSamplePositions,{}],
 		(*To preserve threading capability, give a list of empty lists matching the number of options if no density meter samples are present*)
-		Repeat[{},12],
+		Repeat[{},14],
 		MapThread[
 			Rule[#1,#2]&,
 			{
-				{Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck},
+				{Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck,WeightStabilityDuration,MaxWeightVariation},
 				densityMeterSampleOptionsNoKeys
 			}
 		]
@@ -2119,11 +2146,11 @@ measureDensityResourcePackets[mySamples:{PacketP[Object[Sample]]..},myResolvedOp
 	(*First get all the index-matched options in order*)
 	fixedVolWeightSampleOptionsNoKeys=If[MatchQ[fixedVolWeightSamplePositions,{}],
 		(*To preserve threading capability, give a list of empty lists matching the number of options if no FVW samples are present*)
-		Repeat[{},12],
+		Repeat[{},14],
 		Partition[Flatten[
 			Map[
 				Function[{optionValues}, Extract[optionValues, fixedVolWeightSamplePositions]],
-				Lookup[myResolvedOptions, {Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck}]
+				Lookup[myResolvedOptions, {Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck,WeightStabilityDuration,MaxWeightVariation}]
 			]],
 			Length[fixedVolWeightSamplePositions]
 		]
@@ -2131,11 +2158,11 @@ measureDensityResourcePackets[mySamples:{PacketP[Object[Sample]]..},myResolvedOp
 	(*Now recombine with the keys to form the correct list of options*)
 	fixedVolWeightSampleOptions=If[MatchQ[fixedVolWeightSamplePositions,{}],
 		(*To preserve threading capability, give a list of empty lists matching the number of options if no FVW samples are present*)
-		Repeat[{},12],
+		Repeat[{},14],
 		MapThread[
 			Rule[#1,#2]&,
 			{
-				{Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck},
+				{Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck,WeightStabilityDuration,MaxWeightVariation},
 				fixedVolWeightSampleOptionsNoKeys
 			}
 		]
@@ -2147,7 +2174,7 @@ measureDensityResourcePackets[mySamples:{PacketP[Object[Sample]]..},myResolvedOp
 	batchedSampleOptions= MapThread[
 		Rule[#1,#2]&,
 		{
-			{Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck},
+			{Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck,WeightStabilityDuration,MaxWeightVariation},
 			Join@@@Transpose[{densityMeterSampleOptionsNoKeys,fixedVolWeightSampleOptionsNoKeys}]
 		}
 	];
@@ -2206,8 +2233,8 @@ measureDensityResourcePackets[mySamples:{PacketP[Object[Sample]]..},myResolvedOp
 				]
 		]&,
 		{
-			{Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck},
-			Lookup[myResolvedOptions, {Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck}]
+			{Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck,WeightStabilityDuration,MaxWeightVariation},
+			Lookup[myResolvedOptions, {Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck,WeightStabilityDuration,MaxWeightVariation}]
 		}
 	];
 
@@ -2227,8 +2254,8 @@ measureDensityResourcePackets[mySamples:{PacketP[Object[Sample]]..},myResolvedOp
 				]
 			]&,
 			{
-				{Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck},
-				Lookup[densityMeterSampleOptions, {Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck}]
+				{Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck,WeightStabilityDuration,MaxWeightVariation},
+				Lookup[densityMeterSampleOptions, {Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck,WeightStabilityDuration,MaxWeightVariation}]
 			}
 		]
 	];
@@ -2245,8 +2272,8 @@ measureDensityResourcePackets[mySamples:{PacketP[Object[Sample]]..},myResolvedOp
 				]
 			]&,
 			{
-				{Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck},
-				Lookup[fixedVolWeightSampleOptions, {Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck}]
+				{Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck,WeightStabilityDuration,MaxWeightVariation},
+				Lookup[fixedVolWeightSampleOptions, {Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck,WeightStabilityDuration,MaxWeightVariation}]
 			}
 		]
 	];
@@ -2261,16 +2288,16 @@ measureDensityResourcePackets[mySamples:{PacketP[Object[Sample]]..},myResolvedOp
 			]
 		]&,
 		{
-			{Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck},
-			Lookup[batchedSampleOptions, {Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck}]
+			{Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck,WeightStabilityDuration,MaxWeightVariation},
+			Lookup[batchedSampleOptions, {Method,Volume,RecoupSample,Temperature,ViscosityCorrection,WashSolution,SecondaryWashSolution,TertiaryWashSolution,WashCycles,WashVolume,Instrument,AirWaterCheck,WeightStabilityDuration,MaxWeightVariation}]
 		}
 	];
 	samplesInObjects= Download[mySamples,Object];
 	containersInObjects = DeleteDuplicates@Download[Lookup[mySamples,Container],Object];
 
 	resolvedInstrument=DeleteDuplicates[Lookup[myExpandedBatchedSampleOptions,Instrument]];
-	resolvedBalance=Cases[resolvedInstrument,ObjectP[{Object[Instrument,Balance],Model[Instrument,Balance]}]];
-	resolvedDensityMeter=Cases[resolvedInstrument,ObjectP[{Object[Instrument,DensityMeter],Model[Instrument,DensityMeter]}]];
+	resolvedBalance = Download[Cases[resolvedInstrument, ObjectP[{Object[Instrument, Balance], Model[Instrument, Balance]}]], Object];
+	resolvedDensityMeter = Download[Cases[resolvedInstrument, ObjectP[{Object[Instrument, DensityMeter], Model[Instrument, DensityMeter]}]], Object];
 
 	samplesInResources=Map[
 		Link[Resource[Sample->#, Name->ToString[Unique[]]],Protocols]&,
@@ -2311,9 +2338,9 @@ measureDensityResourcePackets[mySamples:{PacketP[Object[Sample]]..},myResolvedOp
 	(*Sample syringe needles*)
 	(*currently reusuable stainless steel needles, could change to disposable ones in the future if washing ends up being time-intensive*)
 	(*TODO:Possibly change to different longer needles using similar logic to pipette tip picking to see if they reach container bottoms if we encounter any very large containers (> 6-8" deep with narrow apertures*)
-	densityMeterSampleNeedles=PadRight[
+	densityMeterSampleNeedles = PadRight[
 		Table[
-			Link[Resource[Sample->Model[Item, Needle, "id:L8kPEjNLDD1A"],Name->ToString[Unique[]],Rent->True]],
+			Link[Resource[Sample -> Model[Item, Needle, "id:Y0lXejrKm0Po"], Name -> ToString[Unique[]]]],(*"14Ga x 10.7In Disposable Blunt Tip Lure Lock Dispensing Needle"*)
 			(*Need only one needle per sample measured with the density meter, so look at how many samples are being measured with the densitymeter method*)
 			Length[myExpandedDensityMeterSamples]
 		],
@@ -2826,6 +2853,10 @@ measureDensityResourcePackets[mySamples:{PacketP[Object[Sample]]..},myResolvedOp
 		Replace[Pipettes]->DeleteDuplicates[resolvedPipettes]/.pipetteResources,
 		Replace[AirWaterChecks]->Lookup[myExpandedOptions,AirWaterCheck],
 		Replace[BatchedAirWaterChecks]->Lookup[myExpandedBatchedSampleOptions,AirWaterCheck],
+		Replace[WeightStabilityDurations]->Lookup[myExpandedOptions,WeightStabilityDuration],
+		Replace[BatchedWeightStabilityDurations]->Lookup[myExpandedBatchedSampleOptions,WeightStabilityDuration],
+		Replace[MaxWeightVariations]->Lookup[myExpandedOptions,MaxWeightVariation],
+		Replace[BatchedMaxWeightVariations]->Lookup[myExpandedBatchedSampleOptions,MaxWeightVariation],
 		AirWaterCheckSolution -> airWaterCheckSolution, (*prewash and air water check are both water*)
 		PreWashSolution -> preWashSolution,
 		SecondaryPreWashSolution -> secondaryPreWashSolution,
@@ -2833,12 +2864,21 @@ measureDensityResourcePackets[mySamples:{PacketP[Object[Sample]]..},myResolvedOp
 		Balance->
 			If[MatchQ[myExpandedFVWSamples,{}],
 				Null,
-				Link[Resource[(Instrument->DeleteDuplicates[resolvedBalance]/.{obj:ObjectP[Object[Instrument]]}:>obj),Time->(5 Minute)*Length[samplesInFVWResources]]]
+				Link[Resource[Instrument->DeleteDuplicates[resolvedBalance],Time->(5 Minute)*Length[samplesInFVWResources]]]
 			],
-		Instrument->
+		Instrument ->
 			If[MatchQ[myExpandedDensityMeterSamples,{}],
 				Null,
-				Link[Resource[(Instrument->DeleteDuplicates[resolvedDensityMeter]/.{obj:ObjectP[Object[Instrument]]}:>obj),Time->(10 Minute)*Length[samplesInDensityMeterResources]]]
+				Link[Resource[
+					Instrument -> Module[{resolvedInstruments},
+						resolvedInstruments = DeleteDuplicates[resolvedDensityMeter];
+						If[MatchQ[resolvedInstruments, {ObjectP[Model[Instrument, DensityMeter]] ..}],
+							resolvedInstruments,
+							Last[resolvedInstruments]
+						]
+					],
+					Time -> (10 Minute)*Length[samplesInDensityMeterResources]]
+				]
 			],
 		(* used to collect any samples not being recouped or if the density meter is used for any sample*)
 		WasteContainer->If[Or[Nand@@(Take[Lookup[myExpandedBatchedSampleOptions,RecoupSample],Length[myExpandedFVWSamples]]),MemberQ[Lookup[myExpandedBatchedSampleOptions,Method],DensityMeter]],
@@ -2846,8 +2886,8 @@ measureDensityResourcePackets[mySamples:{PacketP[Object[Sample]]..},myResolvedOp
 			(* No need for a beaker if we are recouping all samples and not using density meter *)
 			Null
 		],
-		ResolvedOptions->resolvedOptionsNoHidden,
-		UnresolvedOptions->RemoveHiddenOptions[ExperimentMeasureDensity,myUnresolvedOptions],
+		ResolvedOptions -> resolvedOptionsNoHidden,
+		UnresolvedOptions -> RemoveHiddenOptions[ExperimentMeasureDensity,myUnresolvedOptions],
 		MeasureVolume -> Lookup[myResolvedOptions,MeasureVolume],
 		MeasureWeight -> Lookup[myResolvedOptions,MeasureWeight],
 		ImageSample -> Lookup[myResolvedOptions,ImageSample],

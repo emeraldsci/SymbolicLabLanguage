@@ -10,7 +10,7 @@ DefineObjectType[Object[Qualification, WaterPurifier], {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates whether the water purifier's screen was displaying any warnings or alarms during this qualification.",
+			Description -> "Indicates whether the water purifier's screen was displaying any errors during this qualification.",
 			Category -> "Experimental Results"
 		},
 		WaterDispensed -> {
@@ -21,6 +21,14 @@ DefineObjectType[Object[Qualification, WaterPurifier], {
 			Category -> "Experimental Results"
 		},
 		QualityReportImage -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "A photograph taken of the water quality report displayed on the water purifier's screen after water was dispensed.",
+			Category -> "Experimental Results"
+		},
+		AlarmImage -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,

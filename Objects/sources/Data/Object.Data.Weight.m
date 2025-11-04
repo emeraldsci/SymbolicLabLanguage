@@ -74,6 +74,22 @@ DefineObjectType[Object[Data, Weight], {
 			Category -> "General",
 			Developer -> True
 		},
+		RawWeight -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> _?MassQ,
+			Units -> Gram,
+			Description -> "The balance reading when this data was measured, with no corrections of TareWeight, ResidueWeight, BalanceTareWeight accounted for.",
+			Category -> "Experimental Results",
+			Abstract -> True
+		},
+		RawWeightDistribution -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> DistributionP[Gram],
+			Description -> "The empirical statistical distribution of the balance readings when this data was measured, with no corrections of TareWeight, ResidueWeight, BalanceTareWeight accounted for.",
+			Category -> "Experimental Results"
+		},
 		Weight -> {
 			Format -> Single,
 			Class -> Real,
@@ -107,6 +123,30 @@ DefineObjectType[Object[Data, Weight], {
 			Description -> "The side on image of the weighing surface of the balance and its contents, captured immediately following the weight measurement by the integrated camera.",
 			Category -> "Experimental Results"
 		},
+		WeightStability -> {
+			Format -> Multiple,
+			Class -> Compressed,
+			Pattern :> {_?DateObjectQ, UnitsP[Gram]},
+			Description -> "Trace of weight vs date/time from -60 to +60 seconds relative to the weight measurement timepoint.",
+			Category -> "Experimental Results"
+		},
+		BalanceTareData -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data, Weight][Analytes],
+			Description -> "The weight measurement of the balance when nothing is on it, that was measured for this data.",
+			Category -> "Experimental Results"
+		},
+		BalanceTareWeight -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> _?MassQ,
+			Units -> Gram,
+			Description -> "The weight of the balance when nothing is on it.",
+			Category -> "Data Processing",
+			Abstract -> True
+		},
 		TareData -> {
 			Format -> Single,
 			Class -> Link,
@@ -129,7 +169,8 @@ DefineObjectType[Object[Data, Weight], {
 			Pattern :> _Link,
 			Relation -> Alternatives[
 				Object[Data, Weight][TareData],
-				Object[Data, Weight][ResidueWeightData]
+				Object[Data, Weight][ResidueWeightData],
+				Object[Data, Weight][BalanceTareData]
 			],
 			Description -> "Any direct analyte weight measurements for which this data served as the TareData or ResidueWeightData.",
 			Category -> "Experimental Results"

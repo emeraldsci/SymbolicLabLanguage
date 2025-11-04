@@ -648,6 +648,14 @@ DefineObjectType[Object[Maintenance, ReceiveInventory], {
 			Description -> "Whether an email should be sent to accounts payable after the items in this maintenance were received. It is uploaded to False after an email is sent.",
 			Category -> "Organizational Information",
 			Developer -> True
+		},
+		BarcodeInventories -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Maintenance, BarcodeInventory][Receiving],
+			Description -> "The BarcodeInventory maintenances associated with this receiving.",
+			Category -> "Organizational Information"
 		}
 	}
 }];

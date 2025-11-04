@@ -563,6 +563,15 @@ DefineObjectType[Object[Data, ICPMS], {
 			Category -> "Experimental Results",
 			Abstract -> True
 		},
+		SweepIntensity -> {
+			Format -> Multiple,
+			Class -> {String, Real},
+			Pattern :> {ICPMSNucleusP, GreaterEqualP[0]},
+			Units -> {None, None},
+			Description -> "The intensity of all major isotopes measured in the sweep scan.",
+			Category -> "Experimental Results",
+			Headers -> {"Isotope", "Intensity (counts per second)"}
+		},
 		Intensity -> {
 			Format -> Multiple,
 			Class -> Real,

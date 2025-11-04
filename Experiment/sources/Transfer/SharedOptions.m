@@ -385,18 +385,8 @@ DefineOptionSet[HandlingConditionOption :> {
 			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to a condition that fulfills all safety requirements of the samples being transferred.",
 			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Object,
-				Pattern :> ObjectP[{
-					Model[HandlingCondition]
-				}],
-				PreparedContainer -> False(*,
-				OpenPaths -> {
-					{
-						Object[Catalog, "Root"],
-						"Handling Environments"
-					}
-				}*)
+			Widget -> Alternatives[
+				Widget[Type -> Expression, Pattern :> ObjectP[{Model[HandlingCondition]}]|{ObjectP[{Model[HandlingCondition]}]...}, Size -> Line]
 			],
 			Description -> "The abstract condition that describes the environment in which the transfer will be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Benchtop Handling Station). This option cannot be set when Preparation->Robotic.",
 			Category -> "Hidden"
@@ -441,6 +431,24 @@ DefineOptionSet[TransferEnvironmentOption :> {
 			],
 			Description->"The environment in which the transfer will be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Benchtop Handling Station). Containers involved in the transfer will first be moved into the TransferEnvironment (with covers on), uncovered inside of the TransferEnvironment, then covered after the Transfer has finished -- before they're moved back onto the operator cart. Consult the SterileTechnique/RNaseFreeTechnique option when using a BSC. This option cannot be set when Preparation->Robotic.",
 			Category->"Instrument Specifications"
+		}
+	]
+}];
+
+
+(* ::Subsection::Closed:: *)
+(* EquivalentTransferEnvironmentsOption *)
+
+DefineOptionSet[EquivalentTransferEnvironmentsOption :> {
+	IndexMatching[
+		IndexMatchingInput -> "experiment samples",
+		{
+			OptionName -> EquivalentTransferEnvironments,
+			Default -> Automatic,
+			AllowNull -> True,
+			Widget -> Widget[Type -> Expression, Pattern :> {ObjectP[]...}, Size -> Line],
+			Description -> "A list of equivalent environments in which the transfer will be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Benchtop Handling Station). This option is used to pass the resolved equivalent TransferEnvironment models to the resource packet function.",
+			Category -> "Hidden"
 		}
 	]
 }];
@@ -1081,8 +1089,6 @@ DefineOptionSet[WeighingContainerOption :> {
 					Object[Item, WeighBoat],
 					Model[Container, Vessel],
 					Object[Container, Vessel],
-					Model[Item, Consumable],
-					Object[Item, Consumable],
 					Model[Container, GraduatedCylinder],
 					Object[Container, GraduatedCylinder]
 				}],
@@ -1355,11 +1361,11 @@ DefineOptionSet[QuantitativeTransferOptions :> {
 		{
 			OptionName->NumberOfQuantitativeTransferWashes,
 			Default->Automatic,
-			ResolutionDescription -> "Automatically set to 2 if any of the other QuantitativeTransfer options are set. Otherwise, is set to Null.",
+			ResolutionDescription -> "Automatically set to 3 if any of the other QuantitativeTransfer options are set. Otherwise, is set to Null.",
 			AllowNull->True,
 			Widget->Widget[
 				Type->Number,
-				Pattern:>GreaterP[0,1]
+				Pattern:>GreaterEqualP[2,1]
 			],
 			Description->"Indicates the number of washes of the weight boat with QuantitativeTransferWashSolution that will occur, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
 			Category->"Quantitative Transfers"
@@ -1959,3 +1965,22 @@ DefineOptionSet[TransferLayerOptions :> {
 	]
 }];
 
+(* ::Subsection::Closed:: *)
+(* CountAsPassageOptions *)
+
+DefineOptionSet[CountAsPassageOptions :> {
+	IndexMatching[
+		IndexMatchingInput -> "experiment samples",
+		{
+			OptionName -> CountAsPassage,
+			Default -> False,
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
+			],
+			Description -> "Indicates if cell models found in the Composition of the destination Object[Sample] are recorded to have an increase of 1 in passage number in CellPassageLog. CountAsPassage flag should only be set to True when the transfer is used to inoculate a cell sample for initiating a subculture.",
+			Category->"General"
+		}
+	]
+}];

@@ -91,8 +91,8 @@ DefineObjectType[Model[Instrument, LiquidLevelDetector], {
 		SensorArmHeights->{
 			Format->Multiple,
 			Class->Real,
-			Pattern:>GreaterP[0Centimeter],
-			Units->Centimeter,
+			Pattern:>GreaterP[0Millimeter],
+			Units->Millimeter,
 			Description->"For each member of CompatibleVessels, the height the detector must be set to before measuring liquid levels in the vessel.",
 			IndexMatching->CompatibleVessels,
 			Category->"Instrument Specifications"
@@ -108,7 +108,7 @@ DefineObjectType[Model[Instrument, LiquidLevelDetector], {
 		MinSensorArmHeight -> {
 			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0*Centi*Meter],
+			Pattern :> GreaterEqualP[0*Milli*Meter],
 			Units -> Meter Milli,
 			Description -> "The minimum height that the sensor arm can physically be set to.",
 			Category -> "Sensor Information",
@@ -117,7 +117,7 @@ DefineObjectType[Model[Instrument, LiquidLevelDetector], {
 		MaxSensorArmHeight -> {
 			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0*Centi*Meter],
+			Pattern :> GreaterEqualP[0*Milli*Meter],
 			Units -> Meter Milli,
 			Description -> "The maximum height that the sensor arm can physically be set to.",
 			Category -> "Sensor Information"

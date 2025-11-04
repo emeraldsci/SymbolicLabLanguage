@@ -19,17 +19,7 @@ DefineUsage[AdvancedAnalyzePeaks,
 					{
 						InputName -> "dataObject",
 						Description -> "Object containing data that will be analyzed for peaks.",
-						Widget -> Widget[Type->Object,Pattern:>ObjectP[
-							{
-								Object[Data,Chromatography],Object[Data,ChromatographyMassSpectra],Object[Data,AbsorbanceSpectroscopy],
-								Object[Data,MassSpectrometry],Object[Data,NMR],Object[Data,PAGE],Object[Data,TLC],Object[Data,Western],
-								Object[Data,FluorescenceSpectroscopy],Object[Data,LuminescenceSpectroscopy],Object[Data,XRayDiffraction],
-								Object[Data,IRSpectroscopy],Object[Data,AgaroseGelElectrophoresis],
-								Object[Data,DifferentialScanningCalorimetry],Object[Data,MeltingCurve],
-								Object[Data,CircularDichroism],Object[Data,DynamicLightScattering],Object[Data,CapillaryGelElectrophoresisSDS],Object[Data,CoulterCount],
-								Object[Data, CapillaryIsoelectricFocusing],Object[Data,FragmentAnalysis]
-							}
-						]]
+						Widget -> Widget[Type->Object,Pattern:>ObjectP[Object[Data,Chromatography]]]
 					},
 					IndexName -> "Input Data"
 				]
@@ -51,26 +41,7 @@ DefineUsage[AdvancedAnalyzePeaks,
 					Description -> "Protocol object containing data that will be analyzed.",
 						Widget -> Widget[
 						Type -> Object,
-						Pattern :> ObjectP[{
-							Object[Protocol,HPLC],
-							Object[Protocol,FPLC],
-							Object[Protocol,AbsorbanceSpectroscopy],
-							Object[Protocol,AgaroseGelElectrophoresis],
-							Object[Protocol,MassSpectrometry],
-							Object[Protocol,PAGE],
-							Object[Protocol,Western],
-							Object[Protocol,FluorescenceSpectroscopy],
-							Object[Protocol,LCMS],
-							Object[Protocol,LuminescenceSpectroscopy],
-							Object[Protocol,NMR],
-							Object[Protocol,PowderXRD],
-							Object[Protocol,IRSpectroscopy],
-							Object[Protocol,DifferentialScanningCalorimetry],
-							Object[Protocol,SupercriticalFluidChromatography],
-							Object[Protocol,CapillaryGelElectrophoresisSDS],
-							Object[Protocol,CoulterCount],
-							Object[Protocol,CapillaryIsoelectricFocusing]
-						}]
+						Pattern :> ObjectP[{Object[Protocol,HPLC], Object[Protocol, FPLC]}]
 					]
 				}
 			},

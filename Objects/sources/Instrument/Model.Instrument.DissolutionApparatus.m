@@ -5,7 +5,7 @@
 
 
 DefineObjectType[Model[Instrument, DissolutionApparatus], {
-	Description->"Model information for a dissolution apparatus, used for dissolving solid samples in a liquid in controlled conditions.",
+	Description->"Model information for an instrument that captures the information about the process of the solid oral dosage dissolving in a liquid in controlled conditions.",
 	CreatePrivileges->None,
 	Cache->Session,
 	Fields -> {
@@ -30,7 +30,7 @@ DefineObjectType[Model[Instrument, DissolutionApparatus], {
 			Class -> Real,
 			Pattern :> GreaterP[0 Kelvin],
 			Units -> Celsius,
-			Description -> "Indicates the highest temperature that this instrument can heat the media to.",
+			Description -> "Indicates the highest temperature to which  this instrument can heat the media to.",
 			Category -> "Operating Limits"
 		},
 		MinFlowRate->{
@@ -38,7 +38,7 @@ DefineObjectType[Model[Instrument, DissolutionApparatus], {
 			Class -> Real,
 			Pattern :> GreaterP[0 Milliliter / Minute],
 			Units -> Milliliter / Minute,
-			Description -> "The minimum flow rates at which the sample and medium can be aspirated and dispensed.",
+			Description -> "The minimum flow rate at which the sample or medium can be aspirated or dispensed.",
 			Category -> "Operating Limits"
 		},
 		MaxFlowRate->{
@@ -46,23 +46,23 @@ DefineObjectType[Model[Instrument, DissolutionApparatus], {
 			Class -> Real,
 			Pattern :> GreaterP[0 Milliliter / Minute],
 			Units -> Milliliter / Minute,
-			Description -> "The maximum flow rates at which the sample and medium can be aspirated and dispensed.",
+			Description -> "The maximum flow rate at which the sample or medium can be aspirated or dispensed.",
 			Category -> "Operating Limits"
 		},
-		MinSampleVolume->{
+		MinAliquotVolume->{
 			Format -> Single,
 			Class -> Real,
 			Pattern :> GreaterP[0 Milliliter],
 			Units -> Milliliter,
-			Description -> "The minimum volume of the sample that can be aspirated.",
+			Description -> "The minimum volume of the aliquot that can be aspirated from the dissolution medium.",
 			Category -> "Operating Limits"
 		},
-		MaxSampleVolume->{
+		MaxAliquotVolume->{
 			Format -> Single,
 			Class -> Real,
 			Pattern :> GreaterP[0 Milliliter],
 			Units -> Milliliter,
-			Description -> "The maximum volume of the sample that can be aspirated.",
+			Description -> "The maximum volume of the aliquot that can be aspirated from the dissolution medium.",
 			Category -> "Operating Limits"
 		},
 		DeadVolume->{
@@ -70,7 +70,7 @@ DefineObjectType[Model[Instrument, DissolutionApparatus], {
 			Class -> Real,
 			Pattern :> GreaterP[0 Milliliter],
 			Units -> Milliliter,
-			Description -> "The total amount of liquid required to fill the plumbing between the dissolution vessel and the dispencing needle.",
+			Description -> "The total amount of liquid required to fill the plumbing between the dissolution vessel and the autosampler dispensing needle.",
 			Category -> "Instrument Specifications"
 		},
 		VolumetricPrecision->{
@@ -78,7 +78,7 @@ DefineObjectType[Model[Instrument, DissolutionApparatus], {
 			Class -> Real,
 			Pattern :> GreaterP[0 Milliliter],
 			Units -> Milliliter,
-			Description -> "The precision of the volume aspiration and dispensing performed by the built-in syringe pump.",
+			Description -> "The uncertaintly of the volume of the aspiration or dispensing operations which impacts the volume of the aliquot taken from the dissolution medium.",
 			Category -> "Instrument Specifications"
 		},
 		TubingInnerDiameter->{
@@ -106,8 +106,8 @@ DefineObjectType[Model[Instrument, DissolutionApparatus], {
 		},
 		MaximumNumberOfAliquots -> {
 			Format -> Single,
-			Class -> Real,
-			Pattern :> GreaterP[0],
+			Class -> Integer,
+			Pattern :> GreaterP[0,1],
 			Description -> "Indicates the maximum number of aliquots that can be taken from the dissolution medium during the experiment.",
 			Category -> "Instrument Specifications"
 		},

@@ -531,7 +531,10 @@ labelContainerPrimitiveResources[myLabels:{_String..},myResolvedOptions:{_Rule..
         ReplaceRule[
           Cases[myResolvedOptions, Verbatim[Rule][Alternatives@@nonHiddenOptions, _]],
           Container->resources
-        ]
+        ],
+        {
+          RequiredObjects->Cases[resources,_Resource]
+        }
       ],
       Preparation->Lookup[myResolvedOptions, Preparation],
       UnitOperationType->Output,

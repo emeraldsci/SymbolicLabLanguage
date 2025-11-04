@@ -45,7 +45,7 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 	{
 
 		(* General fields filled in *)
-		NotNullFieldTest[packet, {Authors, Expires, DefaultStorageCondition, State, BiosafetyLevel}, Message -> Hold[Error::RequiredOptions], MessageArguments -> {identifier}],
+		NotNullFieldTest[packet, {Authors, Expires, DefaultStorageCondition, State, BiosafetyLevel}, Message -> {Hold[Error::RequiredOptions], identifier}],
 
 		(* fields that must be populated together *)
 		RequiredTogetherTest[packet, {Waste, WasteType}],
@@ -83,15 +83,13 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 			(* either the model already exists, or it doesn't but the name also doesn't exist; in either case we're good but otherwise we're not *)
 			TrueQ[modelExistsQ] || Not[TrueQ[nameAlreadyExistsQ]],
 			True,
-			Message -> Hold[Error::NonUniqueSampleName],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NonUniqueSampleName], identifier}
 		],
 
 		Test["The Composition field of the sample must be filled in for the model(s) " <> ToString[identifier] <> ":",
 			MatchQ[Lookup[packet, Composition, Null], Except[Null | {}]],
 			True,
-			Message -> Hold[Error::CompositionRequired],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::CompositionRequired], identifier}
 		],
 
 		Test["If sample model is public all member of Composition are public as well:",
@@ -136,8 +134,7 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 				{True, Except[NullP | {}], Except[NullP | {}]},
 				{Except[True], NullP | {}, NullP | {}}
 			],
-			Message -> Hold[Error::SampleExpires],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::SampleExpires], identifier}
 		],
 
 		(* The user isn't allowed to set Deprecated in the upload function. *)
@@ -156,8 +153,7 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 				{{ObjectP[Object[Product]]..}, {}},
 				{{}, {ObjectP[Object[Product]]..}}
 			],
-			Message -> Hold[Error::BothProductsAndKitProducts],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::BothProductsAndKitProducts], identifier}
 		],
 
 		Test["DefaultStorageCondition is consistent with model's safety requirements for " <> ToString[identifier] <> ":",
@@ -176,47 +172,41 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 				{True, Sequence @@ (TrueQ /@ Lookup[storageConditionPacketsToList, {Acid, Base, Pyrophoric}])},
 				TrueQ /@ Lookup[storageConditionPacketsToList, {Flammable, Acid, Base, Pyrophoric}]
 			],
-			Message -> Hold[Error::InconsistentDefaultStorageCondition],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::InconsistentDefaultStorageCondition], identifier}
 		],
 
 		Test["Both Acid and Base cannot be True simultaneously for " <> ToString[identifier] <> ":",
 			Lookup[packet, {Acid, Base}],
 			Except[{True, True}],
-			Message -> Hold[Error::AcidAndBase],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::AcidAndBase], identifier}
 		],
 
 		(* Density of solid or liquid must be \[GreaterEqual] density of liquid hydrogen *)
 		Test["Density of any solid or liquid must be greater than that of liquid Hydrogen for " <> ToString[identifier] <> ":",
 			Lookup[packet, {State, Density}],
 			Alternatives[{Null | Gas, _}, {Solid | Liquid | Consumable, Null | GreaterEqualP[Quantity[0.0708`, ("Grams") / ("Milliliters")]]}],
-			Message -> Hold[Error::InvalidDensity],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::InvalidDensity], identifier}
 		],
 
 		(* Density of solid or liquid must be \[LessEqual] density of hassium *)
 		Test["Density of any solid or liquid must be less than that of Hassium for " <> ToString[identifier] <> ":",
 			Lookup[packet, {State, Density}],
 			Alternatives[{Null | Gas, _}, {Solid | Liquid | Consumable, Null | LessEqualP[Quantity[40.7 , ("Grams") / ("Milliliters")]]}],
-			Message -> Hold[Error::InvalidDensity],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::InvalidDensity], identifier}
 		],
 
 		(* Density of any gas \[GreaterEqual] density of hydrogen gas *)
 		Test["Density of any gas must be greater than that of Hydrogen gas for " <> ToString[identifier] <> ":",
 			Lookup[packet, {State, Density}],
 			Alternatives[{Solid | Liquid | Consumable | Null, _}, {Gas, Null | GreaterEqualP[Quantity[0.00008988 , ("Grams") / ("Milliliters")]]}],
-			Message -> Hold[Error::InvalidDensity],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::InvalidDensity], identifier}
 		],
 
 		(* Density of any gas \[LessEqual] density of tungsten hexafluoride *)
 		Test["Density of any gas must be less than that of tungsten hexafluoride gas for " <> ToString[identifier] <> ":",
 			Lookup[packet, {State, Density}],
 			Alternatives[{Solid | Liquid | Consumable | Null, _}, {Gas, Null | LessEqualP[Quantity[0.0124 , ("Grams") / ("Milliliters")]]}],
-			Message -> Hold[Error::InvalidDensity],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::InvalidDensity], identifier}
 		],
 
 		Test["If a sample is marked as pungent it must also be set to ventilated for " <> ToString[identifier] <> ":",
@@ -225,8 +215,7 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::VentilatedRequired],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::VentilatedRequired], identifier}
 		],
 
 		Test["The contents of the Name field is a member of the Synonyms field for " <> ToString[identifier] <> ":",
@@ -238,21 +227,19 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 				]
 			],
 			True,
-			Message -> Hold[Error::NameIsNotPartOfSynonyms],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NameIsNotPartOfSynonyms], identifier}
 		],
 
 		(* Tests that only apply if MSDSRequired is not False *)
 		If[!MatchQ[Lookup[packet, MSDSRequired], False],
-			NotNullFieldTest[packet, {Flammable, MSDSFile, NFPA, DOTHazardClass}, Message -> Hold[Error::RequiredMSDSOptions], MessageArguments -> {identifier}],
+			NotNullFieldTest[packet, {Flammable, MSDSFile, NFPA, DOTHazardClass}, Message -> {Hold[Error::RequiredMSDSOptions], identifier}],
 			Nothing
 		],
 
 		Test["IncompatibleMaterials is populated and contains either just None or a list of incompatible materials for " <> ToString[identifier] <> ":",
 			Lookup[packet, IncompatibleMaterials],
 			{None} | {MaterialP..},
-			Message -> Hold[Error::IncompatibleMaterials],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::IncompatibleMaterials], identifier}
 		],
 
 		(* Other tests *)
@@ -263,8 +250,7 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::UsedAsSolventSolid],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::UsedAsSolventSolid], identifier}
 		],
 
 		Test["If ConcentratedBufferDiluent is populated for " <> ToString[identifier] <> ". The populated Model[Sample] must have UsedAsSolvent -> True:",
@@ -273,8 +259,7 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::NonSolventConcentratedBufferDiluent],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NonSolventConcentratedBufferDiluent], identifier}
 		],
 
 		Test["If UsedAsSolvent is True or UsedAsMedia is True, Solvent and Media must be Null for " <> ToString[identifier] <> ":",
@@ -283,8 +268,7 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::UsedAsSolventTrueAndPopulatedSolvent],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::UsedAsSolventTrueAndPopulatedSolvent], identifier}
 		],
 
 		Test["If Solvent or Media is populated, UsedAsSolvent and UsedAsMedia must be False for " <> ToString[identifier] <> ":",
@@ -293,8 +277,7 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::UsedAsSolventTrueAndPopulatedSolvent],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::UsedAsSolventTrueAndPopulatedSolvent], identifier}
 		],
 
 		Test["If UsedAsMedia is set to True and State is Liquid, then UsedAsSolvent must also be set to True for " <> ToString[identifier] <> ":",
@@ -391,7 +374,7 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::SampleTypeOptionMismatch], MessageArguments -> {identifier, Sachet,
+			Message -> {Hold[Error::SampleTypeOptionMismatch], identifier, Sachet,
 			"the State has to be Solid but is set to " <> ToString[Lookup[packet, State]]}
 		],
 
@@ -401,7 +384,7 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::SampleTypeOptionMismatch], MessageArguments -> {
+			Message -> {Hold[Error::SampleTypeOptionMismatch], 
 			identifier, Sachet,
 			"the SolidUnitWeight has to be populated but is set to " <> ToString[Lookup[packet, SolidUnitWeight]]}
 		],
@@ -412,7 +395,7 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::SampleTypeOptionMismatch], MessageArguments -> {
+			Message -> {Hold[Error::SampleTypeOptionMismatch], 
 			identifier, Sachet,
 			"the DefaultSachetPouch has to be populated but is set to " <> ToString[Lookup[packet, DefaultSachetPouch]]
 		}
@@ -424,8 +407,7 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::SampleTypeOptionMismatch],
-			MessageArguments -> {
+			Message -> {Hold[Error::SampleTypeOptionMismatch], 
 				identifier,
 				"neither Tablet nor Sachet",
 				"the SolidUnitWeight and SolidUnitWeightDistribution have to be Null but are set to " <> ToString[Lookup[packet, {SolidUnitWeight, SolidUnitWeightDistribution}]]
@@ -438,7 +420,7 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::SampleTypeOptionMismatch], MessageArguments -> {identifier, Sachet,
+			Message -> {Hold[Error::SampleTypeOptionMismatch], identifier, Sachet,
 			"the Composition has to contain an entry of Model[Material] for the pouch but is set to " <> ToString[Lookup[packet, Composition]]}
 		],
 
@@ -461,6 +443,46 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 		Test["If FiberCircumference is populated, the sample must be Fiber:",
 			If[Not[NullQ[Lookup[packet, FiberCircumference]]],
 				TrueQ[Lookup[packet, Fiber]],
+				True
+			],
+			True
+		],
+
+		Test["If the State of the sample is not Liquid, is has no MiscicibleLiquids:",
+			If[MatchQ[Lookup[packet, State], Except[Liquid]],
+				MatchQ[Lookup[packet, MiscibleLiquids], {}],
+				True
+			],
+			True
+		],
+
+		Test["If the sample has miscible liquids, each member of MiscicibleLiquids is itself a liquid:",
+			If[MatchQ[Lookup[packet, MiscibleLiquids], {ObjectP[]..}],
+				Download[Lookup[packet, MiscibleLiquids], State],
+				{}
+			],
+			{Liquid...}
+		],
+
+		Test["If water is a member of MiscicibleLiquids, then it does not have a discrete WaterSolubility at ambient conditions (" <> ToString[$AmbientTemperature] <> "):",
+			If[MemberQ[Lookup[packet, MiscibleLiquids], ObjectP[Model[Molecule, "id:vXl9j57PmP5D"]]],
+				MatchQ[Cases[Lookup[packet, WaterSolubility], {EqualP[$AmbientTemeprature], _}], {}],
+				True
+			],
+			True
+		],
+
+		Test["If Waste is True then Expires must be True and ShelfLife set to <= 180 days:",
+			If[Lookup[packet, Waste],
+				AllTrue[
+					{
+						Lookup[packet, Expires],
+						Lookup[packet,ShelfLife] <= 180 Day
+					},
+					TrueQ
+				],
+				(* If Waste is False or Null, this test should Pass *)
+				True,
 				True
 			],
 			True
@@ -487,7 +509,7 @@ errorToOptionMap[Model[Sample]]:={
 	"Error::VentilatedRequired"->{Pungent, Ventilated},
 	"Error::RequiredOptions"->{Expires,DefaultStorageCondition,State,BiosafetyLevel,DefaultStorageCondition},
 	"Error::NameIsNotPartOfSynonyms"->{Name, Synonyms},
-	"Error::RequiredMSDSOptions"-> {MSDSRequired,Flammable,MSDSFile,NFPA,DOTHazardClass},
+	"Error::RequiredMSDSOptions"-> {Flammable,MSDSFile,NFPA,DOTHazardClass},
 	"Error::IncompatibleMaterials"->{IncompatibleMaterials},
 
 	"Error::SampleExpires"->{ShelfLife, UnsealedShelfLife, Expires},

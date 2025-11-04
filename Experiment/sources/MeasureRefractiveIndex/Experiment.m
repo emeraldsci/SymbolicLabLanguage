@@ -2791,10 +2791,10 @@ preferredNeedle[input:ObjectP[{Model[Container],Object[Container]}]]:=Module[
 	needleToUse = Switch[containerDepth,
 
 		(* Reusable Stainless Steel Non-Coring 4 in x 18G Needle *)
-		RangeP[0 Inch,6 Inch], Model[Item, Needle, "id:XnlV5jmbZZpn"],
+		RangeP[0 Inch,4 Inch],  Model[Item, Needle, "id:AEqRl9x4OE7p"],(*"14Ga x 4In Disposable Blunt Tip Lure Lock Dispensing Needle"*)
 
 		(* Reusable Stainless Steel Non-Coring 6 in x 18G Needle *)
-		GreaterP[6 Inch], Model[Item, Needle, "id:L8kPEjNLDD1A"]
+		GreaterP[4 Inch],  Model[Item, Needle, "id:Y0lXejrKm0Po"](*"14Ga x 10.7In Disposable Blunt Tip Lure Lock Dispensing Needle"*)
 	];
 	needleToUse
 ];

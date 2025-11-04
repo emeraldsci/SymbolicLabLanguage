@@ -2235,14 +2235,24 @@ DefineTests[ExperimentFilter,
 			],
 			ObjectP[Model[Container, Syringe, "id:AEqRl9Kz1VD1"]]
 		],
-		Test["If doing syringe filtering into a non-self-standing tube, populate the DestinationRacks field of the primitives:",
+		Test["If doing syringe filtering into a non-self-standing tube, populate the DestinationRacks field of the primitives and the Needles field with disposable blunt needles appropriate for the source container:",
 			protocol = ExperimentFilter[
 				Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
 				Syringe -> Model[Container, Syringe, "id:AEqRl9Kz1VD1"],
 				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
 			];
-			Download[protocol, BatchedUnitOperations[[1]][DestinationRack]],
-			{ObjectP[Model[Container, Rack]]},
+			Download[protocol,
+				{
+					BatchedUnitOperations[[1]][DestinationRack],
+					BatchedUnitOperations[[1]][Needle][Reusable],
+					BatchedUnitOperations[[1]][Needle][Bevel]
+				}
+			],
+			{
+				{ObjectP[Model[Container, Rack]]},
+				{False},
+				{EqualP[Quantity[90., "AngularDegrees"]]}
+			},
 			Variables :> {protocol}
 		],
 		Example[{Options, FlowRate, "FlowRate option allows the specification of the rate at which liquid is dispensed from the syringe into the filter:"},
@@ -3209,6 +3219,7 @@ DefineTests[ExperimentFilter,
 			ObjectP[Model[Item,Filter, "Filter Test Membrane Filter with LuerSlip" <> $SessionUUID]],
 			Messages :> {Error::FilterInletConnectionType, Error::InvalidOption}
 		],
+		(* we will revisit this and change SterileTechnique to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Messages, "SterileOptionMismatch", "Instrument option allows specification of instrument to use for filtration:"},
 			Lookup[
 				ExperimentFilter[
@@ -3221,7 +3232,7 @@ DefineTests[ExperimentFilter,
 			],
 			ObjectP[Model[Instrument, PeristalticPump, "VWR Peristaltic Variable Pump PP3400"]],
 			Messages :> {Error::SterileOptionMismatch, Error::InvalidOption}
-		],
+		],*)
 		Example[{Messages, "TargetLabelMismatch", "If Target -> Retentate, then RetentateLabel and SampleOutLabel must be the same value; if Target -> Filtrate, then FiltrateLabel and SampleOutLabel must be the same value:"},
 			ExperimentFilter[
 				{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID], Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID]},

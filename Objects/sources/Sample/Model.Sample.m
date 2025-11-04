@@ -15,7 +15,7 @@ DefineObjectType[Model[Sample], {
 			Format->Single,
 			Class->String,
 			Pattern:>_String,
-			Description->"The name of the model.",
+			Description->"The name of the model, to uniquely identify it in Constellation.",
 			Category->"Organizational Information",
 			Abstract->True
 		},
@@ -23,7 +23,7 @@ DefineObjectType[Model[Sample], {
 			Format->Multiple,
 			Class->String,
 			Pattern:>_String,
-			Description->"List of possible alternative names this model goes by.",
+			Description->"A list of alternative names for this sample model.",
 			Category->"Organizational Information",
 			Abstract->True
 		},
@@ -32,7 +32,7 @@ DefineObjectType[Model[Sample], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->IdentityModelTypeP,
-			Description->"The molecular identities of primary interest in this model.",
+			Description->"The molecular entities of primary interest in this sample model.",
 			Category->"Organizational Information",
 			Abstract->True
 		},
@@ -51,7 +51,7 @@ DefineObjectType[Model[Sample], {
 				"Amount",
 				"Identity Model"
 			},
-			Description->"The various molecular components present in this sample, along with their respective initial or theoretical concentrations.",
+			Description->"The various components that constitute this sample model, along with their respective concentrations.",
 			Category->"Organizational Information",
 			Abstract->True
 		},
@@ -71,7 +71,7 @@ DefineObjectType[Model[Sample], {
 				"Amount",
 				"Identity Model"
 			},
-			Description->"Describes the molar composition (in percent) of enantiomers, if this sample contains one of the enantiomers or is a mixture of enantiomers.",
+			Description->"If this sample contains chiral component(s), the relative amounts of each of the two enantiomers, in percent, for each chiral substance.",
 			Category->"Organizational Information"
 		},
 		Media->{
@@ -79,14 +79,14 @@ DefineObjectType[Model[Sample], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Model[Sample],
-			Description->"The base cell growth medium this sample model is in.",
+			Description->"The base cell growth solution of this sample model.",
 			Category->"Organizational Information"
 		},
 		UsedAsMedia->{
 			Format->Single,
 			Class->Boolean,
 			Pattern:>BooleanP,
-			Description->"Indicates if this sample is used as a cell growth medium.",
+			Description->"Indicates if samples of this model are typically used as a cell growth medium.",
 			Category->"Organizational Information"
 		},
 		Living -> {
@@ -101,14 +101,14 @@ DefineObjectType[Model[Sample], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Model[Sample],
-			Description->"The base solution this sample model is in.",
+			Description->"The base component of this sample model that contains, dissolves and disperses the other components.",
 			Category->"Organizational Information"
 		},
 		UsedAsSolvent->{
 			Format->Single,
 			Class->Boolean,
 			Pattern:>BooleanP,
-			Description->"Indicates if this sample is used as a solvent.",
+			Description->"Indicates if samples of this model are typically used to dissolve other substances.",
 			Category->"Organizational Information",
 			Abstract->True
 		},
@@ -133,7 +133,7 @@ DefineObjectType[Model[Sample], {
 			Format->Single,
 			Class->Expression,
 			Pattern:>GradeP, (* Anhydrous | Biosynthesis | Reagent | Ultrapure | RO | ACS | USP | BioUltra | ... *)
-			Description->"The purity of this model, encapsulating a set of purity standards for specific uses.",
+			Description->"The purity standard of this sample model.",
 			Category->"Organizational Information",
 			Abstract->True
 		},
@@ -142,7 +142,7 @@ DefineObjectType[Model[Sample], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Model[Sample][AlternativeForms],
-			Description->"Models of other samples with different grades, hydration states, monobasic/dibasic forms, etc.",
+			Description->"Other sample models representing variations of the same substance with different grades, hydration states, monobasic/dibasic forms, etc.",
 			Category->"Organizational Information",
 			Abstract->False
 		},
@@ -150,7 +150,7 @@ DefineObjectType[Model[Sample], {
 			Format->Single,
 			Class->String,
 			Pattern:>_String,
-			Description->"Unique Ingredient Identifier of compounds based on the unified identification scheme of FDA.",
+			Description->"The Unique Ingredient Identifier of this substance based on the unified identification scheme of FDA.",
 			Category->"Organizational Information",
 			Abstract->True
 		},
@@ -158,7 +158,7 @@ DefineObjectType[Model[Sample], {
 			Format->Multiple,
 			Class->String,
 			Pattern:>_String,
-			Description->"User-supplied labels that are used for the management and organization of samples. If an aliquot is taken out of this sample, the new sample that is generated will inherit this sample's tags.",
+			Description->"Labels that are used for the management and organization of samples. If an aliquot is taken out of this sample, the new sample that is generated will inherit this sample's tags.",
 			Category->"Organizational Information",
 			Abstract->True
 		},
@@ -186,14 +186,6 @@ DefineObjectType[Model[Sample], {
 			Description -> "Records the history of changes to the Verified field, along with when the change occured, and the person responsible.",
 			Category -> "Organizational Information"
 		},
-		AdditionalInformation -> {
-			Format -> Multiple,
-			Class -> {String, Date},
-			Pattern :> {_String, _?DateObjectQ},
-			Description -> "Supplementary information recorded from the UploadMolecule function. These information usually records the user supplied input and options, providing additional information for verification.",
-			Headers -> {"Information", "Date Added"},
-			Category -> "Hidden"
-		},
 
 		(* --- Physical Properties --- *)
 		BoilingPoint->{
@@ -201,7 +193,7 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterP[0*Kelvin],
 			Units->Celsius,
-			Description->"Temperature at which the pure substance boils under atmospheric pressure.",
+			Description->"The temperature at which bulk sample of this model transitions from condensed phase to gas at atmospheric pressure. This occurs when the vapor pressure of the sample equals atmospheric pressure.",
 			Category->"Physical Properties",
 			Abstract->False
 		},
@@ -210,7 +202,7 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterP[0*Kelvin],
 			Units->Celsius,
-			Description->"Melting temperature of the pure substance at atmospheric pressure.",
+			Description->"The temperature at which samples of this model transition from solid to liquid at atmospheric pressure.",
 			Category->"Physical Properties",
 			Abstract->False
 		},
@@ -219,7 +211,7 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterEqualP[0*Kilo*Pascal],
 			Units->Kilo Pascal,
-			Description->"Vapor pressure of the substance at room temperature.",
+			Description->"The pressure of the vapor in thermodynamic equilibrium with condensed phase for samples of this model in a closed system at room temperature.",
 			Category->"Physical Properties",
 			Abstract->False
 		},
@@ -227,21 +219,21 @@ DefineObjectType[Model[Sample], {
 			Format->Single,
 			Class->Expression,
 			Pattern:>CellTypeP,
-			Description->"The primary types of cells that are contained within this sample.",
+			Description->"The taxon of the organism or cell line from which the cell sample originates.",
 			Category->"Physical Properties"
 		},
 		CultureAdhesion->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>CultureAdhesionP,
-			Description->"The default type of cell culture (adherent or suspension) that should be performed when growing these cells. If a cell line can be cultured via an adherent or suspension culture, this is set to the most common cell culture type for the cell line.",
+			Description->"The default type of cell culture (adherent or suspension) that should be performed when growing any cells in this model. If a cell line can be cultured via an adherent or suspension culture, this is set to the most common cell culture type for the cell line.",
 			Category->"Physical Properties"
 		},
 		Conductivity->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>DistributionP[Micro Siemens/Centimeter],
-			Description->"The conductivity of the substance.",
+			Description->"The degree to which samples of this model facilitate the flow of electric charge.",
 			Category->"Physical Properties",
 			Abstract->False
 		},
@@ -250,7 +242,7 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterP[(0*Gram)/Liter Milli],
 			Units->Gram/(Liter Milli),
-			Description->"Known density of samples of this model at room temperature.",
+			Description->"The mass of sample per amount of volume for a pure sample of this model at room temperature and pressure.",
 			Category->"Physical Properties",
 			Abstract->False
 		},
@@ -258,14 +250,14 @@ DefineObjectType[Model[Sample], {
 			Format->Multiple,
 			Class->{Wavelength->VariableUnit, ExtinctionCoefficient->VariableUnit},
 			Pattern:>{Wavelength->GreaterP[0*Nanometer], ExtinctionCoefficient->(GreaterP[0 Liter/(Centimeter*Mole)] | GreaterP[0 Milli Liter /(Milli Gram * Centimeter)])},
-			Description->"A measure of how strongly this sample absorbs light at a particular wavelength.",
+			Description->"A measure of how strongly samples of this model absorb light at a particular wavelength in aqueous solution at ambient temperature and pressure.",
 			Category->"Physical Properties"
 		},
 		Fiber->{
 			Format->Single,
 			Class->Boolean,
 			Pattern:>BooleanP,
-			Description->"Indicates if this model is in the form of a thin cylindrical string of solid substance.",
+			Description->"Indicates if samples of this model consist of a thin cylindrical string of solid substance.",
 			Category->"Physical Properties"
 		},
 		FiberCircumference->{
@@ -273,7 +265,7 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterP[0 Millimeter],
 			Units->Millimeter,
-			Description->"It's the perimeter of the circular cross-section of a the sample if it is a single fiber. In the context of measuring contact angle or surface tension, it's essentially the so called \"wetted length\", the length of the three-phase boundary line for contact between a solid and a liquid in a bulk third phase.",
+			Description->"If samples of this model come in fiber form, the length of the perimeter of the circular cross-section of the sample.",
 			Category->"Physical Properties"
 		},
 		NominalParticleSize->{
@@ -281,8 +273,7 @@ DefineObjectType[Model[Sample], {
 			Class->Distribution,
 			Pattern:>DistributionP[Nanometer],
 			Units->Nanometer,
-			Description ->
-					"The manufacture designated size distribution of particles in the sample model.",
+			Description -> "If containing or composed of discrete fragments of solid, such as a powder or suspension, the manufacturer stated distribution of particle dimensions in the sample model.",
 			Category->"Physical Properties"
 		},
 		ParticleWeight->{
@@ -290,7 +281,7 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterP[0*Gram],
 			Units->Gram,
-			Description->"The weight of a single particle of the sample, if the sample is a powder.",
+			Description->"If containing or composed of discrete fragments of solid, such as a powder or suspension, the average weight of a single fragment of the sample.",
 			Category->"Physical Properties",
 			Abstract->False
 		},
@@ -299,7 +290,7 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>NumericP,
 			Units->None,
-			Description->"The logarithmic acid dissociation constants of the substance at room temperature.",
+			Description->"The logarithmic acid dissociation constants of the substance at room temperature in water.",
 			Category->"Physical Properties",
 			Abstract->False
 		},
@@ -308,7 +299,7 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>RangeP[0,14],
 			Units->None,
-			Description->"The logarithmic concentration of hydrogen ions of the substance at room temperature.",
+			Description->"The logarithmic concentration of hydrogen ions of samples of this model at room temperature.",
 			Category->"Physical Properties",
 			Abstract->False
 		},
@@ -326,7 +317,7 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterP[1],
 			Units->None,
-			Description->"The refractive index of the substance at 20 degree Celsius.",
+			Description->"The ratio of the speed of light in a vacuum to the speed of light travelling through samples of this model at 20 degree Celsius.",
 			Category->"Physical Properties",
 			Abstract->False
 		},
@@ -334,14 +325,14 @@ DefineObjectType[Model[Sample], {
 			Format->Single,
 			Class->Boolean,
 			Pattern:>BooleanP,
-			Description->"Indicates if this model of sample must be used only once and then disposed of after use.",
+			Description->"Indicates if samples of this model must be used only once and then disposed of after use.",
 			Category->"Physical Properties"
 		},
 		State->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>ModelStateP,
-			Description->"The physical state of the sample when well solvated at room temperature and pressure.",
+			Description->"The physical state of samples of this model when well solvated at room temperature and pressure.",
 			Category->"Physical Properties"
 		},
 		SurfaceTension->{
@@ -349,7 +340,7 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterEqualP[0*Milli Newton/Meter],
 			Units->Milli Newton/Meter,
-			Description->"The surface tension of the substance in pure form at room temperature.",
+			Description->"The ability of the surface of samples of this model to resist breaking when disrupted by an external force. Surface tension arises from the tendency of the constituent molecules to stick together and minimize the liquid's surface area.",
 			Category->"Physical Properties",
 			Abstract->False
 		},
@@ -357,7 +348,14 @@ DefineObjectType[Model[Sample], {
 			Format->Single,
 			Class->Boolean,
 			Pattern:>BooleanP,
-			Description->"Indicates if this model is in the form of a small disk or cylinder of compressed solid substance in a measured amount.",
+			Description->"Indicates if this sample model is composed of small disks of compressed solid substance.",
+			Category->"Physical Properties"
+		},
+		Capsule ->{
+			Format->Single,
+			Class->Boolean,
+			Pattern:>BooleanP,
+			Description->"Indicates if this model is in the form of a small cylinder that can be opened containing solid substance in a measured amount.",
 			Category->"Physical Properties"
 		},
 		SolidUnitWeight->{
@@ -365,21 +363,21 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterEqualP[0*Gram],
 			Units->Gram,
-			Description->"The mean mass of a single tablet or sachet of this model.",
+			Description->"If samples of this model come in tablet or sachet form, the average mass of sample in a single tablet or sachet.",
 			Category->"Physical Properties"
 		},
 		SolidUnitWeightDistribution->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>DistributionP[Gram],
-			Description-> "The distribution of the single tablet or sachet weights measured from multiple samplings.",
+			Description-> "If samples of this model come in tablet or sachet form, the range of masses of sample in a single tablet or sachet.",
 			Category->"Physical Properties"
 		},
 		Sachet->{
 			Format->Single,
 			Class->Boolean,
 			Pattern:>BooleanP,
-			Description->"Indicates if this model is in the form of a small pouch filled with a measured amount of loose solid substance.",
+			Description->"Indicates if this sample model is in the form of a small pouch filled with a measured amount of loose solid substance.",
 			Category->"Physical Properties"
 		},
 		DefaultSachetPouch -> {
@@ -387,7 +385,7 @@ DefineObjectType[Model[Sample], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Model[Material],
-			Description->"The material of the pouch that the filler of the sachet is wrapped in to form a single unit of sachet.",
+			Description->"If samples of this model come in sachet form, the material that the enclosing pouch is made from.",
 			Category->"Physical Properties"
 		},
 		Viscosity->{
@@ -395,9 +393,25 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterEqualP[0*Pascal*Second],
 			Units->Pascal Second,
-			Description->"The viscosity of the substance in pure form at room temperature.",
+			Description->"The dynamic viscosity of samples of this model at room temperature and pressure, indicating how resistant it is to flow when an external force is applied.",
 			Category->"Physical Properties",
 			Abstract->False
+		},
+		MiscibleLiquids -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Molecule][MiscibleLiquids], Model[Sample][MiscibleLiquids]],
+			Description -> "Solvent or solvent mixtures with which this sample is able to mix with and form a homogenous solution regardless of the ratio.",
+			Category -> "Physical Properties"
+		},
+		LD50 -> {
+			Format -> Multiple,
+			Class -> {Real, Expression, Expression},
+			Pattern :> {GreaterP[0], AnimalP, DosageRouteP},
+			Description -> "The dose for which a half the members of a given population dies. Dose is recorded as a unitless value but corresponds to dosage mass per animal mass.",
+			Category -> "Health & Safety",
+			Headers -> {"Dose", "Animal", "Route"}
 		},
 
 		(* --- Sample History --- *)
@@ -409,7 +423,7 @@ DefineObjectType[Model[Sample], {
 				Object[Protocol][SamplesIn],
 				Object[Protocol,DynamicFoamAnalysis][AdditiveSamplesIn]
 			],
-			Description->"All protocols that used this sample at any point during their execution in the lab.",
+			Description->"Experiments currently requesting sample(s) of this model as their primary input but did not specify particular samples to use.",
 			Category->"Sample History"
 		},
 
@@ -419,7 +433,7 @@ DefineObjectType[Model[Sample], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Model[StorageCondition],
-			Description->"The condition in which samples of this model are stored when not in use by an experiment; this condition may be overridden by the specific storage condition of any given sample.",
+			Description->"The typical environment in which samples of this model should be stored when not in use by an experiment. Default conditions may be overridden individually for any given sample.",
 			Category->"Storage & Handling"
 		},
 		StoragePositions->{
@@ -427,7 +441,7 @@ DefineObjectType[Model[Sample], {
 			Class->{Link, String},
 			Pattern:>{_Link, LocationPositionP},
 			Relation->{Object[Container]|Object[Instrument], Null},
-			Description->"The specific containers and positions in which this container is to be stored, allowing more granular organization within storage locations for this model's default storage condition.",
+			Description->"The specific containers and positions in which samples of this model should typically be stored, allowing more granular organization within storage locations that satisfy default storage condition.",
 			Category->"Storage & Handling",
 			Headers->{"Storage Container", "Storage Position"},
 			Developer->True
@@ -436,7 +450,7 @@ DefineObjectType[Model[Sample], {
 			Format->Single,
 			Class->Expression,
 			Pattern:>BooleanP,
-			Description->"Indicates if the sample is unstable and can potentially degrade under extreme heating conditions.",
+			Description->"Indicates if samples of this model are unstable and can potentially degrade under extreme heating conditions.",
 			Category->"Storage & Handling",
 			Abstract->True
 		},
@@ -445,7 +459,7 @@ DefineObjectType[Model[Sample], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Model[Container,WashBin],
-			Description->"Indicates the recommended bin for dishwashing this sample.",
+			Description->"The recommended bin for samples of this model prior to dishwashing.",
 			Category->"Storage & Handling"
 		},
 		Waste->{
@@ -459,14 +473,14 @@ DefineObjectType[Model[Sample], {
 			Format->Single,
 			Class->Expression,
 			Pattern:>WasteTypeP,
-			Description->"Indicates the type of waste collected in this sample.",
+			Description->"Indicates the type of waste collected in this sample model.",
 			Category->"Storage & Handling"
 		},
 		Expires->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>BooleanP,
-			Description->"Indicates if samples of this model expire after a given amount of time.",
+			Description->"Indicates if samples of this model have a finite lifespan and become unsuitable for use after a given amount of time.",
 			Category->"Storage & Handling",
 			Abstract->True
 		},
@@ -475,7 +489,7 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterP[0*Day],
 			Units->Day,
-			Description->"The length of time after DateCreated that samples of this model are recommended for use before they should be discarded.",
+			Description->"The length of time after their creation date (DateCreated) that samples of this model are recommended for use, before being considered expired.",
 			Category->"Storage & Handling",
 			Abstract->True
 		},
@@ -484,7 +498,7 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterP[0*Day],
 			Units->Day,
-			Description->"The length of time after DateUnsealed that samples of this model are recommended for use before they should be discarded.",
+			Description->"The length of time after first being uncovered (DateUnsealed) that samples of this model are recommended for use before being considered expired.",
 			Category->"Storage & Handling",
 			Abstract->True
 		},
@@ -492,21 +506,21 @@ DefineObjectType[Model[Sample], {
 			Format->Single,
 			Class->Expression,
 			Pattern:>BooleanP,
-			Description->"Determines if the sample reacts or degrades in the presence of light and should be stored in the dark to avoid exposure.",
+			Description->"Indicates if samples of this model react or degrade in the presence of light and requires storage in the dark.",
 			Category->"Storage & Handling"
 		},
 		SampleHandling->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>SampleHandlingP,
-			Description->"The method by which this sample should be manipulated in the lab when transfers out of the sample are requested.",
+			Description->"The method by which samples of this model should be manipulated in the lab when transfers out of the sample are requested.",
 			Category->"Storage & Handling"
 		},
 		AsepticHandling -> {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates if aseptic techniques are followed for handling this sample in lab. Aseptic techniques include sanitization, autoclaving, sterile filtration, or transferring in a biosafety cabinet during experimentation and storage.",
+			Description -> "Indicates if special techniques should be used to prevent contamination by microorganisms when handling samples of this model. Aseptic techniques include sanitization, autoclaving, sterile filtration, mixing exclusively sterile components, and transferring in a biosafety cabinet during experimentation and storage.",
 			Category -> "Storage & Handling"
 		},
 		TransportCondition->{
@@ -514,7 +528,7 @@ DefineObjectType[Model[Sample], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Model[TransportCondition],
-			Description->"Specifies how the samples of this model should be transported when in use in the lab.",
+			Description->"The environment in which samples of this model should be transported when in use by an experiment, if different from ambient conditions.",
 			Category->"Storage & Handling"
 		},
 		TransferTemperature->{
@@ -522,7 +536,7 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterP[0*Kelvin],
 			Units->Celsius,
-			Description->"The temperature that samples of this model should be at before any transfers using this sample occur.",
+			Description->"The temperature at which samples of this model should be heated or cooled to when moved around the lab during experimentation, if different from ambient temperature.",
 			Category->"Storage & Handling"
 		},
 		ThawTemperature->{
@@ -530,7 +544,7 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterP[0*Kelvin],
 			Units->Celsius,
-			Description->"The default temperature that samples of this model should be thawed at before using in experimentation.",
+			Description->"The typical temperature that samples of this model should be defrosted at before using in experimentation.",
 			Category->"Storage & Handling"
 		},
 		ThawTime->{
@@ -538,7 +552,7 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterP[0*Second],
 			Units->Minute,
-			Description->"The default time that samples of this model should be thawed before using in experimentation. If the samples are still not thawed after this time, thawing will continue until the samples are fully thawed.",
+			Description->"The typical time that samples of this model should be defrosted before using in experimentation. If the samples are still not thawed after this time, thawing will continue until the samples are fully thawed.",
 			Category->"Storage & Handling"
 		},
 		MaxThawTime->{
@@ -546,14 +560,14 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterP[0*Second],
 			Units->Minute,
-			Description->"The default maximum time that samples of this model should be thawed before using in experimentation.",
+			Description->"The default maximum time that samples of this model should be defrosted before using in experimentation.",
 			Category->"Storage & Handling"
 		},
 		ThawMixType->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>MixTypeP,
-			Description->"The default style of motion used to mix samples of this model following thawing.",
+			Description->"The default style of motion used to homogenize samples of this model following defrosting.",
 			Category->"Storage & Handling"
 		},
 		ThawMixRate->{
@@ -561,7 +575,7 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterP[0*RPM],
 			Units->RPM,
-			Description->"The default frequency of rotation the mixing instrument uses to mix samples of this model following thawing.",
+			Description->"The default frequency of rotation the default instrument uses to homogenize samples of this model following thawing.",
 			Category->"Storage & Handling"
 		},
 		ThawMixTime->{
@@ -569,16 +583,16 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterP[0*Minute],
 			Units->Minute,
-			Description-> "The default duration for which samples of this model are mixed following thawing.",
+			Description-> "The default duration for which samples of this model are homogenized following thawing.",
 			Category->"Storage & Handling",
 			Abstract->True
 		},
 		ThawNumberOfMixes->{
 			Format->Single,
 			Class->Integer,
-			Pattern:>GreaterP[0],
+			Pattern:>GreaterP[0, 1],
 			Units->None,
-			Description->"The default number of times samples of this model are mixed by inversion or pipetting up and down following thawing.",
+			Description->"The default number of times samples of this model are homogenized by inversion or pipetting up and down following defrosting.",
 			Category->"Storage & Handling"
 		},
 		ThawCellsMethod->{
@@ -586,7 +600,7 @@ DefineObjectType[Model[Sample], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Object[Method, ThawCells],
-			Description->"The default method by which to thaw cryovials of this sample model.",
+			Description->"The default method object containing the parameters to use to bring cryovials containing this sample model up to ambient temperature.",
 			Category->"Storage & Handling"
 		},
 		WashCellsMethod->{
@@ -594,7 +608,7 @@ DefineObjectType[Model[Sample], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Object[Method, WashCells],
-			Description->"The default method by which to wash cultures of this sample model.",
+			Description->"The default method object containing the parameters to use to purify cultures of this sample model.",
 			Category->"Storage & Handling"
 		},
 		ChangeMediaMethod->{
@@ -602,7 +616,7 @@ DefineObjectType[Model[Sample], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Object[Method, ChangeMedia],
-			Description->"The default method by which to change the media for cultures of this sample model.",
+			Description->"The default method object containing the parameters to use to change the base cell growth solution for cultures of this sample model.",
 			Category->"Storage & Handling"
 		},
 		Parafilm->{
@@ -626,7 +640,7 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterP[0*Kelvin],
 			Units->Celsius,
-			Description->"The temperature that samples of this model should be incubated at while transported between instruments during experimentation.",
+			Description->"The temperature that samples of this model should be heated or refrigerated while transported between instruments during experimentation.",
 			Category->"Storage & Handling"
 		},
 		AsepticTransportContainerType -> {
@@ -643,7 +657,7 @@ DefineObjectType[Model[Sample], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Object[Product][ProductModel],
-			Description->"Products ordering information for this model.",
+			Description->"Product objects describing commercially available entities composed of samples of this model.",
 			Category->"Inventory"
 		},
 		ProductDocumentationFiles->{
@@ -654,12 +668,20 @@ DefineObjectType[Model[Sample], {
 			Description->"PDFs of any product documentation provided by the supplier of this model.",
 			Category->"Inventory"
 		},
+		Icon -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "A simplified image used to represent this sample.",
+			Category -> "Organizational Information"
+		},
 		ConcentratedBufferDiluent->{
 			Format->Single,
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Model[Sample],
-			Description->"The buffer that is used to dilute the sample by ConcentratedBufferDilutionFactor to form BaselineStock.",
+			Description->"The solvent required to dilute this sample model to form BaselineStock. The model is diluted by ConcentratedBufferDilutionFactor.",
 			Category->"Inventory"
 		},
 		(* Copy this over to Object[Sample] and set the 1x buffer as Solvent when we dilute it with Diluent*)
@@ -668,7 +690,7 @@ DefineObjectType[Model[Sample], {
 			Class->Real,
 			Pattern:>GreaterP[0],
 			Units->None,
-			Description->"The amount by which this the sample must be diluted in order to form the standard working concentration. For a sample with ConcentratedBufferDiluent, the dilution made with ConcentratedBufferDiluent forms the standard 1X buffer (BaselineStock).",
+			Description->"The amount by which this the sample must be diluted with its ConcentratedBufferDiluent in order to form standard ratio of Models for 1X buffer, the BaselineStock.",
 			Category->"Inventory"
 		},
 		BaselineStock->{
@@ -676,14 +698,14 @@ DefineObjectType[Model[Sample], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Model[Sample],
-			Description->"The equivalent 1X model of the buffer that the sample forms when diluted with their ConcentratedBufferDiluent by ConcentratedBufferDilutionFactor.",
+			Description->"The 1X version of buffer that this sample model forms when diluted with ConcentratedBufferDiluent by a factor of ConcentrationBufferDilutionFactor.",
 			Category->"Inventory"
 		},
 		Preparable->{
 			Format->Single,
 			Class->Boolean,
 			Pattern:>BooleanP,
-			Description->"Indicates if this samples/items of this model maybe prepared as needed during the course of an experiment.",
+			Description->"Indicates if samples of this model may be prepared as needed during the course of an experiment.",
 			Category->"Inventory"
 		},
 		FixedAmounts->{
@@ -691,7 +713,7 @@ DefineObjectType[Model[Sample], {
 			Class->VariableUnit,
 			Pattern:>GreaterP[0 Milliliter] | GreaterP[0 Gram],
 			Units->None,
-			Description->"The pre-measured amounts in which samples of this model are always stored.",
+			Description->"If this sample model is purchased and stored in pre-measured amounts, the amounts that samples of this model exist in.",
 			Category->"Inventory"
 		},
 		TransferOutSolventVolumes->{
@@ -700,7 +722,7 @@ DefineObjectType[Model[Sample], {
 			Pattern:>GreaterP[0*Liter],
 			Units->Liter Milli,
 			IndexMatching->FixedAmounts,
-			Description->"For each member of FixedAmounts, the amount of the dissolution solvent required to solvate the fixed amount component in this model.",
+			Description->"If this sample model is purchased and stored in pre-measured amounts, the amounts of dissolution solvents required to solvate each of the fixed amounts that this model is handled in.",
 			Category->"Inventory"
 		},
 		PipettingMethod->{
@@ -708,21 +730,21 @@ DefineObjectType[Model[Sample], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Model[Method,Pipetting][Models],
-			Description->"The pipetting parameters used to manipulate samples of this model; these parameters may be overridden by direct specification of pipetting parameters in manipulation primitives.",
+			Description->"The default parameters describing how pure samples of this molecule should be manipulated by pipette, such as aspiration and dispensing rates. These parameters may be overridden when creating experiments.",
 			Category->"Inventory"
 		},
 		ReversePipetting->{
 			Format->Single,
 			Class->Boolean,
 			Pattern:>BooleanP,
-			Description->"Indicates if reverse pipetting technique should be used when transferring this sample via pipette. It is recommended to set ReversePipetting->True if this sample foams or forms bubbles easily.",
+			Description-> "Indicates if additional source sample should be aspirated (past the first stop of the pipette) to reduce the chance of bubble formation when dispensing into a destination position. It is recommended to set ReversePipetting->True if this sample model foams or forms bubbles easily.",
 			Category->"Inventory"
 		},
 		Resuspension->{
 			Format->Single,
 			Class->Boolean,
 			Pattern:>BooleanP,
-			Description->"Indicates if one of the components in the stock solution is a sample which can only be prepared by adding a solution to its original container to dissolve it. The dissolved sample can be optionally removed from the original container for other preparation steps.",
+			Description->"Indicates if one of the components in this sample model can only be prepared by adding a solution to its original container to dissolve it. The dissolved sample can be optionally removed from the original container for other preparation steps.",
 			Category->"Inventory"
 		},
 		KitProducts->{
@@ -730,15 +752,7 @@ DefineObjectType[Model[Sample], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Object[Product][KitComponents, ProductModel],
-			Description->"Products ordering information for this model if this model is part of one or more kits.",
-			Category->"Inventory"
-		},
-		MixedBatchProducts->{
-			Format->Multiple,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Object[Product][MixedBatchComponents, ProductModel],
-			Description->"Products ordering information for this model if this model is part of one or more mixed batches.",
+			Description->"Product objects describing commercially available entities composed of samples of this model, if this model is part of one or more kits.",
 			Category->"Inventory"
 		},
 		ServiceProviders->{
@@ -746,14 +760,14 @@ DefineObjectType[Model[Sample], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Object[Company, Service][CustomSynthesizes],
-			Description->"Service companies that provide synthesis of this model as a service.",
+			Description->"Companies that can be contracted to synthesize samples of this model.",
 			Category->"Inventory"
 		},
 		StickeredUponArrival->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>BooleanP,
-			Description->"Indicates if a sticker should be attached to this item during Receive Inventory, or if the unpeeled sticker should be stored with the item and affixed during resource picking.",
+			Description->"Indicates if a barcode should be attached to this item during Receive Inventory, or if the unpeeled sticker should be stored with the item and affixed during resource picking.",
 			Category->"Inventory",
 			Developer->True
 		},
@@ -774,28 +788,28 @@ DefineObjectType[Model[Sample], {
 			Format->Single,
 			Class->Expression,
 			Pattern:>BooleanP,
-			Description->"Indicates that this model of sample arrives free of both microbial contamination and any microbial cell samples from the manufacturer, or is prepared free of both microbial contamination and any microbial cell samples by employing aseptic techniques during experimentation and storage.",
+			Description->"Indicates that samples of this model arrive free of both microbial contamination and any microbial cell samples from the manufacturer, or is prepared free of both microbial contamination and any microbial cell samples by employing autoclaving, sterile filtration, or mixing exclusively sterile components with aseptic techniques during the course of experiments, as well as during sample storage and handling.",
 			Category->"Health & Safety"
 		},
 		RNaseFree->{
 			Format->Single,
 			Class->Boolean,
 			Pattern:>BooleanP,
-			Description->"Indicates that this model of sample is free of any RNases.",
+			Description->"Indicates if samples of this model are verified to be free from enzymes that break down ribonucleic acid (RNA).",
 			Category->"Health & Safety"
 		},
 		NucleicAcidFree->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>BooleanP,
-			Description->"Indicates if this model of sample is tested to be not contaminated with DNA and RNA by the manufacturer.",
+			Description->"Indicates if samples of this model are verified to be free from nucleic acids - large biomolecules composed of nucleotides that may encode genetic information, such as DNA and RNA.",
 			Category->"Health & Safety"
 		},
 		PyrogenFree->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>BooleanP,
-			Description->"Indicates if this model of sample is tested to be not contaminated with endotoxin by the manufacturer.",
+			Description->"Indicates if samples of this model are verified to be free from compounds that induce fever when introduced into the bloodstream, such as Endotoxins.",
 			Category->"Health & Safety"
 		},
 		Radioactive->{
@@ -809,21 +823,21 @@ DefineObjectType[Model[Sample], {
 			Format->Single,
 			Class->Expression,
 			Pattern:>BooleanP,
-			Description->"Indicates if samples of this model must be handled in a ventilated enclosures.",
+			Description->"Indicates if samples of this model must be handled in an enclosure where airflow is used to reduce exposure of the user to the substance and contaminated air is exhausted in a safe location.",
 			Category->"Health & Safety"
 		},
 		InertHandling->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>BooleanP,
-			Description->"Indicates if samples of this model must be handled in a glove box.",
+			Description->"Indicates if samples of this model must be handled in a glove box under an unreactive atmosphere.",
 			Category->"Health & Safety"
 		},
 		GloveBoxIncompatible->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>BooleanP,
-			Description->"Indicates if samples of this model cannot be used inside of the glove box due high volatility and/or detrimental reactivity with the catalyst in the glove box that is used to remove traces of water and oxygen. Sulfur and sulfur compounds (such as H2S, RSH, COS, SO2, SO3), halides, halogen (Freon), alcohols, hydrazine, phosphene, arsine, arsenate, mercury, and saturation with water may deactivate the catalyst.",
+			Description->"Indicates if samples of this model cannot be used inside of a glove box due high volatility and/or detrimental reactivity with the catalyst in the glove box that is used to remove traces of water and oxygen. Sulfur and sulfur compounds (such as H2S, RSH, COS, SO2, SO3), halides, halogen (Freon), alcohols, hydrazine, phosphene, arsine, arsenate, mercury, and saturation with water may deactivate the catalyst.",
 			Category->"Health & Safety"
 		},
 		GloveBoxBlowerIncompatible->{
@@ -837,7 +851,7 @@ DefineObjectType[Model[Sample], {
 			Format->Single,
 			Class->Expression,
 			Pattern:>BooleanP,
-			Description->"Indicates if samples of this model are easily set aflame under standard conditions.",
+			Description->"Indicates if samples of this model are easily set aflame under standard conditions. This corresponds to NFPA rating of 3 or greater.",
 			Category->"Health & Safety"
 		},
 		Acid->{
@@ -886,14 +900,14 @@ DefineObjectType[Model[Sample], {
 			Format->Single,
 			Class->Boolean,
 			Pattern:>BooleanP,
-			Description->"Indicates if samples of this model do not contain water.",
+			Description->"Indicates if this sample model does not contain traces of water.",
 			Category->"Health & Safety"
 		},
 		HazardousBan->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>BooleanP,
-			Description->"Indicates if samples of this model are currently banned from usage in the ECL because the facility isn't yet equiped to handle them.",
+			Description->"Indicates if samples of this model are currently banned from usage in the ECL because the facility isn't yet equipped to handle them.",
 			Category->"Health & Safety"
 		},
 		ExpirationHazard->{
@@ -907,7 +921,7 @@ DefineObjectType[Model[Sample], {
 			Format->Single,
 			Class->Expression,
 			Pattern:>BooleanP,
-			Description->"Indicates if exposure to this substance has the potential to cause serious and lasting harm. A substance is considered particularly harmful if it is categorized by any of the following GHS classifications (as found on a MSDS): Reproductive Toxicity (H340, H360, H362),  Acute Toxicity (H300, H310, H330, H370, H373), Carcinogenicity (H350).",
+			Description->"Indicates if exposure to samples of this model has the potential to cause serious and lasting harm. A substance is considered particularly harmful if it is categorized by any of the following GHS classifications (as found on a MSDS): Reproductive Toxicity (H340, H360, H362),  Acute Toxicity (H300, H310, H330, H370, H371, H372, H373), Carcinogenicity (H350). Note that PHS designation primarily describes toxicity hazard and doesn't include other types of hazard such as water reactivity or being pyrophoric.",
 			Category->"Health & Safety"
 		},
 		DrainDisposal->{
@@ -935,7 +949,7 @@ DefineObjectType[Model[Sample], {
 			Format->Single,
 			Class->Expression,
 			Pattern:>BooleanP,
-			Description->"Indicates if an MSDS is applicable for this model.",
+			Description->"Indicates if an MSDS is applicable for this sample model.",
 			Category->"Health & Safety"
 		},
 		MSDSFile->{
@@ -943,35 +957,35 @@ DefineObjectType[Model[Sample], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Object[EmeraldCloudFile],
-			Description->"PDF of the models MSDS (Materials Saftey Data Sheet).",
+			Description->"A PDF file of the MSDS (Materials Safety Data Sheet) of this sample model.",
 			Category->"Health & Safety"
 		},
 		NFPA->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>NFPAP,
-			Description->"The National Fire Protection Association (NFPA) 704 hazard diamond classification for the substance.",
+			Description->"The National Fire Protection Association (NFPA) 704 hazard diamond classification for this sample model. The NFPA diamond standard is maintained by the United States National Fire Protection Association and summarizes, clockwise from top, Fire Hazard, Reactivity, Specific Hazard and Health Hazard of a substance.",
 			Category->"Health & Safety"
 		},
 		DOTHazardClass->{
 			Format->Single,
 			Class->String,
 			Pattern:>DOTHazardClassP,
-			Description->"The Department of Transportation hazard classification of the substance.",
+			Description->"The Department of Transportation hazard classification of this sample model.",
 			Category->"Health & Safety"
 		},
 		BiosafetyLevel->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>BiosafetyLevelP,
-			Description->"The Biosafety classification of the substance.",
+			Description->"The set of laboratory precautions required for safe handling of samples of this model from biological hazard. Ranging from least stringent at BSL-1 to most stringent at BSL-4 the biosafety levels are described for use in the United States by the Centers for Disease Control and Prevention (CDC) https://www.cdc.gov/labs/pdf/SF__19_308133-A_BMBL6_00-BOOK-WEB-final-3.pdf.",
 			Category->"Health & Safety"
 		},
 		DoubleGloveRequired -> {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates if working with this sample requires to wear two pairs of gloves.",
+			Description -> "Indicates if working with this sample requires users to wear two pairs of gloves.",
 			Category -> "Health & Safety",
 			Developer -> True
 		},
@@ -981,7 +995,7 @@ DefineObjectType[Model[Sample], {
 			Format->Multiple,
 			Class->Expression,
 			Pattern:>MaterialP|None,
-			Description->"A list of materials that would be damaged if wetted by this model.",
+			Description->"The types of matter that would be damaged if wetted by samples of this model.",
 			Category->"Compatibility"
 		},
 		WettedMaterials->{
@@ -989,13 +1003,13 @@ DefineObjectType[Model[Sample], {
 			Class->Expression,
 			Pattern:>MaterialP,
 			Category->"Compatibility",
-			Description->"The materials of which this model sample is made that may come in direct contact with fluids."
+			Description->"If containing or composed of a structural material, such as a fiber or bead, the types of such matter that may come in direct contact with fluids."
 		},
 		LiquidHandlerIncompatible->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>BooleanP,
-			Description->"Indicates if this model sample cannot be reliably aspirated or dispensed on an automated liquid handling robot.",
+			Description->"Indicates if samples of this model cannot be reliably aspirated or dispensed on an automated liquid handling robot. Substances may be incompatible if they have a low boiling point, readily producing vapor, are highly viscous or are chemically incompatible with all tip types.",
 			Category->"Compatibility"
 		},
 		UltrasonicIncompatible->{
@@ -1010,7 +1024,7 @@ DefineObjectType[Model[Sample], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Model[Sample, Matrix],
-			Description->"The model of the matrix that is best suited for MALDI mass spectrometry of this sample.",
+			Description->"The substance best suited to co-crystallize with samples of this model in preparation for mass spectrometry using the matrix-assisted laser desorption/ionization (MALDI) technique.",
 			Category->"Compatibility",
 			Abstract->False
 		},
@@ -1022,7 +1036,7 @@ DefineObjectType[Model[Sample], {
 			Pattern:>{_Link, GreaterP[0*Day]},
 			Relation->{Model[Qualification][Targets], Null},
 			Units->{None, Day},
-			Description->"The model Qualifications and their required frequencies.",
+			Description->"The type of protocols run on samples of this model, and the nominal period of time between protocol runs, to verify that the samples maintain their expected properties.",
 			Category->"Qualifications & Maintenance",
 			Headers->{"Model Qualification","Time Interval"},
 			Abstract->False
@@ -1033,7 +1047,7 @@ DefineObjectType[Model[Sample], {
 			Pattern:>{_Link, GreaterP[0*Day]},
 			Relation->{Model[Maintenance][Targets], Null},
 			Units->{None, Day},
-			Description->"The model maintenances and their required frequencies.",
+			Description->"The type of protocols run on samples of this model, and the nominal period of time between protocol runs, to restore the samples to a condition where they attain their expected properties.",
 			Category->"Qualifications & Maintenance",
 			Headers->{"Model Maintenance","Time Interval"},
 			Abstract->False
@@ -1042,7 +1056,8 @@ DefineObjectType[Model[Sample], {
 			Format->Single,
 			Class->Boolean,
 			Pattern:>BooleanP,
-			Description->"Indicates if the sample is required to operate continuously in the lab, regardless of if it is InUse by a specific protocol.",
+			Description->"Indicates if samples of this model are required to be continuously available for use in the lab, regardless of if it is InUse by a specific protocol.",
+			Developer->True,
 			Category-> "Qualifications & Maintenance"
 		},
 

@@ -739,7 +739,7 @@ TransferDevices[myAllowedTypes:(ListableP[TypeP[]]|All),myAmount:(MassP|VolumeP|
 
 			(* Filter our graduated cylinders. *)
 			filteredGraduatedCylinders=If[MemberQ[ToList[myAllowedTypes], Model[Container,GraduatedCylinder]] || MatchQ[myAllowedTypes, All],
-				Module[{allGraduatedCylinders,materialFilteredGraduatedCylinders, sterileFilteredGraduatedCylinders, polyPropyleneVolumes},
+				Module[{allGraduatedCylinders,materialFilteredGraduatedCylinders, sterileFilteredGraduatedCylinders, glassVolumes},
 					allGraduatedCylinders=Values[KeySelect[transferDeviceFastCache, MatchQ[ObjectReferenceP[Model[Container,GraduatedCylinder]]]]];
 
 					(* filter for material compatibility *)
@@ -754,15 +754,15 @@ TransferDevices[myAllowedTypes:(ListableP[TypeP[]]|All),myAmount:(MassP|VolumeP|
 						materialFilteredGraduatedCylinders
 					];
 
-					(* pull out all the volumes for our non glass gcs *)
-					polyPropyleneVolumes = Lookup[
-						Cases[sterileFilteredGraduatedCylinders, KeyValuePattern[ContainerMaterials -> Except[{Glass}]]],
+					(* pull out all the volumes for our glass gcs *)
+					glassVolumes = Lookup[
+						Cases[sterileFilteredGraduatedCylinders, KeyValuePattern[ContainerMaterials -> {Glass}]],
 						MaxVolume,
 						{}
 					];
 
-					(* in cases where a gc of equal volume is returned, remove the glass one *)
-					DeleteCases[sterileFilteredGraduatedCylinders, KeyValuePattern[{ContainerMaterials -> {Glass}, MaxVolume -> Alternatives@@polyPropyleneVolumes}]]
+					(* in cases where a gc of equal volume is returned, remove the Polypropylene one *)
+					DeleteCases[sterileFilteredGraduatedCylinders, KeyValuePattern[{ContainerMaterials -> {Polypropylene}, MaxVolume -> Alternatives@@glassVolumes}]]
 				],
 				{}
 			];
@@ -1060,7 +1060,7 @@ optionsToTable[myOptionsList:{_Rule..},myFunction_Symbol]:=Module[{optionDefinit
 									"Copy value clipboard"
 								],
 								Alignment -> {Left, Center},
-								ItemSize -> {Full, .5}, Frame -> Which[
+								ItemSize -> {30, .5}, Frame -> Which[
 
 							(* If this is the first entry in this category section and there is only one entry in this section, {bottom is gray solid, left is gray solid, top is gray solid, right has none}*)
 								MatchQ[First[#2], 1] && MatchQ[First[#2], Length[categoryGroup]],
@@ -1105,7 +1105,7 @@ optionsToTable[myOptionsList:{_Rule..},myFunction_Symbol]:=Module[{optionDefinit
 								Style[#1[[3]], FontFamily -> "Helvetica", FontSize -> 11,
 									RGBColor["#4A4A4A"]],
 
-								Alignment -> {Left, Center}, ItemSize -> {Full, .5},
+								Alignment -> {Left, Center}, ItemSize -> {50, .5},
 								Frame -> Which[
 
 								(* If this is the first entry in this category section and there is only one entry in this section, {bottom is gray solid, left is none, top is gray solid, right is gray solid}*)

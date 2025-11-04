@@ -76,7 +76,7 @@ DefineOptions[ExperimentCoulterCount,
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Enumeration,
-				Pattern :> CoulterCounterApertureDiameterP (* 10 µm|100 µm *)
+				Pattern :> CoulterCounterApertureDiameterP (* 30 µm|100 µm *)
 			],
 			Category -> "General"
 		},
@@ -2009,11 +2009,9 @@ resolveExperimentCoulterCountOptions[mySamples:{ObjectP[Object[Sample]]...}, myO
 			(* Set to 100 Micrometer if any Mammalian, Plant, or Insect cell type is present *)
 			MemberQ[sampleParticleTypes, Mammalian | Plant | Insect, 2],
 			100. * Micrometer,
-			(*
 			(* Set to 10 Micrometer if only Bacterial, Yeast, Fungal, or Microbial cell types are present*)
 			MemberQ[sampleParticleTypes, Bacterial | Yeast | Fungal | Microbial, 2],
-			10. * Micrometer,
-			*)
+			30. * Micrometer,
 			(* In all other cases default to largest aperture diameter we have in lab to avoid blockage *)
 			True,
 			$MaxApertureDiameter

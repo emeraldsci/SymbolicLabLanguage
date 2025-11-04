@@ -446,6 +446,22 @@ DefineObjectType[Object[UnitOperation,Centrifuge],
 				Relation -> Null,
 				Description -> "Indicates if this unit operation should be performed in a sterile environment.",
 				Category -> "General"
+			},
+			WeightStabilityDuration -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Second],
+				Units -> Second,
+				Description -> "The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable and measured.",
+				Category -> "General"
+			},
+			MaxWeightVariation -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Milligram],
+				Units -> Milligram,
+				Description -> "The max allowed amplitude the balance readings can fluctuate with for a duration defined by WeightStabilityDuration before being considered stable and measured.",
+				Category -> "General"
 			}
 		}
 	}

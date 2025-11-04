@@ -195,6 +195,7 @@ DefineOptions[ExperimentFillToVolume,
 		TransferDestinationWellOption,
 		TransferInstrumentOption,
 		TransferEnvironmentOption,
+		EquivalentTransferEnvironmentsOption,
 		TransferTipOptions,
 		TransferNeedleOption,
 		TransferFunnelOption,
@@ -204,6 +205,27 @@ DefineOptions[ExperimentFillToVolume,
 		AspirationMixOptions,
 		DispenseMixOptions,
 		IntermediateDecantOptions,
+		{
+			OptionName -> WasteContainer,
+			Default->Automatic,
+			Description->"The container used to temporarily hold the excess samples removed from the intermediate containers and graduated cylinders after the samples are filled to the target volumes. The sample in this vessel will be discarded at the end of the protocol.",
+			ResolutionDescription -> "Automatically set to Model[Container, Vessel, \"250mL Glass Bottle\"] if any sample is filled with Volumetric method.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Object,
+				Pattern:>ObjectP[{
+					Model[Container],
+					Object[Container]
+				}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Containers"
+					}
+				}
+			],
+			Category -> "Hidden"
+		},
 		SourceTemperatureOptions,
 		DestinationTemperatureOptions,
 		SterileTechniqueOption,
@@ -280,7 +302,7 @@ Error::VolumetricWrongVolume="The specified Volume for the following sample(s) o
 Error::VolumetricTooLargeVolume="The specified Volume for the following sample(s) or container(s) `1` (`2`) is larger than the MaxVolume of the containers (`3`), but Method -> Volumetric. When GraduationFilling is true, volumetric flasks may not be used for a volume greater than the MaxVolume of the container. Please change the specified volume.";
 Error::SampleVolumeAboveRequestedVolume="The current volume for the following sample(s) or container(s) `1` (`2`) is greater than the requested volume to fill to (`3`).  Please increase the requested volume to be greater than the current volume.";
 Error::TransferEnvironmentUltrasonicForbidden="The following sample(s) or container(s) have Method -> Ultrasonic and TransferEnvironment set to a GloveBox or BiosafetyCabinet: `1`.  Only volumetric methods are allowed in those transfer environments.  Please adjust the Method or TransferEnvironment options accordingly.";
-Error::InvalidMaxNumberOfOverfillingRepreparations="MaxNumberOfOverfillingRepreparationsOptions option can only be set when the inputs are all sample Models. Please set MaxNumberOfOverfillingRepreparationsOptions to Null or allow it to be automatically resolved.";
+Error::InvalidMaxNumberOfOverfillingRepreparations="MaxNumberOfOverfillingRepreparationsOptions option can only be set when the inputs are all sample Models or prepared through the parent ManualSamplePreparation or ManualCellPreparation protocols. Please set MaxNumberOfOverfillingRepreparationsOptions to Null or allow it to be automatically resolved.";
 
 (* ::Subsubsection:: *)
 (*ExperimentFillToVolume*)
@@ -838,7 +860,7 @@ resolveExperimentFillToVolumeOptions[mySamples : {ObjectP[{Object[Sample], Objec
 		talliedSamplePackets, replicateSamplePackets, replicateSamplePositions, replicateInvalidInputs, duplicateSampleInputs,
 		duplicateSampleTest, ultrasonicForbiddenEnvironmentQ, ultrasonicForbiddenSamples, ultrasonicForbiddenOptions,
 		ultrasonicForbiddenTests, resolvedLiquidLevelDetectors, resolvedPostProcessingOptions,
-		modelInputQ, resolvedMaxNumberOfOverfillingRepreparations, invalidMaxNumberOfOverfillingRepreparationsOptions, maxNumberOfOverfillingRepreparationsTest,
+		modelInputQ, simulatedSampleQ, mspParentQ, resolvedMaxNumberOfOverfillingRepreparations, invalidMaxNumberOfOverfillingRepreparationsOptions, maxNumberOfOverfillingRepreparationsTest,
 		currentSampleVolumes, sampleVolumeAboveRequestedVolumeErrors, sampleVolumeAboveRequestedVolumeSamples, updatedSimulation,
 		sampleVolumeAboveRequestedVolumeSampleVolumes, samplesWithSimulatedSamples, resolvedAliquotOptions, aliquotTests,
 		sampleVolumeAboveRequestedVolumeRequestedVolumes, sampleVolumeAboveRequestedVolumeInputs,
@@ -1843,7 +1865,19 @@ resolveExperimentFillToVolumeOptions[mySamples : {ObjectP[{Object[Sample], Objec
 	(* do a second download here to decide if we would like to use an intermediate container for dropper pipette transfer (only do this if we need volumetric flask transfer) *)
 	(* this has to happen after transfer resolver since transfer has a complicated logic deciding what source container to use *)
 	postTransferSourceContainerInternalDepth = If[MemberQ[resolvedMethod,Volumetric],
-		Quiet[Download[postTransferSourceContainer,InternalDepth,Simulation->updatedSimulation],{Download::FieldDoesntExist, Download::NotLinkField}],
+		Module[
+			{internalDepthDownload},
+			(* For simulated objects, sometimes InternalDepth of the object is not populated correctly for Download (it is computational). Download the value from both object and model *)
+			internalDepthDownload = Quiet[Download[postTransferSourceContainer, {InternalDepth, Model[InternalDepth]},Simulation->updatedSimulation],{Download::FieldDoesntExist, Download::NotLinkField}];
+			MapThread[
+				If[MatchQ[#1, Volumetric],
+					(* Use the object's or the model's InternalDepth if available. If not, default to Infinity since it is better to just use intermediate container *)
+					FirstCase[#2, DistanceP, Infinity * Meter],
+					Null
+				]&,
+				{resolvedMethod, internalDepthDownload}
+			]
+		],
 		(* we don't need this value so default to Null to avoid another Download *)
 		ConstantArray[Null,Length[postTransferSourceContainer]]
 	];
@@ -1916,20 +1950,30 @@ resolveExperimentFillToVolumeOptions[mySamples : {ObjectP[{Object[Sample], Objec
 	resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions];
 
 	(* Resolve MaxNumberOfOverfillingRepreparations *)
-	(* Check if we have model inputs only. Otherwise we cannot do re-preparation *)
+	(* Check if we have model inputs only. Otherwise we cannot do re-preparation for stand-alone FillToVolumes *)
 	modelInputQ = Lookup[ToList[myResolutionOptions], ModelInputQ, False];
+	(* If we are in MSP with one FillToVolume unit operation that the samples are prepared earlier in the MSP, we may also be able to do re-preparation by rolling back all the MSP UOs and repeat necessary steps. This is being handled by parseFillToVolume *)
+	(* Note that we cannot rely on ParentProtocol option here, because we resolve the option and put in OutputUnitOperations and ResolvedUnitOperationOptions field of MSP before the MSP object is generated *)
+	(* Instead, we can see if our samples are simulated or not *)
+	simulatedSampleQ = MatchQ[
+		(* If the sample is not in database, it is simulated (we have checked earlier that it is a database member in simulation) *)
+		DatabaseMemberQ[samplesWithSimulatedSamples],
+		{False...}
+	];
+	(* Check parent protocol as well and set to repeating the preparation if we don't have it resolved earlier *)
+	mspParentQ = MatchQ[Lookup[safeOptions, ParentProtocol, Null], ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation]}]];
 	resolvedMaxNumberOfOverfillingRepreparations = If[!MatchQ[Lookup[myOptions, MaxNumberOfOverfillingRepreparations],Automatic],
 		(* Respect user input OR if we are doing re-preparation already, we have this option *)
 		Lookup[myOptions, MaxNumberOfOverfillingRepreparations],
-		(* If we have only model inputs, set to 3; Otherwise Null *)
-		If[modelInputQ,
+		(* If we have only model inputs or simulated samples, set to 3; Otherwise Null *)
+		If[modelInputQ||simulatedSampleQ||mspParentQ,
 			3,
 			Null
 		]
 	];
 
 	(* Error checking *)
-	invalidMaxNumberOfOverfillingRepreparationsOptions=If[messages && !NullQ[resolvedMaxNumberOfOverfillingRepreparations] && !modelInputQ,
+	invalidMaxNumberOfOverfillingRepreparationsOptions=If[messages && !NullQ[resolvedMaxNumberOfOverfillingRepreparations] && !modelInputQ && !simulatedSampleQ && !mspParentQ,
 		(
 			Message[Error::InvalidMaxNumberOfOverfillingRepreparations];
 			{MaxNumberOfOverfillingRepreparations}
@@ -1938,7 +1982,7 @@ resolveExperimentFillToVolumeOptions[mySamples : {ObjectP[{Object[Sample], Objec
 	];
 
 	maxNumberOfOverfillingRepreparationsTest=If[gatherTests,
-		Test["MaxNumberOfOverfillingRepreparationsOptions option can only be set when the inputs are Model[Sample]:", !NullQ[resolvedMaxNumberOfOverfillingRepreparations] && !modelInputQ, False],
+		Test["MaxNumberOfOverfillingRepreparationsOptions option can only be set when the inputs are Model[Sample]:", !NullQ[resolvedMaxNumberOfOverfillingRepreparations] && !modelInputQ && !simulatedSampleQ && !mspParentQ, False],
 		Null
 	];
 
@@ -2076,7 +2120,7 @@ fillToVolumeResourcePackets[mySamples : {ObjectP[{Object[Sample], Object[Contain
 		resourcesWithoutName, resourceToNameReplaceRules, allResourceBlobs, transferUnitOperationPacketsMissingFields,
 		availablePipetteObjectsAndModels, resourcesNotToPickUpFront, containersInResources, protPacketFinal,
 		splitLiquidLevelDetector, liquidLevelDetectorResources, liquidLevelDetectorResourceNoNulls,
-		sharedInstrumentTypes,resolvedIntermediateContainers,solventResourceToIntermediateContainerAssoc, intermediateContainerResources, transferUnitOperations, transferUnitOperationPackets,
+		sharedInstrumentTypes,resolvedIntermediateContainers,solventResourceToIntermediateContainerAssoc, intermediateContainerResources, wasteContainerResource, transferUnitOperations, transferUnitOperationPackets,
 		combinedMapThreadFriendlyOptionsNoHidden, fillToVolumeUnitOperations, fillToVolumeUnitOperationPackets,
 		fillToVolumeUnitOperationPacketsNotLinked, currentSimulation, aliquotPacket, protPacket, aliquotDestinationLabel,
 		aliquotQ, aliquotSamples, sampleOrContainerPacketsPreAliquot, samplePacketsPreAliquot, rawResourceBlobsWithoutAliquotSamples,
@@ -2207,13 +2251,13 @@ fillToVolumeResourcePackets[mySamples : {ObjectP[{Object[Sample], Object[Contain
 		Function[{estimatedSampleVolume,totalVolume},
 			Which[
 				MatchQ[totalVolume-estimatedSampleVolume,RangeP[50 Microliter, 100 Microliter]],
-				(totalVolume-estimatedSampleVolume)+10 Microliter,
+				(totalVolume-estimatedSampleVolume)+20 Microliter,
 				
 				MatchQ[totalVolume-estimatedSampleVolume,GreaterP[100 Microliter]],
-				(totalVolume-estimatedSampleVolume)*1.1,
+				(totalVolume-estimatedSampleVolume)*1.3,
 				
 				True,
-				totalVolume (* if required volume cannot be appropriately calculated, set to desired total volume of solution *)
+				totalVolume*1.1 (* if required volume cannot be appropriately calculated, set to desired total volume of solution *)
 			]
 		],
 		{currentSampleVolumes,myVolumes}
@@ -2424,14 +2468,11 @@ fillToVolumeResourcePackets[mySamples : {ObjectP[{Object[Sample], Object[Contain
 	combinedMapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentFillToVolume, myResolvedOptions];
 	combinedMapThreadFriendlyOptionsNoHidden = OptionsHandling`Private`mapThreadOptions[ExperimentFillToVolume, RemoveHiddenOptions[ExperimentFillToVolume, myResolvedOptions]];
 
-	(* If multiple transfer environment resources are the same back to back, they should be the same resource object for BSCs and Glove Boxes. *)
-	(* This is because only 1 operator can use a BSC or glove box at the same time. We don't have the same restriction for fume hoods and *)
-	(* benches so these will be globally assigned to the same resource. *)
-
-	(* NOTE: Benches and fume hoods will be immediately released after they're instrument selected so multiple people can use *)
-	(* them at the same time. *)
-
-	splitTransferEnvironments = Split[Download[Lookup[combinedMapThreadFriendlyOptions, TransferEnvironment], Object]];
+	(* try to group adjacent transfers as much as possible now that we know each transfer has a specific list of "real" equivalent environments that we can do transfers on no problem
+	 given a list: list = {{a, b, c}, {a, b}, {a, c}, {d}, {a, d}}
+	 the goal is get this output: {{{a}, {a}, {a}}, {{d}, {d}}} (the first set will use TransferEnvironment a, the next one uses TransferEnvironment d)
+	 such that we have the longest group that shares the same TransferEnvironment resource *)
+	splitTransferEnvironments = splitByCommonElements[Lookup[combinedMapThreadFriendlyOptions, EquivalentTransferEnvironments]];
 
 	(* Create our index matched transfer environment resources. *)
 	transferEnvironmentResources = Map[
@@ -2439,7 +2480,11 @@ fillToVolumeResourcePackets[mySamples : {ObjectP[{Object[Sample], Object[Contain
 		Function[{groupedTransferEnvironments},
 			Sequence @@ ConstantArray[
 				Resource[
-					Instrument -> First[groupedTransferEnvironments],
+					(* InstrumentResourceP only accepts a single instrument OBJECT/MODEL, or a list of instrument MODELs, but not a list of OBJECTs, so we have to branch here *)
+					Instrument -> If[MatchQ[First[groupedTransferEnvironments], {ObjectP[Model[Instrument]]..}],
+						First[groupedTransferEnvironments],
+						First[First[groupedTransferEnvironments]]
+					],
 					Time -> 30 * Minute * Length[groupedTransferEnvironments],
 					Name -> CreateUUID[]
 				],
@@ -2618,6 +2663,16 @@ fillToVolumeResourcePackets[mySamples : {ObjectP[{Object[Sample], Object[Contain
 	
 	intermediateContainerResources = solventResources/.solventResourceToIntermediateContainerAssoc;
 
+	(* Single WasteContainer resource *)
+	wasteContainerResource = If[MatchQ[Lookup[myResolvedOptions, WasteContainer], ObjectP[]],
+		Resource[
+			Sample -> Lookup[myResolvedOptions, WasteContainer],
+			Name -> CreateUUID[],
+			Rent -> True
+		],
+		Null
+	];
+
 	(* make our Transfer unit operations.  each one will go into a different FillToVolume unit operation *)
 	(* everything is a list, annoyingly, because if FastTrack -> True in UploadUnitOperation then we have to have expanded unit operation keys *)
 	transferUnitOperations = MapThread[
@@ -2680,6 +2735,11 @@ fillToVolumeResourcePackets[mySamples : {ObjectP[{Object[Sample], Object[Contain
 				IntermediateDecant -> {Lookup[options, IntermediateDecant]},
 				IntermediateContainer -> {intermediateContainerResource},
 				IntermediateFunnel -> {Null},
+				(* Only need WasteContainer for Volumetric *)
+				WasteContainer -> If[MatchQ[Lookup[options,Method],Volumetric],
+					wasteContainerResource,
+					Null
+				],
 				SourceTemperature -> {Lookup[options, SourceTemperature]},
 				SourceEquilibrationTime -> {Lookup[options, SourceEquilibrationTime]},
 				MaxSourceEquilibrationTime -> {Lookup[options, MaxSourceEquilibrationTime]},
@@ -2770,6 +2830,11 @@ fillToVolumeResourcePackets[mySamples : {ObjectP[{Object[Sample], Object[Contain
 						BackfillNeedle -> {backfillNeedleResource},
 						VentingNeedle -> {ventingNeedleResource},
 						IntermediateContainer -> {intermediateContainerResource},
+						(* Only need WasteContainer for Volumetric *)
+						WasteContainer -> If[MatchQ[Lookup[options,Method],Volumetric],
+							wasteContainerResource,
+							Null
+						],
 						TipRinseSolution -> {If[MatchQ[Lookup[options, TipRinseSolution], ObjectP[]],
 							Lookup[tipRinseSolutionResources, Download[Lookup[options, TipRinseSolution], Object]],
 							Null
@@ -2919,7 +2984,7 @@ fillToVolumeResourcePackets[mySamples : {ObjectP[{Object[Sample], Object[Contain
 		Object -> protocolID,
 		(* TODO actually fix these once the procedure is written *)
 		Replace[Checkpoints] -> {
-			{"Picking Resourecs", 1 Hour, "Samples and plates required to execute this protocol are gathered from storage and stock solutions are freshly prepared.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 Hour]]},
+			{"Picking Resources", 1 Hour, "Samples and plates required to execute this protocol are gathered from storage and stock solutions are freshly prepared.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 Hour]]},
 			{"Performing Fill to Volume Transfers", 15 * Minute * Length[fillToVolumeUnitOperations], "The fill to volume transfers are performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 15 * Minute * Length[fillToVolumeUnitOperations]]]},
 			{"Returning Materials", 30 Minute, "Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]}
 		},
@@ -2960,6 +3025,7 @@ fillToVolumeResourcePackets[mySamples : {ObjectP[{Object[Sample], Object[Contain
 				Except[Alternatives @@ resourcesNotToPickUpFront]
 			]
 		]),
+		WasteContainer -> wasteContainerResource,
 		ImageSample -> Lookup[expandedResolvedOptions, ImageSample],
 		MeasureVolume -> Lookup[expandedResolvedOptions, MeasureVolume],
 		MeasureWeight -> Lookup[expandedResolvedOptions, MeasureWeight]

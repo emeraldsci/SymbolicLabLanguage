@@ -2121,9 +2121,26 @@ DefineTests[
         ]
       }],
       ObjectP[Object[Protocol,ManualSamplePreparation]]
-    ]
+    ],
+	  Test["Throw a warning if any option is specified to use an object that is missing or expired:",
+		  ExperimentManualSamplePreparation[{
+			  LabelContainer[
+				  Label->{"my cff container 1","my cff container 2","my cff container 3"},
+				  Container->Model[Container, Vessel, "50mL Tube"]
+			  ],
+			  Transfer[
+				  Source->Model[Sample, "Milli-Q water"],
+				  Amount-> 3 Milliliter,
+				  Instrument -> Object[Instrument, Pipette, "Test Missing Pipette for ExperimentManualSamplePreparation" <> $SessionUUID],
+				  Destination -> "my cff container 1"
+			  ]
+		  }],
+		  ObjectP[Object[Protocol,ManualSamplePreparation]],
+		  Messages :> {Warning::OptionContainsUnusableObject}
+	  ]
   },
   SymbolSetUp:>{
+	  $CreatedObjects={};
     (* Turn off the SamplesOutOfStock warning for unit tests *)
     Off[Warning::SamplesOutOfStock];
     Off[Warning::InstrumentUndergoingMaintenance];
@@ -2131,217 +2148,231 @@ DefineTests[
     Off[Warning::ExpiredSamples];
     Off[Warning::SampleMustBeMoved];
 
-    (* Define a list of all of the objects that are created in the SymbolSetUp - containers, samples, models, etc. *)
-    allObjects= {
-      Object[Container,Vessel,"Test 50mL Tube 1 for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Container,Vessel,"Test 50mL Tube 2 for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Container,Vessel,"Test 50mL Tube 3 for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Container,Vessel,"Test 50mL Tube 4 for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Container,Vessel,"Test 50mL Tube 5 for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Container,Vessel,"Test 50mL Tube 6 for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Container,Plate,"Test 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Container,Plate,"Test 96-well UV Star Plate for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Container,Plate,"Test 96-well AlphaPlate for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Container,Plate,"Test 96 DWP 2 for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Container,Plate,"Test 96 DWP 3 for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Container,Plate,"Test 96 DWP 4 for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Sample,"Test water sample 1 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Sample,"Test water sample 2 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Sample,"Test water sample 3 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Sample,"Test water sample 4 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Sample,"Test powder sample 5 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Sample,"Test water sample 6 in 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Sample,"Test plate reader sample 7 in UV Star plate for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Sample,"Test AlphaScreen sample 8 in AlphaPlate for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Sample,"Test water sample 9 in 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Sample,"Test water sample 10 (Sterile) in 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID],
-      Object[Sample,"Test water sample 11 (Living) in 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID]
-    };
+	Module[{allObjects, existsFilter,
+		tube1, tube2, tube3, tube4, tube5, tube6, plate6, plate7, plate8, plate9, plate10, plate11, missingPipette, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11
+	},
+		(* Define a list of all of the objects that are created in the SymbolSetUp - containers, samples, models, etc. *)
+		allObjects = {
+			Object[Container, Vessel, "Test 50mL Tube 1 for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Container, Vessel, "Test 50mL Tube 2 for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Container, Vessel, "Test 50mL Tube 3 for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Container, Vessel, "Test 50mL Tube 4 for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Container, Vessel, "Test 50mL Tube 5 for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Container, Vessel, "Test 50mL Tube 6 for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Container, Plate, "Test 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Container, Plate, "Test 96-well UV Star Plate for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Container, Plate, "Test 96-well AlphaPlate for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Container, Plate, "Test 96 DWP 2 for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Container, Plate, "Test 96 DWP 3 for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Container, Plate, "Test 96 DWP 4 for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Instrument, Pipette, "Test Missing Pipette for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Sample, "Test water sample 3 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Sample, "Test water sample 4 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Sample, "Test powder sample 5 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Sample, "Test water sample 6 in 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Sample, "Test plate reader sample 7 in UV Star plate for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Sample, "Test AlphaScreen sample 8 in AlphaPlate for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Sample, "Test water sample 9 in 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Sample, "Test water sample 10 (Sterile) in 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID],
+			Object[Sample, "Test water sample 11 (Living) in 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID]
+		};
 
-    (* Erase any objects that we failed to erase in the last unit test *)
-    existsFilter=DatabaseMemberQ[allObjects];
+		(* Erase any objects that we failed to erase in the last unit test *)
+		existsFilter = DatabaseMemberQ[allObjects];
 
-    Quiet[EraseObject[
-      PickList[
-        allObjects,
-        existsFilter
-      ],
-      Force->True,
-      Verbose->False
-    ]];
+		Quiet[EraseObject[
+			PickList[
+				allObjects,
+				existsFilter
+			],
+			Force -> True,
+			Verbose -> False
+		]];
 
-    (* Create some empty containers. *)
-    {tube1,tube2,tube3,tube4,tube5,tube6,plate6,plate7,plate8,plate9,plate10,plate11}=Upload[{
-      <|
-        Type->Object[Container,Vessel],
-        Model->Link[Model[Container, Vessel, "50mL Tube"],Objects],
-        Name->"Test 50mL Tube 1 for ExperimentManualSamplePreparation" <> $SessionUUID,
-        Site -> Link[$Site],
-        DeveloperObject->True
-      |>,
-      <|
-        Type->Object[Container,Vessel],
-        Model->Link[Model[Container, Vessel, "50mL Tube"],Objects],
-        Name->"Test 50mL Tube 2 for ExperimentManualSamplePreparation" <> $SessionUUID,
-        Site -> Link[$Site],
-        DeveloperObject->True
-      |>,
-      <|
-        Type->Object[Container,Vessel],
-        Model->Link[Model[Container, Vessel, "50mL Tube"],Objects],
-        Name->"Test 50mL Tube 3 for ExperimentManualSamplePreparation" <> $SessionUUID,
-        Site -> Link[$Site],
-        DeveloperObject->True
-      |>,
-      <|
-        Type->Object[Container,Vessel],
-        Model->Link[Model[Container, Vessel, "50mL Tube"],Objects],
-        Name->"Test 50mL Tube 4 for ExperimentManualSamplePreparation" <> $SessionUUID,
-        Site -> Link[$Site],
-        DeveloperObject->True
-      |>,
-      <|
-        Type->Object[Container,Vessel],
-        Model->Link[Model[Container, Vessel, "50mL Tube"],Objects],
-        Name->"Test 50mL Tube 5 for ExperimentManualSamplePreparation" <> $SessionUUID,
-        Site -> Link[$Site],
-        DeveloperObject->True
-      |>,
-      <|
-        Type->Object[Container,Vessel],
-        Model->Link[Model[Container, Vessel, "50mL Tube"],Objects],
-        Name->"Test 50mL Tube 6 for ExperimentManualSamplePreparation" <> $SessionUUID,
-        Site -> Link[$Site],
-        DeveloperObject->True
-      |>,
-      <|
-        Type->Object[Container,Plate],
-        Model->Link[Model[Container,Plate,"96-well 2mL Deep Well Plate"],Objects],
-        Name->"Test 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID,
-        Site -> Link[$Site],
-        DeveloperObject->True
-      |>,
-      <|
-        Type->Object[Container,Plate],
-        Model->Link[Model[Container, Plate, "96-well UV-Star Plate"],Objects],
-        Name->"Test 96-well UV Star Plate for ExperimentManualSamplePreparation" <> $SessionUUID,
-        Site->Link[$Site],
-        DeveloperObject->True
-      |>,
-      <|
-        Type->Object[Container,Plate],
-        Model->Link[Model[Container, Plate, "AlphaPlate Half Area 96-Well Gray Plate"],Objects],
-        Name->"Test 96-well AlphaPlate for ExperimentManualSamplePreparation" <> $SessionUUID,
-        Site -> Link[$Site],
-        DeveloperObject->True
-      |>,
-      <|
-        Type->Object[Container,Plate],
-        Model->Link[Model[Container,Plate,"96-well 2mL Deep Well Plate"],Objects],
-        Name->"Test 96 DWP 2 for ExperimentManualSamplePreparation" <> $SessionUUID,
-        Site -> Link[$Site],
-        DeveloperObject->True
-      |>,
-      <|
-        Type->Object[Container,Plate],
-        Model->Link[Model[Container,Plate,"96-well 2mL Deep Well Plate"],Objects],
-        Name->"Test 96 DWP 3 for ExperimentManualSamplePreparation" <> $SessionUUID,
-        Site -> Link[$Site],
-        DeveloperObject->True
-      |>,
-      <|
-        Type->Object[Container,Plate],
-        Model->Link[Model[Container,Plate,"96-well 2mL Deep Well Plate"],Objects],
-        Name->"Test 96 DWP 4 for ExperimentManualSamplePreparation" <> $SessionUUID,
-        Site -> Link[$Site],
-        DeveloperObject->True
-      |>
-    }];
+		(* Create some empty containers and a missing pipette. *)
+		{tube1, tube2, tube3, tube4, tube5, tube6, plate6, plate7, plate8, plate9, plate10, plate11, missingPipette} = Upload[{
+			<|
+				Type -> Object[Container, Vessel],
+				Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+				Name -> "Test 50mL Tube 1 for ExperimentManualSamplePreparation" <> $SessionUUID,
+				Site -> Link[$Site],
+				DeveloperObject -> True
+			|>,
+			<|
+				Type -> Object[Container, Vessel],
+				Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+				Name -> "Test 50mL Tube 2 for ExperimentManualSamplePreparation" <> $SessionUUID,
+				Site -> Link[$Site],
+				DeveloperObject -> True
+			|>,
+			<|
+				Type -> Object[Container, Vessel],
+				Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+				Name -> "Test 50mL Tube 3 for ExperimentManualSamplePreparation" <> $SessionUUID,
+				Site -> Link[$Site],
+				DeveloperObject -> True
+			|>,
+			<|
+				Type -> Object[Container, Vessel],
+				Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+				Name -> "Test 50mL Tube 4 for ExperimentManualSamplePreparation" <> $SessionUUID,
+				Site -> Link[$Site],
+				DeveloperObject -> True
+			|>,
+			<|
+				Type -> Object[Container, Vessel],
+				Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+				Name -> "Test 50mL Tube 5 for ExperimentManualSamplePreparation" <> $SessionUUID,
+				Site -> Link[$Site],
+				DeveloperObject -> True
+			|>,
+			<|
+				Type -> Object[Container, Vessel],
+				Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+				Name -> "Test 50mL Tube 6 for ExperimentManualSamplePreparation" <> $SessionUUID,
+				Site -> Link[$Site],
+				DeveloperObject -> True
+			|>,
+			<|
+				Type -> Object[Container, Plate],
+				Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"], Objects],
+				Name -> "Test 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID,
+				Site -> Link[$Site],
+				DeveloperObject -> True
+			|>,
+			<|
+				Type -> Object[Container, Plate],
+				Model -> Link[Model[Container, Plate, "96-well UV-Star Plate"], Objects],
+				Name -> "Test 96-well UV Star Plate for ExperimentManualSamplePreparation" <> $SessionUUID,
+				Site -> Link[$Site],
+				DeveloperObject -> True
+			|>,
+			<|
+				Type -> Object[Container, Plate],
+				Model -> Link[Model[Container, Plate, "AlphaPlate Half Area 96-Well Gray Plate"], Objects],
+				Name -> "Test 96-well AlphaPlate for ExperimentManualSamplePreparation" <> $SessionUUID,
+				Site -> Link[$Site],
+				DeveloperObject -> True
+			|>,
+			<|
+				Type -> Object[Container, Plate],
+				Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"], Objects],
+				Name -> "Test 96 DWP 2 for ExperimentManualSamplePreparation" <> $SessionUUID,
+				Site -> Link[$Site],
+				DeveloperObject -> True
+			|>,
+			<|
+				Type -> Object[Container, Plate],
+				Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"], Objects],
+				Name -> "Test 96 DWP 3 for ExperimentManualSamplePreparation" <> $SessionUUID,
+				Site -> Link[$Site],
+				DeveloperObject -> True
+			|>,
+			<|
+				Type -> Object[Container, Plate],
+				Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"], Objects],
+				Name -> "Test 96 DWP 4 for ExperimentManualSamplePreparation" <> $SessionUUID,
+				Site -> Link[$Site],
+				DeveloperObject -> True
+			|>,
+			<|
+				Type -> Object[Instrument, Pipette],
+				Model -> Link[Model[Instrument, Pipette, "id:KBL5Dvw6eLDk"], Objects], (*"Eppendorf Research Plus P5000"*)
+				Name -> "Test Missing Pipette for ExperimentManualSamplePreparation" <> $SessionUUID,
+				Site -> Link[$Site],
+				Missing -> True,
+				Status -> Available,
+				DeveloperObject -> True
+			|>
+		}];
 
-    (* Create some samples for testing purposes *)
-    {sample1,sample2,sample3,sample4,sample5,sample6,sample7,sample8,sample9,sample10,sample11}=UploadSample[
-      (* NOTE: We over-ride the SampleHandling of these models so that we get consistent test results. *)
-      {
-        Model[Sample, "Milli-Q water"],
-        Model[Sample, "Milli-Q water"],
-        Model[Sample, "Milli-Q water"],
-        Model[Sample, "Milli-Q water"],
-        Model[Sample, "id:vXl9j5qEn66B"], (* "Sodium carbonate, anhydrous" *)
-        Model[Sample, "Milli-Q water"],
-        Model[Sample,StockSolution,"0.2M FITC"],
-        Model[Sample,StockSolution,"0.2M FITC"],
-        Model[Sample, "Milli-Q water"],
-        Model[Sample, "Milli-Q water"],
-        Model[Sample, "Milli-Q water"]
-      },
-      {
-        {"A1",tube1},
-        {"A1",tube2},
-        {"A1",tube3},
-        {"A1",tube4},
-        {"A1",tube5},
-        {"A1",plate6},
-        {"A1",plate7},
-        {"A1",plate8},
-        {"A1",plate9},
-        {"A1",plate10},
-        {"A1",plate11}
-      },
-      Name->{
-        "Test water sample 1 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID,
-        "Test water sample 2 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID,
-        "Test water sample 3 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID,
-        "Test water sample 4 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID,
-        "Test powder sample 5 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID,
-        "Test water sample 6 in 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID,
-        "Test plate reader sample 7 in UV Star plate for ExperimentManualSamplePreparation" <> $SessionUUID,
-        "Test AlphaScreen sample 8 in AlphaPlate for ExperimentManualSamplePreparation" <> $SessionUUID,
-        "Test water sample 9 in 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID,
-        "Test water sample 10 (Sterile) in 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID,
-        "Test water sample 11 (Living) in 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID
-      },
-      InitialAmount->{
-        25 Milliliter,
-        10 Milliliter,
-        10 Milliliter,
-        10 Milliliter,
-        10 Gram,
-        1 Milliliter,
-        200 Microliter,
-        200 Microliter,
-        1 Milliliter,
-        1 Milliliter,
-        1 Milliliter
-      },
-      SampleHandling->{
-        Liquid,
-        Liquid,
-        Liquid,
-        Liquid,
-        Powder,
-        Liquid,
-        Liquid,
-        Liquid,
-        Liquid,
-        Liquid,
-        Liquid
-      }
-    ];
+		(* Create some samples for testing purposes *)
+		{sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11} = UploadSample[
+			(* NOTE: We over-ride the SampleHandling of these models so that we get consistent test results. *)
+			{
+				Model[Sample, "Milli-Q water"],
+				Model[Sample, "Milli-Q water"],
+				Model[Sample, "Milli-Q water"],
+				Model[Sample, "Milli-Q water"],
+				Model[Sample, "id:vXl9j5qEn66B"], (* "Sodium carbonate, anhydrous" *)
+				Model[Sample, "Milli-Q water"],
+				Model[Sample, StockSolution, "0.2M FITC"],
+				Model[Sample, StockSolution, "0.2M FITC"],
+				Model[Sample, "Milli-Q water"],
+				Model[Sample, "Milli-Q water"],
+				Model[Sample, "Milli-Q water"]
+			},
+			{
+				{"A1", tube1},
+				{"A1", tube2},
+				{"A1", tube3},
+				{"A1", tube4},
+				{"A1", tube5},
+				{"A1", plate6},
+				{"A1", plate7},
+				{"A1", plate8},
+				{"A1", plate9},
+				{"A1", plate10},
+				{"A1", plate11}
+			},
+			Name -> {
+				"Test water sample 1 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID,
+				"Test water sample 2 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID,
+				"Test water sample 3 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID,
+				"Test water sample 4 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID,
+				"Test powder sample 5 in 50mL Tube for ExperimentManualSamplePreparation" <> $SessionUUID,
+				"Test water sample 6 in 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID,
+				"Test plate reader sample 7 in UV Star plate for ExperimentManualSamplePreparation" <> $SessionUUID,
+				"Test AlphaScreen sample 8 in AlphaPlate for ExperimentManualSamplePreparation" <> $SessionUUID,
+				"Test water sample 9 in 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID,
+				"Test water sample 10 (Sterile) in 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID,
+				"Test water sample 11 (Living) in 96 DWP for ExperimentManualSamplePreparation" <> $SessionUUID
+			},
+			InitialAmount -> {
+				25 Milliliter,
+				10 Milliliter,
+				10 Milliliter,
+				10 Milliliter,
+				10 Gram,
+				1 Milliliter,
+				200 Microliter,
+				200 Microliter,
+				1 Milliliter,
+				1 Milliliter,
+				1 Milliliter
+			},
+			SampleHandling -> {
+				Liquid,
+				Liquid,
+				Liquid,
+				Liquid,
+				Powder,
+				Liquid,
+				Liquid,
+				Liquid,
+				Liquid,
+				Liquid,
+				Liquid
+			}
+		];
 
-    (* Make some changes to our samples for testing purposes *)
-    Upload[{
-      <|Object->sample1,Status->Available,DeveloperObject->True|>,
-      <|Object->sample2,Status->Available,DeveloperObject->True|>,
-      <|Object->sample3,Status->Available,DeveloperObject->True|>,
-      <|Object->sample4,Status->Available,DeveloperObject->True|>,
-      <|Object->sample5,Status->Available,DeveloperObject->True|>,
-      <|Object->sample6,Status->Available,DeveloperObject->True|>,
-      <|Object->sample7,Status->Available,DeveloperObject->True|>,
-      <|Object->sample8,Status->Available,DeveloperObject->True|>,
-      <|Object->sample9,Status->Available,DeveloperObject->True|>,
-      <|Object->sample10,Status->Available,DeveloperObject->True,Sterile->True|>,
-      <|Object->sample11,Status->Available,DeveloperObject->True,Living->True|>
-    }];
+		(* Make some changes to our samples for testing purposes *)
+		Upload[{
+			<|Object -> sample1, Status -> Available, DeveloperObject -> True|>,
+			<|Object -> sample2, Status -> Available, DeveloperObject -> True|>,
+			<|Object -> sample3, Status -> Available, DeveloperObject -> True|>,
+			<|Object -> sample4, Status -> Available, DeveloperObject -> True|>,
+			<|Object -> sample5, Status -> Available, DeveloperObject -> True|>,
+			<|Object -> sample6, Status -> Available, DeveloperObject -> True|>,
+			<|Object -> sample7, Status -> Available, DeveloperObject -> True|>,
+			<|Object -> sample8, Status -> Available, DeveloperObject -> True|>,
+			<|Object -> sample9, Status -> Available, DeveloperObject -> True|>,
+			<|Object -> sample10, Status -> Available, DeveloperObject -> True, Sterile -> True|>,
+			<|Object -> sample11, Status -> Available, DeveloperObject -> True, Living -> True|>
+		}];
+	]
   },
   SymbolTearDown:>{
     On[Warning::SamplesOutOfStock];
@@ -2349,7 +2380,7 @@ DefineTests[
     On[Warning::DeprecatedProduct];
     On[Warning::ExpiredSamples];
     On[Warning::SampleMustBeMoved];
-    EraseObject[allObjects,Force->True,Verbose->False];
+	EraseObject[PickList[$CreatedObjects,DatabaseMemberQ[$CreatedObjects]],Force->True,Verbose->False];
   },
   Stubs:>{
     $PersonID=Object[User,"Test user for notebook-less test protocols"],
@@ -2850,7 +2881,7 @@ DefineTests[
         State->Liquid,
         BiosafetyLevel->"BSL-1",
         Flammable->False,
-        MSDSRequired->False,
+        MSDSFile -> NotApplicable,
         IncompatibleMaterials->{None},
         CellType->Mammalian,
         CultureAdhesion->Adherent,
@@ -5999,7 +6030,7 @@ DefineTests[
             "ExperimentRoboticCellPreparation test 50mL tube" <> $SessionUUID
           }
         ];
-        
+
         {cover1, cover2, cover3, cover4, cover5} = UploadSample[
           {
             Model[Item, Lid, "Universal Clear Lid"],
@@ -6029,7 +6060,7 @@ DefineTests[
           IncompatibleMaterials -> {None},
           CellType -> Bacterial,
           BiosafetyLevel -> "BSL-2",
-          MSDSRequired -> False,
+          MSDSFile -> NotApplicable,
           CultureAdhesion -> SolidMedia,
           PreferredSolidMedia -> Link[Model[Sample, Media, "id:9RdZXvdwAEo6"]], (* Model[Sample, Media, "LB (Solid Agar)"] *)
           PreferredColonyHandlerHeadCassettes -> {
@@ -6060,7 +6091,7 @@ DefineTests[
           State -> Solid,
           BiosafetyLevel -> "BSL-1",
           Flammable -> False,
-          MSDSRequired -> False,
+          MSDSFile -> NotApplicable,
           IncompatibleMaterials -> {None},
           Living -> True
         ];
@@ -6345,7 +6376,7 @@ DefineTests[
         Site->Link[$Site],
         DeveloperObject->True
       |>];
-      
+
       (* Create some empty containers *)
       {
         emptyContainer1,
@@ -6481,7 +6512,7 @@ DefineTests[
         State -> Liquid,
         BiosafetyLevel -> "BSL-1",
         Flammable -> False,
-        MSDSRequired -> False,
+        MSDSFile -> NotApplicable,
         IncompatibleMaterials -> {None},
         CellType -> Bacterial,
         CultureAdhesion -> Suspension,
@@ -6494,7 +6525,7 @@ DefineTests[
         State -> Liquid,
         BiosafetyLevel -> "BSL-1",
         Flammable -> False,
-        MSDSRequired -> False,
+        MSDSFile -> NotApplicable,
         IncompatibleMaterials -> {None},
         CellType -> Mammalian,
         CultureAdhesion -> Adherent,

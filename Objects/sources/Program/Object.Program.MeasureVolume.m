@@ -77,7 +77,7 @@ DefineObjectType[Object[Program,MeasureVolume], {
 			Format -> Single,
 			Class -> Real,
 			Pattern :> GreaterP[0*Meter],
-			Units -> Centi Meter,
+			Units -> Milli Meter,
 			Description -> "The height at which the liquid level detecting sensor arm is set to ensure the target vessel will fit beneath it.",
 			Category -> "Volume Measurement",
 			Developer -> True

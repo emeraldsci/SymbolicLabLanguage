@@ -358,10 +358,10 @@ analyzePeaksPreview[peaksObj:ListableP[PacketP[Object[Analysis,Peaks]]], output_
 
 		result = MapThread[
 			If[ ContainsAny[Keys[#2], Complement[apkOpNames,pkOpNames]], (* object came from AdvancedAnalyzePeaks *)
-				ECL`AdvancedAnalyzePeaksPreview[#1,#2],
+				ECL`AdvancedAnalyzePeaksPreview[#1, FilterRules[Download[#3, ResolvedOptions], {PeakThresholds,UnknownPeakThresholds,ManualPeaks,ExpectedPeaks}]],
 				ECL`AnalyzePeaksPreview[#1, #2]
 			]&,
-			{references, existingOptions}
+			{references, existingOptions, ToList[peaksObj]}
 		]
 
 	];

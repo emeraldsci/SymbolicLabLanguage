@@ -6347,7 +6347,7 @@ DefineTests[ExperimentExtractProtein,
       UploadProtein[
        functionName <> " test protein "<> $SessionUUID,
         State->Solid,
-        MSDSRequired->False,
+        MSDSFile -> NotApplicable,
         BiosafetyLevel->"BSL-1",
         IncompatibleMaterials->{None}
       ];

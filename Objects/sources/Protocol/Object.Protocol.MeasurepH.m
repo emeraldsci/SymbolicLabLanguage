@@ -351,6 +351,14 @@ DefineObjectType[Object[Protocol, MeasurepH], {
 			Category -> "General",
 			Developer -> True
 		},
+		CalibrationMethodFilePath -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The file path of the SentData.txt and ReceivedData.txt to communicate with SevenExcellence to export and import new calibration buffers and methods. This does not exist in AdjustpH as we will just use the more general field (created for RoboticpH) there.",
+			Category -> "General",
+			Developer -> True
+		},
 		InitialDataFilePath -> {
 			Format -> Multiple,
 			Class -> String,
@@ -527,6 +535,97 @@ DefineObjectType[Object[Protocol, MeasurepH], {
 			Relation -> Alternatives[Object[Data, pH]],
 			Description -> "For each member of Probes, data from pH measurements on the VerificationStandard confirming the validity of a probe's calibration.",
 			Category -> "General"
+		},
+		CalibrationBufferSetName -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Developer-> True,
+			Description -> "The name of the calibration buffer set to use on the seven excellence pH meter.",
+			Category -> "General"
+		},
+		CalibrationMethodName -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Developer-> True,
+			Description -> "The name of the calibration method to use on the seven excellence pH meter.",
+			Category -> "General"
+		},
+		CalibrationMethod -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Method, pHCalibration],
+			Description -> "The pH calibration method (including calibration buffer set name, method file and pHs) used to perform calibration on seven excellence pH meter.",
+			Category -> "General"
+		},
+		LowCalibrationBufferpH -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> RangeP[0,14],
+			Description -> "The pH of the low calibration buffer that should be used to calibrate the pH probe.",
+			Category -> "General"
+		},
+		MediumCalibrationBufferpH -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> RangeP[0,14],
+			Description -> "The pH of the medium calibration buffer that should be used to calibrate the pH probe.",
+			Category -> "General"
+		},
+		HighCalibrationBufferpH -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> RangeP[0,14],
+			Description -> "The pH of the high calibration buffer that should be used to calibrate the pH probe.",
+			Category -> "General"
+		},
+		CurrentpHMeterResponseTime -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The most recently response timestamp from SevenExcellence when the instrument is in remote control. The most recently response timestamp is in the format of yyyy-mm-ddThh:mm:ss.",
+			Category -> "General",
+			Developer ->True
+		},
+		CalibrationBufferRack -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Container, Rack], Model[Container, Rack]],
+			Description -> "The rack used to hold calibration buffer sachet for pH probe calibration.",
+			Category -> "General",
+			Developer->True
+		},
+		CalibrationWashSolutionRack -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Container, Rack], Model[Container, Rack]],
+			Description -> "The rack used to hold calibration wash solution sachet for pH probe calibration.",
+			Category -> "General",
+			Developer->True
+		},
+		CalibrationBufferPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container]|Object[Container]|Object[Sample]|Model[Sample], Model[Container, Rack]|Object[Container, Rack], Null},
+			Description -> "A list of placements used to hold calibration buffer sachet for pH probe calibration.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Placements",
+			Developer -> True
+		},
+		CalibrationWashSolutionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container]|Object[Container]|Object[Sample]|Model[Sample], Model[Container, Rack]|Object[Container, Rack], Null},
+			Description -> "A list of placements used to hold calibration wash solution sachet for pH probe calibration.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Placements",
+			Developer -> True
 		}
 	}
 }];

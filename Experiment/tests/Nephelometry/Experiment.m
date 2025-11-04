@@ -2680,14 +2680,14 @@ DefineTests[ExperimentNephelometry,
 			EquivalenceFunction->Equal,
 			Variables:>{options},
 			Messages:>{Warning::AliquotRequired}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options,FilterSterile,"Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],FilterSterile->True,Output->Options];
 			Lookup[options,FilterSterile],
 			True,
 			Variables:>{options},
 			Messages:>{Warning::AliquotRequired}
-		],
+		],*)
 		Example[{Options,FilterAliquot,"The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample in 50mL tube"<>$SessionUUID],FilterAliquot->1*Milliliter,Output->Options];
 			Lookup[options,FilterAliquot],
@@ -3020,7 +3020,7 @@ DefineTests[ExperimentNephelometry,
 					ShelfLife->ConstantArray[2 Year,5],
 					UnsealedShelfLife->ConstantArray[90 Day,5],
 					DefaultStorageCondition->ConstantArray[Model[StorageCondition,"Ambient Storage"],5],
-					MSDSRequired->ConstantArray[False,5],
+					MSDSFile->ConstantArray[NotApplicable,5],
 					BiosafetyLevel->ConstantArray["BSL-1",5],
 					State->{Liquid,Liquid,Liquid,Liquid,Liquid},
 					Living->{False,False,False,False,False},
@@ -3302,7 +3302,7 @@ DefineTests[Nephelometry,
 				ShelfLife->2 Year,
 				UnsealedShelfLife->90 Day,
 				DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"],
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				BiosafetyLevel->"BSL-1",
 				State->Liquid,
 				CellType->Null

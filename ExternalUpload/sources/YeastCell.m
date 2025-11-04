@@ -23,9 +23,9 @@ DefineOptions[UploadYeastCell,
 ];
 
 
-InstallDefaultUploadFunction[UploadYeastCell, Model[Cell, Yeast]];
-InstallValidQFunction[UploadYeastCell, Model[Cell, Yeast]];
-InstallOptionsFunction[UploadYeastCell, Model[Cell, Yeast]];
+installDefaultUploadFunction[UploadYeastCell, Model[Cell, Yeast], OptionResolver -> resolveDefaultCellUploadFunctionOptions];
+installDefaultValidQFunction[UploadYeastCell, Model[Cell, Yeast]];
+installDefaultOptionsFunction[UploadYeastCell, Model[Cell, Yeast]];
 
 InstallIdentityModelTests[
 	UploadYeastCell,
@@ -36,7 +36,7 @@ InstallIdentityModelTests[
 		CultureAdhesion -> Suspension,
 		BiosafetyLevel -> "BSL-2",
 		Flammable -> False,
-		MSDSRequired -> False,
+		MSDSFile -> NotApplicable,
 		IncompatibleMaterials -> {None}
 	},
 	{Model[Cell, Yeast, "S. cerevisiae (test for UploadYeastCell)" <> $SessionUUID]}
@@ -51,7 +51,7 @@ InstallIdentityModelTests[
 		CultureAdhesion -> Suspension,
 		BiosafetyLevel -> "BSL-2",
 		Flammable -> False,
-		MSDSRequired -> False,
+		MSDSFile -> NotApplicable,
 		IncompatibleMaterials -> {None}
 	},
 	{Model[Cell, Yeast, "S. cerevisiae (test for UploadYeastCellOptions)" <> $SessionUUID]}
@@ -66,7 +66,7 @@ InstallIdentityModelTests[
 		CultureAdhesion -> Suspension,
 		BiosafetyLevel -> "BSL-2",
 		Flammable -> False,
-		MSDSRequired -> False,
+		MSDSFile -> NotApplicable,
 		IncompatibleMaterials -> {None}
 	},
 	{Model[Cell, Yeast, "S. cerevisiae (test for ValidUploadYeastCellQ)" <> $SessionUUID]}

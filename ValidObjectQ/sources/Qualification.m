@@ -1300,6 +1300,14 @@ validQualificationLCMSQTests[packet:PacketP[Object[Qualification,LCMS]]]:=Module
 ];
 
 (* ::Subsection::Closed:: *)
+(*validQualificationKarlFischerTitratorQTests*)
+
+validQualificationKarlFischerTitratorQTests[packet:PacketP[Object[Qualification, KarlFischerTitrator]]]:= {
+	RequiredWhenCompleted[packet, {WaterContent}],
+	NotNullFieldTest[packet, {ExpectedWaterContent}]
+};
+
+(* ::Subsection::Closed:: *)
 (*validQualificationIonChromatographyQTests*)
 
 
@@ -2765,6 +2773,7 @@ registerValidQTestFunction[Object[Qualification, Homogenizer],validQualification
 registerValidQTestFunction[Object[Qualification, HPLC],validQualificationHPLCQTests];
 registerValidQTestFunction[Object[Qualification, Incubator],validQualificationIncubatorQTests];
 registerValidQTestFunction[Object[Qualification, IonChromatography],validQualificationIonChromatographyQTests];
+registerValidQTestFunction[Object[Qualification, KarlFischerTitrator],validQualificationKarlFischerTitratorQTests];
 registerValidQTestFunction[Object[Qualification, LCMS],validQualificationLCMSQTests];
 registerValidQTestFunction[Object[Qualification, LiquidHandler],validQualificationLiquidHandlerQTests];
 registerValidQTestFunction[Object[Qualification, LiquidLevelDetection],validQualificationLiquidLevelDetectionQTests];

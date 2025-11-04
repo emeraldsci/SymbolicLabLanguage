@@ -36,7 +36,7 @@ DefineObjectType[Object[Data, Light], {
     LuxLog -> {
       Format -> Single,
       Class -> QuantityArray,
-      Pattern :> QuantityCoordinatesP[{None, Lux}],
+      Pattern :> QuantityCoordinatesP[{None, Lux}]|QuantityCoordinatesP[{None,Watts/Meter^2}],
       Units -> {None, Lux},
       Description -> "Light as they appear vs date/time during the course of an experiment or single data point.",
       Category -> "Sensor Information",
@@ -55,7 +55,7 @@ DefineObjectType[Object[Data, Light], {
     LuxStandardDeviation -> {
       Format -> Single,
       Class -> Real,
-      Pattern :> GreaterEqualP[0*Lux],
+      Pattern :> GreaterEqualP[0*Lux]|GreaterEqualP[0*Watts/Meter^2],
       Units -> Lux,
       Description -> "The calculated standard deviation for this data.",
       Category -> "Data Processing",
@@ -64,7 +64,7 @@ DefineObjectType[Object[Data, Light], {
     LuxDistribution -> {
       Format -> Single,
       Class -> Expression,
-      Pattern :> DistributionP[Lux],
+      Pattern :> DistributionP[Lux]|DistributionP[Watts/Meter^2],
       Description -> "The empirical distribution based on this data.",
       Category -> "Data Processing"
     },

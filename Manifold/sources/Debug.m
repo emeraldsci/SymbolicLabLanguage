@@ -752,25 +752,49 @@ PlotTestSuiteSummaries[functions:{ObjectP[Object[UnitTest,Function]]..}]:=Module
 		sortedPotentialStatuses
 	];
 	formattedInfo = Map[
-		Flatten[{Switch[#[[2]],
-			Running,
-			{Item[#[[1]], Background->Yellow], Item[#[[2]], Background->Yellow], Item[#[[4]], Background->Yellow]},
-			Failed|MathematicaError,
-			{Item[#[[1]], Background->Pink], Item[#[[2]], Background->Pink], Item[#[[4]], Background->Pink]},
-			Passed,
-			{Item[#[[1]], Background->Green], Item[#[[2]], Background->Green], Item[#[[4]], Background->Green]},
-			Enqueued,
-			{Item[#[[1]], Background->LightGray], Item[#[[2]], Background->LightGray], Item[#[[4]], Background->LightGray]},
-			SuiteTimedOut|TimedOut|Aborted|ManifoldBackendError|Crashed,
-			{Item[#[[1]], Background->Orange], Item[#[[2]],Background->Orange], Item[#[[4]], Background->Orange]},
-			_,
-			{Item[#[[1]], Background->Lighter@Lighter@Purple], Item[#[[2]],Background->Lighter@Lighter@Purple], Item[#[[4]], Background->Purple]}
-		],
-			If[MatchQ[#[[3]],ObjectP[]],Button["TestFailures", TestFailureNotebook[Get[DownloadCloudFile[#[[3]],$TemporaryDirectory]]]],Item["No test summary"]],
-			If[MatchQ[#[[3]],ObjectP[]],Button["SetUpMessages",Print[Lookup[Get[DownloadCloudFile[#[[3]],$TemporaryDirectory]][[1]],SymbolSetUpMessages,"No Messages"]]],Item["No test summary"]]
+		Flatten[{
+			Switch[#[[2]],
+				Running,
+				{Item[#[[1]], Background -> Yellow], Item[#[[2]], Background -> Yellow], Item[#[[4]], Background -> Yellow]},
+				Failed | MathematicaError,
+				{Item[#[[1]], Background -> Pink], Item[#[[2]], Background -> Pink], Item[#[[4]], Background -> Pink]},
+				Passed,
+				{Item[#[[1]], Background -> Green], Item[#[[2]], Background -> Green], Item[#[[4]], Background -> Green]},
+				Enqueued,
+				{Item[#[[1]], Background -> LightGray], Item[#[[2]], Background -> LightGray], Item[#[[4]], Background -> LightGray]},
+				SuiteTimedOut | TimedOut | Aborted | ManifoldBackendError | Crashed,
+				{Item[#[[1]], Background -> Orange], Item[#[[2]], Background -> Orange], Item[#[[4]], Background -> Orange]},
+				_,
+				{Item[#[[1]], Background -> Lighter@Lighter@Purple], Item[#[[2]], Background -> Lighter@Lighter@Purple], Item[#[[4]], Background -> Purple]}
+			],
+			If[MatchQ[#[[3]], ObjectP[]],
+				{
+					Button["TestFailures", TestFailureNotebook[Get[DownloadCloudFile[#[[3]], $TemporaryDirectory]]]],
+					(* creating a button here, upon clicking, it would change the text to copied to let dev know that the corresponding info has been copied to clipboard in StandardForm *)
+					(* use StandardForm so that the default is not OutputForm that gets added to a cell group in MM notebook which is just annoying *)
+					(* then the button turns back to show the original text after 3 seconds - what SessionSubmit[ScheduledTask[...]] does, {3} means the task only gets run ONCE after 3 seconds *)
+					DynamicModule[{buttonText},
+						buttonText = "SetUpMessages";
+						Button[Dynamic[Refresh[buttonText, TrackedSymbols -> {buttonText}]], (CopyToClipboard[StandardForm[Lookup[Get[DownloadCloudFile[#[[3]], $TemporaryDirectory]][[1]], SymbolSetUpMessages]]];buttonText = "Copied \[Checkmark]";SessionSubmit[ScheduledTask[buttonText = "SetUpMessages", {3}]])]
+					],
+					(* creating a button here, upon clicking, it would change the text to copied to let dev know that the corresponding info has been copied to clipboard in StandardForm *)
+					(* use StandardForm so that the default is not OutputForm that gets added to a cell group in MM notebook which is just annoying *)
+					(* then the button turns back to show the original text after 3 seconds - what SessionSubmit[ScheduledTask[...]] does, {3} means the task only gets run ONCE after 3 seconds *)
+					DynamicModule[{buttonText},
+						buttonText = "TestSummary";
+						Button[Dynamic[Refresh[buttonText, TrackedSymbols -> {buttonText}]], (CopyToClipboard[StandardForm[Get[DownloadCloudFile[#[[3]], $TemporaryDirectory]]]];buttonText = "Copied \[Checkmark]";SessionSubmit[ScheduledTask[buttonText = "TestSummary", {3}]])]
+					]
+				},
+				{
+					Item["No test summary"],
+					Item["No test summary"],
+					Item["No test summary"]
+				}
+			]
 		}]&,
-		reSortedInfo];
-	Grid[Join[{{Function, Status, Database, Failures, SymbolSetUpMessages}},formattedInfo],Alignment->Left,Frame->All]
+		reSortedInfo
+	];
+	Grid[Join[{{"Function", "Status", "Database", "Failures", "SymbolSetUpMessages", "TestSummaries"}},formattedInfo],Alignment->Center,Frame->All]
 ];
 
 PlotTestSuiteSummaries[{}]:=Null

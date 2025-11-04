@@ -8,7 +8,7 @@ DefineObjectType[Object[Part, Camera], {
 	Description->"A camera used by instruments for taking images of samples and containers.",
 	CreatePrivileges->None,
 	Cache->Session,
-	Fields -> {		
+	Fields -> {
 		EmbeddedPC -> {
 			Format -> Single,
 			Class -> Link,
@@ -138,6 +138,14 @@ DefineObjectType[Object[Part, Camera], {
 			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model], StreamKey]],
 			Pattern :> _String,
 			Description -> "The stream key GoPros use to access streaming server.",
+			Category -> "Part Specifications"
+		},
+		LensCap -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Part],
+			Description -> "The cap that covers the camera's lens when not in use.",
 			Category -> "Part Specifications"
 		}
 	}

@@ -22,10 +22,11 @@ DefineOptions[DefineTags,
 			IndexMatchingInput -> "Input Data",
 			{
 				OptionName -> Tags,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Adder[Widget[Type -> String, Pattern :> _String, Size -> Line]],
 				Description -> "User-supplied labels that are used for the management and organization of samples. If an aliquot is taken out of this sample, the new sample that is generated will inherit this sample's tags.",
+				ResolutionDescription -> "For existing objects, Automatic resolves to the current field value.",
 				Category -> "Organizational Information"
 			}
 		],
@@ -34,6 +35,6 @@ DefineOptions[DefineTags,
 ];
 
 
-InstallDefaultUploadFunction[DefineTags, Object[Sample], OptionResolver -> resolveDefaultUploadFunctionOptions, InstallNameOverload -> False, InstallObjectOverload -> True];
-InstallValidQFunction[DefineTags, Object[Sample]];
-InstallOptionsFunction[DefineTags, Object[Sample]];
+installDefaultUploadFunction[DefineTags, Object[Sample], InstallNameOverload -> False, InstallObjectOverload -> True];
+installDefaultValidQFunction[DefineTags, Object[Sample]];
+installDefaultOptionsFunction[DefineTags, Object[Sample]];

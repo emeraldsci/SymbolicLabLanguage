@@ -6872,7 +6872,7 @@ simulateExperimentSpreadAndStreakCells[
     fulfilledDestinationContainerResources,fulfilledResuspensionMedias, fulfilledResuspensionContainers,
     postResuspensionSamples,resolvedInoculationSource,resolvedResuspensionContainerWells,resolvedResuspensionMediaVolumes,
     resolvedNumberOfSourceScrapes, destinationContainers, destinationSamples,destinationSampleBatchLengths,platingVolume,dispenses,
-    sanitizedDestinationSamples,transferTuples,uploadSampleTransferPackets,simulatedLabels, coverSimulation
+    sanitizedDestinationSamples,transferTuples,uploadSampleTransferPackets,samplePropertyPackets,simulatedLabels, coverSimulation
   },
 
   (* Get simulation and cache *)
@@ -7087,6 +7087,7 @@ simulateExperimentSpreadAndStreakCells[
         transferTuples[[All, 1]],
         transferTuples[[All, 2]],
         transferTuples[[All, 3]],
+        CountAsPassage -> True,
         Upload -> False,
         UpdateComposition -> True,
         Simulation -> currentSimulation,
@@ -7134,6 +7135,7 @@ simulateExperimentSpreadAndStreakCells[
 
 
   (* Create transfer tuples to pass to UploadSampleTransfer *)
+  (* 4th item of the tuple is the CountAsPassge boolean, it is False for FreezeDried and FrozenGlycerol as it is already counted during resuspension *)
   transferTuples = Flatten[
     MapThread[
       Function[{mySample, destinationSamples, spreadVolume, numberOfDispenses},
@@ -7142,7 +7144,8 @@ simulateExperimentSpreadAndStreakCells[
             {
               mySample,
               destinationSample,
-              spreadVolume * numberOfDispenses
+              spreadVolume * numberOfDispenses,
+              MatchQ[resolvedInoculationSource, LiquidMedia]
             }
           ],
           destinationSamples
@@ -7163,6 +7166,7 @@ simulateExperimentSpreadAndStreakCells[
     transferTuples[[All, 1]],
     transferTuples[[All, 2]],
     transferTuples[[All, 3]],
+    CountAsPassage -> transferTuples[[All, 4]],
     Upload -> False,
     FastTrack -> True,
     UpdateComposition -> True,
@@ -7171,6 +7175,21 @@ simulateExperimentSpreadAndStreakCells[
 
   (* UpdateSimulation *)
   currentSimulation = UpdateSimulation[currentSimulation, Simulation[uploadSampleTransferPackets]];
+
+  (* Make sure our destination samples are solid and have SolidMedia CultureAdhesion *)
+  samplePropertyPackets = Map[
+    Function[{destinationSample},
+      <|
+          Object -> destinationSample,
+          CultureAdhesion -> SolidMedia,
+          State -> Solid
+      |>
+    ],
+    transferTuples[[All,2]]
+  ];
+
+  (* Update Simulation *)
+  currentSimulation = UpdateSimulation[currentSimulation, Simulation[samplePropertyPackets]];
 
   (* Make sure we have cover simulated so that when called in framework, next UO will not yell about cover *)
   coverSimulation = ExperimentCover[

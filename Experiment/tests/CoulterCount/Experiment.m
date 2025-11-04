@@ -75,6 +75,11 @@ DefineTests[ExperimentCoulterCount,
 			100. * Micrometer,
 			EquivalenceFunction -> Equal
 		],
+		Example[{Options, "ApertureDiameter", "ApertureDiameter is automatically set to 30 Micrometer if any input sample contains Microbial CellType:"},
+			Lookup[ExperimentCoulterCount[Object[Sample, "Test sample 5 for ExperimentCoulterCount unit test "<>$SessionUUID], Output -> Options], ApertureDiameter],
+			30. * Micrometer,
+			EquivalenceFunction -> Equal
+		],
 		Example[{Options, "ApertureDiameter", "ApertureDiameter is automatically set to the largest ApertureDiameter in lab if no Diameter, ParticleSize, or CellType information if available from any input samples:"},
 			Lookup[ExperimentCoulterCount[Object[Sample, "Test sample 6 for ExperimentCoulterCount unit test "<>$SessionUUID], Output -> Options], ApertureDiameter],
 			Max[List @@ CoulterCounterApertureDiameterP],

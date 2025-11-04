@@ -2913,7 +2913,7 @@ powderXRDResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOp
 		(* Resources for MassTransfer *)
 		Sequence@@If[MatchQ[transferType, MassTransfer],
 			{
-				Replace[Spatulas] -> Table[Resource[Sample -> Model[Item, Spatula, "id:rea9jl5v0mlL" (*Micro antistatic disposable spatula, double-ended micro tip, 14 cm*)], Name -> CreateUniqueLabel["Spatula"]], Length[samplesInResources]],
+				Replace[Spatulas] -> Table[Resource[Sample -> Model[Item, Spatula, "Disposable Polypropylene Double-Ended Spatula MicroTip, 14 cm, Individual"], Name -> CreateUniqueLabel["Spatula"]], Length[samplesInResources]],
 				Pestle -> Resource[Sample -> Model[Item, Spatula, "id:vXl9j57rvK6k" (*"Flat-Spoon Spatula"*)]],
 				PlateSealFoils -> Resource[Sample -> Model[Item, Consumable, "id:6V0npvqEWrO8" (*"Roll of Kapton Discs, 3/8" Diameter"*)]],
 				Tweezer -> Resource[Sample -> Model[Item, Tweezer, "id:8qZ1VWNwNDVZ" (*"Straight flat tip tweezer"*)]],

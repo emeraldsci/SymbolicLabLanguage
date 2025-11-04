@@ -1995,7 +1995,7 @@ experimentNNASynthesis[myPolymer:(DNA|RNA), myStrands : ListableP[Alternatives[O
 				Expires -> False,
 				ShelfLife -> Null,
 				UnsealedShelfLife -> Null,
-				MSDSRequired -> False,
+				MSDSFile -> NotApplicable,
 				Flammable -> False,
 				IncompatibleMaterials -> {None},
 				(* set the state of new oligomer mixture models to liquid for now because it's breaking computed volume and volume checks *)
@@ -2050,7 +2050,7 @@ experimentNNASynthesis[myPolymer:(DNA|RNA), myStrands : ListableP[Alternatives[O
 					Expires -> False,
 					ShelfLife -> Null,
 					UnsealedShelfLife -> Null,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					Flammable -> False,
 					IncompatibleMaterials -> {None},
 					(* set the state of new oligomer mixture models to liquid for now because it's breaking computed volume and volume checks *)

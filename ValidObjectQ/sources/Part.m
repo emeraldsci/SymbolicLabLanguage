@@ -794,10 +794,17 @@ validPartConductivitySensorQTests[packet:PacketP[Object[Part,ConductivitySensor]
 
 
 (* ::Subsection::Closed:: *)
-(*validDecrimperClipQTests*)
+(*validDecrimperQTests*)
 
 
-validDecrimperClipQTests[packet:PacketP[Object[Part,Decrimper]]]:={
+validDecrimperQTests[packet:PacketP[Object[Part,Decrimper]]]:={
+};
+
+(* ::Subsection::Closed:: *)
+(*validCrimperQTests*)
+
+
+validCrimperQTests[packet:PacketP[Object[Part,Crimper]]]:={
 };
 
 (* ::Subsection::Closed:: *)
@@ -1733,7 +1740,8 @@ registerValidQTestFunction[Object[Part, Chiller],validPartChillerQTests];
 registerValidQTestFunction[Object[Part, Computer],validPartComputerQTests];
 registerValidQTestFunction[Object[Part, ConductivityProbe],validPartConductivityProbeQTests];
 registerValidQTestFunction[Object[Part, ConductivitySensor],validPartConductivitySensorQTests];
-registerValidQTestFunction[Object[Part, Decrimper],validDecrimperClipQTests];
+registerValidQTestFunction[Object[Part, Decrimper],validDecrimperQTests];
+registerValidQTestFunction[Object[Part, Crimper],validCrimperQTests];
 registerValidQTestFunction[Object[Part, Deionizer],validDeionizerQTests];
 registerValidQTestFunction[Object[Part, DialysisClip],validPartDialysisClipQTests];
 registerValidQTestFunction[Object[Part, DiodeArrayModule],validPartDiodeArrayModuleQTests];

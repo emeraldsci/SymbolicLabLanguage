@@ -18,69 +18,62 @@
 
 DefineOptions[UploadOligomer,
 	SharedOptions :> {
-		UploadMolecule
+		MoleculeOptions,
+		ExternalUploadHiddenOptions
 	},
 	Options :> {
+		(* Overwrite the defaults for some options *)
+		ModifyOptions[
+			MoleculeOptions,
+			{
+				(* Default the state to Solid *)
+				{
+					OptionName -> State,
+					ResolutionDescription -> "If creating a new object, resolves to Solid. For existing objects, resolves to the current field value."
+				},
+				(* Default the flammable option to False *)
+				{
+					OptionName -> Flammable,
+					ResolutionDescription -> "If creating a new object, resolves to False. For existing objects, resolves to the current field value."
+				},
+				(* Default BSL to 1 *)
+				{
+					OptionName -> BiosafetyLevel,
+					ResolutionDescription -> "If creating a new object, resolves to BSL-1. For existing objects, resolves to the current field value."
+				},
+				(* Default the MSDSRequired to False *)
+				(* I'm currently just reproducing the existing code here - we will require the user to declare safety information in future *)
+				(* But I might break a lot of code if I just change the default randomly *)
+				{
+					OptionName -> MSDSRequired,
+					ResolutionDescription -> "If creating a new object, resolves to False. For existing objects, resolves to the current field value."
+				},
+				(* Default IncompatibleMaterials to {None} *)
+				{
+					OptionName -> IncompatibleMaterials,
+					ResolutionDescription -> "If creating a new object, resolves to {None}. For existing objects, resolves to the current field value."
+				}
+			}
+		],
+
 		IndexMatching[
 			IndexMatchingInput -> "Input Data",
 			{
 				OptionName -> PolymerType,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives @@ Join[AllPolymersP, {Mixed}]],
 				Description -> "The type of polymer the nucleic acid is composed of (not counting modifications).",
-				ResolutionDescription -> "Resolves to the polymer type of the nucleic acid given as input.",
+				ResolutionDescription -> "If creating a new object, resolves to the polymer type of the nucleic acid given as input otherwise Null. For existing objects, resolves to the current field value.",
 				Category -> "Organizational Information"
-			},
-
-			(* Overwrite the defaults for some safety fields. *)
-			{
-				OptionName -> State,
-				Default -> Solid,
-				AllowNull -> True,
-				Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[Solid, Liquid, Gas]],
-				Description -> "The physical state of the sample when well solvated at room temperature and pressure.",
-				Category -> "Physical Properties"
-			},
-			{
-				OptionName -> MSDSRequired,
-				Default -> False,
-				AllowNull -> True,
-				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-				Description -> "Indicates if an MSDS is applicable for this model.",
-				Category -> "Health & Safety"
-			},
-			{
-				OptionName -> Flammable,
-				Default -> False,
-				AllowNull -> True,
-				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-				Description -> "Indicates if pure samples of this molecule are easily set aflame under standard conditions.",
-				Category -> "Health & Safety"
-			},
-			{
-				OptionName -> BiosafetyLevel,
-				Default -> "BSL-1",
-				AllowNull -> True,
-				Widget -> Widget[Type -> Enumeration, Pattern :> BiosafetyLevelP],
-				Description -> "The Biosafety classification of the substance.",
-				Category -> "Health & Safety"
-			},
-			{
-				OptionName -> IncompatibleMaterials,
-				Default -> {None},
-				AllowNull -> True,
-				Widget -> With[{insertMe=Flatten[None | MaterialP]}, Adder[Widget[Type -> Enumeration, Pattern :> insertMe]]],
-				Description -> "A list of materials that would be damaged if wetted by this model.",
-				Category -> "Compatibility"
 			},
 
 			{
 				OptionName -> Enthalpy,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Description -> "The expected binding enthalpy for the binding of this oligomer model to its reverse complement.",
-				ResolutionDescription -> "Automatically set to the simulated entropy, using the function SimulateEntropy.",
+				ResolutionDescription -> "For new objects, automatically set to the simulated entropy, using the function SimulateEntropy. For existing objects, resolves to the current field value.",
 				Category -> "Physical Properties",
 				Widget -> Widget[
 					Type -> Quantity,
@@ -90,10 +83,10 @@ DefineOptions[UploadOligomer,
 			},
 			{
 				OptionName -> Entropy,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Description -> "The expected binding entropy for the binding of this oligomer model to its reverse complement.",
-				ResolutionDescription -> "Automatically set to the simulated entropy, using the function SimulateEntropy.",
+				ResolutionDescription -> "For new objects, automatically set to the simulated entropy, using the function SimulateEntropy. For existing objects, resolves to the current field value.",
 				Category -> "Physical Properties",
 				Widget -> Widget[
 					Type -> Quantity,
@@ -103,10 +96,10 @@ DefineOptions[UploadOligomer,
 			},
 			{
 				OptionName -> FreeEnergy,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Description -> "The expected Gibbs Free Energy for the binding of this oligomer model to its reverse complement at 37 Celsius.",
-				ResolutionDescription -> "Automatically set to the simulated free energy, using the function SimulateFreeEnergy.",
+				ResolutionDescription -> "For new objects, automatically set to the simulated free energy, using the function SimulateFreeEnergy. For existing objects, resolves to the current field value.",
 				Category -> "Physical Properties",
 				Widget -> Widget[
 					Type -> Quantity,
@@ -132,9 +125,9 @@ UploadOligomer[myStructures:ListableP[_?StructureQ | _?StrandQ], myTypes:Listabl
 ];
 
 
-InstallDefaultUploadFunction[UploadOligomer, Model[Molecule, Oligomer], OptionResolver -> resolveUploadNucleicAcidModelOptions];
-InstallValidQFunction[UploadOligomer, Model[Molecule, Oligomer]];
-InstallOptionsFunction[UploadOligomer, Model[Molecule, Oligomer]];
+installDefaultUploadFunction[UploadOligomer, Model[Molecule, Oligomer], OptionResolver -> resolveUploadNucleicAcidModelOptions];
+installDefaultValidQFunction[UploadOligomer, Model[Molecule, Oligomer]];
+installDefaultOptionsFunction[UploadOligomer, Model[Molecule, Oligomer]];
 InstallIdentityModelTests[
 	UploadOligomer,
 	"Upload a model for a biological macromolecule composed of a limited number of monomeric units:",

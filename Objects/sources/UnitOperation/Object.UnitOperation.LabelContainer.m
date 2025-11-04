@@ -37,6 +37,16 @@ DefineObjectType[Object[UnitOperation,LabelContainer],
 				Category -> "General",
 				Migration->SplitField
 			},
+			(* NOTE: These are all resource picked at once so that we can avoid having multiple resource picking tasks. *)
+			RequiredObjects -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Container]| Model[Container],
+				Description -> "All container objects to be resource picked for the unit operation.",
+				Category -> "General",
+				Developer -> True
+			},
 			Restricted -> {
 				Format -> Multiple,
 				Class -> Boolean,

@@ -454,8 +454,7 @@ validSampleQTests[packet:PacketP[Object[Sample]]]:=Module[
 				True
 			],
 			True,
-			Message :> Hold[Error::AnalytesNotInModels],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::AnalytesNotInModels], identifier}
 		],
 
 		Test["If sample is public all member of Composition are public as well:",
@@ -576,8 +575,7 @@ validSampleQTests[packet:PacketP[Object[Sample]]]:=Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::NonSolventConcentratedBufferDiluent],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NonSolventConcentratedBufferDiluent], identifier}
 		],
 
 		Test["If Model[UsedAsSolvent] is True or Model[UsedAsMedia] is True, Solvent and Media must be Null for " <> ToString[identifier] <> ":",
@@ -586,8 +584,7 @@ validSampleQTests[packet:PacketP[Object[Sample]]]:=Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::UsedAsSolventTrueAndPopulatedSolvent],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::UsedAsSolventTrueAndPopulatedSolvent], identifier}
 		],
 
 		Test["If Solvent or Media is populated, Model[UsedAsSolvent] and Model[UsedAsMedia] must be False for " <> ToString[identifier] <> ":",
@@ -596,8 +593,7 @@ validSampleQTests[packet:PacketP[Object[Sample]]]:=Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::UsedAsSolventTrueAndPopulatedSolvent],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::UsedAsSolventTrueAndPopulatedSolvent], identifier}
 		],
 
 		Test["If Model[UsedAsMedia] is set to True and Model[State] is Liquid, then Model[UsedAsSolvent] must also be set to True for " <> ToString[identifier] <> ":",

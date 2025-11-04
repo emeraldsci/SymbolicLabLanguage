@@ -50,6 +50,14 @@ DefineObjectType[Model[Sensor], {
 			Description -> "A photo of this sensor model.",
 			Category -> "Organizational Information"
 		},
+		Icon -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "A simplified image used to represent this sensor.",
+			Category -> "Organizational Information"
+		},
 		UserManualFiles -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -57,6 +65,15 @@ DefineObjectType[Model[Sensor], {
 			Relation -> Object[EmeraldCloudFile],
 			Description -> "PDFs for the manuals or instruction guides for this model of sensor.",
 			Category -> "Organizational Information"
+		},
+		USPCategorization -> {
+			Format -> Single,
+			Class -> {Expression, Expression},
+			Pattern :> {USPCategorizationP, USPCategorizationJustificationP},
+			Description -> "The USP Group, as outlined in USP 1058, with which this sensor is associated and the justification for that classification. Group A represents the least complex instruments that do not have measurement capability or require calibration. Group B represents instruments that may provide a measurement or an experimental condition that can affect measurement. Group C represents complex analytical instruments with a significant degree of computerization.",
+			Headers -> {"USP Group", "Justification"},
+			Category -> "Organizational Information",
+			Developer -> True
 		},
 		SensorOutputSignal -> {
 			Format -> Single,
@@ -160,14 +177,6 @@ DefineObjectType[Model[Sensor], {
 			Description -> "Products ordering information for this model if this model is part of one or more kits.",
 			Category -> "Inventory"
 		},
-		MixedBatchProducts -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Product][MixedBatchComponents, ProductModel],
-			Description -> "Products ordering information for this model if this model is part of one or more mixed batches.",
-			Category -> "Inventory"
-		},
 		StickeredUponArrival -> {
 			Format -> Single,
 			Class -> Expression,
@@ -245,7 +254,15 @@ DefineObjectType[Model[Sensor], {
 			Description -> "A list of containers for which this model of sensor acts as a replacement part or an accompanying accessory.",
 			Category -> "Inventory"
 		},
-
+		StickerPositionImage -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description ->  "An image of this model that indicates the correct position for affixing barcode stickers.",
+			Category -> "Inventory",
+			Developer->True
+		},
 		(* --- Quality Assurance --- *)
 		ReceivingBatchInformation -> {
 			Format -> Multiple,

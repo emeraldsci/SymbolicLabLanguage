@@ -3171,10 +3171,15 @@ resolveUploadStockSolutionOptions[
 	];
 
 	(* get the pre-resolved MixTime *)
+	(* If Mix -> True, Autoclave -> True, MixType is not specified as something that has to have a MixTime, and MixTime is not specified, no need to do extended mixing, Null the MixTime option so that MixType will resolve to something simple *)
 	(* if Mix -> True, Incubate -> True, IncubationTime is specified, and MixTime is Automatic, then resolve to the IncubationTime; otherwise just stick with what we have *)
-	preResolvedMixTime = If[resolvedMixBool && resolvedIncubateBool && TimeQ[Lookup[safeOptionsTemplateReplaced, IncubationTime]] && MatchQ[Lookup[safeOptionsTemplateReplaced, MixTime], Automatic],
-		Lookup[safeOptionsTemplateReplaced, IncubationTime],
-		Lookup[safeOptionsTemplateReplaced, MixTime]
+	preResolvedMixTime = Which[
+		resolvedMixBool && resolvedAutoclaveBoolean && !MatchQ[Lookup[safeOptionsTemplateReplaced, MixType], Alternatives[Roll, Vortex, Sonicate, Stir, Shake, Homogenize, Disrupt, Nutate]],
+			Null,
+		resolvedMixBool && resolvedIncubateBool && TimeQ[Lookup[safeOptionsTemplateReplaced, IncubationTime]] && MatchQ[Lookup[safeOptionsTemplateReplaced, MixTime], Automatic],
+			Lookup[safeOptionsTemplateReplaced, IncubationTime],
+		True,
+			Lookup[safeOptionsTemplateReplaced, MixTime]
 	];
 
 	(* get the pre-resolved IncubationTime *)

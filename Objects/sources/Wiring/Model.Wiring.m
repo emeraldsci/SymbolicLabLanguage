@@ -84,6 +84,15 @@ DefineObjectType[Model[Wiring], {
 			Description -> "A photo of this model of wiring component.",
 			Category -> "Wiring Information"
 		},
+
+		Icon -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "A simplified image used to represent this wiring component.",
+			Category -> "Wiring Information"
+		},
 		
 		ProductDocumentationFiles -> {
 			Format -> Multiple,
@@ -222,16 +231,7 @@ DefineObjectType[Model[Wiring], {
 			Description -> "Products ordering information for this model if this model is part of one or more kits.",
 			Category -> "Inventory"
 		},
-		
-		MixedBatchProducts -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Product][MixedBatchComponents, ProductModel],
-			Description -> "Products ordering information for this model if this model is part of one or more mixed batches.",
-			Category -> "Inventory"
-		},
-		
+
 		StickeredUponArrival -> {
 			Format -> Single,
 			Class -> Expression,
@@ -295,7 +295,15 @@ DefineObjectType[Model[Wiring], {
 			Description -> "A list of containers for which this model of wiring object acts as a replacement part or an accompanying accessory.",
 			Category -> "Inventory"
 		},
-
+		StickerPositionImage -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description ->  "An image of this model that indicates the correct position for affixing barcode stickers.",
+			Category -> "Inventory",
+			Developer->True
+		},
 
 		(* --- Storage --- *)
 		Expires -> {

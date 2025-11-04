@@ -197,13 +197,24 @@ DefineObjectType[Object[Part], {
 			Category -> "Organizational Information",
 			Headers -> {"Date","Dishwash Protocol"}
 		},
+		GMPQualified -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this object currently meets the requirements for Good Manufacturing Practices.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
 
 		(* --- Quality Assurance --- *)
 		Certificates -> {
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Report, Certificate][PartCertified],
+			Relation->Alternatives[
+				Object[Report, Certificate][PartCertified],
+				Object[Report, Certificate][PartsCertified]
+			],
 			Description->"The quality assurance documentation and data for this part.",
 			Category->"Quality Assurance"
 		},

@@ -36,7 +36,7 @@ DefineObjectType[Object[Qualification,Training,GatherResource], {
       Format -> Single,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Model[Container]|Object[Container],
+      Relation -> Model[Container] | Model[Instrument, HandlingStation, Ambient] | Model[Instrument, HandlingStation, FumeHood] | Object[Container] | Object[Instrument, HandlingStation, Ambient] | Object[Instrument, HandlingStation, FumeHood],
       Description -> "The location where the operator is asked to move the labware in order to demonstrate the use of racks.",
       Category -> "General"
     },

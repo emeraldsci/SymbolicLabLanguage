@@ -43,6 +43,14 @@ DefineObjectType[Model[Part], {
 			Description -> "An example photo of this model of part.",
 			Category -> "Organizational Information"
 		},
+		Icon -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "A simplified image used to represent this part.",
+			Category -> "Part Specifications"
+		},
 		DeveloperObject -> {
 			Format -> Single,
 			Class -> Expression,
@@ -59,6 +67,15 @@ DefineObjectType[Model[Part], {
 			Description -> "Detailed drawings of the part that explain its capabilities and limitations.",
 			Category -> "Part Specifications",
 			Headers -> {"Schematic","Caption"}
+		},
+		USPCategorization -> {
+			Format -> Single,
+			Class -> {Expression, Expression},
+			Pattern :> {USPCategorizationP, USPCategorizationJustificationP},
+			Description -> "The USP Group, as outlined in USP 1058, with which this part is associated and the justification for that classification. Group A represents the least complex instruments that do not have measurement capability or require calibration. Group B represents instruments that may provide a measurement or an experimental condition that can affect measurement. Group C represents complex analytical instruments with a significant degree of computerization.",
+			Headers -> {"USP Group", "Justification"},
+			Category -> "Organizational Information",
+			Developer -> True
 		},
 
 		(* --- Quality Assurance --- *)
@@ -194,14 +211,6 @@ DefineObjectType[Model[Part], {
 			Description -> "Products ordering information for this model if this model is part of one or more kits.",
 			Category -> "Inventory"
 		},
-		MixedBatchProducts -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Product][MixedBatchComponents, ProductModel],
-			Description -> "Products ordering information for this model if this model is part of one or more mixed batches.",
-			Category -> "Inventory"
-		},
 		StickeredUponArrival -> {
 			Format -> Single,
 			Class -> Expression,
@@ -319,6 +328,15 @@ DefineObjectType[Model[Part], {
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
 			Description -> "A file containing an image of showing the designated orientation of this object in storage as defined by the StorageOrientation.",
+			Category -> "Inventory",
+			Developer->True
+		},
+		StickerPositionImage -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description ->  "An image of this model that indicates the correct position for affixing barcode stickers.",
 			Category -> "Inventory",
 			Developer->True
 		},

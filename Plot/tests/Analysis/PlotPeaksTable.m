@@ -74,6 +74,11 @@ DefineTests[PlotPeaksTable,
         KeyValuePattern[Columns -> {Position, RelativePosition, Height, Area, RelativeArea}]
       }
     ],
+    Test[
+      "When provided a peaks analysis object and a single peak field is specified in Column, a dynamic table of peak information is generated which displays the submitted columns:",
+      PlotPeaksTable[Object[Analysis, Peaks, "Test HPLC peak analysis 1 for PlotPeaksTable testing " <> $SessionUUID], Columns -> Area],
+      _DynamicModule
+    ],
     Example[
       {Options, NMR, "When a peak analysis of NMR data is provided and NMR is set to True, the traditional (non-NMR) peak information will be displayed in a dynamic table:"},
       PlotPeaksTable[
@@ -199,13 +204,13 @@ DefineTests[PlotPeaksTable,
       Messages :> {Warning::NoPeaksInAnalysis}
     ],
     Example[
-      {Message, "InvalidColumns", "If Columns are specified that do not match NMR and the data type, a warning will be thrown and the invalid columns will not appear in the peaks table:"},
+      {Message, "InvalidNMRColumns", "If Columns are specified that do not match NMR and the data type, a warning will be thrown and the invalid columns will not appear in the peaks table:"},
       PlotPeaksTable[
         Object[Analysis, Peaks, "Test HPLC peak analysis 1 for PlotPeaksTable testing " <> $SessionUUID],
         Columns -> {Position}
       ],
       _DynamicModule,
-      Messages :> {Warning::InvalidColumns}
+      Messages :> {Warning::InvalidNMRColumns}
     ],
     Test[
       "If NMR peak analysis fields are entered in Columns but the reference data is not NMR data, a warning will be thrown and the invalid columns will not appear in the peaks table:",
@@ -214,7 +219,7 @@ DefineTests[PlotPeaksTable,
         Columns -> {NMRChemicalShift}
       ],
       _DynamicModule,
-      Messages :> {Warning::InvalidColumns}
+      Messages :> {Warning::InvalidNMRColumns}
     ],
     Test[
       "If NMR peak analysis fields are entered in Columns but NMR is set to False, a warning will be thrown and the invalid columns will not appear in the peaks table:",
@@ -224,7 +229,7 @@ DefineTests[PlotPeaksTable,
         Columns -> {NMRChemicalShift}
       ],
       _DynamicModule,
-      Messages :> {Warning::InvalidColumns}
+      Messages :> {Warning::InvalidNMRColumns}
     ],
     Test[
       "If traditional peak analysis fields are entered in Columns but NMR is set to True and the reference data is NMR data, a warning will be thrown and the invalid columns will not appear in the peaks table:",
@@ -234,13 +239,22 @@ DefineTests[PlotPeaksTable,
         Columns -> {Position}
       ],
       _DynamicModule,
-      Messages :> {Warning::InvalidColumns}
+      Messages :> {Warning::InvalidNMRColumns}
     ],
     Example[
       {Message, "NoNMRAnalysisToDisplay", "If NMR is set to True, the reference data is NMR data, and NMR peak splitting information is not available, a warning will be thrown and the peaks table will use the traditional peak fields (such as Position instead of NMRChemicalShift):"},
       PlotPeaksTable[Object[Analysis, Peaks, "Test empty NMR peak analysis for PlotPeaksTable testing " <> $SessionUUID]],
       _DynamicModule,
       Messages :> {Warning::NoNMRAnalysisToDisplay}
+    ],
+    Example[
+      {Message, "InvalidColumnInformations", "If Columns are specified which do not have information for all peaks, a warning will be thrown and the invalid columns will not appear in the peaks table:"},
+      PlotPeaksTable[
+        Object[Analysis, Peaks, "Test large HPLC peak analysis for PlotPeaksTable testing " <> $SessionUUID],
+        Columns -> {Area, WidthRangeEnd}
+      ],
+      _DynamicModule,
+      Messages :> {Warning::InvalidColumnInformation}
     ]
   },
   SetUp :> Module[
@@ -418,7 +432,6 @@ DefineTests[PlotPeaksTable,
           Name -> "Test large HPLC peak analysis for PlotPeaksTable testing " <> $SessionUUID,
           Replace[Reference] -> {Link[testHPLCData2, FluorescencePeaksAnalyses]},
           ReferenceField -> Fluorescence,
-          Replace[AbsoluteThreshold] -> {0.534},
           Replace[AdjacentResolution] -> {
             0., 48.4316, 116.176, 39.7059, 4.21569, 2.10084, 1.56863, 18.8236, 2.56684, 13.9216, 27.4866, 7.23982,
             1.76471, 1.27451, 61.3725, 7.05882, 1.32353, 3.95722, 37.4332, 56.2569, 22.3529
@@ -428,7 +441,6 @@ DefineTests[PlotPeaksTable,
             0.0000295011, 0.0000251289, 0.0000527738, 0.0000270585, 0.0000471062, 0.0000307586, 0.0000387648,
             0.0000467544, 0.0000488748, 0.000020864, 0.0000327949, 0.0000229448, 0.0000403965, 0.0000302587
           },
-          Replace[AreaThreshold] -> {0.},
           Replace[AsymmetryFactor] -> {
             0.666667, 0.75, 1.5, 0.75, 0.666667, 2., 0.8, 1., 0.666667, 0.75, 1., 2., 0.666667, 1.33333, 1.5, 0.375,
             0.666667, 1., 1.5, 0.5, 0.75
@@ -519,10 +531,7 @@ DefineTests[PlotPeaksTable,
             0.833333, 0.875, 1.25, 0.875, 0.833333, 1.5, 0.9, 1., 0.833333, 0.875, 1., 1.5, 0.833333, 1.16667, 1.25,
             0.6875, 0.833333, 1., 1.25, 0.75, 0.875
           },
-          Replace[WidthRangeEnd] -> {
-            0.48475, 0.707501, 1.24075, 1.423, 1.4419, 1.45495, 1.47205, 1.6426, 1.65295, 1.7173, 1.8325, 1.8703, 1.87795,
-            1.8847, 2.16595, 2.20915, 2.2168, 2.2339, 2.3914, 2.62765, 2.73925
-          },
+          Replace[WidthRangeEnd] -> {},
           Replace[WidthRangeStart] -> {
             0.4825, 0.704351, 1.2385, 1.41985, 1.43965, 1.4509, 1.46395, 1.6399, 1.6507, 1.71415, 1.8307, 1.86625,
             1.8757, 1.88155, 2.1637, 2.2042, 2.21455, 2.2312, 2.38915, 2.62495,

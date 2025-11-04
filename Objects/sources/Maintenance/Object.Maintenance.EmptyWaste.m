@@ -5,7 +5,7 @@
 
 
 DefineObjectType[Object[Maintenance, EmptyWaste], {
-	Description->"A protocol that inspects waste bins and emptyies/replaces them if necessary.",
+	Description->"A protocol that inspects waste bins and empties/replaces them if necessary.",
 	CreatePrivileges->None,
 	Cache->Session,
 	Fields -> {

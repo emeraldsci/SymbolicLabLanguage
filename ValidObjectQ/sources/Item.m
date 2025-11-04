@@ -1517,6 +1517,14 @@ validItemWilhelmyPlateQTests[packet:PacketP[Object[Item,WilhelmyPlate]]]:={
 };
 
 
+validItemWeighBoatQTests[packet:PacketP[Object[Item,WeighBoat]]]:={};
+
+validItemWeighBoatWeighingFunnelQTests[packet:PacketP[Object[Item,WeighBoat,WeighingFunnel]]]:={};
+
+validItemSpatulaQTests[packet:PacketP[Object[Item,Spatula]]]:={};
+
+
+
 (* ::Subsection:: *)
 (* Test Registration *)
 
@@ -1593,3 +1601,6 @@ registerValidQTestFunction[Object[Item,Septum],validCoverObjectsQTests];
 registerValidQTestFunction[Object[Item,Lid],validCoverObjectsQTests];
 registerValidQTestFunction[Object[Item,Stopper],validCoverObjectsQTests];
 registerValidQTestFunction[Object[Item, WasteLabel], validItemWasteLabelQTests];
+registerValidQTestFunction[Object[Item, WeighBoat], validItemWeighBoatQTests];
+registerValidQTestFunction[Object[Item, WeighBoat, WeighingFunnel], validItemWeighBoatWeighingFunnelQTests];
+registerValidQTestFunction[Object[Item, Spatula], validItemSpatulaQTests];

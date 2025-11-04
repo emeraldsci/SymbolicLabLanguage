@@ -70,6 +70,8 @@ DefineOptions[ExperimentMeasureCount,
 				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Vessel, \"50mL Tube\"]."
 			}
 		],
+		WeightStabilityDurationOption,
+		MaxWeightVariationOption,
 		SamplesInStorageOptions,
 		SubprotocolDescriptionOption,
 		SimulationOption
@@ -93,7 +95,8 @@ Warning::SolidUnitWeightKnown="For sample(s) `1`, the option `2` is specified al
 
 (* ::Subsubsection::Closed:: *)
 (*ExperimentMeasureCount*)
-
+(* Use Model[Instrument, Balance, "Ohaus EX225AD"] to measure weight *)
+$MeasureCountBalanceModel = Model[Instrument, Balance, "id:rea9jl5Vl1ae"];
 
 ExperimentMeasureCount[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Object[Item],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,
@@ -294,11 +297,17 @@ ExperimentMeasureCount[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 		cache,
 		Quiet[
 			Download[
-				ToList@mySamplesWithPreparedSamples,
 				{
-					Evaluate@Packet[objectSampleFields],
-					Packet[Container[objectContainerFields]],
-					Packet[Container[Model[modelContainerFields]]]
+					ToList@mySamplesWithPreparedSamples,
+					ToList[$MeasureCountBalanceModel]
+				},
+				{
+					{
+						Evaluate@Packet[objectSampleFields],
+						Packet[Container[objectContainerFields]],
+						Packet[Container[Model[modelContainerFields]]]
+					},
+					{Packet[AllowedMaxVariation]}
 				},
 				Cache -> cache,
 				Simulation -> updatedSimulation,
@@ -437,7 +446,7 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 		mapThreadFriendlyOptions, measureTotalWeightList, parameterizeSolidUnitsList, solidUnitParameterizationReplicatesList, replicates,
 		name, confirm, canaryBranch, template, samplesInStorageCondition, operator, parentProtocol, upload, outputOption, email,
 		imageSample, resolvedEmail, resolvedImageSample, numberOfReplicates, resolvedOptions, allTests, resultRule, testsRule,
-		invalidInputs, invalidOptions
+		invalidInputs, invalidOptions, resolvedWeightStabilityDuration, resolvedMaxWeightVariation, fastAssoc
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -456,6 +465,7 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	(* Fetch our cache from the parent function. *)
 	inheritedCache = Lookup[ToList[myResolutionOptions],Cache,{}];
 	simulation = Lookup[ToList[myResolutionOptions],Simulation,{}];
+	fastAssoc = makeFastAssocFromCache[inheritedCache];
 
 	(* Separate out our MeasureCount options from our Sample Prep options. *)
 	{samplePrepOptions,measureCountOptions}=splitPrepOptions[myOptions];
@@ -470,7 +480,7 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	];
 
 	(* Extract the packets that we need from our downloaded cache. *)
-	allSamplePackets=Flatten[
+	allSamplePackets = Flatten[
 		Quiet[
 			Download[
 				{
@@ -1127,6 +1137,17 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 		]
 	];
 
+	(* Resolve balance options *)
+	(* Resolve WeightStabilityDuration and MaxWeightVariation *)
+	resolvedWeightStabilityDuration = If[MatchQ[Lookup[measureCountOptionsAssociation, WeightStabilityDuration], Except[Automatic]],
+		Lookup[measureCountOptionsAssociation, WeightStabilityDuration],
+		60 Second
+	];
+	(* always use Model[Instrument, Balance, "Ohaus EX225AD"], so resolve to the AllowedMaxVariation of it *)
+	resolvedMaxWeightVariation = If[MatchQ[Lookup[measureCountOptionsAssociation, MaxWeightVariation], Except[Automatic]],
+		Lookup[measureCountOptionsAssociation, MaxWeightVariation],
+		fastAssocLookup[fastAssoc, $MeasureCountBalanceModel, AllowedMaxVariation]/.{$Failed -> 0.1 Milligram}
+	];
 
 	(*-- POST OPTION RESOLUTION ERROR CHECKING --*)
 
@@ -1182,6 +1203,8 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 				MeasureTotalWeight -> measureTotalWeightList,
 				ParameterizeSolidUnits -> parameterizeSolidUnitsList,
 				SolidUnitParameterizationReplicates -> solidUnitParameterizationReplicatesList,
+				WeightStabilityDuration -> resolvedWeightStabilityDuration,
+				MaxWeightVariation -> resolvedMaxWeightVariation,
 				NumberOfReplicates -> numberOfReplicates,
 				Confirm -> confirm,
 				CanaryBranch -> canaryBranch,
@@ -1252,7 +1275,8 @@ measureCountResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedO
 		parameterizeSolidUnitsBool,expandedParameterizeSolidUnitsBool,expandedResourcesNeedingParameterization,solidUnitReplicates,
 		expandedSolidUnitReplicates,estimatedWeighingTime,measureTotalWeightBool,expandedMeasureTotalWeightBool,
 		expandedResourcesNeedingTotalWeight,operator,protocolPacket,sharedFieldPacket,finalizedPacket,allResources,
-		fulfillable,frqTests,previewRule,optionsRule,testsRule,resultRule,parameterizationQ,balance,weighboats,tweezer
+		fulfillable,frqTests,previewRule,optionsRule,testsRule,resultRule,parameterizationQ,balance,weighboats,
+		reservoirs, tweezer
   },
 
 	(* Determine the requested output format of this function. *)
@@ -1372,21 +1396,41 @@ measureCountResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedO
 	parameterizationQ = MemberQ[parameterizeSolidUnitsBool,True];
 
 	(* If we are parameterizing, we need balance, tweezers, and weighboats - otherwise we can leave these empty since ExperimentMeasureWeight will take care of its own resources *)
-	balance=If[parameterizationQ,
+	balance = If[parameterizationQ,
 		Resource[
-			Instrument->Model[Instrument,Balance,"Ohaus Pioneer PA124"],
-			Time->estimatedWeighingTime
+			(* Model[Instrument, Balance, "Ohaus EX225AD"] *)
+			Instrument -> $MeasureCountBalanceModel,
+			Time -> estimatedWeighingTime
 		],
 		Null
 	];
 
-	(* If we're parameterizing: since we need 1 weighboat for counting out 10 tablets/sachets, and 1 for weighing the individual tablet/sachet, 'Amount' needs to be twice the amount of samples that are being parameterized *)
-	weighboats = If[parameterizationQ,
-		Resource[
-			Sample -> Model[Item, WeighBoat, "Weigh boats, medium"],
-			Amount -> 2 * Length[expandedResourcesNeedingParameterization]
+	(* If we're parameterizing: 1 weighboat for counting out 10 tablets/sachets to the bench. *)
+	reservoirs = If[parameterizationQ,
+		MapIndexed[If[TrueQ[#1],
+			Resource[
+				Sample -> Model[Item, WeighBoat, "id:Vrbp1jaq5Ojz"],(*Weigh boats, medium, Individual*)
+				Name -> "Weigh Boat " <> ToString[#2[[1]]] <> " For Bench"
+			],
+			Null
+		]&,
+			expandedParameterizeSolidUnitsBool
 		],
-		Null
+		{}
+	];
+
+	(* If we're parameterizing: one for weighing the individual tablet/sachet *)
+	weighboats = If[parameterizationQ,
+		MapIndexed[If[TrueQ[#1],
+			Resource[
+				Sample -> Model[Item, WeighBoat, "id:Vrbp1jaq5Ojz"],(*Weigh boats, medium, Individual*)
+				Name -> "Weigh Boat " <> ToString[#2[[1]]] <> " For Balance"
+			],
+			Null
+		]&,
+			expandedParameterizeSolidUnitsBool
+		],
+		{}
 	];
 
 	tweezer=If[parameterizationQ,
@@ -1404,9 +1448,18 @@ measureCountResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedO
 		Replace[ContainersIn]-> (Link[Resource[Sample->#],Protocols]&)/@containersIn,
 		Replace[SolidUnitWeightParameterizations] -> expandedResourcesNeedingParameterization,
 		Replace[SolidUnitParameterizationReplicates] -> expandedSolidUnitReplicates,
-		WeighBoat -> Link[weighboats],
+		Replace[Reservoirs] -> Link /@ reservoirs,
+		Replace[WeighBoats] -> Link /@ weighboats,
 		Tweezer -> Link[tweezer],
 		Balance-> Link[balance],
+		WeightStabilityDuration -> If[parameterizationQ,
+			Lookup[myResolvedOptions,WeightStabilityDuration],
+			Null
+		],
+		MaxWeightVariation -> If[parameterizationQ,
+			Lookup[myResolvedOptions,MaxWeightVariation],
+			Null
+		],
 		Replace[TotalWeightMeasurementSamples]->expandedResourcesNeedingTotalWeight,
 		Replace[NumberOfReplicates]->numReplicates,
     ImageSample->Lookup[resolvedOptionsNoHidden,ImageSample],

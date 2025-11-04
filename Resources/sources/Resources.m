@@ -4686,13 +4686,19 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 					modelClause = Model == (Alternatives @@ Lookup[modelPacket, Object]),
 					(*we explicitly forbid reuse of InUse covers so we don't steal covers from other containers while we are fulfilling a Model resource*)
 					(*we also forbid a non-reusable container to be picked as Available, just in case they were used in another protocol with no sample uploaded to it due to it being used as intermediate container or some other bug *)
+					(* if the model is dishwashable, only allowed stocked *)
 					statusClause = Which[
-						MatchQ[Lookup[modelPacket, Object], {ObjectP[Join[CoverModelTypes, {Model[Item, Stopper], Model[Item, Septum]}]]..}],
-						Status == (Available | Stocked),
-						MatchQ[Lookup[modelPacket, Object], {ObjectP[FluidContainerModelTypes]..}] && MatchQ[Lookup[modelPacket, Reusable], {Except[True]..}],
-						Status == Stocked,
+						MatchQ[Lookup[modelPacket, Object], {ObjectP[Join[CoverModelTypes, {Model[Item, Stopper], Model[Item, Septum]}, {Model[Item, WeighBoat, WeighingFunnel]}]]..}],
+							Status == (Available | Stocked),
+
+						Or[
+							MatchQ[Lookup[modelPacket, CleaningMethod], CleaningMethodP],
+							MatchQ[Lookup[modelPacket, Object], {ObjectP[FluidContainerModelTypes]..}] && MatchQ[Lookup[modelPacket, Reusable], {Except[True]..}]
+						],
+							Status == Stocked,
+
 						True,
-						Status == (Available | Stocked | InUse)
+							Status == (Available | Stocked | InUse)
 					],
 					(*the only time we care about this is when we are looking for public samples*)
 					notebookClause = If[nullNotebookQ,
@@ -6654,7 +6660,7 @@ ModelInstances[myRequestedModels:{ObjectP[{Model[Sample],Model[Item]}]..},myRequ
 	downloadValues = Quiet[
 		Download[
 			{myRequestedModels,allContainerModels},
-			{{Packet[AlternativePreparations]},{Object}}
+			{{Packet[AlternativePreparations, CleaningMethod]},{Object}}
 		]
 	];
 
@@ -6680,7 +6686,7 @@ ModelInstances[myRequestedModels:{ObjectP[{Model[Sample],Model[Item]}]..},myRequ
 			Module[{models,containerTypes,maxNumberOfUses,maxNumberOfHours,usesRequired,exactAmount,volumeOfUsesRequired,
 				tolerance,well,usesAvailable,amountField,amountSearchClause,containerQuery,hoursQuery,usesQuery,coveredContainerQuery,
 				statusQuery,positionQuery,baseQuery,nullNotebookQuery,maxVolumeOfUses,volumeUsesAvailable,volumeUsesQuery,
-				sterile, sterileQuery},
+				sterile, sterileQuery, pickableStatus},
 
 				(* get all the alternative preparations if we were passed in a stock solution packet *)
 				(* this will come in the form of an alternatives construct for the Search below if it's more than one, or just the thing itself if it is not *)
@@ -6772,15 +6778,19 @@ ModelInstances[myRequestedModels:{ObjectP[{Model[Sample],Model[Item]}]..},myRequ
 					True
 				];
 
+				(* determine if we have a washable resource - if so restrict the Search to Stocked to avoid picking dirty objects that have been incorrectly released *)
+				pickableStatus = If[MatchQ[Lookup[requestedModelPacket, CleaningMethod], CleaningMethodP], Stocked, (Stocked|Available)];
+
 				(*we explicitly forbid reuse of InUse covers so we don't steal covers from other containers while we are fulfilling a Model resource*)
-				statusQuery = If[MatchQ[sampleType, ObjectP[Join[CoverObjectTypes, {Object[Item, Stopper], Object[Item, Septum]}]]],
+				(*also exclude weighing funnel for repeated resource picking - they are individually IDed, and we have retry logic to pick new weighing funnels after the initial ones are already picked. For example, if we need to retry for our first transfer, we don't want the weighing funnel we picked for the second transfer to be used here for retry. Instead we need to pick a new one. *)
+				statusQuery = If[MatchQ[sampleType, TypeP[Join[CoverObjectTypes, {Object[Item, Stopper], Object[Item, Septum]}, {Object[Item, WeighBoat, WeighingFunnel]}]]],
 					And[
-						Status == (Available | Stocked),
+						Status == pickableStatus,
 						CurrentProtocol == Null
 					],
 					Or[
 						And[
-							Status == (Available | Stocked),
+							Status == pickableStatus,
 							CurrentProtocol == Null
 						],
 						(* rootProtocol may be Null if we're calling this from ExperimentTransfer in which case we only want the Available|Stocked criteria above *)

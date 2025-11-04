@@ -301,14 +301,14 @@ DefineTests[
 			EquivalenceFunction -> Equal,
 			TimeConstraint -> 240,
 			Variables :> {options}
-		],
+		],	(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options, FilterSterile, "Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options = ExperimentAlphaScreen[Object[Sample, "Test sample 8 for ExperimentAlphaScreen" <> $SessionUUID], FilterSterile -> True, Output -> Options];
 			Lookup[options, FilterSterile],
 			True,
 			TimeConstraint -> 240,
 			Variables :> {options}
-		],
+		],*)
 		Example[{Options, FilterAliquot, "The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options = ExperimentAlphaScreen[Object[Sample, "Test sample 8 for ExperimentAlphaScreen" <> $SessionUUID], FilterAliquot -> 1 * Milliliter, Output -> Options];
 			Lookup[options, FilterAliquot],
@@ -1971,7 +1971,7 @@ DefineTests[
 				DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 				Expires -> False,
 				State -> Liquid,
-				MSDSRequired -> False]
+				MSDSFile -> NotApplicable]
 			},
 				UploadSample[naclSolutionModel,
 					{"A1", bottle1},

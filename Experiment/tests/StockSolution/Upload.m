@@ -3230,6 +3230,21 @@ DefineTests[UploadStockSolution,
 				{Sterile, AsepticHandling}
 			],
 			{True, True}
+		],
+		Test["If Autoclave -> True, MixTime is resolved to Null and MixType is resolved to one of the simple mix types that uses NumberOfMixes:",
+			Download[
+				UploadStockSolution[
+					{
+						{500 Milliliter, Model[Sample, "Milli-Q water"]},
+						{500 Milliliter, Model[Sample, "Methanol"]}
+					},
+					Autoclave -> True,
+					Mix -> True
+				],
+				{NumberOfMixes, MixTime}
+			],
+			(* Note that the MixType of the StockSolution model generated is Null if not specified, but it is okay. When ExperimentStockSolution is called on it with a specific volume, a mixtype will be resolved accordingly.*)
+			{GreaterP[0], Null}
 		]
 	},
 	(* need to do this because we still want the StorageCondition search to return the real objects and not the fake ones even if $DeveloperSearch = True *)

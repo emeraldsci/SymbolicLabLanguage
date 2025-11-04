@@ -814,7 +814,7 @@ simulateReadPlateExperiment[
 		Module[
 			{blankModels, uniqueContainerPackets, lunaticQ, cuvetteQ, numberOfReplicates, blankVolumeTuplesToMove,
 				blanksToMove, volumesToMove, allWells, emptyPositions, uniquePositionsRequired, maxExtraContainerPositions,
-				allEmptyPositions, blankContainersModel, extraBlankCuvette, allBlankDestinations, bmgBlankPackets, blankContainersToUse,
+				allEmptyPositions, blankContainersModel, allBlankDestinations, bmgBlankPackets, blankContainersToUse,
 				allBMGPlates, combinedSamplesAndBlankPackets,combinedSamplesAndBlanks, combinedSamplesAndBlankModels, maxWellsInOrder, allWellsToTransferTo,
 				waterWellsToTransferTo,sampleBlankWellsToTransferTo, controlSample, controlSampleModel, controlLoadingPackets, lunaticLoadingPackets},
 
@@ -847,8 +847,23 @@ simulateReadPlateExperiment[
 			];
 
 			(* get the blanks to move and the volumes to move *)
-			blanksToMove = blankVolumeTuplesToMove[[All, 1]];
-			volumesToMove = blankVolumeTuplesToMove[[All, 2]];
+			(* note that we only allow one blank in cuvette method (Error::TooManyBlanks) *)
+			blanksToMove = Which[
+				cuvetteQ && Length[blankVolumeTuplesToMove[[All, 1]]] > 0,
+				{First[blankVolumeTuplesToMove[[All, 1]]]},
+				cuvetteQ && Length[blankVolumeTuplesToMove[[All, 1]]] == 0,
+				{},
+				True,
+				blankVolumeTuplesToMove[[All, 1]]
+			];
+			volumesToMove = Which[
+				cuvetteQ && Length[blankVolumeTuplesToMove[[All, 2]]] > 0,
+				{First[blankVolumeTuplesToMove[[All, 2]]]},
+				cuvetteQ && Length[blankVolumeTuplesToMove[[All, 2]]] == 0,
+				{},
+				True,
+				blankVolumeTuplesToMove[[All, 2]]
+			];
 
 			(* get all the wells of the 96 well plate *)
 			allWells = If[MatchQ[workingSampleContainerModelPacket,ListableP[ObjectP[Model[Container]]]],
@@ -875,72 +890,17 @@ simulateReadPlateExperiment[
 			(* almost definitely won't need _all_ these destinations, but having these makes the Join and Take calls below easier *)
 			(* AbsorbanceKinetics can only read one plate at a time so it doesn't use extra blank containers *)
 			maxExtraContainerPositions = If[MatchQ[myProtocolType,TypeP[{Object[Protocol, AbsorbanceSpectroscopy], Object[Protocol, AbsorbanceIntensity]}]],
-				If[cuvetteQ,
-					Flatten[Map[
-						Function[{blankContainer},
-							{#, blankContainer}& /@ (allWells)
-						],
-						blankContainers
-					], 1],
-					Flatten[Map[
+				Flatten[Map[
 					Function[{blankContainer},
 						{#, blankContainer}& /@ (allWells)
 					],
 					blankContainers
-					], 1]
-				],
+				], 1],
 				{}
 			];
-
-			(* if blank container is the same  *)
-			extraBlankCuvette = If[cuvetteQ&&MatchQ[{maxExtraContainerPositions[[1, 2]]}, blankContainers],
-				Module[{aliquotContainerModel,newContainerModelPacket, newContainersModel},
-
-					(* in case containers are not plates, get aliquot container models *)
-					aliquotContainerModel = Select[Flatten[(Lookup[Lookup[protPacket, ResolvedOptions], AliquotContainer])/. Null -> {}], MatchQ[#, ObjectP[Model[Container]]] &];
-
-					(* get a cuvette model to simulate a blank cuvette *)
-					newContainersModel = Which[
-						MatchQ[blankContainers,{(ObjectP[Object[Container, Cuvette]])..}], Download[blankContainers, Model, Simulation -> updatedSimulation],
-						MatchQ[Lookup[uniqueContainerPackets, Model],{(ObjectP[Model[Container, Cuvette]])..}], Lookup[uniqueContainerPackets, Model],
-						MatchQ[aliquotContainerModel, {(ObjectP[Model[Container, Cuvette]])..}], aliquotContainerModel
-					];
-
-					(* simulate cuvette container IDs *)
-					newContainerModelPacket = Map[
-						Module[{type},
-
-							type = Object@@Download[#,Type];
-
-							Association[
-								Type -> type,
-								Object -> SimulateCreateID[type],
-								Model -> Link[#,Objects],
-								Contents -> {},
-								Simulated -> True,
-								Site -> Link[$Site],
-								Notebook -> Link[$Notebook, Objects]
-							]
-						]&,
-						Flatten[{newContainersModel}]
-					];
-
-					(* Update the simulation with our new container packets *)
-					updatedSimulation=UpdateSimulation[updatedSimulation,Simulation[newContainerModelPacket]];
-
-					Flatten[Map[
-						Function[{blankContainer},
-							{#, blankContainer}& /@ (allWells)
-						],
-						Lookup[newContainerModelPacket, Object]
-					], 1]
-				],
-				{}
-			];
-
 
 			(* combine the empty positions with the new container positions *)
-			allEmptyPositions = Join[emptyPositions, extraBlankCuvette, maxExtraContainerPositions];
+			allEmptyPositions = Join[emptyPositions, maxExtraContainerPositions];
 
 			(* get all the blank destinations *)
 			allBlankDestinations = Take[allEmptyPositions, uniquePositionsRequired];

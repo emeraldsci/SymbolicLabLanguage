@@ -40,6 +40,14 @@ DefineObjectType[Object[Container, Bench], {
 			Relation -> Object[Sensor, Temperature],
 			Description -> "The immersion probe that should be used to measure the temperature of any samples transferred in this biosafety cabinet.",
 			Category -> "Instrument Specifications"
+		},
+		WorkstationComputer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Part, Computer],
+			Description -> "The tablet or desktop computer which is mounted on this receiving bench.",
+			Category -> "Integrations"
 		}
 	}
 }];

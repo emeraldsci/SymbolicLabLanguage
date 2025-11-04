@@ -41,6 +41,13 @@ DefineObjectType[Model[Maintenance, Replace, Lamp], {
 			Units -> Hour,
 			Description -> "Length of time the lamp should be turned on for before new protocols are run on the instrument.",
 			Category -> "General"
+		},
+		LampHistoryReport -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates that a lamp usage report will be generated upon completion of maintenance.",
+			Category -> "General"
 		}
 	}
 }];

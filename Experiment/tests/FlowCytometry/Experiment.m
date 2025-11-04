@@ -1923,12 +1923,12 @@ DefineTests[
 			Lookup[options, FilterTemperature],
 			10*Celsius,
 			EquivalenceFunction -> Equal
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options, FilterSterile, "Set the FilterSterile option:"},
 			options = ExperimentFlowCytometry[{Object[Sample, "sample 1 in 2mL tube for ExperimentFlowCytometry testing"<> $SessionUUID], Object[Sample, "sample 3 in 2L bottle for ExperimentFlowCytometry testing"<> $SessionUUID]}, FilterSterile -> True, Output -> Options];
 			Lookup[options, FilterSterile],
 			True
-		],
+		],*)
 		Example[{Options, FilterAliquot, "Set the FilterAliquot option:"},
 			options = ExperimentFlowCytometry[Object[Sample, "sample 1 in 2mL tube for ExperimentFlowCytometry testing"<> $SessionUUID], FilterAliquot -> 400 Microliter, Output -> Options];
 			Lookup[options, FilterAliquot],

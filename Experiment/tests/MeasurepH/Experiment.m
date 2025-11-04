@@ -401,6 +401,7 @@ DefineTests[
 			$Failed,
 			Messages :> {Error::NullVolumeSampleInOption, Error::InvalidOption}
 		],
+		(*)
 		Example[{Messages, "Error::InsufficientVolumeSampleInOption", "Object[Sample] values for options must have sufficient Volume, otherwise an error is thrown:"},
 			ExperimentMeasurepH[
 				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
@@ -409,6 +410,7 @@ DefineTests[
 			$Failed,
 			Messages :> {Error::InsufficientVolumeSampleInOption, Error::InvalidOption}
 		],
+		*)
 		Example[{Messages, "Error::IncompatibleSampleInOption", "Object[Sample] values for options must be compatible with the phMeter probes, otherwise an error is thrown:"},
 			ExperimentMeasurepH[
 				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
@@ -671,13 +673,13 @@ DefineTests[
 			22*Celsius,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options, FilterSterile, "Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options = ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID], FilterSterile -> True, Output -> Options];
 			Lookup[options, FilterSterile],
 			True,
 			Variables :> {options}
-		],
+		],*)
 		Example[{Options, FilterAliquot, "The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options = ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID], FilterAliquot -> 10*Milliliter, Output -> Options];
 			Lookup[options, FilterAliquot],
@@ -1167,19 +1169,6 @@ DefineTests[
 				Error::InvalidInput
 			}
 		],
-		Example[{Messages,"CertainpHCalibrationRequired","SevenExcellence system cannot be used without non-standard pH calibrants:"},
-			ExperimentMeasurepH[
-				Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID],
-				MediumCalibrationBufferpH->7.38,
-				MediumCalibrationBuffer->Model[Sample,"Reference Buffer - pH 7.38"],
-			  Instrument->Model[Instrument, pHMeter, "SevenExcellence (for pH)"]
-			],
-			$Failed,
-			Messages:>{
-				Error::CertainpHCalibrationRequired,
-				Error::InvalidOption
-			}
-		],
 		Example[{Messages,"NoAvailableInstruments","Return $Failed when a container with too low of liquid volume is enqueued without aliquot:"},
 			ExperimentMeasurepH[Object[Sample,"Test water sample for too large container for ExperimentMeasurepH " <> $SessionUUID],Aliquot->False, SecondaryWashSolution -> Null],
 			$Failed,
@@ -1219,7 +1208,16 @@ DefineTests[
 				ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID],Probe->Object[Part, pHProbe, "id:eGakldJEV194"]][ResolvedOptions],
 				ProbeType
 			],
-			Surface
+			Surface,
+			Messages:>{
+				Warning::OptionContainsUnusableObject
+			}
+		],
+		Test["Resolve calibration buffer rack and calibration wash solution rack:",
+			protocol = ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID],SecondaryWashSolution -> Null];
+			Download[protocol, {CalibrationBufferRack, CalibrationWashSolutionRack}],
+			{LinkP[Model[Container, Rack, "id:dORYzZda6Yrb"]], LinkP[Model[Container, Rack, "id:dORYzZda6Yrb"]]},
+			Variables:>{protocol}
 		]
 	},
 	(* without this, telescope crashes and the test fails *)

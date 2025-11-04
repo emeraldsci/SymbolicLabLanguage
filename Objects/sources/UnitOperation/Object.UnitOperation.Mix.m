@@ -586,6 +586,64 @@ DefineObjectType[Object[UnitOperation,Mix],
 				Description->"For each member of SampleLink, the length of time for which the cells are cooled after heat shocking.",
 				Category->"Incubation"
 			},
+			TransformRecoveryMedia -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Sample],
+				Description -> "For each member of SamplesIn, the nutrient-rich growth medium used to support the recovery of heat shocked cells. The sample objects are used in full in their current containers and should be prepared prior to the experiment.",
+				Category -> "Incubation"
+			},
+			TransformRecoveryTransferVolumes -> {
+				Format -> Multiple,
+				Class -> {Real, Real},
+				Pattern :> {GreaterP[0 Microliter], GreaterP[0 Microliter]},
+				Units -> {Microliter, Microliter},
+				Headers -> {"Initial transfer volume", "Secondary transfer volume"},
+				IndexMatching -> SampleLink,
+				Description -> "For each member of SampleLink, the volume of TransformRecoveryMedia added to the heat shocked cells, and the volume of the resulting mixture which is immediately transferred back into the container of TransformRecoveryMedia for incubation.",
+				Category -> "Incubation",
+				Developer -> True
+			},
+			TransformIncubator -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Object[Instrument, Incubator],
+					Model[Instrument, Incubator]
+				],
+				Description -> "The incubator used to house the mixtures of heat shocked cells and TransformRecoveryMedia for recovery. The field is populated by a model object prior to run time, and updated to an object during the course of the experiment.",
+				Category -> "Incubation",
+				Developer -> True
+			},
+			TransformIncubatorTemperature -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Kelvin],
+				Units -> Celsius,
+				Description -> "The temperature at which the mixtures of heat shocked cells and TransformRecoveryMedia are housed in for recovery. The relevant parameter of TransformIncubator is set to this value; currently limited to 37 Degrees Celsius for incubation of bacterial cells.",
+				Category -> "Incubation",
+				Developer -> True
+			},
+			TransformIncubatorShakingRate -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 RPM],
+				Units -> RPM,
+				Description -> "The frequency at which the mixtures of heat shocked cells and TransformRecoveryMedia are agitated by movement in a circular motion for recovery. The relevant parameter of TransformIncubator is set to this value; currently limited to 200 RPM for incubation of bacterial cells.",
+				Category -> "Incubation",
+				Developer -> True
+			},
+			TransformRecoveryIncubationTime -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Hour],
+				Units -> Hour,
+				Description -> "The duration for which the mixtures of heat shocked cells and TransformRecoveryMedia are housed in TransformIncubator for recovery.",
+				Category -> "Incubation",
+				Developer -> True
+			},
 
 			AspirationDate->{
 				Format->Multiple,

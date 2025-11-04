@@ -322,6 +322,15 @@ $ShipFromECLSharedShippingFields ={
 		Category -> "Shipping Information",
 		Developer->True
 	},
+	PackageTareBalanceWeightData -> {
+		Format -> Multiple,
+		Class -> Link,
+		Pattern :> _Link,
+		Relation -> Object[Data,Weight],
+		Description -> "The weight measurement of the balance when nothing is on it, that was measured for this data.",
+		Category -> "Shipping Information",
+		Developer->True
+	},
 	ShippingLabels-> {
 		Format -> Multiple,
 		Class -> Link,

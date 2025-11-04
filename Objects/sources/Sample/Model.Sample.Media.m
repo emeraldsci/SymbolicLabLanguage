@@ -89,18 +89,20 @@ With[
 				Relation->Alternatives[
 					Model[Sample,Media][SolidMedia]
 				],
-				Description->"The corresponding liquid form of this media lacking the gelling agent.",
+				Description->"The corresponding liquid form of this solid media before it is solidified.",
+				Developer -> True,
 				Category->"General"
 			},
-			SolidMedia->{
-				Format->Multiple,
-				Class->Link,
-				Pattern:>_Link,
-				Relation->Alternatives[
-					Model[Sample,Media][LiquidMedia]
+			SolidMedia -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Model[Sample, Media][LiquidMedia]
 				],
-				Description->"The corresponding solid form of this media containing gelling agents in addition to the formula.",
-				Category->"General"
+				Description -> "The corresponding solid form of this media containing gelling agents after it has solidified.",
+				Developer -> True,
+				Category -> "General"
 			},
 			AlternativePreparations->{
 				Format->Multiple,

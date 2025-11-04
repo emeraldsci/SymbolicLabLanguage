@@ -212,6 +212,9 @@ validUnitOperationExtractRNAQTests[packet:PacketP[Object[UnitOperation, ExtractR
 validUnitOperationExtractPlasmidDNATests[packet:Object[UnitOperation, ExtractPlasmidDNA]]={};
 validUnitOperationExtractProteinTests[packet:Object[UnitOperation, ExtractProtein]]={};
 validUnitOperationFreezeCellsTests[packet:Object[UnitOperation, FreezeCells]]={};
+validUnitOperationELISAQTests[packet:Object[UnitOperation, ELISA]]={};
+validUnitOperationWashPlateQTests[packet:Object[UnitOperation, WashPlate]]={};
+validUnitOperationKarlFischerTitrationTests[packet:Object[UnitOperation, KarlFischerTitration]]={};
 
 (* ::Subsection::Closed:: *)
 (* Test Registration *)
@@ -238,3 +241,6 @@ registerValidQTestFunction[Object[UnitOperation, ExtractRNA], validUnitOperation
 registerValidQTestFunction[Object[UnitOperation, ExtractPlasmidDNA], validUnitOperationExtractPlasmidDNATests];
 registerValidQTestFunction[Object[UnitOperation, ExtractProtein], validUnitOperationExtractProteinTests];
 registerValidQTestFunction[Object[UnitOperation, FreezeCells], validUnitOperationFreezeCellsTests];
+registerValidQTestFunction[Object[UnitOperation, ELISA], validUnitOperationELISAQTests];
+registerValidQTestFunction[Object[UnitOperation, WashPlate], validUnitOperationWashPlateQTests];
+registerValidQTestFunction[Object[UnitOperation, KarlFischerTitration], validUnitOperationKarlFischerTitrationTests];

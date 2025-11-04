@@ -25,50 +25,56 @@ DefineOptions[UploadBacterialCell,
 			IndexMatchingInput -> "Input Data",
 			{
 				OptionName -> Antibiotics,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Object, With[{insertMe=List @@ IdentityModelTypeP}, Pattern :> ObjectP[insertMe]]],
 				Description -> "Antimicrobial substances that kill or inhibit the growth of this strain of bacteria.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Organizational Information"
 			},
 			{
 				OptionName -> Hosts,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Species]]],
 				Description -> "Species that are known to carry this strain of bacteria.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Organizational Information"
 			},
 			{
 				OptionName -> Morphology,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Enumeration, Pattern :> BacterialMorphologyP],
 				Description -> "The morphological type of this strain of bacteria.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Physical Properties"
 			},
 			{
 				OptionName -> GramStain,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Enumeration, Pattern :> Positive | Negative],
 				Description -> "Indicates whether this strain of bacteria has a layer of peptidoglycan in its cell wall.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Physical Properties"
 			},
 			{
 				OptionName -> Flagella,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Enumeration, Pattern :> BacterialFlagellaTypeP],
 				Description -> "The type of flagella that protrude from this bacterium's cell wall.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Physical Properties"
 			},
 			{
 				OptionName -> CellLength,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Quantity, Pattern :> RangeP[0 Micro * Meter, 1*Meter], Units -> {1, {Micro * Meter, {Micro * Meter, Angstrom}}}],
 				Description -> "The length of a single bacterium's body along its longest dimension.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Physical Properties"
 			}
 		]
@@ -76,9 +82,9 @@ DefineOptions[UploadBacterialCell,
 ];
 
 
-InstallDefaultUploadFunction[UploadBacterialCell, Model[Cell, Bacteria]];
-InstallValidQFunction[UploadBacterialCell, Model[Cell, Bacteria]];
-InstallOptionsFunction[UploadBacterialCell, Model[Cell, Bacteria]];
+installDefaultUploadFunction[UploadBacterialCell, Model[Cell, Bacteria], OptionResolver -> resolveDefaultCellUploadFunctionOptions];
+installDefaultValidQFunction[UploadBacterialCell, Model[Cell, Bacteria]];
+installDefaultOptionsFunction[UploadBacterialCell, Model[Cell, Bacteria]];
 
 ExternalUpload`Private`InstallIdentityModelTests[
 	UploadBacterialCell,
@@ -88,7 +94,7 @@ ExternalUpload`Private`InstallIdentityModelTests[
 		Morphology -> Cocci,
 		BiosafetyLevel -> "BSL-2",
 		Flammable -> False,
-		MSDSRequired -> False,
+		MSDSFile -> NotApplicable,
 		IncompatibleMaterials -> {None},
 		CellType -> Bacterial,
 		CultureAdhesion -> Suspension
@@ -105,7 +111,7 @@ ExternalUpload`Private`InstallIdentityModelTests[
 		Morphology -> Cocci,
 		BiosafetyLevel -> "BSL-2",
 		Flammable -> False,
-		MSDSRequired -> False,
+		MSDSFile -> NotApplicable,
 		IncompatibleMaterials -> {None},
 		CellType -> Bacterial,
 		CultureAdhesion -> Suspension
@@ -122,7 +128,7 @@ ExternalUpload`Private`InstallIdentityModelTests[
 		Morphology -> Cocci,
 		BiosafetyLevel -> "BSL-2",
 		Flammable -> False,
-		MSDSRequired -> False,
+		MSDSFile -> NotApplicable,
 		IncompatibleMaterials -> {None},
 		CellType -> Bacterial,
 		CultureAdhesion -> Suspension

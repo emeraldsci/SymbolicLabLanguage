@@ -34,18 +34,26 @@ DefineObjectType[Model[Certification],
 				Description->"The list of skill sets needed before any training modules making up this certification can be started.",
 				Category->"Operations Information"
 			},
+			Users -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> TypeP[Object[User]],
+				Description -> "Indicates who this certification is intended to train. User types in this field must be an exact match of the user.",
+				Category -> "Operations Information",
+				Abstract -> True
+			},
 			AutoEnqueue -> {
 				Format -> Single,
 				Class -> Boolean,
 				Pattern :> BooleanP,
-				Description -> "Indicates if this certification will automatically be added to an operator's training once any required certifications are complete.",
+				Description -> "Indicates if this certification will automatically be added to a trainee's training queue once any required certifications are complete.",
 				Category -> "Operations Information"
 			},
 			Deprecated -> {
 				Format -> Single,
 				Class -> Expression,
 				Pattern :> BooleanP,
-				Description -> "Indicates that this model is historical and no longer used to train operators in the lab.",
+				Description -> "Indicates that this model is historical and no longer used.",
 				Category -> "Operations Information",
 				Abstract -> True
 			}

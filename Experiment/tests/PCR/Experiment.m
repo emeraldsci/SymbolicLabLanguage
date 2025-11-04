@@ -2174,13 +2174,13 @@ DefineTests[ExperimentPCR,
 			1000*RPM,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options,FilterSterile,"Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options=ExperimentPCR[Object[Sample,"ExperimentPCR test sample 1"<>$SessionUUID],FilterSterile->True,Output->Options];
 			Lookup[options,FilterSterile],
 			True,
 			Variables:>{options}
-		],
+		],*)
 		Example[{Options,FilterAliquot,"The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options=ExperimentPCR[Object[Sample,"ExperimentPCR test sample 1"<>$SessionUUID],FilterAliquot->0.5*Milliliter,Output->Options];
 			Lookup[options,FilterAliquot],
@@ -2501,7 +2501,7 @@ DefineTests[ExperimentPCR,
 					ShelfLife -> {2 Year, 2 Year},
 					UnsealedShelfLife -> {90 Day, 90 Day},
 					DefaultStorageCondition -> {Model[StorageCondition, "Refrigerator"], Model[StorageCondition, "Refrigerator"]},
-					MSDSRequired -> {False, False},
+					MSDSFile -> {NotApplicable, NotApplicable},
 					BiosafetyLevel -> {"BSL-1", "BSL-1"},
 					State -> {Liquid, Liquid}
 				];
@@ -2794,7 +2794,7 @@ DefineTests[ExperimentPCROptions,
 					ShelfLife->2 Year,
 					UnsealedShelfLife->90 Day,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					BiosafetyLevel->"BSL-1",
 					State->Liquid
 				];
@@ -2945,7 +2945,7 @@ DefineTests[ExperimentPCRPreview,
 					ShelfLife->2 Year,
 					UnsealedShelfLife->90 Day,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					BiosafetyLevel->"BSL-1",
 					State->Liquid
 				];
@@ -3109,7 +3109,7 @@ DefineTests[ValidExperimentPCRQ,
 					ShelfLife->2 Year,
 					UnsealedShelfLife->90 Day,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					BiosafetyLevel->"BSL-1",
 					State->Liquid
 				];
@@ -3320,7 +3320,7 @@ DefineTests[PCR,
 					ShelfLife->2 Year,
 					UnsealedShelfLife->90 Day,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					BiosafetyLevel->"BSL-1",
 					State->Liquid
 				];

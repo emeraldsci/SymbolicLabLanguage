@@ -36,7 +36,7 @@ DefineObjectType[Model[Container, Vessel], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates if this vessel has a dropper attachment that allows it to only dispense liquid via drop creation.",
+			Description -> "Indicates if this vessel has an attachment in the aperture that allows it to only dispense liquid via drop creation.",
 			Category -> "Container Specifications"
 		},
 		DepthMargin -> {
@@ -45,7 +45,7 @@ DefineObjectType[Model[Container, Vessel], {
 			(* Intentionally leave this open to negative values for cases where wells protrude beyond skirt (e.g., filter tubes) *)
 			Pattern :> DistanceP,
 			Units -> Meter Milli,
-			Description -> "Z-axis distance from the bottom of the vessel to the bottom of the first well.",
+			Description -> "Vertical height distance from the bottom of the plate to the bottom of the first contents-holding cavity.",
 			Category -> "Container Specifications"
 		},
 		InternalDimensions -> {
@@ -62,7 +62,7 @@ DefineObjectType[Model[Container, Vessel], {
 			Class -> Real,
 			Pattern :> GreaterP[0*Milli*Meter],
 			Units -> Meter Milli,
-			Description -> "Interior diameter of the vessel's contents holding cavity.",
+			Description -> "Diameter of the vessel's contents holding cavity if the cavity is circular. If the cavity is not circular, InternalDimensions field should be used instead.",
 			Category -> "Dimensions & Positions"
 		},
 		Aperture -> {
@@ -85,7 +85,7 @@ DefineObjectType[Model[Container, Vessel], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> WellShapeP,
-			Description -> "Shape of the bottom of the vessel's contents holding cavity.",
+			Description -> "Shape of the bottom of the vessel's contents holding cavity. This is used to calculate the 3D shape and positions of the wells, which is especially important for application on liquid handlers.",
 			Category -> "Dimensions & Positions"
 		},
 		InternalConicalDepth -> {
@@ -290,7 +290,7 @@ DefineObjectType[Model[Container, Vessel], {
 		GraduationTypes -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> Alternatives[Labeled, Short, Long],
+			Pattern :> GraduationTypeP,
 			Description -> "For each member of Graduations, indicates if the graduation is labeled with a number, a long unlabeled line, or a short unlabeled line.",
 			Category -> "Container Specifications",
 			IndexMatching -> Graduations

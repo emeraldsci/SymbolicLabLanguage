@@ -2883,16 +2883,16 @@ prepareReferenceElectrodeResourcePackets[
 
 	(* Select the needle models using compatibleNeedles helper function *)
 	selectedWashingNeedleModel = If[!MatchQ[washingSyringeConnectionType, Null],
-		First[compatibleNeedles[allNeedlePackets, ConnectionType -> washingSyringeConnectionType, MinimumLength -> washingSolutionContainerModelsMaxHeight, Viscous -> True]],
+		First[compatibleNeedles[allNeedlePackets, ConnectionType -> washingSyringeConnectionType, MinimumLength -> washingSolutionContainerModelsMaxHeight, Viscous -> True, Blunt -> True]],
 		Null
 	];
 
-	selectedPrimingNeedleModel = First[compatibleNeedles[allNeedlePackets, ConnectionType -> primingSyringeConnectionType, MinimumLength -> referenceSolutionContainerModelsMaxHeight, Viscous -> True]];
+	selectedPrimingNeedleModel = First[compatibleNeedles[allNeedlePackets, ConnectionType -> primingSyringeConnectionType, MinimumLength -> referenceSolutionContainerModelsMaxHeight, Viscous -> True, Blunt -> True]];
 
-	selectedRefillNeedleModel = First[compatibleNeedles[allNeedlePackets, ConnectionType -> refillSyringeConnectionType, MinimumLength -> referenceSolutionContainerModelsMaxHeight, Viscous -> True]];
+	selectedRefillNeedleModel = First[compatibleNeedles[allNeedlePackets, ConnectionType -> refillSyringeConnectionType, MinimumLength -> referenceSolutionContainerModelsMaxHeight, Viscous -> True, Blunt -> True]];
 
 	selectedAspirationNeedleModel = If[!MatchQ[aspirationSyringeConnectionType, Null],
-		First[compatibleNeedles[allNeedlePackets, ConnectionType -> aspirationSyringeConnectionType, MinimumLength -> Max[maxReferenceElectrodeLength, referenceSolutionContainerModelsMaxHeight], Viscous -> True]],
+		First[compatibleNeedles[allNeedlePackets, ConnectionType -> aspirationSyringeConnectionType, MinimumLength -> Max[maxReferenceElectrodeLength, referenceSolutionContainerModelsMaxHeight], Viscous -> True, Blunt -> True]],
 		Null
 	];
 

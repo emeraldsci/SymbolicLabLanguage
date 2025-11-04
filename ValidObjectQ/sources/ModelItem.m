@@ -14,17 +14,79 @@
 (* ::Subsection::Closed:: *)
 (*validModelItemQTests*)
 
+Error::InvalidCrimpCapOption = "If CoverType -> Crimp, `1` option must be `2`.";
+Error::InvalidCoverType = "CoverType option of `1` cannot be `2`.";
+Error::StorageOrientationImageRequired = "Since you have set option `1` to Side or Face, `2` option is also required. Please provide an image to `2` option, or set `1` to Upright or Any.";
+Error::StorageOrientationImageRequiredFromExternalField = "Since the option `1` is set to Side or Face according to `3`, `2` option is also required but cannot be found from `3`. Please provide an image to `2` option manually, or set `1` to Upright or Any.";
+Error::ImageForStorageRequired = "Since you have set option `1` to Upright, at least one of `2` option is also required. Please provide an image to one of `2` option, or set `1` to Any.";
+Error::ImageForStorageRequiredFromExternalField = "Since the option `1` is set to Upright according to `3`, at least one of `2` option is also required but cannot be found from `3`. Please provide an image to one of  `2` option manually, or set `1` to Any.";
+Error::CrimpRequiredOptions = "`1` option must be specified if `2` is Crimp. Please either supply value for `1` option, or change `2` to other values.";
+Error::CrimpRequiredOptionsFromExternalField = "`1` option must be specified since `3` has set `2` to Crimp. Please either supply value for `1` option, or manually change option `2` to other values.";
+Error::CrimpRequiredOptionsInconsistentFromExternalField = "`1` option must be specified if `2` is Crimp. However, `1` is set to Null according to `3`. Please either manually supply value for `1` option, or change option `2` to other values.";
+Error::CrimpRequiredOptionsBetweenExternalField = "`1` option must be specified if `2` is Crimp. However, `1` is set to `4` and `2` is set to `5`, both according to `3`. Please either manually supply value for `1` option, or change option `2` to other values.";
+Error::CrimpOnlyOptions = "`1` option can only be specified if `2` is Crimp. Please either set `1` option to Null, or change `2` to other values.";
+Error::CrimpOnlyOptionsFromExternalField = "`1` option can only be specified if `2` is Crimp, which is set to `4` now according to `3`. Please either set `1` option to Null, or manually change option `2` to other values.";
+Error::CrimpOnlyOptionsInconsistentFromExternalField = "`1` option can only be specified if `2` is Crimp. However, `1` is set to Null according to `3`. Please either manually set `1` option to Null, or change option `2` to other values.";
+Error::CrimpOnlyOptionsBetweenExternalField = "`1` option can only be specified if `2` is Crimp. However, `1` is set to `4` and `2` is set to `5`, both according to `3`. Please either manually set `1` option to Null, or change option `2` to other values.";
+Error::CrimpCoverCannotReuse = "Crimp covers cannot be reused. Please either change option `1` to other values, or set `2` to False.";
+Error::CrimpCoverCannotReuseFromExternalField = "Crimp covers cannot be reused, however `1` is set to `4` according to `3`. Please either set option `1` to `5`, or set `2` to `6`.";
+Error::CrimpCoverCannotReuseBetweenExternalField = "Crimp covers cannot be reused, however `1` is set to `4` and `2` is set to `5`, both according to `3`. Please either set option `1` to `6`, or set `2` to `7`.";
+Error::CoverTypeMismatch = "Option `1` cannot be `3` for input type `2`. Please change the `1` to other values.";
+Error::CoverTypeMismatchFromExternalField = "Option `1` was set to `3` according to `4`, however this CoverType is not supported for input type `2`. Please manually change the `1` to other values.";
+Error::BarcodeForbidden = "Caps whose width and depth are under 41 mm are too small to fit barcode sticker. Please set the `1` option to False.";
+Error::BarcodeForbiddenFromExternalField = "Caps whose width and depth are under 41 mm are too small to fit barcode sticker, however `1` option is set to True according to `2`. Please set the `1` option to False manually.";
+Error::BarcodeRequired = "Caps whose width or depth are over 54 mm are required to have barcode sticker. Please set the `1` option to True.";
+Error::BarcodeRequiredFromExternalField = "Caps whose width or depth are over 54 mm are required to have barcode sticker, however `1` option is set to False according to `2`. Please set the `1` option to True manually.";
+Error::InconsistentMargin = "`1` option should be specified if and only if `2` is greater than 1. Please set `1` to Null, or change the value of `2` to greater than 1.";
+Error::InconsistentMarginWithExistingField = "You have specified the `1` option, however this is not allowed since the `2` option was set to 1 according to `3`. Please either set `1` to Null, or manually change `2` to greater than 1.";
+Error::InconsistentMarginToExistingField = "A non-Null value has been inherited from `3` for option `1`, however this conflicts with `2` option, because `1` should only be specified if `2` is greater than 1. Please manually set `1` option to Null.";
+Error::InconsistentMarginBetweenExistingField = "The options `1` and `2` inherited from `3` conflicts with each other because `1` should only be specified if `2` is greater than 1. Please manually change either one of these options.";
+Error::PlateSealCoverTypeMismatch = "For Model[Item, PlateSeal] type input, the only allowed value for `1` option is Seal. Please set `1` option to Seal.";
+Error::PlateSealCoverTypeMismatchFromExternalField = "For Model[Item, PlateSeal] type input, the only allowed value for `1` option is Seal, however it's set to `3` according to `2`. Please set `1` option to Seal manually.";
 
-validModelItemQTests[packet : PacketP[Model[Item]]] := With[
-	{
-		prodPackets = Download[Lookup[packet, Products], Packet[Deprecated,CountPerSample]]
-	},
+DefineOptions[
+	validModelItemQTests,
+	Options :> {additionalValidQTestOptions}
+];
+
+validModelItemQTests[packet : PacketP[Model[Item]], ops:OptionsPattern[]] := Module[
+	{prodPackets, pendingParameterization, safeOps, fieldSource, cache, fastAssoc, object, identifier, commonFields, parameterizedFields, coverQ},
+
+	(* read options *)
+	safeOps = SafeOptions[validModelItemQTests, ToList[ops]];
+	{fieldSource, cache} = Lookup[safeOps, #]& /@ {FieldSource, Cache};
+	object = Lookup[packet, Object];
+	identifier = If[DatabaseMemberQ[object],
+		object,
+		Lookup[packet, Type]
+	];
+	fastAssoc = updateFastAssoc[{{Products, Packet[Deprecated,CountPerSample]}}, packet, cache];
+
+	prodPackets = Experiment`Private`fetchPacketFromFastAssoc[#, fastAssoc]& /@ Download[Lookup[packet, Products], Object];
+	pendingParameterization = TrueQ[Lookup[packet, PendingParameterization, False]];
+
+	commonFields = {Authors, DefaultStorageCondition};
+	parameterizedFields = {Dimensions};
+
+	coverQ = MatchQ[Lookup[packet, Type], TypeP[{Model[Item, Cap], Model[Item, PlateSeal], Model[Item, Lid]}]];
+
 	{
 
 		(* General fields filled in *)
 		(* Note: If you add field here, also add it to the Column VOQ tests so it throws a message. *)
 		(* NOTE: removed Name and Synonyms from NotNullFieldTest and moved related Tests in subtypes *)
-		NotNullFieldTest[packet, {Authors, DefaultStorageCondition, Dimensions, DefaultStorageCondition}],
+		NotNullFieldTest[packet,
+			If[pendingParameterization,
+				commonFields,
+				Join[commonFields, parameterizedFields]
+			],
+			Message -> Automatic,
+			FieldSource -> fieldSource,
+			ParentFunction -> If[coverQ,
+				"UploadCoverModel",
+				"current function"
+			]
+		],
 
 		(* If Expires \[Equal] True, then either ShelfLife or UnsealedShelfLife must be informed. If either ShelfLife or UnsealedShelfLife is informed, then Expires must \[Equal] True. *)
 		Test["Either ShelfLife or UnsealedShelfLife must be informed if Expires == True; if either ShelfLife or UnsealedShelfLife is informed, Expires must equal True:",
@@ -87,6 +149,12 @@ validModelItemQTests[packet : PacketP[Model[Item]]] := With[
 			Alternatives[
 				{(Side|Face), ObjectP[]},
 				{Except[(Side|Face)], _}
+			],
+			Message -> Switch[Lookup[fieldSource, StorageOrientation],
+				User, {Hold[Error::StorageOrientationImageRequired], StorageOrientation, StorageOrientationImage},
+				Template, {Hold[Error::StorageOrientationImageRequiredFromExternalField], StorageOrientation, StorageOrientationImage, "Template option"},
+				Field, {Hold[Error::StorageOrientationImageRequiredFromExternalField], StorageOrientation, StorageOrientationImage, "database"},
+				_, {Hold[Error::StorageOrientationImageRequired], StorageOrientation, StorageOrientationImage}
 			]
 		],
 		Test["If the StorageOrientation is Upright StorageOrientationImage or ImageFile must be populated:",
@@ -95,6 +163,12 @@ validModelItemQTests[packet : PacketP[Model[Item]]] := With[
 				{Upright, ObjectP[], _},
 				{Upright, _, ObjectP[]},
 				{Except[Upright], _, _}
+			],
+			Message -> Switch[Lookup[fieldSource, StorageOrientation],
+				User, {Hold[Error::ImageForStorageRequired], StorageOrientation, {StorageOrientationImage, ImageFile}},
+				Template, {Hold[Error::ImageForStorageRequiredFromExternalField], StorageOrientation, {StorageOrientationImage, ImageFile}, "Template option"},
+				Field, {Hold[Error::ImageForStorageRequiredFromExternalField], StorageOrientation, {StorageOrientationImage, ImageFile}, "database"},
+				_, {Hold[Error::ImageForStorageRequired], StorageOrientation, {StorageOrientationImage, ImageFile}}
 			]
 		],
 		Test["If the item is marked as Counted, then all non-deprecated products must have CountPerSample set:",
@@ -138,6 +212,7 @@ validModelItemQTests[packet : PacketP[Model[Item]]] := With[
 			True
 		]
 	}
+
 ];
 
 errorToOptionMap[Model[Item]]:={};
@@ -275,81 +350,227 @@ validModelItemConsumableSandpaperQTests[packet:PacketP[Model[Item,Consumable,San
 
 (* ::Subsection::Closed:: *)
 (*validModelItemCapQTests*)
+DefineOptions[
+	validModelItemCapQTests,
+	Options :> {additionalValidQTestOptions}
+];
 
+validModelItemCapQTests[packet:PacketP[Model[Item, Cap]], ops:OptionsPattern[]]:=Module[
+	{safeOps, fieldSource, cache, fastAssoc, object, identifier, commonFields, parameterizedFields},
 
-validModelItemCapQTests[packet:PacketP[Model[Item, Cap]]]:={
+	(* read options *)
+	safeOps = SafeOptions[validModelItemCapQTests, ToList[ops]];
+	{fieldSource, cache} = Lookup[safeOps, #]& /@ {FieldSource, Cache};
+	object = Lookup[packet, Object];
+	identifier = If[DatabaseMemberQ[object],
+		object,
+		Lookup[packet, Type]
+	];
+	fastAssoc = updateFastAssoc[{{ProductsContained, ProductModel, Packet[SingleUse]}}, packet, cache];
+	commonFields = {CoverType, Name, Synonyms, ImageFile};
+	parameterizedFields = {CoverFootprint};
 
-	NullFieldTest[packet,
-		{
-			MSDSFile,
-			MSDSRequired,
-			NFPA,
-			DOTHazardClass,
-			BiosafetyLevel,
-			TransportTemperature,
-			Flammable,
-			IncompatibleMaterials,
-			LightSensitive
-		}
-	],
+	{
 
-	(* unique fields *)
-	NotNullFieldTest[packet,{CoverType,CoverFootprint,Name,Synonyms,ImageFile}],
-
-	Test["CrimpingPressure cannot be filled out if CoverType is not Crimp:",
-		Lookup[packet, {CrimpingPressure, CoverType}],
-		{UnitsP[PSI], Crimp}|{Null, _}
-	],
-
-	Test["If CoverType->Crimp, CrimpType is informed:",
-		Lookup[packet, {CoverType, CrimpType}],
-		{Crimp, Except[Null]}|{Except[Crimp], _}
-	],
-
-	Test["If CoverType->Crimp, Reusable is False:",
-		Lookup[packet, {CoverType, Reusable}],
-		{Crimp, False}|{Except[Crimp], _}
-	],
-
-	Test["If CoverType->Crimp, Pierceable is informed:",
-		Lookup[packet, {CoverType, Pierceable}],
-		{Crimp, Except[Null]}|{Except[Crimp], _}
-	],
-
-	Test["If CoverType->Crimp, SeptumRequired is informed:",
-		Lookup[packet, {CoverType, SeptumRequired}],
-		{Crimp, Except[Null]}|{Except[Crimp], _}
-	],
-
-	Test["CoverType cannot be Seal:",
-		Lookup[packet, CoverType],
-		Except[Seal]
-	],
-
-	Test["If the width and depth of the Cap are under 41mm, Barcode should NOT be True (since it won't fit on the cover):",
-		If[MatchQ[Lookup[packet, Dimensions][[1;;2]], {LessP[41 Millimeter], LessP[41 Millimeter]}],
-			!MatchQ[Lookup[packet, Barcode], True],
-			True
+		(* No need to throw messages for these errors for UploadCoverModel, because Error::RedundantOptions will be thrown *)
+		NullFieldTest[packet,
+			{
+				MSDSFile,
+				MSDSRequired,
+				NFPA,
+				DOTHazardClass,
+				BiosafetyLevel,
+				TransportTemperature,
+				Flammable,
+				IncompatibleMaterials,
+				LightSensitive
+			}
 		],
-		True
-	],
 
-	Test["If the width or depth of the Cap is over 54mm (the diameter of a GL45 cap), Barcode should be True:",
-		If[MemberQ[Lookup[packet, Dimensions][[1;;2]], GreaterP[54 Millimeter]],
-			MatchQ[Lookup[packet, Barcode], True],
-			True
+		(* unique fields *)
+		NotNullFieldTest[packet,
+			If[TrueQ[Lookup[packet, PendingParameterization, False]],
+				commonFields,
+				Join[commonFields, parameterizedFields]
+			],
+			Message -> Automatic,
+			FieldSource -> fieldSource,
+			ParentFunction -> "UploadCoverModel"
 		],
-		True
-	],
 
-	Test["The contents of the Name field is a member of the Synonyms field:",
-		MemberQ[Lookup[packet, Synonyms], Lookup[packet, Name]],
-		True
-	],
-	RequiredTogetherTest[packet, {InnerDiameter, OuterDiameter}],
-	FieldComparisonTest[packet,{InnerDiameter,OuterDiameter},Less],
-	RequiredTogetherTest[packet, {Positions, PositionPlotting}]
-};
+		Test["CrimpingPressure must be informed if CoverType is Crimp:",
+			Lookup[packet, {CrimpingPressure, CoverType}],
+			{UnitsP[PSI], Crimp}|{_, Except[Crimp]},
+			Message -> Switch[Lookup[fieldSource, {CrimpingPressure, CoverType}],
+				{(User | Resolved), (User | Resolved)}, {Hold[Error::CrimpRequiredOptions], CrimpingPressure, CoverType},
+				{(User | Resolved), Template}, {Hold[Error::CrimpRequiredOptionsFromExternalField], CrimpingPressure, CoverType, "Template option"},
+				{(User | Resolved), Field}, {Hold[Error::CrimpRequiredOptionsFromExternalField], CrimpingPressure, CoverType, "database"},
+				{Template, (User | Resolved)}, {Hold[Error::CrimpRequiredOptionsInconsistentFromExternalField], CrimpingPressure, CoverType, "Template option"},
+				{Field, (User | Resolved)}, {Hold[Error::CrimpRequiredOptionsInconsistentFromExternalField], CrimpingPressure, CoverType, "database"},
+				{Template, Template}, {Hold[Error::CrimpRequiredOptionsBetweenExternalField], CrimpingPressure, CoverType, "Template option", Lookup[packet, CrimpingPressure], Lookup[packet, CoverType]},
+				{Field, Field}, {Hold[Error::CrimpRequiredOptionsBetweenExternalField], CrimpingPressure, CoverType, "database", Lookup[packet, CrimpingPressure], Lookup[packet, CoverType]},
+				{_, _}, {Hold[Error::CrimpRequiredOptions], CrimpingPressure, CoverType}
+			]
+		],
+
+		Test["CrimpingPressure can be informed only if CoverType is Crimp:",
+			Lookup[packet, {CrimpingPressure, CoverType}],
+			{UnitsP[PSI], Crimp}|{Null, _},
+			Message -> Switch[Lookup[fieldSource, {CrimpingPressure, CoverType}],
+				{(User | Resolved), (User | Resolved)}, {Hold[Error::CrimpOnlyOptions], CrimpingPressure, CoverType},
+				{(User | Resolved), Template}, {Hold[Error::CrimpOnlyOptionsFromExternalField], CrimpingPressure, CoverType, "Template option", Lookup[packet, CoverType]},
+				{(User | Resolved), Field}, {Hold[Error::CrimpOnlyOptionsFromExternalField], CrimpingPressure, CoverType, "database", Lookup[packet, CoverType]},
+				{Template, (User | Resolved)}, {Hold[Error::CrimpOnlyOptionsInconsistentFromExternalField], CrimpingPressure, CoverType, "Template option"},
+				{Field, (User | Resolved)}, {Hold[Error::CrimpOnlyOptionsInconsistentFromExternalField], CrimpingPressure, CoverType, "database"},
+				{Template, Template}, {Hold[Error::CrimpOnlyOptionsBetweenExternalField], CrimpingPressure, CoverType, "Template option", Lookup[packet, CrimpingPressure], Lookup[packet, CoverType]},
+				{Field, Field}, {Hold[Error::CrimpOnlyOptionsBetweenExternalField], CrimpingPressure, CoverType, "database", Lookup[packet, CrimpingPressure], Lookup[packet, CoverType]},
+				{_, _}, {Hold[Error::CrimpOnlyOptions], CrimpingPressure, CoverType}
+			]
+		],
+
+		Test["CrimpType must be informed if CoverType is Crimp:",
+			Lookup[packet, {CrimpType, CoverType}],
+			{Except[Null], Crimp}|{_, Except[Crimp]},
+			Message -> Switch[Lookup[fieldSource, {CrimpType, CoverType}],
+				{(User | Resolved), (User | Resolved)}, {Hold[Error::CrimpRequiredOptions], CrimpType, CoverType},
+				{(User | Resolved), Template}, {Hold[Error::CrimpRequiredOptionsFromExternalField], CrimpType, CoverType, "Template option"},
+				{(User | Resolved), Field}, {Hold[Error::CrimpRequiredOptionsFromExternalField], CrimpType, CoverType, "database"},
+				{Template, (User | Resolved)}, {Hold[Error::CrimpRequiredOptionsInconsistentFromExternalField], CrimpType, CoverType, "Template option"},
+				{Field, (User | Resolved)}, {Hold[Error::CrimpRequiredOptionsInconsistentFromExternalField], CrimpType, CoverType, "database"},
+				{Template, Template}, {Hold[Error::CrimpRequiredOptionsBetweenExternalField], CrimpType, CoverType, "Template option", Lookup[packet, CrimpType], Lookup[packet, CoverType]},
+				{Field, Field}, {Hold[Error::CrimpRequiredOptionsBetweenExternalField], CrimpType, CoverType, "database", Lookup[packet, CrimpType], Lookup[packet, CoverType]},
+				{_, _}, {Hold[Error::CrimpRequiredOptions], CrimpType, CoverType}
+			]
+		],
+
+		Test["CrimpType can be informed only if CoverType is Crimp:",
+			Lookup[packet, {CrimpType, CoverType}],
+			{Except[Null], Crimp}|{Null, _},
+			Message -> Switch[Lookup[fieldSource, {CrimpType, CoverType}],
+				{(User | Resolved), (User | Resolved)}, {Hold[Error::CrimpOnlyOptions], CrimpType, CoverType},
+				{(User | Resolved), Template}, {Hold[Error::CrimpOnlyOptionsFromExternalField], CrimpType, CoverType, "Template option", Lookup[packet, CoverType]},
+				{(User | Resolved), Field}, {Hold[Error::CrimpOnlyOptionsFromExternalField], CrimpType, CoverType, "database", Lookup[packet, CoverType]},
+				{Template, (User | Resolved)}, {Hold[Error::CrimpOnlyOptionsInconsistentFromExternalField], CrimpType, CoverType, "Template option"},
+				{Field, (User | Resolved)}, {Hold[Error::CrimpOnlyOptionsInconsistentFromExternalField], CrimpType, CoverType, "database"},
+				{Template, Template}, {Hold[Error::CrimpOnlyOptionsBetweenExternalField], CrimpType, CoverType, "Template option", Lookup[packet, CrimpType], Lookup[packet, CoverType]},
+				{Field, Field}, {Hold[Error::CrimpOnlyOptionsBetweenExternalField], CrimpType, CoverType, "database", Lookup[packet, CrimpType], Lookup[packet, CoverType]},
+				{_, _}, {Hold[Error::CrimpOnlyOptions], CrimpType, CoverType}
+			]
+		],
+
+		Test["If CoverType -> Crimp, Reusable must be False:",
+			Lookup[packet, {CoverType, Reusable}],
+			{Crimp, False}|{Except[Crimp], _},
+			Message -> Switch[Lookup[fieldSource, {CoverType, Reusable}],
+				{(User | Resolved), (User | Resolved)}, {Hold[Error::CrimpCoverCannotReuse], CoverType, Reusable},
+				{(User | Resolved), Template}, {Hold[Error::CrimpCoverCannotReuseFromExternalField], Reusable, CoverType, "Template option", Lookup[packet, Reusable], "False", "other values"},
+				{(User | Resolved), Field}, {Hold[Error::CrimpCoverCannotReuseFromExternalField], Reusable, CoverType, "database", Lookup[packet, Reusable], "False", "other values"},
+				{Template, (User | Resolved)}, {Hold[Error::CrimpCoverCannotReuseFromExternalField], CoverType, Reusable, "Template option", Lookup[packet, CoverType], "other values", "False"},
+				{Field, (User | Resolved)}, {Hold[Error::CrimpCoverCannotReuseFromExternalField], CoverType, Reusable, "database", Lookup[packet, CoverType], "other values", "False"},
+				{Template, Template}, {Hold[Error::CrimpCoverCannotReuseBetweenExternalField], Reusable, CoverType, "Template option", Lookup[packet, Reusable], Lookup[packet, CoverType], "False", "other values"},
+				{Field, Field}, {Hold[Error::CrimpCoverCannotReuseBetweenExternalField], Reusable, CoverType, "database", Lookup[packet, Reusable], Lookup[packet, CoverType], "False", "other values"},
+				{_, _}, {Hold[Error::CrimpCoverCannotReuse], CoverType, Reusable}
+			]
+		],
+
+		Test["If CoverType -> Crimp, Pierceable must be informed:",
+			Lookup[packet, {Pierceable, CoverType}],
+			{Except[Null], Crimp}|{_, Except[Crimp]},
+			Message -> Switch[Lookup[fieldSource, {Pierceable, CoverType}],
+				{(User | Resolved), (User | Resolved)}, {Hold[Error::CrimpRequiredOptions], Pierceable, CoverType},
+				{(User | Resolved), Template}, {Hold[Error::CrimpRequiredOptionsFromExternalField], Pierceable, CoverType, "Template option"},
+				{(User | Resolved), Field}, {Hold[Error::CrimpRequiredOptionsFromExternalField], Pierceable, CoverType, "database"},
+				{Template, (User | Resolved)}, {Hold[Error::CrimpRequiredOptionsInconsistentFromExternalField], Pierceable, CoverType, "Template option"},
+				{Field, (User | Resolved)}, {Hold[Error::CrimpRequiredOptionsInconsistentFromExternalField], Pierceable, CoverType, "database"},
+				{Template, Template}, {Hold[Error::CrimpRequiredOptionsBetweenExternalField], Pierceable, CoverType, "Template option", Lookup[packet, Pierceable], Lookup[packet, CoverType]},
+				{Field, Field}, {Hold[Error::CrimpRequiredOptionsBetweenExternalField], Pierceable, CoverType, "database", Lookup[packet, Pierceable], Lookup[packet, CoverType]},
+				{_, _}, {Hold[Error::CrimpRequiredOptions], Pierceable, CoverType}
+			]
+		],
+
+		Test["If CoverType -> Crimp, SeptumRequired must be informed:",
+			Lookup[packet, {SeptumRequired, CoverType}],
+			{Except[Null], Crimp}|{_, Except[Crimp]},
+			Message -> Switch[Lookup[fieldSource, {SeptumRequired, CoverType}],
+				{(User | Resolved), (User | Resolved)}, {Hold[Error::CrimpRequiredOptions], SeptumRequired, CoverType},
+				{(User | Resolved), Template}, {Hold[Error::CrimpRequiredOptionsFromExternalField], SeptumRequired, CoverType, "Template option"},
+				{(User | Resolved), Field}, {Hold[Error::CrimpRequiredOptionsFromExternalField], SeptumRequired, CoverType, "database"},
+				{Template, (User | Resolved)}, {Hold[Error::CrimpRequiredOptionsInconsistentFromExternalField], SeptumRequired, CoverType, "Template option"},
+				{Field, (User | Resolved)}, {Hold[Error::CrimpRequiredOptionsInconsistentFromExternalField], SeptumRequired, CoverType, "database"},
+				{Template, Template}, {Hold[Error::CrimpRequiredOptionsBetweenExternalField], SeptumRequired, CoverType, "Template option", Lookup[packet, SeptumRequired], Lookup[packet, CoverType]},
+				{Field, Field}, {Hold[Error::CrimpRequiredOptionsBetweenExternalField], SeptumRequired, CoverType, "database", Lookup[packet, SeptumRequired], Lookup[packet, CoverType]},
+				{_, _}, {Hold[Error::CrimpRequiredOptions], SeptumRequired, CoverType}
+			]
+		],
+
+		Test["CoverType cannot be Seal:",
+			Lookup[packet, CoverType],
+			Except[Seal],
+			Message -> Switch[Lookup[fieldSource, CoverType],
+				User, {Hold[Error::CoverTypeMismatch], CoverType, "Model[Item, Cap]", "Seal"},
+				Template, {Hold[Error::CoverTypeMismatchFromExternalField], CoverType, "Model[Item, Cap]", "Seal", "Template option"},
+				Field, {Hold[Error::CoverTypeMismatchFromExternalField], CoverType, "Model[Item, Cap]", "Seal", "database"},
+				_, {Hold[Error::CoverTypeMismatch], CoverType, "Model[Item, Cap]", "Seal"}
+			]
+		],
+
+		Test["If the width and depth of the Cap are under 41mm, Barcode should NOT be True (since it won't fit on the cover):",
+			If[MatchQ[Lookup[packet, Dimensions], {LessP[41 Millimeter], LessP[41 Millimeter], _}],
+				!MatchQ[Lookup[packet, Barcode], True],
+				True
+			],
+			True,
+			Message -> Switch[Lookup[fieldSource, Barcode],
+				User, {Hold[Error::BarcodeForbidden], Barcode},
+				Template, {Hold[Error::BarcodeForbiddenFromExternalField], Barcode, "Template option"},
+				Field, {Hold[Error::BarcodeForbiddenFromExternalField], Barcode, "database"},
+				_, {Hold[Error::BarcodeForbidden], Barcode}
+			]
+		],
+
+		Test["If the width or depth of the Cap is over 54mm (the diameter of a GL45 cap), Barcode should be True:",
+			If[MatchQ[Lookup[packet, Dimensions], ({GreaterP[54 Millimeter], _, _} | {_, GreaterP[54 Millimeter], _})],
+				MatchQ[Lookup[packet, Barcode], True],
+				True
+			],
+			True,
+			Message -> Switch[Lookup[fieldSource, Barcode],
+				User, {Hold[Error::BarcodeRequired], Barcode},
+				Template, {Hold[Error::BarcodeRequiredFromExternalField], Barcode, "Template option"},
+				Field, {Hold[Error::BarcodeRequiredFromExternalField], Barcode, "database"},
+				_, {Hold[Error::BarcodeRequired], Barcode}
+			]
+		],
+
+		Test["The contents of the Name field is a member of the Synonyms field:",
+			MemberQ[Lookup[packet, Synonyms], Lookup[packet, Name]],
+			True,
+			Message -> {Hold[Error::NameIsPartOfSynonyms], Lookup[packet, Type]}
+		],
+		RequiredTogetherTest[packet,
+			{InnerDiameter, OuterDiameter},
+			Message -> Automatic,
+			FieldSource -> fieldSource
+		],
+		(* Only do the field comparison test if both fields are informed *)
+		If[MatchQ[Lookup[packet, {InnerDiameter,OuterDiameter}], {DistanceP, DistanceP}],
+			FieldComparisonTest[packet,
+				{InnerDiameter,OuterDiameter},
+				Less,
+				Message -> Automatic,
+				FieldSource -> fieldSource
+			],
+			Nothing
+		],
+		RequiredTogetherTest[packet,
+			{Positions, PositionPlotting},
+			Message -> Automatic,
+			FieldSource -> fieldSource
+		]
+	}
+];
+
+
 
 
 (* ::Subsection::Closed:: *)
@@ -379,38 +600,81 @@ validModelItemStopperQTests[packet:PacketP[Model[Item, Stopper]]]:={
 
 (* ::Subsection::Closed:: *)
 (*validModelItemPlateSealQTests*)
+DefineOptions[
+	validModelItemPlateSealQTests,
+	Options :> {additionalValidQTestOptions}
+];
 
+validModelItemPlateSealQTests[packet : PacketP[Model[Item, PlateSeal]], ops:OptionsPattern[]] := Module[
+	{safeOps, fieldSource, cache, fastAssoc, object, identifier, commonFields, parameterizedFields},
 
-validModelItemPlateSealQTests[packet : PacketP[Model[Item, PlateSeal]]] := {
+	(* read options *)
+	safeOps = SafeOptions[validModelItemPlateSealQTests, ToList[ops]];
+	{fieldSource, cache} = Lookup[safeOps, #]& /@ {FieldSource, Cache};
+	object = Lookup[packet, Object];
+	identifier = If[DatabaseMemberQ[object],
+		object,
+		Lookup[packet, Type]
+	];
+	fastAssoc = updateFastAssoc[{{ProductsContained, ProductModel, Packet[SingleUse]}}, packet, cache];
+	commonFields = {CoverType, SealType, Name, Synonyms, ImageFile, Pierceable, MinTemperature, MaxTemperature, RestingOrientation};
+	parameterizedFields = {CoverFootprint};
+	{
 
-	NullFieldTest[packet, {
-		MSDSFile,
-		MSDSRequired,
-		NFPA,
-		DOTHazardClass,
-		BiosafetyLevel,
-		TransportTemperature,
-		Flammable,
-		IncompatibleMaterials,
-		LightSensitive
-	}],
+		(* No need to throw messages for these errors for UploadCoverModel, because Error::RedundantOptions will be thrown *)
+		NullFieldTest[packet, {
+			MSDSFile,
+			MSDSRequired,
+			NFPA,
+			DOTHazardClass,
+			BiosafetyLevel,
+			TransportTemperature,
+			Flammable,
+			IncompatibleMaterials,
+			LightSensitive
+		}],
 
-	(* unique fields *)
-	NotNullFieldTest[packet, {CoverType, CoverFootprint, SealType, Name, Synonyms, ImageFile, Pierceable, MinTemperature, MaxTemperature, RestingOrientation}],
+		(* unique fields *)
+		NotNullFieldTest[packet,
+			If[TrueQ[Lookup[packet, PendingParameterization, False]],
+				commonFields,
+				Join[commonFields, parameterizedFields]
+			],
+			Message -> Automatic,
+			FieldSource -> fieldSource,
+			ParentFunction -> "UploadCoverModel"
+		],
 
-	Test["CoverType must be Seal:",
-		Lookup[packet, CoverType],
-		Seal
-	],
+		Test["CoverType must be Seal:",
+			Lookup[packet, CoverType],
+			Seal,
+			Message -> Switch[Lookup[fieldSource, CoverType],
+				User, {Hold[Error::PlateSealCoverTypeMismatch], CoverType},
+				Template, {Hold[Error::PlateSealCoverTypeMismatchFromExternalField], CoverType, "Template option", Lookup[packet, CoverType]},
+				Field, {Hold[Error::PlateSealCoverTypeMismatchFromExternalField], CoverType, "database", Lookup[packet, CoverType]},
+				_, {Hold[Error::PlateSealCoverTypeMismatch], CoverType}
+			]
+		],
 
-	Test["The contents of the Name field is a member of the Synonyms field:",
-		MemberQ[Lookup[packet, Synonyms], Lookup[packet, Name]],
-		True
-	],
+		Test["The contents of the Name field is a member of the Synonyms field:",
+			MemberQ[Lookup[packet, Synonyms], Lookup[packet, Name]],
+			True,
+			Message -> {Hold[Error::NameIsPartOfSynonyms], Lookup[packet, Type]}
+		],
 
-	RequiredTogetherTest[packet, {Positions, PositionPlotting}],
-	FieldComparisonTest[packet, {MaxTemperature, MinTemperature}, GreaterEqual]
-};
+		RequiredTogetherTest[packet,
+			{Positions, PositionPlotting},
+			Message -> Automatic,
+			FieldSource -> fieldSource
+		],
+		FieldComparisonTest[packet,
+			{MinTemperature, MaxTemperature},
+			LessEqual,
+			Message -> Automatic,
+			FieldSource -> fieldSource
+		]
+	}
+];
 
 
 (* ::Subsection::Closed:: *)
@@ -541,65 +805,256 @@ validModelItemDialysisMembraneQTests[packet:PacketP[Model[Item, DialysisMembrane
 
 (* ::Subsection::Closed:: *)
 (*validModelItemLidQTests*)
+DefineOptions[
+	validModelItemLidQTests,
+	Options :> {additionalValidQTestOptions}
+];
 
+validModelItemLidQTests[packet : PacketP[Model[Item, Lid]], ops:OptionsPattern[]] := Module[
+	{safeOps, fieldSource, cache, fastAssoc, object, identifier, pendingParameterizationQ, commonFields, parameterizedFields},
 
-validModelItemLidQTests[packet : PacketP[Model[Item, Lid]]] := {
+	(* read options *)
+	safeOps = SafeOptions[validModelItemLidQTests, ToList[ops]];
+	{fieldSource, cache} = Lookup[safeOps, #]& /@ {FieldSource, Cache};
+	object = Lookup[packet, Object];
+	identifier = If[DatabaseMemberQ[object],
+		object,
+		Lookup[packet, Type]
+	];
+	fastAssoc = updateFastAssoc[{{ProductsContained, ProductModel, Packet[SingleUse]}}, packet, cache];
 
-	NullFieldTest[packet,
-		{
-			MSDSFile,
-			MSDSRequired,
-			NFPA,
-			DOTHazardClass,
-			BiosafetyLevel,
-			TransportTemperature,
-			Flammable,
-			IncompatibleMaterials,
-			LightSensitive
-		}
-	],
+	pendingParameterizationQ = TrueQ[Lookup[packet, PendingParameterization]];
 
-	(* unique fields *)
-	NotNullFieldTest[packet, {CoverType, CoverFootprint, Name, Synonyms, CondensationRings, ImageFile, RestingOrientation}],
+	commonFields = {CoverType, Name, Synonyms, CondensationRings, ImageFile, RestingOrientation};
+	parameterizedFields = {CoverFootprint};
 
-	RequiredTogetherTest[packet, {NumberOfRings, Rows, Columns, AspectRatio}],
+	{
+		(* No need to throw messages for these errors for UploadCoverModel, because Error::RedundantOptions will be thrown *)
+		NullFieldTest[packet,
+			{
+				MSDSFile,
+				MSDSRequired,
+				NFPA,
+				DOTHazardClass,
+				BiosafetyLevel,
+				TransportTemperature,
+				Flammable,
+				IncompatibleMaterials,
+				LightSensitive
+			}
+		],
 
-	Test["CoverType cannot be Crimp, Seal, Screw, or Pry:",
-		Lookup[packet, CoverType],
-		Except[Crimp | Seal | Screw | Pry]
-	],
+		(* unique fields *)
+		NotNullFieldTest[packet,
+			If[pendingParameterizationQ,
+				commonFields,
+				Join[commonFields, parameterizedFields]
+			],
+			Message -> Automatic,
+			FieldSource -> fieldSource,
+			ParentFunction -> "UploadCoverModel"
+		],
 
-	Test["If and only if Columns is greater than 1, HorizontalPitch and HorizontalMargin are informed:",
-		Lookup[packet, {Columns, HorizontalPitch, HorizontalMargin}],
-		{GreaterP[1], Except[NullP], Except[NullP]} | {Except[GreaterP[1]], _, _}
-	],
+		(* Originally it's a RequiredTogetherTest of 4 fields: NumberOfRings, Rows, Columns, AspectRatio. This makes custom error handling very complicated *)
+		(* Therefore separate this into multiple tests *)
+		RequiredTogetherTest[packet,
+			{Rows, Columns},
+			Message -> Automatic,
+			FieldSource -> fieldSource
+		],
 
-	Test["If and only if Rows is greater than 1, VerticalPitch and VerticalMargin area informed:",
-		Lookup[packet, {Rows, VerticalPitch, VerticalMargin}],
-		{GreaterP[1], Except[NullP], Except[NullP]} | {Except[GreaterP[1]], _, _}
-	],
+		RequiredTogetherTest[packet,
+			{Rows, NumberOfRings},
+			Message -> Automatic,
+			FieldSource -> fieldSource
+		],
 
-	Test["If both Rows and Columns are non-Null, then AspectRatio must be informed and must be equal to Columns/Rows. Otherwise, AspectRatio cannot be informed:",
-		Lookup[packet, {Rows, Columns, AspectRatio}],
-		Alternatives[
-			{Except[NullP], Except[NullP], _?(Equal[Rationalize[#], Divide @@ Lookup[packet, {Columns, Rows} ]]&)},
-			{NullP, NullP, NullP}
+		RequiredTogetherTest[packet,
+			{Columns, NumberOfRings},
+			Message -> Automatic,
+			FieldSource -> fieldSource
+		],
+
+		RequiredTogetherTest[packet,
+			{AspectRatio, NumberOfRings},
+			Message -> Automatic,
+			FieldSource -> fieldSource
+		],
+
+		Test["CoverType cannot be Crimp, Seal, Screw, or Pry:",
+			Lookup[packet, CoverType],
+			Except[Crimp | Seal | Screw | Pry],
+			Message -> Switch[Lookup[fieldSource, CoverType],
+				User, {Hold[Error::CoverTypeMismatch], CoverType, "Model[Item, Lid]", "Crimp, Seal, Screw, or Pry"},
+				Template, {Hold[Error::CoverTypeMismatchFromExternalField], CoverType, "Model[Item, Lid]", "Crimp, Seal, Screw, or Pry", "Template option"},
+				Field, {Hold[Error::CoverTypeMismatchFromExternalField], CoverType, "Model[Item, Lid]", "Crimp, Seal, Screw, or Pry", "database"},
+				_, {Hold[Error::CoverTypeMismatch], CoverType, "Model[Item, Lid]", "Crimp, Seal, Screw, or Pry"}
+			]
+		],
+
+		If[pendingParameterizationQ,
+			(* If still need parameterization, it's OK that Columns > 1 while HorizontalPitch == Null, but not the opposite *)
+			Test["If HorizontalPitch is informed, Columns must be greater than 1:",
+				Lookup[packet,{Columns, HorizontalPitch}],
+				{GreaterP[1], Except[NullP]} | {_, NullP},
+				Message -> Switch[Lookup[fieldSource, {HorizontalPitch, Columns}],
+					{User, (User | Resolved)}, {Hold[Error::InconsistentPitch], HorizontalPitch, Columns},
+					{User, Template}, {Hold[Error::InconsistentPitchWithExistingField], HorizontalPitch, Columns, "Template option"},
+					{User, Field}, {Hold[Error::InconsistentPitchWithExistingField], HorizontalPitch, Columns, "database"},
+					{Template, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], HorizontalPitch, Columns, "Template option"},
+					{Field, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], HorizontalPitch, Columns, "database"},
+					{Template, Template}, {Hold[Error::InconsistentPitchBetweenExistingField], HorizontalPitch, Columns, "Template option"},
+					{Field, Field}, {Hold[Error::InconsistentPitchBetweenExistingField], HorizontalPitch, Columns, "database"},
+					{_, _}, {Hold[Error::InconsistentPitch], HorizontalPitch, Columns}
+				]
+			],
+			Test["If and only if Columns is greater than 1, HorizontalPitch is informed:",
+				Lookup[packet,{Columns, HorizontalPitch}],
+				{GreaterP[1], Except[NullP]} | {Except[GreaterP[1]], NullP},
+				Message -> Switch[Lookup[fieldSource, {HorizontalPitch, Columns}],
+					{User, (User | Resolved)}, {Hold[Error::InconsistentPitch], HorizontalPitch, Columns},
+					{User, Template}, {Hold[Error::InconsistentPitchWithExistingField], HorizontalPitch, Columns, "Template option"},
+					{User, Field}, {Hold[Error::InconsistentPitchWithExistingField], HorizontalPitch, Columns, "database"},
+					{Template, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], HorizontalPitch, Columns, "Template option"},
+					{Field, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], HorizontalPitch, Columns, "database"},
+					{Template, Template}, {Hold[Error::InconsistentPitchBetweenExistingField], HorizontalPitch, Columns, "Template option"},
+					{Field, Field}, {Hold[Error::InconsistentPitchBetweenExistingField], HorizontalPitch, Columns, "database"},
+					{_, _}, {Hold[Error::InconsistentPitch], HorizontalPitch, Columns}
+				]
+			]
+		],
+
+		If[pendingParameterizationQ,
+			(* If still need parameterization, it's OK that Rows > 1 while VerticalPitch == Null, but not the opposite *)
+			Test["If VerticalPitch is informed, Rows must be greater than 1:",
+				Lookup[packet,{Rows, VerticalPitch}],
+				{GreaterP[1], Except[NullP]} | {_, NullP},
+				Message -> Switch[Lookup[fieldSource, {VerticalPitch, Rows}],
+					{User, (User | Resolved)}, {Hold[Error::InconsistentPitch], VerticalPitch, Rows},
+					{User, Template}, {Hold[Error::InconsistentPitchWithExistingField], VerticalPitch, Rows, "Template option"},
+					{User, Field}, {Hold[Error::InconsistentPitchWithExistingField], VerticalPitch, Rows, "database"},
+					{Template, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], VerticalPitch, Rows, "Template option"},
+					{Field, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], VerticalPitch, Rows, "database"},
+					{Template, Template}, {Hold[Error::InconsistentPitchBetweenExistingField], VerticalPitch, Rows, "Template option"},
+					{Field, Field}, {Hold[Error::InconsistentPitchBetweenExistingField], VerticalPitch, Rows, "database"},
+					{_, _}, {Hold[Error::InconsistentPitch], VerticalPitch, Rows}
+				]
+			],
+			Test["If and only if Rows is greater than 1, VerticalPitch is informed:",
+				Lookup[packet,{Rows, VerticalPitch}],
+				{GreaterP[1], Except[NullP]} | {Except[GreaterP[1]], NullP},
+				Message -> Switch[Lookup[fieldSource, {VerticalPitch, Rows}],
+					{User, (User | Resolved)}, {Hold[Error::InconsistentPitch], VerticalPitch, Rows},
+					{User, Template}, {Hold[Error::InconsistentPitchWithExistingField], VerticalPitch, Rows, "Template option"},
+					{User, Field}, {Hold[Error::InconsistentPitchWithExistingField], VerticalPitch, Rows, "database"},
+					{Template, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], VerticalPitch, Rows, "Template option"},
+					{Field, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], VerticalPitch, Rows, "database"},
+					{Template, Template}, {Hold[Error::InconsistentPitchBetweenExistingField], VerticalPitch, Rows, "Template option"},
+					{Field, Field}, {Hold[Error::InconsistentPitchBetweenExistingField], VerticalPitch, Rows, "database"},
+					{_, _}, {Hold[Error::InconsistentPitch], VerticalPitch, Rows}
+				]
+			]
+		],
+
+		If[pendingParameterizationQ,
+			(* If still need parameterization, it's OK that Columns > 1 while HorizontalMargin == Null, but not the opposite *)
+			Test["If HorizontalMargin is informed, Columns must be greater than 1:",
+				Lookup[packet,{Columns, HorizontalMargin}],
+				{GreaterP[1], Except[NullP]} | {_, NullP},
+				Message -> Switch[Lookup[fieldSource, {HorizontalMargin, Columns}],
+					{User, (User | Resolved)}, {Hold[Error::InconsistentMargin], HorizontalMargin, Columns},
+					{User, Template}, {Hold[Error::InconsistentMarginWithExistingField], HorizontalMargin, Columns, "Template option"},
+					{User, Field}, {Hold[Error::InconsistentMarginWithExistingField], HorizontalMargin, Columns, "database"},
+					{Template, (User | Resolved)}, {Hold[Error::InconsistentMarginToExistingField], HorizontalMargin, Columns, "Template option"},
+					{Field, (User | Resolved)}, {Hold[Error::InconsistentMarginToExistingField], HorizontalMargin, Columns, "database"},
+					{Template, Template}, {Hold[Error::InconsistentMarginBetweenExistingField], HorizontalMargin, Columns, "Template option"},
+					{Field, Field}, {Hold[Error::InconsistentMarginBetweenExistingField], HorizontalMargin, Columns, "database"},
+					{_, _}, {Hold[Error::InconsistentMargin], HorizontalMargin, Columns}
+				]
+			],
+			Test["If and only if Columns is greater than 1, HorizontalMargin is informed:",
+				Lookup[packet,{Columns, HorizontalMargin}],
+				{GreaterP[1], Except[NullP]} | {Except[GreaterP[1]], NullP},
+				Message -> Switch[Lookup[fieldSource, {HorizontalMargin, Columns}],
+					{User, (User | Resolved)}, {Hold[Error::InconsistentMargin], HorizontalMargin, Columns},
+					{User, Template}, {Hold[Error::InconsistentMarginWithExistingField], HorizontalMargin, Columns, "Template option"},
+					{User, Field}, {Hold[Error::InconsistentMarginWithExistingField], HorizontalMargin, Columns, "database"},
+					{Template, (User | Resolved)}, {Hold[Error::InconsistentMarginToExistingField], HorizontalMargin, Columns, "Template option"},
+					{Field, (User | Resolved)}, {Hold[Error::InconsistentMarginToExistingField], HorizontalMargin, Columns, "database"},
+					{Template, Template}, {Hold[Error::InconsistentMarginBetweenExistingField], HorizontalMargin, Columns, "Template option"},
+					{Field, Field}, {Hold[Error::InconsistentMarginBetweenExistingField], HorizontalMargin, Columns, "database"},
+					{_, _}, {Hold[Error::InconsistentMargin], HorizontalMargin, Columns}
+				]
+			]
+		],
+
+		If[pendingParameterizationQ,
+			(* If still need parameterization, it's OK that Rows > 1 while VerticalMargin == Null, but not the opposite *)
+			Test["If VerticalMargin is informed, Rows must be greater than 1:",
+				Lookup[packet,{Rows, VerticalMargin}],
+				{GreaterP[1], Except[NullP]} | {_, NullP},
+				Message -> Switch[Lookup[fieldSource, {VerticalMargin, Rows}],
+					{User, (User | Resolved)}, {Hold[Error::InconsistentMargin], VerticalMargin, Rows},
+					{User, Template}, {Hold[Error::InconsistentMarginWithExistingField], VerticalMargin, Rows, "Template option"},
+					{User, Field}, {Hold[Error::InconsistentMarginWithExistingField], VerticalMargin, Rows, "database"},
+					{Template, (User | Resolved)}, {Hold[Error::InconsistentMarginToExistingField], VerticalMargin, Rows, "Template option"},
+					{Field, (User | Resolved)}, {Hold[Error::InconsistentMarginToExistingField], VerticalMargin, Rows, "database"},
+					{Template, Template}, {Hold[Error::InconsistentMarginBetweenExistingField], VerticalMargin, Rows, "Template option"},
+					{Field, Field}, {Hold[Error::InconsistentMarginBetweenExistingField], VerticalMargin, Rows, "database"},
+					{_, _}, {Hold[Error::InconsistentMargin], VerticalMargin, Rows}
+				]
+			],
+			Test["If and only if Rows is greater than 1, VerticalMargin is informed:",
+				Lookup[packet,{Rows, VerticalMargin}],
+				{GreaterP[1], Except[NullP]} | {Except[GreaterP[1]], NullP},
+				Message -> Switch[Lookup[fieldSource, {VerticalMargin, Rows}],
+					{User, (User | Resolved)}, {Hold[Error::InconsistentMargin], VerticalMargin, Rows},
+					{User, Template}, {Hold[Error::InconsistentMarginWithExistingField], VerticalMargin, Rows, "Template option"},
+					{User, Field}, {Hold[Error::InconsistentMarginWithExistingField], VerticalMargin, Rows, "database"},
+					{Template, (User | Resolved)}, {Hold[Error::InconsistentMarginToExistingField], VerticalMargin, Rows, "Template option"},
+					{Field, (User | Resolved)}, {Hold[Error::InconsistentMarginToExistingField], VerticalMargin, Rows, "database"},
+					{Template, Template}, {Hold[Error::InconsistentMarginBetweenExistingField], VerticalMargin, Rows, "Template option"},
+					{Field, Field}, {Hold[Error::InconsistentMarginBetweenExistingField], VerticalMargin, Rows, "database"},
+					{_, _}, {Hold[Error::InconsistentMargin], VerticalMargin, Rows}
+				]
+			]
+		],
+
+		If[!MemberQ[Lookup[packet, {Columns, Rows, AspectRatio}, Null], Null],
+			Test["Columns/Rows  equals AspectRatio:",
+				Lookup[packet,AspectRatio],
+				_?(Equal[#,Divide@@Lookup[packet,{Columns,Rows} ]]&),
+				Message -> Switch[Lookup[fieldSource, {AspectRatio, Columns, Rows}],
+					{User, User, User}, {Hold[Error::ColumnRowInconsistency], AspectRatio, Columns, Rows, "ratio between"},
+					_?(MemberQ[Template]), {Hold[Error::ColumnRowInconsistencyWithExistingField], AspectRatio, Columns, Rows, "ratio between", PickList[{AspectRatio, Columns, Rows}, Lookup[fieldSource, {AspectRatio, Columns, Rows}], Template], "Template option"},
+					_?(MemberQ[Field]), {Hold[Error::ColumnRowInconsistencyWithExistingField], AspectRatio, Columns, Rows, "ratio between", PickList[{AspectRatio, Columns, Rows}, Lookup[fieldSource, {AspectRatio, Columns, Rows}], Field], "database"},
+					{_, _, _}, {Hold[Error::ColumnRowInconsistency], AspectRatio, Columns, Rows, "ratio between"}
+				]
+			],
+			Nothing
+		],
+
+		If[!MemberQ[Lookup[packet, {Rows, Columns, NumberOfRings}, Null], Null],
+			Test["Columns * Rows equals NumberOfRings:",
+				Times@@Lookup[packet, {Rows, Columns}],
+				Lookup[packet, NumberOfRings],
+				Message -> Switch[Lookup[fieldSource, {NumberOfRings, Rows, Columns}],
+					{User, User, User}, {Hold[Error::ColumnRowInconsistency], NumberOfRings, Rows, Columns, "product of"},
+					_?(MemberQ[Template]), {Hold[Error::ColumnRowInconsistencyWithExistingField], NumberOfRings, Rows, Columns, "product of", PickList[{NumberOfRings, Rows, Columns}, Lookup[fieldSource, {NumberOfRings, Rows, Columns}], Template], "Template option"},
+					_?(MemberQ[Field]), {Hold[Error::ColumnRowInconsistencyWithExistingField], NumberOfRings, Rows, Columns, "product of", PickList[{NumberOfRings, Rows, Columns}, Lookup[fieldSource, {NumberOfRings, Rows, Columns}], Field], "database"},
+					{_, _, _}, {Hold[Error::ColumnRowInconsistency], NumberOfRings, Rows, Columns, "product of"}
+				]
+			],
+			Nothing
+		],
+
+		Test["The contents of the Name field is a member of the Synonyms field:",
+			MemberQ[Lookup[packet, Synonyms], Lookup[packet, Name]],
+			True,
+			Message -> {Hold[Error::NameIsPartOfSynonyms], "Model[Item, Lid]"}
 		]
-	],
-
-	Test["If both Rows and Columns are non-Null, then NumberOfRings must be equal to Rows*Columns:",
-		Lookup[packet, {Rows, Columns, NumberOfRings}],
-		Alternatives[
-			{Except[NullP], Except[NullP], Times @@ Lookup[packet, {Rows, Columns}]},
-			{NullP, NullP, NullP}
-		]
-	],
-
-	Test["The contents of the Name field is a member of the Synonyms field:",
-		MemberQ[Lookup[packet, Synonyms], Lookup[packet, Name]],
-		True
-	]
-};
+	}
+];
 
 
 (* ::Subsection::Closed:: *)
@@ -694,13 +1149,12 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 		NullFieldTest[packet, {LightSensitive, Flammable, IncompatibleMaterials, MSDSRequired, NFPA, DOTHazardClass, BiosafetyLevel, Radioactive, Ventilated, DrainDisposal}],
 
 		(* Fields that SHOULD be informed, ie should NOT be Null*)
-		NotNullFieldTest[packet, {Authors, Name, Synonyms, MaxPressure, MaxFlowRate, PackingType, ColumnType, MaxNumberOfUses, Name, Synonyms}, Message -> Hold[Error::RequiredOptions], MessageArguments -> {identifier}],
+		NotNullFieldTest[packet, {Authors, Name, Synonyms, MaxPressure, MaxFlowRate, PackingType, ColumnType, MaxNumberOfUses, Name, Synonyms}, Message -> {Hold[Error::RequiredOptions], identifier}],
 
 		Test["The contents of the Name field is a member of the Synonyms field:",
 			MemberQ[Lookup[packet, Synonyms], Lookup[packet, Name]],
 			True,
-			Message -> Hold[Error::NameIsNotPartOfSynonymsColumn],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NameIsNotPartOfSynonymsColumn], identifier}
 		],
 		Test["SeparationMode should be informed if the ColumnType is not a Join, unless ChromatographyType is GasChromatography:",
 			Lookup[packet, {ColumnType, SeparationMode, ChromatographyType}],
@@ -709,8 +1163,7 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 				{_, _, GasChromatography},
 				{Except[Join], Except[Null], Except[GasChromatography]}
 			],
-			Message -> Hold[Error::SeparationMode],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::SeparationMode], identifier}
 		],
 		Test["ChromatographyType must be GasChromatography if the SeparationMode is GasChromatography:",
 			Lookup[packet, {SeparationMode, ChromatographyType}],
@@ -718,8 +1171,7 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 				{GasChromatography, GasChromatography},
 				{Except[GasChromatography], Except[GasChromatography]}
 			],
-			Message -> Hold[Error::ChromatographyType],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::ChromatographyType], identifier}
 		],
 		Test["Connectors must contain entries for 'Column Inlet' and 'Column Outlet' if ChromatographyType is GasChromatography:",
 			If[MatchQ[Lookup[packet, ChromatographyType], GasChromatography],
@@ -727,8 +1179,7 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 				True
 			],
 			True,
-			Message -> Hold[Error::ColumnConnectors],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::ColumnConnectors], identifier}
 		],
 		(*The FilmThickness Option must be filled out if Model's Chromatography Type is GasChromatography*)
 		Test["FilmThickness Option must be filled out if Model's Chromatography Type is GasChromatography:",
@@ -741,26 +1192,23 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 		Test["ProtectedColumns can only be informed if ColumnType->Guard:",
 			Lookup[packet, {ColumnType, ProtectedColumns}],
 			{Guard, _} | {Except[Guard], NullP | {}},
-			Message -> Hold[Error::OnlyGuardProtectedColumns],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::OnlyGuardProtectedColumns], identifier}
 		],
 		Test["PreferredGuardColumn can only be informed if ColumnType is not Guard:",
 			Lookup[packet, {ColumnType, PreferredGuardColumn}],
 			{Except[Guard], _} | {Guard, NullP | {}},
-			Message -> Hold[Error::PreferredGuardColumn],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::PreferredGuardColumn], identifier}
 		],
 
 		Test["The options InletFilterThickness and InletFilterMaterial should be informed together:",
 			Lookup[packet, {ColumnType, ProtectedColumns}, Null],
 			{Null, Null} | {Except[Null], Except[Null]},
-			Message -> Hold[Error::InletOptionsRequiredTogether],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::InletOptionsRequiredTogether], identifier}
 		],
 
 		If[MatchQ[Lookup[packet, {ColumnType, PackingType}], {Guard, Cartridge}],
 			Nothing,
-			NotNullFieldTest[packet, {WettedMaterials, Diameter}, Message -> Hold[Error::RequiredOptions], MessageArguments -> {identifier}]
+			NotNullFieldTest[packet, {WettedMaterials, Diameter}, Message -> {Hold[Error::RequiredOptions], identifier}]
 		],
 
 		(* Inequality tests *)
@@ -770,8 +1218,7 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 				True
 			],
 			True,
-			Message -> Hold[Error::WettedMaterialsSpecified],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::WettedMaterialsSpecified], identifier}
 		],
 		Test["The option MaxPressure must have values greater than or equal to the respective option MinPressure:",
 			If[MatchQ[Lookup[packet, MaxPressure, Null], Except[Null]] && MatchQ[Lookup[packet, MinPressure, Null], Except[Null]],
@@ -779,8 +1226,7 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 				True
 			],
 			True,
-			Message -> Hold[Error::MaxMinPressureInvalidInequalityOptions],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::MaxMinPressureInvalidInequalityOptions], identifier}
 		],
 		Test["The option MaxFlowRate must have values greater than or equal to the respective option MinFlowRate:",
 			If[MatchQ[Lookup[packet, MaxFlowRate, Null], Except[Null]] && MatchQ[Lookup[packet, MinFlowRate, Null], Except[Null]],
@@ -788,8 +1234,7 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 				True
 			],
 			True,
-			Message -> Hold[Error::MaxMinFlowRateInvalidInequalityOptions],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::MaxMinFlowRateInvalidInequalityOptions], identifier}
 		],
 		Test["The option MaxFlowRate must have values greater than or equal to the respective option NominalFlowRate:",
 			If[MatchQ[Lookup[packet, MaxFlowRate, Null], Except[Null]] && MatchQ[Lookup[packet, NominalFlowRate, Null], Except[Null]],
@@ -797,8 +1242,7 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 				True
 			],
 			True,
-			Message -> Hold[Error::MaxNominalFlowRateInvalidInequalityOptions],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::MaxNominalFlowRateInvalidInequalityOptions], identifier}
 		],
 		Test["The option NominalFlowRate must have values greater than or equal to the respective option MinFlowRate:",
 			If[MatchQ[Lookup[packet, NominalFlowRate, Null], Except[Null]] && MatchQ[Lookup[packet, MinFlowRate, Null], Except[Null]],
@@ -806,8 +1250,7 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 				True
 			],
 			True,
-			Message -> Hold[Error::NominalMinFlowRateInvalidInequalityOptions],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NominalMinFlowRateInvalidInequalityOptions], identifier}
 		],
 		Test["The option MaxTemperature must have values greater than or equal to the respective option MinTemperature:",
 			If[MatchQ[Lookup[packet, MaxTemperature, Null], Except[Null]] && MatchQ[Lookup[packet, MinTemperature, Null], Except[Null]],
@@ -815,8 +1258,7 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 				True
 			],
 			True,
-			Message -> Hold[Error::MaxMinTemperatureInvalidInequalityOptions],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::MaxMinTemperatureInvalidInequalityOptions], identifier}
 		],
 		Test["The option MaxpH must have values greater than or equal to the respective option MinpH:",
 			If[MatchQ[Lookup[packet, MaxpH, Null], Except[Null]] && MatchQ[Lookup[packet, MinpH, Null], Except[Null]],
@@ -824,16 +1266,14 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 				True
 			],
 			True,
-			Message -> Hold[Error::MaxMinpHInvalidInequalityOptions],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::MaxMinpHInvalidInequalityOptions], identifier}
 		],
 
 		(* Only guard columns may be cartridge *)
 		Test["PackingType can only be Cartridge if ColumnType->Guard:",
 			Lookup[packet, {ColumnType, PackingType}],
 			{Guard, Cartridge} | Except[{Guard, Cartridge}],
-			Message -> Hold[Error::OnlyGuardCartridgePackingType],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::OnlyGuardCartridgePackingType], identifier}
 		],
 
 		Test["If the type of column is for HPLC, FPLC, and/or SupercriticalFluidChromatography, then Connectors should have an inlet and outlet entry:",
@@ -842,8 +1282,7 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 				True
 			],
 			True,
-			Message -> Hold[Error::ConnectorEntries],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::ConnectorEntries], identifier}
 		],
 		Test["SeparationMode, MaxpH, MaxPressure, MaxTemperature, MinFlowRate, MinpH, MinPressure, MinTemperature, NominalFlowRate, MaxFlowRate, PackingMaterial of the column must be the same as its PreferredGuardCartridge:",
 			If[NullQ[Lookup[packet, PreferredGuardCartridge, Null]],
@@ -857,8 +1296,7 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 				]
 			],
 			True,
-			Message -> Hold[Error::CartridgeOptionMismatch],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::CartridgeOptionMismatch], identifier}
 		],
 
 		Test["The option PreferredGuardCartridge must be informed if PackingType is Cartridge and may not be informed otherwise:",
@@ -867,8 +1305,7 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 				{Null, Except[Cartridge]} | {Except[Null], Cartridge}
 			],
 			True,
-			Message -> Hold[Error::PreferredGuardCartridgePackingType],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::PreferredGuardCartridgePackingType], identifier}
 		],
 
 		(* Fields that must be informed if ChromatographyType is GasChromatography *)
@@ -876,8 +1313,7 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 			NotNullFieldTest[
 				packet,
 				{Diameter, Polarity, ColumnLength, FilmThickness, ColumnFormat, MinTemperature, MaxTemperature, MaxShortExposureTemperature, Size},
-				Message -> Hold[Error::RequiredOptions],
-				MessageArguments -> {identifier}
+				Message -> {Hold[Error::RequiredOptions], identifier}
 			],
 			Nothing
 		],
@@ -887,8 +1323,7 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 			NotNullFieldTest[
 				packet,
 				{MinFlowRate, MaxFlowRate, MinPressure, MaxPressure, Diameter, ColumnLength, Reusable, StorageCaps, BedWeight, VoidVolume},
-				Message -> Hold[Error::RequiredOptions],
-				MessageArguments -> {identifier}
+				Message -> {Hold[Error::RequiredOptions], identifier}
 			],
 			Nothing
 		],
@@ -898,8 +1333,7 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 			NotNullFieldTest[
 				packet,
 				{SeparationMode, PackingMaterial},
-				Message -> Hold[Error::RequiredOptions],
-				MessageArguments -> {identifier}
+				Message -> {Hold[Error::RequiredOptions], identifier}
 			],
 			Nothing
 		],
@@ -912,8 +1346,7 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 				{_, _, _}, True
 			],
 			True,
-			Message -> Hold[Error::InvalidFlashChromatographySeparationMode],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::InvalidFlashChromatographySeparationMode], identifier}
 		],
 
 		Test["If ChromatographyType is Flash, PackingMaterial must be Silica or Alumina unless ColumnType is Join:",
@@ -1880,7 +2313,8 @@ validModelItemFilterQTests[packet:PacketP[Model[Item,Filter]]]:=
 			{Centrifuge, NullP, NullP},
 			{Membrane, NullP, NullP},
 			{BottleTop,_,_},
-			{CrossFlowFiltration,_,_}
+			{CrossFlowFiltration,_,_},
+			{G2InLine|G2ProbeTip,_,_}
 		]
 	],
 
@@ -1893,7 +2327,8 @@ validModelItemFilterQTests[packet:PacketP[Model[Item,Filter]]]:=
 			{Centrifuge, Except[NullP], Except[NullP]},
 			{Membrane, Except[NullP], Except[NullP]},
 			{BottleTop,Except[NullP],Except[NullP]},
-			{CrossFlowFiltration,_,_}
+			{CrossFlowFiltration,_,_},
+			{G2InLine|G2ProbeTip,_,_}
 		]
 	],
 
@@ -1906,7 +2341,8 @@ validModelItemFilterQTests[packet:PacketP[Model[Item,Filter]]]:=
 			{Centrifuge, Except[NullP]},
 			{Membrane, Except[NullP]},
 			{BottleTop,Except[NullP]},
-			{CrossFlowFiltration,_}
+			{CrossFlowFiltration,_},
+			{G2InLine|G2ProbeTip,_}
 		]
 	]
 };
@@ -3332,6 +3768,28 @@ validModelItemWilhelmyPlateQTests[packet:PacketP[Model[Item,WilhelmyPlate]]]:={
 	}]
 };
 
+validModelItemWeighBoatQTests[packet:PacketP[Model[Item,WeighBoat]]]:={
+	NotNullFieldTest[packet,{
+		Material,
+		MaxVolume,
+		TareWeight
+	}]
+};
+
+validModelItemWeighBoatWeighingFunnelQTests[packet:PacketP[Model[Item,WeighBoat,WeighingFunnel]]]:={
+	NotNullFieldTest[packet,{
+		FunnelStemDiameter,
+		FunnelStemLength
+	}]
+};
+
+validModelItemSpatulaQTests[packet:PacketP[Model[Item,Spatula]]]:={
+	NotNullFieldTest[packet,{
+		Material,
+		TransferVolume
+	}]
+};
+
 
 (* ::Subsection:: *)
 (*Test Registration *)
@@ -3409,6 +3867,6 @@ registerValidQTestFunction[Model[Item, SupportRod],validModelItemSupportRodQTest
 registerValidQTestFunction[Model[Item, Washer],validModelItemWasherQTests];
 registerValidQTestFunction[Model[Item, WasteLabel], validModelItemWasteLabelQTests];
 registerValidQTestFunction[Model[Item, WilhelmyPlate],validModelItemWilhelmyPlateQTests];
-
-
-
+registerValidQTestFunction[Model[Item, WeighBoat], validModelItemWeighBoatQTests];
+registerValidQTestFunction[Model[Item, WeighBoat, WeighingFunnel], validModelItemWeighBoatWeighingFunnelQTests];
+registerValidQTestFunction[Model[Item, Spatula], validModelItemSpatulaQTests];

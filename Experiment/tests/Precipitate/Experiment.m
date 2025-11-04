@@ -295,7 +295,7 @@ DefineTests[ExperimentPrecipitate,
           Object[Sample, "DNA in water sample 2 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID],
           Object[Sample, "DNA in water sample 3 0.25mL (Test for ExperimentPrecipitate) " <> $SessionUUID]
         },
-        SampleVolume -> {100 Microliter, 250 Microliter, 250 Microliter},
+        SampleVolume -> {200 Microliter, 250 Microliter, 250 Microliter},
         SeparationTechnique -> {Filter, Filter, Pellet},
         FiltrationTechnique -> {Centrifuge, AirPressure, Null},
         Sterile -> True,

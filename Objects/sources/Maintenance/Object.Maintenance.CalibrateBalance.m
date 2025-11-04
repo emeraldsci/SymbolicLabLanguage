@@ -88,6 +88,37 @@ DefineObjectType[Object[Maintenance, CalibrateBalance], {
 			Relation -> Object[EmeraldCloudFile],
 			Description -> "A notebook containing analysis of the data collected by this qualification.",
 			Category -> "Analysis & Reports"
+		},
+		CoverWrench -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Item], Model[Item]],
+			Description -> "The wrench used to remove the button cover before maintenance, and reinstall after maintenance is done.",
+			Category -> "General"
+		},
+		ButtonCover -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :>BooleanP,
+			Description -> "Indicates if the balance that is being calibrated has a button cover on it that prevents operator from accessing touchscreen and buttons.",
+			Category -> "General"
+		},
+		WeightStabilityDuration -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Second],
+			Units -> Second,
+			Description -> "The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable and measured.",
+			Category -> "General"
+		},
+		MaxWeightVariation -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Milligram],
+			Units -> Milligram,
+			Description -> "The max allowed amplitude the balance readings can fluctuate with for a duration defined by WeightStabilityDuration before being considered stable and measured.",
+			Category -> "General"
 		}
 	}
 }];

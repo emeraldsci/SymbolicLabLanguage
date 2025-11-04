@@ -229,13 +229,55 @@ DefineObjectType[Model[Item,Lid], {
 			Category -> "Organizational Information",
 			Developer -> True
 		},
-		AdditionalInformation -> {
+		UnresolvedInputs -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> _List,
+			Description -> "The raw inputs provided by the user when creating this cover model via the UploadCoverModel function.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		UnresolvedOptions -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> {(_Rule | _RuleDelayed)...},
+			Description -> "The options provided by the user when creating this cover model via the UploadCoverModel function.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		ReplacementObject -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Cap][DeprecatedModels],
+				Model[Item, Lid][DeprecatedModels],
+				Model[Item, PlateSeal][DeprecatedModels]
+			],
+			Description -> "The new cover model object created by an ECL personnel that replaces the current one. User-created cover model can potentially be replaced entirely during the verification process if the Type of the cover model is determined to be incorrect.",
+			Category -> "Organizational Information",
+			AdminWriteOnly -> True
+		},
+		DeprecatedModels -> {
 			Format -> Multiple,
-			Class -> {String, Date},
-			Pattern :> {_String, _?DateObjectQ},
-			Description -> "Supplementary information recorded from the UploadMolecule function. These information usually records the user supplied input and options, providing additional information for verification.",
-			Headers -> {"Information", "Date Added"},
-			Category -> "Hidden"
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Cap][ReplacementObject],
+				Model[Item, Lid][ReplacementObject],
+				Model[Item, PlateSeal][ReplacementObject]
+			],
+			Description -> "User-created cover models that have been replaced by this current cover model by ECL personnel.",
+			Category -> "Organizational Information",
+			AdminWriteOnly -> True
+		},
+		PendingParameterization -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicate whether this model is awaiting measurement and assessment of physical properties in the lab.",
+			Category -> "Organizational Information",
+			Developer -> True
 		},
 		Weight -> {
 			Format -> Single,

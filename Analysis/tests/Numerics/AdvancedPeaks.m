@@ -35,7 +35,9 @@ DefineTests[AdvancedAnalyzePeaks, {
 		ObjectP[Object[Analysis,Peaks]]
 	],
 	Test["Specify manual peaks:",
-		Lookup[AdvancedAnalyzePeaks[xyPts, ManualPeaks -> {{{200,0},{250,1}}},Upload->False],
+		Lookup[AdvancedAnalyzePeaks[xyPts,
+			ManualPeaks -> {{{{200, 0}, {250, 1}, "manual peak"}}},
+			Upload -> False],
 		Map[Replace,{Position,PeakRangeStart, PeakRangeEnd, BaselineSlope}]], 
 		{{239.14},{198.512}, {250.221},{1/(250.221-198.512)}}, 
 		EquivalenceFunction -> RoundMatchQ[5]
@@ -48,13 +50,12 @@ DefineTests[AdvancedAnalyzePeaks, {
 	],
 	Test["Specify labels:",
 		Lookup[AdvancedAnalyzePeaks[xyPts, 
-  			ManualPeaks -> {{{200, 0}, {250, 0}}}, 
+  			ManualPeaks -> {{{{200, 0}, {250, 0}, "manual peak"}}},
   			PeakThresholds -> {{{50, 150}, 1500}},
   			ExpectedPeaks -> {{"Aaa", 117, {115, 120}}, {"Bbb", 239, {235, 245}}}, Upload -> False], 
  			Map[Replace, {PeakLabel, Position}]
 		],
-		(* can't lable manual (for now) *)
-		{{"Manual 2", "Automatic 1-1", "Aaa"}, {239.14, 65.8685, 117.254}},
+		{{"manual peak", "Automatic 2-1", "Aaa"}, {239.14, 65.8685, 117.254}},
 		EquivalenceFunction -> RoundMatchQ[5]
 	]
 	

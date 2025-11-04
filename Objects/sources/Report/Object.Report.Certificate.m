@@ -20,12 +20,28 @@ DefineObjectType[Object[Report, Certificate],{
 			Description->"The item with the properties and batch number contained in the certificate.",
 			Category->"General"
 		},
+		ItemsCertified->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Item][Certificates],
+			Description->"The items with the properties and batch number contained in the certificate.",
+			Category->"General"
+		},
 		PartCertified->{
 			Format->Single,
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Object[Part][Certificates],
 			Description->"The part with the properties and batch number contained in the certificate.",
+			Category->"General"
+		},
+		PartsCertified->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Part][Certificates],
+			Description->"The parts with the properties and batch number contained in the certificate.",
 			Category->"General"
 		},
 		InstrumentCertified->{

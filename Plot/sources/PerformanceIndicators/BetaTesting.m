@@ -351,7 +351,26 @@ $BetaExperimentFunctions = <|
 			"Power cycle new HEPA", "Power cycle old HEPA", "Hamilton Initialization Failure"
 		}
 	},
-	"ExperimentFreezeCells" -> {StartDate -> DateObject[{2024, 12, 2}]},
+	"ExperimentFreezeCells" -> {
+		StartDate -> DateObject[{2024, 12, 2}],
+		UnusedProcedures -> {
+			"ECL-CMU Go to Cryostores",
+			"VIA Freeze Lid Open Alarm",
+			"VIA Freeze Other Alarm Second Attempt",
+			"VIA Freeze System Overheating Alarm",
+			(* below are maintenance and qualification procedure *)
+			"MaintenanceClean Bench", "MaintenanceClean Bufferbot", "MaintenanceClean Centrifuge",
+			"MaintenanceClean Centrifuge Loop", "MaintenanceClean Collect Step Ladder", "MaintenanceClean CoulterCounter",
+			"MaintenanceClean DrumRoller", "MaintenanceClean FixedAngle Centrifuge Rotor",
+			"MaintenanceClean FlammableCabinet", "MaintenanceCleanFreeezer Gather Spill Pads",
+			"MaintenanceClean FumeHood", "MaintenanceClean PassThroughShelf", "MaintenanceClean Peptide Synthesizer",
+			"MaintenanceClean pHTitrator", "MaintenanceClean Reactor", "MaintenanceClean Return Step Stool",
+			"MaintenanceClean Room", "MaintenanceClean SolidPhaseExtraction", "MaintenanceClean SwingBucket",
+			"MaintenanceDefrost Absorbent mat placement -20 C", "Maintenance Defrost audit loop",
+			"Maintenance Defrost freezer audit wrapper", "MaintenanceDefrost  temperature Alarm -20C",
+			"MaintenanceDefrost Turn On Temperature Alarm -20C", "MaintneanceClean CleanInstrumentsExteriorSurfaces"
+		}
+	},
 	"ExperimentMedia" -> {
 		StartDate -> DateObject[{2024, 12, 2}],
 		SearchCriteria -> Any[StockSolutionModels[Type] == Model[Sample, Media]],

@@ -13,7 +13,7 @@ DefineObjectType[Object[Instrument, SampleImager], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Part, Camera][SampleImager],
-			Description -> "Fixed lense camera part of this sample imager that is used to image short vessel.",
+			Description -> "Fixed lens camera part of this sample imager that is used to image short vessel.",
 			Category -> "Instrument Specifications"
 		},
 		MediumCamera -> {
@@ -21,7 +21,7 @@ DefineObjectType[Object[Instrument, SampleImager], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Part, Camera][SampleImager],
-			Description -> "Fixed lense camera part of this sample imager that is used to image medium size vessels.",
+			Description -> "Fixed lens camera part of this sample imager that is used to image medium size vessels.",
 			Category -> "Instrument Specifications"
 		},
 		LargeCamera -> {
@@ -29,7 +29,7 @@ DefineObjectType[Object[Instrument, SampleImager], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Part, Camera][SampleImager],
-			Description ->"Fixed lense camera part of this sample imager that is used to image large vessels.",
+			Description ->"Fixed lens camera part of this sample imager that is used to image large vessels.",
 			Category -> "Instrument Specifications"
 		},
 		TopLight -> {

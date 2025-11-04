@@ -1292,6 +1292,38 @@ With[{file=$InputFileName},
 			Example[{Options,DisplayFunction,"Control how inputs are converted to strings for verbose printing:"},
 				RunUnitTest[symbolWithFailingTests,Verbose->True,DisplayFunction->(Short[#,1]&)],
 				_EmeraldTestSummary
+			],
+
+			Example[{Options, ClearMemoization, "When ClearMemoization -> True, ClearMemoization will be run before SymbolSetUp and after SymbolTearDown:"},
+				testMemoizedFunction["123"];
+				RunUnitTest[symbolWithFailingTests, ClearMemoization -> True];
+				AbsoluteTiming[testMemoizedFunction["123"]],
+				{GreaterP[2], 1},
+				SetUp :> (
+					testMemoizedFunction[testString_String]:= testMemoizedFunction[testString] = Module[{},
+						If[!MemberQ[$Memoization, UnitTest`Private`testMemoizedFunction],
+							AppendTo[$Memoization, UnitTest`Private`testMemoizedFunction]
+						];
+						Pause[5];
+						1
+					]
+				)
+			],
+
+			Example[{Options, ClearMemoization, "When ClearMemoization -> False, ClearMemoization will not be run before SymbolSetUp and after SymbolTearDown:"},
+				testMemoizedFunction["123"];
+				RunUnitTest[symbolWithFailingTests, ClearMemoization -> False];
+				AbsoluteTiming[testMemoizedFunction["123"]],
+				{LessP[2], 1},
+				SetUp :> (
+					testMemoizedFunction[testString_String]:= testMemoizedFunction[testString] = Module[{},
+						If[!MemberQ[$Memoization, UnitTest`Private`testMemoizedFunction],
+							AppendTo[$Memoization, UnitTest`Private`testMemoizedFunction]
+						];
+						Pause[5];
+						1
+					]
+				)
 			]
 		},
 		Variables:>{symbolWithPassingTests,symbolWithFailingTests,symbolWithoutTests,symbolWithMessagesToTurnOff},

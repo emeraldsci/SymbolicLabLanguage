@@ -3078,10 +3078,9 @@ grindResourcePackets[
 	(* Weigh boat resources *)
 	weighingContainerResources = Link[Resource[
 		Sample -> If[LessEqual[#, 10 Gram],
-			Model[Item, WeighBoat, "id:N80DNj1N7GLX"], (* "Weigh boats, medium" *)
-			Model[Item, WeighBoat, "id:vXl9j57j0zpm"] (* "Weigh boats, large" *)
+			Model[Item, WeighBoat, "id:Vrbp1jaq5Ojz"], (*Weigh boats, medium, Individual*)
+			Model[Item, WeighBoat, "id:XnlV5jOD1AjZ"] (*Weigh boats, large, Individual*)
 		],
-		Amount -> 1,
 		Name -> CreateUniqueLabel["Weigh Boat Resources"]
 	]]& /@ numericAmount;
 

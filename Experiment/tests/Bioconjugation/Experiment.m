@@ -5918,7 +5918,7 @@ DefineTests[ExperimentBioconjugation,
 					State -> Solid,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					MolecularWeight->1 Gram/Mole
 				];
@@ -5940,7 +5940,7 @@ DefineTests[ExperimentBioconjugation,
 					ShelfLife->{1 Year,1 Year,1 Year},
 					UnsealedShelfLife->{2 Week,2 Week,2 Week},
 					DefaultStorageCondition->{Model[StorageCondition,"Refrigerator"],Model[StorageCondition,"Refrigerator"],Model[StorageCondition,"Refrigerator"]},
-					MSDSRequired->{False,False,False},
+					MSDSFile -> {NotApplicable, NotApplicable, NotApplicable},
 					BiosafetyLevel->{"BSL-1","BSL-1","BSL-1"},
 					State->{Liquid,Liquid,Liquid}
 				];

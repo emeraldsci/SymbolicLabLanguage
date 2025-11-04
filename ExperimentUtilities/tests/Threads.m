@@ -138,7 +138,7 @@ DefineTests[
 					State -> Liquid,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					CellType -> Bacterial,
 					CultureAdhesion -> Suspension,

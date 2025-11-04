@@ -265,14 +265,6 @@ DefineObjectType[Object[User,Emerald], {
 			Category -> "Organizational Information",
 			Developer -> True
 		},
-		TrainingModules->{
-			Format->Multiple,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Object[TrainingModule][Operator],
-			Description->"The list of training modules that this operator has been assigned to.",
-			Category->"Operations Information"
-		},
 		DateTrained -> {
 			Format -> Single,
 			Class -> Date,
@@ -295,6 +287,32 @@ DefineObjectType[Object[User,Emerald], {
 			Pattern :> _Link,
 			Relation -> Object[Team, Financing][ClientAccountManagers],
 			Description -> "The customers for whom this employee builds and maintains a partnership. Every customer has at least one assigned ECL employee in this role. ECL employees may oversee multiple customer accounts.",
+			Category -> "Organizational Information"
+		},
+		ErrorRecoveryEvents -> {
+			Format -> Multiple,
+			Class -> {
+				Date -> Date,
+				Procedure -> String,
+				TaskID -> String,
+				Subprotocol -> Link,
+				RootProtocol -> Link
+			},
+			Pattern :> {
+				Date -> _?DateObjectQ,
+				Procedure -> _String,
+				TaskID -> _String,
+				Subprotocol -> _Link,
+				RootProtocol -> _Link
+			},
+			Relation -> {
+				Date -> Null,
+				Procedure -> Null,
+				TaskID -> Null,
+				Subprotocol -> Alternatives[Object[Protocol], Object[Maintenance], Object[Qualification]],
+				RootProtocol -> Alternatives[Object[Protocol][ErrorRecoveryLog, ResponsibleOperator], Object[Maintenance][ErrorRecoveryLog, ResponsibleOperator], Object[Qualification][ErrorRecoveryLog, ResponsibleOperator]]
+			},
+			Description -> "The error recovery procedures triggered by this ECL employee.",
 			Category -> "Organizational Information"
 		}
 	}

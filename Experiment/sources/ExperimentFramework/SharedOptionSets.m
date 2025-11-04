@@ -5151,6 +5151,79 @@ DefineOptionSet[
 ];
 
 
+(* ::Subsubsection:: *)
+(*WeightStabilityDurationOption*)
+
+DefineOptionSet[
+	WeightStabilityDurationOption :> {
+		{
+			OptionName -> WeightStabilityDuration,
+			Default -> Automatic,
+			Description -> "The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable and captured when measuring the weight of the samples of interest.",
+			AllowNull -> True,
+			Category -> "General",
+			Widget -> Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Second], Units :> Second]
+		}
+	}
+];
+
+
+
+(* ::Subsubsection:: *)
+(*MaxWeightVariationOption*)
+
+
+DefineOptionSet[
+	MaxWeightVariationOption :> {
+		{
+			OptionName -> MaxWeightVariation,
+			Default -> Automatic,
+			Description -> "The max allowed amplitude the balance readings can fluctuate within for a duration defined by WeightStabilityDuration before being considered stable and captured when measuring the weight of the samples of interest.",
+			AllowNull -> True,
+			Category -> "General",
+			Widget -> Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Milligram], Units :> {1, {Milligram, {Microgram, Milligram, Gram}}}]
+		}
+	}
+];
+
+(* ::Subsubsection:: *)
+(*TareWeightStabilityDurationOption*)
+
+DefineOptionSet[
+	TareWeightStabilityDurationOption :> {
+		{
+			OptionName -> TareWeightStabilityDuration,
+			Default -> Automatic,
+			Description -> "The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable and captured when no sample is placed on the balance.",
+			AllowNull -> True,
+			Category -> "General",
+			Widget -> Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Second], Units :> Second]
+		}
+	}
+];
+
+
+
+(* ::Subsubsection:: *)
+(*MaxTareWeightVariationOption*)
+
+
+DefineOptionSet[
+	MaxTareWeightVariationOption :> {
+		{
+			OptionName -> MaxTareWeightVariation,
+			Default -> Automatic,
+			Description -> "The max allowed amplitude the balance readings can fluctuate within for a duration defined by WeightStabilityDuration before being considered stable and captured when no sample is placed on the balance.",
+			AllowNull -> True,
+			Category -> "General",
+			Widget -> Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Milligram], Units :> {1, {Milligram, {Microgram, Milligram, Gram}}}]
+		}
+	}
+];
+
+
+
+
 (* ::Subsubsection::Closed:: *)
 (*InSitu Option*)
 

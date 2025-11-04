@@ -67,6 +67,15 @@ DefineObjectType[Object[Product], {
 			Description -> "Indicates if the information in this model has been reviewed for accuracy by an ECL employee.",
 			Category -> "Organizational Information"
 		},
+		VerifiedLog -> {
+			Format -> Multiple,
+			Class -> {Boolean, Link, Date},
+			Pattern :> {BooleanP, _Link, _?DateObjectQ},
+			Relation -> {Null, Object[User], Null},
+			Headers -> {"Verified", "Responsible person", "Date"},
+			Description -> "Records the history of changes to the Verified field, along with when the change occurred, and the person responsible.",
+			Category -> "Organizational Information"
+		},
 		(* --- Product Specifications --- *)
 		KitComponents -> {
 			Format -> Multiple,
@@ -132,64 +141,6 @@ DefineObjectType[Object[Product], {
 				OpenContainer -> Null
 			},
 			Description -> "The identities, quantities, and containers of all items included in this kit product.",
-			Category -> "Product Specifications",
-			Abstract -> True
-		},
-		MixedBatchComponents -> {
-			Format -> Multiple,
-			Class -> {
-				NumberOfItems -> Integer,
-				ProductModel -> Link,
-				DefaultContainerModel -> Link,
-				Amount -> VariableUnit,
-				Position -> String,
-				ContainerIndex -> Integer,
-				Price->Real
-			},
-			Pattern :> {
-				NumberOfItems -> GreaterP[0, 1],
-				ProductModel -> _Link,
-				DefaultContainerModel -> _Link,
-				Amount -> GreaterP[0 Liter] | GreaterP[0 Gram] | GreaterP[0 Unit, 1 Unit],
-				Position -> WellP,
-				ContainerIndex -> _Integer,
-				Price->GreaterEqualP[0*USD]
-			},
-			Units -> {
-				NumberOfItems -> None,
-				ProductModel -> None,
-				DefaultContainerModel -> None,
-				Amount -> None,
-				Position -> None,
-				ContainerIndex -> None,
-				Price->USD
-			},
-			Relation -> {
-				NumberOfItems -> Null,
-				ProductModel -> Alternatives[
-					Model[Sample][MixedBatchProducts],
-					Model[Container][MixedBatchProducts],
-					Model[Sensor][MixedBatchProducts],
-					Model[Part][MixedBatchProducts],
-					Model[Plumbing][MixedBatchProducts],
-					Model[Item][MixedBatchProducts],
-					Model[Wiring][MixedBatchProducts]
-				],
-				DefaultContainerModel -> Alternatives[
-					Model[Container, Vessel],
-					Model[Container, ReactionVessel],
-					Model[Container, GasCylinder],
-					Model[Container, Bag],
-					Model[Container, Shipping],
-					Model[Container, Plate],
-					Model[Container, ProteinCapillaryElectrophoresisCartridge]
-				],
-				Amount -> Null,
-				Position -> Null,
-				ContainerIndex -> Null,
-				Price->Null
-			},
-			Description -> "The identities, quantities, containers, and prices of all items included in this mixed batch product.",
 			Category -> "Product Specifications",
 			Abstract -> True
 		},
@@ -579,6 +530,23 @@ DefineObjectType[Object[Product], {
 			Pattern :> _String,
 			Description -> "The SLL2 ID for this Object, if it was migrated from the old data store.",
 			Category -> "Migration Support",
+			Developer -> True
+		},
+		(* --- User inputs when creating the object --- *)
+		UnresolvedInputs -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> _List,
+			Description -> "The raw inputs provided by the user when creating this product via UploadProduct function.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		UnresolvedOptions -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> {(_Rule | _RuleDelayed)...},
+			Description -> "The options provided by the user when creating this product via UploadProduct function.",
+			Category -> "Organizational Information",
 			Developer -> True
 		}
 	}

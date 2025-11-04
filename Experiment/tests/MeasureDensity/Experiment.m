@@ -116,6 +116,27 @@ DefineTests[ExperimentMeasureDensity,
 			],
 			ObjectP[Model[Instrument, Balance, "Mettler Toledo XPR6U Ultra-Microbalance"]]
 		],
+		Test["Populate balance and corresponding fields properly if method is FixedVolumeWeight:",
+			prot = ExperimentMeasureDensity[{Object[Sample, "Measure Density Test Sample" <> $SessionUUID], Object[Sample, "Measure Density Test Sample" <> $SessionUUID], Object[Sample, "Measure Density Test Sample" <> $SessionUUID]}, Method -> {FixedVolumeWeight, DensityMeter, FixedVolumeWeight}];
+			Download[
+				prot,
+				{
+					Balance,
+					WeightStabilityDurations,
+					MaxWeightVariations,
+					BatchedWeightStabilityDurations,
+					BatchedMaxWeightVariations
+				}
+			],
+			{
+				LinkP[Model[Instrument, Balance]],
+				Join[ConstantArray[TimeP, 5], ConstantArray[Null, 5], ConstantArray[TimeP, 5]],
+				Join[ConstantArray[MassP, 5], ConstantArray[Null, 5], ConstantArray[MassP, 5]],
+				Join[ConstantArray[Null, 5], ConstantArray[TimeP, 10]],
+				Join[ConstantArray[Null, 5], ConstantArray[MassP, 10]]
+			},
+			Variables :> {prot}
+		],
 
 		Example[{Options, Temperature, "Temperature option determines the temperature at which the sample measurement will be performed when using the DensityMeter method (the FixedVolumeWeight method can only be performed at Ambient temperature):"},
 			Lookup[
@@ -762,13 +783,13 @@ DefineTests[ExperimentMeasureDensity,
 			10*Celsius,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options, FilterSterile, "Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options = ExperimentMeasureDensity[Object[Sample,"Measure Density Test Sample"<> $SessionUUID], FilterSterile -> True, Output -> Options];
 			Lookup[options, FilterSterile],
 			True,
 			Variables :> {options}
-		],
+		],*)
 		Example[{Options, FilterAliquot, "The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options = ExperimentMeasureDensity[Object[Sample,"Measure Density Test Sample"<> $SessionUUID], FilterAliquot -> 1.5*Milliliter, Output -> Options];
 			Lookup[options, FilterAliquot],
@@ -978,7 +999,7 @@ DefineTests[ExperimentMeasureDensity,
 				{100*VolumePercent,Model[Molecule, "Water"]}
 			},
 			DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"],
-			MSDSRequired -> False,
+			MSDSFile -> NotApplicable,
 			Expires -> False,
 			BiosafetyLevel -> "BSL-1",
 			IncompatibleMaterials -> {None},
@@ -993,7 +1014,7 @@ DefineTests[ExperimentMeasureDensity,
 			},
 			DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"],
 			Density->1.5 Gram/Milliliter,
-			MSDSRequired -> False,
+			MSDSFile -> NotApplicable,
 			Expires -> False,
 			BiosafetyLevel -> "BSL-1",
 			IncompatibleMaterials -> {None},

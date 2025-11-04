@@ -168,8 +168,8 @@ DefineObjectType[Object[Method, LiquidParticleCounting], {
 		AcquisitionMixType -> {
 			Format -> Single,
 			Class -> Expression,
-			Pattern :> Alternatives[Swirl,Stir],
-			Description -> "Indicates the type of the mix, either stir by a stir bar or swirl the container by hands, during the data collection.",
+			Pattern :> MixTypeP,
+			Description -> "Indicates the type of the mix, either stir by a stir bar or swirl the container by hands during the data collection; or other mix type before the data collection.",
 			Category -> "Particle Size Measurements"
 		},
 		NumberOfMixes -> {
@@ -177,7 +177,7 @@ DefineObjectType[Object[Method, LiquidParticleCounting], {
 			Class -> Integer,
 			Pattern :> RangeP[1,40,1],
 			Units -> None,
-			Description -> "Indicates the number of swirl (by hands) if the corresponding MixTypes is Swirl, before the particle sizes of the sample is collected.",
+			Description -> "Indicates the number of swirl or pipette (by hands) if the corresponding MixTypes is Swirl or Pipette, before the particle sizes of the sample is collected.",
 			Category -> "Particle Size Measurements"
 		},
 		WaitTimeBeforeReading -> {
@@ -199,7 +199,7 @@ DefineObjectType[Object[Method, LiquidParticleCounting], {
 		AcquisitionMixRate -> {
 			Format -> Single,
 			Class -> Real,
-			Pattern :> RangeP[50 RPM,350 RPM],
+			Pattern :> GreaterEqualP[0 RPM],
 			Units -> RPM,
 			Description -> "Indicates the rate at which the samples is mixed with a stir bar during data acquisition.",
 			Category -> "Particle Size Measurements"
@@ -284,7 +284,22 @@ DefineObjectType[Object[Method, LiquidParticleCounting], {
 			Units -> None,
 			Description -> "The number of times each wash solution pumped through the instrument's flow path.",
 			Category -> "Priming"
+		},
+		AcquisitionMixTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Minute],
+			Units -> Minute,
+			Description -> "Indicates the duration of time for which the samples will be mixed before acquisition.",
+			Category -> "Particle Size Measurements"
+		},
+		AcquisitionMixInstrument -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives@@Join[MixInstrumentModels, MixInstrumentObjects],
+			Description -> "Indicates the instrument used to perform the Mix and/or Incubation before acquisition.",
+			Category -> "Particle Size Measurements"
 		}
-
 	}
 }];

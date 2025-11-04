@@ -17,83 +17,14 @@
 
 
 DefineOptions[UploadResin,
+	SharedOptions :> {
+		SubstanceOptions,
+		IdentityModelHealthAndSafetyOptions,
+		ExternalUploadHiddenOptions
+	},
 	Options :> {
 		IndexMatching[
 			IndexMatchingInput -> "Input Data",
-			{
-				OptionName -> Name,
-				Default -> Null,
-				AllowNull -> True,
-				Widget -> Widget[Type -> String, Pattern :> _String, Size -> Line],
-				Description -> "The name of the identity model.",
-				Category -> "Organizational Information"
-			},
-			{
-				OptionName -> Molecule,
-				Default -> Null,
-				AllowNull -> True,
-				Widget -> Alternatives[
-					"Atomic Structure" -> Widget[
-						Type -> Molecule,
-						Pattern :> MoleculeP
-					],
-					"Polymer Strand/Structure" -> Widget[Type -> Expression, Pattern :> _?StructureQ | _?StrandQ, Size -> Line]
-				],
-				Description -> "The chemical structure that represents this molecule.",
-				Category -> "Organizational Information"
-			},
-			{
-				OptionName -> DefaultSampleModel,
-				Default -> Null,
-				AllowNull -> True,
-				Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Sample]]],
-				Description -> "Specifies the model of sample that will be used if this model is specified to be used in an experiment.",
-				Category -> "Organizational Information"
-			},
-			{
-				OptionName -> Synonyms,
-				Default -> Null,
-				AllowNull -> True,
-				Widget -> Adder[Widget[Type -> String, Pattern :> _String, Size -> Word]],
-				Description -> "List of possible alternative names this model goes by.",
-				Category -> "Organizational Information"
-			},
-			{
-				OptionName -> CAS,
-				Default -> Null,
-				AllowNull -> True,
-				Widget -> Widget[Type -> String, Pattern :> _String, Size -> Line],
-				Description -> "Chemical Abstracts Service (CAS) registry number for a chemical.",
-				Category -> "Organizational Information"
-			},
-			{
-				OptionName -> IUPAC,
-				Default -> Null,
-				AllowNull -> True,
-				Widget -> Widget[Type -> String, Pattern :> _String, Size -> Line],
-				Description -> "International Union of Pure and Applied Chemistry (IUPAC) name for the substance.",
-				Category -> "Organizational Information"
-			},
-
-			{
-				OptionName -> StructureImageFile,
-				Default -> Null,
-				AllowNull -> True,
-				Widget -> Alternatives[
-					Widget[Type -> String, Pattern :> URLP, Size -> Line],
-					Widget[Type -> Object, Pattern :> ObjectP[Object[EmeraldCloudFile]]]
-				],
-				Description -> "The URL of an image depicting the chemical structure of the pure form of this substance.",
-				Category -> "Physical Properties"
-			},
-			{
-				OptionName -> State,
-				Default -> Null,
-				AllowNull -> True,
-				Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[Solid, Liquid, Gas]],
-				Description -> "The physical state of the resin at room temperature and pressure.",
-				Category -> "Physical Properties"
-			},
 			{
 				OptionName -> ResinMaterial,
 				Default -> Null,
@@ -151,14 +82,10 @@ DefineOptions[UploadResin,
 				Category -> "Model Information"
 			}
 		]
-	},
-	SharedOptions :> {
-		IdentityModelHealthAndSafetyOptions,
-		ExternalUploadHiddenOptions
 	}
 ];
 
 
-InstallDefaultUploadFunction[UploadResin, Model[Resin]];
-InstallValidQFunction[UploadResin, Model[Resin]];
-InstallOptionsFunction[UploadResin, Model[Resin]];
+installDefaultUploadFunction[UploadResin, Model[Resin]];
+installDefaultValidQFunction[UploadResin, Model[Resin]];
+installDefaultOptionsFunction[UploadResin, Model[Resin]];

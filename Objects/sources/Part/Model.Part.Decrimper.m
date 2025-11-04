@@ -18,7 +18,7 @@ DefineObjectType[Model[Part, Decrimper], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> CoverFootprintP,
-			Description -> "Indicates the cover footprint of the caps that this decripmer can remove from containers.",
+			Description -> "Indicates the cover footprint of the caps that this decrimper can remove from containers.",
 			Category -> "Operating Limits"
 		}
 	}

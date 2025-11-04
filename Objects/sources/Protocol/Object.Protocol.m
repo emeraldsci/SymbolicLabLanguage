@@ -1301,6 +1301,16 @@ With[
 				Developer -> True,
 				AdminViewOnly -> True
 			},
+			SupportNotebook -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Notebook, Page],
+				Description -> "The record of manual intervention steps performed during scientific support of this protocol.",
+				Category -> "Protocol Support",
+				Developer -> True,
+				AdminViewOnly -> True
+			},
 
 			(* ===== *)
 
@@ -2470,6 +2480,14 @@ With[
 				Description -> "The list of video streams associated with this protocol.",
 				Category -> "General"
 			},
+			StreamErrors -> {
+				Format -> Multiple,
+				Class -> String,
+				Pattern :> _String,
+				Description -> "The error operator encountered when trying to start stream for the protocol.",
+				Category -> "General",
+				Developer -> True
+			},
 			Movements -> {
 				Format -> Multiple,
 				Class -> {Link, Link, String, String, Integer, Integer},
@@ -2637,16 +2655,52 @@ With[
 				Description -> "Lists all movements from an aseptic source into an aspetic destination that the indicated task is currently performing.  This field is only populated during the process of any sort of movement task, and is emptied once it is complete.",
 				Developer -> True,
 				Category -> "Placements"
-		},
-		DoubleGloveRequired -> {
-			Format -> Single,
-			Class -> Expression,
-			Pattern :> BooleanP,
-			Description -> "Indicates that when entering this protocol, the operator has to put on two pairs of gloves.",
-			Category -> "Health & Safety",
-			Developer -> True
 			},
-		insertMe
+			DoubleGloveRequired -> {
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> BooleanP,
+				Description -> "Indicates that when entering this protocol, the operator has to put on two pairs of gloves.",
+				Category -> "Health & Safety",
+				Developer -> True
+			},
+			GloveChangeLog -> {
+				Format -> Multiple,
+				Class -> {Date, Link, Link},
+				Pattern :> {_?DateObjectQ, _Link, _Link},
+				Relation -> {None, Object[Item, Consumable], Object[User]},
+				Description -> "The history of glove replacements during this protocol in the form: {Date, Glove Box, Operator}. This field records when gloves were replaced, which gloves  were used, and who performed the replacement.",
+				Headers -> {"Date", "Glove Box", "Operator"},
+				Category -> "Health & Safety",
+				Developer -> True
+			},
+			ErrorRecoveryLog -> {
+				Format -> Multiple,
+				Class -> {
+					Date -> Date,
+					Procedure -> String,
+					TaskID -> String,
+					Subprotocol -> Link,
+					ResponsibleOperator -> Link
+				},
+				Pattern :> {
+					Date -> _?DateObjectQ,
+					Procedure -> _String,
+					TaskID -> _String,
+					Subprotocol -> _Link,
+					ResponsibleOperator -> _Link
+				},
+				Relation -> {
+					Date -> Null,
+					Procedure -> Null,
+					TaskID -> Null,
+					Subprotocol -> Alternatives[Object[Protocol], Object[Maintenance], Object[Qualification]],
+					ResponsibleOperator -> Object[User, Emerald][ErrorRecoveryEvents, RootProtocol]
+				},
+				Description -> "The error recovery procedures triggered during execution of this protocol.",
+				Category -> "Organizational Information"
+			},
+			insertMe
 		}
 	}]
 ];

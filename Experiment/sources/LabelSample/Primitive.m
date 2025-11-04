@@ -499,14 +499,14 @@ resolveLabelSamplePrimitive[myLabels:ListableP[_String],myOptions:OptionsPattern
   storageConditionModelFields={Name, Flammable, Acid, Base, Pyrophoric};
   sampleObjectFields={Name, State, Density, Container, Position, Model, Status, Volume, Mass, Density, Tablet, Sequence@@allObjectEHSFields};
   sampleObjectPacket=Packet@@sampleObjectFields;
-  sampleModelFields={Name, Autoclave, Products, KitProducts, MixedBatchProducts, Density, State, Tablet, SolidUnitWeight, Fiber, FixedAmounts, Composition, Living, Sequence@@allModelEHSFields};
+  sampleModelFields={Name, Autoclave, Products, KitProducts, Density, State, Tablet, SolidUnitWeight, Fiber, FixedAmounts, Composition, Living, Sequence@@allModelEHSFields};
   sampleModelPacket=Packet@@sampleModelFields;
   containerObjectFields={Name, Status, Contents, Model};
   containerObjectPacket=Packet@@containerObjectFields;
   containerModelFields={Name, MaxVolume, Footprint, LiquidHandlerAdapter, LiquidHandlerPrefix};
   containerModelPacket=Packet@@containerModelFields;
   storageConditionModelPacket=Packet@@storageConditionModelFields;
-  productFields={Name, ProductModel, KitComponents, MixedBatchComponents, DefaultContainerModel, Deprecated};
+  productFields={Name, ProductModel, KitComponents, DefaultContainerModel, Deprecated};
 
   (* Extract the packets that we need from our downloaded cache. *)
   downloadedCacheBall=Quiet[Flatten[{Download[
@@ -535,10 +535,8 @@ resolveLabelSamplePrimitive[myLabels:ListableP[_String],myOptions:OptionsPattern
         Packet[DefaultStorageCondition[storageConditionModelFields]],
         Packet[Products[productFields]],
         Packet[KitProducts[productFields]],
-        Packet[MixedBatchProducts[productFields]],
         Packet[Products[DefaultContainerModel][Footprint]],
-        Packet[KitProducts[KitComponents][[All, DefaultContainerModel]][Footprint]],
-        Packet[MixedBatchProducts[MixedBatchComponents][[All, DefaultContainerModel]][Footprint]]
+        Packet[KitProducts[KitComponents][[All, DefaultContainerModel]][Footprint]]
       },
       (*3*){
         containerObjectPacket,
@@ -1006,7 +1004,7 @@ resolveLabelSamplePrimitiveOptions[myLabels:{_String..}, myOptions:{_Rule..}, my
   (* also going to add the specified density if they gave it since we'll use it below *)
   specifiedDensity = Lookup[myOptions, Density];
   sampleModelsAndWithoutResolvedContainers=Cases[
-    Transpose[{resolvedSamples, resolvedAmounts, semiResolvedContainers, resolvedSampleModelPackets, Range[Length[resolvedSamples]], specifiedDensity, resolvedExactAmounts, resolvedTolerances, Lookup[mapThreadFriendlyOptions, Sterile]}],
+    Transpose[{resolvedSamples, resolvedAmounts, semiResolvedContainers, resolvedSampleModelPackets, Range[Length[resolvedSamples]], specifiedDensity, resolvedExactAmounts, resolvedTolerances, Lookup[mapThreadFriendlyOptions, Sterile] /. Automatic -> Null}],
     {ObjectP[Model[Sample]], _, Automatic, _, _, _, _, _, _}
   ];
 
@@ -1324,7 +1322,7 @@ resolveLabelSamplePrimitiveOptions[myLabels:{_String..}, myOptions:{_Rule..}, my
                 ];
 
                 isHazard=If[
-                  MatchQ[Lookup[mapThreadOptions,hazardSymbol],Except[Null]],
+                  MatchQ[Lookup[mapThreadOptions,hazardSymbol],Except[Null | Automatic]],
                   Lookup[mapThreadOptions,hazardSymbol],
                   Lookup[sampleModelPacket,hazardSymbol]
                 ];
@@ -2002,7 +2000,7 @@ DefineOptions[
 ];
 
 labelSamplePrimitiveResources[myLabels:{_String..},myResolvedOptions:{_Rule...},myResolutionOptions:OptionsPattern[labelSamplePrimitiveResources]]:=Module[
-  {cache, simulation, mapThreadFriendlyOptions, parent, automaticDisposal, sampleResources, simulatedObjectsToLabel, containerLabelOrResources, labelSampleUnitOperationPacket, labelSampleUnitOperationPacketWithLabeledObjects},
+  {cache, simulation, mapThreadFriendlyOptions, parent, automaticDisposal, sampleResources, simulatedObjectsToLabel, containerLabelOrResources, existingLabels, requiredObjectsResources, labelSampleUnitOperationPacket, labelSampleUnitOperationPacketWithLabeledObjects},
 
   (* Lookup our cache. *)
   cache=Lookup[ToList[myResolutionOptions], Cache];
@@ -2023,12 +2021,12 @@ labelSamplePrimitiveResources[myLabels:{_String..},myResolvedOptions:{_Rule...},
         MatchQ[sample, ObjectP[Object[Sample]]],
           (* for Object[Sample]s we don't need to actually reserve the volume/mass/whatever *)
           Resource[
-            Sample->sample,
+            Sample->Download[sample, Object],
             Name->CreateUUID[]
           ],
         MatchQ[sample, ObjectP[Model[Sample]]],
           Resource[
-            Sample->sample,
+            Sample->Download[sample, Object],
             Amount->Which[
               MatchQ[Download[sample, Object], WaterModelP] && Not[VolumeQ[amount]], 1 Milliliter, (* if we have to do this then we're already in an error state and this is just to prevent the resource system from trainwrecking *)
               MatchQ[amount, Null], 1 Gram, (* Mass will always work, no matter the state of the sample. *)
@@ -2061,11 +2059,8 @@ labelSamplePrimitiveResources[myLabels:{_String..},myResolvedOptions:{_Rule...},
               Null,
               (* for Object[Sample]s we don't need to actually reserve the volume/mass/whatever *)
               Resource[
-                Sample->If[!MatchQ[samplePacket, Null],
-                  Lookup[samplePacket, Object],
-                  sample[[1]]
-                ],
-                Name->CreateUUID[]
+                Sample -> Lookup[samplePacket, Object],
+                Name -> CreateUUID[]
               ]
             ]
 
@@ -2110,6 +2105,23 @@ labelSamplePrimitiveResources[myLabels:{_String..},myResolvedOptions:{_Rule...},
     Lookup[myResolvedOptions, Container]/. simulatedObjectsToLabel
   ];
 
+  (* Get the existing label from previous UOs *)
+  existingLabels = UnsortedComplement[Values[simulatedObjectsToLabel], ToList[myLabels]];
+
+  (* Get the list of real resources that we need to pick *)
+  requiredObjectsResources = MapThread[
+    Which[
+      (* If container is Object[Container], we already have a resource. From Error::SampleContainerLabelMismatch, we are guaranteed to have a sample object in the container already. Only need to pick container resource *)
+      (* Note that we do this because the sample might also be a resource for a simulated sample (prepared before this UO), in that case, the resource blob will not be converted an Object[Resource] in RequiredResources field, but the simulate model may be left in RequiredObjects causing error in resource picking  *)
+      MatchQ[#2, _Resource], #2,
+      (* If we don't have Object[Container] yet, check if our sample is simulated BEFORE this UO *)
+      (* We do this by checking if the sample's label already existed before this UO. Note that we are giving the same sample another Label within this UO (Label is required for a LabelSample unit operation), but Lookup is returning the earlier value *)
+      MatchQ[#1, _Resource] && !MemberQ[existingLabels, Lookup[simulatedObjectsToLabel, Lookup[#1[[1]], Sample, Null]]], #1,
+      True, Nothing
+    ]&,
+    {sampleResources,containerLabelOrResources}
+  ];
+
   (* Create the unit operation packet. *)
   labelSampleUnitOperationPacket=Module[{nonHiddenOptions},
     nonHiddenOptions=Lookup[
@@ -2128,7 +2140,10 @@ labelSamplePrimitiveResources[myLabels:{_String..},myResolvedOptions:{_Rule...},
             Sample->sampleResources,
             Container->containerLabelOrResources
           }
-        ]
+        ],
+        {
+          RequiredObjects -> requiredObjectsResources
+        }
       ],
       Preparation->Lookup[myResolvedOptions, Preparation],
       UnitOperationType->Output,
@@ -2201,7 +2216,7 @@ simulateLabelSamplePrimitive[myUnitOperationPacket:PacketP[],myLabels:{_String..
   currentSimulation = UpdateSimulation[currentSimulation, Simulation[densityPackets]];
 
   (* Generate EHS override change packets. *)
-  (* Change the SampleModel option into the Model option to pass down to generateChangePacket. *)
+  (* Change the SampleModel option into the Model option to pass down to generateChangePackets. *)
   allEHSOptions=Cases[
     Flatten@{SampleModel, Composition, ToExpression/@Options[ExternalUpload`Private`ObjectSampleHealthAndSafetyOptions][[All,1]]},
     (* NOTE: StorageCondition is special and needs to be updated via UploadStorageCondition. *)
@@ -2215,18 +2230,26 @@ simulateLabelSamplePrimitive[myUnitOperationPacket:PacketP[],myLabels:{_String..
   &)/@mapThreadFriendlyOptions;
 
   (* For each object, generate a change packet with the EHS changes if we have options filled out. *)
-  ehsChangePackets=MapThread[
+  ehsChangePackets=Flatten[MapThread[
     Function[{sampleObject, specifiedEHSOptions},
-      If[Length[specifiedEHSOptions]==0,
+		(* sampleObject is going to be Null here if we already hit a failure and are just continuing to this point *)
+		(* in which case, the ehsChangePackets don't matter anyway *)
+      If[Length[specifiedEHSOptions]==0 || NullQ[sampleObject],
         Nothing,
-        Append[
-          ExternalUpload`Private`generateChangePacket[Object[Sample],specifiedEHSOptions],
-          Object->sampleObject
+        Module[{allChangePackets},
+          (* Sometimes generateChangePackets generates auxilliary cloud file packets if URLs are provided *)
+          allChangePackets=ExternalUpload`Private`generateChangePackets[Object[Sample],specifiedEHSOptions];
+
+          Flatten[{
+            (* Add Object field to the core packet *)
+            Append[First[allChangePackets],Object->sampleObject],
+            Rest[allChangePackets]
+          }]
         ]
       ]
     ],
-    {Lookup[samplePackets/.{Null|$Failed-><||>}, Object], indexMatchedSpecifiedEHSOptions}
-  ];
+    {Lookup[samplePackets/.{Null|$Failed-><||>}, Object, Null], indexMatchedSpecifiedEHSOptions}
+  ]];
 
   (* Update the simulation to include the EHS changes. *)
   currentSimulation=UpdateSimulation[currentSimulation, Simulation[ehsChangePackets]];

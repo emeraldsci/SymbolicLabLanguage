@@ -56,6 +56,17 @@ DefineObjectType[Model[Qualification, Training, Pipetting], {
 			IndexMatching -> Pipettes,
 			Description -> "For each member of Pipettes, the model of the pipetting tip that will be used for this Qualification.",
 			Category -> "General"
+		},
+		WasteContainerModel->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[
+				Model[Container,Vessel],
+				Object[Container,Vessel]
+			],
+			Description->"The model of vessel used to temporarily hold the water sample removed from the weighing container after each pipette test. The water sample in the vessel will be discarded at the end of the training. This is currently used only in MicropipetteP1000 and SerologicalPipettePipetus trainings.",
+			Category -> "General"
 		}
 	}
 }]

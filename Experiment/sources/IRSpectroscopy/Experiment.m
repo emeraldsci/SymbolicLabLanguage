@@ -1004,7 +1004,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	(*is the SampleAmount defined well? can we accommodate it (does the sample have the quantity?)*)
 	incompatibleUnitBool=MapThread[(
 		Which[
-			(*if we're already through an error for quantityNotDefined, no reason to throw again*)
+			(*if we're already throw an error for quantityNotDefined, no reason to throw again*)
 			#3,False,
 			(*check if sample amount is a mass and whether we have mass or density info*)
 			MatchQ[#2,GreaterP[0*Gram]], And[!QuantityQ[Lookup[#1,Density]],!QuantityQ[Lookup[#1,Mass]]],
@@ -1047,7 +1047,7 @@ resolveExperimentIRSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	(*is the BlankAmounts defined well? can we accommodate it (does the sample have the quantity?)*)
 	incompatibleBlankUnitBool=MapThread[(
 		Which[
-			(*if we're already through an error for blankQuantityNotDefined, no reason to throw again*)
+			(*if we're already throw an error for blankQuantityNotDefined, no reason to throw again*)
 			#3,False,
 			(*check if blank amount is a mass and whether we have mass or density info*)
 			MatchQ[#1,ObjectP[Object[Sample]]]&&MatchQ[#2,GreaterP[0*Gram]],

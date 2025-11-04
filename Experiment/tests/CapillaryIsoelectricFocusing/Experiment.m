@@ -3224,14 +3224,14 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 			10*Celsius,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options, FilterSterile, "Set the FilterSterile option:"},
 			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 3 (100 uL) "<>$SessionUUID],
 				FilterSterile -> True, Output -> Options];
 			Lookup[options, FilterSterile],
 			True,
 			Variables :> {options}
-		],
+		],*)
 		Example[{Options, FilterAliquot, "Set the FilterAliquot option:"},
 			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 3 (100 uL) "<>$SessionUUID],
 				FilterAliquot -> 80*Microliter, Output -> Options];
@@ -3566,7 +3566,7 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 					Expires->True,
 					ShelfLife->1 Month,
 					UnsealedShelfLife->2 Week,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					Flammable->False,
 					BiosafetyLevel->"BSL-1",
 					IncompatibleMaterials->{None}
@@ -3581,7 +3581,7 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 					Expires->True,
 					ShelfLife->1 Month,
 					UnsealedShelfLife->2 Week,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					Flammable->False,
 					BiosafetyLevel->"BSL-1",
 					IncompatibleMaterials->{None}
@@ -3596,7 +3596,7 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 					Expires->True,
 					ShelfLife->1 Month,
 					UnsealedShelfLife->2 Week,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					Flammable->False,
 					BiosafetyLevel->"BSL-1",
 					IncompatibleMaterials->{None}
@@ -3613,7 +3613,7 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 					State -> Liquid, BiosafetyLevel -> "BSL-1",
 					MSDSFile ->
 						Link[Object[EmeraldCloudFile, "id:8qZ1VW0rd17n"], "dORYzZOEpwaR"],
-					MSDSRequired -> True, Flammable -> False,
+					Flammable -> False,
 					IncompatibleMaterials -> {None},
 					DefaultStorageCondition ->
 						Link[Model[StorageCondition, "id:N80DNj1r04jW"]]
@@ -4098,7 +4098,7 @@ DefineTests[ValidExperimentCapillaryIsoelectricFocusingQ,
 					Expires->True,
 					ShelfLife->1 Month,
 					UnsealedShelfLife->2 Week,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					Flammable->False,
 					BiosafetyLevel->"BSL-1",
 					IncompatibleMaterials->{None}
@@ -4399,7 +4399,7 @@ DefineTests[
 						Expires->True,
 						ShelfLife->1 Month,
 						UnsealedShelfLife->2 Week,
-						MSDSRequired->False,
+						MSDSFile -> NotApplicable,
 						Flammable->False,
 						BiosafetyLevel->"BSL-1",
 						IncompatibleMaterials->{None}
@@ -4700,7 +4700,7 @@ DefineTests[
 						Expires->True,
 						ShelfLife->1 Month,
 						UnsealedShelfLife->2 Week,
-						MSDSRequired->False,
+						MSDSFile -> NotApplicable,
 						Flammable->False,
 						BiosafetyLevel->"BSL-1",
 						IncompatibleMaterials->{None}

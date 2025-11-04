@@ -38,17 +38,28 @@ DefineObjectType[Object[Protocol, MeasureCount], {
 			Category -> "Weighing",
 			Abstract -> True
 		},
-		WeighBoat -> {
-			Format -> Single,
+		Reservoirs -> {
+			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[
-				Model[Sample], (* TODO: Remove Object[Sample] here after item migration *)
-				Object[Sample],
 				Model[Item],
 				Object[Item]
 			],
-			Description -> "The container used to hold tablets or sachets for counting and for weighing, designed to minimize static electricity effects.",
+			Description -> "For each member of SolidUnitWeightParameterizations, the container used to hold tablets or sachets for counting, designed to minimize static electricity effects.",
+			IndexMatching -> SolidUnitWeightParameterizations,
+			Category -> "Weighing"
+		},
+		WeighBoats -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item],
+				Object[Item]
+			],
+			Description -> "For each member of SolidUnitWeightParameterizations, the container used to hold tablets or sachets for weighing, designed to minimize static electricity effects.",
+			IndexMatching -> SolidUnitWeightParameterizations,
 			Category -> "Weighing"
 		},
 		Tweezer -> {
@@ -79,6 +90,14 @@ DefineObjectType[Object[Protocol, MeasureCount], {
 			Relation -> Object[Sample],
 			Description -> "Any samples for which Mass is not informed and total weight measurement needs to be performed.",
 			Category -> "Weighing"
+		},
+		BalanceLog -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data, Weight],
+			Description -> "The trace of balance reading vs date recorded from the beginning of first weight measurement to the very last weight measurement, whenever a new tablet/sachet unit is measured.",
+			Category -> "General"
 		},
 		SolidUnitWeights -> {
 			Format -> Multiple,
@@ -116,6 +135,14 @@ DefineObjectType[Object[Protocol, MeasureCount], {
 			Description -> "The weight measurement datasets of all tablets or sachets measured in this experiment.",
 			Category -> "Experimental Results"
 		},
+		TareData -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data],
+			Description -> "The weight measurement data of the weigh paper or weigh boat when empty and before any incoming tables or sachets transfer has commenced.",
+			Category -> "Experimental Results"
+		},
 		TotalSampleWeights -> {
 			Format -> Multiple,
 			Class -> Real,
@@ -125,6 +152,22 @@ DefineObjectType[Object[Protocol, MeasureCount], {
 			Category -> "Experimental Results",
 			Abstract -> True,
 			IndexMatching -> TotalWeightMeasurementSamples
+		},
+		WeightStabilityDuration -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Second],
+			Units -> Second,
+			Description -> "The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable and measured.",
+			Category -> "General"
+		},
+		MaxWeightVariation -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Milligram],
+			Units -> Milligram,
+			Description -> "The max allowed amplitude the balance readings can fluctuate with for a duration defined by WeightStabilityDuration before being considered stable and measured.",
+			Category -> "General"
 		}
 	}
 }];

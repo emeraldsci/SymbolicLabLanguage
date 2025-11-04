@@ -90,6 +90,17 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Description->"For each member of SamplesIn, the instrument used to perform the Mix and/or Incubation.",
 			Category->"Incubation"
 		},
+		HandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Instrument, HandlingStation],
+				Object[Instrument, HandlingStation]
+			],
+			Description -> "The environment in which any Invert/Swirl operation happens.",
+			Category -> "General"
+		},
 		AlternateInstruments -> {
 			Format -> Multiple,
 			Class -> Expression,
@@ -1362,7 +1373,26 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Headers -> {Instrument->"Sample", RemainingSonicationTime->"Remaining Sonication Time"},
 			Developer->True
 		},
-
+		ProbeStorageContainerPlacements ->{
+			Format -> Multiple,
+			Class -> {Link, Expression},
+			Pattern :> {_Link, {LocationPositionP..}},
+			Relation -> {Object[Sensor, Temperature]|Object[Item, Lid], Null},
+			Description -> "List of container placements for placing the temperature probe and the reservoir lid into their storage positions on the sonicator.",
+			Category -> "General",
+			Developer -> True,
+			Headers -> {"Object to Place", "Placement Tree"}
+		},
+		ProbeInUseContainerPlacements ->{
+			Format -> Multiple,
+			Class -> {Link, Expression},
+			Pattern :> {_Link, {LocationPositionP..}},
+			Relation -> {Object[Sensor, Temperature], Null},
+			Description -> "List of container placements for placing the temperature probe to the sonicator Probe InUse Slot for temperature measurement in the current incubation.",
+			Category -> "General",
+			Developer -> True,
+			Headers -> {"Object to Place", "Placement Tree"}
+		},
 
 		(*-- HOMOGENIZE FIELDS --*)
 		HomogenizeIndices->{
@@ -1499,6 +1529,7 @@ DefineObjectType[Object[Protocol,Incubate],{
 		},
 
 		(*-- TRANSFORM FIELDS --*)
+		(* Options *)
 		Transform->{
 			Format->Multiple,
 			Class->Boolean,
@@ -1543,6 +1574,69 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Description->"For each member of SamplesIn, the length of time for which the cells are cooled after heat shocking.",
 			Category->"Incubation"
 		},
+		TransformRecoveryMedia -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			IndexMatching -> SamplesIn,
+			Description -> "For each member of SamplesIn, the nutrient-rich growth medium used to support the recovery of heat shocked cells. The sample objects are used in full in their current containers and should be prepared prior to the experiment.",
+			Category -> "Incubation"
+		},
+
+		(* Fixed options *)
+		TransformRecoveryTransferVolumes -> {
+			Format -> Multiple,
+			Class -> {Real, Real},
+			Pattern :> {GreaterP[0 Microliter], GreaterP[0 Microliter]},
+			Units -> {Microliter, Microliter},
+			Headers -> {"Initial transfer volume", "Secondary transfer volume"},
+			IndexMatching -> SamplesIn,
+			Description -> "For each member of SamplesIn, the volume of TransformRecoveryMedia added to the heat shocked cells, and the volume of the resulting mixture which is immediately transferred back into the container of TransformRecoveryMedia for incubation.",
+			Category -> "Incubation",
+			Developer -> True
+		},
+		TransformRecoveryIncubationTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Hour],
+			Units -> Hour,
+			Description -> "The duration for which the mixtures of heat shocked cells and TransformRecoveryMedia are housed in TransformIncubator for recovery.",
+			Category -> "Incubation",
+			Developer -> True
+		},
+		TransformIncubator -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Instrument, Incubator],
+				Model[Instrument, Incubator]
+			],
+			Description -> "The incubator used to house the mixtures of heat shocked cells and TransformRecoveryMedia for recovery. The field is populated by a model object prior to run time, and updated to an object during the course of the experiment.",
+			Category -> "Incubation",
+			Developer -> True
+		},
+		TransformIncubatorTemperature -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Kelvin],
+			Units -> Celsius,
+			Description -> "The temperature at which the mixtures of heat shocked cells and TransformRecoveryMedia are housed in for recovery. The relevant parameter of TransformIncubator is set to this value; currently limited to 37 Degrees Celsius for incubation of bacterial cells.",
+			Category -> "Incubation",
+			Developer -> True
+		},
+		TransformIncubatorShakingRate -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 RPM],
+			Units -> RPM,
+			Description -> "The frequency at which the mixtures of heat shocked cells and TransformRecoveryMedia are agitated by movement in a circular motion for recovery. The relevant parameter of TransformIncubator is set to this value; currently limited to 200 RPM for incubation of bacterial cells.",
+			Category -> "Incubation",
+			Developer -> True
+		},
+
+		(* Developer fields *)
 		TransformCooler->{
 			Format->Single,
 			Class->Link,
@@ -1610,6 +1704,223 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Description->"A field used to record the actual temperature of the cooler immediately prior to heat shocking the cells.",
 			Category->"Incubation",
 			Developer->True
+		},
+		TransformCoolerPowerCable -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Wiring, Cable],
+			Description -> "The power cable zip tied to the transform deck, designated for TransformCooler.",
+			Category -> "Incubation",
+			Developer -> True
+		},
+		TransformCoolerConnection -> {
+			Format -> Single,
+			Class -> {Link, String, Link, String},
+			Pattern :> {_Link, WiringConnectorNameP, _Link, WiringConnectorNameP},
+			Relation -> {Object[Wiring, Cable], Null, Object[Instrument, PortableCooler], Null},
+			Description -> "The connection information for charging TransformBiosafetyCabinet on the transform deck using TransformCoolerPowerCable.",
+			Headers -> {"Charging cable", "Charging cable plug", "Portable cooler", "Portable cooler inlet"},
+			Category -> "Incubation",
+			Developer -> True
+		},
+		TransformHeatBlockTemperature -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data][Protocol],
+			Description -> "A field used to record the actual temperature of the heat block when warming TransformRecoveryMedia.",
+			Category -> "Incubation",
+			Developer -> True
+		},
+		TransformBiosafetyCabinet -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Instrument, HandlingStation, BiosafetyCabinet],
+				Model[Instrument, HandlingStation, BiosafetyCabinet]
+			],
+			Description -> "The biosafety cabinet where TransformRecoveryMedia are added to the heat shocked cells.",
+			Category -> "Incubation",
+			Developer -> True
+		},
+		TransformBiosafetyWasteBin -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container, WasteBin],
+				Model[Container, WasteBin]
+			],
+			Description -> "The waste bin brought into TransformBiosafetyCabinet to hold TransformBiosafetyWasteBag.",
+			Category -> "General",
+			Developer -> True
+		},
+		TransformBiosafetyWasteBag -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item, Consumable],
+				Model[Item, Consumable]
+			],
+			Description -> "The waste bag brought into TransformBiosafetyCabinet and placed in TransformBiosafetyWasteBin to collect biohazardous waste generated while working in the BSC.",
+			Category -> "General",
+			Developer -> True
+		},
+		TransformBiosafetyCabinetPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {
+				Alternatives[
+					Object[Container],
+					Object[Item],
+					Object[Sample],
+					Object[Instrument],
+					Object[Part]
+				],
+				Alternatives[
+					Object[Instrument, HandlingStation, BiosafetyCabinet],
+					Model[Instrument, HandlingStation, BiosafetyCabinet]
+				],
+				Null
+			},
+			Headers -> {"Objects to move", "BSC to move to", "Position to move to"},
+			Description -> "The specific positions in TransformBiosafetyCabinet that objects should be moved into.",
+			Category -> "General",
+			Developer -> True
+		},
+		TransformBiosafetyWasteBinPlacement -> {
+			Format -> Single,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {
+				Alternatives[
+					Object[Container, WasteBin],
+					Model[Container, WasteBin]
+				],
+				Alternatives[
+					Object[Instrument, HandlingStation, BiosafetyCabinet],
+					Model[Instrument, HandlingStation, BiosafetyCabinet]
+				],
+				Null
+			},
+			Headers -> {"Waste bin to move", "BSC to move to", "Position to move to"},
+			Description -> "The specific position in TransformBiosafetyCabinet that TransformBiosafetyWasteBin should be moved into.",
+			Category -> "General",
+			Developer -> True
+		},
+		TransformBiosafetyWasteBagPlacement -> {
+			Format -> Single,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {
+				Alternatives[
+					Object[Item, Consumable],
+					Model[Item, Consumable]
+				],
+				Alternatives[
+					Object[Container, WasteBin],
+					Model[Container, WasteBin]
+				],
+				Null
+			},
+			Headers -> {"Waste Bag to move", "Waste Bin to move to", "Position to move to"},
+			Description -> "The specific position in TransformBiosafetyWasteBin that TransformBiosafetyWasteBag should be moved into.",
+			Category -> "General",
+			Developer -> True
+		},
+		TransformRecoveryPipette -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Instrument, Pipette],
+				Model[Instrument, Pipette]
+			],
+			Description -> "The pipette used to transfer TransformRecoveryMedia to the heat shocked cells.",
+			Category -> "Incubation",
+			Developer -> True
+		},
+		TransformRecoveryTips -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item, Tips],
+				Model[Item, Tips]
+			],
+			IndexMatching -> SamplesIn,
+			Description -> "For each member of SamplesIn, the pipette tip used when transferring TransformRecoveryMedia to the heat shocked cells.",
+			Category -> "Incubation",
+			Developer -> True
+		},
+		TransformRecoveryTransferIndex -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> _Integer,
+			Description -> "The index of WorkingSamples and TransformRecoveryMedia used to identify the sample of heat shocked cells and recovery medium in the looping procedure of recovery transfer.",
+			Category -> "Incubation",
+			Developer -> True
+		},
+		TransformRecoveryTransferPipetteDialImages -> {
+			Format -> Multiple,
+			Class -> {Link, Link},
+			Pattern :> {_Link, _Link},
+			Relation -> {Object[EmeraldCloudFile], Object[EmeraldCloudFile]},
+			Headers -> {"Initial transfer volume", "Secondary transfer volume"},
+			IndexMatching -> TransformRecoveryTransferVolumes,
+			Description -> "For each member of TransformRecoveryTransferVolumes, images that imitate what the dials of TransformRecoveryPipette should be set to for the initial and secondary recovery transfers.",
+			Category -> "Incubation",
+			Developer -> True
+		},
+		TransformIncubatorStorageAvailabilities -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[StorageAvailability],
+			Description -> "For each member of SamplesIn, the storage availability object that corresponds to a position in TransformIncubator.",
+			Category -> "Incubation",
+			IndexMatching -> SamplesIn,
+			Developer -> True
+		},
+		TransformRecoveryIncubationStartTime -> {
+			Format -> Single,
+			Class -> Date,
+			Pattern :> _?DateObjectQ,
+			Description -> "The time when the mixtures of heat shocked cells and TransformRecoveryMedia are stored in TransformIncubator for recovery.",
+			Category -> "Incubation",
+			Developer -> True
+		},
+		TransformRecoveryIncubationRemainingTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Minute],
+			Units -> Minute,
+			Description -> "The remaining TransformRecoveryIncubationTime after tearing down TransformBiosafetyCabinet. Calculated using TransformRecoveryIncubationStartTime to ensure that the mixtures of heat shocked cells and TransformRecoveryMedia are incubated for at least TransformRecoveryIncubationTime.",
+			Category -> "Incubation",
+			Developer -> True
+		},
+		TransformIncubatorSensors -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sensor, Temperature], Object[Sensor, CarbonDioxide], Object[Sensor, RelativeHumidity]],
+			Description -> "The sensor objects inside TransformIncubator whose data need to be recorded during the processing stage of the experiment.",
+			Category -> "Incubation",
+			Developer -> True
+		},
+		TransformIncubatorEnvironmentalData -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Data, Temperature], Object[Data, CarbonDioxide], Object[Data, RelativeHumidity]],
+			Description -> "For each member of TransformIncubatorSensors, the data recorded from the sensor during the incubation.",
+			Category -> "Incubation",
+			IndexMatching -> TransformIncubatorSensors,
+			Developer -> True
 		},
 
 

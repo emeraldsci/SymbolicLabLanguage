@@ -12,8 +12,8 @@ DefineObjectType[Object[Container, Vessel, Dissolution], {
 			Format->Single,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Item,DissolutionShaft],
-			Description->"The mixing implement that is used with this shaft affector. It is considered best practice to use the same mixing implement for each experiment with the same dissolution shaft to keep the number of variables between experiments to a minimum.",
+			Relation->Object[Container,DissolutionShaft],
+			Description->"The mixing implement that is used with this agitator. It is considered best practice to use the same mixing implement for each experiment with the same dissolution shaft to keep the number of variables between experiments to a minimum.",
 			Category->"Dimensions & Positions"
 		},
 		DesignatedInstrument->{
@@ -30,6 +30,13 @@ DefineObjectType[Object[Container, Vessel, Dissolution], {
 			Pattern:>LocationPositionP,
 			Description->"The position in which the vessel is installed in the dissolution apparatus. It is considered best practice to install the vessel in the same position for each experiment to keep the number of variables between experiments to a minimum.",
 			Category->"Dimensions & Positions"
+		},
+		SerialNumber -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The manufacturer provided serial number of the vessel.",
+			Category -> "Container Specifications"
 		}
 	}
 }];
