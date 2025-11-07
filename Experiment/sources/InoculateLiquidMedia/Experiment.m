@@ -161,7 +161,7 @@ DefineOptions[ExperimentInoculateLiquidMedia,
 					}
 				],
 				Description -> "The environment in which the inoculation is performed for the input sample (e.g., cell suspension or inoculum). Containers involved are first moved into the TransferEnvironment (with covers on), then uncovered inside of the TransferEnvironment for inoculation, and covered before moving back onto the operator cart. This option is only applicable if Preparation is set to Manual.",
-				ResolutionDescription -> "If Preparation is Manual, automatically set to Model[Instrument, BiosafetyCabinet, \"Thermo Scientific 1300 SeriesClass II, Type A2 Biosafety Cabinet (Tissue Culture)\"] for mammalian cell samples, otherwise set to Model[Instrument, HandlingStation, BiosafetyCabinet, \"Biosafety Cabinet Handling Station for Microbiology\"].",
+				ResolutionDescription -> "If Preparation is Manual, automatically set to Model[Instrument,HandlingStation,BiosafetyCabinet,\"Biosafety Cabinet Handling Station for Tissue Culture\"] for mammalian cell samples, otherwise set to Model[Instrument, HandlingStation, BiosafetyCabinet, \"Biosafety Cabinet Handling Station for Microbiology\"].",
 				Category -> "General"
 			],
 			(* 1.2 Instrument Specifications for Manual Transfer and Hamilton Transfer *)
@@ -779,9 +779,7 @@ Warning::ConflictingInoculationSource = "`3`. Thus the input samples `1` are not
 (* Invalid Options *)
 Error::InvalidInoculationInstrument = "The specified Instrument(s), `1`, cannot be used for InoculationSource `2`. `3`. Please specify a different Instrument, or allow this option to be set automatically.";
 Error::IncompatibleInstrumentAndCellType = "The input samples, `1`, have cell types `2` incompatible with Instrument `3`. `4`.";
-Error::IncompatibleBiosafetyCabinetAndCellType = "The input samples, `1`, have cell types `2` incompatible with the biosafety cabinet specified in TransferEnvironment `3`. Model[Instrument, BiosafetyCabinet, \"Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet \
-(Tissue Culture)\"] (or an object of this model) allows inoculation of mammalian cells. Model[Instrument, BiosafetyCabinet, \"Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet \
-(Microbial)\"] allows inoculation of microbial cells. Please specify a TransferEnvironment compatible with the cells in the samples or leave it to be set automatically.";
+Error::IncompatibleBiosafetyCabinetAndCellType = "The input samples, `1`, have cell types `2` incompatible with the biosafety cabinet specified in TransferEnvironment `3`. Model[Instrument,HandlingStation,BiosafetyCabinet,\"Biosafety Cabinet Handling Station for Tissue Culture\"](or an object of this model) allows inoculation of mammalian cells. Model[Instrument,HandlingStation,BiosafetyCabinet,\"Biosafety Cabinet Handling Station for Microbiology\"] allows inoculation of microbial cells. Please specify a TransferEnvironment compatible with the cells in the samples or leave it to be set automatically.";
 Error::InoculationSourceOptionMismatch = "InoculationSource is set to `1`. `3`. Please look at the ExperimentInoculateLiquidMedia help file to see what options can be specified when InoculationSource is `1`, or allow the options to be set automatically";
 Warning::NoPreferredLiquidMedia = "The input samples, `1`, either do not have any model cell in their composition or the model cells in the Composition do not have a PreferredLiquidMedia. DestinationMedia will be set to Model[Sample, Media, \"LB Broth, Miller\"].";
 Error::DestinationMediaContainerOverfill = "The input samples, `1` would have total volume(s) `3` in DestinationMediaContainer `2`. This would result in overflowing. Please either decrease the Volume or MediaVolume in order to submit a valid experiment.";
@@ -3349,6 +3347,8 @@ resolveExperimentInoculateLiquidMediaOptions[mySamples: {ObjectP[Object[Sample]]
 		mixMismatchOptions, mixMismatchTests, noTipsFoundOptions, noTipsFoundTests, tipConnectionMismatchOptions, tipConnectionMismatchTests,
 		resuspensionMediaStateOptions, resuspensionMediaStateTests, resuspensionMediaOverfillOptions, resuspensionMediaOverfillTests,
 		freezeDriedMismatchedVolumeOptions, freezeDriedMismatchedVolumeTests, resuspensionMixMismatchOptions, resuspensionMixMismatchTests,
+		mapThreadFriendlyResolvedOptions, inputBlendedMapThreadFriendlyOptions, volatileHazardousSamplesInBSCError,
+		volatileHazardousSamplesInBSCMessage, volatileHazardousSamplesInBSCTest,
 		(* -- RETURN -- *)
 		invalidInputs, invalidOptions, allTests, resolvedPostProcessingOptions
 	},
@@ -3876,7 +3876,7 @@ resolveExperimentInoculateLiquidMediaOptions[mySamples: {ObjectP[Object[Sample]]
 			Error::UnsupportedCellTypes,
 			(*1*)"ExperimentInoculateLiquidMedia only supports mammalian, bacterial and yeast cell cultures",
 			(*2*)StringJoin[
-			Capitalize@samplesForMessages[invalidCellTypeSamples, mySamples, Cache -> cacheBall, Simulation -> simulation],(* Potentially collapse to the sample or all samples instead of ID here *)
+			Capitalize@samplesForMessages[invalidCellTypeSamples, mySamples, Cache -> combinedCache, Simulation -> currentSimulation],(* Potentially collapse to the sample or all samples instead of ID here *)
 			If[Length[invalidCellTypeSamples] == 1,
 				" has",
 				" have"
@@ -7448,6 +7448,43 @@ resolveExperimentInoculateLiquidMediaOptions[mySamples: {ObjectP[Object[Sample]]
 		],
 		Nothing
 	];
+	(* 22.) VolatileHazardousSamplesInBSC *)
+	mapThreadFriendlyResolvedOptions = OptionsHandling`Private`mapThreadOptions[ExperimentInoculateLiquidMedia,resolvedTotalOptions];
+	(* Blend in source and destination to mapthread friendly option list of associations *)
+	inputBlendedMapThreadFriendlyOptions = MapThread[
+		Function[{mySample, options},
+			Append[options, Input -> mySample]
+		],
+		{mySamples, mapThreadFriendlyResolvedOptions}
+	];
+
+	(* Error checking for if any flammable and ventilated sample is asked to be used inside a biosafety cabinet.  This cannot be done due to the concentrated hazard. *)
+	{volatileHazardousSamplesInBSCError, volatileHazardousSamplesInBSCMessage} = If[MemberQ[
+		Lookup[mapThreadFriendlyResolvedOptions, TransferEnvironment],
+		ObjectP[{Model[Instrument, HandlingStation, BiosafetyCabinet], Object[Instrument, HandlingStation, BiosafetyCabinet]}]
+	],
+		(* call the helper to return a list of boolean and a string of error message *)
+		checkVolatileHazardousSamplesInBSCs[
+			inputBlendedMapThreadFriendlyOptions,
+			(* These wash solution options are for qpix, if they are specified, the transfer environment should be Null. So we are guaranteed to have triggered tons of other errors. This one is pretty downstream so don't bother.*)
+			{Cache, WashSolution, SecondaryWashSolution, TertiaryWashSolution, QuaternaryWashSolution},
+			TransferEnvironment,
+			combinedCache
+		],
+		(* Otherwise, no BSC is involved, no error *)
+		{False, Null}
+	];
+	volatileHazardousSamplesInBSCTest = If[TrueQ[volatileHazardousSamplesInBSCError],
+		Test["All samples to use in a Biosafety Cabinet can be safely handled:", True, False],
+		Test["All samples to use in a Biosafety Cabinet can be safely handled:", True, True]
+	];
+
+	If[TrueQ[volatileHazardousSamplesInBSCError] && messages,
+		Message[
+			Error::VolatileHazardousSamplesInBSC,
+			volatileHazardousSamplesInBSCMessage
+		]
+	];
 
 	(* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
 	invalidInputs = DeleteDuplicates[Flatten[
@@ -7488,7 +7525,11 @@ resolveExperimentInoculateLiquidMediaOptions[mySamples: {ObjectP[Object[Sample]]
 			(* For experiments that teh developer marks the post processing samples as Living -> True, we need to add potential failing options to invalidOptions list in order to properly fail the resolver *)
 			If[MemberQ[Values[resolvedPostProcessingOptions], $Failed],
 				PickList[Keys[resolvedPostProcessingOptions], Values[resolvedPostProcessingOptions], $Failed],
-				Nothing]
+				Nothing],
+			If[TrueQ[volatileHazardousSamplesInBSCError],
+				{TransferEnvironment},
+				{}
+			]
 		}
 	]];
 
@@ -7540,6 +7581,7 @@ resolveExperimentInoculateLiquidMediaOptions[mySamples: {ObjectP[Object[Sample]]
 		resuspensionMediaOverfillTests,
 		freezeDriedMismatchedVolumeTests,
 		resuspensionMixMismatchTests,
+		volatileHazardousSamplesInBSCTest,
 		If[gatherTests,
 			postProcessingTests[resolvedPostProcessingOptions],
 			Nothing
@@ -9247,6 +9289,7 @@ simulateInoculateLiquidMedia[
 		allTuples[[All, 1]],
 		allTuples[[All, 2]],
 		allTuples[[All, 3]],
+		CountAsPassage -> True,
 		Upload -> False,
 		FastTrack -> True,
 		Simulation -> currentSimulation

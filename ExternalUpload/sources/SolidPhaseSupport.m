@@ -25,26 +25,29 @@ DefineOptions[UploadSolidPhaseSupport,
 			IndexMatchingInput -> "Input Data",
 			{
 				OptionName -> Strand,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Molecule, Oligomer]]],
 				Description -> "The model of oligomer displayed on the resin.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Model Information"
 			},
 			{
 				OptionName -> SourceResin,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Resin]]],
 				Description -> "The model of the resin prior to synthesis or downloading.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Model Information"
 			},
 			{
 				OptionName -> PreDownloaded,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
 				Description -> "Indicates whether the resin was purchased as a downloaded resin, as opposed to downloaded manually.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Model Information"
 			}
 		]
@@ -52,9 +55,9 @@ DefineOptions[UploadSolidPhaseSupport,
 ];
 
 
-InstallDefaultUploadFunction[UploadSolidPhaseSupport, Model[Resin, SolidPhaseSupport]];
-InstallValidQFunction[UploadSolidPhaseSupport, Model[Resin, SolidPhaseSupport]];
-InstallOptionsFunction[UploadSolidPhaseSupport, Model[Resin, SolidPhaseSupport]];
+installDefaultUploadFunction[UploadSolidPhaseSupport, Model[Resin, SolidPhaseSupport]];
+installDefaultValidQFunction[UploadSolidPhaseSupport, Model[Resin, SolidPhaseSupport]];
+installDefaultOptionsFunction[UploadSolidPhaseSupport, Model[Resin, SolidPhaseSupport]];
 
 
 InstallIdentityModelTests[
@@ -67,7 +70,7 @@ InstallIdentityModelTests[
 		BiosafetyLevel -> "BSL-1",
 		State -> Solid,
 		Flammable -> False,
-		MSDSRequired -> False,
+		MSDSFile -> NotApplicable,
 		IncompatibleMaterials -> {None}
 	},
 	{Model[Resin, SolidPhaseSupport, "Lys-HMBA-ChemMatrix (test for UploadSolidPhaseSupport)" <> $SessionUUID]}
@@ -83,7 +86,7 @@ InstallIdentityModelTests[
 		BiosafetyLevel -> "BSL-1",
 		State -> Solid,
 		Flammable -> False,
-		MSDSRequired -> False,
+		MSDSFile -> NotApplicable,
 		IncompatibleMaterials -> {None}
 	},
 	{Model[Resin, SolidPhaseSupport, "Lys-HMBA-ChemMatrix (test for UploadSolidPhaseSupportOptions)" <> $SessionUUID]}
@@ -99,7 +102,7 @@ InstallIdentityModelTests[
 		BiosafetyLevel -> "BSL-1",
 		State -> Solid,
 		Flammable -> False,
-		MSDSRequired -> False,
+		MSDSFile -> NotApplicable,
 		IncompatibleMaterials -> {None}
 	},
 	{Model[Resin, SolidPhaseSupport, "Lys-HMBA-ChemMatrix (test for ValidUploadSolidPhaseSupportQ)" <> $SessionUUID]}

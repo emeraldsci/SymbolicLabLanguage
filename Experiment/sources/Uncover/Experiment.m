@@ -161,6 +161,7 @@ DefineOptions[ExperimentUncover,
 (* CapRacks will be placed directly on the surfaces here *)
 (* Don't include carts here since we don't want to uncover on a cart that doesn't match our ActiveCart, which we will default to *)
 $CoverEnvironmentTypes := {
+	Object[Instrument, HandlingStation],
 	Object[Instrument, GloveBox],
 	Object[Instrument, FumeHood],
 	Object[Instrument, BiosafetyCabinet],
@@ -739,7 +740,7 @@ resolveExperimentUncoverOptions[
 		unsafeDiscardTest, sterileTechniqueErrors, sterileTechniqueTest, decrimperTest, decrimperErrors, specifiedCapPrierInstrumentObjectPackets,
 		objectContainerRepeatedContainerList, alreadyUncoveredTest, alreadyUncoveredErrors, invalidInputs, invalidOptions,
 		capPrierInstrumentModelPackets, capPrierErrors, capPrierTest, activeCart, resolvedCrimpingPressures, resolvedDecrimpingHeads,
-		defaultAmpouleOpenerModelPackets, ampouleBooleans
+		defaultAmpouleOpenerModelPackets, ampouleBooleans, defaultCrimperPartModelPackets
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -774,6 +775,7 @@ resolveExperimentUncoverOptions[
 	(* Get our default instrument, cover, and septum packets. *)
 	{
 		defaultCrimperInstrumentModelPackets,
+		defaultCrimperPartModelPackets,
 		decrimperPartModelPackets,
 		defaultCrimpingHeadPartModelPackets,
 		defaultDecrimpingHeadPartModelPackets,
@@ -1167,7 +1169,7 @@ resolveExperimentUncoverOptions[
 						Lookup[options, SterileTechnique],
 
 					(* If the user has told us to use a BSC, use sterile technique. *)
-					MatchQ[environment, ObjectP[{Model[Instrument, BiosafetyCabinet], Object[Instrument, BiosafetyCabinet]}]],
+					MatchQ[environment, ObjectP[{Model[Instrument, BiosafetyCabinet], Object[Instrument, BiosafetyCabinet], Model[Instrument, HandlingStation, BiosafetyCabinet], Object[Instrument, HandlingStation, BiosafetyCabinet]}]],
 						True,
 
 					(* Otherwise, no sterile technique. *)
@@ -1270,7 +1272,7 @@ resolveExperimentUncoverOptions[
 		{},
 		MapThread[
 			Function[{sterileTechnique, environment, index},
-				If[MatchQ[sterileTechnique, True] && !MatchQ[environment, ObjectP[{Model[Instrument, BiosafetyCabinet], Object[Instrument, BiosafetyCabinet]}]],
+				If[MatchQ[sterileTechnique, True] && !MatchQ[environment, ObjectP[{Model[Instrument, BiosafetyCabinet], Object[Instrument, BiosafetyCabinet], Model[Instrument, HandlingStation, BiosafetyCabinet], Object[Instrument, HandlingStation, BiosafetyCabinet]}]],
 					{sterileTechnique, environment, index},
 					Nothing
 				]
@@ -1586,13 +1588,18 @@ uncoverResourcePackets[
 
 			(* Create resources for each of our environments. *)
 			uniqueEnvironmentResources=(#->Which[
+				(* special treatment for fumehood, we do not really care which model to use for uncovering if we are really going to use a fumehood, so just allow all models *)
+				MatchQ[#, ObjectP[Model[Instrument, HandlingStation, FumeHood, "id:1ZA60vzEmYv0"]]],
+					With[{currentFumeHoodModels= UnsortedComplement[Cases[transferModelsSearch["Memoization"][[23]], ObjectP[Model[Instrument, HandlingStation, FumeHood]]], $SpecializedHandlingStationModels]},
+						Resource[Instrument -> currentFumeHoodModels]
+					],
 				MatchQ[#, ObjectP[{Model[Container], Object[Container]}]],
 					Resource[Sample->#],
 				MatchQ[#, ObjectP[{Model[Instrument], Object[Instrument]}]],
 					Resource[Instrument->#],
 				True,
 					Null
-			]&)/@Lookup[myResolvedOptions, Environment];
+			]&)/@DeleteDuplicates[Lookup[myResolvedOptions, Environment]];
 
 			(* Create a resource for a cap rack if the cover we're taking off is a cap that has Barcode->False|Null and
 			if the cover is not being discarded *)
@@ -2041,10 +2048,12 @@ simulateExperimentUncover[
 *)
 (*this must never resolve to an Object unless it is determined that the cover is already in that object. coverSubprotocolAssociation and uncoverSubprotocolAssociation depend on Object meaning that we are already in the right spot.*)
 calculateCoverEnvironment[objectSamplePackets_,containerRepeatedContainers_,options_]:=Which[
-	MatchQ[Lookup[options, Environment], Except[Automatic]],Lookup[options, Environment],
+	MatchQ[Lookup[options, Environment], Except[Automatic]],
+		Lookup[options, Environment],
 
 	(* No CoverEnvironment when Robotic. *)
-	MatchQ[Lookup[options, Preparation], Robotic],Null,
+	MatchQ[Lookup[options, Preparation], Robotic],
+		Null,
 
 	(* Is our container already in a suitable environment (and we were told to use SterileTechnique or a crimper)? *)
 	And[
@@ -2054,24 +2063,24 @@ calculateCoverEnvironment[objectSamplePackets_,containerRepeatedContainers_,opti
 		],
 		MemberQ[
 			containerRepeatedContainers,
-			ObjectP[{Object[Instrument, BiosafetyCabinet]}]
+			ObjectP[{Object[Instrument, BiosafetyCabinet], Object[Instrument, HandlingStation, BiosafetyCabinet]}]
 		]
 	],
-	Download[FirstCase[containerRepeatedContainers,ObjectP[{Object[Instrument, BiosafetyCabinet]}]],Object],
+		Download[FirstCase[containerRepeatedContainers,ObjectP[{Object[Instrument, BiosafetyCabinet], Object[Instrument, HandlingStation, BiosafetyCabinet]}]],Object],
 
 	(* Put the container in a BSC if SterileTechnique->True. *)
 	MemberQ[Lookup[objectSamplePackets, CellType, Null], MicrobialCellTypeP] && MatchQ[Lookup[options, SterileTechnique], True],
-		Model[Instrument,BiosafetyCabinet,"id:WNa4ZjKZpBeL"], (* Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet (Microbial) *)
+		Model[Instrument, HandlingStation, BiosafetyCabinet, "id:54n6evJ3G4nl"], (*Biosafety Cabinet Handling Station for Microbiology*)
 
 	MemberQ[Lookup[objectSamplePackets, CellType, Null], NonMicrobialCellTypeP] && MatchQ[Lookup[options, SterileTechnique], True],
-		Model[Instrument,BiosafetyCabinet,"id:dORYzZJzEBdE"], (* Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet (Tissue Culture) *)
+		Model[Instrument, HandlingStation, BiosafetyCabinet, "id:AEqRl9xveX7p"], (*Biosafety Cabinet Handling Station for Tissue Culture*)
 
 	MatchQ[Lookup[options, SterileTechnique], True],
-		Model[Instrument,BiosafetyCabinet,"id:WNa4ZjKZpBeL"], (* Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet (Microbial) *)
+		Model[Instrument, HandlingStation, BiosafetyCabinet, "id:54n6evJ3G4nl"], (*Biosafety Cabinet Handling Station for Microbiology*)
 
 	(* BSC is required for crimping (right now). *)
 	MatchQ[Lookup[options, Instrument], ObjectP[{Model[Instrument, Crimper], Object[Instrument, Crimper]}]],
-		Model[Instrument,BiosafetyCabinet,"id:dORYzZJzEBdE"], (* Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet (Tissue Culture) *)
+		Model[Instrument, HandlingStation, BiosafetyCabinet, "id:AEqRl9xveX7p"], (*Biosafety Cabinet Handling Station for Tissue Culture*)
 
 	(* Is our container already in a suitable environment (and not SterileTechnique or crimping)? *)
 	And[
@@ -2084,11 +2093,11 @@ calculateCoverEnvironment[objectSamplePackets_,containerRepeatedContainers_,opti
 			ObjectP[$CoverEnvironmentTypes]
 		]
 	],
-		(* Prefer benches and carts first over other cover environments. *)
+		(* Prefer handling station, benches, and carts first over other cover environments. *)
 		Download[
 			FirstCase[
 				containerRepeatedContainers,
-				ObjectP[{Object[Container,Bench],Object[Container,OperatorCart]}],
+				ObjectP[{Object[Instrument,HandlingStation],Object[Container,Bench],Object[Container,OperatorCart]}],
 				FirstCase[containerRepeatedContainers,ObjectP[$CoverEnvironmentTypes]]
 			],
 			Object
@@ -2100,8 +2109,9 @@ calculateCoverEnvironment[objectSamplePackets_,containerRepeatedContainers_,opti
 
 	(* Fume Hood is required for ventilated and pungent samples *)
 	(* This will only get hit if it container isn't already in any of the allowed $CoverEnvironmentTypes *)
+	(* we set to this model for now, we will replace it with a list of fumehood models in the resource packets *)
 	AnyTrue[Join@@{Lookup[objectSamplePackets,Ventilated, Null], Lookup[objectSamplePackets,Pungent, Null]},TrueQ],
-		Model[Instrument, FumeHood, "id:P5ZnEj4P8kNO"],
+		Model[Instrument, HandlingStation, FumeHood, "id:1ZA60vzEmYv0"],
 
 	(* If we are called by ExperimentTransfer during option resolving stage (FastTrack->True), do not worry about missing ActiveCart because we haven't started anything yet *)
 	MatchQ[Lookup[options,FastTrack],True],

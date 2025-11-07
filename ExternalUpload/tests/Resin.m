@@ -25,7 +25,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram
 			],
@@ -38,7 +38,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram
 			],
@@ -58,7 +58,7 @@ DefineTests[
 					State->Solid,
 					BiosafetyLevel->"BSL-1",
 					Flammable->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials->{None},
 					Loading->5 Mole/Gram
 				]
@@ -71,7 +71,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				Name->"Test Resin 1 for UploadResin Unit Test"
@@ -86,7 +86,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				Molecule->Molecule[{"N","H","H","H"},{Bond[{1,2},"Single"],Bond[{1,3},"Single"],Bond[{1,4},"Single"]}]
@@ -101,7 +101,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				DefaultSampleModel->Model[Sample,"Test Sample Model 1 for UploadResin Unit Test"]
@@ -123,7 +123,7 @@ DefineTests[
 					State->Liquid,
 					BiosafetyLevel->"BSL-1",
 					Flammable->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials->{None}
 				]
 			}
@@ -135,7 +135,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				Synonyms->{"Test Resin 1 for UploadResin Unit Test","Test Resin 2 for UploadResin Unit Test"}
@@ -150,7 +150,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				CAS->"7732-18-5"
@@ -165,7 +165,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				IUPAC->"Dichloromethane"
@@ -180,7 +180,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				StructureImageFile->Object[EmeraldCloudFile, "id:aXRlGn6D0KJm"]
@@ -195,7 +195,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram
 			];
@@ -209,7 +209,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				ResinMaterial->ControlledPoreGlass
@@ -224,7 +224,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				Linker->RinkAmide
@@ -239,7 +239,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram
 			];
@@ -253,7 +253,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				ProtectingGroup->Fmoc
@@ -268,7 +268,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				PreferredCleavageMethod->Object[Method,Cleavage,"id:jLq9jXvqmM8a"]
@@ -283,7 +283,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				PostCouplingKaiserResult->Negative
@@ -298,7 +298,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				PostCappingKaiserResult->Positive
@@ -338,7 +338,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram
 			],
@@ -351,7 +351,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram
 			],
@@ -364,7 +364,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				Name->"Test Resin 1 for UploadResinOptions Unit Test"
@@ -378,7 +378,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				Molecule->Molecule[{"N","H","H","H"},{Bond[{1,2},"Single"],Bond[{1,3},"Single"],Bond[{1,4},"Single"]}]
@@ -392,7 +392,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				DefaultSampleModel->Model[Sample,"Test Sample Model 1 for UploadResinOptions Unit Test"]
@@ -413,7 +413,7 @@ DefineTests[
 					State->Liquid,
 					BiosafetyLevel->"BSL-1",
 					Flammable->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials->{None}
 				]
 			}
@@ -425,7 +425,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				Synonyms->{"Test Resin 1 for UploadResinOptions Unit Test","Test Resin 2 for UploadResinOptions Unit Test"}
@@ -439,7 +439,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				CAS->"7732-18-5"
@@ -453,7 +453,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				IUPAC->"Dichloromethane"
@@ -467,7 +467,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram
 			],
@@ -480,7 +480,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram
 			],
@@ -493,7 +493,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				ResinMaterial->ControlledPoreGlass
@@ -507,7 +507,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				Linker->RinkAmide
@@ -521,7 +521,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram
 			],
@@ -534,7 +534,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				ProtectingGroup->Fmoc
@@ -548,7 +548,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				PreferredCleavageMethod->Object[Method,Cleavage,"id:jLq9jXvqmM8a"]
@@ -562,7 +562,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				PostCouplingKaiserResult->Negative
@@ -576,7 +576,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				PostCappingKaiserResult->Positive
@@ -615,7 +615,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram
 			],
@@ -628,7 +628,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram
 			],
@@ -641,7 +641,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				Name->"Test Resin 1 for ValidUploadResinQ Unit Test"
@@ -655,7 +655,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				Molecule->Molecule[{"N","H","H","H"},{Bond[{1,2},"Single"],Bond[{1,3},"Single"],Bond[{1,4},"Single"]}]
@@ -669,7 +669,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				DefaultSampleModel->Model[Sample,"Test Sample Model 1 for ValidUploadResinQ Unit Test"]
@@ -690,7 +690,7 @@ DefineTests[
 					State->Liquid,
 					BiosafetyLevel->"BSL-1",
 					Flammable->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials->{None}
 				]
 			}
@@ -702,7 +702,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				Synonyms->{"Test Resin 1 for ValidUploadResinQ Unit Test","Test Resin 2 for ValidUploadResinQ Unit Test"}
@@ -716,7 +716,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				CAS->"7732-18-5"
@@ -730,7 +730,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				IUPAC->"Dichloromethane"
@@ -744,7 +744,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram
 			],
@@ -757,7 +757,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram
 			],
@@ -770,7 +770,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				ResinMaterial->ControlledPoreGlass
@@ -784,7 +784,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				Linker->RinkAmide
@@ -798,7 +798,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram
 			],
@@ -811,7 +811,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				ProtectingGroup->Fmoc
@@ -825,7 +825,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				PreferredCleavageMethod->Object[Method,Cleavage,"id:jLq9jXvqmM8a"]
@@ -839,7 +839,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				PostCouplingKaiserResult->Negative
@@ -853,7 +853,7 @@ DefineTests[
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
 				Flammable->False,
-				MSDSRequired->False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
 				PostCappingKaiserResult->Positive

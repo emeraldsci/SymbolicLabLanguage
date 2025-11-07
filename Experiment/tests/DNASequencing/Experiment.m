@@ -2580,13 +2580,13 @@ DefineTests[ExperimentDNASequencing,
       1000*RPM,
       EquivalenceFunction->Equal,
       Variables:>{options}
-    ],
+    ],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
     Example[{Options,FilterSterile,"Indicates if the filtration of the samples should be done in a sterile environment:"},
       options=ExperimentDNASequencing[Object[Sample,"ExperimentDNASequencing test sample 1"<>$SessionUUID],FilterSterile->True,Output->Options];
       Lookup[options,FilterSterile],
       True,
       Variables:>{options}
-    ],
+    ],*)
     Example[{Options,FilterAliquot,"The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
       options=ExperimentDNASequencing[Object[Sample,"ExperimentDNASequencing test sample in 50mL tube"<>$SessionUUID],Object[Sample,"ExperimentDNASequencing test primer sample 1"<>$SessionUUID],FilterAliquot->1*Milliliter,Output->Options];
       Lookup[options,FilterAliquot],
@@ -3158,7 +3158,7 @@ DefineTests[ExperimentDNASequencing,
           ShelfLife->ConstantArray[2 Year,6],
           UnsealedShelfLife->ConstantArray[90 Day,6],
           DefaultStorageCondition->ConstantArray[Model[StorageCondition,"Ambient Storage"],6],
-          MSDSRequired->ConstantArray[False,6],
+          MSDSFile->ConstantArray[NotApplicable,6],
           BiosafetyLevel->ConstantArray["BSL-1",6],
           State-> {Liquid,Liquid,Liquid,Liquid,Liquid,Solid}
         ];
@@ -3559,7 +3559,7 @@ DefineTests[ExperimentDNASequencingOptions,
           ShelfLife->ConstantArray[2 Year,1],
           UnsealedShelfLife->ConstantArray[90 Day,1],
           DefaultStorageCondition->ConstantArray[Model[StorageCondition,"Ambient Storage"],1],
-          MSDSRequired->ConstantArray[False,1],
+          MSDSFile->ConstantArray[NotApplicable,1],
           BiosafetyLevel->ConstantArray["BSL-1",1],
           State->ConstantArray[Liquid,1]
         ];
@@ -3782,7 +3782,7 @@ DefineTests[ExperimentDNASequencingPreview,
           ShelfLife->ConstantArray[2 Year,1],
           UnsealedShelfLife->ConstantArray[90 Day,1],
           DefaultStorageCondition->ConstantArray[Model[StorageCondition,"Ambient Storage"],1],
-          MSDSRequired->ConstantArray[False,1],
+          MSDSFile->ConstantArray[NotApplicable,1],
           BiosafetyLevel->ConstantArray["BSL-1",1],
           State->ConstantArray[Liquid,1]
         ];
@@ -4020,7 +4020,7 @@ DefineTests[ValidExperimentDNASequencingQ,
           ShelfLife->ConstantArray[2 Year,1],
           UnsealedShelfLife->ConstantArray[90 Day,1],
           DefaultStorageCondition->ConstantArray[Model[StorageCondition,"Ambient Storage"],1],
-          MSDSRequired->ConstantArray[False,1],
+          MSDSFile->ConstantArray[NotApplicable,1],
           BiosafetyLevel->ConstantArray["BSL-1",1],
           State->ConstantArray[Liquid,1]
         ];

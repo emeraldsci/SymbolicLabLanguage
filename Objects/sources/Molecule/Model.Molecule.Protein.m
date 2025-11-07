@@ -23,7 +23,7 @@ DefineObjectType[Model[Molecule, Protein], {
 			Class -> String,
 			Pattern :> PDBIDP,
 			Description -> "The list of Protein Data Bank IDs for any structures of this protein that have been previously reported in literature or are publically available.",
-			Category -> "Organizational Information",
+			Category -> "Molecular Identifiers",
 			Abstract -> True
 		},
 		Antibodies -> {

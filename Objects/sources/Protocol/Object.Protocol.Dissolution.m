@@ -4,7 +4,7 @@
 (*\[Copyright] 2011-2025 Emerald Cloud Lab, Inc.*)
 
 DefineObjectType[Object[Protocol,Dissolution],{
-	Description->"A protocol for capturing the visual information and taking samples of a oral solid dosage being dissolved in a liquid media at a controlled temperature. The experiment is often used to determine the dissolution rate of a given formulation.",
+	Description->"A protocol for capturing the visual information and taking samples of an oral solid dosage being dissolved in liquid media at a controlled temperature. The experiment is often used to determine the dissolution rate of a given formulation.",
 	CreatePrivileges->None,
 	Cache->Session,
 	Fields->{
@@ -50,7 +50,7 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Pattern:>GreaterEqualP[0 * Milliliter],
 			Units->Milliliter,
 			IndexMatching->SamplesIn,
-			Description->"For each member of SamplesIn, the volume of the medium used to dissolve the oral solid dosage and from which the aliquots are taken throughout the experiment.",
+			Description->"For each member of SamplesIn, the volume of the medium used to dissolve the oral solid dosage.",
 			Category->"Medium"
 		},
 		MediaTemperatures->{
@@ -68,16 +68,16 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Alternatives[Model[Item,DissolutionShaft],Object[Item,DissolutionShaft]],
+			Relation->Alternatives[Model[Container,DissolutionShaft],Object[Container,DissolutionShaft]],
 			IndexMatching->SamplesIn,
 			Description->"For each member of SamplesIn, the mixing implement used to transfer the rotational energy from the motor to the Affector that is performing the mixing of the dissolution medium.",
 			Category->"Mixing"
 		},
-		ShaftAffectors->{
+		Agitators->{
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Alternatives[Model[Item,ShaftAffector],Object[Item,ShaftAffector]],
+			Relation->Alternatives[Model[Item,Agitator],Object[Item,Agitator]],
 			IndexMatching->SamplesIn,
 			Description->"For each member of SamplesIn, the implement used to transfer the rotational energy from the shaft to the dissolution medium.",
 			Category->"Mixing"
@@ -86,7 +86,7 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Alternatives[Model[Item],Object[Item]],
+			Relation->Alternatives[Model[Container,Basket],Object[Container,Basket]],
 			IndexMatching->SamplesIn,
 			Description->"For each member of SamplesIn, the basket attachment used to house the sample while rotating.",
 			Category->"Mixing"
@@ -95,7 +95,7 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Alternatives[Model[Item,ShaftAffector],Object[Item,ShaftAffector]],
+			Relation->Alternatives[Model[Item,Agitator],Object[Item,Agitator]],
 			IndexMatching->SamplesIn,
 			Description->"For each member of SamplesIn, the paddle attachment used for height calibration of the shaft position in the dissolution vessel.",
 			Category->"Mixing"
@@ -108,20 +108,21 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Description->"The tool used to calibrate the height of the shaft in the dissolution vessel.",
 			Category->"Mixing"
 		},
-		DosageDispencingUnits->{
+		DosageDispensingUnits->{
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Alternatives[Model[Item],Object[Item]],
-			Description->"The tool used to dispense the oral solid dosage into the dissolution vessel.",
+			Relation->Object[Container,DosageDispensingUnit],
+			Description->"For each member of SamplesIn, the tool used to dispense the oral solid dosage into the dissolution vessel.",
+			IndexMatching->SamplesIn,
 			Category->"Mixing",
 			Developer->True
 		},
 		MixingStrategy->{
 			Format->Single,
 			Class->Expression,
-			Pattern:>Alternatives[Basket,Paddle],
-			Description->"The mixing strategy used to mix the dissolution medium.",
+			Pattern:>DissolutionStrategyP,
+			Description->"The type of the mixing implement used to agitate the dissolution medium during the experiment.",
 			Category->"Mixing"
 		},
 		MixRates->{
@@ -146,7 +147,7 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Alternatives[Object[Item,Sinker],Model[Item,Sinker]],
+			Relation->Alternatives[Object[Container,Sinker],Model[Container,Sinker]],
 			IndexMatching->SamplesIn,
 			Description->"For each member of SamplesIn, the weighted enclosure used to keep the oral solid dosage below the surface of the media during the experiment to facilitate proper mixing.",
 			Category->"Mixing"
@@ -181,12 +182,26 @@ DefineObjectType[Object[Protocol,Dissolution],{
 		},
 
 		(* --- Sampling Category --- *)
+		Sampling->{
+			Format->Single,
+			Class->Boolean,
+			Pattern:>BooleanP,
+			Description->"Indicates if samples of the dissolution media should be taken during the experiment. These samples are commonly used to determine the amount of the sample that was dissolved in the medium at a given time point.",
+			Category->"Sampling"
+		},
+		NumberOfAliquots->{
+			Format->Single,
+			Class->Integer,
+			Pattern:>GreaterEqualP[1,1],
+			Description->"Indicates the number of aliquots taken from the dissolution medium during the experiment.",
+			Category->"Sampling"
+		},
 		SamplingTimes->{
 			Format->Multiple,
 			Class->Real,
 			Units->Minute,
 			Pattern:>GreaterEqualP[0 Minute],
-			Description->"The list of the time points at which aliquots of the dissolution medium are taken.",
+			Description->"The list of the time points after the oral solid dosage is added to the liquid media at which aliquots of the dissolution medium are taken.",
 			Category->"Sampling"
 		},
 		SamplingVolume->{
@@ -197,7 +212,7 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Description->"The volume of the aliquot taken from the dissolution media at each SamplingTimes time point.",
 			Category->"Sampling"
 		},
-		(*TODO: chat with Steven how to split this field into an Expression vs Link field so we can search through links for properties of the storage condition; add to style guide/make shared fields for this*)
+		(*Using this format we can not search through links on this field, but it should be fine as it is nto an expected use case and is more user-friendly than having 2 separate fields for expressions and links*)
 		SamplesOutStorageCondition->{
 			Format->Single,
 			Class -> Expression,
@@ -213,10 +228,9 @@ DefineObjectType[Object[Protocol,Dissolution],{
 				Object[Sample],
 				Model[Sample]
 			],
-			Description->"The medium used to replace the liquid from the dissolution vessel removed for sampling each time an aliquot is taken.",
+			Description->"The medium used to replace the liquid from the dissolution vessel removed for sampling each time an aliquot is taken in order to maintain constant volume of the media in the vessel.",
 			Category->"Sampling"
 		},
-		(*TODO: update the option to match here*)
 		SamplingPrimeVolume->{
 			Format->Single,
 			Class->Real,
@@ -226,7 +240,7 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Category->"Sampling"
 		},
 		(*TODO: stopped here in review*)
-		SamplingMediumRecycle->{
+		RecycleSamplingMedium->{
 			Format->Single,
 			Class->Boolean,
 			Pattern:>BooleanP,
@@ -237,23 +251,31 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Format->Single,
 			Class->Integer,
 			Pattern:>GreaterP[0,1],
-			Description->"Indicate the number of times the system wash cycle is performed between each sampling timepoint.",
+			Description->"Indicates the number of times the system wash cycle is performed between each sampling timepoint.",
 			Category->"Sampling"
 		},
-		SamplingFlowRate->{
+		CollectionFlowRate->{
 			Format->Single,
 			Class->Real,
 			Pattern:>GreaterP[0 * Milli * Liter / Second],
 			Units->Milli * Liter / Second,
-			Description->"The speed of the syringes at which the sample medium is aliquoted.",
+			Description->"The speed at which the medium is aspirated during the experiment.",
 			Category->"Sampling"
 		},
-		SamplingFlushFlowRate->{
+		DispenseFlowRate->{
 			Format->Single,
 			Class->Real,
 			Pattern:>GreaterP[0 * Milli * Liter / Second],
 			Units->Milli * Liter / Second,
-			Description->"The speed of the syringes at which the flush medium is pulled.",
+			Description->"The speed at which the medium is dispensed during the experiment.",
+			Category->"Sampling"
+		},
+		VesselReturnFlowRate->{
+			Format->Single,
+			Class->Real,
+			Pattern:>GreaterP[0 * Milli * Liter / Second],
+			Units->Milli * Liter / Second,
+			Description->"The speed at which the medium is returned to the dissolution vessel.",
 			Category->"Sampling"
 		},
 		SamplingFlushVolume->{
@@ -264,22 +286,8 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Description->"The volume of the medium from the dissolution vessel used to flush the sampling lines at each sampling time point.",
 			Category->"Sampling"
 		},
-		Sampling->{
-			Format->Single,
-			Class->Boolean,
-			Pattern:>BooleanP,
-			Description->"Indicates if samples of the dissolution media should be taken during the experiment. These samples are commonly used to determine the amount of the sample that was dissolved in the medium at a given time point.",
-			Category->"Sampling"
-		},
-		NumberOfSamples->{
-			Format->Single,
-			Class->Integer,
-			Pattern:>GreaterEqualP[1,1],
-			Description->"Indicates the number of aliquots taken from the dissolution medium during the experiment.",
-			Category->"Sampling"
-		},
 		NumberOfSamplingFlushes->{
-			Format->Multiple,
+			Format->Single,
 			Class->Integer,
 			Pattern:>GreaterEqualP[1,1],
 			Description->"Indicate the number of times the sampling lines should be cleaned prior to sampling.",
@@ -287,18 +295,11 @@ DefineObjectType[Object[Protocol,Dissolution],{
 		},
 
 		(* --- Sampling Filtration Category --- *)
-		NumberOfFilterUses->{
-			Format->Single,
-			Class->Integer,
-			Pattern:>GreaterEqualP[1,1],
-			Description->"The number of times the AutosamplerFilter is used before being replaced with a new one.",
-			Category->"Sampling Filtration"
-		},
 		FilterSamples->{
-			Format->Single,
+			Format->Multiple,
 			Class->Expression,
-			Pattern:>Alternatives[InLineFiltration,AutosamplerFiltration,DualFiltration,None],
-			Description->"Indicates if the sample of the dissolution media is filtered when transferring to the ContainerOut. When the samples are removed from the dissolution vessel, they are optionally filtered by an InLineFilter prior to entering the autosampler. Addditionally, the samples are optionally filtered by an AutosamplerFilter prior to the liquid being dispenced into the ContainerOut. The AutosamplerFilter is optionally changed for each aliquot while the InLineFilter is used for the duration of the experiment. Refer to the instrument diagram of the liquid flow path during the instrument operation for more details.",
+			Pattern:>DissolutionFiltrationTypeP,
+			Description->"Indicates the types of filtration applied to the dissolution media samples during transfer to ContainerOut. Accepts a list of filtration types that are applied in sequence. CannulaTipFiltration: filters during sample transfer through cannula tip. InLineFiltration: filters immediately after removal from vessel before entering autosampler. AutosamplerFiltration: filters before dispensing into ContainerOut (changed between aliquots). Multiple types can be specified as a list (e.g., {InLineFiltration, AutosamplerFiltration}).",
 			Category->"Sampling Filtration"
 		},
 		AutosamplerFilters->{
@@ -309,6 +310,13 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Description->"The filter disks used to filter the aliquots of samples that are taken from the dissolution medium at the specified time points before the sample is dispenced into the ContainerOut. This filter is applied after the InLineFilter and is optinally changed between each aliquot.",
 			Category->"Sampling Filtration"
 		},
+		NumberOfFilterUses->{
+			Format->Single,
+			Class->Integer,
+			Pattern:>GreaterEqualP[1,1],
+			Description->"The number of times the AutosamplerFilter is used before being replaced with a new one.",
+			Category->"Sampling Filtration"
+		},
 		InLineFilters->{
 			Format->Multiple,
 			Class->Link,
@@ -316,6 +324,29 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Relation->Alternatives[Object[Item,Filter],Model[Item,Filter]],
 			IndexMatching->SamplesIn,
 			Description->"For each member of SamplesIn, the filter that is used to remove impurities from the samples right after they are removed from the dissolution vessel and prior to the liquid entering the autosampler for optinal secondary filtration.",
+			Category->"Sampling Filtration"
+		},
+		CannulaTipFilters->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[Object[Item,Filter],Model[Item,Filter]],
+			Description->"The filters attached to cannula tips used to filter samples during transfer from the dissolution vessel to the collection container.",
+			Category->"Sampling Filtration"
+		},
+		CannulaTipFilterMaterial->{
+			Format->Single,
+			Class->Expression,
+			Pattern:>FilterMembraneMaterialP,
+			Description->"The material of the cannula tip filters used during sample transfer.",
+			Category->"Sampling Filtration"
+		},
+		CannulaTipFilterPoreSize->{
+			Format->Single,
+			Class->Real,
+			Pattern:>GreaterP[0 * Micron],
+			Units->Micron,
+			Description->"The pore size of the cannula tip filters used during sample transfer.",
 			Category->"Sampling Filtration"
 		},
 
@@ -340,30 +371,34 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Data,Pressure],
-			Description -> "The pressure at which the helium starts to bubble into the dissolution medium.",
+			Description -> "The pressure at which the helium is being pumped into the dissolution medium.",
 			Category -> "Degas"
 		},
 
 		(* developer fields for movement in the procedure*)
-		SinkerLoadingTuples -> {
-			Format -> Multiple,
-			Class -> {Link, Link},
-			Pattern :> {_Link, _Link},
-			Relation -> {Object[Sample], Object[Item,Sinker]},
-			Description -> "A list of tuples with samples that will be placed into the sinkers for the experiment.",
-			Category -> "Placements",
-			Developer -> True,
-			Headers -> {"Object to Place", "Destination Sinker"}
-		},
 		SampleLoadingTuples -> {
 			Format -> Multiple,
-			Class -> {Link, Link},
-			Pattern :> {_Link, _Link},
-			Relation -> { Object[Sample] | Object[Item,Sinker] , Object[Item]},
-			Description -> "A list of tuples with samples (or sinkers containing samples) that will be placed into the dosage dispencing unit.",
+			Class -> {
+				Sample -> Link,
+				Destination -> Link,
+				DosageDispensingUnit -> Link,
+				Cap -> Link
+			},
+			Pattern :> {
+				Sample -> _Link,
+				Destination -> _Link,
+				DosageDispensingUnit -> _Link,
+				Cap -> _Link
+			},
+			Relation -> {
+				Sample -> Object[Sample],
+				Destination -> (Object[Container,Sinker] | Object[Container,Basket]),
+				DosageDispensingUnit -> Object[Container,DosageDispensingUnit],
+				Cap -> Object[Item, Cap]
+			},
+			Description -> "A list of tuples with samples that will be placed into the sinkers (optionally), or directly into Dosage Dispencing Unit, and the cap where the DDU is being placed in for the experiment. When Baskets are used, the sample is placed into the basket and the basket is then attached to the basket holder (Affector).",
 			Category -> "Placements",
-			Developer -> True,
-			Headers -> {"Object to Place", "Destination Object"}
+			Developer -> True
 		},
 		ContainerPlacements -> {
 			Format -> Multiple,
@@ -375,7 +410,26 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Developer -> True,
 			Headers -> {"Object to Place", "Destination Object","Destination Position"}
 		},
-
+		AutosamplerFilterPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Object[Item,Filter], Object[Instrument,DissolutionApparatus], Null},
+			Description -> "A list of placements used to place the autosampler filter into the instrument.",
+			Category -> "Placements",
+			Developer -> True,
+			Headers -> {"Object to Place", "Destination Object","Destination Position"}
+		},
+		InLineFilterPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Object[Item,Filter], Object[Instrument,DissolutionApparatus], Null},
+			Description -> "A list of placements used to place the in line filter into the instrument.",
+			Category -> "Placements",
+			Developer -> True,
+			Headers -> {"Object to Place", "Destination Object","Destination Position"}
+		},
 		(*misc procedure fields*)
 		RunTime -> {
 			Format -> Single,
@@ -383,6 +437,113 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Pattern :> GreaterP[0 Minute],
 			Units -> Minute,
 			Description -> "The estimated time for completion of the mixing part of the protocol.",
+			Category -> "General",
+			Developer -> True
+		},
+		Method -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Method, Dissolution],
+			Description -> "The method  containing the run parameters used for the experiment.",
+			Category -> "General",
+			Developer -> True
+		},
+		MethodUpdates -> {
+			Format -> Multiple,
+			Class -> {
+				Item -> Expression,
+				Contents -> Expression
+			},
+			Pattern :> {
+				Item -> _String,
+				Contents -> Alternatives[BooleanP, _String, GreaterP[0]]
+			},
+			Description -> "A list of method updates to be applied to the method file to match the protocol specifications.",
+			Category -> "General",
+			Developer -> True
+		},
+		PaddlesHeightCorrect -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the paddle height was seen to be correct.",
+			Category -> "Mixing",
+			Developer -> True
+		},
+		DissolutionVesselCaps -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item,Cap],
+			Description -> "The covers that we are using on the vessels throughout the experiment.",
+			Category -> "Mixing",
+			Developer -> True
+		},
+		DissolutionMethodCopyScriptPath -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The path to the script that copies the method files to the Z drive.",
+			Category -> "General",
+			Developer -> True
+		},
+		RecordingConfigurationFilePath -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The path to the recording configuration file (json with a text extension).",
+			Category -> "General",
+			Developer -> True
+		},
+		CondenserFilePath -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The path to the directory where the experiment data is exported to.",
+			Category -> "General",
+			Developer -> True
+		},
+		SamplingTimesStrings -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The list of the time points after the oral solid dosage is added to the liquid media at which aliquots of the dissolution medium are taken. Form in which we will be displaying this in Engine to the operator.",
+			Category -> "Sampling",
+			Developer -> True
+		},
+		VesselRackPlacements -> {
+			Format -> Multiple,
+			Class -> {Link,Link,Expression},
+			Pattern :> {_Link,_Link,LocationPositionP},
+			Relation -> {(Object[Container]|Model[Container]),(Object[Container]|Model[Container]),Null},
+			Description -> "List of placements of vials into autosampler rack.",
+			Category -> "Placements",
+			Developer -> True,
+			Headers -> {"Object to Place","Destination Object","Destination Position"}
+		},
+		ProtocolKey -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The key of the protocol. Used for naming of the protocol in the software.",
+			Category -> "General",
+			Developer -> True
+		},
+		SampleReservoirs -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Container,Vessel],Model[Container,Vessel]],
+			Description -> "The containers that are used to store the individial tablets during the experiment.",
+			Category -> "General",
+			Developer -> True
+		},
+		SampleAmounts -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterP[0,1],
+			Description -> "The amounts of the samples that are being weighed and transported around the lab. It is quite sad that we need this field, but there is no other way to put in amount to the Transfer subprotocol we will genearate.",
 			Category -> "General",
 			Developer -> True
 		}

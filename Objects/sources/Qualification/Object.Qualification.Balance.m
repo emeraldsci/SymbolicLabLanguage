@@ -25,11 +25,11 @@ DefineObjectType[Object[Qualification, Balance], {
 			Category -> "General"
 		},
 		TareWeight -> {
-			Format -> Single,
+			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Data],
-			Description -> "The weight data recorded after the balance was zeroed.",
+			Description -> "The weight data recorded with nothing on the balance.",
 			Category -> "Experimental Results"
 		},
 		TargetContainer -> {
@@ -38,6 +38,22 @@ DefineObjectType[Object[Qualification, Balance], {
 			Pattern :> _Link,
 			Relation -> Alternatives[Object[Container], Object[Instrument]],
 			Description -> "The container within which the Target is located.",
+			Category -> "General"
+		},
+		WeightStabilityDuration -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Second],
+			Units -> Second,
+			Description -> "The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable and measured.",
+			Category -> "General"
+		},
+		MaxWeightVariation -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Milligram],
+			Units -> Milligram,
+			Description -> "The max allowed amplitude the balance readings can fluctuate with for a duration defined by WeightStabilityDuration before being considered stable and measured.",
 			Category -> "General"
 		}
 	}

@@ -60,7 +60,7 @@ DefineObjectType[Object[Instrument, PeristalticPump], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Instrument, DissolutionApparatus][WastePump],
-			Description -> "The dissolution apparatus that the pump is used in.",
+			Description -> "The dissolution apparatus that the pump is used with.",
 			Category -> "Instrument Specifications"
 		}
 	}

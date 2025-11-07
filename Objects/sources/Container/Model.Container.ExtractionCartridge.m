@@ -13,7 +13,7 @@ DefineObjectType[Model[Container, ExtractionCartridge], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> SeparationModeP,
-			Description -> "The type of SPE for which this cartridge is suitable.",
+			Description -> "The type of solid phase extraction (SPE) for which this cartridge model is suitable.",
 			Category -> "Model Information",
 			Abstract -> True
 		},

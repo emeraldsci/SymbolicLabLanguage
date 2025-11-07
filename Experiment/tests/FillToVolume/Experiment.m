@@ -169,21 +169,21 @@ DefineTests[ExperimentFillToVolume,
 			options2 = ExperimentFillToVolume[Object[Sample, "Example volumetric flask sample 1 for ExperimentFillToVolume tests" <> $SessionUUID], 100 Milliliter, Solvent -> Model[Sample, "Milli-Q water"], PreparatoryUnitOperations -> {Transfer[Source->Model[Sample, "Milli-Q water"],Destination->Object[Sample, "Example volumetric flask sample 1 for ExperimentFillToVolume tests" <> $SessionUUID],Amount->95Milliliter]}, Output -> Options];
 			{Lookup[options1, Instrument], Lookup[options2, Instrument]},
 			{
-				ObjectP[Model[Container, GraduatedCylinder, "250 mL polypropylene graduated cylinder"]],
+				ObjectP[Model[Container, GraduatedCylinder, "250 mL KIMAX, glass graduated cylinder"]],
 				Null
 			},
 			Variables :> {options1,options2}
 		],
 		Example[{Options, TransferEnvironment, "Specify the transfer environment in which to perform the transfer. Note that this refers to the _first_ transfer; if transferring a large amount and then transferring a small amount to reach the proper volume, another instrument may be used:"},
-			options = ExperimentFillToVolume[Object[Sample, "Example sample 1 for ExperimentFillToVolume tests" <> $SessionUUID], 30 Milliliter, Solvent -> Model[Sample, "Milli-Q water"], TransferEnvironment -> Model[Instrument, HandlingStation, Ambient, "id:7X104v6a8mJk"], Output -> Options];
+			options = ExperimentFillToVolume[Object[Sample, "Example sample 1 for ExperimentFillToVolume tests" <> $SessionUUID], 30 Milliliter, Solvent -> Model[Sample, "Milli-Q water"], TransferEnvironment -> Model[Instrument, HandlingStation, Ambient, "id:8qZ1VWkXo06X"], Output -> Options];
 			Lookup[options, TransferEnvironment],
-			ObjectP[Model[Instrument, HandlingStation, Ambient, "id:7X104v6a8mJk"]],
+			ObjectP[Model[Instrument, HandlingStation, Ambient, "id:8qZ1VWkXo06X"]],
 			Variables :> {options}
 		],
 		Example[{Options, TransferEnvironment, "Resolve TransferEnvironment to the handling station (with IR probe) when volumetric flask FillToVolume is requested:"},
 			protocol = ExperimentFillToVolume[Object[Sample, "Example volumetric flask sample 1 for ExperimentFillToVolume tests" <> $SessionUUID], 100 Milliliter, Solvent -> Model[Sample, "Milli-Q water"]];
 			Download[protocol, {BatchedUnitOperations[[1]][TransferUnitOperations][[1]][TransferEnvironment][[1]], BatchedUnitOperations[[1]][TransferUnitOperations][[1]][TransferEnvironment][[1]][ProvidedHandlingConditions][IRProbe]}],
-			{ObjectP[Model[Instrument, HandlingStation]], {True}},
+			{ObjectP[Model[Instrument, HandlingStation]], {___,True,___}},
 			Variables :> {protocol}
 		],
 		Example[{Options, TransferEnvironment, "Resolve TransferEnvironment to the fume hood (with IR probe) when volumetric flask FillToVolume is requested on a :"},
@@ -227,6 +227,12 @@ DefineTests[ExperimentFillToVolume,
 			options = ExperimentFillToVolume[Object[Sample, "Example plate sample 1 for ExperimentFillToVolume tests" <> $SessionUUID], 0.5 Milliliter, Solvent -> Model[Sample, "Milli-Q water"], Needle -> Model[Item,Needle,"Reusable Stainless Steel Non-Coring 6 in x 18G Needle"], Output -> Options];
 			Lookup[options, Needle],
 			ObjectP[Model[Item,Needle,"Reusable Stainless Steel Non-Coring 6 in x 18G Needle"]],
+			Variables :> {options}
+		],
+		Example[{Options, Needle, "Disposable blunt-tip needles are defaulted to if a syringe is specified and neither of the source and destination are hermetic:"},
+			options = ExperimentFillToVolume[Object[Sample, "Example plate sample 1 for ExperimentFillToVolume tests" <> $SessionUUID], 0.5 Milliliter, Solvent -> Model[Sample, "Milli-Q water"], Instrument -> Model[Container, Syringe, "id:P5ZnEj4P88P0"], Output -> Options];
+			Download[Lookup[options, Needle], {Bevel, Reusable}],
+			{EqualP[Quantity[90., "AngularDegrees"]], False},
 			Variables :> {options}
 		],
 		Example[{Options, Funnel, "Specify the funnel with which to perform the transfer.  Note that this refers to the _first_ transfer; if transferring a large amount and then transferring a small amount to reach the proper volume, another funnel may be used for the final transfer:"},
@@ -355,6 +361,30 @@ DefineTests[ExperimentFillToVolume,
 			Lookup[options, IntermediateFunnel],
 			ObjectP[Model[Part, Funnel, "9mm Stem OD, 180mm Height - Plastic Wet Funnel"]],
 			Variables :> {options}
+		],
+		Test["For Volumetric FillToVolume, request a WasteContainer for temporarily holding extra solvent in graduated cylinder and intermediate container before final disposal:",
+			protocol = ExperimentFillToVolume[{Object[Sample, "Example sample 1 for ExperimentFillToVolume tests" <> $SessionUUID], Object[Sample, "Example volumetric flask sample 1 for ExperimentFillToVolume tests" <> $SessionUUID]}, {30 Milliliter, 100 Milliliter}, Solvent -> Model[Sample, "Milli-Q water"], Method -> {Ultrasonic, Volumetric}];
+			Download[protocol,{WasteContainer,BatchedUnitOperations[WasteContainer],BatchedUnitOperations[TransferUnitOperations][WasteContainer]}],
+			{
+				ObjectP[Model[Container, Vessel, "id:J8AY5jwzPPR7"]],
+				{Null,ObjectP[Model[Container, Vessel, "id:J8AY5jwzPPR7"]]},
+				{{Null},{ObjectP[Model[Container, Vessel, "id:J8AY5jwzPPR7"]]}}
+			},
+			Variables :> {protocol}
+		],
+		Test["For Volumetric FillToVolume, the same WasteContainer can be passed down to Transfer subprotocols:",
+			(* Do the series of subprotocols just as normal FTV procedure *)
+			ftvProtocol = ExperimentFillToVolume[Object[Sample, "Example volumetric flask sample 1 for ExperimentFillToVolume tests" <> $SessionUUID], 100 Milliliter, Solvent -> Model[Sample, "Milli-Q water"]];
+			transferUO = Download[ftvProtocol,BatchedUnitOperations[[1]][TransferUnitOperations][[1]][Object]];
+			Upload[<|Object->transferUO,WasteContainer->Link[Object[Container, Vessel, "Example waste container for ExperimentFillToVolume tests" <> $SessionUUID]]|>];
+			mspProtocol = ExperimentManualSamplePreparation[transferUO,ParentProtocol->ftvProtocol];
+			transferProtocol = ExperimentTransfer[mspProtocol[ResolvedUnitOperationInputs][[1,1]],mspProtocol[ResolvedUnitOperationInputs][[1,2]],mspProtocol[ResolvedUnitOperationInputs][[1,3]],Sequence@@mspProtocol[ResolvedUnitOperationOptions][[1]],ParentProtocol->mspProtocol];
+			Download[transferProtocol,{WasteContainer,BatchedUnitOperations[WasteContainer]}],
+			{
+				ObjectP[Object[Container, Vessel, "Example waste container for ExperimentFillToVolume tests" <> $SessionUUID]],
+				{ObjectP[Object[Container, Vessel, "Example waste container for ExperimentFillToVolume tests" <> $SessionUUID]]}
+			},
+			Variables :> {ftvProtocol,transferUO,mspProtocol,transferProtocol}
 		],
 
 		Example[{Options, SourceTemperature, "Indicates the temperature at which the solvent should be at during the transfer:"},
@@ -575,6 +605,27 @@ DefineTests[ExperimentFillToVolume,
 			3,
 			Variables :> {protocol}
 		],
+		Example[{Options, MaxNumberOfOverfillingRepreparations, "When called by a parent ManualSamplePreparation protocol, resolve MaxNumberOfOverfillingRepreparations to 3 to allow re-preparation in the event of overfilling:"},
+			protocol = ExperimentFillToVolume[
+				Object[Sample, "Example volumetric flask sample 1 for ExperimentFillToVolume tests" <> $SessionUUID],
+				100 Milliliter,
+				Solvent -> Model[Sample, "Milli-Q water"],
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test parent ManualSamplePreparation protocol for ExperimentFillToVolume unit test"<>$SessionUUID]
+			];
+			Download[protocol, MaxNumberOfOverfillingRepreparations],
+			3,
+			Variables :> {protocol}
+		],
+		Example[{Options, MaxNumberOfOverfillingRepreparations, "When called as part of a ManualSamplePreparation protocol (with samples simulated), allow setting MaxNumberOfOverfillingRepreparations to allow re-preparation in the event of overfilling:"},
+			protocol = ExperimentManualSamplePreparation[{
+				LabelContainer[Label->"my container", Container->Model[Container, Vessel, VolumetricFlask, "100 mL Glass Volumetric Flask"]],
+				Transfer[Source->Model[Sample, "Milli-Q water"], Destination->"my container", Amount->10Milliliter],
+				FillToVolume[Sample->"my container",Solvent -> Model[Sample, "Milli-Q water"], TotalVolume -> 100Milliliter, Method -> Volumetric, MaxNumberOfOverfillingRepreparations-> 2]
+			}];
+			Download[protocol, OutputUnitOperations[[-1]][MaxNumberOfOverfillingRepreparations]],
+			2,
+			Variables :> {protocol}
+		],
 		(* Messages *)
 		Example[{Messages, "DuplicateName", "If the specified name is already taken, an error is thrown:"},
 			ExperimentFillToVolume[{Object[Container, Vessel, "Example container 1 for ExperimentFillToVolume tests" <> $SessionUUID]}, {30 Milliliter}, Solvent -> Model[Sample, "Milli-Q water"], DestinationWell -> {"A1"}, Name -> "ExperimentFillToVolume Template Protocol 1" <> $SessionUUID],
@@ -688,7 +739,7 @@ DefineTests[ExperimentFillToVolume,
 			$Failed,
 			Messages :> {Warning::AliquotRequired, Error::InvalidTransferWellSpecification, Error::InvalidInput}
 		],
-		Example[{Messages, "InvalidMaxNumberOfOverfillingRepreparations", "When the inputs of ExperimentFillToVolume are not all Model[Sample], disallow MaxNumberOfOverfillingRepreparations option since we cannot re-do FillToVolume for an Object[Sample]:"},
+		Example[{Messages, "InvalidMaxNumberOfOverfillingRepreparations", "When the inputs of ExperimentFillToVolume are not all Model[Sample] or prepared through the parent MSP protocol, disallow MaxNumberOfOverfillingRepreparations option since we cannot re-do FillToVolume for an Object[Sample]:"},
 			ExperimentFillToVolume[
 				{
 					Object[Sample, "Example volumetric flask sample 1 for ExperimentFillToVolume tests" <> $SessionUUID],
@@ -704,6 +755,16 @@ DefineTests[ExperimentFillToVolume,
 			$Failed,
 			Messages :> {Error::InvalidMaxNumberOfOverfillingRepreparations, Error::InvalidOption},
 			Variables :> {protocol}
+		],
+		Example[{Messages, "VolatileHazardousSamplesInBSC", "Volatile hazardous materials are not allowed to be handled in a biosafety cabinet:"},
+			ExperimentFillToVolume[
+				Object[Sample, "Example volumetric flask sample 1 for ExperimentFillToVolume tests" <> $SessionUUID],
+				100 Milliliter,
+				Solvent -> Model[Sample, "Methanol"],
+				TransferEnvironment -> Model[Instrument, HandlingStation, BiosafetyCabinet, "id:AEqRl9xveX7p"]
+			],
+			$Failed,
+			Messages :> {Error::VolatileHazardousSamplesInBSC, Error::InvalidTransferEnvironment, Error::InvalidOption}
 		]
 	},
 	Stubs:>{
@@ -712,6 +773,7 @@ DefineTests[ExperimentFillToVolume,
 		$PersonID = Object[User, Emerald, Developer, "id:Y0lXejMmX69l"]
 	},
 	SetUp:>(
+		ClearMemoization[];
 		$CreatedObjects={};
 		Off[Warning::SamplesOutOfStock];
 		Off[Warning::InstrumentUndergoingMaintenance];
@@ -747,6 +809,8 @@ DefineTests[ExperimentFillToVolume,
 				Object[Sample, "Example plate sample 1 for ExperimentFillToVolume tests" <> $SessionUUID],
 				Object[Sample, "Example solvent sample 1 for ExperimentFillToVolume tests" <> $SessionUUID],
 				Object[Sample, "Example solvent sample 2 for ExperimentFillToVolume tests" <> $SessionUUID],
+				Object[Container, Vessel, "Example waste container for ExperimentFillToVolume tests" <> $SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "Test parent ManualSamplePreparation protocol for ExperimentFillToVolume unit test"<>$SessionUUID],
 				Object[Protocol, FillToVolume, "ExperimentFillToVolume Template Protocol 1" <> $SessionUUID],
 				Object[Protocol, FillToVolume, "Test ExperimentFillToVolume protocol object"],
 				Quiet[Download[Object[Protocol, FillToVolume, "ExperimentFillToVolume Template Protocol 1" <> $SessionUUID], {ProcedureLog[Object], RequiredResources[[All, 1]][Object], Primitives[Object]}]]
@@ -758,7 +822,7 @@ DefineTests[ExperimentFillToVolume,
 			Module[
 				{
 					exampleBench,
-					tube1, tube2, tube3, volumetricFlask1, volumetricFlask2, volumetricFlask3, ultrasonicIncompatible1, plate1, solventContainer1, solventContainer2,
+					tube1, tube2, tube3, volumetricFlask1, volumetricFlask2, volumetricFlask3, ultrasonicIncompatible1, plate1, solventContainer1, solventContainer2, wasteContainer,
 					tubeSample1, tubeSample2, tubeSample3, volumetricFlaskSample1, ultrasonicIncompatibleSample1, volumetricFlaskSample2, plateSample1, volumetricFlaskSample3, solventSample1, solventSample2,
 					templateProtocol,
 					allObjs
@@ -775,7 +839,8 @@ DefineTests[ExperimentFillToVolume,
 					ultrasonicIncompatible1,
 					plate1,
 					solventContainer1,
-					solventContainer2
+					solventContainer2,
+					wasteContainer
 				} = UploadSample[
 					{
 						Model[Container, Vessel, "50mL Tube"],
@@ -787,9 +852,11 @@ DefineTests[ExperimentFillToVolume,
 						Model[Container, Vessel, "T25 EasYFlask, TC Surface, Filter Cap"],
 						Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 						Model[Container, Vessel, "50mL Tube"],
-						Model[Container, Vessel, "1L Glass Bottle"]
+						Model[Container, Vessel, "1L Glass Bottle"],
+						Model[Container, Vessel, "50mL Tube"]
 					},
 					{
+						{"Work Surface", exampleBench},
 						{"Work Surface", exampleBench},
 						{"Work Surface", exampleBench},
 						{"Work Surface", exampleBench},
@@ -811,6 +878,7 @@ DefineTests[ExperimentFillToVolume,
 						Available,
 						Available,
 						Available,
+						Available,
 						Available
 					},
 					Name -> {
@@ -823,7 +891,8 @@ DefineTests[ExperimentFillToVolume,
 						"Example UltrasonicIncompatible container 1 for ExperimentFillToVolume" <> $SessionUUID,
 						"Example plate 1 for ExperimentFillToVolume tests" <> $SessionUUID,
 						"Example solvent container 1 for ExperimentFillToVolume tests" <> $SessionUUID,
-						"Example solvent container 2 for ExperimentFillToVolume tests" <> $SessionUUID
+						"Example solvent container 2 for ExperimentFillToVolume tests" <> $SessionUUID,
+						"Example waste container for ExperimentFillToVolume tests" <> $SessionUUID
 					}
 				];
 				{
@@ -915,6 +984,9 @@ DefineTests[ExperimentFillToVolume,
 					<|Object -> #, DeveloperObject -> True|>& /@ PickList[allObjs, DatabaseMemberQ[allObjs]],
 					<|Object -> tubeSample1, Anhydrous -> True|>
 				}]];
+
+				(* Create a parent protocol for test *)
+				Upload[<|Type -> Object[Protocol, ManualSamplePreparation], Name -> "Test parent ManualSamplePreparation protocol for ExperimentFillToVolume unit test"<>$SessionUUID, DeveloperObject->True|>];
 			]
 		]
 	),
@@ -944,6 +1016,7 @@ DefineTests[ExperimentFillToVolume,
 				Object[Sample, "Example solvent sample 1 for ExperimentFillToVolume tests" <> $SessionUUID],
 				Object[Sample, "Example solvent sample 2 for ExperimentFillToVolume tests" <> $SessionUUID],
 				Object[Protocol, FillToVolume, "ExperimentFillToVolume Template Protocol 1" <> $SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "Test parent ManualSamplePreparation protocol for ExperimentFillToVolume unit test"<>$SessionUUID],
 				Quiet[Download[Object[Protocol, FillToVolume, "ExperimentFillToVolume Template Protocol 1" <> $SessionUUID], {ProcedureLog[Object], RequiredResources[[All, 1]][Object], Primitives[Object]}]]
 			}], ObjectP[]];
 			existingObjs = PickList[allObjs, DatabaseMemberQ[allObjs]];

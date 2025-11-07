@@ -14,6 +14,7 @@ $WorkCellsToInstruments=<|
   STAR->{
     Model[Instrument, LiquidHandler, "id:kEJ9mqaW7xZP"], (* "Hamilton STARlet" *)
     Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"], (* "Super STAR" *)
+    Model[Instrument, LiquidHandler, "id:N80DNjkzez5W"], (*"Super STAR (with PlateWasher)"*)
     Model[Instrument, LiquidHandler, "id:R8e1PjeLn8Bj"] (* "Super STAR (Limited)" *)
   },
   bioSTAR->{
@@ -527,7 +528,10 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
   ];
 
   (* Sanitize our inputs. *)
-  sanitizedPrimitivesWithUnitOperationObjects=(sanitizeInputs[myPrimitives, Simulation -> simulation]/.{link:LinkP[] :> Download[link, Object]});
+  (* Experiments of individual UO should call sanitizeInput first by itself. Do not throw the message in framework *)
+  sanitizedPrimitivesWithUnitOperationObjects = Quiet[
+    (sanitizeInputs[myPrimitives, Simulation -> simulation]/.{link:LinkP[] :> Download[link, Object]}),
+    Warning::OptionContainsUnusableObject];
 
   (* return early if we have nonexistent objects; the message will be thrown in sanitizeInputs *)
   If[MatchQ[sanitizedPrimitivesWithUnitOperationObjects, $Failed],
@@ -556,11 +560,16 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     userInputtedUnitOperationPackets=Download[userInputtedUnitOperationObjects, Packet[All], Simulation -> simulation];
 
     (* Convert each of these packets into a primitive. *)
+    (* WasteContainer is a hidden option in FillToVolume and in Transfer. There is no need to allow users to set this option so it is hidden, but we need to pass this down. Include this hidden option *)
     userInputtedUnitOperationObjectToPrimitive=(
-      Lookup[#, Object]->ConstellationViewers`Private`UnitOperationPrimitive[#, IncludeCompletedOptions->False, IncludeEmptyOptions->False]
+      Lookup[#, Object]->ConstellationViewers`Private`UnitOperationPrimitive[#, IncludeCompletedOptions->False, IncludeEmptyOptions->False, IncludedHiddenOptions -> {WasteContainer}]
     &)/@userInputtedUnitOperationPackets;
 
-    (sanitizeInputs[userInputtedUnitOperationObjectsWithoutBoxForms/.userInputtedUnitOperationObjectToPrimitive, Simulation -> simulation]/.{link:LinkP[] :> Download[link, Object]})
+    (* Experiments of individual UO should call sanitizeInput first by itself. Do not throw the message in framework *)
+    Quiet[
+      (sanitizeInputs[userInputtedUnitOperationObjectsWithoutBoxForms /. userInputtedUnitOperationObjectToPrimitive, Simulation -> simulation] /. {link : LinkP[] :> Download[link, Object]}),
+      Warning::OptionContainsUnusableObject
+    ]
   ];
 
   (* -- STAGE 1: Primitive Pattern Checks -- *)
@@ -8764,7 +8773,11 @@ ValidateUnitOperationsJSON[myPrimitives_List, myOptions:OptionsPattern[]]:=Modul
   (* Replace the unit operation objects. *)
   sanitizedPrimitives=Module[{sanitizedPrimitivesWithUnitOperationObjects, userInputtedUnitOperationObjects, userInputtedUnitOperationPackets, userInputtedUnitOperationObjectToPrimitive},
     (* Sanitize our inputs. *)
-    sanitizedPrimitivesWithUnitOperationObjects=(sanitizeInputs[myPrimitives]/.{link:LinkP[] :> Download[link, Object]});
+    (* Experiments of individual UO should call sanitizeInput first by itself. Do not throw the message in framework *)
+    sanitizedPrimitivesWithUnitOperationObjects=Quiet[
+      (sanitizeInputs[myPrimitives]/.{link:LinkP[] :> Download[link, Object]}),
+      Warning::OptionContainsUnusableObject
+    ];
 
     (* Find any unit operation objects that were given as input. *)
     userInputtedUnitOperationObjects=DeleteDuplicates@Cases[sanitizedPrimitivesWithUnitOperationObjects, ObjectReferenceP[Object[UnitOperation]], Infinity];
@@ -8773,9 +8786,12 @@ ValidateUnitOperationsJSON[myPrimitives_List, myOptions:OptionsPattern[]]:=Modul
     userInputtedUnitOperationPackets=Download[userInputtedUnitOperationObjects, Packet[All]];
 
     (* Convert each of these packets into a primitive. *)
-    userInputtedUnitOperationObjectToPrimitive=(Lookup[#, Object]->ConstellationViewers`Private`UnitOperationPrimitive[#, IncludeCompletedOptions->False, IncludeEmptyOptions->False]&)/@userInputtedUnitOperationPackets;
-
-    (sanitizeInputs[sanitizedPrimitivesWithUnitOperationObjects/.userInputtedUnitOperationObjectToPrimitive]/.{link:LinkP[] :> Download[link, Object]})
+    userInputtedUnitOperationObjectToPrimitive=(Lookup[#, Object]->ConstellationViewers`Private`UnitOperationPrimitive[#, IncludeCompletedOptions->False, IncludeEmptyOptions->False,IncludedHiddenOptions -> {WasteContainer}]&)/@userInputtedUnitOperationPackets;
+    (* Experiments of individual UO should call sanitizeInput first by itself. Do not throw the message in framework *)
+    Quiet[
+      (sanitizeInputs[sanitizedPrimitivesWithUnitOperationObjects/.userInputtedUnitOperationObjectToPrimitive]/.{link:LinkP[] :> Download[link, Object]}),
+      Warning::OptionContainsUnusableObject
+    ]
   ];
 
   (* Flatten out our primitives, setting the PrimitiveMethod option if the method wrapper is given. *)
@@ -9155,7 +9171,7 @@ SetAttributes[holdCompositionTimesList,HoldAll];
 
 (* ::Code::Initialization:: *)
 (* "STARlet", "Super STAR" *)
-stackableTipPositions[Model[Instrument,LiquidHandler,"id:kEJ9mqaW7xZP"]|Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"]|Model[Instrument, LiquidHandler, "id:R8e1PjeLn8Bj"]]:={
+stackableTipPositions[Model[Instrument,LiquidHandler,"id:kEJ9mqaW7xZP"]|Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"]|Model[Instrument, LiquidHandler, "id:N80DNjkzez5W"]|Model[Instrument, LiquidHandler, "id:R8e1PjeLn8Bj"]]:={
   {"Deck Slot","Tip Carrier Slot 2","A1"},
   {"Deck Slot","Tip Carrier Slot 2","B1"},
   {"Deck Slot","Tip Carrier Slot 2","C1"},
@@ -9165,7 +9181,7 @@ stackableTipPositions[Model[Instrument,LiquidHandler,"id:kEJ9mqaW7xZP"]|Model[In
 
 (* "Super STAR" *)
 
-nonStackableTipPositions[Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"]|Model[Instrument, LiquidHandler, "id:R8e1PjeLn8Bj"]]:={
+nonStackableTipPositions[Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"]|Model[Instrument, LiquidHandler, "id:N80DNjkzez5W"]|Model[Instrument, LiquidHandler, "id:R8e1PjeLn8Bj"]]:={
   {"Deck Slot","Tip Carrier Slot 1","A1"},
   {"Deck Slot","Tip Carrier Slot 1","B1"},
   {"Deck Slot","Tip Carrier Slot 1","C1"},

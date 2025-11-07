@@ -613,7 +613,7 @@ DefineUsage[DiscardSamples,
 					{
 						InputName -> "objects",
 						Description-> "Samples or Containers to be marked for eventual disposal.",
-						Widget-> Widget[Type->Object,Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container]}],PreparedSample->False],
+						Widget-> Widget[Type->Object,Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}],PreparedSample->False],
 						Expandable->False
 					},
 					IndexName->"main input"
@@ -623,7 +623,7 @@ DefineUsage[DiscardSamples,
 				{
 					OutputName->"updatedObjects",
 					Description->"Samples and containers updated to reflect them being marked for discarding.",
-					Pattern:>{ObjectP[Object[Sample]]|ObjectP[Object[Container]]..}
+					Pattern:>{ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}]..}
 				}
 			}
 		}
@@ -659,7 +659,7 @@ DefineUsage[DiscardSamplesOptions,
 						{
 							InputName -> "objects",
 							Description-> "Samples or Containers to be marked for eventual disposal.",
-							Widget-> Widget[Type->Object,Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container]}],PreparedSample->False],
+							Widget-> Widget[Type->Object,Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}],PreparedSample->False],
 							Expandable->False
 						},
 						IndexName->"main input"
@@ -702,7 +702,7 @@ DefineUsage[DiscardSamplesPreview,
 						{
 							InputName -> "objects",
 							Description-> "Samples or Containers to be marked for eventual disposal.",
-							Widget-> Widget[Type->Object,Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container]}],PreparedSample->False],
+							Widget-> Widget[Type->Object,Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}],PreparedSample->False],
 							Expandable->False
 						},
 						IndexName->"main input"
@@ -742,7 +742,7 @@ DefineUsage[ValidDiscardSamplesQ,
 						{
 							InputName -> "objects",
 							Description-> "Samples or Containers to be marked for eventual disposal.",
-							Widget-> Widget[Type->Object,Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container]}],PreparedSample->False],
+							Widget-> Widget[Type->Object,Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container], Object[Part]}],PreparedSample->False],
 							Expandable->False
 						},
 						IndexName->"main input"
@@ -786,8 +786,8 @@ DefineUsage[CancelDiscardSamples,
 					InputName -> "objects",
 					Description-> "Samples or Containers to be marked for eventual disposal.",
 					Widget-> Alternatives[
-						Widget[Type -> Object, Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container]}],PreparedSample->False],
-						Adder[Widget[Type -> Object, Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container]}],PreparedSample->False]]
+						Widget[Type -> Object, Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container],Object[Part]}],PreparedSample->False],
+						Adder[Widget[Type -> Object, Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container],Object[Part]}],PreparedSample->False]]
 					],
 					Expandable->False
 				}
@@ -833,8 +833,8 @@ DefineUsage[CancelDiscardSamplesOptions,
 					InputName -> "objects",
 					Description-> "Samples or Containers to be marked for eventual disposal.",
 					Widget-> Alternatives[
-						Widget[Type -> Object, Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container]}],PreparedSample->False],
-						Adder[Widget[Type -> Object, Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container]}],PreparedSample->False]]
+						Widget[Type -> Object, Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container],Object[Part]}],PreparedSample->False],
+						Adder[Widget[Type -> Object, Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container],Object[Part]}],PreparedSample->False]]
 					],
 					Expandable->False
 				}
@@ -875,8 +875,8 @@ DefineUsage[CancelDiscardSamplesPreview,
 					InputName -> "objects",
 					Description-> "Samples or Containers to be marked for eventual disposal.",
 					Widget-> Alternatives[
-						Widget[Type -> Object, Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container]}],PreparedSample->False],
-						Adder[Widget[Type -> Object, Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container]}],PreparedSample->False]]
+						Widget[Type -> Object, Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container],Object[Part]}],PreparedSample->False],
+						Adder[Widget[Type -> Object, Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container],Object[Part]}],PreparedSample->False]]
 					],
 					Expandable->False
 				}
@@ -914,8 +914,8 @@ DefineUsage[ValidCancelDiscardSamplesQ,
 					InputName -> "objects",
 					Description-> "Samples or Containers to be marked for eventual disposal.",
 					Widget-> Alternatives[
-						Widget[Type -> Object, Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container]}],PreparedSample->False],
-						Adder[Widget[Type -> Object, Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container]}],PreparedSample->False]]
+						Widget[Type -> Object, Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container],Object[Part]}],PreparedSample->False],
+						Adder[Widget[Type -> Object, Pattern:> ObjectP[{Object[Sample],Object[Item],Object[Container],Object[Part]}],PreparedSample->False]]
 					],
 					Expandable->False
 				}

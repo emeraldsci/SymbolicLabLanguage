@@ -59,17 +59,16 @@ DefineOptions[
 		{TearDown:>Null,_,"Expression to be executed after test expression is executed."},
 		{Variables:>{},{___Symbol},"List of variables to be created private to the test execution. Accessible from SetUp/TearDown but not Stubs."},
 		{Warning->False,True|False,"When True, a failure of this test will not affect the result of a test run."},
-		{Message->Null,Null|Hold[HoldPattern[MessageName[___]]],"The message that should be thrown if this test does not succeed. The string template of the message will be filled in with the MessageArguments option."},
-		{MessageArguments->Null,Null|_List,"The arguments that should be passed to Message[messageName, arg1, arg2...] if a message should be thrown as a result of this test failing."},
+		{Message->Null,Null|{Hold[HoldPattern[MessageName[___]]], ___},"The message that should be thrown if this test does not succeed. The format should be {Hold[MessageName], arg1, arg2...}."},
 		{ConstellationDebug->False,True|False,"When True, attach all constellation requests and responses to the test run."},
 		{Sandbox->False, True|False, "Determines if the test is configured to run in the Sandbox environment."}
 	}
 ];
 
 Test[description_String, expressionUnderTest_, expected_, ops:OptionsPattern[]]:=Module[
-	{messagesExpected,maxExecutionTime,stateFunctions,equivalenceFunction,stubs,
+	{messagesExpected,maxExecutionTime,stateFunctions,equivalenceFunction,stubs, unitTestMessage,
 		executableFunction,replacementOptions,category,subCategory,fatalFailure,
-		level,messagesOption,warning, message, messageArguments, constellationDebugQ, sandboxEnabled},
+		level,messagesOption,warning, message, constellationDebugQ, sandboxEnabled},
 
 	(* If we're on Manifold, we should increase the timeout constraint to 60 minutes. *)
 	(* This is because we really don't want false positives from the manifold unit testing system. *)
@@ -121,14 +120,8 @@ Test[description_String, expressionUnderTest_, expected_, ops:OptionsPattern[]]:
 
 	message=optionOrDefault[
 		OptionValue[Message],
-		Null|Hold[HoldPattern[MessageName[___]]],
+		Null|{Hold[HoldPattern[MessageName[___]]], ___},
 		"Message" /. Options[Test]
-	];
-
-	messageArguments=optionOrDefault[
-		OptionValue[MessageArguments],
-		Null|_List,
-		"MessageArguments" /. Options[Test]
 	];
 
 	sandboxEnabled=optionOrDefault[
@@ -167,7 +160,7 @@ Test[description_String, expressionUnderTest_, expected_, ops:OptionsPattern[]]:
 	stateFunctions = setStateFunctions[stubs];
 	replacementOptions = setupTeardownOptions[Flatten[List[ops]]];
 
-	executableFunction=With[{insertMe1=message,insertMe2=messageArguments},
+	executableFunction=With[{insertMe1=message},
 		ReleaseHold[
 			Replace[
 				Replace[
@@ -259,6 +252,13 @@ Test[description_String, expressionUnderTest_, expected_, ops:OptionsPattern[]]:
 									]
 								];
 
+								(* Construct the UnitTestMessage if we didn't pass. *)
+								unitTestMessage = If[!passed&&!MatchQ[insertMe1,Null|Hold[Null]],
+									(* Essentially, this makes {Hold[MessageName], arg1, arg2,...} into Hold[MessageName, arg1, arg2, ...] *)
+									Fold[Append,insertMe1],
+									Null
+								];
+
 								(*Return a TestResultP for validation*)
 								result=testResult[
 									description,
@@ -291,13 +291,14 @@ Test[description_String, expressionUnderTest_, expected_, ops:OptionsPattern[]]:
 									tearDownTestMessages,
 									simTasks,
 									simObj,
-									sandboxEnabled
+									sandboxEnabled,
+									unitTestMessage
 								];
 							];
 
 							(* Throw a message if asked to do so and we didn't pass. *)
-							If[!passed&&!MatchQ[insertMe1,Null|Hold[Null]]&&MatchQ[ECL`$UnitTestMessages,True],
-								Message@@Fold[Append,insertMe1,insertMe2];
+							If[!passed&&!MatchQ[unitTestMessage,Null|Hold[Null]]&&MatchQ[ECL`$UnitTestMessages,True],
+								Message@@unitTestMessage;
 							];
 
 							(* Return our test result. *)
@@ -720,7 +721,8 @@ testResult[
 	teardownMessages:{Hold[Message[___]]...},
 	simulatedTasks:{___String},
 	simulationObj:Null|_HoldForm,
-	sandbox: (True | False)
+	sandbox: (True | False),
+	unitTestMessage: (Null | HoldForm[_] | HoldPattern[_])
 ]:=EmeraldTestResult[
 	Association[
 		Description->description,
@@ -751,7 +753,8 @@ testResult[
 		TearDownMessages->teardownMessages,
 		SimulatedTasks -> simulatedTasks,
 		Simulation -> simulationObj,
-		Sandbox -> sandbox
+		Sandbox -> sandbox,
+		UnitTestFailureMessage -> unitTestMessage
 	]
 ];
 

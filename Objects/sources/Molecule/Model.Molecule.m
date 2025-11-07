@@ -40,7 +40,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> Expression,
 			Pattern :> MoleculeP|_?ECL`StructureQ|_?ECL`StrandQ,
 			Description -> "The chemical structure that represents this molecule.",
-			Category -> "Organizational Information"
+			Category -> "Molecular Identifiers"
 		},
 		DeveloperObject -> {
 			Format -> Single,
@@ -93,7 +93,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> String,
 			Pattern :> _String,
 			Description -> "Unique Ingredient Identifier of this molecule, as given by the unified identification scheme of the FDA.",
-			Category -> "Organizational Information",
+			Category -> "Molecular Identifiers",
 			Abstract -> True
 		},
 		InChI -> {
@@ -101,7 +101,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> String,
 			Pattern :> InChIP,
 			Description -> "The International Chemical Identifier (InChI) that uniquely identifies this molecule.",
-			Category -> "Organizational Information",
+			Category -> "Molecular Identifiers",
 			Abstract -> True
 		},
 		InChIKey -> {
@@ -109,7 +109,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> String,
 			Pattern :> InChIKeyP,
 			Description -> "The hashed version of the International Chemical Identifier (InChI) that uniquely identifies this molecule.",
-			Category -> "Organizational Information",
+			Category -> "Molecular Identifiers",
 			Abstract -> True
 		},
 		PubChemID -> {
@@ -117,7 +117,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> Integer,
 			Pattern :> _Integer,
 			Description -> "The PubChem Compound ID that uniquely identifies this molecule in the PubChem database.",
-			Category -> "Organizational Information",
+			Category -> "Molecular Identifiers",
 			Abstract -> True
 		},
 		CAS -> {
@@ -125,7 +125,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> String,
 			Pattern :> CASNumberP,
 			Description -> "Chemical Abstracts Service (CAS) registry number for this molecule.",
-			Category -> "Organizational Information",
+			Category -> "Molecular Identifiers",
 			Abstract -> True
 		},
 		IUPAC -> {
@@ -133,7 +133,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> String,
 			Pattern :> _String,
 			Description -> "International Union of Pure and Applied Chemistry (IUPAC) name for this molecule.",
-			Category -> "Organizational Information",
+			Category -> "Molecular Identifiers",
 			Abstract -> True
 		},
 		MolecularFormula -> {
@@ -144,26 +144,19 @@ DefineObjectType[Model[Molecule], {
 			Category -> "Physical Properties",
 			Abstract -> True
 		},
-		Monatomic -> {
-			Format -> Single,
-			Class -> Boolean,
-			Pattern :> BooleanP,
-			Description -> "Indicates if this molecule consists of exactly one atom (e.g. He).",
-			Category -> "Physical Properties"
-		},
 		DetectionLabel -> {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates whether this molecule can be attached to another molecule and act as a tag for detection and quantification of that molecule through methods that don't require physical binding, such as fluorescence (e.g. Alexa Fluor 488).",
-			Category -> "Physical Properties"
+			Description -> "Indicates whether this molecule is typically attached to another molecule to act as a tag for detection and quantification of that molecule through methods that don't require physical binding, such as fluorescence (e.g. Alexa Fluor 488).",
+			Category -> "Molecular Labeling"
 		},
 		AffinityLabel -> {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates whether this molecule can be attached to another molecule and act as a tag for detection and quantification of that molecule through physical binding (e.g. His tag).",
-			Category -> "Physical Properties"
+			Description -> "Indicates whether this molecule is typically attached to another molecule to act as a tag for detection and quantification of that molecule through physical binding (e.g. His tag).",
+			Category -> "Molecular Labeling"
 		},
 		DetectionLabels -> {
 			Format -> Multiple,
@@ -191,7 +184,7 @@ DefineObjectType[Model[Molecule], {
 				Model[Molecule]
 			],
 			Description -> "Target molecules (e.g. proteins or antibodies) to which this molecule binds selectively.",
-			Category -> "Physical Properties",
+			Category -> "Molecular Labeling",
 			Abstract -> True
 		},
 		(* --- Physical Properties --- *)
@@ -264,7 +257,7 @@ DefineObjectType[Model[Molecule], {
 			Pattern :> ObjectP[Object[EmeraldCloudFile]],
 			Relation->Object[EmeraldCloudFile],
 			Description -> "An image depicting the molecule's chemical structure.",
-			Category -> "Physical Properties"
+			Category -> "Molecular Identifiers"
 		},
 		StructureFile -> {
 			Format -> Single,
@@ -272,7 +265,7 @@ DefineObjectType[Model[Molecule], {
 			Pattern :> ObjectP[Object[EmeraldCloudFile]],
 			Relation->Object[EmeraldCloudFile],
 			Description -> "A file that contains the molecule's chemical structure.",
-			Category -> "Physical Properties"
+			Category -> "Molecular Identifiers"
 		},
 		MeltingPoint -> {
 			Format -> Single,
@@ -351,14 +344,14 @@ DefineObjectType[Model[Molecule], {
 			Class -> Expression,
 			Pattern :> BooleanP,
 			Description -> "Indicates if this molecule is a enantiomer, that cannot be superposed on its mirror image by any combination of rotations and translations.",
-			Category -> "Physical Properties"
+			Category -> "Stereochemistry"
 		},
 		Racemic->{
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
 			Description -> "Indicates if this molecule represents a mixture of equal amounts of the two enantiomers of a chiral molecule.",
-			Category -> "Physical Properties"
+			Category -> "Stereochemistry"
 		},
 		EnantiomerForms->{(*Only in Racemic->True*)
 			Format -> Multiple,
@@ -366,7 +359,7 @@ DefineObjectType[Model[Molecule], {
 			Pattern :> _Link,
 			Relation -> Model[Molecule],
 			Description -> "If this model molecule is racemic (Racemic -> True), indicates the two models for the enantiomerically pure forms.",
-			Category -> "Physical Properties"
+			Category -> "Stereochemistry"
 		},
 		RacemicForm->{(*Only in Chiral->True*)
 			Format -> Single,
@@ -374,7 +367,7 @@ DefineObjectType[Model[Molecule], {
 			Pattern :> _Link,
 			Relation -> Model[Molecule],
 			Description -> "If this molecule represents one of a pair of enantiomers (Chiral -> True), indicates the model for its racemic form.",
-			Category -> "Physical Properties"
+			Category -> "Stereochemistry"
 		},
 		EnantiomerPair->{(*Only one, single field*)
 			Format -> Single,
@@ -382,7 +375,7 @@ DefineObjectType[Model[Molecule], {
 			Pattern :> _Link,
 			Relation -> Model[Molecule],
 			Description -> "If this molecule represents one of a pair of enantiomers (Chiral -> True), indicates the model for the alternative enantiomer of this molecule.",
-			Category -> "Physical Properties"
+			Category -> "Stereochemistry"
 		},
 
 		(* --- Health & Safety --- *)
@@ -397,14 +390,14 @@ DefineObjectType[Model[Molecule], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates if a pure sample of this molecule must be handled in a ventilated enclosures.",
+			Description -> "Indicates if a pure sample of this molecule must be handled in ventilated enclosures.",
 			Category -> "Health & Safety"
 		},
 		Flammable -> {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates if a pure sample of this molecule is easily set aflame at room temperature and pressure.",
+			Description -> "Indicates if a pure sample of this molecule is easily set aflame at room temperature and pressure. This corresponds to NFPA rating of 3 or greater.",
 			Category -> "Health & Safety"
 		},
 		Acid -> {
@@ -460,7 +453,7 @@ DefineObjectType[Model[Molecule], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates if exposure to this substance has the potential to cause serious and lasting harm. A substance is considered particularly harmful if it is categorized by any of the following GHS classifications (as found on a MSDS): Reproductive Toxicity (H340, H360, H362),  Acute Toxicity (H300, H310, H330, H370, H373), Carcinogenicity (H350).",
+			Description -> "Indicates if exposure to this substance has the potential to cause serious and lasting harm. A substance is considered particularly harmful if it is categorized by any of the following GHS classifications (as found on a MSDS): Reproductive Toxicity (H340, H360, H362),  Acute Toxicity (H300, H310, H330, H370, H373), Carcinogenicity (H350). Note that PHS designation primarily describes toxicity hazard and doesn't include other types of hazard such as water reactivity or being pyrophoric.",
 			Category -> "Health & Safety"
 		},
 		DrainDisposal -> {
@@ -496,7 +489,7 @@ DefineObjectType[Model[Molecule], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> NFPAP,
-			Description -> "The National Fire Protection Association (NFPA) 704 hazard diamond classification for this molecule.",
+			Description -> "The National Fire Protection Association (NFPA) 704 hazard diamond classification for the substance. The NFPA diamond standard is maintained by the United States National Fire Protection Association and summarizes, clockwise from top, Fire Hazard, Reactivity, Specific Hazard and Health Hazard of a substance.",
 			Category -> "Health & Safety"
 		},
 		DOTHazardClass -> {
@@ -533,7 +526,7 @@ DefineObjectType[Model[Molecule], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates if this molecule reacts or degrades in the presence of light.",
+			Description -> "Indicates if the sample reacts or degrades in the presence of light and requires storage in the dark.",
 			Category -> "Storage Information"
 		},
 
@@ -549,7 +542,7 @@ DefineObjectType[Model[Molecule], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates if pure samples of this molecule cannot be reliably aspirated or dispensed on an automated liquid handling robot.",
+			Description -> "Indicates if pure samples of this molecule cannot be reliably aspirated or dispensed on an automated liquid handling robot. Substances may be incompatible if they have a low boiling point, readily producing vapor, are highly viscous or are chemically incompatible with all tip types.",
 			Category -> "Compatibility"
 		},
 		PipettingMethod -> {
@@ -557,7 +550,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Model[Method,Pipetting],
-			Description -> "The pipetting parameters used to manipulate pure samples of this model.",
+			Description -> "The parameters describing how pure samples of this molecule should be manipulated by pipette, such as aspiration and dispensing rates.",
 			Category -> "Compatibility"
 		},
 		UltrasonicIncompatible -> {
@@ -620,13 +613,30 @@ DefineObjectType[Model[Molecule], {
 			Description -> "Literature references that discuss this molecule.",
 			Category -> "Analysis & Reports"
 		},
-		AdditionalInformation -> {
+		MiscibleLiquids -> {
 			Format -> Multiple,
-			Class -> {String, Date},
-			Pattern :> {_String, _?DateObjectQ},
-			Description -> "Supplementary information recorded from the UploadMolecule function. These information usually records the user supplied input and options, providing additional information for verification.",
-			Headers -> {"Information", "Date Added"},
-			Category -> "Hidden"
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Molecule][MiscibleLiquids], Model[Sample][MiscibleLiquids]],
+			Description -> "Solvent or solvent mixtures with which this molecule is able to mix with and form a homogenous solution regardless of the ratio.",
+			Category -> "Physical Properties"
+		},
+		WaterSolubility -> {
+			Format -> Multiple,
+			Class -> {Real, Real},
+			Pattern :> {GreaterP[0 Kelvin], GreaterP[0 Gram/Milliliter]},
+			Units -> {Celsius, Gram/Milliliter},
+			Description -> "The thermodynamic upper-bound for dissolution of this molecule in pure water at the specified temperature.",
+			Category -> "Physical Properties",
+			Headers -> {"Temperature", "Solubility"}
+		},
+		LD50 -> {
+			Format -> Multiple,
+			Class -> {Real, Expression, Expression},
+			Pattern :> {GreaterP[0], AnimalP, DosageRouteP},
+			Description -> "The dose for which a half the members of a given population dies. Dose is recorded as a unitless value but corresponds to dosage mass per animal mass.",
+			Category -> "Health & Safety",
+			Headers -> {"Dose", "Animal", "Route"}
 		}
 	}
 }];

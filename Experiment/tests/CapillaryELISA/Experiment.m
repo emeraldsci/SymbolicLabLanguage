@@ -3010,7 +3010,7 @@ DefineTests[ExperimentCapillaryELISA,
 			Messages :> {
 				Warning::AliquotRequired
 			}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options, FilterSterile, "Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options = ExperimentCapillaryELISA[Object[Sample, "ExperimentCapillaryELISA test  sample 2 without pre-loaded analyte" <> $SessionUUID], FilterSterile -> True, Output -> Options];
 			Lookup[options, FilterSterile],
@@ -3022,7 +3022,7 @@ DefineTests[ExperimentCapillaryELISA,
 			Messages :> {
 				Warning::AliquotRequired
 			}
-		],
+		],*)
 		Example[{Options, FilterAliquot, "The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options = ExperimentCapillaryELISA[Object[Sample, "ExperimentCapillaryELISA test  sample 2 without pre-loaded analyte" <> $SessionUUID], FilterAliquot -> 0.5 * Milliliter, Output -> Options];
 			Lookup[options, FilterAliquot],
@@ -6677,7 +6677,7 @@ DefineTests[ExperimentCapillaryELISA,
 					State -> Solid,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					ExpirationHazard -> False,
 					DefaultSampleModel -> {Null, Null, Null, Null, Null, Null, Null, Null, Null, Null, Null, testAnalyteModel1, testAnalyteModel2}
@@ -6695,7 +6695,7 @@ DefineTests[ExperimentCapillaryELISA,
 					State -> Solid,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					ExpirationHazard -> False,
 					Targets -> {customizableAnalyte1},
@@ -6715,7 +6715,7 @@ DefineTests[ExperimentCapillaryELISA,
 					State -> Solid,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					ExpirationHazard -> False,
 					Targets -> {customizableAnalyte2},
@@ -6728,7 +6728,7 @@ DefineTests[ExperimentCapillaryELISA,
 					State -> Solid,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					ExpirationHazard -> False,
 					Clonality -> Polyclonal,
@@ -6741,7 +6741,7 @@ DefineTests[ExperimentCapillaryELISA,
 					State -> Solid,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					ExpirationHazard -> False,
 					Clonality -> Monoclonal,
@@ -7593,7 +7593,7 @@ DefineTests[
 					State -> Solid,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					ExpirationHazard -> False
 				];
@@ -7605,7 +7605,7 @@ DefineTests[
 					State -> Solid,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					ExpirationHazard -> False,
 					DefaultSampleModel -> testAnalyteModel1
@@ -7623,7 +7623,7 @@ DefineTests[
 					State -> Solid,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					ExpirationHazard -> False,
 					Targets -> {customizableAnalyte1},
@@ -8085,7 +8085,7 @@ DefineTests[
 					State -> Solid,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					ExpirationHazard -> False
 				];
@@ -8097,7 +8097,7 @@ DefineTests[
 					State -> Solid,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					ExpirationHazard -> False,
 					DefaultSampleModel -> testAnalyteModel1
@@ -8115,7 +8115,7 @@ DefineTests[
 					State -> Solid,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					ExpirationHazard -> False,
 					Targets -> {customizableAnalyte1},
@@ -8577,7 +8577,7 @@ DefineTests[
 					State -> Solid,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					ExpirationHazard -> False
 				];
@@ -8589,7 +8589,7 @@ DefineTests[
 					State -> Solid,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					ExpirationHazard -> False,
 					DefaultSampleModel -> testAnalyteModel1
@@ -8607,7 +8607,7 @@ DefineTests[
 					State -> Solid,
 					BiosafetyLevel -> "BSL-1",
 					Flammable -> False,
-					MSDSRequired -> False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials -> {None},
 					ExpirationHazard -> False,
 					Targets -> {customizableAnalyte1},

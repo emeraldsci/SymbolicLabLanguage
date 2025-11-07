@@ -40,14 +40,14 @@ DefineObjectType[Object[Instrument, LiquidLevelDetector], {
 		MinSensorArmHeight -> {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model],MinSensorArmHeight]],
-			Pattern :> GreaterEqualP[0*Centi*Meter],
+			Pattern :> GreaterEqualP[0*Milli*Meter],
 			Description -> "The minimum height that the sensor arm can physically be set to.",
 			Category -> "Sensor Information"
 		},
 		MaxSensorArmHeight -> {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model],MaxSensorArmHeight]],
-			Pattern :> GreaterEqualP[0*Centi*Meter],
+			Pattern :> GreaterEqualP[0*Milli*Meter],
 			Description -> "The maximum height that the sensor arm can physically be set to.",
 			Category -> "Sensor Information"
 		},

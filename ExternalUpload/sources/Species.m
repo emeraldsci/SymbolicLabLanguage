@@ -22,59 +22,66 @@ DefineOptions[UploadSpecies,
 			IndexMatchingInput -> "Input Data",
 			{
 				OptionName -> Name,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> String, Pattern :> _String, Size -> Line],
 				Description -> "The name of the identity model.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Organizational Information"
 			},
 			{
 				OptionName -> DefaultSampleModel,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Sample]]],
 				Description -> "Specifies the model of sample that will be used if this model is specified to be used in an experiment.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Organizational Information"
 			},
 			{
 				OptionName -> Synonyms,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Adder[Widget[Type -> String, Pattern :> _String, Size -> Word]],
 				Description -> "List of possible alternative names this model goes by.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Organizational Information"
 			},
 			{
 				OptionName -> Cells,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Adder[Widget[Type -> Object, Pattern :> ObjectP[Model[Cell]]]],
 				Description -> "The cells that comprise this species.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Organizational Information"
 			},
 			{
 				OptionName -> Bacteria,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Adder[Widget[Type -> Object, Pattern :> ObjectP[Model[Cell, Bacteria]]]],
 				Description -> "The strains of bacteria that this species carries.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Organizational Information"
 			},
 			{
 				OptionName -> Tissues,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Adder[Widget[Type -> Object, Pattern :> ObjectP[Model[Tissue]]]],
 				Description -> "The tissues that are found in this species.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Organizational Information"
 			},
 
 			{
 				OptionName -> ReferenceImages,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Adder[Widget[Type -> Object, Pattern :> ObjectP[Object[Data]]]],
 				Description -> "Reference microscope images exemplifying the typical appearance of this tissue.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Experimental Results"
 			}
 		]
@@ -86,9 +93,9 @@ DefineOptions[UploadSpecies,
 ];
 
 
-InstallDefaultUploadFunction[UploadSpecies, Model[Species]];
-InstallValidQFunction[UploadSpecies, Model[Species]];
-InstallOptionsFunction[UploadSpecies, Model[Species]];
+installDefaultUploadFunction[UploadSpecies, Model[Species]];
+installDefaultValidQFunction[UploadSpecies, Model[Species]];
+installDefaultOptionsFunction[UploadSpecies, Model[Species]];
 
 InstallIdentityModelTests[
 	UploadSpecies,

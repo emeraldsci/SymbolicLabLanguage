@@ -82,6 +82,14 @@ DefineObjectType[Model[Container,ProteinCapillaryElectrophoresisCartridge],{
 			Description->"The substance that coats the capillary in the cartridge.",
 			Category->"Physical Properties"
 		},
+		Aperture -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Meter],
+			Units -> Meter Milli,
+			Description -> "The minimum opening diameter encountered when aspirating from the container.",
+			Category -> "Dimensions & Positions"
+		},
 		(* Operations Information *)
 		MaxInjections->{
 			Format->Single,

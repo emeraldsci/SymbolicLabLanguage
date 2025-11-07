@@ -114,23 +114,23 @@ DefineObjectType[Object[UnitOperation,Dissolution],{
 		},
 
 		(* --- Mixing Category --- *)
-		Shaft->{
+		Agitator->{
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Alternatives[Model[Item,DissolutionShaft],Object[Item,DissolutionShaft]],
+			Relation->Alternatives[Model[Item,Agitator],Object[Item,Agitator]],
 			IndexMatching->SampleLink,
-			Description->"For each member of SampleLink, the mixing implement used to transfer the rotational energy from the motor to the Affector that is performing the mixing of the dissolution medium.",
+			Description->"For each member of SampleLink, the implement used to transfer the rotational energy from the shaft to the dissolution medium.",
 			Category->"Mixing"
 		},
 		MixingStrategy->{
 			Format->Single,
 			Class->Expression,
-			Pattern:>(Paddle|Basket),
+			Pattern:>DissolutionStrategyP,
 			Description->"The type of the mixing implement used to transfer the rotational energy from the motor to the dissolution media to facilitate the proper mixing.",
 			Category->"Mixing"
 		},
-		ShaftMaterial->{
+		AgitatorMaterial->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>ShaftMaterialP,
@@ -159,7 +159,7 @@ DefineObjectType[Object[UnitOperation,Dissolution],{
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Alternatives[Object[Item,Sinker],Model[Item,Sinker]],
+			Relation->Alternatives[Object[Container,Sinker],Model[Container,Sinker]],
 			IndexMatching->SampleLink,
 			Description->"For each member of SampleLink, the weighted enclosure used to keep the oral solid dosage below the surface of the media during the experiment to facilitate proper mixing.",
 			Category->"Mixing"
@@ -202,6 +202,20 @@ DefineObjectType[Object[UnitOperation,Dissolution],{
 		},
 
 		(* --- Sampling Category --- *)
+		Sampling->{
+			Format->Single,
+			Class->Boolean,
+			Pattern:>BooleanP,
+			Description->"Indicates if samples of the dissolution media should be taken during the experiment. These samples are commonly used to determine the amount of the sample that was dissolved in the medium at a given time point.",
+			Category->"Sampling"
+		},
+		NumberOfAliquots->{
+			Format->Single,
+			Class->Integer,
+			Pattern:>GreaterEqualP[1,1],
+			Description->"Indicates the number of samples taken from the dissolution medium during the experiment.",
+			Category->"Sampling"
+		},
 		SamplingTime->{
 			Format->Multiple,
 			Class->Real,
@@ -251,7 +265,7 @@ DefineObjectType[Object[UnitOperation,Dissolution],{
 			Description->"The volume of the liquid from the dissolution vessel used to flush the sampling lines in the autosampler at each sampling time point prior to dispensing SamplesOut.",
 			Category->"Sampling"
 		},
-		SamplingMediumRecycle->{
+		RecycleSamplingMedium->{
 			Format->Single,
 			Class->Boolean,
 			Pattern:>BooleanP,
@@ -265,12 +279,12 @@ DefineObjectType[Object[UnitOperation,Dissolution],{
 			Description->"Indicate the number of times the system wash cycle is performed between each sampling timepoint.",
 			Category->"Sampling"
 		},
-		SamplingFlowRate->{
+		CollectionFlowRate->{
 			Format->Single,
 			Class->Real,
 			Pattern:>GreaterP[0 * Milli * Liter / Second],
 			Units->Milli * Liter / Second,
-			Description->"The speed of the syringes at which the sample medium is aliquoted.",
+			Description->"The speed at which the medium is aspirated during the experiment.",
 			Category->"Sampling"
 		},
 		SamplingFlushVolume->{
@@ -281,26 +295,20 @@ DefineObjectType[Object[UnitOperation,Dissolution],{
 			Description->"The volume of the flush medium used to flush the sampling lines in the autosampler at each sampling time point prior to dispensing SamplesOut.",
 			Category->"Sampling"
 		},
-		SamplingFlushFlowRate->{
+		DispenseFlowRate->{
 			Format->Single,
 			Class->Real,
 			Pattern:>GreaterP[0 * Milli * Liter / Second],
 			Units->Milli * Liter / Second,
-			Description->"The speed of the syringes at which the flush medium is pulled.",
+			Description->"The speed at which the medium is dispensed during the experiment.",
 			Category->"Sampling"
 		},
-		Sampling->{
+		VesselReturnFlowRate->{
 			Format->Single,
-			Class->Boolean,
-			Pattern:>BooleanP,
-			Description->"Indicates if samples of the dissolution media should be taken during the experiment. These samples are commonly used to determine the amount of the sample that was dissolved in the medium at a given time point.",
-			Category->"Sampling"
-		},
-		NumberOfSamples->{
-			Format->Single,
-			Class->Integer,
-			Pattern:>GreaterEqualP[1,1],
-			Description->"Indicates the number of aliquots taken from the dissolution medium during the experiment.",
+			Class->Real,
+			Pattern:>GreaterP[0 * Milli * Liter / Second],
+			Units->Milli * Liter / Second,
+			Description->"The speed at which the medium is returned to the dissolution vessel.",
 			Category->"Sampling"
 		},
 		NumberOfSamplingFlushes->{
@@ -320,18 +328,18 @@ DefineObjectType[Object[UnitOperation,Dissolution],{
 		},
 
 		(* --- Sampling Filtration Category --- *)
-		NumberOfFilterUse->{
+		NumberOfFilterUses->{
 			Format->Single,
 			Class->Real,
 			Pattern:>GreaterP[1,1],
 			Description->"The number of times the AutosamplerFilter is used before being replaced with a new one.",
 			Category->"Sampling Filtration"
 		},
-		FilterSample->{
-			Format->Single,
+		FilterSamples->{
+			Format->Multiple,
 			Class->Expression,
-			Pattern:>Alternatives[InLineFiltration,AutosamplerFiltration,DualFiltration,None],
-			Description->"Indicates if the sample of the dissolution media is filtered when transferring to the ContainerOut. When the samples are removed from the dissolution vessel, they are optionally filtered by an InLineFilter prior to entering the autosampler. Additionally, the samples are optionally filtered by an AutosamplerFilter prior to the liquid being dispensed into the ContainerOut. The AutosamplerFilter is optionally changed for each aliquot while the InLineFilter is used for the duration of the experiment. Refer to the instrument diagram of the liquid flow path during the instrument operation for more details.",
+			Pattern:>DissolutionFiltrationTypeP,
+			Description->"Indicates the types of filtration applied to the dissolution media samples during transfer to ContainerOut. Accepts a list of filtration types that are applied in sequence. CannulaTipFiltration: filters during sample transfer through cannula tip. InLineFiltration: filters immediately after removal from vessel before entering autosampler. AutosamplerFiltration: filters before dispensing into ContainerOut (changed between aliquots). Multiple types can be specified as a list (e.g., {InLineFiltration, AutosamplerFiltration}).",
 			Category->"Sampling Filtration"
 		},
 		AutosamplerFilter->{
@@ -342,6 +350,21 @@ DefineObjectType[Object[UnitOperation,Dissolution],{
 			Description->"The filter disks used to filter the aliquots of samples that are taken from the dissolution medium at the specified time points before the sample is dispensed into the ContainerOut. This filter is applied after the InLineFilter and is optionally changed between each aliquot.",
 			Category->"Sampling Filtration"
 		},
+		AutosamplerFilterMaterial->{
+			Format->Single,
+			Class->Expression,
+			Pattern:>FilterMaterialP,
+			Description->"The material of the filter used to filter the aliquots of samples that are taken from the dissolution medium at the specified time points before the sample is dispensed into the ContainerOut. This filter is applied after the InLineFilter and is optionally changed between each aliquot.",
+			Category->"Sampling Filtration"
+		},
+		AutosamplerFilterPoreSize->{
+			Format->Single,
+			Class->Real,
+			Pattern:>GreaterP[0 * Micron],
+			Units->Micron,
+			Description->"The pore size of the filter used to filter the aliquots of samples that are taken from the dissolution medium at the specified time points before the sample is dispensed into the ContainerOut. This filter is applied after the InLineFilter and is optionally changed between each aliquot.",
+			Category->"Sampling Filtration"
+		},
 		InLineFilter->{
 			Format->Multiple,
 			Class->Link,
@@ -350,6 +373,61 @@ DefineObjectType[Object[UnitOperation,Dissolution],{
 			IndexMatching->SampleLink,
 			Description->"For each member of SampleLink, the filter that is used to remove impurities from the samples right after they are removed from the dissolution vessel and prior to the liquid entering the autosampler for optional secondary filtration.",
 			Category->"Sampling Filtration"
+		},
+		InLineFilterMaterial->{
+			Format->Single,
+			Class->Expression,
+			Pattern:>FilterMaterialP,
+			Description->"The material of the filter used to filter the aliquots of samples that are taken from the dissolution medium at the specified time points before the sample is dispensed into the ContainerOut. This filter is applied after the InLineFilter and is optionally changed between each aliquot.",
+			Category->"Sampling Filtration"
+		},
+		InLineFilterPoreSize->{
+			Format->Single,
+			Class->Real,
+			Pattern:>GreaterP[0 * Micron],
+			Units->Micron,
+			Description->"The pore size of the filter used to filter the aliquots of samples that are taken from the dissolution medium at the specified time points before the sample is dispensed into the ContainerOut. This filter is applied after the InLineFilter and is optionally changed between each aliquot.",
+			Category->"Sampling Filtration"
+		},
+		CannulaTipFilter->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[Object[Item,Filter],Model[Item,Filter]],
+			Description->"The filters attached to cannula tips used to filter samples during transfer from the dissolution vessel to the collection container.",
+			Category->"Sampling Filtration"
+		},
+		CannulaTipFilterMaterial->{
+			Format->Single,
+			Class->Expression,
+			Pattern:>FilterMembraneMaterialP,
+			Description->"The material of the cannula tip filters used during sample transfer.",
+			Category->"Sampling Filtration"
+		},
+		CannulaTipFilterPoreSize->{
+			Format->Single,
+			Class->Real,
+			Pattern:>GreaterP[0 * Micron],
+			Units->Micron,
+			Description->"The pore size of the cannula tip filters used during sample transfer.",
+			Category->"Sampling Filtration"
+		},
+
+		(* --- Degas Category --- *)
+		Degas->{
+			Format->Single,
+			Class->Boolean,
+			Pattern:>BooleanP,
+			Description->"Indicates if the dissolution medium should be degassed by bubbling Helium prior to the experiment.",
+			Category->"Degas"
+		},
+		DegasTime->{
+			Format->Single,
+			Class->Real,
+			Pattern:>GreaterEqualP[0 * Minute],
+			Units->Minute,
+			Description->"The duration of time the dissolution medium is degassed by bubbling Helium prior to the experiment.",
+			Category->"Degas"
 		},
 
 		(* --- Experimental Results Category --- *)

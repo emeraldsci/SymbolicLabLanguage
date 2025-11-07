@@ -1851,6 +1851,19 @@ DefineTests[ExperimentAliquot,
 				MeasureWeight -> False
 			],
 			ObjectP[Object[Protocol, RoboticCellPreparation]]
+		],
+		Test["Throw a warning if any option is specified to use an object that is missing or expired:",
+			ExperimentAliquot[
+				Object[Sample, "ExperimentAliquot New Test Chemical 1 (1.5 mL, 5 mL)"<>$SessionUUID],
+				1 Millimolar,
+				AssayVolume -> 200 Microliter,
+				ConcentratedBuffer -> Object[Sample, "ExperimentAliquot Missing buffer sample 1" <> $SessionUUID],
+				BufferDiluent -> Object[Sample, "ExperimentAliquot Expired buffer sample 1" <> $SessionUUID],
+				BufferDilutionFactor-> 10,
+				Output -> Options
+			],
+			{__Rule},
+			Messages :> {Warning::OptionContainsUnusableObject}
 		]
 	},
 	Stubs :> {
@@ -1897,6 +1910,8 @@ DefineTests[ExperimentAliquot,
 				Object[Container, Vessel, "Test container 20 for ExperimentAliquot Tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 21 for ExperimentAliquot Tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 22 (cell sample) for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 23 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 24 for ExperimentAliquot Tests" <> $SessionUUID],
 
 				Object[Container, Plate, "Test plate 1 for ExperimentAliquot Tests" <> $SessionUUID],
 				Object[Container, Plate, "Test plate 2 for ExperimentAliquot Tests" <> $SessionUUID],
@@ -1931,6 +1946,8 @@ DefineTests[ExperimentAliquot,
 				Object[Sample, "ExperimentAliquot Test Sample 1 that is incompatible with glass " <> $SessionUUID],
 				Object[Sample, "ExperimentAliquot Test Sample 2 that is incompatible with glass " <> $SessionUUID],
 				Object[Sample, "ExperimentAliquot Test cell Sample 1 " <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot Missing buffer sample 1" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot Expired buffer sample 1" <> $SessionUUID],
 
 				Object[Protocol, RoboticSamplePreparation, "Previous Aliquot SamplePreparation" <> $SessionUUID]
 			};
@@ -1943,10 +1960,10 @@ DefineTests[ExperimentAliquot,
 					templateProt,
 					molarStockSolutionModel, massConcStockSolutionModel,
 					testBench,
-					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, container13, container14, container15, container16, container17, container18, container19, container20, container21, container22,
+					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, container13, container14, container15, container16, container17, container18, container19, container20, container21, container22, container23, container24,
 					plate1, plate2, plate3,
 					sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12, sample13, sample14, sample15, sample16, sample17, sample18, sample19, sample20, sample21,
-					sample22, sample23, sample24, sample25, sample26,
+					sample22, sample23, sample24, sample25, sample26, missingSample, expiredSample,
 
 					allObjs
 				},
@@ -2005,7 +2022,9 @@ DefineTests[ExperimentAliquot,
 					plate1,
 					plate2,
 					plate3,
-					container22
+					container22,
+					container23,
+					container24
 				} = UploadSample[
 					{
 						Model[Container, Vessel, "2mL Tube"],
@@ -2032,9 +2051,13 @@ DefineTests[ExperimentAliquot,
 						Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 						Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 						Model[Container, Plate, "6-well Tissue Culture Plate"],
-						Model[Container, Vessel, "2mL Tube"]
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "50mL Tube"],
+						Model[Container, Vessel, "50mL Tube"]
 					},
 					{
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
 						{"Work Surface", testBench},
 						{"Work Surface", testBench},
 						{"Work Surface", testBench},
@@ -2086,6 +2109,8 @@ DefineTests[ExperimentAliquot,
 						Available,
 						Available,
 						Available,
+						Available,
+						Available,
 						Available
 					},
 					Name -> {
@@ -2113,7 +2138,9 @@ DefineTests[ExperimentAliquot,
 						"Test plate 1 for ExperimentAliquot Tests" <> $SessionUUID,
 						"Test plate 2 for ExperimentAliquot Tests" <> $SessionUUID,
 						"Test full plate 3 for ExperimentAliquot Tests" <> $SessionUUID,
-						"Test container 22 (cell sample) for ExperimentAliquot Tests" <> $SessionUUID
+						"Test container 22 (cell sample) for ExperimentAliquot Tests" <> $SessionUUID,
+						"Test container 23 for ExperimentAliquot Tests" <> $SessionUUID,
+						"Test container 24 for ExperimentAliquot Tests" <> $SessionUUID
 					}
 				];
 				{
@@ -2142,7 +2169,9 @@ DefineTests[ExperimentAliquot,
 					sample23,
 					sample24,
 					sample25,
-					sample26
+					sample26,
+					missingSample,
+					expiredSample
 				} = UploadSample[
 					{
 						Model[Sample, "Milli-Q water"],
@@ -2170,7 +2199,9 @@ DefineTests[ExperimentAliquot,
 						Model[Sample, "Sulfuric acid"],
 						Model[Sample, "Triethylamine trihydrofluoride"],
 						Model[Sample, "Triethylamine trihydrofluoride"],
-						Model[Sample, "E.coli MG1655"]
+						Model[Sample, "E.coli MG1655"],
+						Model[Sample, "Triethylamine trihydrofluoride"],
+						Model[Sample, "Milli-Q water"]
 					},
 					{
 						{"A1", container},
@@ -2198,7 +2229,9 @@ DefineTests[ExperimentAliquot,
 						{"A1", container19},
 						{"A1", container20},
 						{"A1", container21},
-						{"A1", container22}
+						{"A1", container22},
+						{"A1", container23},
+						{"A1", container24}
 					},
 					InitialAmount -> {
 						200 * Microliter,
@@ -2226,7 +2259,9 @@ DefineTests[ExperimentAliquot,
 						10 * Milliliter,
 						40 * Milliliter,
 						40 * Milliliter,
-						1 * Milliliter
+						1 * Milliliter,
+						25 Milliliter,
+						25 Milliliter
 					},
 					Name -> {
 						"ExperimentAliquot New Test Chemical 1 (200 uL)" <> $SessionUUID,
@@ -2254,14 +2289,16 @@ DefineTests[ExperimentAliquot,
 						"ExperimentAliquot Test Sample that is Liquid Handler Incompatible" <> $SessionUUID,
 						"ExperimentAliquot Test Sample 1 that is incompatible with glass " <> $SessionUUID,
 						"ExperimentAliquot Test Sample 2 that is incompatible with glass " <> $SessionUUID,
-						"ExperimentAliquot Test cell Sample 1 " <> $SessionUUID
+						"ExperimentAliquot Test cell Sample 1 " <> $SessionUUID,
+						"ExperimentAliquot Missing buffer sample 1" <> $SessionUUID,
+						"ExperimentAliquot Expired buffer sample 1" <> $SessionUUID
 					}
 				];
 
 
 				allObjs = {
-					plate1, plate2, plate3, container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, container13, container14, container15, container16, container17, container18, container19, container20, container21,
-					sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12, sample13, sample14, sample15, sample16, sample17, sample18, sample19, sample20, sample21, sample22, sample23, sample24, sample25, sample26
+					plate1, plate2, plate3, container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, container13, container14, container15, container16, container17, container18, container19, container20, container21, container22, container23, container24,
+					sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12, sample13, sample14, sample15, sample16, sample17, sample18, sample19, sample20, sample21, sample22, sample23, sample24, sample25, sample26, missingSample, expiredSample
 				};
 
 				(* get rid of the Model field for these samples so that we can make sure everything works when that is the case *)
@@ -2299,7 +2336,20 @@ DefineTests[ExperimentAliquot,
 							{3 Milligram / Milliliter, Link[Model[Molecule, "Sodium Chloride"]], Now}
 						}
 					|>,
-					<|Type -> Object[Protocol, HPLC], Name -> "ExperimentAliquot HPLC parent" <> $SessionUUID, DeveloperObject -> True|>
+					<|
+						Type -> Object[Protocol, HPLC],
+						Name -> "ExperimentAliquot HPLC parent" <> $SessionUUID,
+						DeveloperObject -> True
+					|>,
+					<|
+						Object -> missingSample,
+						Missing -> True
+					|>,
+					<|
+						Object -> missingSample,
+						Expires -> True,
+						ExpirationDate -> (Now - 1 Year)
+					|>
 				}]];
 				UploadSampleStatus[sample13, Discarded, FastTrack -> True];
 
@@ -2338,6 +2388,8 @@ DefineTests[ExperimentAliquot,
 				Object[Container, Vessel, "Test container 20 for ExperimentAliquot Tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 21 for ExperimentAliquot Tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 22 (cell sample) for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 23 for ExperimentAliquot Tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 24 for ExperimentAliquot Tests" <> $SessionUUID],
 
 				Object[Container, Plate, "Test plate 1 for ExperimentAliquot Tests" <> $SessionUUID],
 				Object[Container, Plate, "Test plate 2 for ExperimentAliquot Tests" <> $SessionUUID],
@@ -2372,6 +2424,8 @@ DefineTests[ExperimentAliquot,
 				Object[Sample, "ExperimentAliquot Test Sample 1 that is incompatible with glass " <> $SessionUUID],
 				Object[Sample, "ExperimentAliquot Test Sample 2 that is incompatible with glass " <> $SessionUUID],
 				Object[Sample, "ExperimentAliquot Test cell Sample 1 " <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot Missing buffer sample 1" <> $SessionUUID],
+				Object[Sample, "ExperimentAliquot Expired buffer sample 1" <> $SessionUUID],
 
 				Object[Protocol, RoboticSamplePreparation, "Previous Aliquot SamplePreparation" <> $SessionUUID]
 			};

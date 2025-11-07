@@ -604,7 +604,7 @@ DefineOptions[ExperimentHPLC,
 				OptionName -> InjectionVolume,
 				Default -> Automatic,
 				Description -> "The physical quantity of sample loaded into the flow path for measurement and/or collection.",
-				ResolutionDescription -> "Automatically defaults to the lesser of 10 uL or 90% of the available sample volume for Analytical measurement, lesser of 500 uL or 90% of the available sample volume for Semipreparative measurement and lesser of 5mL or 90% of available sample volume for Preparative measurement.",
+				ResolutionDescription -> "Automatically defaults to the lesser of 10 uL or 90% of the available sample volume for Analytical measurement, lesser of 500 uL or 90% of the available sample volume for Semipreparative measurement and lesser of 5mL or 90% of available sample volume for Preparative measurement. Analytical measurements performed on  Model[Instrument, HPLC, \"Agilent 1290 Infinity II LC System\"] resolve to 200 uL or 90% of the sample volume. If these volumes exceed the instrument limitations than the max volume the instrument is capable of injecting is set instead.",
 				AllowNull -> False,
 				Widget -> Widget[
 					Type -> Quantity,
@@ -4088,6 +4088,16 @@ DefineOptions[ExperimentHPLC,
 			Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
 			Category -> "Post Experiment"
 		},
+		{
+			OptionName -> InjectionSampleCentrifugeOptions,
+			Default -> Automatic,
+			Description -> "The options used to centrifuge the liquid samples prepared in the sub SamplePreparationProtocols prior to being placed into the HPLC autosampler.",
+			ResolutionDescription -> "Automatically set to {Intensity -> Automatic, Time -> 5 Minute, Incubate -> False, Mix -> False, Filter -> False, Aliquot -> False, ImageSample -> False, MeasureVolume -> False} for Analytical and Semi-preparative scale instruments.",
+			(* Null indicates to skip centrifugation. *)
+			AllowNull -> True,
+			Widget -> Widget[Type -> Expression, Pattern :> {OptionsPattern[ExperimentCentrifuge]}, Size -> Paragraph],
+			Category -> "Hidden"
+		},
 		SimulationOption,
 		SamplesInStorageOptions,
 		SamplesOutStorageOptions
@@ -4226,7 +4236,6 @@ Error::InvalidHPLCFluorescenceFlowCellTemperature = "The fluorescence flow cell 
 Error::ConflictRefractiveIndexMethod = "For `3` `4`, when DifferentialRefractiveIndex method is selected in `1`, the gradient in `2` should have the differential refractive index reference loading closed. Please select RefractiveIndex instead or choose a different gradient.";
 Warning::RepeatedDetectors = "The specified Detector option `1` has repeated entries. The repeat entries have been removed.";
 
-
 (* ::Subsection:: *)
 (* ExperimentHPLC Constants *)
 
@@ -4266,7 +4275,9 @@ $ChromatographyLCCompatibleVials = {
 	(* "Polypropylene HPLC vial (high recovery)" *)
 	Model[Container, Vessel, "id:qdkmxz0A884Y"],
 	(* "PFAS Testing Vials, Agilent" *)
-	Model[Container, Vessel, "id:o1k9jAoPw5RN"]
+	Model[Container, Vessel, "id:o1k9jAoPw5RN"],
+	(* "2mL HPLC clear vial, flat bottom" *)
+	Model[Container, Vessel, "id:O81aEBvqN1Ep"]
 };
 
 $ChromatographyLCCompatibleVialsNamed = {
@@ -4963,7 +4974,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		groupedAliquotingSamplesTuples, volumeFitAliquotContainerQ,
 		preresolvedConsolidateAliquots, invalidContainerModelBools,
 		uniqueAliquotableSamples, uniqueNonAliquotablePlates,
-		uniqueNonAliquotableVessels, uniqueNonAliquotableSmallVessels, uniqueNonAliquotableLargeVessels, uniqueNonSuitableContainers,
+		uniqueNonAliquotableVessels, uniqueAliquotableVessels, uniqueNonAliquotableSmallVessels, uniqueNonAliquotableLargeVessels, uniqueNonSuitableContainers,
 		defaultStandardBlankContainer,
 		standardBlankContainerMaxVolume, standardBlankSampleMaxVolume,
 		standardInjectionTuples, blankInjectionTuples,
@@ -5263,7 +5274,8 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		injectionTemperatureRoundedAssociation, injectionTemperatureRoundedTests,
 		injectionVolumeRoundedAssociation, injectionVolumeRoundedTests,
 		roundedInjectionTable, instrumentMaxColumnOD,
-		absorbanceWavelengthInstruments, excitationWavelengthInstruments, emissionWavelengthInstruments
+		absorbanceWavelengthInstruments, excitationWavelengthInstruments, emissionWavelengthInstruments,
+		specifiedInjectionSampleCentrifugeOptions, resolvedInjectionSampleCentrifugeOptions
 	},
 
 	(* Determine the requested return value from the function *)
@@ -10412,15 +10424,20 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 
 	(* Find the possible injection volume range *)
 	defaultInjectionVolume = Which[
-		MatchQ[resolvedScale, Preparative], 5 Milliliter, (* Model[Instrument, HPLC, "Agilent 1290 Infinity II LC System"] *)
+    (* Model[Instrument, HPLC, "Agilent 1290 Infinity II LC System"] *)
+		MatchQ[resolvedScale, Preparative],
+    5 Milliliter,
 		(* Agilent SemiPrep at CMU and Dionex max injection volume = 500 Microliter *)
-		MatchQ[resolvedScale, SemiPreparative], 500 Microliter,
-		MatchQ[resolvedScale, Analytical],
-		If[!NullQ[specifiedInstrumentModelPackets] && MemberQ[Lookup[specifiedInstrumentModelPackets, Object], prepAgilentHPLCPattern],
-			200 Microliter, (* For Model[Instrument, HPLC, "Agilent 1290 Infinity II LC System"] Analytical runs *)
-			10 Microliter
-		],
-		True, 10 Microliter
+		MatchQ[resolvedScale, SemiPreparative],
+    500 Microliter,
+    (* Otherwise we are doing Analytical scale.. *)
+    (* For Analytical done on prep-Agilent: *)
+		!NullQ[specifiedInstrumentModelPackets] && MemberQ[Lookup[specifiedInstrumentModelPackets, Object], prepAgilentHPLCPattern],
+    200 Microliter, (* For Model[Instrument, HPLC, "Agilent 1290 Infinity II LC System"] Analytical runs *)
+		!NullQ[specifiedInstrumentModelPackets],
+		Min[Flatten[{Lookup[specifiedInstrumentModelPackets, MaxSampleVolume, 10 Microliter], 10 Microliter}]],
+		True,
+		10 Microliter
 	];
 
 	(* Extract our the Injection Volume from the InjectionTable *)
@@ -10758,6 +10775,12 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		{False, ObjectP[$ChromatographyLCCompatibleVials]}
 	];
 
+	(* Need anything that is aliquotable too *)
+	uniqueAliquotableVessels = Complement[
+		Cases[simulatedSampleContainers,Except[ObjectP[Object[Container, Plate]]]],
+		uniqueNonAliquotableVessels
+	];
+
 	(* For prep Agilent, split uniqueNonAliquotableVessels into two parts with different models *)
 	uniqueNonAliquotableSmallVessels = DeleteDuplicates@PickList[
 		simulatedSampleContainers,
@@ -10878,7 +10901,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 			]
 		],
 		(* <= 48 vials *)
-		Total[Length[uniqueNonAliquotableVessels],numberOfStandardBlankContainersRequired] <= 48
+		Total[{Length[uniqueNonAliquotableVessels],numberOfStandardBlankContainersRequired}] <= 48
 	];
 
 	(* Waters Instrument - Count the samples, Standards, Blanks and containers for the Waters Acquity instrument *)
@@ -10956,19 +10979,19 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		(* non aliquotable samples - we check for each type it is below the limit *)
 		(* Aliquotable samples - we always use 50mL tube so we count that only *)
 		And[
-			Total[
+			Total[{
 				agilentSmallRackCount,
 				agilentLargeRackCount
-			] <= 5,
+			}] <= 5,
 			agilentSmallRackCount+If[MatchQ[requestedFractionRack,Small],1,0]<=3,
 			agilentLargeRackCount+If[MatchQ[requestedFractionRack,Large],1,0]<=3,
 			Length[uniqueNonSuitableContainers]==0
 		],
 		And[
-			Total[
+			Total[{
 				agilentSmallRackCount,
 				agilentLargeRackCount
-			] <= 6,
+			}] <= 6,
 			Length[uniqueNonSuitableContainers]==0
 		]
 	];
@@ -12141,7 +12164,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			{instrumentPacket},
 			Switch[Lookup[instrumentPacket, {PumpType, NumberOfBuffers}],
 				(* If we have a quaternary, then we can do anything *)
-				{Quaternary,_},{Binary, BinaryFourBuffers, Ternary, Quaternary},
+				{Quaternary,_},{Binary, BinaryFourBuffers, BinaryFourBuffersOrTernary, Ternary, Quaternary},
 				{Binary,4},{Binary, BinaryFourBuffers, BinaryFourBuffersOrTernary},
 				{Ternary,_},{Binary, Ternary, BinaryFourBuffersOrTernary},
 				(* Otherwise just binary, but there shouldn't be any instrument like this currently *)
@@ -14702,12 +14725,15 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 				IntersectingQ[semiResolvedAlternateInstruments /. {Automatic :> {}}, watersHPLCInstruments]
 			],
 			validWatersCountQ,
-			Total[
+			Total[{
 				Count[DeleteDuplicates[simulatedSampleContainers], ObjectP[Object[Container, Plate]]],
 				Ceiling[
 					(numberOfStandardBlankContainersRequired + Length[uniqueNonAliquotableVessels]) / 48
-				]
-			]>2
+				],
+				(* Samples that must be transferred to a plate *)
+				(* For plate samples, we have considered them above, and may keep them in their own plate if possible *)
+				Ceiling[Length[uniqueAliquotableVessels] / 96]
+			}]>2
 		],
 		Replace[specifiedAliquotBools, Automatic -> True, {1}],
 		(* SemiPrep Agilent - Aliquot if unique plates + vessels > 6 positions *)
@@ -14717,12 +14743,12 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 				MemberQ[semiResolvedAlternateInstruments /. {Automatic :> {}}, semiPrepAgilentHPLCPattern]
 			],
 			validSemiPrepAgilentCountQ,
-			Total[
+			Total[{
 				Count[DeleteDuplicates[simulatedSampleContainers], ObjectP[Object[Container, Plate]]],
 				Ceiling[
 					(numberOfStandardBlankContainersRequired + Length[uniqueNonAliquotableVessels]) / 54
 				]
-			]>6
+			}]>6
 		],
 		Replace[specifiedAliquotBools, Automatic -> True, {1}],
 		(* Otherwise just keep the raw Aliquot option *)
@@ -14799,8 +14825,34 @@ tightly as possible, put them all in a single target grouping *)
 		resolveAliquotOptionTests
 	}];
 
+
+	(* Resolve the (hidden) InjectionSampleCentrifugeOptions based on the scale. *)
+	specifiedInjectionSampleCentrifugeOptions = Lookup[hplcOptions, InjectionSampleCentrifugeOptions];
+	resolvedInjectionSampleCentrifugeOptions = Which[
+		MatchQ[specifiedInjectionSampleCentrifugeOptions, Except[Automatic]],
+		specifiedInjectionSampleCentrifugeOptions,
+		MatchQ[resolvedScale, Preparative],
+		Null,
+		True,
+		{
+			Intensity -> 1500 RPM,
+			Time -> 1 Minute,
+			(* If the user wanted the samples to be stored in the sample manager at a specified temperature. Use that temperature for the centrifugation. *)
+			Temperature -> Lookup[instrumentSpecificOptionSet, SampleTemperature],
+			(* We do not want any other sample preparation to occur. Set the sample preparation options to False to be safe. *)
+			Incubate -> False,
+			Mix -> False,
+			Filtration -> False,
+			Aliquot -> False,
+			(* Turn off post processing. *)
+			ImageSample -> False,
+			MeasureWeight -> False,
+			MeasureVolume -> False
+		}
+	];
+
 	(* Set all non-shared Experiment options *)
-	resolvedExperimentOptions = Join[preWavefunctionResolution, instrumentSpecificOptionSet, reformattedGradientOptions];
+	resolvedExperimentOptions = Join[preWavefunctionResolution, instrumentSpecificOptionSet, reformattedGradientOptions, <|InjectionSampleCentrifugeOptions -> resolvedInjectionSampleCentrifugeOptions|>];
 
 	(* Resolve Post Processing Options *)
 	resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions];
@@ -21271,6 +21323,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		Replace[BlanksStorageConditions] -> expandedBlanksStorageConditions,
 		(* Null == False *)
 		InjectionSampleVolumeMeasurement -> Lookup[myResolvedOptions, InjectionSampleVolumeMeasurement],
+    InjectionSampleCentrifugeOptions -> Lookup[myResolvedOptions, InjectionSampleCentrifugeOptions],
 		UnresolvedOptions -> myUnresolvedOptions,
 		ResolvedOptions -> CollapseIndexMatchedOptions[ExperimentHPLC, myResolvedOptions, Ignore -> ToList[myUnresolvedOptions], Messages -> False]
 	];
@@ -21302,10 +21355,18 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	(* Check fulfillability to resources *)
 	(* Don't need to do this test if internal*)
 	{resourcesFulfillableQ, resourceTests} = If[!internalUsageQ,
-		If[gatherTestsQ,
-			Resources`Private`fulfillableResourceQ[allResources, Site -> Lookup[myResolvedOptions, Site], Output -> {Result, Tests}, Cache -> cache, Simulation -> simulation],
-			{Resources`Private`fulfillableResourceQ[allResources, Site -> Lookup[myResolvedOptions, Site], Cache -> cache, Simulation -> simulation], {}}
+
+		Which[
+			MatchQ[$ECLApplication, Engine],
+				{True, {}},
+
+			gatherTestsQ,
+				Resources`Private`fulfillableResourceQ[allResources, Site -> Lookup[myResolvedOptions, Site], Output -> {Result, Tests}, Cache -> cache, Simulation -> simulation],
+
+			True,
+				{Resources`Private`fulfillableResourceQ[allResources, Site -> Lookup[myResolvedOptions, Site], Cache -> cache, Simulation -> simulation], {}}
 		],
+
 		{Null, Null}
 	];
 

@@ -656,11 +656,12 @@ DefineTests[ExperimentMeasureCount,
 				},
 				NumberOfReplicates -> 2
 			];
-			Download[myProtocol, {Tweezer, Balance, WeighBoat}],
+			Download[myProtocol, {Tweezer, Balance, Reservoirs, WeighBoats}],
 			{
 				LinkP[Model[Item, Tweezer, "id:8qZ1VWNwNDVZ"]],
-				LinkP[Model[Instrument, Balance, "id:vXl9j5qEnav7"]],
-				LinkP[Model[Item, WeighBoat, "id:N80DNj1N7GLX"]]
+				LinkP[Model[Instrument, Balance, "id:rea9jl5Vl1ae"]],
+				{LinkP[Model[Item, WeighBoat, "id:Vrbp1jaq5Ojz"]]..(*Weigh boats, medium, Individual*)},
+				{LinkP[Model[Item, WeighBoat, "id:Vrbp1jaq5Ojz"]]..(*Weigh boats, medium, Individual*)}
 			},
 			Stubs :> {
 				$PersonID = Object[User, "Test user for notebook-less test protocols"],
@@ -676,11 +677,12 @@ DefineTests[ExperimentMeasureCount,
 				},
 				NumberOfReplicates -> 3
 			];
-			Download[myProtocol, {Tweezer, Balance, WeighBoat}],
+			Download[myProtocol, {Tweezer, Balance, Reservoirs, WeighBoats}],
 			{
 				Null,
 				Null,
-				Null
+				{},
+				{}
 			},
 			Stubs :> {
 				$PersonID = Object[User, "Test user for notebook-less test protocols"],
@@ -711,6 +713,18 @@ DefineTests[ExperimentMeasureCount,
 				{MeasureVolume, MeasureWeight}
 			],
 			{Null, Null}
+		],
+
+		Test["Resolve WeightStabilityDuration and MaxWeightVariation to 60 s and balance default:",
+			protocol = ExperimentMeasureCount[
+				Object[Sample, "Available tablet sample 1 for ExperimentMeasureCount testing" <> $SessionUUID]
+			];
+			Equal[
+				Download[protocol, {WeightStabilityDuration, MaxWeightVariation}],
+				{60 Second, 0.1 Milligram}
+			],
+			True,
+			Variables :> {protocol}
 		]
 
 	},

@@ -127,7 +127,7 @@ DefineTests[UploadMedia,
 					{40*MassPercent,Model[Molecule,"Tryptone"]},
 					{40*MassPercent,Model[Molecule,"Sodium Chloride"]}
 				},
-				State->Solid, Expires->False, MSDSRequired->False, DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
+				State->Solid, Expires->False, MSDSFile -> NotApplicable, DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
 				UploadMedia[{{25 Gram,newLB}},
 					Model[Sample, "Milli-Q water"],
 					1*Liter,
@@ -266,6 +266,17 @@ DefineTests[UploadMedia,
 				{Sterile, AsepticHandling}
 			],
 			{True, True}
+		],
+		Test["If MediaPhase is solid used for PlateMedia, a liquid form of it is populated as LiquidMedia:",
+			Download[
+				UploadMedia[
+					Model[Sample,Media,"LB Broth, Miller"],
+					MediaPhase->Solid,
+					GellingAgents->{{20Gram,Model[Sample,"Agar for UploadMedia"<>$SessionUUID]}}
+				],
+				LiquidMedia
+			],
+			{{ObjectP[Model[Sample, Media]]}}
 		]
 	},
 	Stubs:>{

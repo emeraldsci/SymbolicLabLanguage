@@ -1215,7 +1215,10 @@ $ObjectBuilders=<|
 	Object[Method, Gradient] -> UploadGradientMethod,
 	Object[Report, Literature] -> UploadLiterature,
 	Object[Journal] -> UploadJournal,
-	Model[Item, Column] -> UploadColumn
+	Model[Item, Column] -> UploadColumn,
+	Model[Container, Vessel] -> UploadContainerModel,
+	Model[Container, Plate] -> UploadContainerModel,
+	Model[Container, ExtractionCartridge] -> UploadContainerModel
 |>;
 
 
@@ -2039,7 +2042,8 @@ $CommandBuilderFunctionsDev = <|
 			"UploadInventory",
 			"UploadCompanySupplier",
 			"UploadCompanyService",
-			"UploadReferenceElectrodeModel"
+			"UploadReferenceElectrodeModel",
+			"UploadContainerModel"
 		},
 		"Defining Sample Components" -> {
 			"UploadMolecule",
@@ -2069,7 +2073,10 @@ $CommandBuilderFunctionsDev = <|
 			"UploadLiterature",
 			"UploadJournal"
 		},
-		"Defining Manifold Jobs" -> {"Compute"}
+		"Defining Manifold Jobs" -> {"Compute"},
+		"Verifying User-Created Objects" -> {
+			"UploadVerifiedContainerModel"
+		}
 	|>,
 	"Search" -> <||>
 |>;

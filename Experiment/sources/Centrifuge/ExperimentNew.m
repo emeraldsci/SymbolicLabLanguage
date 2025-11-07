@@ -228,7 +228,9 @@ DefineOptions[ExperimentCentrifuge,
 			Widget -> Widget[Type->Enumeration,Pattern:>BooleanP],
 			Description->"Indicates if the sample preparation options for this function should be resolved. This option is set to False when ExperimentCentrifuge is called within resolveSamplePrepOptions to avoid an infinite loop.",
 			Category->"Hidden"
-		}
+		},
+		WeightStabilityDurationOption,
+		MaxWeightVariationOption
 	}
 ];
 
@@ -266,6 +268,8 @@ Error::ContainerCentrifugeIncompatibleRobotic="The samples `1` are in containers
 (* ::Subsubsection::Closed:: *)
 (*ExperimentCentrifuge *)
 
+(* Model[Instrument, Balance, "Ohaus EX6202"] is the centrifuge balance *)
+$CentrifugeBalanceModel = Model[Instrument, Balance, "id:o1k9jAGvbWMA"];
 
 (* Mixed Input *)
 ExperimentCentrifuge[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String|{LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions : OptionsPattern[]] := Module[
@@ -501,9 +505,12 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 	allCentrifugeEquipmentPackets = nonDeprecatedCentrifugeModelPackets["Memoization"];
 
 	(* Get a list of preferred container models which we potential transfer sample in order to centrifuge. *)
+	(* Also download preferred containers for Incubate sample prep options *)
 	allPreferredContainers = DeleteDuplicates@Join[
 		PreferredContainer[All, Type -> All],
-		PreferredContainer[All, UltracentrifugeCompatible -> True]
+		PreferredContainer[All, UltracentrifugeCompatible -> True],
+		PreferredContainer[All, LightSensitive -> True],
+		PreferredContainer[All, Sterile -> True]
 	];
 
 	(* Format the list of things to download *)
@@ -515,7 +522,8 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 		List /@ ToList[centrifugeOption] /. Automatic -> Null,
 		List /@ ToList[centrifugeRotorOption] /. Automatic -> Null,
 		{allCounterweights},
-		{allPreferredContainers}
+		{allPreferredContainers},
+		{ToList[$CentrifugeBalanceModel]}
 	];
 
 	(* Sample Fields. *)
@@ -539,7 +547,8 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 		centrifugeFields,
 		centrifugeRotorFields,
 		{counterweightModelFields},
-		{{Packet[Footprint, Dimensions, Name]}}
+		{{Evaluate[Packet@@SamplePreparationCacheFields[Model[Container]]]}},
+		{{Packet[AllowedMaxVariation]}}
 	];
 
 	cacheToUse = ToList[Lookup[expandedSafeOps, Cache, {}]];
@@ -893,7 +902,7 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 		resolvedCounterweight, mismatchedInstruments, nullTareWeightErrors, noCounterweightErrors,nullTareWeightSamples,
 		nullTareWeightInputs,nullTareWeightTest,noCounterweightSamples,noCounterweightInputs,noCounterweightTest,incompatiblePreparationOptions,incompatiblePreparationTests,
 		misMatchedInstrumentPreparationQ, allowedWorkCells, resolvedWorkCell,priorityOfCentrifuges,cantTransferRoboticBools,
-		cantTransferContainerRoboticInvalidInputs,centrifugeMinRates,plateTooHeavyForCentrifugeErrors,tooHeavyPlateSamples,tooHeavyPlateInputs, fastAssoc
+		cantTransferContainerRoboticInvalidInputs,centrifugeMinRates,plateTooHeavyForCentrifugeErrors,tooHeavyPlateSamples,tooHeavyPlateInputs, fastAssoc, resolvedWeightStabilityDuration, resolvedMaxWeightVariation
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -954,7 +963,7 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 
 	(* Extract the packets that we need from our downloaded cache. *)
 	(* only even bother Downloading if simulatedSamples and mySamples are different from each other; otherwise we already have the information in the cache *)
-	sampleDownloads = If[Not[MatchQ[simulatedSamples, mySamples]],
+	sampleDownloads= If[Not[MatchQ[simulatedSamples, mySamples]],
 		Quiet[Download[
 			simulatedSamples,
 			{
@@ -3253,6 +3262,18 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 		}
 	];
 
+	(* Resolve WeightStabilityDuration and MaxWeightVariation *)
+	resolvedWeightStabilityDuration = If[MatchQ[Lookup[myOptions, WeightStabilityDuration], Except[Automatic]],
+		Lookup[myOptions, WeightStabilityDuration],
+		60 Second
+	];
+
+	(* always use Model[Instrument, Balance, "Ohaus EX6202"], so resolve to the AllowedMaxVariation of it *)
+	resolvedMaxWeightVariation = If[MatchQ[Lookup[myOptions, MaxWeightVariation], Except[Automatic]],
+		Lookup[myOptions, MaxWeightVariation],
+		Lookup[fetchPacketFromFastAssoc[$CentrifugeBalanceModel, fastAssoc], AllowedMaxVariation, 0.02 Gram]
+	];
+
 	(* Error messages for the counterweight, for now this is specifically for the robotic centrifuge*)
 	(* throw a message if the plate is too heavy to be spun on this centrifuge *)
 
@@ -3447,6 +3468,8 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 					RotorGeometry->resolvedRotorGeometry,
 					ChilledRotor->resolvedChilledRotor,
 					Counterweight -> resolvedCounterweight,
+					WeightStabilityDuration -> resolvedWeightStabilityDuration,
+					MaxWeightVariation -> resolvedMaxWeightVariation,
 					SampleLabel->resolvedSampleLabels,
 					SampleContainerLabel->resolvedSampleContainerLabels,
 					Preparation->resolvedPreparation,
@@ -4235,7 +4258,7 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 	(* ExperimentMeasureWeight doesn't accept plates and also doesn't populate container weight (only sample weight and tare weight of the empty container).
 	 So, we make resources for a balance and tare racks, have custom tasks in the procedure for measuring container weight, and have sections in the compile and parse for dealing with the weight data. *)
 	balanceResource = Resource[
-		Instrument -> Model[Instrument, Balance, "Ohaus EX6202"],
+		Instrument -> $CentrifugeBalanceModel,
 		Time -> (1 Minute * Length[containersIn])
 	];
 
@@ -4461,6 +4484,14 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 				Balance -> If[MatchQ[Lookup[myResolvedOptions,CounterbalanceWeight],{MassP..}],
 					Null,
 					balanceResource
+				],
+				WeightStabilityDuration -> If[MatchQ[Lookup[myResolvedOptions,CounterbalanceWeight],{MassP..}],
+					Null,
+					Lookup[myResolvedOptions,WeightStabilityDuration]
+				],
+				MaxWeightVariation -> If[MatchQ[Lookup[myResolvedOptions,CounterbalanceWeight],{MassP..}],
+					Null,
+					Lookup[myResolvedOptions,MaxWeightVariation]
 				],
 				Replace[TareRacks] -> If[MatchQ[Lookup[myResolvedOptions,CounterbalanceWeight],{MassP..}],
 					{},

@@ -7920,6 +7920,7 @@ simulateExperimentPickColonies[
     uploadSampleTransferTuples[[All,1]],
     uploadSampleTransferTuples[[All,2]],
     uploadSampleTransferTuples[[All,3]],
+    CountAsPassage -> True,
     LivingDestination -> True,
     FastTrack -> True,
     Simulation -> currentSimulation,

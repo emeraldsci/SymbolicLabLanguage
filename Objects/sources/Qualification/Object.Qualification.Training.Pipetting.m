@@ -58,8 +58,25 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
  			Pattern :> BooleanP,
  			Description -> "Indicates if practice run error messages should be suppressed in engine, so operator can continue to retry the practice run again.",
  			Category -> "Pipetting Skills",
- 			Abstract -> True
+ 			Developer -> True
  		},
+ 		CurrentHandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Instrument,HandlingStation],Model[Instrument,HandlingStation]],
+			Description -> "The environment to be set up by the operator before using a certain type of pipette, including any turning on gopro, start streaming procedures.",
+			Category -> "Pipetting Skills",
+			Developer -> True
+		},
+		TearDownHandlingEnvironment -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the environment is to be torn down up by the operator after finishing using a certain type of pipette, including any turning off gopro, stop streaming procedures.",
+			Category -> "Pipetting Skills",
+			Developer -> True
+		},
 		(* p1000 *)
 		MicropipetteP1000Instrument -> {
 			Format -> Single,
@@ -77,27 +94,51 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Description -> "The balance that was used to test the user's ability to pipette volumes of a test sample, with the Eppendorf P1000 pipette.",
 			Category -> "Pipetting Skills"
 		},
+		MicropipetteP1000HandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Instrument,HandlingStation],Model[Instrument,HandlingStation]],
+			Description -> "The environment where the user was tested for their pipetting skills with a test sample, with the Eppendorf P1000 pipette.",
+			Category -> "Pipetting Skills"
+		},
 		MicropipetteP1000PipetteParameters -> {
 			Format->Multiple,
 			Class->{
 				Container->Link,
 				Volume->Real,
-				PipetteDialImage->EmeraldCloudFile
+				PipetteDialImage->EmeraldCloudFile,
+				WeightStabilityDuration->Real,
+				MaxWeightVariation->Real,
+				TareWeightStabilityDuration->Real,
+				MaxTareWeightVariation->Real
 			},
 			Pattern:>{
 				Container->_Link,
 				Volume->VolumeP,
-				PipetteDialImage->EmeraldFileP
+				PipetteDialImage->EmeraldFileP,
+				WeightStabilityDuration->GreaterEqualP[0 Second],
+				MaxWeightVariation->GreaterEqualP[0 Milligram],
+				TareWeightStabilityDuration->GreaterEqualP[0 Second],
+				MaxTareWeightVariation->GreaterEqualP[0 Milligram]
 			},
 			Relation->{
 				Container->Object[Container]|Object[Item],
 				Volume->Null,
-				PipetteDialImage->Null
+				PipetteDialImage->Null,
+				WeightStabilityDuration->Null,
+				MaxWeightVariation->Null,
+				TareWeightStabilityDuration->Null,
+				MaxTareWeightVariation->Null
 			},
 			Units->{
 				Container->None,
 				Volume->Microliter,
-				PipetteDialImage->None
+				PipetteDialImage->None,
+				WeightStabilityDuration->Second,
+				MaxWeightVariation->Milligram,
+				TareWeightStabilityDuration->Second,
+				MaxTareWeightVariation->Milligram
 			},
 			Description->"Specifies how samples should be pipetted with the Eppendorf P1000 pipette.",
 			Category -> "General"
@@ -195,27 +236,51 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Description -> "The balance that was used to test the user's ability to pipette volumes of a test sample, with the Eppendorf P5000 pipette.",
 			Category -> "Pipetting Skills"
 		},
+		MicropipetteP5000HandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Instrument,HandlingStation],Model[Instrument,HandlingStation]],
+			Description -> "The environment where the user was tested for their pipetting skills with a test sample, with the Eppendorf P5000 pipette.",
+			Category -> "Pipetting Skills"
+		},
 		MicropipetteP5000PipetteParameters -> {
 			Format->Multiple,
 			Class->{
 				Container->Link,
 				Volume->Real,
-				PipetteDialImage->EmeraldCloudFile
+				PipetteDialImage->EmeraldCloudFile,
+				WeightStabilityDuration->Real,
+				MaxWeightVariation->Real,
+				TareWeightStabilityDuration->Real,
+				MaxTareWeightVariation->Real
 			},
 			Pattern:>{
 				Container->_Link,
 				Volume->VolumeP,
-				PipetteDialImage->EmeraldFileP
+				PipetteDialImage->EmeraldFileP,
+				WeightStabilityDuration->GreaterEqualP[0 Second],
+				MaxWeightVariation->GreaterEqualP[0 Milligram],
+				TareWeightStabilityDuration->GreaterEqualP[0 Second],
+				MaxTareWeightVariation->GreaterEqualP[0 Milligram]
 			},
 			Relation->{
 				Container->Object[Container]|Object[Item],
 				Volume->Null,
-				PipetteDialImage->Null
+				PipetteDialImage->Null,
+				WeightStabilityDuration->Null,
+				MaxWeightVariation->Null,
+				TareWeightStabilityDuration->Null,
+				MaxTareWeightVariation->Null
 			},
 			Units->{
 				Container->None,
 				Volume->Microliter,
-				PipetteDialImage->None
+				PipetteDialImage->None,
+				WeightStabilityDuration->Second,
+				MaxWeightVariation->Milligram,
+				TareWeightStabilityDuration->Second,
+				MaxTareWeightVariation->Milligram
 			},
 			Description->"Specifies how samples should be pipetted in this qualification with the Eppendorf P5000 pipette.",
 			Category -> "General"
@@ -313,27 +378,51 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Description -> "The balance that was used to test the user's ability to pipette volumes of a test sample, with the Eppendorf P20 pipette.",
 			Category -> "Pipetting Skills"
 		},
+		MicropipetteP20HandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Instrument, HandlingStation], Model[Instrument, HandlingStation]],
+			Description -> "The environment where the user was tested for their pipetting skills with a test sample, with the Eppendorf P20 pipette.",
+			Category -> "Pipetting Skills"
+		},
 		MicropipetteP20PipetteParameters -> {
 			Format->Multiple,
 			Class->{
 				Container->Link,
 				Volume->Real,
-				PipetteDialImage->EmeraldCloudFile
+				PipetteDialImage->EmeraldCloudFile,
+				WeightStabilityDuration->Real,
+				MaxWeightVariation->Real,
+				TareWeightStabilityDuration->Real,
+				MaxTareWeightVariation->Real
 			},
 			Pattern:>{
 				Container->_Link,
 				Volume->VolumeP,
-				PipetteDialImage->EmeraldFileP
+				PipetteDialImage->EmeraldFileP,
+				WeightStabilityDuration->GreaterEqualP[0 Second],
+				MaxWeightVariation->GreaterEqualP[0 Milligram],
+				TareWeightStabilityDuration->GreaterEqualP[0 Second],
+				MaxTareWeightVariation->GreaterEqualP[0 Milligram]
 			},
 			Relation->{
 				Container->Object[Container]|Object[Item],
 				Volume->Null,
-				PipetteDialImage->Null
+				PipetteDialImage->Null,
+				WeightStabilityDuration->Null,
+				MaxWeightVariation->Null,
+				TareWeightStabilityDuration->Null,
+				MaxTareWeightVariation->Null
 			},
 			Units->{
 				Container->None,
 				Volume->Microliter,
-				PipetteDialImage->None
+				PipetteDialImage->None,
+				WeightStabilityDuration->Second,
+				MaxWeightVariation->Milligram,
+				TareWeightStabilityDuration->Second,
+				MaxTareWeightVariation->Milligram
 			},
 			Description->"Specifies how samples should be pipetted in this qualification with the Eppendorf P20 pipette.",
 			Category -> "General"
@@ -431,27 +520,51 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Description -> "The balance that was used to test the user's ability to pipette volumes of a test sample, with the Eppendorf P2.5 pipette.",
 			Category -> "Pipetting Skills"
 		},
+		MicropipetteP2P5HandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Instrument,HandlingStation],Model[Instrument,HandlingStation]],
+			Description -> "The environment where the user was tested for their pipetting skills with a test sample, with the Eppendorf P2.5 pipette.",
+			Category -> "Pipetting Skills"
+		},
 		MicropipetteP2P5PipetteParameters -> {
 			Format->Multiple,
 			Class->{
 				Container->Link,
 				Volume->Real,
-				PipetteDialImage->EmeraldCloudFile
+				PipetteDialImage->EmeraldCloudFile,
+				WeightStabilityDuration->Real,
+				MaxWeightVariation->Real,
+				TareWeightStabilityDuration->Real,
+				MaxTareWeightVariation->Real
 			},
 			Pattern:>{
 				Container->_Link,
 				Volume->VolumeP,
-				PipetteDialImage->EmeraldFileP
+				PipetteDialImage->EmeraldFileP,
+				WeightStabilityDuration->GreaterEqualP[0 Second],
+				MaxWeightVariation->GreaterEqualP[0 Milligram],
+				TareWeightStabilityDuration->GreaterEqualP[0 Second],
+				MaxTareWeightVariation->GreaterEqualP[0 Milligram]
 			},
 			Relation->{
 				Container->Object[Container]|Object[Item],
 				Volume->Null,
-				PipetteDialImage->Null
+				PipetteDialImage->Null,
+				WeightStabilityDuration->Null,
+				MaxWeightVariation->Null,
+				TareWeightStabilityDuration->Null,
+				MaxTareWeightVariation->Null
 			},
 			Units->{
 				Container->None,
 				Volume->Microliter,
-				PipetteDialImage->None
+				PipetteDialImage->None,
+				WeightStabilityDuration->Second,
+				MaxWeightVariation->Milligram,
+				TareWeightStabilityDuration->Second,
+				MaxTareWeightVariation->Milligram
 			},
 			Description->"Specifies how samples should be pipetted in this qualification with the Eppendorf P2.5 pipette.",
 			Category -> "General"
@@ -549,27 +662,51 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Description -> "The balance that was used to test the user's ability to pipette volumes of a test sample, with the pipetus serological pipette.",
 			Category -> "Pipetting Skills"
 		},
+		SerologicalPipettePipetusHandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Instrument,HandlingStation],Model[Instrument,HandlingStation]],
+			Description -> "The environment where the user was tested for their pipetting skills with a test sample, with the pipetus serological pipette.",
+			Category -> "Pipetting Skills"
+		},
 		SerologicalPipettePipetusPipetteParameters -> {
 			Format->Multiple,
 			Class->{
 				Container->Link,
 				Volume->Real,
-				SerologicalPipetteImage->EmeraldCloudFile
+				SerologicalPipetteImage->EmeraldCloudFile,
+				WeightStabilityDuration->Real,
+				MaxWeightVariation->Real,
+				TareWeightStabilityDuration->Real,
+				MaxTareWeightVariation->Real
 			},
 			Pattern:>{
 				Container->_Link,
 				Volume->VolumeP,
-				SerologicalPipetteImage->EmeraldFileP
+				SerologicalPipetteImage->EmeraldFileP,
+				WeightStabilityDuration->GreaterEqualP[0 Second],
+				MaxWeightVariation->GreaterEqualP[0 Milligram],
+				TareWeightStabilityDuration->GreaterEqualP[0 Second],
+				MaxTareWeightVariation->GreaterEqualP[0 Milligram]
 			},
 			Relation->{
 				Container->Object[Container]|Object[Item],
 				Volume->Null,
-				SerologicalPipetteImage->Null
+				SerologicalPipetteImage->Null,
+				WeightStabilityDuration->Null,
+				MaxWeightVariation->Null,
+				TareWeightStabilityDuration->Null,
+				MaxTareWeightVariation->Null
 			},
 			Units->{
 				Container->None,
 				Volume->Microliter,
-				SerologicalPipetteImage->None
+				SerologicalPipetteImage->None,
+				WeightStabilityDuration->Second,
+				MaxWeightVariation->Milligram,
+				TareWeightStabilityDuration->Second,
+				MaxTareWeightVariation->Milligram
 			},
 			Description->"Specifies how samples should be pipetted in this qualification with the pipetus serological pipette.",
 			Category -> "General"
@@ -667,27 +804,51 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Description -> "The balance that was used to test the user's ability to pipette volumes of a test sample, with the Pos-D MR-100 positive displacement pipette.",
 			Category -> "Pipetting Skills"
 		},
+		PositiveDisplacementPipettePosDMR100HandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Instrument,HandlingStation],Model[Instrument,HandlingStation]],
+			Description -> "The environment where the user was tested for their pipetting skills with a test sample, with the Pos-D MR-100 positive displacement pipette.",
+			Category -> "Pipetting Skills"
+		},
 		PositiveDisplacementPipettePosDMR100PipetteParameters -> {
 			Format->Multiple,
 			Class->{
 				Container->Link,
 				Volume->Real,
-				PipetteDialImage->EmeraldCloudFile
+				PipetteDialImage->EmeraldCloudFile,
+				WeightStabilityDuration->Real,
+				MaxWeightVariation->Real,
+				TareWeightStabilityDuration->Real,
+				MaxTareWeightVariation->Real
 			},
 			Pattern:>{
 				Container->_Link,
 				Volume->VolumeP,
-				PipetteDialImage->EmeraldFileP
+				PipetteDialImage->EmeraldFileP,
+				WeightStabilityDuration->GreaterEqualP[0 Second],
+				MaxWeightVariation->GreaterEqualP[0 Milligram],
+				TareWeightStabilityDuration->GreaterEqualP[0 Second],
+				MaxTareWeightVariation->GreaterEqualP[0 Milligram]
 			},
 			Relation->{
 				Container->Object[Container]|Object[Item],
 				Volume->Null,
-				PipetteDialImage->Null
+				PipetteDialImage->Null,
+				WeightStabilityDuration->Null,
+				MaxWeightVariation->Null,
+				TareWeightStabilityDuration->Null,
+				MaxTareWeightVariation->Null
 			},
 			Units->{
 				Container->None,
 				Volume->Microliter,
-				PipetteDialImage->None
+				PipetteDialImage->None,
+				WeightStabilityDuration->Second,
+				MaxWeightVariation->Milligram,
+				TareWeightStabilityDuration->Second,
+				MaxTareWeightVariation->Milligram
 			},
 			Description->"Specifies how samples should be pipetted in this qualification with the Pos-D MR-100 positive displacement pipette.",
 			Category -> "General"
@@ -785,27 +946,51 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Description -> "The balance that was used to test the user's ability to pipette volumes of a test sample, with the Pos-D MR-10 positive displacement pipette.",
 			Category -> "Pipetting Skills"
 		},
+		PositiveDisplacementPipettePosDMR10HandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Instrument,HandlingStation],Model[Instrument,HandlingStation]],
+			Description -> "The environment where the user was tested for their pipetting skills with a test sample, with the Pos-D MR-10 positive displacement pipette.",
+			Category -> "Pipetting Skills"
+		},
 		PositiveDisplacementPipettePosDMR10PipetteParameters -> {
 			Format->Multiple,
 			Class->{
 				Container->Link,
 				Volume->Real,
-				PipetteDialImage->EmeraldCloudFile
+				PipetteDialImage->EmeraldCloudFile,
+				WeightStabilityDuration->Real,
+				MaxWeightVariation->Real,
+				TareWeightStabilityDuration->Real,
+				MaxTareWeightVariation->Real
 			},
 			Pattern:>{
 				Container->_Link,
 				Volume->VolumeP,
-				PipetteDialImage->EmeraldFileP
+				PipetteDialImage->EmeraldFileP,
+				WeightStabilityDuration->GreaterEqualP[0 Second],
+				MaxWeightVariation->GreaterEqualP[0 Milligram],
+				TareWeightStabilityDuration->GreaterEqualP[0 Second],
+				MaxTareWeightVariation->GreaterEqualP[0 Milligram]
 			},
 			Relation->{
 				Container->Object[Container]|Object[Item],
 				Volume->Null,
-				PipetteDialImage->Null
+				PipetteDialImage->Null,
+				WeightStabilityDuration->Null,
+				MaxWeightVariation->Null,
+				TareWeightStabilityDuration->Null,
+				MaxTareWeightVariation->Null
 			},
 			Units->{
 				Container->None,
 				Volume->Microliter,
-				PipetteDialImage->None
+				PipetteDialImage->None,
+				WeightStabilityDuration->Second,
+				MaxWeightVariation->Milligram,
+				TareWeightStabilityDuration->Second,
+				MaxTareWeightVariation->Milligram
 			},
 			Description->"Specifies how samples should be pipetted in this qualification with the Pos-D MR-10 positive displacement pipette.",
 			Category -> "General"
@@ -904,27 +1089,51 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Description -> "The balance that was used to test the user's ability to pipette volumes of a test sample, with the Eppendorf 8-channel 300 uL pipette.",
 			Category -> "Pipetting Skills"
 		},
+		MultichannelPipette8Channel300uLHandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Instrument,HandlingStation],Model[Instrument,HandlingStation]],
+			Description -> "The environment where the user was tested for their pipetting skills with a test sample, with the Eppendorf 8-channel 300 uL pipette.",
+			Category -> "Pipetting Skills"
+		},
 		MultichannelPipette8Channel300uLPipetteParameters -> {
 			Format->Multiple,
 			Class->{
 				Container->Link,
 				Volume->Real,
-				PipetteDialImage->EmeraldCloudFile
+				PipetteDialImage->EmeraldCloudFile,
+				WeightStabilityDuration->Real,
+				MaxWeightVariation->Real,
+				TareWeightStabilityDuration->Real,
+				MaxTareWeightVariation->Real
 			},
 			Pattern:>{
 				Container->_Link,
 				Volume->VolumeP,
-				PipetteDialImage->EmeraldFileP
+				PipetteDialImage->EmeraldFileP,
+				WeightStabilityDuration->GreaterEqualP[0 Second],
+				MaxWeightVariation->GreaterEqualP[0 Milligram],
+				TareWeightStabilityDuration->GreaterEqualP[0 Second],
+				MaxTareWeightVariation->GreaterEqualP[0 Milligram]
 			},
 			Relation->{
 				Container->Object[Container]|Object[Item],
 				Volume->Null,
-				PipetteDialImage->Null
+				PipetteDialImage->Null,
+				WeightStabilityDuration->Null,
+				MaxWeightVariation->Null,
+				TareWeightStabilityDuration->Null,
+				MaxTareWeightVariation->Null
 			},
 			Units->{
 				Container->None,
 				Volume->Microliter,
-				PipetteDialImage->None
+				PipetteDialImage->None,
+				WeightStabilityDuration->Second,
+				MaxWeightVariation->Milligram,
+				TareWeightStabilityDuration->Second,
+				MaxTareWeightVariation->Milligram
 			},
 			Description->"Specifies how samples should be pipetted in this qualification with the Eppendorf 8-channel 300 uL pipette.",
 			Category -> "General"
@@ -1022,27 +1231,51 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Description -> "The balance that was used to test the user's ability to pipette volumes of a test sample, with the Eppendorf 8-channel 10 uL pipette.",
 			Category -> "Pipetting Skills"
 		},
+		MultichannelPipette8Channel10uLHandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Instrument,HandlingStation],Model[Instrument,HandlingStation]],
+			Description -> "The environment where the user was tested for their pipetting skills with a test sample, with the Eppendorf 8-channel 10 uL pipette.",
+			Category -> "Pipetting Skills"
+		},
 		MultichannelPipette8Channel10uLPipetteParameters -> {
 			Format->Multiple,
 			Class->{
 				Container->Link,
 				Volume->Real,
-				PipetteDialImage->EmeraldCloudFile
+				PipetteDialImage->EmeraldCloudFile,
+				WeightStabilityDuration->Real,
+				MaxWeightVariation->Real,
+				TareWeightStabilityDuration->Real,
+				MaxTareWeightVariation->Real
 			},
 			Pattern:>{
 				Container->_Link,
 				Volume->VolumeP,
-				PipetteDialImage->EmeraldFileP
+				PipetteDialImage->EmeraldFileP,
+				WeightStabilityDuration->GreaterEqualP[0 Second],
+				MaxWeightVariation->GreaterEqualP[0 Milligram],
+				TareWeightStabilityDuration->GreaterEqualP[0 Second],
+				MaxTareWeightVariation->GreaterEqualP[0 Milligram]
 			},
 			Relation->{
 				Container->Object[Container]|Object[Item],
 				Volume->Null,
-				PipetteDialImage->Null
+				PipetteDialImage->Null,
+				WeightStabilityDuration->Null,
+				MaxWeightVariation->Null,
+				TareWeightStabilityDuration->Null,
+				MaxTareWeightVariation->Null
 			},
 			Units->{
 				Container->None,
 				Volume->Microliter,
-				PipetteDialImage->None
+				PipetteDialImage->None,
+				WeightStabilityDuration->Second,
+				MaxWeightVariation->Milligram,
+				TareWeightStabilityDuration->Second,
+				MaxTareWeightVariation->Milligram
 			},
 			Description->"Specifies how samples should be pipetted in this qualification with the Eppendorf 8-channel 10 uL pipette.",
 			Category -> "General"
@@ -1121,6 +1354,17 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Pattern :> RangeP[0 Percent, 100 Percent],
 			Units -> Percent,
 			Description -> "The percentage of buffer volumes that met the qualification passing criteria.",
+			Category -> "General"
+		},
+		WasteContainer->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[
+				Model[Container,Vessel],
+				Object[Container,Vessel]
+			],
+			Description->"The vessel used to temporarily hold the water sample removed from the weighing container after each pipette test. The water sample in this vessel will be discarded at the end of the training. This is currently used only in MicropipetteP1000 and SerologicalPipettePipetus trainings.",
 			Category -> "General"
 		}
 	}

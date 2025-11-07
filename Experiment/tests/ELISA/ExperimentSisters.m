@@ -196,7 +196,7 @@ DefineTests[
 					State->Solid,
 					BiosafetyLevel->"BSL-1",
 					Flammable->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials->{None},
 					ExpirationHazard->False
 				];
@@ -222,7 +222,7 @@ DefineTests[
 					State->Solid,
 					BiosafetyLevel->"BSL-1",
 					Flammable->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials->{None},
 					ExpirationHazard->False,
 					Targets->{targetantigen1}
@@ -722,7 +722,7 @@ DefineTests[
 					State->Solid,
 					BiosafetyLevel->"BSL-1",
 					Flammable->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials->{None},
 					ExpirationHazard->False
 				];
@@ -748,7 +748,7 @@ DefineTests[
 					State->Solid,
 					BiosafetyLevel->"BSL-1",
 					Flammable->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials->{None},
 					ExpirationHazard->False,
 					Targets->{targetantigen1}
@@ -1246,7 +1246,7 @@ DefineTests[
 					State->Solid,
 					BiosafetyLevel->"BSL-1",
 					Flammable->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials->{None},
 					ExpirationHazard->False
 				];
@@ -1272,7 +1272,7 @@ DefineTests[
 					State->Solid,
 					BiosafetyLevel->"BSL-1",
 					Flammable->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials->{None},
 					ExpirationHazard->False,
 					Targets->{targetantigen1}

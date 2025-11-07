@@ -575,7 +575,234 @@ DefineTests[ResolvedAfterCheckpoint,
 			_EmeraldTest?(!(RunTest[#][Passed])&)
 		]
 	}
-]
+];
+
+(* ::Subsubsection::Closed:: *)
+(*fetchPacketFromCacheOrDownload*)
+
+DefineTests[fetchPacketFromCacheOrDownload,
+	{
+		Example[{Basic, "Function will first find objects by travelling through the field lists starting from the main packet, then fetch packets of these objects from cache:"},
+			pacs = Download[{Object[Sample, "fetchPacketFromCacheOrDownload test sample 1" <> $SessionUUID], Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID], Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID]}];
+			fetchPacketFromCacheOrDownload[{{Container, Container}, {Container}}, First[pacs], pacs],
+			{PacketP[Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID]], PacketP[Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID]]},
+			Variables :> {pacs}
+		],
+		Example[{Basic, "If the desired packets can't be found from cache, function will download the packets from Constellation:"},
+			pacs = Download[{Object[Sample, "fetchPacketFromCacheOrDownload test sample 1" <> $SessionUUID]}];
+			fetchPacketFromCacheOrDownload[{{Container, Container}, {Container}}, First[pacs], pacs],
+			{PacketP[Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID]], PacketP[Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID]]},
+			Variables :> {pacs}
+		],
+		Test["Function can operate on multiple field lists to generate different packets:",
+			pacs = Download[{Object[Sample, "fetchPacketFromCacheOrDownload test sample 1" <> $SessionUUID], Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID], Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID]}];
+			fetchPacketFromCacheOrDownload[{{Container, Container}, {Container}}, First[pacs], pacs],
+			{PacketP[Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID]], PacketP[Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID]]},
+			Variables :> {pacs}
+		],
+		Test["Function can travel through layers of fields to fetch the packets:",
+			pacs = Download[{Object[Sample, "fetchPacketFromCacheOrDownload test sample 1" <> $SessionUUID], Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID], Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID]}];
+			fetchPacketFromCacheOrDownload[{Container, Container}, First[pacs], pacs],
+			PacketP[Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID]],
+			Variables :> {pacs}
+		],
+		Test["If the desired packets cannot be found from supplied cache, a download will happen to fetch the packet:",
+			pac = Download[Object[Sample, "fetchPacketFromCacheOrDownload test sample 1" <> $SessionUUID]];
+			fetchPacketFromCacheOrDownload[{Container, Container}, pac, {}],
+			PacketP[Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID]],
+			Variables :> {pac}
+		],
+		Test["If some of the desird packets are available in cache, some are not, function will try to fetch packet locally first, then attempt to download the missing ones:",
+			pacs = Download[{Object[Sample, "fetchPacketFromCacheOrDownload test sample 1" <> $SessionUUID], Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID]}, Packet[Name, Container, Model]];
+			fetchPacketFromCacheOrDownload[{{Container, Container}, {Container}}, First[pacs], pacs],
+			(* Idea of this test is that cached packets only contains a few fields, but downloads from Constellation should have all *)
+			(* One can thus tell where the resulted packet come from *)
+			{
+				PacketP[Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID]],
+				AssociationMatchP[<|
+					Object -> Download[Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID], Object],
+					ID -> Download[Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID], ID],
+					Name -> "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID,
+					Type -> Object[Container, Vessel],
+					Model -> LinkP[Model[Container, Vessel, "2mL Tube"]],
+					Container -> LinkP[Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID]]
+				|>]
+			},
+			Variables :> {pacs}
+		],
+		Test["For a given field list, if it will result in multiple packets, and only some of those are available in cache, then the entire field list will be downloaded from constellation:",
+			pacs = Download[{Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID], Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID]}, Packet[Contents]];
+			fetchPacketFromCacheOrDownload[{Field[Contents[[All, 2]]]}, First[pacs], pacs],
+			(* Idea of this test is that cached packets only contains a few fields, but downloads from Constellation should have all *)
+			(* Therefore cached packets won't match to the AssoicationP below because they are missing the Model and Container field *)
+			{
+				AssociationMatchP[
+					<|
+						Object -> Download[Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID], Object],
+						Type -> Object[Container, Vessel],
+						Model -> LinkP[Model[Container, Vessel, "2mL Tube"]],
+						Container -> LinkP[Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID]]
+					|>,
+					AllowForeignKeys -> True
+				],
+				AssociationMatchP[
+					<|
+						Object -> Download[Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 2" <> $SessionUUID], Object],
+						Type -> Object[Container, Vessel],
+						Model -> LinkP[Model[Container, Vessel, "2mL Tube"]],
+						Container -> LinkP[Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID]]
+					|>,
+					AllowForeignKeys -> True
+				]
+			},
+			Variables :> {pacs}
+		],
+		Test["A Packet[field names...] entry can be specified as the last element of field lists. If so, resulted packets will only contain the fields specified, plus Name, ID, Object, Type fields:",
+			pacs = Download[{Object[Sample, "fetchPacketFromCacheOrDownload test sample 1" <> $SessionUUID], Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID], Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID]}];
+			fetchPacketFromCacheOrDownload[{Container, Container, Packet[Contents]}, First[pacs], pacs],
+			AssociationMatchP[<|
+				Object -> Download[Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID], Object],
+				ID -> Download[Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID], ID],
+				Type -> Object[Container, Bench],
+				Name -> "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID,
+				Contents -> {
+					{"Work Surface", LinkP[Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID]]},
+					{"Work Surface", LinkP[Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 2" <> $SessionUUID]]}
+				}
+			|>],
+			Variables :> {pacs}
+		],
+		Test["A Field[fieldName[[partSpec]]] entry can be specified anywhere of field lists. The partSpec indicates that only part of the fields will be fetched, and objects from that will be used to download the next field or packet:",
+			pacs = Download[{Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID], Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID], Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 2" <> $SessionUUID]}];
+			fetchPacketFromCacheOrDownload[{Field[Contents[[All, 2]]], Field[Contents[[1,2]]]}, First[pacs], pacs],
+			{
+				PacketP[Object[Sample, "fetchPacketFromCacheOrDownload test sample 1" <> $SessionUUID]],
+				PacketP[Object[Sample, "fetchPacketFromCacheOrDownload test sample 2" <> $SessionUUID]]
+			},
+			Variables :> {pacs}
+		],
+		Test["A Repeated[fieldName] entry can be specified anywhere of field lists. It functions similar to the syntax in Download function, basically the linked field will be 'downloaded' repeatedly until the last link is found:",
+			pacs = Quiet[Download[{Object[Sample, "fetchPacketFromCacheOrDownload test sample 1" <> $SessionUUID], Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID], Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID]}, Packet[Container, Contents, Name]]];
+			fetchPacketFromCacheOrDownload[{Repeated[Container], Packet[Contents]}, First[pacs], pacs],
+			{
+				AssociationMatchP[<|
+					Object -> Download[Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID], Object],
+					ID -> Download[Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID], ID],
+					Type -> Object[Container, Vessel],
+					Name -> "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID,
+					Contents -> {
+						{"A1", LinkP[Object[Sample, "fetchPacketFromCacheOrDownload test sample 1" <> $SessionUUID]]}
+					}
+				|>],
+				AssociationMatchP[<|
+					Object -> Download[Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID], Object],
+					ID -> Download[Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID], ID],
+					Type -> Object[Container, Bench],
+					Name -> "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID,
+					Contents -> {
+						{"Work Surface", LinkP[Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID]]},
+						{"Work Surface", LinkP[Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 2" <> $SessionUUID]]}
+					}
+				|>]
+			},
+			Variables :> {pacs}
+		],
+		Test["A Repeated[Field[fieldName[[partSpec]]]] entry can be specified anywhere of field lists. It functions similar to the syntax in Download function, basically the linked field will be 'downloaded' repeatedly until the last link is found:",
+			pacs = Download[{Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID]}];
+			fetchPacketFromCacheOrDownload[{Repeated[Field[Contents[[All, 2]]]]}, First[pacs], pacs],
+			{
+				PacketP[Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID]],
+				PacketP[Object[Sample, "fetchPacketFromCacheOrDownload test sample 1" <> $SessionUUID]],
+				PacketP[Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 2" <> $SessionUUID]],
+				PacketP[Object[Sample, "fetchPacketFromCacheOrDownload test sample 2" <> $SessionUUID]]
+			},
+			Variables :> {pacs}
+		]
+	},
+	SymbolSetUp :> {
+		Module[{objs, existingObjs},
+			objs = Quiet[Cases[
+				Flatten[{
+					Object[Container, Bench, "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID],
+					Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID],
+					Object[Container, Vessel, "fetchPacketFromCacheOrDownload test container 2" <> $SessionUUID],
+					Object[Sample, "fetchPacketFromCacheOrDownload test sample 1" <> $SessionUUID],
+					Object[Sample, "fetchPacketFromCacheOrDownload test sample 2" <> $SessionUUID]
+				}],
+				ObjectP[]
+			]];
+			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
+			EraseObject[existingObjs, Force -> True, Verbose -> False]
+		];
+		Module[
+			{fakeBench, container, container2, sample, sample2},
+
+			fakeBench = Upload[
+				<|
+					Type -> Object[Container, Bench],
+					Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+					Name -> "Bench for fetchPacketFromCacheOrDownload tests" <> $SessionUUID,
+					DeveloperObject -> True,
+					StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]
+				|>
+			];
+
+			(* set up containers *)
+			{
+				container,
+				container2
+			} = ECL`InternalUpload`UploadSample[
+				{
+					Model[Container, Vessel, "2mL Tube"],
+					Model[Container, Vessel, "2mL Tube"]
+				},
+				{
+					{"Work Surface", fakeBench},
+					{"Work Surface", fakeBench}
+				},
+				Status -> Available,
+				Name -> {
+					"fetchPacketFromCacheOrDownload test container 1" <> $SessionUUID,
+					"fetchPacketFromCacheOrDownload test container 2" <> $SessionUUID
+				}
+			];
+
+			(*set up samples*)
+			{
+				sample,
+				sample2
+			} = ECL`InternalUpload`UploadSample[
+				{
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, StockSolution, "70% Ethanol"]
+				},
+				{
+					{"A1", container},
+					{"A1", container2}
+				},
+				InitialAmount -> {
+					1 Milliliter,
+					1 Milliliter
+				},
+				Name -> {
+					"fetchPacketFromCacheOrDownload test sample 1" <> $SessionUUID,
+					"fetchPacketFromCacheOrDownload test sample 2" <> $SessionUUID
+				}
+			];
+
+			Upload[Flatten[{
+				<|
+					Object -> sample2,
+					Replace[Analytes] -> {
+						Link[Model[Molecule, "Water"]],
+						Link[Model[Molecule, "Ethanol"]]
+					}
+				|>,
+				<|Object -> #, DeveloperObject -> True|> & /@ Cases[Flatten[{container, container2, sample, sample2}], ObjectP[]]
+			}]];
+		]
+	}
+];
 
 
 (* ::Section::Closed:: *)

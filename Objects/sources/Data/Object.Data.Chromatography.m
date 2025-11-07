@@ -1437,7 +1437,7 @@ DefineObjectType[Object[Data, Chromatography], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
-			Description -> "The file containing the raw chromatography metadata containing the audit tral which includes the parameters set and the step by step record of the commands performed by the instrument during the injection.",
+			Description -> "The file containing the raw chromatography metadata containing the audit trail which includes the parameters set and the step by step record of the commands performed by the instrument during the injection.",
 			Category -> "Data Processing"
 		},
 		PressureFile -> {

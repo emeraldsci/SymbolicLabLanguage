@@ -1405,6 +1405,15 @@ DefineConstant[
 	"The maximum volume that can be contained by a Model[Container, Cuvette] in the ECL."
 ];
 
+(* ::Subsubsection::Closed:: *)
+(*$BaselineOperator*)
+
+DefineConstant[
+	$AllowUserInvalidObjectUploads,
+	False,
+	"Defines whether we allow external users to upload objects that will not pass ValidObjectQ in certain functions."
+];
+
 
 (* ::Subsubsection::Closed:: *)
 (*$MaxVolumetricFlaskShakeRate*)
@@ -1449,4 +1458,13 @@ DefineConstant[
 	$DefaultTertiaryProbe,
 	Model[Part, pHProbe, "id:J8AY5jDmW5ma"],
 	"The tertiary probe that is connected the SevenExcellence pHMeter."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$pHProbeElectrolyteModel*)
+
+DefineConstant[
+	$pHProbeElectrolyteModel,
+	Model[Sample, "id:N80DNjkL70dN"],
+	"The KCl Model that is used for pH probe electrolyte."
 ];

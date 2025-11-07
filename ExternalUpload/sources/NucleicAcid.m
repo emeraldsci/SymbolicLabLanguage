@@ -24,16 +24,17 @@ resolveUploadNucleicAcidModelOptions[myType_, myInput:{___}, myOptions_, rawOpti
 	<|
 		Result -> result,
 		InvalidInputs -> {},
-		InvalidOptions -> {}
+		InvalidOptions -> {},
+		Tests -> {}
 	|>
 ];
 
 (* Helper function to resolve the options to our function. *)
 (* Takes in a list of inputs and a list of options, return a list of resolved options. *)
 resolveUploadNucleicAcidModelOptions[myType_, myName_String, myOptions_, rawOptions_]:=Module[
-	{outputOption, myOptionsAssociation, myOptionsWithName, myOptionsWithMolecularWeight,
+	{myOptionsAssociation, myOptionsWithName, myOptionsWithMolecularWeight, myOptionsWithSharedResolution,
 		myOptionsWithEnthalpy, myOptionsWithEntropy, myOptionsWithFreeEnergy, myFinalizedOptions, myStructure,
-		myOptionsWithExtinctionCoefficients},
+		myOptionsWithSynonyms, myOptionsWithExtinctionCoefficients, myOptionsWithSimpleDefaults},
 
 	(* Pull our things from our options. *)
 	myStructure=Lookup[myOptions, Molecule];
@@ -46,13 +47,13 @@ resolveUploadNucleicAcidModelOptions[myType_, myName_String, myOptions_, rawOpti
 
 	(* -- AutoFill based on the information we're given. -- *)
 	(* Overwrite the Name option if it is Null. *)
-	myOptionsWithName=If[MatchQ[Lookup[myOptionsAssociation, Name], Null],
+	myOptionsWithName=If[MatchQ[Lookup[myOptionsAssociation, Name], Alternatives[Null, Automatic]],
 		Append[myOptionsAssociation, Name -> myName],
 		myOptionsAssociation
 	];
 
 	(* Overwrite the MolecularWeight option if it is Automatic. *)
-	myOptionsWithMolecularWeight=If[MatchQ[Lookup[myOptionsAssociation, MolecularWeight], Null] && MatchQ[myStructure, _?StructureQ | _?StrandQ],
+	myOptionsWithMolecularWeight=If[MatchQ[Lookup[myOptionsAssociation, MolecularWeight], Alternatives[Null, Automatic]] && MatchQ[myStructure, _?StructureQ | _?StrandQ],
 		With[{molecularWeight=Quiet[MolecularWeight[myStructure]]},
 			If[MatchQ[molecularWeight, MolecularWeightP],
 				Append[myOptionsWithName, MolecularWeight -> molecularWeight],
@@ -63,7 +64,7 @@ resolveUploadNucleicAcidModelOptions[myType_, myName_String, myOptions_, rawOpti
 	];
 
 	(* Overwrite the Enthalpy option if it is Automatic. *)
-	myOptionsWithEnthalpy=If[MatchQ[Lookup[myOptionsAssociation, Enthalpy], Null] && MatchQ[myStructure, _?StructureQ | _?StrandQ],
+	myOptionsWithEnthalpy=If[MatchQ[Lookup[myOptionsAssociation, Enthalpy], Alternatives[Null, Automatic]] && MatchQ[myStructure, _?StructureQ | _?StrandQ],
 		With[
 			{
 				enthalpy=Quiet[
@@ -85,7 +86,7 @@ resolveUploadNucleicAcidModelOptions[myType_, myName_String, myOptions_, rawOpti
 	];
 
 	(* Overwrite the Entropy option if it is Automatic. *)
-	myOptionsWithEntropy=If[MatchQ[Lookup[myOptionsAssociation, Entropy], Null] && MatchQ[myStructure, _?StructureQ | _?StrandQ],
+	myOptionsWithEntropy=If[MatchQ[Lookup[myOptionsAssociation, Entropy], Alternatives[Null, Automatic]] && MatchQ[myStructure, _?StructureQ | _?StrandQ],
 		With[
 			{
 				entropy=Quiet[
@@ -106,7 +107,7 @@ resolveUploadNucleicAcidModelOptions[myType_, myName_String, myOptions_, rawOpti
 	];
 
 	(* Overwrite the FreeEnergy option if it is Automatic. *)
-	myOptionsWithFreeEnergy=If[MatchQ[Lookup[myOptionsAssociation, FreeEnergy], Null] && MatchQ[myStructure, _?StructureQ | _?StrandQ],
+	myOptionsWithFreeEnergy=If[MatchQ[Lookup[myOptionsAssociation, FreeEnergy], Alternatives[Null, Automatic]] && MatchQ[myStructure, _?StructureQ | _?StrandQ],
 		With[
 			{
 				freeEnergy=Quiet[
@@ -127,7 +128,7 @@ resolveUploadNucleicAcidModelOptions[myType_, myName_String, myOptions_, rawOpti
 	];
 
 	(* Overwrite the ExtinctionCoefficients option if it is Automatic. *)
-	myOptionsWithExtinctionCoefficients=If[MatchQ[Lookup[myOptionsAssociation, ExtinctionCoefficients], Null] && MatchQ[myStructure, _?StructureQ | _?StrandQ],
+	myOptionsWithExtinctionCoefficients=If[MatchQ[Lookup[myOptionsAssociation, ExtinctionCoefficients], Alternatives[Null, Automatic]] && MatchQ[myStructure, _?StructureQ | _?StrandQ],
 		With[{extinctionCoefficient=Quiet[ExtinctionCoefficient[myStructure]]},
 			If[MatchQ[extinctionCoefficient, GreaterP[Quantity[0, ("Liters") / ("Centimeters" * "Moles")]]],
 				Append[myOptionsWithFreeEnergy, ExtinctionCoefficients -> {{260 Nanometer, extinctionCoefficient}}],
@@ -137,10 +138,54 @@ resolveUploadNucleicAcidModelOptions[myType_, myName_String, myOptions_, rawOpti
 		myOptionsWithEntropy
 	];
 
+	(* Default simple options *)
+	myOptionsWithSimpleDefaults = Module[
+		{simpleOptionDefaults, modifications},
+
+		(* List of values to default Automatic to *)
+		simpleOptionDefaults = <|
+			State -> Solid,
+			Flammable -> False,
+			BiosafetyLevel -> "BSL-1",
+			MSDSFile -> NotApplicable,
+			IncompatibleMaterials -> {None}
+		|>;
+
+		(* For each of the automatic options in the association pull out the default values (if there is one) *)
+		modifications = KeyTake[
+			simpleOptionDefaults,
+			Keys[Select[myOptionsAssociation, MatchQ[#, Automatic] &]]
+		];
+
+		(* Merge in the changes *)
+		Merge[
+			{myOptionsWithExtinctionCoefficients, modifications},
+			Last
+		]
+	];
+
 	(* Make sure that if we have a Name and Synonyms field  that Name is apart of the Synonyms list. *)
-	myFinalizedOptions=If[MatchQ[Lookup[myOptionsWithExtinctionCoefficients, Synonyms], Null] || (!MemberQ[Lookup[myOptionsWithExtinctionCoefficients, Synonyms], Lookup[myOptionsWithExtinctionCoefficients, Name]] && MatchQ[Lookup[myOptionsWithExtinctionCoefficients, Name], _String]),
-		Append[myOptionsWithExtinctionCoefficients, Synonyms -> (Append[Lookup[myOptionsWithExtinctionCoefficients, Synonyms] /. Null -> {}, Lookup[myOptionsWithExtinctionCoefficients, Name]])],
-		myOptionsWithExtinctionCoefficients
+	myOptionsWithSynonyms=If[MatchQ[Lookup[myOptionsWithSimpleDefaults, Synonyms], Alternatives[Null, Automatic]] || (!MemberQ[Lookup[myOptionsWithSimpleDefaults, Synonyms], Lookup[myOptionsWithSimpleDefaults, Name]] && MatchQ[Lookup[myOptionsWithSimpleDefaults, Name], _String]),
+		Append[myOptionsWithSimpleDefaults, Synonyms -> (Append[Lookup[myOptionsWithSimpleDefaults, Synonyms] /. Alternatives[Null, Automatic] -> {}, Lookup[myOptionsWithSimpleDefaults, Name]])],
+		myOptionsWithSimpleDefaults
+	];
+
+	(* Resolve any shared options that need custom resolution *)
+	myOptionsWithSharedResolution = Module[
+		{customResolvedSharedOptions},
+
+		(* Resolve any options within the shared option sets that need custom handling *)
+		customResolvedSharedOptions = resolveCustomSharedUploadOptions[myOptionsWithSynonyms];
+
+		(* Merge the newly resolved options into the option set *)
+		Join[myOptionsWithSynonyms, customResolvedSharedOptions]
+	];
+
+	(* Default key options *)
+	myFinalizedOptions = Replace[
+		myOptionsWithSharedResolution,
+		Automatic -> Null,
+		{1}
 	];
 
 	(* Return our options. *)
@@ -150,51 +195,4 @@ resolveUploadNucleicAcidModelOptions[myType_, myName_String, myOptions_, rawOpti
 
 (* Helper function to resolve the options to our function. *)
 (* Takes in a list of inputs and a list of options, return a list of resolved options. *)
-resolveUploadNucleicAcidModelOptions[myType_, myInput:ObjectP[], myOptions_, rawOptions_]:=Module[
-	{objectPacket, fields, resolvedOptions},
-
-	(* Lookup our packet from our cache. *)
-	objectPacket=Experiment`Private`fetchPacketFromCache[myInput, Lookup[ToList[myOptions], Cache]];
-
-	(* Get the definition of this type. *)
-	fields=Association@Lookup[LookupTypeDefinition[myType], Fields];
-
-	(* For each of our options, see if it exists as a field of the same name in the object. *)
-	resolvedOptions=Association@KeyValueMap[
-		Function[{fieldSymbol, fieldValue},
-			Module[{fieldDefinition, formattedOptionSymbol, formattedFieldValue},
-				(* If field does not exist as an option do not include it in the resolved options *)
-				If[!KeyExistsQ[myOptions, fieldSymbol],
-					Nothing,
-
-					(* If the user has specified this option, use that. *)
-					If[KeyExistsQ[rawOptions, fieldSymbol],
-						fieldSymbol -> Lookup[rawOptions, fieldSymbol],
-
-						(* ELSE: Get the information about this specific field. *)
-						fieldDefinition=Association@Lookup[fields, fieldSymbol];
-
-						(* Strip off all links from our value. *)
-						formattedFieldValue=ReplaceAll[fieldValue, link_Link :> RemoveLinkID[link]];
-
-						(* Based on the class of our field, we have to format the values differently. *)
-						Switch[Lookup[fieldDefinition, Class],
-							Computable,
-								Nothing,
-							{_Rule..},
-								fieldSymbol -> formattedFieldValue,
-							_List,
-								fieldSymbol -> formattedFieldValue[[All, 2]],
-							_,
-								fieldSymbol -> formattedFieldValue
-						]
-					]
-				]
-			]
-		],
-		Association@objectPacket
-	];
-
-	(* Return our resolved options as a list. *)
-	Normal[resolvedOptions]
-];
+resolveUploadNucleicAcidModelOptions[myType_, myInput:ObjectP[], myOptions_, rawOptions_]:=resolveDefaultUploadFunctionOptions[myType, myInput, myOptions, rawOptions];

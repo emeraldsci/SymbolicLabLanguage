@@ -77,6 +77,9 @@ DefineObjectType[Object[Protocol, Cover], {
 				Model[Instrument, Crimper],
 				Object[Instrument, Crimper],
 
+				Model[Part, Crimper],
+				Object[Part, Crimper],
+
 				Model[Instrument, PlateSealer],
 				Object[Instrument, PlateSealer]
 			],
@@ -103,6 +106,17 @@ DefineObjectType[Object[Protocol, Cover], {
 				Object[Part, DecrimpingHead]
 			],
 			Description -> "The part that attaches to the crimper instrument and is used to remove crimped caps from vials.",
+			Category -> "General"
+		},
+		Decrimpers -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Part, Decrimper],
+				Object[Part, Decrimper]
+			],
+			Description -> "The device used to remove the crimped cap if it was not placed on the container securely.",
 			Category -> "General"
 		},
 		CrimpingPressures -> {

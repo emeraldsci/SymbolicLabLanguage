@@ -52,6 +52,17 @@ DefineObjectType[Object[Qualification,Training,TabletCrushing], {
 			Description -> "Instrument which tablets are weighed on before and after they have been crushed.",
 			Category -> "Tablet Crushing Skills"
 		},
+		HandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Instrument, HandlingStation],
+				Object[Instrument, HandlingStation]
+			],
+			Description -> "The environment in which crushing and weighing tablets happens.",
+			Category -> "General"
+		},
 		TabletPostCrushContainer -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -74,19 +85,19 @@ DefineObjectType[Object[Qualification,Training,TabletCrushing], {
 			Description -> "Rack used to hold the container carrying the tablet after it has been crushed.",
 			Category -> "Tablet Crushing Skills"
 		},
-		TabletWeighPaper -> {
-			Format -> Single,
+		TabletWeighingContainer -> {
+			Format -> Multiple,
 			Class -> Link,
 			Pattern :> Link,
 			Relation -> Alternatives[
-				Object[Item, Consumable],
-				Model[Item, Consumable]
+				Object[Item, WeighBoat],
+				Model[Item, WeighBoat]
 			],
 			Description -> "Container used to hold the tablet for weight measurements before it has been crushed.",
 			Category -> "Tablet Crushing Skills"
 		},
-		TabletSpatula -> {
-			Format -> Single,
+		TabletSpatulas -> {
+			Format -> Multiple,
 			Class -> Link,
 			Pattern :> Link,
 			Relation -> Alternatives[
@@ -120,7 +131,7 @@ DefineObjectType[Object[Qualification,Training,TabletCrushing], {
 			Description -> "The weight of the container carrying the crushed tablet.",
 			Category -> "Experimental Results"
 		},
-		TabletWeighPaperTareWeight -> {
+		TabletWeighingContainerTareWeight -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
@@ -143,6 +154,22 @@ DefineObjectType[Object[Qualification,Training,TabletCrushing], {
 			Relation -> Object[Protocol,ImageSample],
 			Description -> "The Cloud File containing image data of the tablet after it has been crushed.",
 			Category -> "Experimental Results"
+		},
+		WeightStabilityDuration -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Second],
+			Units -> Second,
+			Description -> "The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable and measured.",
+			Category -> "General"
+		},
+		MaxWeightVariation -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Milligram],
+			Units -> Milligram,
+			Description -> "The max allowed amplitude the balance readings can fluctuate with for a duration defined by WeightStabilityDuration before being considered stable and measured.",
+			Category -> "General"
 		}
 	}
 }]

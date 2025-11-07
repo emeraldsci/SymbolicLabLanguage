@@ -25,7 +25,7 @@ DefineTests[
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-2",
 				Flammable -> False,
-				MSDSRequired -> False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ThawCellsMethod -> myThawMethod,
 				Living->True

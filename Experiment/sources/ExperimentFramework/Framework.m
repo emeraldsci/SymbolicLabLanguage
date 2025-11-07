@@ -44,23 +44,23 @@ SamplePreparationCacheFields[type_,ops:OptionsPattern[]]:=Module[{fields, safeOp
 				LiquidHandlerIncompatible, Site, RequestedResources, Conductivity, IncompatibleMaterials, pH, KitComponents,
 				AsepticHandling, Density, Fuming, InertHandling, ParticleWeight, PipettingMethod, Pyrophoric,
 				ReversePipetting, RNaseFree, TransferTemperature, TransportCondition, Ventilated, Well, SurfaceTension,
-				AluminumFoil, Parafilm, Anhydrous, ExtinctionCoefficients, Notebook
+				AluminumFoil, Parafilm, Anhydrous, ExtinctionCoefficients, Missing, ExpirationDate, Notebook, Flammable, DOTHazardClass
 			},
 		Model[Sample],
 			{
-				Conductivity, IncompatibleMaterials, pH, KitComponents, RequestedResources, Products, KitProducts, MixedBatchProducts,
+				Conductivity, IncompatibleMaterials, pH, KitComponents, RequestedResources, Products, KitProducts,
 				MaxThawTime, Solvent, SampleHandling, CellType, CultureAdhesion, BiosafetyLevel, Composition, Analytes, TransportTemperature,
 				Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, Sachet, SolidUnitWeight, State, MolecularWeight, MeltingPoint,
 				ThawTime, ThawTemperature, Dimensions, ExtinctionCoefficients, UsedAsSolvent, AsepticHandling, Density, Fuming, InertHandling,
 				ParticleWeight, PipettingMethod, Pyrophoric, ReversePipetting, RNaseFree, TransferTemperature, TransportCondition, Ventilated, SurfaceTension,
-				Parafilm, AluminumFoil, Living
+				Parafilm, AluminumFoil, Living, Flammable, DOTHazardClass
 			},
 		Object[Container],
 			{
 				Type, Object, Name, Status, Model, Container, Contents, Container, Sterile, TareWeight, StorageCondition, RequestedResources, KitComponents, Site,
 				Ampoule, Hermetic, MaxTemperature, MaxVolume, MinTemperature, Opaque, RNaseFree, Squeezable, InertHandling, AsepticHandling,
 				ParticleWeight, PipettingMethod, Pyrophoric, ReversePipetting, TransferTemperature, TransportCondition, Ventilated,
-				PreviousCover, Cover, Septum, KeepCovered, AluminumFoil,Parafilm
+				PreviousCover, Cover, Septum, KeepCovered, AluminumFoil,Parafilm, Missing, ExpirationDate
 			},
 		Model[Container],
 			{
@@ -73,7 +73,7 @@ SamplePreparationCacheFields[type_,ops:OptionsPattern[]]:=Module[{fields, safeOp
 				AluminumFoil, Ampoule, BuiltInCover, CoverTypes, Counterweights, EngineDefault, Hermetic, Opaque, Parafilm,
 				RequestedResources, Reusable, RNaseFree, Squeezable, StorageBuffer, StorageBufferVolume,
 				TareWeight, VolumeCalibrations, Columns,HorizontalPitch,LiquidHandlerPrefix, MultiProbeHeadIncompatible, VerticalPitch, MaxPressure,
-				DestinationContainerModel,RetentateCollectionContainerModel,ConnectionType, KitProducts, Products, MixedBatchProducts, MaxOverheadMixRate
+				DestinationContainerModel,RetentateCollectionContainerModel,ConnectionType, KitProducts, Products, MaxOverheadMixRate
 			},
 		Object[User],
 			{FirstName, LastName, Email, TeamEmailPreference, NotebookEmailPreferences, Name},
@@ -287,6 +287,97 @@ removeLinks[myInput_, myOptions_] := Module[
 	}
 ];
 
+(* ::Subsection::Closed:: *)
+(* Helper function to be called in sanitizeInputs to check if any options contain specified objects that are in an unusable state *)
+DefineOptions[checkObjectsInOptions,
+	Options :> {
+		SimulationOption
+	}
+];
+(* Message *)
+
+Warning::OptionContainsUnusableObject = "The following options contain specified object instances that have a
+defective state and will require troubleshooting in the lab:`1` To avoid potential delays in processing, please consider using a Model instead.";
+
+checkObjectsInOptions[myOptions:{_Rule...}, mySimulationOps: Rule[Simulation, _]] := Module[
+	{typesToCheck, optionObjects, simulation, objectPackets, defectiveOptionClauses},
+	(* Check that if objects specified in options have unusable states. For now it includes Missing-> True and Expires -> True *)
+	(* Types that we will check for defective states. Note that we don't want to go through all the following if we are only given e.g. updated by a parent Object[Protocol], or a standard curve, or an Object[Method] *)
+	typesToCheck = {Object[Sample], Object[Item], Object[Container], Object[Instrument], Object[Part], Object[Plumbing], Object[Sensor], Object[Wiring]};
+
+	optionObjects = DeleteDuplicates[Cases[Values[myOptions], ObjectP[typesToCheck], Infinity]];
+
+	(* Continue only if there is any specified Object in options. Becuase it has to involve a download call and we want to avoid it unless necessary. *)
+	If[Length[optionObjects] == 0,
+		Return[]
+	];
+
+	(* Grab the simulation passed *)
+	simulation = OptionDefault[OptionValue[checkObjectsInOptions, {mySimulationOps}, Simulation]];
+	(* Download the info we need for the objects. Pass simulation in case any option is specified to use simulated *)
+	objectPackets = Quiet[
+		Download[optionObjects, Packet[ExpirationDate, Missing], Simulation -> simulation],
+		Download::FieldDoesntExist
+	];
+	(* Go through the specified options to construct tuples of problematic {OptionName, Object, defective state name, defective state value} *)
+	defectiveOptionClauses = Map[
+		Function[myOption,
+			Module[{uniqueObjectsInValues, uniqueObjectPackets, objects, expirationDates, missings, objectClauses},
+				(* Pull objects from values *)
+				uniqueObjectsInValues = DeleteDuplicates[Cases[ToList[Values[myOption]], ObjectP[typesToCheck], Infinity]];
+				(* Grab their packets *)
+				uniqueObjectPackets = fetchPacketFromCache[#, objectPackets]& /@ uniqueObjectsInValues;
+				(* Lookup the values *)
+				{objects, expirationDates, missings} = Transpose[Lookup[uniqueObjectPackets, {Object, ExpirationDate, Missing}, Null]];
+
+				(* Construct the clause field-by-field *)
+				objectClauses = Flatten[{
+					If[MemberQ[expirationDates, LessP[Now]],
+						MapThread[
+							Function[{expiredObject, expirationDate},
+								StringJoin[
+									", ",
+									ObjectToString[expiredObject, Simulation -> simulation],
+									" expired at ",
+									DateString[expirationDate]
+								]
+							],
+							{
+								PickList[objects, expirationDates, LessP[Now]],
+								Cases[expirationDates, LessP[Now]]
+							}
+						],
+						(* Otherwise this option is all for  this field *)
+						Nothing
+					],
+					If[MemberQ[missings, True],
+						StringJoin[
+							", ",
+							ObjectToString[PickList[objects, missings, True], Simulation -> simulation]," is missing from its location in database"
+						],
+						(* Otherwise this option is all for  this field *)
+						Nothing
+					]
+				}];
+				(* If we have any defective object for this option, construct a string *)
+				If[MatchQ[objectClauses, {(_String)..}],
+					StringJoin[
+						" For option ",
+						ToString[Keys[myOption]],
+						Sequence@@objectClauses,
+						"."
+					],
+					Nothing
+				]
+			]
+		],
+		myOptions
+	];
+	(* If we have any defective object in options, join all clauses *)
+	If[MatchQ[defectiveOptionClauses, {(_String)..}],
+		Message[Warning::OptionContainsUnusableObject, StringJoin[Sequence@@defectiveOptionClauses]]
+	]
+];
 
 (* ::Subsection::Closed:: *)
 (* replaces objects referenced by name to IDs *)
@@ -350,6 +441,13 @@ sanitizeInputs[myInput_List, myOptions:Alternatives[_List,$Failed], mySimulation
 			Message[Download::ObjectDoesNotExist, PickList[Flatten[allObjects], objectsExistQ, False]];
 			Return[{$Failed, $Failed}]
 		)
+	];
+
+	(* Check if any objects in options have unusable states. When we reach here, all objects are made sure to exist *)
+	If[Length[optionsWithoutSimulationParent] > 0,
+
+		(* check for objects in options and their relevant fields when we do have options specified *)
+		checkObjectsInOptions[optionsWithoutSimulationParent, Simulation -> inheritedSimulation]
 	];
 
 	(* change Sample to more general terms *)
@@ -431,6 +529,12 @@ sanitizeInputs[myInput_List, mySafeOptions:Alternatives[_List,$Failed], myOption
 			Message[Download::ObjectDoesNotExist, PickList[Flatten[allObjects], objectsExistQ, False]];
 			Return[{$Failed, $Failed, $Failed}]
 		)
+	];
+
+	(* Check if any objects in options have unusable states. When we reach here, all objects are made sure to exist *)
+	If[Length[optionsWithoutSimulationParent]>0,
+		(* check for objects in options and their relevant fields when we do have options specified *)
+		checkObjectsInOptions[optionsWithoutSimulationParent, Simulation -> inheritedSimulation]
 	];
 
 	(* change Sample to more general terms *)
@@ -1699,10 +1803,14 @@ simulateSamplePreparationPacketsNew[myFunction_Symbol,mySamples:ListableP[Listab
 	cache = Lookup[flatOptions, Cache, {}];
 	simulation = Lookup[flatOptions, Simulation, Null];
 
-	(* Replace all Named objects to be referenced by ID *)
-	{samplesByID, experimentOptionsByIDWithPreparedModel} = sanitizeInputs[mySamples, myExperimentOptions, Simulation -> simulation];
+	(* replace all Named objects to be referenced by ID *)
+	(* Experiments should call sanitizeInput first by itself. Do not throw the message again *)
+	{samplesByID, experimentOptionsByIDWithPreparedModel} = Quiet[
+		sanitizeInputs[mySamples, flatOptions, Simulation -> simulation],
+		Warning::OptionContainsUnusableObject
+	];
 
-	(* SanitizeInputs will throw the message itself; just need to return $Failed here  *)
+	(* sanitizeInputs will throw the message itself; just need to return $Failed here  *)
 	If[MatchQ[samplesByID, $Failed],
 		Return[{$Failed, $Failed, $Failed}]
 	];

@@ -1547,15 +1547,42 @@ validModelInstrumentHandlingStationQTests[packet:PacketP[Model[Instrument,Handli
 	NotNullFieldTest[
 		packet,
 		{
-			BalanceType,
 			NumberOfVideoCameras,
 			Ventilated,
 			Deionizing,
 			HermeticTransferCompatible,
 			ProvidedHandlingConditions
 		}
-	]
+	],
 	
+	(* if balance type is populated, every objects should have the corresponding balance types! *)
+	Test["BalanceType of the model matches up with each instance's Field[Balances[Mode]]:",
+		Module[{balanceTypesToHave, instances, instanceTuples},
+			balanceTypesToHave = Lookup[packet, BalanceType];
+
+			(* get the objects *)
+			instances = Lookup[packet, Objects];
+			instanceTuples = Download[instances, {Status, Balances[Mode]}];
+
+			(* only check non-Retired instances *)
+			SubsetQ[balanceTypesToHave, #[[2]]]& /@ DeleteCases[instanceTuples, {Retired, _}]
+		],
+		{True...}
+	],
+
+	Test["BalanceType of the ProvidedHandlingConditions match the BalanceType of the instrument model:",
+		Module[{balanceTypesToHave, handlingConditions, handlingConditionBalanceTypes},
+			balanceTypesToHave = Lookup[packet, BalanceType];
+
+			(* get the provided handling conditions *)
+			handlingConditions = Lookup[packet, ProvidedHandlingConditions];
+			handlingConditionBalanceTypes = DeleteDuplicates[Flatten[Download[handlingConditions, BalanceType]]];
+
+			(* cannot provide a handling condition with a balance type that is not in our model *)
+			Complement[handlingConditionBalanceTypes, balanceTypesToHave]
+		],
+		{}
+	]
 };
 
 
@@ -1564,19 +1591,6 @@ validModelInstrumentHandlingStationQTests[packet:PacketP[Model[Instrument,Handli
 
 
 validModelInstrumentHandlingStationAmbientQTests[packet:PacketP[Model[Instrument,HandlingStation,Ambient]]]:={
-
-	NotNullFieldTest[
-		packet,
-		{
-			BalanceType,
-			NumberOfVideoCameras,
-			Ventilated,
-			Deionizing,
-			HermeticTransferCompatible,
-			ProvidedHandlingConditions
-		}
-	]
-
 };
 
 
@@ -2157,7 +2171,7 @@ validModelInstrumentHandlingStationFumeHoodQTests[packet:PacketP[Model[Instrumen
 	],
 
 	(* Fields which should be null *)
-	NullFieldTest[packet,{Connector,Dongle,OperatingSystem,PCICard}]
+	NullFieldTest[packet,{Connector,Dongle,PCICard}]
 
 };
 
@@ -2868,7 +2882,26 @@ validModelInstrumentIonChromatographyQTests[packet:PacketP[Model[Instrument, Ion
 	FieldComparisonTest[packet, {MinFlowCellpH,MaxFlowCellpH}, LessEqual]
 };
 
+(* ::Subsection::Closed:: *)
+(*validModelInstrumentKarlFischerTiratorQTests*)
 
+
+validModelInstrumentKarlFischerTiratorQTests[packet:PacketP[Model[Instrument, KarlFischerTitrator]]]:={
+	(* Shared fields which should be null *)
+
+	(* Shared fields which should NOT be null *)
+	NotNullFieldTest[packet,{
+		Positions,
+		PositionPlotting,
+		TitrationTechnique,
+		SamplingMethods
+	}
+	],
+
+
+	(* Min/Max tests *)
+	FieldComparisonTest[packet, {MinTemperature,MaxTemperature}, LessEqual]
+};
 
 (* ::Subsection::Closed:: *)
 (*validModelInstrumentLightMeterQTests*)
@@ -4214,13 +4247,15 @@ validModelInstrumentPlateWasherQTests[packet:PacketP[Model[Instrument,PlateWashe
 	NullFieldTest[packet, {Connector,Dongle,OperatingSystem,PCICard}],
 
 	(* Individual fields *)
-	NotNullFieldTest[packet, {Positions,PositionPlotting,MixModes}],
+	NotNullFieldTest[packet, {Positions,PositionPlotting}],
 
 	RequiredTogetherTest[packet,{MinRotationRate,MaxRotationRate}],
 
-	FieldComparisonTest[packet,{MaxRotationRate,MinRotationRate},GreaterEqual]
+	FieldComparisonTest[packet,{MaxRotationRate,MinRotationRate},GreaterEqual],
 
+	FieldComparisonTest[packet,{MaxAspirateTravelRate,MinAspirateTravelRate},GreaterEqual],
 
+	FieldComparisonTest[packet,{MaxDispenseFlowRate,MinDispenseFlowRate},GreaterEqual]
 };
 
 
@@ -5472,6 +5507,7 @@ registerValidQTestFunction[Model[Instrument, HPLC],validModelInstrumentHPLCQTest
 registerValidQTestFunction[Model[Instrument, Incubator],validModelInstrumentIncubatorQTests];
 registerValidQTestFunction[Model[Instrument, InfraredProbe],validModelInstrumentInfraredProbeQTests];
 registerValidQTestFunction[Model[Instrument, IonChromatography],validModelInstrumentIonChromatographyQTests];
+registerValidQTestFunction[Model[Instrument, KarlFischerTitrator],validModelInstrumentKarlFischerTiratorQTests];
 registerValidQTestFunction[Model[Instrument, LightMeter],validModelInstrumentLightMeterQTests];
 registerValidQTestFunction[Model[Instrument, LiquidHandler],validModelInstrumentLiquidHandlerQTests];
 registerValidQTestFunction[Model[Instrument, LiquidHandler,AcousticLiquidHandler],validModelInstrumentAcousticLiquidHandlerQTests];

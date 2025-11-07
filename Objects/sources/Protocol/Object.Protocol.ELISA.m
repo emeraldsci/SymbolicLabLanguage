@@ -5,100 +5,254 @@
 
 DefineObjectType[Object[Protocol, ELISA],
 	{
-		Description->"A protocol for performing a Enzyme-Linked Immunosorbent Assay (ELISA) experiment on the provided samples for the detection and quantification of an analyte using antibodies.",
-		CreatePrivileges->None,
-		Cache->Session,
-		Fields->{
-			Instrument->{
-				Format->Single,
-				Class->Link,
-				Pattern :> ObjectP[{Object[Instrument, LiquidHandler], Model[Instrument, LiquidHandler]}],
-				Relation->Object[Instrument, LiquidHandler] | Model[Instrument, LiquidHandler],
-				Description->"The detection and quantification  ELISA device on which the protocol is used to perform the ELISA experiment and detects the signals to quantify certain analytes.",
-				Category->"General"
+		Description -> "A protocol for performing a Enzyme-Linked Immunosorbent Assay (ELISA) experiment on the provided samples for the detection and quantification of an analyte using antibodies.",
+		CreatePrivileges -> None,
+		Cache -> Session,
+		Fields -> {
+			(*===General Information===*)
+			Method -> {
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> ELISAMethodP,
+				Description -> "The format used for ELISA analysis in this unit operation.",
+				Category -> "General"
 			},
-
+			Instrument -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> ObjectP[{Object[Instrument, LiquidHandler], Model[Instrument, LiquidHandler]}],
+				Relation -> Object[Instrument, LiquidHandler] | Model[Instrument, LiquidHandler],
+				Description -> "The instrument integrates a shaker, plate washer, and plate reader, and is used to dispense reagents into ELISA plates and transfer them between modules.",
+				Category -> "General"
+			},
+			DetectionMode -> {
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> AbsorbanceIntensity|FluorescenceIntensity|LuminescenceIntensity,
+				Description -> "The type of detection method used to measure the signal generated from the enzyme substrate reaction to quantify the target analyte during this assay.",
+				Category -> "General"
+			},
+			SampleAssemblyPlates -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Container, Plate], Object[Container, Plate]}],
+				Relation -> Model[Container, Plate]|Object[Container, Plate],
+				Description -> "The deep well plates used to dilute samples, standards, spiking samples, mixing samples and antibodies, and antibody-sample complex incubation before loading them onto ELISAPlate(s).",
+				Category -> "General"
+			},
+			ELISAPlate -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Container, Plate], Object[Container, Plate]}],
+				Relation -> Model[Container, Plate]|Object[Container, Plate],
+				Description -> "The plate that serves as the solid-phase support for the enzyme-linked immunosorbent assay, where samples, standards, and blanks are loaded.",
+				Category -> "General"
+			},
+			SecondaryELISAPlate -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Container, Plate], Object[Container, Plate]}],
+				Relation -> Model[Container, Plate]|Object[Container, Plate],
+				Description -> "The second plate that serves as the solid-phase support for the enzyme-linked immunosorbent assay, where samples, standards, and blanks are loaded.",
+				Category -> "General"
+			},
+			TertiaryELISAPlate -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Container, Plate], Object[Container, Plate]}],
+				Relation -> Model[Container, Plate]|Object[Container, Plate],
+				Description -> "The third plate that serves as the solid-phase support for the enzyme-linked immunosorbent assay, where samples, standards, and blanks are loaded.",
+				Category -> "General"
+			},
+			NumberOfReadings -> {
+				Format -> Single,
+				Class -> Integer,
+				Pattern :> GreaterEqualP[0, 1],
+				Units -> None,
+				Description -> "The number of redundant readings taken by the detector and averaged over per each well.",
+				Category -> "Absorbance Measurement"
+			},
+			TargetAntigens -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[Model[Molecule]],
+				Relation -> Model[Molecule],
+				Description -> "For each member of SamplesIn, the analyte molecule (e.g., peptide, protein, and hormone) detected and quantified in this assay.",
+				Category -> "General",
+				IndexMatching -> SamplesIn
+			},
+			SampleAssemblyPrimitives -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> SampleManipulationP|SamplePreparationP,
+				Description -> "A set of SampleManipulation instructions specifying the dilution, spiking, and antibody mixing of Samples, Standards, and Blanks.",
+				Category -> "General"
+			},
+			AntibodyAntigenDilutionPrimitives -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> SampleManipulationP|SamplePreparationP,
+				Description -> "A set of SampleManipulation instructions specifying the dilution of antibodies and reference antigen using their corresponding diluents.",
+				Category -> "General"
+			},
+			CoatingPlateAssemblyPrimitives -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> SampleManipulationP|SamplePreparationP,
+				Description -> "A set of SampleManipulation instructions specifying the coating of ELISAPlate(s).",
+				Category -> "General"
+			},
+			ELISAPrimitives -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> ELISAPrimitivesP,
+				Description -> "A set of SampleManipulation instructions specifying the blocking, immunosorbent steps, substrate incubation, and plate reading performed in the ELISA instrument.",
+				Category -> "General"
+			},
+			SampleAssemblyProtocol -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
+				Description -> "The sample manipulation protocol used for the dilution, spiking, and antibody mixing of Samples, Standards, and Blanks.",
+				Category -> "General"
+			},
+			AntibodyAntigenDilutionProtocol -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
+				Description -> "The sample manipulation protocol used for the dilution of antibodies and reference antigen using their corresponding diluents.",
+				Category -> "General"
+			},
+			CoatingPlateAssemblyProtocol -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation],
+				Description -> "The sample manipulation protocol used for transferring the solutions for the coating of ELISAPlate(s).",
+				Category -> "General"
+			},
+			CoatingPlateIncubationProtocol -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> ObjectP[Object[Protocol]],
+				Relation -> Object[Protocol],
+				Description -> "The ExperimentIncubation protocol used for the coating of ELISAPlate(s).",
+				Category -> "General"
+			},
 			(* ----------Files------------ *)
 			ProtocolKey -> {
 				Format -> Single,
 				Class -> String,
 				Pattern :> _String,
 				Description -> "The protocol key.",
-				Category -> "General",
+				Category -> "Method Information",
 				Developer -> True
 			},
-			MethodFilePath->{
-				Format->Single,
-				Class->String,
+			MethodFilePath -> {
+				Format -> Single,
+				Class -> String,
 				Pattern :> FilePathP,
-				Description->"The file path of the folder containing the protocol file which contains the run parameters.",
-				Category->"General",
-				Developer->True
+				Description -> "The file path of the folder containing the protocol file which contains the run parameters.",
+				Category -> "Method Information",
+				Developer -> True
 			},
-			MethodFileName->{
-				Format->Single,
-				Class->String,
+			MethodFileName -> {
+				Format -> Single,
+				Class -> String,
 				Pattern :> _String,
-				Description->"The file name of the folder containing the protocol file which contains the run parameters.",
-				Category->"General",
-				Developer->True
+				Description -> "The file name of the folder containing the protocol file which contains the run parameters.",
+				Category -> "Method Information",
+				Developer -> True
 			},
-			MethodFile->{
-				Format->Single,
-				Class->Link,
+			MethodFile -> {
+				Format -> Single,
+				Class -> Link,
 				Pattern :> _Link,
-				Relation->Object[EmeraldCloudFile],
-				Description->"The json file containing the run information generated for the ELISA experiment.",
-				Category->"Experimental Results"
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "The json file containing the run information generated for the ELISA experiment.",
+				Category -> "Method Information"
 			},
-			DataFilePath->{
-				Format->Single,
-				Class->String,
+			ELISALiquidHandlingLogPath -> {
+				Format -> Single,
+				Class -> String,
 				Pattern :> FilePathP,
-				Description->"The file path of the folder containing the data file generated at the conclusion of the experiment.",
-				Category->"General",
-				Developer->True
+				Description -> "The file path of the instrumentation trace file that monitored and recorded the execution of this robotic liquid handling by the ELISA Instrument.",
+				Category -> "Method Information",
+				Developer -> True
 			},
-			DataFileNames->{
-				Format->Multiple,
-				Class->String,
+			LiquidHandlingPressureLogPath -> {
+				Format -> Single,
+				Class -> String,
+				Pattern :> FilePathP,
+				Description -> "The file path of the instrumentation trace file that monitored and recorded the pressure curves during aspiration and dispense of this ELISA liquid handling.",
+				Category -> "Method Information",
+				Developer -> True
+			},
+			DataFilePath -> {
+				Format -> Single,
+				Class -> String,
+				Pattern :> FilePathP,
+				Description -> "The file path of the folder containing the data file generated at the conclusion of the experiment.",
+				Category -> "Method Information",
+				Developer -> True
+			},
+			DataFileNames -> {
+				Format -> Multiple,
+				Class -> String,
 				Pattern :> _String,
-				Description->"The file names of the data file generated at the conclusion of the experiment.",
-				Category->"General",
-				Developer->True
+				Description -> "The file names of the data file generated at the conclusion of the experiment.",
+				Category -> "Method Information",
+				Developer -> True
 			},
-			PrereadDataFileNames->{
-				Format->Multiple,
-				Class->String,
+			PrereadDataFileNames -> {
+				Format -> Multiple,
+				Class -> String,
 				Pattern :> _String,
-				Description->"The file names of the preread data file generated during the substrate incubation, before quenched by the Stopsolution.",
-				Category->"General",
-				Developer->True
+				Description -> "The file names of the preread data file generated during the substrate incubation, before quenched by the Stopsolution.",
+				Category -> "Method Information",
+				Developer -> True
 			},
-(*			PooledPrereadDataFileNames->{*)
-(*				Format -> Multiple,*)
-(*				Class -> Expression,*)
-(*				Pattern :> {ObjectReferenceP[Object[Sample]]..},*)
-(*				Description->"For each member of PrereadTimepoints, the file names of the preread data file generated during the substrate incubation, before quenched by the Stopsolution.",*)
-(*				Category->"General",*)
-(*				IndexMatching->PrereadTimepoints,*)
-(*				Developer->True*)
-(*			},*)
-			DataFiles->{
-				Format->Multiple,
-				Class->Link,
+			DataFiles -> {
+				Format -> Multiple,
+				Class -> Link,
 				Pattern :> _Link,
-				Relation->Object[EmeraldCloudFile],
-				Description->"The txt files containing the experiment data generated by the ELISA instrument.",
-				Category->"Experimental Results"
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "The txt files containing the experiment data generated by the ELISA instrument.",
+				Category -> "Experimental Results"
 			},
-			PrereadDataFiles->{
-				Format->Multiple,
-				Class->Link,
+			PrereadDataFiles -> {
+				Format -> Multiple,
+				Class -> Link,
 				Pattern :> _Link,
-				Relation->Object[EmeraldCloudFile],
-				Description->"For each member of PrereadTimepoints, the txt files containing the experiment data generated by the ELISA instrument.",
-				Category->"Experimental Results"
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "For each member of PrereadTimepoints, the txt files containing the experiment data generated by the ELISA instrument.",
+				Category -> "Experimental Results"
+			},
+			StandardData -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Data][Protocol],
+				Description -> "Data of Standards generated by this protocol.",
+				Category -> "Experimental Results"
+			},
+			BlankData -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Data][Protocol],
+				Description -> "Data of Blanks generated by this protocol.",
+				Category -> "Experimental Results"
+			},
+			PrereadData -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Data][Protocol],
+				Description -> "Preread data generated by this protocol.",
+				Category -> "Experimental Results"
 			},
 			ELISALiquidHandlingLog -> {
 				Format -> Single,
@@ -106,1469 +260,1695 @@ DefineObjectType[Object[Protocol, ELISA],
 				Pattern :> _Link,
 				Relation -> Object[EmeraldCloudFile],
 				Description -> "The instrumentation trace file that monitored and recorded the execution of this robotic liquid handling by the ELISA Instrument.",
-				Category -> "General"
+				Category -> "Experimental Results"
 			},
-			ELISALiquidHandlingLogPath -> {
+			LiquidHandlingPressureLog -> {
 				Format -> Single,
-				Class -> String,
-				Pattern :> FilePathP,
-				Description -> "The file path of the instrumentation trace file that monitored and recorded the execution of this robotic liquid handling by the ELISA Instrument.",
-				Category -> "General",
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "The instrumentation trace file that monitored and recorded the pressure curves during aspiration and dispense of this ELISA liquid handling.",
+				Category -> "Experimental Results"
+			},
+			ELISARunTime -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterP[0 Hour],
+				Units -> Hour,
+				Description -> "The duration of the last continuous run in the NIMBUS machine.",
+				Category -> "Experimental Results",
 				Developer -> True
 			},
-			Method->{
-				Format->Single,
-				Description->"Defines the type of ELISA experiment to be performed. Types include DirectELISA, IndirectELISA, DirectSandwichELISA, IndirectSandwichELISA, DirectCompetitiveELISA, IndirectCompetitiveELISA, and FastELISA. In a DirectELISA experiment, the Sample is coated on the ELISAPlate, and then a primary antibody is used to detect the target antigen. In a DirectSandwichELISA experiment, a capture antibody is coated onto the ELISAPlate to pull down the target antigen from the sample. Then primary antibody is used to detect the target antigen. In a DirectCompetitiveELISA and IndirectCompetitiveELISA experiment, a reference antigen is used to coat the ELISAPlate. Samples are incubated with the primary antibody. Then, when the Sample-Antibody-Complex solution is loaded on the ELISAPlate, the remaining free primary antibody binds to the reference antigen. In a FastELISA experiment, a coating antibody against a small protein tag is coated to the ELISAPlate. A capture antibody containing this small tag and a primary antibody for antigen detection is incubated with the sample to form a CaptureAntibody-TargetAntigen-PrimaryAntibody complex. Then this complex is pulled down by the coating antibody to the surface of the plate. Compared with the Direct methods where the primary antibody is conjugated with an enzyme (such as Horse Radish Peroxidase/HRP or Alkaline Phosphatas/AP) for detection, in Indirect methods a secondary antibody is, instead, conjugated with this enzyme. During Indirect methods, an additional step of SecondaryAntibody incubation is added to the corresponding Direct methods.",
-				Pattern:>ELISAMethodP,
-				Class->Expression,
-				Category->"General"
+			(*===Sample Assembly===*)
+			Spikes -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "For each member of SamplesIn, the additional sample with a known concentration of analyte to be mixed with the input sample to perform a spike-and-recovery assessment.",
+				Category -> "Sample Preparation",
+				IndexMatching -> SamplesIn
 			},
-
-			TargetAntigens->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the Analyte molecule(e.g., peptide, protein, and hormone) detected and quantified in the samples by Antibodies in the ELISA experiment. This option is used to automatically set sample Antibodies and the corresponding experiment conditions of Standards and Blanks.",
-				Pattern:>ObjectP[Model[Molecule]],
-				Class->Link,
-				Relation->Model[Molecule],
-				Category->"General",
-				IndexMatching->SamplesIn
+			SpikeDilutionFactors -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> RangeP[0, 1],
+				Description -> "For each member of SamplesIn, the ratio of dilution by which the Spike is mixed with the input sample before further dilution is performed, calculated as the volume of the Spike divided by the total final volume consisting of both the Spike and the input Sample.",
+				Category -> "Sample Preparation",
+				IndexMatching -> SamplesIn
 			},
-			WashingBuffer->{
-				Format->Single,
-				Description->"The solution used to rinse off unbound molecules from the assay plate.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"General"
+			SampleDilutionCurves -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> {{GreaterEqualP[0 Microliter], GreaterEqualP[0 Microliter]}..},
+				Description -> "For each member of SamplesIn, the multi-step dilutions of (spiked) sample, presented as {Sample transfer volume, Diluent transfer volume}.",
+				Category -> "Sample Preparation",
+				IndexMatching -> SamplesIn
 			},
-			SampleAssemblyPrimitives->{
-				Format->Multiple,
-				Class->Expression,
-				Pattern :> SampleManipulationP|SamplePreparationP,
-				Description->"A set of SampleManipulation instructions specifying the dilution, spiking, and antibody mixings of Samples, Standards, and Blanks.",
-				Category->"General"
+			SampleSerialDilutionCurves -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> {{GreaterEqualP[0 Microliter], GreaterEqualP[0 Microliter]}..},
+				Description -> "For each member of SamplesIn, the multi-step serial dilutions of (spiked) sample, presented as {Transfer volume of previous dilution, Diluent transfer volume}.",
+				Category -> "Sample Preparation",
+				IndexMatching -> SamplesIn
 			},
-
-			AntibodyAntigenDilutionPrimitives->{
-				Format->Multiple,
-				Class->Expression,
-				Pattern :> SampleManipulationP|SamplePreparationP,
-				Description->"A set of SampleManipulation instructions specifying the dilution of antibodies and reference antigen using their corresponding diluents.",
-				Category->"General"
+			SampleDiluent -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "The buffer used to dilute samples to appropriate concentrations for the assay.",
+				Category -> "Sample Preparation"
 			},
-			CoatingPlateAssemblyPrimitives->{
-				Format->Multiple,
-				Class->Expression,
-				Pattern :> SampleManipulationP|SamplePreparationP,
-				Description->"A set of SampleManipulation instructions specifying the coating of ELISAPlate and SecondaryELISAPlate.",
-				Category->"General"
+			SampleVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of SamplesIn, the amount of Sample that is dispensed into the SampleAssemblyPlate(s) in order to form Sample-Antibody complex when Method is FastELISA.",
+				Category -> "Sample Preparation",
+				IndexMatching -> SamplesIn
 			},
-			ELISAPrimitives->{
-				Format->Multiple,
-				Class->Expression,
-				Pattern :> ELISAPrimitivesP,
-				Description->"A set of SampleManipulation instructions specifying the blocking, immunosorbent steps, substratrate incubation, and plate reading performed in the ELISA instrument.",
-				Category->"General"
+			SampleCoatingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of SamplesIn, the amount of Sample that is dispensed into the assay plate(s), in order for the Sample to be adsorbed to the surface of the well.",
+				Category -> "Sample Preparation",
+				IndexMatching -> SamplesIn
 			},
-			SampleAssemblyProtocol->{
-				Format->Single,
-				Class->Link,
+			SampleImmunosorbentVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of SamplesIn, the volume of the Sample to be loaded on the assay plate(s) for the TargetAntigen to bind to the CaptureAntibody in DirectSandwichELISA and IndirectSandwichELISA.",
+				Category -> "Sample Preparation",
+				IndexMatching -> SamplesIn
+			},
+			(*===Coating Antibody===*)
+			CoatingAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "For each member of SamplesIn, the antibody to be immobilized on the surface of the ELISA plate(s) to capture the TargetAntigen during the assay in FastELISA method.",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			CoatingAntibodyDilutionFactors -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> RangeP[0, 1],
+				Description -> "For each member of SamplesIn, the ratio of dilution of CoatingAntibody, calculated as the volume of the CoatingAntibody divided by the total final volume consisting of both the CoatingAntibody and CoatingAntibodyDiluent.",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			CoatingAntibodyVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of SamplesIn, the volume of undiluted CoatingAntibody when CoatingAntibodyDilutionFactor is Null added into the corresponding well of the assay plate(s).",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			CoatingAntibodyCoatingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of SamplesIn, the amount of CoatingAntibody (either diluted or undiluted) that is dispensed into the assay plate(s), in order for the CoatingAntibody to be adsorbed to the surface of the well.",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			CoatingAntibodyDiluent -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "The buffer used to dilute coating antibodies to appropriate concentrations for the assay before plate coating.",
+				Category -> "Antibody Antigen Preparation"
+			},
+			WorkingCoatingAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample], Model[Container], Object[Container]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample], Model[Container], Object[Container]],
+				Description -> "The (diluted) coating antibody used directly for ELISA.",
+				Category -> "Antibody Antigen Preparation",
+				Developer -> True
+			},
+			CoatingAntibodyConcentrates -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "All of the coating antibody resources that need to be diluted.",
+				Category -> "Antibody Antigen Preparation"
+			},
+			CoatingAntibodyDilutionVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The volumes of the coating antibodies that need to be diluted.",
+				Category -> "Antibody Antigen Preparation"
+			},
+			CoatingAntibodyDiluentDilutionVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The volume of the coating antibody diluent added into the dilution container.",
+				Category -> "Antibody Antigen Preparation"
+			},
+			CoatingAntibodyDilutionContainers -> {
+				Format -> Multiple,
+				Description -> "The containers used to dilute coating antibodies.",
+				Pattern :> ObjectP[{Model[Container], Object[Container]}],
+				Class -> Link,
+				Relation -> Alternatives[Model[Container], Object[Container]],
+				Category -> "Antibody Antigen Preparation"
+			},
+			(*===Capture Antibody===*)
+			CaptureAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "For each member of SamplesIn, the antibody that is used to pull down the antigen from sample solution to the surface of the assay plate(s) in DirectSandwichELISA, IndirectSandwichELISA, and FastELISA methods.",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			CaptureAntibodyDilutionFactors -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> RangeP[0, 1],
+				Description -> "For each member of SamplesIn, the ratio of dilution of CaptureAntibody, calculated as the volume of the CaptureAntibody divided by the total final volume consisting of both the CaptureAntibody and either CaptureAntibodyDiluent or Sample.",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			CaptureAntibodyVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of SamplesIn, the volume of undiluted CaptureAntibody directly added into the corresponding well of the assay plate(s) when Method is DirectSandwichELISA or IndirectSandwichELISA, or the volume of diluted CaptureAntibody directly added into the corresponding well of the SampleAssemblyPlate(s) to form Sample-Antibody complex when Method is FastELISA.",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			CaptureAntibodyCoatingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of SamplesIn, the amount of CaptureAntibody that is dispensed into the assay plate(s), in order for the CaptureAntibody to be adsorbed to the surface of the well when Method is DirectSandwichELISA or IndirectSandwichELISA.",
+				Category -> "Coating",
+				IndexMatching -> SamplesIn
+			},
+			CaptureAntibodyDiluent -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "The buffer used to dilute CaptureAntibodies to appropriate concentrations for the assay before plate coating when Method is DirectSandwichELISA or IndirectSandwichELISA or binding to TargetAntigen in samples when Method is FastELISA.",
+				Category -> "Antibody Antigen Preparation"
+			},
+			WorkingCaptureAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample], Model[Container], Object[Container]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample], Model[Container], Object[Container]],
+				Description -> "The (diluted) capture antibody used directly for ELISA.",
+				Category -> "Antibody Antigen Preparation",
+				Developer -> True
+			},
+			CaptureAntibodyConcentrates -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "All of the capture antibody resources that need to be diluted.",
+				Category -> "Antibody Antigen Preparation"
+			},
+			CaptureAntibodyDilutionVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The volumes of the capture antibodies that need to be diluted.",
+				Category -> "Antibody Antigen Preparation"
+			},
+			CaptureAntibodyDiluentDilutionVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The volume of capture antibody diluent added into the dilution container.",
+				Category -> "Antibody Antigen Preparation"
+			},
+			CaptureAntibodyDilutionContainers -> {
+				Format -> Multiple,
+				Description -> "The containers used to dilute capture antibodies.",
+				Pattern :> ObjectP[{Model[Container], Object[Container]}],
+				Class -> Link,
+				Relation -> Alternatives[Model[Container], Object[Container]],
+				Category -> "Antibody Antigen Preparation"
+			},
+			(*===Reference Antigen===*)
+			ReferenceAntigens -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "For each member of SamplesIn, the antigen that competes with sample for the binding of the PrimaryAntibody when Method is DirectCompetitiveELISA or IndirectCompetitiveELISA.",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			ReferenceAntigenDilutionFactors -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> RangeP[0, 1],
+				Description -> "For each member of SamplesIn, the ratio of dilution of ReferenceAntigen, calculated as the volume of the ReferenceAntigen divided by the total final volume consisting of both the ReferenceAntigen and ReferenceAntigenDiluent.",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			ReferenceAntigenVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of SamplesIn, the volume of undiluted ReferenceAntigen added into the corresponding well of the assay plate(s).",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			ReferenceAntigenCoatingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of SamplesIn, the amount of diluted ReferenceAntigen that is dispensed into the assay plate(s), in order for the ReferenceAntigen to be adsorbed to the surface of the well.",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			ReferenceAntigenDiluent -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "The buffer used to dilute the ReferenceAntigen to appropriate concentrations for the assay before plate coating.",
+				Category -> "Antibody Antigen Preparation"
+			},
+			WorkingReferenceAntigens -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample], Model[Container], Object[Container]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample], Model[Container], Object[Container]],
+				Description -> "The (diluted) reference antigen used directly for ELISA.",
+				Category -> "Antibody Antigen Preparation",
+				Developer -> True
+			},
+			ReferenceAntigenConcentrates -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "All of the reference antigen resources that need to be diluted.",
+				Category -> "Antibody Antigen Preparation"
+			},
+			ReferenceAntigenDilutionVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The volumes of the reference antigens that need to be diluted.",
+				Category -> "Antibody Antigen Preparation"
+			},
+			ReferenceAntigenDiluentDilutionVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The volume of reference antigen diluent added into the dilution container.",
+				Category -> "Antibody Antigen Preparation"
+			},
+			ReferenceAntigenDilutionContainers -> {
+				Format -> Multiple,
+				Description -> "The containers used to dilute reference antigens.",
+				Pattern :> ObjectP[{Model[Container], Object[Container]}],
+				Class -> Link,
+				Relation -> Alternatives[Model[Container], Object[Container]],
+				Category -> "Antibody Antigen Preparation"
+			},
+			(*===Primary Antibody===*)
+			PrimaryAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "For each member of SamplesIn, the antibody that directly binds to the TargetAntigen.",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			PrimaryAntibodyDilutionFactors -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> RangeP[0, 1],
+				Description -> "For each member of SamplesIn, the ratio of dilution of PrimaryAntibody, calculated as the volume of the PrimaryAntibody divided by the total final volume consisting of both the PrimaryAntibody and either PrimaryAntibodyDiluent or Sample.",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			PrimaryAntibodyVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of SamplesIn, the volume of undiluted PrimaryAntibody added into the corresponding well of the assay plate(s) when Method is DirectELISA, IndirectELISA, DirectSandwichELISA, and IndirectSandwichELISA, or the volume of diluted PrimaryAntibody directly added into the corresponding well of the SampleAssemblyPlate(s) to form Sample-Antibody complex when Method is DirectCompetitiveELISA, IndirectCompetitiveELISA, and FastELISA.",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			PrimaryAntibodyImmunosorbentVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of SamplesIn, the volume of the PrimaryAntibody to be loaded on the assay plate(s) for Immunosorbent step when Method is DirectELISA, IndirectELISA, DirectSandwichELISA, and IndirectSandwichELISA.",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			PrimaryAntibodyDiluent -> {
+				Format -> Single,
+				Description -> "The buffer used to dilute PrimaryAntibodies to their working concentrations before they are added to the assay plate(s).",
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Class -> Link,
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Category -> "Antibody Antigen Preparation"
+			},
+			WorkingPrimaryAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample], Model[Container], Object[Container]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample], Model[Container], Object[Container]],
+				Description -> "The PrimaryAntibodies that have been diluted or aliquoted that can be used directly for ELISA.",
+				Category -> "Antibody Antigen Preparation",
+				Developer -> True
+			},
+			PrimaryAntibodyConcentrates -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "All of the primary antibody resources that need to be diluted.",
+				Category -> "Antibody Antigen Preparation"
+			},
+			PrimaryAntibodyDilutionVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The volumes of each of the primary antibody that need to be diluted.",
+				Category -> "Antibody Antigen Preparation"
+			},
+			PrimaryAntibodyDiluentDilutionVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The total volumes of the primary antibody diluent needed to dilute each primary antibody.",
+				Category -> "Antibody Antigen Preparation"
+			},
+			PrimaryAntibodyDilutionContainers -> {
+				Format -> Multiple,
+				Description -> "The containers used to dilute primary antibodies.",
+				Pattern :> ObjectP[{Model[Container],Object[Container]}],
+				Class -> Link,
+				Relation -> Alternatives[Model[Container], Object[Container]],
+				Category -> "Antibody Antigen Preparation"
+			},
+			(*===Secondary Antibody===*)
+			SecondaryAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "For each member of SamplesIn, the antibody that binds to the PrimaryAntibody.",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			SecondaryAntibodyDilutionFactors -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> RangeP[0, 1],
+				Description -> "For each member of SamplesIn, the ratio of dilution of SecondaryAntibody, calculated as the volume of the SecondaryAntibody divided by the total final volume consisting of both the SecondaryAntibody and SecondaryAntibodyDiluent.",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			SecondaryAntibodyVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of SamplesIn, the volume of undiluted SecondaryAntibody added into the corresponding well of the assay plate(s).",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			SecondaryAntibodyImmunosorbentVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of SamplesIn, the volume of the Secondary Antibody to be loaded on the assay plate(s)for Immunosorbent assay.",
+				Category -> "Antibody Antigen Preparation",
+				IndexMatching -> SamplesIn
+			},
+			SecondaryAntibodyDiluent -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "The buffer used to dilute SecondaryAntibodies to their working concentrations before they are added to the assay plate(s).",
+				Category -> "Antibody Antigen Preparation"
+			},
+			WorkingSecondaryAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample], Model[Container], Object[Container]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample], Model[Container], Object[Container]],
+				Description -> "The SecondaryAntibody that have been diluted or aliquoted and used directly for ELISA.",
+				Category -> "Antibody Antigen Preparation",
+				Developer -> True
+			},
+			SecondaryAntibodyConcentrates -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "All of the secondary antibody resources that need to be diluted.",
+				Category -> "Antibody Antigen Preparation"
+			},
+			SecondaryAntibodyDilutionVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The total volumes of the secondary antibodies that need to be diluted.",
+				Category -> "Antibody Antigen Preparation"
+			},
+			SecondaryAntibodyDiluentDilutionVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The total volumes of the secondary antibody diluents needed to dilute each secondary antibody.",
+				Category -> "Antibody Antigen Preparation"
+			},
+			SecondaryAntibodyDilutionContainers -> {
+				Format -> Multiple,
+				Description -> "The containers used to dilute secondary antibodies.",
+				Pattern :> ObjectP[{Model[Container],Object[Container]}],
+				Class -> Link,
+				Relation -> Alternatives[Model[Container], Object[Container]],
+				Category -> "Antibody Antigen Preparation"
+			},
+			(*==========EXPERIMENTAL PROCEDURE===============*)
+			WashingBuffer -> {
+				Format -> Single,
+				Class -> Link,
 				Pattern :> _Link,
-				Relation->Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
-				Description->"The sample manipulation protocol used for the dilution, spiking, and antibody mixings of Samples, Standards, and Blanks.",
-				Category->"General"
-			},
-			AntibodyAntigenDilutionProtocol->{
-				Format->Single,
-				Class->Link,
-				Pattern :> _Link,
-				Relation->Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
-				Description->"The sample manipulation protocol used for the dilution of antibodies and reference antigen using their corresponding diluents.",
-				Category->"General"
-			},
-			CoatingPlateAssemblyProtocol->{
-				Format->Single,
-				Class->Link,
-				Pattern :> _Link,
-				Relation->Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation],
-				Description->"The sample manipulation protocol used for transfering the solutions for the coating of ELISAPlate and SecondaryELISAPlate.",
-				Category->"General"
-			},
-			CoatingPlateIncubationProtocol->{
-				Format->Single,
-				Class->Link,
-				Pattern :> ObjectP[Object[Protocol]],
-				Relation->Object[Protocol],
-				Description->"The ExperimentIncubation protocol used for the coating of ELISAPlate and SecondaryELISAPlate.",
-				Category->"General"
-			},
-			Spikes->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the Spike sample with a known concentration of analyte to be mixed with the input sample. The purpose of spiking is to perform a spike-and-recovery assessment to determine whether the ELISA can accurately test the concentration of analyte within the context of the sample.Spike-and-Recovery experiment is used to test whether the ELISA can reliably measure TargetAntigen concentration in the context of the sample. For example, if molecules in the sample inhibits the binding between the antibody and TargetAntigen, the results from the ELISA becomes inaccurate. In a Spike-and-Recovery experiment,an aliquote of a sample (in a different wells than the main ELISA experiment) is mixed with Spike (a sample containing known amount of TargetAntigen, the Standard sample can be used). ELISA is performed on the Sample alone (also called Neat Sample) and the Spiked Sample at the same time, where the Spike concentration in the sample can be measured. This measured Spike concentration can be then compared with the known Spike concentration. Typically a 20% difference between measured Spike concentration and the known Spike concentration is acceptable. Spiked sample can be further diluted to perform linearity-of-dilution assessment.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Sample Preparation",
-				IndexMatching->SamplesIn
-			},
-			SpikeDilutionFactors->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the ratio of dilution by which the Spike is mixed with the input sample before further dilution is performed.",
-				Pattern:>RangeP[0,1],
-				Class->Real,
-				Category->"Sample Preparation",
-				IndexMatching->SamplesIn
-			},
-			SpikeStorageConditions->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the condition under which the unused portion of Spike stock sample should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			SampleDilutionCurves->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the multi-step dilutions of (spiked) sample, presented as {Sample transfer volume, Diluent transfer volume}.",
-				Pattern:>{{GreaterEqualP[0Microliter], GreaterEqualP[0Microliter]}..},
-				Class->Expression,
-				Category->"Sample Preparation",
-				IndexMatching->SamplesIn
-			},
-			SampleSerialDilutionCurves->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the multi-step serial dilutions of (spiked) sample, presented as {Transfer volume of previous dilution, Diluent transfer volume}.",
-				Pattern:>{{GreaterEqualP[0Microliter], GreaterEqualP[0Microliter]}..},
-				Class->Expression,
-				Category->"Sample Preparation",
-				IndexMatching->SamplesIn
-			},
-			SampleDiluent->{
-				Format->Single,
-				Description->"The buffer used to perform multiple dilutions of samples or spiked samples.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Sample Preparation"
-			},
-			CoatingAntibodies->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the sample containing the antibody that is used in for coating in FastELISA.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			CoatingAntibodyDilutionFactors->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the ratio of dilution of CoatingAntibody. CoatingAntibody is diluted with CoatingBuffer. Either AssayConcentration or DilutionFactor should be provided but not both.",
-				Pattern:>RangeP[0,1],
-				Class->Real,
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			CoatingAntibodyVolumes->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the volume of Coating added into the corresponding well of the assay plate. CoatingAntibody is diluted with CoatingBuffer. AntibodyVolume is used as an alternative to AssayConcentration or DilutionFactor. During antibody preparation, a master mix will be made for antibody dilution, and the diluted Antibodies will be aliquoted into each well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			CoatingAntibodyDiluent->{
-				Format->Single,
-				Description->"The buffer used to dilute CoatingAntibodies.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Antibody Antigen Preparation"
-			},
-			CoatingAntibodyStorageConditions->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the condition under which the unused portion of Coating Antibody stock sample should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			CaptureAntibodies->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the sample containing the antibody that is used to pull down the antigen from sample solution to the surface of the assay plate wll in DirectSandwichELISA, IndirectSandwichELISA, and FastELISA.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			CaptureAntibodyDilutionFactors->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the ratio of dilution of CaptureAntibody. For DirectSandwichELISA and IndirectSandwichELISA, CaptureAntibody is diluted with CoatingBuffer. For FastELISA, CaptureAntibody is diluted in the corresponding sample. Either AssayConcentration or DilutionFactor should be provided but not both.",
-				Pattern:>RangeP[0,1],
-				Class->Real,
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			CaptureAntibodyVolumes->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the volume of CaptureAntibody added into the corresponding well of the assay plate. AntibodyVolume is used as an alternative to AssayConcentration or DilutionFactor. During antibody preparation, a master mix will be made for antibody dilution, and the diluted Antibodies will be aliquoted into each well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			CaptureAntibodyDiluent->{
-				Format->Single,
-				Description->"The buffer used to dilute CaptureAntibodies. If Null, CaptureAntibody will be diluted into the corresponding Sample.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Antibody Antigen Preparation"
-			},
-			CaptureAntibodyStorageConditions->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the condition under which the unused portion of Capture Antibody stock sample should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			ReferenceAntigens->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the SAMPLE containing the antigen that is used in DirectCompetitiveELISA or IndirectCompetitiveELISA. The ReferenceAntigen competes with sample antigen for the binding of the PrimaryAntibody. Reference Antigen is sometimes also referred to as Inhibitor Antigen.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			ReferenceAntigenDilutionFactors->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the ratio of dilution of ReferenceAntigen. The ReferenceAntigenSample is always diluted in CoatingBuffer. Either AssayConcentration or DilutionFactor should be provided but not both.",
-				Pattern:>RangeP[0,1],
-				Class->Real,
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			ReferenceAntigenVolumes->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the volume of ReferenceAntigen added into the corresponding well of the assay plate. ReferenceAntigenVolume is used as an alternative to AssayConcentration or DilutionFactor. During antibody preparation, a master mix will be made for antibody dilution, and the diluted Antibodies will be aliquoted into each well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			ReferenceAntigenDiluent->{
-				Format->Single,
-				Description->"The buffer used to dilute the ReferenceAntigen. If Null, ReferenceAntigen will be mixed with the corresponding sample.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Antibody Antigen Preparation"
-			},
-			ReferenceAntigenStorageConditions->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the condition under which the unused portion of Reference Antigen stock sample should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			PrimaryAntibodies->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the antibody that directly binds with the TargetAntigen (analyte).",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			PrimaryAntibodyDilutionFactors->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the ratio of dilution of PrimaryAntibody. For DirectELISA, IndirectELISA, DirectSandwichELISA, and IndirectSandwichELISA, the antibody is diluted with ImmunosorbentBuffer. For DirectCompetitiveELISA, IndirectCompetitiveELISA, and FastELISA, the antibody is diluted in the corresponding sample. Either AssayConcentration or DilutionFactor should be provided but not both.",
-				Pattern:>RangeP[0,1],
-				Class->Real,
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			PrimaryAntibodyVolumes->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the volume of PrimaryAntibody added into the corresponding well of the assay plate. AntibodyVolume is used as an alternative to AssayConcentration or DilutionFactor. During antibody preparation, a master mix will be made for antibody dilution, and the diluted Antibodies will be aliquoted into each well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			PrimaryAntibodyDiluent->{
-				Format->Single,
-				Description->"The buffer used to dilute PrimaryAntibodies.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Antibody Antigen Preparation"
-			},
-			PrimaryAntibodyStorageConditions->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the condition under which the unused portion of Primary Antibody stock sample should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			SecondaryAntibodies->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the antibody that binds to the primary antibody.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			SecondaryAntibodyDilutionFactors->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the ratio of dilution of SecondaryAntibody. SecondaryAntibody is always diluted in the ImmunosorbentBuffer. Either AssayConcentration or DilutionFactor should be provided but not both.",
-				Pattern:>RangeP[0,1],
-				Class->Real,
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			SecondaryAntibodyVolumes->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the volume of SecondaryAntibody added into the corresponding well of the assay plate. AntibodyVolume is used as an alternative to AssayConcentration or DilutionFactor. During antibody preparation, a master mix will be made for antibody dilution, and the diluted Antibodies will be aliquoted into each well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			SecondaryAntibodyDiluent->{
-				Format->Single,
-				Description->"The buffer used to dilute CoatingAntibodies.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Antibody Antigen Preparation"
-			},
-			SecondaryAntibodyStorageConditions->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the condition under which the unused portion of Secondary Antibody stock sample should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Antibody Antigen Preparation",
-				IndexMatching->SamplesIn
-			},
-			SampleAntibodyComplexIncubation->{
-				Format->Single,
-				Description->"Indicates if the pre-mixed sample and Antibodies should be incubated before loaded into the assay plate.",
-				Pattern:>Alternatives[BooleanP],
-				Class->Expression,
-				Category->"General"
-			},
-			SampleAntibodyComplexIncubationTime->{
-				Format->Single,
-				Description->"The duration of SampleAntibodyComplex Incubation (If needed). In DirectCompetitiveELISA and IndirectCompetitiveELISA, PrimaryAntibody is incubated with the sample. In FastELISA, PrimaryAntibody and CaptureAntibody is incubated with the sample. If Null, the prepared sample-antibody complex will be kept at 4 degree Celsius till ready to use.",
-				Pattern:>RangeP[0 Minute,24 Hour],
-				Class->Real,
-				Units->Hour,
-				Category->"Sample Antibody Complex Incubation"
-			},
-			SampleAntibodyComplexIncubationTemperature->{
-				Format->Single,
-				Description->"The temperature at which sample mixed with Antibodies are incubated. In DirectCompetitiveELISA and IndirectCompetitiveELISA, PrimaryAntibody is incubated with the sample. In FastELISA, PrimaryAntibody and CaptureAntibody is incubated with the sample. If Null, the prepared sample-antibody complex will be kept at 4 degree Celsius till ready to use.",
-				Pattern:>Alternatives[Ambient,RangeP[4Celsius,50Celsius]],
-				Class->Expression,
-				Category->"Sample Antibody Complex Incubation"
-			},
-			Coating->{
-				Format->Single,
-				Description->"Indicates if Coating is required. Coating is a procedure to non-sepcifically adsorb protein molecules to the surface of wells of an assay plate.",
-				Pattern:>Alternatives[BooleanP],
-				Class->Expression,
-				Category->"General"
-			},
-			SampleCoatingVolumes->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the amount of Sample that is aliquoted into the assay plate, in order for the Sample to be adsorbed to the surface of the well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Coating",
-				IndexMatching->SamplesIn
-			},
-			CoatingAntibodyCoatingVolumes->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the amount of diluted CoatingAntibody that is aliquoted into the assay plate, in order for the CoatingAntibody to be adsorbed to the surface of the well.",
-				Pattern:>RangeP[0 Microliter,300 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Coating",
-				IndexMatching->SamplesIn
-			},
-			ReferenceAntigenCoatingVolumes->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the amount of ReferenceAntigen that is aliquoted into the assay plate, in order for the ReferenceAntigen to be adsorbed to the surface of the well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Coating",
-				IndexMatching->SamplesIn
-			},
-			CaptureAntibodyCoatingVolumes->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the amount of diluted CaptureAntibody that is aliquoted into the assay plate, in order for the CaptureAntibody to be adsorbed to the surface of the well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Coating",
-				IndexMatching->SamplesIn
-			},
-			CoatingTemperature->{
-				Format->Single,
-				Description->"The temperature at which the Coating Solution is kept in the assay plate, in order for the coating molecules to be adsorbed to the surface of the well.",
-				Pattern:>Alternatives[Ambient,RangeP[4Celsius,50Celsius]],
-				Class->Expression,
-				Category->"Coating"
-			},
-			CoatingTime->{
-				Format->Single,
-				Description->"The duration when the Coating Solution is kept in the assay plate, in order for the coating molecules to be adsorbed to the surface of the well.",
-				Pattern:>RangeP[0 Hour,20 Hour],
-				Class->Real,
-				Units->Hour,
-				Category->"Coating"
-			},
-			CoatingWashVolume->{
-				Format->Single,
-				Description->"The volume of WashBuffer added for to rinse off unbound molecule.",
-				Pattern:>RangeP[25 Microliter,300 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Coating"
-			},
-			CoatingNumberOfWashes->{
-				Format->Single,
-				Description->"The number of washes performed after coating.",
-				Pattern:>GreaterP[0],
-				Class->Real,
-				Category->"Coating"
-			},
-			Blocking->{
-				Format->Single,
-				Description->"Indicates if a protein solution should be incubated with the assay plate to prevent non-specific binding of molecules to the assay plate.",
-				Pattern:>Alternatives[BooleanP],
-				Class->Expression,
-				Category->"Blocking"
-			},
-			BlockingBuffer->{
-				Format->Single,
-				Description->"The protein-containing solution used to prevent non-specific binding of antigen or antibody to the surface of the assay plate.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Blocking"
-			},
-			BlockingVolumes->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the amount of BlockingBuffer that is aliquoted into the appropriate wells of the assay plate, in order to prevent non-specific binding of molecules to the assay plate.",
-				Pattern:>RangeP[25 Microliter,300 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Blocking",
-				IndexMatching->SamplesIn
-			},
-			BlockingTime->{
-				Format->Single,
-				Description->"The duration when the Blocking Solution is kept with the assay plate, in order to prevent non-specific binding of molecules to the assay plate.",
-				Pattern:>RangeP[0 Hour,20 Hour],
-				Class->Real,
-				Units->Hour,
-				Category->"Blocking"
-			},
-			BlockingTemperature->{
-				Format->Single,
-				Description->"The duration of time when the Blocking Solution is kept with the assay plate, in order to prevent non-specific binding of molecules to the assay plate.",
-				Pattern:>Alternatives[Ambient,RangeP[4Celsius,50Celsius]],
-				Class->Expression,
-				Category->"Blocking"
-			},
-			BlockingMixRate->{
-				Format->Single,
-				Description->"The speed at which the plate is shaken (orbitally, at a radius of 2 mm) during Blocking incubation. Mixing is not recommended particularly when incubation volume is high, in which case the options should be set to Null.",
-				Pattern:>RangeP[0 RPM,1000 RPM],
-				Class->Real,
-				Units->RPM,
-				Category->"Blocking"
-			},
-			BlockingWashVolume->{
-				Format->Single,
-				Description->"The volume of WashBuffer added after Blocking, in order to rinse off the unbound molecules from the surface of the wells.",
-				Pattern:>RangeP[25 Microliter,300 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Blocking"
-			},
-			BlockingNumberOfWashes->{
-				Format->Single,
-				Description->"The number of washes performed after Blocking, in order to rinse off the unbound molecules from the surface of the wells.",
-				Pattern:>GreaterP[0],
-				Class->Real,
-				Category->"Blocking"
-			},
-			SampleAntibodyComplexImmunosorbentVolumes->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the volume of the SampleAntibodyComplex to be loaded on the ELISAPlate. In DirectCompetitiveELISA and IndirectCompetitiveELISA, this step enables the free primary antibody to bind to the ReferenceAntigen coated on the plate. In FastELISA, this step enables the PrimaryAntibody-TargetAntigen-CaptureAntibody complex to bind to the CoatingAntibody on the plate.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Immunosorbent Step",
-				IndexMatching->SamplesIn
-			},
-			SampleAntibodyComplexImmunosorbentTime->{
-				Format->Single,
-				Description->"The duration of SampleAntibodyComplex incubation.",
-				Pattern:>RangeP[0 Minute,24 Hour],
-				Class->Real,
-				Units->Hour,
-				Category->"Immunosorbent Step"
-			},
-			SampleAntibodyComplexImmunosorbentTemperature->{
-				Format->Single,
-				Description->"The temperature of the SampleAntibodyComplex incubation.",
-				Pattern:>Alternatives[Ambient,RangeP[4Celsius,50Celsius]],
-				Class->Expression,
-				Category->"Immunosorbent Step"
-			},
-			SampleAntibodyComplexImmunosorbentMixRate->{
-				Format->Single,
-				Description->"The speed at which the plate is shaken (orbitally, at a radius of 2 mm) during SampleAntibodyComplex incubation in the ELISA Plate. Mixing is not recommended when incubation volume is higher than 200 Microliters, in which case the options should be set to Null.",
-				Pattern:>RangeP[0 RPM,1000 RPM],
-				Class->Real,
-				Units->RPM,
-				Category->"Immunosorbent Step"
-			},
-			SampleAntibodyComplexImmunosorbentWashVolume->{
-				Format->Single,
-				Description->"The volume of WashBuffer added to rinse off the unbound primary antibody after SampleAntibodyComplex incubation.",
-				Pattern:>RangeP[25 Microliter,300 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Immunosorbent Step"
-			},
-			SampleAntibodyComplexImmunosorbentNumberOfWashes->{
-				Format->Single,
-				Description->"The number of rinses performed after SampleAntibodyComplex incubation.",
-				Pattern:>GreaterP[0],
-				Class->Real,
-				Category->"Immunosorbent Step"
-			},
-			SampleImmunosorbentVolumes->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the volume of the Sample to be loaded on the ELISAPlate for the target antigen to bind to the capture antibody in DirectSandwichELISA and IndirectSandwichELISA.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Immunosorbent Step",
-				IndexMatching->SamplesIn
-			},
-			SampleImmunosorbentTime->{
-				Format->Single,
-				Description->"The duration of Sample incubation.",
-				Pattern:>RangeP[0 Minute,24 Hour],
-				Class->Real,
-				Units->Hour,
-				Category->"Immunosorbent Step"
-			},
-			SampleImmunosorbentTemperature->{
-				Format->Single,
-				Description->"The temperature of the Sample incubation.",
-				Pattern:>Alternatives[Ambient,RangeP[4Celsius,50Celsius]],
-				Class->Expression,
-				Category->"Immunosorbent Step"
-			},
-			SampleImmunosorbentMixRate->{
-				Format->Single,
-				Description->"The speed at which the plate is shaken (orbitally, at a radius of 2 mm) during Sample incubation. Mixing is not recommended when incubation volume is higher than 200 Microliters, in which case the options should be set to Null.",
-				Pattern:>RangeP[0 RPM,1000 RPM],
-				Class->Real,
-				Units->RPM,
-				Category->"Immunosorbent Step"
-			},
-			SampleImmunosorbentWashVolume->{
-				Format->Single,
-				Description->"The volume of WashBuffer added to rinse off the unbound primary antibody after Sample incubation.",
-				Pattern:>RangeP[25 Microliter,300 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Immunosorbent Step"
-			},
-			SampleImmunosorbentNumberOfWashes->{
-				Format->Single,
-				Description->"The number of rinses performed after Sample incubation.",
-				Pattern:>GreaterP[0],
-				Class->Real,
-				Category->"Immunosorbent Step"
-			},
-			PrimaryAntibodyImmunosorbentVolumes->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the volume of the Primary Antibody to be loaded on the ELISAPlate for immunosordent assay.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Immunosorbent Step",
-				IndexMatching->SamplesIn
-			},
-			PrimaryAntibodyImmunosorbentTime->{
-				Format->Single,
-				Description->"The duration of Primary Antibody incubation.",
-				Pattern:>RangeP[0 Minute,24 Hour],
-				Class->Real,
-				Units->Hour,
-				Category->"Immunosorbent Step"
-			},
-			PrimaryAntibodyImmunosorbentTemperature->{
-				Format->Single,
-				Description->"The temperature of the Primary Antibody incubation.",
-				Pattern:>Alternatives[Ambient,RangeP[4Celsius,50Celsius]],
-				Class->Expression,
-				Category->"Immunosorbent Step"
-			},
-			PrimaryAntibodyImmunosorbentMixRate->{
-				Format->Single,
-				Description->"The speed at which the plate is shaken (orbitally, at a radius of 2 mm) during Primary Antibody incubation. Mixing is not recommended when incubation volume is higher than 200 Microliters, in which case the options should be set to Null.",
-				Pattern:>RangeP[0 RPM,1000 RPM],
-				Class->Real,
-				Units->RPM,
-				Category->"Immunosorbent Step"
-			},
-			PrimaryAntibodyImmunosorbentWashVolume->{
-				Format->Single,
-				Description->"The volume of WashBuffer added to rinse off the unbound primary antibody after PrimaryAntibody incubation.",
-				Pattern:>RangeP[25 Microliter,300 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Immunosorbent Step"
-			},
-			PrimaryAntibodyImmunosorbentNumberOfWashes->{
-				Format->Single,
-				Description->"The number of rinses performed after PrimaryAntibody incubation.",
-				Pattern:>GreaterP[0],
-				Class->Real,
-				Category->"Immunosorbent Step"
-			},
-			SecondaryAntibodyImmunosorbentVolumes->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the volume of the Secondary Antibody to be loaded on the ELISAPlate for immunosordent assay.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Immunosorbent Step",
-				IndexMatching->SamplesIn
-			},
-			SecondaryAntibodyImmunosorbentTime->{
-				Format->Single,
-				Description->"The duration of Secondary Antibody incubation.",
-				Pattern:>RangeP[0 Minute,24 Hour],
-				Class->Real,
-				Units->Hour,
-				Category->"Immunosorbent Step"
-			},
-			SecondaryAntibodyImmunosorbentTemperature->{
-				Format->Single,
-				Description->"The temperature of the Secondary Antibody incubation.",
-				Pattern:>Alternatives[Ambient,RangeP[4Celsius,50Celsius]],
-				Class->Expression,
-				Category->"Immunosorbent Step"
-			},
-			SecondaryAntibodyImmunosorbentMixRate->{
-				Format->Single,
-				Description->"The speed at which the plate is shaken (orbitally, at a radius of 2 mm) during Secondary Antibody incubation. Mixing is not recommended when incubation volume is higher than 200 Microliters, in which case the options should be set to Null.",
-				Pattern:>RangeP[0 RPM,1000 RPM],
-				Class->Real,
-				Units->RPM,
-				Category->"Immunosorbent Step"
-			},
-			SecondaryAntibodyImmunosorbentWashVolume->{
-				Format->Single,
-				Description->"The volume of WashBuffer added to rinse off the unbound Secondary antibody after SecondaryAntibody incubation.",
-				Pattern:>RangeP[25 Microliter,300 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Immunosorbent Step"
-			},
-			SecondaryAntibodyImmunosorbentNumberOfWashes->{
-				Format->Single,
-				Description->"The number of rinses performed after SecondaryAntibody incubation.",
-				Pattern:>GreaterP[0],
-				Class->Real,
-				Category->"Immunosorbent Step"
-			},
-			SubstrateSolutions->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, defines the one-part substrate solution such as PNPP.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Detection",
-				IndexMatching->SamplesIn
-			},
-
-			StopSolutions->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the reagent that is used to stop the reaction between the enzyme and its substrate.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Detection",
-				IndexMatching->SamplesIn
-			},
-			SubstrateSolutionVolumes->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the volume of substrate to be added to the corresponding well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Detection",
-				IndexMatching->SamplesIn
-			},
-			StopSolutionVolumes->{
-				Format->Multiple,
-				Description->"For each member of SamplesIn, the volume of StopSolution to be added to the corresponding well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Detection",
-				IndexMatching->SamplesIn
-			},
-			SubstrateIncubationTime->{
-				Format->Single,
-				Description->"The time during which the colorimetric reaction occurs.",
-				Pattern:>RangeP[0 Minute,24 Hour],
-				Class->Real,
-				Units->Hour,
-				Category->"Detection"
-			},
-			SubstrateIncubationTemperature->{
-				Format->Single,
-				Description->"The temperature of the Substrate incubation, in order for the detection reaction to take place where the antibody-conjugated enzyme (such as Horseradish Peroxidase or Alkaline Phosphatase) catalyzes the colorimetric reaction.",
-				Pattern:>Alternatives[Ambient,RangeP[4Celsius,50Celsius]],
-				Class->Expression,
-				Category->"Detection"
-			},
-			SubstrateIncubationMixRate->{
-				Format->Single,
-				Description->"The speed at which the plate is shaken (orbitally, at a radius of 2 mm) during Substrate incubation. Mixing is not recommended when incubation volume is higher than 200 Microliters, in which case the options should be set to Null.",
-				Pattern:>RangeP[0 RPM,1000 RPM],
-				Class->Real,
-				Units->RPM,
-				Category->"Detection"
-			},
-			PrereadTimepoints->{
-				Format->Multiple,
-				Class->Real,
-				Pattern:>GreaterP[0 Minute],
-				Units->Minute,
-				Description->"The list of time points when the absorbance intensities were recorded at PrereadAbsorbanceWavelengths during the preread process.",
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "The solution used to rinse off unbound molecules from the assay plate(s).",
+				Category -> "Washing"
+			},
+			WashPlateMethod -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> ObjectP[Object[Method, WashPlate]],
+				Relation -> Alternatives[Object[Method, WashPlate]],
+				Description -> "The file containing a set of parameters define how the plate washer aspirates, dispenses, and manages liquid flow during ELISA washing steps, including speeds, heights, delays, and positioning for optimal washing efficiency.",
+				Category -> "Washing"
+			},
+			(*==========Antibody Complex Incubation==============*)
+			SampleAntibodyComplexIncubation -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Specifies whether the pre-mixed samples and antibodies in the SampleAssemblyPlate(s) undergo an incubation step to facilitate the formation of the sample–antibody complex prior to transfer into the assay plate(s).",
+				Category -> "Sample Antibody Complex Incubation"
+			},
+			SampleAntibodyComplexIncubationTime -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Hour],
+				Units -> Hour,
+				Description -> "The incubation duration of pre-mixed samples and antibodies during SampleAntibodyComplexIncubation.",
+				Category -> "Sample Antibody Complex Incubation"
+			},
+			SampleAntibodyComplexIncubationTemperature -> {
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> Alternatives[Ambient, TemperatureP],
+				Description -> "The temperature at which the pre-mixed samples and antibodies are incubated during SampleAntibodyComplexIncubation.",
+				Category -> "Sample Antibody Complex Incubation"
+			},
+			SampleAntibodyComplexIncubationMixRate -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 RPM],
+				Units -> RPM,
+				Description -> "The speed at which the SampleAssemblyPlate(s) containing the pre-mixed samples and antibodies is shaken (orbitally, at a radius of 2 mm) during SampleAntibodyComplexIncubation.",
+				Category -> "Sample Antibody Complex Incubation"
+			},
+			(*============Coating==============*)
+			Coating -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if Coating is required. Coating is a procedure to immobilize analytes (usually antigens and antibodies) to the surface of the assay plate(s) non-specifically.",
 				Category -> "General"
 			},
-			PrereadAbsorbanceWavelengths->{
-				Format->Multiple,
-				Description->"The wavelength used to detect the absorbance of light produced by colorimetric reaction before the sample is quenched by the StopSolutions.",
-				Pattern:>GreaterP[0 Nanometer],
-				Class->Real,
-				Units->Nanometer,
-				Category->"Detection"
-			},
-			AbsorbanceWavelengths->{
-				Format->Multiple,
-				Description->"The wavelength used to detect the absorbance of light by the product of the detection reaction.",
-				Pattern:>GreaterP[0 Nanometer],
-				Class->Real,
-				Units->Nanometer,
-				Category->"Detection"
-			},
-			SignalCorrection->{
-				Format->Single,
-				Description->"The absorbance reading that is used to eliminate the interference of background absorption (such as from ELISAPlate material and dust). If True, a reading at 620 nm is read at the same time of the AbsorbanceWavelength. The correction is done by subtracting the reading at 620nm from that at the AbsorbanceWavelength.",
-				Pattern:>Alternatives[BooleanP],
-				Class->Expression,
-				Category->"Detection"
-			},
-			Standards->{
-				Format->Multiple,
-				Description->"For each member of Standards, a sample containing known amount of TargetAntigen molecule. Standard is used for the quantification of Standard analyte.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardTargetAntigens->{
-				Format->Multiple,
-				Description->"For each member of Standards, the Analyte molecule(e.g., peptide, protein, and hormone) detected and quantified in the samples by Antibodies in the ELISA experiment. This option is used to automatically set sample Antibodies and the corresponding experiment conditions of Standards and Blanks.",
-				Pattern:>ObjectP[Model[Molecule]],
-				Class->Link,
-				Relation->Model[Molecule],
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardDilutionCurves->{
-				Format->Multiple,
-				Description->"For each member of Standards, the multi-step dilutions of standards, presented as {Standard transfer volume, Diluent transfer volume}.",
-				Pattern:>{{GreaterEqualP[0Microliter], GreaterEqualP[0Microliter]}..},
-				Class->Expression,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardSerialDilutionCurves->{
-				Format->Multiple,
-				Description->"For each member of Standards, the multi-step serial dilutions of standards, presented as {Transfer volume of previous dilution, Diluent transfer volume}.",
-				Pattern:>{{GreaterEqualP[0Microliter], GreaterEqualP[0Microliter]}..},
-				Class->Expression,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardDiluent->{
-				Format->Single,
-				Description->"The buffer used to dilute Standards.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Standard"
-			},
-			StandardStorageConditions->{
-				Format->Multiple,
-				Description->"For each member of Standards, the condition under which the unused portion of Standardstock sample should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardCoatingAntibodies->{
-				Format->Multiple,
-				Description->"For each member of Standards, the sample containing the antibody that is used in for coating in FastELISA.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardCoatingAntibodyDilutionFactors->{
-				Format->Multiple,
-				Description->"For each member of Standards, the ratio of dilution of StandardCoatingAntibody. StandardCoatingAntibody is diluted with CoatingBuffer. Either AssayConcentration or DilutionFactor should be provided but not both.",
-				Pattern:>RangeP[0,1],
-				Class->Real,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardCoatingAntibodyVolumes->{
-				Format->Multiple,
-				Description->"For each member of Standards, the volume of Coating added into the corresponding well of the assay plate. CoatingAntibody is diluted with CoatingBuffer. AntibodyVolume is used as an alternative to AssayConcentration or DilutionFactor. During antibody preparation, a master mix will be made for antibody dilution, and the diluted Antibodies will be aliquoted into each well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			(*)StandardCoatingAntibodyStorageConditions->{
-				Format->Multiple,
-				Description->"For each member of Standards, the condition under which the unused portion of Standard Coating Antibody stock sample should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Standard",
-				IndexMatching->Standards
-			},*)
-			StandardCaptureAntibodies->{
-				Format->Multiple,
-				Description->"For each member of Standards, the sample containing the antibody that is used to pull down the antigen from sample solution to the plate in DirectSandwichELISA, IndirectSandwichELISA, and FastELISA.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardCaptureAntibodyDilutionFactors->{
-				Format->Multiple,
-				Description->"For each member of Standards, the ratio of dilution of StandardCaptureAntibody. For DirectSandwichELISA and IndirectSandwichELISA, StandardCaptureAntibody is diluted with CoatingBuffer. For FastELISA, StandardCaptureAntibody is diluted in the corresponding sample. Either AssayConcentration or DilutionFactor should be provided but not both.",
-				Pattern:>RangeP[0,1],
-				Class->Real,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardCaptureAntibodyVolumes->{
-				Format->Multiple,
-				Description->"For each member of Standards, the volume of CaptureAntibody added into the corresponding well of the assay plate. AntibodyVolume is used as an alternative to AssayConcentration or DilutionFactor. During antibody preparation, a master mix will be made for antibody dilution, and the diluted Antibodies will be aliquoted into each well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			(*)StandardCaptureAntibodyStorageConditions->{
-				Format->Multiple,
-				Description->"For each member of Standards, the condition under which the unused portion of Capture Antibody stock sample should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Standard",
-				IndexMatching->Standards
-			},*)
-			StandardReferenceAntigens->{
-				Format->Multiple,
-				Description->"For each member of Standards, the SAMPLE containing the antigen that is used in DirectCompetitiveELISA or InirectCompetitiveELISA. The StandardReferenceAntigen competes with sample antigen for the binding of the StandardPrimaryAntibody. Reference Antigen is sometimes also referred to as Inhibitor Antigen.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardReferenceAntigenDilutionFactors->{
-				Format->Multiple,
-				Description->"For each member of Standards, the ratio of dilution of StandardReferenceAntigen. For DirectCompetitiveELISA and IndirectCompetitiveELISA, the StandardReferenceAntigenStandard is diluted in CoatingBuffer. Either AssayConcentration or DilutionFactor should be provided but not both.",
-				Pattern:>RangeP[0,1],
-				Class->Real,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardReferenceAntigenVolumes->{
-				Format->Multiple,
-				Description->"For each member of Standards, the volume of ReferenceAntigen added into the corresponding well of the assay plate. ReferenceAntigenVolume is used as an alternative to AssayConcentration or DilutionFactor. During antibody preparation, a master mix will be made for antibody dilution, and the diluted Antibodies will be aliquoted into each well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			(*)StandardReferenceAntigenStorageConditions->{
-				Format->Multiple,
-				Description->"For each member of Standards, the condition under which the unused portion of Reference Antigen stock sample should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Standard",
-				IndexMatching->Standards
-			},*)
-			StandardPrimaryAntibodies->{
-				Format->Multiple,
-				Description->"For each member of Standards, the antibody that directly binds with the analyte.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardPrimaryAntibodyDilutionFactors->{
-				Format->Multiple,
-				Description->"For each member of Standards, the ratio of dilution of StandardPrimaryAntibody. For DirectELISA, IndirectELISA, DirectSandwichELISA, and IndirectSandwichELISA, the antibody is diluted with ImmunosorbentBuffer. For DirectCompetitiveELISA, IndirectCompetitiveELISA, and FastELISA, the antibody is diluted in the corresponding sample. Either AssayConcentration or DilutionFactor should be provided but not both.",
-				Pattern:>RangeP[0,1],
-				Class->Real,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardPrimaryAntibodyVolumes->{
-				Format->Multiple,
-				Description->"For each member of Standards, the volume of PrimaryAntibody added into the corresponding well of the assay plate. AntibodyVolume is used as an alternative to AssayConcentration or DilutionFactor. During antibody preparation, a master mix will be made for antibody dilution, and the diluted Antibodies will be aliquoted into each well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			(*)StandardPrimaryAntibodyStorageConditions->{
-				Format->Multiple,
-				Description->"For each member of Standards, the condition under which the unused portion of Primary Antibody stock sample should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Standard",
-				IndexMatching->Standards
-			},*)
-			StandardSecondaryAntibodies->{
-				Format->Multiple,
-				Description->"For each member of Standards, the antibody that binds to the primary antibody.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardSecondaryAntibodyDilutionFactors->{
-				Format->Multiple,
-				Description->"For each member of Standards, the ratio of dilution of StandardSecondaryAntibody. StandardSecondaryAntibody is always diluted in the ImmunosorbentBuffer. Either AssayConcentration or DilutionFactor should be provided but not both.",
-				Pattern:>RangeP[0,1],
-				Class->Real,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardSecondaryAntibodyVolumes->{
-				Format->Multiple,
-				Description->"For each member of Standards, the volume of SecondaryAntibody added into the corresponding well of the assay plate. AntibodyVolume is used as an alternative to AssayConcentration or DilutionFactor. During antibody preparation, a master mix will be made for antibody dilution, and the diluted Antibodies will be aliquoted into each well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			(*)StandardSecondaryAntibodyStorageConditions->{
-				Format->Multiple,
-				Description->"For each member of Standards, the condition under which the unused portion of Secondary Antibody stock sample should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Standard",
-				IndexMatching->Standards
-			},*)
-			StandardCoatingVolumes->{
-				Format->Multiple,
-				Description->"For each member of Standards, the amount of Standard that is aliquoted into the ELISAPlate, in order for the Standard to be adsorbed to the surface of the well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardReferenceAntigenCoatingVolumes->{
-				Format->Multiple,
-				Description->"For each member of Standards, the amount of ReferenceAntigen that is aliquoted into the assay plate, in order for the ReferenceAntigen to be adsorbed to the surface of the well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardCoatingAntibodyCoatingVolumes->{
-				Format->Multiple,
-				Description->"For each member of Standards, the amount of diluted CoatingAntibody that is aliquoted into the ELISAPlate, in order for the CoatingAntibody to be adsorbed to the surface of the well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardCaptureAntibodyCoatingVolumes->{
-				Format->Multiple,
-				Description->"For each member of Standards, the amount of diluted CaptureAntibody that is aliquoted into the ELISAPlate, in order for the CaptureAntibody to be adsorbed to the surface of the well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Coating",
-				IndexMatching->Standards
-			},
-			StandardBlockingVolumes->{
-				Format->Multiple,
-				Description->"For each member of Standards, the amount of BlockingBuffer that is aliquoted into the appropriate wells of the ELISAPlate.",
-				Pattern:>RangeP[0 Microliter,300 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardAntibodyComplexImmunosorbentVolumes->{
-				Format->Multiple,
-				Description->"For each member of Standards, the volume of the StandardAntibodyComplex to be loaded on the ELISAPlate. In DirectCompetitiveELISA and IndirectCompetitiveELISA, this step enables the free primary antibody to bind to the ReferenceAntigen coated on the plate. In FastELISA, this step enables the PrimaryAntibody-TargetAntigen-CaptureAntibody complex to bind to the CoatingAntibody on the plate.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardImmunosorbentVolumes->{
-				Format->Multiple,
-				Description->"For each member of Standards, the volume of the Standard to be loaded on the ELISAPlate for the target antigen to bind to the capture antibody in DirectSandwichELISA and IndirectSandwichELISA.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardPrimaryAntibodyImmunosorbentVolumes->{
-				Format->Multiple,
-				Description->"For each member of Standards, the volume of the Primary Antibody to be loaded on the ELISAPlate for Immunosorbent assay.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardSecondaryAntibodyImmunosorbentVolumes->{
-				Format->Multiple,
-				Description->"For each member of Standards, the volume of the Secondary Antibody to be loaded on the ELISAPlate for immunosordent assay.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardSubstrateSolutions->{
-				Format->Multiple,
-				Description->"For each member of Standards, defines the one-part substrate solution such as PNPP.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardStopSolutions->{
-				Format->Multiple,
-				Description->"For each member of Standards, the reagent that is used to stop the reacelisaMasterSwitchtion between the enzyme and its substrate.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardSubstrateSolutionVolumes->{
-				Format->Multiple,
-				Description->"For each member of Standards, the volume of substrate to be added to the corresponding well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			StandardStopSolutionVolumes->{
-				Format->Multiple,
-				Description->"For each member of Standards, the volume of StopSolution to be added to the corresponding well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Standard",
-				IndexMatching->Standards
-			},
-			Blanks->{
-				Format->Multiple,
-				Description->"For each member of Blanks, a sample containing no TargetAntigen, used as a baseline or negative control for the ELISA.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankTargetAntigens->{
-				Format->Multiple,
-				Description->"For each member of Blanks,The Analyte molecule(e.g., peptide, protein, and hormone) detected and quantified in the blanks by Antibodies in the ELISA experiment. This option is used to automatically set Antibodies and the corresponding experiment conditions.",
-				Pattern:>ObjectP[Model[Molecule]],
-				Class->Link,
-				Relation->Model[Molecule],
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankStorageConditions->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the condition under which the unused portion of Blank sample should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankCoatingAntibodies->{
-				Format->Multiple,
-				Description->"For each member of Blanks,The sample containing the antibody that is used in for coating in FastELISA.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankCoatingAntibodyDilutionFactors->{
-				Format->Multiple,
-				Description->"For each member of Blanks,The ratio of dilution of BlankCoatingAntibody. BlankCoatingAntibody is diluted with CoatingBuffer. Either AssayConcentration or DilutionFactor should be provided but not both.",
-				Pattern:>RangeP[0,1],
-				Class->Real,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankCoatingAntibodyVolumes->{
-				Format->Multiple,
-				Description->"For each member of Blanks,The volume of Coating added into the corresponding well of the assay plate. CoatingAntibody is diluted with CoatingBuffer. AntibodyVolume is used as an alternative to AssayConcentration or DilutionFactor. During antibody preparation, a master mix will be made for antibody dilution, and the diluted Antibodies will be aliquoted into each well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			(*)BlankCoatingAntibodyStorageConditions->{
-				Format->Multiple,
-				Description->"For each member of Blanks,The condition under which the unused portion of BlankCoatingantibody stock sample should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},*)
-			BlankCaptureAntibodies->{
-				Format->Multiple,
-				Description->"For each member of Blanks,The sample containing the antibody that is used to pull down the antigen from sample solution to the plate in DirectSandwichELISA, IndirectSandwichELISA, and FastELISA.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankCaptureAntibodyDilutionFactors->{
-				Format->Multiple,
-				Description->"For each member of Blanks,The ratio of dilution of BlankCaptureAntibody. For DirectSandwichELISA and IndirectSandwichELISA, BlankCaptureAntibody is diluted with CoatingBuffer. For FastELISA, BlankCaptureAntibody is diluted in the corresponding sample. Either AssayConcentration or DilutionFactor should be provided but not both.",
-				Pattern:>RangeP[0,1],
-				Class->Real,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankCaptureAntibodyVolumes->{
-				Format->Multiple,
-				Description->"For each member of Blanks,The volume of CaptureAntibody added into the corresponding well of the assay plate. AntibodyVolume is used as an alternative to AssayConcentration or DilutionFactor. During antibody preparation, a master mix will be made for antibody dilution, and the diluted Antibodies will be aliquoted into each well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			(*)BlankCaptureAntibodyStorageConditions->{
-				Format->Multiple,
-				Description->"For each member of Blanks,The condition under which the unused portion of Capture Antibody stock sample should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},*)
-			BlankReferenceAntigens->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the SAMPLE containing the antigen that is used in DirectCompetitiveELISA or InirectCompetitiveELISA. The BlankReferenceAntigen competes with sample antigen for the binding of the BlankPrimaryAntibody. Reference Antigen is sometimes also referred to as Inhibitor Antigen.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankReferenceAntigenDilutionFactors->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the ratio of dilution of BlankReferenceAntigen. For DirectCompetitiveELISA and IndirectCompetitiveELISA, the BlankReferenceAntigenBlank is diluted in CoatingBuffer. Either AssayConcentration or DilutionFactor should be provided but not both.",
-				Pattern:>RangeP[0,1],
-				Class->Real,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankReferenceAntigenVolumes->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the volume of ReferenceAntigen added into the corresponding well of the assay plate. ReferenceAntigenVolume is used as an alternative to AssayConcentration or DilutionFactor. During antibody preparation, a master mix will be made for antibody dilution, and the diluted Antibodies will be aliquoted into each well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			(*)BlankReferenceAntigenStorageConditions->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the condition under which the unused portion of Reference Antigen stock sample should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},*)
-			BlankPrimaryAntibodies->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the antibody that directly binds with the analyte.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankPrimaryAntibodyDilutionFactors->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the ratio of dilution of BlankPrimaryAntibody. For DirectELISA, IndirectELISA, DirectSandwichELISA, and IndirectSandwichELISA, the antibody is diluted with ImmunosorbentBuffer. For DirectCompetitiveELISA, IndirectCompetitiveELISA, and FastELISA, the antibody is diluted in the corresponding sample. Either AssayConcentration or DilutionFactor should be provided but not both.",
-				Pattern:>RangeP[0,1],
-				Class->Real,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankPrimaryAntibodyVolumes->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the volume of PrimaryAntibody added into the corresponding well of the assay plate. AntibodyVolume is used as an alternative to AssayConcentration or DilutionFactor. During antibody preparation, a master mix will be made for antibody dilution, and the diluted Antibodies will be aliquoted into each well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			(*)BlankPrimaryAntibodyStorageConditions->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the condition under which the unused portion of Primary Antibody stock sample should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},*)
-			BlankSecondaryAntibodies->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the antibody that binds to the primary antibody.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankSecondaryAntibodyDilutionFactors->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the ratio of dilution of BlankSecondaryAntibody. BlankSecondaryAntibody is always diluted in the ImmunosorbentBuffer. Either AssayConcentration or DilutionFactor should be provided but not both.",
-				Pattern:>RangeP[0,1],
-				Class->Real,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankSecondaryAntibodyVolumes->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the volume of SecondaryAntibody added into the corresponding well of the assay plate. AntibodyVolume is used as an alternative to AssayConcentration or DilutionFactor. During antibody preparation, a master mix will be made for antibody dilution, and the diluted Antibodies will be aliquoted into each well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			(*)BlankSecondaryAntibodyStorageConditions->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the condition under which the unused portion of Secondary Antibody stock sample should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},*)
-			BlankCoatingVolumes->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the amount of Blank that is aliquoted into the ELISAPlate.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankReferenceAntigenCoatingVolumes->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the amount of ReferenceAntigen that is aliquoted into the assay plate, in order for the ReferenceAntigen to be adsorbed to the surface of the well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankCoatingAntibodyCoatingVolumes->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the amount of diluted CoatingAntibody that is aliquoted into the ELISAPlate, in order for the CoatingAntibody to be adsorbed to the surface of the well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankCaptureAntibodyCoatingVolumes->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the amount of diluted CaptureAntibody that is aliquoted into the ELISAPlate, in order for the CaptureAntibody to be adsorbed to the surface of the well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankBlockingVolumes->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the amount of BlockingBuffer that is aliquoted into the appropriate wells of the ELISAPlate.",
-				Pattern:>RangeP[0 Microliter,300 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankAntibodyComplexImmunosorbentVolumes->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the volume of the BlankAntibodyComplex to be loaded on the ELISAPlate. In DirectCompetitiveELISA and IndirectCompetitiveELISA, this step enables the free primary antibody to bind to the ReferenceAntigen coated on the plate. In FastELISA, this step enables the PrimaryAntibody-TargetAntigen-CaptureAntibody complex to bind to the CoatingAntibody on the plate.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankImmunosorbentVolumes->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the volume of the Blank to be loaded on the ELISAPlate for the target antigen to bind to the capture antibody in DirectSandwichELISA and IndirectSandwichELISA.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankPrimaryAntibodyImmunosorbentVolumes->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the volume of the Primary Antibody to be loaded on the ELISAPlate for Immunosorbent assay.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankSecondaryAntibodyImmunosorbentVolumes->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the volume of the Secondary Antibody to be loaded on the ELISAPlate for immunosordent assay.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankSubstrateSolutions->{
-				Format->Multiple,
-				Description->"For each member of Blanks, defines the one-part substrate solution such as PNPP.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankStopSolutions->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the reagent that is used to stop the reaction between the enzyme and its substrate.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankSubstrateSolutionVolumes->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the volume of substrate to be added to the corresponding well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			BlankStopSolutionVolumes->{
-				Format->Multiple,
-				Description->"For each member of Blanks, the volume of StopSolution to be added to the corresponding well.",
-				Pattern:>RangeP[0 Microliter,200 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Blank",
-				IndexMatching->Blanks
-			},
-			ELISAPlate->{
-				Format->Single,
-				Description->"The assay plate each sample, standard, and blank will be loaded into and the immunosorbent assay will take place. This plate can be pre-coated and blocked in advance.",
-				Pattern:>ObjectP[{Model[Container,Plate],Object[Container,Plate]}],
-				Class->Link,
-				Relation->Model[Container,Plate]|Object[Container,Plate],
-				Category->"Assay Plate"
-			},
-			SecondaryELISAPlate->{
-				Format->Single,
-				Description->"The second assay plate, if needed.",
-				Pattern:>ObjectP[{Model[Container,Plate],Object[Container,Plate]}],
-				Class->Link,
-				Relation->Model[Container,Plate]|Object[Container,Plate],
-				Category->"Assay Plate"
-			},
-
-			ELISAPlateAssignment->{
-				Category->"Assay Plate",
-				Description->"The arrangement of samples and their corresponding reagents in the ELISAPlate.",
-				Format->Multiple,
-				Class->{
+			CoatingTemperature -> {
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> Alternatives[Ambient, TemperatureP],
+				Description -> "The temperature at which the assay plate(s) are kept during coating, in order for the analytes to be adsorbed to the surface of the assay plate(s).",
+				Category -> "Coating"
+			},
+			CoatingTime -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Hour],
+				Units -> Hour,
+				Description -> "The duration for coating step.",
+				Category -> "Coating"
+			},
+			CoatingWashVolume -> {
+				Format -> Single,
+				Description -> "The volume of WashBuffer added per wash cycle to rinse off unbound coating analytes from the assay plate(s) per well.",
+				Pattern :> GreaterEqualP[0 Microliter],
+				Class -> Real,
+				Units -> Microliter,
+				Category -> "Coating"
+			},
+			CoatingNumberOfWashes -> {
+				Format -> Single,
+				Class -> Integer,
+				Pattern :> GreaterEqualP[0, 1],
+				Description -> "The number of washes performed to rinse off unbound coating analytes.",
+				Category -> "Coating"
+			},
+			MoatVolume -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The volume which each moat is filled with in order to slow evaporation of inner assay samples during the coating step.",
+				Category -> "Coating"
+			},
+			MoatBuffer -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[Object[Sample], Model[Sample]],
+				Description -> "The sample each moat well is filled with in order to slow evaporation of inner assay samples during the coating step.",
+				Category -> "Coating"
+			},
+			MoatSize -> {
+				Format -> Single,
+				Class -> Integer,
+				Pattern :> GreaterEqualP[0, 1],
+				Units -> None,
+				Description -> "The depth the moat extends into the assay plate. For example, if MoatSize is 1, the first available well for sample is B2.",
+				Category -> "Coating"
+			},
+			(*============Blocking==============*)
+			Blocking -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if a protein solution should be incubated with the assay plate to prevent non-specific binding of molecules to the assay plate.",
+				Category -> "Blocking"
+			},
+			BlockingBuffer -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "The solution used to prevent non-specific binding of antigen or antibody to the surface of the assay plate.",
+				Category -> "Blocking"
+			},
+			BlockingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of SamplesIn, the amount of BlockingBuffer that is dispensed into the corresponding wells of the assay plate(s), in order to prevent non-specific binding.",
+				Category -> "Blocking",
+				IndexMatching -> SamplesIn
+			},
+			BlockingTime -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Hour],
+				Units -> Hour,
+				Description -> "The blocking duration when the BlockingBuffer is kept with the assay plate(s), in order to prevent non-specific binding of molecules to the assay plate.",
+				Category -> "Blocking"
+			},
+			BlockingTemperature -> {
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> Alternatives[Ambient, TemperatureP],
+				Description -> "The temperature at which the assay plate(s) are kept during blocking, in order for the blocking analytes to be adsorbed to the unoccupied sites of the assay plate(s).",
+				Category -> "Blocking"
+			},
+			BlockingMixRate -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 RPM],
+				Units -> RPM,
+				Description -> "The speed at which the plate is shaken (orbitally, at a radius of 2 mm) during blocking.",
+				Category -> "Blocking"
+			},
+			BlockingWashVolume -> {
+				Format -> Single,
+				Description -> "The volume of WashBuffer added per wash cycle to rinse off the unbound blocking reagents from the assay plate(s).",
+				Pattern :> GreaterEqualP[0 Microliter],
+				Class -> Real,
+				Units -> Microliter,
+				Category -> "Blocking"
+			},
+			BlockingNumberOfWashes -> {
+				Format -> Single,
+				Class -> Integer,
+				Pattern :> GreaterEqualP[0, 1],
+				Description -> "The number of washes performed to rinse off unbound blocking reagents.",
+				Category -> "Blocking"
+			},
+			(*Immunosorbent*)
+			SampleAntibodyComplexImmunosorbentVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of SamplesIn, the volume of the SampleAntibodyComplex to be loaded on the ELISAPlate. In DirectCompetitiveELISA and IndirectCompetitiveELISA, this step enables the free primary antibody to bind to the ReferenceAntigen coated on the plate. In FastELISA, this step enables the PrimaryAntibody-TargetAntigen-CaptureAntibody complex to bind to the CoatingAntibody on the plate.",
+				Category -> "Immunosorbent Step",
+				IndexMatching -> SamplesIn
+			},
+			SampleAntibodyComplexImmunosorbentTime -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Hour],
+				Units -> Hour,
+				Description -> "The duration for which the sample-antibody complex is allowed to adsorb onto the assay plate(s).",
+				Category -> "Immunosorbent Step"
+			},
+			SampleAntibodyComplexImmunosorbentTemperature -> {
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> Alternatives[Ambient, TemperatureP],
+				Description -> "The temperature at which the assay plate(s) are kept during SampleAntibodyComplexImmunosorbent step.",
+				Category -> "Immunosorbent Step"
+			},
+			SampleAntibodyComplexImmunosorbentMixRate -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 RPM],
+				Units -> RPM,
+				Description -> "The speed at which the assay plate(s) are shaken (orbitally, at a radius of 2 mm) during SampleAntibodyComplexImmunosorbent step.",
+				Category -> "Immunosorbent Step"
+			},
+			SampleAntibodyComplexImmunosorbentWashVolume -> {
+				Format -> Single,
+				Description -> "The volume of WashBuffer added per wash cycle to rinse off the unbound PrimaryAntibody after SampleAntibodyComplexImmunosorbent step.",
+				Pattern :> GreaterEqualP[0 Microliter],
+				Class -> Real,
+				Units -> Microliter,
+				Category -> "Immunosorbent Step"
+			},
+			SampleAntibodyComplexImmunosorbentNumberOfWashes -> {
+				Format -> Single,
+				Class -> Integer,
+				Pattern :> GreaterEqualP[0, 1],
+				Description -> "The number of rinses performed after SampleAntibodyComplexImmunosorbent step.",
+				Category -> "Immunosorbent Step"
+			},
+			SampleImmunosorbentTime -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Hour],
+				Units -> Hour,
+				Description -> "The duration for which the samples are allowed to adsorb onto the assay plate(s) in DirectSandwichELISA and IndirectSandwichELISA.",
+				Category -> "Immunosorbent Step"
+			},
+			SampleImmunosorbentTemperature -> {
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> Alternatives[Ambient, TemperatureP],
+				Description -> "The temperature at which the assay plate(s) are kept during SampleImmunosorbent step.",
+				Category -> "Immunosorbent Step"
+			},
+			SampleImmunosorbentMixRate -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 RPM],
+				Units -> RPM,
+				Description -> "The speed at which the assay plate(s) are shaken (orbitally, at a radius of 2 mm) during SampleImmunosorbent step.",
+				Category -> "Immunosorbent Step"
+			},
+			SampleImmunosorbentWashVolume -> {
+				Format -> Single,
+				Description -> "The volume of WashBuffer added per wash cycle to rinse off the unbound Samples after SampleImmunosorbent step.",
+				Pattern :> GreaterEqualP[0 Microliter],
+				Class -> Real,
+				Units -> Microliter,
+				Category -> "Immunosorbent Step"
+			},
+			SampleImmunosorbentNumberOfWashes -> {
+				Format -> Single,
+				Class -> Integer,
+				Pattern :> GreaterEqualP[0, 1],
+				Description -> "The number of rinses performed to rinse off the unbound Samples after SampleImmunosorbent step.",
+				Category -> "Immunosorbent Step"
+			},
+			PrimaryAntibodyImmunosorbentTime -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Hour],
+				Units -> Hour,
+				Description -> "The duration for which the PrimaryAntibodies are allowed to adsorb onto the assay plate(s) for DirectELISA, IndirectELISA, DirectSandwichELISA, or IndirectSandwichELISA.",
+				Category -> "Immunosorbent Step"
+			},
+			PrimaryAntibodyImmunosorbentTemperature -> {
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> Alternatives[Ambient, TemperatureP],
+				Description -> "The temperature at which the assay plate(s) are kept during PrimaryAntibodyImmunosorbent incubation.",
+				Category -> "Immunosorbent Step"
+			},
+			PrimaryAntibodyImmunosorbentMixRate -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 RPM],
+				Units -> RPM,
+				Description -> "The speed at which the assay plate(s) are shaken (orbitally, at a radius of 2 mm) during PrimaryAntibodyImmunosorbent incubation.",
+				Category -> "Immunosorbent Step"
+			},
+			PrimaryAntibodyImmunosorbentWashVolume -> {
+				Format -> Single,
+				Description -> "The volume of WashBuffer added per wash cycle to rinse off the unbound PrimaryAntibody after PrimaryAntibody incubation.",
+				Pattern :> GreaterP[0 Microliter],
+				Class -> Real,
+				Units -> Microliter,
+				Category -> "Immunosorbent Step"
+			},
+			PrimaryAntibodyImmunosorbentNumberOfWashes -> {
+				Format -> Single,
+				Class -> Integer,
+				Pattern :> GreaterEqualP[0, 1],
+				Description -> "The number of rinses performed to rinse off the unbound PrimaryAntibody after PrimaryAntibody incubation.",
+				Category -> "Immunosorbent Step"
+			},
+			SecondaryAntibodyImmunosorbentTime -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Hour],
+				Units -> Hour,
+				Description -> "The duration for which the SecondaryAntibodies are allowed to adsorb onto the assay plate(s) for IndirectELISA, IndirectSandwichELISA, and IndirectCompetitiveELISA.",
+				Category -> "Immunosorbent Step"
+			},
+			SecondaryAntibodyImmunosorbentTemperature -> {
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> Alternatives[Ambient, TemperatureP],
+				Description -> "The temperature at which the assay plate(s) are kept during SecondaryAntibodyImmunosorbent incubation.",
+				Category -> "Immunosorbent Step"
+			},
+			SecondaryAntibodyImmunosorbentMixRate -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 RPM],
+				Units -> RPM,
+				Description -> "TThe speed at which the assay plate(s) are shaken (orbitally, at a radius of 2 mm) during SecondaryAntibodyImmunosorbent incubation.",
+				Category -> "Immunosorbent Step"
+			},
+			SecondaryAntibodyImmunosorbentWashVolume -> {
+				Format -> Single,
+				Description -> "The volume of WashBuffer added per wash cycle to rinse off the unbound Secondary antibody after SecondaryAntibodyImmunosorbent incubation.",
+				Pattern :> GreaterEqualP[0 Microliter],
+				Class -> Real,
+				Units -> Microliter,
+				Category -> "Immunosorbent Step"
+			},
+			SecondaryAntibodyImmunosorbentNumberOfWashes -> {
+				Format -> Single,
+				Class -> Integer,
+				Pattern :> GreaterEqualP[0, 1],
+				Description -> "The number of rinses performed to rinse off the unbound SecondaryAntibody from assay plate(s) after SecondaryAntibodyImmunosorbent incubation.",
+				Category -> "Immunosorbent Step"
+			},
+			(*Detection*)
+			SubstrateSolution -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "The solution containing a chromogenic, fluorogenic, or chemiluminescent reagent that reacts with the enzyme conjugated to the detection antibody (or other enzyme label) to produce a measurable signal.",
+				Category -> "Detection"
+			},
+			SecondarySubstrateSolution -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "The solution containing an enhancer or activator that optimizes or initiates the reaction of SubstrateSolution when the two are mixed together.",
+				Category -> "Detection"
+			},
+			PreMixSubstrateSolution -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Whether the SubstrateSolution and SecondarySubstrateSolution are mixed prior to being added to the assay plate(s).",
+				Category -> "Detection"
+			},
+			SubstrateSolutionMixRatio -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0],
+				Description -> "The volume ratio of SubstrateSolution to SecondarySubstrateSolution.",
+				Category -> "Detection"
+			},
+			SubstrateSolutions -> {(*todo:delete, no longer index-matching*)
+				Format -> Multiple,
+				Description -> "For each member of SamplesIn, defines the one-part substrate solution such as PNPP.",
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Class -> Link,
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Category -> "Detection",
+				IndexMatching -> SamplesIn
+			},
+			StopSolutions -> {(*todo:delete, no longer index-matching*)
+				Format -> Multiple,
+				Description -> "For each member of SamplesIn, the reagent that is used to stop the reaction between the enzyme and its substrate.",
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Class -> Link,
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Category -> "Detection",
+				IndexMatching -> SamplesIn
+			},
+			SubstrateSolutionVolumes -> {(*todo:delete, no longer index-matching*)
+				Format -> Multiple,
+				Description -> "For each member of SamplesIn, the volume of substrate to be added to the corresponding well.",
+				Pattern :> GreaterP[0 Microliter],
+				Class -> Real,
+				Units -> Microliter,
+				Category -> "Detection",
+				IndexMatching -> SamplesIn
+			},
+			StopSolutionVolumes -> {(*todo:delete, no longer index-matching*)
+				Format -> Multiple,
+				Description -> "For each member of SamplesIn, the volume of StopSolution to be added to the corresponding well.",
+				Pattern :> GreaterP[0 Microliter],
+				Class -> Real,
+				Units -> Microliter,
+				Category -> "Detection",
+				IndexMatching -> SamplesIn
+			},
+			SubstrateSolutionVolume -> {
+				Format -> Single,
+				Description -> "The volume of the working SubstrateSolution (pre-mixed according to the SubstrateSolutionMixRatio if a SecondarySubstrateSolution is specified) to be added to the assay plate(s).",
+				Pattern :> GreaterP[0 Microliter],
+				Class -> Real,
+				Units -> Microliter,
+				Category -> "Detection"
+			},
+			SubstrateIncubationTime -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Hour],
+				Units -> Hour,
+				Description -> "The time allowed for the enzyme substrate reaction to occur in the assay plate(s) before the reaction is stopped or measured.",
+				Category -> "Detection"
+			},
+			SubstrateIncubationTemperature -> {
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> Alternatives[Ambient, TemperatureP],
+				Description -> "The temperature at which the assay plate(s) are kept during SubstrateIncubation, in order for the detection reagent to react with antibody-conjugated enzyme.",
+				Category -> "Detection"
+			},
+			SubstrateIncubationMixRate -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 RPM],
+				Units -> RPM,
+				Description -> "The speed at which the assay plate(s) are shaken (orbitally, at a radius of 2 mm) during SubstrateIncubation.",
+				Category -> "Detection"
+			},
+			StopSolution -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "The reagent that is used to stop colorimetric reaction between the enzyme and its substrate.",
+				Category -> "Detection"
+			},
+			StopSolutionVolume -> {
+				Format -> Single,
+				Description -> "The volume of StopSolution to be added to the assay plate(s).",
+				Pattern :> GreaterP[0 Microliter],
+				Class -> Real,
+				Units -> Microliter,
+				Category -> "Detection"
+			},
+			DetectionWashing -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if an initial washing step is added to detection step before adding SubstrateSolution.",
+				Category -> "Detection"
+			},
+			DetectionWashingBuffer -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "The solution used to wash assay plate(s) prior to adding SubstrateSolution.",
+				Category -> "Detection"
+			},
+			DetectionWashVolume -> {
+				Format -> Single,
+				Description -> "The volume of DetectionWashingBuffer added per wash cycle per well to the assay plate(s).",
+				Pattern :> GreaterEqualP[0 Microliter],
+				Class -> Real,
+				Units -> Microliter,
+				Category -> "Detection"
+			},
+			DetectionNumberOfWashes -> {
+				Format -> Single,
+				Class -> Integer,
+				Pattern :> GreaterEqualP[0, 1],
+				Description -> "The number of washes performed for DetectionWashing.",
+				Category -> "Detection"
+			},
+			RetainCover -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if the lid(s) on the assay plate(s) should not be taken off during measurement to decrease evaporation.",
+				Category -> "Detection"
+			},
+			PrereadTimepoints -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Minute],
+				Units -> Minute,
+				Description -> "The list of time points when the absorbance intensities were recorded at PrereadAbsorbanceWavelengths during the preread process.",
+				Category -> "General"
+			},
+			PrereadAbsorbanceWavelengths -> {
+				Format -> Multiple,
+				Description -> "The wavelength used to detect the absorbance of light produced by colorimetric reaction before the sample is quenched by the StopSolution.",
+				Pattern :> GreaterP[0 Nanometer],
+				Class -> Real,
+				Units -> Nanometer,
+				Category -> "Detection"
+			},
+			AbsorbanceWavelengths -> {
+				Format -> Multiple,
+				Description -> "The wavelength used to detect the absorbance of light by the product of the detection reaction.",
+				Pattern :> GreaterP[0 Nanometer],
+				Class -> Real,
+				Units -> Nanometer,
+				Category -> "Detection"
+			},
+			SignalCorrection -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if an absorbance reading that is used to eliminate the interference of background absorbance (such as from ELISAPlate material and dust) is used.",
+				Category -> "Detection"
+			},
+			SignalCorrectionWavelength -> {
+				Format -> Single,
+				Description -> "The wavelength for absorbance reading that is used to eliminate the interference of background absorbance.",
+				Pattern :> GreaterP[0 Nanometer],
+				Class -> Real,
+				Units -> Nanometer,
+				Category -> "Detection"
+			},
+			WavelengthSelection -> {
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> WavelengthSelectionP,
+				Description -> "The method used to obtain the emission and excitation wavelengths.",
+				Category -> "Detection"
+			},
+			ReadLocation -> {
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> ReadLocationP,
+				Description -> "Indicates if the plate will be illuminated and read from top or bottom.",
+				Category -> "Detection"
+			},
+			EmissionWavelengths -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Nanometer],
+				Units -> Nanometer,
+				Description -> "The wavelengths at which luminescence emitted from the assay plate(s) is measured.",
+				Category -> "Detection"
+			},
+			ExcitationWavelengths -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Nanometer],
+				Units -> Nanometer,
+				Description -> "For each member of EmissionWavelengths, the wavelengths of light used to excite the samples.",
+				Category -> "Detection",
+				IndexMatching -> EmissionWavelengths,
+				Abstract -> True
+			},
+			Gains -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Percent],
+				Units -> Percent,
+				Description -> "For each member of EmissionWavelengths, the voltage set on the PMT (photomultiplier tube) detector to amplify the detected signal during the luminescence measurement at this wavelength.",
+				IndexMatching -> EmissionWavelengths,
+				Category -> "Detection"
+			},
+			DualEmission -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if both emission detectors are used to record emissions at the primary and secondary wavelengths.",
+				Category -> "Detection"
+			},
+			DualEmissionWavelengths -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Nanometer],
+				Units -> Nanometer,
+				Description -> "For each member of EmissionWavelengths, the corresponding wavelength at which luminescence emitted from the assay plate(s) is measured with the secondary detector (simultaneous to the measurement at the emission wavelength done by the primary detector).",
+				IndexMatching -> EmissionWavelengths,
+				Category -> "Detection"
+			},
+			DualEmissionGains -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Percent],
+				Units -> Percent,
+				Description -> "For each member of DualEmissionWavelengths, the voltage set on the PMT (photomultiplier tube) detector to amplify the detected signal during the luminescence measurement at this wavelength.",
+				IndexMatching -> DualEmissionWavelengths,
+				Category -> "Detection"
+			},
+			FocalHeights -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Millimeter],
+				Units -> Millimeter,
+				Description -> "For each member of EmissionWavelengths, indicate the distance from the bottom of the plate carrier to the focal point where light from the sample is directed onto the detector.",
+				Category -> "Detection",
+				IndexMatching -> EmissionWavelengths
+			},
+			AutoFocalHeights -> {
+				Format -> Multiple,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "For each member of EmissionWavelengths, indicates if the FocalHeight is determined by reading the AdjustmentSample at different heights and selecting the height which gives the highest luminescence reading.",
+				Category -> "Detection",
+				IndexMatching -> EmissionWavelengths
+			},
+			IntegrationTime -> {
+				Format -> Single,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Minute],
+				Units -> Second,
+				Description -> "The amount of time over which luminescence measurements should be integrated.",
+				Category -> "Detection"
+			},
+			(*==============STANDARD OPTIONS=================*)
+			Standards -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "The samples containing known amount of TargetAntigen molecule. Standard is used for the quantification of Standard analyte.",
+				Category -> "Standard"
+			},
+			StandardTargetAntigens -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[Model[Molecule]],
+				Relation -> Model[Molecule],
+				Description -> "For each member of Standards, the analyte molecule(e.g., peptide, protein, and hormone) detected and quantified in the Standard samples by antibodies in the ELISA experiment.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardDilutionCurves -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> {{GreaterEqualP[0 Microliter], GreaterEqualP[0 Microliter]}..},
+				Description -> "For each member of Standards, the multi-step dilutions of standards, presented as {Standard transfer volume, Diluent transfer volume}.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardSerialDilutionCurves -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> {{GreaterEqualP[0 Microliter], GreaterEqualP[0 Microliter]}..},
+				Description -> "For each member of Standards, the multi-step serial dilutions of standards, presented as {Transfer volume of previous dilution, Diluent transfer volume}.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardDiluent -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "The buffer used to perform multiple dilutions on Standards to appropriate concentrations.",
+				Category -> "Standard"
+			},
+			StandardCoatingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Standards, the amount of Standard that is dispensed into the ELISAPlate(s), in order for the Standard to be adsorbed to the surface of the well.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardImmunosorbentVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Standards, the volume of the Standard to be loaded on the ELISAPlate for the target antigen to bind to the capture antibody in DirectSandwichELISA and IndirectSandwichELISA.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardCoatingAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "For each member of Standards, the antibody to be immobilized on the surface of the ELISA plate(s) to capture the StandardTargetAntigen during the assay for FastELISA method.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardCoatingAntibodyDilutionFactors -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> RangeP[0, 1],
+				Description -> "For each member of Standards, the ratio of dilution of StandardCoatingAntibody, calculated as the volume of the StandardCoatingAntibody divided by the total final volume consisting of both the StandardCoatingAntibody and CoatingAntibodyDiluent.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardCoatingAntibodyVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Standards, th volume of undiluted StandardCoatingAntibody directly added into the corresponding well of the assay plate(s).",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardCoatingAntibodyCoatingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Standards, the amount of StandardCoatingAntibody (either diluted or undiluted) that is dispensed into the assay plate(s), in order for the StandardCoatingAntibody to be adsorbed to the surface of the well.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardCaptureAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "For each member of Standards, the antibody that is used to pull down the StandardTargetAntigen from standard solution to the the surface of the assay plate(s) in DirectSandwichELISA, IndirectSandwichELISA, and FastELISA.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardCaptureAntibodyDilutionFactors -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> RangeP[0, 1],
+				Description -> "For each member of Standards, the ratio of dilution of StandardCaptureAntibody.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardCaptureAntibodyVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Standards, the volume of undiluted StandardCaptureAntibody added into the corresponding well of the assay plate(s) when Method is DirectSandwichELISA or IndirectSandwichELISA, or the volume of diluted StandardCaptureAntibody directly added into the corresponding well of the SampleAssemblyPlate(s) to form Sample-Antibody complex when Method is FastELISA.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardCaptureAntibodyCoatingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Standards, the amount of StandardCaptureAntibody (either diluted or undiluted) that is dispensed into the assay plate(s), in order for the StandardCaptureAntibody to be adsorbed to the surface of the well.",
+				Category -> "Coating",
+				IndexMatching -> Standards
+			},
+			StandardReferenceAntigens -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "For each member of Standards, the antigen that competes with StandardTargetAntigen in the standard for the binding of the StandardPrimaryAntibody.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardReferenceAntigenDilutionFactors -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> RangeP[0, 1],
+				Description -> "For each member of Standards, the ratio of dilution of StandardReferenceAntigen.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardReferenceAntigenVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Standards, the StandardReferenceAntigen added into the corresponding well of the assay plate(s).",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardReferenceAntigenCoatingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Standards, the amount of StandardReferenceAntigen (either diluted or undiluted) that is dispensed into the assay plate(s), in order for the StandardReferenceAntigen to be adsorbed to the surface of the well.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardPrimaryAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "For each member of Standards, the antibody that directly binds to the StandardTargetAntigen.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardPrimaryAntibodyDilutionFactors -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> RangeP[0, 1],
+				Description -> "For each member of Standards, the ratio of dilution of StandardPrimaryAntibody.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardPrimaryAntibodyVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Standards, the volume of undiluted StandardPrimaryAntibody added into the corresponding well of the assay plate(s) when Method is DirectELISA, IndirectELISA, DirectSandwichELISA, and IndirectSandwichELISA, or the volume of diluted StandardPrimaryAntibody directly added into the corresponding well of the SampleAssemblyPlate(s) to form Sample-Antibody complex when Method is DirectCompetitiveELISA, IndirectCompetitiveELISA, and FastELISA.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardPrimaryAntibodyImmunosorbentVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Standards, the volume of the StandardPrimaryAntibody (either diluted or undiluted) to be loaded on the assay plate(s) for the Immunosorbent step when Method is DirectELISA, IndirectELISA, DirectSandwichELISA, and IndirectSandwichELISA.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardSecondaryAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "For each member of Standards, the antibody that binds to the StandardPrimaryAntibody rather than directly to the StandardTargetAntigen.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardSecondaryAntibodyDilutionFactors -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> RangeP[0, 1],
+				Description -> "For each member of Standards, the ratio of dilution of StandardSecondaryAntibody.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardSecondaryAntibodyVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Standards, the volume of StandardSecondaryAntibody (either diluted or undiluted) added into the corresponding well of the assay plate(s) for the immunosorbent step.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardSecondaryAntibodyImmunosorbentVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Standards, the volume of the StandardSecondaryAntibody (either diluted or undiluted) to be loaded on the assay plate(s) for the immunosorbent step.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardBlockingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Standards, the amount of BlockingBuffer that is dispensed into the corresponding wells of the assay plate(s), in order to prevent non-specific binding.",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardAntibodyComplexImmunosorbentVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Standards, the volume of the StandardAntibodyComplex to be loaded on the assay plate(s).",
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardSubstrateSolutions -> {(*todo delete*)
+				Format -> Multiple,
+				Description -> "For each member of Standards, defines the one-part substrate solution such as PNPP.",
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Class -> Link,
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardStopSolutions -> {(*todo delete*)
+				Format -> Multiple,
+				Description -> "For each member of Standards, the reagent that is used to stop the reacelisaMasterSwitchtion between the enzyme and its substrate.",
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Class -> Link,
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardSubstrateSolutionVolumes -> {(*todo delete*)
+				Format -> Multiple,
+				Description -> "For each member of Standards, the volume of substrate to be added to the corresponding well.",
+				Pattern :> GreaterP[0 Microliter],
+				Class -> Real,
+				Units -> Microliter,
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			StandardStopSolutionVolumes -> {(*todo delete*)
+				Format -> Multiple,
+				Description -> "For each member of Standards, the volume of StopSolution to be added to the corresponding well.",
+				Pattern :> GreaterP[0 Microliter],
+				Class -> Real,
+				Units -> Microliter,
+				Category -> "Standard",
+				IndexMatching -> Standards
+			},
+			(*================Blank==================*)
+			Blanks -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "The solution containing no TargetAntigen, used as a baseline or negative control for the ELISA.",
+				Category -> "Blank"
+			},
+			BlankTargetAntigens -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[Model[Molecule]],
+				Relation -> Model[Molecule],
+				Description -> "For each member of Blanks, the analyte molecule(e.g., peptide, protein, and hormone) used in the blanks as baseline or negative control.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankCoatingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Blanks, the amount of Blank that is dispensed into the ELISAPlate(s), in order for the Blank to be adsorbed to the surface of the well.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankImmunosorbentVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Blanks, the volume of the Blank to be loaded on the ELISAPlate(s) for the target antigen to bind to the capture antibody in DirectSandwichELISA and IndirectSandwichELISA.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankCoatingAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "For each member of Blanks, the antibody to be immobilized on the surface of the ELISA plate(s) to capture the BlankTargetAntigen during the assay.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankCoatingAntibodyDilutionFactors -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> RangeP[0, 1],
+				Description -> "For each member of Blanks, the dilution ratio of BlankCoatingAntibody, calculated as the volume of the BlankCoatingAntibody divided by the total final volume consisting of both the BlankCoatingAntibody and CoatingAntibodyDiluent.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankCoatingAntibodyVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Blanks, the volume of undiluted BlankCoatingAntibody directly added into the corresponding well of the assay plate(s).",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankCoatingAntibodyCoatingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Blanks, the amount of BlankCoatingAntibody (either diluted or undiluted) that is dispensed into the assay plate(s), in order for the BlankCoatingAntibody to be adsorbed to the surface of the well.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankCaptureAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "For each member of Blanks, the antibody that is used to pull down the BlankTargetAntigen from blank solution to the surface of the assay plate(s) in DirectSandwichELISA, IndirectSandwichELISA, and FastELISA methods.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankCaptureAntibodyDilutionFactors -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> RangeP[0, 1],
+				Description -> "For each member of Blanks, the dilution ratio of BlankCaptureAntibody. For DirectSandwichELISA and IndirectSandwichELISA, BlankCaptureAntibody is diluted with CaptureAntibodyDiluent.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankCaptureAntibodyVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Blanks, the volume of undiluted BlankCaptureAntibody added into the corresponding well of the assay plate(s) when Method is DirectSandwichELISA or IndirectSandwichELISA, or the volume of diluted BlankCaptureAntibody directly added into the corresponding well of the SampleAssemblyPlate(s) to form Sample-Antibody complex when Method is FastELISA.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankCaptureAntibodyCoatingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Blanks, the amount of BlankCaptureAntibody (either diluted or undiluted) that is dispensed into the assay plate(s), in order for the BlankCaptureAntibody to be adsorbed to the surface of the well.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankReferenceAntigens -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "For each member of Blanks, the antigen that competes with BlankTargetAntigen in the blank for the binding of the BlankPrimaryAntibody.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankReferenceAntigenDilutionFactors -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> RangeP[0, 1],
+				Description -> "For each member of Blanks, the dilution ratio of BlankReferenceAntigen.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankReferenceAntigenVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Blanks, the volume of BlankReferenceAntigen added into the corresponding well of the assay plate(s).",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankReferenceAntigenCoatingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Blanks, the amount of diluted BlankReferenceAntigen that is dispensed into the assay plate(s), in order for the BlankReferenceAntigen to be adsorbed to the surface of the well.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankPrimaryAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "For each member of Blanks, the antibody that directly binds with the BlankTargetAntigen.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankPrimaryAntibodyDilutionFactors -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> RangeP[0, 1],
+				Description -> "For each member of Blanks, the ratio of dilution of BlankPrimaryAntibody.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankPrimaryAntibodyVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Blanks, the volume of undiluted BlankPrimaryAntibody added into the corresponding well of the assay plate(s) when Method is DirectELISA, IndirectELISA, DirectSandwichELISA, and IndirectSandwichELISA, or the volume of diluted BlankPrimaryAntibody directly added into the corresponding well of the SampleAssemblyPlate(s) to form Sample-Antibody complex when Method is DirectCompetitiveELISA, IndirectCompetitiveELISA, and FastELISA.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankPrimaryAntibodyImmunosorbentVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Blanks, the volume of the BlankPrimaryAntibody (either diluted or undiluted) to be loaded on the assay plate(s) for the Immunosorbent step when Method is DirectELISA, IndirectELISA, DirectSandwichELISA, and IndirectSandwichELISA.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankSecondaryAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Description -> "For each member of Blanks, the antibody that binds to the BlankPrimaryAntibody rather than directly to the BlankTargetAntigen.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankSecondaryAntibodyDilutionFactors -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> RangeP[0, 1],
+				Description -> "For each member of Blanks, the ratio of dilution of BlankSecondaryAntibody.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankSecondaryAntibodyVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Blanks, the volume of BlankSecondaryAntibody added into the corresponding well of the assay plate(s) for the immunosorbent step.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankSecondaryAntibodyImmunosorbentVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Blanks, the volume of the BlankSecondaryAntibody (either diluted or undiluted) to be loaded on the assay plate(s) for the immunosorbent step.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankBlockingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Blanks, the amount of BlockingBuffer that is dispensed into the corresponding wells of the assay plate(s), in order to prevent non-specific binding.",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankAntibodyComplexImmunosorbentVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "For each member of Blanks, the volume of the BlankAntibodyComplex to be loaded on the assay plate(s).",
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankSubstrateSolutions -> {(*todo delete*)
+				Format -> Multiple,
+				Description -> "For each member of Blanks, defines the one-part substrate solution such as PNPP.",
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Class -> Link,
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankStopSolutions -> {(*todo delete*)
+				Format -> Multiple,
+				Description -> "For each member of Blanks, the reagent that is used to stop the reaction between the enzyme and its substrate.",
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Class -> Link,
+				Relation -> Alternatives[Model[Sample], Object[Sample]],
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankSubstrateSolutionVolumes -> {(*todo delete*)
+				Format -> Multiple,
+				Description -> "For each member of Blanks, the volume of substrate to be added to the corresponding well.",
+				Pattern :> GreaterP[0 Microliter],
+				Class -> Real,
+				Units -> Microliter,
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			BlankStopSolutionVolumes -> {(*todo delete*)
+				Format -> Multiple,
+				Description -> "For each member of Blanks, the volume of StopSolution to be added to the corresponding well.",
+				Pattern :> GreaterP[0 Microliter],
+				Class -> Real,
+				Units -> Microliter,
+				Category -> "Blank",
+				IndexMatching -> Blanks
+			},
+			(*=========ELISA Plate And Assignment============*)
+			ELISAPlateAssignment -> {
+				Category -> "Assay Plate",
+				Description -> "The arrangement of samples and their corresponding reagents in the ELISAPlate.",
+				Format -> Multiple,
+				Class -> {
 					Type->Expression,
 					Sample->Link,
 					Spike->Link,
@@ -1596,13 +1976,12 @@ DefineObjectType[Object[Protocol, ELISA],
 					StopSolutionVolume->Real,
 					Data->Link
 				},
-
 				Pattern :> {
 					Type->ELISASampleTypeP,
 					Sample->ObjectP[{Model[Sample], Object[Sample]}],
 					Spike->ObjectP[{Model[Sample], Object[Sample]}],
 					SpikeDilutionFactor->RangeP[0,1],
-					SampleDilutionFactors->{RangeP[0,1]..},
+					SampleDilutionFactors -> {RangeP[0,1]..},
 					CoatingAntibody->ObjectP[{Model[Sample], Object[Sample]}],
 					CoatingAntibodyDilutionFactor->RangeP[0,1],
 					CaptureAntibody->ObjectP[{Model[Sample], Object[Sample]}],
@@ -1626,7 +2005,7 @@ DefineObjectType[Object[Protocol, ELISA],
 					Data->_Link
 
 				},
-				Units->{
+				Units -> {
 					Type->None,
 					Sample ->None,
 					Spike->None,
@@ -1684,10 +2063,10 @@ DefineObjectType[Object[Protocol, ELISA],
 				}
 			},
 			SecondaryELISAPlateAssignment->{
-				Category->"Assay Plate",
-				Description->"The arrangement of samples and their corresponding reagents in the SecondaryELISAPlate.",
-				Format->Multiple,
-				Class->{
+				Category -> "Assay Plate",
+				Description -> "The arrangement of samples and their corresponding reagents in the SecondaryELISAPlate.",
+				Format -> Multiple,
+				Class -> {
 					Type->Expression,
 					Sample->Link,
 					Spike->Link,
@@ -1715,13 +2094,12 @@ DefineObjectType[Object[Protocol, ELISA],
 					StopSolutionVolume->Real,
 					Data->Link
 				},
-
 				Pattern :> {
 					Type->ELISASampleTypeP,
 					Sample->ObjectP[{Model[Sample], Object[Sample]}],
 					Spike->ObjectP[{Model[Sample], Object[Sample]}],
 					SpikeDilutionFactor->RangeP[0,1],
-					SampleDilutionFactors->{RangeP[0,1]..},
+					SampleDilutionFactors -> {RangeP[0,1]..},
 					CoatingAntibody->ObjectP[{Model[Sample], Object[Sample]}],
 					CoatingAntibodyDilutionFactor->RangeP[0,1],
 					CaptureAntibody->ObjectP[{Model[Sample], Object[Sample]}],
@@ -1743,9 +2121,8 @@ DefineObjectType[Object[Protocol, ELISA],
 					SubstrateSolutionVolume->RangeP[0Microliter,300Microliter],
 					StopSolutionVolume->RangeP[0Microliter,300Microliter],
 					Data->_Link
-
 				},
-				Units->{
+				Units -> {
 					Type->None,
 					Sample ->None,
 					Spike->None,
@@ -1802,596 +2179,328 @@ DefineObjectType[Object[Protocol, ELISA],
 					Data->Object[Data]
 				}
 			},
-			SampleAssemblyPlate->{
-				Format->Single,
-				Description->"The deep well plate used to dilute samples, standards, spiking samples, mixing samples and antibodies, and antibody-sample complex incubation before loading them onto ELISAplate.",
-				Pattern:>ObjectP[{Model[Container,Plate],Object[Container,Plate]}],
-				Class->Link,
-				Relation->Model[Container,Plate]|Object[Container,Plate],
-				Category->"Sample Preparation"
+			SampleAssemblyPlate -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Container, Plate], Object[Container, Plate]}],
+				Relation -> Model[Container, Plate]|Object[Container, Plate],
+				Description -> "The deep well plate used to dilute samples, standards, spiking samples, mixing samples and antibodies, and antibody-sample complex incubation before loading them onto ELISAplate.",
+				Category -> "Sample Preparation"
 			},
-			SecondarySampleAssemblyPlate->{
-				Format->Single,
-				Description->"The deep well plated used to dilute samples, standards, spiking samples, mixing samples and antibodies, and antibody-sample complex incubation before loading them onto the SecondaryELISAPlate.",
-				Pattern:>ObjectP[{Model[Container,Plate],Object[Container,Plate]}],
-				Class->Link,
-				Relation->Model[Container,Plate]|Object[Container,Plate],
-				Category->"Sample Preparation"
+			SecondarySampleAssemblyPlate -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Container, Plate], Object[Container, Plate]}],
+				Relation -> Model[Container, Plate]|Object[Container, Plate],
+				Description -> "The deep well plated used to dilute samples, standards, spiking samples, mixing samples and antibodies, and antibody-sample complex incubation before loading them onto the SecondaryELISAPlate.",
+				Category -> "Sample Preparation"
 			},
-			Tips->{
-				Format->Multiple,
-				Description->"The tips needed for the liquid transfers in the ELISA instrument.",
-				Pattern:>ObjectP[{Model[Item,Tips],Object[Item,Tips]}],
-				Relation->Model[Item,Tips]|Object[Item,Tips],
-				Class->Link,
-				Developer->True,
-				Category->"General"
-			},
-			(*Dilution parameters*)
-			PrimaryAntibodyConcentrates->{
-				Format->Multiple,
-				Description->"All of the primary antibody resources that need to be diluted.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Antibody Antigen Preparation"
-			},
-			PrimaryAntibodyDilutionVolumes->{
-				Format->Multiple,
-				Description->"The volumes of each of the primary antibody that need to be diluted.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Antibody Antigen Preparation"
-			},
-			PrimaryAntibodyDiluentDilutionVolumes->{
-				Format->Multiple,
-				Description->"The total volumes of the primary antibody diluent needed to dilute each primary antibody.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Antibody Antigen Preparation"
-			},
-			PrimaryAntibodyDilutionContainers->{
-				Format->Multiple,
-				Description->"The containers used to dilute primary antibodies.",
-				Pattern:>ObjectP[{Model[Container],Object[Container]}],
-				Class->Link,
-				Relation->Model[Container]|Object[Container],
-				Category->"Antibody Antigen Preparation"
-			},
-			PrimaryAntibodyConcentrateStorageConditions->{
-				Format->Multiple,
-				Description->"The condition under which the unused portion of PrimaryAntibodyConcentrate samples should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Antibody Antigen Preparation"
-			},
-			SecondaryAntibodyConcentrates->{
-				Format->Multiple,
-				Description->"All of the secondary antibody resources that need to be diluted.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Antibody Antigen Preparation"
-			},
-			SecondaryAntibodyDilutionVolumes->{
-				Format->Multiple,
-				Description->"The total volumes of the secondary antibodies that need to be diluted.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Antibody Antigen Preparation"
-			},
-			SecondaryAntibodyDiluentDilutionVolumes->{
-				Format->Multiple,
-				Description->"The total volumes of the secondary antibody diluents needed to dilute each secondary antibody.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Antibody Antigen Preparation"
-			},
-			SecondaryAntibodyDilutionContainers->{
-				Format->Multiple,
-				Description->"The containers used to dilute secondary antibodies.",
-				Pattern:>ObjectP[{Model[Container],Object[Container]}],
-				Class->Link,
-				Relation->Model[Container]|Object[Container],
-				Category->"Antibody Antigen Preparation"
-			},
-			SecondaryAntibodyConcentrateStorageConditions->{
-				Format->Multiple,
-				Description->"The condition under which the unused portion of SecondaryAntibodyConcentrate samples should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Antibody Antigen Preparation"
-			},
-			CaptureAntibodyConcentrates->{
-				Format->Multiple,
-				Description->"All of the capture antibody resources that need to be diluted.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Antibody Antigen Preparation"
-			},
-			CaptureAntibodyDilutionVolumes->{
-				Format->Multiple,
-				Description->"The volumes of the capture antibodies that need to be diluted.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Antibody Antigen Preparation"
-			},
-			CaptureAntibodyDiluentDilutionVolumes->{
-				Format->Multiple,
-				Description->"The volume of capture antibody diluent added into the dilution container.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Antibody Antigen Preparation"
-			},
-			CaptureAntibodyDilutionContainers->{
-				Format->Multiple,
-				Description->"The containers used to dilute capture antibodies.",
-				Pattern:>ObjectP[{Model[Container],Object[Container]}],
-				Class->Link,
-				Relation->Model[Container]|Object[Container],
-				Category->"Antibody Antigen Preparation"
-			},
-			CaptureAntibodyConcentrateStorageConditions->{
-				Format->Multiple,
-				Description->"The condition under which the unused portion of CaptureAntibodyConcentrate samples should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Antibody Antigen Preparation"
-			},
-			CoatingAntibodyConcentrates->{
-				Format->Multiple,
-				Description->"All of the coating antibody resources that need to be diluted.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Antibody Antigen Preparation"
-			},
-			CoatingAntibodyDilutionVolumes->{
-				Format->Multiple,
-				Description->"The volumes of the coating antibodies that need to be diluted.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Antibody Antigen Preparation"
-			},
-			CoatingAntibodyDiluentDilutionVolumes->{
-				Format->Multiple,
-				Description->"The volume of the coating antibody diluent added into the dilution container.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Antibody Antigen Preparation"
-			},
-			CoatingAntibodyDilutionContainers->{
-				Format->Multiple,
-				Description->"The containers used to dilute coating antibodies.",
-				Pattern:>ObjectP[{Model[Container],Object[Container]}],
-				Class->Link,
-				Relation->Model[Container]|Object[Container],
-				Category->"Antibody Antigen Preparation"
-			},
-			CoatingAntibodyConcentrateStorageConditions->{
-				Format->Multiple,
-				Description->"The condition under which the unused portion of CoatingAntibodyConcentrate samples should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Antibody Antigen Preparation"
-			},
-			ReferenceAntigenConcentrates->{
-				Format->Multiple,
-				Description->"All of the reference antigen resources that need to be diluted.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Model[Sample]|Object[Sample],
-				Category->"Antibody Antigen Preparation"
-			},
-			ReferenceAntigenDilutionVolumes->{
-				Format->Multiple,
-				Description->"The volumes of the reference antigens that need to be diluted.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Antibody Antigen Preparation"
-			},
-			ReferenceAntigenDiluentDilutionVolumes->{
-				Format->Multiple,
-				Description->"The volume of reference antigen diluent added into the dilution container.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"Antibody Antigen Preparation"
-			},
-			ReferenceAntigenDilutionContainers->{
-				Format->Multiple,
-				Description->"The containers used to dilute reference antigens.",
-				Pattern:>ObjectP[{Model[Container],Object[Container]}],
-				Class->Link,
-				Relation->Model[Container]|Object[Container],
-				Category->"Antibody Antigen Preparation"
-			},
-			ReferenceAntigenConcentrateStorageConditions->{
-				Format->Multiple,
-				Description->"The condition under which the unused portion of ReferenceAntigenConcentrate samples should be stored after the protocol is completed.",
-				Pattern:>SampleStorageTypeP|Disposal,
-				Class->Expression,
-				Category->"Antibody Antigen Preparation"
-			},
-			StandardData->{
-				Format->Multiple,
-				Class->Link,
-				Pattern:>_Link,
-				Relation->Object[Data][Protocol],
-				Description->"Data of Standards generated by this protocol.",
-				Category->"Experimental Results"
-			},
-			BlankData->{
-				Format->Multiple,
-				Class->Link,
-				Pattern:>_Link,
-				Relation->Object[Data][Protocol],
-				Description->"Data of Blanks generated by this protocol.",
-				Category->"Experimental Results"
-			},
-			PrereadData->{
-				Format->Multiple,
-				Class->Link,
-				Pattern:>_Link,
-				Relation->Object[Data][Protocol],
-				Description->"Preread data generated by this protocol.",
-				Category->"Experimental Results"
+			Tips -> {
+				Format -> Multiple,
+				Description -> "The tips needed for the liquid transfers in the ELISA instrument.",
+				Pattern :> ObjectP[{Model[Item, Tips],Object[Item, Tips]}],
+				Relation -> Model[Item, Tips]|Object[Item, Tips],
+				Class -> Link,
+				Developer -> True,
+				Category -> "Resources"
 			},
 			(*----Developer Fields----*)
-			(*Diluted antibodies*)
-			WorkingPrimaryAntibodies->{
-				Format->Multiple,
-				Description->"The (diluted) primary antibody used directly for ELISA.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample],Model[Container],Object[Container]}],
-				Class->Link,
-				Relation->Alternatives[Model[Sample],Object[Sample],Model[Container],Object[Container]],
-				Category->"Antibody Antigen Preparation",
-				Developer->True
-			},
-			WorkingSecondaryAntibodies->{
-				Format->Multiple,
-				Description->"The (diluted) secondary antibody used directly for ELISA.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample],Model[Container],Object[Container]}],
-				Class->Link,
-				Relation->Alternatives[Model[Sample],Object[Sample],Model[Container],Object[Container]],
-				Category->"Antibody Antigen Preparation",
-				Developer->True
-			},
-			WorkingCaptureAntibodies->{
-				Format->Multiple,
-				Description->"The (diluted) capture antibody used directly for ELISA.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample],Model[Container],Object[Container]}],
-				Class->Link,
-				Relation->Alternatives[Model[Sample],Object[Sample],Model[Container],Object[Container]],
-				Category->"Antibody Antigen Preparation",
-				Developer->True
-			},
-			WorkingCoatingAntibodies->{
-				Format->Multiple,
-				Description->"The (diluted) coating antibody used directly for ELISA.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample],Model[Container],Object[Container]}],
-				Class->Link,
-				Relation->Alternatives[Model[Sample],Object[Sample],Model[Container],Object[Container]],
-				Category->"Antibody Antigen Preparation",
-				Developer->True
-			},
-			WorkingReferenceAntigens->{
-				Format->Multiple,
-				Description->"The (diluted) reference antigen used directly for ELISA.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample],Model[Container],Object[Container]}],
-				Class->Link,
-				Relation->Alternatives[Model[Sample],Object[Sample],Model[Container],Object[Container]],
-				Category->"Antibody Antigen Preparation",
-				Developer->True
-			},
-			SampleAssemblyWellIDs->{
-				Format->Multiple,
-				Description->"The sample assembly plate and well number each sample/standars/blank and their dilutions correspond to.",
+			SampleAssemblyWellIDs -> {
+				Format -> Multiple,
+				Description -> "The sample assembly plate and well number each sample/standard/blank and their dilutions correspond to.",
 				Pattern:>{ObjectP[{Model[Container],Object[Container]}],WellP},
 				Relation->{(Model[Container]|Object[Container]),Null},
-				Class->{Link,Expression},
-				Category->"General",
-				Headers->{"Sample Assembly Container","Well"},
-				Developer->True
+				Class -> {Link,Expression},
+				Category -> "General",
+				Headers -> {"Sample Assembly Container","Well"},
+				Developer -> True
 			},
-
-			AssayPlateAssemblyWellIDs->{
-				Format->Multiple,
-				Description->"The ELISA plate and well number each sample/standars/blank and their dilutions correspond to.",
+			AssayPlateAssemblyWellIDs -> {
+				Format -> Multiple,
+				Description -> "The ELISA plate and well number each sample/standard/blank and their dilutions correspond to.",
 				Pattern:>{ObjectP[{Model[Container],Object[Container]}],WellP},
-				Class->{Link,Expression},
+				Class -> {Link,Expression},
 				Relation->{(Model[Container]|Object[Container]),Null},
-				Category->"General",
-				Headers->{"Assay Plate","Well"},
-				Developer->True
+				Category -> "General",
+				Headers -> {"Assay Plate","Well"},
+				Developer -> True
 			},
-			AntibodyAntigenDilutionQ->{
-				Format->Single,
-				Description->"Indicating if any antibodies need to be diluted with its diluent.",
-				Pattern:>BooleanP,
-				Class->Boolean,
-				Category->"General",
-				Developer->True
+			AntibodyAntigenDilutionQ -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicating if any antibodies need to be diluted with its diluent.",
+				Category -> "General",
+				Developer -> True
 			},
-
-			ExpandedWorkingSamples->{
-				Format->Multiple,
-				Description->"Working samples joined with Standards and Blanks and expanded to match its corresponding well used for making SM primitives.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample],Model[Container],Object[Container]}],
-				Relation->Alternatives[Model[Sample],Object[Sample],Model[Container],Object[Container]],
-				Class->Link,
-				Category->"General",
-				Developer->True
+			ExpandedWorkingSamples -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample], Model[Container], Object[Container]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample], Model[Container], Object[Container]],
+				Description -> "Working samples joined with Standards and Blanks and expanded to match its corresponding well used for making SM primitives.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedDiluents->{
-				Format->Multiple,
-				Description->"The Sample and Standard diluents expanded to match its corresponding well.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Relation->Alternatives[Model[Sample],Object[Sample]],
-				Class->Link,
-				Category->"General",
-				Developer->True
+			ExpandedDiluents -> {
+				Format -> Multiple,
+				Description -> "The Sample and Standard diluents expanded to match its corresponding well.",
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation->Alternatives[Model[Sample], Object[Sample]],
+				Class -> Link,
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedSpikes->{
-				Format->Multiple,
-				Description->"The Spikes expanded to match its corresponding well.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Relation->Alternatives[Model[Sample],Object[Sample]],
-				Class->Link,
-				Category->"General",
-				Developer->True
+			ExpandedSpikes -> {
+				Format -> Multiple,
+				Description -> "The Spikes expanded to match its corresponding well.",
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Relation->Alternatives[Model[Sample], Object[Sample]],
+				Class -> Link,
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedConcentrateVolumes->{
-				Format->Multiple,
-				Description->"The concentrate volumes (Sample or previous dilution) expanded to match its corresponding well.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"General",
-				Developer->True
+			ExpandedConcentrateVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The concentrate volumes (Sample or previous dilution) expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedDiluentVolumes->{
-				Format->Multiple,
-				Description->"The Sample and Antibody volumes expanded to match its corresponding well.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"General",
-				Developer->True
+			ExpandedDiluentVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The Sample and Antibody volumes expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedSpikeVolumes->{
-				Format->Multiple,
-				Description->"The Spike volumes expanded to match its corresponding well.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"General",
-				Developer->True
+			ExpandedSpikeVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The Spike volumes expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedPrimaryAntibodySampleMixingVolumes->{
-				Format->Multiple,
-				Description->"The PrimaryAntibody volumes used to mix with samples, expanded to match its corresponding well.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"General",
-				Developer->True
+			ExpandedPrimaryAntibodySampleMixingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The PrimaryAntibody volumes used to mix with samples, expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedCaptureAntibodySampleMixingVolumes->{
-				Format->Multiple,
-				Description->"The PrimaryAntibody volumes used to mix with samples, expanded to match its corresponding well.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"General",
-				Developer->True
+			ExpandedCaptureAntibodySampleMixingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The PrimaryAntibody volumes used to mix with samples, expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedSampleAssemblyTotalVolumes->{
-				Format->Multiple,
-				Description->"The Total volumes in each SampleAssembly well, used for pipetting mixing after sample assembly.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"General",
-				Developer->True
+			ExpandedSampleAssemblyTotalVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The Total volumes in each SampleAssembly well, used for pipetting mixing after sample assembly.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedSerialDilutionQ->{
-				Format->Multiple,
-				Description->"Indicating if the Concentrate of this dilution is drawn from the original sample or the previous dilution.",
-				Pattern:>BooleanP,
-				Class->Boolean,
-				Category->"General",
-				Developer->True
+			ExpandedSerialDilutionQ -> {
+				Format -> Multiple,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicating if the Concentrate of this dilution is drawn from the original sample or the previous dilution.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedWorkingPrimaryAntibodies->{
-				Format->Multiple,
-				Description->"The PrimaryAntibodies directly used for sample mixing or immunosorbent step, expanded to match its corresponding well.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample],Model[Container],Object[Container]}],
-				Relation->Alternatives[Model[Sample],Object[Sample],Model[Container],Object[Container]],
-				Class->Link,
-				Category->"General",
-				Developer->True
+			ExpandedWorkingPrimaryAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample], Model[Container], Object[Container]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample], Model[Container], Object[Container]],
+				Description -> "The PrimaryAntibodies directly used for sample mixing or immunosorbent step, expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedWorkingSecondaryAntibodies->{
-				Format->Multiple,
-				Description->"The SecondaryAntibodies directly used for immunosorbent step,expanded to match its corresponding well.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample],Model[Container],Object[Container]}],
-				Relation->Alternatives[Model[Sample],Object[Sample],Model[Container],Object[Container]],
-				Class->Link,
-				Category->"General",
-				Developer->True
+			ExpandedWorkingSecondaryAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample], Model[Container], Object[Container]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample], Model[Container], Object[Container]],
+				Description -> "The SecondaryAntibodies directly used for immunosorbent step,expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedWorkingCaptureAntibodies->{
-				Format->Multiple,
-				Description->"The CaptureAntibodies directly used for sample mixing or coating, expanded to match its corresponding well.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample],Model[Container],Object[Container]}],
-				Relation->Alternatives[Model[Sample],Object[Sample],Model[Container],Object[Container]],
-				Class->Link,
-				Category->"General",
-				Developer->True
+			ExpandedWorkingCaptureAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample], Model[Container], Object[Container]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample], Model[Container], Object[Container]],
+				Description -> "The CaptureAntibodies directly used for sample mixing or coating, expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedWorkingCoatingAntibodies->{
-				Format->Multiple,
-				Description->"The CoatingAntibodies directly used for coating, expanded to match its corresponding well.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample],Model[Container],Object[Container]}],
-				Relation->Alternatives[Model[Sample],Object[Sample],Model[Container],Object[Container]],
-				Class->Link,
-				Category->"General",
-				Developer->True
+			ExpandedWorkingCoatingAntibodies -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample], Model[Container], Object[Container]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample], Model[Container], Object[Container]],
+				Description -> "The CoatingAntibodies directly used for coating, expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedWorkingReferenceAntigens->{
-				Format->Multiple,
-				Description->"The ReferenceAntigens directly used for coating, expanded to match its corresponding well.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample],Model[Container],Object[Container]}],
-				Relation->Alternatives[Model[Sample],Object[Sample],Model[Container],Object[Container]],
-				Class->Link,
-				Category->"General",
-				Developer->True
+			ExpandedWorkingReferenceAntigens -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> ObjectP[{Model[Sample], Object[Sample], Model[Container], Object[Container]}],
+				Relation -> Alternatives[Model[Sample], Object[Sample], Model[Container], Object[Container]],
+				Description -> "The ReferenceAntigens directly used for coating, expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedSampleCoatingVolumes->{
-				Format->Multiple,
-				Description->"The SampleCoatingVolumes expanded to match its corresponding well.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"General",
-				Developer->True
+			ExpandedSampleCoatingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The SampleCoatingVolumes expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedCaptureAntibodyCoatingVolumes->{
-				Format->Multiple,
-				Description->"The CaptureAntibodyCoatingVolumes expanded to match its corresponding well.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"General",
-				Developer->True
+			ExpandedCaptureAntibodyCoatingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The CaptureAntibodyCoatingVolumes expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedCoatingAntibodyCoatingVolumes->{
-				Format->Multiple,
-				Description->"The CoatingAntibodyCoatingVolumes expanded to match its corresponding well.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"General",
-				Developer->True
+			ExpandedCoatingAntibodyCoatingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The CoatingAntibodyCoatingVolumes expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedReferenceAntigenCoatingVolumes->{
-				Format->Multiple,
-				Description->"The ReferenceAntigenCoatingVolumes expanded to match its corresponding well.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"General",
-				Developer->True
+			ExpandedReferenceAntigenCoatingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The ReferenceAntigenCoatingVolumes expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedSampleImmunosorbentVolumes->{
-				Format->Multiple,
-				Description->"The SampleImmunosorbentVolumes expanded to match its corresponding well.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"General",
-				Developer->True
+			ExpandedSampleImmunosorbentVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The SampleImmunosorbentVolumes expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedSampleAntibodyComplexImmunosorbentVolumes->{
-				Format->Multiple,
-				Description->"The SampleAntibodyComplexImmunosorbentVolumes expanded to match its corresponding well.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"General",
-				Developer->True
+			ExpandedSampleAntibodyComplexImmunosorbentVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The SampleAntibodyComplexImmunosorbentVolumes expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedPrimaryAntibodyImmunosorbentVolumes->{
-				Format->Multiple,
-				Description->"The PrimaryAntibodyImmunosorbentVolumes expanded to match its corresponding well.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"General",
-				Developer->True
+			ExpandedPrimaryAntibodyImmunosorbentVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The PrimaryAntibodyImmunosorbentVolumes expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedSecondaryAntibodyImmunosorbentVolumes->{
-				Format->Multiple,
-				Description->"The SecondaryAntibodyImmunosorbentVolumes expanded to match its corresponding well.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"General",
-				Developer->True
+			ExpandedSecondaryAntibodyImmunosorbentVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The SecondaryAntibodyImmunosorbentVolumes expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedSubstrateSolutions->{
-				Format->Multiple,
-				Description->"The SubstrateSolutions, expanded to match its corresponding well.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Alternatives[Model[Sample],Object[Sample]],
-				Category->"General",
-				Developer->True
+			ExpandedSubstrateSolutions -> {
+				Format -> Multiple,
+				Description -> "The SubstrateSolutions, expanded to match its corresponding well.",
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Class -> Link,
+				Relation->Alternatives[Model[Sample], Object[Sample]],
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedStopSolutions->{
-				Format->Multiple,
-				Description->"The StopSolutions, expanded to match its corresponding well.",
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				Class->Link,
-				Relation->Alternatives[Model[Sample],Object[Sample]],
-				Category->"General",
-				Developer->True
+			ExpandedStopSolutions -> {
+				Format -> Multiple,
+				Description -> "The StopSolutions, expanded to match its corresponding well.",
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				Class -> Link,
+				Relation->Alternatives[Model[Sample], Object[Sample]],
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedSubstrateSolutionVolumes->{
-				Format->Multiple,
-				Description->"The SubstrateSolutionVolumes expanded to match its corresponding well.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"General",
-				Developer->True
+			ExpandedSubstrateSolutionVolumes -> {
+				Format -> Multiple,
+				Description -> "The SubstrateSolutionVolumes expanded to match its corresponding well.",
+				Pattern :> GreaterEqualP[0 Microliter],
+				Class -> Real,
+				Units -> Microliter,
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedStopSolutionVolumes->{
-				Format->Multiple,
-				Description->"The StopSolutionVolumes expanded to match its corresponding well.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"General",
-				Developer->True
+			ExpandedStopSolutionVolumes -> {
+				Format -> Multiple,
+				Description -> "The StopSolutionVolumes expanded to match its corresponding well.",
+				Pattern :> GreaterEqualP[0 Microliter],
+				Class -> Real,
+				Units -> Microliter,
+				Category -> "General",
+				Developer -> True
 			},
-			ExpandedBlockingVolumes->{
-				Format->Multiple,
-				Description->"The BlockingVolumes expanded to match its corresponding well.",
-				Pattern:>GreaterEqualP[0 Microliter],
-				Class->Real,
-				Units->Microliter,
-				Category->"General",
-				Developer->True
+			ExpandedBlockingVolumes -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Microliter],
+				Units -> Microliter,
+				Description -> "The BlockingVolumes expanded to match its corresponding well.",
+				Category -> "General",
+				Developer -> True
 			},
-			WellExpandingParameters->{
-				Format->Multiple,
-				Description->"A list of integers indicating how many wells a sample, standardard, or blank will take up, based on NumberOfReplciates and DilutionCurves.",
+			WellExpandingParameters -> {
+				Format -> Multiple,
+				Description -> "A list of integers indicating how many wells a sample, standard, or blank will take up, based on NumberOfReplicates and DilutionCurves.",
 				Pattern:>GreaterP[0],
-				Class->Real,
-				Category->"General",
-				Developer->True
+				Class -> Real,
+				Category -> "General",
+				Developer -> True
 			},
-			DeckPlacements->{
-				Format->Multiple,
-				Class->{Link, Expression},
+			DeckPlacements -> {
+				Format -> Multiple,
+				Class -> {Link, Expression},
 				Pattern :> {_Link, {LocationPositionP..}},
 				Relation->{Object[Container] | Object[Sample] | Object[Item], Null},
-				Description->"A list of container placements to set up the ELISA instrument deck.",
-				Category->"Placements",
-				Headers->{"Container", "Placement Tree"},
-				Developer->True
+				Description -> "A list of container placements to set up the ELISA instrument deck.",
+				Category -> "Placements",
+				Headers -> {"Container", "Placement Tree"},
+				Developer -> True
 			},
 			VesselRackPlacements -> {
 				Format -> Multiple,
@@ -2422,32 +2531,106 @@ DefineObjectType[Object[Protocol, ELISA],
 				Developer -> True,
 				Headers -> {"Object to Place", "Placement Tree"}
 			},
-			LiquidHandlingPressureLog -> {
-				Format -> Single,
-				Class -> Link,
-				Pattern :> _Link,
-				Relation -> Object[EmeraldCloudFile],
-				Description -> "The instrumentation trace file that monitored and recorded the pressure curves during aspiration and dispense of this ELISA liquid handling.",
-				Category -> "General"
+			(*===Post Experiment Storage===*)
+			SpikeStorageConditions -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> SampleStorageTypeP|Disposal,
+				Description -> "For each member of SamplesIn, the condition under which the unused portion of Spike stock sample should be stored after the protocol is completed.",
+				Category -> "Sample Post-Processing",
+				IndexMatching -> SamplesIn
 			},
-			LiquidHandlingPressureLogPath -> {
-				Format -> Single,
-				Class -> String,
-				Pattern :> FilePathP,
-				Description -> "The file path of the instrumentation trace file that monitored and recorded the pressure curves during aspiration and dispense of this ELISA liquid handling.",
-				Category -> "General",
-				Developer -> True
+			CoatingAntibodyStorageConditions -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> SampleStorageTypeP|Disposal,
+				Description -> "For each member of SamplesIn, the condition under which the unused portion of CoatingAntibody stock should be stored after the protocol is completed.",
+				Category -> "Sample Post-Processing",
+				IndexMatching -> SamplesIn
 			},
-			ELISARunTime->{
-				Format->Single,
-				Description->"The duration of the last continuous run in the NIMBUS machine.",
-				Pattern:>RangeP[0 Hour,24 Hour],
-				Class->Real,
-				Units->Hour,
-				Category->"General",
-				Developer->True
+			CaptureAntibodyStorageConditions -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> SampleStorageTypeP|Disposal,
+				Description -> "For each member of SamplesIn, the condition under which the unused portion of Capture Antibody stock should be stored after the protocol is completed.",
+				Category -> "Sample Post-Processing",
+				IndexMatching -> SamplesIn
+			},
+			ReferenceAntigenStorageConditions -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> SampleStorageTypeP|Disposal,
+				Description -> "For each member of SamplesIn, the condition under which the unused portion of ReferenceAntigen stock should be stored after the protocol is completed.",
+				Category -> "Sample Post-Processing",
+				IndexMatching -> SamplesIn
+			},
+			PrimaryAntibodyStorageConditions -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> SampleStorageTypeP|Disposal,
+				Description -> "For each member of SamplesIn, the condition under which the unused portion of PrimaryAntibody stock should be stored after the protocol is completed.",
+				Category -> "Sample Post-Processing",
+				IndexMatching -> SamplesIn
+			},
+			SecondaryAntibodyStorageConditions -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> SampleStorageTypeP|Disposal,
+				Description -> "For each member of SamplesIn, the condition under which the unused portion of SecondaryAntibody stock should be stored after the protocol is completed.",
+				Category -> "Sample Post-Processing",
+				IndexMatching -> SamplesIn
+			},
+			CoatingAntibodyConcentrateStorageConditions -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> SampleStorageTypeP|Disposal,
+				Description -> "The condition under which the unused portion of CoatingAntibodyConcentrate samples should be stored after the protocol is completed.",
+				Category -> "Sample Post-Processing"
+			},
+			CaptureAntibodyConcentrateStorageConditions -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> SampleStorageTypeP|Disposal,
+				Description -> "The condition under which the unused portion of CaptureAntibodyConcentrate samples should be stored after the protocol is completed.",
+				Category -> "Sample Post-Processing"
+			},
+			ReferenceAntigenConcentrateStorageConditions -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> SampleStorageTypeP|Disposal,
+				Description -> "The condition under which the unused portion of ReferenceAntigenConcentrate samples should be stored after the protocol is completed.",
+				Category -> "Sample Post-Processing"
+			},
+			PrimaryAntibodyConcentrateStorageConditions -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> SampleStorageTypeP|Disposal,
+				Description -> "The condition under which the unused portion of PrimaryAntibodyConcentrate samples should be stored after the protocol is completed.",
+				Category -> "Sample Post-Processing"
+			},
+			SecondaryAntibodyConcentrateStorageConditions -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> SampleStorageTypeP|Disposal,
+				Description -> "The condition under which the unused portion of SecondaryAntibodyConcentrate samples should be stored after the protocol is completed.",
+				Category -> "Sample Post-Processing"
+			},
+			StandardStorageConditions -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> SampleStorageTypeP|Disposal,
+				Description -> "For each member of Standards, the condition under which the unused portion of Standard stock should be stored after the protocol is completed.",
+				Category -> "Sample Post-Processing",
+				IndexMatching -> Standards
+			},
+			BlankStorageConditions -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> SampleStorageTypeP|Disposal,
+				Description -> "For each member of Blanks, the condition under which the unused portion of Blank stock should be stored after the protocol is completed.",
+				Category -> "Sample Post-Processing",
+				IndexMatching -> Blanks
 			}
-
 		}
 	}
 ];

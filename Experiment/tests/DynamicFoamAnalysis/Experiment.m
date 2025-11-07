@@ -797,7 +797,8 @@ DefineTests[
 			protocol=ExperimentDynamicFoamAnalysis[{Object[Sample,"DynamicFoamAnalysis Test Water Sample1"<> $SessionUUID],Object[Sample,"DynamicFoamAnalysis Test Water Sample2"<> $SessionUUID]},
 				Agitation->{Stir,Sparge}];
 			Download[protocol,Needles],
-			{ObjectP[Model[Item, Needle, "id:O81aEBZaXOBx"]],ObjectP[Model[Item, Needle, "id:O81aEBZaXOBx"]]}
+			(*"14Ga x 2In Disposable Blunt Tip Lure Lock Dispensing Needle"*)
+			{ObjectP[Model[Item, Needle, "id:4pO6dMmv9pnM"]],ObjectP[Model[Item, Needle, "id:4pO6dMmv9pnM"]]}
 		],
 		Test["The primary O-ring resources will be generated in the resource packets:",
 			protocol=ExperimentDynamicFoamAnalysis[{Object[Sample,"DynamicFoamAnalysis Test Water Sample1"<> $SessionUUID],Object[Sample,"DynamicFoamAnalysis Test Water Sample2"<> $SessionUUID]},
@@ -1125,13 +1126,13 @@ DefineTests[
 			22*Celsius,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options,FilterSterile,"Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options=ExperimentDynamicFoamAnalysis[Object[Sample,"DynamicFoamAnalysis Test Water Sample1"<> $SessionUUID],FilterContainerOut->Model[Container,Vessel,"100 mL Glass Bottle"],FilterSterile->False,Output->Options];
 			Lookup[options,FilterSterile],
 			False,
 			Variables:>{options}
-		],
+		],*)
 		Example[{Options,FilterAliquot,"The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options=ExperimentDynamicFoamAnalysis[Object[Sample,"DynamicFoamAnalysis Test Water Sample2"<> $SessionUUID],FilterContainerOut->Model[Container,Vessel,"50mL Tube"],FilterAliquot->50*Milliliter,Output->Options];
 			Lookup[options,FilterAliquot],

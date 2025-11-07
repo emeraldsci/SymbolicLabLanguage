@@ -169,7 +169,7 @@ DefineOptions[ExperimentCover,
 				OptionName -> Instrument,
 				Default -> Automatic,
 				Description -> "The device used to help secure the cover to the top of the container.",
-				ResolutionDescription -> "Automatically set to a Model[Instrument, Crimper] that has the same CoverFootprint as the calculated Cover if CoverType->Crimp or set to a Model[Instrument, PlateSealer] that has the same CoverFootprint as the calculated Cover if CoverType->Seal. Otherwise, is set to Null.",
+				ResolutionDescription -> "Automatically set to a Model[Part, Crimper] that has the same CoverFootprint as the calculated Cover if CoverType->Crimp (if one exists), or a Model[Instrument, Crimper] that has the same CoverFootprint as the calculated Cover if CoverType->Crimp.  Otherwise, set to a Model[Instrument, PlateSealer] that has the same CoverFootprint as the calculated Cover if CoverType->Seal. Otherwise, is set to Null.",
 				AllowNull -> True,
 				Category -> "General",
 				Widget -> Widget[
@@ -179,7 +179,10 @@ DefineOptions[ExperimentCover,
 						Object[Instrument, Crimper],
 
 						Model[Instrument, PlateSealer],
-						Object[Instrument, PlateSealer]
+						Object[Instrument, PlateSealer],
+
+						Model[Part, Crimper],
+						Object[Part, Crimper]
 					}]
 				]
 			},
@@ -187,7 +190,7 @@ DefineOptions[ExperimentCover,
 				OptionName -> CrimpingHead,
 				Default -> Automatic,
 				Description -> "The part that is attached to the Object[Instrument, Crimper] that transfers the pneumatic pressure from the crimping instrument to secure the crimped cap to the top of the container.",
-				ResolutionDescription -> "Automatically set to a Model[Part, CrimpingHead] that has the same with the CoverFootprint and CrimpType as the Cover, if the Cover is a Model[Item,Cap] with CoverType->Crimp.",
+				ResolutionDescription -> "Automatically set to a Model[Part, CrimpingHead] that has the same with the CoverFootprint and CrimpType as the Cover, if the Cover is a Model[Item,Cap] with CoverType->Crimp and the Instrument is a Model[Instrument, Crimper].",
 				AllowNull -> True,
 				Category -> "General",
 				Widget -> Widget[
@@ -202,7 +205,7 @@ DefineOptions[ExperimentCover,
 				OptionName -> DecrimpingHead,
 				Default -> Automatic,
 				Description -> "Used in conjunction with the CrimpingHead to remove the crimped cap from the covered container, if the crimp was not successful. Successful crimps are (1) level with the bottom of the container and (2) not over or under tightened to the top of the container. If the previous crimping attempt is not successful, the operator will decrimp and recrimp until they have a successful crimp.",
-				ResolutionDescription -> "Automatically set to a Model[Part, DecrimpingHead] that has the same with the CoverFootprint as the Cover, if the Cover is a Model[Item,Cap] with CoverType->Crimp.",
+				ResolutionDescription -> "Automatically set to a Model[Part, DecrimpingHead] that has the same with the CoverFootprint as the Cover, if the Cover is a Model[Item,Cap] with CoverType->Crimp and the Instrument is a Model[Instrument, Crimper].",
 				AllowNull -> True,
 				Category -> "General",
 				Widget -> Widget[
@@ -214,10 +217,25 @@ DefineOptions[ExperimentCover,
 				]
 			},
 			{
+				OptionName -> Decrimper,
+				Default -> Automatic,
+				Description -> "Used in conjunction with the Instrument (if it is a hand crimper) to remove the crimped cap from the covered container, if the crimp was not successful. Successful crimps are (1) level with the bottom of the container and (2) not over or under tightened to the top of the container. If the previous crimping attempt is not successful, the operator will decrimp and recrimp until they have a successful crimp.",
+				ResolutionDescription -> "Automatically set to a Model[Part, Decrimper] that has the same with the CoverFootprint as the Cover, if the Cover is a Model[Item,Cap] with CoverType->Crimp and the Instrument is a Model[Part, Crimper].",
+				AllowNull -> True,
+				Category -> "General",
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[{
+						Model[Part, Decrimper],
+						Object[Part, Decrimper]
+					}]
+				]
+			},
+			{
 				OptionName -> CrimpingPressure,
 				Default -> Automatic,
 				Description -> "The pressure of the gas that is connected to the pneumatic Model[Instrument, Crimper] that determines the strength used to crimp or decrimp the crimped cap.",
-				ResolutionDescription -> "Automatically set to the CrimpingPressure field in the Model[Item, Cap] if CoverType->Crimp. If this field is empty, set to 20 PSI. Otherwise, if CoverType is not Crimp, set to Null.",
+				ResolutionDescription -> "Automatically set to the CrimpingPressure field in the Model[Item, Cap] if CoverType->Crimp and the Instrument is a Model[Instrument, Crimper], or 20 PSI if it is empty.  Otherwise, automatically set to Null.",
 				AllowNull -> True,
 				Category -> "General",
 				Widget -> Widget[
@@ -551,7 +569,7 @@ ExperimentCover[myInputs:ListableP[ObjectP[{Object[Sample], Object[Container]}]]
 					Packet[PreviousCover[{Model, Status, CoveredContainer, Container, Name}]],
 					Packet[PreviousCover[Model][{CoverType, CoverFootprint, Opaque, CrimpType, SeptumRequired, Reusable, EngineDefault, Barcode, CrimpingPressure, Name}]]
 				},
-				{Packet[ActiveCart]}
+				{Packet[ActiveCart, RootProtocol], Packet[RootProtocol[Resources][Model]]}
 			},
 			Cache->cache,
 			Simulation->samplePreparationSimulation
@@ -1043,6 +1061,7 @@ coverModelsSearch[fakeString_]:=coverModelsSearch[fakeString]=Module[{},
 	Search[
 		{
 			{Model[Instrument, Crimper]},
+			{Model[Part, Crimper]},
 			{Model[Part, Decrimper]},
 			{Model[Part, CrimpingHead]},
 			{Model[Part, DecrimpingHead]},
@@ -1056,6 +1075,7 @@ coverModelsSearch[fakeString_]:=coverModelsSearch[fakeString]=Module[{},
 			{Model[Part, AmpouleOpener]}
 		},
 		{
+			Deprecated != True && DeveloperObject != True,
 			Deprecated != True && DeveloperObject != True,
 			Deprecated != True && DeveloperObject != True,
 			Deprecated != True && DeveloperObject != True,
@@ -1127,6 +1147,9 @@ coverModelPackets[myOptions_List]:=Module[
 					Flatten[Cases[modelsNotInSearch, ObjectP[Model[Instrument, Crimper]]]]
 				],
 				DeleteDuplicates[
+					Flatten[Cases[modelsNotInSearch, ObjectP[Model[Part, Crimper]]]]
+				],
+				DeleteDuplicates[
 					Flatten[Cases[modelsNotInSearch, ObjectP[Model[Part, Decrimper]]]]
 				],
 				DeleteDuplicates[
@@ -1163,6 +1186,7 @@ coverModelPackets[myOptions_List]:=Module[
 			{
 				Packet[MinPressure, MaxPressure],
 				Packet[CoverFootprint, CapDiameter, Name],
+				Packet[CoverFootprint, CapDiameter, Name],
 				Packet[CoverFootprint, CrimpType, Name],
 				Packet[CoverFootprint, Name],
 				Packet[CoverFootprint, Name],
@@ -1188,7 +1212,8 @@ coverModelPackets[myOptions_List]:=Module[
 (* NOTE: These are the non-deprecated model packets that we ALWAYS download so we memoize it. *)
 nonDeprecatedCoverModelPackets[fakeString_]:=nonDeprecatedCoverModelPackets[fakeString]=Module[
 	{crimperInstrumentModels, crimpingHeadPartModels, decrimpingHeadPartModels, plateSealerInstrumentModels, capModels, lidModels,
-		plateSealModels, septumModels, capPrierInstrumentModels, keckClampModels, decrimperPartModels, ampouleOpenerModels},
+		plateSealModels, septumModels, capPrierInstrumentModels, keckClampModels, decrimperPartModels, ampouleOpenerModels,
+		crimperPartModels},
 
 	(* Add nonDeprecatedCoverModelPackets to list of Memoized functions. *)
 	If[!MemberQ[$Memoization, Experiment`Private`nonDeprecatedCoverModelPackets],
@@ -1198,6 +1223,7 @@ nonDeprecatedCoverModelPackets[fakeString_]:=nonDeprecatedCoverModelPackets[fake
 	(* Search for all transfer models in the lab to download from. *)
 	{
 		crimperInstrumentModels,
+		crimperPartModels,
 		decrimperPartModels,
 		crimpingHeadPartModels,
 		decrimpingHeadPartModels,
@@ -1217,32 +1243,34 @@ nonDeprecatedCoverModelPackets[fakeString_]:=nonDeprecatedCoverModelPackets[fake
 	Flatten /@ Quiet[
 		Download[
 			{
-				crimperInstrumentModels,
-				decrimperPartModels,
-				crimpingHeadPartModels,
-				decrimpingHeadPartModels,
-				capPrierInstrumentModels,
-				plateSealerInstrumentModels,
-				capModels,
-				lidModels,
-				plateSealModels,
-				septumModels,
-				keckClampModels,
-				ampouleOpenerModels
+				(*1*)crimperInstrumentModels,
+				(*2*)crimperPartModels,
+				(*3*)decrimperPartModels,
+				(*4*)crimpingHeadPartModels,
+				(*5*)decrimpingHeadPartModels,
+				(*6*)capPrierInstrumentModels,
+				(*7*)plateSealerInstrumentModels,
+				(*8*)capModels,
+				(*9*)lidModels,
+				(*10*)plateSealModels,
+				(*11*)septumModels,
+				(*12*)keckClampModels,
+				(*13*)ampouleOpenerModels
 			},
 			{
-				{Packet[CoverFootprint, CrimpType, Name]},
-				{Packet[CoverFootprint, CapDiameter, Name]},
-				{Packet[CoverFootprint, CrimpType, Name]},
-				{Packet[CoverFootprint, Name]},
-				{Packet[CoverFootprint, Name]},
-				{Packet[CoverFootprint, MinTemperature, MaxTemperature, MinDuration, MaxDuration, Model, Name]},
-				{Packet[CoverType, CoverFootprint, CrimpType, SeptumRequired, TaperGroundJointSize, Opaque, Reusable, EngineDefault, Barcode, CrimpingPressure, Name]},
-				{Packet[CoverType, CoverFootprint, Opaque, Dimensions, InternalDimensions2D, NotchPositions, Reusable, EngineDefault, Name]},
-				{Packet[CoverType, CoverFootprint, SealType, Opaque, Dimensions, Reusable, EngineDefault, Name, NotchPositions]},
-				{Packet[CoverFootprint, Pierceable, EngineDefault, Barcode, Name]},
-				{Packet[TaperGroundJointSize]},
-				{Packet[MinVolume, MaxVolume, Name]}
+				(*1*){Packet[CoverFootprint, CrimpType, Name]},
+				(*2*){Packet[CoverFootprint, CapDiameter, Name]},
+				(*3*){Packet[CoverFootprint, CapDiameter, Name]},
+				(*4*){Packet[CoverFootprint, CrimpType, Name]},
+				(*5*){Packet[CoverFootprint, Name]},
+				(*6*){Packet[CoverFootprint, Name]},
+				(*7*){Packet[CoverFootprint, MinTemperature, MaxTemperature, MinDuration, MaxDuration, Model, Name]},
+				(*8*){Packet[CoverType, CoverFootprint, CrimpType, SeptumRequired, TaperGroundJointSize, Opaque, Reusable, EngineDefault, Barcode, CrimpingPressure, Name]},
+				(*9*){Packet[CoverType, CoverFootprint, Opaque, Dimensions, InternalDimensions2D, NotchPositions, Reusable, EngineDefault, Name]},
+				(*10*){Packet[CoverType, CoverFootprint, SealType, Opaque, Dimensions, Reusable, EngineDefault, Name, NotchPositions]},
+				(*11*){Packet[CoverFootprint, Pierceable, EngineDefault, Barcode, Name]},
+				(*12*){Packet[TaperGroundJointSize]},
+				(*13*){Packet[MinVolume, MaxVolume, Name]}
 			}
 		],
 		{Download::NotLinkField, Download::FieldDoesntExist}
@@ -1269,7 +1297,7 @@ Error::PlateSealerInstrumentConflict="When a heat-activated plate seal is specif
 Error::PlateSealAdapterConflict="When a Biorad PlateSealer instrument is set, specific PlateSealAdapter must be set based on container type. At indicies, `1`, the PlateSealAdapter option is set to `2` while the container is set to `3`. They do not work with together. Please resolve these conflicts.";
 Error::PlateSealPaddleConflict="When a PlateSealPaddle is set, specific PlateSeal must be set. At indicies, `1`, the PlateSealPaddle option is set to `2` while the cover is set to `3`. They do not work with together. Please resolve these conflicts.";
 Error::PlateSealerHeightConflict="When a plate sealer is specified as instrument for SBS plate, the container must be a plate with specific dimensions. At indicies, `1`,the container option is set to be `2`, but the height is beyond the range of height accepted by  `3`. Please resolve these conflicts.";
-Error::CrimperConflict="The container(s) at indices, `1`, require crimpers, however the Instrument option is set to `2` and the CrimpingHead/DecrimpingHead options are set to `3` and `4`. When using a crimped cap as a cover, (1) a crimper instrument must be specified in the Instrument option, (2) a crimping head that matches the cover's CoverFootprint and CrimpType must be specified, and (3) a decrimping head that matches the cover's CoverFootprint must be specified.";
+Error::CrimperConflict="The container(s) at indices, `1`, require crimpers, however the Instrument option is set to `2` and the CrimpingHead/DecrimpingHead/Decrimper options are set to `3`/`4`/`5`. When using a crimped cap as a cover, (1) a crimper instrument must be specified in the Instrument option, (2) a crimping head that matches the cover's CoverFootprint and CrimpType must be specified (if not using a hand crimper), and (3) a decrimping head that matches the cover's CoverFootprint must be specified (if not using a hand crimper), and (4) a hand decrimper that matches the cover's CoverFootprint must be specified (using a hand crimper).";
 Error::UsePreviousCoverConflict="When UsePreviousCover->True, the Cover option should be set to the previous cover that was used for the container. At indices, `1`, the UsePreviousCover option is set to True, but the Cover option is set to `2`. This either 1) does not match the PreviousCover field in the given Object[Container], 2) there is no PreviousCover, or 3) the PreviousCover is already Discarded and cannot be used. Please let the UsePreviousCover option resolve automatically.";
 Error::ContainerIsAlreadyCovered="The container(s), `1`, already have covers on them. In order to put on a new cover, the container must first be uncovered. All unit operations will automatically Cover and Uncover containers, if necessary. Please only call the Cover and Uncover if you'd like to override the default behavior of the unit operations.";
 Error::BuiltInCover="The container(s) at indices, `1`, have built in covers (BuiltInCover->True in Model[Container]) and therefore cannot have the Cover options specified. Please let the Cover option automatically get set to Null so that the built in cover can be used to cover the container.";
@@ -1301,7 +1329,7 @@ resolveExperimentCoverOptions[
 		outputSpecification,output,gatherTests,messagesQ,warningsQ,cache,currentSimulation,samplePrepOptions,coverOptions,
 		objectContainerFields,objectContainerPacketFields,modelContainerFields,objectSampleFields,modelSampleFields,
 		objectContainerPackets,modelContainerPackets,objectSamplePacketList,modelSamplePacketList,crimperInstrumentModelPackets,
-		crimpingHeadPartModelPackets,decrimpingHeadPartModelPackets,plateSealerInstrumentModelPackets,capModelPackets,
+		crimpingHeadPartModelPackets,decrimpingHeadPartModelPackets,plateSealerInstrumentModelPackets,capModelPackets, crimperPartModelPackets,
 		lidModelPackets,septumModelPackets,keckClampModelPackets,specifiedCrimperInstrumentObjectPackets,specifiedCrimpingHeadPartObjectPackets,
 		specifiedDecrimpingHeadPartObjectPackets,specifiedPlateSealerInstrumentObjectPackets,specifiedCapObjectPackets,specifiedPlateSealRollerObjectPackets, specifiedKeckClampObjectPackets,
 		specifiedLidObjectPackets,specifiedSeptumObjectPackets,defaultCrimperInstrumentModelPackets,defaultCrimpingHeadPartModelPackets,
@@ -1315,10 +1343,11 @@ resolveExperimentCoverOptions[
 		keepCoveredTest,plateSealerErrors,plateHeightErrors,plateSealAdapterErrors,plateSealPaddleErrors,specifiedAluminumFoilRoll,
 		resolvedAluminumFoilRoll, needAluminumFoilQ, aluminumFoilRollError, aluminumFoilRollTest, defaultDecrimperPartModelPackets,
 		plateSealerTest,crimperTest,crimperErrors,usePreviousCoverErrors,usePreviousCoverTest,objectContainerRepeatedContainerList,
-		alreadyCoveredTest,alreadyCoveredErrors,invalidInputs,invalidOptions,defaultPlateSealModelPackets,specifiedPlateSealObjectPackets,
-		plateSealModelPackets,defaultCapPrierInstrumentModelPackets,builtInCoverErrors,builtInCoverTest,conflictingStopperErrors,
+		alreadyCoveredTest,alreadyCoveredErrors,invalidInputs,invalidOptions,defaultPlateSealModelPackets,specifiedPlateSealObjectPackets, specifiedCrimperPartObjectPackets,
+		plateSealModelPackets,defaultCapPrierInstrumentModelPackets,builtInCoverErrors,builtInCoverTest,conflictingStopperErrors, defaultCrimperPartModelPackets,
 		conflictingStopperTest,conflictingKeckClampErrors, conflictingKeckClampTest,coverContainerTest,containerLidCompatibleTests,containerLidCompatibleInvalidOptions,coverContainerErrors,resolvedCrimpingHeads,resolvedDecrimpingHeads,resolvedCrimpingPressures,
-		activeCartPackets,activeCart,defaultDecrimpingHeadPartModelPackets, defaultAmpuoleOpenerPackets, roboticPrimitiveQ,allowedWorkCells,resolvedWorkCell
+		parentProtocolPackets,activeCart,defaultDecrimpingHeadPartModelPackets, defaultAmpuoleOpenerPackets, roboticPrimitiveQ,allowedWorkCells,resolvedWorkCell,
+		resolvedDecrimper, rootResourcePackets
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -1353,6 +1382,7 @@ resolveExperimentCoverOptions[
 	(* Get our default instrument, cover, and septum packets. *)
 	{
 		defaultCrimperInstrumentModelPackets,
+		defaultCrimperPartModelPackets,
 		defaultDecrimperPartModelPackets,
 		defaultCrimpingHeadPartModelPackets,
 		defaultDecrimpingHeadPartModelPackets,
@@ -1368,65 +1398,69 @@ resolveExperimentCoverOptions[
 
 	(* - Big Download to make cacheBall and get the inputs in order by ID - *)
 	{
-		objectContainerPackets,
-		modelContainerPackets,
-		objectContainerRepeatedContainerList,
-		objectSamplePacketList,
-		modelSamplePacketList,
-		specifiedCrimperInstrumentObjectPackets,
-		specifiedCrimpingHeadPartObjectPackets,
-		specifiedDecrimpingHeadPartObjectPackets,
-		specifiedPlateSealerInstrumentObjectPackets,
-		specifiedCapObjectPackets,
-		specifiedLidObjectPackets,
-		specifiedPlateSealObjectPackets,
-		specifiedSeptumObjectPackets,
-		specifiedPlateSealRollerObjectPackets,
-		specifiedKeckClampObjectPackets,
-		previousCoverObjectPackets,
-		activeCartPackets
+		(*1*)objectContainerPackets,
+		(*2*)modelContainerPackets,
+		(*3*)objectContainerRepeatedContainerList,
+		(*4*)objectSamplePacketList,
+		(*5*)modelSamplePacketList,
+		(*6*)specifiedCrimperInstrumentObjectPackets,
+		(*7*)specifiedCrimperPartObjectPackets,
+		(*8*)specifiedCrimpingHeadPartObjectPackets,
+		(*9*)specifiedDecrimpingHeadPartObjectPackets,
+		(*10*)specifiedPlateSealerInstrumentObjectPackets,
+		(*11*)specifiedCapObjectPackets,
+		(*12*)specifiedLidObjectPackets,
+		(*13*)specifiedPlateSealObjectPackets,
+		(*14*)specifiedSeptumObjectPackets,
+		(*15*)specifiedPlateSealRollerObjectPackets,
+		(*16*)specifiedKeckClampObjectPackets,
+		(*17*)previousCoverObjectPackets,
+		(*18*){parentProtocolPackets}
 	}=Quiet[
 		Download[
 			{
-				myContainers,
-				myContainers,
-				myContainers,
-				myContainers,
-				myContainers,
-				Cases[ToList[myOptions], ObjectP[Object[Instrument, Crimper]], Infinity],
-				Cases[ToList[myOptions], ObjectP[Object[Part, CrimpingHead]], Infinity],
-				Cases[ToList[myOptions], ObjectP[Object[Part, DecrimpingHead]], Infinity],
-				Cases[ToList[myOptions], ObjectP[Object[Instrument, PlateSealer]], Infinity],
-				Cases[ToList[myOptions], ObjectP[Object[Item, Cap]], Infinity],
-				Cases[ToList[myOptions], ObjectP[Object[Item, Lid]], Infinity],
-				Cases[ToList[myOptions], ObjectP[Object[Item, PlateSeal]], Infinity],
-				Cases[ToList[myOptions], ObjectP[Object[Item, Septum]], Infinity],
-				Cases[ToList[myOptions], ObjectP[Object[Item, PlateSealRoller]], Infinity],
-				Cases[ToList[myOptions], ObjectP[Object[Item, KeckClamp]], Infinity],
-				myContainers,
-				{Lookup[myOptions,ParentProtocol]}
+				(*1*)myContainers,
+				(*2*)myContainers,
+				(*3*)myContainers,
+				(*4*)myContainers,
+				(*5*)myContainers,
+				(*6*)Cases[ToList[myOptions], ObjectP[Object[Instrument, Crimper]], Infinity],
+				(*7*)Cases[ToList[myOptions], ObjectP[Object[Part, Crimper]], Infinity],
+				(*8*)Cases[ToList[myOptions], ObjectP[Object[Part, CrimpingHead]], Infinity],
+				(*9*)Cases[ToList[myOptions], ObjectP[Object[Part, DecrimpingHead]], Infinity],
+				(*10*)Cases[ToList[myOptions], ObjectP[Object[Instrument, PlateSealer]], Infinity],
+				(*11*)Cases[ToList[myOptions], ObjectP[Object[Item, Cap]], Infinity],
+				(*12*)Cases[ToList[myOptions], ObjectP[Object[Item, Lid]], Infinity],
+				(*13*)Cases[ToList[myOptions], ObjectP[Object[Item, PlateSeal]], Infinity],
+				(*14*)Cases[ToList[myOptions], ObjectP[Object[Item, Septum]], Infinity],
+				(*15*)Cases[ToList[myOptions], ObjectP[Object[Item, PlateSealRoller]], Infinity],
+				(*16*)Cases[ToList[myOptions], ObjectP[Object[Item, KeckClamp]], Infinity],
+				(*17*)myContainers,
+				(*18*){Lookup[myOptions,ParentProtocol]}
 			},
 			{
-				List@objectContainerPacketFields,
-				List@Packet[Model[modelContainerFields]],
-				{Container..},
-				List@Packet[Contents[[All,2]][objectSampleFields]],
-				List@Packet[Contents[[All,2]][Model][modelSampleFields]],
-				{Packet[Model, Name], Packet[Model[{MinPressure, MaxPressure, Name}]]},
-				{Packet[Model, Name], Packet[Model[{CoverFootprint, CrimpType, Name}]]},
-				{Packet[Model, Name], Packet[Model[{CoverFootprint, Name}]]},
-				{Packet[Model, Name], Packet[Model[{CoverFootprint, TemperatureActivated, MinTemperature, MaxTemperature, MinDuration, MaxDuration, Barcode, Name}]]},
-				{Packet[Model, Name], Packet[Model[{CoverType, CoverFootprint, CrimpType, SeptumRequired, TaperGroundJointSize, Opaque, Reusable, EngineDefault, Container, Barcode, CrimpingPressure, Name}]]},
-				{Packet[Model, Name], Packet[Model[{CoverType, CoverFootprint, Opaque, Dimensions, NotchPositions, Reusable, EngineDefault, Name}]]},
-				{Packet[Model, Name], Packet[Model[{CoverType, CoverFootprint, SealType, Opaque, Pierceable, Dimensions, Reusable, EngineDefault, Name}]]},
-				{Packet[Model, Name], Packet[Model[{CoverFootprint, Pierceable, EngineDefault, Barcode, Name}]]},
-				{Packet[Model, Name], Packet[Model[{Name}]]},
-				{Packet[Model, Name], Packet[Model[{TaperGroundJointSize, Name}]]},
-				{
+				(*1*)List@objectContainerPacketFields,
+				(*2*)List@Packet[Model[modelContainerFields]],
+				(*3*){Container..},
+				(*4*)List@Packet[Contents[[All,2]][objectSampleFields]],
+				(*5*)List@Packet[Contents[[All,2]][Model][modelSampleFields]],
+				(*6*){Packet[Model, Name], Packet[Model[{MinPressure, MaxPressure, Name}]]},
+				(*7*){Packet[Model, Name], Packet[Model[{CoverFootprint, CapDiameter, Name}]]},
+				(*8*){Packet[Model, Name], Packet[Model[{CoverFootprint, CrimpType, Name}]]},
+				(*9*){Packet[Model, Name], Packet[Model[{CoverFootprint, Name}]]},
+				(*10*){Packet[Model, Name], Packet[Model[{CoverFootprint, TemperatureActivated, MinTemperature, MaxTemperature, MinDuration, MaxDuration, Barcode, Name}]]},
+				(*11*){Packet[Model, Name], Packet[Model[{CoverType, CoverFootprint, CrimpType, SeptumRequired, TaperGroundJointSize, Opaque, Reusable, EngineDefault, Container, Barcode, CrimpingPressure, Name}]]},
+				(*12*){Packet[Model, Name], Packet[Model[{CoverType, CoverFootprint, Opaque, Dimensions, NotchPositions, Reusable, EngineDefault, Name}]]},
+				(*13*){Packet[Model, Name], Packet[Model[{CoverType, CoverFootprint, SealType, Opaque, Pierceable, Dimensions, Reusable, EngineDefault, Name}]]},
+				(*14*){Packet[Model, Name], Packet[Model[{CoverFootprint, Pierceable, EngineDefault, Barcode, Name}]]},
+				(*15*){Packet[Model, Name], Packet[Model[{Name}]]},
+				(*16*){Packet[Model, Name], Packet[Model[{TaperGroundJointSize, Name}]]},
+				(*17*){
 					Packet[PreviousCover[{Model, Status, CoveredContainer, Container, Name}]],
 					Packet[PreviousCover[Model][{CoverType, CoverFootprint, Opaque, CrimpType, SeptumRequired, Reusable, EngineDefault, Barcode, Name, Connectors, NotchPositions}]]
 				},
-				{Packet[ActiveCart]}
+				(* need to have the model of all the RootProtocol's InUse things so that we can decide what we want to do with the crimper resolution *)
+				(*18*){Packet[ActiveCart, RootProtocol], Packet[RootProtocol[Resources][Model]]}
 			},
 			Cache->cache,
 			Simulation->currentSimulation
@@ -1436,6 +1470,7 @@ resolveExperimentCoverOptions[
 
 	{
 		crimperInstrumentModelPackets,
+		crimperPartModelPackets,
 		crimpingHeadPartModelPackets,
 		decrimpingHeadPartModelPackets,
 		plateSealerInstrumentModelPackets,
@@ -1447,19 +1482,23 @@ resolveExperimentCoverOptions[
 	}={
 		Flatten[{
 			defaultCrimperInstrumentModelPackets,
-			Cases[Flatten@specifiedCrimperInstrumentObjectPackets, PacketP[Model[Instrument]]]
+			Cases[Flatten@specifiedCrimperInstrumentObjectPackets, PacketP[Model[Instrument, Crimper]]]
+		}],
+		Flatten[{
+			defaultCrimperPartModelPackets,
+			Cases[Flatten@specifiedCrimperPartObjectPackets, PacketP[Model[Part, Crimper]]]
 		}],
 		Flatten[{
 			defaultCrimpingHeadPartModelPackets,
-			Cases[Flatten@specifiedCrimpingHeadPartObjectPackets, PacketP[Model[Part]]]
+			Cases[Flatten@specifiedCrimpingHeadPartObjectPackets, PacketP[Model[Part, CrimpingHead]]]
 		}],
 		Flatten[{
 			defaultDecrimpingHeadPartModelPackets,
-			Cases[Flatten@specifiedDecrimpingHeadPartObjectPackets, PacketP[Model[Part]]]
+			Cases[Flatten@specifiedDecrimpingHeadPartObjectPackets, PacketP[Model[Part, DecrimpingHead]]]
 		}],
 		Flatten[{
 			defaultPlateSealerInstrumentModelPackets,
-			Cases[Flatten@specifiedPlateSealerInstrumentObjectPackets, PacketP[Model[Instrument]]]
+			Cases[Flatten@specifiedPlateSealerInstrumentObjectPackets, PacketP[Model[Instrument, PlateSealer]]]
 		}],
 		Flatten[{
 			defaultCapModelPackets,
@@ -1505,6 +1544,7 @@ resolveExperimentCoverOptions[
 		objectContainerPackets,
 		modelContainerPackets,
 		specifiedCrimperInstrumentObjectPackets,
+		specifiedCrimperPartObjectPackets,
 		specifiedCrimpingHeadPartObjectPackets,
 		specifiedDecrimpingHeadPartObjectPackets,
 		specifiedPlateSealerInstrumentObjectPackets,
@@ -1517,6 +1557,7 @@ resolveExperimentCoverOptions[
 		objectContainerPackets,
 		modelContainerPackets,
 		specifiedCrimperInstrumentObjectPackets,
+		specifiedCrimperPartObjectPackets,
 		specifiedCrimpingHeadPartObjectPackets,
 		specifiedDecrimpingHeadPartObjectPackets,
 		specifiedPlateSealerInstrumentObjectPackets,
@@ -1528,10 +1569,17 @@ resolveExperimentCoverOptions[
 	};
 
 	(* We've had to download with extra lists, clean this up. *)
-	activeCart=If[MatchQ[activeCartPackets,{Null}],
-		Null,
-		Lookup[activeCartPackets[[1,1]],ActiveCart]
+	{
+		activeCart,
+		rootResourcePackets
+	}=If[MatchQ[parentProtocolPackets, Null],
+		{Null, {}},
+		{
+			Lookup[parentProtocolPackets[[1]], ActiveCart],
+			parentProtocolPackets[[2]]
+		}
 	];
+
 
 	cacheBall=FlattenCachePackets[{
 		objectContainerPackets,
@@ -1540,6 +1588,7 @@ resolveExperimentCoverOptions[
 		objectSamplePacketList,
 		modelSamplePacketList,
 		specifiedCrimperInstrumentObjectPackets,
+		specifiedCrimperPartObjectPackets,
 		specifiedCrimpingHeadPartObjectPackets,
 		specifiedDecrimpingHeadPartObjectPackets,
 		specifiedPlateSealerInstrumentObjectPackets,
@@ -1558,7 +1607,8 @@ resolveExperimentCoverOptions[
 		defaultLidModelPackets,
 		defaultPlateSealModelPackets,
 		defaultSeptumModelPackets,
-		defaultKeckClampModelPackets
+		defaultKeckClampModelPackets,
+		parentProtocolPackets
 	}];
 
 	(* Make the fast association. *)
@@ -1611,48 +1661,51 @@ resolveExperimentCoverOptions[
 	(* Prepare the Lid information *)
 	lidInternalDimensions2D=Lookup[
 		(* Default Lid *)
-		fetchPacketFromCache[Model[Item, Lid, "id:N80DNj16AaKA"],cacheBall],
+		fetchPacketFromFastAssoc[Model[Item, Lid, "id:N80DNj16AaKA"],fastCacheBall],
 		InternalDimensions2D,
 		Null
 	]/.(Null->{200Millimeter,200Millimeter});
 
 	(* Get our map thread friendly options. *)
 	mapThreadFriendlyOptions=OptionsHandling`Private`mapThreadOptions[ExperimentCover,Normal@coverOptions];
+
 	(* Resolve our map thread options. *)
 	{
-		resolvedSampleLabels,
-		resolvedSampleContainerLabels,
-		resolvedCoverTypes,
-		resolvedUsePreviousCovers,
-		resolvedOpaques,
-		resolvedCovers,
-		resolvedCoverLabels,
-		resolvedSeptums,
-		resolvedInstruments,
-		resolvedCrimpingHeads,
-		resolvedDecrimpingHeads,
-		resolvedCrimpingPressures,
-		resolvedTemperatures,
-		resolvedTimes,
-		resolvedParafilms,
-		resolvedAluminumFoils,
-		resolvedKeckClamps,
-		resolvedKeepCovereds,
-		resolvedEnvironments,
-		resolvedSterileTechniques,
-		resolvedCoverModelPackets,
-		resolvedPlateSealAdapters,
-		resolvedPlateSealPaddles,
-		containerLidCompatibleErrors,
-		containsLiveCellsQs,
-		plateSealSafeUseQs
+		(*1*)resolvedSampleLabels,
+		(*2*)resolvedSampleContainerLabels,
+		(*3*)resolvedCoverTypes,
+		(*4*)resolvedUsePreviousCovers,
+		(*5*)resolvedOpaques,
+		(*6*)resolvedCovers,
+		(*7*)resolvedCoverLabels,
+		(*8*)resolvedSeptums,
+		(*9*)resolvedInstruments,
+		(*10*)resolvedCrimpingHeads,
+		(*11*)resolvedDecrimpingHeads,
+		(*12*)resolvedDecrimper,
+		(*13*)resolvedCrimpingPressures,
+		(*14*)resolvedTemperatures,
+		(*15*)resolvedTimes,
+		(*16*)resolvedParafilms,
+		(*17*)resolvedAluminumFoils,
+		(*18*)resolvedKeckClamps,
+		(*19*)resolvedKeepCovereds,
+		(*20*)resolvedEnvironments,
+		(*21*)resolvedSterileTechniques,
+		(*22*)resolvedCoverModelPackets,
+		(*23*)resolvedPlateSealAdapters,
+		(*24*)resolvedPlateSealPaddles,
+		(*25*)containerLidCompatibleErrors,
+		(*26*)containsLiveCellsQs,
+		(*27*)plateSealSafeUseQs
 	}=Transpose@MapThread[
 		Function[{originalInputObject, containerPacket, containerModelPacket, objectSamplePackets, modelSamplePackets, containerRepeatedContainers, options},
 			Module[
 				{containerLidCompatibleQ,usePreviousCover, preResolvedCover, coverType, opaque, cover, coverModelPacket, coverLabel, septum,
 					instrument, instrumentModel, temperature, time, plateSealPaddle, parafilm, aluminumFoil, keckClamp, keepCovered, environment, sterileTechnique, sampleLabel,
-					sampleContainerLabel, crimpingHead, decrimpingHead, crimpingPressure, containerContainer, plateSealAdapter,
-					previousCover, previousCoverModel, containerLidCompatibleError, containsLiveCellsQ, plateSealSafeUseQ},
+					sampleContainerLabel, crimpingHead, decrimpingHead, crimpingPressure, containerContainer, plateSealAdapter, decrimper,
+					previousCover, previousCoverModel, containerLidCompatibleError, containsLiveCellsQ, plateSealSafeUseQ,
+					semiResolvedDecrimper, semiResolvedInstrument},
 
 				(* Pre-check the container's size to determine if it can fit our default black lid *)
 				containerLidCompatibleQ=If[MatchQ[containerModelPacket,PacketP[Model[Container,Plate]]]&&MatchQ[Lookup[containerModelPacket,Footprint],Plate],
@@ -1700,9 +1753,12 @@ resolveExperimentCoverOptions[
 
 				(* determine the previous cover and previous cover model because we use it a lot below *)
 				previousCover = Download[Lookup[containerPacket, PreviousCover], Object];
-				previousCoverModel = If[MatchQ[previousCover, ObjectP[]],
-					cacheLookup[previousCoverObjectPackets, previousCover, Model],
-					Null
+				previousCoverModel = Download[
+					If[MatchQ[previousCover, ObjectP[]],
+						cacheLookup[previousCoverObjectPackets, previousCover, Model],
+						Null
+					],
+					Object
 				];
 
 				(* Resolve the UsePreviousCover option. *)
@@ -1730,18 +1786,21 @@ resolveExperimentCoverOptions[
 					And[
 						MatchQ[Lookup[containerPacket, PreviousCover], ObjectP[Object[Item]]],
 						MatchQ[
-							Lookup[fetchPacketFromCache[previousCover, previousCoverObjectPackets], Status],
+							fastAssocLookup[fastCacheBall, previousCover, Status],
 							Except[Discarded]
 						],
 						MatchQ[
-							Lookup[fetchPacketFromCache[previousCover, previousCoverObjectPackets], CoveredContainer],
+							fastAssocLookup[fastCacheBall, previousCover, CoveredContainer],
 							Null
 						],
 						(* Never re-use aspiration caps, unless it's specified. We don't have a specific field informing whether the cap is aspiration caps or not, so we look at the following two criteria: *)
 						(* Model Name should not container 'Aspiration' *)
-						!StringContainsQ[Lookup[fetchPacketFromCache[Download[previousCoverModel, Object], previousCoverObjectPackets], Name], "Aspiration", IgnoreCase -> True],
+						Or[
+							NullQ[fastAssocLookup[fastCacheBall, previousCoverModel, Name]],
+							!StringContainsQ[fastAssocLookup[fastCacheBall, previousCoverModel, Name], "Aspiration", IgnoreCase -> True]
+						],
 						(* Does not have any Connectors defined *)
-						Length[Lookup[fetchPacketFromCache[Download[previousCoverModel, Object], previousCoverObjectPackets], Connectors]] == 0,
+						Length[fastAssocLookup[fastCacheBall, previousCoverModel, Connectors]] == 0,
 						Or[
 							(* we allow black lid for a lunatic chip because this is the only cover we can use on it while we are working with it. *)
 							And[
@@ -1816,7 +1875,7 @@ resolveExperimentCoverOptions[
 				];
 				(* Get the Model of instrument if this option is set by user. *)
 				instrumentModel=If[MatchQ[Lookup[options, Instrument],ObjectP[Object[Instrument]]],
-					Lookup[fetchPacketFromCache[Lookup[options, Instrument], cacheBall],Model],
+					fastAssocLookup[fastCacheBall, Lookup[options, Instrument], Model],
 					Lookup[options, Instrument]
 				];
 				(* Resolve the CoverType option. *)
@@ -1828,15 +1887,8 @@ resolveExperimentCoverOptions[
 						Module[{coverTypeFromModel},
 							(* Try to get the CoverType from the CoverType field. *)
 							coverTypeFromModel=If[MatchQ[preResolvedCover, ObjectP[Object[]]],
-								Lookup[
-									fetchPacketFromCache[
-										Lookup[fetchPacketFromCache[preResolvedCover, cacheBall], Model],
-										cacheBall
-									],
-									CoverType,
-									Null
-								],
-								Lookup[fetchPacketFromCache[preResolvedCover, cacheBall], CoverType, Null]
+								fastAssocLookup[fastCacheBall, preResolvedCover, {Model, CoverType}],
+								fastAssocLookup[fastCacheBall, preResolvedCover, CoverType]
 							];
 
 							(* If we found the CoverType field, use that. Otherwise, if it was Null, just set it based on the container type. *)
@@ -1855,7 +1907,7 @@ resolveExperimentCoverOptions[
 					(* Did the user give us an instrument? *)
 					MatchQ[Lookup[options, Instrument], ObjectP[]],
 						Switch[Lookup[options, Instrument],
-							ObjectP[{Model[Instrument, Crimper], Object[Instrument, Crimper]}],
+							ObjectP[{Model[Instrument, Crimper], Object[Instrument, Crimper], Model[Part, Crimper], Object[Part, Crimper]}],
 								Crimp,
 							ObjectP[{Model[Instrument, PlateSealer], Object[Instrument, PlateSealer]}],
 								Seal,
@@ -2074,9 +2126,9 @@ resolveExperimentCoverOptions[
 					MatchQ[cover, Null],
 						<||>,
 					MatchQ[cover,ObjectP[Model[]]],
-						fetchPacketFromCache[cover, cacheBall],
+						fetchPacketFromFastAssoc[cover, fastCacheBall],
 					True,
-						fetchModelPacketFromCache[cover, cacheBall]
+						fastAssocPacketLookup[fastCacheBall, cover, Model]
 				];
 
 				(* Resolve the Opaque option. *)
@@ -2111,17 +2163,19 @@ resolveExperimentCoverOptions[
 				];
 
 				(* Resolve the instrument option. *)
-				instrument=Which[
+				semiResolvedInstrument=Which[
 					MatchQ[Lookup[options, Instrument], Except[Automatic]],
 						Lookup[options, Instrument],
 
 					MatchQ[resolvedPreparation, Robotic] && MatchQ[coverType, Place],
 						Null,
 
-					(* If we're using a crimp cap, we need to get a crimping instrument. *)
+					(* If we're using a crimp cap, we need to get a crimper. If a hand crimper exists for the chosen footprint, use that.  Otherwise, use the pneumatic one *)
+					MatchQ[coverType, Crimp] && MemberQ[Lookup[crimperPartModelPackets, CoverFootprint], Lookup[coverModelPacket, CoverFootprint]],
+						FirstCase[crimperPartModelPackets, packet:KeyValuePattern[{CoverFootprint -> Lookup[coverModelPacket, CoverFootprint]}] :> Lookup[packet, Object]],
 					MatchQ[coverType, Crimp],
 						Lookup[
-							FirstOrDefault[crimperInstrumentModelPackets, <|Object->Null|>],
+							FirstOrDefault[crimperInstrumentModelPackets, <|Object -> Null|>],
 							Object
 						],
 
@@ -2144,6 +2198,16 @@ resolveExperimentCoverOptions[
 						Null
 				];
 
+				(* if the semi resolved instrument is a crimper model and we have an instance of that model already InUse by the protocol, then pick that particular object *)
+				instrument = If[MatchQ[semiResolvedInstrument, ObjectP[Model[Part, Crimper]]],
+					FirstCase[
+						rootResourcePackets,
+						packet:KeyValuePattern[{Model -> ObjectP[semiResolvedInstrument]}] :> Lookup[packet, Object],
+						semiResolvedInstrument
+					],
+					semiResolvedInstrument
+				];
+
 				(* Resolve the crimping head option. *)
 				crimpingHead=Which[
 					MatchQ[Lookup[options, CrimpingHead], Except[Automatic]],
@@ -2152,8 +2216,8 @@ resolveExperimentCoverOptions[
 					MatchQ[resolvedPreparation, Robotic],
 						Null,
 
-					(* If we're using a crimp cap, we need to get a crimping head. *)
-					MatchQ[coverType, Crimp],
+					(* If we're using a pneumatic crimper, we need to get a crimping head. *)
+					MatchQ[instrument, ObjectP[{Model[Instrument, Crimper], Object[Instrument, Crimper]}]],
 						Lookup[
 							FirstCase[
 								crimpingHeadPartModelPackets,
@@ -2176,8 +2240,8 @@ resolveExperimentCoverOptions[
 					MatchQ[resolvedPreparation, Robotic],
 						Null,
 
-					(* If we're using a crimp cap, we need to get a decrimping head. *)
-					MatchQ[coverType, Crimp],
+					(* If we're using a pneumatic crimper, we need to get a decrimping head. *)
+					MatchQ[instrument, ObjectP[{Model[Instrument, Crimper], Object[Instrument, Crimper]}]],
 						Lookup[
 							FirstCase[
 								decrimpingHeadPartModelPackets,
@@ -2192,6 +2256,27 @@ resolveExperimentCoverOptions[
 						Null
 				];
 
+				(* semi-resolve the Decrimper option *)
+				semiResolvedDecrimper = Which[
+					(* if it's specified, just use that *)
+					MatchQ[Lookup[options, Decrimper], Except[Automatic]], Lookup[options, Decrimper],
+					(* if we have a hand crimper and one exists for the cover footprint, pick that one *)
+					MatchQ[instrument, ObjectP[{Model[Part, Crimper], Object[Part, Crimper]}]],
+						FirstCase[defaultDecrimperPartModelPackets, packet:KeyValuePattern[{CoverFootprint -> Lookup[coverModelPacket, CoverFootprint]}] :> Lookup[packet, Object], Null],
+					(* otherwise, Null *)
+					True, Null
+				];
+
+				(* if the semi resolved decrimper is a model and we have an instance of that model already InUse by the protocol, then pick that particular object *)
+				decrimper = If[MatchQ[semiResolvedDecrimper, ObjectP[Model[Part, Decrimper]]],
+					FirstCase[
+						rootResourcePackets,
+						packet:KeyValuePattern[{Model -> ObjectP[semiResolvedDecrimper]}] :> Lookup[packet, Object],
+						semiResolvedDecrimper
+					],
+					semiResolvedDecrimper
+				];
+
 				(* Resolve the crimping pressure option. *)
 				crimpingPressure=Which[
 					MatchQ[Lookup[options, CrimpingPressure], Except[Automatic]],
@@ -2200,8 +2285,8 @@ resolveExperimentCoverOptions[
 					MatchQ[resolvedPreparation, Robotic],
 						Null,
 
-					(* If we're using a crimp cap, we need to get a decrimping head. *)
-					MatchQ[coverType, Crimp],
+					(* If we're using a pneumatic crimper, we need to get a crimping pressure. *)
+					MatchQ[instrument, ObjectP[{Model[Instrument, Crimper], Object[Instrument, Crimper]}]],
 						If[MatchQ[Lookup[coverModelPacket, CrimpingPressure], GreaterEqualP[0 PSI]],
 							Lookup[coverModelPacket, CrimpingPressure],
 							20 PSI
@@ -2382,7 +2467,7 @@ resolveExperimentCoverOptions[
 						Lookup[options, SterileTechnique],
 
 					(* If the user has told us to use a BSC, use sterile technique. *)
-					MatchQ[environment, ObjectP[{Model[Instrument, BiosafetyCabinet], Object[Instrument, BiosafetyCabinet]}]],
+					MatchQ[environment, ObjectP[{Model[Instrument, BiosafetyCabinet], Object[Instrument, BiosafetyCabinet], Model[Instrument, HandlingStation, BiosafetyCabinet], Object[Instrument, HandlingStation, BiosafetyCabinet]}]],
 						True,
 
 					(* Otherwise, no sterile technique. *)
@@ -2441,32 +2526,33 @@ resolveExperimentCoverOptions[
 				];
 
 				{
-					sampleLabel,
-					sampleContainerLabel,
-					coverType,
-					usePreviousCover,
-					opaque,
-					cover,
-					coverLabel,
-					septum,
-					instrument,
-					crimpingHead,
-					decrimpingHead,
-					crimpingPressure,
-					temperature,
-					time,
-					parafilm,
-					aluminumFoil,
-					keckClamp,
-					keepCovered,
-					environment,
-					sterileTechnique,
-					coverModelPacket,
-					plateSealAdapter,
-					plateSealPaddle,
-					containerLidCompatibleError,
-					containsLiveCellsQ,
-					plateSealSafeUseQ
+					(*1*)sampleLabel,
+					(*2*)sampleContainerLabel,
+					(*3*)coverType,
+					(*4*)usePreviousCover,
+					(*5*)opaque,
+					(*6*)cover,
+					(*7*)coverLabel,
+					(*8*)septum,
+					(*9*)instrument,
+					(*10*)crimpingHead,
+					(*11*)decrimpingHead,
+					(*12*)decrimper,
+					(*13*)crimpingPressure,
+					(*14*)temperature,
+					(*15*)time,
+					(*16*)parafilm,
+					(*17*)aluminumFoil,
+					(*18*)keckClamp,
+					(*19*)keepCovered,
+					(*20*)environment,
+					(*21*)sterileTechnique,
+					(*22*)coverModelPacket,
+					(*23*)plateSealAdapter,
+					(*24*)plateSealPaddle,
+					(*25*)containerLidCompatibleError,
+					(*26*)containsLiveCellsQ,
+					(*27*)plateSealSafeUseQ
 				}
 			]
 		],
@@ -2522,6 +2608,7 @@ resolveExperimentCoverOptions[
 			Instrument->resolvedInstruments,
 			CrimpingHead->resolvedCrimpingHeads,
 			DecrimpingHead->resolvedDecrimpingHeads,
+			Decrimper -> resolvedDecrimper,
 			CrimpingPressure->resolvedCrimpingPressures,
 			Temperature->resolvedTemperatures,
 			Time->resolvedTimes,
@@ -2736,7 +2823,7 @@ resolveExperimentCoverOptions[
 		{},
 		MapThread[
 			Function[{sterileTechnique, environment, index},
-				If[MatchQ[sterileTechnique, True] && !MatchQ[environment, ObjectP[{Model[Instrument, BiosafetyCabinet], Object[Instrument, BiosafetyCabinet]}]],
+				If[MatchQ[sterileTechnique, True] && !MatchQ[environment, ObjectP[{Model[Instrument, BiosafetyCabinet], Object[Instrument, BiosafetyCabinet], Model[Instrument, HandlingStation, BiosafetyCabinet], Object[Instrument, HandlingStation, BiosafetyCabinet]}]],
 					{sterileTechnique, environment, index},
 					Nothing
 				]
@@ -3097,11 +3184,21 @@ resolveExperimentCoverOptions[
 	crimperErrors=If[MatchQ[resolvedPreparation, Robotic],
 		{},
 		MapThread[
-			Function[{instrument, crimpingHead, decrimpingHead, cover, coverType, coverModelPacket, index},
+			Function[{instrument, crimpingHead, decrimpingHead, decrimper, coverType, coverModelPacket, index},
 				If[
 					Or[
+						(* if we're using a hand crimper, can't have a crimping/decrimping head, and we must have a decrimper *)
 						And[
-							MatchQ[coverType, Crimp],
+							MatchQ[coverType, Crimp] && MatchQ[instrument, ObjectP[{Model[Part, Crimper], Object[Part, Crimper]}]],
+							Or[
+								MatchQ[crimpingHead, ObjectP[{Model[Part, CrimpingHead], Object[Part, CrimpingHead]}]],
+								MatchQ[decrimpingHead, ObjectP[{Model[Part, DecrimpingHead], Object[Part, DecrimpingHead]}]],
+								!MatchQ[decrimper, ObjectP[{Model[Part, Decrimper], Object[Part, Decrimper]}]]
+							]
+						],
+						(* if we're using a pneumatic crimper, must have a crimping/decrimping head *)
+						And[
+							MatchQ[coverType, Crimp] && MatchQ[instrument, ObjectP[{Model[Instrument, Crimper], Object[Instrument, Crimper]}]],
 							Or[
 								(* If we're supposed to be crimping and don't have the crimper, crimping head, or decrimping head, we can't proceed. *)
 								!MatchQ[instrument, ObjectP[{Model[Instrument, Crimper], Object[Instrument, Crimper]}]],
@@ -3113,21 +3210,22 @@ resolveExperimentCoverOptions[
 								!MatchQ[Lookup[fetchPacketFromFastAssoc[decrimpingHead, fastCacheBall], {CoverFootprint}], Lookup[coverModelPacket, {CoverFootprint}]]
 							]
 						],
+						(* if not crimping at all, can't have any of the crimping options *)
 						And[
 							!MatchQ[coverType, Crimp],
 							Or[
 								(* If we're supposed to be crimping and don't have the crimper, crimping head, or decrimping head, we can't proceed. *)
-								MatchQ[instrument, ObjectP[{Model[Instrument, Crimper], Object[Instrument, Crimper]}]],
+								MatchQ[instrument, ObjectP[{Model[Instrument, Crimper], Object[Instrument, Crimper], Model[Part, Crimper], Object[Part, Crimper]}]],
 								MatchQ[crimpingHead, ObjectP[{Model[Part, CrimpingHead], Object[Part, CrimpingHead]}]],
 								MatchQ[decrimpingHead, ObjectP[{Model[Part, DecrimpingHead], Object[Part, DecrimpingHead]}]]
 							]
 						]
 					],
-					{index, instrument, crimpingHead, decrimpingHead},
+					{index, instrument, crimpingHead, decrimpingHead, decrimper},
 					Nothing
 				]
 			],
-			{resolvedInstruments, resolvedCrimpingHeads, resolvedDecrimpingHeads, resolvedCovers, resolvedCoverTypes, resolvedCoverModelPackets, Range[Length[myContainers]]}
+			{resolvedInstruments, resolvedCrimpingHeads, resolvedDecrimpingHeads, resolvedDecrimper, resolvedCoverTypes, resolvedCoverModelPackets, Range[Length[myContainers]]}
 		]
 	];
 
@@ -3142,7 +3240,8 @@ resolveExperimentCoverOptions[
 			crimperErrors[[All,1]],
 			ObjectToString[crimperErrors[[All,2]], Cache->cacheBall],
 			ObjectToString[crimperErrors[[All,3]], Cache->cacheBall],
-			ObjectToString[crimperErrors[[All,4]], Cache->cacheBall]
+			ObjectToString[crimperErrors[[All,4]], Cache->cacheBall],
+			ObjectToString[crimperErrors[[All,5]], Cache->cacheBall]
 		]
 	];
 
@@ -3419,7 +3518,7 @@ coverResourcePackets[
 				uniquePlateSealAdapterResources, uniquePlateSealPaddleResources, coverManualUnitOperationPackets, manualProtocolPacket, sharedFieldPacket,
 				finalizedPacket, specifiedCoverPackets, capRacks, specifiedCoverModelPackets, mapThreadOptionsWithResources, groupedMapThreadOptionsWithResources,
 				nonHiddenCoverOptions, uniqueCrimpingHeadResources, uniqueDecrimpingHeadResources, crimpingJigs, uniqueCrimpingJigResources,
-				resolvedCoverType, resolvedCover, resolvedAluminum, pickAluminumFoilQ
+				uniqueDecrimperResources
 			},
 
 			(* Create resources for our samples and containers. *)
@@ -3482,6 +3581,8 @@ coverResourcePackets[
 			uniqueInstrumentResources=(#->Which[
 				MatchQ[#, ObjectP[{Model[Instrument], Object[Instrument]}]],
 					Resource[Instrument->#, Time->(5 Minute * Length[Cases[Lookup[myResolvedOptions, Instrument], #]]), Name->CreateUUID[]],
+				MatchQ[#, ObjectP[]],
+					Resource[Sample -> #, Name -> CreateUUID[]],
 				True,
 					Null
 			]&)/@DeleteDuplicates[Lookup[myResolvedOptions, Instrument]];
@@ -3502,15 +3603,27 @@ coverResourcePackets[
 					Null
 			]&)/@DeleteDuplicates[Lookup[myResolvedOptions, DecrimpingHead]];
 
+
+			(* Create resources for our hand decrimpers. *)
+			uniqueDecrimperResources = (# -> If[MatchQ[#, ObjectP[{Model[Part], Object[Part]}]],
+				Resource[Sample -> #, Name -> CreateUUID[]],
+				Null
+			]&) /@ DeleteDuplicates[Lookup[myResolvedOptions, Decrimper]];
+
 			(* Create resources for each of our environments. *)
 			uniqueEnvironmentResources=(#->Which[
+				(* special treatment for fumehood, we do not really care which model to use for uncovering if we are really going to use a fumehood, so just allow all models *)
+				MatchQ[#, ObjectP[Model[Instrument, HandlingStation, FumeHood, "id:1ZA60vzEmYv0"]]],
+					With[{currentFumeHoodModels= UnsortedComplement[Cases[transferModelsSearch["Memoization"][[23]], ObjectP[Model[Instrument, HandlingStation, FumeHood]]], $SpecializedHandlingStationModels]},
+						Resource[Instrument -> currentFumeHoodModels]
+					],
 				MatchQ[#, ObjectP[{Model[Container], Object[Container]}]],
 					Resource[Sample->#],
 				MatchQ[#, ObjectP[{Model[Instrument], Object[Instrument]}]],
 					Resource[Instrument->#],
 				True,
 					Null
-			]&)/@Lookup[myResolvedOptions, Environment];
+			]&)/@DeleteDuplicates[Lookup[myResolvedOptions, Environment]];
 
 			(* Create PlateSealAdapter resources. *)
 			uniquePlateSealAdapterResources=(#->Which[
@@ -3601,6 +3714,7 @@ coverResourcePackets[
 							CapRack,
 							CrimpingHead,
 							DecrimpingHead,
+							Decrimper,
 							CrimpingJig,
 							KeckClamp
 						},
@@ -3617,6 +3731,7 @@ coverResourcePackets[
 						capRacks,
 						(Lookup[uniqueCrimpingHeadResources, #]&)/@Lookup[myResolvedOptions, CrimpingHead],
 						(Lookup[uniqueDecrimpingHeadResources, #]&)/@Lookup[myResolvedOptions, DecrimpingHead],
+						(Lookup[uniqueDecrimperResources, #]&)/@Lookup[myResolvedOptions, Decrimper],
 						(Lookup[uniqueCrimpingJigResources, #]&)/@crimpingJigs,
 						keckClampResources
 					}]
@@ -3697,6 +3812,7 @@ coverResourcePackets[
 				Replace[Instruments]->(Lookup[uniqueInstrumentResources, #]&)/@Lookup[myResolvedOptions, Instrument],
 				Replace[CrimpingHeads]->(Lookup[uniqueCrimpingHeadResources, #]&)/@Lookup[myResolvedOptions, CrimpingHead],
 				Replace[DecrimpingHeads]->(Lookup[uniqueDecrimpingHeadResources, #]&)/@Lookup[myResolvedOptions, DecrimpingHead],
+				Replace[Decrimpers] -> (Lookup[uniqueDecrimperResources, #]&) /@ Lookup[myResolvedOptions, Decrimper],
 				Replace[CrimpingPressures]->Lookup[myResolvedOptions, CrimpingPressure],
 				Replace[Environment]->Link/@((Lookup[uniqueEnvironmentResources,#]&)/@Lookup[myResolvedOptions,Environment]),
 				Replace[Temperatures]->Lookup[myResolvedOptions, Temperature],

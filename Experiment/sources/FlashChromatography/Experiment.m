@@ -746,7 +746,7 @@ DefineOptions[ExperimentFlashChromatography,
 (*Messages*)
 
 Error::MissingSampleVolumes="The samples, `1`, are missing volume information and cannot be processed. Please ensure the Volume field of each sample is not Null.";
-Error::NonLiquidSamples="The samples, `1`, are not in the liquid state and cannot processed. Please ensure the State field of each sample is Liquid.";
+Error::NonLiquidSamples="The samples, `1`, are not in the liquid state and cannot be processed. Please ensure the State field of each sample is Liquid.";
 
 Error::InvalidFlashChromatographyPreparation="The Preparation option is specified to `1`, but ExperimentFlashChromatography can only be prepared manually. Please leave Preparation unspecified or specify it to Manual or Automatic.";
 Warning::MixedSeparationModes="The separation modes indicated by the specified Column, `1`, Cartridge, `2`, or CartridgeFunctionalGroup, `3`, options are not all the same. Results may be unsatisfactory if columns or cartridges with different intended separation modes are used together. All Automatic options will be resolved for `4` separation. If this is not desired, please specify a different SeparationMode or call ExperimentFlashChromatography separately for desired SeparationMode.";
@@ -4733,7 +4733,7 @@ resolveExperimentFlashChromatographyOptions[
 					PrimaryWavelengthPeakWidth, SecondaryWavelengthPeakWidth, WideRangeUVPeakWidth,
 					PrimaryWavelengthPeakThreshold, SecondaryWavelengthPeakThreshold, and WideRangeUVPeakThreshold *)
 
-					(* These options are resolved identically for each detector (PrimaryWavelength, SecondaryWavelength, 
+					(* These options are resolved identically for each detector (PrimaryWavelength, SecondaryWavelength,
 					and WideRangeUV), so we will MapThread over them *)
 
 					(* Get a list of the unresolved PeakDetectionMethod options *)
@@ -4914,11 +4914,11 @@ resolveExperimentFlashChromatographyOptions[
 									(* Resolve PeakWidth *)
 									peakWidth=Switch[{unresolvedPeakWidth,detectorMemberQ,slopeMemberQ},
 
-										(* If PeakWidth is Automatic, the detector is in PeakDetectors, and Slope is in 
+										(* If PeakWidth is Automatic, the detector is in PeakDetectors, and Slope is in
 										PeakDetectionMethod, resolve to 1 Minute *)
 										{Automatic,True,True},1 Minute,
 
-										(* If PeakWidth is Automatic, and either the detector is not in PeakDetectors, 
+										(* If PeakWidth is Automatic, and either the detector is not in PeakDetectors,
 										or Slope is not in PeakDetectionMethod, resolve to Null *)
 										{Automatic,_,_},Null,
 
@@ -4945,7 +4945,7 @@ resolveExperimentFlashChromatographyOptions[
 										is in PeakDetectionMethod, resolve to 200 MilliAbsorbanceUnit *)
 										{Automatic,True,True},200 MilliAbsorbanceUnit,
 
-										(* If PeakThreshold is Automatic, and either the detector is not in PeakDetectors, 
+										(* If PeakThreshold is Automatic, and either the detector is not in PeakDetectors,
 										or Threshold is not in PeakDetectionMethod, resolve to Null *)
 										{Automatic,_,_},Null,
 
@@ -4975,14 +4975,14 @@ resolveExperimentFlashChromatographyOptions[
 
 					(*-- ColumnStorageCondition --*)
 
-					(* Set a Boolean to indicate whether the current Column is specified to an Object[Item,Column] and 
+					(* Set a Boolean to indicate whether the current Column is specified to an Object[Item,Column] and
 					the same column object is also specified for a later input sample *)
 					columnReusedQ=And[
 						MatchQ[unresolvedColumn,ObjectP[Object[Item,Column]]],
 						MemberQ[Drop[specifiedColumn,sampleIndex],unresolvedColumn]
 					];
 
-					(* Flip an error switch if ColumnStorageCondition is specified to Disposal and the Column is an 
+					(* Flip an error switch if ColumnStorageCondition is specified to Disposal and the Column is an
 					Object[Item,Column] that is also specified for a later input sample *)
 					invalidColumnStorageConditionError=And[
 						MatchQ[unresolvedColumnStorageCondition,Disposal],
@@ -6184,7 +6184,7 @@ resolveExperimentFlashChromatographyOptions[
 		]
 	];
 
-	(* Throw an error if FractionCollectionEndTime is specified and it is less than or equal to the resolved 
+	(* Throw an error if FractionCollectionEndTime is specified and it is less than or equal to the resolved
 	FractionCollectionStartTime or greater than the totalGradientBTime *)
 	invalidFractionCollectionEndTimeOptions=If[MemberQ[invalidFractionCollectionEndTimeErrors,True]&&messages,
 		Message[Error::InvalidFractionCollectionEndTimeFlash,
@@ -6598,7 +6598,7 @@ resolveExperimentFlashChromatographyOptions[
 		]
 	];
 
-	(* Throw an error if ColumnStorageCondition is specified to Disposal and the Column is an 
+	(* Throw an error if ColumnStorageCondition is specified to Disposal and the Column is an
 	Object[Item,Column] that is also specified for a later input sample *)
 	invalidColumnStorageConditionOptions=If[MemberQ[invalidColumnStorageConditionErrors,True]&&messages,
 		Message[Error::InvalidColumnStorageCondition,
@@ -8358,7 +8358,7 @@ flashChromatographyResourcePackets[
 	(* Need to pull these at infinite depth because otherwise all resources with Link wrapped around them won't be grabbed *)
 	allResourceBlobs=DeleteDuplicates[Cases[Flatten[Values[protocolPacketWithoutRequiredObjects]],_Resource,Infinity]];
 
-	(* If we are doing Manual preparation, populate the RequiredObjects and RequiredInstruments fields of the protocol packet; 
+	(* If we are doing Manual preparation, populate the RequiredObjects and RequiredInstruments fields of the protocol packet;
 	Null, if we are doing Robotic preparation (we aren't because FlashChromatography doesn't support it) *)
 	protocolPacket=If[MatchQ[resolvedPreparation,Manual],
 		Join[

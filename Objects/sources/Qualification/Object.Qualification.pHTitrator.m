@@ -136,6 +136,13 @@ DefineObjectType[Object[Qualification,pHTitrator], {
       Description -> "The most recently response timestamp from pH titrator when TitrationMethod is Robotic. The most recently response timestamp is in the format of yyyy-mm-dd hh:mm:ss.",
       Category -> "pH Titration",
       Developer ->True
+    },
+    CalibrationMethodName -> {
+      Format -> Single,
+      Class -> String,
+      Pattern :> _String,
+      Description -> "The name of the calibration method to use on the seven excellence pH meter.",
+      Category -> "General"
     }
   }
 }];

@@ -18,43 +18,48 @@
 
 DefineOptions[UploadProtein,
 	SharedOptions :> {
-		UploadMolecule
+		MoleculeOptions,
+		ExternalUploadHiddenOptions
 	},
 	Options :> {
 		IndexMatching[
 			IndexMatchingInput -> "Input Data",
 			{
 				OptionName -> Species,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Species]]],
 				Description -> "The source species that this protein is found in.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Organizational Information"
 			},
 			{
 				OptionName -> PDBIDs,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Adder[
 					Widget[Type -> String, Pattern :> PDBIDP, Size -> Word]
 				],
-				Description -> "The list of Protein Data Bank IDs for any structures of this protein that have been previously reported in literature or are publically available.",
+				Description -> "The list of Protein Data Bank IDs for any structures of this protein that have been previously reported in literature or are publicly available.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Organizational Information"
 			},
 			{
 				OptionName -> Antibodies,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Molecule, Protein, Antibody]]],
 				Description -> "Antibodies that are known to bind to this protein.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Organizational Information"
 			},
 			{
 				OptionName -> Transcripts,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Molecule, Transcript]]],
 				Description -> "RNA templates that synthesize this protein inside of a cell.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Organizational Information"
 			}
 		]
@@ -62,9 +67,9 @@ DefineOptions[UploadProtein,
 ];
 
 
-InstallDefaultUploadFunction[UploadProtein, Model[Molecule, Protein]];
-InstallValidQFunction[UploadProtein, Model[Molecule, Protein]];
-InstallOptionsFunction[UploadProtein, Model[Molecule, Protein]];
+installDefaultUploadFunction[UploadProtein, Model[Molecule, Protein]];
+installDefaultValidQFunction[UploadProtein, Model[Molecule, Protein]];
+installDefaultOptionsFunction[UploadProtein, Model[Molecule, Protein]];
 
 ExternalUpload`Private`InstallIdentityModelTests[
 	UploadProtein,
@@ -78,7 +83,7 @@ ExternalUpload`Private`InstallIdentityModelTests[
 		State -> Solid,
 		BiosafetyLevel -> "BSL-1",
 		Flammable -> False,
-		MSDSRequired -> False,
+		MSDSFile -> NotApplicable,
 		IncompatibleMaterials -> {None}
 	},
 	Model[Molecule, Protein, "P-selectin (test for UploadProtein)" <> $SessionUUID]
@@ -97,7 +102,7 @@ ExternalUpload`Private`InstallIdentityModelTests[
 		State -> Solid,
 		BiosafetyLevel -> "BSL-1",
 		Flammable -> False,
-		MSDSRequired -> False,
+		MSDSFile -> NotApplicable,
 		IncompatibleMaterials -> {None}
 	},
 	Model[Molecule, Protein, "P-selectin (test for UploadProteinOptions)" <> $SessionUUID]
@@ -115,7 +120,7 @@ ExternalUpload`Private`InstallIdentityModelTests[
 		State -> Solid,
 		BiosafetyLevel -> "BSL-1",
 		Flammable -> False,
-		MSDSRequired -> False,
+		MSDSFile -> NotApplicable,
 		IncompatibleMaterials -> {None}
 	},
 	Model[Molecule, Protein, "P-selectin (test for ValidUploadProteinQ)" <> $SessionUUID]

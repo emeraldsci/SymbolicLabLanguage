@@ -262,8 +262,10 @@ DefineObjectType[type:typeP, typeDef:TypeDefinitionP, typeRegister_Symbol]:=Modu
 
 		];
 
-		(* log this as a known type *)
-		AppendTo[allKnownTypes,type];
+		(* log this as a known type, if it is not already a known type *)
+		If[!MemberQ[allKnownTypes,type],
+			AppendTo[allKnownTypes,type]
+		];
 
 		(* log this as a known type *)
 		TypeQ[type] = True;
@@ -281,7 +283,10 @@ DefineObjectType[type:typeP, typeDef:TypeDefinitionP, typeRegister_Symbol]:=Modu
 				these lists are used by Types definitions
 			*)
 			Function[anscestor,
-					typeAndDescendents[anscestor]  = Append[typeAndDescendents[anscestor],type];
+				(* We may be reloading a type that is already a descendent of an ancestor type. *)
+				If[!MemberQ[typeAndDescendents[anscestor],type],
+					typeAndDescendents[anscestor]  = Append[typeAndDescendents[anscestor],type]
+				]
 			],
 			typeAnscestors
 		];

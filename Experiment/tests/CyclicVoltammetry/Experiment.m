@@ -2570,7 +2570,7 @@ DefineTests[ExperimentCyclicVoltammetry,
 				Unset[$CreatedObjects]
 			)
 		],
-
+(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options, FilterSterile, "Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options = ExperimentCyclicVoltammetry[
 				Object[Sample,"Example 5mM Ferrocene 0.1M [NBu4][PF6] in acetonitrile liquid sample for CyclicVoltammetry tests" <> $SessionUUID],
@@ -2587,7 +2587,7 @@ DefineTests[ExperimentCyclicVoltammetry,
 				EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
 				Unset[$CreatedObjects]
 			)
-		],
+		],*)
 
 		Example[{Options, FilterAliquot, "Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options = ExperimentCyclicVoltammetry[

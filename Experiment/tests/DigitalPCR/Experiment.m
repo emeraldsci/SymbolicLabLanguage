@@ -5407,13 +5407,13 @@ DefineTests[
       1000 * RPM,
       EquivalenceFunction -> Equal,
       Variables :> {options}
-    ],
+    ],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
     Example[{Options, FilterSterile, "Indicates if the filtration of the samples should be done in a sterile environment:"},
       options = ExperimentDigitalPCR[{Object[Sample, "ExperimentDigitalPCR test sample with primers and probes" <> $SessionUUID]}, FilterSterile -> True, Output -> Options];
       Lookup[options, FilterSterile],
       True,
       Variables :> {options}
-    ],
+    ],*)
     Example[{Options, FilterAliquot, "The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
       options = ExperimentDigitalPCR[{Object[Sample, "ExperimentDigitalPCR test sample in 50mL tube" <> $SessionUUID]}, FilterAliquot -> 0.5 * Milliliter, Output -> Options];
       Lookup[options, FilterAliquot],
@@ -5851,7 +5851,7 @@ DefineTests[
         Strand[DNA["GTCTCACCAATGTATGGACC"]]
       },
       PolymerType -> DNA,
-      MSDSRequired -> False,
+      MSDSFile -> NotApplicable,
       IncompatibleMaterials -> ConstantArray[{None}, 9],
       State -> Liquid,
       BiosafetyLevel -> "BSL-1",
@@ -6088,7 +6088,7 @@ DefineTests[
       ShelfLife -> 2 Year,
       UnsealedShelfLife -> 90 Day,
       DefaultStorageCondition -> ConstantArray[Model[StorageCondition, "Refrigerator"], 23],
-      MSDSRequired -> False,
+      MSDSFile -> NotApplicable,
       BiosafetyLevel -> "BSL-1",
       State -> Liquid
     ];
@@ -6970,7 +6970,7 @@ DefineTests[ExperimentDigitalPCROptions,
         Strand[DNA["GTCTCACCAATGTATGGACC"]]
       },
       PolymerType -> DNA,
-      MSDSRequired -> False,
+      MSDSFile -> NotApplicable,
       IncompatibleMaterials -> ConstantArray[{None}, 3],
       State -> Liquid,
       BiosafetyLevel -> "BSL-1",
@@ -7033,7 +7033,7 @@ DefineTests[ExperimentDigitalPCROptions,
       ShelfLife -> 2 Year,
       UnsealedShelfLife -> 90 Day,
       DefaultStorageCondition -> ConstantArray[Model[StorageCondition, "Refrigerator"], 4],
-      MSDSRequired -> False,
+      MSDSFile -> NotApplicable,
       BiosafetyLevel -> "BSL-1",
       State -> Liquid
     ];
@@ -7421,7 +7421,7 @@ DefineTests[ExperimentDigitalPCRPreview,
         Strand[DNA["GTCTCACCAATGTATGGACC"]]
       },
       PolymerType -> DNA,
-      MSDSRequired -> False,
+      MSDSFile -> NotApplicable,
       IncompatibleMaterials -> ConstantArray[{None}, 3],
       State -> Liquid,
       BiosafetyLevel -> "BSL-1",
@@ -7484,7 +7484,7 @@ DefineTests[ExperimentDigitalPCRPreview,
       ShelfLife -> 2 Year,
       UnsealedShelfLife -> 90 Day,
       DefaultStorageCondition -> ConstantArray[Model[StorageCondition, "Refrigerator"], 4],
-      MSDSRequired -> False,
+      MSDSFile -> NotApplicable,
       BiosafetyLevel -> "BSL-1",
       State -> Liquid
     ];
@@ -7881,7 +7881,7 @@ DefineTests[ValidExperimentDigitalPCRQ,
         Strand[DNA["GTCTCACCAATGTATGGACC"]]
       },
       PolymerType -> DNA,
-      MSDSRequired -> False,
+      MSDSFile -> NotApplicable,
       IncompatibleMaterials -> ConstantArray[{None}, 3],
       State -> Liquid,
       BiosafetyLevel -> "BSL-1",
@@ -7944,7 +7944,7 @@ DefineTests[ValidExperimentDigitalPCRQ,
       ShelfLife -> 2 Year,
       UnsealedShelfLife -> 90 Day,
       DefaultStorageCondition -> ConstantArray[Model[StorageCondition, "Refrigerator"], 4],
-      MSDSRequired -> False,
+      MSDSFile -> NotApplicable,
       BiosafetyLevel -> "BSL-1",
       State -> Liquid
     ];

@@ -37,13 +37,13 @@ DefineTests[ExperimentFreezeCells,
 			],
 			ObjectP[Object[Protocol, FreezeCells]]
 		],
-		Example[{Basic, "Create a protocol object to Freeze a cell from a vessel container:"},
+		Example[{Basic, "Create a protocol object to freeze a cell from a vessel container:"},
 			ExperimentFreezeCells[
 				Object[Sample, "Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID]
 			],
 			ObjectP[Object[Protocol, FreezeCells]]
 		],
-		Example[{Basic, "Create a protocol object to Freeze a cell from a plate container:"},
+		Example[{Basic, "Create a protocol object to freeze a cell from a plate container:"},
 			ExperimentFreezeCells[
 				Object[Container, Plate, "Test 24-well Plate 1 for ExperimentFreezeCells "<>$SessionUUID],
 				NumberOfReplicates -> 4
@@ -200,7 +200,7 @@ DefineTests[ExperimentFreezeCells,
 					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
 				},
 				Aliquot -> True,
-				TemperatureProfile -> {{-10 Celsius, 30 Minute}, {-60 Celsius, 120 Minute}},
+				TemperatureProfile -> {{-10 Celsius, 30 Minute}, {-60 Celsius, 80 Minute}, {-80 Celsius, 120 Minute}},
 				Output -> Options, OptionsResolverOnly -> True
 			],
 			KeyValuePattern[{
@@ -236,6 +236,18 @@ DefineTests[ExperimentFreezeCells,
 				FreezingStrategy -> InsulatedCooler
 			}]
 		],
+		Example[{Options, FreezingStrategy, "If ContainersIn is a 5 ml cryo vial and CryogenicSampleContainer is not specified, automatically resolve to InsulatedCooler:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension bacterial cell sample in 5mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				Output -> Options, OptionsResolverOnly -> True
+			],
+			KeyValuePattern[{
+				Aliquot -> False,
+				FreezingStrategy -> InsulatedCooler
+			}]
+		],
 		(* Options: ChangeMedia *)
 		Example[{Options, CellPelletCentrifuge, "Specify the instrument used to pellet the cell sample(s) using the CellPelletCentrifuge option:"},
 			ExperimentFreezeCells[
@@ -266,7 +278,7 @@ DefineTests[ExperimentFreezeCells,
 				CellPelletCentrifuge -> ObjectP[Model[Instrument, Centrifuge]]
 			}]
 		],
-		Test["If the CryprotectionStrategy is ChangeMedia and CellPelletCentrifuge is not specified, the CellPelletCentrifuge resolves to a centrifuge Model which is not Deprecated and which has at least one Object[Instrument, Centrifuge] at ECL:",
+		Test["If the CryoprotectionStrategy is ChangeMedia and CellPelletCentrifuge is not specified, the CellPelletCentrifuge resolves to a centrifuge Model which is not Deprecated and which has at least one Object[Instrument, Centrifuge] at ECL:",
 			protocol = ExperimentFreezeCells[
 				{
 					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
@@ -390,6 +402,24 @@ DefineTests[ExperimentFreezeCells,
 			KeyValuePattern[{
 				Aliquot -> True,
 				CellPelletIntensity -> $LivingBacterialCentrifugeIntensity
+			}]
+		],
+		Test["If the samples in the same input sample container have ChangeMedia options (CellPelletCentrifuge,CellPelletIntensity,CellPelletTime) and some of them are specified, resolve to the same specified values:",
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension mammalian cell sample 1 sharing plate 2 (Test for ExperimentFreezeCells) "<>$SessionUUID],
+					Object[Sample, "Suspension mammalian cell sample 2 sharing plate 2 (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				CryoprotectionStrategy -> ChangeMedia,
+				CellPelletIntensity -> {700 GravitationalAcceleration, Automatic},
+				CellPelletTime -> {Automatic, 5 Minute},
+				Aliquot -> True,
+				Output -> Options, OptionsResolverOnly -> True
+			],
+			KeyValuePattern[{
+				Aliquot -> True,
+				CellPelletIntensity -> {700 GravitationalAcceleration, 700 GravitationalAcceleration},
+				CellPelletTime -> {5 Minute, 5 Minute}
 			}]
 		],
 		Example[{Options, CellPelletIntensity, "If CryoprotectionStrategy is AddCryoprotectant, the CellPelletIntensity option is automatically set to Null:"},
@@ -1041,7 +1071,7 @@ DefineTests[ExperimentFreezeCells,
 				CryogenicSampleContainer -> ObjectP[Model[Container, Vessel, "2mL Cryogenic Vial"]]
 			}]
 		],
-		Example[{Options, CryogenicSampleContainer, "If Aliquot is True, CryogenicSampleContainer is automatically set to an Object[Container, Vessel] which has a CryogenicVial Footprint and a MaxVolume sufficient to contain the AliquotVolume:"},
+		Example[{Options, CryogenicSampleContainer, "If Aliquot is True, CryogenicSampleContainer is automatically set to a cryogenic vial model with its MaxVolume sufficient to contain the AliquotVolume:"},
 			ExperimentFreezeCells[
 				{
 					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
@@ -1078,6 +1108,31 @@ DefineTests[ExperimentFreezeCells,
 				CryogenicSampleContainer -> ObjectP[Object[Container, Vessel, "Test 2mL Cryogenic Vial 0 for ExperimentFreezeCells "<>$SessionUUID]],
 				Aliquot -> False
 			}]
+		],
+		Test["All three cryogenic vial models in catalog are usable for ExperimentFreezeCells for InsulatedCooler strategy:",
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID],
+					Object[Sample, "Suspension bacterial cell sample in 1.2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID],
+					Object[Sample, "Suspension bacterial cell sample in 5mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				FreezingStrategy -> InsulatedCooler,
+				CryoprotectionStrategy -> None,
+				Aliquot -> False
+			],
+			ObjectP[Object[Protocol, FreezeCells]]
+		],
+		Test["Both 1.2ml and 2ml cryogenic vial models in catalog are usable for ExperimentFreezeCells for ControlledRateFreezer strategy:",
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID],
+					Object[Sample, "Suspension bacterial cell sample in 1.2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				FreezingStrategy -> ControlledRateFreezer,
+				CryoprotectionStrategy -> None,
+				Aliquot -> False
+			],
+			ObjectP[Object[Protocol, FreezeCells]]
 		],
 		Example[{Options, FreezingRack, "Specify the FreezingRack option to determine which rack the CryogenicSampleContainers containing the cell samples are held in:"},
 			ExperimentFreezeCells[
@@ -1256,12 +1311,12 @@ DefineTests[ExperimentFreezeCells,
 					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
 				},
 				Aliquot -> True,
-				TemperatureProfile -> {{-10 Celsius, 30 Minute}, {-60 Celsius, 120 Minute}},
+				TemperatureProfile -> {{-10 Celsius, 30 Minute}, {-60 Celsius, 80 Minute}, {-80 Celsius, 120 Minute}},
 				Output -> Options, OptionsResolverOnly -> True
 			],
 			KeyValuePattern[{
 				Aliquot -> True,
-				TemperatureProfile -> {{-10 Celsius, 30 Minute}, {-60 Celsius, 120 Minute}}
+				TemperatureProfile -> {{-10 Celsius, 30 Minute}, {-60 Celsius, 80 Minute}, {-80 Celsius, 120 Minute}}
 			}]
 		],
 		Example[{Options, TemperatureProfile, "If the FreezingStrategy is ControlledRateFreezer, the TemperatureProfile is automatically set to a profile which results in linear cooling at 1 Celsius per Minute beginning at 25 Celsius and terminating at -80 Celsius:"},
@@ -1350,25 +1405,72 @@ DefineTests[ExperimentFreezeCells,
 				{
 					Object[Sample, "Suspension mammalian cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID],
 					Object[Sample, "Suspension yeast cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID],
-					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
+					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID],
+					Object[Sample, "Suspension bacterial cell sample in 5mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID]
 				},
 				FreezingStrategy -> InsulatedCooler,
 				Aliquot -> True,
-				Freezer -> {
-					Model[Instrument, Freezer, "Stirling Ultracold"],
-					Model[Instrument, Freezer, "Stirling Ultracold"],
-					Model[Instrument, Freezer, "Stirling UltraCold SU780UE, -20C"]
+				CryogenicSampleContainer -> {
+					Model[Container, Vessel, "2mL Cryogenic Vial"],(*batch1*)
+					Model[Container, Vessel, "5mL Cryogenic Vial"],(*batch2*)
+					Model[Container, Vessel, "2mL Cryogenic Vial"],(*batch3*)
+					Model[Container, Vessel, "5mL Cryogenic Vial"](*batch2*)
 				},
 				Coolant -> {
-					Model[Sample, "Methanol"],
 					Model[Sample, "Isopropanol"],
+					Model[Sample, "Isopropanol"],
+					Model[Sample, "Methanol"],
 					Model[Sample, "Isopropanol"]
 				}
 			];
-			batchedUnitOps = Download[protocol, BatchedUnitOperations];
-			MatchQ[batchedUnitOps, {ObjectP[Object[UnitOperation, FreezeCells]], ObjectP[Object[UnitOperation, FreezeCells]], ObjectP[Object[UnitOperation, FreezeCells]]}],
-			True,
-			Variables :> {protocol, batchedUnitOps}
+			{insulatedCoolerContainers, freezingRacks, coolants, batchedUnitOps} = Download[protocol, {InsulatedCoolerContainers, FreezingRacks, Coolants, BatchedUnitOperations}];
+			{
+				insulatedCoolerContainers,
+				freezingRacks,
+				coolants,
+				Download[batchedUnitOps[[1]], {InsulatedCoolerContainer, FreezingRack, Coolant}],
+				Download[batchedUnitOps[[2]], {InsulatedCoolerContainer, FreezingRack, Coolant}],
+				Download[batchedUnitOps[[3]], {InsulatedCoolerContainer, FreezingRack, Coolant}]
+			},
+			{
+				{
+					ObjectP[Model[Container, Vessel, "2mL Mr. Frosty Container"]],(*batch1*)
+					ObjectP[Model[Container, Vessel, "5mL Mr. Frosty Container"]],(*batch2*)
+					ObjectP[Model[Container, Vessel, "2mL Mr. Frosty Container"]],(*batch3*)
+					ObjectP[Model[Container, Vessel, "5mL Mr. Frosty Container"]](*batch2*)
+				},
+				{
+					ObjectP[Model[Container, Rack, InsulatedCooler, "2mL Mr. Frosty Rack"]],(*batch1*)
+					ObjectP[Model[Container, Rack, InsulatedCooler, "5mL Mr. Frosty Rack"]],(*batch2*)
+					ObjectP[Model[Container, Rack, InsulatedCooler, "2mL Mr. Frosty Rack"]],(*batch3*)
+					ObjectP[Model[Container, Rack, InsulatedCooler, "5mL Mr. Frosty Rack"]](*batch2*)
+				},
+				{
+					ObjectP[Model[Sample, "Isopropanol"]],(*batch1*)
+					ObjectP[Model[Sample, "Isopropanol"]],(*batch2*)
+					ObjectP[Model[Sample, "Methanol"]],(*batch3*)
+					ObjectP[Model[Sample, "Isopropanol"]](*batch2*)
+				},
+				(*batch1*)
+				{
+					{ObjectP[Model[Container, Vessel, "2mL Mr. Frosty Container"]]},
+					{ObjectP[Model[Container, Rack, InsulatedCooler, "2mL Mr. Frosty Rack"]]},
+					{ObjectP[Model[Sample, "Isopropanol"]]}
+				},
+				(*batch2*)
+				{
+					{ObjectP[Model[Container, Vessel, "5mL Mr. Frosty Container"]], ObjectP[Model[Container, Vessel, "5mL Mr. Frosty Container"]]},
+					{ObjectP[Model[Container, Rack, InsulatedCooler, "5mL Mr. Frosty Rack"]], ObjectP[Model[Container, Rack, InsulatedCooler, "5mL Mr. Frosty Rack"]]},
+					{ObjectP[Model[Sample, "Isopropanol"]], ObjectP[Model[Sample, "Isopropanol"]]}
+				},
+				(*batch3*)
+				{
+					{ObjectP[Model[Container, Vessel, "2mL Mr. Frosty Container"]]},
+					{ObjectP[Model[Container, Rack, InsulatedCooler, "2mL Mr. Frosty Rack"]]},
+					{ObjectP[Model[Sample, "Methanol"]]}
+				}
+			},
+			Variables :> {protocol, insulatedCoolerContainers, freezingRacks, coolants, batchedUnitOps}
 		],
 		Test["If the FreezingStrategy is InsulatedCooler and there are multiple samples with identical freezing conditions (Coolant, FreezingRack, and Freezer), consolidate the samples into the same batch:",
 			protocol = ExperimentFreezeCells[
@@ -1451,7 +1553,7 @@ DefineTests[ExperimentFreezeCells,
 				CryoprotectionStrategy -> {None, ChangeMedia}
 			];
 			Download[protocol, FreezeCellsPelletUnitOperation],
-			Pellet[
+			Centrifuge[
 				KeyValuePattern[Sample ->  {
 					ObjectP[Object[Sample, "Suspension mammalian cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]]
 				}]
@@ -1466,7 +1568,7 @@ DefineTests[ExperimentFreezeCells,
 				NumberOfReplicates -> 2
 			];
 			Download[protocol, FreezeCellsPelletUnitOperation],
-			Pellet[
+			Centrifuge[
 				KeyValuePattern[Sample ->  {
 					ObjectP[Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]]
 				}]
@@ -1484,7 +1586,7 @@ DefineTests[ExperimentFreezeCells,
 				Aliquot -> True
 			];
 			Download[protocol, FreezeCellsPelletUnitOperation],
-			Pellet[
+			Centrifuge[
 				KeyValuePattern[Sample ->  {
 					ObjectP[Object[Sample, "Suspension mammalian cell sample 1 sharing plate 2 (Test for ExperimentFreezeCells) "<>$SessionUUID]],
 					ObjectP[Object[Sample, "Suspension mammalian cell sample 2 sharing plate 2 (Test for ExperimentFreezeCells) "<>$SessionUUID]]
@@ -1507,58 +1609,6 @@ DefineTests[ExperimentFreezeCells,
 			Variables :> {protocol, pelletUnitOps}
 		],
 		(* Tests: Resource Packets - Resource Consolidation *)
-		Test["If the FreezingStrategy is InsulatedCooler and there are multiple samples with identical freezing conditions (Coolant, FreezingRack, and Freezer), only one unique resource is generated for the FreezingRacks:",
-			protocol = ExperimentFreezeCells[
-				{
-					Object[Sample, "Suspension mammalian cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID],
-					Object[Sample, "Suspension yeast cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID],
-					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
-				},
-				FreezingStrategy -> InsulatedCooler,
-				Aliquot -> True
-			];
-			requiredResources = Download[protocol, RequiredResources];
-			freezingRacks = DeleteDuplicates @ Cases[
-				LinkedObject /@ Flatten[
-					Cases[requiredResources, {_, FreezingRacks, _, _}]
-				],
-				ObjectP[]
-			];
-			MatchQ[Length[freezingRacks], 1],
-			True,
-			Variables :> {protocol, requiredResources, freezingRacks}
-		],
-		Test["If the FreezingStrategy is InsulatedCooler and there are multiple unique sets of freezing conditions (Coolant, FreezingRack, and Freezer), a unique FreezingRacks resource is generated for each of the unique condition sets:",
-			protocol = ExperimentFreezeCells[
-				{
-					Object[Sample, "Suspension mammalian cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID],
-					Object[Sample, "Suspension yeast cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID],
-					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
-				},
-				FreezingStrategy -> InsulatedCooler,
-				Aliquot -> True,
-				Freezer -> {
-					Model[Instrument, Freezer, "Stirling Ultracold"],
-					Model[Instrument, Freezer, "Stirling Ultracold"],
-					Model[Instrument, Freezer, "Stirling UltraCold SU780UE, -20C"]
-				},
-				Coolant -> {
-					Model[Sample, "Methanol"],
-					Model[Sample, "Isopropanol"],
-					Model[Sample, "Isopropanol"]
-				}
-			];
-			requiredResources = Download[protocol, RequiredResources];
-			freezingRacks = DeleteDuplicates @ Cases[
-				LinkedObject /@ Flatten[
-					Cases[requiredResources, {_, FreezingRacks, _, _}]
-				],
-				ObjectP[]
-			];
-			MatchQ[Length[freezingRacks], 3],
-			True,
-			Variables :> {protocol, requiredResources, freezingRacks}
-		],
 		Test["If the same sample model is specified for the CryoprotectantSolution option at multiple indices, the resources generated for the CryoprotectantSolutions are consolidated:",
 			protocol = ExperimentFreezeCells[
 				{
@@ -1790,11 +1840,11 @@ DefineTests[ExperimentFreezeCells,
 					Object[Sample, "Suspension mammalian cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
 				},
 				FreezingStrategy -> InsulatedCooler,
-				InsulatedCoolerFreezingTime -> Hour,
+				InsulatedCoolerFreezingTime -> 4 Hour,
 				Aliquot -> True
 			];
 			Download[protocol, EstimatedProcessingTime],
-			RangeP[79 Minute, 81 Minute],
+			RangeP[259 Minute, 261 Minute],
 			Variables :> {protocol}
 		],
 		Test["If the FreezingStrategy is ControlledRateFreezer, the EstimatedProcessingTime field is set to 20 minutes more than the total time required by the TemperatureProfile:",
@@ -1817,17 +1867,11 @@ DefineTests[ExperimentFreezeCells,
 					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
 				},
 				FreezingStrategy -> InsulatedCooler,
-				Freezer -> {
-					Model[Instrument, Freezer, "Stirling UltraCold SU780XLE, -20C"],
-					Model[Instrument, Freezer, "Stirling UltraCold SU780UE"]
-				},
+				Freezer -> Model[Instrument, Freezer, "Stirling UltraCold SU780UE"],
 				Aliquot -> True
 			];
 			Download[protocol, InsulatedCoolerFreezingConditions],
-				{
-					ObjectP[Model[StorageCondition, "id:n0k9mG8Bv96n"]], (* Model[StorageCondition, "Freezer, Flammable"]: a -20 Celsius Freezer, Flammable materials rated *)
-					ObjectP[Model[StorageCondition, "id:xRO9n3BVOe3z"]] (* Model[StorageCondition, "Deep Freezer"]: a -80 Celsius Freezer *)
-				},
+			{ObjectP[Model[StorageCondition, "id:xRO9n3BVOe3z"]]..}, (* Model[StorageCondition, "Deep Freezer"]: a -80 Celsius Freezer *)
 			Variables :> {protocol}
 		],
 		Test["If the FreezingStrategy is ControlledRateFreezer, the InsulatedCoolerFreezingConditions field is not populated with storage condition models:",
@@ -1855,7 +1899,7 @@ DefineTests[ExperimentFreezeCells,
 			{ObjectP[Object[Protocol, FreezeCells]], SimulationP}
 		],
 		(* ===Messages=== *)
-		(* Messages: Sample Properties *)
+		(*-- INVALID INPUT TESTS --*)
 		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
 			ExperimentFreezeCells[Object[Sample, "Nonexistent sample"]],
 			$Failed,
@@ -1879,7 +1923,7 @@ DefineTests[ExperimentFreezeCells,
 		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
 			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
 				containerPackets = UploadSample[
-					Model[Container,Vessel,"50mL Tube"],
+					Model[Container, Vessel, "50mL Tube"],
 					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
 					Upload -> False,
 					SimulationMode -> True,
@@ -1902,12 +1946,17 @@ DefineTests[ExperimentFreezeCells,
 				ExperimentFreezeCells[sampleID, Simulation -> simulationToPassIn, Output -> Options]
 			],
 			{__Rule},
-			Messages :> {Warning::CellTypeNotSpecified,Warning::CultureAdhesionNotSpecified,Warning::FreezeCellsAliquotingRequired,Warning::FreezeCellsUnusedSample}
+			Messages :> {
+				Warning::CellTypeNotSpecified,
+				Warning::CultureAdhesionNotSpecified,
+				Warning::FreezeCellsAliquotingRequired,
+				Warning::FreezeCellsUnusedSample
+			}
 		],
 		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
 			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
 				containerPackets = UploadSample[
-					Model[Container,Vessel,"50mL Tube"],
+					Model[Container, Vessel, "50mL Tube"],
 					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
 					Upload -> False,
 					SimulationMode -> True,
@@ -1930,25 +1979,30 @@ DefineTests[ExperimentFreezeCells,
 				ExperimentFreezeCells[containerID, Simulation -> simulationToPassIn, Output -> Options]
 			],
 			{__Rule},
-			Messages :> {Warning::CellTypeNotSpecified,Warning::CultureAdhesionNotSpecified,Warning::FreezeCellsAliquotingRequired,Warning::FreezeCellsUnusedSample}
+			Messages :> {
+				Warning::CellTypeNotSpecified,
+				Warning::CultureAdhesionNotSpecified,
+				Warning::FreezeCellsAliquotingRequired,
+				Warning::FreezeCellsUnusedSample
+			}
 		],
-		Example[{Messages, "DiscardedSamples", "If the given samples are discarded, they cannot be incubated:"},
+		Example[{Messages, "DiscardedSample", "If the given samples are discarded, they cannot be incubated:"},
 			ExperimentFreezeCells[Object[Sample, "Test discarded sample (Test for ExperimentFreezeCells)" <> $SessionUUID]],
 			$Failed,
 			Messages :> {
-				Error::DiscardedSamples,
+				Error::DiscardedSample,
 				Error::InvalidInput
 			}
 		],
-		Example[{Messages, "DeprecatedModels", "If the given samples have deprecated models, they cannot be incubated:"},
+		Example[{Messages, "DeprecatedModel", "If the given samples have deprecated models, they cannot be incubated:"},
 			ExperimentFreezeCells[Object[Sample, "Test deprecated sample (Test for ExperimentFreezeCells)" <> $SessionUUID]],
 			$Failed,
 			Messages :> {
-				Error::DeprecatedModels,
+				Error::DeprecatedModel,
 				Error::InvalidInput
 			}
 		],
-		Example[{Messages, "DuplicatedSamples", "Throws an error if ChangeMedia CryoprotectionStrategies is applied on the same input sample:"},
+		Example[{Messages, "FreezeCellsDuplicatedSamples", "Throws an error if multiple CryoprotectionStrategies including ChangeMedia is applied on the same input sample:"},
 			ExperimentFreezeCells[
 				{
 					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID],
@@ -1959,13 +2013,73 @@ DefineTests[ExperimentFreezeCells,
 			],
 			$Failed,
 			Messages :> {
-				Error::DuplicatedSamples,
-				Error::ConflictingChangeMediaOptionsForSameContainer,
-				Error::InvalidInput,
-				Error::InvalidOption
+				Error::FreezeCellsDuplicatedSamples,
+				Error::InvalidInput
 			}
 		],
-		Example[{Messages, "DuplicatedSamples", "Throws an error if all specified options are the same for two inputs which are identical while NumberOfReplicates is Null:"},
+		Example[{Messages, "FreezeCellsDuplicatedSamples", "Throws an error if ChangeMedia CryoprotectionStrategies is applied to the input samples which are expanded by framework:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID],
+					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID],
+					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID],
+					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				CryogenicSampleContainerLabel -> {
+					"freeze cells cryogenic sample container 1 replicate 1",
+					"freeze cells cryogenic sample container 1 replicate 2",
+					"freeze cells cryogenic sample container 2 replicate 1",
+					"freeze cells cryogenic sample container 2 replicate 2"
+				},
+				NumberOfReplicates -> Null,
+				CryoprotectionStrategy -> {ChangeMedia, ChangeMedia, AddCryoprotectant, AddCryoprotectant},
+				Aliquot -> True
+			],
+			$Failed,
+			Messages :> {
+				Error::FreezeCellsDuplicatedSamples,
+				Error::InvalidInput
+			}
+		],
+		Example[{Messages, "FreezeCellsDuplicatedSamples", "Throws an error if the input samples are both expanded by framework and manually duplicated in input and associated with ChangeMedia:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID],
+					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID],
+					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID],
+					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				CryogenicSampleContainerLabel -> {
+					"freeze cells cryogenic sample container 1 replicate 1",
+					"freeze cells cryogenic sample container 1 replicate 2",
+					"freeze cells cryogenic sample container 2 replicate 1",
+					"freeze cells cryogenic sample container 2 replicate 2"
+				},
+				NumberOfReplicates -> Null,
+				CryoprotectionStrategy -> ChangeMedia,
+				Aliquot -> True
+			],
+			$Failed,
+			Messages :> {
+				Error::FreezeCellsDuplicatedSamples,
+				Error::InvalidInput
+			}
+		],
+		Example[{Messages, "FreezeCellsDuplicatedSamples", "Throws an error if both NumberOfReplicates and duplicated samples are manually selected:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID],
+					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				NumberOfReplicates -> 3
+			],
+			$Failed,
+			Messages :> {
+				Error::FreezeCellsDuplicatedSamples,
+				Error::InvalidInput
+			}
+		],
+		Example[{Messages, "FreezeCellsDuplicatedSamples", "Throws an error if all specified options are the same for two inputs which are identical while NumberOfReplicates is Null:"},
 			ExperimentFreezeCells[
 				{
 					Object[Sample, "Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID],
@@ -1981,11 +2095,11 @@ DefineTests[ExperimentFreezeCells,
 			],
 			$Failed,
 			Messages :> {
-				Error::DuplicatedSamples,
+				Error::FreezeCellsDuplicatedSamples,
 				Error::InvalidInput
 			}
 		],
-		Example[{Messages, "DuplicatedSamples", "Do not throw an error if all specified options are the same for two inputs which are expanded by framework while NumberOfReplicates is Null:"},
+		Example[{Messages, "FreezeCellsDuplicatedSamples", "Do not throw an error if all specified options are the same for two inputs which are expanded by framework while NumberOfReplicates is Null:"},
 			ExperimentFreezeCells[
 				{
 					Object[Sample, "Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID],
@@ -2001,7 +2115,7 @@ DefineTests[ExperimentFreezeCells,
 			],
 			ObjectP[Object[Protocol, FreezeCells]]
 		],
-		Example[{Messages, "DuplicatedSamples", "Throws an error if the number of appearance of the same sample with the same option is larger than NumberOfReplicates:"},
+		Example[{Messages, "FreezeCellsDuplicatedSamples", "Throws an error if the number of appearance of the same sample with the same option is larger than NumberOfReplicates:"},
 			ExperimentFreezeCells[
 				{
 					Object[Sample, "Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID],
@@ -2013,7 +2127,7 @@ DefineTests[ExperimentFreezeCells,
 			],
 			$Failed,
 			Messages :> {
-				Error::DuplicatedSamples,
+				Error::FreezeCellsDuplicatedSamples,
 				Error::InvalidInput
 			}
 		],
@@ -2042,7 +2156,7 @@ DefineTests[ExperimentFreezeCells,
 			],
 			ObjectP[Object[Protocol, FreezeCells]]
 		],
-		Example[{Messages, "FreezeCellsUnsupportedCellType", "If any input sample has a CellType other than those currently supported (Mammalian, Bacterial, and Yeast), an error is thrown:"},
+		Example[{Messages, "UnsupportedCellTypes", "If any input sample has a CellType other than those currently supported (Mammalian, Bacterial, and Yeast), an error is thrown:"},
 			ExperimentFreezeCells[
 				{
 					Object[Sample, "Suspension insect cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
@@ -2051,8 +2165,75 @@ DefineTests[ExperimentFreezeCells,
 			],
 			$Failed,
 			Messages :> {
-				Error::FreezeCellsUnsupportedCellType,
+				Error::UnsupportedCellTypes,
 				Error::InvalidInput
+			}
+		],
+		Example[{Messages, "FreezeCellsNonLiquidSamples", "If any input sample has a State other than Liquid, an error is thrown:"},
+			ExperimentFreezeCells[
+				Object[Sample, "Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID]
+			],
+			$Failed,
+			SetUp :> (Upload[<|Object -> Object[Sample, "Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID], State -> Null|>]),
+			TearDown :> (Upload[<|Object -> Object[Sample, "Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID], State -> Liquid|>]),
+			Messages :> {
+				Error::FreezeCellsNonLiquidSamples,
+				Error::InvalidInput
+			}
+		],
+		Example[{Messages, "EmptySamples", "If a sample is liquid but Volume is not populated, throws a warning:"},
+			ExperimentFreezeCells[
+				Object[Sample, "Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID]
+			],
+			ObjectP[Object[Protocol, FreezeCells]],
+			SetUp :> (Upload[<|Object -> Object[Sample, "Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID], Volume -> Null|>]),
+			TearDown :> (Upload[<|Object -> Object[Sample, "Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID], Volume -> 0.5 Milliliter|>]),
+			Messages :> {
+				Warning::EmptySamples
+			}
+		],
+		Example[{Messages, "EmptySamples", "If a sample is liquid but Volume is less than either 100 Microliter or 1% of container MaxVolume whichever is lower, throws a warning:"},
+			ExperimentFreezeCells[
+				Object[Sample, "Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID]
+			],
+			ObjectP[Object[Protocol, FreezeCells]],
+			SetUp :> (Upload[<|Object -> Object[Sample, "Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID], Volume -> 15 Microliter|>]),
+			TearDown :> (Upload[<|Object -> Object[Sample, "Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID], Volume -> 0.5 Milliliter|>]),
+			Messages :> {
+				Warning::EmptySamples
+			}
+		],
+		Example[{Messages, "InstrumentPrecision", "TemperatureProfile temperature points may only be specified in increments of 1 Celsius:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension mammalian cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				FreezingStrategy -> ControlledRateFreezer,
+				TemperatureProfile -> {{-40.2 Celsius, 55 Minute}, {-79.8 Celsius, 105.22 Minute}},
+				Aliquot -> True,
+				Output -> Options, OptionsResolverOnly -> True
+			],
+			KeyValuePattern[{
+				TemperatureProfile -> {{-40 Celsius, 55 Minute}, {-80 Celsius, 105 Minute}}
+			}],
+			Messages :> {
+				Warning::InstrumentPrecision
+			}
+		],
+		Example[{Messages, "InstrumentPrecision", "A warning is thrown if specified CellPelletIntensity has more digits than the allowed precision:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				Aliquot -> True,
+				CellPelletIntensity -> 1000.4 RPM,
+				Output -> Options, OptionsResolverOnly -> True
+			],
+			KeyValuePattern[{
+				CellPelletIntensity -> 1000 RPM
+			}],
+			Messages :> {
+				Warning::InstrumentPrecision
 			}
 		],
 		Example[{Messages, "FreezeCellsAliquotingRequired", "Throw a warning if ContainersIn is not a cryo vial, automatically set Aliquot to True:"},
@@ -2066,6 +2247,60 @@ DefineTests[ExperimentFreezeCells,
 				Warning::FreezeCellsAliquotingRequired
 			}
 		],
+		Example[{Messages, "FreezeCellsAliquotingRequired", "Throw a warning if ContainersIn has no model information, automatically set Aliquot to True:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				}
+			],
+			ObjectP[Object[Protocol, FreezeCells]],
+			SetUp :> (Upload[<|Object -> Object[Container, Vessel, "Test 2mL Tube 1 for ExperimentFreezeCells " <>$SessionUUID], Model -> Null|>]),
+			TearDown :> (Upload[<|Object -> Object[Container, Vessel, "Test 2mL Tube 1 for ExperimentFreezeCells " <>$SessionUUID], Model -> Link[Model[Container, Vessel, "id:3em6Zv9NjjN8"], Objects]|>]),
+			Messages :> {
+				Warning::FreezeCellsAliquotingRequired
+			}
+		],
+		Example[{Messages, "FreezeCellsAliquotingRequired", "Throw a warning if ContainersIn is a 5ml cryo vial and FreezingStrategy is ControlledRateFreezer, automatically set Aliquot to True:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension bacterial cell sample in 5mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				FreezingStrategy -> ControlledRateFreezer
+			],
+			ObjectP[Object[Protocol, FreezeCells]],
+			Messages :> {
+				Warning::FreezeCellsAliquotingRequired,
+				Warning::FreezeCellsUnusedSample
+			}
+		],
+		Example[{Messages, "FreezeCellsAliquotingRequired", "Throw a warning if the volume of input sample is larger than 75% of max volume, automatically set Aliquot to True:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension bacterial cell sample in 5mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				}
+			],
+			SetUp :> (Upload[<|Object -> Object[Sample, "Suspension bacterial cell sample in 5mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID], Volume -> 4 Milliliter|>]),
+			TearDown :> (Upload[<|Object ->  Object[Sample, "Suspension bacterial cell sample in 5mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID], Volume -> 2 Milliliter|>]),
+			ObjectP[Object[Protocol, FreezeCells]],
+			Messages :> {
+				Warning::FreezeCellsAliquotingRequired,
+				Warning::FreezeCellsUnusedSample
+			}
+		],
+		Example[{Messages, "FreezeCellsAliquotingRequired", "Throw a warning if the volume of input sample with cryoprotectant solution is larger than 75% of max volume, automatically set Aliquot to True:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension bacterial cell sample in 5mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				CryoprotectionStrategy -> AddCryoprotectant,
+				CryoprotectantSolutionVolume -> 2 Milliliter
+			],
+			ObjectP[Object[Protocol, FreezeCells]],
+			Messages :> {
+				Warning::FreezeCellsAliquotingRequired,
+				Warning::FreezeCellsUnusedSample
+			}
+		],
 		Example[{Messages, "CryogenicVialAliquotingRequired", "Throw an error if ContainersIn is not a cryo vial but Aliquot is set to False:"},
 			ExperimentFreezeCells[
 				{
@@ -2076,6 +2311,7 @@ DefineTests[ExperimentFreezeCells,
 			$Failed,
 			Messages :> {
 				Error::CryogenicVialAliquotingRequired,
+				Error::InvalidCryogenicSampleContainer,
 				Error::InvalidOption
 			}
 		],
@@ -2146,7 +2382,7 @@ DefineTests[ExperimentFreezeCells,
 				Warning::FreezeCellsReplicateLabels
 			}
 		],
-		Example[{Messages, "ConflictingCellType", "If a CellType is specified for any sample which does not match the CellType field in Object[Sample], a warning is thrown:"},
+		Example[{Messages, "ConflictingCellType", "If a CellType is specified for any sample which does not match the CellType field in Object[Sample] and conflicts with microbial/non-microbial, an error is thrown:"},
 			ExperimentFreezeCells[
 				{
 					Object[Sample, "Suspension yeast cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
@@ -2154,12 +2390,26 @@ DefineTests[ExperimentFreezeCells,
 				Aliquot -> True,
 				CellType -> Mammalian
 			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingCellType,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ConflictingCellType", "If a microbial CellType is specified for any sample which does not match the microbial CellType field in Object[Sample], a warning is thrown:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension yeast cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				Aliquot -> True,
+				CellType -> Bacterial
+			],
 			ObjectP[Object[Protocol, FreezeCells]],
 			Messages :> {
 				Warning::ConflictingCellType
 			}
 		],
-		Example[{Messages, "FreezeCellsUnsupportedCultureAdhesion", "If any input sample has a CultureAdhesion other than Suspension, an error is thrown:"},
+		Example[{Messages, "UnsupportedCellCultureType", "If any input sample has a CultureAdhesion other than Suspension, an error is thrown:"},
 			ExperimentFreezeCells[
 				{
 					Object[Sample, "Adherent mammalian cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
@@ -2168,8 +2418,8 @@ DefineTests[ExperimentFreezeCells,
 			],
 			$Failed,
 			Messages :> {
-				Error::FreezeCellsUnsupportedCultureAdhesion,
-				Error::InvalidInput
+				Error::UnsupportedCellCultureType,
+				Error::InvalidOption
 			}
 		],
 		Example[{Messages, "CultureAdhesionNotSpecified", "If any input sample has no specified CultureAdhesion and no information in the CultureAdhesion field of the Object[Sample], the CultureAdhesion defaults to Suspension and a warning is thrown:"},
@@ -2201,6 +2451,7 @@ DefineTests[ExperimentFreezeCells,
 			$Failed,
 			Messages :> {
 				Error::ConflictingCultureAdhesion,
+				Error::UnsupportedCellCultureType,
 				Error::InvalidOption
 			}
 		],
@@ -2208,14 +2459,80 @@ DefineTests[ExperimentFreezeCells,
 		Example[{Messages, "FreezeCellsNoCompatibleCentrifuge", "If there is no centrifuge model compatible with the given cell pelleting conditions, an error is thrown:"},
 			ExperimentFreezeCells[
 				{
-					Object[Sample, "Suspension bacterial cell sample in 5mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID]
+					Object[Sample, "Suspension bacterial cell sample in 5mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
 				},
 				CryoprotectionStrategy -> ChangeMedia,
-				Aliquot -> False
+				Aliquot -> True,
+				CryoprotectantSolutionVolume -> 1.5 Milliliter
 			],
 			$Failed,
 			Messages :> {
 				Error::FreezeCellsNoCompatibleCentrifuge,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "FreezeCellsNoCompatibleCentrifuge", "If there is no model info for the given sample container for ChangeMedia strategy, an error is thrown:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension bacterial cell sample in 5mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				CryoprotectionStrategy -> ChangeMedia,
+				Aliquot -> True
+			],
+			SetUp :> (Upload[<|Object -> Object[Container, Vessel, "Test 5mL Cryogenic Vial 0 for ExperimentFreezeCells "<>$SessionUUID], Model -> Null|>]),
+			TearDown :> (Upload[<|Object -> Object[Container, Vessel, "Test 5mL Cryogenic Vial 0 for ExperimentFreezeCells "<>$SessionUUID], Model -> Link[Model[Container, Vessel, "id:o1k9jAG1Nl57"], Objects]|>]),
+			$Failed,
+			Messages :> {
+				Error::FreezeCellsNoCompatibleCentrifuge,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "FreezeCellsNoCompatibleCentrifuge", "If there is centrifuge model compatible with the given container, but out of range of CellPelletIntensity, an error is thrown:"},
+			ExperimentFreezeCells[
+				{
+					Object[Container, Plate, "Test 24-well Plate 1 for ExperimentFreezeCells "<>$SessionUUID]
+				},
+				CryoprotectionStrategy -> ChangeMedia,
+				CellPelletIntensity -> 14000 RPM,
+				CryoprotectantSolutionVolume -> 1.5 Milliliter,
+				Aliquot -> True
+			],
+			$Failed,
+			Messages :> {
+				Error::FreezeCellsNoCompatibleCentrifuge,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "CellPelletCentrifugeIsIncompatible", "If the specified centrifuge model is not compatible with the given container, an error is thrown:"},
+			ExperimentFreezeCells[
+				{
+					Object[Container, Plate, "Test 24-well Plate 1 for ExperimentFreezeCells "<>$SessionUUID]
+				},
+				CellPelletCentrifuge -> Model[Instrument, Centrifuge, "Microfuge 16"],
+				CryoprotectionStrategy -> ChangeMedia,
+				CryoprotectantSolutionVolume -> 1.5 Milliliter,
+				Aliquot -> True
+			],
+			$Failed,
+			Messages :> {
+				Error::CellPelletCentrifugeIsIncompatible,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "CellPelletCentrifugeIsIncompatible", "If the specified centrifuge model is not compatible with the specified CellPelletIntensity, an error is thrown:"},
+			ExperimentFreezeCells[
+				{
+					Object[Container, Plate, "Test 24-well Plate 1 for ExperimentFreezeCells "<>$SessionUUID]
+				},
+				CellPelletCentrifuge -> Model[Instrument, Centrifuge, "Avanti J-15R"],
+				CryoprotectionStrategy -> ChangeMedia,
+				CellPelletIntensity -> 11000 RPM,
+				CryoprotectantSolutionVolume -> 1.5 Milliliter,
+				Aliquot -> True
+			],
+			$Failed,
+			Messages :> {
+				Error::CellPelletCentrifugeIsIncompatible,
 				Error::InvalidOption
 			}
 		],
@@ -2531,7 +2848,7 @@ DefineTests[ExperimentFreezeCells,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "ConflictingCryoprotectantSolutionTemperature", "If CryoprotectantSolutionTemperature is specified while CryoprotectionStrategy is None at all indices, an error is thrown:"},
+		Example[{Messages, "ConflictingCryoprotectantSolutionTemperature", "If CryoprotectantSolutionTemperature is specified while CryoprotectionStrategy is None at all indices, a warning is thrown:"},
 			ExperimentFreezeCells[
 				{
 					Object[Sample, "Suspension mammalian cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID]
@@ -2539,13 +2856,60 @@ DefineTests[ExperimentFreezeCells,
 				CryoprotectionStrategy -> None,
 				CryoprotectantSolutionTemperature -> Ambient
 			],
+			ObjectP[Object[Protocol, FreezeCells]],
+			Messages :> {
+				Warning::ConflictingCryoprotectantSolutionTemperature
+			}
+		],
+		Example[{Messages, "ConflictingCryoprotectionOptions", "If the samples in the same input sample container, one of them has ChangeMedia specified while the other one resolves to other strategy, throw an error:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension mammalian cell sample 1 sharing plate 2 (Test for ExperimentFreezeCells) "<>$SessionUUID],
+					Object[Sample, "Suspension mammalian cell sample 2 sharing plate 2 (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				CryoprotectionStrategy -> {Automatic, ChangeMedia},
+				CellPelletIntensity -> {Null, Automatic},
+				Aliquot -> True
+			],
 			$Failed,
 			Messages :> {
-				Error::ConflictingCryoprotectantSolutionTemperature,
+				Error::ConflictingCryoprotectionOptions,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "OveraspiratedTransfer", "If CellPelletSupernatantVolume is larger than sample volume, an error is thrown:"},
+		Example[{Messages, "ConflictingCryoprotectionOptions", "If the samples in the same input sample container, one of them resolves to ChangeMedia while the other one resolves to other strategy, throw an error:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension mammalian cell sample 1 sharing plate 2 (Test for ExperimentFreezeCells) "<>$SessionUUID],
+					Object[Sample, "Suspension mammalian cell sample 2 sharing plate 2 (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				CellPelletIntensity -> {Null, 500 GravitationalAcceleration},
+				Aliquot -> True
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingCryoprotectionOptions,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ConflictingCryoprotectionOptions", "If specified options leading to different cryoprotection strategy for the same sample, throw an error:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension mammalian cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID],
+					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				Aliquot -> True,
+				CryoprotectantSolutionTemperature -> Null,
+				CryoprotectantSolution -> {Model[Sample, "Glycerol"], Automatic},
+				CellPelletIntensity -> {Automatic, 500 GravitationalAcceleration}
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingCryoprotectionOptions,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "SupernatantOveraspiratedTransfer", "If CellPelletSupernatantVolume is larger than sample volume, an error is thrown:"},
 			ExperimentFreezeCells[
 				{
 					Object[Sample, "Suspension mammalian cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
@@ -2557,7 +2921,7 @@ DefineTests[ExperimentFreezeCells,
 			],
 			$Failed,
 			Messages :> {
-				Warning::OveraspiratedTransfer,
+				Error::SupernatantOveraspiratedTransfer,
 				Error::InvalidOption
 			}
 		],
@@ -2578,7 +2942,7 @@ DefineTests[ExperimentFreezeCells,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "CryoprotectantSolutionOverfill", "If addition of CryoprotectantSolution would result in overfilling the cell sample's current container factoring in supernatant removal, an error is thrown:"},
+		Example[{Messages, "CryoprotectantSolutionOverfill", "If the addition of CryoprotectantSolution would result in overfilling the cell sample's current container factoring in supernatant removal, an error is thrown:"},
 			ExperimentFreezeCells[
 				{
 					Object[Sample, "Suspension mammalian cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
@@ -2587,6 +2951,19 @@ DefineTests[ExperimentFreezeCells,
 				CryoprotectantSolutionVolume -> 1.6 Milliliter,
 				CellPelletSupernatantVolume -> 0.1 Milliliter,
 				NumberOfReplicates -> 2
+			],
+			$Failed,
+			Messages :> {
+				Error::CryoprotectantSolutionOverfill,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "CryoprotectantSolutionOverfill", "If the addition of CryoprotectantSolution would result in overfilling the cell sample's current container when Aliquot is False, an error is thrown:"},
+			ExperimentFreezeCells[
+				Object[Sample,
+					"Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) " <> $SessionUUID],
+				CryoprotectantSolutionVolume -> 2 Milliliter,
+				Aliquot -> False
 			],
 			$Failed,
 			Messages :> {
@@ -2820,14 +3197,14 @@ DefineTests[ExperimentFreezeCells,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "FreezeCellsConflictingHardware", "If FreezingRack is set to a rack model appropriate for a 5 Milliliter CryogenicSampleContainer while CryogenicSampleContainer is set to a container whose MaxVolume is less than 3.6 Milliliter, an error is thrown:"},
+		Example[{Messages, "FreezeCellsConflictingHardware", "If CryogenicSampleContainer is set a 5 Milliliter container while FreezingStrategy is ControlledRateFreezer, an error is thrown:"},
 			ExperimentFreezeCells[
 				{
 					Object[Sample, "Suspension mammalian cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID]
 				},
-				FreezingRack -> Model[Container, Rack, InsulatedCooler, "id:N80DNj1WLYPX"] (* Model[Container, Rack, InsulatedCooler, "5mL Mr. Frosty Rack"] *),
+				FreezingStrategy -> ControlledRateFreezer,
 				Aliquot -> True,
-				CryogenicSampleContainer -> Model[Container, Vessel, "id:vXl9j5qEnnOB"] (* Model[Container, Vessel, "2mL Cryogenic Vial"] *)
+				CryogenicSampleContainer -> Model[Container, Vessel, "id:o1k9jAG1Nl57"] (* Model[Container, Vessel, "5mL Cryogenic Vial"] *)
 			],
 			$Failed,
 			Messages :> {
@@ -2835,18 +3212,48 @@ DefineTests[ExperimentFreezeCells,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "FreezeCellsConflictingHardware", "If FreezingRack is set to a rack model appropriate for a 2 Milliliter CryogenicSampleContainer while CryogenicSampleContainer is set to a container whose MaxVolume is greater than 2 Milliliter, an error is thrown:"},
+		Example[{Messages, "ConflictingCellFreezingOptions", "If TemperatureProfile for ControlledRateFreezer is specified while CryogenicSampleContainer is set to a container whose MaxVolume is greater than 2 Milliliter, an error is thrown:"},
 			ExperimentFreezeCells[
 				{
 					Object[Sample, "Suspension mammalian cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID]
 				},
-				FreezingRack -> Model[Container, Rack, InsulatedCooler, "id:7X104vnMk93w"], (* Model[Container, Rack, InsulatedCooler, "2mL Mr. Frosty Rack"] *)
+				TemperatureProfile -> {{-40 Celsius, 55 Minute}, {-80 Celsius, 105 Minute}},
 				CryogenicSampleContainer -> Model[Container, Vessel, "id:o1k9jAG1Nl57"] (* Model[Container, Vessel, "5mL Cryogenic Vial"] *),
 				Aliquot -> True
 			],
 			$Failed,
 			Messages :> {
-				Error::FreezeCellsConflictingHardware,
+				Error::ConflictingCellFreezingOptions,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ConflictingCellFreezingOptions", "If FreezingRack is set to a rack model for controlled rate freezer while Coolant is also specified, an error is thrown:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension mammalian cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				FreezingRack -> Model[Container, Rack, "2mL Cryo Rack for VIA Freeze"],
+				Coolant -> Model[Sample, "Isopropanol"],
+				Aliquot -> True
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingCellFreezingOptions,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ConflictingCellFreezingOptions", "If FreezingRack is set to both a controlled rate freezer rack and a Mr.Frosty rack, an error is thrown:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension mammalian cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID],
+					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) " <> $SessionUUID]
+				},
+				FreezingRack -> {Model[Container, Rack, "2mL Cryo Rack for VIA Freeze"], Model[Container, Rack, InsulatedCooler, "2mL Mr. Frosty Rack"]},
+				Aliquot -> True
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingCellFreezingOptions,
 				Error::InvalidOption
 			}
 		],
@@ -2973,7 +3380,7 @@ DefineTests[ExperimentFreezeCells,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "UnsuitableCryogenicSampleContainerFootprint", "If a specified CryogenicSampleContainer does not have a CryogenicVial Footprint, an error is thrown:"},
+		Example[{Messages, "InvalidCryogenicSampleContainer", "If a specified CryogenicSampleContainer does not have a CEVial Footprint, an error is thrown:"},
 			ExperimentFreezeCells[
 				{
 					Object[Sample, "Suspension mammalian cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
@@ -2983,11 +3390,39 @@ DefineTests[ExperimentFreezeCells,
 			],
 			$Failed,
 			Messages :> {
-				Error::UnsuitableCryogenicSampleContainerFootprint,
+				Error::InvalidCryogenicSampleContainer,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "UnsuitableFreezingRack", "If a specified FreezingRack is not a rack for cryogenic samples, an error is thrown:"},
+		Example[{Messages, "InvalidCryogenicSampleContainer", "If a specified CryogenicSampleContainer does not have MinTemperature below -170C or contains glass, an error is thrown:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension mammalian cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				CryogenicSampleContainer -> Model[Container, Vessel, "2mL Glass CE Vials"],
+				Aliquot -> True
+			],
+			$Failed,
+			Messages :> {
+				Error::InvalidCryogenicSampleContainer,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "InvalidCryogenicSampleContainer", "If a specified CryogenicSampleContainer has only Snap CoverType, an error is thrown:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension mammalian cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				CryogenicSampleContainer -> Model[Container, Vessel, "10mL Flask, Reaction, 14/20 Outer Joint, Valve, Airfree, Schlenk"],
+				Aliquot -> True
+			],
+			$Failed,
+			Messages :> {
+				Error::InvalidCryogenicSampleContainer,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "InvalidFreezingRack", "If a specified FreezingRack is not a rack for cryogenic samples, an error is thrown:"},
 			ExperimentFreezeCells[
 				{
 					Object[Sample, "Suspension mammalian cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
@@ -2997,11 +3432,26 @@ DefineTests[ExperimentFreezeCells,
 			],
 			$Failed,
 			Messages :> {
-				Error::UnsuitableFreezingRack,
+				Error::InvalidFreezingRack,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "ExcessiveCryogenicSampleVolume", "If the total volume to be frozen for any cell sample exceeds the MaxVolume (5 Milliliter) of the largest Model[Container, Vessel] with a CryogenicVial Footprint, an error is thrown:"},
+		Example[{Messages, "InvalidFreezingRack", "If FreezingRack is set to a rack model appropriate for a 2 Milliliter CryogenicSampleContainer while CryogenicSampleContainer is set to a container whose MaxVolume is greater than 2 Milliliter, an error is thrown:"},
+			ExperimentFreezeCells[
+				{
+					Object[Sample, "Suspension mammalian cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID]
+				},
+				FreezingRack -> Model[Container, Rack, InsulatedCooler, "id:7X104vnMk93w"], (* Model[Container, Rack, InsulatedCooler, "2mL Mr. Frosty Rack"] *)
+				CryogenicSampleContainer -> Model[Container, Vessel, "id:o1k9jAG1Nl57"] (* Model[Container, Vessel, "5mL Cryogenic Vial"] *),
+				Aliquot -> True
+			],
+			$Failed,
+			Messages :> {
+				Error::InvalidFreezingRack,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ExcessiveCryogenicSampleVolume", "If the total volume to be frozen for any cell sample exceeds the MaxVolume (5 Milliliter) of the largest cryogenic vial models, an error is thrown:"},
 			ExperimentFreezeCells[
 				{
 					Object[Container, Vessel, "Test 250mL Erlenmeyer Flask 0 for ExperimentFreezeCells "<>$SessionUUID]
@@ -3063,18 +3513,19 @@ DefineTests[ExperimentFreezeCells,
 				},
 				Aliquot -> True,
 				FreezingStrategy -> InsulatedCooler,
-				Coolant -> {
-					Model[Sample, "Isopropanol"],
-					Model[Sample, "Isopropanol"],
-					Model[Sample, "Methanol"],
-					Model[Sample, "Methanol"]
+				CryogenicSampleContainer -> {
+					Model[Container, Vessel, "2mL Cryogenic Vial"],(*batch1*)
+					Model[Container, Vessel, "5mL Cryogenic Vial"],(*batch2*)
+					Model[Container, Vessel, "2mL Cryogenic Vial"],(*batch3*)
+					Model[Container, Vessel, "5mL Cryogenic Vial"](*batch4*)
 				},
-				Freezer -> {
-					Model[Instrument, Freezer, "Stirling UltraCold SU780UE, -20C"],
-					Model[Instrument, Freezer, "Stirling Ultracold"],
-					Model[Instrument, Freezer, "Stirling UltraCold SU780UE, -20C"],
-					Model[Instrument, Freezer, "Stirling Ultracold"]
-				}
+				Coolant -> {
+					Model[Sample, "Isopropanol"],(*batch1*)
+					Model[Sample, "Isopropanol"],(*batch2*)
+					Model[Sample, "Methanol"],(*batch3*)
+					Model[Sample, "Methanol"](*batch4*)
+				},
+				Freezer -> Model[Instrument, Freezer, "Stirling Ultracold"]
 			],
 			$Failed,
 			Messages :> {
@@ -3082,7 +3533,7 @@ DefineTests[ExperimentFreezeCells,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "FreezeCellsUnsupportedFreezerModel", "If any Model[Instrument, Freezer] is specified for the Freezer option which does not have a DefaultTemperature within 5 Celsius of either -20 Celsius or -80 Celsius, an error is thrown:"},
+		Example[{Messages, "InvalidFreezerModel", "If any Model[Instrument, Freezer] is specified for the Freezer option which does not have a DefaultTemperature within 5 Celsius of either -20 Celsius or -80 Celsius, an error is thrown:"},
 			ExperimentFreezeCells[
 				{
 					Object[Sample, "Suspension mammalian cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID],
@@ -3099,7 +3550,7 @@ DefineTests[ExperimentFreezeCells,
 			],
 			$Failed,
 			Messages :> {
-				Error::FreezeCellsUnsupportedFreezerModel,
+				Error::InvalidFreezerModel,
 				Error::InvalidOption
 			}
 		]
@@ -3115,10 +3566,10 @@ DefineTests[ExperimentFreezeCells,
 	SymbolSetUp :> Block[{$DeveloperUpload = True, $AllowPublicObjects = True},
 		Module[
 			{
-				objects, existsFilter, testBench, tube0, tube1, tube2, tube3, tube4, tube5, tube6, cryovial0, cryovial1, cryovial2,
-				cryovial3, cryovial4, flask0, plate1, plate2, deprecatedModel, sample0, sample1, sample2, sample3, sample4, sample5,
-				sample6, sample7, sample8, sample9, discardedSample, deprecatedSample, sample10, sample11, sharingPlateSample1,
-				sharingPlateSample2
+				objects, existsFilter, testBench, tube0, tube1, tube2, tube3, tube4, tube5, tube6, tube7, cryovial0, cryovial1,
+				cryovial2, cryovial3, cryovial4, cryovial5, flask0, plate1, plate2, deprecatedModel, sample0, sample1, sample2,
+				sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12, sample13, discardedSample,
+				deprecatedSample, sharingPlateSample1, sharingPlateSample2
 			},
 			$CreatedObjects = {};
 
@@ -3134,6 +3585,8 @@ DefineTests[ExperimentFreezeCells,
 				Object[Container, Vessel, "Test 2mL Tube 4 for ExperimentFreezeCells "<>$SessionUUID],
 				Object[Container, Vessel, "Test 2mL Tube 5 for ExperimentFreezeCells "<>$SessionUUID],
 				Object[Container, Vessel, "Test 2mL Tube 6 for ExperimentFreezeCells "<>$SessionUUID],
+				Object[Container, Vessel, "Test 2mL Tube 7 for ExperimentFreezeCells "<>$SessionUUID],
+				Object[Container, Vessel, "Test 1.2mL Cryogenic Vial 0 for ExperimentFreezeCells "<>$SessionUUID],
 				Object[Container, Vessel, "Test 2mL Cryogenic Vial 0 for ExperimentFreezeCells "<>$SessionUUID],
 				Object[Container, Vessel, "Test 2mL Cryogenic Vial 1 for ExperimentFreezeCells "<>$SessionUUID],
 				Object[Container, Vessel, "Test 2mL Cryogenic Vial 2 for ExperimentFreezeCells "<>$SessionUUID],
@@ -3154,8 +3607,10 @@ DefineTests[ExperimentFreezeCells,
 				Object[Sample, "Suspension mammalian cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID],
 				Object[Sample, "Suspension mammalian cell sample in 250mL Erlenmeyer Flask (Test for ExperimentFreezeCells) "<>$SessionUUID],
 				Object[Sample, "Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID],
+				Object[Sample, "Suspension bacterial cell sample in 5mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID],
 				Object[Sample, "Test discarded sample (Test for ExperimentFreezeCells)" <> $SessionUUID],
 				Object[Sample, "Test deprecated sample (Test for ExperimentFreezeCells)" <> $SessionUUID],
+				Object[Sample, "Suspension bacterial cell sample in 1.2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID],
 				Object[Sample, "Suspension bacterial cell sample in 5mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID],
 				Object[Sample, "Suspension mammalian cell sample in plate 1 (Test for ExperimentFreezeCells) "<>$SessionUUID],
 				Object[Sample, "Suspension mammalian cell sample 1 sharing plate 2 (Test for ExperimentFreezeCells) "<>$SessionUUID],
@@ -3182,7 +3637,7 @@ DefineTests[ExperimentFreezeCells,
 				|>
 			];
 
-			{tube0, tube1, tube2, tube3, tube4, tube5, tube6, cryovial0, cryovial1, cryovial2, cryovial3, cryovial4, flask0, plate1, plate2} = UploadSample[
+			{tube0, tube1, tube2, tube3, tube4, tube5, tube6, tube7, cryovial0, cryovial1, cryovial2, cryovial3, cryovial4, cryovial5, flask0, plate1, plate2} = UploadSample[
 				{
 					Model[Container, Vessel, "2mL Tube"],
 					Model[Container, Vessel, "2mL Tube"],
@@ -3191,16 +3646,18 @@ DefineTests[ExperimentFreezeCells,
 					Model[Container, Vessel, "2mL Tube"],
 					Model[Container, Vessel, "2mL Tube"],
 					Model[Container, Vessel, "2mL Tube"],
+					Model[Container, Vessel, "5mL Tube"],
 					Model[Container, Vessel, "2mL Cryogenic Vial"],
 					Model[Container, Vessel, "2mL Cryogenic Vial"],
 					Model[Container, Vessel, "2mL Cryogenic Vial"],
 					Model[Container, Vessel, "2mL Cryogenic Vial"],
 					Model[Container, Vessel, "5mL Cryogenic Vial"],
+					Model[Container, Vessel, "1.2mL Cryogenic Vial"],
 					Model[Container, Vessel, "250mL Erlenmeyer Flask"],
 					Model[Container, Plate, "24-well V-bottom 10 mL Deep Well Plate Sterile"],
 					Model[Container, Plate, "24-well V-bottom 10 mL Deep Well Plate Sterile"]
 				},
-				ConstantArray[{"Work Surface", testBench}, 15],
+				ConstantArray[{"Work Surface", testBench}, 17],
 				Name -> {
 					"Test 2mL Tube 0 for ExperimentFreezeCells "<>$SessionUUID,
 					"Test 2mL Tube 1 for ExperimentFreezeCells "<>$SessionUUID,
@@ -3209,11 +3666,13 @@ DefineTests[ExperimentFreezeCells,
 					"Test 2mL Tube 4 for ExperimentFreezeCells "<>$SessionUUID,
 					"Test 2mL Tube 5 for ExperimentFreezeCells "<>$SessionUUID,
 					"Test 2mL Tube 6 for ExperimentFreezeCells "<>$SessionUUID,
+					"Test 2mL Tube 7 for ExperimentFreezeCells "<>$SessionUUID,
 					"Test 2mL Cryogenic Vial 0 for ExperimentFreezeCells "<>$SessionUUID,
 					"Test 2mL Cryogenic Vial 1 for ExperimentFreezeCells "<>$SessionUUID,
 					"Test 2mL Cryogenic Vial 2 for ExperimentFreezeCells "<>$SessionUUID,
 					"Test 2mL Cryogenic Vial 3 for ExperimentFreezeCells "<>$SessionUUID,
 					"Test 5mL Cryogenic Vial 0 for ExperimentFreezeCells "<>$SessionUUID,
+					"Test 1.2mL Cryogenic Vial 0 for ExperimentFreezeCells "<>$SessionUUID,
 					"Test 250mL Erlenmeyer Flask 0 for ExperimentFreezeCells "<>$SessionUUID,
 					"Test 24-well Plate 1 for ExperimentFreezeCells "<>$SessionUUID,
 					"Test 24-well Plate 2 for ExperimentFreezeCells "<>$SessionUUID
@@ -3230,7 +3689,7 @@ DefineTests[ExperimentFreezeCells,
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
 				Flammable -> False,
-				MSDSRequired -> False,
+				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				CellType -> Bacterial,
 				CultureAdhesion -> Suspension,
@@ -3239,112 +3698,115 @@ DefineTests[ExperimentFreezeCells,
 
 			(* Create some samples for testing purposes *)
 			{
-				sample0,
-				sample1,
-				sample2,
-				sample3,
-				sample4,
-				sample5,
-				sample6,
-				sample7,
-				sample8,
-				sample9,
-				discardedSample,
-				deprecatedSample,
-				sample10,
-				sample11,
-				sharingPlateSample1,
-				sharingPlateSample2
+				(*1*)sample0,
+				(*2*)sample1,
+				(*3*)sample2,
+				(*4*)sample3,
+				(*5*)sample4,
+				(*6*)sample5,
+				(*7*)sample6,
+				(*8*)sample7,
+				(*9*)sample8,
+				(*10*)sample9,
+				(*11*)sample10,
+				(*12*)discardedSample,
+				(*13*)deprecatedSample,
+				(*14*)sample11,
+				(*15*)sample12,
+				(*16*)sample13,
+				(*17a*)sharingPlateSample1,
+				(*17b*)sharingPlateSample2
 			} = UploadSample[
 				{
-					{{100 VolumePercent, Model[Cell, Mammalian, "HEK293"]}},
-					{{100 VolumePercent, Model[Cell, Bacteria, "Ecoli 25922"]}},
-					{{100 VolumePercent, Model[Cell, Yeast, "Pichia Pastoris"]}},
-					{{100 MassPercent, Model[Cell, Mammalian, "HEK293"]}},
-					{{100 VolumePercent, Model[Cell, Mammalian, "Insect Cell Sf9"]}},
-					{{100 VolumePercent, Model[Molecule, "Water"]}},
-					{{100 VolumePercent, Model[Cell, Mammalian, "HEK293"]}},
-					{{100 VolumePercent, Model[Cell, Mammalian, "HEK293"]}},
-					{{100 VolumePercent, Model[Cell, Mammalian, "HEK293"]}},
-					{{100 VolumePercent, Model[Cell, Bacteria, "Ecoli 25922"]}},
-					{{100 VolumePercent, Model[Cell, Bacteria, "Ecoli 25922"]}},
-					deprecatedModel,
-					{{100 VolumePercent, Model[Cell, Bacteria, "Ecoli 25922"]}},
-					{{100 VolumePercent, Model[Cell, Bacteria, "Ecoli 25922"]}},
-					{{100 VolumePercent, Model[Cell, Bacteria, "Ecoli 25922"]}},
-					{{100 VolumePercent, Model[Cell, Bacteria, "Ecoli 25922"]}}
+					(*1*){{100 VolumePercent, Model[Cell, Mammalian, "HEK293"]}},
+					(*2*){{100 VolumePercent, Model[Cell, Bacteria, "Ecoli 25922"]}},
+					(*3*){{100 VolumePercent, Model[Cell, Yeast, "Pichia Pastoris"]}},
+					(*4*){{100 MassPercent, Model[Cell, Mammalian, "HEK293"]}},
+					(*5*){{100 VolumePercent, Model[Cell, Mammalian, "Insect Cell Sf9"]}},
+					(*6*){{100 VolumePercent, Model[Molecule, "Water"]}},
+					(*7*){{100 VolumePercent, Model[Cell, Mammalian, "HEK293"]}},
+					(*8*){{100 VolumePercent, Model[Cell, Mammalian, "HEK293"]}},
+					(*9*){{100 VolumePercent, Model[Cell, Mammalian, "HEK293"]}},
+					(*10*){{100 VolumePercent, Model[Cell, Bacteria, "Ecoli 25922"]}},
+					(*11*){{100 VolumePercent, Model[Cell, Bacteria, "Ecoli 25922"]}},
+					(*12*){{100 VolumePercent, Model[Cell, Bacteria, "Ecoli 25922"]}},
+					(*13*)deprecatedModel,
+					(*14*){{100 VolumePercent, Model[Cell, Bacteria, "Ecoli 25922"]}},
+					(*15*){{100 VolumePercent, Model[Cell, Bacteria, "Ecoli 25922"]}},
+					(*16*){{100 VolumePercent, Model[Cell, Mammalian, "HEK293"]}},
+					(*17a*){{100 VolumePercent, Model[Cell, Mammalian, "HEK293"]}},
+					(*17b*){{100 VolumePercent, Model[Cell, Mammalian, "HEK293"]}}
 				},
 				{
-					{"A1", tube0},
-					{"A1", tube1},
-					{"A1", tube2},
-					{"A1", tube3},
-					{"A1", tube4},
-					{"A1", tube5},
-					{"A1", tube6},
-					{"A1", cryovial0},
-					{"A1", flask0},
-					{"A1", cryovial1},
-					{"A1", cryovial2},
-					{"A1", cryovial3},
-					{"A1", cryovial4},
-					{"A1", plate1},
-					{"A1", plate2},
-					{"B1", plate2}
+					(*1*){"A1", tube0},
+					(*2*){"A1", tube1},
+					(*3*){"A1", tube2},
+					(*4*){"A1", tube3},
+					(*5*){"A1", tube4},
+					(*6*){"A1", tube5},
+					(*7*){"A1", tube6},
+					(*8*){"A1", cryovial0},
+					(*9*){"A1", flask0},
+					(*10*){"A1", tube7},
+					(*11*){"A1", cryovial1},
+					(*12*){"A1", cryovial2},
+					(*13*){"A1", cryovial3},
+					(*14*){"A1", cryovial4},
+					(*15*){"A1", cryovial5},
+					(*16*){"A1", plate1},
+					(*17a*){"A1", plate2},
+					(*17b*){"B1", plate2}
 				},
 				Name -> {
-					"Suspension mammalian cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID,
-					"Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID,
-					"Suspension yeast cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID,
-					"Adherent mammalian cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID,
-					"Suspension insect cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID,
-					"Suspension cell sample in 2mL Tube with no CellType information (Test for ExperimentFreezeCells) "<>$SessionUUID,
-					"Mammalian cell sample in 2mL Tube with no CultureAdhesion information (Test for ExperimentFreezeCells) "<>$SessionUUID,
-					"Suspension mammalian cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID,
-					"Suspension mammalian cell sample in 250mL Erlenmeyer Flask (Test for ExperimentFreezeCells) "<>$SessionUUID,
-					"Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID,
-					"Test discarded sample (Test for ExperimentFreezeCells)" <> $SessionUUID,
-					"Test deprecated sample (Test for ExperimentFreezeCells)" <> $SessionUUID,
-					"Suspension bacterial cell sample in 5mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID,
-					"Suspension mammalian cell sample in plate 1 (Test for ExperimentFreezeCells) "<>$SessionUUID,
-					"Suspension mammalian cell sample 1 sharing plate 2 (Test for ExperimentFreezeCells) "<>$SessionUUID,
-					"Suspension mammalian cell sample 2 sharing plate 2 (Test for ExperimentFreezeCells) "<>$SessionUUID
+					(*1*)"Suspension mammalian cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID,
+					(*2*)"Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID,
+					(*3*)"Suspension yeast cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID,
+					(*4*)"Adherent mammalian cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID,
+					(*5*)"Suspension insect cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID,
+					(*6*)"Suspension cell sample in 2mL Tube with no CellType information (Test for ExperimentFreezeCells) "<>$SessionUUID,
+					(*7*)"Mammalian cell sample in 2mL Tube with no CultureAdhesion information (Test for ExperimentFreezeCells) "<>$SessionUUID,
+					(*8*)"Suspension mammalian cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID,
+					(*9*)"Suspension mammalian cell sample in 250mL Erlenmeyer Flask (Test for ExperimentFreezeCells) "<>$SessionUUID,
+					(*10*)"Suspension bacterial cell sample in 5mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID,
+					(*11*)"Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID,
+					(*12*)"Test discarded sample (Test for ExperimentFreezeCells)" <> $SessionUUID,
+					(*13*)"Test deprecated sample (Test for ExperimentFreezeCells)" <> $SessionUUID,
+					(*14*)"Suspension bacterial cell sample in 5mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID,
+					(*15*)"Suspension bacterial cell sample in 1.2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID,
+					(*16*)"Suspension mammalian cell sample in plate 1 (Test for ExperimentFreezeCells) "<>$SessionUUID,
+					(*17a*)"Suspension mammalian cell sample 1 sharing plate 2 (Test for ExperimentFreezeCells) "<>$SessionUUID,
+					(*17b*)"Suspension mammalian cell sample 2 sharing plate 2 (Test for ExperimentFreezeCells) "<>$SessionUUID
 				},
-				InitialAmount -> {
-					0.5 Milliliter,
-					0.5 Milliliter,
-					0.5 Milliliter,
-					0.5 Milliliter,
-					0.5 Milliliter,
-					0.5 Milliliter,
-					0.5 Milliliter,
-					0.5 Milliliter,
-					100 Milliliter,
-					0.5 Milliliter,
-					0.5 Milliliter,
-					0.5 Milliliter,
-					2 Milliliter,
-					2 Milliliter,
-					1 Milliliter,
-					1 Milliliter
+				InitialAmount -> Flatten@{
+					(*1-8*)ConstantArray[0.5 Milliliter, 8],
+					(*9*)100 Milliliter,
+					(*10*)2 Milliliter,
+					(*11-13*)ConstantArray[0.5 Milliliter, 3],
+					(*14*)2 Milliliter,
+					(*15*)0.5 Milliliter,
+					(*16*)2 Milliliter,
+					(*17a*)1 Milliliter,
+					(*17b*)1 Milliliter
 				},
 				CellType -> {
-					Mammalian,
-					Bacterial,
-					Yeast,
-					Mammalian,
-					Insect,
-					Null,
-					Mammalian,
-					Mammalian,
-					Mammalian,
-					Bacterial,
-					Bacterial,
-					Bacterial,
-					Bacterial,
-					Mammalian,
-					Mammalian,
-					Mammalian
+					(*1*)Mammalian,
+					(*2*)Bacterial,
+					(*3*)Yeast,
+					(*4*)Mammalian,
+					(*5*)Insect,
+					(*6*)Null,
+					(*7*)Mammalian,
+					(*8*)Mammalian,
+					(*9*)Mammalian,
+					(*10*)Bacterial,
+					(*11*)Bacterial,
+					(*12*)Bacterial,
+					(*13*)Bacterial,
+					(*14*)Bacterial,
+					(*15*)Bacterial,
+					(*16*)Mammalian,
+					(*17a*)Mammalian,
+					(*17b*)Mammalian
 				},
 				CultureAdhesion -> {
 					Suspension,
@@ -3362,26 +3824,11 @@ DefineTests[ExperimentFreezeCells,
 					Suspension,
 					Suspension,
 					Suspension,
+					Suspension,
+					Suspension,
 					Suspension
 				},
-				Living -> {
-					True,
-					True,
-					True,
-					True,
-					True,
-					True,
-					True,
-					True,
-					True,
-					True,
-					True,
-					True,
-					True,
-					True,
-					True,
-					True
-				},
+				Living -> True,
 				State -> Liquid,
 				FastTrack -> True
 			];
@@ -3406,6 +3853,8 @@ DefineTests[ExperimentFreezeCells,
 				Object[Container, Vessel, "Test 2mL Tube 4 for ExperimentFreezeCells "<>$SessionUUID],
 				Object[Container, Vessel, "Test 2mL Tube 5 for ExperimentFreezeCells "<>$SessionUUID],
 				Object[Container, Vessel, "Test 2mL Tube 6 for ExperimentFreezeCells "<>$SessionUUID],
+				Object[Container, Vessel, "Test 2mL Tube 7 for ExperimentFreezeCells "<>$SessionUUID],
+				Object[Container, Vessel, "Test 1.2mL Cryogenic Vial 0 for ExperimentFreezeCells "<>$SessionUUID],
 				Object[Container, Vessel, "Test 2mL Cryogenic Vial 0 for ExperimentFreezeCells "<>$SessionUUID],
 				Object[Container, Vessel, "Test 2mL Cryogenic Vial 1 for ExperimentFreezeCells "<>$SessionUUID],
 				Object[Container, Vessel, "Test 2mL Cryogenic Vial 2 for ExperimentFreezeCells "<>$SessionUUID],
@@ -3426,8 +3875,10 @@ DefineTests[ExperimentFreezeCells,
 				Object[Sample, "Suspension mammalian cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID],
 				Object[Sample, "Suspension mammalian cell sample in 250mL Erlenmeyer Flask (Test for ExperimentFreezeCells) "<>$SessionUUID],
 				Object[Sample, "Suspension bacterial cell sample in 2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID],
+				Object[Sample, "Suspension bacterial cell sample in 5mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID],
 				Object[Sample, "Test discarded sample (Test for ExperimentFreezeCells)" <> $SessionUUID],
 				Object[Sample, "Test deprecated sample (Test for ExperimentFreezeCells)" <> $SessionUUID],
+				Object[Sample, "Suspension bacterial cell sample in 1.2mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID],
 				Object[Sample, "Suspension bacterial cell sample in 5mL Cryogenic Vial (Test for ExperimentFreezeCells) "<>$SessionUUID],
 				Object[Sample, "Suspension mammalian cell sample in plate 1 (Test for ExperimentFreezeCells) "<>$SessionUUID],
 				Object[Sample, "Suspension mammalian cell sample 1 sharing plate 2 (Test for ExperimentFreezeCells) "<>$SessionUUID],
@@ -3785,7 +4236,8 @@ DefineTests[ValidExperimentFreezeCellsQ,
 				{
 					Object[Sample, "Suspension mammalian cell sample in 2mL Tube (Test for ValidExperimentFreezeCellsQ) "<>$SessionUUID],
 					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ValidExperimentFreezeCellsQ) "<>$SessionUUID]
-				}
+				},
+				Aliquot -> True
 			],
 			True
 		],

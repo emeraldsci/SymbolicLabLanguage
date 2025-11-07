@@ -813,6 +813,7 @@ DefineTests[
 				Supplier->Object[Company,Supplier,"Sigma Aldrich"],
 				CountPerSample->20,
 				Name->"Aluminum Round Micro Weigh Dishes with Handle" <> $SessionUUID,
+				(* NOTE: This 'Counted' version of this model in the lab, but using it as a test 'Counted' object should be OK. *)
 				ProductModel->Model[Item, WeighBoat, "Aluminum Round Micro Weigh Dish"],
 				SampleType->Tub,
 				Packaging->Single,
@@ -1051,6 +1052,7 @@ DefineTests[
 			UploadProduct[
 				Supplier->Object[Company,Supplier,"Sigma Aldrich"],
 				Name->"Aluminum Round Micro Weigh Dishes with Handle" <> $SessionUUID,
+				(* NOTE: This 'Counted' version of this model in the lab, but using it as a test 'Counted' object should be OK. *)
 				ProductModel->Model[Item, WeighBoat, "Aluminum Round Micro Weigh Dish"],
 				SampleType->Tub,
 				Packaging->Single,
@@ -1487,7 +1489,7 @@ DefineTests[
 			Stubs:>{$AllowPublicObjects=True, $UsePyeclProductParser = False}
 		]
 	},
-	Stubs :> {findProductPriceAgain[___] := 1.0} (* If the price couldn't be found, set to 1.0 USD *),
+	Stubs :> {findProductPriceAgain[___] := 1.0, $UseAIProductParser = False} (* If the price couldn't be found, set to 1.0 USD *),
 	SetUp :> (
 		$CreatedObjects = {}
 	),
@@ -1821,7 +1823,7 @@ DefineTests[
 					EraseObject[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
 			},
-			Stubs:>{$AllowPublicObjects=True}
+			Stubs:>{$AllowPublicObjects=True, $UseAIProductParser = False}
 		],
 		Example[{Basic, "Inspect the resolved options when uploading a Object[Product] of Diethylene glycol methyl ether manually (without scraping from a product URL) :"},
 			UploadProductOptions[
@@ -1849,7 +1851,7 @@ DefineTests[
 					EraseObject[Object[Product, "Diethylene glycol methyl ether 99% (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
 			},
-			Stubs:>{$AllowPublicObjects=True}
+			Stubs:>{$AllowPublicObjects=True, $UseAIProductParser = False}
 		],
 		Example[{Options, OutputFormat, "Return the resolved options as a list:"},
 			Quiet[
@@ -1879,7 +1881,7 @@ DefineTests[
 					EraseObject[Object[Product, "Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
 			},
-			Stubs:>{$AllowPublicObjects=True}
+			Stubs:>{$AllowPublicObjects=True, $UseAIProductParser = False}
 		],
 		Example[{Options, OutputFormat, "Return the resolved options as a table:"},
 			Quiet[
@@ -1908,7 +1910,7 @@ DefineTests[
 					EraseObject[Object[Product, "Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
 			},
-			Stubs:>{$AllowPublicObjects=True}
+			Stubs:>{$AllowPublicObjects=True, $UseAIProductParser = False}
 		]
 	}
 ];
@@ -2021,7 +2023,7 @@ DefineTests[
 					EraseObject[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
 			},
-			Stubs:>{$AllowPublicObjects=True}
+			Stubs:>{$AllowPublicObjects=True, $UseAIProductParser = False}
 		],
 		Example[{Basic, "Determine if the uploaded Object[Product] of Diethylene glycol methyl ether will be valid when uploaded:"},
 			ValidUploadProductQ[
@@ -2048,7 +2050,7 @@ DefineTests[
 					EraseObject[Object[Product, "Diethylene glycol methyl ether 99% (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
 			},
-			Stubs:>{$AllowPublicObjects=True}
+			Stubs:>{$AllowPublicObjects=True, $UseAIProductParser = False}
 		],
 		Test["Determine if the uploaded Object[Product] of Diethylene glycol methyl ether will be valid when uploaded if some required options are missing:",
 			ValidUploadProductQ[
@@ -2075,7 +2077,7 @@ DefineTests[
 					EraseObject[Object[Product, "Diethylene glycol methyl ether 99% (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
 			},
-			Stubs:>{$AllowPublicObjects=True}
+			Stubs:>{$AllowPublicObjects=True, $UseAIProductParser = False}
 		],
 		Example[{Options, "Verbose", "Set Verbose->True to see all of the tests that ValidUploadProductQ is running. Valid values for this option are True|False|Failures:"},
 			Quiet[
@@ -2110,7 +2112,7 @@ DefineTests[
 					EraseObject[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
 			},
-			Stubs:>{$AllowPublicObjects=True}
+			Stubs:>{$AllowPublicObjects=True, $UseAIProductParser = False}
 		],
 		Example[{Options, "OutputFormat", "Set OutputFormat->TestSummary to have the function return a TestSummary object instead of a single Boolean. The dereferenceable keys form this object can be viewed by running Keys[...] on the test summary:"},
 			Quiet[
@@ -2145,7 +2147,7 @@ DefineTests[
 					EraseObject[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
 			},
-			Stubs:>{$AllowPublicObjects=True}
+			Stubs:>{$AllowPublicObjects=True, $UseAIProductParser = False}
 		]
 	}
 ];
@@ -2154,26 +2156,25 @@ DefineTests[
 (* ::Subsubsection::Closed:: *)
 (*parseProductURL*)
 
+(* -- Due to the quota of Gemini we should always avoid actually using AI parser. If routing to AI parser is necessary for the test, we should always stub the output -- *)
+
 DefineTests[
 	parseProductURL,
 	{
 		Test["Take a product url as input, output an association which contains information about this product:",
 			parseProductURL["https://www.fishersci.com/shop/products/falcon-50ml-conical-centrifuge-tubes-2/1443222"],
-			_Association
+			_Association,
+			Stubs :> {$UseAIProductParser = False}
 		],
 		Test["If the product url is not available (i.e., Null), return $Failed:",
 			parseProductURL[Null],
-			$Failed
+			$Failed,
+			Stubs :> {$UseAIProductParser = False}
 		],
 		Test["If use of AI parser is not allowed, parser will always return $Failed if the webpage does not belong to one of these 3 vendors: thermo, fishersci, sigma:",
 			parseProductURL["https://www.avantorsciences.com/us/en/product/10073654/sodium-hydroxide-33-ww-in-aqueous-solution-vwr-chemicals-bdh"],
 			$Failed,
 			Stubs :> {$UseAIProductParser = False}
-		],
-		Test["If use of AI parser is allowed, function is able to parse product information from more vendors:",
-			parseProductURL["https://www.avantorsciences.com/us/en/product/10073654/sodium-hydroxide-33-ww-in-aqueous-solution-vwr-chemicals-bdh"],
-			_Association,
-			Stubs :> {$UseAIProductParser = True}
 		],
 		Test["When $UseAIProductParser is set to First, function will attempt to use AI parser first; if AI parser failed, function will then try conventional parser:",
 			(* Here's how this test works: ai parser will sow "used ai parser" but return $Failed, and conventional parser will return an association *)
@@ -2193,6 +2194,7 @@ DefineTests[
 				PyECLRequest["/ccd/extract-product", ___] := <| "title" -> "50mL Tube", "price" -> 1.00 |>
 			}
 		],
+		(* Gemini endpoint won't be actually hit because we are stubbing out the PyECLRequest call *)
 		Test["When $UseAIProductParser is set to Last, function will attempt to use conventional parser first; if that failed, function will then try AI parser:",
 			Reap[
 				parseProductURL["https://www.fishersci.com/shop/products/falcon-50ml-conical-centrifuge-tubes-2/1443222"],
@@ -2208,6 +2210,7 @@ DefineTests[
 				PyECLRequest["/ccd/ai/extract-product", ___] := <| "title" -> "50mL Tube", "price" -> 1.00 |>
 			}
 		],
+		(* Gemini endpoint won't be actually hit because we are stubbing out the PyECLRequest call *)
 		Test["If the price obtained from parser is 0, function will re-attempt by directly posting the pricing api:",
 			parseProductURL["https://www.fishersci.com/shop/products/falcon-50ml-conical-centrifuge-tubes-2/1443222"],
 			AssociationMatchP[<| Name -> "50mL Tube", Price -> EqualP[100 USD] |>, AllowForeignKeys -> True],
@@ -2220,22 +2223,12 @@ DefineTests[
 		Test["Successfully parse information for a 2 ml tube product from fishersci:",
 			parseProductURL["https://www.fishersci.com/shop/products/2-0ml-micro-centrifuge-tube/50202026"],
 			_Association,
-			Stubs :> {$UseAIProductParser = Last}
-		],
-		Test["Successfully parse information for a chemical product from sigma:",
-			parseProductURL["https://www.sigmaaldrich.com/US/en/product/sial/322415?%5Cregion=US"],
-			_Association,
-			Stubs :> {$UseAIProductParser = Last}
+			Stubs :> {$UseAIProductParser = False}
 		],
 		Test["Successfully parse information for a DNA product from thermo:",
 			parseProductURL["https://www.thermofisher.com/order/catalog/product/SM0241?SID=srch-srp-SM0241"],
 			_Association,
-			Stubs :> {$UseAIProductParser = Last}
-		],
-		Test["Successfully parse information for a chemical product from avantor:",
-			parseProductURL["https://www.avantorsciences.com/us/en/product/4546820/hydrochloric-acid-370---380-finyte-jtbaker"],
-			_Association,
-			Stubs :> {$UseAIProductParser = Last}
+			Stubs :> {$UseAIProductParser = False}
 		]
 	},
 	SetUp :> {ClearMemoization[]}

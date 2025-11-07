@@ -33,6 +33,17 @@ DefineObjectType[Object[Qualification,Training,GraduatedCylinderTransfer], {
 			Description->"Specifies how much sample to transfer with each graduated cylinder.",
 			Category -> "Graduated Cylinder Skills"
 		},
+		HandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Instrument, HandlingStation],
+				Object[Instrument, HandlingStation]
+			],
+			Description -> "The environment in which transferring the test sample with various graduated cylinder happens.",
+			Category -> "General"
+		},
 		GraduatedCylindersBalance -> {
 			Format -> Single,
 			Class -> Link,
@@ -72,6 +83,47 @@ DefineObjectType[Object[Qualification,Training,GraduatedCylinderTransfer], {
 			Units -> Percent,
 			Description -> "The percentage of buffer volumes that met the qualification passing criteria for the graduated cylinder module.",
 			Category -> "Experimental Results"
+		},
+		WeightStabilityDurations -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Second],
+			Units -> Second,
+			Description -> "The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable and captured when measuring the weight of the samples of interest.",
+			Category -> "General"
+		},
+		MaxWeightVariations -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Milligram],
+			Units -> Milligram,
+			Description -> "The max allowed amplitude the balance readings can fluctuate with for a duration defined by WeightStabilityDuration before being considered stable and captured when measuring the weight of the samples of interest.",
+			Category -> "General"
+		},
+		TareWeightStabilityDurations -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Second],
+			Units -> Second,
+			Description -> "The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable and captured when measuring the weight of the empty balance and containers.",
+			Category -> "General"
+		},
+		MaxTareWeightVariations -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Milligram],
+			Units -> Milligram,
+			Description -> "The max allowed amplitude the balance readings can fluctuate with for a duration defined by WeightStabilityDuration before being considered stable and captured when measuring the weight of the empty balance and containers.",
+			Category -> "General"
+		},
+		GraduatedCylinderImages -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "Images that imitate what the graduated cylinders should look like when filled to the target volumes.",
+			Category -> "General",
+			Developer -> True
 		}
 	}
 }

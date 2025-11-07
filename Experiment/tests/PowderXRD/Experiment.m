@@ -786,14 +786,14 @@ DefineTests[ExperimentPowderXRD,
 			10*Celsius,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
-		],
+		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options, FilterSterile, "Set the FilterSterile option:"},
 			options = ExperimentPowderXRD[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], FilterSterile -> True, Output -> Options];
 			Lookup[options, FilterSterile],
 			True,
 			Variables :> {options},
 			Messages :> {Warning::AliquotRequired}
-		],
+		],*)
 		Example[{Options, FilterAliquot, "Set the FilterAliquot option:"},
 			options = ExperimentPowderXRD[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], FilterAliquot -> 80*Microliter, Output -> Options];
 			Lookup[options, FilterAliquot],

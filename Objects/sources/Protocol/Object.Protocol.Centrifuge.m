@@ -130,6 +130,14 @@ DefineObjectType[Object[Protocol, Centrifuge], {
 			IndexMatching->CounterbalanceContainers,
 			Developer->True
 		},
+		BalanceLog -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data, Weight],
+			Description -> "The trace of balance reading vs date recorded from the beginning of first weight measurement to the very last weight measurement.",
+			Category -> "Centrifuge Balancing"
+		},
 		CounterbalancePrepManipulation->{
 			Format->Multiple,
 			Class->Link,
@@ -528,6 +536,22 @@ DefineObjectType[Object[Protocol, Centrifuge], {
 			Description->"For each member of WorkingContainers, the appearance taken immediately after centrifuge is done.",
 			Category->"Sample Post-Processing",
 			Developer->True
+		},
+		WeightStabilityDuration -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Second],
+			Units -> Second,
+			Description -> "The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable and measured.",
+			Category -> "General"
+		},
+		MaxWeightVariation -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Milligram],
+			Units -> Milligram,
+			Description -> "The max allowed amplitude the balance readings can fluctuate with for a duration defined by WeightStabilityDuration before being considered stable and measured.",
+			Category -> "General"
 		}
 	}
 }];

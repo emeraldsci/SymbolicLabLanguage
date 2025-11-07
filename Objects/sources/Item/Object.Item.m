@@ -277,7 +277,10 @@ DefineObjectType[Object[Item], {
       Format->Multiple,
       Class->Link,
       Pattern:>_Link,
-      Relation->Object[Report, Certificate][ItemCertified],
+      Relation->Alternatives[
+		  Object[Report, Certificate][ItemCertified],
+		  Object[Report, Certificate][ItemsCertified]
+	  ],
       Description->"The quality assurance documentation and data for this item.",
       Category->"Quality Assurance"
     },

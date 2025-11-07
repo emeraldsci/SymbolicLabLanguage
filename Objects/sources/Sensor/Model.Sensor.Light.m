@@ -13,7 +13,7 @@ DefineObjectType[Model[Sensor, Light], {
     MaxLux -> {
       Format -> Single,
       Class -> Real,
-      Pattern :> GreaterEqualP[0*Lux],
+      Pattern :> GreaterEqualP[0*Lux]|GreaterEqualP[0*Watts/Meter^2],
       Units -> Lux,
       Description -> "Maximum light that can be reliably read by this model of sensor.",
       Category -> "Sensor Information",
@@ -22,7 +22,7 @@ DefineObjectType[Model[Sensor, Light], {
     MinLux -> {
       Format -> Single,
       Class -> Real,
-      Pattern :> UnitsP[Lux],
+      Pattern :> UnitsP[Lux]|UnitsP[Watts/Meter^2],
       Units -> Lux,
       Description -> "Minimum light that can be reliably read by this model of sensor.",
       Category -> "Sensor Information",
@@ -31,7 +31,7 @@ DefineObjectType[Model[Sensor, Light], {
     Resolution -> {
       Format -> Single,
       Class -> Real,
-      Pattern :> GreaterP[0*Lux],
+      Pattern :> GreaterP[0*Lux]|GreaterP[0*Watts/Meter^2],
       Units -> Lux,
       Description -> "This is the smallest change in light that corresponds to a change in displayed value. Also known as readability, increment, scale division.",
       Category -> "Sensor Information"

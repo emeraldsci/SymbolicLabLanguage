@@ -48,8 +48,8 @@ DefineObjectType[Object[Container, Deck], {
 				Object[Instrument, SupercriticalFluidChromatography][WashBufferDeck],
 				Object[Instrument, PlateWasher][BufferDeck],
 				Object[Instrument, ColonyHandler][ColonyHandlerDeck],
-				Object[Instrument, KarlFischerTitrator][AutosamplerDeck]
-
+				Object[Instrument, KarlFischerTitrator][AutosamplerDeck],
+				Object[Instrument, DissolutionApparatus][AutosamplerDeck]
 			],
 			Description -> "Instruments that are using or associated with this deck.",
 			Category -> "Instrument Specifications",

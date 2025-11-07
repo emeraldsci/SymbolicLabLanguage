@@ -47,15 +47,15 @@ DefineOptions[ExperimentCapillaryGelElectrophoresisSDS,
 			Category->"General"
 		},
 		{
-			OptionName->SampleTemperature,
-			Default->10*Celsius,
-			Description->"The sample tray temperature at which samples are maintained while awaiting injection.",
-			AllowNull->False,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>Alternatives[Ambient,4*Celsius,10*Celsius,15*Celsius]
+			OptionName -> SampleTemperature,
+			Default -> Ambient,
+			Description -> "The temperature at which samples are maintained between sample preparation steps (SDS/reference/reagent mixing and optional denaturing) and while awaiting injection.",
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> Alternatives[Ambient, 4*Celsius, 10*Celsius, 15*Celsius]
 			],
-			Category->"General"
+			Category -> "General"
 		},
 		{
 			OptionName->InjectionTable,

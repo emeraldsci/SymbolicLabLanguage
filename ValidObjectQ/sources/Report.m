@@ -195,25 +195,17 @@ validReportCertificateQTests[packet:PacketP[Object[Report,Certificate]]]:= {
 	(* Ensure that the batch number is unique for the certificate *)
 	UniqueFieldTest[packet, BatchNumber],
 
-	(* If the object is an item or part then batch number is required *)
-	Test[
-		If[NotNullQ[(ItemCertified|PartCertified)],
-			NotNullQ[BatchNumber],
-			True
-		]
-	],
-
 	(** All receiving batch information fields required by the certified object's model are populated **)
 		(* Object[Item] *)
 	RequiredTogetherTest[
-		SafeEvaluate[{Download[Lookup[packet,ItemCertified],Model[ReceivingBatchInformation]]},
-			Download[Lookup[packet,ItemCertified],Model[ReceivingBatchInformation]]
+		SafeEvaluate[{Download[Lookup[packet,ItemsCertified],Model[ReceivingBatchInformation]]},
+			Download[Lookup[packet,ItemsCertified],Model[ReceivingBatchInformation]]
 		]
 	],
 		(* Object[Part] *)
 	RequiredTogetherTest[
-		SafeEvaluate[{Download[Lookup[packet,PartCertified],Model[ReceivingBatchInformation]]},
-			Download[Lookup[packet,PartCertified],Model[ReceivingBatchInformation]]
+		SafeEvaluate[{Download[Lookup[packet,PartsCertified],Model[ReceivingBatchInformation]]},
+			Download[Lookup[packet,PartsCertified],Model[ReceivingBatchInformation]]
 		]
 	]
 };
@@ -223,30 +215,31 @@ validReportCertificateQTests[packet:PacketP[Object[Report,Certificate]]]:= {
 
 validReportCertificateAnalysisQTests[packet:PacketP[Object[Report,Certificate,Analysis]]]:={
 	(* not null general fields*)
-	NotNullFieldTest[packet,{MaterialCertified, BatchNumber}],
+	NotNullFieldTest[packet,{MaterialsCertified, BatchNumber}],
 
 	(* Ensure that Material Certified is unique *)
-	UniqueFieldTest[MaterialCertified],
+	UniqueFieldTest[MaterialsCertified],
 
 	(* Don't use Certificate of Analysis for instruments or sensors*)
 	NullFieldTest[packet,{InstrumentCertified, SensorCertified}],
 
 	(* Only one object type should be informed *)
-	UniquelyInformedTest[packet,{ItemCertified, PartCertified, MaterialCertified}],
+	UniquelyInformedTest[packet,{ItemsCertified, PartsCertified, MaterialsCertified}],
 
-	(* If MaterialCertified is Null then DownstreamSamplesTransferred should also be Null *)
+	(* If MaterialsCertified is Null then DownstreamSamplesCertified should also be Null *)
 	Test[
-		If[NullQ[Lookup[packet,MaterialCertified]],
-			NullQ[Lookup[packet,DownstreamSamplesTransferred]],
+		If[MatchQ[Lookup[packet,MaterialsCertified], {}],
+			MatchQ[Lookup[packet,DownstreamSamplesCertified], {}],
+			True
+		],
 		True
-		]
 	],
 
 	(** All receiving batch information fields required by the certified sample's model are populated **)
 	(* Object[Sample] *)
 	RequiredTogetherTest[
-		SafeEvaluate[{Download[Lookup[packet,MaterialCertified],Model[ReceivingBatchInformation]]},
-		Download[Lookup[packet,MaterialCertified],Model[ReceivingBatchInformation]]
+		SafeEvaluate[{Download[Lookup[packet, MaterialsCertified], Model[ReceivingBatchInformation]]},
+			Download[Lookup[packet, MaterialsCertified], Model[ReceivingBatchInformation]]
 		]
 	]
 };
@@ -260,7 +253,7 @@ validReportCertificateCalibrationQTests[packet:PacketP[Object[Report,Certificate
 	NotNullFieldTest[ModelNumber],
 
 	(* Ensure only one object type field is populated *)
-	UniquelyInformedTest[packet,{ItemCertified, PartCertified, SensorCertified, InstrumentCertified}],
+	UniquelyInformedTest[packet,{ItemsCertified, PartsCertified, SensorCertified, InstrumentCertified}],
 
 	(* If an instrument was calibrated, its serial and model number should be included. *)
 	RequiredTogetherTest[packet,{InstrumentCertified, SerialNumber, ModelNumber}],
@@ -283,7 +276,7 @@ validReportCertificateCalibrationQTests[packet:PacketP[Object[Report,Certificate
 validReportCertificateInstrumentValidationQTests[packet:PacketP[Object[Report,Certificate,InstrumentValidation]]]:={
 
 	(* Only an instrument should be certified. Batch number should be Null *)
-	NullFieldTest[packet,{ItemCertified,PartCertified,BatchNumber}],
+	NullFieldTest[packet,{ItemsCertified,PartsCertified,BatchNumber}],
 
 	(* The Instrument's model and serial number should be populated *)
 	NotNullFieldTest[packet, {SerialNumber,ModelNumber}]

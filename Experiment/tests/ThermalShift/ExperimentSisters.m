@@ -130,7 +130,7 @@ DefineTests[ExperimentThermalShiftPreview,
           ShelfLife->{1 Year,1 Year},
           UnsealedShelfLife->{2 Week,2 Week},
           DefaultStorageCondition->{Model[StorageCondition,"Refrigerator"],Model[StorageCondition,"Refrigerator"]},
-          MSDSRequired->{False,False},
+          MSDSFile -> {NotApplicable, NotApplicable},
           BiosafetyLevel->{"BSL-1","BSL-1"},
           State->{Liquid,Liquid}
         ];
@@ -339,7 +339,7 @@ DefineTests[ExperimentThermalShiftOptions,
           ShelfLife->{1 Year,1 Year},
           UnsealedShelfLife->{2 Week,2 Week},
           DefaultStorageCondition->{Model[StorageCondition,"Refrigerator"],Model[StorageCondition,"Refrigerator"]},
-          MSDSRequired->{False,False},
+          MSDSFile -> {NotApplicable, NotApplicable},
           BiosafetyLevel->{"BSL-1","BSL-1"},
           State->{Liquid,Liquid}
         ];
@@ -559,7 +559,7 @@ DefineTests[ValidExperimentThermalShiftQ,
           ShelfLife->{1 Year,1 Year},
           UnsealedShelfLife->{2 Week,2 Week},
           DefaultStorageCondition->{Model[StorageCondition,"Refrigerator"],Model[StorageCondition,"Refrigerator"]},
-          MSDSRequired->{False,False},
+          MSDSFile -> {NotApplicable, NotApplicable},
           BiosafetyLevel->{"BSL-1","BSL-1"},
           State->{Liquid,Liquid}
         ];

@@ -2003,314 +2003,325 @@ DefineTests[ClearSampleStorageSchedule,
 
 
 DefineTests[DiscardSamples,
-    {
-        Example[{Basic, "Mark a sample for disposal; it and its container will be discarded once they are not in use by any experiment:"},
-            DiscardSamples[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]],
-            {OrderlessPatternSequence[ObjectReferenceP[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]]]}
-        ],
-        Example[{Basic, "Mark a plate for disposal; all samples within the container will be discarded:"},
-            DiscardSamples[Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID]],
-            {OrderlessPatternSequence[ObjectReferenceP[Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]]]}
-        ],
-        Example[{Basic, "Mark multiple samples for disposal:"},
-            DiscardSamples[{Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID], Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]}],
-            {OrderlessPatternSequence[
-                ObjectReferenceP[Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID]],
-                ObjectReferenceP[Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]]
-            ]}
-        ],
-        Example[{Additional, "Mark multiple containers for disposal; all samples within the containers are also marked for disposal:"},
-            DiscardSamples[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]}],
-            {
-                OrderlessPatternSequence[
-                    ObjectReferenceP[Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]],
-                    ObjectReferenceP[Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]],
-                    ObjectReferenceP[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]]
-                ]
-            }
-        ],
-        Example[{Additional, "Mark a mixed list of samples and containers for disposal:"},
-            DiscardSamples[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID], Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]}],
-            {OrderlessPatternSequence[
-                ObjectReferenceP[Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]],
-                ObjectReferenceP[Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]],
-                ObjectReferenceP[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]]
-            ]}
-        ],
-        Example[{Additional, "Marking a sample for disposal marks both the sample and its container as AwaitingDisposal:"},
-            DiscardSamples[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]];
-            Download[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID], {AwaitingDisposal, Container[AwaitingDisposal]}],
-            {True, True}
-        ],
-        Example[{Options, DiscardContainer, "Indicate that the container of a fluid sample should be thrown out:"},
-            DiscardSamples[Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID], DiscardContainer -> True];
-            Download[Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID], {Container[AwaitingDisposal], Container[Reusable], Container[Model][Reusable]}],
-            {True, False, True}
-        ],
-        Example[{Options, DiscardContainer, "Normally, if a container is marked as reusable in its Model, discarding it will direct it to be dishwashed and restocked:"},
-            DiscardSamples[Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID]];
-            Download[Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID], {AwaitingDisposal, Reusable, Model[Reusable]}],
-            {True, True, True}
-        ],
-        Example[{Options, DiscardContainer, "Set DiscardContainer to True to indicate that a normally reusable container should no longer be considered reusable, and be thrown out instead of dishwashed:"},
-            DiscardSamples[Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID], DiscardContainer -> True];
-            Download[Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID], {AwaitingDisposal, Reusable, Model[Reusable]}],
-            {True, False, True}
-        ],
-        Example[{Options, DiscardContainer, "If a container is marked as non-reusable, discarding it will direct it to be thrown out:"},
-            {
-                Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID], Model[Reusable]],
-                DiscardSamples[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]]
-            },
-            {False, {ObjectReferenceP[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]]}}
-        ],
-        Example[{Options, DiscardContainer, "Non-reusable containers must always be thrown out; DiscardContainer cannot be set to False:"},
-            {
-                Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID], Model[Reusable]],
-                DiscardSamples[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID], DiscardContainer -> False]
-            },
-            {False, $Failed},
-            Messages :> {Error::ContainerDiscardRequired, Error::InvalidOption}
-        ],
-        Example[{Messages, "InputLengthMismatch", "If DiscardContainer is provided as a list, the list must have the same length as the input list:"},
-            DiscardSamples[{Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID]}, DiscardContainer -> {True, Automatic}],
-            $Failed,
-            Messages :> {Error::InputLengthMismatch}
-        ],
-        Example[{Messages, "ItemsContainerless", "The DiscardContainer option will be ignored for items that are not moved around the lab inside an associated container:"},
-            DiscardSamples[Object[Item, Column, "Column to Dispose for DiscardSamples tests" <> $SessionUUID], DiscardContainer -> True],
-            {ObjectReferenceP[Object[Item, Column, "Column to Dispose for DiscardSamples tests" <> $SessionUUID]]},
-            Messages :> {Warning::ItemsContainerless}
-        ],
-        Example[{Messages, "ContainerDiscardRequired", "Samples in non-reusable containers must be discarded along with their containers; DiscardContainer cannot be set to False:"},
-            DiscardSamples[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID], DiscardContainer -> False],
-            $Failed,
-            Messages :> {Error::ContainerDiscardRequired, Error::InvalidOption}
-        ],
-        Example[{Messages, "DiscardedInputs", "Samples already discarded cannot be discarded again:"},
-            DiscardSamples[Object[Sample, "Discarded Water in 2mL Tube"]],
-            $Failed,
-            Messages :> {Error::DiscardedInputs, Error::InvalidInput}
-        ],
-        Example[{Messages, "OutstandingResources", "A warning is thrown is samples with outstanding resources are discarded; the samples will not actually be discarded until the outstanding resources are fulfilled:"},
-            DiscardSamples[Object[Sample, "Water in 2mL Tube with Outstanding Resource"]],
-            {OrderlessPatternSequence[ObjectReferenceP[Object[Sample, "Water in 2mL Tube with Outstanding Resource"]], ObjectReferenceP[Object[Container, Vessel, "id:n0k9mG8AmaG4"]]]},
-            Messages :> {Warning::OutstandingResources}
-        ],
-        Example[{Messages, "ConflictingConditionsInContainer", "If not all samples within the same container are provided, an error is thrown, as partial containers cannot be discarded:"},
-            DiscardSamples[Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]],
-            $Failed,
-            Messages :> {Error::ConflictingConditionsInContainer, Error::InvalidInput}
-        ],
-        (****************************************TESTS ********************************)
-        Test["When Output -> Tests, return a list of tests checking all messages:",
-            DiscardSamples[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]}, Output -> Tests],
-            {__EmeraldTest}
-        ],
-        Test["When Output -> Preview, return Null:",
-            DiscardSamples[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]}, Output -> Preview],
-            Null
-        ],
-        Test["When Output -> Options, return a list of non-hidden options:",
-            DiscardSamples[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]}, Output -> Options],
-            {DiscardContainer -> True}
-        ],
-        Test["When Output -> {Tests, Preview, Options, Result}, return a list all those outputs in that order:",
-            DiscardSamples[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]}, Output -> {Tests, Preview, Options, Result}],
-            {
-                {__EmeraldTest},
-                Null,
-                {DiscardContainer -> True},
-                {
-                    OrderlessPatternSequence[
-                        ObjectReferenceP[Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]],
-                        ObjectReferenceP[Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]],
-                        ObjectReferenceP[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]]
-                    ]
-                }
-            }
-        ],
-        Test["Specify a container and its contents and DiscardSamples should still work:",
-            DiscardSamples[{Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID], Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]}],
-            {OrderlessPatternSequence[ObjectReferenceP[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]]]}
-        ],
-        Test["Specify a SelfContainedSample to test DiscardSamples:",
-            DiscardSamples[Object[Item, Needle, "Test Needle to test DiscardSamples for DiscardSamples tests" <> $SessionUUID]],
-            {OrderlessPatternSequence[ObjectReferenceP[Object[Item, Needle, "Test Needle to test DiscardSamples for DiscardSamples tests" <> $SessionUUID]]]}
-        ]
-    },
-    SetUp :> (
-        Upload[{
-            <|
-                Object -> Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID],
-                StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-                Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
-                AwaitingDisposal -> Null,
-                Replace[DisposalLog] -> {}
-            |>,
-            <|
-                Object -> Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID],
-                StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-                Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
-                AwaitingDisposal -> Null,
-                Replace[DisposalLog] -> {}
-            |>,
-            <|
-                Object -> Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID],
-                StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-                Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
-                AwaitingDisposal -> Null,
-                Replace[DisposalLog] -> {}
-            |>,
-            <|
-                Object -> Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID],
-                StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-                Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
-                AwaitingDisposal -> Null,
-                Replace[DisposalLog] -> {}
-            |>,
-            <|
-                Object -> Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID],
-                StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-                Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
-                AwaitingDisposal -> Null,
-                Replace[DisposalLog] -> {}
-            |>,
-            <|
-                Object -> Object[Item, Column, "Column to Dispose for DiscardSamples tests" <> $SessionUUID],
-                StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-                Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
-                AwaitingDisposal -> Null,
-                Replace[DisposalLog] -> {}
-            |>,
-            <|
-                Object -> Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID],
-                StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-                Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
-                AwaitingDisposal -> Null,
-                Replace[DisposalLog] -> {},
-                Reusable -> True
-            |>,
-            <|
-                Object -> Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID],
-                StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-                Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
-                AwaitingDisposal -> Null,
-                Replace[DisposalLog] -> {}
-            |>,
-            <|
-                Object -> Object[Item, Needle, "Test Needle to test DiscardSamples for DiscardSamples tests" <> $SessionUUID],
-                StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-                Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
-                AwaitingDisposal -> Null,
-                Replace[DisposalLog] -> {}
-            |>
+	{
+		Example[{Basic, "Mark a sample for disposal; it and its container will be discarded once they are not in use by any experiment:"},
+			DiscardSamples[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]],
+			{OrderlessPatternSequence[ObjectReferenceP[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]]]}
+		],
+		Example[{Basic, "Mark a plate for disposal; all samples within the container will be discarded:"},
+			DiscardSamples[Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID]],
+			{OrderlessPatternSequence[ObjectReferenceP[Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]]]}
+		],
+		Example[{Basic, "Mark multiple samples for disposal:"},
+			DiscardSamples[{Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID], Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]}],
+			{OrderlessPatternSequence[
+				ObjectReferenceP[Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID]],
+				ObjectReferenceP[Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]]
+			]}
+		],
+		Example[{Additional, "Mark multiple containers for disposal; all samples within the containers are also marked for disposal:"},
+			DiscardSamples[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]}],
+			{
+				OrderlessPatternSequence[
+					ObjectReferenceP[Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]],
+					ObjectReferenceP[Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]],
+					ObjectReferenceP[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]]
+				]
+			}
+		],
+		Example[{Additional, "Mark a mixed list of samples and containers for disposal:"},
+			DiscardSamples[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID], Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]}],
+			{OrderlessPatternSequence[
+				ObjectReferenceP[Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]],
+				ObjectReferenceP[Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]],
+				ObjectReferenceP[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]]
+			]}
+		],
+		Example[{Additional, "Marking a sample for disposal marks both the sample and its container as AwaitingDisposal:"},
+			DiscardSamples[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]];
+			Download[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID], {AwaitingDisposal, Container[AwaitingDisposal]}],
+			{True, True}
+		],
+		Example[{Additional, "Parts can also be marked for disposal:"},
+			DiscardSamples[Object[Part, Funnel, "Test Funnel for DiscardSamples tests" <> $SessionUUID]];
+			Download[Object[Part, Funnel, "Test Funnel for DiscardSamples tests" <> $SessionUUID], {AwaitingDisposal, AwaitingStorageUpdate, Container[AwaitingDisposal]}],
+			{True, True,Null}
+		],
+		Example[{Options, DiscardContainer, "Indicate that the container of a fluid sample should be thrown out:"},
+			DiscardSamples[Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID], DiscardContainer -> True];
+			Download[Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID], {Container[AwaitingDisposal], Container[Reusable], Container[Model][Reusable]}],
+			{True, False, True}
+		],
+		Example[{Options, DiscardContainer, "Normally, if a container is marked as reusable in its Model, discarding it will direct it to be dishwashed and restocked:"},
+			DiscardSamples[Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID]];
+			Download[Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID], {AwaitingDisposal, Reusable, Model[Reusable]}],
+			{True, True, True}
+		],
+		Example[{Options, DiscardContainer, "Set DiscardContainer to True to indicate that a normally reusable container should no longer be considered reusable, and be thrown out instead of dishwashed:"},
+			DiscardSamples[Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID], DiscardContainer -> True];
+			Download[Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID], {AwaitingDisposal, Reusable, Model[Reusable]}],
+			{True, False, True}
+		],
+		Example[{Options, DiscardContainer, "If a container is marked as non-reusable, discarding it will direct it to be thrown out:"},
+			{
+				Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID], Model[Reusable]],
+				DiscardSamples[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]]
+			},
+			{False, {ObjectReferenceP[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]]}}
+		],
+		Example[{Options, DiscardContainer, "Non-reusable containers must always be thrown out; DiscardContainer cannot be set to False:"},
+			{
+				Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID], Model[Reusable]],
+				DiscardSamples[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID], DiscardContainer -> False]
+			},
+			{False, $Failed},
+			Messages :> {Error::ContainerDiscardRequired, Error::InvalidOption}
+		],
+		Example[{Messages, "InputLengthMismatch", "If DiscardContainer is provided as a list, the list must have the same length as the input list:"},
+			DiscardSamples[{Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID]}, DiscardContainer -> {True, Automatic}],
+			$Failed,
+			Messages :> {Error::InputLengthMismatch}
+		],
+		Example[{Messages, "ItemsContainerless", "The DiscardContainer option will be ignored for items that are not moved around the lab inside an associated container:"},
+			DiscardSamples[Object[Item, Column, "Column to Dispose for DiscardSamples tests" <> $SessionUUID], DiscardContainer -> True],
+			{ObjectReferenceP[Object[Item, Column, "Column to Dispose for DiscardSamples tests" <> $SessionUUID]]},
+			Messages :> {Warning::ItemsContainerless}
+		],
+		Example[{Messages, "ContainerDiscardRequired", "Samples in non-reusable containers must be discarded along with their containers; DiscardContainer cannot be set to False:"},
+			DiscardSamples[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID], DiscardContainer -> False],
+			$Failed,
+			Messages :> {Error::ContainerDiscardRequired, Error::InvalidOption}
+		],
+		Example[{Messages, "DiscardedInputs", "Samples already discarded cannot be discarded again:"},
+			DiscardSamples[Object[Sample, "Discarded Water in 2mL Tube"]],
+			$Failed,
+			Messages :> {Error::DiscardedInputs, Error::InvalidInput}
+		],
+		Example[{Messages, "OutstandingResources", "A warning is thrown is samples with outstanding resources are discarded; the samples will not actually be discarded until the outstanding resources are fulfilled:"},
+			DiscardSamples[Object[Sample, "Water in 2mL Tube with Outstanding Resource"]],
+			{OrderlessPatternSequence[ObjectReferenceP[Object[Sample, "Water in 2mL Tube with Outstanding Resource"]], ObjectReferenceP[Object[Container, Vessel, "id:n0k9mG8AmaG4"]]]},
+			Messages :> {Warning::OutstandingResources}
+		],
+		Example[{Messages, "ConflictingConditionsInContainer", "If not all samples within the same container are provided, an error is thrown, as partial containers cannot be discarded:"},
+			DiscardSamples[Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]],
+			$Failed,
+			Messages :> {Error::ConflictingConditionsInContainer, Error::InvalidInput}
+		],
+		(****************************************TESTS ********************************)
+		Test["When Output -> Tests, return a list of tests checking all messages:",
+			DiscardSamples[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]}, Output -> Tests],
+			{__EmeraldTest}
+		],
+		Test["When Output -> Preview, return Null:",
+			DiscardSamples[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]}, Output -> Preview],
+			Null
+		],
+		Test["When Output -> Options, return a list of non-hidden options:",
+			DiscardSamples[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]}, Output -> Options],
+			{DiscardContainer -> True}
+		],
+		Test["When Output -> {Tests, Preview, Options, Result}, return a list all those outputs in that order:",
+			DiscardSamples[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]}, Output -> {Tests, Preview, Options, Result}],
+			{
+				{__EmeraldTest},
+				Null,
+				{DiscardContainer -> True},
+				{
+					OrderlessPatternSequence[
+						ObjectReferenceP[Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]],
+						ObjectReferenceP[Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]],
+						ObjectReferenceP[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]]
+					]
+				}
+			}
+		],
+		Test["Specify a container and its contents and DiscardSamples should still work:",
+			DiscardSamples[{Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID], Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]}],
+			{OrderlessPatternSequence[ObjectReferenceP[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]]]}
+		],
+		Test["Specify a SelfContainedSample to test DiscardSamples:",
+			DiscardSamples[Object[Item, Needle, "Test Needle to test DiscardSamples for DiscardSamples tests" <> $SessionUUID]],
+			{OrderlessPatternSequence[ObjectReferenceP[Object[Item, Needle, "Test Needle to test DiscardSamples for DiscardSamples tests" <> $SessionUUID]]]}
+		]
+	},
+	SetUp :> (
+		Upload[{
+			<|
+				Object -> Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID],
+				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+				Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
+				AwaitingDisposal -> Null,
+				Replace[DisposalLog] -> {}
+			|>,
+			<|
+				Object -> Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID],
+				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+				Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
+				AwaitingDisposal -> Null,
+				Replace[DisposalLog] -> {}
+			|>,
+			<|
+				Object -> Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID],
+				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+				Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
+				AwaitingDisposal -> Null,
+				Replace[DisposalLog] -> {}
+			|>,
+			<|
+				Object -> Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID],
+				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+				Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
+				AwaitingDisposal -> Null,
+				Replace[DisposalLog] -> {}
+			|>,
+			<|
+				Object -> Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID],
+				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+				Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
+				AwaitingDisposal -> Null,
+				Replace[DisposalLog] -> {}
+			|>,
+			<|
+				Object -> Object[Item, Column, "Column to Dispose for DiscardSamples tests" <> $SessionUUID],
+				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+				Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
+				AwaitingDisposal -> Null,
+				Replace[DisposalLog] -> {}
+			|>,
+			<|
+				Object -> Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID],
+				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+				Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
+				AwaitingDisposal -> Null,
+				Replace[DisposalLog] -> {},
+				Reusable -> True
+			|>,
+			<|
+				Object -> Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID],
+				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+				Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
+				AwaitingDisposal -> Null,
+				Replace[DisposalLog] -> {}
+			|>,
+			<|
+				Object -> Object[Item, Needle, "Test Needle to test DiscardSamples for DiscardSamples tests" <> $SessionUUID],
+				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+				Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
+				AwaitingDisposal -> Null,
+				Replace[DisposalLog] -> {}
+			|>
 
-        }]
-    ),
-    SymbolSetUp :> (
-        Module[{objs, existingObjs},
-            objs = {
-                Object[Container, Bench, "Test bench for DiscardSamples tests" <> $SessionUUID],
-                Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID],
-                Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID],
-                Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID],
-                Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID],
-                Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID],
-                Object[Item, Column, "Column to Dispose for DiscardSamples tests" <> $SessionUUID],
-                Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID],
-                Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID],
-                Object[Item, Needle, "Test Needle to test DiscardSamples for DiscardSamples tests" <> $SessionUUID]
-            };
-            existingObjs = PickList[objs, DatabaseMemberQ[objs]];
-            EraseObject[existingObjs, Force -> True, Verbose -> False]
-        ];
-        Module[{testBench, plate1, vessel1, vessel2, sample1, sample2, sample3, sample4, column1, needle1},
+		}]
+	),
+	SymbolSetUp :> (
+		Module[{objs, existingObjs},
+			objs = {
+				Object[Container, Bench, "Test bench for DiscardSamples tests" <> $SessionUUID],
+				Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID],
+				Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID],
+				Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID],
+				Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID],
+				Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID],
+				Object[Item, Column, "Column to Dispose for DiscardSamples tests" <> $SessionUUID],
+				Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID],
+				Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID],
+				Object[Item, Needle, "Test Needle to test DiscardSamples for DiscardSamples tests" <> $SessionUUID],
+				Object[Part, Funnel, "Test Funnel for DiscardSamples tests" <> $SessionUUID]
+			};
+			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
+			EraseObject[existingObjs, Force -> True, Verbose -> False]
+		];
+		Module[{testBench, plate1, vessel1, vessel2, sample1, sample2, sample3, sample4, column1, needle1, funnel1},
 
-            testBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Test bench for DiscardSamples tests" <> $SessionUUID, DeveloperObject -> True, StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]|>];
+			testBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Test bench for DiscardSamples tests" <> $SessionUUID, DeveloperObject -> True, StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]|>];
 
-            {
-                plate1,
-                vessel1,
-                vessel2,
-                column1,
-                needle1
-            } = UploadSample[
-                {
-                    Model[Container, Plate, "96-well 2mL Deep Well Plate"],
-                    Model[Container, Vessel, "2mL Tube"],
-                    Model[Container, Vessel, "250mL Glass Bottle"],
-                    Model[Item, Column, "HiTrap Q HP 5x1mL Column"],
-                    Model[Item, Needle, "Reusable Stainless Steel Non-Coring 12 in x 18G Needle"]
-                },
-                {
-                    {"Work Surface", testBench},
-                    {"Work Surface", testBench},
-                    {"Work Surface", testBench},
-                    {"Work Surface", testBench},
-                    {"Work Surface", testBench}
-                },
-                Name -> {
-                    "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID,
-                    "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID,
-                    "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID,
-                    "Column to Dispose for DiscardSamples tests" <> $SessionUUID,
-                    "Test Needle to test DiscardSamples for DiscardSamples tests" <> $SessionUUID
-                }
-            ];
+			{
+				plate1,
+				vessel1,
+				vessel2,
+				column1,
+				needle1,
+				funnel1
+			} = UploadSample[
+				{
+					Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+					Model[Container, Vessel, "2mL Tube"],
+					Model[Container, Vessel, "250mL Glass Bottle"],
+					Model[Item, Column, "HiTrap Q HP 5x1mL Column"],
+					Model[Item, Needle, "Reusable Stainless Steel Non-Coring 12 in x 18G Needle"],
+					Model[Part, Funnel, "7.2mm Stem OD, 85mm Height - Plastic Wet Funnel"]
+				},
+				{
+					{"Work Surface", testBench},
+					{"Work Surface", testBench},
+					{"Work Surface", testBench},
+					{"Work Surface", testBench},
+					{"Work Surface", testBench},
+					{"Work Surface", testBench}
+				},
+				Name -> {
+					"96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID,
+					"2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID,
+					"250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID,
+					"Column to Dispose for DiscardSamples tests" <> $SessionUUID,
+					"Test Needle to test DiscardSamples for DiscardSamples tests" <> $SessionUUID,
+					"Test Funnel for DiscardSamples tests" <> $SessionUUID
+				}
+			];
 
-            {
-                sample1,
-                sample2,
-                sample3,
-                sample4
-            } = UploadSample[
-                {
-                    Model[Sample, "Milli-Q water"],
-                    Model[Sample, "Milli-Q water"],
-                    Model[Sample, "Milli-Q water"],
-                    Model[Sample, "Milli-Q water"]
-                },
-                {
-                    {"A1", plate1},
-                    {"A2", plate1},
-                    {"A1", vessel1},
-                    {"A1", vessel2}
-                },
-                Name -> {
-                    "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID,
-                    "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID,
-                    "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID,
-                    "Water in Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID
-                },
-                InitialAmount -> {
-                    1 Milliliter,
-                    1 Milliliter,
-                    1 Milliliter,
-                    100 Milliliter
-                },
-                FastTrack -> True
-            ];
-        ]
-    ),
-    SymbolTearDown :> (
-        Module[{objs, existingObjs},
-            objs = {
-                Object[Container, Bench, "Test bench for DiscardSamples tests" <> $SessionUUID],
-                Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID],
-                Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID],
-                Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID],
-                Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID],
-                Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID],
-                Object[Item, Column, "Column to Dispose for DiscardSamples tests" <> $SessionUUID],
-                Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID],
-                Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID],
-                Object[Item, Needle, "Test Needle to test DiscardSamples for DiscardSamples tests" <> $SessionUUID]
-            };
-            existingObjs = PickList[objs, DatabaseMemberQ[objs]];
-            EraseObject[existingObjs, Force -> True, Verbose -> False]
-        ]
-    )
+			{
+				sample1,
+				sample2,
+				sample3,
+				sample4
+			} = UploadSample[
+				{
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"]
+				},
+				{
+					{"A1", plate1},
+					{"A2", plate1},
+					{"A1", vessel1},
+					{"A1", vessel2}
+				},
+				Name -> {
+					"Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID,
+					"Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID,
+					"Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID,
+					"Water in Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID
+				},
+				InitialAmount -> {
+					1 Milliliter,
+					1 Milliliter,
+					1 Milliliter,
+					100 Milliliter
+				},
+				FastTrack -> True
+			];
+		]
+	),
+	SymbolTearDown :> (
+		Module[{objs, existingObjs},
+			objs = {
+				Object[Container, Bench, "Test bench for DiscardSamples tests" <> $SessionUUID],
+				Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID],
+				Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID],
+				Object[Container, Plate, "96-well Plate to Dispose for DiscardSamples tests" <> $SessionUUID],
+				Object[Sample, "Water Sample in Plate to Dispose for DiscardSamples tests" <> $SessionUUID],
+				Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamples tests" <> $SessionUUID],
+				Object[Item, Column, "Column to Dispose for DiscardSamples tests" <> $SessionUUID],
+				Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID],
+				Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID],
+				Object[Item, Needle, "Test Needle to test DiscardSamples for DiscardSamples tests" <> $SessionUUID],
+				Object[Part, Funnel, "Test Funnel for DiscardSamples tests" <> $SessionUUID]
+			};
+			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
+			EraseObject[existingObjs, Force -> True, Verbose -> False]
+		]
+	)
 ];
 
 
@@ -2319,286 +2330,292 @@ DefineTests[DiscardSamples,
 
 
 DefineTests[DiscardSamplesOptions,
-    {
-        Example[{Basic, "Returns all options for: Mark a sample for disposal; it and its container will be discarded once they are not in use by any experiment:"},
-            DiscardSamplesOptions[Object[Sample, "Water Sample to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]],
-            Graphics_
-        ],
-        Example[{Basic, "Returns all options for: Mark a plate for disposal; all samples within the container will be discarded:"},
-            DiscardSamplesOptions[Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]],
-            Graphics_
-        ],
-        Example[{Basic, "Returns all options for: Mark multiple samples for disposal:"},
-            DiscardSamplesOptions[{Object[Sample, "Water Sample in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]}],
-            Graphics_
-        ],
-        Example[{Additional, "Returns all options for: Mark multiple containers for disposal; all samples within the containers are also marked for disposal:"},
-            DiscardSamplesOptions[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]}, OutputFormat -> List],
-            {DiscardContainer -> True}
-        ],
-        Example[{Additional, "Returns all options for: Mark a mixed list of samples and containers for disposal:"},
-            DiscardSamplesOptions[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Object[Sample, "Water Sample to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]}],
-            Graphics_
-        ],
-        Example[{Additional, "Returns all options for: Marking a sample for disposal marks both the sample and its container as AwaitingDisposal:"},
-            DiscardSamplesOptions[Object[Sample, "Water Sample to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], OutputFormat -> List],
-            {DiscardContainer -> True}
-        ],
-        (* Options *)
-        Example[
-            {Options, OutputFormat, "Choose to return options as a List or Table:"},
-            DiscardSamplesOptions[Object[Sample, "Water Sample to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], OutputFormat -> List],
-            {RulesP..}
-        ],
-        Example[{Options, DiscardContainer, "Returns all options for: Indicate that the container of a fluid sample should be thrown out:"},
-            DiscardSamplesOptions[Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], DiscardContainer -> True, OutputFormat -> List],
-            {DiscardContainer -> True}
-        ],
-        Example[{Options, DiscardContainer, "Returns all options for: Normally, if a container is marked as reusable in its Model, discarding it will direct it to be dishwashed and restocked:"},
-            DiscardSamplesOptions[Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], OutputFormat -> List],
-            {DiscardContainer -> False},
-            TimeConstraint -> 300
-        ],
-        Example[{Options, DiscardContainer, "Returns all options for: Set DiscardContainer to True to indicate that a normally reusable container should no longer be considered reusable, and be thrown out instead of dishwashed:"},
-            DiscardSamplesOptions[Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], DiscardContainer -> True, OutputFormat -> List],
-            {DiscardContainer -> True}
-        ],
-        Example[{Options, DiscardContainer, "Returns all options for: If a container is marked as non-reusable, discarding it will direct it to be thrown out:"},
-            {
-                Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Model[Reusable]],
-                DiscardSamplesOptions[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], OutputFormat -> List]
-            },
-            {False, {DiscardContainer -> True}}
-        ],
-        Example[{Options, DiscardContainer, "Returns all options for: Non-reusable containers must always be thrown out; DiscardContainer cannot be set to False:"},
-            {
-                Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Model[Reusable]],
-                DiscardSamplesOptions[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], DiscardContainer -> False, OutputFormat -> List]
-            },
-            {False, {DiscardContainer -> False}},
-            Messages :> {Error::ContainerDiscardRequired, Error::InvalidOption}
-        ],
-        Example[{Messages, "InputLengthMismatch", "Returns Error if DiscardContainer is provided as a list, the list must have the same length as the input list:"},
-            DiscardSamplesOptions[{Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]}, DiscardContainer -> {True, Automatic}],
-            $Failed,
-            Messages :> {Error::InputLengthMismatch}
-        ],
-        Example[{Messages, "ItemsContainerless", "Returns all options for: The DiscardContainer option will be ignored for items that are not moved around the lab inside an associated container:"},
-            DiscardSamplesOptions[Object[Item, Column, "Column to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], DiscardContainer -> True],
-            Graphics_,
-            Messages :> {Warning::ItemsContainerless}
-        ],
-        Example[{Messages, "ContainerDiscardRequired", "Returns all options for when Samples in non-reusable containers must be discarded along with their containers; DiscardContainer cannot be set to False:"},
-            DiscardSamplesOptions[Object[Sample, "Water Sample to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], DiscardContainer -> False],
-            Graphics_,
-            Messages :> {Error::ContainerDiscardRequired, Error::InvalidOption}
-        ],
-        Example[{Messages, "DiscardedInputs", "Returns all options for when Samples already discarded cannot be discarded again:"},
-            DiscardSamplesOptions[Object[Sample, "Discarded Water in 2mL Tube"]],
-            Graphics_,
-            Messages :> {Error::DiscardedInputs, Error::InvalidInput}
-        ],
-        Example[{Messages, "OutstandingResources", "Returns all options for: samples with outstanding resources are discarded; the samples will not actually be discarded until the outstanding resources are fulfilled:"},
-            DiscardSamplesOptions[Object[Sample, "Water in 2mL Tube with Outstanding Resource"]],
-            Graphics_,
-            Messages :> {Warning::OutstandingResources}
-        ],
-        Example[{Messages, "ConflictingConditionsInContainer", "Returns all options for when not all samples within the same container are provided:"},
-            DiscardSamplesOptions[Object[Sample, "Water Sample in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]],
-            Graphics_,
-            Messages :> {Error::ConflictingConditionsInContainer, Error::InvalidInput}
-        ],
-        (****************************************TESTS ********************************)
-        Test["Returns all options for: When Output -> Tests, return a list of tests checking all messages:",
-            DiscardSamplesOptions[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]}, Output -> Tests, OutputFormat -> List],
-            {DiscardContainer -> True}
-        ],
-        Test["Returns all options for: When Output -> Preview, return Null:",
-            DiscardSamplesOptions[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]}, Output -> Preview, OutputFormat -> List],
-            {DiscardContainer -> True}
-        ],
-        Test["Returns all options for: When Output -> Options, return a list of options:",
-            DiscardSamplesOptions[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]}, Output -> Options, OutputFormat -> List],
-            {DiscardContainer -> True}
-        ],
-        Test["Returns all options for: When Output -> {Tests, Preview, Options, Result}, return a list all those outputs in that order:",
-            DiscardSamplesOptions[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]}, Output -> {Tests, Preview, Options, Result}, OutputFormat -> List],
-            {DiscardContainer -> True},
-            TimeConstraint -> 200
-        ]
-    },
-    SetUp :> (
-        Upload[{
-            <|
-                Object -> Object[Sample, "Water Sample to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-                Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
-                AwaitingDisposal -> Null,
-                Replace[DisposalLog] -> {}
-            |>,
-            <|
-                Object -> Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-                Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
-                AwaitingDisposal -> Null,
-                Replace[DisposalLog] -> {}
-            |>,
-            <|
-                Object -> Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-                Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
-                AwaitingDisposal -> Null,
-                Replace[DisposalLog] -> {}
-            |>,
-            <|
-                Object -> Object[Sample, "Water Sample in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-                Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
-                AwaitingDisposal -> Null,
-                Replace[DisposalLog] -> {}
-            |>,
-            <|
-                Object -> Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-                Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
-                AwaitingDisposal -> Null,
-                Replace[DisposalLog] -> {}
-            |>,
-            <|
-                Object -> Object[Item, Column, "Column to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-                Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
-                AwaitingDisposal -> Null,
-                Replace[DisposalLog] -> {}
-            |>,
-            <|
-                Object -> Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-                Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
-                AwaitingDisposal -> Null,
-                Replace[DisposalLog] -> {},
-                Reusable -> True
-            |>,
-            <|
-                Object -> Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-                Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
-                AwaitingDisposal -> Null,
-                Replace[DisposalLog] -> {}
-            |>,
-            <|
-                Object -> Object[Item, Needle, "Test Needle to test DiscardSamplesOptions for DiscardSamplesOptions tests" <> $SessionUUID],
-                StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-                Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
-                AwaitingDisposal -> Null,
-                Replace[DisposalLog] -> {}
-            |>
+	{
+		Example[{Basic, "Returns all options for: Mark a sample for disposal; it and its container will be discarded once they are not in use by any experiment:"},
+			DiscardSamplesOptions[Object[Sample, "Water Sample to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]],
+			Graphics_
+		],
+		Example[{Basic, "Returns all options for: Mark a plate for disposal; all samples within the container will be discarded:"},
+			DiscardSamplesOptions[Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]],
+			Graphics_
+		],
+		Example[{Basic, "Returns all options for: Mark multiple samples for disposal:"},
+			DiscardSamplesOptions[{Object[Sample, "Water Sample in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]}],
+			Graphics_
+		],
+		Example[{Additional, "Returns all options for: Mark multiple containers for disposal; all samples within the containers are also marked for disposal:"},
+			DiscardSamplesOptions[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]}, OutputFormat -> List],
+			{DiscardContainer -> True}
+		],
+		Example[{Additional, "Returns all options for: Mark a mixed list of samples and containers for disposal:"},
+			DiscardSamplesOptions[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Object[Sample, "Water Sample to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]}],
+			Graphics_
+		],
+		Example[{Additional, "Returns all options for: Marking a sample for disposal marks both the sample and its container as AwaitingDisposal:"},
+			DiscardSamplesOptions[Object[Sample, "Water Sample to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], OutputFormat -> List],
+			{DiscardContainer -> True}
+		],
+		(* Options *)
+		Example[
+			{Options, OutputFormat, "Choose to return options as a List or Table:"},
+			DiscardSamplesOptions[Object[Sample, "Water Sample to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], OutputFormat -> List],
+			{RulesP..}
+		],
+		Example[{Options, DiscardContainer, "Returns all options for: Indicate that the container of a fluid sample should be thrown out:"},
+			DiscardSamplesOptions[Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], DiscardContainer -> True, OutputFormat -> List],
+			{DiscardContainer -> True}
+		],
+		Example[{Options, DiscardContainer, "Returns all options for: Normally, if a container is marked as reusable in its Model, discarding it will direct it to be dishwashed and restocked:"},
+			DiscardSamplesOptions[Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], OutputFormat -> List],
+			{DiscardContainer -> False},
+			TimeConstraint -> 300
+		],
+		Example[{Options, DiscardContainer, "Returns all options for: Set DiscardContainer to True to indicate that a normally reusable container should no longer be considered reusable, and be thrown out instead of dishwashed:"},
+			DiscardSamplesOptions[Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], DiscardContainer -> True, OutputFormat -> List],
+			{DiscardContainer -> True}
+		],
+		Example[{Options, DiscardContainer, "Returns all options for: If a container is marked as non-reusable, discarding it will direct it to be thrown out:"},
+			{
+				Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Model[Reusable]],
+				DiscardSamplesOptions[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], OutputFormat -> List]
+			},
+			{False, {DiscardContainer -> True}}
+		],
+		Example[{Options, DiscardContainer, "Returns all options for: Non-reusable containers must always be thrown out; DiscardContainer cannot be set to False:"},
+			{
+				Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Model[Reusable]],
+				DiscardSamplesOptions[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], DiscardContainer -> False, OutputFormat -> List]
+			},
+			{False, {DiscardContainer -> False}},
+			Messages :> {Error::ContainerDiscardRequired, Error::InvalidOption}
+		],
+		Example[{Messages, "InputLengthMismatch", "Returns Error if DiscardContainer is provided as a list, the list must have the same length as the input list:"},
+			DiscardSamplesOptions[{Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]}, DiscardContainer -> {True, Automatic}],
+			$Failed,
+			Messages :> {Error::InputLengthMismatch}
+		],
+		Example[{Messages, "ItemsContainerless", "Returns all options for: The DiscardContainer option will be ignored for items that are not moved around the lab inside an associated container:"},
+			DiscardSamplesOptions[Object[Item, Column, "Column to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], DiscardContainer -> True],
+			Graphics_,
+			Messages :> {Warning::ItemsContainerless}
+		],
+		Example[{Messages, "ContainerDiscardRequired", "Returns all options for when Samples in non-reusable containers must be discarded along with their containers; DiscardContainer cannot be set to False:"},
+			DiscardSamplesOptions[Object[Sample, "Water Sample to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], DiscardContainer -> False],
+			Graphics_,
+			Messages :> {Error::ContainerDiscardRequired, Error::InvalidOption}
+		],
+		Example[{Messages, "DiscardedInputs", "Returns all options for when Samples already discarded cannot be discarded again:"},
+			DiscardSamplesOptions[Object[Sample, "Discarded Water in 2mL Tube"]],
+			Graphics_,
+			Messages :> {Error::DiscardedInputs, Error::InvalidInput}
+		],
+		Example[{Messages, "OutstandingResources", "Returns all options for: samples with outstanding resources are discarded; the samples will not actually be discarded until the outstanding resources are fulfilled:"},
+			DiscardSamplesOptions[Object[Sample, "Water in 2mL Tube with Outstanding Resource"]],
+			Graphics_,
+			Messages :> {Warning::OutstandingResources}
+		],
+		Example[{Messages, "ConflictingConditionsInContainer", "Returns all options for when not all samples within the same container are provided:"},
+			DiscardSamplesOptions[Object[Sample, "Water Sample in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]],
+			Graphics_,
+			Messages :> {Error::ConflictingConditionsInContainer, Error::InvalidInput}
+		],
+		(****************************************TESTS ********************************)
+		Test["Returns all options for: When Output -> Tests, return a list of tests checking all messages:",
+			DiscardSamplesOptions[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]}, Output -> Tests, OutputFormat -> List],
+			{DiscardContainer -> True}
+		],
+		Test["Returns all options for: When Output -> Preview, return Null:",
+			DiscardSamplesOptions[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]}, Output -> Preview, OutputFormat -> List],
+			{DiscardContainer -> True}
+		],
+		Test["Returns all options for: When Output -> Options, return a list of options:",
+			DiscardSamplesOptions[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]}, Output -> Options, OutputFormat -> List],
+			{DiscardContainer -> True}
+		],
+		Test["Returns all options for: When Output -> {Tests, Preview, Options, Result}, return a list all those outputs in that order:",
+			DiscardSamplesOptions[{Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID]}, Output -> {Tests, Preview, Options, Result}, OutputFormat -> List],
+			{DiscardContainer -> True},
+			TimeConstraint -> 200
+		]
+	},
+	SetUp :> (
+		Upload[{
+			<|
+				Object -> Object[Sample, "Water Sample to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+				Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
+				AwaitingDisposal -> Null,
+				Replace[DisposalLog] -> {}
+			|>,
+			<|
+				Object -> Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+				Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
+				AwaitingDisposal -> Null,
+				Replace[DisposalLog] -> {}
+			|>,
+			<|
+				Object -> Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+				Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
+				AwaitingDisposal -> Null,
+				Replace[DisposalLog] -> {}
+			|>,
+			<|
+				Object -> Object[Sample, "Water Sample in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+				Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
+				AwaitingDisposal -> Null,
+				Replace[DisposalLog] -> {}
+			|>,
+			<|
+				Object -> Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+				Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
+				AwaitingDisposal -> Null,
+				Replace[DisposalLog] -> {}
+			|>,
+			<|
+				Object -> Object[Item, Column, "Column to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+				Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
+				AwaitingDisposal -> Null,
+				Replace[DisposalLog] -> {}
+			|>,
+			<|
+				Object -> Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+				Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
+				AwaitingDisposal -> Null,
+				Replace[DisposalLog] -> {},
+				Reusable -> True
+			|>,
+			<|
+				Object -> Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+				Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
+				AwaitingDisposal -> Null,
+				Replace[DisposalLog] -> {}
+			|>,
+			<|
+				Object -> Object[Item, Needle, "Test Needle to test DiscardSamplesOptions for DiscardSamplesOptions tests" <> $SessionUUID],
+				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+				Replace[StorageConditionLog] -> {{Now, Link[Model[StorageCondition, "Ambient Storage"]], Null}},
+				AwaitingDisposal -> Null,
+				Replace[DisposalLog] -> {}
+			|>
 
-        }]
-    ),
-    SymbolSetUp :> (
-        Module[{objs, existingObjs},
-            objs = {
-                Object[Container, Bench, "Test bench for DiscardSamplesOptions tests" <> $SessionUUID],
-                Object[Sample, "Water Sample to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                Object[Sample, "Water Sample in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                Object[Item, Column, "Column to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                Object[Item, Needle, "Test Needle to test DiscardSamplesOptions for DiscardSamplesOptions tests" <> $SessionUUID]
-            };
-            existingObjs = PickList[objs, DatabaseMemberQ[objs]];
-            EraseObject[existingObjs, Force -> True, Verbose -> False]
-        ];
-        Module[{testBench, plate1, vessel1, vessel2, sample1, sample2, sample3, sample4, column1, needle1},
+		}]
+	),
+	SymbolSetUp :> (
+		Module[{objs, existingObjs},
+			objs = {
+				Object[Container, Bench, "Test bench for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Sample, "Water Sample to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Sample, "Water Sample in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Item, Column, "Column to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Item, Needle, "Test Needle to test DiscardSamplesOptions for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Part, Funnel, "Test Part for DiscardSamplesOptions tests" <> $SessionUUID]
+			};
+			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
+			EraseObject[existingObjs, Force -> True, Verbose -> False]
+		];
+		Module[{testBench, plate1, vessel1, vessel2, sample1, sample2, sample3, sample4, column1, needle1, part1},
 
-            testBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Test bench for DiscardSamplesOptions tests" <> $SessionUUID, DeveloperObject -> True, StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]|>];
+			testBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Test bench for DiscardSamplesOptions tests" <> $SessionUUID, DeveloperObject -> True, StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]|>];
 
-            {
-                plate1,
-                vessel1,
-                vessel2,
-                column1,
-                needle1
-            } = UploadSample[
-                {
-                    Model[Container, Plate, "96-well 2mL Deep Well Plate"],
-                    Model[Container, Vessel, "2mL Tube"],
-                    Model[Container, Vessel, "250mL Glass Bottle"],
-                    Model[Item, Column, "HiTrap Q HP 5x1mL Column"],
-                    Model[Item, Needle, "Reusable Stainless Steel Non-Coring 12 in x 18G Needle"]
-                },
-                {
-                    {"Work Surface", testBench},
-                    {"Work Surface", testBench},
-                    {"Work Surface", testBench},
-                    {"Work Surface", testBench},
-                    {"Work Surface", testBench}
-                },
-                Name -> {
-                    "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID,
-                    "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID,
-                    "250mL Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID,
-                    "Column to Dispose for DiscardSamplesOptions tests" <> $SessionUUID,
-                    "Test Needle to test DiscardSamplesOptions for DiscardSamplesOptions tests" <> $SessionUUID
-                }
-            ];
+			{
+				plate1,
+				vessel1,
+				vessel2,
+				column1,
+				needle1,
+				part1
+			} = UploadSample[
+				{
+					Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+					Model[Container, Vessel, "2mL Tube"],
+					Model[Container, Vessel, "250mL Glass Bottle"],
+					Model[Item, Column, "HiTrap Q HP 5x1mL Column"],
+					Model[Item, Needle, "Reusable Stainless Steel Non-Coring 12 in x 18G Needle"],
+					Model[Part, Funnel, "7.2mm Stem OD, 85mm Height - Plastic Wet Funnel"]
+				},
+				{
+					{"Work Surface", testBench},
+					{"Work Surface", testBench},
+					{"Work Surface", testBench},
+					{"Work Surface", testBench},
+					{"Work Surface", testBench},
+					{"Work Surface", testBench}
+				},
+				Name -> {
+					"96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID,
+					"2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID,
+					"250mL Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID,
+					"Column to Dispose for DiscardSamplesOptions tests" <> $SessionUUID,
+					"Test Needle to test DiscardSamplesOptions for DiscardSamplesOptions tests" <> $SessionUUID,
+					"Test Part for DiscardSamplesOptions tests" <> $SessionUUID
+				}
+			];
 
-            {
-                sample1,
-                sample2,
-                sample3,
-                sample4
-            } = UploadSample[
-                {
-                    Model[Sample, "Milli-Q water"],
-                    Model[Sample, "Milli-Q water"],
-                    Model[Sample, "Milli-Q water"],
-                    Model[Sample, "Milli-Q water"]
-                },
-                {
-                    {"A1", plate1},
-                    {"A2", plate1},
-                    {"A1", vessel1},
-                    {"A1", vessel2}
-                },
-                Name -> {
-                    "Water Sample in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID,
-                    "Water Sample 2 in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID,
-                    "Water Sample to Dispose for DiscardSamplesOptions tests" <> $SessionUUID,
-                    "Water in Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID
-                },
-                InitialAmount -> {
-                    1 Milliliter,
-                    1 Milliliter,
-                    1 Milliliter,
-                    100 Milliliter
-                },
-                FastTrack -> True
-            ];
-        ]
-    ),
-    SymbolTearDown :> (
-        Module[{objs, existingObjs},
-            objs = {
-                Object[Container, Bench, "Test bench for DiscardSamplesOptions tests" <> $SessionUUID],
-                Object[Sample, "Water Sample to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                Object[Sample, "Water Sample in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                Object[Item, Column, "Column to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
-                Object[Item, Needle, "Test Needle to test DiscardSamplesOptions for DiscardSamplesOptions tests" <> $SessionUUID]
-            };
-            existingObjs = PickList[objs, DatabaseMemberQ[objs]];
-            EraseObject[existingObjs, Force -> True, Verbose -> False]
-        ]
-    )
+			{
+				sample1,
+				sample2,
+				sample3,
+				sample4
+			} = UploadSample[
+				{
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"]
+				},
+				{
+					{"A1", plate1},
+					{"A2", plate1},
+					{"A1", vessel1},
+					{"A1", vessel2}
+				},
+				Name -> {
+					"Water Sample in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID,
+					"Water Sample 2 in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID,
+					"Water Sample to Dispose for DiscardSamplesOptions tests" <> $SessionUUID,
+					"Water in Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID
+				},
+				InitialAmount -> {
+					1 Milliliter,
+					1 Milliliter,
+					1 Milliliter,
+					100 Milliliter
+				},
+				FastTrack -> True
+			];
+		]
+	),
+	SymbolTearDown :> (
+		Module[{objs, existingObjs},
+			objs = {
+				Object[Container, Bench, "Test bench for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Sample, "Water Sample to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Container, Plate, "96-well Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Sample, "Water Sample in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Sample, "Water Sample 2 in Plate to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Item, Column, "Column to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Item, Needle, "Test Needle to test DiscardSamplesOptions for DiscardSamplesOptions tests" <> $SessionUUID],
+				Object[Part, Funnel, "Test Part for DiscardSamplesOptions tests" <> $SessionUUID]
+			};
+			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
+			EraseObject[existingObjs, Force -> True, Verbose -> False]
+		]
+	)
 ];
 
 

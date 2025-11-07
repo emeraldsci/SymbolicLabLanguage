@@ -1507,6 +1507,79 @@ DefineTests[
         ]
       }],
       ObjectP[Object[Protocol]]
+    ],
+    Test["Populate RequiredObjects field for resource picking:",
+      Module[
+        {protocol, requiredObjects, requiredResources, requiredObjectResource},
+        protocol = ExperimentManualSamplePreparation[{
+          LabelSample[
+            Sample -> Model[Sample, "Milli-Q water"],
+            Label -> {"best sample ever"},
+            Amount -> 10 Milliliter,
+            Container -> Model[Container, Vessel, "50mL Tube"]
+          ]
+        }];
+        requiredObjects = Download[protocol, OutputUnitOperations[[1]][RequiredObjects]];
+        requiredResources = Download[protocol, OutputUnitOperations[[1]][RequiredResources]];
+        requiredObjectResource = Download[FirstCase[requiredResources, {___, RequiredObjects, ___}][[1]],Object];
+        {
+          requiredObjects,
+          Length[requiredResources],
+          Count[Download[requiredResources[[All, 1]], Object], requiredObjectResource]
+        }
+      ],
+      {
+        {LinkP[Model[Sample, "Milli-Q water"]]},
+        (* Same resource for SampleLink, RequiredObjects, LabeledObjects. There might be an additional one for water container resource *)
+        GreaterEqualP[3],
+        3
+      }
+    ],
+    Test["Populate RequiredObjects field with the container only for resource picking if the container is an object with an existing sample:",
+      Module[
+        {protocol},
+        protocol = ExperimentManualSamplePreparation[{
+          LabelSample[
+            Sample -> {"A1", Object[Container, Vessel, "Test container 2 for LabelSample "<>$SessionUUID]},
+            Label -> "best sample ever",
+            SampleModel -> Model[Sample, "Milli-Q water"]
+          ]
+        }];
+        Download[protocol, OutputUnitOperations[[1]][RequiredObjects]]
+      ],
+      {
+        ObjectP[Object[Container, Vessel, "Test container 2 for LabelSample "<>$SessionUUID]]
+      }
+    ],
+    Test["Do not populate RequiredObjects field for resource picking if the sample object is simulated in a container before this unit operation:",
+      Module[
+        {protocol},
+        protocol = ExperimentManualSamplePreparation[{
+          LabelSample[
+            Sample -> Model[Sample, "Milli-Q water"],
+            Amount -> 1 Milliliter,
+            Container -> Model[Container, Vessel, "2mL Tube"],
+            Label -> "my Sample"
+          ],
+          LabelContainer[
+            Container -> Model[Container, Vessel, "50mL Tube"],
+            Label -> "my Container"
+          ],
+          Transfer[
+            Source -> "my Sample",
+            Destination -> "my Container",
+            Amount -> 800 Microliter
+          ],
+          LabelSample[
+            Sample -> {"A1", "my Container"},
+            Container -> "my Container",
+            Label -> "my Final Sample",
+            SampleModel -> Model[Sample, "Milli-Q water"]
+          ]
+        }];
+        Download[protocol, OutputUnitOperations[[-1]][RequiredObjects]]
+      ],
+      {}
     ]
   },
   SymbolSetUp :> (

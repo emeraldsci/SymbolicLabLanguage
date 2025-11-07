@@ -322,7 +322,6 @@ itemPackage[items:{(_Symbol|_String|ECL`Object[__Symbol])...}]:=DeleteDuplicates
 ];
 
 
-
 (* ::Subsubsubsection::Closed:: *)
 (*Public Function*)
 
@@ -339,7 +338,8 @@ DefineOptions[
 		{Association->True,True|False,"Whether or not to return an Association of inputs->summaries. If False, only returns a list of summaries."},
 		{OutputFormat->TestSummary,SingleBoolean|Boolean|TestSummary,"Determines the format of the return value. Boolean returns a pass/fail for each entry. SingleBoolean returns a single pass/fail boolean for all the inputs. TestSummary returns the EmeraldTestSummary object for each input."},
 		{DisplayFunction->InputForm,_Symbol|_Function,"When Verbose->True|Failures, this function is applied to each element for printing the headers."},
-		{TestsToRun->All, IntegrationTests | Sandbox | All, "When TestsToRun->Sandbox, only run tests defined for Sandbox. When TestsToRun->IntegrationTests omit tests defined for Sandbox. Otherwise run all tests."}
+		{TestsToRun->All, IntegrationTests | Sandbox | All, "When TestsToRun->Sandbox, only run tests defined for Sandbox. When TestsToRun->IntegrationTests omit tests defined for Sandbox. Otherwise run all tests."},
+		{ClearMemoization -> True, BooleanP, "Indicate if ClearMemoization[] should be run before SymbolSetUp and after SymbolTearDown. For normal unit testing ClearMemoization should be set to True as temporary test objects can cause severe problems with memoization. However, when RunUnitTest is leveraged for other purposes like VOQ framework, this option may be set to False."}
 	}
 ];
 
@@ -612,7 +612,7 @@ Options[runIndividualTests]=Append[Options[RunUnitTest],Sort->True];
 
 runIndividualTests[tests:{TestP...},identifier_,OptionsPattern[]]:=Module[
 	{verbose, testsByCategory, category, subcategory,categories, subcategories,sort, showExpression,displayFunction,
-		window, testsBySubCategory, flatSubCategories, sortedTests, sandboxOption, filteredTests},
+		window, testsBySubCategory, flatSubCategories, sortedTests, sandboxOption, filteredTests, clearMemoization},
 
 	verbose = OptionValue[Verbose];
 	category = OptionValue[Category];
@@ -622,6 +622,7 @@ runIndividualTests[tests:{TestP...},identifier_,OptionsPattern[]]:=Module[
 	displayFunction = OptionValue[DisplayFunction];
 	showExpression = OptionValue[ShowExpression];
 	sandboxOption = OptionValue[TestsToRun];
+	clearMemoization = OptionValue[ClearMemoization];
 
 	categories = If[MatchQ[category,_List|All],
 		category,
@@ -675,10 +676,10 @@ runIndividualTests[tests:{TestP...},identifier_,OptionsPattern[]]:=Module[
 	];
 
 	If[verbose===False,
-		quietTestResults[testsByCategory, identifier],
+		quietTestResults[testsByCategory, identifier, clearMemoization],
 		If[window===True,
-			runTestsInNotebook[testsByCategory, identifier, verbose, displayFunction, ShowExpression->showExpression],
-			runTestsInline[testsByCategory, identifier, verbose, displayFunction]
+			runTestsInNotebook[testsByCategory, identifier, verbose, displayFunction, clearMemoization, ShowExpression->showExpression],
+			runTestsInline[testsByCategory, identifier, verbose, displayFunction, clearMemoization]
 		]
 	]
 ];
@@ -696,14 +697,17 @@ turnOffTestMessages[options_List]:=	Lookup[options /. {message_MessageName :> Ho
 turnOnTestMessages[options_List]:=	Lookup[options /. {message_MessageName :> Hold[message]}, TurnOffMessages, {}] /. {Hold -> On};
 
 (*Execute test functions without any verbose output*)
-quietTestResults[testsByCategory_Association, identifier_]:=Module[
+quietTestResults[testsByCategory_Association, identifier_, clearMemoizationQ:BooleanP]:=Module[
 	{tests, symbolOptions, symbolSetUpMessages, symbolTearDownMessages, reapedResults, results, variables, definitions,
 		percentCoverage},
 
 	tests=flatTests[testsByCategory];
 
 	(* ClearMemoization before SymbolSetUp and after SymbolTearDown because the creating/erasing objects these often do can mess up memoization badly *)
-	ECL`ClearMemoization[];
+	(* However, when calling RunUnitTests for other purposes like VOQ tests in external upload functions, clearing memoization can cause unexpected results so this feature should be skipped *)
+	If[clearMemoizationQ,
+		ECL`ClearMemoization[]
+	];
 
 	symbolOptions=defaultTestOptions[identifier];
 
@@ -757,7 +761,10 @@ quietTestResults[testsByCategory_Association, identifier_]:=Module[
 	];
 
 	(* ClearMemoization before SymbolSetUp and after SymbolTearDown because the creating/erasing objects these often do can mess up memoization badly *)
-	ECL`ClearMemoization[];
+	(* However, when calling RunUnitTests for other purposes like VOQ tests in external upload functions, clearing memoization can cause unexpected results so this feature should be skipped *)
+	If[clearMemoizationQ,
+		ECL`ClearMemoization[]
+	];
 
 	results = If[MatchQ[reapedResults[[2]],{}],
 		{},
@@ -789,7 +796,7 @@ quietTestResults[testsByCategory_Association, identifier_]:=Module[
 
 (*Runs tests and prints to unit testing notebook their results as they are executed*)
 Options[runTestsInNotebook]={ShowExpression->True};
-runTestsInNotebook[testsByCategory_Association,identifier_, verbose:True|Failures, displayFunction:_Symbol|_Function, ops:OptionsPattern[]]:=Module[
+runTestsInNotebook[testsByCategory_Association,identifier_, verbose:True|Failures, displayFunction:_Symbol|_Function, clearMemoizationQ:BooleanP, ops:OptionsPattern[]]:=Module[
 	{testNotebook, symbolOptions,symbolSetUpMessages, reapedResults,symbolTearDownMessages, results, summary, name,
 		tests, variables, definitions, percentCoverage},
 
@@ -800,7 +807,10 @@ runTestsInNotebook[testsByCategory_Association,identifier_, verbose:True|Failure
 	tests=DeleteDuplicates[flatTests[testsByCategory]];
 
 	(* ClearMemoization before SymbolSetUp and after SymbolTearDown because the creating/erasing objects these often do can mess up memoization badly *)
-	ECL`ClearMemoization[];
+	(* However, when calling RunUnitTests for other purposes like VOQ tests in external upload functions, clearing memoization can cause unexpected results so this feature should be skipped *)
+	If[clearMemoizationQ,
+		ECL`ClearMemoization[]
+	];
 
 	symbolOptions=defaultTestOptions[identifier];
 
@@ -875,7 +885,10 @@ runTestsInNotebook[testsByCategory_Association,identifier_, verbose:True|Failure
 	];
 
 	(* ClearMemoization before SymbolSetUp and after SymbolTearDown because the creating/erasing objects these often do can mess up memoization badly *)
-	ECL`ClearMemoization[];
+	(* However, when calling RunUnitTests for other purposes like VOQ tests in external upload functions, clearing memoization can cause unexpected results so this feature should be skipped *)
+	If[clearMemoizationQ,
+		ECL`ClearMemoization[]
+	];
 
 	results = If[MatchQ[reapedResults[[2]],{}],
 		{},
@@ -930,7 +943,7 @@ decrementCategoryCell[notebook_NotebookObject,name_String,category_String]:=With
 ];
 
 
-runTestsInline[testsByCategory_Association,identifier_, verbose:True|Failures, displayFunction:_Symbol|_Function]:=Module[
+runTestsInline[testsByCategory_Association,identifier_, verbose:True|Failures, displayFunction:_Symbol|_Function, clearMemoizationQ:BooleanP]:=Module[
 	{symbolOptions, symbolSetUpMessages, reapedResults, symbolTearDownMessages, results, name, tests, runningTest,
 	totalCount, testIndex, maxCategoryLength, tempCell, summary, percentCoverage, variables, definitions},
 
@@ -946,7 +959,10 @@ runTestsInline[testsByCategory_Association,identifier_, verbose:True|Failures, d
 	maxCategoryLength=Max[Map[StringLength[ToString[#[Category]]]&,tests]];
 
 	(* ClearMemoization before SymbolSetUp and after SymbolTearDown because the creating/erasing objects these often do can mess up memoization badly *)
-	ECL`ClearMemoization[];
+	(* However, when calling RunUnitTests for other purposes like VOQ tests in external upload functions, clearing memoization can cause unexpected results so this feature should be skipped *)
+	If[clearMemoizationQ,
+		ECL`ClearMemoization[]
+	];
 
 	symbolOptions=defaultTestOptions[identifier];
 
@@ -1025,7 +1041,10 @@ runTestsInline[testsByCategory_Association,identifier_, verbose:True|Failures, d
 	];
 
 	(* ClearMemoization before SymbolSetUp and after SymbolTearDown because the creating/erasing objects these often do can mess up memoization badly *)
-	ECL`ClearMemoization[];
+	(* However, when calling RunUnitTests for other purposes like VOQ tests in external upload functions, clearing memoization can cause unexpected results so this feature should be skipped *)
+	If[clearMemoizationQ,
+		ECL`ClearMemoization[]
+	];
 
 	results = If[MatchQ[reapedResults[[2]],{}],
 		{},

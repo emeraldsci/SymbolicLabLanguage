@@ -295,9 +295,9 @@ launchCloudFileVideoHTML[cloudFile:EmeraldFileP] := Module[{html,bucket,url, fil
 	SafeOpen[filename];
 ];
 
-launchCloudFileVideoHTML[cloudFile: EmeraldFileP, startTimeInSeconds_Integer] := Module[{html,bucket,url, filename},
-    filename = generateCloudFileVideoHTML[cloudFile, startTimeInSeconds];
-    SafeOpen[filename];
+launchCloudFileVideoHTML[cloudFile: EmeraldFileP, startTimeInSeconds_Integer, endTimeInSeconds:Alternatives[Null, _Integer], playbackSpeed:GreaterP[0]:1] := Module[{html,bucket,url, filename},
+	filename = generateCloudFileVideoHTML[cloudFile, startTimeInSeconds, endTimeInSeconds, playbackSpeed];
+	SafeOpen[filename];
 ];
 
 getCloudFrontURL::Error = "`1`";
@@ -320,8 +320,8 @@ getCloudFrontURL[cloudFile:EmeraldFileP] := Module[{resp, url},
 	url
 ];
 
-generateCloudFileVideoHTML[cloudFile:EmeraldFileP, startTimeInSeconds_Integer: 0] := Module[{html,bucket,url, filename},
-	url=getCloudFrontURL[cloudFile]<>"#t="<>ToString[startTimeInSeconds];
+generateCloudFileVideoHTML[cloudFile:EmeraldFileP, startTimeInSeconds_Integer: 0, endTimeInSeconds:Alternatives[Null, _Integer]: Null, playbackSpeed:GreaterP[0]: 1] := Module[{html,bucket,url, filename},
+	url = getCloudFrontURL[cloudFile]<> "#t="<>ToString[startTimeInSeconds] <> If[NullQ[endTimeInSeconds], "", "," <> ToString[endTimeInSeconds]];
 	If[MatchQ[url, $Failed],
 		Return[$Failed]
 	];
@@ -330,8 +330,12 @@ generateCloudFileVideoHTML[cloudFile:EmeraldFileP, startTimeInSeconds_Integer: 0
 				<body>
 				    <video id=\"myVideo\" width=\"640\" height=\"480\" autoplay=\"autoplay\" controls=\"controls\">
   				    <source src=\""<>ToString@url<>"\" type=\"video/mp4\">
-  			        Your browser does not support the video tag.
-			        </video>
+							Your browser does not support the video tag.
+						</video>
+						<script>
+							let vid = document.getElementById(\"myVideo\");
+							vid.playbackRate = " <> ToString[playbackSpeed] <> ";
+						</script>
 			    </body>
 			</html>";
 	filename=FileNameJoin[{$TemporaryDirectory,CreateUUID[]}]<>".html";

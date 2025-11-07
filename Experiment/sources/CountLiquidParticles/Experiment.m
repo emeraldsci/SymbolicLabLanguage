@@ -486,7 +486,7 @@ DefineOptions[ExperimentCountLiquidParticles,
 					"Indicates the method used to mix the sample. If this option is set to Stir, a StirBar will be transferred into the sample container and stir the sample during the entire data collection process."
 				],
 				ResolutionDescription->"Automatically set to Stir if AcquisitionMix is True.",
-				Widget-> Widget[Type->Enumeration,Pattern:>If[$CountLiquidParticlesAllowHandSwirl, Alternatives[Stir, Swirl],Alternatives[Stir]]],
+				Widget-> Widget[Type->Enumeration,Pattern:>MixTypeP],
 				Category->"Particle Size Measurements"
 			},
 			{
@@ -528,9 +528,9 @@ DefineOptions[ExperimentCountLiquidParticles,
 				OptionName->AcquisitionMixRate,
 				Default->Automatic,
 				AllowNull->True,
-				Description->"Indicates the rate at which the samples should be mixed with a stir bar during data acquisition.",
-				ResolutionDescription -> "Automatically set AcquisitionMixRate 400 RPM if the AcquisitionMixType is Stir.",
-				Widget-> Widget[Type->Quantity,Pattern:>RangeP[50 RPM,350 RPM],Units->RPM],
+				Description->"Indicates the rate at which the samples should be mixed with a stir bar during data acquisition, or mixed with other mix type before data acquisition.",
+				ResolutionDescription -> "Automatically set AcquisitionMixRate 200 RPM if the AcquisitionMixType is Stir.",
+				Widget-> Widget[Type->Quantity,Pattern:>RangeP[$MinMixRate, $MaxMixRate],Units->RPM],
 				ResolutionDescription -> "Automatically set 500 RPM if if the AcquisitionMixType is Stir.",
 				Category->"Particle Size Measurements"
 			},
@@ -577,6 +577,34 @@ DefineOptions[ExperimentCountLiquidParticles,
 				Description->"Indicates the maximum number of attempts to mix the samples with a stir bar. One attempt designates each time AdjustMixRate changes the AcquisitionMixRate (i.e. each decrease/increase is equivalent to 1 attempt.",
 				ResolutionDescription->"If AdjustMixRate is True, automatically sets to 10.",
 				Widget->Widget[Type->Number,Pattern:>RangeP[1,40]],
+				Category->"Particle Size Measurements"
+			},
+			{
+				OptionName->AcquisitionMixTime,
+				Default->Automatic,
+				AllowNull->True,
+				Widget->Widget[Type->Quantity, Pattern :> RangeP[0 Minute,$MaxExperimentTime], Units->{1,{Hour,{Second,Minute,Hour}}}],
+				Description->"Duration of time for which the samples will be mixed before acquisition.",
+				ResolutionDescription->"Automatically resolves based on the mix type and container of the sample. Resolved to Null if a stir bar is used because sample will be mixed during acquisition",
+				Category->"Particle Size Measurements"
+			},
+			{
+				OptionName->AcquisitionMixInstrument,
+				Default->Automatic,
+				AllowNull->True,
+				Widget->Widget[
+					Type->Object,
+					Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Mixing Devices"
+						}
+					}
+				],
+				Description->"The instrument used to perform the Mix and/or Incubation.",
+				ResolutionDescription->"Automatically resolves based on the options AcquisitionMix, AcquisitionMixType and container of the sample.",
 				Category->"Particle Size Measurements"
 			},
 
@@ -1072,7 +1100,6 @@ ExperimentCountLiquidParticles[myContainers:ListableP[ObjectP[{Object[Container]
 		updatedCache,samples,sampleOptions,containerToSampleTests, containerToSampleSimulation, cache,listedContainers
 	},
 
-
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
 	output=ToList[outputSpecification];
@@ -1208,7 +1235,8 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 		conflictingMixingOptionsList, conflictingMixOptionsTests, duplicateParticleSizesBools,resolvedSamplingHeights,
 		liquidLevelCoverStirBarBools, sampleHeightBools, minSampleHeights, stirBarCoverHeights, invalidParticleLiquidLevelTooLowOptions,
 		invalidParticleLiquidLevelTooLowTests,invalidSamplingHeightOptions, invalidSamplingHeightTests, resolvedSampleLabel, resolvedSampleContainerLabel,
-		countLiquidPartcielDilutionWarnings,duplicateParticleSizesWarnings
+		countLiquidPartcielDilutionWarnings,duplicateParticleSizesWarnings, postResolvedStirBars, postResolvedAcquisitionMixTypes,
+		replacedMixNamesOptions , resolvedMixOptions, mixTests, expandedMixOptions, replacedMixOptions, otherExperimentOptions, experimentMixPassedOptions, resolvedAcquisitionMixTimes, mixResolverResolvedOptions, resolvedAcquisitionMixInstruments
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -1808,7 +1836,7 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 				{
 					methodPacketForProtocol, stirBar, maxStirAttempt, acquisitionMix, acquisitionMixRate, adjustMixRate, minAcquisitionMixRate, maxAcquisitionMixRate,
 					acquisitionMixRateIncrement, acquisitionMixType, numberOfMixes, waitTimeBeforeReading, specifiedStirQ, specifiedSwirlQ, specifiedAcquisitionMixQ,
-					resolvedSampleTemperature, resolvedAcquisitionMix, resolvedAcquisitionMixType
+					resolvedSampleTemperature, resolvedAcquisitionMix, resolvedAcquisitionMixType, acquisitionMixTime, acquisitionMixInstrument
 				},
 				(* Preparation: get the user specified method packet*)
 				methodPacketForProtocol = If[MatchQ[method, ObjectP[]], fetchPacketFromCache[Download[method, Object], Flatten[methodPackets]], {}];
@@ -1826,7 +1854,9 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 					acquisitionMixType,
 					numberOfMixes,
 					waitTimeBeforeReading,
-					sampleTemperature
+					sampleTemperature,
+					acquisitionMixTime,
+					acquisitionMixInstrument
 				} = Lookup[optionList,
 					{
 						StirBar,
@@ -1840,31 +1870,48 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 						AcquisitionMixType,
 						NumberOfMixes,
 						WaitTimeBeforeReading,
-						SampleTemperature
+						SampleTemperature,
+						AcquisitionMixTime,
+						AcquisitionMixInstrument
 					}
 				];
 
 				(* check to see if user implied using stirring or swirling for mixing *)
 				specifiedStirQ = Or[
+					MatchQ[acquisitionMixType, Stir],
 					MatchQ[stirBar, Except[Null | Automatic]],
 					MatchQ[maxStirAttempt, Except[Null | Automatic]],
-					MatchQ[acquisitionMixRate, Except[Null | Automatic]],
 					MatchQ[adjustMixRate, Except[Null | Automatic | False]],
 					MatchQ[minAcquisitionMixRate, Except[Null | Automatic]],
 					MatchQ[maxAcquisitionMixRate, Except[Null | Automatic]],
-					MatchQ[acquisitionMixRateIncrement, Except[Null | Automatic]]
+					MatchQ[acquisitionMixRateIncrement, Except[Null | Automatic]],
+					(* We allow other mix types, like Shake, to specify mix rate. But if only MixRate is specified, we prefer Stir over other mix types *)
+					And[
+						MatchQ[acquisitionMixType, Automatic],
+						MatchQ[acquisitionMixRate, Except[Null | Automatic]]
+					]
 				];
 
 				specifiedSwirlQ = Or[
-					MatchQ[acquisitionMixType, Except[Null | Automatic]],
-					MatchQ[numberOfMixes, Except[Null | Automatic]],
-					MatchQ[waitTimeBeforeReading, Except[Null | Automatic]]
+					MatchQ[acquisitionMixType, Swirl],
+					(* We allow other mix types, like Invert, to specify numberOfMixes and waitTimeBeforeReading. But if only numberOfMixes/waitTimeBeforeReading is specified, we prefer Swirl over other mix types *)
+					And[
+						MatchQ[acquisitionMixType, Automatic],
+						MatchQ[numberOfMixes, Except[Null | Automatic]]
+					],
+					And[
+						MatchQ[acquisitionMixType, Automatic],
+						MatchQ[waitTimeBeforeReading, Except[Null | Automatic]]
+					]
 				];
 
-				(* if any of these two are specified then we will determine that user has specified aquisition mix *)
+				(* if any of mix related options are specified then we will determine that user has specified acquisition mix *)
 				specifiedAcquisitionMixQ = Or[
 					specifiedStirQ,
-					specifiedSwirlQ
+					specifiedSwirlQ,
+					MatchQ[acquisitionMixType, Except[Null | Automatic]],
+					MatchQ[acquisitionMixTime, Except[Null | Automatic]],
+					MatchQ[acquisitionMixInstrument, Except[Null | Automatic]]
 				];
 
 				(* resolved SampleTemperature *)
@@ -2030,6 +2077,8 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 		(*32*)resolvedNumberOfMixesList,
 		(*33*)resolvedWaitTimeBeforeReadings,
 		(*34*)resolvedSamplingHeights,
+		(*35*)resolvedAcquisitionMixTimes,
+		(*36*)resolvedAcquisitionMixInstruments,
 
 		(* other returned values*)
 		(*1*)sampleLoadingVolumes,
@@ -2105,7 +2154,7 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 						conflictingMixingOptions,duplicateParticleSizesWarning,
 						resolvedStirBarModelPacket, readingContainerModelPacket, calibrationFunction,minSampleVolume,
 						minSampleHeight, stirBarCoverHeight, stirBarDeadHeight, liquidLevelCoverStirBarError, sampleHeightError,
-						rawCalibrationFunction, inputUnit, outputUnit, inverseFunction, stirBarStirringHeight, latestVolumeCalibration
+						rawCalibrationFunction, inputUnit, outputUnit, inverseFunction, stirBarStirringHeight, latestVolumeCalibration, acquisitionMixTime, acquisitionMixInstrument, invertQ
 					},
 
 					(*get the information from optionList *)
@@ -2142,7 +2191,9 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 						(*31*)acquisitionMixType,
 						(*32*)numberOfMixes,
 						(*33*)waitTimeBeforeReading,
-						(*34*)samplingHeight
+						(*34*)samplingHeight,
+						(*35*)acquisitionMixTime,
+						(*36*)acquisitionMixInstrument
 					}=Lookup[optionList,
 						{
 							(*1*)ParticleSizes,
@@ -2177,7 +2228,9 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 							(*31*)AcquisitionMixType,
 							(*32*)NumberOfMixes,
 							(*33*)WaitTimeBeforeReading,
-							(*34*)SamplingHeight
+							(*34*)SamplingHeight,
+							(*35*)AcquisitionMixTime,
+							(*36*)AcquisitionMixInstrument
 						}
 					];
 
@@ -2691,6 +2744,7 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 					(* Build a shorthand for stirring with stir bar *)
 					stirQ= resolvedAcquisitionMix&&MatchQ[resolvedAcquisitionMixType,Stir];
 					swirlQ= resolvedAcquisitionMix&&MatchQ[resolvedAcquisitionMixType,Swirl];
+					invertQ = resolvedAcquisitionMix&&MatchQ[resolvedAcquisitionMixType,Invert];
 
 					(* User cannot specify both type of mixing *)
 					conflictingMixingOptions=Which[
@@ -2699,9 +2753,9 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 							{numberOfMixes,waitTimeBeforeReading},
 							Except[Null|Automatic]
 						],
-						swirlQ, PickList[
-							{StirBar,MaxStirAttempt,AcquisitionMixRate,AdjustMixRate,MinAcquisitionMixRate,MaxAcquisitionMixRate,AcquisitionMixRateIncrement},
-							{stirBar,maxStirAttempt,acquisitionMixRate,adjustMixRate,minAcquisitionMixRate,maxAcquisitionMixRate,acquisitionMixRateIncrement},
+						Or[swirlQ, invertQ], PickList[
+							{StirBar,MaxStirAttempt,AcquisitionMixRate,AdjustMixRate,MinAcquisitionMixRate,MaxAcquisitionMixRate,AcquisitionMixRateIncrement, AcquisitionMixTime, AcquisitionMixInstrument},
+							{stirBar,maxStirAttempt,acquisitionMixRate,adjustMixRate,minAcquisitionMixRate,maxAcquisitionMixRate,acquisitionMixRateIncrement, acquisitionMixTime, acquisitionMixInstrument},
 							Except[Null|Automatic]
 						],
 						True,{}
@@ -2761,8 +2815,8 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 						(* If required Acquisition Mix set to 500 RPM *)
 						stirQ, 200 RPM,
 
-						(* Catch all with Null *)
-						True, Null
+						(* Otherwise, leave it for resolveExperimentIncubateNewOptions to resolve *)
+						True, Automatic
 
 					];
 
@@ -2861,11 +2915,11 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 						(* If user specified a method, use the value from the method object *)
 						MatchQ[methodPacketForProtocol,PacketP[]], Lookup[methodPacketForProtocol,NumberOfMixes],
 
-						(* If the AcquisitionMixType is set to Swirl, set to reasonable value *)
-						swirlQ, 20,
+						(* If the AcquisitionMixType is set to Swirl or Invert, set to reasonable value *)
+						Or[swirlQ, invertQ], 20,
 
-						(* Else set to Null *)
-						True, Null
+						(* Otherwise, leave it for resolveExperimentIncubateNewOptions to resolve *)
+						True, Automatic
 
 					];
 
@@ -2878,8 +2932,8 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 						(* If user specified a method, use the value from the method object *)
 						MatchQ[methodPacketForProtocol,PacketP[]], Lookup[methodPacketForProtocol,WaitTimeBeforeReading],
 
-						(* If the AcquisitionMixType is set to Swirl, set to reasonable value *)
-						swirlQ, 1 Minute,
+						(* If the AcquisitionMixType is set to Swirl or Invert, set to reasonable value *)
+						Or[swirlQ, invertQ], 1 Minute,
 
 						(* Else set to Null *)
 						True, Null
@@ -2913,7 +2967,7 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 						},
 
 						(* for AcquisitionMixType is swirl*)
-						swirlQ,
+						Or[swirlQ, invertQ],
 						{
 							{},
 							PickList[
@@ -2932,7 +2986,7 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 						},
 
 						(* No mix specified*)
-						True,
+						!resolvedAcquisitionMix,
 						{
 							PickList[
 								{
@@ -2953,10 +3007,14 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 									resolvedMaxAcquisitionMixRate,
 									resolvedAcquisitionMixRateIncrement
 								},
-								Except[(Null|{}|False)]
+								Except[(Null|{}|False|Automatic)]
 							],
 							{}
-						}
+						},
+
+						(* we rely on resolveExperimentIncubateNewOptions to check and resolve other mix type options *)
+						True,
+						{{}, {}}
 
 					];
 
@@ -3403,6 +3461,8 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 						(*32*)resolvedNumberOfMixes,
 						(*33*)resolvedWaitTimeBeforeReading,
 						(*34*)resolvedSamplingHeight,
+						(*35*)acquisitionMixTime,
+						(*36*)acquisitionMixInstrument,
 
 						(* Other returned value *)
 						(*1*)sampleLoadingVolume,
@@ -3456,6 +3516,58 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 		]
 	];
 
+	(* ---- Resolve Mix Options ---- *)
+	(* We don't want Mix to get our sample prep options, or template option *)
+	otherExperimentOptions=Normal[KeyDrop[myOptions,Flatten[{ToExpression[Keys[Options[SamplePrepOptions]]], Template}]]];
+
+	(* Generate the options for the ExperimentMix call. Make all of the options symbols (PassOptions converts to strings) *)
+	experimentMixPassedOptions=MapAt[ToExpression,
+		List[Quiet[PassOptions[ExperimentCountLiquidParticles, ExperimentMix, otherExperimentOptions],Warning::OptionPattern]],
+		{All, 1}
+	];
+
+	(* calling the option resolver of Mix to resolve options *)
+	replacedMixOptions=ReplaceRule[
+		experimentMixPassedOptions,
+		{
+			Mix->resolvedAcquisitionMixes,
+			MixType->resolvedAcquisitionMixTypes,
+			StirBar->resolvedStirBars,
+			Time->resolvedAcquisitionMixTimes,
+			MixRate->resolvedAcquisitionMixRates,
+			NumberOfMixes->resolvedNumberOfMixesList,
+			Instrument->resolvedAcquisitionMixInstruments,
+
+			Output-> If[gatherTests,
+				{Options,Tests},
+				Options
+			],
+			Cache->simulatedCache
+		}
+	];
+	expandedMixOptions=Last[ExpandIndexMatchedInputs[ExperimentMix,{ToList[simulatedSamples]},replacedMixOptions]];
+
+	(* resolve everything mix related *)
+	{resolvedMixOptions,mixTests}=If[gatherTests,
+		Quiet[resolveExperimentIncubateNewOptions[simulatedSamples,expandedMixOptions,Cache->simulatedCache,Simulation->updatedSimulation,Output->{Result,Tests}],{Error::DiscardedSamples,Error::InvalidInput,Error::AliquotOptionConflict,Error::StirIncompatibleInstruments,Error::StirNoStirBarOrImpeller,Error::VolumetricFlaskMixMismatch,Error::InvalidOption}],
+		{Quiet[resolveExperimentIncubateNewOptions[simulatedSamples,expandedMixOptions,Cache->simulatedCache,Simulation->updatedSimulation],{Error::DiscardedSamples,Error::InvalidInput,Error::AliquotOptionConflict,Error::StirIncompatibleInstruments,Error::StirNoStirBarOrImpeller,Error::VolumetricFlaskMixMismatch,Error::InvalidOption}],{}}
+	];
+
+	(*now we want to convert back to the names that we use in this experiment function*)
+	replacedMixNamesOptions=ReplaceAll[
+		resolvedMixOptions,
+		{
+			Rule[MixType,x_]:>Rule[AcquisitionMixType,x],
+			Rule[StirBar,x_]:>Rule[StirBar,x],
+			Rule[Time,x_]:>Rule[AcquisitionMixTime,x],
+			Rule[MixRate,x_]:>Rule[AcquisitionMixRate,x],
+			Rule[NumberOfMixes,x_]:>Rule[NumberOfMixes,x],
+			Rule[Instrument,x_]:>Rule[AcquisitionMixInstrument,x]
+		}
+	];
+
+	postResolvedAcquisitionMixTypes = Lookup[replacedMixNamesOptions,AcquisitionMixType];
+	postResolvedStirBars = Lookup[replacedMixNamesOptions,StirBar];
 
 	(* --- Resolved aliquot options --- *)
 	(* -- First check if supplied to resolved to a container --*)
@@ -3623,7 +3735,7 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 		Message[
 			Error::CountLiquidParticleRequiredAcquisitionMixOptions,
 			ObjectToString[PickList[mySamples,requiredAcquisitionMixOptionList,_?(Length[#] > 0 &)],Cache->simulatedCache],
-			ObjectToString[PickList[resolvedAcquisitionMixTypes,requiredAcquisitionMixOptionList,_?(Length[#] > 0 &)],Cache->simulatedCache],
+			ObjectToString[PickList[postResolvedAcquisitionMixTypes,requiredAcquisitionMixOptionList,_?(Length[#] > 0 &)],Cache->simulatedCache],
 			ObjectToString[PickList[requiredAcquisitionMixOptionList,requiredAcquisitionMixOptionList,_?(Length[#] > 0 &)],Cache->simulatedCache]
 		]
 	];
@@ -3707,7 +3819,7 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 			Error::CountLiquidParticleConflictingMixOptions,
 			ObjectToString[PickList[mySamples,conflictingMixingOptionsList,_?(Length[#] > 0 &)],Cache->simulatedCache],
 			ObjectToString[PickList[conflictingMixingOptionsList,conflictingMixingOptionsList,_?(Length[#] > 0 &)],Cache->simulatedCache],
-			ObjectToString[PickList[resolvedAcquisitionMixTypes,conflictingMixingOptionsList,_?(Length[#] > 0 &)],Cache->simulatedCache]
+			ObjectToString[PickList[postResolvedAcquisitionMixTypes,conflictingMixingOptionsList,_?(Length[#] > 0 &)],Cache->simulatedCache]
 		]
 	];
 
@@ -3740,7 +3852,7 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 		Message[
 			Error::CountLiquidParticleInvalidStirBar,
 			ObjectToString[PickList[mySamples,invalidStirBarBools,True],Cache->simulatedCache],
-			PickList[resolvedStirBars,invalidStirBarBools,True]
+			PickList[postResolvedStirBars,invalidStirBarBools,True]
 		];{StirBar}
 	];
 
@@ -3756,7 +3868,7 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 		Message[
 			Error::CountLiquidParticleInvalidMinAcquisitionMixRate,
 			ObjectToString[PickList[mySamples,invalidMinAcquisitionMixRateBools,True],Cache->simulatedCache],
-			PickList[resolvedStirBars,invalidMinAcquisitionMixRateBools,True]
+			PickList[postResolvedStirBars,invalidMinAcquisitionMixRateBools,True]
 		];{MinAcquisitionMixRate}
 	];
 
@@ -3934,10 +4046,18 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 	If[Length[invalidOptions]>0&&!gatherTests,
 		Message[Error::InvalidOption,invalidOptions]
 	];
-	
+
 	(* Define the Resolved Options *)
-	resolvedOptions=ReplaceRule[
+	(* Here replacedMixNamesOptions include full sets of resolved options, using Append->False will remove any options we picked up from Incubate but not needed in CountLiquidParticles *)
+	mixResolverResolvedOptions=ReplaceRule[
 		roundedUnresolvedOptions,
+		Normal[replacedMixNamesOptions],
+		Append -> False
+	];
+
+	(* We only want a subset of incubate options - e.g. AcquisitionMixTime, but not Aliquot. The duplicated options in incubate will be over written by  resolvedAliquotOptions *)
+	resolvedOptions=ReplaceRule[
+		mixResolverResolvedOptions,
 		Join[
 			resolvedSamplePrepOptions,
 			resolvedAliquotOptions,
@@ -3967,17 +4087,13 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 				DilutionStorageCondition->resolvedDilutionStorageConditions,
 				DilutionNumberOfMixes->resolvedDilutionNumberOfMixes,
 				AcquisitionMix->resolvedAcquisitionMixes,
-				AcquisitionMixType->resolvedAcquisitionMixTypes,
-				NumberOfMixes->resolvedNumberOfMixesList,
 				WaitTimeBeforeReading->resolvedWaitTimeBeforeReadings,
-				StirBar->resolvedStirBars,
 				MaxStirAttempts->resolvedMaxStirAttempts,
 				PrimeSolutionTemperatures->resolvedPrimeSolutionTemperatures,
 				PrimeEquilibrationTime->resolvedPrimeEquilibrationTimes,
 				ReadingVolume->resolvedReadingVolumes,
 				EquilibrationTime->resolvedEquilibrationTimes,
 				PreRinseVolume->resolvedPreRinseVolumes,
-				AcquisitionMixRate->resolvedAcquisitionMixRates,
 				AdjustMixRate->resolvedAdjustMixRates,
 				MinAcquisitionMixRate->resolvedMinAcquisitionMixRates,
 				MaxAcquisitionMixRate->resolvedMaxAcquisitionMixRates,
@@ -3991,7 +4107,11 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 				DiscardFirstRun->resolvedDiscardFirstRuns,
 				SamplingHeight->resolvedSamplingHeights,
 				SampleLabel->resolvedSampleLabel,
-				SampleContainerLabel->resolvedSampleContainerLabel
+				SampleContainerLabel->resolvedSampleContainerLabel,
+
+				(* We do not want to inherit the PreparatoryUnitOperations and Template of mixResolverResolvedOptions *)
+				PreparatoryUnitOperations -> Lookup[roundedUnresolvedOptions, PreparatoryUnitOperations],
+				Template -> Lookup[roundedUnresolvedOptions, Template]
 			}
 		]
 	];
@@ -4030,7 +4150,8 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 					invalidParticleLiquidLevelTooLowTests,
 					invalidSamplingHeightTests,
 					countLiquidPartcielDilutionWarnings,
-					duplicateParticleSizesWarnings
+					duplicateParticleSizesWarnings,
+					mixTests
 				}
 			],
 			_EmeraldTest
@@ -4074,8 +4195,7 @@ resolveCountLiquidParticlesMethod[myContainers : ListableP[ObjectP[{Object[Conta
 		Lookup[safeOps,Preparation],
 		{Manual}
 	];
-	
-	
+
 	(* make a boolean for if it is ManualSamplePreparation or not *)
 	(* Create a list of reasons why we need Preparation->Manual. *)
 	manualRequirementStrings={
@@ -4148,7 +4268,7 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 		diluent,dilutionContainer,dilutionCurve,dilutionMixRate,dilutionMixVolume,dilutionNumberOfMixes,dilutionStorageCondition,equilibrationTime,
 		instrument,maxAcquisitionMixRate,maxStirAttempts,method,minAcquisitionMixRate,numberOfPrimes,numberOfReadings,numberOfWashes,
 		particleSizes,preparation,preRinseVolume,primeEquilibrationTime,primeSolutions,primeSolutionTemperatures,primeWaitTimes,readingVolume,
-		sampleTemperature,sensor,serialDilutionCurve,stirBar,syringe,syringeSize,washEquilibrationTime,washSolution,
+		sampleTemperature,sensor,serialDilutionCurve,stirBars,syringe,syringeSize,washEquilibrationTime,washSolution,
 		washSolutionTemperature,washWaitTime,resourcePacketDownload,samplePackets,syringePacket,numAspirations,sampleLoadingVolumes,
 		sampleVolumes,syringeDownloadFields,pairedSamplesInAndVolumes,sampleVolumeRules,sampleResourceReplaceRules,samplesInResources,
 		requiredDiluentVolumes,pairedDiluentsAndVolumes,diluentVolumeRules,uniqueDiluentResources,uniqueDiluentObjects,uniqueDiluentReplaceRules,
@@ -4158,7 +4278,9 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 		resultRule,instrumentResource,sharedFieldPacket,finalizedPacket,simulationRule,allMethodPackets,methodPacketsToUpload, resolvedMethodsForProtocol,
 		methodPacketForProtocolUpload,expandedSerialDilutions,expandedDilutions,dilutionContainerList,discardFirstRuns,flowRate,estimatedPrimeTime,
 		estimatedRunTime,fillLiquidResource,expandedMethodPackets,rinseWaterVolume,rinseWaterResource,acquisitionMixType,numberOfMixes,
-		waitTimeBeforeReading,samplingHeights,solidSamplePackets,solidInvalidInputs
+		waitTimeBeforeReading,samplingHeights,solidSamplePackets,solidInvalidInputs, stirBarWasherResource, stirBarCount, stirBarWashSolutionResource,
+		wasteBeakerResource, pipettesResources, stirBarWashSolutionResourceLookup, uniqueStirBarWashSolutionResource
+		, quotientRemainder, stirBarCutOff, acquisitionMixTimes, acquisitionMixInstruments
 	},
 	
 	(* expand the resolved options if they weren't expanded already *)
@@ -4227,7 +4349,7 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 		(*30*)sampleTemperature,
 		(*31*)sensor,
 		(*32*)serialDilutionCurve,
-		(*33*)stirBar,
+		(*33*)stirBars,
 		(*34*)syringe,
 		(*36*)syringeSize,
 		(*37*)washEquilibrationTime,
@@ -4239,7 +4361,9 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 		(*43*)acquisitionMixType,
 		(*44*)numberOfMixes,
 		(*45*)waitTimeBeforeReading,
-		(*46*)samplingHeights
+		(*46*)samplingHeights,
+		(*47*)acquisitionMixTimes,
+		(*48*)acquisitionMixInstruments
 	} = Lookup[optionsWithReplicates,
 		{
 			(*1*)AcquisitionMix,
@@ -4285,7 +4409,9 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 			(*43*)AcquisitionMixType,
 			(*44*)NumberOfMixes,
 			(*45*)WaitTimeBeforeReading,
-			(*46*)SamplingHeight
+			(*46*)SamplingHeight,
+			(*47*)AcquisitionMixTime,
+			(*48*)AcquisitionMixInstrument
 		}
 	];
 	
@@ -4497,11 +4623,59 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 	(* Generate the resource, we need a stir bar for each container, we cannot only generate unique stir bar here *)
 	stirBarResources=Map[
 		If[NullQ[#],Null,Link[Resource[Sample->#,Name->CreateUUID[],Rent->True]]]&,
-		stirBar
+		stirBars
 	];
 	
 	(*-- If we need stir bar we also need a stir bar retriever to retrieve the stir bar from the container --*)
-	stirBarRetrieverResource=If[NullQ[stirBar],Null,Link[Resource[Sample->Model[Part, StirBarRetriever, "18 Inch Stir Bar Retriever"],Name->CreateUUID[],Rent->True]]];
+	stirBarRetrieverResource=If[
+		NullQ[stirBars],
+		Null,
+		Link[Resource[Sample->Model[Part, StirBarRetriever, "18 Inch Stir Bar Retriever"],Name->CreateUUID[],Rent->True]]
+	];
+
+	(*-- If we need stir bar we need a stir bar washer to clean and transfer the stir bar --*)
+	stirBarWasherResource = If[
+		NullQ[stirBars],
+		Null,
+		Link[Resource[Sample -> Model[Part, "50 mL Tube Stir Bar Washer with 3/16in hole"], Name -> CreateUUID[], Rent->True]]
+	];
+
+	(* resource the wash solution for cleaning stir bar *)
+	stirBarCount = Count[stirBars,ObjectP[]];
+
+	(* set the cut off of stir bar counts to be 10, corresponding to stir bar wash solution of 100 mL *)
+	stirBarCutOff = 10;
+	quotientRemainder = QuotientRemainder[stirBarCount, stirBarCutOff];
+
+	(* generate all the wash solution resources we need for all the stir bar *)
+	uniqueStirBarWashSolutionResource = Flatten[Join[
+		(* for the quotient, we generate one 100 mL water resource for every 10 stir bars *)
+		ConstantArray[
+			Resource[Sample->Model[Sample, "Milli-Q water"],Name->CreateUUID[],Amount-> 10 Milliliter * stirBarCutOff,Container->PreferredContainer[10 Milliliter * stirBarCutOff]],
+			stirBarCutOff
+		]&/@Range[quotientRemainder[[1]]],
+		(* for the reminder *)
+		ConstantArray[
+			Resource[Sample->Model[Sample, "Milli-Q water"],Name->CreateUUID[],Amount-> 10 Milliliter * quotientRemainder[[2]],Container->PreferredContainer[10 Milliliter * quotientRemainder[[2]]]],
+			quotientRemainder[[2]]
+		]
+	]];
+
+	(* generate look up for stir bar wash solution *)
+	stirBarWashSolutionResourceLookup = If[stirBarCount > 0,
+		AssociationThread[DeleteCases[stirBarResources, Null], uniqueStirBarWashSolutionResource],
+		<||>
+	];
+	stirBarWashSolutionResource = stirBarResources/.stirBarWashSolutionResourceLookup;
+
+	(* resource Model[Container, Vessel, "1000mL Glass Beaker"] for stir bar cleaning*)
+	wasteBeakerResource = If[NullQ[stirBars], Null, Link[Resource[Sample -> Model[Container, Vessel, "id:O81aEB4kJJJo"], Name -> CreateUUID[], Rent -> True]]];
+
+	(* resource pipettes Model[Item, Consumable, "VWR Disposable Transfer Pipet"] for each stir bar *)
+	pipettesResources = Map[
+		If[NullQ[#],Null,Link[Resource[Sample->Model[Item, Consumable, "id:bq9LA0J1xmBd"],Name->CreateUUID[],Rent->True]]]&,
+		stirBars
+	];
 
 	(*-- Syringe --*)
 	(* SyringeResources, not sure if we need this one, but in case we still have multiple syringes, so I will just add one here *)
@@ -4615,7 +4789,7 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 	]];
 	
 	rinseWaterResource=Link[Resource[Sample->Model[Sample, "Milli-Q water"],Name->CreateUUID[],Amount->rinseWaterVolume,Container->PreferredContainer[rinseWaterVolume]]];
-	
+
 	(*-- Check points --*)
 	checkpoints={
 		{"Preparing Samples", 1 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> 1 Minute]]},
@@ -4679,6 +4853,7 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 		Replace[WashIndexes]->(Range/@numberOfWashes),
 		Replace[NumberOfReadings]->numberOfReadings,
 		Replace[ParticleSizes]->particleSizes,
+		Replace[Pipettes] -> pipettesResources,
 		Replace[PreRinseVolumes]->preRinseVolume,
 		Replace[PreRinseVolumeStrings]->(ToString[Round[Unitless[#,Milliliter],0.001]]&/@preRinseVolume),
 		Replace[PrimeEquilibrationTimes]->primeEquilibrationTime,
@@ -4689,10 +4864,15 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 		Replace[SampleLoadingVolumes]->sampleLoadingVolumes,
 		Replace[SampleTemperatures]->(sampleTemperature/.{Ambient->$AmbientTemperature}),
 		Replace[StirBars]->stirBarResources,
+		StirBarWasher->stirBarWasherResource,
+		Replace[StirBarWashSolutions] -> stirBarWashSolutionResource,
 		Replace[WashEquilibrationTimes]->Replace[washEquilibrationTime, {Null -> 0Minute}],
 		Replace[WashSolutions]->washSolutionsResources,
 		Replace[WashSolutionTemperatures]->(washSolutionTemperature/.{Ambient->$AmbientTemperature}),
-		Replace[WashWaitTimes]->Replace[washWaitTime, {Null -> 0Minute}]
+		Replace[WashWaitTimes]->Replace[washWaitTime, {Null -> 0Minute}],
+		WasteBeaker -> wasteBeakerResource,
+		Replace[AcquisitionMixTimes] -> acquisitionMixTimes,
+		Replace[AcquisitionMixInstruments] -> Link[acquisitionMixInstruments]
 	|>;
 	
 	(* generate a packet with the shared fields *)
@@ -4753,6 +4933,8 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 				WashWaitTime->Lookup[resolvedOptionsNoHidden,WashWaitTime],
 				NumberOfWash->Lookup[resolvedOptionsNoHidden,NumberOfWashes],
 				SamplingHeight->Lookup[resolvedOptionsNoHidden,SamplingHeight],
+				AcquisitionMixTime -> Lookup[resolvedOptionsNoHidden,AcquisitionMixTime],
+				AcquisitionMixInstrument -> Lookup[resolvedOptionsNoHidden,AcquisitionMixInstrument],
 				
 				(* Function informations *)
 				Cache->cache,

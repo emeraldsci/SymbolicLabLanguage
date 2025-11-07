@@ -141,7 +141,8 @@ validModelQualificationBalanceQTests[packet:PacketP[Model[Qualification,Balance]
 		packet,
 		{
 			CalibrationWeights,
-			WeightHandles
+			WeightHandles,
+			NumberOfReplicates
 		}
 	]
 };
@@ -1044,7 +1045,7 @@ validModelQualificationHPLCQTests[packet:PacketP[Model[Qualification,HPLC]]]:=Mo
 	Test[
 		"When the target is a Waters or Agilent instrument, Buffer D is required, otherwise it should be Null:",
 		{
-			MemberQ[models,Alternatives[Model[Instrument,HPLC,"id:GmzlKjY5EOAM"],Model[Instrument,HPLC,"id:1ZA60vw8X5eD"],Model[Instrument,HPLC,"id:Z1lqpMGJmR0O"],Model[Instrument,HPLC,"id:P5ZnEjx1oAAR"],Model[Instrument,HPLC,"id:dORYzZn6p31E"],Model[Instrument, HPLC, "id:R8e1Pjp1md8p"],Model[Instrument, HPLC, "id:dORYzZRWJlDD"], Model[Instrument, HPLC, "id:lYq9jRqD8OpV"], Model[Instrument, HPLC, "id:dORYzZRWmDn5"]]],
+			MemberQ[models,Alternatives[Model[Instrument,HPLC,"id:GmzlKjY5EOAM"],Model[Instrument,HPLC,"id:1ZA60vw8X5eD"],Model[Instrument,HPLC,"id:Z1lqpMGJmR0O"],Model[Instrument,HPLC,"id:P5ZnEjx1oAAR"],Model[Instrument,HPLC,"id:dORYzZn6p31E"],Model[Instrument, HPLC, "id:R8e1Pjp1md8p"],Model[Instrument, HPLC, "id:dORYzZRWJlDD"], Model[Instrument, HPLC, "id:lYq9jRqD8OpV"], Model[Instrument, HPLC, "id:dORYzZRWmDn5"],Model[Instrument, HPLC, "id:dORYzZd6K4AD"],Model[Instrument, HPLC, "id:4pO6dMmKwEkB"]]],
 			Lookup[packet,BufferD]
 		},
 		Alternatives[
@@ -1221,6 +1222,18 @@ validModelQualificationIonChromatographyQTests[packet:PacketP[Model[Qualificatio
 		]
 
 	}];
+
+(* ::Subsection::Closed:: *)
+(*validModelQualificationKarlFischerTitratorQTests*)
+
+
+validModelQualificationKarlFischerTitratorQTests[packet:PacketP[Model[Qualification, KarlFischerTitrator]]]:= {
+	NotNullFieldTest[
+		packet,
+		{TitrationTechnique, SamplingMethods}
+	]
+};
+
 
 
 (* ::Subsection::Closed:: *)
@@ -1422,6 +1435,21 @@ validModelQualificationMassSpectrometerQTests[packet:PacketP[Model[Qualification
 				Replicates
 			}
 		]
+	]
+};
+
+(* ::Subsection::Closed:: *)
+(*validModelQualificationMaterialLossAuditQTests*)
+
+
+validModelQualificationMaterialLossAuditQTests[packet:PacketP[Model[Qualification,MaterialLossAudit]]]:={
+
+	(* the target should be of the right instrument type *)
+	NotNullFieldTest[
+		packet,
+		{
+			MaxUnreportedMaterialLossRate
+		}
 	]
 };
 
@@ -2671,14 +2699,16 @@ registerValidQTestFunction[Model[Qualification, HPLC],validModelQualificationHPL
 registerValidQTestFunction[Model[Qualification, LCMS],validModelQualificationLCMSQTests];
 registerValidQTestFunction[Model[Qualification, Incubator],validModelQualificationIncubatorQTests];
 registerValidQTestFunction[Model[Qualification, InstrumentAlarmAudit],validModelQualificationInstrumentAlarmAuditQTests];
-registerValidQTestFunction[Model[Qualification,InteractiveTraining],validModelQualificationInteractiveTrainingQTests];
+registerValidQTestFunction[Model[Qualification, InteractiveTraining],validModelQualificationInteractiveTrainingQTests];
 registerValidQTestFunction[Model[Qualification, IonChromatography],validModelQualificationIonChromatographyQTests];
+registerValidQTestFunction[Model[Qualification, KarlFischerTitrator],validModelQualificationKarlFischerTitratorQTests];
 registerValidQTestFunction[Model[Qualification, LiquidHandler],validModelQualificationLiquidHandlerQTests];
 registerValidQTestFunction[Model[Qualification, LiquidParticleCounter],validModelQualificationLiquidParticleCounterQTests];
 registerValidQTestFunction[Model[Qualification, LiquidLevelDetection],validModelQualificationLiquidLevelDetectionQTests];
 registerValidQTestFunction[Model[Qualification, LiquidLevelDetector],validModelQualificationLiquidLevelDetectorQTests];
 registerValidQTestFunction[Model[Qualification, Lyophilizer],validModelQualificationLyophilizerQTests];
 registerValidQTestFunction[Model[Qualification, MeltingPointApparatus],validModelQualificationMeltingPointApparatusQTests];
+registerValidQTestFunction[Model[Qualification, MaterialLossAudit],validModelQualificationMaterialLossAuditQTests];
 registerValidQTestFunction[Model[Qualification, MassSpectrometer],validModelQualificationMassSpectrometerQTests];
 registerValidQTestFunction[Model[Qualification, Microscope],validModelQualificationMicroscopeQTests];
 registerValidQTestFunction[Model[Qualification, Microwave],validModelQualificationMicrowaveQTests];

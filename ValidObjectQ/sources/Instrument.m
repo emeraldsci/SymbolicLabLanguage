@@ -2436,6 +2436,22 @@ validInstrumentHandlingStationAmbientQTests[packet:PacketP[Object[Instrument,Han
 
 validInstrumentInfraredProbeQTests[packet:PacketP[Object[Instrument,InfraredProbe]]]:={};
 
+(* ::Subsection::Closed:: *)
+(*validInstrumentKarlFischerTitratorQTests*)
+
+validInstrumentKarlFischerTitratorQTests[packet:PacketP[Object[Instrument, KarlFischerTitrator]]]:={
+	(* Individual fields *)
+	NotNullFieldTest[
+		packet,
+		{
+			MediumCap,
+			WasteContainerCap,
+			MediumWeightSensor,
+			StirBarRetriever,
+			ContainerDisconnectionSlot
+		}
+	]
+};
 
 (* ::Subsection::Closed:: *)
 (*validInstrumentIonChromatographyQTests*)
@@ -2624,9 +2640,12 @@ validInstrumentLiquidHandlerQTests[packet:PacketP[Object[Instrument,LiquidHandle
 				True
 			],
 
-			Test["If the instrument is a Hamilton, must have MethodFilePath and DataFilePath populated:",
+			Test["If the instrument is a Hamilton, must have MethodFilePath and DataFilePath populated either in the object or in the model:",
 				If[MatchQ[manufacturer, ObjectP[Object[Company, Supplier, "id:vXl9j5qErxNJ"]]],
-					Not[NullQ[Lookup[packet, MethodFilePath]]] && Not[NullQ[Lookup[packet, DataFilePath]]],
+					Or[
+						!NullQ[Lookup[packet, MethodFilePath]] && !NullQ[Lookup[packet, DataFilePath]],
+						!NullQ[Download[Lookup[packet, Model], DefaultMethodFilePath]] && !NullQ[Download[Lookup[packet, Model], DefaultDataFilePath]]
+					],
 					True
 				],
 				True
@@ -2748,11 +2767,12 @@ validInstrumentLiquidHandlerQTests[packet:PacketP[Object[Instrument,LiquidHandle
 
 			Test[
 				"If informed, all members of the OffDeckHeaterShakers of Hamilton must be in IntegratedShakers as well:",
-				And[
-					!MatchQ[Lookup[packet,OffDeckHeaterShakers],{}|Null],
-					Equal[
+				Or[
+					MatchQ[Lookup[packet,OffDeckHeaterShakers],{}|Null],
+					EqualQ[
 						Length[Intersection[Download[Lookup[packet,OffDeckHeaterShakers],Object],Download[Lookup[packet,IntegratedShakers],Object]]],
-						Length[Lookup[packet,OffDeckHeaterShakers]]]
+						Length[Lookup[packet,OffDeckHeaterShakers]]
+					]
 				],
 				True
 			],
@@ -3527,7 +3547,7 @@ validInstrumentPlateTilterQTests[packet:PacketP[Object[Instrument,PlateTilter]]]
 
 
 (* ::Subsection::Closed:: *)
-(*validInstrumentShakerQTests*)
+(*validInstrumentPlateWasherQTests*)
 
 
 validInstrumentPlateWasherQTests[packet:PacketP[Object[Instrument,PlateWasher]]]:={
@@ -3546,6 +3566,7 @@ validInstrumentPlateWasherQTests[packet:PacketP[Object[Instrument,PlateWasher]]]
 	NotNullFieldTest[
 		packet,
 		{
+			BufferDeck,
 			WasteContainer,
 			BufferAInlet
 		}
@@ -4994,6 +5015,7 @@ registerValidQTestFunction[Object[Instrument, SupercriticalFluidChromatography],
 registerValidQTestFunction[Object[Instrument, Incubator],validInstrumentIncubatorQTests];
 registerValidQTestFunction[Object[Instrument, InfraredProbe],validInstrumentInfraredProbeQTests];
 registerValidQTestFunction[Object[Instrument, IonChromatography],validInstrumentIonChromatographyQTests];
+registerValidQTestFunction[Object[Instrument, KarlFischerTitrator],validInstrumentKarlFischerTitratorQTests];
 registerValidQTestFunction[Object[Instrument, LightMeter],validInstrumentLightMeterQTests];
 registerValidQTestFunction[Object[Instrument, LiquidHandler],validInstrumentLiquidHandlerQTests];
 registerValidQTestFunction[Object[Instrument, LiquidHandler, AcousticLiquidHandler],validInstrumentAcousticLiquidHandlerQTests];

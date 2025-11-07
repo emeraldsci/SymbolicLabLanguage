@@ -161,6 +161,52 @@ DefineObjectType[Object[Container, Plate], {
 			Headers->{"Date","Use"},
 			Description -> "The dates the plate has previously been used in protocols.",
 			Category -> "General"
+		},
+		(* Quality Assurance *)
+		Certificates ->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation-> Object[Report,Certificate,Analysis][MaterialsCertified],
+			Description->"The certificate of analysis for this plate's batch number containing certified physical property data used of this plate used in calibrations.",
+			Category->"Quality Assurance"
+		},
+		(* Health & Safety *)
+		MSDSRequired->{
+			Format->Single,
+			Class->Expression,
+			Pattern:>BooleanP,
+			Description->"Indicates if an MSDS is applicable for this plate.",
+			Category->"Health & Safety"
+		},
+		MSDSFile->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[EmeraldCloudFile],
+			Description->"PDF of the models MSDS (Materials Saftey Data Sheet).",
+			Category->"Health & Safety"
+		},
+		NFPA->{
+			Format->Single,
+			Class->Expression,
+			Pattern:>NFPAP,
+			Description->"The National Fire Protection Association (NFPA) 704 hazard diamond classification for the plate.",
+			Category->"Health & Safety"
+		},
+		DOTHazardClass->{
+			Format->Single,
+			Class->String,
+			Pattern:>DOTHazardClassP,
+			Description->"The Department of Transportation hazard classification of the plate.",
+			Category->"Health & Safety"
+		},
+		BiosafetyLevel->{
+			Format->Single,
+			Class->Expression,
+			Pattern:>BiosafetyLevelP,
+			Description->"The Biosafety classification of the plate.",
+			Category->"Health & Safety"
 		}
 	}
 }];

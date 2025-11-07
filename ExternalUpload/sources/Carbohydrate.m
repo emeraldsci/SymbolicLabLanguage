@@ -18,33 +18,37 @@
 
 DefineOptions[UploadCarbohydrate,
 	SharedOptions :> {
-		UploadMolecule
+		MoleculeOptions,
+		ExternalUploadHiddenOptions
 	},
 	Options :> {
 		IndexMatching[
 			IndexMatchingInput -> "Input Data",
 			{
 				OptionName -> GlyTouCanID,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Adder[Widget[Type -> String, Pattern :> _String, Size -> Line]],
 				Description -> "The GlyTouCan IDs for this carbohydrate.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Organizational Information"
 			},
 			{
 				OptionName -> WURCS,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> String, Pattern :> _String, Size -> Paragraph],
 				Description -> "The Web3 Unique Representation of Carbohydrate Structures notation for this carbohydrate.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Organizational Information"
 			},
 			{
 				OptionName -> MonoisotopicMass,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Quantity, Pattern :> GreaterP[0 Dalton], Units -> Dalton],
 				Description -> "The monoisotopic, underivatised, uncharged mass of this carbohydrate, calculated from experimental data for individual monosaccarides.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Physical Properties"
 			}
 		]
@@ -52,9 +56,9 @@ DefineOptions[UploadCarbohydrate,
 ];
 
 
-InstallDefaultUploadFunction[UploadCarbohydrate, Model[Molecule, Carbohydrate]];
-InstallValidQFunction[UploadCarbohydrate, Model[Molecule, Carbohydrate]];
-InstallOptionsFunction[UploadCarbohydrate, Model[Molecule, Carbohydrate]];
+installDefaultUploadFunction[UploadCarbohydrate, Model[Molecule, Carbohydrate]];
+installDefaultValidQFunction[UploadCarbohydrate, Model[Molecule, Carbohydrate]];
+installDefaultOptionsFunction[UploadCarbohydrate, Model[Molecule, Carbohydrate]];
 
 ExternalUpload`Private`InstallIdentityModelTests[
 	UploadCarbohydrate,
@@ -66,7 +70,7 @@ ExternalUpload`Private`InstallIdentityModelTests[
 		State -> Solid,
 		BiosafetyLevel -> "BSL-1",
 		Flammable -> False,
-		MSDSRequired -> False,
+		MSDSFile -> NotApplicable,
 		IncompatibleMaterials -> {None}
 	},
 	{Model[Molecule, Carbohydrate, "Acarbose (test for UploadCarbohydrate)" <> $SessionUUID]}
@@ -82,7 +86,7 @@ ExternalUpload`Private`InstallIdentityModelTests[
 		State -> Solid,
 		BiosafetyLevel -> "BSL-1",
 		Flammable -> False,
-		MSDSRequired -> False,
+		MSDSFile -> NotApplicable,
 		IncompatibleMaterials -> {None}
 	},
 	{Model[Molecule, Carbohydrate, "Acarbose (test for UploadCarbohydrateOptions)" <> $SessionUUID]}
@@ -98,7 +102,7 @@ ExternalUpload`Private`InstallIdentityModelTests[
 		State -> Solid,
 		BiosafetyLevel -> "BSL-1",
 		Flammable -> False,
-		MSDSRequired -> False,
+		MSDSFile -> NotApplicable,
 		IncompatibleMaterials -> {None}
 	},
 	{Model[Molecule, Carbohydrate, "Acarbose (test for ValidUploadCarbohydrateQ)" <> $SessionUUID]}

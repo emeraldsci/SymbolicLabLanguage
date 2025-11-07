@@ -122,6 +122,14 @@ DefineObjectType[Model[Plumbing], {
 			Description -> "A photo of this model of plumbing component.",
 			Category -> "Plumbing Information"
 		},
+		Icon -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "A simplified image used to represent this plumbing component.",
+			Category -> "Plumbing Information"
+		},
 		ProductDocumentationFiles -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -155,7 +163,16 @@ DefineObjectType[Model[Plumbing], {
 			Category -> "Inventory",
 			Developer->True
 		},
-		
+		StickerPositionImage -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description ->  "An image of this model that indicates the correct position for affixing barcode stickers.",
+			Category -> "Inventory",
+			Developer->True
+		},
+
 		(* --- Operating Limits --- *)
 		MinPressure -> {
 			Format -> Single,
@@ -221,14 +238,6 @@ DefineObjectType[Model[Plumbing], {
 			Pattern :> _Link,
 			Relation -> Object[Product][KitComponents, ProductModel],
 			Description -> "Products ordering information for this model if this model is part of one or more kits.",
-			Category -> "Inventory"
-		},
-		MixedBatchProducts -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Product][MixedBatchComponents, ProductModel],
-			Description -> "Products ordering information for this model if this model is part of one or more mixed batches.",
 			Category -> "Inventory"
 		},
 		StickeredUponArrival -> {

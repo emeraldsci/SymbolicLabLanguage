@@ -81,7 +81,7 @@ DefineObjectType[Object[UnitOperation, SpreadCells],{
     InoculationSource -> {
       Format -> Single,
       Class -> Expression,
-      Pattern :> StreakSpreadInoculationSourceP, (* SolidMedia|LiquidMedia|AgarStab *)
+      Pattern :> StreakSpreadInoculationSourceP, (*LiquidMedia | FreezeDried | FrozenGlycerol *)
       Description -> "The type of the media (LiquidMedia, FreezeDried, or FrozenGlycerol) where the source cells are stored before the experiment. For the source type of FreezeDried, the samples are resuspended first by adding a liquid media. For the source type of FrozenGlycerol, the samples are scraped from top and resuspended into liquid media by pipette, while the source tube is chilled to remain frozen.",
       Category -> "General"
     },

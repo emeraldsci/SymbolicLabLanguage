@@ -22,7 +22,7 @@ DefineOptions[DefineAnalytes,
 			IndexMatchingInput -> "Input Data",
 			{
 				OptionName -> Analytes,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Alternatives[
 					"List of Analytes" -> With[{insertMe=List @@ IdentityModelTypeP},
@@ -33,6 +33,7 @@ DefineOptions[DefineAnalytes,
 					"Empty List" -> Widget[Type -> Enumeration, Pattern :> Alternatives[{}]]
 				],
 				Description -> "The molecular identities of primary interest in this sample.",
+				ResolutionDescription -> "For existing objects, Automatic resolves to the current field value.",
 				Category -> "Organizational Information"
 			}
 		],
@@ -40,6 +41,6 @@ DefineOptions[DefineAnalytes,
 	}
 ];
 
-InstallDefaultUploadFunction[DefineAnalytes, Object[Sample], InstallNameOverload -> False, InstallObjectOverload -> True];
-InstallValidQFunction[DefineAnalytes, Object[Sample]];
-InstallOptionsFunction[DefineAnalytes, Object[Sample]];
+installDefaultUploadFunction[DefineAnalytes, Object[Sample], InstallNameOverload -> False, InstallObjectOverload -> True];
+installDefaultValidQFunction[DefineAnalytes, Object[Sample]];
+installDefaultOptionsFunction[DefineAnalytes, Object[Sample]];

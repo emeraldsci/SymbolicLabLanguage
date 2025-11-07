@@ -312,7 +312,7 @@ DefineObjectType[Object[UnitOperation,CountLiquidParticles],
 			AcquisitionMixType -> {
 				Format -> Multiple,
 				Class -> Expression,
-				Pattern :> Alternatives[Swirl,Stir],
+				Pattern :> MixTypeP,
 				Description -> "Indicates the type of the mix, either stir by a stir bar or swirl the container by hands, during the data collection.",
 				Category -> "Particle Size Measurements"
 			},
@@ -321,7 +321,7 @@ DefineObjectType[Object[UnitOperation,CountLiquidParticles],
 				Class -> Integer,
 				Pattern :> RangeP[1,40,1],
 				Units -> None,
-				Description -> "Indicates the number of swirl (by hands) if the corresponding AcquisitionMixTypes is Swirl, before the particle sizes of the sample is collected.",
+				Description -> "Indicates the number of swirl (by hands) if the corresponding AcquisitionMixTypes is Swirl or Pipette, before the particle sizes of the sample is collected.",
 				Category -> "Particle Size Measurements"
 			},
 			WaitTimeBeforeReading -> {
@@ -345,7 +345,7 @@ DefineObjectType[Object[UnitOperation,CountLiquidParticles],
 				Class -> Real,
 				Pattern :> GreaterP[0 RPM],
 				Units -> RPM,
-				Description -> "Indicates the rate at which the samples is mixed with a stir bar during data acquisition.",
+				Description -> "Indicates the rate at which the samples is mixed with a stir bar during data acquisition or with other mix type before data acquisition.",
 				Category -> "Particle Size Measurements"
 			},
 			AdjustMixRate -> {
@@ -557,6 +557,57 @@ DefineObjectType[Object[UnitOperation,CountLiquidParticles],
 				Pattern:>FilePathP,
 				Description -> "The folder and the final file name that will be generated for the videos to be saved in.",
 				Category -> "Data Processing"
+			},
+			StirBarWashSolutions -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Object[Sample],
+					Model[Sample]
+				],
+				Description -> "The solvent used for washing the stir bar.",
+				Category -> "Washing"
+			},
+			WasteBeaker->{
+				Format->Single,
+				Class->Link,
+				Pattern:>_Link,
+				Relation->Object[Container,Vessel]|Model[Container,Vessel],
+				Description->"A vessel that is used to catch any residual water that comes off the stir bar washer when it is washed.",
+				Category->"Washing"
+			},
+			StirBarWasher -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[Model[Part],Object[Part]],
+				Description -> "The stir bar washer that is used to wash the stir bar after it is taken out of the zip bag and to transfer it to sample container.",
+				Category -> "Washing"
+			},
+			Pipettes -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[Object[Item, Consumable],Model[Item, Consumable]],
+				Description -> "The pipette used to wash the stir bar after it is taken out of the zip bag.",
+				Category -> "Washing"
+			},
+			AcquisitionMixTime -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Minute],
+				Units -> Minute,
+				Description -> "Indicates duration of time for which the samples will be mixed before acquisition.",
+				Category -> "Particle Size Measurements"
+			},
+			AcquisitionMixInstrument -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives@@Join[MixInstrumentModels, MixInstrumentObjects],
+				Description -> "The instrument used to perform the Mix and/or Incubation before acquisition.",
+				Category-> "Particle Size Measurements"
 			}
 		}
 	}

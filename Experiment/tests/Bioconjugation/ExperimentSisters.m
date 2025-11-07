@@ -114,7 +114,7 @@ DefineTests[ExperimentBioconjugationPreview,
           ShelfLife->{1 Year,1 Year},
           UnsealedShelfLife->{2 Week,2 Week},
           DefaultStorageCondition->{Model[StorageCondition,"Refrigerator"],Model[StorageCondition,"Refrigerator"]},
-          MSDSRequired->{False,False},
+          MSDSFile -> {NotApplicable, NotApplicable},
           BiosafetyLevel->{"BSL-1","BSL-1"},
           State->{Liquid,Liquid}
         ];
@@ -306,7 +306,7 @@ DefineTests[ExperimentBioconjugationOptions,
           ShelfLife->{1 Year,1 Year},
           UnsealedShelfLife->{2 Week,2 Week},
           DefaultStorageCondition->{Model[StorageCondition,"Refrigerator"],Model[StorageCondition,"Refrigerator"]},
-          MSDSRequired->{False,False},
+          MSDSFile -> {NotApplicable, NotApplicable},
           BiosafetyLevel->{"BSL-1","BSL-1"},
           State->{Liquid,Liquid}
         ];
@@ -508,7 +508,7 @@ DefineTests[ValidExperimentBioconjugationQ,
           ShelfLife->{1 Year,1 Year},
           UnsealedShelfLife->{2 Week,2 Week},
           DefaultStorageCondition->{Model[StorageCondition,"Refrigerator"],Model[StorageCondition,"Refrigerator"]},
-          MSDSRequired->{False,False},
+          MSDSFile -> {NotApplicable, NotApplicable},
           BiosafetyLevel->{"BSL-1","BSL-1"},
           State->{Liquid,Liquid}
         ];

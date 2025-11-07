@@ -35,47 +35,41 @@ validModelMoleculeQTests[packet : PacketP[Model[Molecule]]] := With[
 		Test["The Name of the Model is unique for " <> ToString[chemicalIdentifier] <> ":",
 			uniqueNameQ,
 			True,
-			Message -> Hold[Error::NonUniqueObjectName],
-			MessageArguments -> {chemicalIdentifier}
+			Message -> {Hold[Error::NonUniqueObjectName], chemicalIdentifier}
 		],
 
 		Test["Both Acid and Base cannot be True simultaneously for " <> ToString[chemicalIdentifier] <> ":",
 			Lookup[packet, {Acid, Base}],
 			Except[{True, True}],
-			Message -> Hold[Error::AcidAndBase],
-			MessageArguments -> {chemicalIdentifier}
+			Message -> {Hold[Error::AcidAndBase], chemicalIdentifier}
 		],
 
 		(* Density of solid or liquid must be \[GreaterEqual] density of liquid hydrogen *)
 		Test["Density of any solid or liquid must be greater than that of liquid Hydrogen for " <> ToString[chemicalIdentifier] <> ":",
 			Lookup[packet, {State, Density}],
 			Alternatives[{Null | Gas, _}, {Solid | Liquid | Consumable, Null | GreaterEqualP[Quantity[0.0708`, ("Grams") / ("Milliliters")]]}],
-			Message -> Hold[Error::InvalidDensity],
-			MessageArguments -> {chemicalIdentifier}
+			Message -> {Hold[Error::InvalidDensity], chemicalIdentifier}
 		],
 
 		(* Density of solid or liquid must be \[LessEqual] density of hassium *)
 		Test["Density of any solid or liquid must be less than that of Hassium for " <> ToString[chemicalIdentifier] <> ":",
 			Lookup[packet, {State, Density}],
 			Alternatives[{Null | Gas, _}, {Solid | Liquid | Consumable, Null | LessEqualP[Quantity[40.7 , ("Grams") / ("Milliliters")]]}],
-			Message -> Hold[Error::InvalidDensity],
-			MessageArguments -> {chemicalIdentifier}
+			Message -> {Hold[Error::InvalidDensity], chemicalIdentifier}
 		],
 
 		(* Density of any gas \[GreaterEqual] density of hydrogen gas *)
 		Test["Density of any gas must be greater than that of Hydrogen gas for " <> ToString[chemicalIdentifier] <> ":",
 			Lookup[packet, {State, Density}],
 			Alternatives[{Solid | Liquid | Consumable | Null, _}, {Gas, Null | GreaterEqualP[Quantity[0.00008988 , ("Grams") / ("Milliliters")]]}],
-			Message -> Hold[Error::InvalidDensity],
-			MessageArguments -> {chemicalIdentifier}
+			Message -> {Hold[Error::InvalidDensity], chemicalIdentifier}
 		],
 
 		(* Density of any gas \[LessEqual] density of tungsten hexafluoride *)
 		Test["Density of any gas must be less than that of tungsten hexafluoride gas for " <> ToString[chemicalIdentifier] <> ":",
 			Lookup[packet, {State, Density}],
 			Alternatives[{Solid | Liquid | Consumable | Null, _}, {Gas, Null | LessEqualP[Quantity[0.0124 , ("Grams") / ("Milliliters")]]}],
-			Message -> Hold[Error::InvalidDensity],
-			MessageArguments -> {chemicalIdentifier}
+			Message -> {Hold[Error::InvalidDensity], chemicalIdentifier}
 		],
 
 		Test["If a sample is marked as pungent it must also be set to ventilated for " <> ToString[chemicalIdentifier] <> ":",
@@ -84,31 +78,28 @@ validModelMoleculeQTests[packet : PacketP[Model[Molecule]]] := With[
 				True
 			],
 			True,
-			Message -> Hold[Error::VentilatedRequired],
-			MessageArguments -> {chemicalIdentifier}
+			Message -> {Hold[Error::VentilatedRequired], chemicalIdentifier}
 		],
 
 		(* Shared field shaping *)
-		NotNullFieldTest[packet, {State, Name, Synonyms}, Message -> Hold[Error::RequiredOptions], MessageArguments -> {chemicalIdentifier}],
+		NotNullFieldTest[packet, {State, Name, Synonyms}, Message -> {Hold[Error::RequiredOptions], chemicalIdentifier}],
 
 		Test["The contents of the Name field is a member of the Synonyms field for " <> ToString[chemicalIdentifier] <> ":",
 			MemberQ[Lookup[packet, Synonyms], Lookup[packet, Name]],
 			True,
-			Message -> Hold[Error::NameIsNotPartOfSynonyms],
-			MessageArguments -> {chemicalIdentifier}
+			Message -> {Hold[Error::NameIsNotPartOfSynonyms], chemicalIdentifier}
 		],
 
 		(* Tests that only apply if MSDSRequired is not False *)
 		If[!MatchQ[Lookup[packet, MSDSRequired], False],
-			NotNullFieldTest[packet, {Flammable, MSDSFile, NFPA, DOTHazardClass}, Message -> Hold[Error::RequiredMSDSOptions], MessageArguments -> {chemicalIdentifier}],
+			NotNullFieldTest[packet, {Flammable, MSDSFile, NFPA, DOTHazardClass}, Message -> {Hold[Error::RequiredMSDSOptions], chemicalIdentifier}],
 			Nothing
 		],
 
 		Test["IncompatibleMaterials is populated and contains either just None or a list of incompatible materials for " <> ToString[chemicalIdentifier] <> ":",
 			Lookup[packet, IncompatibleMaterials],
 			{None} | {MaterialP..},
-			Message -> Hold[Error::IncompatibleMaterials],
-			MessageArguments -> {chemicalIdentifier}
+			Message -> {Hold[Error::IncompatibleMaterials], chemicalIdentifier}
 		],
 
 		(* Tests that AffinityLabels and DetectionLabels conform to AffinityLableP and DetectionLabelP*)
@@ -127,8 +118,7 @@ validModelMoleculeQTests[packet : PacketP[Model[Molecule]]] := With[
 					Test["AffinityLabels conforms to AffinityLabelP:",
 						passingQ,
 						True,
-						Message -> Hold[Error::AffinityLabelsDoNotConformToPattern],
-						MessageArguments -> {StringTake[patternConflictingInputs // ToString, {2, -2}], If[Not[passingQ], StringTake[Search[Model[Molecule], AffinityLabel === True] // ToString, {2, -2}], Null]}
+						Message -> {Hold[Error::AffinityLabelsDoNotConformToPattern], StringTake[patternConflictingInputs // ToString, {2, -2}], If[Not[passingQ], StringTake[Search[Model[Molecule], AffinityLabel === True] // ToString, {2, -2}], Null]}
 					]
 				),
 				Nothing
@@ -149,8 +139,7 @@ validModelMoleculeQTests[packet : PacketP[Model[Molecule]]] := With[
 				Test["DetectionLabels conforms to DetectionLabelP:",
 					passingQ,
 					True,
-					Message -> Hold[Error::DetectionLabelsDoNotConformToPattern],
-					MessageArguments -> {StringTake[patternConflictingInputs // ToString, {2, -2}], If[Not[passingQ], StringTake[Search[Model[Molecule], DetectionLabel === True] // ToString, {2, -2}]]}
+					Message -> {Hold[Error::DetectionLabelsDoNotConformToPattern], StringTake[patternConflictingInputs // ToString, {2, -2}], If[Not[passingQ], StringTake[Search[Model[Molecule], DetectionLabel === True] // ToString, {2, -2}]]}
 				],
 				Nothing
 			]
@@ -158,19 +147,6 @@ validModelMoleculeQTests[packet : PacketP[Model[Molecule]]] := With[
 
 
 		(* Other tests *)
-		Test["If Monatomic is set to True, the MolecularFormula contains exactly one element.",
-			Module[{formula, monatomic},
-				{formula, monatomic} = Lookup[packet, {MolecularFormula, Monatomic}, $Failed];
-				If[!MemberQ[{formula, monatomic}, $Failed] && MatchQ[monatomic, True],
-					MatchQ[formula, ElementAbbreviationP],
-					True
-				]
-			],
-			True,
-			Message -> Hold[Error::MoleculeIsNotMonatomic],
-			MessageArguments -> {chemicalIdentifier}
-		],
-
 		RequiredTogetherTest[packet, {Fluorescent, FluorescenceExcitationMaximums, FluorescenceEmissionMaximums}],
 
 		Test["For each of the FluorescenceExcitationMaximums the corresponding FluorescenceEmissionMaximums are provided for " <> ToString[chemicalIdentifier] <> ":",
@@ -182,8 +158,7 @@ validModelMoleculeQTests[packet : PacketP[Model[Molecule]]] := With[
 				]
 			],
 			True,
-			Message -> Hold[Error::FluorescenceFields],
-			MessageArguments -> {chemicalIdentifier}
+			Message -> {Hold[Error::FluorescenceFields], chemicalIdentifier}
 		],
 
 		(* Chiral properties*)
@@ -246,8 +221,7 @@ validModelMoleculeQTests[packet : PacketP[Model[Molecule]]] := With[
 				]
 			],
 			True,
-			Message -> Hold[Error::RacemicOrChiralMolecule],
-			MessageArguments -> {chemicalIdentifier}
+			Message -> {Hold[Error::RacemicOrChiralMolecule], chemicalIdentifier}
 		],
 
 		Test["If model is public and has DefaultSampleModel, it is public as well:",
@@ -261,6 +235,30 @@ validModelMoleculeQTests[packet : PacketP[Model[Molecule]]] := With[
 				]
 			],
 			True
+		],
+
+		Test["If the State of a molecule is not Liquid, is has no MiscicibleLiquids:",
+			If[MatchQ[Lookup[packet, State], Except[Liquid]],
+				MatchQ[Lookup[packet, MiscibleLiquids], {}],
+				True
+			],
+			True
+		],
+
+		Test["Each member of MiscicibleLiquids is itself a liquid:",
+			If[MatchQ[Lookup[packet, MiscibleLiquids], {ObjectP[]..}],
+				Download[Lookup[packet, MiscibleLiquids], State],
+				{}
+			],
+			{Liquid...}
+		],
+
+		Test["If water is a member of MiscicibleLiquids, then it does not have a discrete WaterSolubility at ambient conditions (" <> ToString[$AmbientTemperature] <> "):",
+			If[MemberQ[Lookup[packet, MiscibleLiquids], ObjectP[Model[Molecule, "id:vXl9j57PmP5D"]]],
+				MatchQ[Cases[Lookup[packet, WaterSolubility], {EqualP[$AmbientTemeprature], _}], {}],
+				True
+			],
+			True
 		]
 
 	}
@@ -272,15 +270,13 @@ Error::InvalidDensity="The density for the input(s), `1`, do not appear to be va
 Error::VentilatedRequired="The input(s), `1`, that are marked as Pungent must also be set to Ventilated->True. Please change the value of the Ventilated field.";
 Error::MoleculeRequiredFields="The options {State, BiosafetyLevel, Name, Synonyms} are required for input(s), `1`. Please include these options to upload a valid object.";
 Error::NameIsNotPartOfSynonyms="The Name option is not part of the Synonyms field, for the input(s) `1`. Please include the Name of the object as part of the Synonyms field.";
-Error::RequiredMSDSOptions="If MSDSRequired isn't set to False, the fields {Flammable,MSDSFile,NFPA,DOTHazardClass} are required for input(s): `1`. Please fill out the values of these fields in order to upload a valid object.";
+Error::RequiredMSDSOptions="If an MSDS is required, the fields {Flammable,MSDSFile,NFPA,DOTHazardClass} are required for input(s): `1`. Please fill out the values of these fields in order to upload a valid object or use the MSDSFile option to declare that an MSDS is not required.";
 Error::IncompatibleMaterials="The option IncompatibleMaterials must either be {None} or a list of incompatible materials for input(s): `1`. Please change the value of this option in order to upload a valid object.";
 Error::FluorescenceFields="The FluorescenceExcitationMaximums and FluorescenceEmissionMaximums fields must be the same length for the input(s):`1`. For every provided fluorescence excitation maximum please provide the corresponding fluorescence emission maximum.";
 Error::AffinityLabelsDoNotConformToPattern="The AffinityLabels `1` is not allowed. Allowed molecules for Affinity labels include `2`, whose AffinityLabel->True.";
 Error::DetectionLabelsDoNotConformToPattern="The DetectionLabels `1` is not allowed. Allowed molecules for Detection labels include `2`, whose DetectionLabel->True.";
 Error::RacemicOrChiralMolecule="The molecule `1` cannot be both a racemic molecule and a chiral molecule at the same time. Please check the chirality of the molecule and set either one or both of Chiral or Racemic to be False.";
 Error::MoleculeRequired = "Molecule was not specified for `1`, please make sure you specify a Molecule in order to upload it as Oligomer.";
-Error::MoleculeIsNotMonatomic = "The specified MolecularFormula for `1` does not agree with Monatomic being True. Please check that molecule's formula contains only one element.";
-Error::MoleculeIsMonatomic = "The specified MolecularFormula for `1` does not agree with Monatomic being False. Please check that molecule's formula contains only one element.";
 
 errorToOptionMap[Model[Molecule]]:={
 	"Error::NonUniqueObjectName"->{Name},
@@ -289,17 +285,11 @@ errorToOptionMap[Model[Molecule]]:={
 	"Error::VentilatedRequired"->{Pungent, Ventilated},
 	"Error::RequiredOptions"->{State, BiosafetyLevel, Name, Synonyms},
 	"Error::NameIsNotPartOfSynonyms"->{Name, Synonyms},
-	"Error::RequiredMSDSOptions"-> {MSDSRequired,Flammable,MSDSFile,NFPA,DOTHazardClass},
+	"Error::RequiredMSDSOptions"-> {Flammable,MSDSFile,NFPA,DOTHazardClass},
 	"Error::IncompatibleMaterials"->{IncompatibleMaterials},
 	"Error::FluorescenceFields"->{FluorescenceExcitationMaximums,FluorescenceEmissionMaximums},
 	"Error::AffinityLabelsDoNotConformToPattern"->{AffinityLabels},
-	"Error::DetectionLabelsDoNotConformToPattern"->{DetectionLabels},
-	"Error::MoleculeExists"->{InChI, InChIKey, CAS, IUPAC, PubChemID},
-	"Error::InvalidMSDSURL"->{MSDSFile},
-	"Error::InvalidStructureFileURL"->{StructureFile},
-	"Error::InvalidStructureImageFileURL"->{StructureImageFile},
-	"Error::InvalidStructureLocalFile"->{StructureFile},
-	"Error::InvalidStructureImageLocalFile"->{StructureImageFile}
+	"Error::DetectionLabelsDoNotConformToPattern"->{DetectionLabels}
 };
 
 
@@ -314,8 +304,7 @@ validModelMoleculecDNAQTests[packet : PacketP[Model[Molecule, cDNA]]] := With[
 		NotNullFieldTest[
 			packet,
 			{BiosafetyLevel, Name, Synonyms, Cells, ReverseTranscriptaseBuffer, ReverseTranscriptaseEnzyme},
-			Message -> Hold[Error::RequiredOptions],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::RequiredOptions], identifier}
 		],
 
 		Test["The Molecular structure of the Nucleic Acid is required if its MolecularWeight is under 10 Kilogram/Mole::",
@@ -324,8 +313,7 @@ validModelMoleculecDNAQTests[packet : PacketP[Model[Molecule, cDNA]]] := With[
 				{MoleculeP | _?ECL`StructureQ | _?ECL`StrandQ, _},
 				{_, GreaterEqualP[10 Kilogram / Mole]}
 			],
-			Message -> Hold[Error::MoleculeRequired],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::MoleculeRequired], identifier}
 		]
 	}
 ];
@@ -349,8 +337,7 @@ validModelMoleculeOligomerQTests[packet : PacketP[Model[Molecule, Oligomer]]] :=
 		NotNullFieldTest[
 			packet,
 			{PolymerType, BiosafetyLevel, Name, Synonyms, MolecularWeight},
-			Message -> Hold[Error::RequiredOptions],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::RequiredOptions], identifier}
 		],
 
 		Test["The Molecular structure of the Nucleic Acid is required if its MolecularWeight is under 5 Kilogram/Mole::",
@@ -359,8 +346,7 @@ validModelMoleculeOligomerQTests[packet : PacketP[Model[Molecule, Oligomer]]] :=
 				{MoleculeP | _?ECL`StructureQ | _?ECL`StrandQ, _},
 				{_, GreaterEqualP[5 Kilogram / Mole]}
 			],
-			Message -> Hold[Error::MoleculeRequired],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::MoleculeRequired], identifier}
 		],
 
 		Test["The MolecularWeight matches the expected value calculated by MolecularWeight[]:",
@@ -372,8 +358,7 @@ validModelMoleculeOligomerQTests[packet : PacketP[Model[Molecule, Oligomer]]] :=
 				True,
 				RoundReals[Convert[Total@ToList[MolecularWeight[Lookup[packet, Molecule]]], Gram / Mole], 2]
 			],
-			Message -> Hold[Error::InvalidMolecularWeight],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::InvalidMolecularWeight], identifier}
 		]
 	}
 ];
@@ -396,8 +381,7 @@ validModelMoleculeTranscriptQTests[packet : PacketP[Model[Molecule, Transcript]]
 		NotNullFieldTest[
 			packet,
 			{BiosafetyLevel, Name, Synonyms},
-			Message -> Hold[Error::RequiredOptions],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::RequiredOptions], identifier}
 		],
 
 		Test["The Molecular structure of the Nucleic Acid is required if its MolecularWeight is under 10 Kilogram/Mole::",
@@ -406,8 +390,7 @@ validModelMoleculeTranscriptQTests[packet : PacketP[Model[Molecule, Transcript]]
 				{MoleculeP | _?ECL`StructureQ | _?ECL`StrandQ, _},
 				{_, GreaterEqualP[10 Kilogram / Mole]}
 			],
-			Message -> Hold[Error::MoleculeRequired],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::MoleculeRequired], identifier}
 		]
 	}
 ];
@@ -461,8 +444,7 @@ validModelMoleculeProteinAntibodyQTests[packet : PacketP[Model[Molecule, Protein
 				]
 			],
 			True,
-			Message -> Hold[Error::SecondaryAntibodySpecies],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::SecondaryAntibodySpecies], identifier}
 		],
 		Test["RecommendedDilution is specified if this antibody is suitable for western blotting:",
 			If[MemberQ[Lookup[packet, AssayTypes], Western],
@@ -470,8 +452,7 @@ validModelMoleculeProteinAntibodyQTests[packet : PacketP[Model[Molecule, Protein
 				True
 			],
 			True,
-			Message -> Hold[Error::RequiredRecommendedDilution],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::RequiredRecommendedDilution], identifier}
 		]
 	}
 ];
@@ -531,15 +512,13 @@ validModelResinQTests[packet : PacketP[Model[Resin]]] := With[
 		Test["The Name of the Model is unique for " <> ToString[identifier] <> ":",
 			uniqueNameQ,
 			True,
-			Message -> Hold[Error::NonUniqueResinName],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NonUniqueResinName], identifier}
 		],
 
 		Test["Both Acid and Base cannot be True simultaneously for " <> ToString[identifier] <> ":",
 			Lookup[packet, {Acid, Base}],
 			Except[{True, True}],
-			Message -> Hold[Error::AcidAndBase],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::AcidAndBase], identifier}
 		],
 
 		Test["If a sample is marked as pungent it must also be set to ventilated for " <> ToString[identifier] <> ":",
@@ -548,31 +527,28 @@ validModelResinQTests[packet : PacketP[Model[Resin]]] := With[
 				True
 			],
 			True,
-			Message -> Hold[Error::VentilatedRequired],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::VentilatedRequired], identifier}
 		],
 
 		(* Shared field shaping *)
-		NotNullFieldTest[packet, {State, BiosafetyLevel, Name, Synonyms}, Message -> Hold[Error::RequiredOptions], MessageArguments -> {identifier}],
+		NotNullFieldTest[packet, {State, BiosafetyLevel, Name, Synonyms}, Message -> {Hold[Error::RequiredOptions], identifier}],
 
 		Test["The contents of the Name field is a member of the Synonyms field for " <> ToString[identifier] <> ":",
 			MemberQ[Lookup[packet, Synonyms], Lookup[packet, Name]],
 			True,
-			Message -> Hold[Error::NameIsNotPartOfSynonyms],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NameIsNotPartOfSynonyms], identifier}
 		],
 
 		(* Tests that only apply if MSDSRequired is not False *)
 		If[!MatchQ[Lookup[packet, MSDSRequired], False],
-			NotNullFieldTest[packet, {Flammable, MSDSFile, NFPA, DOTHazardClass}, Message -> Hold[Error::RequiredMSDSOptions], MessageArguments -> {identifier}],
+			NotNullFieldTest[packet, {Flammable, MSDSFile, NFPA, DOTHazardClass}, Message -> {Hold[Error::RequiredMSDSOptions], identifier}],
 			Nothing
 		],
 
 		Test["IncompatibleMaterials is populated and contains either just None or a list of incompatible materials for " <> ToString[identifier] <> ":",
 			Lookup[packet, IncompatibleMaterials],
 			{None} | {MaterialP..},
-			Message -> Hold[Error::IncompatibleMaterials],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::IncompatibleMaterials], identifier}
 		],
 
 		(* Other tests *)
@@ -582,8 +558,7 @@ validModelResinQTests[packet : PacketP[Model[Resin]]] := With[
 				{Model[Resin], Except[NullP]},
 				{Model[Resin, SolidPhaseSupport], _}
 			],
-			Message -> Hold[Error::LoadingRequired],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::LoadingRequired], identifier}
 		],
 		Test["Labels needs to have AffinityLabels and/or DetectionLabels:",
 			Module[{affinityLabels, destinationLabels, labels, unionSet},
@@ -592,7 +567,7 @@ validModelResinQTests[packet : PacketP[Model[Resin]]] := With[
 				ContainsExactly[unionSet,labels]
 			],
 			True,
-			Message -> Hold[Error::IncompleteLabels]
+			Message -> {Hold[Error::IncompleteLabels]}
 		]
 	}
 ];
@@ -606,7 +581,7 @@ errorToOptionMap[Model[Resin]]:={
 	"Error::VentilatedRequired"->{Pungent, Ventilated},
 	"Error::RequiredOptions"->{State, BiosafetyLevel, Name, Synonyms},
 	"Error::NameIsNotPartOfSynonyms"->{Name, Synonyms},
-	"Error::RequiredMSDSOptions"-> {MSDSRequired,Flammable,MSDSFile,NFPA,DOTHazardClass},
+	"Error::RequiredMSDSOptions"-> {Flammable,MSDSFile,NFPA,DOTHazardClass},
 	"Error::IncompatibleMaterials"->{IncompatibleMaterials},
 	"Error::LoadingRequired"->{Loading}
 };
@@ -622,11 +597,10 @@ validModelResinSolidPhaseSupportQTests[packet : PacketP[Model[Resin, SolidPhaseS
 		Test["SourceResin is required for " <> ToString[identifier] <> " unless the resin is PreDownloaded:",
 			Lookup[packet, {SourceResin, PreDownloaded}],
 			{Except[NullP | {}], False | Null} | {NullP | {}, True},
-			Message -> Hold[Error::SourceResinRequired],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::SourceResinRequired], identifier}
 		],
 
-		NotNullFieldTest[packet, {Strand}, Message -> Hold[Error::RequiredOptions], MessageArguments -> {identifier}]
+		NotNullFieldTest[packet, {Strand}, Message -> {Hold[Error::RequiredOptions], identifier}]
 	}
 ];
 
@@ -659,15 +633,13 @@ validModelLysateQTests[packet : PacketP[Model[Lysate]]] := With[
 		Test["The Name of the Model is unique for " <> ToString[identifier] <> ":",
 			uniqueNameQ,
 			True,
-			Message -> Hold[Error::NonUniqueLysateName],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NonUniqueLysateName], identifier}
 		],
 
 		Test["Both Acid and Base cannot be True simultaneously for " <> ToString[identifier] <> ":",
 			Lookup[packet, {Acid, Base}],
 			Except[{True, True}],
-			Message -> Hold[Error::AcidAndBase],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::AcidAndBase], identifier}
 		],
 
 		Test["If a sample is marked as pungent it must also be set to ventilated for " <> ToString[identifier] <> ":",
@@ -676,34 +648,31 @@ validModelLysateQTests[packet : PacketP[Model[Lysate]]] := With[
 				True
 			],
 			True,
-			Message -> Hold[Error::VentilatedRequired],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::VentilatedRequired], identifier}
 		],
 
 		(* Shared field shaping *)
-		NotNullFieldTest[packet, {State, BiosafetyLevel, Name, Synonyms}, Message -> Hold[Error::RequiredOptions], MessageArguments -> {identifier}],
+		NotNullFieldTest[packet, {State, BiosafetyLevel, Name, Synonyms}, Message -> {Hold[Error::RequiredOptions], identifier}],
 
 		Test["The contents of the Name field is a member of the Synonyms field for " <> ToString[identifier] <> ":",
 			MemberQ[Lookup[packet, Synonyms], Lookup[packet, Name]],
 			True,
-			Message -> Hold[Error::NameIsNotPartOfSynonyms],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NameIsNotPartOfSynonyms], identifier}
 		],
 
 		(* Tests that only apply if MSDSRequired is not False *)
 		If[!MatchQ[Lookup[packet, MSDSRequired], False],
-			NotNullFieldTest[packet, {Flammable, MSDSFile, NFPA, DOTHazardClass}, Message -> Hold[Error::RequiredMSDSOptions], MessageArguments -> {identifier}],
+			NotNullFieldTest[packet, {Flammable, MSDSFile, NFPA, DOTHazardClass}, Message -> {Hold[Error::RequiredMSDSOptions], identifier}],
 			Nothing
 		],
 
 		Test["IncompatibleMaterials is populated and contains either just None or a list of incompatible materials for " <> ToString[identifier] <> ":",
 			Lookup[packet, IncompatibleMaterials],
 			{None} | {MaterialP..},
-			Message -> Hold[Error::IncompatibleMaterials],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::IncompatibleMaterials], identifier}
 		],
 
-		NotNullFieldTest[packet, {Cell}, Message :> Hold[Error::CellRequired], MessageArguments -> {identifier}]
+		NotNullFieldTest[packet, {Cell}, Message ->{Hold[Error::CellRequired], identifier}]
 	}
 ];
 
@@ -717,7 +686,7 @@ errorToOptionMap[Model[Lysate]]:={
 	"Error::VentilatedRequired"->{Pungent, Ventilated},
 	"Error::RequiredOptions"->{State, BiosafetyLevel, Name, Synonyms},
 	"Error::NameIsNotPartOfSynonyms"->{Name, Synonyms},
-	"Error::RequiredMSDSOptions"-> {MSDSRequired,Flammable,MSDSFile,NFPA,DOTHazardClass},
+	"Error::RequiredMSDSOptions"-> {Flammable,MSDSFile,NFPA,DOTHazardClass},
 	"Error::IncompatibleMaterials"->{IncompatibleMaterials},
 	"Error::CellRequired"->{Cell}
 };
@@ -744,15 +713,13 @@ validModelVirusQTests[packet : PacketP[Model[Virus]]] := With[
 		Test["The Name of the Model is unique for " <> ToString[identifier] <> ":",
 			uniqueNameQ,
 			True,
-			Message -> Hold[Error::NonUniqueVirusName],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NonUniqueVirusName], identifier}
 		],
 
 		Test["Both Acid and Base cannot be True simultaneously for " <> ToString[identifier] <> ":",
 			Lookup[packet, {Acid, Base}],
 			Except[{True, True}],
-			Message -> Hold[Error::AcidAndBase],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::AcidAndBase], identifier}
 		],
 
 		Test["If a sample is marked as pungent it must also be set to ventilated for " <> ToString[identifier] <> ":",
@@ -761,31 +728,28 @@ validModelVirusQTests[packet : PacketP[Model[Virus]]] := With[
 				True
 			],
 			True,
-			Message -> Hold[Error::VentilatedRequired],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::VentilatedRequired], identifier}
 		],
 
 		Test["The contents of the Name field is a member of the Synonyms field for " <> ToString[identifier] <> ":",
 			MemberQ[Lookup[packet, Synonyms], Lookup[packet, Name]],
 			True,
-			Message -> Hold[Error::NameIsNotPartOfSynonyms],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NameIsNotPartOfSynonyms], identifier}
 		],
 
 		(* Tests that only apply if MSDSRequired is not False *)
 		If[!MatchQ[Lookup[packet, MSDSRequired], False],
-			NotNullFieldTest[packet, {Flammable, MSDSFile, NFPA, DOTHazardClass}, Message -> Hold[Error::RequiredMSDSOptions], MessageArguments -> {identifier}],
+			NotNullFieldTest[packet, {Flammable, MSDSFile, NFPA, DOTHazardClass}, Message -> {Hold[Error::RequiredMSDSOptions], identifier}],
 			Nothing
 		],
 
 		Test["IncompatibleMaterials is populated and contains either just None or a list of incompatible materials for " <> ToString[identifier] <> ":",
 			Lookup[packet, IncompatibleMaterials],
 			{None} | {MaterialP..},
-			Message -> Hold[Error::IncompatibleMaterials],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::IncompatibleMaterials], identifier}
 		],
 
-		NotNullFieldTest[packet, {State, BiosafetyLevel, Name, Synonyms, GenomeType, Taxonomy, LatentState}, Message -> Hold[Error::RequiredOptions], MessageArguments -> {identifier}]
+		NotNullFieldTest[packet, {State, BiosafetyLevel, Name, Synonyms, GenomeType, Taxonomy, LatentState}, Message -> {Hold[Error::RequiredOptions], identifier}]
 	}
 ];
 
@@ -798,7 +762,7 @@ errorToOptionMap[Model[Virus]]:={
 	"Error::VentilatedRequired"->{Pungent, Ventilated},
 	"Error::RequiredOptions"->{State, BiosafetyLevel, Name, Synonyms,GenomeType,Taxonomy,LatentState},
 	"Error::NameIsNotPartOfSynonyms"->{Name, Synonyms},
-	"Error::RequiredMSDSOptions"-> {MSDSRequired,Flammable,MSDSFile,NFPA,DOTHazardClass},
+	"Error::RequiredMSDSOptions"-> {Flammable,MSDSFile,NFPA,DOTHazardClass},
 	"Error::IncompatibleMaterials"->{IncompatibleMaterials},
 	"Error::RequiredVirusOptions"->{GenomeType,Taxonomy,LatentState}
 };
@@ -827,15 +791,13 @@ validModelCellQTests[packet : PacketP[Model[Cell]]] := With[
 		Test["The Name of the Model is unique for " <> ToString[identifier] <> ":",
 			uniqueNameQ,
 			True,
-			Message -> Hold[Error::NonUniqueCellName],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NonUniqueCellName], identifier}
 		],
 
 		Test["Both Acid and Base cannot be True simultaneously for " <> ToString[identifier] <> ":",
 			Lookup[packet, {Acid, Base}],
 			Except[{True, True}],
-			Message -> Hold[Error::AcidAndBase],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::AcidAndBase], identifier}
 		],
 
 		Test["If a sample is marked as pungent it must also be set to ventilated for " <> ToString[identifier] <> ":",
@@ -844,31 +806,28 @@ validModelCellQTests[packet : PacketP[Model[Cell]]] := With[
 				True
 			],
 			True,
-			Message -> Hold[Error::VentilatedRequired],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::VentilatedRequired], identifier}
 		],
 
 		Test["The contents of the Name field is a member of the Synonyms field for " <> ToString[identifier] <> ":",
 			MemberQ[Lookup[packet, Synonyms], Lookup[packet, Name]],
 			True,
-			Message -> Hold[Error::NameIsNotPartOfSynonyms],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NameIsNotPartOfSynonyms], identifier}
 		],
 
 		(* Tests that only apply if MSDSRequired is not False *)
 		If[!MatchQ[Lookup[packet, MSDSRequired], False],
-			NotNullFieldTest[packet, {Flammable, MSDSFile, NFPA, DOTHazardClass}, Message -> Hold[Error::RequiredMSDSOptions], MessageArguments -> {identifier}],
+			NotNullFieldTest[packet, {Flammable, MSDSFile, NFPA, DOTHazardClass}, Message -> {Hold[Error::RequiredMSDSOptions], identifier}],
 			Nothing
 		],
 
 		Test["IncompatibleMaterials is populated and contains either just None or a list of incompatible materials for " <> ToString[identifier] <> ":",
 			Lookup[packet, IncompatibleMaterials],
 			{None} | {MaterialP..},
-			Message -> Hold[Error::IncompatibleMaterials],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::IncompatibleMaterials], identifier}
 		],
 
-		NotNullFieldTest[packet, {CellType, CultureAdhesion, State, BiosafetyLevel, Name, Synonyms}, Message -> Hold[Error::RequiredOptions], MessageArguments -> {identifier}],
+		NotNullFieldTest[packet, {CellType, CultureAdhesion, State, BiosafetyLevel, Name, Synonyms}, Message -> {Hold[Error::RequiredOptions], identifier}],
 
 		Test["If provided, PreferredSplitThreshold must be less than PreferredMaxCellCount for " <> ToString[identifier] <> ":",
 			Module[{preferredSplitThreshold, preferredMaxCellCount},
@@ -879,8 +838,7 @@ validModelCellQTests[packet : PacketP[Model[Cell]]] := With[
 				]
 			],
 			True,
-			Message -> Hold[Error::SplitThresholdGreaterThanMaxCellCount],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::SplitThresholdGreaterThanMaxCellCount], identifier}
 		],
 
 		(* Tests that DetectionLabels conform to DetectionLabelP *)
@@ -900,9 +858,8 @@ validModelCellQTests[packet : PacketP[Model[Cell]]] := With[
 					Test["DetectionLabels conforms to DetectionLabelP:",
 						passingQ,
 						True,
-						Message -> Hold[Error::DetectionLabelsDoNotConformToPattern],
 						(* putting this Search in here for only if we are actually failing*)
-						MessageArguments -> {StringTake[patternConflictingInputs // ToString, {2, -2}], If[Not[passingQ], StringTake[Search[Model[Molecule], DetectionLabel === True] // ToString, {2, -2}], Null]}
+						Message -> Join[{Hold[Error::DetectionLabelsDoNotConformToPattern]}, {StringTake[patternConflictingInputs // ToString, {2, -2}], If[Not[passingQ], StringTake[Search[Model[Molecule], DetectionLabel === True] // ToString, {2, -2}], Null]}]
 					]
 				),
 				Nothing
@@ -919,7 +876,7 @@ errorToOptionMap[Model[Cell]]:={
 	"Error::AcidAndBase"->{Acid, Base},
 	"Error::VentilatedRequired"->{Pungent, Ventilated},
 	"Error::NameIsNotPartOfSynonyms"->{Name, Synonyms},
-	"Error::RequiredMSDSOptions"-> {MSDSRequired,Flammable,MSDSFile,NFPA,DOTHazardClass},
+	"Error::RequiredMSDSOptions"-> {Flammable,MSDSFile,NFPA,DOTHazardClass},
 	"Error::IncompatibleMaterials"->{IncompatibleMaterials},
 	"Error::RequiredOptions"->{State,BiosafetyLevel,Name,Synonyms},
 	"Error::DetectionLabelsDoNotConformToPattern"->{DetectionLabels}
@@ -951,8 +908,7 @@ validModelBacterialCellQTests[packet : PacketP[Model[Cell, Bacteria]]] := With[
 		Test["If the Morphology of the cell is non-Cocci, Cell Length should be informed:",
 			Lookup[packet, {Morphology, CellLength}, Null],
 			{Cocci, Null | {}} | {Except[Cocci], Except[Null | {}]},
-			Message -> Hold[Error::CellLengthRequired],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::CellLengthRequired], identifier}
 		]
 	}
 ];
@@ -998,15 +954,13 @@ validModelTissueQTests[packet : PacketP[Model[Tissue]]] := With[
 		Test["The Name of the Model is unique for " <> ToString[identifier] <> ":",
 			uniqueNameQ,
 			True,
-			Message -> Hold[Error::NonUniqueTissueName],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NonUniqueTissueName], identifier}
 		],
 
 		Test["Both Acid and Base cannot be True simultaneously for " <> ToString[identifier] <> ":",
 			Lookup[packet, {Acid, Base}],
 			Except[{True, True}],
-			Message -> Hold[Error::AcidAndBase],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::AcidAndBase], identifier}
 		],
 
 		Test["If a sample is marked as pungent it must also be set to ventilated for " <> ToString[identifier] <> ":",
@@ -1015,31 +969,28 @@ validModelTissueQTests[packet : PacketP[Model[Tissue]]] := With[
 				True
 			],
 			True,
-			Message -> Hold[Error::VentilatedRequired],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::VentilatedRequired], identifier}
 		],
 
 		(* Shared field shaping *)
-		NotNullFieldTest[packet, {Species, State, BiosafetyLevel, Name, Synonyms}, Message -> Hold[Error::RequiredOptions], MessageArguments -> {identifier}],
+		NotNullFieldTest[packet, {Species, State, BiosafetyLevel, Name, Synonyms}, Message -> {Hold[Error::RequiredOptions], identifier}],
 
 		Test["The contents of the Name field is a member of the Synonyms field for " <> ToString[identifier] <> ":",
 			MemberQ[Lookup[packet, Synonyms], Lookup[packet, Name]],
 			True,
-			Message -> Hold[Error::NameIsNotPartOfSynonyms],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NameIsNotPartOfSynonyms], identifier}
 		],
 
 		(* Tests that only apply if MSDSRequired is not False *)
 		If[!MatchQ[Lookup[packet, MSDSRequired], False],
-			NotNullFieldTest[packet, {Flammable, MSDSFile, NFPA, DOTHazardClass}, Message -> Hold[Error::RequiredMSDSOptions], MessageArguments -> {identifier}],
+			NotNullFieldTest[packet, {Flammable, MSDSFile, NFPA, DOTHazardClass}, Message -> {Hold[Error::RequiredMSDSOptions], identifier}],
 			Nothing
 		],
 
 		Test["IncompatibleMaterials is populated and contains either just None or a list of incompatible materials for " <> ToString[identifier] <> ":",
 			Lookup[packet, IncompatibleMaterials],
 			{None} | {MaterialP..},
-			Message -> Hold[Error::IncompatibleMaterials],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::IncompatibleMaterials], identifier}
 		]
 
 	}
@@ -1053,7 +1004,7 @@ errorToOptionMap[Model[Tissue]]:={
 	"Error::VentilatedRequired"->{Pungent, Ventilated},
 	"Error::RequiredOptions"->{Species,State, BiosafetyLevel, Name, Synonyms},
 	"Error::NameIsNotPartOfSynonyms"->{Name, Synonyms},
-	"Error::RequiredMSDSOptions"-> {MSDSRequired,Flammable,MSDSFile,NFPA,DOTHazardClass},
+	"Error::RequiredMSDSOptions"-> {Flammable,MSDSFile,NFPA,DOTHazardClass},
 	"Error::IncompatibleMaterials"->{IncompatibleMaterials}
 };
 
@@ -1079,15 +1030,13 @@ validModelMaterialQTests[packet : PacketP[Model[Material]]] := With[
 		Test["The Name of the Model is unique for " <> ToString[identifier] <> ":",
 			uniqueNameQ,
 			True,
-			Message -> Hold[Error::NonUniqueMaterialName],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NonUniqueMaterialName], identifier}
 		],
 
 		Test["Both Acid and Base cannot be True simultaneously for " <> ToString[identifier] <> ":",
 			Lookup[packet, {Acid, Base}],
 			Except[{True, True}],
-			Message -> Hold[Error::AcidAndBase],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::AcidAndBase], identifier}
 		],
 
 		Test["If a sample is marked as pungent it must also be set to ventilated for " <> ToString[identifier] <> ":",
@@ -1096,31 +1045,28 @@ validModelMaterialQTests[packet : PacketP[Model[Material]]] := With[
 				True
 			],
 			True,
-			Message -> Hold[Error::VentilatedRequired],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::VentilatedRequired], identifier}
 		],
 
 		(* Shared field shaping *)
-		NotNullFieldTest[packet, {State, BiosafetyLevel, Name, Synonyms}, Message -> Hold[Error::RequiredOptions], MessageArguments -> {identifier}],
+		NotNullFieldTest[packet, {State, BiosafetyLevel, Name, Synonyms}, Message -> {Hold[Error::RequiredOptions], identifier}],
 
 		Test["The contents of the Name field is a member of the Synonyms field for " <> ToString[identifier] <> ":",
 			MemberQ[Lookup[packet, Synonyms], Lookup[packet, Name]],
 			True,
-			Message -> Hold[Error::NameIsNotPartOfSynonyms],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NameIsNotPartOfSynonyms], identifier}
 		],
 
 		(* Tests that only apply if MSDSRequired is not False *)
 		If[!MatchQ[Lookup[packet, MSDSRequired], False],
-			NotNullFieldTest[packet, {Flammable, MSDSFile, NFPA, DOTHazardClass}, Message -> Hold[Error::RequiredMSDSOptions], MessageArguments -> {identifier}],
+			NotNullFieldTest[packet, {Flammable, MSDSFile, NFPA, DOTHazardClass}, Message -> {Hold[Error::RequiredMSDSOptions], identifier}],
 			Nothing
 		],
 
 		Test["IncompatibleMaterials is populated and contains either just None or a list of incompatible materials for " <> ToString[identifier] <> ":",
 			Lookup[packet, IncompatibleMaterials],
 			{None} | {MaterialP..},
-			Message -> Hold[Error::IncompatibleMaterials],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::IncompatibleMaterials], identifier}
 		]
 	}
 ];
@@ -1134,7 +1080,7 @@ errorToOptionMap[Model[Material]]:={
 	"Error::VentilatedRequired"->{Pungent, Ventilated},
 	"Error::RequiredOptions"->{State, BiosafetyLevel, Name, Synonyms},
 	"Error::NameIsNotPartOfSynonyms"->{Name, Synonyms},
-	"Error::RequiredMSDSOptions"-> {MSDSRequired,Flammable,MSDSFile,NFPA,DOTHazardClass},
+	"Error::RequiredMSDSOptions"-> {Flammable,MSDSFile,NFPA,DOTHazardClass},
 	"Error::IncompatibleMaterials"->{IncompatibleMaterials}
 };
 
@@ -1156,8 +1102,7 @@ validModelSpeciesQTests[packet : PacketP[Model[Species]]] := With[
 		Test["The Name of the Model is unique for " <> ToString[identifier] <> ":",
 			uniqueNameQ,
 			True,
-			Message -> Hold[Error::NonUniqueSpeciesName],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NonUniqueSpeciesName], identifier}
 		]
 	}
 ];

@@ -246,30 +246,48 @@ SimulateLogPartitionCoefficient[myMolecules:ListableP[ObjectP[Model[Molecule]]|N
   ];
 
   (* For each of these molecules, get the PubChem ID. *)
-  pubChemAssociations = Quiet@Block[{ExternalUpload`Private`$SimulatedLogP = True},
-    Map[
-      Function[{packet},
-        Which[
-          MatchQ[Lookup[packet, LogP], _?NumericQ],
-            <|LogP -> Lookup[packet, LogP]|>,
+  pubChemAssociations = Block[{ExternalUpload`Private`$SimulatedLogP = True},
+    Module[
+      {positionsToScrape, positionsNotToScrape, notScrapeRules, pubChemIdentifiers, pubChemPackets, scrapeRules},
 
-          MatchQ[Lookup[packet, Molecule], MoleculeP],
-            With[{insertMe=MoleculeValue[Lookup[packet, Molecule], "InChI"]}, ExternalUpload`Private`retryConnection[ExternalUpload`Private`parseInChI[insertMe], 3]],
+      (* Figure out which positions we have a LogP for and therefore don't have to populate *)
+	  (* this is admittedly super weird with the If; I want it to be Null and want NumericQ to return False in the first case and True in the second case *)
+      positionsNotToScrape = Position[uniqueMoleculePackets, _?(NumericQ[If[NullQ[#], Null, Lookup[#, LogP]]]&), {1}, Heads -> False];
+      positionsToScrape = Position[uniqueMoleculePackets, _?(!NumericQ[If[NullQ[#], 0, Lookup[#, LogP]]]&), {1}, Heads -> False];
 
-          MatchQ[Lookup[packet, PubChemID], _Integer],
-            With[{insertMe=Lookup[packet, PubChemID]}, ExternalUpload`Private`retryConnection[ExternalUpload`Private`parsePubChem[insertMe], 3]],
+      (* Create rules to return a little packet with the LogP in for the cases where we have it already *)
+      notScrapeRules = AssociationMap[
+        <|LogP -> Lookup[Extract[uniqueMoleculePackets, #], LogP]|> &,
+        positionsNotToScrape
+      ];
 
-          MatchQ[Lookup[packet, InChI], InChIP],
-            With[{insertMe=Lookup[packet, InChI]}, ExternalUpload`Private`retryConnection[ExternalUpload`Private`parseInChI[insertMe], 3]],
+      (* For the rest, we'll contact PubChem *)
+      (* Get a list of identifiers, in order, to try for each input *)
+      pubChemIdentifiers = DeleteCases[
+        Lookup[
+          Extract[uniqueMoleculePackets, positionsToScrape],
+          {Molecule, PubChemID, InChI, Name},
+          Null
+        ],
+        Null,
+        {2}
+      ];
 
-          MatchQ[Lookup[packet, Name], _String],
-            With[{insertMe=Lookup[packet, Name]}, ExternalUpload`Private`retryConnection[ExternalUpload`Private`parseChemicalIdentifier[insertMe], 3]],
+      (* Feed those into scrapeMoleculeData, silencing any messages and replacing $Faileds with empty packets *)
+      pubChemPackets = Replace[
+        Quiet[ExternalUpload`Private`scrapeMoleculeData[pubChemIdentifiers]],
+        $Failed -> <||>,
+        1
+      ];
 
-          True,
-            <||>
-        ]
-      ],
-      uniqueMoleculePackets
+      (* Create rules to feed those results back into the index match list *)
+      scrapeRules = AssociationThread[positionsToScrape -> pubChemPackets];
+
+      (* Create a final list of empty packets and feed in the results *)
+      ReplacePart[
+        ConstantArray[<||>, Length[uniqueMoleculePackets]],
+        Join[notScrapeRules, scrapeRules]
+      ]
     ]
   ];
 

@@ -597,6 +597,13 @@ DefineObjectType[Object[Sample], {
 			Description->"Indicates if this model is in the form of a small disk or cylinder of compressed solid substance in a measured amount.",
 			Category->"Physical Properties"
 		},
+		Capsule ->{
+			Format->Single,
+			Class->Boolean,
+			Pattern:>BooleanP,
+			Description->"Indicates if this model is in the form of a small cylinder that can be opened containing solid substance in a measured amount.",
+			Category->"Physical Properties"
+		},
 		SolidUnitWeight->{
 			Format->Single,
 			Class->Real,
@@ -1096,8 +1103,25 @@ DefineObjectType[Object[Sample], {
 			Description -> "Indicates if aseptic techniques are followed for handling this sample in lab. Aseptic techniques include sanitization, autoclaving, sterile filtration, or transferring in a biosafety cabinet during experimentation and storage.",
 			Category -> "Storage & Handling"
 		},
-
-		(* --- Inventory --- *)
+		CellPassageNumber -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0, 1],
+			Units -> None,
+			Description -> "The number of times the cell model in this sample has been subcultured from its original source. Each passage involves harvesting cells and reinoculating them into a new vessel. If the sample contains multiple cell models, this value reflects the maximum among their individual passage numbers. A record of passage number changes can be found in the CellPassageLog field.",
+			Category -> "Sample History"
+		},
+		CellPassageLog -> {
+			Format -> Multiple,
+			Class -> {Expression, Link, Link, Integer, Link},
+			Pattern :> {_?DateObjectQ, _Link, _Link, GreaterEqualP[0], _Link},
+			Relation -> {Null, Model[Cell], Object[Sample], Null, Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification]},
+			Units -> {None, None, None, None, None},
+			Description -> "A record of the subculture history of cell models in this sample. Each entry is a list that includes the date, the cell model, the immediate inoculation source sample from which this cell model was inoculated, the passage number, and the responsible protocol. Higher passage numbers indicate prolonged culturing, which can lead to passage-dependent drift (e.g., altered morphology, growth rate, gene expression, or stimulus response). SamplesOut from InoculateLiquidMedia, SpreadCells, StreakCells, and PickColonies will be logged with +1 in passage number. However, simply aliquoting by Transfer will not up the number, unless CountAsPassage is set to True.",
+			Headers -> {"Date", "Cell Model", "Parent Cell Sample", "Passage Number", "Responsible Party"},
+			Category -> "Sample History"
+		},
+			(* --- Inventory --- *)
 		Product->{
 			Format->Single,
 			Class->Link,
@@ -1281,6 +1305,7 @@ DefineObjectType[Object[Sample], {
 			Pattern:>_Link,
 			Relation->Alternatives[
 				Object[Report, Certificate, Analysis][MaterialCertified],
+				Object[Report, Certificate, Analysis][MaterialsCertified],
 				Object[Report, Certificate, Analysis][DownstreamSamplesCertified]
 			],
 			Description->"The quality assurance documentation and data for this sample or its components.",

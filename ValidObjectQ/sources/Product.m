@@ -16,10 +16,15 @@
 
 
 Error::NonUniqueName="There is already a `1` with the name `2`. The name field must be unique for all `1` objects. Please change the value of this options.";
-Error::RequiredTogetherOptions="The options `2` are required together for `1`.";
+Error::RequiredTogetherOptions="The options `2` are required together for `1`. Please supply non-Null value for both options, or set both to Null.";
+Error::RequiredTogetherOptionsFromExternalSource = "For input type `1`, because options `3` have been set by `4`, `2` options are also required. Please specify value for option `2`, or set `3` to Null manually.";
+Error::RequiredTogetherOptionsCannotFindFromExternalSource = "For input type `1`, because you have specified option `2`, option `3` is also required but cannot be found from `4`. Please manually specify `3` options, or change `2` to Null.";
+Error::RequiredTogetherOptionsConflictFromExternalSource = "For input type `1`, because options `2` have been set by `4`, `3` options are also required but can't be found from `4`. Please specify values for the `3` options, or set `2` to Null manually.";
 Error::RequiredOptions="The options `1` are required but are currently set to Null for input(s) `2`. Please specify values for these options.";
+Error::UnableToFindInfo = "`4` was unable to find information about the following options `1` from `3` for input(s) `2`. Please specify values for these options manually.";
+Error::UnableToResolveOption = "The options `1` are required but are not able to be determined automatically for input type `2`. Please specify values for these options manually.";
 Error::ManufacturerOptions="The options {Manufacturer,ManufacturerCatalogNumber} should both be specified or both be set to Null. Currently their values are `1`. Please change the values of these options.";
-Error::NameIsPartOfSynonyms="The Name of this product must be a member of its Synonyms. Please change the value of these options.";
+Error::NameIsPartOfSynonyms="The Name of this input type `1` must be a member of its Synonyms. Please change the value of these options.";
 Error::DefaultContainerModel="Products that are self-contained must not have the DefaultContainerModel option specified. Please change the value of this option.";
 Error::ProductAmount="If this product is self contained, Amount must not be specified. If this product is not self contained, Amount must be specified. Please change the values of these options.";
 Error::EmeraldSuppliedProductSamples="If Emerald Cloud Lab is the supplier of this product, NumberOfItems must be 1. Currently, its value is `1`. Please change the value of this option.";
@@ -296,15 +301,13 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				Name,
 				NumberOfItems
 			},
-			Message -> Hold[Error::RequiredOptions],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::RequiredOptions], identifier}
 		],
 
 		RequiredTogetherTest[
 			packet,
 			{Manufacturer, ManufacturerCatalogNumber},
-			Message -> Hold[Error::RequiredTogetherOptions],
-			MessageArguments -> {identifier, {Manufacturer, ManufacturerCatalogNumber}}
+			Message -> {Hold[Error::RequiredTogetherOptions], identifier, {Manufacturer, ManufacturerCatalogNumber}}
 		],
 
 		(* -- Site tests -- *)
@@ -320,8 +323,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				MemberQ[Download[Flatten[ToList[experimentSites]], Object], Download[Lookup[packet, Site], Object]]
 			],
 			True,
-			Message -> Hold[Error::InvalidProductSite],
-			MessageArguments -> {Lookup[packet, Site, Null], Download[Flatten[ToList[experimentSites]], Object]}
+			Message -> {Hold[Error::InvalidProductSite], Lookup[packet, Site, Null], Download[Flatten[ToList[experimentSites]], Object]}
 		],
 
 		Test["Public products have a Site field matching an EmeraldFacility or Null:",
@@ -334,8 +336,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				MemberQ[ECLSites, Download[Lookup[packet, Site], Object]]
 			],
 			True,
-			Message -> Hold[Error::InvalidProductSite],
-			MessageArguments -> {Lookup[packet, Site, Null], Download[Flatten[ToList[experimentSites]], Object]}
+			Message -> {Hold[Error::InvalidProductSite], Lookup[packet, Site, Null], Download[Flatten[ToList[experimentSites]], Object]}
 		],
 
 		Test["If KitComponents is not populated, then StickerKitInParallel must not be populated:",
@@ -344,8 +345,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::StickerKitInParallelUnused],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::StickerKitInParallelUnused], identifier}
 		],
 
 		Test["If KitComponents is not populated, ProductModel must be populated:",
@@ -363,8 +363,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 			],
 
 			True,
-			Message -> Hold[Error::InvalidSampleType],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::InvalidSampleType], identifier}
 		],
 
 		Test["If KitComponents is populated, DefaultContainerModel, Amount, CountPerSample, and ProductModel must all be Null:",
@@ -373,15 +372,13 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				MatchQ[Lookup[packet, {DefaultContainerModel, Amount, CountPerSample, ProductModel}], {Null, Null, Null, Null}]
 			],
 			True,
-			Message -> Hold[Error::InvalidKitOptions],
-			MessageArguments -> {{DefaultContainerModel, Amount, CountPerSample, ProductModel}}
+			Message -> {Hold[Error::InvalidKitOptions], {DefaultContainerModel, Amount, CountPerSample, ProductModel}}
 		],
 
 		Test["If KitComponents is populated, it must have more than one entry (otherwise it is not a kit):",
 			MatchQ[Length[Lookup[packet, KitComponents, {}]], 0 | GreaterEqualP[2, 1]],
 			True,
-			Message -> Hold[Error::SingleKitComponent],
-			MessageArguments -> {}
+			Message -> {Hold[Error::SingleKitComponent]}
 		],
 		
 		
@@ -390,8 +387,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 			"The contents of the Name field is a member of the Synonyms field:",
 			MemberQ[Lookup[packet, Synonyms], Lookup[packet, Name]],
 			True,
-			Message -> Hold[Error::NameIsPartOfSynonyms],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::NameIsPartOfSynonyms], identifier}
 		],
 
 		Test["CountPerSample is provided if and only if the product model is counted:",
@@ -404,8 +400,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				]
 			],
 			True,
-			Message -> Hold[Error::CountedProduct],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::CountedProduct], identifier}
 		],
 
 		Test["Kits can't have any counted models as the product has no way to track the initial count:",
@@ -414,8 +409,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::CountedKitProduct],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::CountedKitProduct], identifier}
 		],
 
 		Test["Amount and CountPerSample cannot both be informed at the same time except for when it's a Sample Chemical and the sample contains Tablets or Sachets:",
@@ -434,8 +428,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				{True, NullP, _},
 				{True, Except[NullP], _}
 			],
-			Message -> Hold[Error::TabletSachetFields],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::TabletSachetFields], identifier}
 		],
 
 		Test["If the product is for a sample that is not self-contained, Amount is informed (unless the sample contains Tablets or Sachets):",
@@ -453,8 +446,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::ProductAmount],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::ProductAmount], identifier}
 		],
 		
 		Test["If DefaultContainerModel is informed, it is not Deprecated:",
@@ -477,8 +469,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::DefaultContainerModel],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::DefaultContainerModel], identifier}
 		],
 
 		(* DefaultContainerModel cannot have more than 1 position if it is a plate *)
@@ -488,7 +479,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::DefaultContainerModelTooManyPositions]
+			Message -> {Hold[Error::DefaultContainerModelTooManyPositions]}
 		],
 
 		(* Tests if product is made at Emerald *)
@@ -499,8 +490,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				{Object[Company, Supplier, "id:eGakld01qrkB"], 1},
 				{Except[Object[Company, Supplier, "id:eGakld01qrkB"]], _}
 			],
-			Message -> Hold[Error::EmeraldSuppliedProductSamples],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::EmeraldSuppliedProductSamples], identifier}
 		],
 		
 		Test["Products cannot exist for Model[Sample, StockSolution]s (external Model[Sample, StockSolution, Standard]s are ok):",
@@ -529,8 +519,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				]
 			],
 			True,
-			Message -> Hold[Error::AmountUnitState],
-			MessageArguments -> {Lookup[packet,Amount],If[MatchQ[prodModelPacket,PacketP[]],Lookup[prodModelPacket,State],Null]}
+			Message -> {Hold[Error::AmountUnitState], Lookup[packet,Amount],If[MatchQ[prodModelPacket,PacketP[]],Lookup[prodModelPacket,State],Null]}
 		],
 
 		(* If product isn't supplied by ET / ECL, it must have a list price *)
@@ -541,8 +530,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				True
 			],
 			True,
-			Message -> Hold[Error::PricePerUnitRequired],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::PricePerUnitRequired], identifier}
 		],
 
 		(* If a product is stocked (i.e., has an existing inventory object for it) it must have a price *)
@@ -606,23 +594,20 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 		Test["ContainerIndex is not repeated for any kit components whose DefaultContainerModel is a Model[Container,Vessel]:",
 			kitQ && MemberQ[validVesselIndex, False],
 			False,
-			Message -> Hold[Error::RepeatedContainerIndex],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::RepeatedContainerIndex], identifier}
 		],
 
 		Test["ContainerIndex/Position is correctly set:",
 			kitQ && MemberQ[validContainerIndex, False],
 			False,
-			Message -> Hold[Error::InvalidContainerIndexPosition],
-			MessageArguments -> {identifier}
+			Message -> {Hold[Error::InvalidContainerIndexPosition], identifier}
 		],
 
 		(* if the product already exists then who cares, or if the name doesn't already exist we're also good *)
 		Test["The Name must be unique among all Object[Product]s:",
 			prodExistsQ || Not[nameAlreadyExistsQ],
 			True,
-			Message -> Hold[Error::NonUniqueName],
-			MessageArguments -> {Object[Product],identifier}
+			Message -> {Hold[Error::NonUniqueName], Object[Product],identifier}
 		],
 
 		Test["If DefaultCoverModel is populated, DefaultContainerModel must also be populated for any samples:",
@@ -656,27 +641,24 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 		Test["Ambiguous Aseptic Receiving specified. Please adjust the Sterile, SealedContainer, AsepticShippingContainerType, or AsepticRebaggingContainerType fields.",
 			MatchQ[asepticReceivingIndicatedString,""],
 			True,
-			MessageArguments -> {
+			Message->{Hold[Error::UnsupportedAsepticReceiving],
 				asepticReceivingIndicatedString,
 				standardReceivingIndicatedString,
 				asepticReceivingCorrectionString,
 				standardReceivingCorrectionString
-			},
-			Message->Hold[Error::UnsupportedAsepticReceiving]
+			}
 		],
 
 		Test["Rebagging is only supported for non resealable bulk containers",
 			MatchQ[incompatibleAsepticShippingAndReceivingString,""],
 			True,
-			MessageArguments -> {incompatibleAsepticShippingAndReceivingString},
-			Message -> Hold[Error::IncompatibleAsepticShippingAndReceiving]
+			Message -> {Hold[Error::IncompatibleAsepticShippingAndReceiving], incompatibleAsepticShippingAndReceivingString}
 		],
 
 		Test["Rebagging is required for unknown and nonresealable bulk aseptic shipping containers:",
 			MatchQ[asepticRebaggingContainerTypeRequiredString,""],
 			True,
-			MessageArguments -> {asepticRebaggingContainerTypeRequiredString},
-			Message -> Hold[Error::AsepticRebaggingContainerTypeRequired]
+			Message -> {Hold[Error::AsepticRebaggingContainerTypeRequired], asepticRebaggingContainerTypeRequiredString}
 		]
 	}
 ];

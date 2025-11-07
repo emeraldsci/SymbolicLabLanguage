@@ -536,6 +536,51 @@ DefineObjectType[Object[UnitOperation, AdjustpH], {
 			Units -> Milli*Volt,
 			Description -> "The maximum allowed y-intercept of the fitted slope when using SevenExcellence instrument.",
 			Category -> "General"
+		},
+		LowCalibrationBuffer->{
+			Format->Single,
+			Class->Link,
+			Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
+			Relation->Object[Sample]|Model[Sample],
+			Description->"The low pH reference buffer used to calibrate the pH instruments.",
+			Category->"General"
+		},
+		MediumCalibrationBuffer->{
+			Format->Single,
+			Class->Link,
+			Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
+			Relation->Object[Sample]|Model[Sample],
+			Description->"The medium pH reference buffer used to calibrate the pH instruments.",
+			Category->"General"
+		},
+		HighCalibrationBuffer->{
+			Format->Single,
+			Class->Link,
+			Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
+			Relation->Object[Sample]|Model[Sample],
+			Description->"The high pH reference buffer used to calibrate the pH instruments.",
+			Category->"General"
+		},
+		LowCalibrationBufferpH -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> RangeP[0,14],
+			Description -> "The pH of the low calibration buffer that should be used to calibrate the pH probe.",
+			Category -> "General"
+		},
+		MediumCalibrationBufferpH -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> RangeP[0,14],
+			Description -> "The pH of the medium calibration buffer that should be used to calibrate the pH probe.",
+			Category -> "General"
+		},
+		HighCalibrationBufferpH -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> RangeP[0,14],
+			Description -> "The pH of the high calibration buffer that should be used to calibrate the pH probe.",
+			Category -> "General"
 		}
 	}
 }];

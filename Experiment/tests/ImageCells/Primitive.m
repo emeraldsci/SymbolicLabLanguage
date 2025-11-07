@@ -1216,7 +1216,7 @@ DefineTests[
 					State->Solid,
 					BiosafetyLevel->"BSL-1",
 					Flammable->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials->{None},
 					DetectionLabel->True,
 					Fluorescent->{True,True,True,Null,True},
@@ -1305,7 +1305,7 @@ DefineTests[
 					Diameter->15 Micrometer,
 					BiosafetyLevel->"BSL-2",
 					Flammable->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials->{None},
 					DetectionLabels->{
 						Null,
@@ -1360,7 +1360,7 @@ DefineTests[
 					State->Liquid,
 					BiosafetyLevel->"BSL-2",
 					Flammable->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials->{None},
 					Living->True
 				];

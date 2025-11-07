@@ -3630,13 +3630,18 @@ dynamicFoamAnalysisResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnres
 	(* Prepare Syringe and Needle Resource - Use one syringe and one needle for each sample - same for replicates of one sample *)
 	uniqueSyringeResource=Resource[Sample->#,Name->ToString[Unique[]]]&/@Table[Model[Container, Syringe, "id:AEqRl9Kz1VD1"],Length[mySamples]];
 
-	uniqueNeedleResource=Resource[Sample->#,Name->ToString[Unique[]],Rent->True]&/@Table[Model[Item, Needle, "id:O81aEBZaXOBx"],Length[mySamples]];
+	uniqueNeedleResource = Map[
+		Function[uniqueSample,
+			uniqueSample -> Resource[Sample -> Model[Item, Needle, "id:4pO6dMmv9pnM"], Name -> ToString[Unique[]]](*"14Ga x 2In Disposable Blunt Tip Lure Lock Dispensing Needle"*)
+		],
+		DeleteDuplicates[mySamples]
+	];
 
 	(* SYRINGE RESOURCES expanded *)
 	syringeResource=Flatten[Table[#,integerNumberOfReplicates]&/@uniqueSyringeResource];
 
 	(* NEEDLE RESOURCES expanded *)
-	needleResource=Flatten[Table[#,integerNumberOfReplicates]&/@uniqueNeedleResource];
+	needleResource=Flatten[Table[#,integerNumberOfReplicates]&/@(mySamples/.uniqueNeedleResource)];
 
 	(* ---- BATCHING CALCULATIONS FOR MULTIPLE COLUMNS---- *)
 	(* Group batches by foam column. THis is the only one we care about since the batching is just to allow foam column washing *)

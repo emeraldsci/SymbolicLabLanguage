@@ -139,10 +139,21 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 			ToleranceInteger -> {
 				Format -> Multiple,
 				Class -> Integer,
-				Pattern :> GreaterP[0, 1],
+				Pattern :> GreaterEqualP[0, 1],
 				Description -> "The allowed tolerance when preparing the specified Amount of sample. This option can only be set if ExactAmount is set to True.",
 				Category -> "General",
 				Migration->SplitField
+			},
+
+			(* NOTE: These are all resource picked at once so that we can avoid having multiple resource picking tasks. *)
+			RequiredObjects -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Container]| Model[Container] | Object[Sample] | Model[Sample],
+				Description -> "All objects to be resource picked for the unit operation.",
+				Category -> "General",
+				Developer -> True
 			},
 
 			State -> {

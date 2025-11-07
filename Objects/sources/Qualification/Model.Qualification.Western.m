@@ -15,6 +15,13 @@ DefineObjectType[Model[Qualification,Western], {
 			Relation->Object[Sample]|Model[Sample],
 			Description->"The antibodies that selectively binds to a specific protein in the input sample.",
 			Category->"Sample Preparation"
+		},
+		QualificationSampleLabels -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The preparatory unit operation-defined strings to provide as input to the ExperimentWestern experiment call.",
+			Category -> "Sample Preparation"
 		}
 	}
 }];

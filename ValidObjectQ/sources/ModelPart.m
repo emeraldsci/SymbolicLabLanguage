@@ -132,6 +132,19 @@ validModelPartDecrimpingHeadQTests[packet:PacketP[Model[Part,DecrimpingHead]]]:=
 };
 
 
+(* ::Subsection::Closed:: *)
+(*validModelPartCrimperQTests*)
+
+
+validModelPartCrimperQTests[packet:PacketP[Model[Part, Crimper]]]:={
+	NotNullFieldTest[
+		packet,
+		{
+			CapDiameter,
+			CoverFootprint
+		}
+	]
+};
 
 (* ::Subsection::Closed:: *)
 (*validModelPartAlignmentToolQTests*)
@@ -1944,6 +1957,7 @@ validModelPartTybeBlockQTests[packet:PacketP[Model[Part, TubeBlock]]]:={
 
 registerValidQTestFunction[Model[Part], validModelPartQTests];
 registerValidQTestFunction[Model[Part, CrimpingJig],validModelPartCrimpingJigQTests];
+registerValidQTestFunction[Model[Part, Crimper],validModelPartCrimperQTests];
 registerValidQTestFunction[Model[Part, CrimpingHead],validModelPartCrimpingHeadQTests];
 registerValidQTestFunction[Model[Part, DecrimpingHead],validModelPartDecrimpingHeadQTests];
 registerValidQTestFunction[Model[Part, AlignmentTool],validModelPartAlignmentToolQTests];

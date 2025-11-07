@@ -83,7 +83,7 @@ DefineOptions[
         Widget->Widget[
           Type->Object,
           Pattern:>ObjectP[{
-            (* NOTE: We can only use frozen samples that come in Footprint->CryogenicVial with this instrument. *)
+            (* NOTE: We can only use frozen samples that come in CryogenicVial with this instrument. Check ExperimentFreezeCell's helper whyCantThisModelBeCryogenicVial *)
             Model[Instrument, CellThaw],
             Object[Instrument, CellThaw],
 
@@ -95,7 +95,7 @@ DefineOptions[
           }]
         ],
         Description->"The instrument used to gently heat the frozen cell sample until it is thawed.",
-        ResolutionDescription->"Automatically set to Model[Instrument, CellThaw, \"ThawSTAR\"], if the samples are in a CryogenicVial. Otherwise, set to Model[Instrument, HeatBlock, \"Cole-Parmer StableTemp Digital Utility Water Baths, 10 liters\"].",
+        ResolutionDescription->"Automatically set to Model[Instrument, CellThaw, \"ThawSTAR\"], if the samples are in a cryogenic vial. Otherwise, set to Model[Instrument, HeatBlock, \"Cole-Parmer StableTemp Digital Utility Water Baths, 10 liters\"].",
         Category->"Thawing"
       },
       {
@@ -607,9 +607,7 @@ resolveThawCellsMethod[mySamples:{ObjectP[{Object[Sample], Model[Sample]}]...}, 
           Packet[Products[{DefaultContainerModel}]],
           Packet[Products[DefaultContainerModel][{Footprint}]],
           Packet[KitProducts[{DefaultContainerModel}]],
-          Packet[KitProducts[DefaultContainerModel][{Footprint}]],
-          Packet[MixedBatchProducts[{DefaultContainerModel}]],
-          Packet[MixedBatchProducts[DefaultContainerModel][{Footprint}]]
+          Packet[KitProducts[DefaultContainerModel][{Footprint}]]
         }
       },
       Cache->cacheBall,
@@ -656,7 +654,7 @@ resolveThawCellsMethod[mySamples:{ObjectP[{Object[Sample], Model[Sample]}]...}, 
         Lookup[samplePacket, Container],
         (* Otherwise, we must have a Model[Sample]. *)
         Module[{productObject, productPacket},
-          (* This is downloaded in the order of Products, KitProducts, MixedBatchProducts *)
+          (* This is downloaded in the order of Products, KitProducts *)
           productObject=FirstCase[samplePacket, ObjectP[Object[Product]], Null, Infinity];
           productPacket=fetchPacketFromCache[productObject, modelSampleProductPacketList];
 
@@ -687,8 +685,8 @@ resolveThawCellsMethod[mySamples:{ObjectP[{Object[Sample], Model[Sample]}]...}, 
 
   (* Create a list of reasons why we need Preparation->Manual. *)
   manualRequirementStrings={
-    If[MemberQ[Lookup[sampleContainerModelPackets, Footprint, {}], Except[CryogenicVial]],
-      "the sample container footprints "<>ToString[Cases[Transpose[{(ObjectToString[#, Cache->sampleContainerModelPackets]&)/@Lookup[sampleContainerModelPackets, Object, {}], Lookup[sampleContainerModelPackets, Footprint, {}]}], {_, Except[CryogenicVial]}][[All,1]]]<>" are not able to be thawed on the liquid handler",
+    If[MemberQ[Lookup[sampleContainerModelPackets, Footprint, {}], Except[CEVial]],
+      "the sample container footprints "<>ToString[Cases[Transpose[{(ObjectToString[#, Cache->sampleContainerModelPackets]&)/@Lookup[sampleContainerModelPackets, Object, {}], Lookup[sampleContainerModelPackets, Footprint, {}]}], {_, Except[CEVial]}][[All,1]]]<>" are not able to be thawed on the liquid handler",
       Nothing
     ],
     If[MemberQ[Lookup[safeOptions, Instrument], Except[Automatic|ObjectP[{Model[Instrument, HeatBlock, "id:R8e1Pjp1W39a"], Model[Instrument, Shaker, "id:pZx9jox97qNp"], Model[Instrument, Shaker, "id:KBL5Dvw5Wz6x"], Model[Instrument, Shaker, "id:eGakldJkWVnz"]}]]], (* Hamilton Heater Cooler *)
@@ -830,13 +828,13 @@ resolveThawCellsOptions[mySamples:{ObjectP[{Object[Sample], Model[Sample]}]...},
   (* Download the information that we need from our samples. *)
   objectSampleFields= DeleteDuplicates[Flatten[{ThawCellsMethod,LiquidHandlerIncompatible,SamplePreparationCacheFields[Object[Sample]]}]];
   objectSamplePacketFields=Packet@@objectSampleFields;
-  modelSampleFields={CellType,CultureAdhesion,ThawCellsMethod,LiquidHandlerIncompatible,Products,KitProducts,MixedBatchProducts};
+  modelSampleFields={CellType,CultureAdhesion,ThawCellsMethod,LiquidHandlerIncompatible,Products,KitProducts};
   modelSamplePacketFields=Packet@@modelSampleFields;
   objectContainerFields=DeleteDuplicates[Flatten[{Hermetic,SamplePreparationCacheFields[Object[Container]]}]];
   objectContainerPacketFields=Packet@@objectContainerFields;
   modelContainerFields=DeleteDuplicates[Flatten[{HorizontalPitch,VerticalPitch,VolumeCalibrations,Columns,Aperture,WellDepth,Sterile,RNaseFree,Squeezable,Material,TareWeight,Object,Positions,Hermetic,MaxVolume,IncompatibleMaterials,SamplePreparationCacheFields[Model[Container]]}]];
   modelContainerPacketFields=Packet@@modelContainerFields;
-  productFields={Name, ProductModel, KitComponents, MixedBatchComponents, DefaultContainerModel, Deprecated, Amount};
+  productFields={Name, ProductModel, KitComponents, DefaultContainerModel, Deprecated, Amount};
   methodFields={Instrument, Temperature};
   methodPacketFields=Packet@@methodFields;
 
@@ -875,9 +873,7 @@ resolveThawCellsOptions[mySamples:{ObjectP[{Object[Sample], Model[Sample]}]...},
           Packet[Products[productFields]],
           Packet[Products[DefaultContainerModel][modelContainerFields]],
           Packet[KitProducts[productFields]],
-          Packet[KitProducts[DefaultContainerModel][modelContainerFields]],
-          Packet[MixedBatchProducts[productFields]],
-          Packet[MixedBatchProducts[DefaultContainerModel][modelContainerFields]]
+          Packet[KitProducts[DefaultContainerModel][modelContainerFields]]
         },
         {
           Packet[Composition[[All,2]][ThawCellsMethod]]
@@ -959,7 +955,7 @@ resolveThawCellsOptions[mySamples:{ObjectP[{Object[Sample], Model[Sample]}]...},
         ],
         (* Otherwise, we must have a Model[Sample]. *)
         Module[{productObject, productPacket},
-          (* This is downloaded in the order of Products, KitProducts, MixedBatchProducts *)
+          (* This is downloaded in the order of Products, KitProducts *)
           productObject=FirstCase[samplePacket, ObjectP[Object[Product]], Null, Infinity];
           productPacket=fetchPacketFromCache[productObject, modelSampleProductPacketList];
 

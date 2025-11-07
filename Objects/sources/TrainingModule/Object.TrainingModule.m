@@ -5,7 +5,7 @@
 
 
 DefineObjectType[Object[TrainingModule], {
-	Description->"A module created for a specific operator to track their training progress for a given skill.",
+	Description->"A module created for a specific user to track their training progress for a given skill.",
 	CreatePrivileges->None,
 	Cache->Session,
 	Fields->{
@@ -41,12 +41,20 @@ DefineObjectType[Object[TrainingModule], {
 			Category->"Organizational Information",
 			Developer->True
 		},
-		Operator->{
+		User->{
 			Format->Single,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[User,Emerald][TrainingModules],
-			Description->"The operator to whom this training module has been assigned.",
+			Relation->Object[User][TrainingModules],
+			Description->"The user to whom this training module has been assigned.",
+			Category->"General"
+		},
+		Certifications->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Certification][ActiveTrainingModules, 3],
+			Description->"The broader skill sets earned by completing this training module.",
 			Category->"General"
 		},
 		Quizzes->{

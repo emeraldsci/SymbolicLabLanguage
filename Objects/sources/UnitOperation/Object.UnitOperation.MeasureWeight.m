@@ -95,6 +95,24 @@ DefineObjectType[Object[UnitOperation, MeasureWeight], {
 			Pattern :> BooleanP,
 			Description -> "Indicates if the protocol should run the experiment on the SamplesIn leaving them in their current location and state rather than moving them back and forth from storage or their previous location in a parent protocol.",
 			Category -> "General"
+		},
+		WeightStabilityDuration -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Second],
+			Units -> Second,
+			Description -> "For each member of SampleLink, the duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable and measured.",
+			Category -> "General",
+			IndexMatching -> SampleLink
+		},
+		MaxWeightVariation -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Milligram],
+			Units -> Milligram,
+			Description -> "For each member of SampleLink, the max allowed amplitude the balance readings can fluctuate with for a duration defined by WeightStabilityDuration before being considered stable and measured.",
+			Category -> "General",
+			IndexMatching -> SampleLink
 		}
 	}
 }]

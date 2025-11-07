@@ -7,6 +7,55 @@
 (* ::Section:: *)
 (*Source Code*)
 
+(* ::Subsection::Closed:: *)
+(*SharedOptionSet*)
+DefineOptionSet[StrictOption :> {
+	{
+		OptionName -> Strict,
+		Default -> Automatic,
+		AllowNull -> False,
+		Widget -> Widget[
+			Type -> Enumeration,
+			Pattern :> Alternatives[Automatic, True, False]
+		],
+		Description -> "Indicates if error-checking in ValidObjectQ of the corresponding type that the user is trying to create or modify will be employed to ensure the uploaded object is ready for final verification. If Strict -> True, the Upload function will return $Failed if the final packet fails ValidObjectQ tests.",
+		ResolutionDescription -> "Can vary depending on the parent function. In general, Strict is set to False when user calls the external upload functions, while it is set to True when developer calls the upload or verification functions.",
+		Category -> "Hidden"
+	}
+}];
+
+DefineOptionSet[AllowWarningsOption :> {
+	{
+		OptionName -> AllowWarnings,
+		Default -> True,
+		AllowNull -> False,
+		Widget -> Widget[
+			Type -> Enumeration,
+			Pattern :> BooleanP
+		],
+		Description -> "Indicates if the target objects can still be set to Verified -> True by the verification function if only messages with Warning:: head were thrown.",
+		Category -> "Hidden"
+	}
+}];
+
+DefineOptionSet[VerifyOption :> {
+	{
+		OptionName -> Verify,
+		Default -> False,
+		AllowNull -> False,
+		Widget -> Widget[
+			Type -> Enumeration,
+			Pattern :> BooleanP
+		],
+		Description -> "Indicates if the developer is ready for the final Upload and set the input objects to Verified -> True. If Verify -> False, function will output list of options for review. If Verify -> True, function will attempt to upload the changes and set Verified -> True for input object(s).",
+		Category -> "Hidden"
+	}
+}];
+
+(* Define this feature flag to enable/disable feature to automatically upload and create new ProductModel, DefaultContainerModel and/or DefaultCoverModel *)
+(* TODO This feature should not be turned on until we are ready to start the new sample intake system for external users *)
+$AllowAutoNewModelCreation = False;
+
 
 (* ::Subsection::Closed:: *)
 (*Helper Parser Functions (UploadMolecule/UploadSampleModel)*)
@@ -255,8 +304,7 @@ parsePubChemCID[cid_] := Module[
 
 		(* Return status code early if the URLRead failed *)
 		If[!MatchQ[httpResponse["StatusCode"], 200],
-			(*Return[httpResponse["StatusCode"], Module] - return more detail when rest of error handling is merged*)
-			$Failed
+			Return[httpResponse["StatusCode"], Module]
 		];
 
 		bodyResponse = Quiet[httpResponse["Body"]];
@@ -867,7 +915,7 @@ parsePubChemCID[cid_] := Module[
 			];
 
 			(* Return the viscosity *)
-			SafeRound[medianViscosity, 0.01]
+			SafeRound[medianViscosity, 0.01 Centipoise]
 		],
 
 		Alternatives[GreaterEqualP[0 Centipoise], Null]
@@ -1000,7 +1048,7 @@ parsePubChemCID[cid_] := Module[
 			];
 
 			(* Return the melting point *)
-			SafeRound[medianMeltingPoint, 0.1]
+			SafeRound[medianMeltingPoint, 0.1 Celsius]
 		],
 
 		Alternatives[UnitsP[Celsius], Null]
@@ -1190,7 +1238,7 @@ parsePubChemCID[cid_] := Module[
 			];
 
 			(* Return the boiling point *)
-			SafeRound[medianBoilingPoint, 0.1]
+			SafeRound[medianBoilingPoint, 0.1 Celsius]
 		],
 
 		Alternatives[UnitsP[Celsius], Null]
@@ -2595,12 +2643,16 @@ parsePubChem[PubChem[myPubChemID_]]:=Module[
 	result=Quiet[
 		Check[
 			parsePubChemCID[ToString[myPubChemID]],
-			$Failed]
+			$Failed
+		]
 	];
 
-	(* If the query didn't fail, memoize it. *)
-	If[!SameQ[result, $Failed],
-		parsePubChem[PubChem[myPubChemID]]=result;
+	(* Memoize if we generated a correct result or got told the compound doesn't exist *)
+	If[MatchQ[result, Alternatives[_Association, 404]],
+		If[!MemberQ[$Memoization, ExternalUpload`Private`parsePubChem],
+			AppendTo[$Memoization, ExternalUpload`Private`parsePubChem]
+		];
+		parsePubChem[PubChem[myPubChemID]] = result;
 	];
 
 	(* Return the result. *)
@@ -2614,26 +2666,49 @@ parsePubChem[PubChem[myPubChemID_]]:=Module[
 
 
 (* This helper function takes in a chemical identifier (including name) and returns an association of PubChem information. *)
+(* Overload to search for molecules by InChI *)
+parseChemicalIdentifier[molecule : MoleculeP] := parseChemicalIdentifier[MoleculeValue[molecule, "InChI"]];
+(* Overload for MM 12.3.1 which uses the Head ExternalIdentified[], instead of a direct string for InChI *)
+parseChemicalIdentifier[ExternalIdentifier["InChI", identifier_String]] := parseChemicalIdentifier[identifier];
 parseChemicalIdentifier[identifier_String]:=Module[
-	{result, pubChemNameURL, filledURL, jsonResponse, cid},
+	{result, pubChemNameURL, filledURL, response, cid, jsonBody},
 	result=Quiet[
 		Check[
-			(* The following is the template URL of the PubChem API for CIDs. The CID goes in `1`. *)
-			pubChemNameURL="https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/JSON?name=`1`";
+			(* Template URLs for searching for compounds in PubChem database using various identifiers *)
+			pubChemNameURL=Switch[identifier,
+				InChIP,
+				"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/inchi/JSON?inchi=`1`",
+
+				InChIKeyP,
+				"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/inchikey/JSON?inchikey=`1`",
+
+				CASNumberP,
+				"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/JSON?name=`1`",
+
+				(* Default string name search *)
+				_String,
+				"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/JSON?name=`1`"
+			];
 
 			(* Fill out the template URL with the given CID. *)
 			filledURL=StringTemplate[pubChemNameURL][EncodeURIComponent[identifier]];
 
-			(* Make a POST request to this URL. *)
-			jsonResponse=ManifoldEcho[Quiet[URLExecute[filledURL, "RawJSON"]], "URLExecute[\""<>ToString[filledURL]<>"\", \"RawJSON\"]"];
-
-			(* If an error was returned, return $Failed. Throw a message in the higher level function that called this one. *)
-			If[MemberQ[jsonResponse, _Failure],
-				Return[$Failed];
+			(* Make a request to this URL. *)
+			response=ManifoldEcho[
+				Quiet[URLRead[filledURL]],
+				"URLRead[\""<>ToString[filledURL]<>"\"]"
 			];
 
+			(* Return status code early if the URLRead failed *)
+			If[!MatchQ[response["StatusCode"], 200],
+				Return[response["StatusCode"], Check]
+			];
+
+			(* Otherwise convert the body to JSON *)
+			jsonBody = ImportString[response["Body"], "RawJSON"];
+
 			(* Extract the CID from the JSON packet. *)
-			cid=jsonResponse["PC_Compounds"][[1]]["id"]["id"]["cid"];
+			cid=jsonBody["PC_Compounds"][[1]]["id"]["id"]["cid"];
 
 			(* Use the CID to association parser. *)
 			parsePubChemCID[cid],
@@ -2643,8 +2718,11 @@ parseChemicalIdentifier[identifier_String]:=Module[
 		]
 	];
 
-	(* Iff the result is not $Failed, memoize. *)
-	If[!SameQ[result, $Failed],
+	(* Memoize if we generated a correct result or got told the compound doesn't exist *)
+	If[MatchQ[result, Alternatives[_Association, 400, 404]],
+		If[!MemberQ[$Memoization, ExternalUpload`Private`parseChemicalIdentifier],
+			AppendTo[$Memoization, ExternalUpload`Private`parseChemicalIdentifier]
+		];
 		parseChemicalIdentifier[identifier]=result;
 	];
 
@@ -2653,62 +2731,13 @@ parseChemicalIdentifier[identifier_String]:=Module[
 ];
 
 
-(* ::Subsubsection::Closed:: *)
-(*InChI to Association (parseInChI)*)
-
-(* Overload for MM 12.3.1 which uses the Head ExternalIdentified[], instead of a direct string *)
-parseInChI[ExternalIdentifier["InChI", identifier_String]]:=parseInChI[identifier];
-(* This helper function takes in an InChI and returns an association of PubChem information. *)
-parseInChI[identifier_String]:=Module[
-	{result, pubChemInChIURL, filledURL, jsonResponse, cid},
-
-	result=Quiet[
-		Check[
-			(* The following is the template URL of the PubChem API for CIDs. The CID goes in `1`. *)
-			pubChemInChIURL="https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/inchi/JSON?inchi=`1`";
-
-			(* Fill out the template URL with the given CID. *)
-			filledURL=StringTemplate[pubChemInChIURL][EncodeURIComponent[identifier]];
-
-			(* Make a POST request to this URL. *)
-			jsonResponse=ManifoldEcho[
-				Quiet[URLExecute[filledURL, "RawJSON"]],
-				"Quiet[URLExecute[\""<>ToString[filledURL]<>"\", \"RawJSON\"]]"
-			];
-
-			(* If an error was returned, return $Failed. Throw a message in the higher level function that called this one. *)
-			If[MemberQ[jsonResponse, _Failure],
-				Return[$Failed];
-			];
-
-			(* Extract the CID from the JSON packet. *)
-			cid=jsonResponse["PC_Compounds"][[1]]["id"]["id"]["cid"];
-
-			(* Use the CID to association parser. *)
-			parsePubChemCID[cid],
-
-			(* If something happened, return $Failed. Our high-level functions check for this. *)
-			$Failed
-		]
-	];
-
-	(* Iff the result is not $Failed, memoize. *)
-	If[!SameQ[result, $Failed],
-		parseInChI[identifier]=result;
-	];
-
-	(* Return the result. *)
-	result
-];
-
 
 (* ::Subsubsection::Closed:: *)
 (*ThermoFisher to Association (parseThermoURL)*)
 
 
 parseThermoURL[url_String]:=Module[
-	{result, response, thermoWebsite, casList, generalCASList, casInformation, productID, msdsURL, msdsPage, msdsString, cas,
-		pubChemInformation, informationWithMSDS, thermoName},
+	{result, response, thermoWebsite, casList, generalCASList, cas, pubChemInformation},
 
 	(* Wrap our computation with Quiet[] and Check[] because sometimes contacting the web server can result in an error. *)
 	result=Quiet[
@@ -2719,43 +2748,24 @@ parseThermoURL[url_String]:=Module[
 				URLRead[HTTPRequest[url, <|Method -> "GET"|>]],
 				"URLRead[HTTPRequest[\""<>ToString[url]<>"\", <|Method -> \"GET\"|>]]"
 			];
+
+			(* Return status code early if the URLRead failed *)
+			If[!MatchQ[response["StatusCode"], 200],
+				Return[response["StatusCode"], Check]
+			];
+
 			thermoWebsite = {response["Body"]};
 
 			(* Return early if the URLRead failed *)
 			If[MatchQ[thermoWebsite, {Missing["NotAvailable", "Body"]}],
-				Return[$Failed]
+				Return[$Failed, Check]
 			];
 
-			(* Get the product number from the ThermoFisher URL. *)
-			(* If for some reason the URL doesnt match this pattern, look for it in the thermoWebsite. *)
-			(* If it can't be found in the URL or site content, set it to empty string *)
-			productID = FirstCase[
-				{
-					StringCases[url, "/catalog/product/"~~x:(DigitCharacter | WordCharacter | "-").. :> x],
-					StringCases[First[thermoWebsite], "\"productId\":\""~~x:(DigitCharacter | WordCharacter | "-")..~~"\"" :> x]
-				},
-				Except[{}],
-				""
+			(* Return a 404 if the website tells us the product isn't real but doesn't throw 404 directly *)
+			(* This matches PubChem's convention for status codes *)
+			If[StringContainsQ[First[thermoWebsite], ">Product Catalog number" ~~ __ ~~ " is not available.<"],
+				Return[404, Check]
 			];
-
-			(* Attempt to parse out the name of this chemical from the page. *)
-			thermoName = Quiet[Check[
-				Module[{rawStringName},
-					(* Pull out the string within the <title> ... </title> *)
-					rawStringName = FirstOrDefault[First[StringCases[thermoWebsite, Shortest["<title" ~~ ___ ~~ ">" ~~ x__ ~~ "</title>"] :> x]]];
-
-					(* Convert all HTML entities into empty strings (Mathematica can't handle these) *)
-					If[MatchQ[rawStringName, Null],
-						Null,
-						StringReplace[rawStringName, {
-							("&#" | "&")~~(DigitCharacter | WordCharacter)..~~";" :> "",
-							" | "~~(DigitCharacter..)~~"-"~~__ -> ""
-						}]
-					]
-				],
-				(* We failed to get the name, return Null. *)
-				Null
-			]];
 
 			(* Extract the CAS Number as a list. *)
 			casList = First[
@@ -2777,7 +2787,7 @@ parseThermoURL[url_String]:=Module[
 			];
 
 			(* Download the information via PubChem via CAS or PubChemID *)
-			casInformation = If[Length[generalCASList] > 0,
+			pubChemInformation = If[Length[generalCASList] > 0,
 				(* Join the three extracted numbers to get the CAS. *)
 				cas = StringJoin[Riffle[First[Commonest[generalCASList]], "-"]];
 
@@ -2788,63 +2798,8 @@ parseThermoURL[url_String]:=Module[
 				$Failed
 			];
 
-			(* Finally, if we couldn't get information from the InChIKey and we successfully parsed out a name, look for information from the name of the chemical. *)
-			pubChemInformation = If[MatchQ[casInformation, $Failed] && !MatchQ[thermoName, Null],
-				Module[{parsedByName},
-					parsedByName = parseChemicalIdentifier[thermoName];
-
-					If[!MatchQ[parsedByName, $Failed],
-						parsedByName,
-						casInformation
-					]
-				],
-				casInformation
-			];
-
-			(* Attempt to get the MSDS Information. If we fail, that's okay - default to Null. *)
-			msdsURL = Quiet[Check[
-
-				(* Construct the URL to the MSDS of this chemical. *)
-				msdsPage = "https://assets.thermofisher.com/TFS-Assets/LSG/SDS/"<>productID<>"_MTR-NALT_EN.pdf";
-
-				(* Download the PDF and convert it to Plaintext. *)
-				msdsString = Import[msdsPage, "Plaintext"];
-
-				(* If we successfully got the URL and imported the body in plain text, return the msdsPage as the URL *)
-				(* If we failed to get the PDF in Plaintext, msdsURL should be Null *)
-				If[Length[StringCases[msdsString, "Safety Data Sheet"]] > 0,
-					msdsPage,
-					Null
-				],
-
-				(* Return Null if we encounter an error. *)
-				Null
-			]];
-
-			(* Append MSDSFile\[Rule]msdsURL and MSDSRequired\[Rule]True *)
-			(* MSDSRequired\[Rule]True should always be set when using a product URL to parse a chemical. *)
-			informationWithMSDS = If[!MatchQ[pubChemInformation, $Failed],
-				Merge[{<|MSDSFile -> msdsURL, MSDSRequired -> True|>, pubChemInformation}, (First[ToList[#]]&)],
-				(* If something happened, return $Failed. Otherwise the whole association remains unevualated. *)
-				$Failed
-			];
-
-			(* If the name parsing succeeded, return our association with the new name. *)
-			If[!SameQ[thermoName, Null],
-				(* The name parsing succeeded. Convert the association to a list so that we can replace the name. Then convert it back to an association. *)
-				Module[{associationAsList, listWithName},
-					(* Convert the association to a list. *)
-					associationAsList = Normal[informationWithMSDS];
-
-					(* Replace the name with our newly parsed name. *)
-					listWithName = associationAsList /. (Name -> _) -> (Name -> thermoName);
-
-					(* Convert it back to an association *)
-					Association @@ listWithName
-				],
-				(* The name parsing didn't succeed. Return the original name. *)
-				informationWithMSDS
-			],
+			(* Return the data *)
+			pubChemInformation,
 
 			(* If something happened, return $Failed. Our high-level functions check for this. *)
 			$Failed
@@ -2853,8 +2808,11 @@ parseThermoURL[url_String]:=Module[
 
 	(* Only memoize if the result wasn't Null. This is because the ThermoFisher server can sometimes fail or *)
 	(* lock us out if we're making too many requests. *)
-	If[!SameQ[result, $Failed],
-		parseThermoURL[url] = result;
+	If[MatchQ[result, Alternatives[_Association, 404]],
+		If[!MemberQ[$Memoization, ExternalUpload`Private`parseThermoURL],
+			AppendTo[$Memoization, ExternalUpload`Private`parseThermoURL]
+		];
+		parseThermoURL[url]=result;
 	];
 
 	(* Return our result. *)
@@ -2867,67 +2825,45 @@ parseThermoURL[url_String]:=Module[
 
 
 parseSigmaURL[url_String]:=Module[
-	{result, sigmaWebsite, casList, generalCASList, cas, pubChemInformation, msdsURL,
-		sigmaID, sigmaMSDSPage, msdsBody, msdsID, potentialMSDSURL, potentialMSDSBody,
-		informationWithMSDS, sigmaName, inchiKeyList, casInformation, inchiKeyInformation},
+	{result, sigmaResponse, sigmaWebsite, casList, generalCASList, cas, pubChemInformation, inchiKeyList, casInformation},
 
 	(* Wrap our computation with Quiet[] and Check[] because sometimes contacting the web server can result in an error. *)
 	result = Quiet[
 		Check[
-			(* Download the HTML for the website. *)
-			sigmaWebsite = {
-				ManifoldEcho[
-					URLRead[
-						HTTPRequest[
-							url,
-							<|
-								Method -> "GET",
-								(* this is a header that we found can work to get a response for now, but just so people keep an eye sigma may block us at any time b/c we run unit tests and ping their website too often *)
-								"Headers" -> {
-									"accept-language" -> "en-US,en;q=0.9",
-									"user-agent" -> "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36"
-								}
-							|>
-						]
-					]["Body"],
-					"URLRead[HTTPRequest[\""<>ToString[url]<>"\", <|Method -> \"GET\", \"Headers\" -> {\"accept-language\" -> \"en-US,en;q=0.9\", \"user-agent\" -> \"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36\"}|>]][\"Body\"]"
-				]
-			};
-
-			(* Return early if the URLRead failed *)
-			If[MatchQ[sigmaWebsite, {Missing["NotAvailable", "Body"]}],
-				Return[$Failed]
-			];
-
-			(* Attempt to parse out the name of this chemical from the page. *)
-			sigmaName = Quiet[Check[
-				Module[{rawStringName},
-					(* Pull out the string within the <title> ... </title> *)
-					rawStringName = FirstOrDefault[
-						StringCases[
-							First[sigmaWebsite],
-							{
-								Shortest["\"title\":\"" ~~ x__ ~~ " " ~~ DigitCharacter.. ~~ "-" ~~ DigitCharacter.. ~~ "-" ~~ DigitCharacter ~~ "\",\"description\""] :> {x},
-								Shortest["\"title\":\"" ~~ x__ ~~ " |"] :> {x}
+			(* Make the request to the sigma website *)
+			sigmaResponse = ManifoldEcho[
+				URLRead[
+					HTTPRequest[
+						url,
+						<|
+							Method -> "GET",
+							(* this is a header that we found can work to get a response for now, but just so people keep an eye sigma may block us at any time b/c we run unit tests and ping their website too often *)
+							"Headers" -> {
+								"accept-language" -> "en-US,en;q=0.9",
+								"user-agent" -> "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Safari/605.1.15"
 							}
-						],
-						""
-					];
-
-					(* Convert all HTML entities into empty strings (Mathematica can't handle these) *)
-					(* Also remove the | Sigma-Aldrich from the name. This shows up in the page title for styling. *)
-					If[MatchQ[rawStringName, Null],
-						Null,
-						StringReplace[rawStringName, {
-							"&#"~~(DigitCharacter | WordCharacter)..~~";" :> "",
-							" | Sigma-Aldrich" -> "",
-							" | "~~(DigitCharacter..)~~"-"~~__ -> ""
-						}]
+						|>
 					]
 				],
-				(* We failed to get the name, return Null. *)
-				Null
-			]];
+				"URLRead[HTTPRequest[\""<>ToString[url]<>"\", <|Method -> \"GET\", \"Headers\" -> {\"accept-language\" -> \"en-US,en;q=0.9\", \"user-agent\" -> \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Safari/605.1.15\"}|>]]"
+			];
+
+			(* Return status code early if the URLRead failed *)
+			If[!MatchQ[sigmaResponse["StatusCode"], 200],
+				Return[sigmaResponse["StatusCode"], Check]
+			];
+
+			(* Extract the HTML for the website. *)
+			sigmaWebsite = {
+				sigmaResponse["Body"]
+			};
+
+
+			(* Return a 404 if the website tells us the product isn't real but doesn't throw 404 directly *)
+			(* This matches PubChem's convention for status codes *)
+			If[StringContainsQ[First[sigmaWebsite], Alternatives["404-not-found.png", "404 Page not found"]],
+				Return[404, Check]
+			];
 
 			(* Extract the CAS Number as a list. *)
 			casList = FirstOrDefault[
@@ -2961,7 +2897,7 @@ parseSigmaURL[url_String]:=Module[
 			];
 
 			(* If we couldn't get information from CAS, try to get the InChIKey. *)
-			inchiKeyInformation = If[MatchQ[casInformation, $Failed],
+			pubChemInformation = If[MatchQ[casInformation, $Failed],
 				(* Look for the InChIKey. *)
 				inchiKeyList = FirstOrDefault[
 					StringCases[
@@ -2983,124 +2919,8 @@ parseSigmaURL[url_String]:=Module[
 				casInformation
 			];
 
-			(* Finally, if we couldn't get information from the InChIKey and we successfully parsed out a name, look for information from the name of the chemical. *)
-			pubChemInformation = If[MatchQ[inchiKeyInformation, $Failed] && !MatchQ[sigmaName, Null],
-				parseChemicalIdentifier[sigmaName],
-				inchiKeyInformation
-			];
-
-			(* Attempt to get the MSDS Information. If we fail, that's okay - default to Null. *)
-			msdsURL = Quiet[Check[
-				(* Pull out the Product key from the Sigma website. *)
-				sigmaID = StringTrim[
-					First[
-						FirstOrDefault[
-							StringCases[
-								First[sigmaWebsite],
-								{
-									"<strong itemprop=\"productKey\">"~~x:(DigitCharacter | WordCharacter | "-" | "_" | " ")..~~"</strong>" :> {x},
-									Shortest["\"productKey\":\""~~x:__~~"\""] :> {x}
-								}
-							],
-							""
-						]
-					]
-				];
-
-				(* Make a request to the Sigma MSDS searcher. *)
-				(* DO NOT use the Emerald specific POST/GET functions here as they do not store the cookies. *)
-				sigmaMSDSPage = Module[{productType},
-					(* First extract the type of product from the URL. If it isnt found set to Null*)
-					productType = FirstOrDefault[
-						StringCases[url, "/product/" ~~ x : (WordCharacter ..) ~~ "/" :> x],
-						Null
-					];
-
-					(* If we have a sigmaID and a productType, use these to get the MSDS URL. *)
-					If[!MatchQ[productType, Null] && !MatchQ[sigmaID, Null],
-						"https://www.sigmaaldrich.com/MSDS/MSDS/DisplayMSDSPage.do?country=US&language=en&productNumber="<>sigmaID<>"&brand="<>ToUpperCase[productType],
-						Null
-					]
-				];
-
-				(* Read from the MSDS page URL *)
-				msdsBody = URLRead[
-					HTTPRequest[
-						sigmaMSDSPage,
-						<|
-							Method -> "GET",
-							(* this is a header that we found can work to get a response for now, but just so people keep an eye sigma may block us at any time b/c we run unit tests and ping their website too often *)
-							"Headers" -> {
-								"accept-language" -> "en-US,en;q=0.9",
-								"user-agent" -> "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36"
-							}
-						|>
-					]
-				]["Body"];
-
-				(* 10/22/21 - The sigma website now directly returns the PDF from this request *)
-				If[Length[StringCases[msdsBody, "PDF"]] > 0,
-					(* If we have the PDF already, just return that for the msds URL *)
-					sigmaMSDSPage,
-					(* If we don't, default to the previous code *)
-					(* Try and find the resolved MSDS ID from the page. Cookies are nesessary for this request, however, they are stored by using the URLRead[...] function. *)
-					msdsID = FirstOrDefault@StringCases[msdsBody, "/MSDS/MSDS/PrintMSDSAction.do?name=msdspdf_"~~x:DigitCharacter.. :> x];
-
-					If[!MatchQ[msdsID, _String],
-						Null,
-						(* Put together the potential MSDS URL. *)
-						potentialMSDSURL = "https://www.sigmaaldrich.com/MSDS/MSDS/PrintMSDSAction.do?name=msdspdf_"<>msdsID;
-
-						(* Download the body of the potential MSDS url. *)
-						potentialMSDSBody = URLRead[
-							HTTPRequest[
-								potentialMSDSURL,
-								<|
-									Method -> "GET",
-									(* this is a header that we found can work to get a response for now, but just so people keep an eye sigma may block us at any time b/c we run unit tests and ping their website too often *)
-									"Headers" -> {
-										"accept-language" -> "en-US,en;q=0.9",
-										"user-agent" -> "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36"
-									}
-								|>
-							]
-						]["Body"];
-
-						(* Check that the URL returned a PDF header. If so, it is good. If not, return Null. *)
-						If[Length[StringCases[potentialMSDSBody, "PDF"]] > 0,
-							potentialMSDSURL,
-							Null
-						]
-					]
-				],
-				(* Return Null if we encounter an error. *)
-				Null
-			]];
-
-			(* Append MSDSFile\[Rule]msdsURL and MSDSRequired\[Rule]True *)
-			(* MSDSRequired\[Rule]True should always be set when using a product URL to parse a chemical. *)
-			informationWithMSDS = If[!MatchQ[pubChemInformation, $Failed],
-				Merge[{<|MSDSFile -> msdsURL, MSDSRequired -> True|>, pubChemInformation}, (First[ToList[#]]&)],
-				(* If something happened, return $Failed. Otherwise the whole association remains unevualated. *)
-				$Failed
-			];
-
-			(* If the name parsing succeeded, return our association with the new name. *)
-			If[!SameQ[sigmaName, Null],
-				(* The name parsing succeeded. Convert the association to a list so that we can replace the name. Then convert it back to an association. *)
-				Module[{associationAsList, listWithName},
-					(* Convert the association to a list. *)
-					associationAsList = Normal[informationWithMSDS];
-
-					(* Replace the name with our newly parsed name. *)
-					listWithName = associationAsList /. (Name -> _) -> (Name -> sigmaName);
-
-					(* Convert it back to an association *)
-					Association @@ listWithName
-				],
-				(* The name parsing didn't succeed. Return the original name. *)
-				informationWithMSDS
-			],
+			(* Return the PubChem information *)
+			pubChemInformation,
 
 			(* If something happened, return $Failed. Our high-level functions check for this. *)
 			$Failed
@@ -3108,15 +2928,19 @@ parseSigmaURL[url_String]:=Module[
 	];
 
 
-	(* Only memoize if the result wasn't Null. This is because the ThermoFisher server can sometimes fail or *)
+	(* Only memoize if the result was successful or confirmed missing. This is because the ThermoFisher server can sometimes fail or *)
 	(* lock us out if we're making too many requests. *)
-	If[!SameQ[result, $Failed],
+	If[MatchQ[result, Alternatives[_Association, 404]],
+		If[!MemberQ[$Memoization, ExternalUpload`Private`parseSigmaURL],
+			AppendTo[$Memoization, ExternalUpload`Private`parseSigmaURL]
+		];
 		parseSigmaURL[url]=result;
 	];
 
 	(* Return our result. *)
 	result
 ];
+
 
 
 (* ::Subsubsection::Closed:: *)
@@ -3309,7 +3133,7 @@ findSDS[myIdentifier: Alternatives[_String, CASNumberP], myOptions : OptionsPatt
 
 				(* Try and import the PDF, and check if the result is valid *)
 				(* Returns either the valid File or $Failed. Function memoizes *)
-				downloadResult = downloadAndValidateSDSURL[url];
+				downloadResult = downloadAndValidateURL[url, All, MSDSFile];
 
 				(* If the pdf is valid, return early and break the loop *)
 				If[MatchQ[downloadResult, _File],
@@ -3438,30 +3262,54 @@ searchChemicalSafetySDS[myIdentifier: Alternatives[_String, CASNumberP]] := Modu
 (* ::Subsubsection::Closed:: *)
 (* File/CloudFile Handling *)
 
+(* Overload that takes in a type and field name to ensure we hit the same memoization when called from multiple places in the codebase *)
+downloadAndValidateURL[url : _String, type : Alternatives[TypeP[], All], fieldName : _Symbol] := Module[
+	{fileNameIdentifier, validationFunction},
+
+	(* Generate a systematic name for the file to download to *)
+	fileNameIdentifier = ToLowerCase[ToString[fieldName]];
+
+	(* Lookup the function to ensure the downloaded file is valid *)
+	validationFunction = selectFileValidationFunction[type, fieldName];
+
+	(* Call the central, memoized, overload *)
+	downloadAndValidateURL[url, fileNameIdentifier, validationFunction]
+];
+
+(* Overload with no validation (memoized download basically) *)
+downloadAndValidateURL[url_String, fileNameIdentifier : _String] := downloadAndValidateURL[url, fileNameIdentifier, True &];
 
 (* Internal memoized function to perform HTTPRequest when validating URLs *)
-downloadAndValidateURL[url_String, fileNameIdentifier : _String, fileValidationFunction : _Function] := Module[
-	{filePath, downloadedFile, validFileQ, returnValue},
+downloadAndValidateURL[url_String, fileNameIdentifier : _String, fileValidationFunction : Alternatives[_Function, _Symbol]] := Module[
+	{filePath, downloadedFile, returnValue},
 
 	(* Location to (attempt to) download file to *)
 	filePath = Module[
-		{splitFileName, fileNameIdentifierStem, fileNameIdentifierExtension},
+		{splitFileName, fileNameIdentifierStem, fileNameIdentifierExtension, extensionFromURL},
 
 		(* Split off the extension from the file name *)
 		splitFileName = StringSplit[fileNameIdentifier, "."];
 
+		(* Get the extension implied by the URL - defaults to empty string *)
+		extensionFromURL = StringDelete[FileExtension[url], Except[WordCharacter]];
+
 		(* Parse out the extension from the rest of the name *)
-		{fileNameIdentifierStem, fileNameIdentifierExtension} = If[EqualQ[Length[splitFileName], 1],
-			{First[splitFileName], ""},
-			{StringRiffle[Most[splitFileName], "."], Last[splitFileName]}
+		{fileNameIdentifierStem, fileNameIdentifierExtension} = If[!EqualQ[Length[splitFileName], 1],
+			{StringRiffle[Most[splitFileName], "."], Last[splitFileName]},
+			{First[splitFileName], extensionFromURL}
 		];
 
 		(* Assemble the file name *)
-		FileNameJoin[{$TemporaryDirectory, ToString[Unique[fileNameIdentifierStem]] <> "." <> fileNameIdentifierExtension}]
+		If[MatchQ[fileNameIdentifierExtension, ""],
+			FileNameJoin[{$TemporaryDirectory, ToString[Unique[fileNameIdentifierStem]]}],
+			FileNameJoin[{$TemporaryDirectory, ToString[Unique[fileNameIdentifierStem]] <> "." <> fileNameIdentifierExtension}]
+		]
 	];
 
 	(* Attempt to download the file *)
-	downloadedFile = URLDownload[
+	(* Return $Failed if any error is thrown *)
+	downloadedFile = Quiet[Check[
+		URLDownload[
 		HTTPRequest[url,
 			<|
 				Method -> "GET",
@@ -3472,18 +3320,14 @@ downloadAndValidateURL[url_String, fileNameIdentifier : _String, fileValidationF
 			|>
 		],
 		filePath,
-		TimeConstraint -> 3
-	];
-
-	(* Check if we got something *)
-	validFileQ = Quiet[Check[
-		TrueQ[fileValidationFunction[downloadedFile]],
-		False
+		TimeConstraint -> 5
+	],
+		$Failed
 	]];
 
-	(* We'll return either the file or $Failed *)
-	returnValue = If[validFileQ,
-		downloadedFile,
+	(* Validate the local file (Memoized). Strip File wrapper first *)
+	returnValue = If[MatchQ[downloadedFile, Alternatives[_String, _File]],
+		validateLocalFile[downloadedFile /. File[x_] :> x, fileValidationFunction],
 		$Failed
 	];
 
@@ -3497,47 +3341,81 @@ downloadAndValidateURL[url_String, fileNameIdentifier : _String, fileValidationF
 	returnValue
 ];
 
-(* Handy wrappers to prevent divergence when called from multiple places and ensure we hit memoization *)
-(* SDS *)
-downloadAndValidateSDSURL[url : URLP] := downloadAndValidateURL[
-	url,
-	"sds.pdf",
-	And[
-		(* First check the file format - FileFormat isn't outfoxed by incorrect extensions- we may have downloaded HTML to a .pdf filename but this will show it's still HTML *)
-		MatchQ[FileFormat[#], "PDF"],
 
-		(* If the file truly appears to be PDF format, import it and check we can read some text *)
-		Quiet[Check[
-			StringContainsQ[Import[#, "Plaintext"], Alternatives["safety data sheet", CaseSensitive["CAS"], CaseSensitive["GHS"]], IgnoreCase -> True],
-			False
-		]]
-	]&
+(* Lookup from type/field describing a file containing field to a validation function to use to validate files put into that field *)
+(* The first match will be returned, so add higher priority patterns to the top *)
+fileValidationFunctions = {
+	(* Types/Field - The fields that the Validator applies to. Validator is the function to test validity. Message is what to insert into the error message to explain validity failure *)
+	(* The *Field* URL(s) provided did not return *insert here* when downloaded for inputs... *)
+	<|Types -> All, Field -> MSDSFile, Validator -> validateSDS, Message -> "a valid MSDS pdf"|>,
+	<|Types -> All, Field -> StructureImageFile, Validator -> validateImageFile, Message -> "an image"|>,
+	<|Types -> All, Field -> StructureFile, Validator -> validateChemicalStructureFile, Message -> "a readable file"|>
+};
+
+(* Helper to select the appropriate validation function *)
+selectFileValidationFunction[type_, fieldName_] := Lookup[
+	selectFileValidationData[type, fieldName],
+	Validator,
+
+	(* If no validation function, assume file is valid *)
+	True &
 ];
 
-(* Structure Image File *)
-downloadAndValidateStructureImageFileURL[url : URLP] := downloadAndValidateURL[
-	url,
-	"structureimage.png",
-	(* Check that we get an image when we import the file *)
-	ImageQ[Import[#]]&
+selectFileValidationData[type_, fieldName_] := SelectFirst[
+	fileValidationFunctions,
+	Or[
+		And[MatchQ[type, TypeP[Lookup[#, Types]]], MatchQ[fieldName, Lookup[#, Field]]],
+		And[MatchQ[Lookup[#, Types], All], MatchQ[fieldName, Lookup[#, Field]]]
+	]&,
+	<||>
 ];
 
-(* Structure File *)
-downloadAndValidateStructureFileURL[url : URLP] := downloadAndValidateURL[
-	url,
-	"structure.sdf",
-	(* Check that we get a valid molecule when we import the structure file *)
-	MatchQ[Import[#], {_Molecule..}]&
+(* Helpers to validate specific file types *)
+(* Validate a pdf *)
+(* Check the file format - FileFormat isn't outfoxed by incorrect extensions- we may have downloaded HTML to a .pdf filename but this will show it's still HTML *)
+validatePDF[file_] := MatchQ[FileFormat[file], "PDF"];
+
+(* Validate an SDS file *)
+validateSDS[file_] := And[
+	(* Check we have a pdf *)
+	validatePDF[file],
+
+	(* If the file truly appears to be PDF format, import it and check we can read some text that indicates it's an SDS *)
+	Quiet[Check[
+		StringContainsQ[Import[file, "Plaintext"], Alternatives["safety data sheet", CaseSensitive["CAS"], CaseSensitive["GHS"]], IgnoreCase -> True],
+		False
+	]]
+];
+
+(* Validate an image file *)
+validateImageFile[file_] := ImageQ[Import[file]];
+
+(* Validate a chemical structure file *)
+(* MM doesn't support all structure types and it also depends on file extension to be able to identify a file as a chemical structure *)
+(* And file extensions aren't reliable when downloaded from a URL *)
+validateChemicalStructureFile[file_] := (*MatchQ[Import[file], {_Molecule..}]*) True;
+
+
+
+(* Overload that takes in a type and field name to ensure we hit the same memoization when called from multiple places in the codebase *)
+validateLocalFile[filePath : FilePathP, type : TypeP[], fieldName : _Symbol] := Module[
+	{validationFunction},
+
+	(* Lookup the function to ensure the downloaded file is valid *)
+	validationFunction = selectFileValidationFunction[type, fieldName];
+
+	(* Call the central, memoized, overload *)
+	validateLocalFile[filePath, validationFunction]
 ];
 
 
 (* Internal memoized function for validating local files *)
-validateLocalFile[filePath : FilePathP, fileValidationFunction : _Function] := Module[
+validateLocalFile[filePath : FilePathP, fileValidationFunction : Alternatives[_Function, _Symbol]] := Module[
 	{validFileQ, returnValue},
 
 	(* Validate the file using the supplied function *)
 	validFileQ = Quiet[Check[
-		TrueQ[fileValidationFunction[filePath]],
+		FileExistsQ[filePath] && TrueQ[fileValidationFunction[filePath]],
 		False
 	]];
 
@@ -3557,20 +3435,6 @@ validateLocalFile[filePath : FilePathP, fileValidationFunction : _Function] := M
 	returnValue
 ];
 
-(* Handy wrappers to prevent divergence when called from multiple places and ensure we hit memoization *)
-(* Structure File *)
-validateStructureFilePath[filePath : FilePathP] := validateLocalFile[
-	filePath,
-	MatchQ[Import[#], {_Molecule..}] &
-];
-
-(* Structure Image File *)
-validateStructureImageFilePath[filePath : FilePathP] := validateLocalFile[
-	filePath,
-	ImageQ[Import[#]] &
-];
-
-
 (* Helper for uploading a file to AWS and returning constellation cloud file packet. Memoized to prevent re-uploading *)
 pathToCloudFilePacket[file : Alternatives[FilePathP, _File]] := (pathToCloudFilePacket[file] = Module[
 	{},
@@ -3584,6 +3448,105 @@ pathToCloudFilePacket[file : Alternatives[FilePathP, _File]] := (pathToCloudFile
 	UploadCloudFile[file, Upload -> False]
 ]);
 
+(* Helper function to call the external UploadXX functions inside another function and memoize the result *)
+
+(* Output of this function will be {object(s), packet(s)}. First output is the same as if running UploadXX with Upload -> True, second output is the same as if running UploadXX with Upload -> False *)
+(* This function is listable, however it's required that we end up using one single UploadXX function for all inputs *)
+executeDefaultUploadFunction[myModelType:ListableP[TypeP[]], options:{(_Rule| _RuleDelayed)...}, label_String] := Module[
+	{
+		optionWithUploadFalse, result, mainResultPackets, outputObjects, correctedOutputObjects,
+		modelUploadFunction, uploadFunctionInput1, uploadFunctionInput2, modelParentTypes,
+		uploadFunctions, selectedUploadFunctions
+	},
+
+	(* Enforce Upload -> False and Stict -> False rule *)
+	optionWithUploadFalse = ReplaceRule[options, {Upload -> False, Strict -> False}];
+
+	(* For each input type, find the list of parent types. This is because some upload function may be defined on the parent type in $ObjectBuilders *)
+	(* Also, sort the list of types starting from child type. For example, if input type is Model[Container, Vessel, Filter], we want the result to be {Model[Container, Vessel, Filter], Model[Container, Vessel], Model[Container]} *)
+	modelParentTypes = Reverse[ValidObjectQ`Private`returnAllSubTypesForType[#]]& /@ ToList[myModelType];
+
+	(* Lookup the Upload function we need for parent type tree of each input *)
+	uploadFunctions = Lookup[$ObjectBuilders, #, Null]& /@ modelParentTypes;
+	(* For each input of myModelType, select the first upload function that's not Null *)
+	selectedUploadFunctions = FirstCase[#, Except[Null], Null]& /@ uploadFunctions;
+	(* Finally, find the upload function that will be used for all inputs. If we need more than 1 type of upload function, return error later *)
+	modelUploadFunction = If[Length[DeleteDuplicates[selectedUploadFunctions]] > 1,
+		Null,
+		First[selectedUploadFunctions]
+	];
+
+	(* If we didn't find the Upload function, return $Failed now *)
+	If[NullQ[modelUploadFunction],
+		Return[{$Failed, $Failed}, Module]
+	];
+
+	(* Then construct the inputs for the Upload function *)
+	uploadFunctionInput1 = Switch[modelUploadFunction,
+		(* For UploadSampleModel and UploadColumn, use the resolved Name as input *)
+		(UploadSampleModel | UploadColumn),
+			Lookup[options, Name, Null],
+		(* For UploadContainerModel and UploadCoverModel, use the type as input *)
+		(UploadContainerModel | UploadCoverModel),
+			myModelType,
+		(* TODO will add input for UploadProduct function in the upload product branch. Don't do it now because the new version has different input than current version *)
+		(* Anything else set to Null (i.e., no first input) *)
+		_,
+			Null
+	];
+
+	(* second input for the Upload function: None of the above requires a second input, so set to Null *)
+	(* subject to change in the future as we enable more uploads *)
+	uploadFunctionInput2 = Null;
+
+	(* Run the UploadXX function. Note that different UploadXX function can have anywhere between 0 - 2 required inputs *)
+	(* Suppress all error messages. Will throw error in the upstream function instead *)
+	(* Also Block $AllowAutoNewModelCreation to False so that we don't allow these upload functions to create new objects. This would prevent infinite loop *)
+	result = Block[{$AllowAutoNewModelCreation = False},
+		Quiet[
+			Which[
+				NullQ[uploadFunctionInput1],
+				modelUploadFunction[optionWithUploadFalse],
+				NullQ[uploadFunctionInput2],
+				modelUploadFunction[uploadFunctionInput1, optionWithUploadFalse],
+				True,
+				modelUploadFunction[uploadFunctionInput1, uploadFunctionInput2, optionWithUploadFalse]
+			]
+		]
+	];
+
+	(* If the function return value is not a packet or list of packets, return $Failed *)
+	If[!MatchQ[result, ListableP[PacketP[]]],
+		Return[{$Failed, $Failed}, Module]
+	];
+
+	(* Find the packets that is the expected type *)
+	mainResultPackets = Cases[result, PacketP[myModelType]];
+	(* Look up the Objects of these types *)
+	outputObjects = Lookup[#, Object]&/@ mainResultPackets;
+
+	(* Now decide if the first output should be one single object, or a list of objects *)
+	(* This is a bit hard to decide, but if we have found only 1 packet of the expected type *)
+	(* And the first input is not a list, then we say the first output should be a single object *)
+	correctedOutputObjects = If[Length[outputObjects] == 1 && (!MatchQ[uploadFunctionInput1, _List]),
+		First[outputObjects],
+		outputObjects
+	];
+
+	(* Register memoization *)
+	If[!MemberQ[$Memoization, ExternalUpload`Private`executeDefaultUploadFunction],
+		AppendTo[$Memoization, ExternalUpload`Private`executeDefaultUploadFunction]
+	];
+	Set[executeDefaultUploadFunction[myModelType, options, label], {correctedOutputObjects, result}];
+
+	(* Finally output results *)
+	{correctedOutputObjects, result}
+];
+
+(* Overload to output only objects or only packets *)
+executeDefaultUploadFunction[myModelType:ListableP[TypeP[]], options:{(_Rule| _RuleDelayed)...}, label_String, Object] := First[executeDefaultUploadFunction[myModelType, options, label]];
+executeDefaultUploadFunction[myModelType:ListableP[TypeP[]], options:{(_Rule| _RuleDelayed)...}, label_String, Packet] := Last[executeDefaultUploadFunction[myModelType, options, label]];
+
 
 (* ::Subsection::Closed:: *)
 (*Shared Option Sets*)
@@ -3592,7 +3555,8 @@ pathToCloudFilePacket[file : Alternatives[FilePathP, _File]] := (pathToCloudFile
 (* ::Subsubsection::Closed:: *)
 (*IdentityModelHealthAndSafetyOptions*)
 
-
+(* This option set is shared by diverse functions *)
+(* Use the phrasing "this entity" - applies to Molecules, samples, cells etc *)
 DefineOptionSet[
 	IdentityModelHealthAndSafetyOptions :>
 		{
@@ -3600,130 +3564,151 @@ DefineOptionSet[
 				IndexMatchingInput -> "Input Data",
 				{
 					OptionName -> Radioactive,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if pure samples of this molecule emit substantial ionizing radiation.",
+					Description -> "Indicates if pure samples of this entity emit substantial ionizing radiation.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of Radioactive.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> Ventilated,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if pure samples of this molecule must be handled in a ventilated enclosures.",
+					Description -> "Indicates if pure samples of this entity must be handled in an enclosure where airflow is used to reduce exposure of the user to the substance and contaminated air is exhausted in a safe location. Samples may need to be ventilated if they are, for example, pungent, fuming or hazardous.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of Ventilated.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> Pungent,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if pure samples of this molecule must be handled in a ventilated enclosures.",
-					Category -> "Health & Safety"
-				},
-				{
-					OptionName -> Flammable,
-					Default -> Null,
-					AllowNull -> True,
-					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if pure samples of this molecule are easily set aflame under standard conditions.",
-					Category -> "Health & Safety"
-				},
-				{
-					OptionName -> Acid,
-					Default -> Null,
-					AllowNull -> True,
-					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if this molecule forms strongly acidic solutions when dissolved in water (typically pKa <= 4) and requires secondary containment during storage.",
-					Category -> "Health & Safety"
-				},
-				{
-					OptionName -> Base,
-					Default -> Null,
-					AllowNull -> True,
-					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if this molecule forms strongly basic solutions when dissolved in water (typically pKaH >= 11) and requires secondary containment during storage.",
-					Category -> "Health & Safety"
-				},
-				{
-					OptionName -> Pyrophoric,
-					Default -> Null,
-					AllowNull -> True,
-					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if pure samples of this molecule can ignite spontaneously upon exposure to air.",
-					Category -> "Health & Safety"
-				},
-				{
-					OptionName -> WaterReactive,
-					Default -> Null,
-					AllowNull -> True,
-					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if pure samples of this molecule react spontaneously upon exposure to water.",
+					Description -> "Indicates if pure samples of this entity have a strong odor.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of Pungent.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> Fuming,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if pure samples of this molecule emit fumes spontaneously when exposed to air.",
+					Description -> "Indicates if pure samples of this entity emit fumes spontaneously when exposed to air.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of Fuming.",
+					Category -> "Health & Safety"
+				},
+				{
+					OptionName -> Flammable,
+					Default -> Automatic,
+					AllowNull -> True,
+					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+					Description -> "Indicates if pure samples of this entity are easily set aflame under standard conditions. This corresponds to NFPA rating of 3 or greater.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of Flammable.",
+					Category -> "Health & Safety"
+				},
+				{
+					OptionName -> Acid,
+					Default -> Automatic,
+					AllowNull -> True,
+					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+					Description -> "Indicates if this entity forms strongly acidic solutions when dissolved in water (typically pKa <= 4) and requires secondary containment during storage.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of Acid.",
+					Category -> "Health & Safety"
+				},
+				{
+					OptionName -> Base,
+					Default -> Automatic,
+					AllowNull -> True,
+					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+					Description -> "Indicates if this entity forms strongly basic solutions when dissolved in water (typically pKaH >= 11) and requires secondary containment during storage.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of Base.",
+					Category -> "Health & Safety"
+				},
+				{
+					OptionName -> Pyrophoric,
+					Default -> Automatic,
+					AllowNull -> True,
+					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+					Description -> "Indicates if pure samples of this entity can ignite spontaneously upon exposure to air.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of Pyrophoric.",
+					Category -> "Health & Safety"
+				},
+				{
+					OptionName -> WaterReactive,
+					Default -> Automatic,
+					AllowNull -> True,
+					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+					Description -> "Indicates if pure samples of this entity react spontaneously upon exposure to water.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of WaterReactive.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> HazardousBan,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if pure samples of this molecule are currently banned from usage in the ECL because the facility isn't yet equiped to handle them.",
-					Category -> "Health & Safety"
+					Description -> "Indicates if pure samples of this entity are currently banned from usage in the ECL because the facility isn't yet equipped to handle them.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of HazardousBan.",
+					Category -> "Hidden"
 				},
 				{
 					OptionName -> ExpirationHazard,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if pure samples of this molecule become hazardous once they are expired and must be automatically disposed of when they pass their expiration date.",
+					Description -> "Indicates if pure samples of this entity become hazardous once they are expired and must be automatically disposed of when they pass their expiration date.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of ExpirationHazard.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> ParticularlyHazardousSubstance,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if exposure to this substance has the potential to cause serious and lasting harm. A substance is considered particularly harmful if it is categorized by any of the following GHS classifications (as found on a MSDS): Reproductive Toxicity (H340, H360, H362),  Acute Toxicity (H300, H310, H330, H370, H373), Carcinogenicity (H350).",
+					Description -> "Indicates if exposure to samples of this entity has the potential to cause serious and lasting harm. A substance is considered particularly harmful if it is categorized by any of the following GHS classifications (as found on a MSDS): Reproductive Toxicity (H340, H360, H362),  Acute Toxicity (H300, H310, H330, H370, H371, H372, H373), Carcinogenicity (H350). Note that PHS designation primarily describes toxicity hazard and doesn't include other types of hazard such as water reactivity or being pyrophoric.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of ParticularlyHazardousSubstance.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> DrainDisposal,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if pure samples of this molecule may be safely disposed down a standard drain.",
+					Description -> "Indicates if pure samples of this entity may be safely disposed down a standard drain.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of DrainDisposal.",
 					Category -> "Health & Safety"
 				},
+				(* The MSDSRequired option is hidden, but retained for implementation reasons *)
+				(* Both MSDSRequired and MSDSFile fields are used and propagated internally in SLL to handle safety information *)
+				(* If two samples have MSDSFile -> file and MSDSRequired -> True and are combined, MSDSFile is nulled out and MSDSRequired remains True *)
+				(* However, to simplify things for the user we just show them a single MSDS option that either takes the file or a declaration that an MSDS is not required *)
 				{
 					OptionName -> MSDSRequired,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if an MSDS is applicable for this model.",
-					Category -> "Health & Safety"
+					Description -> "Indicates if an MSDS is applicable for this entity. If this option conflicts with the MSDSFile option, the latter will be used.",
+					ResolutionDescription -> "If creating a new object, automatically set to False if the user or external data sources indicate that the substance is non-hazardous, otherwise set to True. For existing objects, automatically set to match the field value of MSDSRequired.",
+					Category -> "Hidden"
 				},
 				{
 					OptionName -> MSDSFile,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Alternatives[
-						Widget[Type -> String, Pattern :> URLP, Size -> Line],
-						Widget[Type -> Object, Pattern :> ObjectP[Object[EmeraldCloudFile]], PatternTooltip -> "A cloud file stored on Constellation that ends in .PDF."]
+						"Declare Non-Hazardous" -> Widget[Type -> Enumeration, Pattern :> Alternatives[NotApplicable], PatternTooltip -> "Declare that this entity does not present a safety hazard and does not require an MSDS."],
+						"URL" -> Widget[Type -> String, Pattern :> URLP, Size -> Line],
+						"File Path" -> Widget[Type -> String, Pattern :> FilePathP, Size -> Line],
+						"EmeraldCloudFile" -> Widget[Type -> Object, Pattern :> ObjectP[Object[EmeraldCloudFile]], PatternTooltip -> "A cloud file stored on Constellation that ends in .PDF."]
 					],
-					Description -> "URL of the MSDS (Materials Safety Data Sheet) PDF file.",
+					Description -> "A PDF file of the MSDS (Materials Safety Data Sheet) of this entity.",
+					ResolutionDescription -> "For existing objects, automatically set to match the field value of MSDSFile.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> NFPA,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> {
 						"Health" -> Widget[Type -> Enumeration, Pattern :> 0 | 1 | 2 | 3 | 4],
@@ -3740,72 +3725,90 @@ DefineOptionSet[
 							]
 						]
 					},
-					Description -> "The National Fire Protection Association (NFPA) 704 hazard diamond classification for the substance.",
+					Description -> "The National Fire Protection Association (NFPA) 704 hazard diamond classification for the entity. The NFPA diamond standard is maintained by the United States National Fire Protection Association and summarizes, clockwise from top, Fire Hazard, Reactivity, Specific Hazard and Health Hazard of a substance.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of NFPA.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> DOTHazardClass,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> DOTHazardClassP],
-					Description -> "The Department of Transportation hazard classification of the substance.",
+					Description -> "The Department of Transportation hazard classification of this entity.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of DOTHazardClass.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> BiosafetyLevel,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BiosafetyLevelP],
-					Description -> "The Biosafety classification of the substance.",
+					Description -> "The Biosafety classification of this entity.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of BiosafetyLevel.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> DoubleGloveRequired,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if working with this substance required wearing two pairs of gloves.",
+					Description -> "Indicates if working with samples of this entity requires wearing two pairs of gloves.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of DoubleGloveRequired.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> LightSensitive,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Determines if the sample reacts or degrades in the presence of light and should be stored in the dark to avoid exposure.",
+					Description -> "Indicates if the samples of this entity reacts or degrades in the presence of light and requires storage in the dark.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of LightSensitive.",
 					Category -> "Storage Information"
 				},
 
 				{
 					OptionName -> IncompatibleMaterials,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
-					Widget -> With[{insertMe=Flatten[None | MaterialP]}, Adder[Widget[Type -> Enumeration, Pattern :> insertMe]]],
-					Description -> "A list of materials that would be damaged if wetted by this model.",
+					Widget -> Adder[Widget[Type -> Enumeration, Pattern :> Flatten[None | MaterialP]]],
+					Description -> "A list of materials that would be damaged if wetted by samples of this entity.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of IncompatibleMaterials.",
 					Category -> "Compatibility"
 				},
 				{
 					OptionName -> LiquidHandlerIncompatible,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if pure samples of this molecule cannot be reliably aspirated or dispensed on an automated liquid handling robot.",
+					Description -> "Indicates if pure samples of this entity cannot be reliably aspirated or dispensed on an automated liquid handling robot. Substances may be incompatible if they have a low boiling point, readily producing vapor, are highly viscous or are chemically incompatible with all tip types.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of LiquidHandlerIncompatible.",
 					Category -> "Compatibility"
 				},
 				{
 					OptionName -> PipettingMethod,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
-					Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Method, Pipetting]]],
-					Description -> "The pipetting parameters used to manipulate pure samples of this model.",
+					Widget -> Widget[
+						Type -> Object,
+						Pattern :> ObjectP[Model[Method, Pipetting]],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Pipetting Methods"
+							}
+						}
+					],
+					Description -> "The default parameters describing how pure samples of this entity should be manipulated by pipette, such as aspiration and dispensing rates. These parameters may be overridden when creating experiments.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of PipettingMethod.",
 					Category -> "Compatibility"
 				},
 				{
 					OptionName -> UltrasonicIncompatible,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if pure samples of this molecule cannot be performed via the ultrasonic distance method due to vapors interfering with the reading.",
+					Description -> "Indicates if volume measurements of pure samples of this entity cannot be performed via the ultrasonic distance method due to vapors interfering with the reading.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of UltrasonicIncompatible.",
 					Category -> "Compatibility"
 				}
 			]
@@ -3824,50 +3827,56 @@ DefineOptionSet[
 				IndexMatchingInput -> "Input Data",
 				{
 					OptionName -> State,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[Solid, Liquid, Gas]],
-					Description -> "The physical state of the sample when well solvated at room temperature and pressure.",
-					Category -> "Health & Safety"
+					Description -> "The physical state of samples of this model at room temperature and pressure. If composed of more than one constituent, the state when the components are well mixed and solvated.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of State.",
+					Category -> "Physical Properties"
 				},
 				{
 					OptionName -> SampleHandling,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> SampleHandlingP],
-					Description -> "The method by which this sample should be manipulated in the lab when transfers out of the sample are requested.",
-					Category -> "Health & Safety"
+					Description -> "The method by which samples of this model should be manipulated in the lab when transfers out of the sample are requested.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of SampleHandling.",
+					Category -> "Transfer Properties"
 				},
 				{
 					OptionName -> CellType,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> CellTypeP],
-					Description -> "The primary types of cells that are contained within this sample.",
-					Category -> "Health & Safety"
+					Description -> "The primary types of cells that are contained within this model.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of CellType.",
+					Category -> "Biological Information"
 				},
 				{
 					OptionName -> CultureAdhesion,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> CultureAdhesionP],
-					Description -> "The default type of cell culture (adherent or suspension) that should be performed when growing these cells. If a cell line can be cultured via an adherent or suspension culture, this is set to the most common cell culture type for the cell line.",
-					Category -> "Health & Safety"
+					Description -> "The default type of cell culture (adherent or suspension) that should be performed when growing any cells in this model. If a cell line can be cultured via an adherent or suspension culture, this is set to the most common cell culture type for the cell line.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of CultureAdhesion.",
+					Category -> "Biological Information"
 				},
 				{
 					OptionName -> Sterile,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates that this model of sample arrives free of both microbial contamination and any microbial cell samples from the manufacturer, or is prepared free of both microbial contamination and any microbial cell samples by employing autoclaving, sterile filtration, or mixing exclusively sterile components with aseptic techniques during the course of experiments, as well as during sample storage and handling.",
-					Category -> "Health & Safety"
+					Description -> "Indicates that samples of this model arrive free of both microbial contamination and any microbial cell samples from the manufacturer, or is prepared free of both microbial contamination and any microbial cell samples by employing autoclaving, sterile filtration, or mixing exclusively sterile components with aseptic techniques during the course of experiments, as well as during sample storage and handling.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of Sterile.",
+					Category -> "Sterility"
 				},
 				{
 					OptionName -> AsepticHandling,
-					Default -> Null,
-					Description -> "Indicates if aseptic techniques are expected for handling this model of sample. Aseptic techniques include sanitization, autoclaving, sterile filtration, mixing exclusively sterile components, and transferring in a biosafety cabinet during experimentation and storage.",
+					Default -> Automatic,
+					Description -> "Indicates if special techniques should be used to prevent contamination by microorganisms when handling samples of this model. Aseptic techniques include sanitization, autoclaving, sterile filtration, mixing exclusively sterile components, and transferring in a biosafety cabinet during experimentation and storage.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of AsepticHandling.",
 					AllowNull -> True,
-					Category -> "Health & Safety",
+					Category -> "Sterility",
 					Widget -> Widget[
 						Type -> Enumeration,
 						Pattern :> BooleanP
@@ -3875,42 +3884,56 @@ DefineOptionSet[
 				},
 				{
 					OptionName -> DefaultStorageCondition,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
-					Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[StorageCondition]]],
-					Description -> "The condition in which samples of this model are stored when not in use by an experiment; this condition may be overridden by the specific storage condition of any given sample.",
+					Widget -> Widget[
+						Type -> Object,
+						Pattern :> ObjectP[Model[StorageCondition]],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Storage Conditions"
+							}
+						}
+					],
+					Description -> "The typical environment in which samples of this model should be stored when not in use by an experiment. Default conditions may be overridden individually for any given sample.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of DefaultStorageCondition.",
 					Category -> "Storage Information"
 				},
 				{
 					OptionName -> Expires,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if samples of this model expire after a given amount of time.",
-					Category -> "Storage Information"
+					Description -> "Indicates if samples of this model have a finite lifespan and become unsuitable for use after a given amount of time.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of Expires.",
+					Category -> "Expiration Properties"
 				},
 				{
 					OptionName -> ShelfLife,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Quantity, Pattern :> GreaterP[0 * Day], Units -> {1, {Day, {Day, Month, Year}}}],
-					Description -> "The length of time after DateCreated that samples of this model are recommended for use before they should be discarded.",
-					Category -> "Storage Information"
+					Description -> "The length of time after their creation date (DateCreated) that samples of this model are recommended for use, before being considered expired.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of ShelfLife.",
+					Category -> "Expiration Properties"
 				},
 				{
 					OptionName -> UnsealedShelfLife,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Quantity, Pattern :> GreaterP[0 * Day], Units -> {1, {Day, {Day, Month, Year}}}],
-					Description -> "The length of time after DateUnsealed that samples of this model are recommended for use before they should be discarded.",
-					Category -> "Storage Information"
+					Description -> "The length of time after first being uncovered (DateUnsealed) that samples of this model are recommended for use before being considered expired.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of UnsealedShelfLife.",
+					Category -> "Expiration Properties"
 				},
 				{
 					OptionName -> TransportTemperature,
-					Default -> Null,
-					Description -> "The temperature that samples of this model should be incubated at while transported between instruments during experimentation.",
+					Default -> Automatic,
+					Description -> "The temperature at which samples of this model should be heated or cooled to when moved around the lab during experimentation, if different from ambient temperature.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of TransportTemperature.",
 					AllowNull -> True,
-					Category -> "Storage Information",
+					Category -> "Handling Temperatures",
 					Widget -> Widget[
 						Type -> Quantity,
 						Pattern :> Alternatives[RangeP[-86*Celsius, 10*Celsius], RangeP[30*Celsius, 105*Celsius]],
@@ -3919,11 +3942,12 @@ DefineOptionSet[
 				},
 				{
 					OptionName -> Anhydrous,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if this sample does not contain water.",
-					Category -> "Health & Safety"
+					Description -> "Indicates if this sample does not contain traces of water.",
+					ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of Anhydrous.",
+					Category -> "Chemical Properties"
 				}
 			],
 			IdentityModelHealthAndSafetyOptions
@@ -3942,92 +3966,103 @@ DefineOptionSet[
 				IndexMatchingInput -> "Input Data",
 				{
 					OptionName -> State,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[Solid, Liquid, Gas]],
 					Description -> "The physical state of the sample when well solvated at room temperature and pressure.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> SampleHandling,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> SampleHandlingP],
 					Description -> "The method by which this sample should be manipulated in the lab when transfers out of the sample are requested.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> CellType,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> CellTypeP],
 					Description -> "The primary types of cells that are contained within this sample.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> CultureAdhesion,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> CultureAdhesionP],
 					Description -> "The type of cell culture that is currently being performed to grow these cells.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> Sterile,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
 					Description -> "Indicates that this sample arrives free of both microbial contamination and any microbial cell samples from the manufacturer, or is prepared free of both microbial contamination and any microbial cell samples by employing autoclaving, sterile filtration, or mixing exclusively sterile components with aseptic techniques during experimentation and storage.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> StorageCondition,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[StorageCondition]], OpenPaths -> {{Object[Catalog, "Root"], "Storage Conditions"}}],
 					Description -> "The condition in which this sample gets stored in when not used by an experiment.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Storage Information"
 				},
 				{
 					OptionName -> Expires,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
 					Description -> "Indicates if samples of this model expire after a given amount of time.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Storage Information"
 				},
 				{
 					OptionName -> ShelfLife,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Quantity, Pattern :> GreaterP[0 * Day], Units -> {1, {Day, {Day, Month, Year}}}],
 					Description -> "The length of time after DateCreated that samples of this model are recommended for use before they should be discarded.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Storage Information"
 				},
 				{
 					OptionName -> UnsealedShelfLife,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Quantity, Pattern :> GreaterP[0 * Day], Units -> {1, {Day, {Day, Month, Year}}}],
 					Description -> "The length of time after DateUnsealed that samples of this model are recommended for use before they should be discarded.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Storage Information"
 				},
 				{
 					OptionName -> TransportTemperature,
-					Default -> Null,
+					Default -> Automatic,
 					Description -> "The temperature that this sample should be heated or refrigerated while transported between instruments during experimentation.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					AllowNull -> True,
 					Category -> "Storage Information",
 					Widget -> Widget[
-						Type->Quantity,
-						Pattern:>Alternatives[RangeP[-86*Celsius, 10*Celsius], RangeP[30*Celsius, 105*Celsius]],
+						Type -> Quantity,
+						Pattern :> Alternatives[RangeP[-86 * Celsius, 10 * Celsius], RangeP[30 * Celsius, 105 * Celsius]],
 						Units -> {1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}
 					]
 				},
 				{
 					OptionName -> TransferTemperature,
-					Default -> Null,
+					Default -> Automatic,
 					Description -> "The temperature that this sample should be at before any transfers using this sample occur.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					AllowNull -> True,
 					Category -> "Storage Information",
 					Widget -> Widget[
@@ -4038,16 +4073,18 @@ DefineOptionSet[
 				},
 				{
 					OptionName -> Anhydrous,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
 					Description -> "Indicates if this sample does not contain water.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> ExpirationDate,
-					Default -> Null,
+					Default -> Automatic,
 					Description -> "Date after which this sample is considered expired and users will be warned about using it in protocols.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					AllowNull -> True,
 					Category -> "Health & Safety",
 					Widget -> Widget[
@@ -4058,8 +4095,9 @@ DefineOptionSet[
 				},
 				{
 					OptionName -> AutoclaveUnsafe,
-					Default -> Null,
+					Default -> Automatic,
 					Description -> "Indicates if this sample cannot be safely autoclaved.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					AllowNull -> True,
 					Category -> "Health & Safety",
 					Widget -> Widget[
@@ -4069,8 +4107,9 @@ DefineOptionSet[
 				},
 				{
 					OptionName -> InertHandling,
-					Default -> Null,
+					Default -> Automatic,
 					Description -> "Indicates if this sample must be handled in a glove box.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					AllowNull -> True,
 					Category -> "Health & Safety",
 					Widget -> Widget[
@@ -4080,8 +4119,9 @@ DefineOptionSet[
 				},
 				{
 					OptionName -> AsepticHandling,
-					Default -> Null,
+					Default -> Automatic,
 					Description -> "Indicates if aseptic techniques are followed for this sample. Aseptic techniques include sanitization, autoclaving, sterile filtration, mixing exclusively sterile components, and transferring in a biosafety cabinet during experimentation and storage.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					AllowNull -> True,
 					Category -> "Health & Safety",
 					Widget -> Widget[
@@ -4091,8 +4131,9 @@ DefineOptionSet[
 				},
 				{
 					OptionName -> GloveBoxIncompatible,
-					Default -> Null,
+					Default -> Automatic,
 					Description -> "Indicates if this sample cannot be used inside of the glove box due high volatility and/or detrimental reactivity with the catalyst in the glove box that is used to remove traces of water and oxygen. Sulfur and sulfur compounds (such as H2S, RSH, COS, SO2, SO3), halides, halogen (Freon), alcohols, hydrazine, phosphene, arsine, arsenate, mercury, and saturation with water may deactivate the catalyst.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					AllowNull -> True,
 					Category -> "Compatibility",
 					Widget -> Widget[
@@ -4102,8 +4143,9 @@ DefineOptionSet[
 				},
 				{
 					OptionName -> GloveBoxBlowerIncompatible,
-					Default -> Null,
+					Default -> Automatic,
 					Description -> "Indicates that the glove box blower must be turned off to prevent damage to the catalyst in the glove box that is used to remove traces of water and oxygen, when manipulating this sample inside of the glove box.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					AllowNull -> True,
 					Category -> "Compatibility",
 					Widget -> Widget[
@@ -4113,8 +4155,9 @@ DefineOptionSet[
 				},
 				{
 					OptionName -> RNaseFree,
-					Default -> Null,
+					Default -> Automatic,
 					Description -> "Indicates that this sample is free of any RNases.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					AllowNull -> True,
 					Category -> "Health & Safety",
 					Widget -> Widget[
@@ -4124,8 +4167,9 @@ DefineOptionSet[
 				},
 				{
 					OptionName -> NucleicAcidFree,
-					Default -> Null,
+					Default -> Automatic,
 					Description -> "Indicates if this sample is presently considered to be not contaminated with DNA and RNA.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					AllowNull -> True,
 					Category -> "Health & Safety",
 					Widget -> Widget[
@@ -4135,8 +4179,9 @@ DefineOptionSet[
 				},
 				{
 					OptionName -> PyrogenFree,
-					Default -> Null,
+					Default -> Automatic,
 					Description -> "Indicates if this sample is presently considered to be not contaminated with endotoxin.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					AllowNull -> True,
 					Category -> "Health & Safety",
 					Widget -> Widget[
@@ -4146,8 +4191,9 @@ DefineOptionSet[
 				},
 				{
 					OptionName -> AsepticTransportContainerType,
-					Default -> Null,
+					Default -> Automatic,
 					Description -> "Indicates how this sample is contained in an aseptic barrier and if it needs to be unbagged before being used in a protocol, maintenance, or qualification.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					AllowNull -> True,
 					Category -> "Storage Information",
 					Widget -> Widget[
@@ -4168,36 +4214,34 @@ DefineOptionSet[
 DefineOptionSet[
 	ExternalUploadHiddenOptions :>
 		{
-			IndexMatching[
-				IndexMatchingInput -> "Input Data",
-				{
-					OptionName -> Cache,
-					Default -> {},
-					AllowNull -> False,
-					Widget -> Widget[Type -> Expression, Pattern :> _List, Size -> Line],
-					Description -> "The download cache.",
-					Category -> "Hidden"
-				},
-				{
-					OptionName -> Upload,
-					Default -> True,
-					AllowNull -> False,
-					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if the database changes resulting from this function should be made immediately or if upload packets should be returned.",
-					Category -> "Hidden"
-				},
-				{
-					OptionName -> Output,
-					Default -> Result,
-					AllowNull -> True,
-					Widget -> Alternatives[
-						Widget[Type -> Enumeration, Pattern :> CommandBuilderOutputP],
-						Adder[Widget[Type -> Enumeration, Pattern :> CommandBuilderOutputP]]
-					],
-					Description -> "Indicate what the function should return.",
-					Category -> "Hidden"
-				}
-			]
+			{
+				OptionName -> Cache,
+				Default -> {},
+				AllowNull -> False,
+				Widget -> Widget[Type -> Expression, Pattern :> _List, Size -> Paragraph],
+				Description -> "The download cache.",
+				Category -> "Hidden"
+			},
+			{
+				OptionName -> Upload,
+				Default -> True,
+				AllowNull -> False,
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+				Description -> "Indicates if the database changes resulting from this function should be made immediately or if upload packets should be returned.",
+				Category -> "Hidden"
+			},
+			{
+				OptionName -> Output,
+				Default -> Result,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					Widget[Type -> Enumeration, Pattern :> CommandBuilderOutputP],
+					Adder[Widget[Type -> Enumeration, Pattern :> CommandBuilderOutputP]]
+				],
+				Description -> "Indicate what the function should return.",
+				Category -> "Hidden"
+			},
+			StrictOption
 		}
 ];
 
@@ -4213,239 +4257,707 @@ DefineOptionSet[
 				IndexMatchingInput -> "Input Data",
 				{
 					OptionName -> CellType,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> CellTypeP],
 					Description -> "The primary types of cells that are contained within this sample.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> CultureAdhesion,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> CultureAdhesionP],
 					Description -> "The default type of cell culture (adherent or suspension) that should be performed when growing these cells. If a cell line can be cultured via an adherent or suspension culture, this is set to the most common cell culture type for the cell line.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Health & Safety"
 				},
 				{
 					OptionName -> Name,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> String, Pattern :> _String, Size -> Line],
 					Description -> "The name of the identity model.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Organizational Information"
 				},
 				{
 					OptionName -> DefaultSampleModel,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Sample]]],
 					Description -> "Specifies the model of sample that will be used if this model is specified to be used in an experiment.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Organizational Information"
 				},
 				{
 					OptionName -> Synonyms,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Adder[Widget[Type -> String, Pattern :> _String, Size -> Word]],
 					Description -> "List of possible alternative names this model goes by.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Organizational Information"
 				},
 				{
 					OptionName -> ATCCID,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> String, Pattern :> _String, Size -> Word],
 					Description -> "The American Type Culture Collection (ATCC) identifying number of this cell line.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Organizational Information"
 				},
 				{
 					OptionName -> Species,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Species]]],
 					Description -> "The species that this cell was originally cultivated from.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Organizational Information"
 				},
 
 				{
 					OptionName -> Diameter,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Quantity, Pattern :> GreaterP[0 * Micro * Meter], Units -> (Micro * Meter)],
 					Description -> "The average diameter of an individual cell.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Organizational Information"
 				},
 				{
 					OptionName -> DoublingTime,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Quantity, Pattern :> GreaterP[0 * Hour], Units -> {1, {Hour, {Day, Hour, Minute}}}],
 					Description -> "The average period of time it takes for a population of these cells to double in number during their exponential growth phase in its preferred media.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Organizational Information"
 				},
 				{
 					OptionName -> Viruses,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Adder[Widget[Type -> Object, Pattern :> ObjectP[Model[Virus]]]],
 					Description -> "Viruses that are known to be carried by this cell line.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Organizational Information"
 				},
 				{
 					OptionName -> cDNAs,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Adder[Widget[Type -> Object, Pattern :> ObjectP[Model[Molecule, cDNA]]]],
 					Description -> "The cDNA models that this cell line produces.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Organizational Information"
 				},
 				{
 					OptionName -> Transcripts,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Adder[Widget[Type -> Object, Pattern :> ObjectP[Model[Molecule, Transcript]]]],
 					Description -> "The transcript models that this cell line produces.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Organizational Information"
 				},
 				{
 					OptionName -> Lysates,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Adder[Widget[Type -> Object, Pattern :> ObjectP[Model[Lysate]]]],
 					Description -> "The model of the contents of this cell when lysed.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Organizational Information"
 				},
 				{
 					OptionName -> PreferredLiquidMedia,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Sample,Media]]],
 					Description -> "The recommended liquid media for the growth of the cells.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "General"
 				},
 				{
 					OptionName -> PreferredSolidMedia,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Sample,Media]]],
 					Description -> "The recommended solid media for the growth of the cells.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "General"
 				},
 				{
 					OptionName -> PreferredFreezingMedia,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Sample]]],
 					Description -> "The recommended media for cryopreservation of these cells, often containing additives that protect the cells during freezing.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "General"
 				},
 				{
 					OptionName -> ThawCellsMethod,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Object, Pattern :> ObjectP[Object[Method, ThawCells]]],
-					Description -> "The default method by which to thaw cryovials of this cell line.",
+					Description -> "The default method by which to bring cryovials of this cell line to ambient temperature.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "General"
 				},
 				{
 					OptionName -> DetectionLabels,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Adder[Widget[Type -> Object, Pattern :> ObjectP[Model[Molecule]]]],
 					Description -> "Indicate the tags (e.g. GFP, Alexa Fluor 488) that the cell contains, which can indicate the presence and amount of particular features or molecules in the cell. Allowed Model[Molecule] as DetectionLabels must have DetectionLabel->True.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Physical Properties"
 				},
 				{
 					OptionName -> PreferredColonyHandlerHeadCassettes,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Adder[Widget[Type -> Object, Pattern :> ObjectP[Model[Part,ColonyHandlerHeadCassette]]]],
 					Description -> "The ColonyHandlerHeadCassettes that are designed to pick this cell type from a solid gel.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "General"
 				},
 				{
 					OptionName -> FluorescentExcitationWavelength,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> {
 						"Minimum Wavelength" -> Widget[Type -> Quantity, Pattern :> GreaterP[0 Nanometer], Units -> Nanometer],
 						"Maximum Wavelength" -> Widget[Type -> Quantity, Pattern :> GreaterP[0 Nanometer], Units -> Nanometer]
 					},
 					Description -> "The range of wavelengths that causes the cell to be in an excited state.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "General"
 				},
 				{
 					OptionName -> FluorescentEmissionWavelength,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> {
 						"Minimum Wavelength" -> Widget[Type -> Quantity, Pattern :> GreaterP[0 Nanometer], Units -> Nanometer],
 						"Maximum Wavelength" -> Widget[Type -> Quantity, Pattern :> GreaterP[0 Nanometer], Units -> Nanometer]
 					},
 					Description -> "The detectable range of wavelengths this cell will emit through fluorescence after being put into an excited state.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "General"
 				},
 				{
 					OptionName -> StandardCurves,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Adder[Widget[Type -> Object, Pattern :> ObjectP[Object[Analysis,StandardCurve]]]],
 					Description -> "The standard curves used to convert between a combination of cell concentration units, Cell/Milliliter, OD600, CFU/Milliliter, RelativeNephelometricUnit, NephelometricTurbidityUnit, FormazinTurbidityUnit, and FormazinNephelometricUnit. If there exist multiple standard curves between the same units, the more recently generated curve will be used in calculations.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "General"
 				},
 				{
 					OptionName -> StandardCurveProtocols,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Adder[Alternatives[Widget[Type -> Object, Pattern :> ObjectP[{Object[Protocol,Nephelometry], Object[Protocol,AbsorbanceIntensity]}]],Widget[Type -> Expression, Pattern :> Null, Size -> Line]]],
 					Description -> "The protocol that generated the data used to determine the standard curve.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "General"
-				}
-			],
-
-			IdentityModelHealthAndSafetyOptions,
-
-			IndexMatching[
-				IndexMatchingInput -> "Input Data",
-				(* Overwrite some of the safety options with different defaults. *)
+				},
 				{
 					OptionName -> State,
-					Default -> Liquid,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[Solid, Liquid, Gas]],
 					Description -> "The physical state of the sample when well solvated at room temperature and pressure.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Liquid. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Physical Properties"
 				},
 				{
-					OptionName -> MSDSRequired,
-					Default -> True,
-					AllowNull -> True,
-					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if an MSDS is applicable for this model.",
-					Category -> "Health & Safety"
-				},
-				{
-					OptionName -> Flammable,
-					Default -> False,
-					AllowNull -> True,
-					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if pure samples of this molecule are easily set aflame under standard conditions.",
-					Category -> "Health & Safety"
-				},
-
-				{
 					OptionName -> ReferenceImages,
-					Default -> Null,
+					Default -> Automatic,
 					AllowNull -> True,
 					Widget -> Adder[Widget[Type -> Object, Pattern :> ObjectP[Object[Data]]]],
 					Description -> "Reference microscope images exemplifying the typical appearance of this cell line.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 					Category -> "Experimental Results"
 				}
 			],
 
+			IdentityModelHealthAndSafetyOptions,
 			ExternalUploadHiddenOptions
 		}
+];
+
+(* ::Subsubsection::Closed:: *)
+(*SubstanceOptions*)
+
+
+DefineOptionSet[
+	SubstanceOptions :>
+		{
+			IndexMatching[
+				IndexMatchingInput -> "Input Data",
+				{
+					OptionName -> Name,
+					Default -> Automatic,
+					AllowNull -> True,
+					Widget -> Widget[Type -> String, Pattern :> _String, Size -> Line],
+					Description -> "The common or proprietary name of the molecule, used to identify it in Constellation.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+					Category -> "Organizational Information"
+				},
+				{
+					OptionName -> Molecule,
+					Default -> Automatic,
+					AllowNull -> True,
+					Widget -> Alternatives[
+						"Atomic Structure" -> Widget[
+							Type -> Molecule,
+							Pattern :> MoleculeP
+						],
+						"Polymer Strand/Structure" -> Widget[Type -> Expression, Pattern :> _?StructureQ | _?StrandQ, Size -> Line]
+					],
+					Description -> "The chemical structure that represents this substance.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+					Category -> "Molecular Identifiers"
+				},
+				{
+					OptionName -> DefaultSampleModel,
+					Default -> Automatic,
+					AllowNull -> True,
+					Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Sample]]],
+					Description -> "The model of sample that will be used if this substance is specified to be used in an experiment.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+					Category -> "Organizational Information"
+				},
+				{
+					OptionName -> Synonyms,
+					Default -> Automatic,
+					AllowNull -> True,
+					Widget -> Adder[Widget[Type -> String, Pattern :> _String, Size -> Word]],
+					Description -> "A list of alternative names for this substance.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to the specified object name. For existing objects, Automatic resolves to the current field value.",
+					Category -> "Organizational Information"
+				},
+				{
+					OptionName -> CAS,
+					Default -> Automatic,
+					AllowNull -> True,
+					Widget -> Widget[Type -> String, Pattern :> CASNumberP, Size -> Line],
+					Description -> "Chemical Abstracts Service (CAS) registry number for this substance.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+					Category -> "Molecular Identifiers"
+				},
+				{
+					OptionName -> IUPAC,
+					Default -> Automatic,
+					AllowNull -> True,
+					Widget -> Widget[Type -> String, Pattern :> _String, Size -> Line],
+					Description -> "International Union of Pure and Applied Chemistry (IUPAC) name for the substance.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+					Category -> "Molecular Identifiers"
+				},
+				{
+					OptionName -> State,
+					Default -> Automatic,
+					AllowNull -> True,
+					Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[Solid, Liquid, Gas]],
+					Description -> "The physical state of a pure sample of this substance at room temperature and pressure.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+					Category -> "Physical Properties"
+				},
+				{
+					OptionName -> StructureImageFile,
+					Default -> Automatic,
+					AllowNull -> True,
+					Widget -> Alternatives[
+						"URL" -> Widget[Type -> String, Pattern :> URLP, Size -> Line],
+						"File Path" -> Widget[Type -> String, Pattern :> FilePathP, Size -> Line],
+						"EmeraldCloudFile" -> Widget[Type -> Object, Pattern :> ObjectP[Object[EmeraldCloudFile]]]
+					],
+					Description -> "An image depicting the chemical structure of this substance.",
+					ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+					Category -> "Molecular Identifiers"
+				}
+			]
+		}
+];
+
+(* ::Subsubsection::Closed:: *)
+(*MoleculeOptions*)
+
+
+DefineOptionSet[
+	MoleculeOptions :> {
+		IndexMatching[
+			IndexMatchingInput -> "Input Data",
+			{
+				OptionName -> UNII,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> String, Pattern :> _String, Size -> Word],
+				Description -> "The Unique Ingredient Identifier of this molecule based on the unified identification scheme of FDA.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Molecular Identifiers"
+			},
+			{
+				OptionName -> InChI,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> String, Pattern :> InChIP, Size -> Line, PatternTooltip -> "A valid InChI identifier that starts with InChI=."],
+				Description -> "The International Chemical Identifier (InChI) that uniquely identifies this chemical species.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Molecular Identifiers"
+			},
+			{
+				OptionName -> InChIKey,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> String, Pattern :> InChIKeyP, Size -> Line, PatternTooltip -> "A valid InChIKey identifier in the form ##############-##########-# where # is any letter between A-Z." ],
+				Description -> "The International Chemical Identifier (InChI) Key that uniquely identifies this chemical species.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Molecular Identifiers"
+			},
+			{
+				OptionName -> PubChemID,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Number, Pattern :> GreaterP[0, 1]],
+				Description -> "The PubChem Compound ID that uniquely identifies this molecule in the PubChem database.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Molecular Identifiers"
+			},
+			{
+				OptionName -> MolecularFormula,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> String, Pattern :> _String, Size -> Word],
+				Description -> "Chemical formula of this substance (e.g. H2O, NH3, etc.).",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Physical Properties"
+			},
+			{
+				OptionName -> MolecularWeight,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> GreaterP[(0 * Gram) / Mole],
+					Units -> Alternatives[
+						CompoundUnit[
+							{1, {Gram, {Microgram, Milligram, Gram, Kilogram}}},
+							{-1, {Mole, {Micromole, Millimole, Mole, Kilomole}}}
+						],
+						Dalton
+					]
+				],
+				Description -> "The ratio between mass and amount of substance for pure samples of this molecule - the mass of one mole of the molecule.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Physical Properties"
+			},
+			{
+				OptionName -> ExactMass,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> GreaterP[(0 * Gram) / Mole],
+					Units -> Alternatives[
+						CompoundUnit[
+							{1, {Gram, {Microgram, Milligram, Gram, Kilogram}}},
+							{-1, {Mole, {Micromole, Millimole, Mole, Kilomole}}}
+						],
+						Dalton
+					]
+				],
+				Description -> "The most abundant mass of the molecule calculated using the natural abundance of isotopes on Earth.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Physical Properties"
+			},
+			{
+				OptionName -> Density,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> GreaterP[(0 * Gram) / Milliliter],
+					Units -> CompoundUnit[
+						{1, {Gram, {Microgram, Milligram, Gram, Kilogram}}},
+						Alternatives[
+							{-3, {Meter, {Millimeter, Centimeter, Meter}}},
+							{-1, {Liter, {Microliter, Milliliter, Liter}}}
+						]
+					]
+				],
+				Description -> "The mass of sample per amount of volume for a pure sample of this molecule at room temperature and pressure.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Physical Properties"
+			},
+			{
+				OptionName -> ExtinctionCoefficients,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Adder[
+					{
+						"Wavelength" -> Widget[
+							Type -> Quantity,
+							Pattern :> GreaterP[0 * Nanometer],
+							Units -> {1, {Nanometer, {Nanometer, Micrometer, Millimeter, Meter}}}
+						],
+						"ExtinctionCoefficient" -> Widget[
+							Type -> Quantity,
+							Pattern :> GreaterP[0 Liter / (Centimeter * Mole)],
+							Units -> CompoundUnit[
+								{1, {Liter, {Microliter, Milliliter, Liter}}},
+								{-1, {Centimeter, {Micrometer, Millimeter, Centimeter, Meter}}},
+								{-1, {Mole, {Micromole, Millimole, Mole, Kilomole}}}
+							]
+						]
+					}
+				],
+				Description -> "A measure of how strongly this molecule absorbs light at a particular wavelength in aqueous solution at ambient temperature and pressure.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Physical Properties"
+			},
+			{
+				OptionName -> StructureFile,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"URL" -> Widget[Type -> String, Pattern :> URLP, Size -> Line],
+					"File Path" -> Widget[Type -> String, Pattern :> FilePathP, Size -> Line],
+					"EmeraldCloudFile" -> Widget[Type -> Object, Pattern :> ObjectP[Object[EmeraldCloudFile]]]
+				],
+				Description -> "A file containing the chemical structure of this molecule.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Molecular Identifiers"
+			},
+			{
+				OptionName -> MeltingPoint,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> GreaterP[0 * Kelvin],
+					Units -> Alternatives[
+						{1, {Celsius, {Celsius}}},
+						{1, {Kelvin, {Kelvin}}},
+						{1, {Fahrenheit, {Fahrenheit}}}
+					]
+				],
+				Description -> "The temperature at which pure samples of this molecule transition from solid to liquid at atmospheric pressure.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Physical Properties"
+			},
+			{
+				OptionName -> BoilingPoint,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> GreaterP[0 * Kelvin],
+					Units -> Alternatives[
+						{1, {Celsius, {Celsius}}},
+						{1, {Kelvin, {Kelvin}}},
+						{1, {Fahrenheit, {Fahrenheit}}}
+					]
+				],
+				Description -> "The temperature at which bulk sample of this molecule transitions from condensed phase to gas at atmospheric pressure. This occurs when the vapor pressure of the sample equals atmospheric pressure.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Physical Properties"
+			},
+			{
+				OptionName -> VaporPressure,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> GreaterEqualP[0 * Kilo * Pascal],
+					Units -> Alternatives[
+						{1, {Pascal, {Micropascal, Millipascal, Pascal, Kilopascal, Megapascal}}},
+						{1, {Atmosphere, {Atmosphere}}},
+						{1, {Bar, {Microbar, Millibar, Bar, Kilobar}}},
+						{1, {Torr, {Millitorr, Torr}}}
+					]
+				],
+				Description -> "The pressure of the vapor in thermodynamic equilibrium with condensed phase for pure samples of this molecule in a closed system at room temperature.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Physical Properties"
+			},
+			{
+				OptionName -> Viscosity,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> GreaterEqualP[0 * Pascal * Second],
+					Units -> Alternatives[
+						{1, {Poise, {Millipoise, Centipoise, Poise}}},
+						CompoundUnit[
+							{1, {Pascal, {Micropascal, Millipascal, Pascal, Kilopascal}}},
+							{1, {Second, {Microsecond, Millisecond, Second}}}
+						]
+					]
+				],
+				Description -> "The dynamic viscosity of pure samples of this substance at room temperature and pressure, indicating how resistant it is to flow when an external force is applied.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Physical Properties"
+			},
+			{
+				OptionName -> LogP,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Number, Pattern :> RangeP[-Infinity, Infinity]],
+				Description -> "The logarithm of the partition coefficient, which is the ratio of concentrations of a solute between the aqueous and organic phases of an octanol-water biphasic system.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Physical Properties"
+			},
+			{
+				OptionName -> pKa,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Adder[Widget[Type -> Number, Pattern :> RangeP[-Infinity, Infinity]]],
+				Description -> "The logarithmic acid dissociation constants of the substance at room temperature in water.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Physical Properties"
+			},
+			{
+				OptionName -> Fluorescent,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+				Description -> "Indicates if this molecule can re-emit light upon excitation.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Physical Properties"
+			},
+			{
+				OptionName -> FluorescenceExcitationMaximums,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Adder[Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 * Nanometer], Units -> {1, {Nanometer, {Nanometer}}}]],
+				Description -> "The wavelengths corresponding to the highest peak of each fluorescent moiety's excitation spectrum, known as lambda max.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Physical Properties"
+			},
+			{
+				OptionName -> FluorescenceEmissionMaximums,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Adder[Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 * Nanometer], Units -> {1, {Nanometer, {Nanometer}}}]],
+				Description -> "The wavelengths corresponding to the highest peak of each fluorescent moiety's emission spectrum.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Physical Properties"
+			},
+
+			{
+				OptionName -> DetectionLabel,
+				Default -> Automatic,
+				AllowNull -> False,
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+				Description -> "Indicates whether this molecule is typically attached to another molecule to act as a tag for detection and quantification of that molecule through methods that don't require physical binding, such as fluorescence (e.g. Alexa Fluor 488).",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Molecular Labeling"
+			},
+			{
+				OptionName -> AffinityLabel,
+				Default -> Automatic,
+				AllowNull -> False,
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+				Description -> "Indicates whether this molecule is typically attached to another molecule to act as a tag for detection and quantification of that molecule through physical binding (e.g. His tag).",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Molecular Labeling"
+			},
+			{
+				OptionName -> DetectionLabels,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Adder[Widget[Type -> Object, Pattern :> ObjectP[Model[Molecule]]]],
+				Description -> "The substructures that are contained within this molecule which enable detection and quantification of the molecule through methods that don't require physical binding, such as fluorescence (e.g. Alexa Fluor 488). Model[Molecule]s can be used as DetectionLabels when they have DetectionLabel->True.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Molecular Labeling"
+			},
+			{
+				OptionName -> AffinityLabels,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Adder[Widget[Type -> Object, Pattern :> ObjectP[Model[Molecule]]]],
+				Description -> "The substructures that are contained within this molecule which enable detection and quantification of the molecule through physical binding (e.g. His tag). Model[Molecule]s can be used as DetectionLabels when they have AffinityLabel->True.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Molecular Labeling"
+			},
+
+			(* Chiral Properties*)
+			{
+				OptionName -> Chiral,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+				Description -> "Indicates if this molecule is an enantiomer, that cannot be superposed on its mirror image by any combination of rotations and translations.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Stereochemistry"
+			},
+			{
+				OptionName -> Racemic,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+				Description -> "Indicates if this molecule represents a mixture of equal amounts of the two enantiomers of a chiral molecule.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Stereochemistry"
+			},
+			{
+				OptionName -> EnantiomerForms,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Adder[Widget[Type -> Object, Pattern :> ObjectP[Model[Molecule]]]],
+				Description -> "If this model molecule is racemic (Racemic -> True), indicates the two models for the enantiomerically pure forms.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Stereochemistry"
+			},
+			{
+				OptionName -> RacemicForm,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Molecule]]],
+				Description -> "If this molecule represents one of a pair of enantiomers (Chiral -> True), indicates the model for its racemic form.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Stereochemistry"
+			},
+			{
+				OptionName -> EnantiomerPair,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Molecule]]],
+				Description -> "If this molecule represents one of a pair of enantiomers (Chiral -> True), indicates the model for the alternative enantiomer of this molecule.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Stereochemistry"
+			}
+		],
+
+		SubstanceOptions,
+		IdentityModelHealthAndSafetyOptions,
+
+		IndexMatching[
+			IndexMatchingInput -> "Input Data",
+			{
+				OptionName -> LiteratureReferences,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Adder[
+					Widget[Type -> Object, Pattern :> ObjectP[Object[Report, Literature]]]
+				],
+				Description -> "Literature references that discuss this molecule.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Analysis & Reports"
+			}
+		]
+	}
 ];
 
 
@@ -4487,7 +4999,7 @@ SetAttributes[retryConnection, HoldAll];
 
 DefineOptions[resolveTemplateOptions,
 	Options :> {
-		{Exclude -> {}, {(_Symbol)..}, "List of option names that should not be replaced with values from the template."}
+		{Exclude -> {}, {(_Symbol)...}, "List of option names that should not be replaced with values from the template."}
 	}
 ];
 
@@ -4605,13 +5117,23 @@ resolveTemplateOptions[
 	safeOps_List,
 	ops:OptionsPattern[resolveTemplateOptions]
 ]:=Module[
-	{listedOps, nonReusableFields, userOpsSpecified, defaultedOps, templateDefaultedRules, replacedSafeOps},
+	{
+		listedOps, nonReusableFields, userOpsSpecified, defaultedOps, templateDefaultedRules, replacedSafeOps,
+		type, fieldDefinition, namedMultipleFieldDefinitions, formattedTemplateRules
+	},
 
 	(* Make sure we are dealing with lists of options *)
 	listedOps=ToList[ops];
 
 	(* A list of fields that should never be taken as*)
 	nonReusableFields=OptionDefault[OptionValue[Exclude]];
+
+	(* extract field definitions for the type *)
+	type = Lookup[tempObj, Type];
+	fieldDefinition = Lookup[LookupTypeDefinition[type], Fields];
+
+	(* extract named multiple fields *)
+	namedMultipleFieldDefinitions = Select[fieldDefinition, MatchQ[Lookup[Values[#], Headers], {_Rule..}]&];
 
 	(* Determine which options the user specified *)
 	userOpsSpecified=First /@ ToList[userOps];
@@ -4628,15 +5150,395 @@ resolveTemplateOptions[
 		xLink:LinkP[] :> Most[xLink](* Trim the IDs from any links discovered *)
 	];
 
-	(* Replace safe ops with rules pulled from the template obj*)
-	replacedSafeOps=ReplaceRule[
-		safeOps,
+	(* Note that some fields are in named multiple form but options are index-multiple. Need to convert that *)
+	formattedTemplateRules = Map[
+		Function[{optionRule},
+			If[!MemberQ[Keys[namedMultipleFieldDefinitions], Keys[optionRule]],
+				optionRule,
+				Module[{key, value, headers, correctedValue},
+					key = Keys[optionRule];
+					value = Values[optionRule];
+					headers = Keys[Lookup[Lookup[namedMultipleFieldDefinitions, key], Headers]];
+					correctedValue = Lookup[#, headers, Null]& /@ value;
+					key -> correctedValue
+				]
+			]
+		],
 		templateDefaultedRules
 	];
 
+	(* Replace safe ops with rules pulled from the template obj*)
+	replacedSafeOps=ReplaceRule[
+		safeOps,
+		formattedTemplateRules
+	];
+
 	(* Pass the final list through safe ops, and convert any links found into Links without IDs  *)
-	SafeOptions[funcName, replacedSafeOps]
+	(* The field value from Template object may not necessarily match the required option pattern. For example, field value can always be Null while option pattern may have AllowNull -> False *)
+	(* In these cases we'll just use the default option. Quiet the Warning::OptionPattern error so we don't throw message on that *)
+	Quiet[SafeOptions[funcName, replacedSafeOps], {Warning::OptionPattern}]
 ];
+
+
+
+
+(* ::Subsubsection:: *)
+(* scrapeMoleculeData *)
+
+Error::CompoundNotFound = "The compound(s) `1` were not found in the PubChem database and data could not be obtained from any other identifier(s) supplied. Please verify the identifiers are correct or supply an alternative identifier or synonym.";
+Warning::CompoundNotFound = "The compound(s) `1` were not found in the PubChem database, however data could be obtained from other identifier(s) supplied `2`. Please review the output and consider checking that the identifiers are correct.";
+Error::InvalidIdentifier = "The identifier(s) `1` could not be understood by PubChem and data could not be obtained from any other identifier(s) supplied. Please verify the identifiers are correct or supply an alternative identifier or synonym.";
+Warning::InvalidIdentifier = "The identifier(s) `1` could not be understood by PubChem, however data could be obtained from other identifier(s) supplied `2`. Please review the output and consider checking that the identifiers are correct.";
+Error::URLNotFound="The URL(s) `1` could not be found and data could not be obtained from any other identifier(s) supplied. Please ensure that the URLs are correct, try a different URL or supply an alternative identifier.";
+Warning::URLNotFound="The URL(s) `1` could not be found, however data could be obtained from other identifier(s) supplied `2`. Please review the output and consider checking that the URLs are correct.";
+Error::BadRequest="The server considered the URL(s) `1` a bad request and data could not be obtained from any other identifier(s) supplied. Please ensure that the URLs are correct, try a different URL or supply an alternative identifier.";
+Warning::BadRequest="The server considered the URL(s) `1` a bad request, however data could be obtained from other identifier(s) supplied `2`. Please review the output and consider checking that the URLs are correct.";
+Error::APIRateLimit="Unable to scrape the required information from the URL(s) `1` because of rate limiting and data could not be obtained from any other identifier(s) supplied. Please wait for a few minutes and try again.";
+Warning::APIRateLimit="Unable to scrape the required information from the URL(s) `1` because of rate limiting, however data could be obtained from other identifier(s) supplied `2`. Please review the output and consider waiting for a few minutes to try again.";
+Error::APIUnavailable="Unable to scrape the required information from the URL(s) `1` because the server is temporarily unavailable and data could not be obtained from any other identifier(s) supplied. Please try again later or consider supplying an alternative identifier.";
+Warning::APIUnavailable="Unable to scrape the required information from the URL(s) `1` because the server is temporarily unavailable, however data could be obtained from other identifier(s) supplied `2`. Please review the output and consider waiting for a few minutes to try again.";
+Error::APIConnectionError="Unable to scrape the required information from the URL(s) `1` because of http status code `2` and data could not be obtained from any other identifier(s) supplied. Please try again later or consider supplying an alternative identifier.";
+Warning::APIConnectionError="Unable to scrape the required information from the URL(s) `1` because of http status code `2`, however data could be obtained from other identifier(s) supplied `2`. Please review the output and consider waiting for a few minutes to try again.";
+
+(* Function is not memoized, but all the components are so re-runs are fast *)
+(* Input is double listable - each item in the outer list corresponds to a separate molecule *)
+(* If an item is itself a list, the identifiers are tried in turn and the first successful one used *)
+(* So, {id1, id2, id3} will return a list of packets for molecules 1, 2 and 3 respectively *)
+(* and {{id1, id2, id3}} will assumes the identifiers are all for the same molecule, will try each in turn, and return a single packet for the first that worked *)
+scrapeMoleculeData[
+	myIdentifiers : ListableP[Alternatives[ListableP[Alternatives[
+		MoleculeP,
+		_PubChem,
+		_Integer,
+		InChIP,
+		ExternalIdentifier["InChI", _], (* Some MM versions wrap InChI with ExternalIdentifier head *)
+		InChIKeyP,
+		CASNumberP,
+		ThermoFisherURLP,
+		MilliporeSigmaURLP,
+		_String
+	]],{}]]
+] := Module[
+	{
+		listedIdentifierLists, listedInputQ, userSuppliedURLQs, inputType, apiResponses, utilizedListedIdentifiers,
+		finalInputs, finalResponses, finalAPIResponsesWithSDS, finalReturnValues
+	},
+
+	(* Ensure input is a list of lists *)
+	(* Each item in the outer list is for a molecule. Then each of those lists is a list of identifiers to try in turn for that molecule *)
+	(*
+		{
+			{mol1Identifier1, mol1Identifier2, mol1Identifier3},
+			{mol2Identifier1},
+			{mol3Identifier1, mol3Identifier2},
+			...
+		}
+	*)
+	listedIdentifierLists = Module[{listed},
+
+		(* Convert to list of lists *)
+		listed = If[ListQ[myIdentifiers],
+			ToList /@ myIdentifiers,
+			{ToList[myIdentifiers]}
+		];
+
+		(* Perform any other input modifications *)
+		Replace[
+			listed,
+			{
+				(* Strip any InChI ExternalIdentifier heads *)
+				ExternalIdentifier["InChI", x_] :> x,
+
+				(* Empty lists can be treated the same as a Null identifier. This will return $Failed *)
+				{} -> {Null}
+			},
+			2
+		]
+	];
+
+	(* Boolean for if input was listed or not *)
+	listedInputQ = ListQ[myIdentifiers];
+
+	(* Helper function to check what input type we have *)
+	inputType[input_] := Switch[input,
+		MoleculeP, "Molecule",
+		_PubChem|_Integer, "PubChem",
+		InChIP, "InChI",
+		InChIKeyP, "InChIKey",
+		CASNumberP, "CAS",
+		ThermoFisherURLP, "ThermoFisherURL",
+		MilliporeSigmaURLP, "MilliporeSigmaURL",
+		_String, "Name",
+		_, Null
+	];
+
+	(* Make the API requests *)
+	(* For each molecule input, 'Scan' over the list of identifiers provided until one of them works *)
+	(* Scan allows us to 'Return' early once one of the values meets our criteria (an association) *)
+	(* We're also interested in collecting the output of each failed attempt, so 'Sow' each output as we get it *)
+	apiResponses = Map[
+		Function[moleculeIdentifierList,
+			Module[{scanResults},
+
+				(* Scan over the inputs for this molecule until one works *)
+				scanResults = Reap[
+					Scan[
+						Module[{identifier, identifierType, output},
+
+							identifier = #;
+							identifierType = inputType[identifier];
+
+							(* Perform the appropriate API call on this identifier, for this input *)
+							output = Switch[identifierType,
+								(* Get the InChI associated with the input and parse the result *)
+								"Molecule", parseChemicalIdentifier[MoleculeValue[identifier, "InChI"]],
+
+								(* UploadMolecule[PubChem[myPubChemID]] *)
+								"PubChem", parsePubChem[identifier],
+
+								(* UploadMolecule[inchi] *)
+								"InChI", parseChemicalIdentifier[identifier],
+
+								(* UploadMolecule[inchiKey] *)
+								"InChIKey", parseChemicalIdentifier[identifier],
+
+								(* UploadMolecule[CAS] *)
+								"CAS", parseChemicalIdentifier[identifier],
+
+								(* UploadMolecule[thermoURL] *)
+								"ThermoFisherURL", parseThermoURL[identifier],
+
+								(* UploadMolecule[sigmaURL] *)
+								"MilliporeSigmaURL", parseSigmaURL[identifier],
+
+								(* UploadMolecule[Name] *)
+								"Name", parseChemicalIdentifier[identifier],
+
+								(* If anything else (should just be Null), return Null *)
+								Null, Null
+							];
+
+							(* Sow the output *)
+							(* This collects the output of this call, regardless of the outcome *)
+							Sow[output, "scrapeMoleculeDataReap"];
+
+							(* If the output is valid, exit the scan early. No need to try the rest *)
+							If[AssociationQ[output],
+								Return[]
+							]
+						] &,
+						moleculeIdentifierList
+					],
+
+					(* Use a unique identifier for the reap/sow to prevent clashing, such as with debugger *)
+					"scrapeMoleculeDataReap"
+				];
+
+				(* Return only the expressions that were sown *)
+				(* Scan returns Null, which is the first item. Then Reap adds an extra list, so strip that *)
+				scanResults[[2, 1]]
+			]
+		],
+		listedIdentifierLists
+	];
+
+	(* Trim the provided list of identifiers to remove any we didn't use, so it index matches apiResponses *)
+	utilizedListedIdentifiers = MapThread[
+		Take[#1, Length[#2]] &,
+		{listedIdentifierLists, apiResponses}
+	];
+
+
+	(* Gather error message information and throw listed errors *)
+	(* Each helper either returned a packet, or the HTTP response code *)
+	Module[
+		{
+			flattenedIdentifiers, flattenedResponses, flattenedWorkingIdentifierForInputs, inputTypeResponseTuples, errorMessageData,
+			responsesOtherFailedOverall, responsesOtherSuccessOverall
+		},
+
+		(* Flatten the list of identifiers and responses *)
+		flattenedIdentifiers = Flatten[utilizedListedIdentifiers];
+		flattenedResponses = Flatten[apiResponses];
+
+		(* For each identifier, get the identifier that actually worked (or not) *)
+		(* This helps us with out error messages *)
+		(* Error: Identifier 1 didn't work and we don't have any others. vs. Warning: Identifiers 1 and 2 didn't work but Identifier 3 worked. *)
+		flattenedWorkingIdentifierForInputs = Flatten[
+			MapThread[
+				(* The input had a working identifier if the last response is an association *)
+				(* Map the response to the number of identifiers for that input *)
+				If[AssociationQ[Last[#2]],
+					ConstantArray[Last[#1], Length[#2]],
+					ConstantArray[$Failed, Length[#2]]
+				] &,
+				{utilizedListedIdentifiers, apiResponses}
+			]
+		];
+
+		(* Determine if the user supplied a URL directly or not *)
+		(* Then we blame the right person (user vs dev) if a URL is malformed and tailor the error message *)
+		userSuppliedURLQs = MatchQ[#, URLP] & /@ flattenedIdentifiers;
+
+		(* Create tuples with the input type and the response *)
+		(* Flat list - throw all the errors together *)
+		inputTypeResponseTuples = Transpose[{
+			flattenedIdentifiers,
+			userSuppliedURLQs,
+			flattenedResponses,
+			flattenedWorkingIdentifierForInputs
+		}];
+
+		errorMessageData = {
+			(* HTTP response code, if user specified URL, error message, input worked because of a different identifier? *)
+			{400, True, Hold[Error::BadRequest], False}, (* Request is invalid - means user provided a malformed URL. No working identifier provided *)
+			{400, True, Hold[Warning::BadRequest], True}, (* Request is invalid - means user provided a malformed URL. Later working identifier provided *)
+			{400, False, Hold[Error::InvalidIdentifier], False}, (* Request is invalid - means user provided an invalid identifier. No working identifier provided *)
+			{400, False, Hold[Warning::InvalidIdentifier], True}, (* Request is invalid - means user provided an invalid identifier. Later working identifier provided *)
+			{404, True, Hold[Error::URLNotFound], False}, (* Invalid URL - means user specified a URL that doesn't exist. No working identifier provided *)
+			{404, True, Hold[Warning::URLNotFound], True}, (* Invalid URL - means user specified a URL that doesn't exist. Later working identifier provided *)
+			{404, False, Hold[Error::CompoundNotFound], False}, (* Invalid URL - means that compound wasn't found in the database. No working identifier provided *)
+			{404, False, Hold[Warning::CompoundNotFound], True}, (* Invalid URL - means that compound wasn't found in the database. Later working identifier provided *)
+			{429, _, Hold[Error::APIRateLimit], False}, (* Rate limit. No working identifier provided *)
+			{429, _, Hold[Warning::APIRateLimit], True}, (* Rate limit. Later working identifier provided *)
+			{503, _, Hold[Error::APIUnavailable], False}, (* Server maintenance. No working identifier provided *)
+			{503, _, Hold[Warning::APIUnavailable], True} (* Server maintenance. Later working identifier provided *)
+		};
+
+		Map[
+			Module[
+				{errorCode, userURLQ, errorMessage, successfulInput, successfulInputPattern, invalidInputTuples},
+
+				{errorCode, userURLQ, errorMessage, successfulInput} = #;
+
+				(* Convert successful input boolean to a pattern to match *)
+				successfulInputPattern = If[successfulInput,
+					Except[$Failed],
+					$Failed
+				];
+
+				(* Pull out any inputs that failed with this code *)
+				invalidInputTuples = Cases[inputTypeResponseTuples, {input_, userURLQ, errorCode, successInput : successfulInputPattern} :> {input, successInput}];
+
+				(* Throw a message if required *)
+				Which[
+					(* If this message has invalid inputs and the molecule scraping was ultimately successful *)
+					(* Throw a message both with the identifier that failed and the one that ultimately succeeded *)
+					!MatchQ[invalidInputTuples, {}] && TrueQ[successfulInput],
+					Module[{heldMessageArgs},
+
+						(* Construct the arguments to the message in a hold *)
+						heldMessageArgs = With[{transposedArgs = Transpose[invalidInputTuples]},
+							Hold @@ transposedArgs
+						];
+
+						(* Join the error message name with the args and throw the message *)
+						Message @@ Join[errorMessage, heldMessageArgs]
+					],
+
+					(* Otherwise if this message has invalid inputs and the molecule scraping was not ultimately successful *)
+					(* Just throw a message both with the identifier that failed and ask the user to review the input *)
+					!MatchQ[invalidInputTuples, {}] && !TrueQ[successfulInput],
+					Module[{heldMessageArgs},
+
+						(* Construct the arguments to the message in a hold *)
+						heldMessageArgs = With[{args = First /@ invalidInputTuples},
+							Hold[args]
+						];
+
+						(* Join the error message name with the args and throw the message *)
+						Message @@ Join[errorMessage, heldMessageArgs]
+					],
+
+					(* Otherwise no error *)
+					True,
+					Null
+				]
+			] &,
+			errorMessageData
+		];
+
+		(* If we hit any other errors, throw a more general message. No success overall *)
+		responsesOtherFailedOverall = Cases[inputTypeResponseTuples, {input_, _, code : Except[Alternatives @@ Join[errorMessageData[[All, 1]], {_Association, Null}]], successInput : $Failed} :> {input, code, successInput}];
+
+		If[!MatchQ[responsesOtherFailedOverall, {}],
+			Message[Error::APIConnectionError, responsesOtherFailedOverall[[All, 1]], responsesOtherFailedOverall[[All, 2]]]
+		];
+
+		(* If we hit any other errors, throw a more general message. Success overall *)
+		responsesOtherSuccessOverall = Cases[inputTypeResponseTuples, {input_, _, code : Except[Alternatives @@ Join[errorMessageData[[All, 1]], {_Association, Null}]], successInput : Except[$Failed]} :> {input, code, successInput}];
+
+		If[!MatchQ[responsesOtherSuccessOverall, {}],
+			Message[Warning::APIConnectionError, responsesOtherSuccessOverall[[All, 1]], responsesOtherSuccessOverall[[All, 2]], responsesOtherSuccessOverall[[All, 3]]]
+		];
+	];
+
+	(* Reduce the responses down so that only the final response is retained (successful or otherwise) *)
+	finalInputs = Last /@ utilizedListedIdentifiers;
+	finalResponses = Last /@ apiResponses;
+
+	(* If we successfully scraped the molecule, we may also need an SDS. Get it if needed *)
+	finalAPIResponsesWithSDS = MapThread[
+		Module[
+			{identifier, response, msdsRequired, casNumber, preferredVendor, validatedSDSURL},
+
+			{identifier, response} = {#1, #2};
+
+			(* Look up the molecule ID and if an MSDS is required *)
+			{msdsRequired, casNumber} = Quiet[Check[
+				Lookup[response, {MSDSRequired, CAS}],
+				{$Failed, $Failed}
+			]];
+
+			(* Return early if we can't do anything *)
+			If[Or[FailureQ[msdsRequired], FailureQ[casNumber], !MatchQ[casNumber, CASNumberP]],
+				Return[response, Module]
+			];
+
+			(* Return early if no SDS is required *)
+			If[MatchQ[msdsRequired, False],
+				Return[Append[response, MSDSFile -> Null], Module]
+			];
+
+			(* Otherwise try and get an SDS *)
+			(* Do we have a preferred vendor for the SDS? *)
+			preferredVendor = Switch[identifier,
+				ThermoFisherURLP,
+				"thermo",
+
+				MilliporeSigmaURLP,
+				"sigma",
+
+				_,
+				All
+			];
+
+			validatedSDSURL = findSDS[casNumber, Vendor -> preferredVendor, Output -> ValidatedURL];
+
+			(* Return the augmented packet *)
+			If[MatchQ[validatedSDSURL, URLP],
+				Append[response, MSDSFile -> validatedSDSURL],
+				Append[response, MSDSFile -> Null]
+			]
+		] &,
+		{finalInputs, finalResponses}
+	];
+
+	(* Return $Failed in any unsuccessful case *)
+	finalReturnValues = If[AssociationQ[#],
+		#,
+		$Failed
+	] & /@ finalAPIResponsesWithSDS;
+
+	(* Return the final response. Strip list if a singleton input was provided *)
+	If[listedInputQ,
+		finalReturnValues,
+		First[finalReturnValues]
+	]
+];
+
+scrapeMoleculeData[{{}}] := {$Failed};
+scrapeMoleculeData[{}] := {};
 
 
 (* ::Subsection::Closed:: *)
@@ -4674,39 +5576,41 @@ SetAttributes[holdCompositionList, HoldAll];
 (*Packet Formatting*)
 
 (* ::Subsubsection::Closed:: *)
-(*generateChangePacket*)
+(*generateChangePackets*)
 
-DefineOptions[generateChangePacket,
+DefineOptions[generateChangePackets,
 	Options :> {
 		{ExistingPacket -> <||>, _Association, "The current packet of the object as in Constellation."},
 		{Output -> Packet, ListableP[Alternatives[Packet, IrrelevantFields]], "Output of the function. Packet indicates the change packet, while IrrelavantFields is a list of options that exists in the resolved option input, but doesn't exist as a field of the target type."},
 		{RemoveNull -> True, BooleanP, "Indicate if options which values are Null, {} or Automatic should be removed and not included in the final change packet."},
-		{Append -> False, Alternatives[True, False, {_Symbol...}], "Indicates if multiple fields will be appended or replaced in the change packet. In addition to a single Boolean, one can also list fields that should be appended, in that case all other multiple fields will be replaced."}
+		{Append -> False, Alternatives[True, False, {_Symbol...}], "Indicates if multiple fields will be appended or replaced in the change packet. In addition to a single Boolean, one can also list fields that should be appended, in that case all other multiple fields will be replaced."},
+		{NullPatterns -> Alternatives[Null, Automatic, {}], _Alternatives, "Indicate the patterns that if the option value is one of these pattern, the option should be removed from change packet if RemoveNull -> True."}
 	}
 ];
 
 (* Given a type and a list of resolved options, formats the options into a change packet. Use a Boolean to indicate whether all multiple fields will be Appended (True) or Replaced (False). *)
-generateChangePacket[myType_, resolvedOptions:{(_Rule| _RuleDelayed)...}, appendInput:BooleanP, myOptions:OptionsPattern[]]:= If[appendInput,
-	generateChangePacket[myType, resolvedOptions, ReplaceRule[ToList[myOptions], {Append -> True}]],
-	generateChangePacket[myType, resolvedOptions, ReplaceRule[ToList[myOptions], {Append -> False}]]
+generateChangePackets[myType_, resolvedOptions:{(_Rule| _RuleDelayed)...}, appendInput:BooleanP, myOptions:OptionsPattern[]]:= If[appendInput,
+	generateChangePackets[myType, resolvedOptions, ReplaceRule[ToList[myOptions], {Append -> True}]],
+	generateChangePackets[myType, resolvedOptions, ReplaceRule[ToList[myOptions], {Append -> False}]]
 ];
 
 (* main overload: Given a type and a list of resolved options, formats the options into a change packet. *)
-generateChangePacket[myType_, resolvedOptions:{(_Rule| _RuleDelayed)...}, myOptions:OptionsPattern[]]:=Module[
+generateChangePackets[myType_, resolvedOptions:{(_Rule| _RuleDelayed)...}, myOptions:OptionsPattern[]]:=Module[
 	{
 		existingPacket, fields, convertedPacket, diffedPacket, output, genericOptions, irrelevantFields,
-		packet, resolvedOptionsNoNull, fieldDefinitions, safeOps, removeNull, fieldsToAppend
+		packet, resolvedOptionsNoNull, fieldDefinitions, safeOps, removeNull, fieldsToAppend, convertedOptionSymbols, convertedFieldValues,
+		auxilliaryUploadPackets, allUploadPackets, nullPatterns, packetWithCorrectEmptyList
 	},
 	(* get the options *)
-	safeOps = SafeOptions[generateChangePacket, ToList[myOptions]];
-	{existingPacket, output, removeNull, fieldsToAppend} = Lookup[safeOps, {ExistingPacket, Output, RemoveNull, Append}];
+	safeOps = SafeOptions[generateChangePackets, ToList[myOptions]];
+	{existingPacket, output, removeNull, fieldsToAppend, nullPatterns} = Lookup[safeOps, {ExistingPacket, Output, RemoveNull, Append, NullPatterns}];
 
 	(* Get the definition of this type. *)
 	fieldDefinitions = Lookup[LookupTypeDefinition[myType], Fields];
 
 	(* Remove entries from ResolvedOptions which the value are Null, Automatic, {} or a list of these, if we have RemoveNull -> True *)
 	resolvedOptionsNoNull = If[TrueQ[removeNull],
-		Select[resolvedOptions, !MatchQ[Values[#], ListableP[(Automatic | Null | {})]]&],
+		Select[resolvedOptions, !MatchQ[Values[#], ListableP[nullPatterns]]&],
 		resolvedOptions
 	];
 
@@ -4714,51 +5618,59 @@ generateChangePacket[myType_, resolvedOptions:{(_Rule| _RuleDelayed)...}, myOpti
 	fields = Association[fieldDefinitions];
 
 	(* For each of our options, see if it exists as a field of the same name in the object. *)
-	convertedPacket = Association@KeyValueMap[
-		Function[{optionSymbol, optionValue},
-			(* If this option doesn't exist as a field, do not include it in the change packet. *)
-			If[!KeyExistsQ[fields, optionSymbol],
-				Nothing,
-				(* Otherwise, fetch the field definition and do some modifications on the Key and Values *)
-				Module[{fieldDefinition, formattedOptionSymbol, formattedOptionValue},
-					(* Get the information about this specific field. *)
-					fieldDefinition = Lookup[fields, optionSymbol];
-					(* Format our option symbol. *)
-					(*If the option symbol is in the Append option, or Append -> True, switch the multiple field options to Append, otherwise Replace as usual*)
-					formattedOptionSymbol=If[
-						(TrueQ[fieldsToAppend] || MemberQ[ToList[fieldsToAppend], optionSymbol]),
-						Switch[{Lookup[fieldDefinition, Format], optionSymbol},
-							{Single, Notebook},
-							Transfer[optionSymbol],
-							{Single,_},
-							optionSymbol,
-							{Multiple,_},
-							Append[optionSymbol]
-						],
-						Switch[{Lookup[fieldDefinition, Format], optionSymbol},
-							{Single, Notebook},
-							Transfer[optionSymbol],
-							{Single,_},
-							optionSymbol,
-							{Multiple,_},
-							Replace[optionSymbol]
-						]
-					];
+	{convertedOptionSymbols, convertedFieldValues, auxilliaryUploadPackets} = If[!MatchQ[resolvedOptionsNoNull, {}],
+		Transpose @ KeyValueMap[
+			Function[{optionSymbol, optionValue},
+				(* If this option doesn't exist as a field, do not include it in the change packet. *)
+				If[!KeyExistsQ[fields, optionSymbol],
+					{Null, Null, {}},
+					(* Otherwise, fetch the field definition and do some modifications on the Key and Values *)
+					Module[{fieldDefinition, formattedOptionSymbol, formattedOptionValue, optionValueUploadPackets},
+						(* Get the information about this specific field. *)
+						fieldDefinition = Lookup[fields, optionSymbol];
+						(* Format our option symbol. *)
+						(*If the option symbol is in the Append option, or Append -> True, switch the multiple field options to Append, otherwise Replace as usual*)
+						formattedOptionSymbol = If[
+							(TrueQ[fieldsToAppend] || MemberQ[ToList[fieldsToAppend], optionSymbol]),
+							Switch[{Lookup[fieldDefinition, Format], optionSymbol},
+								{Single, Notebook},
+								Transfer[optionSymbol],
+								{Single, _},
+								optionSymbol,
+								{Multiple, _},
+								Append[optionSymbol]
+							],
+							Switch[{Lookup[fieldDefinition, Format], optionSymbol},
+								{Single, Notebook},
+								Transfer[optionSymbol],
+								{Single, _},
+								optionSymbol,
+								{Multiple, _},
+								Replace[optionSymbol]
+							]
+						];
 
-					(* Call the helper to format the option value. The helper does the following things: *)
-					(* 1. Wrap Link[] on objects for any link fields, including backlinks *)
-					(* 2. For link fields relating to EmeraldCloudFile, if a local file path or url is provided, call UploadCloudFile to do the upload and replace field value with cloud file object *)
-					(* 3. correctly format named multiple fields if the option value is index-multiple *)
-					(* 4. feature 1 and 2 also applies to inner fields of named multiple or index multiple fields (e.g., first column of StoragePositions will get wrapped with Link[] *)
-					(* 5. Performs any known custom conversions *)
-					formattedOptionValue = formatFieldValue[myType, optionSymbol, optionValue, fieldDefinition];
+						(* Call the helper to format the option value. The helper does the following things: *)
+						(* 1. Wrap Link[] on objects for any link fields, including backlinks *)
+						(* 2. For link fields relating to EmeraldCloudFile, if a local file path or url is provided, call UploadCloudFile to do the upload and replace field value with cloud file object *)
+						(* 3. correctly format named multiple fields if the option value is index-multiple *)
+						(* 4. feature 1 and 2 also applies to inner fields of named multiple or index multiple fields (e.g., first column of StoragePositions will get wrapped with Link[] *)
+						(* 5. Performs any known custom conversions *)
+						(* Returns a list of cloud file packets to upload the file based field contents to constellation *)
+						{formattedOptionValue, optionValueUploadPackets} = formatFieldValue[myType, optionSymbol, optionValue, fieldDefinition];
 
-					formattedOptionSymbol -> formattedOptionValue
+						{formattedOptionSymbol, formattedOptionValue, optionValueUploadPackets}
+					]
 				]
-			]
+			],
+			Association@resolvedOptionsNoNull
 		],
-		Association@resolvedOptionsNoNull
+
+		(* Return empty lists if no options *)
+		{{}, {}, {}}
 	];
+	(* Convert the field values into an association *)
+	convertedPacket = KeyDrop[AssociationThread[convertedOptionSymbols, convertedFieldValues], Null];
 
 	(* Only include our key in our change packet if it is different than in our existing packet, if we have one. *)
 	diffedPacket=If[MatchQ[existingPacket, <||>],
@@ -4767,7 +5679,29 @@ generateChangePacket[myType_, resolvedOptions:{(_Rule| _RuleDelayed)...}, myOpti
 			Function[{key, value},
 				Module[{strippedField},
 					strippedField=(key /. {(Replace[field_]|Transfer[field_]) :> field});
-					If[KeyExistsQ[existingPacket, strippedField] && MatchQ[Lookup[existingPacket, strippedField] /. {link_Link :> RemoveLinkID[link]}, value],
+					If[
+						And[
+							KeyExistsQ[existingPacket, strippedField],
+							(* Check if the field value is the same. For most fields a simple MatchQ will work *)
+							(* However, this doesn't work well with Named Multiple because RemoveLinkID won't evaluate inside Association until you try to evaluate it *)
+							Or[
+								(* Check this criteria for everything but named multiples *)
+								MatchQ[Lookup[existingPacket, strippedField] /. {link_Link :> RemoveLinkID[link]}, value],
+								(* Do this for Named Multiple: Ensure that both new and existing value has the same length, then check every inner associations match *)
+								With[
+									{existingValue = Lookup[existingPacket, strippedField] /. {link_Link :> RemoveLinkID[link]}},
+									And[
+										MatchQ[existingValue, {_Association..}],
+										MatchQ[value, {_Association..}],
+										SameLengthQ[existingValue, value],
+										(* Very annoyingly RemoveLinkID does not evaluate inside association. To force-evaluate that, make it into list of rules then back to association *)
+										And @@ MapThread[MatchQ[Association[Normal[#1, Association]], #2]&, {existingValue, value}]
+									]
+								]
+							],
+							(* Do not strip Object, Type and ID key *)
+							!MatchQ[strippedField, Alternatives[Object, Type, ID]]
+						],
 						(* Don't include the field *)
 						Nothing,
 						(* Otherwise, include the field. *)
@@ -4780,13 +5714,34 @@ generateChangePacket[myType_, resolvedOptions:{(_Rule| _RuleDelayed)...}, myOpti
 		]
 	];
 
+	(* One last correction. In the final packet if we have Replace[field] -> Null, change that to {}; If we have Append[field] -> Null, remove it altogether *)
+	packetWithCorrectEmptyList = Association[
+		KeyValueMap[
+			Function[{key, value},
+				Which[
+					MatchQ[Head[key], Replace] && MatchQ[value, Null],
+						key -> {},
+					MatchQ[Head[key], Append] && MatchQ[value, Null],
+						Nothing,
+					True,
+						key -> value
+				]
+			],
+			diffedPacket
+		]
+	];
+
 	(* Append the fields required to upload the object. *)
 	packet = Join[
-		diffedPacket,
+		packetWithCorrectEmptyList,
 		<|
 			(* Only add Authors if it's in the type definition and it's not already in the resolved options list. *)
 			If[KeyExistsQ[fields, Authors] && (!KeyExistsQ[resolvedOptionsNoNull, Authors]),
-				Replace[Authors] -> {Link[$PersonID]},
+				(* If we have Append -> True or Authors is in the fields to append list, use Append[Authors], otherwise use Replace[Authors] *)
+				If[(TrueQ[fieldsToAppend] || MemberQ[ToList[fieldsToAppend], Authors]),
+					Append[Authors] -> Link[$PersonID],
+					Replace[Authors] -> {Link[$PersonID]}
+				],
 				Nothing
 			],
 			(*more custom stuff that might pertain to specific upload functions*)
@@ -4814,17 +5769,21 @@ generateChangePacket[myType_, resolvedOptions:{(_Rule| _RuleDelayed)...}, myOpti
 	];
 
 	(* Define a list of options that is normal to appear in resolved options but not fields *)
-	genericOptions = {Upload, Cache, Simulation, Force, Output};
+	genericOptions = {Upload, Cache, Simulation, Force, Output, Strict, Template};
 	(* Find irrelevant options that were specified *)
 	irrelevantFields = Complement[Keys[resolvedOptionsNoNull], Join[Keys[fields], genericOptions]];
 
-	output /. {Packet -> packet, IrrelevantFields -> irrelevantFields}
+	(* Combine the main packet with the auxilliary packets *)
+	allUploadPackets = Flatten[{packet, auxilliaryUploadPackets}];
+
+	output /. {Packet -> allUploadPackets, IrrelevantFields -> irrelevantFields}
 
 ];
 
 (* Define a helper to format the field value *)
+(* Tuple is returned with field value in first position and list of packets for upload in second position (required if a URL/file path provided for cloud file field) *)
 formatFieldValue[objectType_, optionName_, optionValue_, fieldDefinition:{(_Rule | _RuleDelayed)..}] := Module[
-	{format, class, relation, headers, preProcessedOptionValue, standardFieldValue},
+	{format, class, relation, headers, preProcessedOptionValue, standardFieldValue, standardFieldValueAuxilliaryUploadPackets, translatedFieldValue},
 	(* Look up the key field definitions *)
 	{format, class, relation, headers} = Lookup[fieldDefinition, {Format, Class, Relation, Headers}, Null];
 
@@ -4834,29 +5793,75 @@ formatFieldValue[objectType_, optionName_, optionValue_, fieldDefinition:{(_Rule
 	preProcessedOptionValue = preProcessOptionValue[objectType, optionName, optionValue];
 
 	(* Format field values according to standard rules for the field type *)
-	standardFieldValue = Which[
-		(* For fields link to cloud file, if our field value is indeed EmeraldCloudFile, wrap that with Link[] *)
-		MatchQ[class, Link] && MatchQ[relation, Object[EmeraldCloudFile]] && MatchQ[preProcessedOptionValue, ListableP[ObjectP[Object[EmeraldCloudFile]]]],
-		Link[preProcessedOptionValue],
-
-		(* For fields link to cloud file but our field value is not EmeraldCloudFile (most likely string, either local file path or url), replace that with UploadCloudFile *)
+	(* Some fields (URLS) also return cloud file packets for upload *)
+	{standardFieldValue, standardFieldValueAuxilliaryUploadPackets} = Which[
+		(* For links to cloud files, if our field value is indeed EmeraldCloudFile, wrap that with Link[] *)
+		(* If our field value is not EmeraldCloudFile (most likely string, either local file path or url), replace that with UploadCloudFile *)
+		(* Could be a mixed list of both *)
 		MatchQ[class, Link] && MatchQ[relation, Object[EmeraldCloudFile]],
-		Replace[
-			preProcessedOptionValue,
-			{
-				(* If our string is a URL, then try and download it. Otherwise, pass directly to UploadCloudFile. *)
-				(* TODO for now I just copied from the old code, but this is certainly not ideal. We should try to implement downloadAndValidateURL and validateLocalFile *)
-				string_String :> If[MatchQ[string, URLP],
-					With[{downloaded=Quiet[First[URLDownload[string]]]},
-						If[MatchQ[downloaded, "ConnectionFailure"],
-							Null,
-							Link[UploadCloudFile[downloaded]]
-						]
-					],
-					Link[Quiet[UploadCloudFile[string]]]
-				]
-			},
-			{0, 1}
+		Module[
+			{listedOptionValue, localFiles, cloudFilePackets, sanitizedPackets, linkedObjectReferences, correctlyListedOutput},
+
+			(* Option value may be singleton or list *)
+			listedOptionValue = ToList[preProcessedOptionValue];
+
+			(* First create/locate a local file and validate it. Function is memoized *)
+			localFiles = Which[
+				MatchQ[#, URLP],
+					downloadAndValidateURL[#, objectType, optionName],
+
+				MatchQ[#, FilePathP],
+					validateLocalFile[#, objectType, optionName],
+
+				MatchQ[#, (ObjectP[Object[EmeraldCloudFile]] | NullP)],
+				Null,
+
+				True,
+				$Failed
+			] & /@ listedOptionValue;
+
+			(* Now try and upload the local file to AWS and return the cloud file packet *)
+			cloudFilePackets = Quiet[If[!NullQ[#], pathToCloudFilePacket[#], Null] & /@ localFiles];
+
+			(* Sanitized the output *)
+			(* Cloud files give Null here and file paths/urls give a packet. Anything else should be converted to $Failed  *)
+			sanitizedPackets = Replace[
+				cloudFilePackets,
+				{
+					Except[Alternatives[PacketP[], Null]] :> $Failed
+				},
+				{1}
+			];
+
+			(* Add links around the IDs *)
+			linkedObjectReferences = MapThread[
+				Function[{originalOptionValue, generatedCloudFilePacket},
+					Switch[{originalOptionValue, generatedCloudFilePacket},
+
+						(* If we had a cloud file in the first place, or if we have Null, simply return it as a link *)
+						{(ObjectP[] | NullP), _},
+						Link[originalOptionValue],
+
+						(* If not and we generated a packet here, return the object id in that packet *)
+						{_, PacketP[]},
+						Link[Lookup[generatedCloudFilePacket, Object]],
+
+						(* Otherwise it failed, so pass through the (Failed) value *)
+						_,
+						generatedCloudFilePacket
+					]
+				],
+				{listedOptionValue, sanitizedPackets}
+			];
+
+			(* If we have a singleton input, return as a singleton *)
+			correctlyListedOutput = If[!MatchQ[preProcessedOptionValue, _List],
+				First[linkedObjectReferences],
+				linkedObjectReferences
+			];
+
+			(* Return the field value and the auxilliary packets *)
+			{correctlyListedOutput, Cases[sanitizedPackets, PacketP[]]}
 		],
 
 		(* For other linked fields, we need to construct backlink as needed *)
@@ -4877,12 +5882,12 @@ formatFieldValue[objectType_, optionName_, optionValue_, fieldDefinition:{(_Rule
 					&) /@ relationsList;
 
 			(* Apply the backlink mapping. *)
-			(preProcessedOptionValue /. {link_Link :> Download[link, Object]}) /. backlinkMap
+			{(preProcessedOptionValue /. {link_Link :> Download[link, Object]}) /. backlinkMap, {}}
 		],
 
 		(* For Index-multiple fields: divide the field definition by index, then recursively map the function to resolve field values *)
 		MatchQ[class, _List] && MatchQ[headers, {_String..}],
-		Module[{fieldPropertyKeys, fieldPropertyValues, indexLength, expandedFieldPropertyValues, expandedFieldDefinitions, expandedOptionValue, listedConvertedField},
+		Module[{fieldPropertyKeys, fieldPropertyValues, indexLength, expandedFieldPropertyValues, expandedFieldDefinitions, expandedOptionValue, listedConvertedField, listedUploadPackets},
 			indexLength = Length[headers];
 			(* Extract keys and values from field definition *)
 			fieldPropertyKeys = Keys[fieldDefinition];
@@ -4917,6 +5922,9 @@ formatFieldValue[objectType_, optionName_, optionValue_, fieldDefinition:{(_Rule
 				(* Otherwise, if the option value length itself matches index, most likely we simply need to wrap it with another layer of list *)
 				MatchQ[preProcessedOptionValue, _List] && Length[preProcessedOptionValue] == indexLength,
 				{preProcessedOptionValue},
+				(* If we have a index-single field with field value being Null or Automatic, expand it into an index-matching list *)
+				MatchQ[format, Single] && MatchQ[preProcessedOptionValue, (Null | Automatic)],
+				{ConstantArray[preProcessedOptionValue, indexLength]},
 				(* All other cases we have an error *)
 				True,
 				$Failed
@@ -4924,13 +5932,13 @@ formatFieldValue[objectType_, optionName_, optionValue_, fieldDefinition:{(_Rule
 
 			(* If anything failing index-matching, return $Failed *)
 			If[MatchQ[expandedOptionValue, $Failed],
-				Return[$Failed, Module]
+				Return[{$Failed, {}}, Module]
 			];
 
 			(* Now we have expanded our field definitions and values, call MapThread on the formatFieldValue function recursively *)
-			listedConvertedField = Map[
+			{listedConvertedField, listedUploadPackets} = Transpose @ Map[
 				Function[{singleValues},
-					MapThread[Function[{singleHeaderValue, singleHeaderDefinition},
+					Transpose @ MapThread[Function[{singleHeaderValue, singleHeaderDefinition},
 						formatFieldValue[objectType, optionName, singleHeaderValue, singleHeaderDefinition]
 					],
 						{singleValues, expandedFieldDefinitions}
@@ -4940,40 +5948,43 @@ formatFieldValue[objectType_, optionName_, optionValue_, fieldDefinition:{(_Rule
 			];
 
 			(* If the field format is single, convert back to a single value from list of lists *)
-			Which[
-				MatchQ[format, Single] && EqualQ[Length[listedConvertedField], 1],
-				First[listedConvertedField],
+			{
+				Which[
+					MatchQ[format, Single] && EqualQ[Length[listedConvertedField], 1],
+					First[listedConvertedField],
 
-				(* Throw an error if it's a single and we got multiple entries *)
-				MatchQ[format, Single],
-				$Failed,
+					(* Throw an error if it's a single and we got multiple entries *)
+					MatchQ[format, Single],
+					$Failed,
 
-				(* No change if it's a multiple *)
-				True,
-				listedConvertedField
-			]
+					(* No change if it's a multiple *)
+					True,
+					listedConvertedField
+				],
+				Flatten[listedUploadPackets]
+			}
 		],
 
 		(* For named-multiple fields: do a similar treatment as index-multiple *)
-		MatchQ[class, _List] && MatchQ[headers, {_Rule..}],
+		MatchQ[class, _List] && MatchQ[class, {_Rule..}],
 		Module[
 			{
 				indexLength, fieldPropertyKeys, fieldPropertyValues, expandedFieldPropertyValues, expandedFieldDefinitions,
-				headerKeys, expandedOptionValue, indexMultipleFieldValue, listedConvertedField
+				headerKeys, expandedOptionValue, indexMultipleFieldValue, listedConvertedField, listedUploadPackets
 			},
-			indexLength = Length[headers];
+			indexLength = Length[class];
 			(* Extract keys and values from field definition *)
 			fieldPropertyKeys = Keys[fieldDefinition];
 			fieldPropertyValues = Values[fieldDefinition];
 
-			(* Expand the field definition to make it index-match to headers *)
+			(* Expand the field definition to make it index-match to class *)
 			(* e.g., say original field definition is {Headers -> {"X", "Y"}, Description -> "xxx", Class -> {Link, Integer}}, *)
 			(* We want {{Headers -> "X", Description -> "xxx", Class -> Link}, {Headers -> "Y", Description -> "xxx", Class -> Integer}} *)
 
 			(* Form of this is {{"X", "Y"}, {"xxx", "xxx"}, {{Link, Integer}} *)
 			expandedFieldPropertyValues = Map[
 				If[MatchQ[#, _List] && Length[#] == indexLength,
-					#,
+					Values[#],
 					ConstantArray[#, indexLength]
 				]&,
 				fieldPropertyValues
@@ -4987,7 +5998,7 @@ formatFieldValue[objectType_, optionName_, optionValue_, fieldDefinition:{(_Rule
 			];
 
 			(* Also expand the option value *)
-			headerKeys = Keys[headers];
+			headerKeys = Keys[class];
 			expandedOptionValue = Which[
 				(* If the option value is in named-multiple form, i.e., list of associations, extract the values *)
 				MatchQ[preProcessedOptionValue, {_Association..}],
@@ -5008,13 +6019,13 @@ formatFieldValue[objectType_, optionName_, optionValue_, fieldDefinition:{(_Rule
 
 			(* If anything failing index-matching, return $Failed *)
 			If[MatchQ[expandedOptionValue, $Failed],
-				Return[$Failed, Module]
+				Return[{$Failed, {}}, Module]
 			];
 
 			(* Now we have expanded our field definitions and values, call MapThread on the formatFieldValue function recursively *)
-			indexMultipleFieldValue = Map[
+			{indexMultipleFieldValue, listedUploadPackets} = Transpose @ Map[
 				Function[{singleValues},
-					MapThread[Function[{singleHeaderValue, singleHeaderDefinition},
+					Transpose @ MapThread[Function[{singleHeaderValue, singleHeaderDefinition},
 						formatFieldValue[objectType, optionName, singleHeaderValue, singleHeaderDefinition]
 					],
 						{singleValues, expandedFieldDefinitions}
@@ -5032,26 +6043,35 @@ formatFieldValue[objectType_, optionName_, optionValue_, fieldDefinition:{(_Rule
 			];
 
 			(* If the field format is single, convert back to a single value from list of lists *)
-			Which[
-				MatchQ[format, Single] && EqualQ[Length[listedConvertedField], 1],
-				First[listedConvertedField],
+			{
+				Which[
+					MatchQ[format, Single] && EqualQ[Length[listedConvertedField], 1],
+					First[listedConvertedField],
 
-				(* Throw an error if it's a single and we got multiple entries *)
-				MatchQ[format, Single],
-				$Failed,
+					(* Throw an error if it's a single and we got multiple entries *)
+					MatchQ[format, Single],
+					$Failed,
 
-				(* No change if it's a multiple *)
-				True,
-				listedConvertedField
-			]
+					(* No change if it's a multiple *)
+					True,
+					listedConvertedField
+				],
+				Flatten[listedUploadPackets]
+			}
 		],
-		(* Any other case, make no change to field value *)
+		(* Any other case, make no change to field value and return no upload packets *)
 		True,
-		preProcessedOptionValue
+		{preProcessedOptionValue, {}}
 	];
 
 	(* Perform any custom conversions where the translation from option pattern to field pattern is non-standard *)
-	translateCustomOptionValue[optionName, standardFieldValue]
+	translatedFieldValue = translateCustomOptionValue[optionName, standardFieldValue];
+
+	(* Return the final field value with the upload packets *)
+	{
+		translatedFieldValue,
+		standardFieldValueAuxilliaryUploadPackets
+	}
 ];
 
 (* helper *)
@@ -5128,6 +6148,56 @@ indexToNamedMultiple[myfieldRules:{_Rule..}, myFieldDefinitions:{_Rule..}] := Mo
 
 ];
 
+(* ::Subsubsection::Closed:: *)
+(*mergeMapThreadFriendlyOptions*)
+
+(* mergeMapThreadFriendlyOptions *)
+(* Purpose of this function is to recombine list of MapThread friendly options back into one set of options *)
+(* e.g., if input is {<|Option1 -> True, Option2 -> False|>, <|Option1 -> False, Option2 -> False|>}, where Option1 is index-matching, option 2 is not *)
+(* Then our desired result is {Option1 -> {True, False}, Option2 -> False} *)
+(* The behavior of this function is similar to CollapseIndexMatchingOptions but there's a fundemental difference: CollapseIndexMatchingOptions will not collapse non-index-matched options *)
+(* So if applying CollapseIndexMatchingOptions to the example above, we would get {Option1 -> {True, False}, Option2 -> {False, False} instead, which is not desired. That's why we need this separate function *)
+mergeMapThreadFriendlyOptions[myOptionAssocs:{_Association..}, myFunction_, myIndexName:(_String | _Symbol)] := Module[
+	{
+		optionDefinitions, searchCriteria, allIndexMatchingOptionsDefinitions, allIndexMatchingOptions, optionWithEverythingMerged
+	},
+	(* First lookup function's option definition *)
+	optionDefinitions = OptionDefinition[myFunction];
+
+	(* Construct the search criteria to find out what options are index-matching, what are not *)
+	searchCriteria = If[MatchQ[myIndexName, _String],
+		(* If the index name is a string, we are matching to input *)
+		KeyValuePattern["IndexMatchingInput" -> myIndexName],
+		(* otherwise the index name is a symbol, we are matching to another option *)
+		KeyValuePattern["IndexMatchingParent" -> ToString[myIndexName]]
+	];
+
+	allIndexMatchingOptionsDefinitions = Cases[optionDefinitions, searchCriteria];
+
+	allIndexMatchingOptions = Lookup[#, "OptionSymbol"]& /@ allIndexMatchingOptionsDefinitions;
+
+	(* Now construct the merged option. First assume all options are index-matching, then correct those that aren't *)
+	optionWithEverythingMerged = Merge[myOptionAssocs, Identity];
+
+	KeyValueMap[
+		Function[{key, value},
+			If[MemberQ[allIndexMatchingOptions, key],
+				(* If the option is index-matching, we are good *)
+				key -> value,
+				(* otherwise, we shouldn't have done the merge, therefore take the first value of option *)
+				key -> First[value]
+			]
+		],
+		optionWithEverythingMerged
+	]
+];
+
+(* list of options overload *)
+mergeMapThreadFriendlyOptions[myOptionLists:{{_Rule..}..}, myFunction_, myIndexName:(_String | _Symbol)] := mergeMapThreadFriendlyOptions[
+	Association /@ myOptionLists,
+	myFunction,
+	myIndexName
+];
 
 (* ::Subsubsection::Closed:: *)
 (*translateCustomOptionValue*)
@@ -5140,10 +6210,11 @@ translateCustomOptionValue[field_Symbol, optionValue_] := Switch[field,
 	NFPA,
 	Which[
 		(* If matches NFPA field already except Special is set to Null, change that Null to a {} so we match NFPA *)
-		MatchQ[ReplaceRule[optionValue, (Rule[Special, Null] -> Rule[Special, {}])], NFPAP],
-		ReplaceRule[
+		MatchQ[Replace[optionValue, (Rule[Special, Null] -> Rule[Special, {}]), {1}], NFPAP],
+		Replace[
 			optionValue,
-			(Rule[Special, Null] -> Rule[Special, {}])
+			(Rule[Special, Null] -> Rule[Special, {}]),
+			{1}
 		],
 
 		(* If in option format, convert it to field format *)
@@ -5159,7 +6230,7 @@ translateCustomOptionValue[field_Symbol, optionValue_] := Switch[field,
 			Health -> optionValue[[1]],
 			Flammability -> optionValue[[2]],
 			Reactivity -> optionValue[[3]],
-			Special -> If[NullQ[optionValue[[4]]], {}, ToList[optionValue[[4]]]]
+			Special -> If[MatchQ[optionValue[[4]], Null], {}, ToList[optionValue[[4]]]]
 		},
 
 		(* Otherwise leave unchanged *)
@@ -5211,9 +6282,15 @@ preProcessOptionValue[objectType : TypeP[], fieldName_Symbol, optionValue_] := S
 (* ::Subsubsection::Closed:: *)
 (*stripChangePacket*)
 
+DefineOptions[stripChangePacket,
+	Options :> {
+		{ExistingPacket -> <||>, _Association, "The current packet of the object as in Constellation."}
+	}
+];
+
 
 (* Change any change heads in our packet. Make sure to keep DelayedRules from evaluating the RHS. *)
-stripChangePacket[myChangePacket_Association, myOptions:OptionsPattern[]]:=Module[{existingPacket, nonChangePacket, fullPacket, fields, nonComputableFields, notIncludedFields},
+stripChangePacket[myChangePacket_Association, myOptions:OptionsPattern[stripChangePacket]]:=Module[{existingPacket, nonChangePacket, fullPacket, fields, nonComputableFields, notIncludedFields},
 	(* Get the existing packet, if we were given one. *)
 	existingPacket=Lookup[ToList[myOptions], ExistingPacket, <||>];
 
@@ -5263,9 +6340,12 @@ lookupInvalidOptionMap[myType_]:=Flatten[ValidObjectQ`Private`errorToOptionMap /
 (* ::Subsection::Closed:: *)
 (*Sister Functions*)
 
-LazyLoading[$DelayDefaultUploadFunction, InstallValidQFunction, DownValueTrigger -> True];
+LazyLoading[$DelayDefaultUploadFunction, installDefaultValidQFunction, DownValueTrigger -> True];
 
-InstallValidQFunction[myFunction_, myType_]:=Module[{validQFunctionString, validQFunctionSymbol, stringInputName},
+Error::InvalidURL = "The `1` URL(s), `2`, did not return `3` when downloaded for inputs `4`. Please double check the URL(s).";
+Error::InvalidLocalFile = "The `1` path(s), `2`, did not return `3` when imported for inputs `4`. Please double check the URL(s).";
+
+installDefaultValidQFunction[myFunction_, myType_]:=Module[{validQFunctionString, validQFunctionSymbol, stringInputName},
 	(* Do surgery to add Valid <> myFunction <> Q. *)
 	validQFunctionString="Valid"<>ToString[myFunction]<>"Q";
 	validQFunctionSymbol=ToExpression["ECL`"<>validQFunctionString];
@@ -5274,53 +6354,55 @@ InstallValidQFunction[myFunction_, myType_]:=Module[{validQFunctionString, valid
 	stringInputName=ToLowerCase[ToString[Last[myType]]];
 
 	(* Install usage rules. *)
-	DefineUsage[validQFunctionSymbol,
-		{
-			BasicDefinitions -> {
-				{
-					Definition -> {validQFunctionString<>"["<>stringInputName<>"Name]", "isValid"<>stringInputName<>"Model"},
-					Description -> "returns a boolean that indicates if a valid "<>ToString[myType]<>" will be generated from the inputs of this function.",
-					Inputs :> {
-						{
-							InputName -> stringInputName<>"Name",
-							Description -> "The common name of this "<>stringInputName<>".",
-							Widget -> Widget[Type -> String, Pattern :> _String, Size -> Line]
-						}
-					},
-					Outputs :> {
-						{
-							OutputName -> "isValid"<>stringInputName<>"Model",
-							Description -> "A boolean that indicates if the resulting "<>ToString[myType]<>" is valid.",
-							Pattern :> BooleanP
+	If[!MatchQ[Usage[validQFunctionSymbol], _Association],
+		DefineUsage[validQFunctionSymbol,
+			{
+				BasicDefinitions -> {
+					{
+						Definition -> {validQFunctionString<>"["<>stringInputName<>"Name]", "isValid"<>stringInputName<>"Model"},
+						Description -> "returns a boolean that indicates if a valid "<>ToString[myType]<>" will be generated from the inputs of this function.",
+						Inputs :> {
+							{
+								InputName -> stringInputName<>"Name",
+								Description -> "The common name of this "<>stringInputName<>".",
+								Widget -> Widget[Type -> String, Pattern :> _String, Size -> Line]
+							}
+						},
+						Outputs :> {
+							{
+								OutputName -> "isValid"<>stringInputName<>"Model",
+								Description -> "A boolean that indicates if the resulting "<>ToString[myType]<>" is valid.",
+								Pattern :> BooleanP
+							}
 						}
 					}
+				},
+				SeeAlso -> {
+					"UploadOligomer",
+					"UploadProtein",
+					"UploadAntibody",
+					"UploadCarbohydrate",
+					"UploadPolymer",
+					"UploadResin",
+					"UploadSolidPhaseSupport",
+					"UploadLysate",
+					"UploadVirus",
+					"UploadMammalianCell",
+					"UploadBacterialCell",
+					"UploadYeastCell",
+					"UploadTissue",
+					"UploadMaterial",
+					"UploadSpecies",
+					"UploadProduct",
+					"Upload",
+					"Download",
+					"Inspect"
+				},
+				Author -> {
+					"lige.tonggu"
 				}
-			},
-			SeeAlso -> {
-				"UploadOligomer",
-				"UploadProtein",
-				"UploadAntibody",
-				"UploadCarbohydrate",
-				"UploadPolymer",
-				"UploadResin",
-				"UploadSolidPhaseSupport",
-				"UploadLysate",
-				"UploadVirus",
-				"UploadMammalianCell",
-				"UploadBacterialCell",
-				"UploadYeastCell",
-				"UploadTissue",
-				"UploadMaterial",
-				"UploadSpecies",
-				"UploadProduct",
-				"Upload",
-				"Download",
-				"Inspect"
-			},
-			Author -> {
-				"lige.tonggu"
 			}
-		}
+		]
 	];
 
 	(* Install the options. *)
@@ -5362,10 +6444,10 @@ InstallValidQFunction[myFunction_, myType_]:=Module[{validQFunctionString, valid
 	];
 ];
 
-LazyLoading[$DelayDefaultUploadFunction, InstallOptionsFunction,
+LazyLoading[$DelayDefaultUploadFunction, installDefaultOptionsFunction,
 	DownValueTrigger -> True];
 
-InstallOptionsFunction[myFunction_, myType_]:=Module[{optionsFunctionString, optionsFunctionSymbol, stringInputName},
+installDefaultOptionsFunction[myFunction_, myType_]:=Module[{optionsFunctionString, optionsFunctionSymbol, stringInputName},
 
 	(* Do surgery to add myFunction <> Options. *)
 	optionsFunctionString=ToString[myFunction]<>"Options";
@@ -5374,54 +6456,56 @@ InstallOptionsFunction[myFunction_, myType_]:=Module[{optionsFunctionString, opt
 	(* Install the usage rules. *)
 	stringInputName=ToLowerCase[ToString[Last[myType]]];
 
-	(* Install usage rules. *)
-	DefineUsage[optionsFunctionSymbol,
-		{
-			BasicDefinitions -> {
-				{
-					Definition -> {optionsFunctionString<>"["<>stringInputName<>"Name]", stringInputName<>"Options"},
-					Description -> "returns a list of options as they will be resolved by "<>ToString[myFunction]<>"[].",
-					Inputs :> {
-						{
-							InputName -> stringInputName<>"Name",
-							Description -> "The common name of this "<>stringInputName<>".",
-							Widget -> Widget[Type -> String, Pattern :> _String, Size -> Line]
-						}
-					},
-					Outputs :> {
-						{
-							OutputName -> stringInputName<>"Options",
-							Description -> "A list of resolved options as they will be resolved by "<>ToString[myFunction]<>"[].",
-							Pattern :> {Rule..}
+	(* Install usage rules, unless it's already defined separately *)
+	If[!MatchQ[Usage[optionsFunctionSymbol], _Association],
+		DefineUsage[optionsFunctionSymbol,
+			{
+				BasicDefinitions -> {
+					{
+						Definition -> {optionsFunctionString<>"["<>stringInputName<>"Name]", stringInputName<>"Options"},
+						Description -> "returns a list of options as they will be resolved by "<>ToString[myFunction]<>"[].",
+						Inputs :> {
+							{
+								InputName -> stringInputName<>"Name",
+								Description -> "The common name of this "<>stringInputName<>".",
+								Widget -> Widget[Type -> String, Pattern :> _String, Size -> Line]
+							}
+						},
+						Outputs :> {
+							{
+								OutputName -> stringInputName<>"Options",
+								Description -> "A list of resolved options as they will be resolved by "<>ToString[myFunction]<>"[].",
+								Pattern :> {Rule..}
+							}
 						}
 					}
+				},
+				SeeAlso -> {
+					"UploadOligomer",
+					"UploadProtein",
+					"UploadAntibody",
+					"UploadCarbohydrate",
+					"UploadPolymer",
+					"UploadResin",
+					"UploadSolidPhaseSupport",
+					"UploadLysate",
+					"UploadVirus",
+					"UploadMammalianCell",
+					"UploadBacterialCell",
+					"UploadYeastCell",
+					"UploadTissue",
+					"UploadMaterial",
+					"UploadSpecies",
+					"UploadProduct",
+					"Upload",
+					"Download",
+					"Inspect"
+				},
+				Author -> {
+					"lige.tonggu"
 				}
-			},
-			SeeAlso -> {
-				"UploadOligomer",
-				"UploadProtein",
-				"UploadAntibody",
-				"UploadCarbohydrate",
-				"UploadPolymer",
-				"UploadResin",
-				"UploadSolidPhaseSupport",
-				"UploadLysate",
-				"UploadVirus",
-				"UploadMammalianCell",
-				"UploadBacterialCell",
-				"UploadYeastCell",
-				"UploadTissue",
-				"UploadMaterial",
-				"UploadSpecies",
-				"UploadProduct",
-				"Upload",
-				"Download",
-				"Inspect"
-			},
-			Author -> {
-				"lige.tonggu"
 			}
-		}
+		]
 	];
 
 	(* Install the options. *)
@@ -5457,6 +6541,208 @@ InstallOptionsFunction[myFunction_, myType_]:=Module[{optionsFunctionString, opt
 		]
 	];
 ];
+
+LazyLoading[$DelayDefaultUploadFunction, installDefaultVerificationFunction,
+	DownValueTrigger -> True];
+
+Warning::NotYetVerified = "Your changes has not been uploaded because Verify -> False. Please review the resulted options and correct as needed. When you are ready to upload your changes, re-run the function with Verify -> True.";
+Error::InteralOnlyFunction = "Function `1` is meant for internal user only. Please use the `2` function instead.";
+
+DefineOptions[installDefaultVerificationFunction,
+	Options :> {
+		{AllowedMessages -> {}, {Hold[_MessageName]...}, "The messages that's OK to throw from the main upload function, in which cases we still set Verified -> True for the input objects."},
+		{OptionCategoryChange -> {}, {<| Options -> _Symbol, Category -> _String |>...}, "The options that needs to change category between main function and verification function. The syntax for this option is {<|Option -> OptionSymbol, Category -> 'new category'|>...}. This is especially useful to hide/show certain options."}
+	}
+];
+
+installDefaultVerificationFunction[myFunction_, myInputName_String, myAllowedTypes:ListableP[TypeP[]], ops:OptionsPattern[]] := Module[
+	{
+		verificationFunctionString, verificationFunctionSymbol, uploadFunctionOptionSymbols, filteredOptionRules,
+		safeOps, allowedMessages, optionCategoryChange, optionsNeedCategoryChange, optionToNewCategoryAssoc
+	},
+
+	safeOps = SafeOptions[installDefaultVerificationFunction, ToList[ops]];
+	{allowedMessages, optionCategoryChange} = Lookup[safeOps, {AllowedMessages, OptionCategoryChange}];
+
+	(* Construct the function name: *)
+	(* UploadXX -> UploadVerifiedXX, e.g. UploadSampleModel -> UploadVerifiedSampleModel *)
+	(* DefineXX -> DefineVerifiedXX, e.g. DefineSolvent -> DefineVerifiedSolvent *)
+	(* If function name does not start with Upload or Define, simply prepend "Verify" before function name *)
+	verificationFunctionString = StringReplace[ToString[myFunction],
+		{
+			StartOfString~~"Upload"~~x:Except[EndOfString] :> "UploadVerified"<>x,
+			StartOfString~~"Define"~~x:Except[EndOfString] :> "DefineVerified"<>x,
+			x_ :> "Verify"<>x
+		},
+		1
+	];
+	verificationFunctionSymbol = ToExpression["ECL`"<>verificationFunctionString];
+
+	(* Install the usage rules *)
+	DefineUsage[verificationFunctionSymbol,
+		{
+			BasicDefinitions -> {
+				{
+					Definition -> {verificationFunctionString<>"["<>myInputName<>"]", myInputName},
+					Description -> "returns the input "<>myInputName<>" object which needs to be verified.",
+					MoreInformation -> {
+						"The main upload function makes it easy for users to create objects by relaxing object validity checks.",
+						"This function is then used internally to ensure that no information is missing, populate if required and that the resulting object passes full validity checks.",
+						"Sets the Verified field to True. Intend that only verified objects will be able to be used in the lab in the future."
+					},
+					Inputs :> {
+						{
+							InputName -> myInputName,
+							Description -> "The common name of type(s) allowed for this function.",
+							Widget -> Widget[Type -> Object, Pattern :> ObjectP[myAllowedTypes]]
+						}
+					},
+					Outputs :> {
+						{
+							OutputName -> myInputName,
+							Description -> "The input "<>myInputName<>" object which needs to be verified.",
+							Pattern :> ObjectP[myAllowedTypes]
+						}
+					}
+				}
+			},
+			SeeAlso -> {
+				ToString[myFunction],
+				ToString[myFunction]<>"Options",
+				"Valid"<>ToString[myFunction]<>"Q"
+			},
+			Author -> If[MatchQ[Authors[myFunction], {_String..}],
+				Authors[myFunction],
+				{"hanming.yang"}
+			]
+		}
+	];
+
+	(* Install the options. *)
+
+	(* First find all option symbols from the main upload function *)
+	uploadFunctionOptionSymbols = Lookup[#, "OptionSymbol"] & /@ OptionDefinition[myFunction];
+
+	(* Find all options that needs category change *)
+	optionsNeedCategoryChange = Lookup[optionCategoryChange, Options];
+
+	(* Construct an assoc for all option -> new category *)
+	optionToNewCategoryAssoc = AssociationThread[optionsNeedCategoryChange, Lookup[optionCategoryChange, Category]];
+
+	(* Remove Strict and Output options, since user won't be able to control these two anyway *)
+	(* Also remove Cache, Simulation and Upload options, we'll use DefineOptions to redefine these two. It's a problem with ModifyOptions that the Widget will be set to Null, and DefineOptions will reject them *)
+	filteredOptionRules = If[MemberQ[optionsNeedCategoryChange, #],
+		{OptionName -> #, Category -> Lookup[optionToNewCategoryAssoc, #]},
+		{OptionName -> #}
+	] & /@ DeleteCases[uploadFunctionOptionSymbols, Alternatives[Strict, Simulation]];
+
+	(* Define options. Pass all options from main upload function except Output and Strict. Also add Verify option *)
+	DefineOptions[verificationFunctionSymbol,
+		Options :> {
+			VerifyOption,
+			AllowWarningsOption,
+			SimulationOption
+		},
+		SharedOptions :> {ModifyOptions[myFunction, filteredOptionRules]}
+	];
+
+	(* Install the downvalue *)
+
+	verificationFunctionSymbol[myInput:ListableP[ObjectP[myAllowedTypes]], myOptions:OptionsPattern[]] := Module[
+		{
+			functionOption, verify, optionForUploadFunction, uploadFunctionReturn, uploadFunctionEvaluationData,
+			allMessages, allowedMessageNames, allMessageNames, validReturnQ, allowWarningQ, allMessageNamesNoWarning
+		},
+
+		(* Read all option and extract the Verify option *)
+		functionOption = SafeOptions[verificationFunctionSymbol, ToList[myOptions]];
+		{verify, allowWarningQ} = Lookup[functionOption, {Verify, AllowWarnings}];
+
+		(* Prevent external user from using this function *)
+		If[!MatchQ[$PersonID, ObjectP[Object[User, Emerald]]],
+			Message[Error::InteralOnlyFunction, verificationFunctionSymbol, myFunction];
+			Return[$Failed]
+		];
+
+		(* Construct the options for the main Upload function *)
+		(* Be aware, pass the user-specified option, not the safe options to the main upload function. This is to ensure only options that are actually specified manually counts as the unresolved option *)
+		(* Also, note that in CCD command builder, we call ResolvedOptionsJSON which changes the Output of function to {Preview, Options} *)
+		(* Therefore when calling this function in CCD, we should avoid changing the Output option, but instead make Upload -> False *)
+		optionForUploadFunction = If[verify,
+			(* If we have Verify -> True, that means we are at the final step, we are ready to upload the changes and set Verified -> True *)
+			ReplaceRule[
+				Normal[KeyDrop[ToList[myOptions], {Verify, AllowWarnings}], Association],
+				{
+					If[MatchQ[$ECLApplication, CommandCenter],
+						Nothing,
+						Output -> Result
+					],
+					Strict -> True
+				}
+			],
+			(* If we have Verify -> False, that means we are NOT YET at the final step, we should output all options for developer to review *)
+			ReplaceRule[
+				Normal[KeyDrop[ToList[myOptions], {Verify, AllowWarnings}], Association],
+				{
+					If[MatchQ[$ECLApplication, CommandCenter],
+						Upload -> False,
+						Output -> Options
+					],
+					Strict -> True
+				}
+			]
+		];
+
+		(* Throw a message to remind developer that changes has not been uploaded if Verify -> False *)
+		If[!verify,
+			Message[Warning::NotYetVerified]
+		];
+
+		(* Now call the main upload function for option resolving, error checking and/or upload. Use EvaluationData to record all messages *)
+		uploadFunctionEvaluationData = EvaluationData[myFunction[myInput, optionForUploadFunction]];
+
+		(* Extract results and messages *)
+		uploadFunctionReturn = Lookup[uploadFunctionEvaluationData, "Result"];
+		allMessages = Lookup[uploadFunctionEvaluationData, "MessagesExpressions"];
+		allMessageNames = Replace[allMessages, HoldPattern[Message[x_, y___]] :> x, 2];
+
+		(* If AllowWarning -> True, remove the warnings from message list when doing the validation check *)
+		allMessageNamesNoWarning = If[allowWarningQ,
+			Select[allMessageNames, !MatchQ[Replace[#, Hold[MessageName[head_, tag_]]:> head], Warning]&],
+			allMessageNames
+		];
+
+		(* Define a custom list of allowed messages *)
+		allowedMessageNames = allowedMessages;
+
+		(* Check if the returned value from default upload function is valid. By valid we mean if we are ready to set the input object to Verified -> True *)
+		(* If Verify -> True, we want to ensure the return is object or a list of object, and no messages were thrown except the allowed ones *)
+		(* If Verify -> False, the return is always invalid *)
+		validReturnQ = And[
+			TrueQ[verify],
+			MatchQ[uploadFunctionReturn, ListableP[ObjectReferenceP[]]],
+			Length[Complement[allMessageNamesNoWarning, allowedMessageNames]] == 0
+		];
+
+		(* If the Upload function completed successfully, do a second upload to set Verified -> True *)
+		Which[
+			(* If Verify -> True and result is valid, set Verified -> True for all inputs and return the inputs *)
+			validReturnQ,
+				Upload[<| Object -> #, Verified -> True |>& /@ ToList[myInput]];
+				myInput,
+			(* If Verify -> False, just return the output from the upload function (should be list of options) *)
+			!verify,
+				uploadFunctionReturn,
+			(* The last case is Verify -> True but our result is not valid. In this case return $Failed *)
+			True,
+				$Failed
+		]
+	];
+
+];
+
+(* a 2-input overload to stay consistent of other sister install functions *)
+installDefaultVerificationFunction[myFunction_, myAllowedType:TypeP[], ops:OptionsPattern[]] := installDefaultVerificationFunction[myFunction, ToString[Last[myAllowedType]], myAllowedType, ops];
 
 
 (* ::Subsection:: *)
@@ -5836,10 +7122,26 @@ InstallIdentityModelTests[myFunction_, basicDescription_, defaultFunctionArgumen
 
 
 
-LazyLoading[$DelayDefaultUploadFunction, InstallDefaultUploadFunction, DownValueTrigger -> True, UpValueTriggers -> {Usage}];
+LazyLoading[$DelayDefaultUploadFunction, installDefaultUploadFunction, DownValueTrigger -> True, UpValueTriggers -> {Usage}];
 
-DefineOptions[InstallDefaultUploadFunction,
+DefineOptions[installDefaultUploadFunction,
 	Options :> {
+		{
+			OptionName -> DocumentationDefinitionNumber,
+			Default -> Null,
+			AllowNull -> True,
+			Pattern :> Alternatives[Null, GreaterEqualP[1, 1]],
+			Description -> "Specify the definition number for ValidInputLengthsQ. Null uses the default definition.",
+			Category -> "Organizational Information"
+		},
+		{
+			OptionName -> InputPattern,
+			Default -> _String,
+			AllowNull -> False,
+			Pattern :> _, (* This can be pretty much anything *)
+			Description -> "Singleton input pattern allowed for object creation overloads. Custom documentation and option resolver must be written if this option is specified.",
+			Category -> "Organizational Information"
+		},
 		{
 			OptionName -> OptionResolver,
 			Default -> resolveDefaultUploadFunctionOptions,
@@ -5849,11 +7151,27 @@ DefineOptions[InstallDefaultUploadFunction,
 			Category -> "Organizational Information"
 		},
 		{
+			OptionName -> PacketCreationFunction,
+			Default -> generateDefaultUploadPackets,
+			AllowNull -> False,
+			Pattern :> _Symbol,
+			Description -> "Specify the head of the function to use to generate changes to the main output objects in the function definition.",
+			Category -> "Organizational Information"
+		},
+		{
 			OptionName -> AuxilliaryPacketsFunction,
 			Default -> generateDefaultUploadFunctionAuxilliaryPackets,
 			AllowNull -> False,
 			Pattern :> _Symbol,
 			Description -> "Specify the head of the function to use to generate changes to additional objects in the function definition.",
+			Category -> "Organizational Information"
+		},
+		{
+			OptionName -> RunOptionValidationTests,
+			Default -> True,
+			AllowNull -> False,
+			Pattern :> BooleanP,
+			Description -> "Specify if ValidObjectQ tests should be run on the final packet. If this option is set to False, it will be skipped in the main function, but should be run elsewhere to ensure the objects to be uploaded are valid.",
 			Category -> "Organizational Information"
 		},
 		{
@@ -5871,163 +7189,216 @@ DefineOptions[InstallDefaultUploadFunction,
 			Pattern :> BooleanP,
 			Description -> "Indicates if the input pattern to the function allows modification of existing objects by providing the object reference as input.",
 			Category -> "Organizational Information"
+		},
+		{
+			OptionName -> DuplicateObjectChecks,
+			Default -> {
+				<|
+					Field -> Name,
+					Check -> Error
+				|>
+			},
+			AllowNull -> True,
+			Pattern :> {
+				<|
+					Field -> _Symbol,
+					Check -> Alternatives[
+						Error, (* Throw a hard error if this field matches an existing object *)
+						Warning, (* Throw a warning if this field matches an existing object but allow user to create the new object *)
+						Modification (* Throw a warning saying a duplicate has been found and automatically modify that existing object instead of creating a new one *)
+					]
+				|>...
+			},
+			Description -> "A list of fields to compare to existing objects in the database to determine if duplicate objects already exist, and the action to take if a duplicate is found.",
+			(* Note that Null and {} are not counted as matching to avoid flagging non-duplicates *)
+			(* Currently only works with full matches, including in the case of multiple fields *)
+			Category -> "Organizational Information"
 		}
 	}
 ];
 
+Error::DuplicateObjects = "The input(s) `1` attempted to set `2` to `3`. However objects `4` already exist with those values and duplicates cannot be created. Please use the existing objects or amend the corresponding options to create new unique objects.";
+Warning::DuplicateObjects = "The input(s) `1` attempted to set `2` to `3`. However objects `4` already exist with those values. Please check whether the existing objects are appropriate and only create new objects if needed. You can edit the existing objects by using them as inputs to the function directly.";
+Warning::ObjectAlreadyExists = "The input(s) `1` attempted to set `2` to `3`. However objects `4` already exist with those values. Your changes will modify the existing objects rather than create new ones.";
+Error::MultipleExistingObjects = "The inputs(s) `1` attempted to set `2` to `3`. However multiple objects `4` already exist. Please specify the object that you wish to modify as your input."
+
+(* Flag for unit testing to turn off duplicate object checking *)
+(* Functions typically don't allow duplicate objects by name which leads to flaky unit testing *)
+$installDefaultUploadFunctionDuplicateChecking = True;
 
 (* Overload that specifies the option resolver to use. *)
-InstallDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[InstallDefaultUploadFunction]]:=Module[
-	{safeOptions, installNameOverload, installObjectOverload, optionResolver, auxilliaryPacketsFunction, stringInputName, singletonFunctionPattern, listableFunctionPattern},
+installDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[installDefaultUploadFunction]]:=Module[
+	{
+		safeOptions, installNameOverload, installObjectOverload, optionResolver, auxilliaryPacketsFunction,
+		singletonFunctionPattern, listableFunctionPattern, documentationDefinitionNumberOption, inputPatternOption,
+		packetCreationFunction, runVOQTestsQ, duplicateObjectChecksOption
+	},
 
 	(* Get the safe options *)
-	safeOptions = SafeOptions[InstallDefaultUploadFunction, ToList[options]];
+	safeOptions = SafeOptions[installDefaultUploadFunction, ToList[options]];
 
 	(* Look up option values *)
 	{
 		installNameOverload,
 		installObjectOverload,
 		optionResolver,
-		auxilliaryPacketsFunction
+		auxilliaryPacketsFunction,
+		documentationDefinitionNumberOption,
+		inputPatternOption,
+		packetCreationFunction,
+		runVOQTestsQ,
+		duplicateObjectChecksOption
 	}=Lookup[safeOptions,
 		{
 			InstallNameOverload,
 			InstallObjectOverload,
 			OptionResolver,
-			AuxilliaryPacketsFunction
+			AuxilliaryPacketsFunction,
+			DocumentationDefinitionNumber,
+			InputPattern,
+			PacketCreationFunction,
+			RunOptionValidationTests,
+			DuplicateObjectChecks
 		}
 	];
 
-	(* Install the usage rules. *)
-	stringInputName=ToLowerCase[ToString[Last[myType]]];
+	(* Install the usage rules if required *)
+	(* We need documentation for input and option validation, expansion etc *)
+	(* So this can't be optional - no docs at run time -> generate them *)
+	If[!AssociationQ[Usage[myFunction]],
+		Module[{stringInputName},
 
-	DefineUsage[myFunction,
-		{
-			BasicDefinitions -> {
+			stringInputName = ToLowerCase[ToString[Last[myType]]];
 
-				If[TrueQ[installNameOverload] && TrueQ[installObjectOverload],
-					{
-						Definition -> {ToString[myFunction]<>"[Inputs]", stringInputName<>"Model"},
-						Description -> "creates/updates a model '"<>stringInputName<>"Model' that contains the information given about the "<>stringInputName<>".",
-						Inputs :> {
-							IndexMatching[
-								{
-									InputName -> "Inputs",
-									Description -> "The new names and/or existing objects that should be updated with information given about the "<>stringInputName<>".",
-									Widget -> Alternatives[
-										With[{insertMe=myType},
-											Widget[Type -> Object, Pattern :> ObjectP[insertMe]]
-										],
-										Widget[Type -> String, Pattern :> _String, Size -> Line]
+			DefineUsage[myFunction,
+				{
+					BasicDefinitions -> {
+
+						If[TrueQ[installNameOverload] && TrueQ[installObjectOverload],
+							{
+								Definition -> {ToString[myFunction] <> "[Inputs]", stringInputName <> "Model"},
+								Description -> "creates/updates a model '" <> stringInputName <> "Model' that contains the information given about the " <> stringInputName <> ".",
+								Inputs :> {
+									IndexMatching[
+										{
+											InputName -> "Inputs",
+											Description -> "The new names and/or existing objects that should be updated with information given about the " <> stringInputName <> ".",
+											Widget -> Alternatives[
+												With[{insertMe = myType},
+													Widget[Type -> Object, Pattern :> ObjectP[insertMe]]
+												],
+												Widget[Type -> String, Pattern :> _String, Size -> Line]
+											]
+										},
+										IndexName -> "Input Data"
 									]
 								},
-								IndexName -> "Input Data"
-							]
-						},
-						Outputs :> {
-							{
-								OutputName -> stringInputName<>"Model",
-								Description -> "The model that represents this "<>stringInputName<>".",
-								Pattern :> ObjectP[myType]
-							}
-						},
-						(* Hidden definition to call our functions with (ValidInputLengthsQ, etc.) *)
-						CommandBuilder -> False
-					},
-					Nothing
-				],
-
-				If[TrueQ[installNameOverload],
-					{
-						Definition -> {ToString[myFunction]<>"["<>Capitalize[stringInputName]<>"Name]", stringInputName<>"Model"},
-						Description -> "returns a new model '"<>stringInputName<>"Model' that contains the information given about the "<>stringInputName<>".",
-						Inputs :> {
-							IndexMatching[
-								{
-									InputName -> Capitalize[stringInputName]<>"Name",
-									Description -> "The common name of this "<>stringInputName<>".",
-									Widget -> Widget[Type -> String, Pattern :> _String, Size -> Line]
+								Outputs :> {
+									{
+										OutputName -> stringInputName <> "Model",
+										Description -> "The model that represents this " <> stringInputName <> ".",
+										Pattern :> ObjectP[myType]
+									}
 								},
-								IndexName -> "Input Data"
-							]
-						},
-						Outputs :> {
-							{
-								OutputName -> stringInputName<>"Model",
-								Description -> "The model that represents this "<>stringInputName<>".",
-								Pattern :> ObjectP[myType]
-							}
-						}
-					},
-					Nothing
-				],
+								(* Hidden definition to call our functions with (ValidInputLengthsQ, etc.) *)
+								CommandBuilder -> False
+							},
+							Nothing
+						],
 
-				If[TrueQ[installObjectOverload],
-					{
-						Definition -> {ToString[myFunction]<>"["<>Capitalize[stringInputName]<>"Object]", stringInputName<>"Model"},
-						Description -> "updates an existing model '"<>stringInputName<>"Model' that contains the information given about the "<>stringInputName<>".",
-						Inputs :> {
-							IndexMatching[
-								{
-									InputName -> Capitalize[stringInputName]<>"Object",
-									Description -> "The existing "<>ToString[myType]<>" object that should be updated.",
-									Widget -> With[{insertMe=myType},
-										Widget[Type -> Object, Pattern :> ObjectP[insertMe], PreparedSample -> False, PreparedContainer -> False]
+						If[TrueQ[installNameOverload],
+							{
+								Definition -> {ToString[myFunction] <> "[" <> Capitalize[stringInputName] <> "Name]", stringInputName <> "Model"},
+								Description -> "returns a new model '" <> stringInputName <> "Model' that contains the information given about the " <> stringInputName <> ".",
+								Inputs :> {
+									IndexMatching[
+										{
+											InputName -> Capitalize[stringInputName] <> "Name",
+											Description -> "The common name of this " <> stringInputName <> ".",
+											Widget -> Widget[Type -> String, Pattern :> _String, Size -> Line]
+										},
+										IndexName -> "Input Data"
 									]
 								},
-								IndexName -> "Input Data"
-							]
-						},
-						Outputs :> {
+								Outputs :> {
+									{
+										OutputName -> stringInputName <> "Model",
+										Description -> "The model that represents this " <> stringInputName <> ".",
+										Pattern :> ObjectP[myType]
+									}
+								}
+							},
+							Nothing
+						],
+
+						If[TrueQ[installObjectOverload],
 							{
-								OutputName -> stringInputName<>"Model",
-								Description -> "The model that represents this "<>stringInputName<>".",
-								Pattern :> ObjectP[myType]
-							}
-						}
+								Definition -> {ToString[myFunction] <> "[" <> Capitalize[stringInputName] <> "Object]", stringInputName <> "Model"},
+								Description -> "updates an existing model '" <> stringInputName <> "Model' that contains the information given about the " <> stringInputName <> ".",
+								Inputs :> {
+									IndexMatching[
+										{
+											InputName -> Capitalize[stringInputName] <> "Object",
+											Description -> "The existing " <> ToString[myType] <> " object that should be updated.",
+											Widget -> With[{insertMe = myType},
+												Widget[Type -> Object, Pattern :> ObjectP[insertMe], PreparedSample -> False, PreparedContainer -> False]
+											]
+										},
+										IndexName -> "Input Data"
+									]
+								},
+								Outputs :> {
+									{
+										OutputName -> stringInputName <> "Model",
+										Description -> "The model that represents this " <> stringInputName <> ".",
+										Pattern :> ObjectP[myType]
+									}
+								}
+							},
+							Nothing
+						]
 					},
-					Nothing
-				]
-			},
-			If[MatchQ[myFunction,UploadSampleModel],
-				MoreInformation -> {
-					"If Updating the Composition of a Model[Sample], the Compositions of all linked Object[Sample]'s will also be updated. The date in the components of the composition will have the Date of when UploadSampleModel is executed."
-				},
-				Nothing
-			],
-			SeeAlso -> {
-				"UploadOligomer",
-				"UploadProtein",
-				"UploadAntibody",
-				"UploadCarbohydrate",
-				"UploadPolymer",
-				"UploadResin",
-				"UploadSolidPhaseSupport",
-				"UploadLysate",
-				"UploadVirus",
-				"UploadMammalianCell",
-				"UploadBacterialCell",
-				"UploadYeastCell",
-				"UploadTissue",
-				"UploadMaterial",
-				"UploadSpecies",
-				"UploadProduct",
-				"Upload",
-				"Download",
-				"Inspect"
-			},
-			Author -> {
-				"lige.tonggu"
-			}
-		}
+					If[MatchQ[myFunction, UploadSampleModel],
+						MoreInformation -> {
+							"If Updating the Composition of a Model[Sample], the Compositions of all linked Object[Sample]'s will also be updated. The date in the components of the composition will have the Date of when UploadSampleModel is executed."
+						},
+						Nothing
+					],
+					SeeAlso -> {
+						"UploadOligomer",
+						"UploadProtein",
+						"UploadAntibody",
+						"UploadCarbohydrate",
+						"UploadPolymer",
+						"UploadResin",
+						"UploadSolidPhaseSupport",
+						"UploadLysate",
+						"UploadVirus",
+						"UploadMammalianCell",
+						"UploadBacterialCell",
+						"UploadYeastCell",
+						"UploadTissue",
+						"UploadMaterial",
+						"UploadSpecies",
+						"UploadProduct",
+						"Upload",
+						"Download",
+						"Inspect"
+					},
+					Author -> {
+						"david.ascough"
+					}
+				}
+			]
+		]
 	];
 
 	(* Create an input pattern for our listable and singleton functions. *)
 	singletonFunctionPattern=Switch[{installNameOverload, installObjectOverload},
 		{True, True},
-		_String | ObjectP[myType],
+		inputPatternOption | ObjectP[myType],
 		{True, False},
-		_String,
+		inputPatternOption,
 		{False, True},
 		ObjectP[myType]
 	];
@@ -6038,30 +7409,103 @@ InstallDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[Instal
 	With[
 		{
 			optionResolverFunction = optionResolver,
-			auxPacketsFunction = auxilliaryPacketsFunction
+			auxPacketsFunction = auxilliaryPacketsFunction,
+			packetFunction = packetCreationFunction,
+			docsNumber = documentationDefinitionNumberOption /. Null -> 1,
+			duplicateCheckData = duplicateObjectChecksOption
 		},
 
 		myFunction[myInputs : listableFunctionPattern, myOptions : OptionsPattern[myFunction]] := Module[
-			{listedInputs, listedOptions, outputSpecification, cache, simulation, output, gatherTests, safeOptions, safeOptionTests, validLengths, validLengthTests,
-				expandedInputs, expandedOptions, optionName, optionValueList, expandedOptionsWithName,
-				resolvedOptions, resolvedOptionsInvalidInputs, resolvedOptionsInvalidOptions, collapsedResolvedOptions, uploadPackets, auxilliaryPackets,
-				voqTestResults, voqTests, voqInvalidInputs, voqInvalidOptions, allInvalidInputs, allInvalidOptions,
-				resultRule, previewRule, optionsRule, testsRule,
-				inputObjectCache, listedOptionsWithCache, safeOptionsWithCache},
-
-			(* Make sure we're working with a list of inputs and options *)
-			listedInputs = ToList[myInputs];
-			listedOptions = ToList[myOptions];
+			{
+				listedInputs, listedOptions, outputSpecification, cache, simulation, output, gatherTests, safeOptions, safeOptionTests, validLengths, validLengthTests,
+				expandedInputs, expandedSpecifiedOptions, mapThreadSpecifiedOptions, mapThreadSpecifiedOptionsWithCache, mapThreadSafeOptionsWithCache,
+				resolvedInputs, resolvedOptions, resolvedOptionsInvalidInputs, resolvedOptionsInvalidOptions, collapsedResolvedOptions, uploadPackets, auxilliaryUploadPackets, auxilliaryPackets,				voqTestResults, voqTests, voqInvalidInputs, voqInvalidOptions, allInvalidInputs, allInvalidOptions,
+				resultRule, previewRule, optionsRule, testsRule, specifiedObjectsExistQ, specifiedObjectsExistTests, uploadPacketsInvalidOptions,
+				inputObjectCache, listedOptionsWithCache, safeOptionsWithCache, appendToFieldsQ, objectPackets, resolvedInputObjectPackets,
+				optionResolverTests
+			},
 
 			(* Determine the requested return value from the function *)
-			outputSpecification = If[!MatchQ[Lookup[listedOptions, Output], _Missing],
-				Lookup[listedOptions, Output],
+			outputSpecification = If[!MatchQ[Lookup[ToList[myOptions], Output], _Missing],
+				Lookup[ToList[myOptions], Output],
 				Result
 			];
 			output = ToList[outputSpecification];
 
 			(* Determine if we should keep a running list of tests *)
 			gatherTests = MemberQ[output, Tests];
+
+			(* Sanitize the inputs *)
+			{listedInputs, listedOptions, specifiedObjectsExistQ, specifiedObjectsExistTests} = Module[
+				{toListInputs, toListOptions, objectsExistQ, objectsExistTests, sanitizedInputs, sanitizedOptions},
+
+				(* Make sure we're working with a list of inputs and options *)
+				{toListInputs, toListOptions} = {ToList[myInputs], ToList[myOptions]};
+
+				(* Sanitize - convert named objects to ID form *)
+				(* This performs a dbq check and returns $Failed if any object is missing *)
+				(* Silence the error and handle ourselves *)
+				{sanitizedInputs, sanitizedOptions} = Quiet[Experiment`Private`sanitizeInputs[toListInputs, toListOptions]];
+
+				(* If modifying any objects, check that they exist *)
+				{objectsExistQ, objectsExistTests} = Module[
+					{specifiedObjects, nonExistentObjects, nonExistentObjectsTests},
+
+					(* Get any objects that were specified *)
+					specifiedObjects = Cases[toListInputs, ObjectP[]];
+
+					nonExistentObjects = If[MatchQ[sanitizedInputs, $Failed],
+						(* Check if they exist *)
+						PickList[specifiedObjects, DatabaseMemberQ[specifiedObjects], False],
+
+						(* If sanitize inputs passed, we know for sure there is no failure as we did the check already *)
+						{}
+					];
+
+					(* Throw an error if required *)
+					If[Length[nonExistentObjects]>0&&!gatherTests,
+						Message[Error::MissingObjects, nonExistentObjects];
+					];
+
+					(* Generate tests if required *)
+					nonExistentObjectsTests = If[gatherTests,
+						Module[{failingTest, passingTest},
+
+							failingTest = If[MatchQ[nonExistentObjects, {}],
+								Nothing,
+								Test["The specified input objects " <> ECL`InternalUpload`ObjectToString[nonExistentObjects] <> " exist:", True, False]
+							];
+
+							passingTest = If[Length[specifiedObjects]==Length[nonExistentObjects],
+								Nothing,
+								Test["The specified input objects " <> ECL`InternalUpload`ObjectToString[Complement[specifiedObjects, nonExistentObjects]] <> " exist:", True, True]
+							];
+
+							{failingTest, passingTest}
+						],
+						{}
+					];
+
+					(* Return the output *)
+					{
+						MatchQ[nonExistentObjects, {}],
+						nonExistentObjectsTests
+					}
+				];
+
+				(* Return the results *)
+				{sanitizedInputs, sanitizedOptions, objectsExistQ, objectsExistTests}
+			];
+
+			(* If any specified objects don't exist, return $Failed (or the tests up to this point) *)
+			If[!specifiedObjectsExistQ,
+				Return[outputSpecification /. {
+					Result -> $Failed,
+					Tests -> specifiedObjectsExistTests,
+					Options -> $Failed,
+					Preview -> Null
+				}]
+			];
 
 			(* Call SafeOptions to make sure all options match pattern *)
 			{safeOptions, safeOptionTests} = If[gatherTests,
@@ -6071,15 +7515,15 @@ InstallDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[Instal
 
 			(* Call ValidInputLengthsQ to make sure all options are the right length *)
 			{validLengths, validLengthTests} = If[gatherTests,
-				ValidInputLengthsQ[myFunction, {listedInputs}, listedOptions, Output -> {Result, Tests}],
-				{ValidInputLengthsQ[myFunction, {listedInputs}, listedOptions], Null}
+				ValidInputLengthsQ[myFunction, {listedInputs}, listedOptions, docsNumber, Output -> {Result, Tests}],
+				{ValidInputLengthsQ[myFunction, {listedInputs}, listedOptions, docsNumber], Null}
 			];
 
 			(* If the specified options don't match their patterns return $Failed (or the tests up to this point)  *)
 			If[MatchQ[safeOptions, $Failed],
 				Return[outputSpecification /. {
 					Result -> $Failed,
-					Tests -> safeOptionTests,
+					Tests -> Join[specifiedObjectsExistTests, safeOptionTests],
 					Options -> $Failed,
 					Preview -> Null
 				}]
@@ -6089,11 +7533,12 @@ InstallDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[Instal
 			If[!validLengths,
 				Return[outputSpecification /. {
 					Result -> $Failed,
-					Tests -> Join[safeOptionTests, validLengthTests],
+					Tests -> Join[specifiedObjectsExistTests, safeOptionTests, validLengthTests],
 					Options -> $Failed,
 					Preview -> Null
 				}]
 			];
+
 
 			(* SafeOptions passed. Use SafeOptions to get the output format. *)
 			outputSpecification = Lookup[safeOptions, Output];
@@ -6103,80 +7548,567 @@ InstallDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[Instal
 			simulation = Lookup[safeOptions, Simulation, Null];
 
 			(* Download all of the objects from our input list without computable fields. *)
-			inputObjectCache = Module[{objects, types, typeFields, fullDownloadFields},
+			inputObjectCache = Module[{objectsFromInputs, objectsFromOptions, objects},
 
 				(*all unique objects we are working with*)
-				objects = DeleteDuplicates[Cases[listedInputs, ObjectReferenceP[myType], Infinity]];
-				(* This is required as the objects may be subtype of myType and we need to download all the fields. This is specifically important for Model[Sample,StockSolution] *)
-				types = Download[objects, Type];
+				objectsFromInputs = Download[Cases[listedInputs, ObjectReferenceP[], Infinity], Object];
+				objectsFromOptions = Download[Cases[Values[safeOptions], ObjectP[], Infinity], Object];
+				objects = DeleteDuplicates[Flatten[{objectsFromInputs, objectsFromOptions}]];
 
-				(* fields without computable fields *)
-				typeFields = Map[
-					(
-						# -> {Packet @@ Experiment`Private`noComputableFieldsList[#]}
-					)&,
-					DeleteDuplicates[types]
-				];
-
-				fullDownloadFields = types /. typeFields;
-
-				(* need to Flatten here to get a flat list of packets *)
-				Experiment`Private`FlattenCachePackets[
-					Download[
-						objects,
-						fullDownloadFields,
-						Cache -> cache,
-						Simulation -> simulation
-					]
+				(* Get the packets *)
+				downloadDuffPackets[
+					objects,
+					cache,
+					simulation
 				]
 			];
 
-			(* Add the input object packets to the Cache option *)
+			(* Replace the cache with the input object packets *)
 			listedOptionsWithCache = ReplaceRule[listedOptions, Cache -> inputObjectCache];
 			safeOptionsWithCache = ReplaceRule[safeOptions, Cache -> inputObjectCache];
+
+			(* Pull out packets for the input objects *)
+			objectPackets = Experiment`Private`fetchPacketFromCache[#, Lookup[safeOptionsWithCache, Cache]]& /@ listedInputs;
 
 			(*-- Otherwise, we're dealing with a listable version. Map over the inputs and options. --*)
 			(*-- Basic checks of input and option validity passed. We are ready to map over the inputs and options. --*)
 			(* Expand any index-matched options from OptionName\[Rule]A to OptionName\[Rule]{A,A,A,...} so that it's safe to MapThread over pairs of options, inputs when resolving/validating values *)
-			{expandedInputs, expandedOptions} = ExpandIndexMatchedInputs[myFunction, {listedInputs}, listedOptionsWithCache];
+			{expandedInputs, expandedSpecifiedOptions} = ExpandIndexMatchedInputs[myFunction, {listedInputs}, listedOptions, docsNumber];
 
-			(* Put the option name inside of the option values list so we can easily MapThread. *)
-			expandedOptionsWithName = Function[{option},
-				optionName = option[[1]];
-				optionValueList = option[[2]];
+			(* Convert the options into MapThreadFormat *)
+			(* Function returns options as Associations but other functions require lists, so replace with List *)
+			mapThreadSpecifiedOptions = If[!MatchQ[expandedSpecifiedOptions, {}],
+				Module[{initialExpandedOptions},
 
-				(* We are given OptionName\[Rule]OptionValueList. *)
-				(* We want {OptionName\[Rule]OptionValue1, OptionName\[Rule]OptionValue2, etc.} *)
-				Function[{optionValue},
-					optionName -> optionValue
-				] /@ optionValueList
-			] /@ expandedOptions;
+					(* Use mapThreadOptions to expand the options into an index matching set *)
+					initialExpandedOptions = Replace[
+						OptionsHandling`Private`mapThreadOptions[
+							myFunction,
+							expandedSpecifiedOptions,
+							(* Use AmbiguousNestedResolution option as otherwise doesn't expand correctly if none are user specified *)
+							AmbiguousNestedResolution -> IndexMatchingOptionPreferred
+						],
+						Association -> List,
+						{2},
+						Heads -> True
+					];
+
+					(* However, mapThreadOptions has a bug/feature where if only the non-index matching default/hidden options are specified, the options don't get expanded *)
+					(* Handle that case *)
+					(* E.g. UploadFunction[{input1, input2}, Output -> Options] -> {{Output -> Options}} *)
+					(* but UploadFunction[{input1, input2}, Name -> Null, Output -> Options] -> {{Output -> Options, Name -> Null}, {Output -> Options, Name -> Null}} *)
+					(* This workaround can be removed once UploadFunction[{input1, input2}, Output -> Options] -> {{Output -> Options}, {Output -> Options}} *)
+					If[!EqualQ[Length[initialExpandedOptions], Length[listedInputs]],
+						ConstantArray[First[initialExpandedOptions], Length[listedInputs]],
+						initialExpandedOptions
+					]
+				],
+
+				(* If no options, pass through empty list for each input (not supported by mapThreadOptions *)
+				ConstantArray[{}, Length[listedInputs]]
+			];
+
+			(* Add the updated cache to the specified options *)
+			mapThreadSpecifiedOptionsWithCache = ReplaceRule[#, Cache -> inputObjectCache] & /@ mapThreadSpecifiedOptions;
+
+			(* Create the safe options with the updated cache *)
+			mapThreadSafeOptionsWithCache = SafeOptions[myFunction, #] & /@ mapThreadSpecifiedOptionsWithCache;
 
 			(* Resolve our options *)
-			(* This is mapped for now, whilst converting from the previous mapping approach to listed form in line with style guide *)
 			(* Note the options come out mapthread style - list of associations *)
-			{resolvedOptions, resolvedOptionsInvalidInputs, resolvedOptionsInvalidOptions} = Module[
-				{resolverOutput},
+			(* This also handles duplicate checking/handling as we need to re-resolve options if we decide to modify an existing object we find rather than create a duplicate *)
+			{resolvedInputs, resolvedOptions, resolvedOptionsInvalidInputs, resolvedOptionsInvalidOptions, resolvedInputObjectPackets, optionResolverTests} = Module[
+				{
+					initialOptionResolverOutput, initialResolvedOptions, initialResolverInvalidInputs, initialResolverInvalidOptions, psuedoObjectPacketsForInputsCreatingNewObjects,
+					fieldListForDuplicateChecks, newReplacementInputObjects, duplicatesDataByInput, inputPositionsCreatingNewObject, inputsCreatingNewObjects, resolvedOptionsForInputsCreatingNewObjects,
+					newInputReresolvedOptions, duplicateChecksInvalidInputs, duplicateChecksInvalidOptions, newInputInvalidInputs, newInputsInvalidOptions,
+					finallyResolvedInputs, finallyResolvedOptions, updatedInputs, newInputsCache, initialOptionResolverTests, newOptionResolverTests
+				},
 
-				(* Resolve the options *)
+				(* Resolve the options using the initial inputs *)
 				(* This returns in a different format to an experiment function resolver *)
 				(* Options need to be passed in in mapthread style format *)
-				resolverOutput = optionResolverFunction[
+				(* And an association is returned with keys of Result, InvalidInputs and InvalidOptions *)
+				initialOptionResolverOutput = optionResolverFunction[
 					myType,
 					listedInputs,
-					SafeOptions[myFunction, #] & /@ Transpose[{Sequence @@ expandedOptionsWithName}](* Safe options *),
-					Transpose[{Sequence @@ expandedOptionsWithName}](* User specified options *)
+					mapThreadSafeOptionsWithCache,
+					mapThreadSpecifiedOptionsWithCache
 				];
 
-				(* Return the required information *)
-				Lookup[resolverOutput, {Result, InvalidInputs, InvalidOptions}]
+				(* Split the output *)
+				{initialResolvedOptions, initialResolverInvalidInputs, initialResolverInvalidOptions, initialOptionResolverTests} = Lookup[initialOptionResolverOutput, {Result, InvalidInputs, InvalidOptions, Tests}];
+
+				(* In a simple world, that's it. However, we want this function to identify if a duplicate object already exists and, in certain circumstances, to automatically modify that existing object *)
+				(* So, we do that duplicate check now, and re-run the resolver with the existing duplicate object if needed *)
+
+				(* Return early if no duplicate checking. Also return early if option resolving failed *)
+				If[
+					Or[
+						(* If this function was installed with no duplicate checks requested, there's nothing to do here *)
+						MatchQ[duplicateCheckData, Alternatives[{}, Null]],
+
+						(* Duplicate checking is only applicable when creating new objects *)
+						MatchQ[listedInputs, {ObjectP[myType]..}],
+
+						(* Flag for unit testing only, so it's easy to turn this check off *)
+						!TrueQ[$installDefaultUploadFunctionDuplicateChecking],
+
+						TrueQ[Lookup[safeOptionsWithCache, Force]],
+
+						(* Don't attempt to check duplicate if the option resolution failed altogether *)
+						MatchQ[initialResolvedOptions, $Failed]
+					],
+					Return[{listedInputs, initialResolvedOptions, initialResolverInvalidInputs, initialResolverInvalidOptions, Cases[objectPackets, PacketP[]], initialOptionResolverTests}, Module]
+				];
+
+				(* Determine which positions in the inputs are creating new objects *)
+				inputPositionsCreatingNewObject = Position[listedInputs, Except[ObjectP[myType]], {1}, Heads -> False];
+
+				(* Filter down the inputs and options to just those creating new objects *)
+				inputsCreatingNewObjects = Extract[listedInputs, inputPositionsCreatingNewObject];
+				resolvedOptionsForInputsCreatingNewObjects = Extract[initialResolvedOptions, inputPositionsCreatingNewObject];
+
+				(* First, process the options to look like fields so that the comparison with existing objects works later *)
+				psuedoObjectPacketsForInputsCreatingNewObjects = Module[
+					{appendToFieldsQ, initialChangePacketLists, initialChangePackets},
+
+					(* Check if we're appending to fields (rather than replacing the whole contents *)
+					(* This doesn't currently matter as we don't compare multiples and we strip the Append/Replace anyway *)
+					appendToFieldsQ = Lookup[safeOptionsWithCache, Append, False];
+
+					(* Convert resolved options into change packets *)
+					(* Change packets can be a list for each as they may contain cloud file upload packets *)
+					initialChangePacketLists = Map[
+						generateChangePackets[myType, #, appendToFieldsQ] &,
+						resolvedOptionsForInputsCreatingNewObjects
+					];
+
+					(* Core upload packet is always the first one *)
+					initialChangePackets = First /@ initialChangePacketLists;
+
+					(* The packets are currently formatted for upload, including Append/Replace etc. Strip to make it look like they're downloaded *)
+					stripChangePacket[Append[#, Type -> myType]] & /@ initialChangePackets
+				];
+
+				(* Get the list of fields to check - we know for sure that this isn't empty *)
+				fieldListForDuplicateChecks = Lookup[duplicateCheckData, Field];
+
+				(* Perform the search and identify duplicate objects and which fields matched *)
+				(* Returned in the format {<|ob1 -> {field1, field2}, ob2 -> {field2, field2}|>, <||>, ...} *)
+				duplicatesDataByInput = Module[
+					{filteredPacketsWithNonNullValues},
+
+					(* Filter the packets down for each input so they only contain the fields to check *)
+					filteredPacketsWithNonNullValues = KeyTake[psuedoObjectPacketsForInputsCreatingNewObjects, fieldListForDuplicateChecks];
+
+					(* Perform the search for duplicates *)
+					(* Helper attempts to use the fastest method based on the search terms *)
+					duffDuplicateSearch[
+						myType,
+						filteredPacketsWithNonNullValues
+					]
+				];
+
+				(* If we have duplicate objects, handle that *)
+				(* This will return a list index matching the original inputs that create new objects *)
+				(* Null = no further action required, Whether invalid inputs/options are returned determines if we'll hard error *)
+				(* ObjectP[] = this is a duplicate we found and we want to automatically edit it *)
+				{newReplacementInputObjects, duplicateChecksInvalidInputs, duplicateChecksInvalidOptions} = If[
+					(* No duplicates => return already resolved options *)
+					(* So return Null for everything. No error, no recalculation *)
+					MatchQ[Flatten[Keys[duplicatesDataByInput]], {}],
+					{
+						ConstantArray[Null, Length[duplicatesDataByInput]],
+						{},
+						{}
+					},
+
+					(* Otherwise we have duplicates, so throw some messages *)
+					Module[
+						{
+							inputPositionsWithDuplicates, filteredInputsWithDuplicates, filteredDuplicateData, filteredResolvedOptionsWithDuplicates,
+							duplicateFieldsByObject, conflictOptions, conflictActions, postModificationNewInputs,
+							errorInvalidInputs, errorInvalidOptions, inputPositionsWithError, inputPositionsWithWarning,
+							inputPositionsWithModification, fieldsWithModificationAction, fieldsWithWarningAction, fieldsWithErrorAction,
+							postModificationInvalidInputs, postModificationInvalidOptions
+						},
+
+						(* First, determine which positions for the inputs have duplicates *)
+						inputPositionsWithDuplicates = Position[duplicatesDataByInput, Except[<||>], {1}, Heads -> False];
+
+						(* Pull out the corresponding inputs and duplicate objects *)
+						filteredInputsWithDuplicates = Extract[inputsCreatingNewObjects, inputPositionsWithDuplicates];
+						filteredDuplicateData = Extract[duplicatesDataByInput, inputPositionsWithDuplicates];
+						filteredResolvedOptionsWithDuplicates = Extract[psuedoObjectPacketsForInputsCreatingNewObjects, inputPositionsWithDuplicates];
+
+						(* Convert the duplicate associations into lists of rules *)
+						duplicateFieldsByObject = Normal[filteredDuplicateData, Association];
+
+						(* Get a list of the fields that had at least one conflict *)
+						conflictOptions = DeleteDuplicates[Flatten[Values[duplicateFieldsByObject]]];
+
+						(* Look up the developer specified action to take in each case. Default to warning *)
+						conflictActions = Lookup[
+							Function[opt,
+								SelectFirst[duplicateCheckData, MatchQ[Lookup[#, Field], opt] &, <||>]
+							] /@ conflictOptions,
+							Check,
+							Warning
+						];
+
+						(* Identify which input positions have which type of duplicate matches *)
+						(* If an Error, don't throw any other warning. If modifying, we don't need to throw the warning *)
+						fieldsWithModificationAction = PickList[conflictOptions, conflictActions, Modification];
+						fieldsWithWarningAction = PickList[conflictOptions, conflictActions, Warning];
+						fieldsWithErrorAction = PickList[conflictOptions, conflictActions, Error];
+
+						inputPositionsWithError = Position[duplicateFieldsByObject, _?(MemberQ[#, Alternatives @@ fieldsWithErrorAction, Infinity] &), {1}, Heads -> False];
+						inputPositionsWithModification = Complement[
+							Position[duplicateFieldsByObject, _?(MemberQ[#, Alternatives @@ fieldsWithModificationAction, Infinity] &), {1}, Heads -> False],
+							inputPositionsWithError
+						];
+						inputPositionsWithWarning = Complement[
+							Position[duplicateFieldsByObject, _?(MemberQ[#, Alternatives @@ fieldsWithWarningAction, Infinity] &), {1}, Heads -> False],
+							inputPositionsWithError,
+							inputPositionsWithModification
+						];
+
+						(* Throw modification warning first *)
+						{postModificationNewInputs, postModificationInvalidInputs, postModificationInvalidOptions} = Module[
+							{
+								inputsWithModifications, modificationDuplicates, modificationDuplicateData, modificationOptions
+
+							},
+
+							(* Filter down the lists *)
+							inputsWithModifications = Extract[filteredInputsWithDuplicates, inputPositionsWithModification];
+							modificationDuplicates = Extract[duplicateFieldsByObject, inputPositionsWithModification];
+							modificationOptions = Extract[filteredResolvedOptionsWithDuplicates, inputPositionsWithModification];
+
+							(* Return early if no inputs to modify *)
+							If[MatchQ[inputPositionsWithModification, {}],
+								Return[
+									{
+										ConstantArray[Null, Length[filteredInputsWithDuplicates]],
+										{},
+										{}
+									},
+									Module
+								]
+							];
+
+							(* For each input, pick out the duplicates that had modification fields *)
+							modificationDuplicateData = Map[
+								Cases[
+									#,
+									Rule[x_, y_?(MemberQ[#, Alternatives @@ fieldsWithModificationAction] &)] :> {x, Cases[y, Alternatives @@ fieldsWithModificationAction]}
+								] &,
+								modificationDuplicates
+							];
+
+							(* Throw an error if there's more than one molecule for any given input as we don't know what to modify *)
+							(* Otherwise throw the warning saying we're going to modify the existing objects rather than create new ones *)
+							If[GreaterQ[Max[Length /@ modificationDuplicateData], 1],
+								Module[{moreThanOneObjectQs, invalidInputs, invalidDuplicateData, invalidModificationOptions},
+
+									(* Which inputs have more than one object *)
+									moreThanOneObjectQs = GreaterQ[Length[#], 1] & /@ modificationDuplicateData;
+
+									invalidInputs = PickList[inputsWithModifications, moreThanOneObjectQs];
+									invalidDuplicateData = PickList[modificationDuplicateData, moreThanOneObjectQs];
+									invalidModificationOptions = PickList[modificationOptions, moreThanOneObjectQs];
+
+									(* Throw the message *)
+									Message[
+										Error::MultipleExistingObjects,
+										invalidInputs,
+										invalidDuplicateData[[All, All, 2]],
+										MapThread[
+											Function[{optionSet, fieldLists},
+												Lookup[optionSet, #] & /@ fieldLists
+											],
+											{invalidModificationOptions, invalidDuplicateData[[All, All, 2]]}
+										],
+										invalidDuplicateData[[All, All, 1]]
+									];
+
+									{
+										(* Doesn't matter what we return as we're not continuing anyway by throwing invalid inputs/options *)
+										ConstantArray[Null, Length[filteredInputsWithDuplicates]],
+										invalidInputs,
+										DeleteDuplicates[Flatten[invalidDuplicateData[[All, All, 2]]]]
+									}
+								],
+
+								(
+									Message[
+										Warning::ObjectAlreadyExists,
+										inputsWithModifications,
+										modificationDuplicateData[[All, 1, 2]],
+										MapThread[
+											Lookup[#1, #2] &,
+											{modificationOptions, modificationDuplicateData[[All, 1, 2]]}
+										],
+										modificationDuplicateData[[All, 1, 1]]
+									];
+									(* Return an index matched array containing the existing objects to modify, or Null *)
+									(* No invalid inputs/options as we want to continue *)
+									{
+										ReplacePart[
+											ConstantArray[Null, Length[filteredInputsWithDuplicates]],
+											AssociationThread[inputPositionsWithModification, modificationDuplicateData[[All, 1, 1]]]
+										],
+										{},
+										{}
+									}
+								)
+							]
+						];
+
+						(* Then throw general warning *)
+						Module[
+							{
+								inputsWithWarnings, warningDuplicates, warningDuplicateData, warningOptions
+							},
+
+							(* Filter down the lists *)
+							inputsWithWarnings = Extract[filteredInputsWithDuplicates, inputPositionsWithWarning];
+							warningDuplicates = Extract[duplicateFieldsByObject, inputPositionsWithWarning];
+							warningOptions = Extract[filteredResolvedOptionsWithDuplicates, inputPositionsWithWarning];
+
+							(* Return early if no inputs to warn *)
+							If[MatchQ[inputsWithWarnings, {}],
+								Return[
+									Null,
+									Module
+								]
+							];
+
+							(* For each input, pick out the duplicates that had warning fields *)
+							warningDuplicateData = Map[
+								Cases[
+									#,
+									Rule[x_, y_?(MemberQ[#, Alternatives @@ fieldsWithWarningAction] &)] :> {x, Cases[y, Alternatives @@ fieldsWithWarningAction]}
+								] &,
+								warningDuplicates
+							];
+
+							Message[
+								Warning::DuplicateObjects,
+								inputsWithWarnings,
+								warningDuplicateData[[All, 1, 2]],
+								MapThread[
+									Lookup[#1, #2] &,
+									{warningOptions, warningDuplicateData[[All, 1, 2]]}
+								],
+								warningDuplicateData[[All, 1, 1]]
+							];
+
+							(* Return an index matched array containing the existing objects to modify, or Null *)
+							(* No invalid inputs/options as we want to continue *)
+							{
+								ReplacePart[
+									ConstantArray[Null, Length[filteredInputsWithDuplicates]],
+									AssociationThread[inputPositionsWithWarning, warningDuplicateData[[All, 1, 1]]]
+								],
+								{},
+								{}
+							}
+						];
+
+						(* Then finally throw hard error *)
+						{errorInvalidInputs, errorInvalidOptions} = Module[
+							{
+								inputsWithErrors, errorDuplicates, errorDuplicateData, errorOptions
+							},
+
+							(* Filter down the lists *)
+							inputsWithErrors = Extract[filteredInputsWithDuplicates, inputPositionsWithError];
+							errorDuplicates = Extract[duplicateFieldsByObject, inputPositionsWithError];
+							errorOptions = Extract[filteredResolvedOptionsWithDuplicates, inputPositionsWithError];
+
+							(* Return early if no inputs to warn *)
+							If[MatchQ[inputsWithErrors, {}],
+								Return[
+									{{}, {}},
+									Module
+								]
+							];
+
+							(* For each input, pick out the duplicates that had error fields *)
+							errorDuplicateData = Map[
+								Cases[
+									#,
+									Rule[x_, y_?(MemberQ[#, Alternatives @@ fieldsWithErrorAction] &)] :> {x, Cases[y, Alternatives @@ fieldsWithErrorAction]}
+								] &,
+								errorDuplicates
+							];
+
+							Message[
+								Error::DuplicateObjects,
+								inputsWithErrors,
+								errorDuplicateData[[All, 1, 2]],
+								MapThread[
+									Lookup[#1, #2] &,
+									{errorOptions, errorDuplicateData[[All, 1, 2]]}
+								],
+								errorDuplicateData[[All, 1, 1]]
+							];
+
+							(* Just return the invalid inputs/options in this case as we won't continue *)
+							{
+								inputsWithErrors,
+								DeleteDuplicates[Flatten[errorDuplicateData[[All, 1, 2]]]]
+							}
+						];
+
+						(* Return the new inputs list *)
+						{
+							(* Return the new object if we found one to modify, and return Null for other inputs *)
+							ReplacePart[
+								ConstantArray[Null, Length[duplicatesDataByInput]],
+								AssociationThread[inputPositionsWithDuplicates, postModificationNewInputs]
+							],
+							Flatten[{postModificationInvalidInputs, errorInvalidInputs}],
+							Flatten[{postModificationInvalidOptions, errorInvalidOptions}]
+						}
+					]
+				];
+
+				(* If there are objects we're modifying, re-resolve those options *)
+				{updatedInputs, newInputReresolvedOptions, newInputInvalidInputs, newInputsInvalidOptions, newInputsCache, newOptionResolverTests} = If[MemberQ[newReplacementInputObjects, ObjectP[]],
+					Module[
+						{
+							inputPositionsToReresolve, newInputObjectsOnly, newInputObjectsSafeOptions, newInputObjectsSpecifiedOptions,
+							reresolvedOutput, reresolvedOptionSubset, reresolvedInvalidInputs, reresolvedInvalidOptions, modificationObjectPackets,
+							reresolvedOptionResolverTests
+						},
+
+						(* First identify the positions to re-resolve options for *)
+						inputPositionsToReresolve = Position[newReplacementInputObjects, ObjectP[], {1}, Heads -> False];
+
+						(* Pick out the objects *)
+						newInputObjectsOnly = Extract[newReplacementInputObjects, inputPositionsToReresolve];
+
+						(* Need to download the full packets for any objects we're modifying and add to the cache *)
+						modificationObjectPackets = downloadDuffPackets[
+							newInputObjectsOnly,
+							cache,
+							simulation
+						];
+
+						(* Pick out the options and update the cache *)
+						{newInputObjectsSafeOptions, newInputObjectsSpecifiedOptions} = Map[
+							Function[optionSet,
+								Module[
+									{optionSubset},
+
+									(* Extract the options for the inputs we're re-running *)
+									optionSubset = Extract[optionSet, inputPositionsToReresolve];
+
+									(* Update the cache *)
+									ReplaceRule[#, Cache -> modificationObjectPackets] & /@ optionSubset
+								]
+							],
+							{mapThreadSafeOptionsWithCache, mapThreadSpecifiedOptionsWithCache}
+						];
+
+						(* Re-resolve the options only for those inputs *)
+						reresolvedOutput = optionResolverFunction[
+							myType,
+							newInputObjectsOnly,
+							newInputObjectsSafeOptions,
+							newInputObjectsSpecifiedOptions
+						];
+
+						(* Split the output *)
+						{reresolvedOptionSubset, reresolvedInvalidInputs, reresolvedInvalidOptions, reresolvedOptionResolverTests} = Lookup[reresolvedOutput, {Result, InvalidInputs, InvalidOptions, Tests}];
+
+						(* Punch the re-resolved options back into their correct positions in the list of inputs creating new objects *)
+						{
+							ReplacePart[
+								inputsCreatingNewObjects,
+								AssociationThread[inputPositionsToReresolve, newInputObjectsOnly]
+							],
+							ReplacePart[
+								resolvedOptionsForInputsCreatingNewObjects,
+								AssociationThread[inputPositionsToReresolve, reresolvedOptionSubset]
+							],
+							reresolvedInvalidInputs,
+							reresolvedInvalidOptions,
+							modificationObjectPackets,
+							reresolvedOptionResolverTests
+						}
+					],
+
+					(* If no objects to re-resolve options for, just pass through the initially resolved options *)
+					{
+						inputsCreatingNewObjects,
+						resolvedOptionsForInputsCreatingNewObjects,
+						{},
+						{},
+						{},
+						initialOptionResolverTests
+					}
+				];
+
+				(* Reassemble the inputs/options in the correct index-matching order, with the re-resolved options superseding any initially resolved options *)
+				(* Currently they index match inputs that are creating new objects only *)
+				finallyResolvedInputs = ReplacePart[
+					listedInputs,
+					AssociationThread[inputPositionsCreatingNewObject, updatedInputs]
+				];
+
+				(* If we returned invalid inputs and options specifically from the duplicate check, rather than options resolution, torpedo the whole thing early *)
+				(* This means a user won't get to the option resolver part of the command builder *)
+				finallyResolvedOptions = If[And[MatchQ[duplicateChecksInvalidInputs, {}], MatchQ[duplicateChecksInvalidOptions, {}]],
+					ReplacePart[
+						initialResolvedOptions,
+						AssociationThread[inputPositionsCreatingNewObject, newInputReresolvedOptions]
+					],
+					$Failed
+				];
+
+				(* Return the resolved options and any invalid inputs and options. Also updated input object cache *)
+				{
+					finallyResolvedInputs,
+					finallyResolvedOptions,
+					Flatten[{initialResolverInvalidInputs, duplicateChecksInvalidInputs, newInputInvalidInputs}],
+					Flatten[{initialResolverInvalidOptions, duplicateChecksInvalidOptions, newInputsInvalidOptions}],
+					Experiment`Private`FlattenCachePackets[{
+						objectPackets,
+						newInputsCache
+					}],
+					newOptionResolverTests
+				}
+			];
+
+			(* Exit early if there was a fatal error with option resolution *)
+			If[Or[MatchQ[resolvedOptions, $Failed], MemberQ[resolvedOptions, $Failed]],
+				(
+					If[Length[resolvedOptionsInvalidInputs] > 0,
+						Message[Error::InvalidInput, ToString[resolvedOptionsInvalidInputs]];
+					];
+
+					If[Length[resolvedOptionsInvalidOptions] > 0,
+						Message[Error::InvalidOption, ToString[resolvedOptionsInvalidOptions]];
+					];
+
+					Return[outputSpecification /. {
+						Result -> $Failed,
+						Options -> $Failed,
+						Tests -> Join[safeOptionTests, validLengthTests, specifiedObjectsExistTests, optionResolverTests],
+						Preview -> Null
+					}]
+				)
 			];
 
 			(* Collapse and filter the resolved options *)
 			collapsedResolvedOptions = CollapseIndexMatchedOptions[
 				myFunction,
 				RemoveHiddenOptions[
-					UploadSampleModel,
+					myFunction,
 					Replace[Merge[resolvedOptions, Identity], Association -> List, {1}, Heads -> True]
 				],
 				Ignore -> listedOptions,
@@ -6185,255 +8117,249 @@ InstallDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[Instal
 
 
 			(* Generate the upload packets from the resolved options *)
-			uploadPackets = Module[
-				{appendToFieldsQ, initialChangePackets, fullChangePackets},
 
-				(* Check if we're appending to fields (rather than replacing the whole contents *)
-				appendToFieldsQ = Lookup[safeOptionsWithCache, Append, False];
+			(* Check if we're appending to fields (rather than replacing the whole contents *)
+			appendToFieldsQ = Lookup[safeOptionsWithCache, Append, False];
 
-				(* Convert resolved options into change packets *)
-				initialChangePackets = MapThread[
-					With[{objectPacket = Experiment`Private`fetchPacketFromCache[#1, Lookup[safeOptionsWithCache, Cache]]},
-						If[MatchQ[objectPacket, PacketP[]],
-							(* If modifying an existing object, feed in the packet for the existing object *)
-							generateChangePacket[myType, #2, appendToFieldsQ, ExistingPacket -> objectPacket],
-
-							(* Otherwise, just pass in the resolved options *)
-							generateChangePacket[myType, #2, appendToFieldsQ]
-						]
-					] &,
-					{First[expandedInputs], resolvedOptions}
-				];
-
-				(* Create a new object reference for the object, or sub in the existing one if modifying an existing object *)
-				fullChangePackets = MapThread[
-					If[MatchQ[#1, ObjectP[myType]],
-						Append[#2, Object -> Download[#1, Object]],
-						Append[#2, Object -> CreateID[myType]]
-					] &,
-					{First[expandedInputs], initialChangePackets}
-				]
+			{uploadPackets, auxilliaryUploadPackets, uploadPacketsInvalidOptions} = packetFunction[
+				myType,
+				resolvedInputs,
+				resolvedOptions,
+				Append -> appendToFieldsQ,
+				ExistingPacket -> resolvedInputObjectPackets
 			];
 
+			(* Exit early if there was a fatal error when constructing packets *)
+			If[MatchQ[uploadPackets, $Failed],
+				Return[outputSpecification /. {
+					Result -> $Failed,
+					Options -> $Failed,
+					Tests -> Join[safeOptionTests, validLengthTests, specifiedObjectsExistTests, optionResolverTests],
+					Preview -> Null
+				}]
+			];
 
 			(* Now create upload packets for any auxilliary changes, if needed *)
 			(* The default function returns an empty list *)
-			auxilliaryPackets = auxPacketsFunction[myType, listedInputs, listedOptionsWithCache, resolvedOptions];
+			auxilliaryPackets = auxPacketsFunction[myType, resolvedInputs, listedOptionsWithCache, resolvedOptions];
 
 
 			(* Perform error checking using VOQ system *)
 			(* VOQ test failures will generate messages themselves directly *)
-			{voqTestResults, voqTests, voqInvalidInputs, voqInvalidOptions} = Module[
-				{pseudoObjectPackets, pseudoObjectPacketsWithoutRuleDelayeds, voqTestLists, voqResults, invalidOptions, invalidInputs},
+			{voqTestResults, voqTests, voqInvalidInputs, voqInvalidOptions} = If[TrueQ[runVOQTestsQ],
+				Module[
+					{pseudoObjectPackets, pseudoObjectPacketsWithoutRuleDelayeds, voqTestLists, voqResults, invalidOptions, invalidInputs},
 
-				(* Convert the upload packets into packets that look like a real object, such as removing Append/Replace *)
-				(* The new packet includes all fields including those with Null/{} value that were excluded from the change packet. *)
-				(* If we're modifying an existing object, we merge that packet with our change packet *)
-				pseudoObjectPackets = MapThread[
-					Function[{inp, inpPack},
-						With[{objectPacket = Experiment`Private`fetchPacketFromCache[inp, Lookup[listedOptionsWithCache, Cache]]},
-							If[MatchQ[objectPacket, PacketP[]],
-								stripChangePacket[Append[inpPack, Type -> myType], ExistingPacket -> objectPacket],
-								stripChangePacket[Append[inpPack, Type -> myType]]
-							]
-						]
-					],
-					{listedInputs, uploadPackets}
-				];
-
-				(* Remove rule delayeds from the packet *)
-				pseudoObjectPacketsWithoutRuleDelayeds = Module[
-					{ruleLists, ruleListsWithoutRuleDelayeds},
-
-					(* Convert the associations into lists of rules, as we can't filter by rule type in an association *)
-					ruleLists = Replace[pseudoObjectPackets, Association -> List, {2}, Heads -> True];
-
-					(* Remove the rule delayeds *)
-					ruleListsWithoutRuleDelayeds = DeleteCases[ruleLists, _RuleDelayed, {2}];
-
-					(* Convert back into associations and return *)
-					Association @@@ ruleListsWithoutRuleDelayeds
-				];
-
-				(* Get the tests for each input *)
-				voqTestLists = ValidObjectQ`Private`testsForPacket /@ pseudoObjectPacketsWithoutRuleDelayeds;
-
-				(* Run the VOQ tests for each input *)
-				{voqResults, invalidInputs, invalidOptions} = Module[
-					{
-						testEvaluationData, testMessageData, passingQs, messagesQs, messageRulesGrouped, invalidOptionMap,
-						invalidOptions, messageRulesWithoutInvalidInput, messageRulesWithoutRequiredOptions
-					},
-
-					(* Run the tests *)
-					(* This actually throws messages directly *)
-					(* The custom error handling is reproduced from the previous code - it prevents the messages being thrown multiple times in the map *)
-					(* so they can be combined later. But it's rather nasty redefining Message and can lead to weird side effects when anything *)
-					(* within the error handling block is relying on what a message is (such as Check) *)
-					(* But it does hide the mapped messages from Command Center when it calls the whole upload function wrapped in EvaluationData *)
-					{testEvaluationData, testMessageData} = Internal`InheritedBlock[{Message, $InMsg = False},
-						Module[{voqMessageList, evaluationData},
-
-							(* Deprotect Message so that we can modify the downvalues. Ouch *)
-							Unprotect[Message];
-
-							(* Actually run the voq tests for each of the upload packets *)
-							{evaluationData, voqMessageList} = Transpose[Block[
-								{ECL`$UnitTestMessages = True},
-								Module[{messageList, evaluationOutput},
-
-									(* Create a list to store details about the messages in *)
-									messageList = {};
-
-									(* Set a conditional downvalue for the Message function, directing the information to our message list *)
-									(* Record the message if it has an Error:: or Warning:: head. *)
-									Message[msg_, vars___] /; !$InMsg := Block[{$InMsg = True},
-										If[MatchQ[HoldForm[msg], HoldForm[MessageName[Error | Warning, _]]],
-
-											(* If it's an error or warning, capture it and don't display *)
-											AppendTo[messageList, {HoldForm[msg], vars}];
-
-											(* If it's a different type of message, throw it as normal *)
-											Message[msg, vars]
-										]
-									];
-
-									(* Run the tests. Quiet other messages but we'll still capture our messages of interest *)
-									evaluationOutput = Quiet[EvaluationData[RunUnitTest[<|"Function" -> #|>, OutputFormat -> SingleBoolean, Verbose -> False]]];
-
-									(* Return the output and details of the messages thrown *)
-									{evaluationOutput, messageList}
-								]& /@ voqTestLists
-							]];
-
-							(* Return the evaluation data and the list of messages thrown *)
-							{
-								evaluationData,
-								voqMessageList
-							}
-						]
-					];
-
-					(* Combine the captured messages so that they become listable and avoid duplicated messages *)
-					(* i.e. rather than "Input A is invalid" and "Input B is invalid" we say "Inputs A and B are invalid" *)
-
-					(* Build a map of messages and which inputs they were thrown for. Group together our message rules. *)
-					messageRulesGrouped = Module[
-						{messageRules},
-
-						messageRules = Flatten@Map[
-							Function[{inputMessageList},
-								Function[{inputMessage},
-									ToString[First[inputMessage]] -> Rest[inputMessage]
-								] /@ inputMessageList
-							],
-							testMessageData
-						];
-
-						Merge[
-							messageRules,
-							Transpose
-						]
-					];
-
-					(* Lookup the map from invalid option error message type to the list of invalid options that triggered it *)
-					(* e.g. <|"Error::NameIsNotPartOfSynonyms" -> {Name, Synonyms}|> *)
-					invalidOptionMap = lookupInvalidOptionMap[myType];
-
-					(* Get the options that are invalid. *)
-					invalidOptions = Cases[DeleteDuplicates[Flatten[Function[{messageName},
-						(* If we're dealing with "Error::RequiredOptions", only count the options that are Null. *)
-						If[MatchQ[messageName, "Error::RequiredOptions"],
-							(* Only count the ones that are Null. *)
-							Module[{allPossibleOptions},
-								allPossibleOptions = Lookup[invalidOptionMap, messageName];
-
-								(* We may have multiple Outputs requested from our result, so Flatten first and pull out the rules to get the options. *)
-								(
-									If[MemberQ[Lookup[Cases[Flatten[resolvedOptions], _Rule], #, Null], Null],
-										#,
-										Nothing
-									]
-										&) /@ allPossibleOptions
-							],
-							(* ELSE: Just lookup like normal. *)
-							Lookup[invalidOptionMap, messageName, Null]
-						]
-					] /@ Keys[messageRulesGrouped]]], Except[_String | Null]];
-
-					(* Get inputs that are invalid *)
-					invalidInputs = First[Lookup[messageRulesGrouped, "Error::InvalidInput", {{}}]];
-
-					(* Drop the invalid input messages *)
-					messageRulesWithoutInvalidInput = KeyDrop[messageRulesGrouped, "Error::InvalidInput"];
-
-					(* Throw Error::RequiredOptions separately. This is so that we can delete duplicates on the first `1`. *)
-					messageRulesWithoutRequiredOptions = If[KeyExistsQ[messageRulesWithoutInvalidInput, "Error::RequiredOptions"],
-						Message[
-							Error::RequiredOptions,
-							(* Flatten all of the options that are required. *)
-							ToString[DeleteDuplicates[Flatten[messageRulesWithoutInvalidInput["Error::RequiredOptions"][[1]]]]],
-
-							(* Also delete duplicates for the inputs. *)
-							ToString[DeleteDuplicates[Flatten[messageRulesWithoutInvalidInput["Error::RequiredOptions"][[2]]]]]
-						];
-						KeyDrop[messageRulesWithoutInvalidInput, "Error::RequiredOptions"],
-						messageRulesWithoutInvalidInput
-					];
-
-					(* Throw the listable versions of the Error and Warning messages. *)
-					(
-						Module[{messageName, messageContents, messageNameHead, messageNameTag},
-							messageName = #[[1]];
-							messageContents = #[[2]];
-
-							(* First, get the message name head and tag.*)
-							messageNameHead = ToExpression[First[StringCases[messageName, x___ ~~ "::" ~~ ___ :> x]]];
-							messageNameTag = First[StringCases[messageName, ___ ~~ "::" ~~ x___ :> x]];
-
-							(* Ignore Warning::UnknownOption since this is quieted in RunUnitTest but we're catching all messages. *)
-							(* Also ignore Error::UnsupportedPolymers *)
-							If[!MatchQ[messageName, "Warning::UnknownOption" | "Error::UnsupportedPolymers"],
-								(* Throw the listable message. *)
-								With[{insertMe1 = messageNameHead, insertMe2 = messageNameTag}, Message[MessageName[insertMe1, insertMe2], Sequence @@ (ToString[DeleteDuplicates[#]]& /@ messageContents)]];
-							];
-
-						] &
-					) /@ Normal[messageRulesWithoutRequiredOptions];
-
-
-
-					(* Did the tests pass? *)
-					passingQs = Lookup[testEvaluationData, "Result"];
-
-					(* Did the tests throw messages? (Either directly, or captured) *)
-					messagesQs = MapThread[
-						!MatchQ[{#1, #2}, {{}, {}}] &,
-						{Lookup[testEvaluationData, "Messages"], testMessageData}
-					];
-
-					(* If VOQ didn't pass but also didn't throw any messages, call again with Verbose -> Failures to display the failures VOQ style *)
-					MapThread[
-						Function[{tests, passingQ, messageQ},
-							If[!passingQ && !messageQ,
-								RunUnitTest[<|"Function" -> tests|>, Verbose -> Failures]
+					(* Convert the upload packets into packets that look like a real object, such as removing Append/Replace *)
+					(* The new packet includes all fields including those with Null/{} value that were excluded from the change packet. *)
+					(* If we're modifying an existing object, we merge that packet with our change packet *)
+					pseudoObjectPackets = MapThread[
+						Function[{inp, inpPack},
+							With[{objectPacket = Experiment`Private`fetchPacketFromCache[inp, resolvedInputObjectPackets]},
+								If[MatchQ[objectPacket, PacketP[]],
+									stripChangePacket[Append[inpPack, Type -> myType], ExistingPacket -> objectPacket],
+									stripChangePacket[Append[inpPack, Type -> myType]]
+								]
 							]
 						],
-						{voqTestLists, passingQs, messagesQs}
+						{resolvedInputs, uploadPackets}
 					];
 
-					(* Return the VOQ results, invalid inputs and options *)
-					{passingQs, invalidInputs, invalidOptions}
-				];
+					(* Remove rule delayeds from the packet *)
+					pseudoObjectPacketsWithoutRuleDelayeds = Module[
+						{ruleLists, ruleListsWithoutRuleDelayeds},
 
-				(* Return the VOQ results and the tests *)
-				{voqResults, Flatten[voqTestLists], invalidInputs, invalidOptions}
+						(* Convert the associations into lists of rules, as we can't filter by rule type in an association *)
+						ruleLists = Replace[pseudoObjectPackets, Association -> List, {2}, Heads -> True];
+
+						(* Remove the rule delayeds *)
+						ruleListsWithoutRuleDelayeds = DeleteCases[ruleLists, _RuleDelayed, {2}];
+
+						(* Convert back into associations and return *)
+						Association @@@ ruleListsWithoutRuleDelayeds
+					];
+
+					(* Run the VOQ tests for each input *)
+					{voqResults, invalidInputs, invalidOptions, voqTestLists} = Module[
+						{
+							testEvaluationData, testMessageData, passingQs, messagesQs, messageRulesGrouped, invalidOptionMap,
+							invalidOptions, messageRulesWithoutInvalidInput, messageRulesWithoutRequiredOptions, allVOQTests
+						},
+
+						(* Get the tests for each input *)
+						allVOQTests = ValidObjectQ`Private`testsForPacket /@ pseudoObjectPacketsWithoutRuleDelayeds;
+
+						(* Run the tests *)
+						(* This actually throws messages directly *)
+						(* The custom error handling is reproduced from the previous code - it prevents the messages being thrown multiple times in the map *)
+						(* so they can be combined later. But it's rather nasty redefining Message and can lead to weird side effects when anything *)
+						(* within the error handling block is relying on what a message is (such as Check) *)
+						(* But it does hide the mapped messages from Command Center when it calls the whole upload function wrapped in EvaluationData *)
+						{testEvaluationData, testMessageData} = Internal`InheritedBlock[{Message, $InMsg = False},
+							Module[{voqMessageList, evaluationData},
+
+								(* Deprotect Message so that we can modify the downvalues. Ouch *)
+								Unprotect[Message];
+
+								(* Actually run the voq tests for each of the upload packets *)
+								{evaluationData, voqMessageList} = Transpose[Block[
+									{ECL`$UnitTestMessages = True},
+									Module[{messageList, evaluationOutput},
+
+										(* Create a list to store details about the messages in *)
+										messageList = {};
+
+										(* Set a conditional downvalue for the Message function, directing the information to our message list *)
+										(* Record the message if it has an Error:: or Warning:: head. *)
+										Message[msg_, vars___] /; !$InMsg := Block[{$InMsg = True},
+											If[MatchQ[HoldForm[msg], HoldForm[MessageName[Error | Warning, _]]],
+
+												(* If it's an error or warning, capture it and don't display *)
+												AppendTo[messageList, {HoldForm[msg], vars}];
+
+												(* If it's a different type of message, throw it as normal *)
+												Message[msg, vars]
+											]
+										];
+
+										(* Run the tests. Quiet other messages but we'll still capture our messages of interest *)
+										evaluationOutput = Quiet[EvaluationData[RunUnitTest[<|"Function" -> #|>, OutputFormat -> SingleBoolean, Verbose -> False]]];
+
+										(* Return the output and details of the messages thrown *)
+										{evaluationOutput, messageList}
+									]& /@ allVOQTests
+								]];
+
+								(* Return the evaluation data and the list of messages thrown *)
+								{
+									evaluationData,
+									voqMessageList
+								}
+							]
+						];
+
+						(* Combine the captured messages so that they become listable and avoid duplicated messages *)
+						(* i.e. rather than "Input A is invalid" and "Input B is invalid" we say "Inputs A and B are invalid" *)
+
+						(* Build a map of messages and which inputs they were thrown for. Group together our message rules. *)
+						messageRulesGrouped = Module[
+							{messageRules},
+
+							messageRules = Flatten@Map[
+								Function[{inputMessageList},
+									Function[{inputMessage},
+										ToString[First[inputMessage]] -> Rest[inputMessage]
+									] /@ inputMessageList
+								],
+								testMessageData
+							];
+
+							Merge[
+								messageRules,
+								Transpose
+							]
+						];
+
+						(* Lookup the map from invalid option error message type to the list of invalid options that triggered it *)
+						(* e.g. <|"Error::NameIsNotPartOfSynonyms" -> {Name, Synonyms}|> *)
+						invalidOptionMap = lookupInvalidOptionMap[myType];
+
+						(* Get the options that are invalid. *)
+						invalidOptions = Cases[DeleteDuplicates[Flatten[Function[{messageName},
+							(* If we're dealing with "Error::RequiredOptions", only count the options that are Null. *)
+							If[MatchQ[messageName, "Error::RequiredOptions"],
+								(* Only count the ones that are Null. *)
+								Module[{allPossibleOptions},
+									allPossibleOptions = Lookup[invalidOptionMap, messageName];
+
+									(* We may have multiple Outputs requested from our result, so Flatten first and pull out the rules to get the options. *)
+									(
+										If[MemberQ[Lookup[Cases[Flatten[resolvedOptions], _Rule], #, Null], Null],
+											#,
+											Nothing
+										]
+											&) /@ allPossibleOptions
+								],
+								(* ELSE: Just lookup like normal. *)
+								Lookup[invalidOptionMap, messageName, Null]
+							]
+						] /@ Keys[messageRulesGrouped]]], Except[_String | Null]];
+
+						(* Get inputs that are invalid *)
+						invalidInputs = First[Lookup[messageRulesGrouped, "Error::InvalidInput", {{}}]];
+
+						(* Drop the invalid input messages *)
+						messageRulesWithoutInvalidInput = KeyDrop[messageRulesGrouped, "Error::InvalidInput"];
+
+						(* Throw Error::RequiredOptions separately. This is so that we can delete duplicates on the first `1`. *)
+						messageRulesWithoutRequiredOptions = If[KeyExistsQ[messageRulesWithoutInvalidInput, "Error::RequiredOptions"],
+							Message[
+								Error::RequiredOptions,
+								(* Flatten all of the options that are required. *)
+								ToString[DeleteDuplicates[Flatten[messageRulesWithoutInvalidInput["Error::RequiredOptions"][[1]]]]],
+
+								(* Also delete duplicates for the inputs. *)
+								ToString[DeleteDuplicates[Flatten[messageRulesWithoutInvalidInput["Error::RequiredOptions"][[2]]]]]
+							];
+							KeyDrop[messageRulesWithoutInvalidInput, "Error::RequiredOptions"],
+							messageRulesWithoutInvalidInput
+						];
+
+						(* Throw the listable versions of the Error and Warning messages. *)
+						(
+							Module[{messageName, messageContents, messageNameHead, messageNameTag},
+								messageName = #[[1]];
+								messageContents = #[[2]];
+
+								(* First, get the message name head and tag.*)
+								messageNameHead = ToExpression[First[StringCases[messageName, x___ ~~ "::" ~~ ___ :> x]]];
+								messageNameTag = First[StringCases[messageName, ___ ~~ "::" ~~ x___ :> x]];
+
+								(* Ignore Warning::UnknownOption since this is quieted in RunUnitTest but we're catching all messages. *)
+								(* Also ignore Error::UnsupportedPolymers *)
+								If[!MatchQ[messageName, "Warning::UnknownOption" | "Error::UnsupportedPolymers"],
+									(* Throw the listable message. *)
+									With[{insertMe1 = messageNameHead, insertMe2 = messageNameTag}, Message[MessageName[insertMe1, insertMe2], Sequence @@ (ToString[DeleteDuplicates[#]]& /@ messageContents)]];
+								];
+
+							] &
+						) /@ Normal[messageRulesWithoutRequiredOptions];
+
+
+
+						(* Did the tests pass? *)
+						passingQs = Lookup[testEvaluationData, "Result"];
+
+						(* Did the tests throw messages? (Either directly, or captured) *)
+						messagesQs = MapThread[
+							!MatchQ[{#1, #2}, {{}, {}}] &,
+							{Lookup[testEvaluationData, "Messages"], testMessageData}
+						];
+
+						(* If VOQ didn't pass but also didn't throw any messages, call again with Verbose -> Failures to display the failures VOQ style *)
+						MapThread[
+							Function[{tests, passingQ, messageQ},
+								If[!passingQ && !messageQ,
+									RunUnitTest[<|"Function" -> tests|>, Verbose -> Failures]
+								]
+							],
+							{allVOQTests, passingQs, messagesQs}
+						];
+
+						(* Return the VOQ results, invalid inputs and options *)
+						{passingQs, invalidInputs, invalidOptions, allVOQTests}
+					];
+
+					(* Return the VOQ results and the tests *)
+					{voqResults, Flatten[voqTestLists], invalidInputs, invalidOptions}
+				],
+				{ConstantArray[True, Length[listedInputs]], {}, {}, {}}
 			];
 
 
 			(* Combine the lists of invalid inputs and invalid options *)
 			allInvalidInputs = DeleteDuplicates[Join[resolvedOptionsInvalidInputs, voqInvalidInputs]];
-			allInvalidOptions = Sort[DeleteDuplicates[Join[resolvedOptionsInvalidOptions, voqInvalidOptions]]];
+			allInvalidOptions = Sort[DeleteDuplicates[Join[resolvedOptionsInvalidOptions, uploadPacketsInvalidOptions, voqInvalidOptions]]];
 
 			If[Length[allInvalidInputs] > 0,
 				Message[Error::InvalidInput, ToString[allInvalidInputs]];
@@ -6455,7 +8381,7 @@ InstallDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[Instal
 
 			(* Tests *)
 			testsRule = Tests -> If[MemberQ[output, Tests],
-				Join[safeOptionTests, validLengthTests, voqTests],
+				Join[safeOptionTests, validLengthTests, specifiedObjectsExistTests, optionResolverTests, voqTests],
 				Null
 			];
 
@@ -6466,11 +8392,11 @@ InstallDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[Instal
 
 					(* If we failed to resolve options, return Null *)
 					If[Or[Length[allInvalidInputs] > 0, Length[allInvalidOptions] > 0],
-						Return[Null, Module]
+						Return[$Failed, Module]
 					];
 
 					(* Otherwise combine all the upload packets *)
-					allUploadPackets = Flatten[{uploadPackets, auxilliaryPackets}];
+					allUploadPackets = Flatten[{uploadPackets, auxilliaryUploadPackets, auxilliaryPackets}];
 
 					(* If not uploading, return the packets *)
 					If[!TrueQ[Lookup[safeOptions, Upload]],
@@ -6483,7 +8409,7 @@ InstallDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[Instal
 					(* If upload was successful, return the list of core objects created/modified. Otherwise return Null *)
 					If[MatchQ[uploadResult, {ObjectReferenceP[]...}],
 						Cases[uploadResult, ObjectP[myType]],
-						Null
+						$Failed
 					]
 				],
 
@@ -6498,9 +8424,263 @@ InstallDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[Instal
 		myFunction[myInput : singletonFunctionPattern, myOptions : OptionsPattern[myFunction]] := Replace[
 			myFunction[{myInput}, myOptions],
 			(* Remove the listedness of any molecule in the Result *)
-			x : {ObjectReferenceP[myType]} :> First[x]
+			x : {ObjectReferenceP[myType]} :> First[x],
+			{0, 1} (* Level 0 if Output -> Result, Level 1 if a list of outputs *)
 		];
 
+	]
+];
+
+(* iDUFF helpers *)
+downloadDuffPackets[objects : {ObjectP[]...}, cache_, simulation_] := Module[
+	{types, typeFields, fullDownloadFields},
+
+	(* This is required as the objects may be subtype of myType and we need to download all the fields. This is specifically important for Model[Sample,StockSolution] *)
+	types = Download[objects, Type];
+
+	(* fields without computable fields *)
+	typeFields = Map[
+		(
+			(* Objects field can be large and we don't really use it for duff. Exclude that to speed up the download *)
+			# -> {Packet @@ DeleteCases[Experiment`Private`noComputableFieldsList[#], Objects]}
+		)&,
+		DeleteDuplicates[types]
+	];
+
+	fullDownloadFields = types /. typeFields;
+
+	(* need to Flatten here to get a flat list of packets *)
+	Experiment`Private`FlattenCachePackets[
+		Quiet[
+			Download[
+				objects,
+				fullDownloadFields,
+				Cache -> cache,
+				Simulation -> simulation
+			],
+			{Download::MissingCacheField}
+		]
+	]
+];
+
+(* Search for duplicate objects in an efficient way *)
+(* Returns duplicates index matching the conditions in {<|ob1 -> {field1, field2}, ob2 -> {field2, field2}|>, <||>, <||>} format *)
+DefineOptions[duffDuplicateSearch,
+	Options :>{
+		{
+			OptionName -> MaxResults,
+			Default -> 10,
+			AllowNull -> False,
+			Pattern :> GreaterEqualP[1, 1],
+			Description -> "The max number of duplicates to return per search term.",
+			Category -> "Organizational Information"
+		}
+	}
+];
+
+duffDuplicateSearch[
+	myType : TypeP[], (* Type of the objects *)
+	myConditionsAssociations : {_Association...}, (* Association for each input. Containing the fields to check and their values e.g. <|Field1 -> value1, Field2 -> Value2|> *)
+	myOptions : OptionsPattern[duffDuplicateSearch]
+] := Module[
+	{
+		safeOptions, maxResultsOption, slowSearchWorkaroundThreshold, sanitizedConditionsRules, uniqueSearchConditions,
+		numberOfUniqueSearchConditions, nonEmptyPositionNumbers, nonEmptyConditions, nonEmptyDuplicateInformation
+	},
+
+	(* Handle the options *)
+	safeOptions = SafeOptions[duffDuplicateSearch, ToList[myOptions]];
+	maxResultsOption = Lookup[safeOptions, MaxResults];
+
+	(* The reason this helper exists is because Search slows down considerably based on the length of the first argument (types) *)
+	(* As a rough rule, evaluation time increases linearly with the length of that argument. Very different to Download *)
+	(* Typically *)
+	(* Search[type, conditions] -> 0.2s *)
+	(* Search[{type1, type2}, {conditions1, conditions2}] -> 0.4s *)
+	(* etc *)
+	(* This is a problem for checking for duplicates which match any one of the duplicate fields because the simplest way to write the search is *)
+	(* {duplicatesOnFactor1, duplicatesOnFactor2, ..., duplicatesOnFactorN} = Search[{type1, type2, ..., typeN}, {Field1==value1, Field2==value2, ..., FieldN==valueN}] *)
+	(* Which tells us directly which field resulted in which duplicates *)
+	(* But for UploadMolecule we test for duplicates on 6 fields which are reliably populated by PubChem, so this list can easily get very long and very slow *)
+	(* Instead, we search *)
+	(* duplicatesByAllFactors = Search[type, Or @@ allFactors] *)
+	(* Which gets us a list of all duplicates, but not why it's a duplicate *)
+	(* Then Download the field values for all the fields of interest and match those up with the conditions for each input to get what we want *)
+
+	(* Variable to determine number of search conditions required to switch the search method *)
+	slowSearchWorkaroundThreshold = 4;
+
+	(* First, filter the conditions associations to ensure that they don't contain Nulls/{} *)
+	(* Also convert from association to rules. We need easy access to both the fields and values, as well as handling duplicate keys later *)
+	sanitizedConditionsRules = Map[
+		Function[association,
+			Normal[Select[association, !MatchQ[#, Alternatives[Null, {}]] &], Association]
+		],
+		myConditionsAssociations
+	];
+
+	(* Sum up the number of unique search conditions to search for *)
+	uniqueSearchConditions = DeleteDuplicates[Join @@ sanitizedConditionsRules];
+	numberOfUniqueSearchConditions = Length[uniqueSearchConditions];
+
+	(* Exit early if nothing to do *)
+	If[EqualQ[numberOfUniqueSearchConditions, 0],
+		Return[ConstantArray[<||>, Length[sanitizedConditionsRules]]]
+	];
+
+	(* Otherwise, filter down to just the inputs that have something to do *)
+	(* Determine which positions have non-empty search conditions *)
+	nonEmptyPositionNumbers = Position[sanitizedConditionsRules, Except[{}], {1}, Heads -> False];
+
+	(* Pick out the non-empty conditions *)
+	nonEmptyConditions = Extract[sanitizedConditionsRules, nonEmptyPositionNumbers];
+
+	(* Switch to use the fastest method based on the conditions we're given *)
+	nonEmptyDuplicateInformation = If[
+		(* Case where we have less than the search speed threshold *)
+		(* This means we can just do a search in such a way that we know which field triggered a duplicate, without a follow up download *)
+		LessQ[numberOfUniqueSearchConditions, slowSearchWorkaroundThreshold],
+		Module[
+			{
+				searchTerms, searchTermLookup, duplicatesBySearchCondition, duplicatesBySearchConditionLookup
+			},
+
+			(* Configure the search terms in the format for search *)
+			(* Create one search term for each of the unique search conditions so that the output comes out index matching them *)
+			searchTerms = Equal @@@ uniqueSearchConditions;
+
+			(* Create a lookup from the input form to the search syntax *)
+			searchTermLookup = AssociationThread[uniqueSearchConditions -> searchTerms];
+
+			(* Perform the search *)
+			duplicatesBySearchCondition = With[
+				{duplicateSearchTerms = searchTerms},
+				Search[
+					ConstantArray[myType, Length[duplicateSearchTerms]],
+					duplicateSearchTerms,
+					MaxResults -> maxResultsOption
+				]
+			];
+
+			(* Create a lookup from the original search condition to the duplicate list *)
+			duplicatesBySearchConditionLookup = MapThread[
+				#1 -> #2 &,
+				{uniqueSearchConditions, duplicatesBySearchCondition}
+			];
+
+			(* For each of the original inputs, check which duplicates were found and for which search condition *)
+			Map[
+				Function[{ruleList},
+					Module[{filteredDuplicateLookup, duplicateList},
+
+						(* Filter down the duplicate results, so only includes the search terms appropriate to this input *)
+						filteredDuplicateLookup = Select[duplicatesBySearchConditionLookup, MemberQ[ruleList, First[#]] &];
+
+						(* Pull out a list of all the duplicates found for this input *)
+						duplicateList = DeleteDuplicates[Flatten[Last /@ filteredDuplicateLookup]];
+
+						(* Reorganize the output into an association of duplicate -> searchTermsItsADuplicateBy *)
+						AssociationMap[
+							Function[duplicate,
+								Cases[filteredDuplicateLookup, HoldPattern[HoldPattern[field_ -> value_] -> duplicates_?(MemberQ[#, duplicate] &)] :> field]
+							],
+							duplicateList
+						]
+					]
+				],
+				nonEmptyConditions
+			]
+		],
+
+		(* If above the threshold, the direct search is slow. So do a tandem search and download *)
+		Module[
+			{searchTerms, allDuplicates, uniqueFieldsToDownload, downloadPackets, duplicatesBySearchConditionLookup},
+
+			(* Configure the search terms in the format for search *)
+			(* Create one search term for each of the unique search conditions so that the output comes out index matching them *)
+			searchTerms = Equal @@@ uniqueSearchConditions;
+
+			(* Perform the search - only a single type and condition for speed. But the disadvantage is that we don't know which term in the "Or" triggered the duplicate *)
+			allDuplicates = With[
+				{duplicateSearchTerms = Or @@ searchTerms},
+				Search[
+					myType,
+					duplicateSearchTerms,
+					MaxResults -> (maxResultsOption * Length[searchTerms])
+				]
+			];
+
+			(* Get a list of unique fields to download so that we can filter *)
+			uniqueFieldsToDownload = DeleteDuplicates[First /@ uniqueSearchConditions];
+
+			(* Perform the download *)
+			downloadPackets = Quiet[Download[
+				allDuplicates,
+				Evaluate[Packet @@ uniqueFieldsToDownload]
+			]];
+
+			(* For each search condition, figure out which duplicates were found *)
+			duplicatesBySearchConditionLookup = Map[
+				Function[{searchCondition},
+					Module[
+						{searchField, searchValue, duplicates},
+
+						(* Pull apart the search term *)
+						{searchField, searchValue} = List @@ searchCondition;
+
+						(* Get the list of objects that hit that duplicate *)
+						duplicates = Lookup[
+							Select[
+								downloadPackets,
+								MatchQ[
+									searchValue,
+									Alternatives[
+										Lookup[#, searchField],
+										EqualP[Lookup[#, searchField]],
+										ObjectP[Lookup[#, searchField]]
+									]
+								] &
+							],
+							Object,
+							{}
+						];
+
+						(* Return search term -> duplicate list *)
+						searchCondition -> duplicates
+					]
+				],
+				uniqueSearchConditions
+			];
+
+			(* For each of the original inputs, check which duplicates were found and for which search condition *)
+			Map[
+				Function[{ruleList},
+					Module[{filteredDuplicateLookup, duplicateList},
+
+						(* Filter down the duplicate results, so only includes the search terms appropriate to this input *)
+						filteredDuplicateLookup = Select[duplicatesBySearchConditionLookup, MemberQ[ruleList, First[#]] &];
+
+						(* Pull out a list of all the duplicates found for this input *)
+						duplicateList = DeleteDuplicates[Flatten[Last /@ filteredDuplicateLookup]];
+
+						(* Reorganize the output into an association of duplicate -> searchTermsItsADuplicateBy *)
+						AssociationMap[
+							Function[duplicate,
+								Cases[filteredDuplicateLookup, HoldPattern[HoldPattern[field_ -> value_] -> duplicates_?(MemberQ[#, duplicate] &)] :> field]
+							],
+							duplicateList
+						]
+					]
+				],
+				nonEmptyConditions
+			]
+		]
+	];
+
+	(* Punch the duplicates back into the index matched position - empty association if no duplicates *)
+	ReplacePart[
+		ConstantArray[<||>, Length[myConditionsAssociations]],
+		AssociationThread[nonEmptyPositionNumbers -> nonEmptyDuplicateInformation]
 	]
 ];
 
@@ -6519,14 +8699,16 @@ resolveDefaultUploadFunctionOptions[myType_, myInput:{___}, myOptions_, rawOptio
 	<|
 		Result -> result,
 		InvalidInputs -> {},
-		InvalidOptions -> {}
+		InvalidOptions -> {},
+		Tests -> {}
 	|>
 ];
 
 (* Helper function to resolve the options to our function. *)
 (* Takes in a list of inputs and a list of options, return a list of resolved options. *)
+(* For new objects *)
 resolveDefaultUploadFunctionOptions[myType_, myName_String, myOptions_, rawOptions_]:=Module[
-	{myOptionsAssociation, myOptionsWithName, myFinalizedOptions},
+	{myOptionsAssociation, myOptionsWithName, myOptionsWithSynonyms, myFinalizedOptions, myOptionsWithSharedResolution},
 
 	(* Convert the options to an association. *)
 	myOptionsAssociation=Association @@ myOptions;
@@ -6535,17 +8717,35 @@ resolveDefaultUploadFunctionOptions[myType_, myName_String, myOptions_, rawOptio
 	(* either the tests or the results. *)
 
 	(* -- AutoFill based on the information we're given. -- *)
-	(* Overwrite the Name option if it is Null. *)
-	myOptionsWithName=If[MatchQ[Lookup[myOptionsAssociation, Name], Null],
+	(* Overwrite the Name option if it is Null or Automatic *)
+	myOptionsWithName=If[MatchQ[Lookup[myOptionsAssociation, Name], Alternatives[Null, Automatic]],
 		Append[myOptionsAssociation, Name -> myName],
 		myOptionsAssociation
 	];
 
 
 	(* Make sure that if we have a Name and Synonyms field  that Name is apart of the Synonyms list. *)
-	myFinalizedOptions=If[MatchQ[Lookup[myOptionsWithName, Synonyms], Null] || (KeyExistsQ[myOptionsWithName, Synonyms] && !MemberQ[Lookup[myOptionsWithName, Synonyms], Lookup[myOptionsWithName, Name]] && MatchQ[Lookup[myOptionsWithName, Name], _String]),
-		Append[myOptionsWithName, Synonyms -> (Append[Lookup[myOptionsWithName, Synonyms] /. Null -> {}, Lookup[myOptionsWithName, Name]])],
+	myOptionsWithSynonyms=If[MatchQ[Lookup[myOptionsWithName, Synonyms], Alternatives[Null, Automatic]] || (KeyExistsQ[myOptionsWithName, Synonyms] && !MemberQ[Lookup[myOptionsWithName, Synonyms], Lookup[myOptionsWithName, Name]] && MatchQ[Lookup[myOptionsWithName, Name], _String]),
+		Append[myOptionsWithName, Synonyms -> (Append[Lookup[myOptionsWithName, Synonyms] /. Alternatives[Null, Automatic] -> {}, Lookup[myOptionsWithName, Name]])],
 		myOptionsWithName
+	];
+
+	(* Resolve any shared options that need custom resolution *)
+	myOptionsWithSharedResolution = Module[
+		{customResolvedSharedOptions},
+
+		(* Resolve any options within the shared option sets that need custom handling *)
+		customResolvedSharedOptions = resolveCustomSharedUploadOptions[myOptionsWithSynonyms];
+
+		(* Merge the newly resolved options into the option set *)
+		Join[myOptionsWithSynonyms, customResolvedSharedOptions]
+	];
+
+	(* Resolve any (remaining) Automatic options to Null *)
+	myFinalizedOptions = Replace[
+		myOptionsWithSharedResolution,
+		Automatic -> Null,
+		{1}
 	];
 
 	(* Return our options. *)
@@ -6555,8 +8755,9 @@ resolveDefaultUploadFunctionOptions[myType_, myName_String, myOptions_, rawOptio
 (* Helper function to resolve the options to our function. *)
 
 (* Core overload *)
+(* For existing objects *)
 resolveDefaultUploadFunctionOptions[myType_, myInput:ObjectP[], myOptions_, rawOptions_]:=Module[
-	{objectPacket, fields, resolvedOptions},
+	{objectPacket, fields, modifiedOptions, resolvedOptions, specifiedOptionsWithoutAutomatic},
 
 	(* Lookup our packet from our cache. *)
 	objectPacket=Experiment`Private`fetchPacketFromCache[myInput, Lookup[ToList[myOptions], Cache]];
@@ -6564,17 +8765,34 @@ resolveDefaultUploadFunctionOptions[myType_, myInput:ObjectP[], myOptions_, rawO
 	(* Get the definition of this type. *)
 	fields=Association@Lookup[LookupTypeDefinition[myType], Fields];
 
+	(* Resolve/modify the provided options only *)
+	(* This handles any cases where options don't correspond directly to fields/field values *)
+	(* The resulting option set does correspond directly from option to field *)
+	modifiedOptions = Module[
+		{customResolvedSharedOptions},
+
+		(* Resolve any options within the shared option sets that need custom handling *)
+		customResolvedSharedOptions = resolveCustomSharedUploadOptions[rawOptions];
+
+		(* Merge the newly resolved options into the option set *)
+		Join[Association[rawOptions], customResolvedSharedOptions]
+	];
+
+	(* Filter out Automatic from the specified options - this is as though the user didn't specify the option *)
+	(* If there is a value in the database, we'll use that. Otherwise it's left as Null *)
+	specifiedOptionsWithoutAutomatic = Select[modifiedOptions, !MatchQ[#, Automatic] &];
+
 	(* For each of our options, see if it exists as a field of the same name in the object. *)
 	resolvedOptions=Association@KeyValueMap[
 		Function[{fieldSymbol, fieldValue},
-			Module[{fieldDefinition, formattedOptionSymbol, formattedFieldValue},
+			Module[{fieldDefinition, formattedFieldValue, sanitizedFieldValue},
 				(* If field does not exist as an option do not include it in the resolved options *)
 				If[!KeyExistsQ[myOptions, fieldSymbol],
 					Nothing,
 
 					(* If the user has specified this option, use that. *)
-					If[KeyExistsQ[rawOptions, fieldSymbol],
-						fieldSymbol -> Lookup[rawOptions, fieldSymbol],
+					If[KeyExistsQ[specifiedOptionsWithoutAutomatic, fieldSymbol],
+						fieldSymbol -> Lookup[specifiedOptionsWithoutAutomatic, fieldSymbol],
 
 						(* ELSE: Get the information about this specific field. *)
 						fieldDefinition=Association@Lookup[fields, fieldSymbol];
@@ -6582,14 +8800,18 @@ resolveDefaultUploadFunctionOptions[myType_, myInput:ObjectP[], myOptions_, rawO
 						(* Strip off all links from our value. *)
 						formattedFieldValue=ReplaceAll[fieldValue, link_Link :> RemoveLinkID[link]];
 
+						(* Perform any manual sanitizing of field -> option *)
+						sanitizedFieldValue = translateCustomFieldValue[fieldSymbol, formattedFieldValue];
+
 						(* Based on the class of our field, we have to format the values differently. *)
-						Switch[Lookup[fieldDefinition, Class],
-							Computable,
+						Switch[{Lookup[fieldDefinition, Format],Lookup[fieldDefinition, Class]},
+							{Computable,_},
 							Nothing,
-							{_Rule..}, (* Named Multiple *)
-							fieldSymbol -> ReplaceAll[formattedFieldValue[[All, 2]], {} -> Null],
+							(* Named Multiple *)
+							{Multiple,{_Rule..}},
+							fieldSymbol -> ReplaceAll[Values /@ sanitizedFieldValue, {} -> Null],
 							_,
-							fieldSymbol -> ReplaceAll[formattedFieldValue, {} -> Null]
+							fieldSymbol -> ReplaceAll[sanitizedFieldValue, {} -> Null]
 						]
 					]
 				]
@@ -6600,6 +8822,393 @@ resolveDefaultUploadFunctionOptions[myType_, myInput:ObjectP[], myOptions_, rawO
 
 	(* Return our resolved options as a list. *)
 	Normal[resolvedOptions]
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*translateCustomFieldValue*)
+
+(* Helper to convert the values of fields into format suitable for options where the relationship between the two is non-standard *)
+translateCustomFieldValue[field_Symbol, fieldValue_] := Switch[field,
+
+	(* NFPA : {Health -> 1, Flammability -> 2, Reactivity -> 3, Special -> {Oxidizer}} -> {1, 2, 3, {Oxidizer}} *)
+	NFPA,
+	If[MatchQ[fieldValue, {_Rule..}],
+		{
+			Lookup[fieldValue, Health],
+			Lookup[fieldValue, Flammability],
+			Lookup[fieldValue, Reactivity],
+			Lookup[fieldValue, Special]
+		},
+		fieldValue
+	],
+
+	_,
+	fieldValue
+];
+
+(* ::Subsubsection::Closed:: *)
+(*resolveDefaultCellUploadFunctionOptions*)
+
+(* Default option resolver for cell functions with a few defaults changed *)
+(* Takes in a list of inputs and a list of options, return a list of resolved options. *)
+resolveDefaultCellUploadFunctionOptions[myType_, myInput:{___}, myOptions_, rawOptions_] := Module[
+	{result},
+
+	(* Map over the singleton function *)
+	result = MapThread[resolveDefaultCellUploadFunctionOptions[myType, #1, #2, #3] &, {myInput, myOptions, rawOptions}];
+
+	(* Return the output in the expected format *)
+	<|
+		Result -> result,
+		InvalidInputs -> {},
+		InvalidOptions -> {},
+		Tests -> {}
+	|>
+];
+
+(* For new objects *)
+(* This is the standard resolver, but with a few options defaulting *)
+resolveDefaultCellUploadFunctionOptions[myType_, myName_String, myOptions_, rawOptions_]:=Module[
+	{myOptionsAssociation, simpleOptionDefaults, modifications, modifiedOptions},
+
+	myOptionsAssociation = Association @@ myOptions;
+
+	(* List of values to default Automatic to, specific to Cell functions using CellOptions *)
+	simpleOptionDefaults = <|
+		State -> Liquid,
+		MSDSFile -> NotApplicable,
+		Flammable -> False
+	|>;
+
+	(* For each of the automatic options in the association pull out the default values (if there is one) *)
+	modifications = KeyTake[
+		simpleOptionDefaults,
+		Keys[Select[myOptionsAssociation, MatchQ[#, Automatic] &]]
+	];
+
+	(* Merge in the changes *)
+	modifiedOptions = Normal[Merge[
+		{myOptionsAssociation, modifications},
+		Last
+	]];
+
+	(* Resolve the updated options normally *)
+	resolveDefaultUploadFunctionOptions[myType, myName, modifiedOptions, rawOptions]
+];
+
+(* For existing objects - use the standard resolver *)
+resolveDefaultCellUploadFunctionOptions[myType_, myInput:ObjectP[], myOptions_, rawOptions_]:=resolveDefaultUploadFunctionOptions[myType, myInput, myOptions, rawOptions];
+
+(* ::Subsubsection::Closed:: *)
+(* Default Resolver Helpers *)
+
+(* Function to hold together option resolution for shared option sets *)
+(* Existing objects *)
+resolveCustomSharedUploadOptions[
+	optionSets : Alternatives[{{_Rule...}..}, {_Association..}],
+	externalDatabaseOptions : Alternatives[{{_Rule...}...}, {_Association...}],
+	existingObjectFields: Alternatives[{{_Rule...}...}, {_Association...}]
+] := Module[
+	{msdsOptionList},
+
+	(* Each helper in this function returns a list of just the resolved options, not the whole set *)
+
+	(* Resolve the MSDSFile and MSDSRequired options *)
+	msdsOptionList = resolveMSDSOptions[
+		optionSets,
+		externalDatabaseOptions,
+		existingObjectFields
+	];
+
+	(* Join all the resolved options *)
+	Map[
+		Association[Join @@ #] &,
+		Transpose[{msdsOptionList}]
+	]
+];
+
+(* New objects *)
+resolveCustomSharedUploadOptions[
+	optionSets : Alternatives[{{_Rule...}..}, {_Association..}],
+	externalDatabaseOptions : Alternatives[{{_Rule...}...}, {_Association...}]
+] := Module[
+	{msdsOptionList},
+
+	(* Each helper in this function returns a list of just the resolved options, not the whole set *)
+	(* If options aren't present, they will be ignored and helpers return empty list *)
+
+	(* Resolve the MSDSFile and MSDSRequired options *)
+	msdsOptionList = resolveMSDSOptions[
+		optionSets,
+		externalDatabaseOptions
+	];
+
+	(* Join all the resolved options (when there is more than one helper here) *)
+	Map[
+		Association[Join @@ #] &,
+		Transpose[{msdsOptionList}]
+	]
+];
+
+(* New objects with no external data. Pass into main overload with empty external data input *)
+resolveCustomSharedUploadOptions[
+	optionSets : Alternatives[{{_Rule...}..}, {_Association..}]
+] := resolveCustomSharedUploadOptions[
+	optionSets,
+	ConstantArray[{}, Length[optionSets]]
+];
+
+(* Singleton overloads *)
+resolveCustomSharedUploadOptions[
+	options : Alternatives[{_Rule...}, _Association],
+	external : Alternatives[{_Rule...}, _Association],
+	object : Alternatives[{_Rule...}, _Association]
+] := First[resolveCustomSharedUploadOptions[{options}, {external}, {object}]];
+
+resolveCustomSharedUploadOptions[
+	options : Alternatives[{_Rule...}, _Association],
+	external : Alternatives[{_Rule...}, _Association]
+] := First[resolveCustomSharedUploadOptions[{options}, {external}]];
+
+resolveCustomSharedUploadOptions[
+	options : Alternatives[{_Rule...}, _Association]
+] := First[resolveCustomSharedUploadOptions[{options}]];
+
+(* Resolve MSDSFile/MSDSRequired options *)
+(* Overload for existing objects - handle existing fields, then pass into core overload *)
+resolveMSDSOptions[
+	optionSets : Alternatives[{{_Rule...}...}, {_Association...}],
+	externalDatabaseOptions : Alternatives[{{_Rule...}...}, {_Association...}],
+	existingObjectFields: Alternatives[{{_Rule...}...}, {_Association...}]
+] := Module[
+	{externalAssociations, existingObjectAssociations, mergedDatabase},
+
+	(* Merge the existing object fields into the external database options, taking precedence over the latter *)
+	(* Ensure options sets are in associations *)
+	externalAssociations = Association /@ externalDatabaseOptions;
+	existingObjectAssociations = Association /@ existingObjectFields;
+
+	(* Merge them *)
+	mergedDatabase = MapThread[
+		Function[{external, existing},
+			Merge[
+				{existing, external},
+				(* Take the first case that's not Automatic. Otherwise return Null as we didn't get a resolved value for that option *)
+				FirstCase[#, Except[Automatic], Null] &
+			]
+		],
+		{externalAssociations, existingObjectAssociations}
+	];
+
+	(* Pass into the 2 arg overload *)
+	resolveMSDSOptions[
+		optionSets,
+		mergedDatabase
+	]
+];
+
+(* Core overload *)
+resolveMSDSOptions[
+	optionSets : Alternatives[{{_Rule...}...}, {_Association...}],
+	externalOptions : Alternatives[{{_Rule...}...}, {_Association...}]
+] := Module[
+	{resolvedMSDSRequireds, resolvedMSDSFiles},
+
+	(* Resolve the options *)
+	{resolvedMSDSRequireds, resolvedMSDSFiles} = Transpose@MapThread[
+		Module[
+			{
+				msdsRequiredOption, msdsFileOption, msdsRequiredExternalDatabase, msdsFileExternalDatabase
+			},
+
+			(* Look up the option and external database values *)
+			(* MSDSRequired option is hidden so isn't expected to be populated for new objects *)
+			{msdsRequiredOption, msdsFileOption} = Lookup[#1, {MSDSRequired, MSDSFile}, $Failed];
+			{msdsRequiredExternalDatabase, msdsFileExternalDatabase} = Lookup[#2, {MSDSRequired, MSDSFile}, Null];
+
+			(* Resolve, resolve, resolve *)
+			(* MSDSRequired option is hidden so isn't expected to be populated for new objects *)
+			(* This will be updated when sample intake verification is online *)
+			(* {resolvedMSDSRequired, resolvedMSDSFile} = *) Which[
+				(* If the options aren't present, pass through $Failed *)
+				Or[FailureQ[msdsRequiredOption], FailureQ[msdsFileOption]],
+				{$Failed, Failed},
+
+				(* If both are user specified (rare), use them. Resolving NotApplicable to Null for MSDSFile *)
+				And[!MatchQ[msdsRequiredOption, Alternatives[Null, Automatic]], !MatchQ[msdsFileOption, Alternatives[Null, Automatic]]],
+				{
+					msdsRequiredOption,
+					msdsFileOption /. {NotApplicable -> Null}
+				},
+
+				(* Otherwise if the user specified the MSDSFile option, use it and mirror it with the MSDSRequired option *)
+				!MatchQ[msdsFileOption, Alternatives[Null, Automatic]],
+				{
+					msdsFileOption /. {NotApplicable -> False, Except[NotApplicable] -> True},
+					msdsFileOption /. {NotApplicable -> Null}
+				},
+
+				(* If the user specified MSDSRequired but not MSDSFile (rare) use it and use PubChem to resolve the MSDSFile *)
+				!MatchQ[msdsRequiredOption, Alternatives[Null, Automatic]],
+				{
+					msdsRequiredOption,
+					msdsFileExternalDatabase
+				},
+
+				(* Otherwise use PubChem *)
+				True,
+				{
+					msdsRequiredExternalDatabase,
+					msdsFileExternalDatabase
+				}
+			]
+		] &,
+		{optionSets, externalOptions}
+	];
+
+	(* Return the results in the correct format. Leave empty if option resolution errored out *)
+	MapThread[
+		If[Or[FailureQ[#1], FailureQ[#2]],
+			{},
+			{MSDSRequired -> #1, MSDSFile -> #2}
+		] &,
+		{resolvedMSDSRequireds, resolvedMSDSFiles}
+	]
+];
+
+(* ::Subsubsection::Closed:: *)
+(* generateDefaultUploadPackets *)
+
+(* The function to create the main upload packet, and some auxillary Object[EmeraldCloudFile] packets *)
+DefineOptions[generateDefaultUploadPackets, Options :> {
+	{Append -> False, BooleanP, "Indicate whether changes to Multiple fields should have Append[] head. If this option is set to False, then all changes will have Replace[] head instead."},
+	{ExistingPacket -> <||>, ({_Association...} | <||>), "The current packet of the object as in Constellation."}
+}];
+
+generateDefaultUploadPackets[myType_, myInputs_List, myOptions:{{_Rule...}..}, myOps:OptionsPattern[]] := Module[
+	{
+		safeOps, initialChangePacketLists, appendToFieldsQ, objectPacket, initialChangePackets,
+		auxUploadPackets, invalidFields, fullChangePackets, expandedObjectPackets
+	},
+	safeOps = SafeOptions[generateDefaultUploadPackets, ToList[myOps]];
+
+	{appendToFieldsQ, objectPacket} = Lookup[safeOps, {Append, ExistingPacket}];
+
+	(* Generate an index matched list of input object packets. Empty packet if not in the list - such as when creating a new object *)
+	expandedObjectPackets = With[{packet = Experiment`Private`fetchPacketFromCache[#, ToList[objectPacket]]},
+		If[MatchQ[packet, PacketP[]],
+			packet,
+			<||>
+		]
+	] & /@ myInputs;
+
+	(* Convert resolved options into change packets *)
+	(* Change packets can be a list for each as they may contain cloud file upload packets *)
+	initialChangePacketLists = MapThread[
+		generateChangePackets[myType, #2, appendToFieldsQ, ExistingPacket -> #1]&,
+		{expandedObjectPackets, myOptions}
+	];
+
+	(* Core upload packet is always the first one *)
+	initialChangePackets = First /@ initialChangePacketLists;
+
+	(* Remainder, if any, are auxilliary packets *)
+	auxUploadPackets = Flatten[Rest /@ initialChangePacketLists];
+
+	(* Check if any of the fields in the core packets came back as $Failed *)
+	invalidFields = Module[{failingFields, failingOptionValues, groupedMessageParameters},
+
+		(* Fields that returned $Failed *)
+		failingFields = Function[packet, Keys[Select[packet, MatchQ[#, $Failed] &]]] /@ initialChangePackets;
+
+		(* Return early if nothing failed *)
+		If[MatchQ[failingFields, {{}...}],
+			Return[{}, Module]
+		];
+
+		(* For the failing fields, construct a flat list of tuples with the input, option name, failed option value and type of path (URL/FilePath) *)
+		failingOptionValues = Flatten[
+			MapThread[
+				Function[{inp, ops, fFields},
+					(* For each of the failing fields, lookup the failing option value and return a tuple *)
+					{
+						(* Input *)
+						inp,
+						(* Option name *)
+						#,
+						(* Option value *)
+						Lookup[ops, #],
+						(* Option value type (URL/FilePath) *)
+						Switch[Lookup[ops, #],
+							URLP, URL,
+							_String, FilePath,
+							_, Null
+						]
+					} & /@ fFields
+				],
+				{myInputs, myOptions, failingFields}
+			],
+			1
+		];
+
+		(* We will throw a combined error message for each field name / path type combination *)
+		(* Group the messages *)
+		(* <|{fieldName, URL/FilePath} -> {inputList, optionValueList}, ..|> *)
+		groupedMessageParameters = GroupBy[
+			failingOptionValues,
+			(#[[{2, 4}]] &) -> (#[[{1, 3}]] &),
+			Transpose
+		];
+
+		(* Now throw the messages *)
+		KeyValueMap[
+			Function[{identifierTuple, valueTuple},
+				Module[
+					{fieldName, patternType, inputList, optionList, messageValidationDetails},
+
+					(* Assign some friendly names *)
+					{fieldName, patternType} = identifierTuple;
+					{inputList, optionList} = valueTuple;
+
+					(* Lookup additional wording for the messages to help explain why it failed extra validation. Generic wording if nothing more detailed *)
+					messageValidationDetails = Lookup[selectFileValidationData[myType, fieldName], Message, "a valid file"];
+
+					Switch[patternType,
+						URL,
+						Message[Error::InvalidURL, fieldName, optionList, messageValidationDetails, inputList],
+
+						FilePath,
+						Message[Error::InvalidLocalFile, fieldName, optionList, messageValidationDetails, inputList],
+
+						_,
+						Null
+					]
+				]
+			],
+			groupedMessageParameters
+		];
+
+		(* Return the invalid options *)
+		DeleteDuplicates[failingOptionValues[[All,2]]]
+	];
+
+	(* Create a new object reference for the object, or sub in the existing one if modifying an existing object *)
+	fullChangePackets = MapThread[
+		If[MatchQ[#1, ObjectP[myType]],
+			Append[#2, Object -> Download[#1, Object]],
+			Append[#2, Object -> CreateID[myType]]
+		] &,
+		{myInputs, initialChangePackets}
+	];
+
+	(* Return the core and auxilliary upload packets *)
+	{
+		fullChangePackets,
+		auxUploadPackets,
+		invalidFields
+	}
+
 ];
 
 (* ::Subsubsection::Closed:: *)
@@ -7590,6 +10199,348 @@ approximateDensity[compositionTuples:{{CompositionP | Null, PacketP[] | Null}..}
 		UnitConvert[Total[MapThread[(#1 * scalingFactor * #2)&, {initialContributions, densities}]], "Grams" / "Liters"]]
 ];
 
+(* ::Subsubsection::Closed:: *)
+(*RunOptionValidationTests*)
+
+DefineOptions[
+	RunOptionValidationTests,
+	Options :> {
+		{ClearMemoization -> False, BooleanP, "Indicate if ClearMemoization should be run before and after the test. As RunOptionValidationTests is generally called in the mid-function, setting ClearMemoization -> True leads to unexpected loss of memoization which can have significant impact on the calling function."},
+		{Message -> True, BooleanP, "Indicate whether error messages should be thrown when any test fails."},
+		{UnresolvedOptions -> {}, {_Rule...}, "The list of user-supplied options. The source of a field value may be used to customize the description of certain tests and the text of certain error messages."},
+		{ParsedOptions -> {}, {_Rule...}, "The list of options that are auto-resolved based on parsed information from external sources, e.g. pubChem. The source of a field value may be used to customize the description of certain tests and the text of certain error messages."},
+		{TemplateOptions -> {}, ({_Rule...} | {{_Rule...}..}), "The list of options that are copied from other existing objects in database. The source of a field value may be used to customize the description of certain tests and the text of certain error messages."},
+		{PacketType -> Upload, (Upload | Regular), "Indicate if the input packet is meant to be uploaded, which may contain Append[] or Replace[] change head, or the packet is the same as a downloaded packet which do not contain those change heads."},
+		(* We don't want to use CacheOption directly because it's important to add in the description that previous packet of input objects need to be included *)
+		{Cache -> {}, {PacketP[]...}, "List of pre-downloaded packets to be used before checking for session cached object or downloading any object information from the server. This must contain a full packet for the original object if modifying that existing object."},
+		{Output -> Result, ListableP[(Result | Messages | Tests | FailedTestDescriptions | InvalidOptions)], "Indicate the output of this function. Result is the single Boolean which indicates whether all tests passed or not. Messages is the list of merged messages with arguments in the Hold form. Tests are all tests that were run. FailedTestDescriptions is the test descriptions of the failed tests. Invalid options are the list of options that caused the overall packet to fail ValidObjectQ."},
+		{InvalidOptionsDetermination -> MessageArguments, Alternatives[MessageArguments, MessageName, Both], "Indicate the method to determine all invalid options. If InvalidOptionsDetermination -> MessageArguments, function extracts fields from arguments of all unit test failure messages; if InvalidOptionsDetermination -> MessageName, function utilizes errorToOptionMapComplete to compute the invalid options."},
+		{ParentFunction -> Null, Alternatives[Null, _Symbol], "The parent function that is responsible of generating the input packets. This function will be used for ExpandIndexMatchedOptions when multiple packets are supplied."}
+	}
+];
+
+RunOptionValidationTests[myPackets:ListableP[PacketP[]], ops:OptionsPattern[]] := Module[
+	{
+		safeOps, clearMemoization, message, unresolvedOptions, parsedOptions, output, cache,
+		types, packetType, packetWithObject, originalPacket, object, packetWithoutChangeHeads,
+		packetWithoutRuleDelayed, packetTests, testResults, failedTestSummaries, allFailedTestDescriptions,
+		passedQ, unresolvedOptionList, parsedOptionList, resolvedOptionList, constellationOptionList,
+		resolvedOptionListNoChangeHead, unresolvedSourceAssoc, parsedSourceAssoc, resolvedSourceAssoc,
+		constellationSourceAssoc, fieldSourceAssociation, allValidFields, correctedUnresolvedOptionList,
+		correctedParsedOptionList, unresolvedOptionsNoAutomatic, unitTestFailureMessages,
+		failedTestDescriptionsWithoutMessage, mergedMessage, allUnitTestFailureMessages, splittedMessages,
+		groupedMessages, allMessageArguments, allFieldsInMessageArguments, allMessageNames, errorLookup,
+		allFailingFieldsFromErrorToOptionLookup, invalidOptions, invalidOptionDetermination, failedTestDescriptions,
+		numberOfInputs, separatedUnresolvedOptions, separatedParsedOptions, listedPackets, inputNames,
+		unflattenedMessageNames, templateOptions, expandedTemplateOptions, templateOptionList, correctedTemplateOptionList,
+		templateSourceAssoc, mergedMessagesWithLinkCleaned
+	},
+
+	listedPackets = ToList[myPackets];
+
+	(* Read all options *)
+	safeOps = SafeOptions[RunOptionValidationTests, ToList[ops]];
+
+	{clearMemoization, message, unresolvedOptions, parsedOptions, templateOptions, output, cache, packetType, invalidOptionDetermination} = Lookup[safeOps,
+		{ClearMemoization, Message, UnresolvedOptions, ParsedOptions, TemplateOptions, Output, Cache, PacketType, InvalidOptionsDetermination}
+	];
+
+	(* read the Type of input packet. A change packet must have either the Type key or the Object key or both *)
+	types = If[NullQ[Lookup[#, Type, Null]],
+		(* If the packet does not have Type entry, read the Object and strip the ID *)
+		Lookup[#, Object][Type],
+		(* Otherwise simply read the Type entry *)
+		Lookup[#, Type]
+	]& /@ listedPackets;
+
+	(* If the packet does not contain Object key, make one. Also the packet may not contain Type, correct that *)
+	packetWithObject = MapThread[
+		Function[{packet, type},
+			If[KeyExistsQ[packet, Object],
+				Append[packet, Type -> type],
+				Join[packet, <| Object -> CreateID[type], Type -> type |>]
+			]
+		],
+		{listedPackets, types}
+	];
+	object = Lookup[packetWithObject, Object];
+
+	(* Read the original packet from the Cache if we have PacketType -> Upload *)
+	(* Note, this function does not do any Download. Therefore, original packet must be included in the Cache option, otherwise the function will always think we are creating a brand-new object *)
+	originalPacket = If[MatchQ[packetType, Upload],
+		Experiment`Private`fetchPacketFromCache[#, cache],
+		<||>
+	]& /@ object;
+
+	packetWithoutChangeHeads = MapThread[
+		If[MatchQ[#1, PacketP[]],
+			stripChangePacket[#2, ExistingPacket -> #1],
+			stripChangePacket[#2]
+		]&,
+		{originalPacket, packetWithObject}
+	];
+
+	(* Get rid of any delayed rules so that we don't double upload. *)
+	packetWithoutRuleDelayed = Association[Cases[Normal[#, Association], Except[_RuleDelayed]]]& /@ packetWithoutChangeHeads;
+
+	(* Compute the option source, i.e., where does an option/field in the final packet come from? *)
+
+	(* For user-specified option, expand and separate the options into a MapThread-friendly form *)
+	(* This is because it may contain something like Option -> {value, Automatic}, in this case we should say this option for input 1 comes from user *)
+	(* But input 2 doesn't. We therefore want to expand the unresolved options and find out exactly whether option value for one input is specified or not *)
+	numberOfInputs = Length[listedPackets];
+
+	separatedUnresolvedOptions = Transpose[
+		KeyValueMap[
+			Function[{key, value},
+				If[MatchQ[value, _List] && Length[value] == numberOfInputs,
+					(* If the option value index-match with input, separate the Key -> {value1, value2, ...} into {key -> value1, key -> value2, ...} *)
+					(key -> #)& /@ value,
+					(* If the option value does not index-match, replicate the key -> value to match the length of input *)
+					ConstantArray[key -> value, numberOfInputs]
+				]
+			],
+			Association[unresolvedOptions]
+		]
+	];
+
+	separatedParsedOptions = Transpose[
+		KeyValueMap[
+			Function[{key, value},
+				If[MatchQ[value, _List] && Length[value] == numberOfInputs,
+					(* If the option value index-match with input, separate the Key -> {value1, value2, ...} into {key -> value1, key -> value2, ...} *)
+					(key -> #)& /@ value,
+					(* If the option value does not index-match, replicate the key -> value to match the length of input *)
+					ConstantArray[key -> value, numberOfInputs]
+				]
+			],
+			Association[parsedOptions]
+		]
+	];
+
+	(* UnresolvedOptions may contain Option -> Automatic, which shouldn't really count as user-specified. Remove these *)
+	unresolvedOptionsNoAutomatic = Map[
+		Function[{option},
+			Select[option, !MatchQ[Values[#], ListableP[Automatic]]&]
+		],
+		separatedUnresolvedOptions
+	];
+
+	(* also expand TemplateOptions if needed *)
+	expandedTemplateOptions = If[MatchQ[templateOptions, {{_Rule...}..}],
+		templateOptions,
+		ConstantArray[templateOptions, Length[listedPackets]]
+	];
+
+	(* Read the option/field names from UnresolvedOptions, ParsedOptions and input packet *)
+	unresolvedOptionList = Keys[unresolvedOptionsNoAutomatic];
+	parsedOptionList = Keys[separatedParsedOptions];
+	templateOptionList = Keys[expandedTemplateOptions];
+	resolvedOptionList = Keys[listedPackets];
+	constellationOptionList = Keys[originalPacket];
+
+	(* Option/Fields read from myPackets may have change head such as Append[] and Replace[]. Remove the heads *)
+	resolvedOptionListNoChangeHead = Map[
+		Function[{singlePacketKeys},
+			If[MatchQ[Head[#], Alternatives[Append, Replace, Transfer]],
+				First[#],
+				#
+			]& /@ singlePacketKeys
+		],
+		resolvedOptionList
+	];
+
+	(* Find all fields in the object type we are trying to make *)
+	allValidFields = Fields[#, Output -> Short]& /@ types;
+	(* Some option keys may not exist as a field in the type (e.g., Upload, Cache, etc.). Remove these *)
+	(* Resolved options is read from the packet so shouldn't have this issue as long as it's correctly constructed upstream *)
+	correctedUnresolvedOptionList = If[Length[unresolvedOptionList] == 0,
+		ConstantArray[{}, numberOfInputs],
+		MapThread[
+			Function[{option, fieldList},
+				Cases[option, Alternatives @@ fieldList]
+			],
+			{unresolvedOptionList, allValidFields}
+		]
+	];
+	correctedParsedOptionList = If[Length[parsedOptionList] == 0,
+		ConstantArray[{}, numberOfInputs],
+		MapThread[
+			Function[{option, fieldList},
+				Cases[option, Alternatives @@ fieldList]
+			],
+			{parsedOptionList, allValidFields}
+		]
+	];
+	correctedTemplateOptionList = If[Length[templateOptionList] == 0,
+		ConstantArray[{}, numberOfInputs],
+		MapThread[
+			Function[{option, fieldList},
+				Cases[option, Alternatives @@ fieldList]
+			],
+			{templateOptionList, allValidFields}
+		]
+	];
+
+	(* Construct association for each option source *)
+	(* format would be: {<|option1 -> User, option2 -> User..|>, <|option11 -> External, option12 -> External..|>..} *)
+	(* Essentially all options from the same source will be in the same assoc *)
+	{unresolvedSourceAssoc, parsedSourceAssoc, templateSourceAssoc, resolvedSourceAssoc, constellationSourceAssoc} = MapThread[
+		Function[{optionsList, source},
+			Map[
+				Function[{optionForSingleInput},
+					AssociationThread[optionForSingleInput, source]
+				],
+				optionsList
+			]
+		],
+		{
+			{correctedUnresolvedOptionList, correctedParsedOptionList, correctedTemplateOptionList, resolvedOptionListNoChangeHead, constellationOptionList},
+			{User, External, Template, Resolved, Field}
+		}
+	];
+
+	(* Finally, merge the associations so that each options have only one source *)
+	(* Here we utilize the property of Association, which do not allow duplicate keys, and later Key->Value pair overwrites earlier ones when combining *)
+	(* Read comments bottom-up may be easier to understand *)
+	fieldSourceAssociation = MapThread[
+		Join[#1, #2, #3, #4, #5]&,
+		{
+			(* Finally, fields not found in any other associations are from Constellation download *)
+			constellationSourceAssoc,
+			(* Any field present in the input packet but absent in UnresolvedOptions and ParsedOptions comes from resolver *)
+			(* We are assuming the input packet is a change packet. If it's a regular one just like what you downloaded, still we assume all field values come from resolver because it's going to be too much work to determine whether it's same or different from Constellation *)
+			resolvedSourceAssoc,
+			(* Any options appreared in the TemplateOptions but absent in UnresolvedOptions and ParsedOptions comes from template objects *)
+			templateSourceAssoc,
+			(* Any option appeared in the ParsedOptions but absent in UnresolvedOptions comes from external sources *)
+			parsedSourceAssoc,
+			(* Any option appeared in the UnresolvedOptions comes from user *)
+			unresolvedSourceAssoc
+		}
+	];
+
+	(* call ValidObjectQ`Private`testsForPacket function with proper options to pull out the list of tests *)
+	packetTests = MapThread[
+		Function[{packet, fieldSource},
+			ValidObjectQ`Private`testsForPacket[
+				packet,
+				FieldSource -> fieldSource,
+				Cache -> cache
+			]
+		],
+		{packetWithoutChangeHeads, fieldSourceAssociation}
+	];
+
+	(* construct a dummy input name which index-match to inputs *)
+	inputNames = ("Input "<>ToString[#])& /@ Range[1, numberOfInputs];
+
+	(* Run the test. Do not throw message now even if we have Message -> True, because later we'll merge messages with the same name and throw all at once *)
+	testResults = RunUnitTest[
+		AssociationThread[inputNames, packetTests],
+		OutputFormat -> TestSummary,
+		Verbose -> False,
+		ClearMemoization -> clearMemoization
+	];
+
+	(* Get the test summaries for the failed tests *)
+	failedTestSummaries = Flatten[Lookup[First[Lookup[testResults, #]], {ResultFailures, MessageFailures}]]& /@ inputNames;
+
+	(* Get the descriptions from failed tests *)
+	allFailedTestDescriptions = Map[
+		Function[{singleFailedSummary},
+			If[Length[singleFailedSummary] == 0,
+				{},
+				Lookup[First /@ singleFailedSummary, Description]
+			]
+		],
+		failedTestSummaries
+	];
+
+	(* Get the UnitTestFailureMessage from the failed tests *)
+	unitTestFailureMessages = Map[
+		Function[{singleFailedSummary},
+			If[Length[singleFailedSummary] == 0,
+				{},
+				Lookup[First /@ singleFailedSummary, UnitTestFailureMessage, Null]
+			]
+		],
+		failedTestSummaries
+	];
+
+	(* Get the failed test descriptions that does not have UnitTestFailureMessage defined *)
+	failedTestDescriptionsWithoutMessage = MapThread[
+		PickList[#1, #2, Null]&,
+		{allFailedTestDescriptions, unitTestFailureMessages}
+	];
+
+	(* If we include Messages in the output or if we have Message -> True, we should only output failedTestDescriptionsWithoutMessage as the FailedTestDescriptions *)
+	failedTestDescriptions = If[(message || MemberQ[ToList[output], Messages]),
+		Flatten[failedTestDescriptionsWithoutMessage],
+		Flatten[allFailedTestDescriptions]
+	];
+
+	(* combine error messages of the same kind *)
+	allUnitTestFailureMessages = DeleteDuplicates[DeleteCases[#, Null]]& /@ unitTestFailureMessages;
+
+	(* Split the hold form of the message into message name and arguments. e.g. Hold[Error::RequiredOptions, 1, 2, 3] -> {Hold[Error::RequiredOptions], {1, 2, 3}} *)
+	splittedMessages = Replace[Flatten[allUnitTestFailureMessages], HoldPattern[Hold[x_, y___]] :> {Hold[x], {y}}, 1];
+	(* Also record the message name in string form *)
+	unflattenedMessageNames = Replace[allUnitTestFailureMessages, HoldPattern[Hold[x_, y___]] :> ToString[Unevaluated[x]], 2];
+
+	(* group the error message by the message name *)
+	groupedMessages = GroupBy[splittedMessages, First];
+
+	(* Merge the messages with the same message name, and combine all arguements at the same position *)
+	mergedMessage = KeyValueMap[
+		Function[{messageName, allMessages},
+			Join[
+				messageName,
+				Hold @@ (DeleteDuplicates /@ Transpose[allMessages[[All, 2]]])
+			]
+		],
+		groupedMessages
+	];
+
+	(* Finally, some of the Objects may appear as links in the message text. Clean that *)
+	(* This is especially common because all objects are converted to links in packet *)
+	mergedMessagesWithLinkCleaned = ReplaceAll[
+		mergedMessage,
+		(* Here we use First[], not Download[link, Object] because a lot of times those links are in named object form. This download changes it to ID form *)
+		(* Also don't use ObjectToString because mapping this function is very slow *)
+		link:LinkP[] :> First[link]
+	];
+
+	(* Throw message now if we have Message -> True *)
+	If[message,
+		Message @@@ mergedMessagesWithLinkCleaned
+	];
+
+	(* Find the options/fields that are involved in failing tests via the message arguments *)
+	allMessageArguments = Cases[DeleteDuplicates[Flatten[splittedMessages[[All, 2]]]], _Symbol];
+	allFieldsInMessageArguments = Intersection[allMessageArguments, Flatten[allValidFields]];
+
+	(* Find the options/fields that are involved in failing tests via the message names *)
+	errorLookup = ValidObjectQ`Private`errorToOptionMapComplete /@ types;
+	allFailingFieldsFromErrorToOptionLookup = DeleteDuplicates[Flatten[
+		MapThread[Lookup[#1, #2, Nothing]&,
+			{errorLookup, unflattenedMessageNames}
+		]
+	]];
+
+	invalidOptions = Switch[invalidOptionDetermination,
+		MessageArguments, allFieldsInMessageArguments,
+		MessageName, allFailingFieldsFromErrorToOptionLookup,
+		_, DeleteDuplicates[Join[allFieldsInMessageArguments, allFailingFieldsFromErrorToOptionLookup]]
+	];
+
+	(* VOQ passes if we didn't have any messages thrown *)
+	passedQ = And @@ (Lookup[testResults, #][Passed]& /@ inputNames);
+
+	output /. {Result -> passedQ, Tests -> Flatten[packetTests], Messages -> mergedMessagesWithLinkCleaned, FailedTestDescriptions -> failedTestDescriptions, InvalidOptions -> invalidOptions}
+
+];
+
 DefineOptions[
 	ValidObjectQMessages,
 	Options :> {
@@ -7749,16 +10700,16 @@ cubaneData = <|
 	Viscosity -> Null,
 	Radioactive -> False,
 	ParticularlyHazardousSubstance -> False,
-	MSDSRequired -> False,
+	MSDSRequired -> True,
 	DOTHazardClass -> Null,
 	NFPA -> Null,
 	Flammable -> Null,
 	Pyrophoric -> Null,
 	WaterReactive -> Null,
-	Fuming -> Null,
-	Ventilated -> Null,
+	Fuming -> False,
+	Ventilated -> False,
 	DrainDisposal -> Null,
-	LightSensitive -> False,
+	LightSensitive -> Null,
 	Pungent -> False,
 	PubChemID -> 136090,
 	Molecule -> Molecule[
@@ -7804,7 +10755,7 @@ caffeineDataSDS = Join[
 cubaneDataSDS = Join[
 	cubaneData,
 	<|
-		MSDSFile -> Null
+		MSDSFile -> "All-sds.pdf"
 	|>
 ];
 

@@ -1222,8 +1222,7 @@ DefineTests[
 						ThawTime -> Null
 					|>
 				}
-			},
-			TimeConstraint -> 80
+			}
 		],
 		Example[{Options,Mix,"Setting Mix to False but specifying mixing parameters results in an error:"},
 			ExperimentStockSolution[
@@ -1700,8 +1699,7 @@ DefineTests[
 						ThawTime -> Null
 					|>
 				}
-			},
-			TimeConstraint -> 80
+			}
 		],
 		Example[{Options,Incubate,"Setting Incubate to False but specifying incubation parameters results in an error:"},
 			ExperimentStockSolution[
@@ -3605,8 +3603,7 @@ DefineTests[
 						ThawTime -> Null
 					|>
 				}
-			},
-			TimeConstraint -> 80
+			}
 		],
 		Test["Populate MixedSolutions and MixParameters appropriately when a subset of solutions are incubated (if not already mixing):",
 			Download[
@@ -3642,8 +3639,7 @@ DefineTests[
 						ThawTime -> Null
 					|>
 				}
-			},
-			TimeConstraint -> 80
+			}
 		],
 		Test["Populate pH fields when a subset of solutions are pH-titrated:",
 			Download[

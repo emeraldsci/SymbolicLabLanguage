@@ -55,6 +55,17 @@ validMethodLyseCellsQTest[packet:PacketP[Object[Method,LyseCells]]]:={};
 errorToOptionMap[Object[Method,LyseCells]]:={};
 
 (* ::Subsection::Closed:: *)
+(*validMethodWashPlateQTest*)
+
+validMethodWashPlateQTest[packet: PacketP[Object[Method, WashPlate]]]:= {
+	RequiredTogetherTest[packet, {AspirateTravelRate, AspiratePositionings, AspirateDelay}],
+	RequiredTogetherTest[packet, {FinalAspirateTravelRate, FinalAspiratePositionings, FinalAspirateDelay}],
+	RequiredTogetherTest[packet, {DispenseFlowRate, DispensePositionings, DispenseVacuumDelay}],
+	NotNullFieldTest[packet, {Instruments, CrosswiseAspiration, FinalAspirate, BottomWash}]
+};
+
+
+(* ::Subsection::Closed:: *)
 (*validMethodCleavageQTests*)
 
 
@@ -278,7 +289,7 @@ validMethodIonChromatographyGradientQTests[packet:PacketP[Object[Method,IonChrom
 };
 
 (* ::Subsection::Closed:: *)
-(*validMethodWashCellsQTest*)
+(*validMethodFlowCytometryQTest*)
 
 validMethodFlowCytometryQTest[packet:PacketP[Object[Method,FlowCytometry]]]:={};
 
@@ -935,6 +946,7 @@ registerValidQTestFunction[Object[Method, Cleavage],validMethodCleavageQTests];
 registerValidQTestFunction[Object[Method, ThawCells],validMethodThawCellsQTest];
 registerValidQTestFunction[Object[Method, ChangeMedia],validMethodChangeMediaQTest];
 registerValidQTestFunction[Object[Method, WashCells],validMethodWashCellsQTest];
+registerValidQTestFunction[Object[Method, WashPlate],validMethodWashPlateQTest];
 registerValidQTestFunction[Object[Method, FlowCytometry],validMethodFlowCytometryQTest];
 registerValidQTestFunction[Object[Method, FractionCollection],validMethodFractionCollectionQTests];
 registerValidQTestFunction[Object[Method, FragmentAnalysis],validMethodFragmentAnalysisQTests];

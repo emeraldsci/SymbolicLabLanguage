@@ -17,7 +17,7 @@ DefineObjectType[Model[Molecule, Carbohydrate], {
 			Class -> String,
 			Pattern :> _String,
 			Description -> "The GlyTouCan IDs for this carbohydrate.",
-			Category -> "Organizational Information",
+			Category -> "Molecular Identifiers",
 			Abstract -> True
 		},
 		(* Table of Monoisotopic vs Average mass for monosaccharides: https://web.expasy.org/glycomod/glycomod_masses.html *)

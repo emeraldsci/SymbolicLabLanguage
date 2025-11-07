@@ -31,6 +31,19 @@ DefineObjectType[Object[Inventory], {
 			Description -> "The products or models that automatically reordered by this inventory object if amounts are below the specified thresholds.",
 			Category -> "Inventory"
 		},
+		PreferredProduct -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Product],
+				Model[Sample, StockSolution],
+				Model[Sample, Matrix],
+				Model[Sample, Media]
+			],
+			Description -> "The default product to use when re-orders are placed.",
+			Category -> "Inventory"
+		},
 		Status -> {
 			Format -> Single,
 			Class -> Expression,

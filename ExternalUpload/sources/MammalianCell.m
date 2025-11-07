@@ -25,18 +25,20 @@ DefineOptions[UploadMammalianCell,
 			IndexMatchingInput -> "Input Data",
 			{
 				OptionName -> Tissues,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Tissue]]],
 				Description -> "The types of tissue that this cell helps comprise.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Organizational Information"
 			},
 			{
 				OptionName -> Morphology,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Enumeration, Pattern :> MammalianCellMorphologyP],
 				Description -> "The morphological type of the cell line.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Physical Properties"
 			}
 		]
@@ -44,9 +46,9 @@ DefineOptions[UploadMammalianCell,
 ];
 
 
-InstallDefaultUploadFunction[UploadMammalianCell, Model[Cell, Mammalian]];
-InstallValidQFunction[UploadMammalianCell, Model[Cell, Mammalian]];
-InstallOptionsFunction[UploadMammalianCell, Model[Cell, Mammalian]];
+installDefaultUploadFunction[UploadMammalianCell, Model[Cell, Mammalian], OptionResolver -> resolveDefaultCellUploadFunctionOptions];
+installDefaultValidQFunction[UploadMammalianCell, Model[Cell, Mammalian]];
+installDefaultOptionsFunction[UploadMammalianCell, Model[Cell, Mammalian]];
 
 ExternalUpload`Private`InstallIdentityModelTests[
 	UploadMammalianCell,
@@ -59,7 +61,7 @@ ExternalUpload`Private`InstallIdentityModelTests[
 		Diameter -> 15 Micro * Meter,
 		BiosafetyLevel -> "BSL-2",
 		Flammable -> False,
-		MSDSRequired -> False,
+		MSDSFile -> NotApplicable,
 		IncompatibleMaterials -> {None},
 		CellType -> Mammalian,
 		CultureAdhesion -> Adherent
@@ -78,7 +80,7 @@ ExternalUpload`Private`InstallIdentityModelTests[
 		Diameter -> 15 Micro * Meter,
 		BiosafetyLevel -> "BSL-2",
 		Flammable -> False,
-		MSDSRequired -> False,
+		MSDSFile -> NotApplicable,
 		IncompatibleMaterials -> {None},
 		CellType -> Mammalian,
 		CultureAdhesion -> Adherent
@@ -98,7 +100,7 @@ ExternalUpload`Private`InstallIdentityModelTests[
 		Diameter -> 15 Micro * Meter,
 		BiosafetyLevel -> "BSL-2",
 		Flammable -> False,
-		MSDSRequired -> False,
+		MSDSFile -> NotApplicable,
 		IncompatibleMaterials -> {None},
 		CellType -> Mammalian,
 		CultureAdhesion -> Adherent

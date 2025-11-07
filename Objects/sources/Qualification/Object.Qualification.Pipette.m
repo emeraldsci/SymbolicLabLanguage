@@ -99,6 +99,38 @@ DefineObjectType[Object[Qualification,Pipette], {
 			Relation -> Object[Instrument,Pipette],
 			Description -> "The pipettes that are tested in this qualification.",
 			Category -> "General"
+		},
+		WeightStabilityDurations -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Second],
+			Units -> Second,
+			Description -> "The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable and captured when measuring the weight of the samples of interest.",
+			Category -> "General"
+		},
+		MaxWeightVariations -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Milligram],
+			Units -> Milligram,
+			Description -> "The max allowed amplitude the balance readings can fluctuate with for a duration defined by WeightStabilityDuration before being considered stable and captured when measuring the weight of the samples of interest.",
+			Category -> "General"
+		},
+		TareWeightStabilityDurations -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Second],
+			Units -> Second,
+			Description -> "The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable and captured when measuring the weight of the empty balance and containers.",
+			Category -> "General"
+		},
+		MaxTareWeightVariations -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Milligram],
+			Units -> Milligram,
+			Description -> "The max allowed amplitude the balance readings can fluctuate with for a duration defined by WeightStabilityDuration before being considered stable and captured when measuring the weight of the empty balance and containers.",
+			Category -> "General"
 		}
 	}
 }];

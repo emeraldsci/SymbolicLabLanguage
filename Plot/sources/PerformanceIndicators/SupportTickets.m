@@ -393,7 +393,8 @@ DefineOptions[PlotSupportTimeline,
 		{Display -> Relative, Relative | Absolute | Both, "Indicates if the number of tickets, the percentage of tickets per protocol or both metrics are to be displayed."},
 		{RemoveMonitoringTickets -> True, BooleanP, "Indicates if tickets used to track daily operations, such as long task tickets are to be shown."},
 		{ExcludeCanaryProtocols -> False, BooleanP, "Indicates if the tickets generated generated from a root canary protocol should be excluded from the plot."},
-		{ExcludedCategories -> {}, {} | ListableP[SupportTicketErrorSubcategoryP], "Tickets with the specified error categories are excluded from the plot."}
+		{ExcludedCategories -> {}, {} | ListableP[SupportTicketErrorSubcategoryP], "Tickets with the specified error categories are excluded from the plot."},
+		{RootProtocol -> False, BooleanP, "Indicates if only root protocols are considered, in which case all tickets associated with that protocol or any subprotocols thereof are counted."}
 	},
 	SharedOptions :> {EmeraldDateListPlot}
 ];
@@ -425,18 +426,19 @@ PlotSupportTimeline[specifiedProtocols : (All | ListableP[TypeP[{Object[Protocol
 	{
 		safeOps, splitSampleManips, splitLiquidHandlers, specifiedTags, specifiedAnnotation, display, removeMonitoringTickets,
 		excludeCanaryProtocols, searchCriteria, plotStyle, protocols, expandedProtocols, excludedCategories, excludedCategoriesPattern,
-		tags, allTypes, dateTicks, dateBins, datePoints, allProtocols, taggedSupport, annotations, taggedBins, summarizedBins,
-		relativeCoordinates, minPercent, maxPercent, annotationEpilogs, packetInfo, packetInfoTSCounted, dateBinnedInfo, groupedBins,
-		monitoringTicketsPattern, averagedBins, typeCounts, protocolCountCoordinates, absoluteCountCoordinates, typedData, legend,
-		calculatedOptions, optionsToPass, primaryDataColor, absolutePlot, relativePlot, successPercent, betaSuccessEpilog, plotEndTime
+		tags, allTypes, dateTicks, dateBins, datePoints, allProtocols, annotations, taggedBins, summarizedBins,
+		relativeCoordinates, minPercent, maxPercent, annotationEpilogs, packetInfo, dateBinnedInfo, groupedBins,
+		monitoringTicketsPattern, typeCounts, protocolCountCoordinates, absoluteCountCoordinates, typedData, legend,
+		calculatedOptions, optionsToPass, primaryDataColor, absolutePlot, relativePlot, successPercent, betaSuccessEpilog, plotEndTime,
+		rootProtocol, parentProtocolCriteria,ticketDownloadFields
 	},
 
 	safeOps = SafeOptions[PlotSupportTimeline, ToList[ops]];
 
 	(* Extract the protocols options *)
-	{splitSampleManips, splitLiquidHandlers, specifiedTags, specifiedAnnotation, display, removeMonitoringTickets, excludeCanaryProtocols, searchCriteria, plotStyle, excludedCategories} = Lookup[
+	{splitSampleManips, splitLiquidHandlers, specifiedTags, specifiedAnnotation, display, removeMonitoringTickets, excludeCanaryProtocols, searchCriteria, plotStyle, excludedCategories, rootProtocol} = Lookup[
 		safeOps,
-		{SampleManipulationSplit, LiquidHandlerSplit, Tags, Annotation, Display, RemoveMonitoringTickets, ExcludeCanaryProtocols, SearchCriteria, PlotStyle, ExcludedCategories}
+		{SampleManipulationSplit, LiquidHandlerSplit, Tags, Annotation, Display, RemoveMonitoringTickets, ExcludeCanaryProtocols, SearchCriteria, PlotStyle, ExcludedCategories, RootProtocol}
 	];
 
 	tags=ToList[specifiedTags];
@@ -490,20 +492,27 @@ PlotSupportTimeline[specifiedProtocols : (All | ListableP[TypeP[{Object[Protocol
 	(* Calculate the center of the date bins *)
 	datePoints = DateObject[Mean[{AbsoluteTime[First[#]], AbsoluteTime[Last[#]]}]]& /@ dateBins;
 
+	parentProtocolCriteria = If[MatchQ[rootProtocol, True], ParentProtocol==Null, True];
+
 	(* Find all the protocols completed inside the time range *)
 	allProtocols = If[MatchQ[protocols, All],
 		Search[
 			{Object[Protocol], Object[Qualification], Object[Maintenance]},
-			DateCompleted >= startTime && DateCompleted <= endTime && searchCriteria
+			DateCompleted >= startTime && DateCompleted <= endTime && searchCriteria&&parentProtocolCriteria
 		],
-		Search[allTypes, DateCompleted >= startTime && DateCompleted <= endTime && searchCriteria]
+		Search[allTypes, DateCompleted >= startTime && DateCompleted <= endTime && searchCriteria&&parentProtocolCriteria]
+	];
+
+	ticketDownloadFields = If[MatchQ[rootProtocol, True],
+		Packet[InternalCommunications[ErrorCategory,SupportTicketSource]],
+		Packet[ProtocolSpecificInternalCommunications[ErrorCategory,SupportTicketSource]]
 	];
 
 	(* Download all the TS tickets/reports and type for each protocol so we can process the counts by type for each entry *)
 	packetInfo=Quiet[
 		Download[
 			allProtocols,
-			{Packet[DateCompleted,Type,LiquidHandlingScale,LiquidHandler,ParentProtocol,CanaryBranch],Packet[ProtocolSpecificInternalCommunications[ErrorCategory,SupportTicketSource]]}
+			{Packet[DateCompleted,Type,LiquidHandlingScale,LiquidHandler,ParentProtocol,CanaryBranch],ticketDownloadFields}
 		],
 		{Download::FieldDoesntExist}
 	];

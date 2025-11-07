@@ -273,7 +273,7 @@ DefineTests[UploadCapillaryELISACartridge,
 					State->Solid,
 					BiosafetyLevel->"BSL-1",
 					Flammable->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials->{None},
 					ExpirationHazard->False
 				];
@@ -631,7 +631,7 @@ DefineTests[ValidUploadCapillaryELISACartridgeQ,
 					State->Solid,
 					BiosafetyLevel->"BSL-1",
 					Flammable->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials->{None},
 					ExpirationHazard->False
 				];
@@ -850,7 +850,7 @@ DefineTests[UploadCapillaryELISACartridgeOptions,
 					State->Solid,
 					BiosafetyLevel->"BSL-1",
 					Flammable->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials->{None},
 					ExpirationHazard->False
 				];
@@ -1044,7 +1044,7 @@ DefineTests[UploadCapillaryELISACartridgePreview,
 					State->Solid,
 					BiosafetyLevel->"BSL-1",
 					Flammable->False,
-					MSDSRequired->False,
+					MSDSFile -> NotApplicable,
 					IncompatibleMaterials->{None},
 					ExpirationHazard->False
 				];

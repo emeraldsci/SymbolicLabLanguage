@@ -13,7 +13,7 @@ DefineOptions[DefineComposition,
 			IndexMatchingInput -> "Input Data",
 			{
 				OptionName -> Composition,
-				Default -> Null,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Adder[{
 					"Amount" -> Alternatives[
@@ -63,6 +63,7 @@ DefineOptions[DefineComposition,
 					]
 				}],
 				Description -> "The various molecular components present in this sample, along with their respective concentrations. The recorded composition is associated with the specific time at which it is defined.",
+				ResolutionDescription -> "Resolves to the current field value.",
 				Category -> "Organizational Information"
 			},
 			{
@@ -77,6 +78,6 @@ DefineOptions[DefineComposition,
 		ExternalUploadHiddenOptions
 	}
 ];
-InstallDefaultUploadFunction[DefineComposition, Object[Sample], InstallNameOverload -> False, InstallObjectOverload -> True];
-InstallValidQFunction[DefineComposition, Object[Sample]];
-InstallOptionsFunction[DefineComposition, Object[Sample]];
+installDefaultUploadFunction[DefineComposition, Object[Sample], InstallNameOverload -> False, InstallObjectOverload -> True];
+installDefaultValidQFunction[DefineComposition, Object[Sample]];
+installDefaultOptionsFunction[DefineComposition, Object[Sample]];

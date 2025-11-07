@@ -27,6 +27,14 @@ DefineObjectType[Model[Maintenance, EmptyWaste], {
 			Category -> "General",
 			Abstract -> True
 		},
+		WasteSource -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[General,Instrument,All],
+			Description -> "Indicates whether the waste being emptied by this model of maintenance is from a instrument's waste container (Instrument) or a common lab waste container (General) or both (All).",
+			Category -> "General",
+			Abstract -> True
+		},
 		AutoclaveProgram -> {
 			Format -> Single,
 			Class -> Expression,

@@ -13,7 +13,7 @@ DefineObjectType[Object[Sensor, Light], {
     MaxLux -> {
       Format -> Computable,
       Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model],MaxLux]],
-      Pattern :> GreaterEqualP[0*Lux],
+      Pattern :> GreaterEqualP[0*Lux]|GreaterEqualP[0*Watts/Meter^2],
       Description -> "Maximum light that can be reliably read by this model of sensor.",
       Category -> "Sensor Information",
       Abstract -> True
@@ -21,7 +21,7 @@ DefineObjectType[Object[Sensor, Light], {
     MinLux -> {
       Format -> Computable,
       Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model],MinLux]],
-      Pattern :> UnitsP[Lux],
+      Pattern :> UnitsP[Lux]|UnitsP[Watts/Meter^2],
       Description -> "Minimum light that can be reliably read by this model of sensor.",
       Category -> "Sensor Information",
       Abstract -> True
@@ -29,7 +29,7 @@ DefineObjectType[Object[Sensor, Light], {
     Resolution -> {
       Format -> Computable,
       Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model],Resolution]],
-      Pattern :> GreaterP[0*Lux],
+      Pattern :> GreaterP[0*Lux]|GreaterP[0*Watts/Meter^2],
       Description -> "This is the smallest change in light that corresponds to a change in displayed value. Also known as readability, increment, scale division.",
       Category -> "Sensor Information"
     },

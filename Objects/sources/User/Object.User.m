@@ -102,6 +102,22 @@ DefineObjectType[Object[User], {
 			Category -> "Personal Information",
 			Abstract -> True
 		},
+		TrainingModules->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[TrainingModule][User],
+			Description->"The skills the person has or is working on obtaining.",
+			Category->"Operations Information"
+		},
+		Certifications->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Certification][User],
+			Description->"The skill sets this person has or is working on obtaining.",
+			Category->"Operations Information"
+		},
 
 		(* --- Team Information --- *)
 		FinancingTeams -> {

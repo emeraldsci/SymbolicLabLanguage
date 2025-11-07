@@ -67,6 +67,16 @@ DefineObjectType[Model[Instrument], {
 			Description -> "Objects that represent instances of this model but are not contained in the Objects field. If two instruments are almost identical save for small differences, then the Model field of these two instruments will be shared (and thus the Objects field of the model will contain both of them). The AlternativeObjects field of the model, however, will be populated as well with those objects that are completely accurately described by the model if they are not already in the Objects field.",
 			Category -> "Organizational Information"
 		},
+		USPCategorization -> {
+			Format -> Single,
+			Class -> {Expression, Expression},
+			Pattern :> {USPCategorizationP, USPCategorizationJustificationP},
+			Description -> "The USP Group, as outlined in USP 1058, with which this instrument is associated and the justification for that classification. Group A represents the least complex instruments that do not have measurement capability or require calibration. Group B represents instruments that may provide a measurement or an experimental condition that can affect measurement. Group C represents complex analytical instruments with a significant degree of computerization.",
+			Headers -> {"USP Group", "Justification"},
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+
 		(* --- Instrument Specifications --- *)
 		InstrumentSchematics -> {
 			Format -> Multiple,
@@ -372,6 +382,15 @@ DefineObjectType[Model[Instrument], {
 			Category -> "Inventory",
 			Developer->True
 		},
+		StickerPositionImage -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description ->  "An image of this model that indicates the correct position for affixing barcode stickers.",
+			Category -> "Inventory",
+			Developer->True
+		},
 		CrossSectionalShape -> {
 			Format -> Single,
 			Class -> Expression,
@@ -442,7 +461,7 @@ DefineObjectType[Model[Instrument], {
 			Format -> Multiple,
 			Class -> {Link, Integer},
 			Pattern :> {_Link, GreaterEqualP[0,1]},
-			Relation -> {(Model[Container]|Model[Sample]|Model[Part]|Model[Plumbing]|Model[Wiring]), Null},
+			Relation -> {(Model[Container]|Model[Sample]|Model[Part]|Model[Plumbing]|Model[Wiring]|Model[Item]), Null},
 			Headers -> {"Item Model", "Required Quantity"},
 			Description -> "Items required to be present in the local cache for instruments of this model, along with the required quantity of each item.",
 			Category -> "Storage Information"

@@ -85,6 +85,14 @@ DefineObjectType[Model[Item], {
 			Description -> "The scale relating pixels of ImageFile to real world distance.",
 			Category -> "Item Specifications"
 		},
+		Icon -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "A simplified image used to represent this item.",
+			Category -> "Item Specifications"
+		},
 		Schematics -> {
 			Format -> Multiple,
 			Class -> {Link,String},
@@ -477,14 +485,6 @@ DefineObjectType[Model[Item], {
 			Abstract->True,
 			Category -> "Container Specifications"
 		},
-		MixedBatchProducts -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Product][MixedBatchComponents, ProductModel],
-			Description -> "Products ordering information for this model if this model is part of one or more mixed batches.",
-			Category -> "Inventory"
-		},
 		ServiceProviders -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -559,6 +559,15 @@ DefineObjectType[Model[Item], {
 			Pattern :> BooleanP,
 			Description -> "Indicates if this item should be 'rented' from the ECL rather than purchased when it is needed during the course of an experiment.",
 			Category -> "Inventory"
+		},
+		StickerPositionImage -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description ->  "An image of this model that indicates the correct position for affixing barcode stickers.",
+			Category -> "Inventory",
+			Developer->True
 		},
 
 		(* --- Health & Safety --- *)
