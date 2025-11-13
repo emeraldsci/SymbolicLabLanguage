@@ -4260,36 +4260,6 @@ $DefaultIonExchangePreparativeColumn=Model[Item, Column, "id:rea9jl1or6Np"];
 $DefaultIonExchangeAnalyticalColumn=Model[Item, Column, "id:zGj91aR3d6GL"];
 $DefaultHPLCColumns=List[$DefaultLCMSColumn,$DefaultSizeExclusionColumn,$DefaultReversePhasePreparativeColumn,$DefaultReversePhaseAnalyticalColumn,$DefaultIonExchangePreparativeColumn,$DefaultIonExchangeAnalyticalColumn];
 
-(* HPLC Vials *)
-$ChromatographyLCCompatibleVials = {
-	(* "HPLC vial (high recovery)" *)
-	Model[Container, Vessel, "id:jLq9jXvxr6OZ"],
-	(* "1mL HPLC Vial (total recovery)" *)
-	Model[Container, Vessel, "id:1ZA60vL48X85"],
-	(* "Amber HPLC vial (high recovery)" *)
-	Model[Container, Vessel, "id:GmzlKjznOxmE"],
-	(* "HPLC vial (high recovery), LCMS Certified" *)
-	Model[Container, Vessel, "id:3em6ZvL8x4p8"],
-	(* "HPLC vial (high recovery) - Deactivated Clear Glass" *)
-	Model[Container, Vessel, "id:aXRlGnRE6A8m"],
-	(* "Polypropylene HPLC vial (high recovery)" *)
-	Model[Container, Vessel, "id:qdkmxz0A884Y"],
-	(* "PFAS Testing Vials, Agilent" *)
-	Model[Container, Vessel, "id:o1k9jAoPw5RN"],
-	(* "2mL HPLC clear vial, flat bottom" *)
-	Model[Container, Vessel, "id:O81aEBvqN1Ep"]
-};
-
-$ChromatographyLCCompatibleVialsNamed = {
-	Model[Container, Vessel, "HPLC vial (high recovery)"],
-	Model[Container, Vessel, "1mL HPLC Vial (total recovery)"],
-	Model[Container, Vessel, "Amber HPLC vial (high recovery)"],
-	Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"],
-	Model[Container, Vessel, "HPLC vial (high recovery) - Deactivated Clear Glass"],
-	Model[Container, Vessel, "Polypropylene HPLC vial (high recovery)"],
-	Model[Container, Vessel, "PFAS Testing Vials, Agilent"]
-};
-
 (* ::Subsection:: *)
 (* ExperimentHPLC *)
 
@@ -4306,7 +4276,7 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 		modelColumnFields, gradientFields, fractionCollectionFields, sampleFields, modelContainerFields, optionsWithObjects,
 		availableInstruments, availableInstrumentObjects, allObjects, sampleObjects, modelSampleObjects, modelContainerObjects,
 		instrumentObjects, objectSampleFields, modelSampleFields, modelSampleFieldsPacket, objectContainerFields, modelContainerFieldsPacket, analyteFields,
-		modelContainerSyringeFields, syringeContainerFieldsPacket, authorPacket, inheritedCache,
+		modelContainerSyringeFields, syringeContainerFieldsPacket, authorPacket, inheritedCache, lcVialModels,
 		modelInstrumentObjects, columnObjects, modelColumnObjects, gradientObjects, fractionCollectionObjects, syringeObject, authorObject, cacheBall,
 		resolvedOptionsResult, resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions, protocolObject, resourcePackets,
 		resourcePacketTests, cartridgeObjects, modelCartridgeObjects, cartridgeFields, modelCartridgeFields,
@@ -4611,6 +4581,9 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 		allECLCMUHPLCInstrumentObjectsSearch["Memoization"]
 	];
 
+	(* Find all compatible LC vials prior to downloading. *)
+	lcVialModels = allLCCompatibleVialSearch["Memoization"];
+
 	(* Flatten and merge all possible objects needed into a list *)
 	allObjects = DeleteDuplicates@Download[
 		Cases[
@@ -4622,7 +4595,7 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 					(* Plate for samples *)
 					Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 					(* Vials used for standards/blanks *)
-					$ChromatographyLCCompatibleVials,
+					lcVialModels,
 					(* Preparatory HPLC *)
 					Model[Container, Vessel, "15mL Tube"],
 					Model[Container, Vessel, "50mL Tube"],
@@ -5275,7 +5248,8 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		injectionVolumeRoundedAssociation, injectionVolumeRoundedTests,
 		roundedInjectionTable, instrumentMaxColumnOD,
 		absorbanceWavelengthInstruments, excitationWavelengthInstruments, emissionWavelengthInstruments,
-		specifiedInjectionSampleCentrifugeOptions, resolvedInjectionSampleCentrifugeOptions
+		specifiedInjectionSampleCentrifugeOptions, resolvedInjectionSampleCentrifugeOptions,
+		lcVialModels, lcVialModelsNamed
 	},
 
 	(* Determine the requested return value from the function *)
@@ -10767,12 +10741,17 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		PickList[simulatedSampleContainers, specifiedAliquotBools, False],
 		ObjectP[Object[Container, Plate]]
 	];
+
+	(* Pull the memoized LC vials and their names. *)
+	lcVialModels = allLCCompatibleVialSearch["Memoization"];
+	lcVialModelsNamed = NamedObject[lcVialModels, Cache -> cache];
+
 	(* Vessels are for Dionex and Waters instruments *)
 	uniqueNonAliquotableVessels = DeleteDuplicates@PickList[
 		simulatedSampleContainers,
 		Transpose[{specifiedAliquotBools, simulatedSampleContainerModels}],
 		(* {Model[Container, Vessel, "HPLC vial (high recovery)"], Model[Container, Vessel, "1mL HPLC Vial (total recovery)"], Model[Container, Vessel, "Amber HPLC vial (high recovery)"], Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"], Model[Container, Vessel, "HPLC vial (high recovery) - Deactivated Clear Glass"],Model[Container, Vessel, "Polypropylene HPLC vial (high recovery)"], Model[Container, Vessel, "PFAS Testing Vials, Agilent"]} *)
-		{False, ObjectP[$ChromatographyLCCompatibleVials]}
+		{False, ObjectP[lcVialModels]}
 	];
 
 	(* Need anything that is aliquotable too *)
@@ -14622,7 +14601,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	(* Only prep HPLC uses different containers *)
 	{compatibleContainers, namedCompatibleContainers} = If[MatchQ[instrumentModel, prepAgilentHPLCPattern],
 		{{Model[Container, Vessel, "id:bq9LA0dBGGR6"], Model[Container, Vessel, "id:xRO9n3vk11pw"], Model[Container, Vessel, "id:bq9LA0dBGGrd"], Model[Container, Vessel, "id:rea9jl1orrMp"]}, {Model[Container, Vessel, "50mL Tube"], Model[Container, Vessel, "15mL Tube"], Model[Container, Vessel, "50mL Light Sensitive Centrifuge Tube"], Model[Container, Vessel, "15mL Light Sensitive Centrifuge Tube"]}},
-		{$ChromatographyLCCompatibleVials, $ChromatographyLCCompatibleVialsNamed}
+		{lcVialModels, lcVialModelsNamed}
 	];
 
 	(* If the sample's container model is not compatible with the instrument, it will not be possible to run the samples. *)
@@ -18950,8 +18929,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 	compatibleVialContainer = If[MatchQ[instrumentModel,prepAgilentHPLCPattern],
 		(* "50mL Tube" *)
 		{Model[Container, Vessel, "id:bq9LA0dBGGR6"]},
-		(* {"HPLC vial (high recovery)", "1mL HPLC Vial (total recovery)", "Amber HPLC vial (high recovery)", "HPLC vial (high recovery), LCMS Certified", "HPLC vial (high recovery) - Deactivated Clear Glass", "Polypropylene HPLC vial (high recovery)", "PFAS Testing Vials, Agilent"} *)
-		$ChromatographyLCCompatibleVials
+		(* We could assign this to a variable but it returns exactly what we need and is only used here so just inserting the memoized search directly. *)
+		allLCCompatibleVialSearch["Memoization"]
 	];
 
 	(* Set autosampler dead volume (following the same number as in the resolver *)
@@ -23093,6 +23072,41 @@ calculateBufferUsage[grad_, maxTime_, flowRates_, finalGradientPercentABC_] := M
 	extraVolume = (Unitless[lastFlowRate, Milliliter / Minute] * 10 * Unitless[finalGradientPercentABC] / 100);
 
 	((totalVolume * totalGradientProportion) + extraVolume) Milliliter
+];
+
+(* ::Subsubsection::Closed:: *)
+(*allLCCompatibleVialSearch*)
+
+(* Function to search the database for all non-deprecated CE vials that fit the autosampler.
+ 	Memoizes the result after first execution to avoid repeated database trips within a single kernel session. *)
+allLCCompatibleVialSearch[fakeString:_String] := allLCCompatibleVialSearch[fakeString] = Module[{containers, centrifugableQ},
+
+	(*Add allCentrifugeEquipmentSearch to list of Memoized functions*)
+	AppendTo[$Memoization,Experiment`Private`allLCCompatibleVialSearch];
+
+	containers = Search[
+		Model[Container, Vessel],
+		And[
+			(* Needs to be a lab-supported model. *)
+			Deprecated != True,
+			(* That will fit into the autosampler rack slows. *)
+			Footprint == CEVial,
+			(* NOTE: These next to limits come from Dionex Ultimate 3000 documentation for their vial rack.*)
+			(* Needs to be tall enough to be retrievable from the autosampler racks. *)
+			Dimensions[[3]] >= 31 Millimeter,
+			(* But not too tall that the needle might collide with the top or cap. *)
+			Dimensions[[3]] <= 43 Millimeter,
+			(* We need to know how deep the needle can go. *)
+			Or[
+				DepthMargin != Null,
+				InternalDepth != Null
+			]
+		]
+	];
+
+	centrifugableQ = MemberQ[allCentrifugableContainersSearch["Memoization"], ObjectP[#]]& /@ containers;
+
+	PickList[containers, centrifugableQ]
 ];
 
 

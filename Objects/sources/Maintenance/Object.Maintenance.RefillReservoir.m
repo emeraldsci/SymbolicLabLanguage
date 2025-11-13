@@ -216,7 +216,7 @@ DefineObjectType[Object[Maintenance, RefillReservoir], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Model[Instrument,FumeHood] | Object[Instrument,FumeHood],
+			Relation -> Model[Instrument, FumeHood] | Object[Instrument, FumeHood] | Model[Instrument, HandlingStation, FumeHood] | Object[Instrument, HandlingStation, FumeHood],
 			Description -> "The environment in which to equilibrate temperature of the reservoir.",
 			Category -> "General",
 			Developer -> True

@@ -2597,72 +2597,6 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 	pHTitratorspHMeters = Cases[Download[Lookup[rawpHTitratorsAssociate, pHMeter, Null], Object], ObjectP[]];
 	pHTitratorsMixInstruments = Cases[Download[Lookup[rawpHTitratorsAssociate, MixInstrument, Null], Object], ObjectP[]];
 
-	(* TitrationMethod conflict check *)
-	titrationMethodConflictQs=MapThread[
-		Which[
-			(*If TitrationMethod is not resolved or is resolved to Manual, no conflicts*)
-			MatchQ[#1,Except[Robotic]],
-			True,
-			(*If TitrationMethod is resolved Robotic but associated option is not compatible, give conflicts*)
-			MatchQ[#1,Robotic]&&
-					Or@@{
-						MatchQ[#2,Except[Automatic|Stir]],
-						MatchQ[#3,Except[Alternatives[Automatic, Model[Instrument, pHMeter, "id:R8e1PjeAn4B4"], Sequence @@ pHTitratorspHMeters]]],
-						MatchQ[#4,Surface],
-						MatchQ[#5,Except[Automatic|Null|Model[Part, pHProbe, "id:jLq9jXvP7jLx"]|Model[Part, pHProbe, "id:J8AY5jDmW5BZ"]]], (*Model[Part, pHProbe, "InLab Reach Pro-225"]|Model[Part, pHProbe, "InLab Micro Pro-ISM"]*)
-						MatchQ[#6,True],
-						MatchQ[#7,False],
-						MatchQ[#8,True],
-						MatchQ[#9,Except[Alternatives[Automatic, Model[Instrument, OverheadStirrer, "id:rea9jlRRmN05"], Sequence @@ pHTitratorsMixInstruments]]],
-						MatchQ[#10,Except[Automatic|Null]],
-						MatchQ[#11,Except[Null]]&&MatchQ[Lookup[fetchPacketFromCache[#11,fullCache],State,Null],Solid],
-						MatchQ[#12,Except[Null]]&&MatchQ[Lookup[fetchPacketFromCache[#12,fullCache],State,Null],Solid],
-						MatchQ[#13,True],
-						MatchQ[#14, Except[Automatic]]||MatchQ[#15, Except[Automatic]],
-						MatchQ[#16,Null]
-					},
-			False,
-
-			True,
-			True
-		]&,
-		{
-			(*1*)specifiedTitrationMethod,
-			(*2*)specifiedpHMixType,
-			(*3*)specifiedpHMeterModel,
-			(*4*)specifiedProbeType,
-			(*5*)specifiedProbeModel,
-			(*6*)specifiedpHAliquot,
-			(*7*)specifiedTitrate,
-			(*8*)specifiedpHMixUntilDissolved,
-			(*9*)specifiedpHMixInstrument,
-			(*10*)specifiedpHAliquotVolume,
-			(*11*)resolvedTitratingBases,
-			(*12*)resolvedTitratingAcids,
-			(*13*)specifiedRecoupSample,
-			(*14*)specifiedAliquotContainer,
-			(*15*)specifiedDestinationWell,
-			(*16*)specifiedTitrationInstrument
-		}
-	];
-
-	titrationMethodConflictingSamples=PickList[mySamples,titrationMethodConflictQs,False];
-
-	titrationMethodConflictingOptions=If[!(And@@titrationMethodConflictQs),{TitrationMethod, pHMixType, pHMeter, ProbeType, Probe, pHAliquot, Titrate, pHMixUntilDissolved, pHMixInstrument, pHAliquotVolume, TitratingBase, TitratingAcid, RecoupSample},{}];
-
-
-	If[!(And@@titrationMethodConflictQs)&&!gatherTests,
-		Message[Error::ConflictingTitrationMethod,titrationMethodConflictingSamples]
-	];
-
-	titrationMethodTest=If[gatherTests,
-		Test["Specified TitrationMethod and associated options should not conflict",
-			And@@titrationMethodConflictQs,
-			True
-		],
-		{}
-	];
-
 	(* -- Resolve TitrationMethod -- *)
 
 	(* findpHTitrationCaps returns all the possible caps that can be used for the sample container in robotic titration*)
@@ -2710,10 +2644,12 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 			MatchQ[#10,Except[Null]]&&MatchQ[Lookup[fetchPacketFromCache[#10,fullCache],State,Null],Solid],Manual,
 			(*If TitratingBase is specified to Solid, resolve to Manual*)
 			MatchQ[#11,Except[Null]]&&MatchQ[Lookup[fetchPacketFromCache[#11,fullCache],State,Null],Solid],Manual,
-			(*If AliquotContainer or DestinationWell is specified, resolve to Manual because we might need to aliquot to the desired containers for robotic titration. *)
-			MatchQ[#15, Except[Automatic]]||MatchQ[#16, Except[Automatic]], Manual,
 			(*If we could not find a compatible cap for sample container and (Aliquot is specified False or we could not find a container to aliquot into), resolve to Manual*)
 			MatchQ[#12, {}]&&(MatchQ[#13, False]||NullQ[#14]), Manual,
+			(*If AliquotContainer is specified and does not match with robotic titration container, resolve to Manual *)
+			MatchQ[#15, Except[Automatic|Null|ObjectP[#14]]], Manual,
+			(*If DestinationWell is specified, resolve to Manual *)
+			MatchQ[#16, Except[Automatic|Null]], Manual,
 			(*If TitrationInstrument is Null, resolve to Manual*)
 			MatchQ[#17,Null],Manual,
 			(*If ProbeType is specified to be Surface, resolve to Manual*)
@@ -2748,6 +2684,74 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 			(*20*)specifiedMaxpHMixTemperature
 		}
 	];
+
+	(* TitrationMethod conflict check *)
+	titrationMethodConflictQs=MapThread[
+		Which[
+			(*If TitrationMethod is not resolved or is resolved to Manual, no conflicts*)
+			MatchQ[#1,Except[Robotic]],
+			True,
+			(*If TitrationMethod is resolved Robotic but associated option is not compatible, give conflicts*)
+			MatchQ[#1,Robotic]&&
+					Or@@{
+						MatchQ[#2,Except[Automatic|Stir]],
+						MatchQ[#3,Except[Alternatives[Automatic, Model[Instrument, pHMeter, "id:R8e1PjeAn4B4"], Sequence @@ pHTitratorspHMeters]]],
+						MatchQ[#4,Surface],
+						MatchQ[#5,Except[Automatic|Null|Model[Part, pHProbe, "id:jLq9jXvP7jLx"]|Model[Part, pHProbe, "id:J8AY5jDmW5BZ"]]], (*Model[Part, pHProbe, "InLab Reach Pro-225"]|Model[Part, pHProbe, "InLab Micro Pro-ISM"]*)
+						MatchQ[#6,True],
+						MatchQ[#7,False],
+						MatchQ[#8,True],
+						MatchQ[#9,Except[Alternatives[Automatic, Model[Instrument, OverheadStirrer, "id:rea9jlRRmN05"], Sequence @@ pHTitratorsMixInstruments]]],
+						MatchQ[#10,Except[Automatic|Null]],
+						MatchQ[#11,Except[Null]]&&MatchQ[Lookup[fetchPacketFromCache[#11,fullCache],State,Null],Solid],
+						MatchQ[#12,Except[Null]]&&MatchQ[Lookup[fetchPacketFromCache[#12,fullCache],State,Null],Solid],
+						MatchQ[#13,True],
+						MatchQ[#14,Null],
+						MatchQ[#15, {}]&&(MatchQ[#16, False]||NullQ[#17])
+					},
+			False,
+
+			True,
+			True
+		]&,
+		{
+			(*1*)resolvedTitrationMethod,
+			(*2*)specifiedpHMixType,
+			(*3*)specifiedpHMeterModel,
+			(*4*)specifiedProbeType,
+			(*5*)specifiedProbeModel,
+			(*6*)specifiedpHAliquot,
+			(*7*)specifiedTitrate,
+			(*8*)specifiedpHMixUntilDissolved,
+			(*9*)specifiedpHMixInstrument,
+			(*10*)specifiedpHAliquotVolume,
+			(*11*)resolvedTitratingBases,
+			(*12*)resolvedTitratingAcids,
+			(*13*)specifiedRecoupSample,
+			(*14*)specifiedTitrationInstrument,
+			(*15*)possibleTitratorCaps,
+			(*16*)specifiedAliquot,
+			(*17*)roboticTitrationContainer
+		}
+	];
+
+	titrationMethodConflictingSamples=PickList[mySamples,titrationMethodConflictQs,False];
+
+	titrationMethodConflictingOptions=If[!(And@@titrationMethodConflictQs),{TitrationMethod, pHMixType, pHMeter, ProbeType, Probe, pHAliquot, Titrate, pHMixUntilDissolved, pHMixInstrument, pHAliquotVolume, TitratingBase, TitratingAcid, RecoupSample},{}];
+
+
+	If[!(And@@titrationMethodConflictQs)&&!gatherTests,
+		Message[Error::ConflictingTitrationMethod,titrationMethodConflictingSamples]
+	];
+
+	titrationMethodTest=If[gatherTests,
+		Test["Specified TitrationMethod and associated options should not conflict",
+			And@@titrationMethodConflictQs,
+			True
+		],
+		{}
+	];
+
 
 	(* Update MaxNumberOfCycles and MaxAcidAmountPerCycle/MaxBaseAmountPerCycle if titrationMethod is Robotic and these options were not specified*)
 	(* Originally, MaxNumberOfCycles is default to 10, MaxAcidAmountPerCycle/MaxBaseAmountPerCycle is 2.5% of initial volume. *)
@@ -4618,8 +4622,8 @@ findpHTitratorCaps[modelContainerPacket : PacketP[], calibrationFunction : (_Qua
 
 	possibleCaps = If[Length[capsCandidates] > 0 && (!additionVolumeTooLargeQ)&& (!NullQ[calibrationFunction]),
 		Module[{minHeight,minVolume},
-			(* Calculate the required min liquid height/volume to reach the probe *)
-			minHeight = internalDepth - Lookup[capsCandidates, InternalDepth];
+			(* Calculate the required min liquid height/volume to reach the probe, set 50 Millimeter tolerance since the minDepths of Model[Instrument, pHMeter, "SevenExcellence (for pH) for Robotic Titration"] is 30 mm for fully immersion *)
+			minHeight = internalDepth - Lookup[capsCandidates, InternalDepth] + 50 Millimeter;
 			minVolume = calibrationFunction[#]&/@minHeight;
 			PickList[capsCandidates[Object], minVolume, LessP[sampleVolume]]
 		],

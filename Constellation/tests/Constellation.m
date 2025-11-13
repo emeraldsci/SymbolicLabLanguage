@@ -1038,3 +1038,847 @@ DefineTests[TraceHistory,
 		]
 	}
 ];
+
+(*CreatedObjects*)
+DefineTests[CreatedObjects,
+	{
+		Example[{Basic, "Return all objects created during the session when logging is enabled:"},
+			(* Create test objects *)
+			createdObjects = Upload[
+				{
+					<|
+						Type -> Object[Container],
+						Name -> "Test Container for CreatedObjects unit tests " <> $SessionUUID,
+						DeveloperObject -> True
+					|>,
+					<|
+						Type -> Object[Sample],
+						Name -> "Test Sample for CreatedObjects unit tests " <> $SessionUUID,
+						DeveloperObject -> True
+					|>
+				}
+			];
+
+			(* Verify they appear in CreatedObjects *)
+			allCreatedObjects = CreatedObjects[];
+
+			(* Check that our test objects are included *)
+			MatchQ[allCreatedObjects, createdObjects],
+			True,
+			Variables :> {createdObjects, allCreatedObjects},
+			Stubs :> {
+				$LogCreatedObjects = True
+			},
+			TearDown :> {
+				(* Clean up test objects *)
+				EraseObject[createdObjects, Force -> True, Verbose -> False];
+			}
+		],
+
+		Example[{Basic, "Return objects created since the specified start date:"},
+
+			(* Create test object before start time *)
+			createdObject1 = Upload[
+				<|
+					Type -> Object[Container],
+					Name -> "Test Container for CreatedObjects date filtering unit tests " <> $SessionUUID,
+					DeveloperObject -> True
+				|>
+			];
+
+			(* Record start time *)
+			startTime = Now;
+
+			(* Wait a moment to ensure timestamp difference *)
+			Pause[0.1];
+
+			(* Create test object after start time *)
+			createdObject2 = Upload[
+				<|
+					Type -> Object[Sample],
+					Name -> "Test Sample for CreatedObjects date filtering unit tests " <> $SessionUUID,
+					DeveloperObject -> True
+				|>
+			];
+
+			(* Get objects created since start time *)
+			afterObjects = CreatedObjects[startTime];
+
+			(* Verify our object is included *)
+			MatchQ[afterObjects, {createdObject2}],
+			True,
+			Variables :> {
+				startTime,
+				createdObject1,
+				createdObject2,
+				afterObjects
+			},
+			Stubs :> {
+				$LogCreatedObjects = True
+			},
+			TearDown :> {
+				EraseObject[
+					{createdObject1, createdObject2},
+					Force -> True, Verbose -> False
+				];
+			}
+		],
+
+		Example[{Basic, "Return objects created within the specified date range:"},
+
+			(* Create test object before start time *)
+			createdObject1 = Upload[
+				<|
+					Type -> Object[Container],
+					Name -> "Test Container for CreatedObjects range filtering unit tests " <> $SessionUUID,
+					DeveloperObject -> True
+				|>
+			];
+
+			(* Record start time *)
+			startTime = Now;
+
+			(* Wait a moment *)
+			Pause[0.1];
+
+			(* Create test object *)
+			createdObject2 = Upload[
+				<|
+					Type -> Object[Sample],
+					Name -> "Test Sample for CreatedObjects range filtering unit tests " <> $SessionUUID,
+					DeveloperObject -> True
+				|>
+			];
+
+			(* Wait a moment *)
+			Pause[0.1];
+
+			(* Record end time *)
+			endTime = Now;
+
+			(* Create test object after start time *)
+			createdObject3 = Upload[
+				<|
+					Type -> Object[Container],
+					Name -> "Test Container 2 for CreatedObjects range filtering unit tests " <> $SessionUUID,
+					DeveloperObject -> True
+				|>
+			];
+
+			(* Get objects created in range *)
+			rangeObjects = CreatedObjects[startTime, endTime];
+
+			(* Verify our object is included *)
+			MatchQ[rangeObjects, {createdObject2}],
+			True,
+			Variables :> {
+				startTime,
+				endTime,
+				createdObject1,
+				createdObject2,
+				createdObject3,
+				rangeObjects
+			},
+			Stubs :> {
+				$LogCreatedObjects = True
+			},
+			TearDown :> {
+				EraseObject[
+					{createdObject1, createdObject2, createdObject3},
+					Force -> True, Verbose -> False
+				];
+			}
+		],
+
+		Example[{Additional, "Created objects are not tracked when logging is disabled and only existing objects in the list are returned:"},
+			(* Create test object - should not be tracked in new list *)
+			createdObject = Upload[
+				<|
+					Type -> Object[Container],
+					Name -> "Test Container for CreatedObjects logging disabled unit tests " <> $SessionUUID,
+					DeveloperObject -> True
+				|>
+			];
+
+			(* CreatedObjects should return existing objects but not track new ones *)
+			(* Since logging is disabled, the function still works but doesn't add to tracking *)
+			CreatedObjects[],
+			{},
+			Variables :> {createdObject},
+			Stubs :> {
+				$LogCreatedObjects = False
+			},
+			TearDown :> {
+				EraseObject[createdObject, Force -> True, Verbose -> False];
+			}
+		],
+
+		Test["$CreatedObjectsData is correctly populated when objects are created:",
+			
+			(* Record initial state *)
+			initialData = $CreatedObjectsData;
+
+			(* Create test object *)
+			createdObject = Upload[
+				<|
+					Type -> Object[Container],
+					Name -> "Test Container for CreatedObjectsData validation " <> $SessionUUID,
+					DeveloperObject -> True
+				|>
+			];
+
+			(* Get final state *)
+			finalData = $CreatedObjectsData;
+
+			{
+				initialData,
+				finalData
+			},
+
+			(* Verify the data structure was updated *)
+			{
+				<||>,
+				<|Global`$ConstellationDomain -> {{RangeP[Now - 1 Minute, Now], createdObject}}|>
+			},
+			Variables :> {
+				initialData,
+				createdObject,
+				finalData
+			},
+			Stubs :> {
+				$LogCreatedObjects = True
+			},
+			TearDown :> {
+				EraseObject[
+					createdObject,
+					Force -> True,
+					Verbose -> False
+				];
+			}
+		]
+	},
+	SymbolSetUp :> {
+		Module[{namedObjects},
+			(* Define named objects that could be created during tests *)
+			namedObjects = {
+				Object[Container, "Test Container for CreatedObjects unit tests " <> $SessionUUID],
+				Object[Sample, "Test Sample for CreatedObjects unit tests " <> $SessionUUID],
+				Object[Container, "Test Container for CreatedObjects date filtering unit tests " <> $SessionUUID],
+				Object[Sample, "Test Sample for CreatedObjects date filtering unit tests " <> $SessionUUID],
+				Object[Container, "Test Container for CreatedObjects range filtering unit tests " <> $SessionUUID],
+				Object[Sample, "Test Sample for CreatedObjects range filtering unit tests " <> $SessionUUID],
+				Object[Container, "Test Container 2 for CreatedObjects range filtering unit tests " <> $SessionUUID],
+				Object[Container, "Test Container for CreatedObjects logging disabled unit tests " <> $SessionUUID]
+			};
+
+			(* Clean up any existing test objects that may have been left over *)
+			EraseObject[
+				PickList[namedObjects, DatabaseMemberQ[namedObjects]],
+				Force -> True,
+				Verbose -> False
+			];
+		]
+	},
+	SymbolTearDown :> {
+		Module[{namedObjects},
+			(* Define named objects that could be created during tests *)
+			namedObjects = {
+				Object[Container, "Test Container for CreatedObjects unit tests " <> $SessionUUID],
+				Object[Sample, "Test Sample for CreatedObjects unit tests " <> $SessionUUID],
+				Object[Container, "Test Container for CreatedObjects date filtering unit tests " <> $SessionUUID],
+				Object[Sample, "Test Sample for CreatedObjects date filtering unit tests " <> $SessionUUID],
+				Object[Container, "Test Container for CreatedObjects range filtering unit tests " <> $SessionUUID],
+				Object[Sample, "Test Sample for CreatedObjects range filtering unit tests " <> $SessionUUID],
+				Object[Container, "Test Container 2 for CreatedObjects range filtering unit tests " <> $SessionUUID],
+				Object[Container, "Test Container for CreatedObjects logging disabled unit tests " <> $SessionUUID]
+			};
+
+			(* Clean up any test objects created during the tests *)
+			EraseObject[
+				PickList[namedObjects, DatabaseMemberQ[namedObjects]],
+				Force -> True,
+				Verbose -> False
+			];
+		]
+	},
+	Stubs :> {
+		$CreatedObjectsData = <||>,
+		$CreatedObjectsCheckpoints = <||>
+	}
+];
+
+(*SetCreatedObjectsCheckpoint*)
+DefineTests[SetCreatedObjectsCheckpoint,
+	{
+		Example[{Basic, "Create a default checkpoint and return the name of the checkpoint:"},
+			SetCreatedObjectsCheckpoint[],
+			Null,
+			TearDown :> {
+				UnsetCreatedObjectsCheckpoint[];
+			}
+		],
+
+		Example[{Basic, "Create a named checkpoint and return the name:"},
+			SetCreatedObjectsCheckpoint["test-checkpoint"],
+			"test-checkpoint",
+			TearDown :> {
+				UnsetCreatedObjectsCheckpoint["test-checkpoint"];
+			}
+		],
+
+		Example[{Basic, "Create a checkpoint with a unique name and return the generated name:"},
+			uniqueTag = SetCreatedObjectsCheckpoint[Unique],
+			_String,
+			Variables :> {uniqueTag},
+			TearDown :> {
+				UnsetCreatedObjectsCheckpoint[uniqueTag];
+			}
+		],
+
+		Example[{Additional, "SetCreatedObjectsCheckpoint automatically enables logging:"},
+			(* Set a checkpoint *)
+			SetCreatedObjectsCheckpoint["logging-test"];
+
+			(* Check that logging is now enabled *)
+			$LogCreatedObjects,
+			True,
+			Stubs :> {
+				$LogCreatedObjects = False
+			},
+			TearDown :> {
+				UnsetCreatedObjectsCheckpoint["logging-test"];
+			}
+		],
+
+		Test["$CreatedObjectsCheckpoints is correctly populated when checkpoints are set:",
+			(* Record initial state *)
+			initialCheckpoints = $CreatedObjectsCheckpoints;
+
+			(* Set a checkpoint *)
+			checkpointTag = "test-checkpoint-validation";
+			SetCreatedObjectsCheckpoint[checkpointTag];
+
+			(* Get final state *)
+			finalCheckpoints = $CreatedObjectsCheckpoints;
+
+			(* Verify the checkpoint was added *)
+			finalCheckpoints,
+
+			<|"test-checkpoint-validation" -> RangeP[Now - 1 Minute, Now]|>,
+			Variables :> {
+				initialCheckpoints,
+				checkpointTag,
+				finalCheckpoints
+			},
+			TearDown :> {
+				UnsetCreatedObjectsCheckpoint["test-checkpoint-validation"];
+			}
+		]
+	},
+	Stubs :> {
+		$CreatedObjectsData = <||>,
+		$CreatedObjectsCheckpoints = <||>
+	}
+];
+
+(*CreatedObjectsCheckpoint*)
+DefineTests[CreatedObjectsCheckpoint,
+	{
+		Example[{Basic, "Return objects created since the default checkpoint:"},
+			(* Set default checkpoint *)
+			SetCreatedObjectsCheckpoint[];
+
+			(* Wait a moment *)
+			Pause[0.1];
+
+			(* Create test object after checkpoint *)
+			createdObject = Upload[
+				<|
+					Type -> Object[Container],
+					Name -> "Test Container for CreatedObjectsCheckpoint default unit tests " <> $SessionUUID,
+					DeveloperObject -> True
+				|>
+			];
+
+			(* Get objects since checkpoint *)
+			checkpointObjects = CreatedObjectsCheckpoint[];
+
+			(* Verify our object is included *)
+			MatchQ[checkpointObjects, {createdObject}],
+			True,
+			Variables :> {
+				createdObject,
+				checkpointObjects
+			},
+			TearDown :> {
+				EraseObject[createdObject, Force -> True, Verbose -> False];
+				UnsetCreatedObjectsCheckpoint[];
+			}
+		],
+
+		Example[{Basic, "Returns objects created since the checkpoint named \"testTag\":"},
+			(* Set named checkpoint *)
+			SetCreatedObjectsCheckpoint["testTag"];
+
+			(* Wait a moment *)
+			Pause[0.1];
+
+			(* Create test object after checkpoint *)
+			createdObject = Upload[
+				<|
+					Type -> Object[Container],
+					Name -> "Test Container for CreatedObjectsCheckpoint named unit tests " <> $SessionUUID,
+					DeveloperObject -> True
+				|>
+			];
+
+			(* Get objects since checkpoint *)
+			checkpointObjects = CreatedObjectsCheckpoint["testTag"];
+
+			(* Verify our object is included *)
+			MatchQ[checkpointObjects, {createdObject}],
+			True,
+			Variables :> {
+				createdObject,
+				checkpointObjects
+			},
+			TearDown :> {
+				EraseObject[createdObject, Force -> True, Verbose -> False];
+				UnsetCreatedObjectsCheckpoint["testTag"];
+			}
+		],
+
+		Example[{Basic, "Returns $Failed for non-existent checkpoint:"},
+			CreatedObjectsCheckpoint["non-existent-checkpoint"],
+			$Failed
+		],
+
+		Test["CreatedObjectsCheckpoint tracks multiple objects correctly:",
+			(* Set checkpoint *)
+			SetCreatedObjectsCheckpoint["multi-test"];
+
+			(* Wait a moment *)
+			Pause[0.1];
+
+			(* Create multiple test objects *)
+			createdObjects = Upload[
+				{
+					<|
+						Type -> Object[Container],
+						Name -> "Test Container 1 for CreatedObjectsCheckpoint multi unit tests " <> $SessionUUID,
+						DeveloperObject -> True
+					|>,
+					<|
+						Type -> Object[Container],
+						Name -> "Test Container 2 for CreatedObjectsCheckpoint multi unit tests " <> $SessionUUID,
+						DeveloperObject -> True
+					|>
+				}
+			];
+
+			(* Get objects since checkpoint *)
+			checkpointObjects = CreatedObjectsCheckpoint["multi-test"];
+
+			(* Verify both objects are included *)
+			MatchQ[checkpointObjects, createdObjects],
+			True,
+			Variables :> {
+				createdObjects,
+				checkpointObjects
+			},
+			TearDown :> {
+				EraseObject[createdObjects, Force -> True, Verbose -> False];
+				UnsetCreatedObjectsCheckpoint["multi-test"];
+			}
+		]
+	},
+	SymbolSetUp :> {
+		Module[{namedObjects},
+			(* Define named objects that could be created during tests *)
+			namedObjects = {
+				Object[Container, "Test Container for CreatedObjectsCheckpoint default unit tests " <> $SessionUUID],
+				Object[Container, "Test Container for CreatedObjectsCheckpoint named unit tests " <> $SessionUUID],
+				Object[Container, "Test Container 1 for CreatedObjectsCheckpoint multi unit tests " <> $SessionUUID],
+				Object[Container, "Test Container 2 for CreatedObjectsCheckpoint multi unit tests " <> $SessionUUID]
+			};
+
+			(* Clean up any existing test objects that may have been left over *)
+			EraseObject[
+				PickList[namedObjects, DatabaseMemberQ[namedObjects]],
+				Force -> True,
+				Verbose -> False
+			];
+		]
+	},
+	SymbolTearDown :> {
+		Module[{namedObjects},
+			(* Define named objects that could be created during tests *)
+			namedObjects = {
+				Object[Container, "Test Container for CreatedObjectsCheckpoint default unit tests " <> $SessionUUID],
+				Object[Container, "Test Container for CreatedObjectsCheckpoint named unit tests " <> $SessionUUID],
+				Object[Container, "Test Container 1 for CreatedObjectsCheckpoint multi unit tests " <> $SessionUUID],
+				Object[Container, "Test Container 2 for CreatedObjectsCheckpoint multi unit tests " <> $SessionUUID]
+			};
+
+			(* Clean up any test objects created during the tests *)
+			EraseObject[
+				PickList[namedObjects, DatabaseMemberQ[namedObjects]],
+				Force -> True,
+				Verbose -> False
+			];
+		]
+	},
+	Stubs :> {
+		$CreatedObjectsData = <||>,
+		$CreatedObjectsCheckpoints = <||>
+	}
+];
+
+(*UnsetCreatedObjectsCheckpoint*)
+DefineTests[UnsetCreatedObjectsCheckpoint,
+	{
+		Example[{Basic, "Remove the default checkpoint and return the default checkpoint name:"},
+			(* Set default checkpoint first *)
+			SetCreatedObjectsCheckpoint[];
+
+			(* Remove it *)
+			UnsetCreatedObjectsCheckpoint[],
+			Null
+		],
+
+		Example[{Basic, "Remove a named checkpoint and return the tag:"},
+			(* Set named checkpoint first *)
+			SetCreatedObjectsCheckpoint["removeTag"];
+
+			(* Remove it *)
+			UnsetCreatedObjectsCheckpoint["removeTag"],
+			"removeTag"
+		],
+
+		Example[{Additional, "Does not error for non-existent checkpoints:"},
+			UnsetCreatedObjectsCheckpoint["never-existed"],
+			"never-existed"
+		],
+
+		Example[{Additional, "After removing checkpoint, CreatedObjectsCheckpoint returns $Failed:"},
+			(* Set checkpoint *)
+			SetCreatedObjectsCheckpoint["temp-checkpoint"];
+
+			(* Remove it *)
+			UnsetCreatedObjectsCheckpoint["temp-checkpoint"];
+
+			(* Try to access it *)
+			CreatedObjectsCheckpoint["temp-checkpoint"],
+			$Failed
+		],
+
+		Test["$CreatedObjectsCheckpoints is correctly updated when checkpoints are removed:",
+			(* Record initial state *)
+			initialCheckpoints = $CreatedObjectsCheckpoints;
+
+			(* Set a checkpoint *)
+			checkpointTag = "test-unset-validation";
+			SetCreatedObjectsCheckpoint[checkpointTag];
+			afterSetCheckpoints = $CreatedObjectsCheckpoints;
+
+			(* Remove the checkpoint *)
+			UnsetCreatedObjectsCheckpoint[checkpointTag];
+			afterUnsetCheckpoints = $CreatedObjectsCheckpoints;
+
+			(* Verify the checkpoint was added then removed *)
+			{
+				afterSetCheckpoints,
+				afterUnsetCheckpoints
+			},
+			{
+				<|checkpointTag -> RangeP[Now - 1 Minute, Now]|>,
+				<||>
+			},
+			Variables :> {
+				initialCheckpoints,
+				checkpointTag,
+				afterSetCheckpoints,
+				afterUnsetCheckpoints
+			}
+		]
+	},
+	Stubs :> {
+		$CreatedObjectsData = <||>,
+		$CreatedObjectsCheckpoints = <||>
+	}
+];
+
+(*EraseCreatedObjects*)
+DefineTests[EraseCreatedObjects,
+	{
+		Example[{Basic, "Erase objects created since the default checkpoint:"},
+			(* Set default checkpoint *)
+			SetCreatedObjectsCheckpoint[];
+
+			(* Wait a moment *)
+			Pause[0.1];
+
+			(* Create test object after checkpoint *)
+			createdObject = Upload[
+				<|
+					Type -> Object[Container],
+					Name -> "Test Container for EraseCreatedObjects unit tests 1 " <> $SessionUUID,
+					DeveloperObject -> True
+				|>
+			];
+
+			(* Erase objects since checkpoint *)
+			erasedObjects = EraseCreatedObjects[];
+
+			(* Verify the object was erased *)
+			{
+				MatchQ[erasedObjects, {createdObject}],
+				DatabaseMemberQ[createdObject]
+			},
+			{True, False},
+			Variables :> {createdObject, erasedObjects},
+			TearDown :> {
+				UnsetCreatedObjectsCheckpoint[];
+			}
+		],
+
+		Example[{Basic, "Erase objects created since a named checkpoint:"},
+			(* Set named checkpoint *)
+			SetCreatedObjectsCheckpoint["test-tag"];
+
+			(* Wait a moment *)
+			Pause[0.1];
+
+			(* Create test object after checkpoint *)
+			createdObject = Upload[
+				<|
+					Type -> Object[Container],
+					Name -> "Test Container for EraseCreatedObjects unit tests 2 " <> $SessionUUID,
+					DeveloperObject -> True
+				|>
+			];
+
+			(* Erase objects since checkpoint *)
+			erasedObjects = EraseCreatedObjects["test-tag"];
+
+			(* Verify the object was erased *)
+			{
+				MatchQ[erasedObjects, {createdObject}],
+				DatabaseMemberQ[createdObject]
+			},
+			{True, False},
+			Variables :> {createdObject, erasedObjects},
+			TearDown :> {
+				UnsetCreatedObjectsCheckpoint["test-tag"];
+			}
+		],
+
+		Example[{Basic, "Erase objects created within a date range:"},
+			(* Record start time *)
+			startTime = Now;
+
+			(* Wait a moment *)
+			Pause[0.1];
+
+			(* Create test object *)
+			createdObject = Upload[
+				<|
+					Type -> Object[Container],
+					Name -> "Test Container for EraseCreatedObjects unit tests 3 " <> $SessionUUID,
+					DeveloperObject -> True
+				|>
+			];
+
+			(* Wait a moment *)
+			Pause[0.1];
+			endTime = Now;
+
+			(* Erase objects in date range *)
+			erasedObjects = EraseCreatedObjects[startTime, endTime];
+
+			(* Verify the object was erased *)
+			{
+				MatchQ[erasedObjects, {createdObject}],
+				DatabaseMemberQ[createdObject]
+			},
+			{True, False},
+			Variables :> {startTime, createdObject, endTime, erasedObjects}
+		],
+
+		Example[{Additional, "Erase objects created since a specific date:"},
+			(* Record start time *)
+			startTime = Now;
+
+			(* Wait a moment *)
+			Pause[0.1];
+
+			(* Create test object *)
+			createdObject = Upload[
+				<|
+					Type -> Object[Container],
+					Name -> "Test Container for EraseCreatedObjects unit tests 4 " <> $SessionUUID,
+					DeveloperObject -> True
+				|>
+			];
+
+			(* Erase objects since start time *)
+			erasedObjects = EraseCreatedObjects[startTime];
+
+			(* Verify the object was erased *)
+			{
+				MatchQ[erasedObjects, {createdObject}],
+				DatabaseMemberQ[createdObject]
+			},
+			{True, False},
+			Variables :> {startTime, createdObject, erasedObjects}
+		],
+
+		Example[{Additional, "Returns $Failed for non-existent checkpoint:"},
+			EraseCreatedObjects["non-existent-checkpoint"],
+			$Failed
+		],
+
+		Test["EraseCreatedObjects handles multiple objects correctly:",
+			(* Set checkpoint *)
+			SetCreatedObjectsCheckpoint["multiple-object-test"];
+
+			(* Wait a moment *)
+			Pause[0.1];
+
+			(* Create multiple test objects *)
+			createdObjects = Upload[
+				{
+					<|
+						Type -> Object[Container],
+						Name -> "Test Container 1 for EraseCreatedObjects unit tests 5 " <> $SessionUUID,
+						DeveloperObject -> True
+					|>,
+					<|
+						Type -> Object[Container],
+						Name -> "Test Container 2 for EraseCreatedObjects unit tests 5 " <> $SessionUUID,
+						DeveloperObject -> True
+					|>
+				}
+			];
+
+			(* Erase the objects *)
+			erasedObjects = EraseCreatedObjects["multiple-object-test"];
+
+			(* Verify all objects were erased *)
+			{
+				MatchQ[erasedObjects, createdObjects],
+				DatabaseMemberQ[createdObjects]
+			},
+			{True, {False, False}},
+			Variables :> {createdObjects, erasedObjects},
+			TearDown :> {
+				UnsetCreatedObjectsCheckpoint["multiple-object-test"];
+			}
+		],
+
+		Test["EraseCreatedObjects returns empty list when no objects exist to erase:",
+			(* Set checkpoint *)
+			SetCreatedObjectsCheckpoint["empty-erase-test"];
+
+			(* Wait a moment but don't create any objects *)
+			Pause[0.1];
+
+			(* Try to erase (should return empty list) *)
+			erasedObjects = EraseCreatedObjects["empty-erase-test"];
+
+			erasedObjects,
+			{},
+			Variables :> {erasedObjects},
+			TearDown :> {
+				UnsetCreatedObjectsCheckpoint["empty-erase-test"];
+			}
+		],
+
+		Test["EraseCreatedObjects with Force -> Automatic shows confirmation dialog on production database:",
+			(* Set checkpoint *)
+			SetCreatedObjectsCheckpoint["force-dialog-test"];
+
+			(* Wait a moment *)
+			Pause[0.1];
+
+			(* Create test object after checkpoint *)
+			createdObject = Upload[
+				<|
+					Type -> Object[Container],
+					Name -> "Test Container for EraseCreatedObjects unit tests 6 " <> $SessionUUID,
+					DeveloperObject -> True
+				|>
+			];
+
+			(* Use Reap/Sow to track if dialog was created and what the user "chose" *)
+			{erasedObjects, dialogCalls} = Reap[
+				EraseCreatedObjects["force-dialog-test"],
+				"dialog-called"
+			];
+
+			(* Verify dialog was created and object still exists (user chose cancel) *)
+			{
+				dialogCalls,
+				DatabaseMemberQ[createdObject]
+			},
+			{{{"dialog-called"}}, True},
+			Variables :> {createdObject, erasedObjects, dialogCalls},
+			Stubs :> {
+				ProductionQ[] = True,
+				EmeraldChoiceDialog[_, _] := (Sow["dialog-called", "dialog-called"]; False)
+			},
+			TearDown :> {
+				UnsetCreatedObjectsCheckpoint["force-dialog-test"];
+				(* Clean up the object that wasn't deleted *)
+				EraseObject[createdObject, Force -> True, Verbose -> False];
+			}
+		]
+	},
+	SymbolSetUp :> {
+		Module[{namedObjects},
+			(* Define named objects that could be created during tests *)
+			namedObjects = {
+				Object[Container, "Test Container for EraseCreatedObjects unit tests 1 " <> $SessionUUID],
+				Object[Container, "Test Container for EraseCreatedObjects unit tests 2 " <> $SessionUUID],
+				Object[Container, "Test Container for EraseCreatedObjects unit tests 3 " <> $SessionUUID],
+				Object[Container, "Test Container for EraseCreatedObjects unit tests 4 " <> $SessionUUID],
+				Object[Container, "Test Container 1 for EraseCreatedObjects unit tests 5 " <> $SessionUUID],
+				Object[Container, "Test Container 2 for EraseCreatedObjects unit tests 5 " <> $SessionUUID],
+				Object[Container, "Test Container for EraseCreatedObjects unit tests 6 " <> $SessionUUID]
+			};
+
+			(* Clean up any existing test objects that may have been left over *)
+			EraseObject[
+				PickList[namedObjects, DatabaseMemberQ[namedObjects]],
+				Force -> True,
+				Verbose -> False
+			];
+		]
+	},
+	SymbolTearDown :> {
+		Module[{namedObjects},
+			(* Define named objects that could be created during tests *)
+			namedObjects = {
+				Object[Container, "Test Container for EraseCreatedObjects unit tests 1 " <> $SessionUUID],
+				Object[Container, "Test Container for EraseCreatedObjects unit tests 2 " <> $SessionUUID],
+				Object[Container, "Test Container for EraseCreatedObjects unit tests 3 " <> $SessionUUID],
+				Object[Container, "Test Container for EraseCreatedObjects unit tests 4 " <> $SessionUUID],
+				Object[Container, "Test Container 1 for EraseCreatedObjects unit tests 5 " <> $SessionUUID],
+				Object[Container, "Test Container 2 for EraseCreatedObjects unit tests 5 " <> $SessionUUID],
+				Object[Container, "Test Container for EraseCreatedObjects unit tests 6 " <> $SessionUUID]
+			};
+
+			(* Clean up any test objects created during the tests *)
+			EraseObject[
+				PickList[namedObjects, DatabaseMemberQ[namedObjects]],
+				Force -> True,
+				Verbose -> False
+			];
+		]
+	},
+	Stubs :> {
+		$LogCreatedObjects = True,
+		$CreatedObjectsData = <||>,
+		$CreatedObjectsCheckpoints = <||>
+	}
+];

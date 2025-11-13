@@ -1863,7 +1863,7 @@ DefineTests[
 					Model[Sample,"Milli-Q water"]
 				},
 				{
-					Model[Container,Vessel,"2 mL clear glass vial, sterile with septum and aluminum crimp top"]
+					Model[Container,Vessel,"id:R8e1PjRDbb0J"]
 				},
 				{
 					150 Microliter
@@ -3096,6 +3096,16 @@ DefineTests[
 				}]
 			}
 		],
+		Example[{Messages, InvalidRecoup, "Throw an error if recouping back to a squeezable, hermetic, or non-dispensable container:"},
+			ExperimentTransfer[
+				Object[Sample, "Test water sample 3 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
+				Model[Container, Vessel, "50mL Tube"],
+				0.5 Gram,
+				IntermediateDecantRecoup -> True
+			],
+			$Failed,
+			Messages :> {Error::InvalidRecoup, Error::InvalidOption}
+		],
 		Example[{Additional,"Hermetic transfer with liquid samples in between two hermetic containers with unsealing specified for the destination:"},
 			ExperimentTransfer[
 				Object[Sample, "Test water sample 3 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
@@ -3532,7 +3542,7 @@ DefineTests[
 		Example[{Messages,"VolatileHazardousSamplesInBSC","Volatile hazardous materials are not allowed to be transferred in a biosafety cabinet:"},
 			ExperimentTransfer[
 				{Model[Sample, "Chloroform"]},
-				{Model[Container, Vessel, "2 mL clear glass vial, sterile with septum and aluminum crimp top"]},
+				{Model[Container, Vessel, "id:R8e1PjRDbb0J"]},
 				{150 Microliter},
 				TransferEnvironment -> Model[Instrument, HandlingStation, BiosafetyCabinet, "Biosafety Cabinet Handling Station for Tissue Culture"],
 				Instrument ->
@@ -3548,7 +3558,7 @@ DefineTests[
 		Example[{Messages,"VolatileHazardousSamplesInBSC","Volatile hazardous materials are not allowed to be handled in a biosafety cabinet:"},
 			ExperimentTransfer[
 				{Model[Sample, "Chloroform"]},
-				{Model[Container, Vessel, "2 mL clear glass vial, sterile with septum and aluminum crimp top"]},
+				{Model[Container, Vessel, "id:R8e1PjRDbb0J"]},
 				{150 Microliter},
 				TransferEnvironment -> Model[Instrument, HandlingStation, BiosafetyCabinet, "Biosafety Cabinet Handling Station for Tissue Culture"],
 				Instrument -> Model[Instrument, Pipette, "Eppendorf Research Plus P200, Tissue Culture"]
@@ -4666,6 +4676,56 @@ DefineTests[
 				WeighingContainer -> ObjectP[Model[Item, WeighBoat]]
 			}]
 		],
+		Example[{Options, BalanceReblanking, "BalanceReblanking is automatically resolved to None if WeighingContainer is not replaceable:"},
+			ExperimentTransfer[
+				{Model[Sample, "Acetylsalicylic Acid (Aspirin)"]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{10 Milligram},
+				Output -> Options
+			],
+			KeyValuePattern[{
+				BalanceReblanking -> None
+			}]
+		],
+		Example[{Options, BalanceReblanking, "BalanceReblanking is automatically resolved to AsNecessary if WeighingContainer is replaceable:"},
+			ExperimentTransfer[
+				{Model[Sample, "Milli-Q water"]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{1 Gram},
+				WeighingContainer -> Model[Item, WeighBoat, "Aluminum Round Micro Weigh Dish, Individual"],
+				Output -> Options
+			],
+			KeyValuePattern[{
+				BalanceReblanking -> AsNecessary
+			}]
+		],
+		Example[{Options, BalanceReblanking, "BalanceReblanking can be specified to Always:"},
+			ExperimentTransfer[
+				{Model[Sample, "Milli-Q water"]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{1 Gram},
+				BalanceReblanking -> Always,
+				WeighingContainer -> Model[Item, WeighBoat, "Aluminum Round Micro Weigh Dish, Individual"],
+				Output -> Options
+			],
+			KeyValuePattern[{
+				BalanceReblanking -> Always
+			}]
+		],
+		Example[{Messages,"InvalidBalanceReblanking","A message is thrown if specified BalanceReblanking is not suitable to weighing container:"},
+			ExperimentTransfer[
+				{Model[Sample, "Milli-Q water"]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{1 Gram},
+				BalanceReblanking -> Always,
+				WeighingContainer -> Object[Container, Vessel, "Test 50mL Tube 4 for ExperimentTransfer" <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {
+				Message[Error::InvalidBalanceReblanking],
+				Message[Error::InvalidOption]
+			}
+		],
 		Example[{Messages,"RequiredWeighingContainerNonEmptyDestination","A message is thrown if the weighing container is set to Null, but the destination position will be non-empty at the time of transfer:"},
 			ExperimentTransfer[
 				{
@@ -5699,7 +5759,6 @@ DefineTests[
 				{mspProtocolTransferEnvironment,transferProtocolTransferEnvironment}
 			],
 			{
-				(* $TransferFumeHoodModel - Model[Instrument, HandlingStation, FumeHood, "Labconco Premier 6 Foot Variant A"] *)
 				ObjectP[Model[Instrument, HandlingStation, FumeHood]],
 				ObjectP[Model[Instrument, HandlingStation, FumeHood]]
 			}
@@ -5738,7 +5797,6 @@ DefineTests[
 				{mspProtocolTransferEnvironment,transferProtocolTransferEnvironment}
 			],
 			{
-				(* $TransferFumeHoodModel - Model[Instrument, HandlingStation, FumeHood, "Labconco Premier 6 Foot Variant A"] *)
 				ObjectP[Model[Instrument, HandlingStation, FumeHood]],
 				ObjectP[Model[Instrument, HandlingStation, FumeHood]]
 			}
@@ -5984,16 +6042,16 @@ DefineTests[
 					BatchedUnitOperations[[1]][{WeightStabilityDuration, MaxWeightVariation, TareWeightStabilityDuration, MaxTareWeightVariation}]
 				],
 				{
-					{10 Second},
-					{balanceDefault * 5},
-					{60 Second},
+					{$LiquidDefaultWeightStabilityDuration},
+					{balanceDefault * $LiquidDefaultWeightToleranceFactor},
+					{$DefaultWeightStabilityDuration},
 					{balanceDefault}
 				}
 			],
 			True,
 			Variables :> {protocol, balanceDefault}
 		],
-		Test["Resolve WeightStabilityDuration and MaxWeightVariation to 60 s and balance default if we are transferring using balance:",
+		Test["Resolve WeightStabilityDuration and MaxWeightVariation to 180 s and balance default if we are transferring using balance:",
 			protocol = ExperimentTransfer[
 				Model[Sample, "Milli-Q water"],
 				Model[Container, Vessel, "50mL Tube"],
@@ -6007,9 +6065,9 @@ DefineTests[
 					BatchedUnitOperations[[1]][{WeightStabilityDuration, MaxWeightVariation, TareWeightStabilityDuration, MaxTareWeightVariation}]
 				],
 				{
-					{60 Second},
+					{$DefaultWeightStabilityDuration},
 					{balanceDefault},
-					{60 Second},
+					{$DefaultWeightStabilityDuration},
 					{balanceDefault}
 				}
 			],
@@ -6293,8 +6351,8 @@ DefineTests[
 						(*18*)Model[Container, Vessel, "50mL Tube"],
 						(*19*)Model[Container, Vessel, "50mL Tube"],
 						(*20*)Model[Container, Vessel, "50mL Tube"],
-						(*21*)Model[Container, Vessel, "id:6V0npvmW99k1"],
-						(*22*)Model[Container, Vessel, "id:6V0npvmW99k1"],
+						(*21*)Model[Container, Vessel, "id:54n6evKx008Y"],
+						(*22*)Model[Container, Vessel, "id:54n6evKx008Y"],
 						(*23*)Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 						(*24*)Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 						(*25*)Model[Container, Plate, "96-well 2mL Deep Well Plate"],
@@ -7584,7 +7642,7 @@ DefineTests[
 				|>,
 				<|
 					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "id:6V0npvmW99k1"], Objects],
+					Model -> Link[Model[Container, Vessel, "id:54n6evKx008Y"], Objects],
 					Name -> "Test Hermetic Container 1 for ValidExperimentTransferQ" <> $SessionUUID,
 					Hermetic -> True,
 					DeveloperObject -> True,
@@ -7592,7 +7650,7 @@ DefineTests[
 				|>,
 				<|
 					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "id:6V0npvmW99k1"], Objects],
+					Model -> Link[Model[Container, Vessel, "id:54n6evKx008Y"], Objects],
 					Name -> "Test Hermetic Container 2 for ValidExperimentTransferQ" <> $SessionUUID,
 					Hermetic -> True,
 					DeveloperObject -> True,

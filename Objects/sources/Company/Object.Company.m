@@ -60,7 +60,14 @@ DefineObjectType[Object[Company], {
 			Description -> "Quality documentation that this company is responsible for attesting to the accuracy of the data contained therein.",
 			Category -> "Certification Information"
 		},
-
+		CertificateModels -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Report, Certificate][CertificationSource],
+			Description -> "Examples of quality documentation that this company is responsible for attesting to the accuracy of the data contained therein.",
+			Category -> "Certification Information"
+		},
 		(* This is NOT a developer field but we do NOT want it to be in UploadCompany either. Updating this field should be limited to developers only and the external users are not supposed to upload to this field. *)
 		ManufacturingSpecifications -> {
 			Format -> Multiple,

@@ -349,6 +349,15 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Description->"The pore size of the cannula tip filters used during sample transfer.",
 			Category->"Sampling Filtration"
 		},
+		Cannulas->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[Model[Item,Cannula],Object[Item,Cannula]],
+			IndexMatching->SamplesIn,
+			Description->"For each member of SamplesIn, the cannula used to sample media during the dissolution experiment.",
+			Category->"Sampling Filtration"
+		},
 
 		(*degas*)
 		Degas->{
@@ -429,6 +438,16 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Category -> "Placements",
 			Developer -> True,
 			Headers -> {"Object to Place", "Destination Object","Destination Position"}
+		},
+		CannulaTipFilterPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link},
+			Pattern :> {_Link, _Link},
+			Relation -> {Object[Item,Filter], Object[Item,Cannula]},
+			Description -> "A list of placements used to place the cannula tip filter into the instrument.",
+			Category -> "Placements",
+			Developer -> True,
+			Headers -> {"Object to Place", "Destination Object"}
 		},
 		(*misc procedure fields*)
 		RunTime -> {
@@ -544,6 +563,59 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Class -> Integer,
 			Pattern :> GreaterP[0,1],
 			Description -> "The amounts of the samples that are being weighed and transported around the lab. It is quite sad that we need this field, but there is no other way to put in amount to the Transfer subprotocol we will genearate.",
+			Category -> "General",
+			Developer -> True
+		},
+		WasteContainer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Model[Container]
+			],
+			Description -> "The container used to collect waste during cleaning of the gas lines.",
+			Category -> "General",
+			Developer -> True
+		},
+		SecondaryWasteContainer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Model[Container]
+			],
+			Description -> "The container used to collect waste during cleaning of the cannulas at the end of the protocol.",
+			Category -> "General",
+			Developer -> True
+		},
+		CannulaConnections -> {
+			Format -> Multiple,
+			Class -> {Link, String, Link, String},
+			Pattern :> {_Link, ConnectorNameP, _Link, ConnectorNameP},
+			Relation -> {Object[Instrument], Null, Object[Item,Cannula], Null},
+			Description -> "The connection information for the cannulas to the isntrument. This is used to install the new cannulas used in the experiment.",
+			Headers -> {"Instrument", "Instrument Port", "Cannula", "Cannula Port"},
+			Category -> "General",
+			Developer -> True
+		},
+		CannulaDisconnections -> {
+			Format -> Multiple,
+			Class -> {Link, String, Link, String},
+			Pattern :> {_Link, ConnectorNameP, _Link, ConnectorNameP},
+			Relation -> {Object[Instrument], Null, Object[Item,Cannula], Null},
+			Description -> "The disconnection information for the cannulas from the isntrument. This is used to remove the cannulas from the instrument that were installed prior to this experiment.",
+			Headers -> {"Instrument", "Instrument Port", "Cannula", "Cannula Port"},
+			Category -> "General",
+			Developer -> True
+		},
+		ReplacementCannulas -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item,Cannula],
+			Description -> "The cannulas that are being installed on the instrument. If we are using less than 6 positions on the instrument in the protocol, this field will have all 6 cannulas regardless since we want to have identical cannulas in all positions.",
 			Category -> "General",
 			Developer -> True
 		}

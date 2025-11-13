@@ -21,7 +21,7 @@ $TransferBalanceBenchModel = Model[Container, Bench, "id:J8AY5jwRw5o9"];
 (* $HighTechSchlenkLineTransferEnvironments is currently not used in Transfer since there is no room in that hood and also the instructions need to be updated *)
 (* Keeping this hard-coded value for future reference *)
 (* Note that the SchlenkLine field of this fume hood is NOT populated *)
-$HighTechSchlenkLineTransferEnvironments={Object[Instrument, FumeHood, "id:mnk9jOkaVWbm"](*"E6 Hood 1"*)};
+$HighTechSchlenkLineTransferEnvironments={Object[Instrument, HandlingStation, FumeHood, "id:lYq9jRO71WXY"](*"E6 Hood 1"*)};
 
 (* NOTE: These are the single probes ONLY. *)
 $WorkCellProbes={SingleProbe1, SingleProbe2, SingleProbe3, SingleProbe4, SingleProbe5, SingleProbe6, SingleProbe7, SingleProbe8};
@@ -82,9 +82,9 @@ $MicroBalanceCompatibleWeighingContainerModels = {Model[Item, WeighBoat, Weighin
 (* definitely add more to this list as we discover more, i.e. fumehood containing pH meter and schlenk lines *)
 $SpecializedHandlingStationModels = {
 	Model[Instrument, HandlingStation, FumeHood, "id:aXRlGn0rDJGB"], (* Model[Instrument, HandlingStation, FumeHood, "Fume Hood Handling Station with Schlenk Line"] *)
-	Model[Instrument, HandlingStation, FumeHood, "id:1ZA60vzObqa0"] (* Model[Instrument, HandlingStation, FumeHood, "Fumehood with pHMeter"] *)
+	Model[Instrument, HandlingStation, FumeHood, "id:1ZA60vzObqa0"], (* Model[Instrument, HandlingStation, FumeHood, "Fumehood with pHMeter"] *)
+	Model[Instrument, HandlingStation, FumeHood, "id:O81aEBlPJMex"] (* Model[Instrument, HandlingStation, FumeHood, "Fume Hood Handling Station for Waste Disposal"] *)
 };
-
 
 (* ::Subsubsection:: *)
 (*ExperimentTransfer Options*)
@@ -374,7 +374,7 @@ DefineOptions[ExperimentTransfer,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
 				Description -> "Indicates if any residual sample transferred into the intermediate container should be transferred back to the source sample. This option can only be set to True for Object[Sample] source.",
-				Category -> "General"
+				Category -> "Intermediate Decanting"
 			},
 			{
 				OptionName -> BalanceCleaningMethod,
@@ -396,6 +396,15 @@ DefineOptions[ExperimentTransfer,
 					Units -> {1, {Microliter, {Microliter, Milliliter, Liter}}}
 				],
 				Category -> "Hidden"
+			},
+			{
+				OptionName -> BalanceReblanking,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[Always,AsNecessary,None]],
+				Description -> "Indicates the type of re-weighing performed on the balance if material loss is detected or stray material is present. Always indicates weighing container replacement whenever there is any material loss detected OR there is stray material on the outside. AsNecessary indicates weighing container replacement when there is stray material on the outside and cleaning without replacement when the outside is clean and only something is on the balance. None indicates cleaning of weighing container whenever there is any material loss detected OR there is stray material on the outside.",
+				ResolutionDescription -> "Automatically set to AsNecessary if weighing container is replaceable. Otherwise, resolves to None.",
+				Category -> "General"
 			}
 		],
 		{
@@ -636,11 +645,12 @@ Error::AspiratorRequiresSterileTransfer="Transfers using an aspirator, including
 Error::InvalidBackfillGas="All transfers that specify the need for BackfillGas must either occur in a Instrument that is equipped with the correct gas pipe. The manipulations at indices, `3`, have a TransferEnvironment of `1` (check the ArgonHermeticTransfer/NitrogenHermeticTransfer field of the ProvidedHandlingConditions) that is not capable of fulfilling BackfillGas of `2`. If you want this transfer to occur with no BackFill needed, please specify UnsealHermeticSource->True, or reset BackfillGas TransferEnvironment options to Automatic to continue.";
 Error::TransferEnvironmentBalanceCombination="The balance(s) requested, `1`, at manipulation indices, `4`, are not located in the given transfer environment(s), `2`. The available balance models in these transfer environment(s) are, `3`. Please specify another transfer environment for the transfer to occur in or specify a different balance.";
 Error::TransferEnvironmentInstrumentCombination="The instrument(s) requested, `1`, at manipulation indices, `3`, do not have the same CultureHandling or AsepticHandling value as the given transfer environment(s), `2`. Please specify another transfer environment for the transfer to occur in or specify a different instrument.";
-Error::AspiratableOrDispensableFalse="The source containers at indices, `1`, have Aspiratable->False specified in their container models. The destination containers at indices, `2`, have Dispensable->False in their container models. Due to these invalid containers, the transfer cannot be performed. Please choose alternative sources/destinations to transfer to/from.";
+Error::AspiratableOrDispensableFalse="The source containers at indices, `1`, have Aspiratable->False specified in their container models. The destination containers at indices, `2`, have Dispensable->False or Ampoule->True in their container models. Due to these invalid containers, the transfer cannot be performed. Please choose alternative sources/destinations to transfer to/from.";
 Error::InvalidTransferTemperatureGloveBox="All transfers that occur in the glove box cannot have a non-Ambient/25 Celsius SourceTemperature or DestinationTemperature specified since hot/cold transfers cannot be performed in the glove box. The manipulations at indices, `2`, that are specified to occur in the TransferEnvironment(s), `1`, have a non-Ambient SourceTemperature/DestinationTemperature. Please do not specify a SourceTemperature/DestinationTemperature if the transfer is to occur in the glove box.";
 Error::IncompatibleTransferDestinationContainer="The following source sample(s) `1` at manipulation indices, `2` are incompatible to the corresponding destination(s) `3` containing material(s) `4`. Please select destination(s) that do(es) not have ContainerMaterials which are members of the IncompatibleMaterials of the source sample(s).";
 Error::IncompatibleTransferIntermediateContainer="The following source sample(s) `1` at manipulation indices, `2` are incompatible to the corresponding intermediate container(s) `3` containing material(s) `4`. Please specify IntermediateContainer that do(es) not have ContainerMaterials which are members of the IncompatibleMaterials of the source sample(s).";
 Error::RecoupContamination="The following source sample(s) `1` at manipulation indices, `2` are not private samples while IntermediateDecantRecoup option is set to True, which can potentially result in cross-contamination of a public sample while fulfilling the source model sample (if any). Please replace the problematic source sample with an explicit object sample that can be used by your financing team, or set IntermediateDecantRecoup option to False.";
+Error::InvalidRecoup="The following source sample(s) `1` at manipulation indices, `2`, are not possible to recoup the sample back in because one or more of the following reasons: 1) it is a squeezable, hermetic, or explicitly non-dispensable container; 2) the hand pump is used. Please set IntermediateDecantRecoup to False, use a different source sample in a different container, or leave the HandPump option automatic and try again.";
 Error::IncompatibleQuantitativeTransferWeighingContainer="The following container(s) `2` at manipulation indices `3` are incompatible with QuantitativeTransfer `1`. Please set WeighingContainer to a Model[Item,WeighBoat] or Model[Item,WeighBoat,WeighingFunnel] when QuantitativeTransfer is True or allow to resolve automatically.";
 Error::NoCompatibleWeighingContainer="The transfers at  manipulation indices `1` require WeighingContainer (`2`) but no compatible ones were found. Please check the transfer amount, destination Aperture, and IncompatibleMaterials of the sample and QuantitativeTransferWashSolution (if applicable).  If Mode is Micro, only "<>ToString[$MicroBalanceCompatibleWeighingContainerModels, InputForm]<>" can be used. Please modify either amount to trasfer, destination container or quantitative transfer parameters or allow to resolve automatically.";
 Error::IncompatibleWeighingContainer="The following specified WeighingContainer (`1`) at manipulation indices (`2`) are not compatible with the transfer parameters specified. Weighing container must be compatible with the specified transfer amount, destination container Aperture, and should not include any specified IncompatibleMaterials for the sample or QuantitativeTransferWashSolution (if applicable). If Mode is Micro, only "<>ToString[$MicroBalanceCompatibleWeighingContainerModels, InputForm]<>" can be used. Please modify the specified WeighingContainer or allow to resolve automatically.";
@@ -689,6 +699,7 @@ Error::InvalidTransferNonDisposalSourceStorageCondition = "The source samples, `
 Error::NoTransferEnvironmentAvailable = " The manipulation(s) at indices, `1`, cannot find an available TransferEnvironment to transfer from source(s), `2`, to destination(s), `3`, for the following reasons: `4`. Please correct the input accordingly and try again.";
 Error::InvalidTransferEnvironment = "The manipulation(s) at indices, `1` have TransferEnvironment, `2`, that is not suitable for the transfer due to the following reasons: `3`. Please correct the relevant options accordingly and try again.";
 Error::VolatileHazardousSamplesInBSC = "Recirculating biosafety cabinets cannot safely handle volatile hazardous materials. `1` Please use alternative chemicals or use a chemical fume hood as the TransferEnvironment.";
+Error::InvalidBalanceReblanking = "The manipulation(s) at indices, `2` have BalanceReblanking, `1`, that is not suitable for the weighing container: `3`. BalanceReblanking can be specified as Always or AsNecessary only if the weighing container is replaceable. Please correct the relevant options accordingly and try again.";
 
 (*ExperimentTransfer*)
 
@@ -999,7 +1010,7 @@ ExperimentTransfer[
 		CoverFootprints, Dimensions,Footprint,InternalDepth,Parafilm, AluminumFoil, CoverType, CoverFootprint, CrimpType, SeptumRequired, Opaque,
 		Reusable, EngineDefault, NotchPositions, SealType, HorizontalPitch, VerticalPitch, VolumeCalibrations, Columns,
 		Aperture, WellDepth, Sterile, RNaseFree, Squeezable, Material, Counted, TareWeight, Weight, SolutionVolume, Object, Positions, Hermetic, Ampoule, MaxVolume,
-		IncompatibleMaterials,ContainerMaterials, StorageBuffer, StorageBufferVolume, Products,FunnelStemDiameter,FunnelStemLength,Graduations, GraduationType, GraduationLabels, CrossSectionalShape, SamplePreparationCacheFields[Model[Container]]}]];
+		IncompatibleMaterials,ContainerMaterials, StorageBuffer, StorageBufferVolume, Products,FunnelStemDiameter,FunnelStemLength,Graduations, GraduationType, GraduationLabels, CrossSectionalShape, Aspiratable, Dispensable, SamplePreparationCacheFields[Model[Container]]}]];
 	modelContainerPacketFields = Packet @@ modelContainerFields;
 	productFields = {Name, ProductModel, KitComponents, DefaultContainerModel, Deprecated};
 	pipettingMethodFields = {Name, AspirationEquilibrationTime, AspirationMixRate, AspirationPosition, AspirationPositionOffset,
@@ -1671,7 +1682,7 @@ transferModelPackets[myOptions_List]:=transferModelPackets[myOptions]=Module[
 	(* Find the objects for which we do not have packets for. *)
 	modelsNotInSearch=Complement[allModelsFromOptions, Flatten[searchResult]];
 
-	modelContainerFields=DeleteDuplicates[Flatten[{DeveloperObject, BuiltInCover, CoverTypes, CoverFootprints, Parafilm, AluminumFoil, CoverType, CoverFootprint, CrimpType, SeptumRequired, Opaque, Reusable, EngineDefault, NotchPositions, SealType,HorizontalPitch,VerticalPitch,VolumeCalibrations,Columns,Aperture,WellDepth,Sterile,RNaseFree,Squeezable,Material,Counted, TareWeight,Weight,SolutionVolume,Object,Positions,Hermetic,Ampoule,MaxVolume,ContainerMaterials, IncompatibleMaterials,Dimensions,FunnelStemDiameter,FunnelStemLength,Graduations,GraduationTypes,GraduationLabels,CrossSectionalShape,SamplePreparationCacheFields[Model[Container]]}]];
+	modelContainerFields=DeleteDuplicates[Flatten[{DeveloperObject, BuiltInCover, CoverTypes, CoverFootprints, Parafilm, AluminumFoil, CoverType, CoverFootprint, CrimpType, SeptumRequired, Opaque, Reusable, EngineDefault, NotchPositions, SealType,HorizontalPitch,VerticalPitch,VolumeCalibrations,Columns,Aperture,WellDepth,Sterile,RNaseFree,Squeezable,Material,Counted, TareWeight,Weight,SolutionVolume,Object,Positions,Hermetic,Ampoule,MaxVolume,ContainerMaterials, IncompatibleMaterials,Dimensions,FunnelStemDiameter,FunnelStemLength,Graduations,GraduationTypes,GraduationLabels,CrossSectionalShape,Aspiratable,Dispensable,SamplePreparationCacheFields[Model[Container]]}]];
 	modelContainerPacketFields=Packet@@modelContainerFields;
 
 	(* Download packets for these models. *)
@@ -1965,7 +1976,7 @@ nonDeprecatedTransferModelPackets[fakeString_]:=nonDeprecatedTransferModelPacket
 		DeveloperObject, MultiProbeHeadIncompatible, BuiltInCover, CoverTypes, CoverFootprints, Parafilm, AluminumFoil,
 		CoverType, CoverFootprint, CrimpType, SeptumRequired, Opaque, Reusable, EngineDefault, NotchPositions, SealType,
 		HorizontalPitch,VerticalPitch,VolumeCalibrations,Columns,Aperture,WellDepth,Sterile,RNaseFree,Squeezable,Material,Counted,
-		TareWeight,Weight,SolutionVolume,Object,Positions,Hermetic,Ampoule,MaxVolume,IncompatibleMaterials, Products, Dimensions, FunnelStemDiameter,FunnelStemLength,Graduations, GraduationTypes, GraduationLabels, CrossSectionalShape,SamplePreparationCacheFields[Model[Container]]}]];
+		TareWeight,Weight,SolutionVolume,Object,Positions,Hermetic,Ampoule,MaxVolume,IncompatibleMaterials, Products, Dimensions, FunnelStemDiameter,FunnelStemLength,Graduations, GraduationTypes, GraduationLabels, CrossSectionalShape, Aspiratable, Dispensable, SamplePreparationCacheFields[Model[Container]]}]];
 	modelContainerPacketFields=Packet@@modelContainerFields;
 
 	(* Download the fields that we need. *)
@@ -2933,6 +2944,7 @@ resolveExperimentTransferOptions[
 		smallQuantityQuantitativeTransfers, smallQuantityQuantitativeTransferTest, noTransferEnvironmentAvailableErrors, noTransferEnvironmentAvailableOptions,
 		noTransferEnvironmentAvailableTest, invalidTransferEnvironmentErrors, invalidTransferEnvironmentOptions, invalidTransferEnvironmentTest,
 		volatileHazardousSamplesInBSCError, volatileHazardousSamplesInBSCMessage, volatileHazardousSamplesInBSCTest, inputBlendedMapThreadFriendlyOptions,
+		invalidRecoupErrors,invalidRecoupTest,
 		(* *)
 		optionsAndPrecisions, roundedOptions, roundedOptionTests,
 		mapThreadFriendlyOptions, resolvedInstrument, resolvedTransferEnvironment, resolvedBalance,resolvedBalancePreCleaningMethod,
@@ -2972,7 +2984,8 @@ resolveExperimentTransferOptions[
 		invalidNonDisposalSamplesInStorageConditionTests, resolvedSupplementalCertificates, restrictSourceOptions, restrictDestinationOptions,
 		resolvedRestrictSource, resolvedRestrictDestination, reversePipettingSamples,
 		resolvedOptions, mapThreadFriendlyResolvedOptions,resolvedHandlingCondition,resolvedEquivalentTransferEnvironments, resolvedOverdrawVolume, resolvedOverdrawVolumeWasteContainer, resolvedWasteContainer,
-		resolvedWeightStabilityDurations, resolvedMaxWeightVariations, resolvedTareWeightStabilityDurations, resolvedMaxTareWeightVariations, getHandlingStations,
+		resolvedWeightStabilityDurations, resolvedMaxWeightVariations, resolvedTareWeightStabilityDurations, resolvedMaxTareWeightVariations, getHandlingStations, resolvedBalanceReblanking, balanceReblankingErrors, balanceReblankingTest,
+		noRecoupContainerP,
 		(* Resources *)
 		resourceRentContainerBools, resourceFreshBools,
 		(* Final *)
@@ -3044,6 +3057,9 @@ resolveExperimentTransferOptions[
 	(* input can be a single condition, or a list of condition objects *)
 	(* remember to exclude the specialized handling station models that we should not auto-resolve! *)
 	getHandlingStations[myHandlingConditions_] := UnsortedComplement[DeleteDuplicates[Flatten[Lookup[handlingConditionInstrumentLookup["Memoization"], myHandlingConditions, {}]]], $SpecializedHandlingStationModels];
+	
+	(* a scoped pattern, this represents the container model that we do not want operator to pour back, i.e. container that is squeezable or hermetic, or explicitly non-dispensable *)
+	noRecoupContainerP = (KeyValuePattern[{Dispensable -> False}] | KeyValuePattern[{Squeezable -> True}] | KeyValuePattern[{Hermetic -> True}]);
 
 	(* Resolve our sample prep options *)
 	{simulatedSources, simulatedCache, samplePrepTests} = {
@@ -3460,7 +3476,7 @@ resolveExperimentTransferOptions[
 		DeveloperObject, MultiProbeHeadIncompatible, BuiltInCover, CoverTypes, CoverFootprints, Parafilm, AluminumFoil,
 		CoverType, CoverFootprint, CrimpType, SeptumRequired, Opaque, Reusable, EngineDefault, NotchPositions, SealType,
 		HorizontalPitch,VerticalPitch,VolumeCalibrations,Columns,Aperture,WellDepth,Sterile,RNaseFree,Squeezable,Material,Counted,
-		TareWeight,Weight,SolutionVolume,Object,Positions,Hermetic,Ampoule,MaxVolume,IncompatibleMaterials, Products, Dimensions,FunnelStemDiameter,FunnelStemLength,Graduations, GraduationType, GraduationLabels, CrossSectionalShape,SamplePreparationCacheFields[Model[Container]]}]];
+		TareWeight,Weight,SolutionVolume,Object,Positions,Hermetic,Ampoule,MaxVolume,IncompatibleMaterials, Products, Dimensions,FunnelStemDiameter,FunnelStemLength,Graduations, GraduationType, GraduationLabels, CrossSectionalShape,Dispensable,SamplePreparationCacheFields[Model[Container]]}]];
 	modelContainerPacketFields=Packet@@modelContainerFields;
 
 	availableSampleContainerModelPackets=Quiet[
@@ -4300,6 +4316,7 @@ resolveExperimentTransferOptions[
 	incompatibleDestinationContainerErrors={};
 	incompatibleIntermediateContainerErrors={};
 	recoupContaminationErrors={};
+	invalidRecoupErrors={};
 	incompatibleFTVIntermediateContainerErrors={};
 	incompatibleFTVIntermediateDecantErrors={};
 	incompatibleFTVInstrumentErrors={};
@@ -4326,6 +4343,7 @@ resolveExperimentTransferOptions[
 	multichannelDispenseMixWarnings = {};
 	noTransferEnvironmentAvailableErrors = {};
 	invalidTransferEnvironmentErrors = {};
+	balanceReblankingErrors = {};
 
 	(*-- RESOLVE EXPERIMENT OPTIONS --*)
 
@@ -6271,7 +6289,8 @@ resolveExperimentTransferOptions[
 		(*107*)resolvedWeightStabilityDurations,
 		(*108*)resolvedMaxWeightVariations,
 		(*109*)resolvedTareWeightStabilityDurations,
-		(*110*)resolvedMaxTareWeightVariations
+		(*110*)resolvedMaxTareWeightVariations,
+		(*111*)resolvedBalanceReblanking
 	}=Transpose@MapThread[
 		Function[{sourceObject, sourceContainerObject, sourceContainerModelObject, destinationObject, destinationContainerObject, destinationContainerModelObject, collectionContainerSample, sourceIsModelQ, amount, destinationIsWasteQ, options, manipulationIndex, sourceInput, destinationInput},
 			Module[
@@ -6299,7 +6318,7 @@ resolveExperimentTransferOptions[
 					sourceContainerCover,allowSourceContainerReCover,intermediateContainerSemiResolved,workingSourceContainerModelPacketSemiResolved,
 					resolveIntermediateContainer, semiResolvedHandlingConditions, semiResolvedTransferEnvironment, handlingConditions, transferEnvironmentResolutionStrings,
 					equivalentTransferEnvironments, overdrawVolume, fumeHoodRequested, weightStabilityDuration, maxWeightVariation, modelDefaultMaxVariation, tareWeightStabilityDuration, maxTareWeightVariation,
-					needBalanceQ, smallVolumeTransferQ
+					needBalanceQ, smallVolumeTransferQ, balanceReblanking
 				},
 
 
@@ -8530,9 +8549,13 @@ resolveExperimentTransferOptions[
 
 				(* Get the aperture of our destination container. *)
 				(* NOTE: Vessels have this number under Aperture, Plates have it under WellDiameter. *)
-				destinationContainerAperture=If[MatchQ[Lookup[destinationContainerModelPacket, Aperture], DistanceP],
-					Lookup[destinationContainerModelPacket, Aperture],
-					Lookup[destinationContainerModelPacket, WellDiameter]
+				destinationContainerAperture= Which[
+					DistanceQ[Lookup[destinationContainerModelPacket, Aperture]],
+						Lookup[destinationContainerModelPacket, Aperture],
+					DistanceQ[Lookup[destinationContainerModelPacket, WellDiameter]],
+						Lookup[destinationContainerModelPacket, WellDiameter],
+					True,
+						Null
 				];
 
 				(* Preresolve the balance option *)
@@ -8632,6 +8655,24 @@ resolveExperimentTransferOptions[
 						],
 					True,
 						Null
+				];
+
+				balanceReblanking = Which[
+					(* Did the user give us a value? *)
+					MatchQ[Lookup[options, BalanceReblanking], Except[Automatic]],
+					Lookup[options, BalanceReblanking],
+					(* if weighingContainer is Model, resolve to AsNecessary *)
+					MatchQ[weighingContainer, ObjectP[Model[]]],
+					AsNecessary,
+					(*otherwise, either we do not need a weighing container, or weighingContainer is specified object -- resolve balanceReblanking to None*)
+					True,
+					None
+				];
+
+				(* -- Error check for weighingContainer/balanceReblanking -- *)
+				(*--Error for balanceReblanking if weighing container is not a replaceable *)
+				If[MatchQ[weighingContainer, Except[ObjectP[Model]]] && MatchQ[balanceReblanking, AsNecessary|Always],
+					AppendTo[balanceReblankingErrors, {balanceReblanking, manipulationIndex, weighingContainer}]
 				];
 
 				weighingContainerModel = Which[
@@ -10699,7 +10740,7 @@ resolveExperimentTransferOptions[
 				(* FTV to VolumetricFlask only allows Model[Container, Vessel, "id:kEJ9mqaVPPD8"] as IntermediateContainer *)
 				Which[
 					(*If specified option is a Model*)
-					MatchQ[Lookup[options, IntermediateContainer],ObjectP[Model[Container]]],
+					MatchQ[Lookup[options, IntermediateContainer],ObjectP[Model[Container]]|Null],
 						If[MatchQ[Lookup[options, IntermediateContainer], Except[ObjectP[Model[Container, Vessel, "id:kEJ9mqaVPPD8"]]]]
 							&&(volumetricFlaskFTVQ),
 							AppendTo[incompatibleFTVIntermediateContainerErrors,{Lookup[options, IntermediateContainer],manipulationIndex,Lookup[destinationContainerModelPacket,Object],Model[Container, Vessel, "id:kEJ9mqaVPPD8"]}];
@@ -11054,11 +11095,11 @@ resolveExperimentTransferOptions[
 					(* if we are not using balance or we are doing robotic, no need for this at all *)
 					needBalanceQ,
 						Null,
-					(* if we are transferring small amount of liquid, and using balance, set to 10 Second, allow a larger variation due to possible evaporation (5x of balance's model's allowed max variation), otherwise, set to 60 Second and balance default *)
+					(* if we are transferring small amount of liquid, and using balance, set to 10 Second, allow a larger variation due to possible evaporation (5x of balance's model's allowed max variation), otherwise, set to 180 Second and balance default *)
 					smallVolumeTransferQ,
-						10 Second,
+						$LiquidDefaultWeightStabilityDuration,
 					True,
-						60 Second
+						$DefaultWeightStabilityDuration
 				];
 
 				maxWeightVariation = Which[
@@ -11068,9 +11109,9 @@ resolveExperimentTransferOptions[
 					(* if we are not using balance or we are doing robotic, no need for this at all *)
 					needBalanceQ,
 						Null,
-					(* if we are transferring small amount of liquid, and using balance, set to 10 Second, allow a larger variation due to possible evaporation (5x of balance's model's allowed max variation), otherwise, set to 60 Second and balance default *)
+					(* if we are transferring small amount of liquid, and using balance, set to 10 Second, allow a larger variation due to possible evaporation (5x of balance's model's allowed max variation), otherwise, set to 180 Second and balance default *)
 					smallVolumeTransferQ,
-						5 * modelDefaultMaxVariation,
+						$LiquidDefaultWeightToleranceFactor * modelDefaultMaxVariation,
 					True,
 						modelDefaultMaxVariation
 				];
@@ -11082,9 +11123,12 @@ resolveExperimentTransferOptions[
 					(* if we are not using balance or we are doing robotic, no need for this at all *)
 					needBalanceQ,
 						Null,
+					(* match WeightStabilityDuration unless we are doing small amount of liquid transfer. In the case of small amount of liquid transfer, we should have a longer duration for tare weight *)
+					!smallVolumeTransferQ && MatchQ[maxWeightVariation, TimeP],
+						weightStabilityDuration,
 					(* otherwise always default to 60s *)
 					True,
-						60 Second
+					$DefaultWeightStabilityDuration
 				];
 
 				maxTareWeightVariation = Which[
@@ -11094,9 +11138,34 @@ resolveExperimentTransferOptions[
 					(* if we are not using balance or we are doing robotic, no need for this at all *)
 					needBalanceQ,
 						Null,
+					(* match MaxWeightVariation unless we are doing small amount of liquid transfer. In the case of small amount of liquid transfer, we should have a tighter max variation *)
+					!smallVolumeTransferQ && MatchQ[weightStabilityDuration, MassP],
+						maxWeightVariation,
 					(* otherwise always default to 60s *)
 					True,
 						modelDefaultMaxVariation
+				];
+
+				(* cannot recoup if any of the following: *)
+				If[
+					Or[
+						(* if our source sample is in a squeezable/hermetic container, or a non-dispensable container, we cannot set IntermediateDecantRecoup to True *)
+						And[
+							TrueQ[Lookup[options, IntermediateDecantRecoup]],
+							MatchQ[sourceContainerModelPacket, noRecoupContainerP]
+						],
+						(* if we are using a graduated cylinder but our source sample is in a squeezable/hermetic container, or a non-dispensable container, we cannot set IntermediateDecantRecoup to True *)
+						And[
+							MatchQ[instrument, ObjectP[{Object[Container, GraduatedCylinder], Model[Container, GraduatedCylinder]}]],
+							MatchQ[sourceContainerModelPacket, noRecoupContainerP]
+						],
+						(* if we are using a handpump, hand pump would have been setup inside the working source and it is not possible to do recoup *)
+						And[
+							MatchQ[handPump, ObjectP[]],
+							TrueQ[Lookup[options, IntermediateDecantRecoup]]
+						]
+					],
+					AppendTo[invalidRecoupErrors, {sourceInput, manipulationIndex}]
 				];
 
 				(* Return our options in the order that we will transpose them. *)
@@ -11210,7 +11279,8 @@ resolveExperimentTransferOptions[
 					(*107*)weightStabilityDuration,
 					(*108*)maxWeightVariation,
 					(*109*)tareWeightStabilityDuration,
-					(*110*)maxTareWeightVariation
+					(*110*)maxTareWeightVariation,
+					(*111*)balanceReblanking
 				}
 			]
 		],
@@ -11264,7 +11334,7 @@ resolveExperimentTransferOptions[
 	resolvedWasteContainer = Which[
 		(* If we already have an object, use it! This happens if we are generating Transfer with the resolved options stored in MSP *)
 		!MatchQ[Lookup[myOptions,WasteContainer],Automatic],
-		Lookup[myOptions,WasteContainer],
+			Lookup[myOptions,WasteContainer],
 		Or[
 			(* FillToVolume with VolumetricFlask where we always need an intermediate container with transfer pipet and do not want to pour back *)
 			And[
@@ -11275,18 +11345,22 @@ resolveExperimentTransferOptions[
 				!MatchQ[Lookup[myOptions,FillToVolumeOverfillingRepreparation, False],True],
 				MemberQ[workingDestinationContainerModelPackets,ObjectP[{Model[Container,Vessel,VolumetricFlask],Object[Container,Vessel,VolumetricFlask]}]]
 			],
-			(* We need to do IntermediateDecant, but we are not doing recoup *)
 			MemberQ[
-				Transpose[{resolvedIntermediateDecant,Lookup[myOptions, IntermediateDecantRecoup]}],
-				{True,False}
+				Transpose[{workingSourceContainerModelPackets, resolvedIntermediateDecant, resolvedInstrument, Lookup[myOptions, IntermediateDecantRecoup]}],
+				Alternatives[
+					(* We need to do IntermediateDecant, but we are not doing recoup *)
+					{_, True, _, False},
+					(* We need to use a graduated cylinder, but we are not doing recoup *)
+					{_, _, ObjectP[{Object[Container, GraduatedCylinder], Model[Container, GraduatedCylinder]}], False}
+				]
 			],
 			(* We are using a handpump *)
 			MemberQ[resolvedHandPump, ObjectP[]]
 		],
-		Model[Container, Vessel, "250mL Glass Bottle"],
+			Model[Container, Vessel, "250mL Glass Bottle"],
 		True,
-		(* Otherwise no waste container needed *)
-		Null
+			(* Otherwise no waste container needed *)
+			Null
 	];
 
 
@@ -11599,7 +11673,8 @@ resolveExperimentTransferOptions[
 			WeightStabilityDuration -> resolvedWeightStabilityDurations,
 			MaxWeightVariation -> resolvedMaxWeightVariations,
 			TareWeightStabilityDuration -> resolvedTareWeightStabilityDurations,
-			MaxTareWeightVariation -> resolvedMaxTareWeightVariations
+			MaxTareWeightVariation -> resolvedMaxTareWeightVariations,
+			BalanceReblanking -> resolvedBalanceReblanking
 		}
 	];
 
@@ -12727,11 +12802,13 @@ resolveExperimentTransferOptions[
 	aspiratableOrDispensableFalseResult=MapThread[
 		Function[{sourceContainerPacket, sourceContainerModelPacket, destinationContainerPacket, destinationContainerModelPacket, manipulationIndex},
 			Sequence@@{
-				If[MatchQ[Lookup[sourceContainerModelPacket, Aspiratable], False],
+				(* cannot aspirate a container that is not hermetic, that means it is permanently sealed *)
+				If[MatchQ[Lookup[sourceContainerModelPacket, {Aspiratable, Hermetic, Ampoule}], {False, Except[True], Except[True]}],
 					{Source, sourceContainerPacket, manipulationIndex},
 					Nothing
 				],
-				If[MatchQ[Lookup[sourceContainerModelPacket, Dispensable], False],
+				(* cannot dispense into a container that is ampoule, or not hermetic *)
+				If[MatchQ[Lookup[destinationContainerModelPacket, {Dispensable, Hermetic, Ampoule}], {False, Except[True], _} | {_, _, True}],
 					{Destination, destinationContainerPacket, manipulationIndex},
 					Nothing
 				]
@@ -13216,6 +13293,20 @@ resolveExperimentTransferOptions[
 	recoupContaminationTest = If[Length[recoupContaminationErrors] == 0,
 		Test["We are not recouping residual sample in IntermediateContainer back to a public or model sample:", True, True],
 		Test["We are not recouping residual sample in IntermediateContainer back to a public or model sample:", False, True]
+	];
+
+	(* check if we are trying to recoup intermediate container liquid back to a public sample or model sample, which is not allowed *)
+	If[Length[invalidRecoupErrors] > 0 && messages,
+		Message[
+			Error::InvalidRecoup,
+			ObjectToString[invalidRecoupErrors[[All, 1]], Cache -> simulatedCache],
+			invalidRecoupErrors[[All, 2]]
+		]
+	];
+
+	invalidRecoupTest = If[Length[invalidRecoupErrors] == 0,
+		Test["We are not recouping residual sample that is in a squeezable, hermetic, or non-dispensable container, or in a container installed with a hand pump:", True, True],
+		Test["We are not recouping residual sample that is in a squeezable, hermetic, or non-dispensable container, or in a container installed with a hand pump:", False, True]
 	];
 
 	(* Check that the user did not give us a spatula that cannot fit inside the destination aperture *)
@@ -13924,6 +14015,21 @@ resolveExperimentTransferOptions[
 		Test["The specified TransferEnvironment is suitable to fulfill the user-specified transfers:", False, True]
 	];
 
+	(* Check that the user specified BalanceReblanking does not match with weighing container. *)
+	If[Length[balanceReblankingErrors] > 0 && messages,
+		Message[
+			Error::InvalidBalanceReblanking,
+			balanceReblankingErrors[[All,1]],
+			balanceReblankingErrors[[All,2]],
+			ObjectToString[balanceReblankingErrors[[All,3]], Cache->simulatedCache]
+		]
+	];
+
+	balanceReblankingTest=If[Length[balanceReblankingErrors] == 0,
+		Test["BalanceReblanking must be None if weighing container is not replaceable:", True, True],
+		Test["BalanceReblanking must be None if weighing container is not replaceable:", False, True]
+	];
+
 	(* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
 	invalidInputs=DeleteDuplicates[Flatten[{
 		invalidWellResult[[All,1]],
@@ -14010,6 +14116,10 @@ resolveExperimentTransferOptions[
 			{}
 		],
 		If[Length[recoupContaminationErrors]>0,
+			{IntermediateDecantRecoup},
+			{}
+		],
+		If[Length[invalidRecoupErrors]>0,
 			{IntermediateDecantRecoup},
 			{}
 		],
@@ -14164,6 +14274,10 @@ resolveExperimentTransferOptions[
 			{RestrictSource, RestrictDestination},
 			{}
 		],
+		If[Length[balanceReblankingErrors]>0,
+			{WeighingContainer, BalanceReblanking},
+			{}
+		],
 		(* For experiments that teh developer marks the post processing samples as Living -> True, we need to add potential failing options to invalidOptions list in order to properly fail the resolver *)
 		If[MemberQ[Values[resolvedPostProcessingOptions],$Failed],
 			PickList[Keys[resolvedPostProcessingOptions],Values[resolvedPostProcessingOptions],$Failed],
@@ -14224,6 +14338,7 @@ resolveExperimentTransferOptions[
 			incompatibleFTVIntermediateDecantTest,
 			incompatibleIntermediateContainerTest,
 			recoupContaminationTest,
+			invalidRecoupTest,
 			solidSampleVolumeTest,
 			roundedOptionTests,
 			roundedTransferAmountTest,
@@ -14635,7 +14750,7 @@ transferResourcePackets[
 				expandedQuantitativeTransferWashTips, allTips, talliedTips, tipToResourceListLookup, popTipResource,
 				destinationContainerResources, expandedShell, combinedShell, expandCombinedList, flameDestinations, flameSourceResources, roundToInstrumentResolution,
 				combinedAmountsRounded, combinedAmountsAsVolume, pipetteDialImages, aspirationMixPipetteDialImages, dispenseMixPipetteDialImages, transferInstMaxVolumes, transferInstResolutions,
-				transferInstChannels, transferInstPipetteTypes, discardSources, graduatedCylinderImages, serologicalPipetteImages, intermediateContainerImages, splitTransferEnvironments, overdrawVolumeContainerResource, wasteContainerResource, syringeImages,
+				transferInstChannels, transferInstPipetteTypes, discardSources, graduatedCylinderImages, serologicalPipetteImages, intermediateContainerImages, splitTransferEnvironments, overdrawVolume, overdrawVolumeContainerResource, wasteContainerResource, balanceCleaningBrushResource, waterBasedCleaningWipesResource, alcoholBasedCleaningWipesResource, syringeImages,
 				transferManualUnitOperationPacketsWithRequiredObjects, transferManualUnitOperationRequiredResourceTuples
 			},
 
@@ -14869,6 +14984,34 @@ transferResourcePackets[
 			wasteContainerResource = If[MatchQ[Lookup[myResolvedOptions, WasteContainer], ObjectP[]],
 				Resource[
 					Sample -> Lookup[myResolvedOptions, WasteContainer],
+					Name -> CreateUUID[],
+					Rent -> True
+				],
+				Null
+			];
+			
+			(* Balance Cleaning Tools Resources - BalanceCleaningBrush, WaterBasedCleaningWipes, AlcoholBasedCleaningWipes *)
+			balanceCleaningBrushResource = If[MemberQ[Lookup[myResolvedOptions,Balance],ObjectP[]],
+				Resource[
+					Sample -> Model[Item, Consumable, "id:8qZ1VWkY377b"],(*Model[Item, Consumable, "Antistatic Brush (Narrow Brush Width, Long Handle)"]*)
+					Name -> CreateUUID[],
+					Rent -> True
+				],
+				Null
+			];
+			
+			waterBasedCleaningWipesResource = If[MemberQ[Lookup[myResolvedOptions,Balance],ObjectP[]],
+				Resource[
+					Sample -> Model[Item, Consumable, "id:eGakldewPqzz"],(*Model[Item, Consumable, "Pre-moistened DI Wipes, 100% pure deionized water"]*)
+					Name -> CreateUUID[],
+					Rent -> True
+				],
+				Null
+			];
+			
+			alcoholBasedCleaningWipesResource = If[MemberQ[Lookup[myResolvedOptions,Balance],ObjectP[]],
+				Resource[
+					Sample -> Model[Item, Consumable, "id:XnlV5jNGWBDo"], (*Model[Item, Consumable, "Pre-moistened 70% IPA, 30% pure deionized water Wipes"]*)
 					Name -> CreateUUID[],
 					Rent -> True
 				],
@@ -15747,7 +15890,7 @@ transferResourcePackets[
 							],
 						MatchQ[Lookup[options, WeighingContainer], ObjectP[{Object[Item]}]],
 							If[
-								MatchQ[fastAssocLookup[fastAssoc, fastAssocPacketLookup[fastAssoc,Lookup[options, SachetIntermediateContainer],Model], Counted],True],
+								MatchQ[fastAssocLookup[fastAssoc, fastAssocPacketLookup[fastAssoc,Lookup[options, WeighingContainer],Model], Counted],True],
 								Resource[
 									Sample -> Lookup[options, WeighingContainer],
 									Amount -> 1
@@ -16533,7 +16676,8 @@ transferResourcePackets[
 									WeightStabilityDuration -> Lookup[options, WeightStabilityDuration],
 									MaxWeightVariation -> Lookup[options, MaxWeightVariation],
 									TareWeightStabilityDuration -> Lookup[options, TareWeightStabilityDuration],
-									MaxTareWeightVariation -> Lookup[options, MaxTareWeightVariation]
+									MaxTareWeightVariation -> Lookup[options, MaxTareWeightVariation],
+									BalanceReblanking -> Lookup[options, BalanceReblanking]
 								}
 							]
 						]
@@ -16797,6 +16941,9 @@ transferResourcePackets[
 				Replace[IntermediateContainers]->expandCombinedList[Flatten@(FirstOrDefault/@Lookup[transferManualUnitOperationPackets, Replace[IntermediateContainerLink], Null])],
 				Replace[IntermediateFunnels]->expandCombinedList[Flatten@(FirstOrDefault/@Lookup[transferManualUnitOperationPackets, Replace[IntermediateFunnel], Null])],
 				WasteContainer->wasteContainerResource,
+				BalanceCleaningBrush -> balanceCleaningBrushResource,
+				WaterBasedCleaningWipes -> waterBasedCleaningWipesResource,
+				AlcoholBasedCleaningWipes -> alcoholBasedCleaningWipesResource,
 				Replace[SourceTemperatures]->(Lookup[myResolvedOptions, SourceTemperature]/.{Ambient->25 Celsius, Cold->4 Celsius}),
 				Replace[SourceEquilibrationTimes]->Lookup[myResolvedOptions, SourceEquilibrationTime],
 				Replace[MaxSourceEquilibrationTimes]->Lookup[myResolvedOptions, MaxSourceEquilibrationTime],
@@ -16819,6 +16966,7 @@ transferResourcePackets[
 				Replace[DestinationCovers] -> Link[Lookup[myResolvedOptions, DestinationCover]],
 				Replace[DestinationSeptums] -> Link[Lookup[myResolvedOptions, DestinationSeptum]],
 				Replace[DestinationStoppers] -> Link[Lookup[myResolvedOptions, DestinationStopper]],
+				Replace[BalanceReblankings]->Lookup[myResolvedOptions,BalanceReblanking],
 
 				Replace[BatchedUnitOperations]->(Link[#, Protocol]&)/@Lookup[transferManualUnitOperationPackets, Object],
 				Replace[Checkpoints]->{
