@@ -220,8 +220,15 @@ DefineTests[PDBIDExistsQ,
 		],
 		Example[{Basic,"Return true if the provied string is in the PDB ID database:"},
 			PDBIDExistsQ["5MAC"],
+			True
+		],
+		Example[{Messages,UnexpectedError,"Return a message if an unexpected value is returned:"},
+			PDBIDExistsQ["5MAC"],
 			True,
-			TimeConstraint->200
+			Messages :> {PDBIDExistsQ::UnexpectedError},
+			Stubs:>{
+				URLRead[_,{"StatusCode","Body"}]:=<|"StatusCode"->"500","Body"->"Oops"|>
+			}
 		]
 	}
 ];

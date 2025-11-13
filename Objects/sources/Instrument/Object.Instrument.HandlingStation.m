@@ -96,7 +96,6 @@ DefineObjectType[Object[Instrument, HandlingStation], {
 			Description -> "Whether or not a flow meter is connected to the hood.",
 			Category -> "Instrument Specifications"
 		},
-		(* TODO this is to replace PlumbingAvailable field in Object[Instrument, FumeHood] *)
 		Plumbing -> {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]},Download[Field[Model],Plumbing]],

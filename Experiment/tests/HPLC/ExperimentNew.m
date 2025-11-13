@@ -4482,7 +4482,7 @@ DefineTests[ExperimentHPLC,
 		Test["Ensure that in most cases, a centrifugation subprotocol can be generated:",
 			{minTemperature, maxTemperature} = Lookup[First[Cases[Lookup[FirstCase[OptionDefinition[ExperimentHPLC], KeyValuePattern["OptionName" -> "SampleTemperature"]], "Widget"], KeyValuePattern[Type -> Quantity], Infinity]], {Min, Max}];
 			containers = Flatten[{
-				$ChromatographyLCCompatibleVials,
+				allLCCompatibleVialSearch["Memoization"],
 				Model[Container, Plate, "id:L8kPEjkmLbvW"],(*96-well 2mL Deep Well Plate*)
 				Model[Container, Vessel, "id:xRO9n3vk11pw"],(*15mL Tube*)
 				Model[Container, Vessel, "id:bq9LA0dBGGR6"](*50mL Tube*)

@@ -1468,3 +1468,30 @@ DefineConstant[
 	Model[Sample, "id:N80DNjkL70dN"],
 	"The KCl Model that is used for pH probe electrolyte."
 ];
+
+(* ::Subsubsection::Closed:: *)
+(*$DefaultWeightStabilityDuration*)
+
+DefineConstant[
+	$DefaultWeightStabilityDuration,
+	1 Minute,
+	"The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable when measuring weight of solid or covered liquid samples."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$LiquidDefaultWeightStabilityDuration*)
+
+DefineConstant[
+	$LiquidDefaultWeightStabilityDuration,
+	10 Second,
+	"The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable when measuring weight of uncovered liquid samples."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$LiquidDefaultToleranceFactor*)
+
+DefineConstant[
+	$LiquidDefaultWeightToleranceFactor,
+	5,
+	"The factor to which the balance default variation multiplies to determine the max allowed amplitude the balance readings can fluctuate with for a duration before being considered stable."
+];

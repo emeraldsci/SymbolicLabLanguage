@@ -432,6 +432,8 @@ DefineObjectType[Object[Protocol, PowderXRD], {
 			Relation -> Alternatives[
 				Model[Instrument, FumeHood],
 				Object[Instrument, FumeHood],
+				Model[Instrument, HandlingStation, FumeHood],
+				Object[Instrument, HandlingStation, FumeHood],
 				Model[Instrument, Balance],
 				Object[Instrument, Balance]
 			],

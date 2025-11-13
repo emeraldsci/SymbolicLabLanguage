@@ -10564,7 +10564,7 @@ cyclicVoltammetryResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresol
 		workingElectrodeResource, counterElectrodeResource, uniqueReferenceElectrodes, referenceElectrodeReplaceRules, referenceElectrodeLengths, sortedPreferredContainersByHeight, sortedPreferredContainerHeights, selectedReferenceElectrodeContainerModels, referenceElectrodesField,
 
 		(* other resources *)
-		instrumentResource, reactionVesselHolderModel, reactionVesselHolderResource, fumeHoodModel, fumeHoodResource,
+		instrumentResource, reactionVesselHolderModel, reactionVesselHolderResource, fumeHoodModels, fumeHoodResource,
 		schlenkLineModel, schlenkLineResources, postMeasurementStandardAdditionSchlenkLineResources,
 		reactionVesselModels, reactionVesselResources, electrodeCapResource, tweezerResource,
 		electrodeImagingRackModel, electrodeImagingRackResource, referenceElectrodeRackModel, referenceElectrodeRackResource,
@@ -12441,8 +12441,8 @@ cyclicVoltammetryResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresol
 	reactionVesselHolderResource = Resource[Sample -> reactionVesselHolderModel, Name -> CreateUUID[], Rent -> True];
 
 	(* -- FumeHood -- *)
-	fumeHoodModel = Model[Instrument, FumeHood, "Labconco Premier 6 Foot"];
-	fumeHoodResource = Resource[Instrument -> fumeHoodModel, Time -> experimentTime];
+	fumeHoodModels = commonFumeHoodHandlingStationModels["Memoization"];
+	fumeHoodResource = Resource[Instrument -> fumeHoodModels, Time -> experimentTime];
 
 	(* -- SchlenkLine -- *)
 	schlenkLineModel = Model[Instrument, SchlenkLine, "High Tech Schlenk Line"];

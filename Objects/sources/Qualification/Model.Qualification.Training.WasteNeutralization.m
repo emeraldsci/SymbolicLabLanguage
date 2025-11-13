@@ -40,14 +40,14 @@ DefineObjectType[Model[Qualification,Training,WasteNeutralization],{
             Description -> "The container model used to dilute and neutralize the waste sample in this training qualification.",
             Category -> "General"
         },
-        WasteNeutralizationEnvironment -> {
-            Format -> Single,
-            Class -> Link,
-            Pattern :> _Link,
-            Relation -> Model[Instrument,FumeHood],
-            Description -> "The fume hood instrument model in which the neutralization occurs.",
-            Category -> "General"
-        },
+		WasteNeutralizationEnvironmentModels -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Instrument, FumeHood] | Model[Instrument, HandlingStation, FumeHood],
+			Description -> "A list of fume hood instrument models in which the neutralization occurs.",
+			Category -> "General"
+		},
         WasteNeutralizationInstrument -> {
             Format -> Single,
             Class -> Link,

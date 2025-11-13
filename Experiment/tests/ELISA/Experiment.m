@@ -16,182 +16,127 @@
 (*ExperimentELISA*)
 
 
-DefineTests[
-	ExperimentELISA,
+DefineTests[ExperimentELISA,
 	{
-
 		(* Basic examples *)
-		Example[{Basic,"Accepts a sample object:"},
-			ExperimentELISA[Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID]],
-			ObjectP[Object[Protocol,ELISA]],
-			SetUp:>($CreatedObjects={}),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects]
-			)
+		Example[{Basic, "Accepts a liquid sample object and generates a protocol using an uncoated ELISA Plate:"},
+			ExperimentELISA[Object[Sample, "ExperimentELISA test object sample 1" <> $SessionUUID]],
+			ObjectP[Object[Protocol, ELISA]]
 		],
-		Example[{Basic,"Accepts a container with liquid sample:"},
-			ExperimentELISA[Object[Container,Vessel,"ExperimentELISA test container 1" <> $SessionUUID]],
-			ObjectP[Object[Protocol,ELISA]],
-			SetUp:>($CreatedObjects={}),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects]
-			)
+		Example[{Basic, "Accepts a container with liquid sample and generates a protocol using an uncoated ELISA Plate:"},
+			ExperimentELISA[Object[Container, Vessel, "ExperimentELISA test container 1" <> $SessionUUID]],
+			ObjectP[Object[Protocol, ELISA]]
 		],
-		Example[{Basic,"Accepts multiple sample objects:"},
+		Example[{Basic, "Accepts a pre-coated ELISA plate with solid samples:"},
 			ExperimentELISA[
-				{Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID],Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID]}
+				Object[Container, Plate, "ExperimentELISA test sample-coated plate-1" <> $SessionUUID],
+				Method -> DirectELISA,
+				Coating -> False,
+				PrimaryAntibodyDilutionFactor -> 1
 			],
-			ObjectP[Object[Protocol,ELISA]],
-			SetUp:>($CreatedObjects={}),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects]
-			)
+			ObjectP[Object[Protocol, ELISA]]
 		],
-		(* Additional examples *)
-		Example[{Additional,"Specify Method option to perform a desired DirectELISA experiment. All related information is automatically resolved and populated in the protocol:"},
-			protocol=ExperimentELISA[{
-				Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID],
-				Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID]
-			},Method->DirectELISA];
-			Download[protocol,{Method,PrimaryAntibodies,SecondaryAntibodies,CaptureAntibodies,ReferenceAntigens}],
-			{DirectELISA,{ObjectP[]..},{},{},{}},
-			Variables:>{protocol},
-			SetUp:>($CreatedObjects={}),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects]
-			)
-		],
-		Example[{Additional,"Specify Method option to perform a desired IndirectELISA experiment. All related information is automatically resolved and populated in the protocol:"},
-			protocol=ExperimentELISA[{
-				Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID],
-				Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID]
-			},Method->IndirectELISA];
-			Download[protocol,{Method,PrimaryAntibodies,SecondaryAntibodies,CaptureAntibodies,ReferenceAntigens}],
-			{IndirectELISA,{ObjectP[]..},{ObjectP[]..},{},{}},
-			Variables:>{protocol},
-			SetUp:>($CreatedObjects={}),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects]
-			)
-		],
-		Example[{Additional,"Specify Method option to perform a desired DirectSandwichELISA experiment. All related information is automatically resolved and populated in the protocol:"},
-			protocol=ExperimentELISA[{
-				Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID],
-				Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID]
-			},Method->DirectSandwichELISA];
-			Download[protocol,{Method,PrimaryAntibodies,SecondaryAntibodies,CaptureAntibodies,ReferenceAntigens}],
-			{DirectSandwichELISA,{ObjectP[]..},{},{ObjectP[]..},{}},
-			Variables:>{protocol},
-			SetUp:>($CreatedObjects={}),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects]
-			)
-		],
-		Example[{Additional,"Specify Method option to perform a desired IndirectSandwichELISA experiment. All related information is automatically resolved and populated in the protocol:"},
-			protocol=ExperimentELISA[{
-				Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID],
-				Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID]
-			},Method->IndirectSandwichELISA];
-			Download[protocol,{Method,PrimaryAntibodies,SecondaryAntibodies,CaptureAntibodies,ReferenceAntigens}],
-			{IndirectSandwichELISA,{ObjectP[]..},{ObjectP[]..},{ObjectP[]..},{}},
-			Variables:>{protocol},
-			SetUp:>($CreatedObjects={}),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects]
-			)
-		],
-		Example[{Additional,"Specify Method option to perform a desired DirectCompetitiveELISA experiment. All related information is automatically resolved and populated in the protocol:"},
-			protocol=ExperimentELISA[{
-				Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID],
-				Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID]
-			},Method->DirectCompetitiveELISA];
-			Download[protocol,{Method,PrimaryAntibodies,SecondaryAntibodies,CaptureAntibodies,ReferenceAntigens}],
-			{DirectCompetitiveELISA,{ObjectP[]..},{},{},{ObjectP[]..}},
-			Variables:>{protocol},
-			SetUp:>($CreatedObjects={}),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects]
-			)
-		],
-		Example[{Additional,"Specify Method option to perform a desired IndirectCompetitiveELISA experiment. All related information is automatically resolved and populated in the protocol:"},
-			protocol=ExperimentELISA[{
-				Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID],
-				Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID]
-			},Method->IndirectCompetitiveELISA];
-			Download[protocol,{Method,PrimaryAntibodies,SecondaryAntibodies,CaptureAntibodies,ReferenceAntigens}],
-			{IndirectCompetitiveELISA,{ObjectP[]..},{ObjectP[]..},{},{ObjectP[]..}},
-			Variables:>{protocol},
-			SetUp:>($CreatedObjects={}),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects]
-			)
-		],
-		Example[{Additional,"Specify Method option to perform a desired FastELISA experiment. All related information is automatically resolved and populated in the protocol:"},
-			protocol=ExperimentELISA[{
-				Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID],
-				Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID]
-			},Method->FastELISA];
-			Download[protocol,{Method,PrimaryAntibodies,SecondaryAntibodies,CaptureAntibodies,ReferenceAntigens}],
-			{FastELISA,{ObjectP[]..},{},{ObjectP[]..},{}},
-			Variables:>{protocol},
-			SetUp:>($CreatedObjects={}),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects]
-			)
-		],
-		Example[{Additional,"Perform an IndirectELISA experiment with sample coated:"},
-			ExperimentELISA[{
-				Object[Container,Plate,"ExperimentELISA test sample-coated plate-1" <> $SessionUUID],
-				Object[Container,Plate,"ExperimentELISA test sample-coated plate-2" <> $SessionUUID]
-			},Method->IndirectELISA,Coating->False,Blocking->False,
-				(* Use larger dilution factor to make sure we have enough pipetting volume *)
-				PrimaryAntibodyDilutionFactor->0.1,
-				StandardPrimaryAntibodyDilutionFactor->0.1,
-				BlankPrimaryAntibodyDilutionFactor->0.1,
-				SecondaryAntibodyDilutionFactor->0.1,
-				StandardSecondaryAntibodyDilutionFactor->0.1,
-				BlankSecondaryAntibodyDilutionFactor->0.1
+		Example[{Basic, "Accepts a liquid sample object and generates a protocol using a coated ELISA Plate:"},
+			ExperimentELISA[
+				Object[Sample, "ExperimentELISA test object sample 1" <> $SessionUUID],
+				Method -> DirectSandwichELISA,
+				Coating -> False,
+				ELISAPlate -> Object[Container, Plate, "ExperimentELISA test capture antibody-coated plate-1" <> $SessionUUID]
 			],
-			ObjectP[Object[Protocol,ELISA]],
-			SetUp:>($CreatedObjects={}),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects]
-			)
+			ObjectP[Object[Protocol, ELISA]]
 		],
-		Example[{Additional,"Perform a SandwichELISA experiment with capture antibody coated:"},
+		Example[{Basic, "Accepts multiple liquid sample objects:"},
 			ExperimentELISA[
 				{
-					Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID],
-					Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID]
-				},
-				ELISAPlate->Object[Container,Plate,"ExperimentELISA test capture antibody-coated plate-1" <> $SessionUUID],
-				SecondaryELISAPlate->Object[Container,Plate,"ExperimentELISA test capture antibody-coated plate-2" <> $SessionUUID],
-				Method->DirectSandwichELISA,Coating->False,Blocking->False,
-				PrimaryAntibody->Object[Sample,"ExperimentELISA test antibody object sample 1 HRP-conjugated" <> $SessionUUID],
-				PrimaryAntibodyDilutionFactor->0.1,
-				StandardPrimaryAntibodyDilutionFactor->0.1,
-				BlankPrimaryAntibodyDilutionFactor->0.1
+					Object[Sample, "ExperimentELISA test object sample 1" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test object sample 2" <> $SessionUUID]
+				}
 			],
-			ObjectP[Object[Protocol,ELISA]],
-			SetUp:>($CreatedObjects={}),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects]
-			)
+			ObjectP[Object[Protocol, ELISA]]
 		],
-
-
+		Example[{Basic, "Accepts multiple pre-coated ELISA plate objects with solid samples:"},
+			ExperimentELISA[
+				{
+					Object[Container, Plate, "ExperimentELISA test sample-coated plate-1" <> $SessionUUID],
+					Object[Container, Plate, "ExperimentELISA test sample-coated plate-2" <> $SessionUUID]
+				},
+				Method -> IndirectELISA,
+				Coating -> False,
+				PrimaryAntibodyDilutionFactor -> 0.1,
+				SecondaryAntibodyDilutionFactor -> 0.1
+			],
+			ObjectP[Object[Protocol, ELISA]]
+		],
+		Example[{Basic, "Generates an ELISA protocol if Method is set to DirectELISA:"},
+			ExperimentELISA[
+				{
+					Object[Sample, "ExperimentELISA test object sample 1" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test object sample 2" <> $SessionUUID]
+				},
+				Method -> DirectELISA
+			],
+			ObjectP[Object[Protocol, ELISA]]
+		],
+		Example[{Basic, "Generates an ELISA protocol if Method is set to IndirectELISA experiment:"},
+			ExperimentELISA[
+				{
+					Object[Sample, "ExperimentELISA test object sample 1" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test object sample 2" <> $SessionUUID]
+				},
+				Method -> IndirectELISA
+			],
+			ObjectP[Object[Protocol, ELISA]]
+		],
+		Example[{Basic, "Generates an ELISA protocol if Method is set to DirectSandwichELISA experiment:"},
+			ExperimentELISA[
+				{
+					Object[Sample, "ExperimentELISA test object sample 1" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test object sample 2" <> $SessionUUID]
+				},
+				Method -> DirectSandwichELISA
+			],
+			ObjectP[Object[Protocol, ELISA]]
+		],
+		Example[{Basic, "Generates an ELISA protocol if Method is set to IndirectSandwichELISA experiment:"},
+			ExperimentELISA[
+				{
+					Object[Sample, "ExperimentELISA test object sample 1" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test object sample 2" <> $SessionUUID]
+				},
+				Method -> IndirectSandwichELISA
+			],
+			ObjectP[Object[Protocol, ELISA]]
+		],
+		Example[{Basic, "Generates an ELISA protocol if Method is set to DirectCompetitiveELISA experiment:"},
+			ExperimentELISA[
+				{
+					Object[Sample, "ExperimentELISA test object sample 1" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test object sample 2" <> $SessionUUID]
+				},
+				Method -> DirectCompetitiveELISA
+			],
+			ObjectP[Object[Protocol, ELISA]]
+		],
+		Example[{Basic, "Generates an ELISA protocol if Method is set to IndirectCompetitiveELISA experiment:"},
+			ExperimentELISA[
+				{
+					Object[Sample, "ExperimentELISA test object sample 1" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test object sample 2" <> $SessionUUID]
+				},
+				Method -> IndirectCompetitiveELISA
+			],
+			ObjectP[Object[Protocol, ELISA]]
+		],
+		Example[{Basic, "Generates an ELISA protocol if Method is set to FastELISA experiment:"},
+			ExperimentELISA[
+				{
+					Object[Sample, "ExperimentELISA test object sample 1" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test object sample 2" <> $SessionUUID]
+				},
+				Method -> FastELISA
+			],
+			ObjectP[Object[Protocol, ELISA]]
+		],
 		(*Options*)
 		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
 			options = ExperimentELISA[
@@ -686,11 +631,10 @@ DefineTests[
 				Method->IndirectSandwichELISA
 			];
 			Lookup[options,{
-				SecondaryAntibody,SecondaryAntibodyDilutionFactor,SecondaryAntibodyVolume,SecondaryAntibodyDiluent,SecondaryAntibodyStorageCondition
+				SecondaryAntibody,SecondaryAntibodyDilutionFactor,SecondaryAntibodyDiluent,SecondaryAntibodyStorageCondition
 			}],
 			{ObjectP[Model[Sample,"HRP-Conjugated Goat-Anti-Mouse-IgG Secondary Antibody"]],
 				0.001,
-				Null,
 				ObjectP[Model[Sample,"ELISA Blocker Blocking Buffer"]],
 				Refrigerator},
 			Variables:>{options}
@@ -703,11 +647,10 @@ DefineTests[
 				SecondaryAntibody->Object[Sample,"ExperimentELISA test antibody object sample 6 HRP-conjugated secondary" <> $SessionUUID]
 			];
 			Lookup[options,{
-				SecondaryAntibody,SecondaryAntibodyDilutionFactor,SecondaryAntibodyVolume,SecondaryAntibodyDiluent,SecondaryAntibodyStorageCondition
+				SecondaryAntibody,SecondaryAntibodyDilutionFactor,SecondaryAntibodyDiluent,SecondaryAntibodyStorageCondition
 			}],
 			{ObjectP[Object[Sample,"ExperimentELISA test antibody object sample 6 HRP-conjugated secondary" <> $SessionUUID]],
 				0.001,
-				Null,
 				ObjectP[Model[Sample,"ELISA Blocker Blocking Buffer"]],
 				Refrigerator},
 			Variables:>{options}
@@ -726,7 +669,7 @@ DefineTests[
 			Variables:>{options}
 		],
 		Example[
-			{Options,SecondaryAntibodyVolume,"Specify SecondaryAntibodyVolume:"},
+			{Options,SecondaryAntibodyVolume,"Specify SecondaryAntibodyVolume for IndirectSandwichELISA:"},
 			options=ExperimentELISA[{Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID],Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID],Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID],Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID],Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID],Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID]},
 				Output->Options,
 				Method->IndirectSandwichELISA,
@@ -1203,6 +1146,37 @@ DefineTests[
 			50RPM,
 			Variables:>{options}
 		],
+		Example[{Options, PrimaryAntibodyImmunosorbentWashing, "PrimaryAntibodyImmunosorbentWashing is default to True for DirectELISA:"},
+			options = ExperimentELISA[
+				{Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID], Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID]},
+				Method -> DirectELISA,
+				Output -> Options
+			];
+			Lookup[options, {PrimaryAntibodyImmunosorbentWashing, PrimaryAntibodyImmunosorbentWashVolume, PrimaryAntibodyImmunosorbentNumberOfWashes}],
+			{True, 250 Microliter, 4},
+			Variables :> {options}
+		],
+		Example[{Options, PrimaryAntibodyImmunosorbentWashing, "PrimaryAntibodyImmunosorbentWashing is default to Null for DirectCompetitiveELISA since it is not relevant:"},
+			options = ExperimentELISA[
+				{Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID], Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID]},
+				Method -> DirectCompetitiveELISA,
+				Output -> Options
+			];
+			Lookup[options, PrimaryAntibodyImmunosorbentWashing],
+			Null,
+			Variables :> {options}
+		],
+		Example[{Options, PrimaryAntibodyImmunosorbentWashing, "PrimaryAntibodyImmunosorbentWashing can be skipped:"},
+			options = ExperimentELISA[
+				{Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID], Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID]},
+				Method -> DirectELISA,
+				PrimaryAntibodyImmunosorbentWashing -> False,
+				Output -> Options
+			];
+			Lookup[options, {PrimaryAntibodyImmunosorbentWashing, PrimaryAntibodyImmunosorbentWashVolume, PrimaryAntibodyImmunosorbentNumberOfWashes}],
+			{False, Null, Null},
+			Variables :> {options}
+		],
 		Example[
 			{Options,PrimaryAntibodyImmunosorbentWashVolume,"Specify the volume of WashBuffer added to rinse off the unbound PrimaryAntibody after incubation:"},
 			options=ExperimentELISA[{Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID],Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID]},
@@ -1268,6 +1242,92 @@ DefineTests[
 			Lookup[options,SecondaryAntibodyImmunosorbentMixRate],
 			50RPM,
 			Variables:>{options}
+		],
+		Example[{Options, SecondaryAntibodyImmunosorbentWashing, "SecondaryAntibodyImmunosorbentWashing is default to True for IndirectELISA:"},
+			options = ExperimentELISA[
+				{Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID], Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID]},
+				Method -> IndirectELISA,
+				Output -> Options
+			];
+			Lookup[options, {SecondaryAntibodyImmunosorbentWashing, SecondaryAntibodyImmunosorbentWashVolume, SecondaryAntibodyImmunosorbentNumberOfWashes}],
+			{True, 250 Microliter, 4},
+			Variables :> {options}
+		],
+		Example[{Options, SecondaryAntibodyImmunosorbentWashing, "SecondaryAntibodyImmunosorbentWashing is default to Null for DirectELISA since it is not relevant:"},
+			options = ExperimentELISA[
+				{Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID], Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID]},
+				Method -> DirectELISA,
+				Output -> Options
+			];
+			Lookup[options, SecondaryAntibodyImmunosorbentWashing],
+			Null,
+			Variables :> {options}
+		],
+		Example[{Options, SecondaryAntibodyImmunosorbentWashing, "SecondaryAntibodyImmunosorbentWashing can be skipped:"},
+			options = ExperimentELISA[
+				{Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID], Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID]},
+				Method -> IndirectELISA,
+				SecondaryAntibodyImmunosorbentWashing -> False,
+				Output -> Options
+			];
+			Lookup[options, {SecondaryAntibodyImmunosorbentWashing, SecondaryAntibodyImmunosorbentWashVolume, SecondaryAntibodyImmunosorbentNumberOfWashes}],
+			{False, Null, Null},
+			Variables :> {options}
+		],
+		Example[{Options, SecondaryAntibodyDilutionOnDeck, "SecondaryAntibodyDilutionOnDeck is default to False for IndirectELISA:"},
+			options = ExperimentELISA[
+				{Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID], Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID]},
+				Method -> IndirectELISA,
+				Output -> Options
+			];
+			Lookup[options, SecondaryAntibodyDilutionOnDeck],
+			False,
+			Variables :> {options}
+		],
+		Example[{Options, SecondaryAntibodyDilutionOnDeck, "SecondaryAntibodyDilutionOnDeck can be specified as True and a plate is used as dilution container:"},
+			{options, protocol} = ExperimentELISA[
+				Object[Container, Plate, "ExperimentELISA test sample-coated plate-1" <> $SessionUUID],
+				Method -> IndirectELISA,
+				Coating -> False,
+				PrimaryAntibodyDilutionFactor -> 1,
+				SecondaryAntibodyDilutionFactor -> 0.5,
+				SecondaryAntibodyVolume -> 100 Microliter,(*this is the TransferVolume during dilution*)
+				SecondaryAntibodyImmunosorbentVolume -> 100 Microliter,(*this is the amount added to ELISA plate*)
+				SecondaryAntibodyDilutionOnDeck -> True,
+				Output -> {Options, Result}
+			];
+			{
+				Lookup[options, {SecondaryAntibodyDilutionOnDeck, SecondaryAntibodyDilutionFactor, SecondaryAntibodyVolume, SecondaryAntibodyImmunosorbentVolume}],
+				Download[
+					protocol,
+					{
+						SamplesIn,
+						SecondaryAntibodies,(*indexmatching to samplesin*)
+						SecondaryAntibodyDilutionFactors,
+						SecondaryAntibodyVolumes,
+						WorkingSecondaryAntibodies,(*collapse to 1 since not unique*)
+						SecondaryAntibodyConcentrates,
+						SecondaryAntibodyDilutionVolumes,
+						SecondaryAntibodyDiluentDilutionVolumes,
+						SecondaryAntibodyDilutionContainers
+					}
+				]
+			},
+			{
+				{True, 0.5, EqualP[100 Microliter], EqualP[100 Microliter]},
+				{
+					{ObjectP[Object[Sample, "ExperimentELISA test coated object sample 1" <> $SessionUUID]], ObjectP[Object[Sample, "ExperimentELISA test coated object sample 2" <> $SessionUUID]]},
+					{ObjectP[], ObjectP[]},
+					{0.5, 0.5},
+					{EqualP[100 Microliter], EqualP[100 Microliter]},
+					{ObjectP[]},
+					{ObjectP[]},
+					{EqualP[200 Microliter]},
+					{EqualP[200 Microliter]},
+					{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]}
+				}
+			},
+			Variables :> {options, protocol}
 		],
 		Example[
 			{Options,SecondaryAntibodyImmunosorbentWashVolume,"Specify the volume of WashBuffer added to rinse off the unbound SecondaryAntibody after incubation:"},
@@ -1671,11 +1731,11 @@ DefineTests[
 				StandardSecondaryAntibody->Model[Sample,"HRP-Conjugated Goat-Anti-Mouse-IgG Secondary Antibody"]
 			];
 			Lookup[options,{
-				StandardSecondaryAntibody,StandardSecondaryAntibodyDilutionFactor,StandardSecondaryAntibodyVolume
+				StandardSecondaryAntibody,StandardSecondaryAntibodyDilutionFactor
 			}],
 			{ObjectP[Model[Sample,"HRP-Conjugated Goat-Anti-Mouse-IgG Secondary Antibody"]],
-				0.001,
-				Null},
+				0.001
+			},
 			Variables:>{options}
 		],
 		Example[
@@ -2079,11 +2139,11 @@ DefineTests[
 				BlankSecondaryAntibodyDilutionFactor->0.1
 			];
 			Lookup[options,{
-				BlankSecondaryAntibody,BlankSecondaryAntibodyDilutionFactor,BlankSecondaryAntibodyVolume
+				BlankSecondaryAntibody,BlankSecondaryAntibodyDilutionFactor
 			}],
 			{ObjectP[Object[Sample,"ExperimentELISA test antibody object sample 6 HRP-conjugated secondary" <> $SessionUUID]],
-				0.1,
-				Null},
+				0.1
+			},
 			Variables:>{options}
 		],
 
@@ -3466,6 +3526,22 @@ DefineTests[
 				Error::SampleVolumeShouldNotBeLargerThan50ml
 			}
 		],
+		Example[{Messages, "SecondaryAntibodyDilutionVolumeTooLarge", "Throw an error if the total dilution volume of SecondaryAntibody on deck is larger than 1.8 Milliliter:"},
+			ExperimentELISA[
+				Object[Container, Plate, "ExperimentELISA test sample-coated plate-1" <> $SessionUUID],
+				Method -> IndirectELISA,
+				Coating -> False,
+				PrimaryAntibodyDilutionFactor -> 1,
+				SecondaryAntibodyDilutionOnDeck -> True,
+				SecondaryAntibodyVolume -> 0.1 Milliliter,
+				SecondaryAntibodyDilutionFactor -> 0.1,(*requires 2ml total with 2 samples, each 1ml*)
+				SecondaryAntibodyImmunosorbentVolume -> 100 Microliter
+			],
+			$Failed,
+			Messages :> {
+				Error::SecondaryAntibodyDilutionVolumeTooLarge
+			}
+		],
 		Example[{Messages,"PlateAssignmentExceedsAvailableWells","Each ELISA plate can only accept up to 96 samples:"},
 			ExperimentELISA[Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID],
 				(* Using NumberOfReplicates to force number of samples to go over 96 *)
@@ -3787,211 +3863,268 @@ DefineTests[
 			}
 		]
 	},
-	SymbolSetUp:>(
+	Stubs :> {
+		$PersonID = Object[User, "Test user for notebook-less test protocols"]
+	},
+	SymbolSetUp :> (
+		Off[Warning::SamplesOutOfStock];
+		Off[Warning::InstrumentUndergoingMaintenance];
 		(* Set $CreatedObjects to {} to catch all of objects created *)
-		$CreatedObjects={};
 		ClearMemoization[];
+		$CreatedObjects = {};
 		ClearDownload[];
 
-		Module[{allObjects,existingObjects},
-			allObjects=
-					{
-						(* Bench *)
-						Object[Container,Bench,"Bench for ExperimentELISA tests" <> $SessionUUID],
-						(*Containers*)
-						Object[Container,Vessel,"ExperimentELISA test container 1" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 2" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 3" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 4" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 5" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 6" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 7" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 8" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 9" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 10" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 11" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 12" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 13 (50 mL)" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 14 (liquid handler incompatible)" <> $SessionUUID],
-
-						(* Tags *)
-						Model[Molecule, Protein, "V5 Tag" <> $SessionUUID],
-
-						(*Target Antigens Model molecules*)
-						Model[Molecule,Protein,"ExperimentELISA test target antigen model molecule 1" <> $SessionUUID],
-						(*Antibody Model molecules*)
-						Model[Molecule,Protein,Antibody,"ExperimentELISA test antibody model molecule 1 HRP-conjugated" <> $SessionUUID],
-						Model[Molecule,Protein,Antibody,"ExperimentELISA test antibody model molecule 2 non-conjugated" <> $SessionUUID],
-						Model[Molecule,Protein,Antibody,"ExperimentELISA test antibody model molecule 3 non-conjugated" <> $SessionUUID],
-						Model[Molecule,Protein,Antibody,"ExperimentELISA test antibody model molecule 4 tagged" <> $SessionUUID],
-						Model[Molecule,Protein,Antibody,"ExperimentELISA test antibody model molecule 5 anti-tag" <> $SessionUUID],
-						Model[Molecule,Protein,Antibody,"ExperimentELISA test antibody model molecule 6 HRP-conjugated secondary" <> $SessionUUID],
-
-
-						(* Model samples *)
-						Model[Sample,"ExperimentELISA test model sample 1" <> $SessionUUID],
-						(*Target Antigen Model Samples*)
-						Model[Sample,"ExperimentELISA test target antigen model sample 1" <> $SessionUUID],
-						(* Antibody Model samples *)
-						Model[Sample,"ExperimentELISA test antibody model sample 1 HRP-conjugated" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test antibody model sample 2 non-conjugated" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test antibody model sample 3 non-conjugated" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test antibody model sample 4 tagged" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test antibody model sample 5 anti-tag" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test antibody model sample 6 HRP-conjugated secondary" <> $SessionUUID],
-
-
-						(* Object samples *)
-						Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test object sample 3 discarded" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test object sample 4 solid" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test object sample 5 (semi-large volume)" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test object sample 6 (in liquid handler incompatible container)" <> $SessionUUID],
-						(*Target Antigen Object Samples*)
-						Object[Sample,"ExperimentELISA test target antigen object sample 1" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test target antigen object sample 2" <> $SessionUUID],
-						(* Antibody Object samples *)
-						Object[Sample,"ExperimentELISA test antibody object sample 1 HRP-conjugated" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test antibody object sample 2 non-conjugated" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test antibody object sample 3 non-conjugated" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test antibody object sample 4 tagged" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test antibody object sample 5 anti-tag" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test antibody object sample 5 anti-tag" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test antibody object sample 6 HRP-conjugated secondary" <> $SessionUUID],
-
-						(*Containers in*)
-						Object[Container,Plate,"ExperimentELISA test sample-coated plate-1" <> $SessionUUID],
-						Object[Container,Plate,"ExperimentELISA test sample-coated plate-2" <> $SessionUUID],
-						Object[Container,Plate,"ExperimentELISA test capture antibody-coated plate-1" <> $SessionUUID],
-						Object[Container,Plate,"ExperimentELISA test capture antibody-coated plate-2" <> $SessionUUID],
-						(*Coated samples*)
-						Object[Sample,"ExperimentELISA test coated object sample 1" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test coated object sample 2" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test coated object sample 3" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test coated object sample 4" <> $SessionUUID]
-
-					};
-			existingObjects=PickList[allObjects,DatabaseMemberQ[allObjects]];
-			Quiet[EraseObject[existingObjects,Force->True,Verbose->False]]
+		Module[{allObjects, existingObjects},
+			allObjects = {
+				(* Bench *)
+				Object[Container, Bench, "Bench for ExperimentELISA tests" <> $SessionUUID],
+				(* Containers *)
+				Model[Container, Plate, "Coated Plate Model for ExperimentELISA tests" <> $SessionUUID],
+				Object[Container, Vessel, "ExperimentELISA test container 1" <> $SessionUUID],
+				Object[Container, Vessel, "ExperimentELISA test container 2" <> $SessionUUID],
+				Object[Container, Vessel, "ExperimentELISA test container 3" <> $SessionUUID],
+				Object[Container, Vessel, "ExperimentELISA test container 4" <> $SessionUUID],
+				Object[Container, Vessel, "ExperimentELISA test container 5" <> $SessionUUID],
+				Object[Container, Vessel, "ExperimentELISA test container 6" <> $SessionUUID],
+				Object[Container, Vessel, "ExperimentELISA test container 7" <> $SessionUUID],
+				Object[Container, Vessel, "ExperimentELISA test container 8" <> $SessionUUID],
+				Object[Container, Vessel, "ExperimentELISA test container 9" <> $SessionUUID],
+				Object[Container, Vessel, "ExperimentELISA test container 10" <> $SessionUUID],
+				Object[Container, Vessel, "ExperimentELISA test container 11" <> $SessionUUID],
+				Object[Container, Vessel, "ExperimentELISA test container 12" <> $SessionUUID],
+				Object[Container, Vessel, "ExperimentELISA test container 13 (50 mL)" <> $SessionUUID],
+				Object[Container, Vessel, "ExperimentELISA test container 14 (liquid handler incompatible)" <> $SessionUUID],
+				Object[Container, Vessel, "ExperimentELISA test container 15" <> $SessionUUID],
+				Object[Container, Vessel, "ExperimentELISA test container 16" <> $SessionUUID],
+				Object[Container, Vessel, "ExperimentELISA test container 17" <> $SessionUUID],
+				Object[Container, Vessel, "ExperimentELISA test container 18" <> $SessionUUID],
+				Object[Container, Plate, "ExperimentELISA test sample-coated plate-1" <> $SessionUUID],
+				Object[Container, Plate, "ExperimentELISA test sample-coated plate-2" <> $SessionUUID],
+				Object[Container, Plate, "ExperimentELISA test sample-coated plate-3" <> $SessionUUID],
+				Object[Container, Plate, "ExperimentELISA test capture antibody-coated plate-1" <> $SessionUUID],
+				Object[Container, Plate, "ExperimentELISA test capture antibody-coated plate-2" <> $SessionUUID],
+				Object[Container, Plate, "ExperimentELISA test 24-well plate" <> $SessionUUID],
+				(* Tags *)
+				Model[Molecule, Protein, "ExperimentELISA test V5 Tag" <> $SessionUUID],
+				(* Target Antigens Model molecules *)
+				Model[Molecule, Protein, "ExperimentELISA test target antigen model molecule 1" <> $SessionUUID],
+				Model[Molecule, Protein, "ExperimentELISA test target antigen model molecule 2" <> $SessionUUID],
+				(* Antibody Model molecules *)
+				Model[Molecule, Protein, Antibody, "ExperimentELISA test antibody model molecule 1 HRP-conjugated" <> $SessionUUID],
+				Model[Molecule, Protein, Antibody, "ExperimentELISA test antibody model molecule 2 non-conjugated" <> $SessionUUID],
+				Model[Molecule, Protein, Antibody, "ExperimentELISA test antibody model molecule 3 non-conjugated" <> $SessionUUID],
+				Model[Molecule, Protein, Antibody, "ExperimentELISA test antibody model molecule 4 tagged" <> $SessionUUID],
+				Model[Molecule, Protein, Antibody, "ExperimentELISA test antibody model molecule 5 anti-tag" <> $SessionUUID],
+				Model[Molecule, Protein, Antibody, "ExperimentELISA test antibody model molecule 6 HRP-conjugated secondary" <> $SessionUUID],
+				(* Model samples *)
+				Model[Sample, "ExperimentELISA test model sample 1" <> $SessionUUID],
+				Model[Sample, "ExperimentELISA test model sample 2" <> $SessionUUID],
+				Model[Sample, "ExperimentELISA test deprecated model sample" <> $SessionUUID],
+				(* Target Antigen Model Samples *)
+				Model[Sample, "ExperimentELISA test target antigen model sample 1" <> $SessionUUID],
+				Model[Sample, "ExperimentELISA test target antigen model sample 2" <> $SessionUUID],
+				(* Antibody Model samples *)
+				Model[Sample, "ExperimentELISA test antibody model sample 1 HRP-conjugated" <> $SessionUUID],
+				Model[Sample, "ExperimentELISA test antibody model sample 2 non-conjugated" <> $SessionUUID],
+				Model[Sample, "ExperimentELISA test antibody model sample 3 non-conjugated" <> $SessionUUID],
+				Model[Sample, "ExperimentELISA test antibody model sample 4 tagged" <> $SessionUUID],
+				Model[Sample, "ExperimentELISA test antibody model sample 5 anti-tag" <> $SessionUUID],
+				Model[Sample, "ExperimentELISA test antibody model sample 6 HRP-conjugated secondary" <> $SessionUUID],
+				(* Object samples *)
+				Object[Sample, "ExperimentELISA test object sample 1" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test object sample 2" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test object sample 3 discarded" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test object sample 4 solid" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test object sample 5 (semi-large volume)" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test object sample 6 (in liquid handler incompatible container)" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test sample 7 deprecated " <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test sample 8 w/o analyte w/ composition" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test object sample with different target antigen" <> $SessionUUID],
+				(* Target Antigen Object Samples *)
+				Object[Sample, "ExperimentELISA test target antigen object sample 1" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test target antigen object sample 2" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test target antigen object sample 3" <> $SessionUUID],
+				(* Antibody Object samples *)
+				Object[Sample, "ExperimentELISA test antibody object sample 1 HRP-conjugated" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test antibody object sample 2 non-conjugated" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test antibody object sample 3 non-conjugated" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test antibody object sample 4 tagged" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test antibody object sample 5 anti-tag" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test antibody object sample 5 anti-tag" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test antibody object sample 6 HRP-conjugated secondary" <> $SessionUUID],
+				(*Coated samples*)
+				Object[Sample, "ExperimentELISA test coated object sample 1" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test coated object sample 2" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test coated object sample 3" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test coated object sample 4" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test coated object sample 5" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test coated object sample 6" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test sample 1 in 24-well plate" <> $SessionUUID],
+				Object[Sample, "ExperimentELISA test sample 2 in 24-well plate" <> $SessionUUID]
+			};
+			existingObjects = PickList[allObjects, DatabaseMemberQ[allObjects]];
+			Quiet[EraseObject[existingObjects, Force -> True, Verbose -> False]]
 		];
 
-
 		Block[{$AllowSystemsProtocols = True},
-			Module[{
-				testBench,
-				container1,
-				container2,
-				container3,
-				container4,
-				container5,
-				container6,
-				container7,
-				container8,
-				container9,
-				container10,
-				container11,
-				container12,
-				container13,
-				container14,
-				v5tag,
-				targetAntigen1,
-				antibodyMolecule1,
-				antibodyMolecule2,
-				antibodyMolecule3,
-				antibodyMolecule4,
-				antibodyMolecule5,
-				antibodyMolecule6,
-				antibodyModelSample1,
-				antibodyModelSample2,
-				antibodyModelSample3,
-				antibodyModelSample4,
-				antibodyModelSample5,
-				antibodyModelSample6,
-				testSample1,
-				testSample2,
-				testSample3,
-				testSample4,
-				testSample5,
-				testSample6,
-				testAntigenSample1,
-				testAntigenSample2,
-				testAntibodySample1,
-				testAntibodySample2,
-				testAntibodySample3,
-				testAntibodySample4,
-				testAntibodySample5,
-				testAntibodySample6
-			},
-				(*Test Bench Object*)
-				testBench=Upload[
+			Module[
+				{
+					testBench, testCoatedPlateModel, container1, container2, container3, container4, container5, container6, container7,
+					container8, container9, container10, container11, container12, container13, container14, liquidHandlerIncompatibleContainer, container16,
+					container17, container18, plate1, plate2, plate3, plate4, plate5, plate6, v5tag, targetAntigen1, targetAntigen2,
+					antibodyMolecule1, antibodyMolecule2, antibodyMolecule3, antibodyMolecule4, antibodyMolecule5, antibodyMolecule6,
+					sampleModel1, sampleModel2, deprecatedModel, targetAntigenModel1, targetAntigenModel2, antibodyModelSample1,
+					antibodyModelSample2, antibodyModelSample3, antibodyModelSample4, antibodyModelSample5, antibodyModelSample6,
+					testSample1, testSample2, testSample3, testSample4, testSampleOtherAntigen, testSample5, testSample6, testSample7,
+					testSample8, testAntigenSample1, testAntigenSample2, testAntigenSample3, testAntibodySample1, testAntibodySample2,
+					testAntibodySample3, testAntibodySample4, testAntibodySample5, testAntibodySample6
+				},
+				(* Test Bench Object *)
+				testBench = Upload[
 					<|
-						Type->Object[Container,Bench],
-						Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],
-						Name->"Bench for ExperimentELISA tests" <> $SessionUUID,
-						StorageCondition->Link[Model[StorageCondition,"Ambient Storage"]],
-						DeveloperObject -> True
+						Type -> Object[Container, Bench],
+						Model -> Link[Model[Container, Bench, "The Bench of Testing"],Objects],
+						Name -> "Bench for ExperimentELISA tests" <> $SessionUUID,
+						StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]
 					|>
 				];
 
-				Block[{$DeveloperUpload = True},
-					(*Test Containers*)
-					{
-						container1,
-						container2,
-						container3,
-						container4,
-						container5,
-						container6,
-						container7,
-						container8,
-						container9,
-						container10,
-						container11,
-						container12
-					}=UploadSample[
-						ConstantArray[Model[Container,Vessel,"2mL Tube"],12],
-						ConstantArray[{"Work Surface", testBench},12],
-						Status->ConstantArray[Available,12],
-						Name->{
-							"ExperimentELISA test container 1" <> $SessionUUID,
-							"ExperimentELISA test container 2" <> $SessionUUID,
-							"ExperimentELISA test container 3" <> $SessionUUID,
-							"ExperimentELISA test container 4" <> $SessionUUID,
-							"ExperimentELISA test container 5" <> $SessionUUID,
-							"ExperimentELISA test container 6" <> $SessionUUID,
-							"ExperimentELISA test container 7" <> $SessionUUID,
-							"ExperimentELISA test container 8" <> $SessionUUID,
-							"ExperimentELISA test container 9" <> $SessionUUID,
-							"ExperimentELISA test container 10" <> $SessionUUID,
-							"ExperimentELISA test container 11" <> $SessionUUID,
-							"ExperimentELISA test container 12" <> $SessionUUID
+				(* Create a test plate model with Coating *)
+				testCoatedPlateModel = Upload[<|
+					Type -> Model[Container, Plate],
+					Name -> "Coated Plate Model for ExperimentELISA tests" <> $SessionUUID,
+					Replace[Synonyms] -> {"Coated Plate Model for ExperimentELISA tests" <> $SessionUUID},
+					LiquidHandlerPrefix -> "ExperimentELISA tests" <> $SessionUUID,
+					Coating -> Link[Model[Molecule, Protein, "Protein A"]],
+					Opaque -> True,
+					SelfStanding -> True,
+					Treatment -> NonTreated,
+					MinTemperature -> Quantity[-20., "DegreesCelsius"],
+					MaxTemperature -> Quantity[65., "DegreesCelsius"],
+					MinVolume -> 50 Microliter,
+					MaxVolume -> 300 Microliter,
+					Dimensions -> {127.5 Millimeter, 85.3 Millimeter, 14.4 Millimeter},
+					CrossSectionalShape -> Rectangle,
+					Footprint -> Plate,
+					Replace[PositionPlotting] -> Download[Model[Container, Plate, "96-well Polystyrene Flat-Bottom Plate, Clear"], PositionPlotting],
+					Replace[Positions] -> Download[Model[Container, Plate, "96-well Polystyrene Flat-Bottom Plate, Clear"], Positions],
+					Reusable -> False,
+					Expires -> False,
+					DefaultStorageCondition -> Link[Model[StorageCondition, "id:7X104vnR18vX"]],
+					Replace[CoverFootprints] -> {LidSBSUniversal, SealSBS, SBSPlateLid},
+					Replace[CoverTypes] -> {Seal, Place},
+					(*Plate*)
+					PlateColor -> Clear,
+					WellColor -> Clear,
+					WellDiameter -> 6 Millimeter,
+					HorizontalMargin -> 11.2 Millimeter,
+					VerticalMargin -> 8.15 Millimeter,
+					DepthMargin -> 11.8 Millimeter,
+					HorizontalPitch -> 18 Millimeter,
+					VerticalPitch -> 9 Millimeter,
+					HorizontalOffset -> Quantity[0., "Millimeters"],
+					VerticalOffset -> Quantity[0., "Millimeters"],
+					WellBottomThickness -> 0.8 Millimeter,
+					VerifiedContainerModel -> True,
+					AspectRatio -> 4,
+					Columns -> 4,
+					Rows -> 1,
+					NumberOfWells -> 96,
+					RecommendedFillVolume -> Quantity[100., "Microliters"],
+					WellBottom -> FlatBottom,
+					WellDepth -> 1.8 Millimeter,
+					FlangeWidth -> 1.8 Millimeter,
+					FlangeHeight -> 4.2 Millimeter
+				|>];
+
+				(* Test Containers *)
+				{
+					container1,
+					container2,
+					container3,
+					container4,
+					container5,
+					container6,
+					container7,
+					container8,
+					container9,
+					container10,
+					container11,
+					container12,
+					container13,
+					container14,
+					liquidHandlerIncompatibleContainer,
+					container16,
+					container17,
+					container18,
+					plate1,
+					plate2,
+					plate3,
+					plate4,
+					plate5,
+					plate6
+				} = UploadSample[
+					Join[
+						ConstantArray[Model[Container, Vessel, "2mL Tube"], 13],
+						{
+							Model[Container, Vessel, "50mL Tube"],
+							Model[Container, Vessel, "100 mL Glass Bottle"]
 						},
-						StorageCondition->AmbientStorage
-					];
-
-					container13=UploadSample[Model[Container,Vessel,"50mL Tube"],{"Work Surface", testBench},Status->Available,Name->"ExperimentELISA test container 13 (50 mL)" <> $SessionUUID,StorageCondition->AmbientStorage];
-
-					container14=UploadSample[Model[Container, Vessel, "100 mL Glass Bottle"],{"Work Surface", testBench},Status->Available,Name->"ExperimentELISA test container 14 (liquid handler incompatible)" <> $SessionUUID,StorageCondition->AmbientStorage];
+						ConstantArray[Model[Container, Vessel, "2mL Tube"], 3],
+						ConstantArray[Model[Container, Plate, "96-well Polystyrene Flat-Bottom Plate, Clear"], 3],
+						ConstantArray[testCoatedPlateModel, 2],
+						{Model[Container, Plate, "id:E8zoYveRlldX"]}
+					],
+					ConstantArray[{"Work Surface", testBench}, 24],
+					Status -> Available,
+					Name -> {
+						"ExperimentELISA test container 1" <> $SessionUUID,
+						"ExperimentELISA test container 2" <> $SessionUUID,
+						"ExperimentELISA test container 3" <> $SessionUUID,
+						"ExperimentELISA test container 4" <> $SessionUUID,
+						"ExperimentELISA test container 5" <> $SessionUUID,
+						"ExperimentELISA test container 6" <> $SessionUUID,
+						"ExperimentELISA test container 7" <> $SessionUUID,
+						"ExperimentELISA test container 8" <> $SessionUUID,
+						"ExperimentELISA test container 9" <> $SessionUUID,
+						"ExperimentELISA test container 10" <> $SessionUUID,
+						"ExperimentELISA test container 11" <> $SessionUUID,
+						"ExperimentELISA test container 12" <> $SessionUUID,
+						"ExperimentELISA test container 13 (50 mL)" <> $SessionUUID,
+						"ExperimentELISA test container 14 (liquid handler incompatible)" <> $SessionUUID,
+						"ExperimentELISA test container 15" <> $SessionUUID,
+						"ExperimentELISA test container 16" <> $SessionUUID,
+						"ExperimentELISA test container 17" <> $SessionUUID,
+						"ExperimentELISA test container 18" <> $SessionUUID,
+						"ExperimentELISA test sample-coated plate-1" <> $SessionUUID,
+						"ExperimentELISA test sample-coated plate-2" <> $SessionUUID,
+						"ExperimentELISA test sample-coated plate-3" <> $SessionUUID,
+						"ExperimentELISA test capture antibody-coated plate-1" <> $SessionUUID,
+						"ExperimentELISA test capture antibody-coated plate-2" <> $SessionUUID,
+						"ExperimentELISA test 24-well plate" <> $SessionUUID
+					},
+					StorageCondition -> AmbientStorage
 				];
 
 				(* Target Antigens Model molecules*)
 				{
 					targetAntigen1,
+					targetAntigen2,
 					v5tag
-				}=UploadProtein[
+				} = UploadProtein[
 					{
 						"ExperimentELISA test target antigen model molecule 1" <> $SessionUUID,
-						"V5 Tag" <> $SessionUUID
+						"ExperimentELISA test target antigen model molecule 2" <> $SessionUUID,
+						"ExperimentELISA test V5 Tag" <> $SessionUUID
 					},
-					State->Solid,
-					BiosafetyLevel->"BSL-1",
-					Flammable->False,
+					State -> Solid,
+					BiosafetyLevel -> "BSL-1",
+					Flammable -> False,
 					MSDSFile -> NotApplicable,
-					IncompatibleMaterials->{None},
-					ExpirationHazard->False,
-					AffinityLabel -> {False, True},
-					DetectionLabel -> {False, False}
+					IncompatibleMaterials -> {None},
+					ExpirationHazard -> False,
+					AffinityLabel -> {False, False, True},
+					DetectionLabel -> {False, False, False}
 				];
 
 				(*Antibody Model molecules*)
@@ -4002,8 +4135,7 @@ DefineTests[
 					antibodyMolecule4,
 					antibodyMolecule5,
 					antibodyMolecule6
-
-				}=UploadAntibody[
+				} = UploadAntibody[
 					{
 						"ExperimentELISA test antibody model molecule 1 HRP-conjugated" <> $SessionUUID,
 						"ExperimentELISA test antibody model molecule 2 non-conjugated" <> $SessionUUID,
@@ -4012,40 +4144,57 @@ DefineTests[
 						"ExperimentELISA test antibody model molecule 5 anti-tag" <> $SessionUUID,
 						"ExperimentELISA test antibody model molecule 6 HRP-conjugated secondary" <> $SessionUUID
 					},
-					State->Solid,
-					BiosafetyLevel->"BSL-1",
-					Flammable->False,
+					State -> Solid,
+					BiosafetyLevel -> "BSL-1",
+					Flammable -> False,
 					MSDSFile -> NotApplicable,
-					IncompatibleMaterials->{None},
-					ExpirationHazard->False,
-					Targets->{targetAntigen1}
+					IncompatibleMaterials -> {None},
+					ExpirationHazard -> False,
+					Targets -> {targetAntigen1}
 				];
 
 				(* Model samples *)
-				Upload[
+				{sampleModel1, sampleModel2, deprecatedModel, targetAntigenModel1, targetAntigenModel2} = Upload[{
 					<|
-						Name->"ExperimentELISA test model sample 1" <> $SessionUUID,
-						Type->Model[Sample],
-						DefaultStorageCondition->Link[Model[StorageCondition,"Refrigerator"]],
-						State->Liquid,
-						Replace[Analytes]->{Link[targetAntigen1]}
-					|>
-				];
-
-				(*Target Antigen Model Samples*)
-				Upload[
+						Name -> "ExperimentELISA test model sample 1" <> $SessionUUID,
+						Type -> Model[Sample],
+						DefaultStorageCondition -> Link[Model[StorageCondition, "Refrigerator"]],
+						State -> Liquid,
+						Replace[Analytes] -> {Link[targetAntigen1]}
+					|>,
 					<|
-						Name->"ExperimentELISA test target antigen model sample 1" <> $SessionUUID,
-						Type->Model[Sample],
-						DefaultStorageCondition->Link[Model[StorageCondition,"Refrigerator"]],
-						State->Liquid,
-						Replace[Analytes]->{Link[targetAntigen1]}
+						Name -> "ExperimentELISA test model sample 2" <> $SessionUUID,
+						Type -> Model[Sample],
+						DefaultStorageCondition -> Link[Model[StorageCondition, "Refrigerator"]],
+						State -> Liquid,
+						Replace[Analytes] -> {Link[targetAntigen2]}
+					|>,
+					<|
+						Name -> "ExperimentELISA test deprecated model sample" <> $SessionUUID,
+						Type -> Model[Sample],
+						Deprecated -> True,
+						DefaultStorageCondition -> Link[Model[StorageCondition, "Refrigerator"]],
+						State -> Liquid,
+						Replace[Analytes] -> {Link[targetAntigen1]}
+					|>,
+					(* Target Antigen Model Samples *)
+					<|
+						Name -> "ExperimentELISA test target antigen model sample 1" <> $SessionUUID,
+						Type -> Model[Sample],
+						DefaultStorageCondition -> Link[Model[StorageCondition, "Refrigerator"]],
+						State -> Liquid,
+						Replace[Analytes] -> {Link[targetAntigen1]}
+					|>,
+					<|
+						Name -> "ExperimentELISA test target antigen model sample 2" <> $SessionUUID,
+						Type -> Model[Sample],
+						DefaultStorageCondition -> Link[Model[StorageCondition, "Refrigerator"]],
+						State -> Liquid,
+						Replace[Analytes] -> {Link[targetAntigen2]}
 					|>
-				];
+				}];
 
 				(* Antibody Model samples *)
-
-
 				{
 					antibodyModelSample1,
 					antibodyModelSample2,
@@ -4053,14 +4202,14 @@ DefineTests[
 					antibodyModelSample4,
 					antibodyModelSample5,
 					antibodyModelSample6
-				}=Upload[
-					<|
-						Name->#,
-						Type->Model[Sample],
-						DefaultStorageCondition->Link[Model[StorageCondition,"Refrigerator"]],
-						State->Liquid
-					|>
-				]&/@
+				} = Upload[
+					Map[
+						<|
+							Name -> #,
+							Type -> Model[Sample],
+							DefaultStorageCondition -> Link[Model[StorageCondition, "Refrigerator"]],
+							State -> Liquid
+						|>&,
 						{
 							"ExperimentELISA test antibody model sample 1 HRP-conjugated" <> $SessionUUID,
 							"ExperimentELISA test antibody model sample 2 non-conjugated" <> $SessionUUID,
@@ -4068,16 +4217,20 @@ DefineTests[
 							"ExperimentELISA test antibody model sample 4 tagged" <> $SessionUUID,
 							"ExperimentELISA test antibody model sample 5 anti-tag" <> $SessionUUID,
 							"ExperimentELISA test antibody model sample 6 HRP-conjugated secondary" <> $SessionUUID
-						};
+						}
+					]
+				];
 
-				(*Object samples, Target Antigen Objects, Antibody Objects*)
+				(* Object samples, Target Antigen Objects, Antibody Objects *)
 				{
 					testSample1,
 					testSample2,
 					testSample3,
 					testSample4,
+					testSampleOtherAntigen,
 					testAntigenSample1,
 					testAntigenSample2,
+					testAntigenSample3,
 					testAntibodySample1,
 					testAntibodySample2,
 					testAntibodySample3,
@@ -4085,50 +4238,62 @@ DefineTests[
 					testAntibodySample5,
 					testAntibodySample6,
 					testSample5,
-					testSample6
-				}=UploadSample[
+					testSample6,
+					testSample7,
+					testSample8
+				} = UploadSample[
 					{
 						(* Model samples *)
-						Model[Sample,"ExperimentELISA test model sample 1" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test model sample 1" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test model sample 1" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test model sample 1" <> $SessionUUID],
-						(*Target Antigen Model Samples*)
-						Model[Sample,"ExperimentELISA test target antigen model sample 1" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test target antigen model sample 1" <> $SessionUUID],
+						sampleModel1,
+						sampleModel1,
+						sampleModel1,
+						sampleModel1,
+						sampleModel2,
+						(* Target Antigen Model Samples *)
+						targetAntigenModel1,
+						targetAntigenModel1,
+						targetAntigenModel2,
 						(* Antibody Model samples *)
-						Model[Sample,"ExperimentELISA test antibody model sample 1 HRP-conjugated" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test antibody model sample 2 non-conjugated" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test antibody model sample 3 non-conjugated" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test antibody model sample 4 tagged" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test antibody model sample 5 anti-tag" <> $SessionUUID],
-						Model[Sample,"HRP-Conjugated Goat-Anti-Mouse-IgG Secondary Antibody"],
-						Model[Sample,"ExperimentELISA test model sample 1" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test model sample 1" <> $SessionUUID]
+						antibodyModelSample1,
+						antibodyModelSample2,
+						antibodyModelSample3,
+						antibodyModelSample4,
+						antibodyModelSample5,
+						Model[Sample, "HRP-Conjugated Goat-Anti-Mouse-IgG Secondary Antibody"],
+						sampleModel1,
+						sampleModel1,
+						deprecatedModel,
+						Model[Sample, StockSolution, "Lysozyme from chicken egg white 10 mg/mL PBS"]
 					},
 					{
-						{"A1",container1},
-						{"A1",container2},
-						{"A1",container3},
-						{"A1",container4},
-						{"A1",container5},
-						{"A1",container6},
-						{"A1",container7},
-						{"A1",container8},
-						{"A1",container9},
-						{"A1",container10},
-						{"A1",container11},
-						{"A1",container12},
-						{"A1",container13},
-						{"A1",container14}
+						{"A1", container1},
+						{"A1", container2},
+						{"A1", container3},
+						{"A1", container4},
+						{"A1", container17},
+						{"A1", container5},
+						{"A1", container6},
+						{"A1", container18},
+						{"A1", container7},
+						{"A1", container8},
+						{"A1", container9},
+						{"A1", container10},
+						{"A1", container11},
+						{"A1", container12},
+						{"A1", container13},
+						{"A1", liquidHandlerIncompatibleContainer},
+						{"A1", container14},
+						{"A1", container16}
 					},
-					Name->{
+					Name -> {
 						"ExperimentELISA test object sample 1" <> $SessionUUID,
 						"ExperimentELISA test object sample 2" <> $SessionUUID,
 						"ExperimentELISA test object sample 3 discarded" <> $SessionUUID,
 						"ExperimentELISA test object sample 4 solid" <> $SessionUUID,
+						"ExperimentELISA test object sample with different target antigen" <> $SessionUUID,
 						"ExperimentELISA test target antigen object sample 1" <> $SessionUUID,
 						"ExperimentELISA test target antigen object sample 2" <> $SessionUUID,
+						"ExperimentELISA test target antigen object sample 3" <> $SessionUUID,
 						"ExperimentELISA test antibody object sample 1 HRP-conjugated" <> $SessionUUID,
 						"ExperimentELISA test antibody object sample 2 non-conjugated" <> $SessionUUID,
 						"ExperimentELISA test antibody object sample 3 non-conjugated" <> $SessionUUID,
@@ -4136,279 +4301,329 @@ DefineTests[
 						"ExperimentELISA test antibody object sample 5 anti-tag" <> $SessionUUID,
 						"ExperimentELISA test antibody object sample 6 HRP-conjugated secondary" <> $SessionUUID,
 						"ExperimentELISA test object sample 5 (semi-large volume)" <> $SessionUUID,
-						"ExperimentELISA test object sample 6 (in liquid handler incompatible container)" <> $SessionUUID
+						"ExperimentELISA test object sample 6 (in liquid handler incompatible container)" <> $SessionUUID,
+						"ExperimentELISA test sample 7 deprecated " <> $SessionUUID,
+						"ExperimentELISA test sample 8 w/o analyte w/ composition" <> $SessionUUID
 					},
-					InitialAmount->Join[ConstantArray[1.8Milliliter,12], {25Milliliter,100Milliliter}],
-					StorageCondition->Refrigerator
+					InitialAmount -> Join[ConstantArray[1.8 Milliliter, 14], {25 Milliliter, 100 Milliliter, 1 Milliliter, 1 Milliliter}],
+					StorageCondition -> Refrigerator
 				];
 
 				UploadSample[
-					ConstantArray[Model[Container, Plate, "96-well Polystyrene Flat-Bottom Plate, Clear"],4],
-					ConstantArray[{"Work Surface", testBench},4],
-					Status->ConstantArray[Available,4],
-					Name->{
-						"ExperimentELISA test sample-coated plate-1" <> $SessionUUID,
-						"ExperimentELISA test sample-coated plate-2" <> $SessionUUID,
-						"ExperimentELISA test capture antibody-coated plate-1" <> $SessionUUID,
-						"ExperimentELISA test capture antibody-coated plate-2" <> $SessionUUID
-					},
-					StorageCondition->Refrigerator
-				];
-
-				UploadSample[
+					ConstantArray[sampleModel1, 8],
 					{
-						(* Model samples *)
-						Model[Sample,"ExperimentELISA test model sample 1" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test model sample 1" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test model sample 1" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test model sample 1" <> $SessionUUID]
-
+						{"A1", plate1},
+						{"B1", plate1},
+						{"A1", plate2},
+						{"B1", plate2},
+						{"A1", plate3},
+						{"B1", plate3},
+						{"A1", plate6},
+						{"B1", plate6}
 					},
-					{
-						{"A1",Object[Container,Plate,"ExperimentELISA test sample-coated plate-1" <> $SessionUUID]},
-						{"B1",Object[Container,Plate,"ExperimentELISA test sample-coated plate-1" <> $SessionUUID]},
-						{"A1",Object[Container,Plate,"ExperimentELISA test sample-coated plate-2" <> $SessionUUID]},
-						{"B1",Object[Container,Plate,"ExperimentELISA test sample-coated plate-2" <> $SessionUUID]}
-					},
-					Name->{
+					Name -> {
 						"ExperimentELISA test coated object sample 1" <> $SessionUUID,
 						"ExperimentELISA test coated object sample 2" <> $SessionUUID,
 						"ExperimentELISA test coated object sample 3" <> $SessionUUID,
-						"ExperimentELISA test coated object sample 4" <> $SessionUUID
+						"ExperimentELISA test coated object sample 4" <> $SessionUUID,
+						"ExperimentELISA test coated object sample 5" <> $SessionUUID,
+						"ExperimentELISA test coated object sample 6" <> $SessionUUID,
+						"ExperimentELISA test sample 1 in 24-well plate" <> $SessionUUID,
+						"ExperimentELISA test sample 2 in 24-well plate" <> $SessionUUID
 					},
-					State->ConstantArray[Solid,4],
-					StorageCondition->Refrigerator
+					State -> Join[ConstantArray[Solid, 6], {Liquid, Liquid}],
+					InitialAmount -> Join[ConstantArray[100 Microgram, 6], {1 Milliliter, 1 Milliliter}],
+					StorageCondition -> Refrigerator
 				];
 
-
+				(* Link Analyte and Model sample *)
 				Upload[{
-					<|Object->antibodyMolecule1,
-						Replace[Targets]->{Link[Model[Molecule,Protein,"ExperimentELISA test target antigen model molecule 1" <> $SessionUUID],Antibodies]},
-						DefaultSampleModel->Link[antibodyModelSample1],
-						Replace[SecondaryAntibodies]->{Link[Model[Molecule,Protein,Antibody,"ExperimentELISA test antibody model molecule 6 HRP-conjugated secondary" <> $SessionUUID],Targets]},
-						Replace[DetectionLabels]-> {Link[Model[Molecule, Protein,"Horseradish Peroxidase"]]},
-						DeveloperObject->True
+					<|
+						Object -> antibodyMolecule1,
+						Replace[Targets] -> {Link[targetAntigen1, Antibodies], Link[targetAntigen2, Antibodies]},
+						DefaultSampleModel -> Link[antibodyModelSample1],
+						Replace[SecondaryAntibodies] -> {Link[antibodyMolecule6, Targets]},
+						Replace[DetectionLabels] -> {Link[Model[Molecule, Protein, "Horseradish Peroxidase"]]}
 					|>,
-					<|Object->antibodyMolecule2,
-						Replace[Targets]->{Link[Model[Molecule,Protein,"ExperimentELISA test target antigen model molecule 1" <> $SessionUUID],Antibodies]},
-						DefaultSampleModel->Link[antibodyModelSample2],
-						Replace[SecondaryAntibodies]->{Link[Model[Molecule,Protein,Antibody,"ExperimentELISA test antibody model molecule 6 HRP-conjugated secondary" <> $SessionUUID],Targets]},
-						Organism->Mouse,
-						DeveloperObject->True
+					<|
+						Object -> antibodyMolecule2,
+						Replace[Targets] -> {Link[targetAntigen1, Antibodies]},
+						DefaultSampleModel -> Link[antibodyModelSample2],
+						Replace[SecondaryAntibodies] -> {Link[antibodyMolecule6, Targets]},
+						Organism -> Mouse
 					|>,
-					<|Object->antibodyMolecule3,
-						Replace[Targets]->{Link[Model[Molecule,Protein,"ExperimentELISA test target antigen model molecule 1" <> $SessionUUID],Antibodies]},
-						DefaultSampleModel->Link[antibodyModelSample3],
-						Replace[SecondaryAntibodies]->{Link[Model[Molecule,Protein,Antibody,"ExperimentELISA test antibody model molecule 6 HRP-conjugated secondary" <> $SessionUUID],Targets]},
-						Organism->Rabbit,
-						DeveloperObject->True
+					<|
+						Object -> antibodyMolecule3,
+						Replace[Targets] -> {Link[targetAntigen1, Antibodies]},
+						DefaultSampleModel -> Link[antibodyModelSample3],
+						Replace[SecondaryAntibodies] -> {Link[antibodyMolecule6, Targets]},
+						Organism -> Rabbit
 					|>,
-					<|Object->antibodyMolecule4,
-						Replace[Targets]->{Link[Model[Molecule,Protein,"ExperimentELISA test target antigen model molecule 1" <> $SessionUUID],Antibodies]},
-						DefaultSampleModel->Link[antibodyModelSample4],
-						Replace[SecondaryAntibodies]->{Link[Model[Molecule,Protein,Antibody,"ExperimentELISA test antibody model molecule 5 anti-tag" <> $SessionUUID],Targets]},
-						Replace[AffinityLabels]->{Link[v5tag]},
-						DeveloperObject->True
+					<|
+						Object -> antibodyMolecule4,
+						Replace[Targets] -> {Link[targetAntigen1, Antibodies]},
+						DefaultSampleModel -> Link[antibodyModelSample4],
+						Replace[SecondaryAntibodies] -> {Link[antibodyMolecule5, Targets]},
+						Replace[AffinityLabels] -> {Link[v5tag]}
 					|>,
-					<|Object->antibodyMolecule5,
-						Replace[Targets]->{Link[v5tag, Antibodies]},
-						DefaultSampleModel->Link[Model[Sample, "ExperimentELISA test antibody model sample 5 anti-tag" <> $SessionUUID]],
-						DeveloperObject->True
+					<|
+						Object -> antibodyMolecule5,
+						Replace[Targets] -> {Link[v5tag, Antibodies]},
+						DefaultSampleModel -> Link[antibodyModelSample5]
 					|>,
-					<|Object->antibodyMolecule6,
-						Replace[Targets]->{Link[Model[Molecule,Protein,Antibody,"ExperimentELISA test antibody model molecule 2 non-conjugated" <> $SessionUUID],SecondaryAntibodies],Link[Model[Molecule,Protein,Antibody,"ExperimentELISA test antibody model molecule 3 non-conjugated" <> $SessionUUID],SecondaryAntibodies]},
-						DefaultSampleModel->Link[antibodyModelSample6],
-						Replace[DetectionLabels]-> {Link[Model[Molecule, Protein,"Horseradish Peroxidase"]]},
-						DeveloperObject->True
+					<|
+						Object -> antibodyMolecule6,
+						Replace[Targets] -> {
+							Link[antibodyMolecule2, SecondaryAntibodies],
+							Link[antibodyMolecule3, SecondaryAntibodies]
+						},
+						DefaultSampleModel -> Link[antibodyModelSample6],
+						Replace[DetectionLabels] -> {Link[Model[Molecule, Protein, "Horseradish Peroxidase"]]}
 					|>,
-					<|Object->antibodyModelSample1,
-						Replace[Analytes]->{Link[antibodyMolecule1]},
-						DeveloperObject->True
+					<|
+						Object -> antibodyModelSample1,
+						Replace[Analytes] -> {Link[antibodyMolecule1]}
 					|>,
-					<|Object->antibodyModelSample2,
-						Replace[Analytes]->{Link[antibodyMolecule2]},
-						DeveloperObject->True
+					<|
+						Object -> antibodyModelSample2,
+						Replace[Analytes] -> {Link[antibodyMolecule2]}
 					|>,
-					<|Object->antibodyModelSample3,
-						Replace[Analytes]->{Link[antibodyMolecule3]},
-						DeveloperObject->True
+					<|
+						Object -> antibodyModelSample3,
+						Replace[Analytes] -> {Link[antibodyMolecule3]}
 					|>,
-					<|Object->antibodyModelSample4,
-						Replace[Analytes]->{Link[antibodyMolecule4]},
-						DeveloperObject->True
+					<|
+						Object -> antibodyModelSample4,
+						Replace[Analytes] -> {Link[antibodyMolecule4]}
 					|>,
-					<|Object->antibodyModelSample5,
-						Replace[Analytes]->{Link[antibodyMolecule5]},
-						DeveloperObject->True
+					<|
+						Object -> antibodyModelSample5,
+						Replace[Analytes] -> {Link[antibodyMolecule5]}
 					|>,
-					<|Object->antibodyModelSample6,
-						Replace[Analytes]->{Link[antibodyMolecule6]},
-						DeveloperObject->True
+					<|
+						Object -> antibodyModelSample6,
+						Replace[Analytes] -> {Link[antibodyMolecule6]}
 					|>,
-					<|Object->testSample1,Status->Available,State->Liquid,
-						Replace[Analytes]->{Link[targetAntigen1]},
-						Replace[Composition]->{{Null,Link[targetAntigen1],Now}},
-						DeveloperObject->True
+					<|
+						Object -> testSample1,
+						Status -> Available,
+						State -> Liquid,
+						Replace[Analytes] -> {Link[targetAntigen1]},
+						Replace[Composition] -> {{Null, Link[targetAntigen1], Now}}
 					|>,
-					<|Object->testSample2,Status->Available,State->Liquid,
-						Replace[Analytes]->{Link[targetAntigen1]},
-						Replace[Composition]->{{100Micro*Molar,Link[targetAntigen1],Now}},
-						DeveloperObject->True
+					<|
+						Object -> testSample2,
+						Status -> Available,
+						State -> Liquid,
+						Replace[Analytes] -> {Link[targetAntigen1]},
+						Replace[Composition] -> {{100 Micromolar, Link[targetAntigen1], Now}}
 					|>,
-					<|Object->testSample3,Status->Discarded,State->Liquid,
-						Replace[Analytes]->{Link[targetAntigen1]},
-						Replace[Composition]->{{Null,Link[targetAntigen1],Now}},
-						DeveloperObject->True
+					<|
+						Object -> testSample3,
+						Status -> Discarded,
+						State -> Liquid,
+						Replace[Analytes] -> {Link[targetAntigen1]},
+						Replace[Composition] -> {{Null, Link[targetAntigen1], Now}}
 					|>,
-					<|Object->testSample4,Status->Available,State->Solid,
-						Replace[Analytes]->{Link[targetAntigen1]},
-						Replace[Composition]->{{Null,Link[targetAntigen1],Now}},
-						Volume->Null,
-						DeveloperObject->True
+					<|
+						Object -> testSample4,
+						Status -> Available,
+						State -> Solid,
+						Replace[Analytes] -> {Link[targetAntigen1]},
+						Replace[Composition] -> {{Null, Link[targetAntigen1], Now}},
+						Volume -> Null
 					|>,
-					<|Object->testSample5,Status->Available,State->Liquid,
-						Replace[Analytes]->{Link[targetAntigen1]},
-						Replace[Composition]->{{Null,Link[targetAntigen1],Now}},
-						DeveloperObject->True
+					<|
+						Object -> testSampleOtherAntigen,
+						Status -> Available,
+						State -> Liquid,
+						Replace[Analytes] -> {Link[targetAntigen2]},
+						Replace[Composition] -> {{Null, Link[targetAntigen2], Now}}
 					|>,
-					<|Object->testSample6,Status->Available,State->Liquid,
-						Replace[Analytes]->{Link[targetAntigen1]},
-						Replace[Composition]->{{Null,Link[targetAntigen1],Now}},
-						DeveloperObject->True
+					<|
+						Object -> testSample5,
+						Status -> Available,
+						State -> Liquid,
+						Replace[Analytes] -> {Link[targetAntigen1]},
+						Replace[Composition] -> {{Null, Link[targetAntigen1], Now}}
 					|>,
-					<|Object->testAntigenSample1,
-						Replace[Analytes]->{Link[targetAntigen1]},
-						State->Liquid
+					<|
+						Object -> testSample6,
+						Status -> Available,
+						State -> Liquid,
+						Replace[Analytes] -> {Link[targetAntigen1]},
+						Replace[Composition] -> {{Null, Link[targetAntigen1], Now}}
 					|>,
-					<|Object->testAntigenSample2,
-						Replace[Analytes]->{Link[targetAntigen1]},
-						State->Liquid
+					<|
+						Object -> testSample7,
+						Status -> Available,
+						State -> Liquid,
+						Replace[Analytes] -> {Link[targetAntigen1]},
+						Replace[Composition] -> {{Null, Link[targetAntigen1], Now}}
 					|>,
-					<|Object->targetAntigen1,
-						DefaultSampleModel->Link[Model[Sample, "ExperimentELISA test target antigen model sample 1" <> $SessionUUID]],
-						State->Solid,
-						DeveloperObject->True
+					<|
+						Object -> testAntigenSample1,
+						Replace[Analytes] -> {Link[targetAntigen1]},
+						State -> Liquid
 					|>,
-					<|Object->testAntibodySample1,
-						Replace[Analytes]->{Link[antibodyMolecule1]},
-						State->Liquid
+					<|
+						Object -> testAntigenSample2,
+						Replace[Analytes] -> {Link[targetAntigen1]},
+						State -> Liquid
 					|>,
-					<|Object->testAntibodySample2,
-						Replace[Analytes]->{Link[antibodyMolecule2]},
-						State->Liquid
+					<|
+						Object -> testAntigenSample3,
+						Replace[Analytes] -> {Link[targetAntigen2]},
+						State -> Liquid
 					|>,
-					<|Object->testAntibodySample3,
-						Replace[Analytes]->{Link[antibodyMolecule3]},
-						State->Liquid
+					<|
+						Object -> targetAntigen1,
+						DefaultSampleModel -> Link[targetAntigenModel1],
+						State -> Solid
 					|>,
-					<|Object->testAntibodySample4,
-						Replace[Analytes]->{Link[antibodyMolecule4]},
-						State->Liquid
+					<|
+						Object -> targetAntigen2,
+						DefaultSampleModel -> Link[targetAntigenModel2],
+						State -> Solid
 					|>,
-					<|Object->testAntibodySample5,
-						Replace[Analytes]->{Link[antibodyMolecule5]},
-						State->Liquid
+					<|
+						Object -> testAntibodySample1,
+						Replace[Analytes] -> {Link[antibodyMolecule1]},
+						State -> Liquid
 					|>,
-					<|Object->testAntibodySample6,
-						Replace[Analytes]->{Link[Model[Molecule,Protein,Antibody,"HRP-Conjugated Goat-Anti-Mouse-IgG Secondary Antibody"]]},
-						State->Liquid
+					<|
+						Object -> testAntibodySample2,
+						Replace[Analytes] -> {Link[antibodyMolecule2]},
+						State -> Liquid
+					|>,
+					<|
+						Object -> testAntibodySample3,
+						Replace[Analytes] -> {Link[antibodyMolecule3]},
+						State -> Liquid
+					|>,
+					<|
+						Object -> testAntibodySample4,
+						Replace[Analytes] -> {Link[antibodyMolecule4]},
+						State -> Liquid
+					|>,
+					<|
+						Object -> testAntibodySample5,
+						Replace[Analytes] -> {Link[antibodyMolecule5]},
+						State -> Liquid
+					|>,
+					<|
+						Object -> testAntibodySample6,
+						Replace[Analytes] -> {Link[Model[Molecule, Protein, Antibody, "HRP-Conjugated Goat-Anti-Mouse-IgG Secondary Antibody"]]},
+						State -> Liquid
 					|>
-
 				}]
 
 			]
 		]
 
 	),
-	SymbolTearDown:>{
-		Module[{allObjects,existingObjects},
-			allObjects=
-					{
-						(* Bench *)
-						Object[Container,Bench,"Bench for ExperimentELISA tests" <> $SessionUUID],
-						(*Containers*)
-						Object[Container,Vessel,"ExperimentELISA test container 1" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 2" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 3" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 4" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 5" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 6" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 7" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 8" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 9" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 10" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 11" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 12" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 13 (50 mL)" <> $SessionUUID],
-						Object[Container,Vessel,"ExperimentELISA test container 14 (liquid handler incompatible)" <> $SessionUUID],
-
-						(* Tags *)
-						Model[Molecule, Protein, "V5 Tag" <> $SessionUUID],
-						(*Target Antigens Model molecules*)
-						Model[Molecule,Protein,"ExperimentELISA test target antigen model molecule 1" <> $SessionUUID],
-						(*Antibody Model molecules*)
-						Model[Molecule,Protein,Antibody,"ExperimentELISA test antibody model molecule 1 HRP-conjugated" <> $SessionUUID],
-						Model[Molecule,Protein,Antibody,"ExperimentELISA test antibody model molecule 2 non-conjugated" <> $SessionUUID],
-						Model[Molecule,Protein,Antibody,"ExperimentELISA test antibody model molecule 3 non-conjugated" <> $SessionUUID],
-						Model[Molecule,Protein,Antibody,"ExperimentELISA test antibody model molecule 4 tagged" <> $SessionUUID],
-						Model[Molecule,Protein,Antibody,"ExperimentELISA test antibody model molecule 5 anti-tag" <> $SessionUUID],
-						Model[Molecule,Protein,Antibody,"ExperimentELISA test antibody model molecule 6 HRP-conjugated secondary" <> $SessionUUID],
-
-
-						(* Model samples *)
-						Model[Sample,"ExperimentELISA test model sample 1" <> $SessionUUID],
-						(*Target Antigen Model Samples*)
-						Model[Sample,"ExperimentELISA test target antigen model sample 1" <> $SessionUUID],
-						(* Antibody Model samples *)
-						Model[Sample,"ExperimentELISA test antibody model sample 1 HRP-conjugated" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test antibody model sample 2 non-conjugated" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test antibody model sample 3 non-conjugated" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test antibody model sample 4 tagged" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test antibody model sample 5 anti-tag" <> $SessionUUID],
-						Model[Sample,"ExperimentELISA test antibody model sample 6 HRP-conjugated secondary" <> $SessionUUID],
-
-
-						(* Object samples *)
-						Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test object sample 2" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test object sample 3 discarded" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test object sample 4 solid" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test object sample 5 (semi-large volume)" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test object sample 6 (in liquid handler incompatible container)" <> $SessionUUID],
-						(*Target Antigen Object Samples*)
-						Object[Sample,"ExperimentELISA test target antigen object sample 1" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test target antigen object sample 2" <> $SessionUUID],
-						(* Antibody Object samples *)
-						Object[Sample,"ExperimentELISA test antibody object sample 1 HRP-conjugated" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test antibody object sample 2 non-conjugated" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test antibody object sample 3 non-conjugated" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test antibody object sample 4 tagged" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test antibody object sample 5 anti-tag" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test antibody object sample 5 anti-tag" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test antibody object sample 6 HRP-conjugated secondary" <> $SessionUUID],
-						(*Containers in*)
-						Object[Container,Plate,"ExperimentELISA test sample-coated plate-1" <> $SessionUUID],
-						Object[Container,Plate,"ExperimentELISA test sample-coated plate-2" <> $SessionUUID],
-						Object[Container,Plate,"ExperimentELISA test capture antibody-coated plate-1" <> $SessionUUID],
-						Object[Container,Plate,"ExperimentELISA test capture antibody-coated plate-2" <> $SessionUUID],
-						(*Coated samples*)
-						Object[Sample,"ExperimentELISA test coated object sample 1" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test coated object sample 2" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test coated object sample 3" <> $SessionUUID],
-						Object[Sample,"ExperimentELISA test coated object sample 4" <> $SessionUUID]
-
-
-					};
-			existingObjects=PickList[allObjects,DatabaseMemberQ[allObjects]];
-			Quiet[EraseObject[existingObjects,Force->True,Verbose->False]];
+	SymbolTearDown :> {
+		Module[{allObjects, existingObjects},
+			On[Warning::SamplesOutOfStock];
+			On[Warning::InstrumentUndergoingMaintenance];
+			ClearMemoization[];
+			allObjects = Cases[Flatten[{
+				$CreatedObjects,
+				{
+					(* Bench *)
+					Object[Container, Bench, "Bench for ExperimentELISA tests" <> $SessionUUID],
+					(* Containers *)
+					Model[Container, Plate, "Coated Plate Model for ExperimentELISA tests" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentELISA test container 1" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentELISA test container 2" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentELISA test container 3" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentELISA test container 4" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentELISA test container 5" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentELISA test container 6" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentELISA test container 7" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentELISA test container 8" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentELISA test container 9" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentELISA test container 10" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentELISA test container 11" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentELISA test container 12" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentELISA test container 13 (50 mL)" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentELISA test container 14 (liquid handler incompatible)" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentELISA test container 15" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentELISA test container 16" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentELISA test container 17" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentELISA test container 18" <> $SessionUUID],
+					Object[Container, Plate, "ExperimentELISA test sample-coated plate-1" <> $SessionUUID],
+					Object[Container, Plate, "ExperimentELISA test sample-coated plate-2" <> $SessionUUID],
+					Object[Container, Plate, "ExperimentELISA test sample-coated plate-3" <> $SessionUUID],
+					Object[Container, Plate, "ExperimentELISA test capture antibody-coated plate-1" <> $SessionUUID],
+					Object[Container, Plate, "ExperimentELISA test capture antibody-coated plate-2" <> $SessionUUID],
+					Object[Container, Plate, "ExperimentELISA test 24-well plate" <> $SessionUUID],
+					(* Tags *)
+					Model[Molecule, Protein, "ExperimentELISA test V5 Tag" <> $SessionUUID],
+					(* Target Antigens Model molecules *)
+					Model[Molecule, Protein, "ExperimentELISA test target antigen model molecule 1" <> $SessionUUID],
+					Model[Molecule, Protein, "ExperimentELISA test target antigen model molecule 2" <> $SessionUUID],
+					(* Antibody Model molecules *)
+					Model[Molecule, Protein, Antibody, "ExperimentELISA test antibody model molecule 1 HRP-conjugated" <> $SessionUUID],
+					Model[Molecule, Protein, Antibody, "ExperimentELISA test antibody model molecule 2 non-conjugated" <> $SessionUUID],
+					Model[Molecule, Protein, Antibody, "ExperimentELISA test antibody model molecule 3 non-conjugated" <> $SessionUUID],
+					Model[Molecule, Protein, Antibody, "ExperimentELISA test antibody model molecule 4 tagged" <> $SessionUUID],
+					Model[Molecule, Protein, Antibody, "ExperimentELISA test antibody model molecule 5 anti-tag" <> $SessionUUID],
+					Model[Molecule, Protein, Antibody, "ExperimentELISA test antibody model molecule 6 HRP-conjugated secondary" <> $SessionUUID],
+					(* Model samples *)
+					Model[Sample, "ExperimentELISA test model sample 1" <> $SessionUUID],
+					Model[Sample, "ExperimentELISA test model sample 2" <> $SessionUUID],
+					Model[Sample, "ExperimentELISA test deprecated model sample" <> $SessionUUID],
+					(* Target Antigen Model Samples *)
+					Model[Sample, "ExperimentELISA test target antigen model sample 1" <> $SessionUUID],
+					Model[Sample, "ExperimentELISA test target antigen model sample 2" <> $SessionUUID],
+					(* Antibody Model samples *)
+					Model[Sample, "ExperimentELISA test antibody model sample 1 HRP-conjugated" <> $SessionUUID],
+					Model[Sample, "ExperimentELISA test antibody model sample 2 non-conjugated" <> $SessionUUID],
+					Model[Sample, "ExperimentELISA test antibody model sample 3 non-conjugated" <> $SessionUUID],
+					Model[Sample, "ExperimentELISA test antibody model sample 4 tagged" <> $SessionUUID],
+					Model[Sample, "ExperimentELISA test antibody model sample 5 anti-tag" <> $SessionUUID],
+					Model[Sample, "ExperimentELISA test antibody model sample 6 HRP-conjugated secondary" <> $SessionUUID],
+					(* Object samples *)
+					Object[Sample, "ExperimentELISA test object sample 1" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test object sample 2" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test object sample 3 discarded" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test object sample 4 solid" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test object sample 5 (semi-large volume)" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test object sample 6 (in liquid handler incompatible container)" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test sample 7 deprecated " <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test sample 8 w/o analyte w/ composition" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test object sample with different target antigen" <> $SessionUUID],
+					(* Target Antigen Object Samples *)
+					Object[Sample, "ExperimentELISA test target antigen object sample 1" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test target antigen object sample 2" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test target antigen object sample 3" <> $SessionUUID],
+					(* Antibody Object samples *)
+					Object[Sample, "ExperimentELISA test antibody object sample 1 HRP-conjugated" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test antibody object sample 2 non-conjugated" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test antibody object sample 3 non-conjugated" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test antibody object sample 4 tagged" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test antibody object sample 5 anti-tag" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test antibody object sample 5 anti-tag" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test antibody object sample 6 HRP-conjugated secondary" <> $SessionUUID],
+					(*Coated samples*)
+					Object[Sample, "ExperimentELISA test coated object sample 1" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test coated object sample 2" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test coated object sample 3" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test coated object sample 4" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test coated object sample 5" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test coated object sample 6" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test sample 1 in 24-well plate" <> $SessionUUID],
+					Object[Sample, "ExperimentELISA test sample 2 in 24-well plate" <> $SessionUUID]
+				}
+			}], ObjectP[]];
+			existingObjects = PickList[allObjects, DatabaseMemberQ[allObjects]];
+			Quiet[EraseObject[existingObjects, Force -> True, Verbose -> False]]
 		]
-	},
-	Stubs:>{
-		$PersonID=Object[User,"Test user for notebook-less test protocols"]
 	},
 	Parallel -> True,
 	HardwareConfiguration -> HighRAM,
-	TurnOffMessages :> {Warning::SamplesOutOfStock, Warning::InstrumentUndergoingMaintenance,Warning::NegativeDiluentVolume}
+	TurnOffMessages :> {Warning::SamplesOutOfStock, Warning::InstrumentUndergoingMaintenance, Warning::NegativeDiluentVolume, Error::InsufficientTotalVolume}
 ];
 
 

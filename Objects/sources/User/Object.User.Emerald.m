@@ -87,14 +87,6 @@ DefineObjectType[Object[User,Emerald], {
 			Description -> "The Emerald employees that this employee directly manages.",
 			Category -> "Company Information"
 		},
-		Department -> {
-			Format -> Single,
-			Class -> Expression,
-			Pattern :> EmeraldDepartmentP,
-			Description -> "The department at Emerald that the user reports to.",
-			Category -> "Organizational Information",
-			Abstract -> True
-		},
 		Site->{
 			Format->Single,
 			Class->Link,

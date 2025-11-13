@@ -160,6 +160,13 @@ DefineObjectType[Model[StorageCondition], {
 			Description -> "Indicates if this storage condition is meant to store dust-sensitive or fragile items in a shelving unit or cabinet that is enclosed on all sides.",
 			Category -> "Storage Information"
 		},
+		Lined -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this storage condition contains a protective insert to reduce contamination or cushion fragile samples.",
+			Category -> "Storage Information"
+		},
 		AtmosphericCondition  -> {
 			Format -> Single,
 			Class -> Expression,

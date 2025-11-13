@@ -120,22 +120,24 @@ printFullOpacity[expr_]:=CellPrint[ExpressionCell[expr,"Print",PrivateCellOption
 (* ::Subsubsection::Closed:: *)
 (*PDBIDExistsQ*)
 
+PDBIDExistsQ::UnexpectedError="Contacting the protein data bank returned unexpected response (`1`: `2`)";
 
 PDBIDExistsQ[pdbID_String] := Module[
-	{importPath,imported},
+	{expectedURL, response, statusCode, idExists, body},
 
-	(* string join the pdb id to the importing file path *)
-	importPath = "https://files.rcsb.org/download/"<>pdbID<>".pdb";
+	expectedURL = "https://files.rcsb.org/download/"<>pdbID<>".pdb";
 
-	(* import as pdb *)
-	imported = Quiet[Import[importPath,"PDB"]];
+	response = URLRead[expectedURL,{"StatusCode","Body"}];
+	{statusCode,body} = Lookup[response, {"StatusCode","Body"}];
 
-	(* if the import failed, return an error message, otherwise return the graphic *)
-	If[
-	MatchQ[imported,$Failed],
-	False,
-	True
-	]
+	(* We assume protein exists unless we get a 'client error' code (typically 404) *)
+	idExists = !MatchQ[statusCode, RangeP[400,499]];
+
+	If[idExists && !MatchQ[statusCode, RangeP[200,299]],
+		Message[PDBIDExistsQ::UnexpectedError, statusCode, body]
+	];
+
+	idExists
 ];
 
 

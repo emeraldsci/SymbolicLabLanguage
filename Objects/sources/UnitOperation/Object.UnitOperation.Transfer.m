@@ -1709,6 +1709,21 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Category -> "General",
 				Developer -> True
 			},
+			UnbaggingObjects -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Object[Container],
+					Object[Item],
+					Object[Sample],
+					Object[Part],
+					Object[Instrument]
+				],
+				Description -> "The objects which may be inside of aseptic bags that need to be removed once inside of the biosafety cabinet.",
+				Category -> "General",
+				Developer -> True
+			},
 			BiosafetyWasteBinPlacements -> {
 				Format -> Multiple,
 				Class -> {Link, Link, String},
@@ -2317,6 +2332,13 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Description -> "Objects required for the current unit operation that are not picked upfront at the beginning of the protocol.",
 				Category -> "General",
 				Developer -> True
+			},
+			BalanceReblanking ->{
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> Alternatives[Always,AsNecessary,None],
+				Description -> "Indicates the type of re-weighing performed on the balance if material loss is detected or stray material is present. Always indicates weighing container replacement whenever there is any material loss detected OR there is stray material on the outside. AsNecessary indicates weighing container replacement when there is stray material on the outside and cleaning without replacement when the outside is clean and only something is on the balance. None indicates cleaning of weighing container whenever there is any material loss detected OR there is stray material on the outside.",
+				Category -> "General"
 			}
 		}
 	}

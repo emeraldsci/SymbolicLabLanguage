@@ -1282,7 +1282,36 @@ DefineTests[
 			Download[protocol, RequiredResources[[All, 1]][{Object, Sample, Models}]],
 			(* the key point here is that there is only one resource created and not two; that's because the resource blob requesting a specific sample is already requested by its parent protocol *)
 			{{ObjectP[Object[Resource, Sample]], Null, {ObjectP[Model[Sample, "id:M8n3rx0DjPrE"]]}}},
-			Variables :> {protocol}
+			Variables :> {protocol},
+			(* Make sure the protocol is Processing so the resource is still "current" *)
+			SetUp:>(
+				Upload[<|Object->Object[Protocol, PAGE, "id:6V0npvmJXqe8"],Status->Processing|>];
+				$CreatedObjects = {}
+			)
+		],
+		Test["If a subprotocol is requesting a specific sample that another subprotocol of the same root has already reserved with a pending resource BUT the requestor is completed, create a resource for this item as normal:",
+			protocol = RequireResources[
+				<|
+					Type -> Object[Protocol, Transfer],
+					Replace[SamplesIn] -> {
+						Link[Resource[Sample -> Object[Sample, "id:3em6ZvL4prMB"], Amount -> 10*Milliliter], Protocols],
+						Link[Resource[Sample -> Model[Sample, "id:M8n3rx0DjPrE"], Amount -> 10*Milliliter], Protocols]
+					}
+				|>,
+				RootProtocol -> Object[Protocol, PAGE, "id:6V0npvmJXqe8"]
+			];
+			Download[protocol, RequiredResources[[All, 1]][{Object, Sample, Models}]],
+			(* the key point here is that there are two resources created and the first one is for the resource that has another reserved request *)
+			{
+				{ObjectP[Object[Resource, Sample]], ObjectP[Object[Sample, "id:3em6ZvL4prMB"]], _},
+				{ObjectP[Object[Resource, Sample]], Null, {ObjectP[Model[Sample, "id:M8n3rx0DjPrE"]]}}
+			},
+			Variables :> {protocol},
+			(* Make sure the protocol is Completed so the resource is no longer pending request *)
+			SetUp:>(
+				Upload[<|Object->Object[Protocol, PAGE, "id:6V0npvmJXqe8"],Status->Completed|>];
+				$CreatedObjects = {}
+			)
 		],
 		Test["Auto-generate a container resource for a water resource:",
 			protocol = With[
@@ -4421,7 +4450,8 @@ DefineTests[fulfillableResources,
 							Link[hplcInstrument3, Model, linkID12],
 							Link[hplcInstrument4, Model, linkID14]
 						},
-						Name -> "Test HPLC Model 1 For fulfillableResources Tests " <> $SessionUUID
+						Name -> "Test HPLC Model 1 For fulfillableResources Tests " <> $SessionUUID,
+						DeveloperObject -> True
 					|>,
 					<|
 						Object -> hplcInstrument1,

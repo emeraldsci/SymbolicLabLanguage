@@ -139,6 +139,13 @@ DefineObjectType[Model[Part], {
 			Description -> "Indicates how parts of this model are contained in an aseptic barrier and if they need to be unbagged before being used in a protocol, maintenance, or qualification.",
 			Category -> "Storage Information"
 		},
+		ExposedSurfaces -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if any sensitive portions of this part are open to the external environment and prone to contamination.",
+			Category -> "Compatibility"
+		},
 		
 		(* --- Plumbing Information --- *)
 		Connectors -> {

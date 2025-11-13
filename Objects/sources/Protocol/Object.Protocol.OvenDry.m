@@ -138,9 +138,21 @@ DefineObjectType[Object[Protocol, OvenDry], {
       Format -> Multiple,
       Class -> Expression,
       Pattern :> SamplePreparationP,
-      Description -> "Transfer unit operations that contains the instructions for transferring SamplesIn to compatible containers.",
+      Description -> "Transfer unit operation or operations that contain the instructions for transferring SamplesIn to compatible containers.",
       Category -> "General",
       Developer -> True
+    },
+    SampleTransfers -> {
+      Format -> Multiple,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Alternatives[
+        Object[Protocol, ManualSamplePreparation],
+        Object[Protocol, RoboticSamplePreparation],
+        Object[Notebook, Script]
+      ],
+      Description -> "A sample preparation protocol or protocols used to transfer SamplesIn to compatible containers.",
+      Category -> "General"
     },
     OvenActualTemperature -> {
       Format -> Single,

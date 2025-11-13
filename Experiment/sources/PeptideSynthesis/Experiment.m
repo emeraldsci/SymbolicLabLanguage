@@ -4019,7 +4019,7 @@ peptideSynthesisResourcePackets[
 	
 	
 	(* find all the non-deprecated fume hood models *)
-	fumeHoodModels=Search[Model[Instrument,FumeHood],Deprecated != True];
+	fumeHoodModels=commonFumeHoodHandlingStationModels["Memoization"];
 	
 	synthesizerResource=Link[Resource[Name->ToString[Unique[]],Instrument->Lookup[myResolvedOptions,Instrument],Time->synthesisTimeEstimate]];
 	fumeHoodResource=Link[Resource[Name->ToString[Unique[]],Instrument->fumeHoodModels,Time->2 Hour]];

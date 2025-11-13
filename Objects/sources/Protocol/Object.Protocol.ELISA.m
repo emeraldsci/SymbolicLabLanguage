@@ -724,6 +724,13 @@ DefineObjectType[Object[Protocol, ELISA],
 				Category -> "Antibody Antigen Preparation",
 				IndexMatching -> SamplesIn
 			},
+			SecondaryAntibodyDilutionOnDeck -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates whether the SecondaryAntibody and SecondaryAntibodyDiluent are mixed prior to being added to the assay plate(s) on deck during the immunosorbent step instead of during sample assembly.",
+				Category -> "Antibody Antigen Preparation"
+			},
 			SecondaryAntibodyDiluent -> {
 				Format -> Single,
 				Class -> Link,
@@ -1055,6 +1062,13 @@ DefineObjectType[Object[Protocol, ELISA],
 				Description -> "The speed at which the assay plate(s) are shaken (orbitally, at a radius of 2 mm) during PrimaryAntibodyImmunosorbent incubation.",
 				Category -> "Immunosorbent Step"
 			},
+			PrimaryAntibodyImmunosorbentWashing -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if a final washing step is performed at the end of PrimaryAntibodyImmunosorbent incubation to wash off unbound PrimaryAntibody.",
+				Category -> "Immunosorbent Step"
+			},
 			PrimaryAntibodyImmunosorbentWashVolume -> {
 				Format -> Single,
 				Description -> "The volume of WashBuffer added per wash cycle to rinse off the unbound PrimaryAntibody after PrimaryAntibody incubation.",
@@ -1091,6 +1105,13 @@ DefineObjectType[Object[Protocol, ELISA],
 				Pattern :> GreaterEqualP[0 RPM],
 				Units -> RPM,
 				Description -> "TThe speed at which the assay plate(s) are shaken (orbitally, at a radius of 2 mm) during SecondaryAntibodyImmunosorbent incubation.",
+				Category -> "Immunosorbent Step"
+			},
+			SecondaryAntibodyImmunosorbentWashing-> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if a final washing step is performed at the end of SecondaryAntibodyImmunosorbent incubation to wash off unbound SecondaryAntibody.",
 				Category -> "Immunosorbent Step"
 			},
 			SecondaryAntibodyImmunosorbentWashVolume -> {

@@ -83,7 +83,7 @@ DefineObjectType[Object[Qualification,Training,WasteNeutralization], {
             Format -> Single,
             Class -> Link,
             Pattern :> _Link,
-            Relation -> Alternatives[Object[Instrument,FumeHood],Model[Instrument,FumeHood]],
+            Relation -> Alternatives[Object[Instrument,FumeHood],Model[Instrument,FumeHood],Object[Instrument,HandlingStation,FumeHood],Model[Instrument,HandlingStation,FumeHood]],
             Description -> "The fume hood instrument object in which the neutralization occurs.",
             Category -> "General"
         },

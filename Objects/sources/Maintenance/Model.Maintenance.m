@@ -61,7 +61,8 @@ DefineObjectType[Model[Maintenance], {
 				Model[Sample][MaintenanceFrequency, 1],
 				Model[Sensor][MaintenanceFrequency, 1],
 				Model[Part][MaintenanceFrequency, 1],
-				Model[Item][MaintenanceFrequency, 1]
+				Model[Item][MaintenanceFrequency, 1],
+				Model[User][MaintenanceFrequency, 1]
 			],
 			Description -> "The target model of object for which this model of Maintenance is designed to maintain.",
 			Category -> "Qualifications & Maintenance"

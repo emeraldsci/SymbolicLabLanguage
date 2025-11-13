@@ -12,7 +12,7 @@
 
 (* NOTE: We assume that we have all the fields that we need in this packet already. *)
 UnitOperationPrimitive[myUnitOperationPacket_, myOptions:OptionsPattern[]]:=Module[
-	{includeCompletedOptions,includeEmptyOptions,includedHiddenOptions,collapseOptionsQ,splitFieldsLookup,nonSplitFieldsFromPacket,recombinedSplitFields,
+	{includeCompletedOptions,includeEmptyOptions,includedHiddenOptions,collapseOptionsQ,splitFieldsLookup,nonSplitFieldsFromPacket,nonSplitFieldsFromPacketCollapsedNulls,recombinedSplitFields,
 		allValuesFromPacket,finalValuesFromPacket,unitOperationHead,filteredValuesFromPacket},
 
 	(* Should we include completed options or keep some hidden options? *)
@@ -30,6 +30,20 @@ UnitOperationPrimitive[myUnitOperationPacket_, myOptions:OptionsPattern[]]:=Modu
 	(* Get the split fields from the packet and the non split fields. *)
 	(* Note that we need to consider both Rule and RuleDelayed here since we may have RuleDelayed in our Download packets. They should still be considered as valid fields in the packet *)
 	nonSplitFieldsFromPacket=Cases[Normal[myUnitOperationPacket], Verbatim[Rule][Except[Alternatives@@DeleteDuplicates[Flatten[{Values[splitFieldsLookup], Object, ID, Name, Type, DeveloperObject, RequiredResources}]]], _]|Verbatim[RuleDelayed][Except[Alternatives@@DeleteDuplicates[Flatten[{Values[splitFieldsLookup], Object, ID, Name, Type, DeveloperObject, RequiredResources}]]], _]];
+
+	(* Replace NullP field values with Null; needed since some field patterns of UO objects are not synced with corresponding option definitions for NullP patterns *)
+	(* Ex1. LightExposureStandard is a non index matched option with adder widget for ExperimentIncubate, and a multiple field of Object[UnitOperation, Incubate].
+	   If this option is not specified for ExperimentIncubate, the corresponding Object[UnitOperation, Incubate] in OutputUnitOperations of a protocol generated from ExperimentIncubate has LightExposureStandard -> {Null}.
+	   But LightExposureStandard option for ExperimentIncubate is not index-matched, so an Incubate primitive with LightExposureStandard -> {Null} will error
+	   So replace LightExposureStandard -> {Null} in Object[UnitOperation, Incubate] (myUnitOperationPacket) with LightExposureStandard -> Null for the primitive.
+	*)
+	(* Ex2. TransformRecoveryTransferVolumes is an index matched option for ExperimentIncubate, and a multiple field of Object[UnitOperation, Incubate] with Class {Real, Real}.
+	   If this option is not specified for ExperimentIncubate, the corresponding Object[UnitOperation, Incubate] in OutputUnitOperations of a protocol generated from ExperimentIncubate has TransformRecoveryTransferVolumes -> {{Null, Null}}.
+	   But TransformRecoveryTransferVolumes option for ExperimentIncubate has pattern {GreaterP[0 Milliliter], GreaterP[0 Milliliter]}, so an Incubate primitive with TransformRecoveryTransferVolumes -> {{Null, Null}} will error
+	   So replace TransformRecoveryTransferVolumes -> {{Null, Null}} in Object[UnitOperation, Incubate] (myUnitOperationPacket) with TransformRecoveryTransferVolumes -> Null for the primitive.
+	   Note: TransformRecoveryTransferVolumes -> {Null..} works since the option is index matched
+	*)
+	nonSplitFieldsFromPacketCollapsedNulls = nonSplitFieldsFromPacket /. {(field_ -> value_?NullQ) :> field -> Null};
 
 	(* Piece together the split fields. *)
 	recombinedSplitFields=KeyValueMap[
@@ -65,7 +79,7 @@ UnitOperationPrimitive[myUnitOperationPacket_, myOptions:OptionsPattern[]]:=Modu
 	];
 
 	(* Join this with the non split fields. *)
-	allValuesFromPacket=Join[nonSplitFieldsFromPacket, recombinedSplitFields];
+	allValuesFromPacket=Join[nonSplitFieldsFromPacketCollapsedNulls, recombinedSplitFields];
 
 	(* Filter out empty fields if IncludeEmptyOptions is set. *)
 	(* Note that we need to consider both Rule and RuleDelayed here since we may have RuleDelayed in our Download packets. They should still be considered as valid entries in the packet *)

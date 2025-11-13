@@ -18,6 +18,22 @@ DefineObjectType[Model[Container, GraduatedCylinder], {
 			Category -> "Operating Limits",
 			Abstract -> True
 		},
+		Aperture -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Meter],
+			Units -> Meter Milli,
+			Description -> "The minimum opening diameter encountered when aspirating from the container.",
+			Category -> "Dimensions & Positions"
+		},
+		InternalDepth -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Milli*Meter],
+			Units -> Meter Milli,
+			Description -> "The distance from the aperture to the bottom of vessel's contents-holding cavity.",
+			Category -> "Dimensions & Positions"
+		},
 		Graduations->{
 			Format->Multiple,
 			Class->Real,

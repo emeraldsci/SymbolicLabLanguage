@@ -1015,6 +1015,13 @@ DefineObjectType[Model[Container], {
 			Category -> "Compatibility",
 			Developer -> True
 		},
+		ExposedSurfaces -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if any sensitive portions of this container are open to the external environment and prone to contamination.",
+			Category -> "Compatibility"
+		},
 
 		(*--- Qualifications & Maintenance ---*)
 		QualificationFrequency -> {

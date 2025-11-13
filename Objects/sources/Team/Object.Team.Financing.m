@@ -178,6 +178,13 @@ DefineObjectType[Object[Team, Financing], {
 			Category -> "Organizational Information",
 			Developer -> True
 		},
+		Departments -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> EmeraldDepartmentP | _String,
+			Description -> "The departments or functions in this organization that use the Cloud Lab.",
+			Category -> "Organizational Information"
+		},
 
 		NextBillingCycle -> {
 			Format -> Single,

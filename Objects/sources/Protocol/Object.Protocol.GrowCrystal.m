@@ -53,7 +53,7 @@ DefineObjectType[Object[Protocol, GrowCrystal], {
 			Format -> Single, 
 			Class -> Link, 
 			Pattern :> _Link, 
-			Relation -> Alternatives[Object[Instrument, FumeHood], Model[Instrument, FumeHood]],
+			Relation -> Alternatives[Object[Instrument, FumeHood], Model[Instrument, FumeHood], Object[Instrument, HandlingStation, FumeHood], Model[Instrument, HandlingStation, FumeHood]],
 			Description -> "The environment in which CoCrystallizationReagents on CrystallizationPlate are evaporated. The CrystallizationPlate involved in the air dry will first be moved into the Environment (with cover on), uncovered inside of the Environment, then covered after the Transfer has finished -- before they're moved back onto the operator cart.",
 			Category -> "General"
 		}, 

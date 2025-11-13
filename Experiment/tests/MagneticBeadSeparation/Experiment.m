@@ -2082,6 +2082,25 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			22 Microliter,
 			Variables:>{options}
 		],
+		Example[{Options,Volume,"Volume can be specified as All, and buffer volumes are reasonably set accordingly:"},
+			options=ExperimentMagneticBeadSeparation[
+				Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+				Volume -> All,
+				PreWash->True,
+				Output->Options
+			];
+			Lookup[options, {Volume, PreWashBufferVolume}],
+			{All, EqualP[1 Milliliter]},
+			Variables:>{options}
+		],
+		Example[{Options,Volume,"Volume can be specified as All for robotic prep:"},
+			ExperimentMagneticBeadSeparation[
+				Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+				Volume -> All,
+				Preparation -> Robotic
+			],
+			ObjectP[Object[Protocol, RoboticSamplePreparation]]
+		],
 		Example[{Options,AnalyteAffinityLabel,"AnalyteAffinityLabel can be specified:"},
 			options=ExperimentMagneticBeadSeparation[
 				Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],

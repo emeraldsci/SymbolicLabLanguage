@@ -313,3 +313,20 @@ DefineOptionSet[QueuePositionOption:>{
 		]
 	}
 }];
+
+
+
+DefineOptionSet[
+	TrainingPracticeOptions:>{
+		{
+			NumberOfDrills->Automatic,
+			Automatic|Null|RangeP[1,10],
+			"The number of times to include practicing of the trained skill in this qualification."
+		},
+		{
+			Trainer->Null,
+			BooleanP|AsNeeded|Null|ObjectP[Object[User],Model[User]],
+			"The instructor providing live feedback to the user being trained in this skill."
+		}
+	}
+];

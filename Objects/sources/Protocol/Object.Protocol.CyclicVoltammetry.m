@@ -145,7 +145,7 @@ DefineObjectType[Object[Protocol, CyclicVoltammetry], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Alternatives[Model[Instrument, FumeHood], Object[Instrument, FumeHood]],
+			Relation -> Alternatives[Model[Instrument, FumeHood], Object[Instrument, FumeHood], Model[Instrument, HandlingStation, FumeHood], Object[Instrument, HandlingStation, FumeHood]],
 			Description -> "Indicates the fume hood where the electrode polishing and washing tasks are performed.",
 			Category -> "General",
 			Developer -> True

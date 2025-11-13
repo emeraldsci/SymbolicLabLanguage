@@ -56,7 +56,7 @@ DefineObjectType[Object[Maintenance, EmptyWaste], {
 			Format -> Multiple,
 			Class -> {Link, Link, String},
 			Pattern :> {_Link, _Link, LocationPositionP},
-			(* For Sharp, this can be Object[Container,WasteBin] inside Object[Instrument,FumeHood] *)
+			(* For Sharp, this can be Object[Container,WasteBin] inside a fumehood *)
 			Relation -> {Model[Sample] | Model[Container] | Model[Item] | Object[Sample]| Object[Container]| Object[Item], Object[Container] | Object[Instrument], Null},(*TODO remove after item migration, keep only Item*)
 			Description -> "Placements for exchanged waste type.",
 			Headers->{"Waste Bag", "Destination Container", "Destination Position"},

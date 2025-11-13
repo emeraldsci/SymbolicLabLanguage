@@ -437,6 +437,14 @@ DefineObjectType[Model[Container, Plate], {
 			Description -> "A list of the required fields populated by receiving.",
 			Category -> "Quality Assurance"
 		},
+		ReceivingBatchCertificateExample -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Report,Certificate][ModelsSupported],
+			Description -> "Certificate example that contains images for where receiving batch information can be found on documentation.",
+			Category -> "Quality Assurance"
+		},
 		InstrumentsCalibrated -> {
 			Format -> Multiple,
 			Class -> Link,

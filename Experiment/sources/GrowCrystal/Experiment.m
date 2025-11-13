@@ -1193,8 +1193,8 @@ ExperimentGrowCrystal[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:Op
 
 	(* Default instrument models from resolver. *)
 	defaultInstrumentObjects = {
-		Model[Instrument, LiquidHandler, AcousticLiquidHandler, "id:o1k9jAGrz9MG"],(*"Super STAR"*)
-		Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"],(*"Labcyte Echo 650"*)
+		Model[Instrument, LiquidHandler, AcousticLiquidHandler, "id:o1k9jAGrz9MG"],(*"Labcyte Echo 650"*)
+		Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"],(*"Super STAR"*)
 		Model[Instrument, CrystalIncubator, "id:6V0npvmnzzGG"](*"Formulatrix Rock Imager"*)
 	};
 
@@ -1761,8 +1761,8 @@ resolveExperimentGrowCrystalOptions[
 				Union[
 					Cases[ToList[suppliedDropSetterInstrument], ObjectP[]],
 					{
-						Model[Instrument, LiquidHandler, AcousticLiquidHandler, "id:o1k9jAGrz9MG"], (*Super STAR*)
-						Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"](*Labcyte Echo 650*)
+						Model[Instrument, LiquidHandler, AcousticLiquidHandler, "id:o1k9jAGrz9MG"],(*"Labcyte Echo 650"*)
+						Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"](*"Super STAR"*)
 					}
 				],
 				Union[
@@ -6950,7 +6950,7 @@ growCrystalResourcePackets[
 		updatedDilutionBuffers, updatedAdditives, updatedSeedingSolutions, updatedCoCrystallizationReagents, updatedOils,
 		updatedTransferTable, updatedBufferPreparationTable, crystallizationPlateResource, crystallizationCoverResource,
 		crystallizationCoverPaddleResource, uniqueAssayPlates, uniqueAssayPlateReplacements, uniqueAssayPlateResources, imagerResource,
-		runTime, updatedDropCompositionTable, fumeHood, fumeHoodResource, samplesOutStorageCondition, manualProtocolPacket,
+		runTime, updatedDropCompositionTable, fumeHoodModels, fumeHoodResource, samplesOutStorageCondition, manualProtocolPacket,
 		simulation, sharedFieldPacket, finalizedPacket, allResourceBlobs, fulfillable, frqTests, previewRule, optionsRule,
 		resultRule, testsRule
 	},
@@ -7054,16 +7054,16 @@ growCrystalResourcePackets[
 	|>&	/@ transferTable;
 
 	(* FumeHood model can be automatically selected. *)
-	fumeHood = If[And[
+	fumeHoodModels = If[And[
 		MatchQ[Lookup[expandedResolvedOptions, CoCrystallizationAirDryTemperature], Ambient|$AmbientTemperature],
 		GreaterQ[Lookup[expandedResolvedOptions, CoCrystallizationAirDryTime], 1 Hour]
 		],
 		(* find all the non-deprecated fume hood models *)
-		Search[Model[Instrument,FumeHood], Deprecated != True],
+		commonFumeHoodHandlingStationModels["Memoization"],
 		Null
 	];
-	fumeHoodResource = If[!NullQ[fumeHood],
-		Resource[Name -> ToString[Unique[]], Instrument -> fumeHood, Time -> Lookup[expandedResolvedOptions, CoCrystallizationAirDryTime]]
+	fumeHoodResource = If[!NullQ[fumeHoodModels],
+		Resource[Name -> ToString[Unique[]], Instrument -> fumeHoodModels, Time -> Lookup[expandedResolvedOptions, CoCrystallizationAirDryTime]]
 	];
 
 

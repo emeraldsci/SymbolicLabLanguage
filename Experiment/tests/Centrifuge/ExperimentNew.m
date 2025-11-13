@@ -2196,7 +2196,7 @@ DefineTests[
 			];
 			Equal[
 				Download[protocol, {WeightStabilityDuration, MaxWeightVariation}],
-				{60 Second, 0.02 Gram}
+				{$DefaultWeightStabilityDuration, 0.02 Gram}
 			],
 			True,
 			Variables :> {protocol}

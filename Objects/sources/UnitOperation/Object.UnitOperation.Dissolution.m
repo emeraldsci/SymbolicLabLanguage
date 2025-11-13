@@ -412,6 +412,15 @@ DefineObjectType[Object[UnitOperation,Dissolution],{
 			Description->"The pore size of the cannula tip filters used during sample transfer.",
 			Category->"Sampling Filtration"
 		},
+		Cannula->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[Model[Item,Cannula],Object[Item,Cannula]],
+			IndexMatching->SampleLink,
+			Description->"For each member of SampleLink, the cannula used to sample media during the dissolution experiment.",
+			Category->"Sampling Filtration"
+		},
 
 		(* --- Degas Category --- *)
 		Degas->{

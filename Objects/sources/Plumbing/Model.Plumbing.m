@@ -390,6 +390,13 @@ DefineObjectType[Model[Plumbing], {
 			Description -> "A list of instruments for which this model is replacement part or an accompanying accessory.",
 			Category -> "Qualifications & Maintenance"
 		},
+		ExposedSurfaces -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if any sensitive portions of this plumbing component are open to the external environment and prone to contamination.",
+			Category -> "Compatibility"
+		},
 
 		(* --- Resources --- *)
 		RequestedResources -> {

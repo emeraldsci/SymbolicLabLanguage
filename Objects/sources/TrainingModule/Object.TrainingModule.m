@@ -73,6 +73,14 @@ DefineObjectType[Object[TrainingModule], {
 			Description->"The lab-based qualifications that have been assigned to the operator. If an operator fails a qualification, another can be generated here.",
 			Category->"General"
 		},
+		PracticeDrills->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Maintenance,Training][TrainingModule],
+			Description->"Maintenance run in the lab that allow an operator to practice this skill.",
+			Category->"General"
+		},
 		TrainingMaterials->{
 			Format->Multiple,
 			Class->Link,

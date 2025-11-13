@@ -50,6 +50,24 @@ DefineObjectType[Model[Container, ReactionVessel], {
 			Relation->Model[Container,Rack],
 			Description->"Model of a container capable of holding this type of vessel upright.",
 			Category->"Compatibility"
+		},
+		Aperture -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Millimeter],
+			Relation -> Null,
+			Units -> Millimeter,
+			Description -> "The minimum opening diameter encountered when aspirating from the container.",
+			Category -> "Dimensions & Positions"
+		},
+		InternalDepth -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Millimeter],
+			Relation -> Null,
+			Units -> Millimeter,
+			Description -> "The distance from the aperture to the bottom of vessel's contents-holding cavity.",
+			Category -> "Dimensions & Positions"
 		}
 	}
 }];

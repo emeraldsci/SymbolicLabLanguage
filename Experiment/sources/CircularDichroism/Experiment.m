@@ -2972,7 +2972,7 @@ circularDichroismResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnres
 	{samplesInWithReplicates,optionsWithReplicates} = expandCircularDichroismReplicates[mySamples, expandedResolvedOptions, numReplicates];
 
 	(* Build a search call for all FumeHood models *)
-	fumeHoodModels = Search[Model[Instrument, FumeHood], Deprecated != True];
+	fumeHoodModels = commonFumeHoodHandlingStationModels["Memoization"];
 
 	(* Extract with all expanded options*)
 	{

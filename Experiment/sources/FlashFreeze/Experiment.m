@@ -100,6 +100,13 @@ Error::MaxFreezeUntilFrozen="In ExperimentFlashFreeze, FreezeUntilFrozen must be
 Error::MaxFreezingTimeMismatch="In ExperimentFlashFreeze, FreezingTime must be less than or equal to MaxFreezingTime (`1`), which conflicts for the following samples: `2`.";
 Error::FlashFreezeSampleVolumeHighError="In ExperimentFlashFreeze, the stored Volume of the samples (`1`) must not be greater than 50 milliliters, which conflicts for the following samples: `2`.";
 
+
+(* ::Subsubsection:: *)
+(*Global Constants*)
+
+(* E6 Hood 1 *)
+$FlashFreezeFumeHood = Object[Instrument, HandlingStation, FumeHood, "id:lYq9jRO71WXY"];
+
 (* ::Subsubsection:: *)
 (*ExperimentFlashFreeze*)
 
@@ -1425,7 +1432,7 @@ flashFreezeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 	(* make other needed resources*)
 
 	(* Fumehood resource *)
-	fumeHood = Link[Object[Instrument, FumeHood, "id:mnk9jOkaVWbm"](*E6 Hood 1*)];
+	fumeHood = Link[$FlashFreezeFumeHood];
 
 	(* instrument resource *)
 	instrumentResource = Resource[Instrument -> instrument, Time -> instrumentTime];

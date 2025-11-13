@@ -4693,7 +4693,7 @@ microwaveDigestionResourcePackets[
 	stirBarRetriever=Link[Resource[Sample -> Model[Part, StirBarRetriever, "id:eGakldJlXP1o"], Rent -> True]];
 
 	(* Fume Hood model changed to Labconco Premier 6 Foot when moved to ECL. *)
-	workSurface=Link[Resource[Instrument -> Model[Instrument, FumeHood, "id:P5ZnEj4P8kNO"], Time -> (10 Minute + (5 Minute * Length[composedGlassware]))]];
+	workSurface=Link[Resource[Instrument -> commonFumeHoodHandlingStationModels["Memoization"], Time -> (10 Minute + (5 Minute * Length[composedGlassware]))]];
 
 
 	(* -------------------------------- *)

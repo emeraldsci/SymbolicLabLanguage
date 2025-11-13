@@ -6380,6 +6380,42 @@ DefineTests[
 				TearDown :> {EraseObject[newColumn, Force -> True]}
 			]
 		],
+		Module[{newColumn},
+			Example[{Options, DefaultStorageCondition, "If ExposedSurfaces is True and DefaultStorageCondition is Automatic, resolves to Ambient Storage, Lined Enclosed:"},
+				newColumn=UploadColumn[
+					"Dummy Column"<>$SessionUUID<>CreateUUID[],
+					ExposedSurfaces -> True,
+					WettedMaterials -> {CarbonSteel}, Dimensions -> {1Centimeter, 1Centimeter, 10Centimeter},
+					ColumnType -> Preparative, SeparationMode -> NormalPhase, PackingType -> Prepacked,
+					MaxNumberOfUses -> 500, Diameter -> 5 Centimeter,
+					MinFlowRate -> 1 Milliliter / Minute, MaxFlowRate -> 100 Milliliter / Minute,
+					MinPressure -> 1000 PSI, MaxPressure -> 5000 PSI,
+					Products -> {Object[Product, "UploadColumn Dummy Product"]}
+				];
+				Download[newColumn, DefaultStorageCondition],
+				ObjectP[Model[StorageCondition, "Ambient Storage, Lined Enclosed"]],
+				Stubs :> {$PersonID=Object[User, "Test user for notebook-less test protocols"]},
+				TearDown :> {EraseObject[newColumn, Force -> True]}
+			]
+		],
+		Module[{newColumn},
+			Example[{Options, DefaultStorageCondition, "If ExposedSurfaces is False and DefaultStorageCondition is Automatic, resolves to Ambient Storage:"},
+				newColumn=UploadColumn[
+					"Dummy Column"<>$SessionUUID<>CreateUUID[],
+					ExposedSurfaces -> False,
+					WettedMaterials -> {CarbonSteel}, Dimensions -> {1Centimeter, 1Centimeter, 10Centimeter},
+					ColumnType -> Preparative, SeparationMode -> NormalPhase, PackingType -> Prepacked,
+					MaxNumberOfUses -> 500, Diameter -> 5 Centimeter,
+					MinFlowRate -> 1 Milliliter / Minute, MaxFlowRate -> 100 Milliliter / Minute,
+					MinPressure -> 1000 PSI, MaxPressure -> 5000 PSI,
+					Products -> {Object[Product, "UploadColumn Dummy Product"]}
+				];
+				Download[newColumn, DefaultStorageCondition],
+				ObjectP[Model[StorageCondition, "Ambient Storage"]],
+				Stubs :> {$PersonID=Object[User, "Test user for notebook-less test protocols"]},
+				TearDown :> {EraseObject[newColumn, Force -> True]}
+			]
+		],
 		Example[{Options, StorageBuffer, "StorageBuffer allows specification of the preferred buffer used to keep the resin wet while the column is stored:"},
 			newColumn=UploadColumn[
 				"Dummy Column"<>$SessionUUID<>CreateUUID[],
@@ -6429,6 +6465,24 @@ DefineTests[
 				];
 				Download[newColumn, Dimensions],
 				{Quantity[0.12, "Meters"], Quantity[0.13, "Meters"], Quantity[0.14, "Meters"]},
+				Stubs :> {$PersonID=Object[User, "Test user for notebook-less test protocols"]},
+				TearDown :> {EraseObject[newColumn, Force -> True]}
+			]
+		],
+		Module[{newColumn},
+			Example[{Options, ExposedSurfaces, "Indicates if any sensitive portions of this column are open to the external environment and prone to contamination:"},
+				newColumn=UploadColumn[
+					"Dummy Column"<>$SessionUUID<>CreateUUID[],
+					ExposedSurfaces -> True,
+					ColumnType -> Preparative, SeparationMode -> NormalPhase, PackingType -> Prepacked,
+					MaxNumberOfUses -> 500, Diameter -> 5 Centimeter,
+					MinFlowRate -> 1 Milliliter / Minute, MaxFlowRate -> 100 Milliliter / Minute,
+					MinPressure -> 1000 PSI, MaxPressure -> 5000 PSI,
+					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"], WettedMaterials -> {CarbonSteel}, Dimensions -> {1Centimeter, 1Centimeter, 10Centimeter},
+					Products -> {Object[Product, "UploadColumn Dummy Product"]}
+				];
+				Download[newColumn, ExposedSurfaces],
+				True,
 				Stubs :> {$PersonID=Object[User, "Test user for notebook-less test protocols"]},
 				TearDown :> {EraseObject[newColumn, Force -> True]}
 			]

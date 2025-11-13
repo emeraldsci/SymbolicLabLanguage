@@ -1025,7 +1025,7 @@ resolveUploadModelOptions[myInput_List, myProductInfo_, myOptions:{_Rule...}, my
 					validImageFileDirectoryQ, imageFileUploadPacket, previousAuthors,
 					nonNullIrrelevantFields, unresolvedPositions, unresolvedPositionPlotting,
 					resolvedPositions, resolvedPositionPlotting, compatiblePositionFieldsQ, missingPositionInfo,
-					attemptToResolvePositionsQ, unresolvedDefaultStorageCondition,
+					attemptToResolvePositionsQ, unresolvedExposedSurfaces, resolvedExposedSurfaces, unresolvedDefaultStorageCondition,
 					resolvedDefaultStorageCondition, resolvedDefaultStickerModel, unresolvedDefaultStickerModel,
 					unresolvedPreferredWashBin, resolvedPreferredWashBin,
 					unresolvedAspectRatio, resolvedAspectRatio, productOptionFulfilledQ,
@@ -1616,11 +1616,26 @@ resolveUploadModelOptions[myInput_List, myProductInfo_, myOptions:{_Rule...}, my
 				roundedPositions = ReplaceAll[resolvedPositions, x:DistanceP :> RoundOptionPrecision[x, 0.01 Millimeter]];
 				roundedPositionPlotting = ReplaceAll[resolvedPositionPlotting, x:DistanceP :> RoundOptionPrecision[x, 0.01 Millimeter]];
 
-				(* resovle DefaultStorageCondition: simply convert symbols to Model[StorageCondition]s *)
+				(* Resolve ExposedSurfaces: default to False for new objects *)
+				unresolvedExposedSurfaces = Lookup[templatedOps, ExposedSurfaces, Automatic];
+
+				resolvedExposedSurfaces = If[MatchQ[unresolvedExposedSurfaces, Automatic],
+					False,
+					unresolvedExposedSurfaces
+				];
+
+				(* Resolve DefaultStorageCondition: conditional on ExposedSurfaces *)
 				unresolvedDefaultStorageCondition = Lookup[templatedOps, DefaultStorageCondition];
 
-				resolvedDefaultStorageCondition = Replace[unresolvedDefaultStorageCondition,
-					nonSampleStorageConditionLookup["memoization"]
+				resolvedDefaultStorageCondition = If[!MatchQ[unresolvedDefaultStorageCondition, Automatic],
+					(* If the user specified a value, use it (convert symbols to objects if needed) *)
+					Replace[unresolvedDefaultStorageCondition, nonSampleStorageConditionLookup["memoization"]],
+
+					(* Otherwise, resolve based on ExposedSurfaces *)
+					If[TrueQ[resolvedExposedSurfaces],
+						Model[StorageCondition, "Ambient Storage, Lined Enclosed"],
+						Model[StorageCondition, "Ambient Storage"]
+					]
 				];
 
 				(* Resolve RNAseFree and PyrogenFree: default to False  *)
@@ -1710,6 +1725,7 @@ resolveUploadModelOptions[myInput_List, myProductInfo_, myOptions:{_Rule...}, my
 						Positions -> roundedPositions,
 						PositionPlotting -> roundedPositionPlotting,
 						DefaultStorageCondition -> resolvedDefaultStorageCondition,
+						ExposedSurfaces -> resolvedExposedSurfaces,
 						DefaultStickerModel -> resolvedDefaultStickerModel,
 						PreferredWashBin -> resolvedPreferredWashBin,
 						If[MatchQ[myParentFunctionHead, UploadContainerModel],
@@ -1744,6 +1760,7 @@ resolveUploadModelOptions[myInput_List, myProductInfo_, myOptions:{_Rule...}, my
 							Positions -> roundedPositions,
 							PositionPlotting -> roundedPositionPlotting,
 							DefaultStorageCondition -> resolvedDefaultStorageCondition,
+							ExposedSurfaces -> resolvedExposedSurfaces,
 							DefaultStickerModel -> resolvedDefaultStickerModel,
 							PreferredWashBin -> resolvedPreferredWashBin,
 							If[MatchQ[myParentFunctionHead, UploadContainerModel],
@@ -2686,8 +2703,20 @@ DefineOptions[UploadContainerModel,
 				Category -> "Container Specifications"
 			},
 			{
+				OptionName -> ExposedSurfaces,
+				Default -> Automatic,
+				AllowNull -> False,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				],
+				Description -> "Indicates if any sensitive portions of this container are open to the external environment and prone to contamination.",
+				ResolutionDescription -> "If creating a new object, resolves to False. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Storage & Handling"
+			},
+			{
 				OptionName -> DefaultStorageCondition,
-				Default -> AmbientStorage,
+				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Alternatives[
 					Widget[
@@ -2700,6 +2729,7 @@ DefineOptions[UploadContainerModel,
 					]
 				],
 				Description -> "The environment in which an empty new container of this model is stored when not in use by an experiment; whenever the container has contents, its storage condition will be overwritten by the contents. For reusable containers, when they are emptied and cleaned, their storage condition will be restored to this DefaultStorageCondition.",
+				ResolutionDescription -> "If ExposedSurfaces is True, resolves to Model[StorageCondition, \"Ambient Storage, Lined Enclosed\"], otherwise resolves to Model[StorageCondition, \"Ambient Storage\"]. For existing models, Automatic resolves to the current field value.",
 				Category -> "Storage & Handling"
 			},
 			{

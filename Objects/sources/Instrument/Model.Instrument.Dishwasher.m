@@ -92,6 +92,15 @@ DefineObjectType[Model[Instrument, Dishwasher], {
 			Description -> "The distances between the bottom of the dishwasher chamber and the positions where racks can be inserted.",
 			Category -> "Dimensions & Positions",
 			Headers -> {"Rack Slot","Z-Position"}
+		},
+		PositionMaxWeights -> {
+			Format -> Multiple,
+			Class -> {String, Real},
+			Pattern :> {LocationPositionP, GreaterEqualP[0 Kilogram]},
+			Units -> {None, Kilogram},
+			Description -> "The upper bound weight limit for each position. The total weight of any rack and its contents should not exceed this value when loaded at these positions.",
+			Category -> "Operating Limits",
+			Headers -> {"Rack Slot", "Max Weight"}
 		}
 	}
 }];

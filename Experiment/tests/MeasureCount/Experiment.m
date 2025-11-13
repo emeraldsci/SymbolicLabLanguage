@@ -721,7 +721,7 @@ DefineTests[ExperimentMeasureCount,
 			];
 			Equal[
 				Download[protocol, {WeightStabilityDuration, MaxWeightVariation}],
-				{60 Second, 0.1 Milligram}
+				{$DefaultWeightStabilityDuration, 0.1 Milligram}
 			],
 			True,
 			Variables :> {protocol}
