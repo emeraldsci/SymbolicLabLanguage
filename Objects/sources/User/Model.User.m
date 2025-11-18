@@ -48,6 +48,19 @@ DefineObjectType[Model[User], {
 			Headers -> {"Qualification Model", "Time"},
 			Category -> "Qualifications & Maintenance",
 			Developer -> True
+		},
+
+		(* Maintenances *)
+		MaintenanceFrequency -> {
+			Format -> Multiple,
+			Class -> {Link, Real},
+			Pattern :> {_Link, GreaterP[0*Second]},
+			Relation -> {Model[Maintenance][Targets], Null},
+			Units -> {None, Day},
+			Description -> "A list of the Maintenances which should be run for users of this model and their required frequencies.",
+			Headers -> {"Maintenance Model", "Time"},
+			Category -> "Qualifications & Maintenance",
+			Developer -> True
 		}
 	}
 }]

@@ -2357,7 +2357,7 @@ prepareReferenceElectrodeResourcePackets[
 		selectedSandpaperModel, sandpaperResource, tweezerResource, electrodeImagingRackResource, referenceElectrodeRackResource, electrodeImagingDeck,
 
 		(* time estimates *)
-		polishingTime, washingTime, primingTime, refillAndSoakingTime, gatherResourcesTime, fumeHoodModel, fumeHoodResource,
+		polishingTime, washingTime, primingTime, refillAndSoakingTime, gatherResourcesTime, fumeHoodModels, fumeHoodResource,
 
 		(* FRQ check *)
 		protocolPacket, allResourceBlobs, fulfillable, frqTests, resultRule, testsRule
@@ -2986,8 +2986,8 @@ prepareReferenceElectrodeResourcePackets[
 	gatherResourcesTime = (20 Minute) * Length[targetReferenceElectrodeModelsWithReplicates];
 
 	(* Request the fume hood *)
-	fumeHoodModel = Model[Instrument, FumeHood, "Labconco Premier 6 Foot"];
-	fumeHoodResource = Resource[Instrument -> fumeHoodModel, Time -> (polishingTime + washingTime + primingTime + refillAndSoakingTime)];
+	fumeHoodModels = commonFumeHoodHandlingStationModels["Memoization"];
+	fumeHoodResource = Resource[Instrument -> fumeHoodModels, Time -> (polishingTime + washingTime + primingTime + refillAndSoakingTime)];
 
 	(* --------------------- *)
 	(* -- PROTOCOL PACKET -- *)

@@ -308,10 +308,10 @@ DefineTests[ExperimentUncover,
 			],
 			{ObjectP[Model[Part, Decrimper]]}
 		],
-		(* this test assumes we don't have a 20mm manual decrimper (which at the time of writing was True; if this changes the test will have to change) *)
+		(* this test assumes we don't have a 11mm manual decrimper (which at the time of writing was True; if this changes the test will have to change) *)
 		Test["If uncovering a container that is crimped and we do not have a matching decrimper for that cap type, then just use the pneumatic one:",
 			Download[
-				ExperimentUncover[Object[Container, Vessel, "Crimped 20mm vial for ExperimentUncover Testing" <> $SessionUUID]],
+				ExperimentUncover[Object[Container, Vessel, "Crimped 11mm vial for ExperimentUncover Testing" <> $SessionUUID]],
 				Instruments
 			],
 			{ObjectP[Model[Instrument, Crimper]]}
@@ -362,8 +362,8 @@ DefineTests[ExperimentUncover,
 				Object[Item, Lid, "Aluminum foil cover 1 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Crimped 13mm vial for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "13mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID],
-				Object[Container, Vessel, "Crimped 20mm vial for ExperimentUncover Testing" <> $SessionUUID],
-				Object[Item, Cap, "20mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID],
+				Object[Container, Vessel, "Crimped 11mm vial for ExperimentUncover Testing" <> $SessionUUID],
+				Object[Item, Cap, "11mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Covered 2L Glass Bottle 1 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "GL45 Bottle Cap 1 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Ampoule for ExperimentUncover Testing" <> $SessionUUID],
@@ -463,8 +463,8 @@ DefineTests[ExperimentUncover,
 					(* for decrimping *)
 					Model[Container, Vessel, "id:6V0npvmW99k1"], (*Model[Container, Vessel, "2 mL clear glass vial, sterile with septum and aluminum crimp top"]*)
 					Model[Item, Cap, "id:9RdZXv17GGDj"], (*Model[Item, Cap, "14 millimeter aluminum crimp cap with septum for 2 mL glass vial"]*)
-					Model[Container, Vessel, "id:J8AY5jAxB8Ex"], (*Model[Container, Vessel, "50 mL glass serum bottle with crimp seal"]*)
-					Model[Item, Cap, "id:pZx9jo8M5L1E"], (*Model[Item, Cap, "VWR Flip Off 20mm Cap"]*)
+					Model[Container, Vessel, "id:XnlV5jNXm8oP"], (*Model[Container, Vessel, "Thermo Scientific SureSTART 2 mL Glass Crimp Top Vials, Level 2 High-Throughput Applications"]*)
+					Model[Item, Cap, "id:jLq9jXOmYw5q"], (*Model[Item, Cap, "Thermo Scientific SureSTART 11 mm Crimp Caps, White Silicone/Red PTFE"]*)
 
 					(* for ampoule opener*)
 					Model[Container, Vessel, "id:zGj91aR3dddn"], (*Model[Container, Vessel, "1mL amber glass ampule"]*)
@@ -541,8 +541,8 @@ DefineTests[ExperimentUncover,
 					"Aluminum foil cover 1 for ExperimentUncover Testing" <> $SessionUUID,
 					"Crimped 13mm vial for ExperimentUncover Testing" <> $SessionUUID,
 					"13mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID,
-					"Crimped 20mm vial for ExperimentUncover Testing" <> $SessionUUID,
-					"20mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID,
+					"Crimped 11mm vial for ExperimentUncover Testing" <> $SessionUUID,
+					"11mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID,
 					"Ampoule for ExperimentUncover Testing" <> $SessionUUID,
 					"Ampoule cover for ExperimentUncover Testing" <> $SessionUUID
 				}
@@ -606,8 +606,9 @@ DefineTests[ExperimentUncover,
 				Object[Item, Lid, "Aluminum foil cover 1 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Crimped 13mm vial for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "13mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID],
-				Object[Container, Vessel, "Crimped 20mm vial for ExperimentUncover Testing" <> $SessionUUID],
-				Object[Item, Cap, "20mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID],Object[Container, Vessel, "Covered 2L Glass Bottle 1 for ExperimentUncover Testing" <> $SessionUUID],
+				Object[Container, Vessel, "Crimped 11mm vial for ExperimentUncover Testing" <> $SessionUUID],
+				Object[Item, Cap, "11mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID],
+				Object[Container, Vessel, "Covered 2L Glass Bottle 1 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "GL45 Bottle Cap 1 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Ampoule for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "Ampoule cover for ExperimentUncover Testing" <> $SessionUUID]

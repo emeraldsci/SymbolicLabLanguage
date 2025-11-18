@@ -123,3 +123,22 @@ DefineUsage[UpdateSimulation,
 		Author -> {"xu.yi", "hanming.yang", "thomas"}
 	}
 ];
+
+DefineUsage[SimulatedObjectQ,
+	{
+		BasicDefinitions -> {
+			{"SimulatedObjectQ[object]", "boolean", "indicates if 'object' is a simulated object."},
+			{"SimulatedObjectQ[objects]", "booleans", "indicates if 'objects' are a simulated objects."}
+		},
+		Input :> {
+			{"object", ObjectP[], "The object to test."},
+			{"objects", {ObjectP[]..}, "A list of objects to test."}
+		},
+		Output :> {
+			{"boolean", BooleanP[], "True or False."},
+			{"booleans", {BooleanP[]..}, "A list of True or False."}
+		},
+		SeeAlso -> {"Simulation", "SimulateCreateID", "DatabaseMemberQ"},
+		Author -> {"ryan.bisbey"}
+	}
+];

@@ -6601,7 +6601,7 @@ Error::ColumnRefreshMultipleWaveformDuration = "The specified waveforms for `1` 
 ExperimentIonChromatography[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : OptionsPattern[]] := Module[
 	{
 		outputSpecification, output, gatherTests, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
-		safeOptionsNamed, mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed,
+		safeOptionsNamed, mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, lcVialModels,
 		safeOps, safeOpsTests, validLengths, validLengthTests, availableInstruments, allObjects, objectSampleFields, analyteFields,
 		objectContainerFields, modelContainerFieldsPacket, modelInstrumentFields, columnFields, modelColumnFields, modelSampleFields, modelSampleObjects,
 		gradientFields, sampleFields, modelContainerFields, optionsWithObjects, userSpecifiedObjects, simulatedSampleQ, objectsExistQs, modelSamplePackets,
@@ -7045,6 +7045,8 @@ ExperimentIonChromatography[mySamples : ListableP[ObjectP[Object[Sample]]], myOp
 		Object[Instrument, IonChromatography, "id:GmzlKjPmo4W4"]
 	};
 
+	lcVialModels = allLCCompatibleVialSearch["Memoization"];
+
 	(* Flatten and merge all possible objects needed into a list *)
 	allObjects = DeleteDuplicates@Download[
 		Cases[
@@ -7069,7 +7071,7 @@ ExperimentIonChromatography[mySamples : ListableP[ObjectP[Object[Sample]]], myOp
 					(* == Default containers == *)
 					(* 96-well 2mL Deep Well Plate *)
 					Model[Container, Plate, "id:L8kPEjkmLbvW"],
-					$ChromatographyLCCompatibleVials,
+					lcVialModels,
 
 					(* == Instruments == *)
 					availableInstruments,
@@ -25218,7 +25220,8 @@ resolveExperimentIonChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		defaultAliquotContainer = Flatten[{
 			(* 96-well 2mL Deep Well Plate *)
 			Model[Container, Plate, "id:L8kPEjkmLbvW"],
-			$ChromatographyLCCompatibleVials
+			(* We could assign this to a variable but it returns exactly what we need and is only used here so just inserting the memoized search directly. *)
+			allLCCompatibleVialSearch["Memoization"]
 		}];
 
 		(* First determine if we are aliquoting *)
@@ -26100,8 +26103,7 @@ experimentIonChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 	];
 
 	(*all standards and blanks will be in vials, so we use the same value*)
-	(* {"HPLC vial (high recovery)", "1mL HPLC Vial (total recovery)", "Amber HPLC vial (high recovery)", "HPLC vial (high recovery), LCMS Certified", "HPLC vial (high recovery) - Deactivated Clear Glass", "Polypropylene HPLC vial (high recovery)", "PFAS Testing Vials, Agilent"} *)
-	compatibleVialContainers={Model[Container, Vessel, "id:jLq9jXvxr6OZ"], Model[Container, Vessel, "id:1ZA60vL48X85"], Model[Container, Vessel, "id:GmzlKjznOxmE"], Model[Container, Vessel, "id:3em6ZvL8x4p8"], Model[Container, Vessel, "id:aXRlGnRE6A8m"], Model[Container, Vessel, "id:qdkmxz0A884Y"],Model[Container, Vessel, "id:o1k9jAoPw5RN"]};
+	compatibleVialContainers =  allLCCompatibleVialSearch["Memoization"];
 
 	(* Fetch container vial's max volume *)
 	vialContainerMaxVolumes = Lookup[fetchPacketFromCache[#, inheritedCache], MaxVolume]& /@ compatibleVialContainers;

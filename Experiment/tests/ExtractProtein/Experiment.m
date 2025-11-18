@@ -5964,7 +5964,7 @@ DefineTests[ExperimentExtractProtein,
     ],
 
     (* -- LiquidLiquidExtractionCentrifugeIntensity -- *)
-    Example[{Options,LiquidLiquidExtractionCentrifugeIntensity, "If the liquid-liquid extraction solution will be centrifuged and the MaxIntensity of the centrifuge model is less than the MaxCentrifugationForce of the plate model (or the MaxCentrifugationForce of the plate model does not exist), the liquid-liquid extraction solution will be centrifuged at the MaxIntensity of the centrifuge model:"},
+    Example[{Options,LiquidLiquidExtractionCentrifugeIntensity, "The liquid-liquid extraction solution will be centrifuged at the lesser intensity between MaxIntensity of the centrifuge model and MaxCentrifugationForce of the plate model:"},
       ExperimentExtractProtein[
         Object[Sample, "ExperimentExtractProtein Previously Extracted Protein Sample " <> $SessionUUID],
         LiquidLiquidExtractionCentrifugeInstrument -> Model[Instrument,Centrifuge,"HiG4"],
@@ -5974,7 +5974,7 @@ DefineTests[ExperimentExtractProtein,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            LiquidLiquidExtractionCentrifugeIntensity -> EqualP[3600 GravitationalAcceleration]
+            LiquidLiquidExtractionCentrifugeIntensity -> EqualP[2000 GravitationalAcceleration]
           }
         ]
       },

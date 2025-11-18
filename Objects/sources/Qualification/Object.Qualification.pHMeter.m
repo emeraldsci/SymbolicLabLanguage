@@ -19,6 +19,17 @@ DefineObjectType[Object[Qualification,pHMeter], {
 			Category -> "General",
 			Abstract -> True
 		},
+		ProbeInstruments -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Instrument,pHMeter],
+				Object[Instrument,pHMeter]
+			],
+			Description -> "The probe instruments that should be used to measure the pH of the QualificationSamples.",
+			Category -> "General"
+		},
 		pHData -> {
 			Format -> Multiple,
 			Class -> Link,

@@ -1008,7 +1008,7 @@ prepareTransporterResourcePackets[myInputs:{ObjectP[{Object[Item], Model[Item], 
 		previewRule, optionsRule, resolvedOptionsNoHidden, testsRule, resultRule, resourcePlacement,
 		uuid, temperatureControlledResources, transporterPickingTime, transporterConfigurationTime, checkpoints,
 		transporterResourcesNoDuplicates, transporterIndexMatchingTuple, transportTemperatureNoDuplicates, transporterIndexMatchingTupleNoDup,
-		fumeHoodResource, cableResources, cableResourcesNoDuplicates
+		cableResources, cableResourcesNoDuplicates
 	},
 	(* Determine the requested output format of this function. *)
 	outputSpecification = OptionValue[Output];
@@ -1090,12 +1090,6 @@ prepareTransporterResourcePackets[myInputs:{ObjectP[{Object[Item], Model[Item], 
 
 	protocolObject = CreateID[Object[Protocol, PrepareTransporter]];
 
-	(* Reserve a fumehood to set up heater *)
-	fumeHoodResource = If[MemberQ[transporters, ObjectP[{Object[Instrument, PortableHeater], Model[Instrument, PortableHeater]}]],
-		Resource[Instrument -> Model[Instrument, FumeHood, "id:P5ZnEj4P8kNO"]],
-		Null
-	];
-
 	protocolPacket = <|
 		Object -> protocolObject,
 		UnresolvedOptions -> myUnresolvedOptions,
@@ -1105,7 +1099,6 @@ prepareTransporterResourcePackets[myInputs:{ObjectP[{Object[Item], Model[Item], 
 		Replace[ResourcePlacements] -> resourcePlacement,
 		Replace[TemperatureControlledResources] -> temperatureControlledResources,
 		Replace[Checkpoints] -> checkpoints,
-		FumeHood -> Link[fumeHoodResource],
 		Replace[PowerCables] -> cableResourcesNoDuplicates
 	|>;
 

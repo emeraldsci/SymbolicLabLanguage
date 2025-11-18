@@ -1402,6 +1402,183 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Pattern :> Alternatives[Wet,Dry],
 			Description ->  "Indicates the type of cleaning performed on the balance right before a weighing instance if the operator indicates presence of stray material. Dry indicates the balance pan surface and the balance floor outside of the balance pan is cleared of any stray material using soft and lint-free non-woven wipes. Wet indicates the balance pan surface and the balance floor outside of the balance pan is first cleaned with Dry method, followed by wiping with DI-water moistened wipes, IPA-moistened wipes, and a final dry wipe. None indicates no cleaning is performed prior to initial setup.",
 			Category -> "Cleaning"
+		},
+		WaterBasedCleaningWipes -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item,Consumable],
+				Model[Item,Consumable]
+			],
+			Description -> "The wipes used to wipe off any stray material from the balance.",
+			Category -> "Cleaning"
+		},
+		AlcoholBasedCleaningWipes -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item,Consumable],
+				Model[Item,Consumable]
+			],
+			Description -> "The wipes used to wipe off any stray material from the balance.",
+			Category -> "Cleaning"
+		},
+		BalanceCleaningBrush -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item,Consumable],
+				Model[Item,Consumable]
+			],
+			Description -> "The brush used to dust off any stray material from the balance.",
+			Category -> "Cleaning"
+		},
+		ReplaceAlcoholBasedCleaningWipes -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if alcohol based cleaning wipes has been emptied out and needs replacement.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		ReplaceWaterBasedCleaningWipes -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if water based cleaning wipes has been emptied out and needs replacement.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		BalanceReblankings ->{
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> Alternatives[Always,AsNecessary,None],
+			Description -> "Indicates the type of re-weighing performed on the balance if material loss is detected or stray material is present. Always indicates weighing container replacement whenever there is any material loss detected OR there is stray material on the outside. AsNecessary indicates weighing container replacement when there is stray material on the outside and cleaning without replacement when the outside is clean and only something is on the balance. None indicates cleaning of weighing container whenever there is any material loss detected OR there is stray material on the outside.",
+			Category -> "General"
+		},
+		PrewetLabware->{
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if labware used with the Source sample is rinsed with PrewetWashSolution, NumberOfPrewetWashes times, prior to use.",
+			Category->"Prewet Labware"
+		},
+		NumberOfPrewetWashes->{
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0],
+			Units -> None,
+			Description -> "The number of times labware used with source sample is rinsed with PrewetWashSolution before use with the source sample.",
+			Category->"Prewet Labware"
+		},
+		PrewetWashVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The total volume of the PrewetWashSolution that is used to rinse labware (Destination, IntermediateContainer, Instrument (graduated cylinder, syringe), Funnel, IntermediateFunnel, Tips, QuantitativeTransferWashTips), NumberOfPrewetWashes times, to rinse off possible contaminants and prepare the labware for use.",
+			Category->"Prewet Labware"
+		},
+		PrewetWashSolutions->{
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Sample],
+				Object[Sample]
+			],
+			Description -> "The solution that is used to rinse labware (Destination, IntermediateContainer, Instrument (graduated cylinder, syringe), Funnel, IntermediateFunnel, QuantitativeTransferWashTips), NumberOfPrewetWashes times, to rinse off possible contaminants and prepare the labware for use.",
+			Category -> "General",
+			Migration->SplitField
+		},
+		PrewetWashIntermediateContainers->{
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container],
+				Object[Container]
+			],
+			Description -> "The container that is used to hold the PrewetWashSolution prior to rinsing of labware, NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Prewet Labware"
+		},
+		PrewetWashWasteContainers->{
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container],
+				Object[Container]
+			],
+			Description -> "The container that is used to hold the waste generated in rinsing labware with PrewetWashSolution, NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Prewet Labware"
+		},
+		DestinationPrewetWashVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The volume of the PrewetWashSolution that is used to rinse destination container, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Prewet Labware"
+		},
+		IntermediateContainerPrewetWashVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The volume of the PrewetWashSolution that is used to rinse the intermediate container, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Prewet Labware"
+		},
+		InstrumentPrewetWashVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The volume of the PrewetWashSolution that is used to rinse the instrument (graduated cylinder or syringe), per wash amd NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Prewet Labware"
+		},
+		TipsPrewetWashVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The volume of the PrewetWashSolution that is used to rinse tips, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Prewet Labware"
+		},
+		FunnelPrewetWashVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The volume of the PrewetWashSolution that is used to rinse Funnel, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Prewet Labware"
+		},
+		IntermediateFunnelPrewetWashVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The volume of the PrewetWashSolution that is used to rinse IntermediateFunnel, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Prewet Labware"
+		},
+		HandPumpPrewetWashVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The volume of the PrewetWashSolution that is used to rinse HandPump, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Prewet Labware"
+		},
+		QuantitativeTransferTipsPrewetWashVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The volume of the PrewetWashSolution that is used to rinse QuantitativeTransferTips, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Prewet Labware"
 		}
 	}
 }];

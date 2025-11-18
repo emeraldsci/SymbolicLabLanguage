@@ -364,7 +364,8 @@ With[
 					Object[Item][Maintenance],
 					Object[Plumbing],
 					Object[Wiring],
-					Object[Product]
+					Object[Product],
+					Object[User]
 				],
 				Description -> "The designated object that this maintenance is intended to service.",
 				Category -> "General",

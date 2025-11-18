@@ -780,13 +780,13 @@ Warning::ConflictingInoculationSource = "`3`. Thus the input samples `1` are not
 Error::InvalidInoculationInstrument = "The specified Instrument(s), `1`, cannot be used for InoculationSource `2`. `3`. Please specify a different Instrument, or allow this option to be set automatically.";
 Error::IncompatibleInstrumentAndCellType = "The input samples, `1`, have cell types `2` incompatible with Instrument `3`. `4`.";
 Error::IncompatibleBiosafetyCabinetAndCellType = "The input samples, `1`, have cell types `2` incompatible with the biosafety cabinet specified in TransferEnvironment `3`. Model[Instrument,HandlingStation,BiosafetyCabinet,\"Biosafety Cabinet Handling Station for Tissue Culture\"](or an object of this model) allows inoculation of mammalian cells. Model[Instrument,HandlingStation,BiosafetyCabinet,\"Biosafety Cabinet Handling Station for Microbiology\"] allows inoculation of microbial cells. Please specify a TransferEnvironment compatible with the cells in the samples or leave it to be set automatically.";
-Error::InoculationSourceOptionMismatch = "InoculationSource is set to `1`. `3`. Please look at the ExperimentInoculateLiquidMedia help file to see what options can be specified when InoculationSource is `1`, or allow the options to be set automatically";
+Error::InoculationSourceOptionMismatch = "InoculationSource is set to `1`. `2`. Please look at the ExperimentInoculateLiquidMedia help file to see what options can be specified when InoculationSource is `1`, or allow the options to be set automatically.";
 Warning::NoPreferredLiquidMedia = "The input samples, `1`, either do not have any model cell in their composition or the model cells in the Composition do not have a PreferredLiquidMedia. DestinationMedia will be set to Model[Sample, Media, \"LB Broth, Miller\"].";
 Error::DestinationMediaContainerOverfill = "The input samples, `1` would have total volume(s) `3` in DestinationMediaContainer `2`. This would result in overflowing. Please either decrease the Volume or MediaVolume in order to submit a valid experiment.";
 Error::MultipleDestinationMediaContainers = "The input samples, `1`, have InoculationSource as `2` but DestinationMediaContainer as a list of Objects. `3` or allow these options to be set automatically.";
 Error::NoTipsFound = "For the input samples, `1`, no pipette tip can touch the top of the sample in the source container and the bottom of the DestinationMediaContainer. Please specify a different DestinationMediaContainer, or allow the option to be set automatically.";
 Error::TipConnectionMismatch = "The input samples, `1`, have a specified Instrument and InoculationTips that do not have the same TipConnectionType. Please specify Instruments and InoculationTips with the same TipConnectionType or allow these options to be set automatically.";
-Warning::NoPreferredLiquidMediaForResuspension = "The input samples, `1`, either do not have model cell in their composition or the model cells in the Composition do not have a PreferredLiquidMedia. ResuspensionMedia will be resolved to Model[Sample, Media, \"LB Broth, Miller\"]";
+Warning::NoPreferredLiquidMediaForResuspension = "The input samples, `1`, either do not have model cell in their composition or the model cells in the Composition do not have a PreferredLiquidMedia. ResuspensionMedia will be resolved to Model[Sample, Media, \"LB Broth, Miller\"].";
 Error::InvalidResuspensionMediaState = "For the following samples, `1`, the ResuspensionMedia has a non Liquid State. Please specify a different ResuspensionMedia or allow this option to be set automatically.";
 Error::ResuspensionMediaOverfill = "The input samples, `1` would have total volume(s) `3` in the source container `2` upon addition of ResuspensionMedia `4`. This would result in overflowing. Please either decrease the ResuspensionMediaVolume in order to submit a valid experiment.";
 Error::FreezeDriedUnusedSample = "The sample(s) `1` are expected to have a total volume of `2` after resuspending. Currently, the Volume is set to `3` and the DestinationMediaContainer option is set to `4`. Under these conditions, `5` of the sample(s) will not be used and will therefore be discarded. Consider adjusting the Volume or specify multiple DestinationMediaContainer for the sample in order to submit a valid experiment.";
@@ -4729,8 +4729,8 @@ resolveExperimentInoculateLiquidMediaOptions[mySamples: {ObjectP[Object[Sample]]
 	];
 
 	(* Big main switch off of InoculationSource where we will call other option resolvers as necessary *)
-	(* InvalidOptions calculated by InoculationSource specific functions (such as ExperimentPickColonies, ExperimentTransfer) is recorded in swithcInvalidOptions *)
-	(* InvalidInputs calculated by InoculationSource specific functions (such as ExperimentPickColonies, ExperimentTransfer) is recorded in swithcInvalidInputs *)
+	(* InvalidOptions calculated by InoculationSource specific functions (such as ExperimentPickColonies, ExperimentTransfer) is recorded in switchInvalidOptions *)
+	(* InvalidInputs calculated by InoculationSource specific functions (such as ExperimentPickColonies, ExperimentTransfer) is recorded in switchInvalidInputs *)
 	{
 		(*1*)resolvedTotalOptions,
 		(*2*)nullMismatchOptions,
@@ -7005,11 +7005,11 @@ resolveExperimentInoculateLiquidMediaOptions[mySamples: {ObjectP[Object[Sample]]
 			(* The guidance for user is different for SolidMedia case where simply updating Instrument option won't work as PickColonies is only applicable for microbial cells *)
 			lastMessage = joinClauses[{
 				If[!MatchQ[nullMismatchOptions, {}],
-					"The following options " <> ToString[nullMismatchOptions] <> " must be set to a non-Null value when InoculationSource is " <> ToString[resolvedInoculationSource],
+					"The following " <> pluralize[nullMismatchOptions, "option ", "options "] <> joinClauses[nullMismatchOptions] <> " must be set to a non-Null value when InoculationSource is " <> ToString[resolvedInoculationSource],
 					Nothing
 				],
 				If[!MatchQ[specifiedNullOptions, {}],
-					"The following options " <> ToString[specifiedNullOptions] <> " cannot be set when InoculationSource is " <> ToString[resolvedInoculationSource],
+					"The following " <> pluralize[specifiedNullOptions, "option ", "options "] <> joinClauses[specifiedNullOptions] <> " cannot be set when InoculationSource is " <> ToString[resolvedInoculationSource],
 					Nothing
 				],
 				Which[
@@ -7028,7 +7028,6 @@ resolveExperimentInoculateLiquidMediaOptions[mySamples: {ObjectP[Object[Sample]]
 			Message[
 				Error::InoculationSourceOptionMismatch,
 				resolvedInoculationSource,
-				inoculationSourceOptionMismatchOptions,
 				lastMessage
 			]
 		]

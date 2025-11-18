@@ -498,6 +498,12 @@ validItemBLIProbeQTests[packet : PacketP[Object[Item, BLIProbe]]] := {
 validItemClampQTests[packet:PacketP[Object[Item,Clamp]]]:={};
 
 
+(* ::Subsection::Closed:: *)
+(*validItemCannulaQTests*)
+
+
+validItemCannulaQTests[packet:PacketP[Object[Item,Cannula]]]:={};
+
 
 (* ::Subsection::Closed:: *)
 (*validItemConsumableQTests*)
@@ -1553,6 +1559,7 @@ registerValidQTestFunction[Object[Item,BoxCutter],validItemBoxCutterQTests];
 registerValidQTestFunction[Object[Item,CalibrationWeight],validItemCalibrationWeightQTests];
 registerValidQTestFunction[Object[Item,CalibrationDistanceBlock],validItemCalibrationDistanceBlockQTests];
 registerValidQTestFunction[Object[Item,Clamp],validItemClampQTests];
+registerValidQTestFunction[Object[Item,Cannula],validItemCannulaQTests];
 registerValidQTestFunction[Object[Item,Counterweight],validItemCounterweightQTests];
 registerValidQTestFunction[Object[Item, Electrode],validItemElectrodeQTests];
 registerValidQTestFunction[Object[Item, Electrode, ReferenceElectrode],validItemElectrodeReferenceElectrodeQTests];

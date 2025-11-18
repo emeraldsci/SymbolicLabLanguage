@@ -931,7 +931,7 @@ DefineTests[
 						Index -> 2,
 						HandlingEnvironment -> ObjectP[],
 						CoveredContainer -> Null,
-						WeightStabilityDuration -> EqualP[60 Second],
+						WeightStabilityDuration -> EqualP[$DefaultWeightStabilityDuration],
 						MaxWeightVariation -> EqualP[0.1 Milligram]
 					|>,
 					(* 2 *)
@@ -951,7 +951,7 @@ DefineTests[
 						Index -> 3,
 						HandlingEnvironment -> ObjectP[],
 						CoveredContainer -> Null,
-						WeightStabilityDuration -> EqualP[60 Second],
+						WeightStabilityDuration -> EqualP[$DefaultWeightStabilityDuration],
 						MaxWeightVariation -> EqualP[1 Milligram]
 					|>,
 					(* 3 *)
@@ -971,7 +971,7 @@ DefineTests[
 						Index -> 4,
 						HandlingEnvironment -> ObjectP[],
 						CoveredContainer -> Null,
-						WeightStabilityDuration -> EqualP[60 Second],
+						WeightStabilityDuration -> EqualP[$DefaultWeightStabilityDuration],
 						MaxWeightVariation -> EqualP[1 Milligram]
 					|>,
 					(* 4 *)
@@ -991,7 +991,7 @@ DefineTests[
 						Index -> 5,
 						HandlingEnvironment -> ObjectP[],
 						CoveredContainer -> Null,
-						WeightStabilityDuration -> EqualP[60 Second],
+						WeightStabilityDuration -> EqualP[$DefaultWeightStabilityDuration],
 						MaxWeightVariation -> EqualP[1 Milligram]
 					|>
 				},
@@ -1842,7 +1842,7 @@ DefineTests[
 						Batching[[All,MaxWeightVariation]]}
 				],
 				{
-					{60 Second, 60 Second},
+					{$DefaultWeightStabilityDuration, $DefaultWeightStabilityDuration},
 					balanceDefault
 				}
 			],
