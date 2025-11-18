@@ -8700,7 +8700,7 @@ transferUnitOperationPrimaryData[
         measuredTransferWeights, measuredTransferWeightData, measuredTransferWeightAppearances,
         residueWeights, residueWeightData, residueWeightAppearances, materialLossWeights, materialLossWeightData, materialLossWeightAppearances, percentTransferred,
         quantitativeTransferBools, quantitativeTransferWashSolutions, quantitativeTransferWashVolumes, numbersOfQuantitativeTransferWashes,
-        funnels, instruments, tips, intermediateContainers, intermediateFunnels, backfillGases, backfillNeedles, needles, transferAmounts, massTransferIndices,
+        funnels, instruments, tips, intermediateContainers, intermediateFunnels, backfillGases, backfillNeedles, needles, requestedTransferAmounts, massTransferIndices,
         padWeightList, paddedTareWeights, paddedTransferWeights, paddedContainerWeights, paddedResidueWeights, paddedMaterialLossWeights, roboticQ, actualTransferAmounts,
         streamPackets, tareWeightAppearancePackets, emptyContainerWeightAppearancePackets, measuredTransferWeightAppearancePackets, residueWeightAppearancePackets, materialLossWeightAppearancePackets,
         sourceModels, destinationModels, transferEnvironmentModels, balanceModels, balanceResolutions, weighingContainerModels, funnelModels, instrumentModels, tipModels, intermediateContainerModels,
@@ -8838,8 +8838,11 @@ transferUnitOperationPrimaryData[
         }
     ];
 
+    (* Set a flag for whether this is a robotic transfer. *)
+    roboticQ = MatchQ[preparation, Robotic];
+
     (* Get the requested transfer amounts, accounting for split fields. *)
-    transferAmounts = Module[{allAmountFormats},
+    requestedTransferAmounts = Module[{allAmountFormats},
         allAmountFormats = Lookup[outputUnitOpPacket, {AmountExpression, AmountInteger, AmountVariableUnit}];
         Map[FirstCase[#, Except[Null]]&, Transpose[allAmountFormats]]
     ];
@@ -8854,103 +8857,7 @@ transferUnitOperationPrimaryData[
                 Nothing
             ]
         ],
-        {transferAmounts, balances, Range[Length[transferAmounts]]}
-    ];
-
-    (* If any of the weight variables are not the correct length, pad them appropriately so that we can map over them as needed. *)
-    padWeightList[myList_List, myReferenceList_List] := If[EqualQ[Length[myList], Length[myReferenceList]],
-        myList,
-        Module[
-            {notNullElements},
-
-            (* Find any non-Null items in the list, which we expect to be either weights or images. *)
-            notNullElements = Cases[myList, Except[Null]];
-
-            (* Make a flat list of Nulls and then insert the weights or images at the mass transfer indices. *)
-            ReplacePart[
-                ConstantArray[Null, Length[myReferenceList]],
-                massTransferIndices -> notNullElements
-            ] /. {{} -> Null}
-        ]
-    ];
-
-    (* Pad out all of the weight lists. *)
-    {
-        paddedTareWeights,
-        paddedTransferWeights,
-        paddedContainerWeights,
-        paddedResidueWeights,
-        paddedMaterialLossWeights
-    } = Map[
-        padWeightList[ToList[#], quantitativeTransferBools]&,
-        {
-            tareWeights,
-            measuredTransferWeights,
-            emptyContainerWeights,
-            residueWeights,
-            materialLossWeights
-        }
-    ];
-
-    (* Set a flag for whether this is a robotic transfer. *)
-    roboticQ = MatchQ[preparation, Robotic];
-
-    (* Determine the actual transfer amounts for solid and liquid transfers. *)
-    actualTransferAmounts = If[roboticQ,
-
-        (* if it is robotic, there is no actual transfer amount measured so skip this *)
-        ConstantArray[Null, Length[transferAmounts]],
-
-        (* If it is not robotic, we can get either the percent transferred (liquid) or the measured weight of the transferred material (solid) *)
-        Module[
-            {calculatedWeights},
-
-            (* The mass calculations differ according to whether quantitative transfer was used. *)
-            calculatedWeights = Flatten @ MapThread[
-                Function[
-                    {quantitativeTransferQ, measuredTransferWeight, emptyContainerWeight, residueWeight},
-                    Which[
-                        (* If QuantitativeTransfer is True, subtract the container weight from the weight of container and sample together. *)
-                        TrueQ[quantitativeTransferQ], measuredTransferWeight - emptyContainerWeight,
-                        (* If there is no measured transfer weight, this is either Amount -> All or it's not a mass transfer. Return Null. *)
-                        NullQ[measuredTransferWeight], Null,
-                        (* If there is no empty container weight or residue weight, this is an old protocol that didn't use those fields. *)
-                        (* For backwards compatibility, just use the MeasuredTransferWeight, which previously used to provide the actual weight. *)
-                        NullQ[emptyContainerWeight] && NullQ[residueWeight], measuredTransferWeight,
-                        (* If there is a transfer weight but no residue weight, we're weighing directly into the destination without a weigh boat/funnel. *)
-                        NullQ[residueWeight], measuredTransferWeight - emptyContainerWeight,
-                        (* Otherwise, this is a mass transfer with QuantitativeTransfer turned off. Subtract residue weight from the transfer weight. *)
-                        True, measuredTransferWeight - residueWeight
-                    ]
-                ],
-                {quantitativeTransferBools, paddedTransferWeights, paddedContainerWeights, paddedResidueWeights}
-            ];
-
-            (* Make the list of Actual transfer amounts for liquid and solid transfers. *)
-            MapThread[Function[{percent, weight, requestedAmount},
-                Which[
-                    (* If the user requested All for a mass transfer and weight data is known, use the calculated weight without adjusting the units. *)
-                   MatchQ[requestedAmount, All] && !NullQ[weight],
-                        weight,
-                    (* If the user requested All for a mass transfer WITHOUT using a balance, return All. *)
-                    MatchQ[requestedAmount, All],
-                        All,
-                    (* If the user specified itemized transfer *)
-                    MatchQ[requestedAmount, _Integer],
-                        UnitScale[weight],
-                    (* If there is a requested quantity for a mass transfer, express the actual mass in the desired units. *)
-                    !NullQ[weight],
-                        Convert[weight, Units[requestedAmount]],
-                    (* If we have a percent for a liquid transfer, use that. *)
-                    MatchQ[percent, PercentP],
-                        percent,
-                    (* We shouldn't end up here, but just in case. *)
-                    True,
-                        Null
-                ]],
-                {percentTransferred, calculatedWeights, transferAmounts}
-            ]
-        ]
+        {requestedTransferAmounts, balances, Range[Length[requestedTransferAmounts]]}
     ];
 
     (* Download info from the weight data and download Models for various fields that we want to display. *)
@@ -9031,9 +8938,9 @@ transferUnitOperationPrimaryData[
                 {Model},
                 {Model},
                 {Packet[WeightLog, WeightStability]},
-                {Packet[WeightLog, WeightStability]},
-                {Packet[WeightLog, WeightStability]},
-                {Packet[WeightLog, WeightStability]},
+                {Packet[WeightLog, WeightStability, BalanceTareWeight]},
+                {Packet[WeightLog, WeightStability, BalanceTareWeight]},
+                {Packet[WeightLog, WeightStability, BalanceTareWeight]},
                 {Packet[WeightLog, WeightStability]}
             }
         ],
@@ -9055,6 +8962,23 @@ transferUnitOperationPrimaryData[
         materialLossWeightAppearancePackets
     };
 
+    (* If any of the weight variables are not the correct length, pad them appropriately so that we can map over them as needed. *)
+    padWeightList[myList_List, myReferenceList_List] := If[EqualQ[Length[myList], Length[myReferenceList]],
+        myList,
+        Module[
+            {notNullElements},
+
+            (* Find any non-Null items in the list, which we expect to be either weights or images. *)
+            notNullElements = Cases[myList, Except[Null]];
+
+            (* Make a flat list of Nulls and then insert the weights or images at the mass transfer indices. *)
+            ReplacePart[
+                ConstantArray[Null, Length[myReferenceList]],
+                massTransferIndices -> notNullElements
+            ] /. {{} -> Null}
+        ]
+    ];
+
     (* Pad out the image and weight data objects. Also pad out the quantitative transfer wash solutions while we're here. *)
     {
         paddedTareWeightAppearanceObjects,
@@ -9072,7 +8996,12 @@ transferUnitOperationPrimaryData[
         paddedEmptyContainerWeightDataPackets,
         paddedMeasuredTransferWeightDataPackets,
         paddedResidueWeightDataPackets,
-        paddedMaterialLossWeightDataPackets
+        paddedMaterialLossWeightDataPackets,
+        paddedTareWeights,
+        paddedTransferWeights,
+        paddedContainerWeights,
+        paddedResidueWeights,
+        paddedMaterialLossWeights
     } = Map[
         padWeightList[ToList[#], quantitativeTransferBools]&,
         {
@@ -9091,8 +9020,104 @@ transferUnitOperationPrimaryData[
             emptyContainerWeightDataPackets,
             measuredTransferWeightDataPackets,
             residueWeightDataPackets,
-            materialLossWeightDataPackets
+            materialLossWeightDataPackets,
+            tareWeights,
+            measuredTransferWeights,
+            emptyContainerWeights,
+            residueWeights,
+            materialLossWeights
         }
+    ];
+
+    (* Determine the actual transfer amounts for solid and liquid transfers. *)
+    actualTransferAmounts = If[roboticQ,
+
+        (* if it is robotic, there is no actual transfer amount measured so skip this *)
+        ConstantArray[Null, Length[requestedTransferAmounts]],
+
+        (* If it is not robotic, we can get either the percent transferred (liquid) or the measured weight of the transferred material (solid) *)
+        Module[
+            {emptyContainerRetareWeights, measuredTransferRetareWeights, residueRetareWeights, calculatedWeights},
+
+            (* Get any relevant retare values. Replace any Nulls with 0 Gram. *)
+            {emptyContainerRetareWeights, measuredTransferRetareWeights, residueRetareWeights} = Map[
+                If[MemberQ[#, PacketP[]],
+                    ReplacePart[
+                        ConstantArray[0 Gram, Length[quantitativeTransferBools]],
+                        massTransferIndices -> Lookup[#[[massTransferIndices]], BalanceTareWeight, 0 Gram]
+                    ],
+                    ConstantArray[0 Gram, Length[quantitativeTransferBools]]
+                ]&,
+                {paddedEmptyContainerWeightDataPackets, paddedMeasuredTransferWeightDataPackets, paddedResidueWeightDataPackets}
+            ];
+
+            (* The mass calculations differ according to whether quantitative transfer was used. *)
+            calculatedWeights = Flatten @ MapThread[
+                Function[
+                    {
+                        quantitativeTransferQ,
+                        measuredTransferWeight,
+                        measuredTransferWeightRetareWeight,
+                        emptyContainerWeight,
+                        emptyContainerWeightRetareWeight,
+                        residueWeight,
+                        residueWeightRetareWeight
+                    },
+                    Which[
+                        (* If QuantitativeTransfer is True, subtract the container weight from the weight of container and sample together. *)
+                        TrueQ[quantitativeTransferQ],
+                            (measuredTransferWeight - measuredTransferWeightRetareWeight) - (emptyContainerWeight - emptyContainerWeightRetareWeight),
+                        (* If there is no measured transfer weight, this is either Amount -> All or it's not a mass transfer. Return Null. *)
+                        NullQ[measuredTransferWeight],
+                            Null,
+                        (* If there is no empty container weight or residue weight, this is an old protocol that didn't use those fields. *)
+                        (* For backwards compatibility, just use the MeasuredTransferWeight, which previously used to provide the actual weight. *)
+                        NullQ[emptyContainerWeight] && NullQ[residueWeight],
+                            (measuredTransferWeight - measuredTransferWeightRetareWeight),
+                        (* If there is a transfer weight but no residue weight, we're weighing directly into the destination without a weigh boat/funnel. *)
+                        NullQ[residueWeight],
+                            (measuredTransferWeight - measuredTransferWeightRetareWeight) - (emptyContainerWeight - emptyContainerWeightRetareWeight),
+                        (* Otherwise, this is a mass transfer with QuantitativeTransfer turned off. Subtract residue weight from the transfer weight. *)
+                        True,
+                            (measuredTransferWeight - measuredTransferWeightRetareWeight) - (residueWeight - residueWeightRetareWeight)
+                    ]
+                ],
+                {
+                    quantitativeTransferBools,
+                    paddedTransferWeights,
+                    measuredTransferRetareWeights,
+                    paddedContainerWeights,
+                    emptyContainerRetareWeights,
+                    paddedResidueWeights,
+                    residueRetareWeights
+                }
+            ];
+
+            (* Make the list of Actual transfer amounts for liquid and solid transfers. *)
+            MapThread[Function[{percent, weight, requestedAmount},
+                Which[
+                    (* If the user requested All for a mass transfer and weight data is known, use the calculated weight without adjusting the units. *)
+                    MatchQ[requestedAmount, All] && !NullQ[weight],
+                        weight,
+                    (* If the user requested All for a mass transfer WITHOUT using a balance, return All. *)
+                    MatchQ[requestedAmount, All],
+                        All,
+                    (* If the user specified itemized transfer *)
+                    MatchQ[requestedAmount, _Integer],
+                        UnitScale[weight],
+                    (* If there is a requested quantity for a mass transfer, express the actual mass in the desired units. *)
+                    !NullQ[weight],
+                        Convert[weight, Units[requestedAmount]],
+                    (* If we have a percent for a liquid transfer, use that. *)
+                    MatchQ[percent, PercentP],
+                        percent,
+                    (* We shouldn't end up here, but just in case. *)
+                    True,
+                        Null
+                ]],
+                {percentTransferred, calculatedWeights, requestedTransferAmounts}
+            ]
+        ]
     ];
 
     (* Quick helper to import images and shrink them to display in tooltips *)
@@ -9594,7 +9619,7 @@ transferUnitOperationPrimaryData[
             destinationLinks,
             sourceModels,
             destinationModels,
-            transferAmounts,
+            requestedTransferAmounts,
             actualTransferAmountsFormatted,
             transferEnvironmentModels,
 
@@ -9764,7 +9789,7 @@ transferUnitOperationPrimaryData[
                         If[MatchQ[#4, All], All, UnitForm[#4, Brackets -> False]],
                         If[roboticQ, Nothing, #5]
                     }, NullP -> Nothing, {1}]&,
-                    {Range[Length[sourceContainers]], clickableSourcesForSummary, clickableDestinationsForSummary, transferAmounts, actualTransferAmountsFormatted}
+                    {Range[Length[sourceContainers]], clickableSourcesForSummary, clickableDestinationsForSummary, requestedTransferAmounts, actualTransferAmountsFormatted}
                 ];
                 summaryHeadings = {Tooltip["Index", "Click radio button to show detailed transfer data below"], "Source", "Destination", "Requested Amount", If[roboticQ, Nothing, "Actual Amount"]};
 
@@ -10858,9 +10883,11 @@ plateReaderUnitOperationPrimaryData[
 
 fillToVolumeUnitOperationPrimaryData[outputUnitOpPacket_Association] := Module[
     {
-        totalVolumes, containerLabels, containerLinks, sampleLinks, solventLinks, methods, imageSampleQ, dateCompleted,
-        downloadResult, solventModels, ftvImages, ftvImageCloudFiles, imageQs, imageButtons, stylizeHeader,
-        safeContainerLabels, safeContainerLinks, safeSolventLinks, safeSolventModels, tables
+        totalVolumes, containerLabels, containerLinks, sampleLinks, solventLinks, methods, imageSampleQ,
+        ftvProtocol, qsPacket, streamPackets, procedureEventPackets, solventModels, containerModels, meniscusCloudFiles,
+        targetsAchievedQ, safeStreamPackets, safeProcedureEvenPackets, flatSolventModels, flatContainerModels,
+        safeMeniscusImages, safeMeniscusCloudFiles, imageQs, qsStartTaskP, streamTuples, imageButtonsWithStreams,
+        safeContainerLabels, safeContainerLinks, safeSolventLinks, safeSolventModels, safeContainerModels, gridFormat, tables
     },
 
     (* Get the relevant information we need from the protocol packet. *)
@@ -10872,7 +10899,7 @@ fillToVolumeUnitOperationPrimaryData[outputUnitOpPacket_Association] := Module[
         solventLinks,
         methods,
         imageSampleQ,
-        dateCompleted
+        ftvProtocol
     } = Lookup[outputUnitOpPacket,
         {
             TotalVolume,
@@ -10882,34 +10909,41 @@ fillToVolumeUnitOperationPrimaryData[outputUnitOpPacket_Association] := Module[
             SolventLink,
             Method,
             ImageSample,
-            DateCompleted
+            Subprotocol
         }
     ];
 
-    (* If ImageSample is True, Download the image of the container when it is filled to the stated volume. *)
-    (* Regardless of whether ImageSamples is True, download the solvent models. *)
-    downloadResult = If[TrueQ[imageSampleQ] && MatchQ[sampleLinks, {ObjectP[Object[Sample]]..}],
-        Quiet @ Download[
+    (* Download *)
+    {qsPacket, {{streamPackets}}, {{procedureEventPackets}}, solventModels, containerModels} = Quiet[
+        Download[
             {
-                sampleLinks,
-                solventLinks
+                {ftvProtocol},
+                {ftvProtocol},
+                {ftvProtocol},
+                solventLinks,
+                containerLinks
             },
             {
-                {AppearanceLog[[-1, 2]][{Image, UncroppedImageFile}]},
+                {Packet[MeniscusImages, TargetVolumeToleranceAchieved]},
+                {Packet[Subprotocols[Subprotocols][Streams][Object, StartTime]]},
+                {Packet[Subprotocols[Subprotocols][ProcedureLog][Object, TaskID, DateCreated]]},
+                {Model[Object]},
                 {Model[Object]}
-            },
-            Date -> dateCompleted
-        ],
-        Download[solventLinks, Model]
+            }
+        ]
     ];
 
-    (* Get the solvent Models from the download. *)
-    solventModels = Flatten[downloadResult[[-1]]];
+    (* Parse some info from the download. *)
+    meniscusCloudFiles = Lookup[Flatten[qsPacket][[1]], MeniscusImages, Null];
+    targetsAchievedQ = Lookup[Flatten[qsPacket][[1]], TargetVolumeToleranceAchieved, Null];
+    safeStreamPackets = Flatten[streamPackets, 1];
+    safeProcedureEvenPackets = Flatten[procedureEventPackets, 1];
+    {flatSolventModels, flatContainerModels} = Flatten /@ {solventModels, containerModels};
 
     (* If we got images from the Download, assign these and the cloud files to the appropriate variables. *)
     (* Otherwise, just set these variables to flat lists of Nulls of the correct length so this doesn't trainwreck. *)
-    {ftvImages, ftvImageCloudFiles} = If[MatchQ[Transpose @ Flatten[downloadResult[[1]], 1], {{_Image..}, _List}],
-        Transpose @ Flatten[downloadResult[[1]], 1],
+    {safeMeniscusImages, safeMeniscusCloudFiles} = If[MatchQ[meniscusCloudFiles, {ObjectP[Object[EmeraldCloudFile]]..}],
+        {ImportCloudFile /@ meniscusCloudFiles, meniscusCloudFiles},
         ConstantArray[
             ConstantArray[Null, Length[totalVolumes]],
             2
@@ -10922,92 +10956,195 @@ fillToVolumeUnitOperationPrimaryData[outputUnitOpPacket_Association] := Module[
             {image, imageCloudFile},
             MatchQ[imageCloudFile, ObjectP[Object[EmeraldCloudFile]]] && ImageQ[image]
         ],
-        {ftvImages, ftvImageCloudFiles}
+        {safeMeniscusImages, safeMeniscusCloudFiles}
     ];
 
-    (* Make an image button if the image exists. *)
-    imageButtons = MapThread[
+    (* Generate a pattern to identify the starting time for the QS steps. There are a few different procedure  *)
+    (* branches that might be relevant, so we need to check for several task IDs. *)
+    qsStartTaskP = Alternatives @@ {
+        "41a276b9-c461-4f73-a31b-0b5c8f7233dd",
+        "81dad16d-726d-4c6a-b76c-ed6dbff60679",
+        "12544256-42fb-4e9b-858e-c73e497cac48",
+        "6fad2043-0093-4bab-8fee-795cd8779aa0",
+        "59fe5fe3-ff06-4728-a3ec-e6b5edae3001" (* This task no longer exists but is here for backwards compatibility *)
+    };
+
+    (* Build stream tuples in the format {stream object, timepoint in unitless seconds} to view the QS steps. *)
+    streamTuples = MapThread[
         Function[
-            {imageQ, image, imageCloudFile},
-            If[TrueQ[imageQ],
-                With[{explicitImage = image, explicitCloudFile = imageCloudFile},
-                    Tooltip[
-                        Button[
-                            Framed[Pane@ImageResize[explicitImage, 250], FrameStyle -> LightGray],
-                            OpenCloudFile[explicitCloudFile],
+            {streamPacketsPerSub, procedureEventPacketsPerSub},
+
+            If[Or[
+                !MatchQ[Lookup[streamPacketsPerSub, StartTime, Null], {_?DateObjectQ..}],
+                FreeQ[Lookup[procedureEventPacketsPerSub, TaskID], qsStartTaskP]
+            ],
+                Nothing,
+                Module[
+                    {taskIDs, datesCreated, startTaskPosition, qsStartTime, streamPacketToUse, startTimeInSeconds},
+
+                    (* Get the task IDs and dates created for each procedure event in this transfer subprotocol. *)
+                    {taskIDs, datesCreated} = Transpose @ Lookup[procedureEventPacketsPerSub, {TaskID, DateCreated}];
+
+                    (* Find the position in the procedure event log of the earliest procedure event involving *)
+                    (* the "start task" in this protocol. Do the same for the position of the latest "end task". *)
+                    startTaskPosition = Min @ Flatten[Position[taskIDs, qsStartTaskP]];
+
+                    (* Use these values to find the start and end dates for the QS step. *)
+                    qsStartTime = datesCreated[[startTaskPosition]];
+
+                    (* Find out which stream to use for WatchProtocol. If there's just one, this is easy. *)
+                    streamPacketToUse = If[SameQ[Length[streamPacketsPerSub], 1],
+                        streamPacketsPerSub[[1]],
+                        (* If there are multiple streams for this sub, find the latest stream that started before the QS step. *)
+                        Module[
+                            {startTimeOfCorrectStream},
+                            startTimeOfCorrectStream = Max @ Cases[Lookup[streamPacketsPerSub, StartTime], LessP[qsStartTime]];
+                            First @ PickList[
+                                streamPacketsPerSub,
+                                Lookup[streamPacketsPerSub, StartTime, Null],
+                                startTimeOfCorrectStream
+                            ]
+                        ]
+                    ];
+
+                    (* Get the time stamp in unitless seconds relative to the start of the stream. *)
+                    startTimeInSeconds = Round[Unitless[Convert[qsStartTime - Lookup[streamPacketToUse, StartTime], 1 Second]]];
+
+                    (* Return the tuples for this stream. *)
+                    {Lookup[streamPacketToUse, Object], startTimeInSeconds}
+                ]
+            ]
+        ],
+        {safeStreamPackets, safeProcedureEvenPackets}
+    ];
+
+    (* Set up the image buttons. *)
+    imageButtonsWithStreams = If[MemberQ[imageQs, True],
+        With[
+            {
+                explicitImages = safeMeniscusImages,
+                explicitImageCloudFiles = safeMeniscusCloudFiles,
+                explicitStreamObjects = streamTuples[[All, 1]],
+                explicitStreamTimes = streamTuples[[All, 2]]
+            },
+
+            MapThread[
+                Function[
+                    {imageQ, image, imageCloudFile, streamObject, streamTime},
+                    If[imageQ,
+                        ActionMenu[
+                            Show[image, ImageSize -> $ReviewImageSize],
+                            {
+                                "Open Image" :> OpenCloudFile[imageCloudFile],
+                                If[!NullQ[streamObject],
+                                    "Play Stream" :> WatchProtocol[streamObject, streamTime],
+                                    Nothing
+                                ]
+                            },
                             Appearance -> None,
                             Method -> "Queued"
                         ],
-                        "Open Image"
+                        Null
                     ]
                 ],
-                Null
+                {imageQs, explicitImages, explicitImageCloudFiles, explicitStreamObjects, explicitStreamTimes}
             ]
         ],
-        {imageQs, ftvImages, ftvImageCloudFiles}
+        ConstantArray[Null, Length[totalVolumes]]
     ];
 
-    (* Helper to format the header. *)
-    stylizeHeader[header_String] := Style[header, Bold, 11, FontFamily -> "Helvetica", RGBColor["#4A4A4A"]];
-
     (* Ensure that we don't break the MapThread if one of the Link or Label fields is empty. *)
-    {safeContainerLabels, safeContainerLinks, safeSolventLinks, safeSolventModels} = MapThread[
-        Function[
-            {list, string},
+    {safeContainerLabels, safeContainerLinks, safeSolventLinks, safeSolventModels, safeContainerModels} = Map[
+        Function[{list},
             If[MatchQ[list, {}],
-                ConstantArray[string<>" not found", Length[totalVolumes]],
+                ConstantArray[Null, Length[totalVolumes]],
                 list
             ]
         ],
-        {
-            {containerLabels, containerLinks, solventLinks, solventModels},
-            {"ContainerLabel", "ContainerLink", "SolventLink", "Solvent Model"}
-        }
+        {containerLabels, containerLinks, solventLinks, flatSolventModels, flatContainerModels}
     ];
 
-    (* Generate the data tables. *)
-    tables = MapThread[
-        Function[{containerLabel, container, fillVolume, method, solvent, solventModel, imageQ, imageButton},
-            Column[
+    (* Setup grid formatting options *)
+    gridFormat = {
+        Background -> tableBackground[2, IncludeHeader -> False],
+        Alignment -> {{Right, {Left}}},
+        Spacings -> {1.5, 1},
+        ItemStyle -> {{Directive[Bold, FontSize -> 12, FontFamily -> "Helvetica"], Directive[FontFamily -> "Helvetica", FontSize -> 12]}},
+        Dividers -> {
+            {{Directive[Opacity[0]]}},
+            {
+                Directive[LCHColor[0.4, 0, 0], Thickness[0.5]],
                 {
-                    (* Show the image if we have it. *)
-                    If[TrueQ[imageQ], imageButton, Nothing],
+                    1 -> Directive[LCHColor[0.4, 0, 0], Thickness[1]],
+                    -1 -> Directive[LCHColor[0.4, 0, 0], Thickness[1]]
+                }
+            }
+        }
+    };
 
-                    (* Container object as a "click to copy" button. *)
-                    Style[customButton[NamedObject[container]], Bold, FontFamily -> "Helvetica"],
+    (* Make a summary table for each of the FTV samples. *)
+    tables = MapThread[
+        Function[
+            {
+                imageButton,
+                containerLabel,
+                containerObject,
+                containerModel,
+                sampleObject,
+                solventObject,
+                solventModel,
+                method,
+                totalVolume,
+                targetAchievedQ
+            },
 
-                    (* Information table for all instances. *)
-                    Pane[
-                        Grid[
-                            {
-                                {stylizeHeader["Container Label"], customButton[containerLabel]},
-                                {stylizeHeader["Method"], customButton[method]},
-                                {stylizeHeader["Solvent"], customButton[solvent]},
-                                If[MatchQ[solventModel, ObjectP[Model[Sample]]],
-                                    {stylizeHeader["Solvent Model"], customButton[solventModel]},
-                                    Nothing
-                                ],
-                                {stylizeHeader["Total Volume"], customButton[fillVolume]}
-                            },
-                            Frame -> All,
-                            Alignment -> {Center, Center},
-                            Spacings -> {2, 1},
-                            ItemStyle -> Directive[FontSize -> 12, FontFamily -> "Helvetica"],
-                            FrameStyle -> Lighter[Gray, 0.4],
-                            Alignment -> {Center, Center},
-                            Background -> White,
-                            ItemSize -> {{13, 20}}
-                        ],
-                        ImageSize -> {UpTo[700], UpTo[600]},
-                        Scrollbars -> Automatic,
-                        AppearanceElements -> None
-                    ]
-                },
-                Alignment -> Center,
-                Spacings -> 2
+            Module[
+                {tableContent, grid},
+
+                (* Generate the table for each FTV sample according to the available information. *)
+                tableContent = {
+                    {"Container Label", containerLabel},
+                    {"Container Model", containerModel},
+                    {"Sample", sampleObject},
+                    {"Method", method},
+                    {"Target Volume", UnitForm[totalVolume, Brackets -> False]},
+                    If[BooleanQ[targetAchievedQ], {"Target Achieved", targetAchievedQ}, Nothing],
+                    {"Solvent", solventObject},
+                    If[MatchQ[solventModel, ObjectP[Model[Sample]]], {"Solvent Model", solventModel}, Nothing]
+                };
+
+                (* Set up the grid and label it. *)
+                grid = Grid[Replace[tableContent, {objectValue:ObjectP[] :> customButton[objectValue]}, {2}],
+                    Sequence@@gridFormat,
+                    ItemSize -> {{All, 25}}
+                ];
+                Column[
+                    {
+                        imageButton,
+                        Labeled[
+                            grid,
+                            customButton[containerObject],
+                            Top,
+                            LabelStyle -> Directive[Bold, 16, FontFamily -> "Helvetica"]
+                        ]
+                    },
+                    Alignment -> Center
+                ]
             ]
+
         ],
-        {safeContainerLabels, safeContainerLinks, totalVolumes, methods, safeSolventLinks, safeSolventModels, imageQs, imageButtons}
+        {
+            imageButtonsWithStreams,
+            safeContainerLabels,
+            safeContainerLinks,
+            safeContainerModels,
+            sampleLinks[Object],
+            safeSolventLinks[Object],
+            safeSolventModels,
+            methods,
+            totalVolumes,
+            targetsAchievedQ
+        }
     ];
 
     (* Return in SlideView if there is more than one table to show. Otherwise just return the one table. *)

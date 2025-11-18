@@ -8792,14 +8792,10 @@ maldiResourcePackets[mySamples:{ObjectP[Object[Sample]]...},templatedOptions:{(_
 
 	(* - Sonciator Resources - *)
 	(* Create a resource for the sonicators used to clean the MALDI plates *)
-	(* We can select any $EquivalentInstrumentModelLookup from the three different types of Branson sonicators *)
 	sonicatorResource=Resource[
-		Instrument->Flatten[
-			Replace[
-			Link[{
-				Model[Instrument, Sonicator, "id:3em6Zv9NjwJo"](*Branson 1800 - regular *) (* Only allowing this one because this one has the holder cap that can hold beaker in place *)
-			}],
-			Resources`Private`$EquivalentInstrumentModelLookup, 1]],
+		Instrument-> Link[{
+					Model[Instrument, Sonicator, "id:3em6Zv9NjwJo"](*Branson 1800 - regular *) (* Only allowing this one because this one has the holder cap that can hold beaker in place *)
+				}],
 		Time->25 Minute (* 2 10-minute baths, assume 5 minutes to move in and out*)
 	];
 

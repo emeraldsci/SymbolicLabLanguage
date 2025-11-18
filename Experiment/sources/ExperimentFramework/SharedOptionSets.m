@@ -5194,7 +5194,7 @@ DefineOptionSet[
 		{
 			OptionName -> TareWeightStabilityDuration,
 			Default -> Automatic,
-			Description -> "The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable and captured when no sample is placed on the balance.",
+			Description -> "The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable and captured when the balance is empty or contains only the empty weighing container.",
 			AllowNull -> True,
 			Category -> "General",
 			Widget -> Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Second], Units :> Second]
@@ -5213,7 +5213,7 @@ DefineOptionSet[
 		{
 			OptionName -> MaxTareWeightVariation,
 			Default -> Automatic,
-			Description -> "The max allowed amplitude the balance readings can fluctuate within for a duration defined by WeightStabilityDuration before being considered stable and captured when no sample is placed on the balance.",
+			Description -> "The max allowed amplitude the balance readings can fluctuate within for a duration defined by WeightStabilityDuration before being considered stable and captured when the balance is empty or contains only the empty weighing container.",
 			AllowNull -> True,
 			Category -> "General",
 			Widget -> Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Milligram], Units :> {1, {Milligram, {Microgram, Milligram, Gram}}}]

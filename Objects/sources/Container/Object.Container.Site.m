@@ -422,6 +422,21 @@ DefineObjectType[Object[Container, Site], {
 			Category -> "Organizational Information",
 			Developer -> True
 		},
+		PriorityLabware -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Part],
+				Model[Item],
+				Model[Plumbing],
+				Model[Wiring],
+				Model[Container]
+			],
+			Description -> "A list of models which should be washed if present in the dishpit in order to satisfy anticipated resource requests.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
 		AvailableExperiments->{
 			Format->Multiple,
 			Class -> Expression,

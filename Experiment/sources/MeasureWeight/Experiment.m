@@ -2153,7 +2153,7 @@ resolveExperimentMeasureWeightOptions[myInputs:{ObjectP[{Object[Container],Seque
 						(* otherwise, use default setting *)
 						(* Note: unlike Transfer, MeasureWeight for liquid in container should always have a cover *)
 						True,
-						60 Second
+						$DefaultWeightStabilityDuration
 					];
 
 					maxWeightVariation = Which[

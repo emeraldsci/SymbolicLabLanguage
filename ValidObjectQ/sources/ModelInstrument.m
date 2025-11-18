@@ -1558,14 +1558,15 @@ validModelInstrumentHandlingStationQTests[packet:PacketP[Model[Instrument,Handli
 	(* if balance type is populated, every objects should have the corresponding balance types! *)
 	Test["BalanceType of the model matches up with each instance's Field[Balances[Mode]]:",
 		Module[{balanceTypesToHave, instances, instanceTuples},
-			balanceTypesToHave = Lookup[packet, BalanceType];
+			(* make sure the balance type is well sorted *)
+			balanceTypesToHave = Sort[DeleteDuplicates[Lookup[packet, BalanceType]]];
 
 			(* get the objects *)
 			instances = Lookup[packet, Objects];
 			instanceTuples = Download[instances, {Status, Balances[Mode]}];
 
 			(* only check non-Retired instances *)
-			SubsetQ[balanceTypesToHave, #[[2]]]& /@ DeleteCases[instanceTuples, {Retired, _}]
+			MatchQ[balanceTypesToHave, Sort[DeleteDuplicates[#[[2]]]]]& /@ DeleteCases[instanceTuples, {Retired, _}]
 		],
 		{True...}
 	],

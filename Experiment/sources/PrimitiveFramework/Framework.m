@@ -114,6 +114,10 @@ resizePrimitiveFrameworkCache[]:=If[Length[Keys[$PrimitiveFrameworkResolverOutpu
   ];
 ];
 
+(* Default PrewetLabware Options *)
+$DefaultPrewetLabware = False;
+$DefaultNumberOfPrewetWashes = 2;
+
 (* NOTE: We keep the input pattern here extremely vague because we want to give the user informative messages if their *)
 (* input doesn't match the primitive set pattern. *)
 (* NOTE: We use the exact same logic for all Experiment, ExperimentSamplePreparation, ExperimentRoboticSamplePreparation, etc. so we use this *)
@@ -2644,7 +2648,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
         ],
         {{},{},{}}
       ];
-      fastCacheBall = makeFastAssocFromCache[Cases[Flatten[downloadInformation], _Association]];
+      fastCacheBall = makeFastAssocFromCache[FlattenCachePackets[{downloadInformation, cacheBall}]];
       allContainerContentsPackets=Flatten[downloadInformation[[2,All,1]]];
       allSamplePackets=Flatten[downloadInformation[[1,All,1]]];
       allContainerModelPackets=DeleteDuplicates@Flatten[{downloadInformation[[2,All,4]],downloadInformation[[3]]}];
@@ -4002,7 +4006,8 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
         SafeAddHandler[{"MessageTextFilter", messageHandler},
           Module[
             {options, simulation, tests, result, timeEstimate, errorMessagesThrownQ,
-              resolverPlateReaderRule, simulationHash, userReaderRequest},
+              resolverPlateReaderRule, simulationHash, userReaderRequest,
+              preresolvedPrewetLabware, preresolvedPrewetWashSolution},
 
             (* Helper function to see if myMessageList contains an Error. *)
             errorMessagesThrownQ[]:=MemberQ[myMessageList, KeyValuePattern[{MessageName->Hold[Verbatim[MessageName][Except[Warning],_]]}]];
@@ -4061,6 +4066,240 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
               Nothing
             ];
 
+            (* If PrewetLabware is set to True and preparation is Manual, pre-resolve options *)
+            {
+              preresolvedPrewetLabware,
+              preresolvedPrewetWashSolution
+            } = If[MatchQ[primitive,_Transfer]&&MatchQ[preparation,Manual]&&MemberQ[ToList[Lookup[safeResolverOptions,PrewetLabware]],True],
+              Module[{allTransferFTVDestinationsTuples,allTransferFTVSourcesTuples,flattenedTransferFTVDestinations, flattenedTransferFTVSources, destinationSourceStateTuples, expandedPrewetLabware,
+                expandedNumberOfPrewetWashes,
+                expandedPrewetWashVolume,
+                expandedQuantitativeTransfer,
+                expandedQuantitativeTransferWashSolution,
+                expandedQuantitativeTransferWashVolume,
+                expandedQuantitativeTransferWashInstrument,
+                expandedQuantitativeTransferWashTips,
+                expandedNumberOfQuantitativeTransferWashes},
+                
+                (* create an ordered tuple of all destinations {{destination container, amount}..} - amount is Null if FTV *)
+                (* create an ordered list of all sources *)
+                (* all labels have been converted to objects *)
+                allTransferFTVDestinationsTuples={};
+                allTransferFTVSourcesTuples={};
+                Map[
+                  Function[{primitive},
+                    If[MatchQ[primitive,_Transfer]&&MatchQ[preparation,Manual],
+                      (
+                        AppendTo[
+                          allTransferFTVDestinationsTuples,
+                          MapThread[
+                            {
+                              Which[
+                                MatchQ[#1,_String],
+                                Lookup[Lookup[currentSimulation[[1]],Labels],#1],
+                                MatchQ[#1,{_String,ObjectP[]|_String}],
+                                Lookup[Lookup[currentSimulation[[1]],Labels],#1[[2]]],
+                                True,
+                                #1
+                              ],
+                              #2
+                            }&,
+                            {Lookup[primitive[[1]],Destination],Lookup[primitive[[1]],Amount]}
+                          ]
+                        ];
+                        AppendTo[
+                          allTransferFTVSourcesTuples,
+                          Map[
+                            If[MatchQ[#,_String],
+                              Lookup[Lookup[currentSimulation[[1]],Labels],#1],
+                              #
+                            ]&,
+                            Lookup[primitive[[1]], Source]
+                          ]
+                        ];
+                      ),
+                      (
+                        AppendTo[
+                          allTransferFTVDestinationsTuples,
+                          Map[
+                            If[MatchQ[#, _String],
+                              {Lookup[Lookup[currentSimulation[[1]],Labels],#1], Null},
+                              {#, Null}
+                            ]&,
+                            Lookup[primitive[[1]], Sample]
+                          ]
+                        ];
+                        AppendTo[
+                          allTransferFTVSourcesTuples,
+                          Map[
+                            If[MatchQ[#, _String],
+                              Lookup[Lookup[currentSimulation[[1]],Labels],#1],
+                              #
+                            ]&,
+                            Lookup[primitive[[1]], Solvent]
+                          ]
+                        ];
+                      )
+                    ]
+                  ],
+                  Cases[coverOptimizedPrimitives[[index;;]],(_Transfer|_FillToVolume)]
+                ];
+
+                (* flatten and convert any Destination sample to container *)
+                flattenedTransferFTVDestinations = (
+                  Flatten[allTransferFTVDestinationsTuples,1]/.{
+                    destination:ObjectP[{Object[Sample]}]:>Lookup[fetchPacketFromFastAssoc[destination, fastCacheBall], Container]
+                  }
+                )/.{link_Link:>Download[link,Object]};
+                
+                flattenedTransferFTVSources = Flatten[allTransferFTVSourcesTuples,1];
+
+                (* create tuples for {destination, amount (quantity if Transfer, Null if FTV), source, sourceState} which will be used later to pre-resolve PrewetWashSolution *)
+                destinationSourceStateTuples = Map[
+                  Flatten[#]&,
+                  Transpose[{
+                    flattenedTransferFTVDestinations, (* {{destination, amount|Null}..} *)
+                    flattenedTransferFTVSources,
+                    Lookup[fetchPacketFromFastAssoc[#, fastCacheBall], State]&/@flattenedTransferFTVSources
+                  }]
+                ];
+
+                {
+                  expandedPrewetLabware,
+                  expandedNumberOfPrewetWashes,
+                  expandedPrewetWashVolume,
+                  expandedQuantitativeTransfer,
+                  expandedQuantitativeTransferWashSolution,
+                  expandedQuantitativeTransferWashVolume,
+                  expandedQuantitativeTransferWashInstrument,
+                  expandedQuantitativeTransferWashTips,
+                  expandedNumberOfQuantitativeTransferWashes
+                } = Map[
+                  If[MatchQ[Lookup[safeResolverOptions,#],Automatic]&&MatchQ[primitive,_Transfer]&&MatchQ[preparation,Manual],
+                    ConstantArray[Automatic,Length[Lookup[allPrimitiveOptionsWithSimulatedObjects, Source]]],
+                    Lookup[safeResolverOptions,#]
+                  ]&,
+                  {
+                    PrewetLabware,
+                    NumberOfPrewetWashes,
+                    PrewetWashVolume,
+                    QuantitativeTransfer,
+                    QuantitativeTransferWashSolution,
+                    QuantitativeTransferWashVolume,
+                    QuantitativeTransferWashInstrument,
+                    QuantitativeTransferWashTips,
+                    NumberOfQuantitativeTransferWashes
+                  }
+                ];
+                
+                  Transpose[MapThread[
+                    Function[
+                      {source,transferIndex,specifiedPrewetLabware,
+                        specifiedNumberOfPrewetWashes,
+                        specifiedPrewetWashVolume,
+                        specifiedQuantitativeTransfer,
+                        specifiedQuantitativeTransferWashSolution,
+                        specifiedQuantitativeTransferWashVolume,
+                        specifiedQuantitativeTransferWashInstrument,
+                        specifiedQuantitativeTransferWashTips,
+                        specifiedNumberOfQuantitativeTransferWashes},
+                      Module[
+                        {sourceSample, finalPrewetLabware, finalPrewetWashSolution, preresolvedQuantitativeTransfer},
+        
+                        (* Get the sample object *)
+                        sourceSample=If[MatchQ[source, ObjectP[]],
+                          Download[source,Object],
+                          Null
+                        ];
+        
+                        preresolvedQuantitativeTransfer = Or[
+                          MatchQ[specifiedQuantitativeTransfer,True],
+                          MemberQ[{specifiedQuantitativeTransferWashSolution,
+                            specifiedQuantitativeTransferWashVolume,
+                            specifiedQuantitativeTransferWashInstrument,
+                            specifiedQuantitativeTransferWashTips,
+                            specifiedNumberOfQuantitativeTransferWashes},Except[Automatic|Null]]
+                        ];
+        
+                        finalPrewetLabware = Which[
+                          MatchQ[specifiedPrewetLabware,Except[Automatic]],
+                          specifiedPrewetLabware,
+          
+                          (* If any other PrewetLabware options are NOT Automatic|Null, set to True *)
+                          MatchQ[specifiedNumberOfPrewetWashes, Except[Automatic|Null]]&&MatchQ[specifiedPrewetWashVolume, Except[Automatic|Null]],
+                          True,
+          
+                          (* Otherwise, set to default *)
+                          True,
+                          $DefaultPrewetLabware
+                        ];
+        
+                        finalPrewetWashSolution = Which[
+                          MatchQ[finalPrewetLabware,Except[True]],
+                          Null,
+          
+                          (* If source is a label, use source *)
+                          MatchQ[Download[sourceSample,State,Simulation->currentSimulation],Liquid],
+                          sourceSample,
+          
+                          (* If source is solid and there is quantitative transfer, use quantitative transfer solution *)
+                          MatchQ[preresolvedQuantitativeTransfer,True],
+                          Which[
+                            MatchQ[specifiedQuantitativeTransferWashSolution,ObjectP[]],
+                            specifiedQuantitativeTransferWashSolution,
+            
+                            MatchQ[specifiedQuantitativeTransferWashSolution,_String],
+                            Lookup[Lookup[currentSimulation[[1]],Labels],specifiedQuantitativeTransferWashSolution],
+            
+                            True,
+                            Null
+                          ],
+          
+                          (* If there is a future FTV primitive with the same Sample as the destination, use the Solvent of that FTV primitive - prefer to use FTV solvent to maintain specific volumes specified for other liquid transfers *)
+                          MatchQ[
+                            Cases[destinationSourceStateTuples[[transferIndex+1;;]],{flattenedTransferFTVDestinations[[transferIndex]][[1]],Null,__}],
+                            Except[{}]
+                          ],
+                          FirstCase[destinationSourceStateTuples[[transferIndex+1;;]],{flattenedTransferFTVDestinations[[transferIndex]][[1]],Null,__},{}][[3]],
+          
+                          (* If there is a future Transfer primitive with the same Destination as the destination and a liquid Source, use the Source of the Transfer primitive that has the largest Amount *)
+                          MatchQ[
+                            Cases[destinationSourceStateTuples[[transferIndex+1;;]],{flattenedTransferFTVDestinations[[transferIndex]][[1]],_Quantity,_,Liquid}],
+                            Except[{}]
+                          ],
+                          (* Sort from highest to lowest amount (tuple[[2]]), then take the first tuple and get the source sample (tuple[[3]])*)
+                          ReverseSortBy[
+                            Cases[destinationSourceStateTuples[[transferIndex+1;;]],{flattenedTransferFTVDestinations[[transferIndex]][[1]],_Quantity,_,Liquid}],
+                            #[[2]]&
+                          ][[1]][[3]],
+          
+                          True,
+                          Null
+                        ];
+        
+                        {finalPrewetLabware,finalPrewetWashSolution}
+                      ]
+                    ],
+                    {
+                      Lookup[allPrimitiveOptionsWithSimulatedObjects, Source],
+                      Range[Length[Lookup[allPrimitiveOptionsWithSimulatedObjects, Source]]],
+                      expandedPrewetLabware,
+                      expandedNumberOfPrewetWashes,
+                      expandedPrewetWashVolume,
+                      expandedQuantitativeTransfer,
+                      expandedQuantitativeTransferWashSolution,
+                      expandedQuantitativeTransferWashVolume,
+                      expandedQuantitativeTransferWashInstrument,
+                      expandedQuantitativeTransferWashTips,
+                      expandedNumberOfQuantitativeTransferWashes
+                    }
+                  ]]
+              ],
+  
+              (* retain the values of these options *)
+              {Lookup[safeResolverOptions,PrewetLabware,Null],Lookup[safeResolverOptions,PrewetWashSolution,Null]}
+            ];
+            
             (* Evaluate the resolver function. Turn off message printing while doing so (we'll throw messages later). *)
             (* NOTE: Preparation is not an option if the experiment function can only be performed manually. *)
             (* NOTE: Do NOT send down the Cache->cacheBall option to the experiment function since the cache ball can contain *)
@@ -4228,6 +4467,13 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                                 WorkCell->resolvedWorkCell,
                                 Nothing
                               ],
+                              If[MatchQ[primitive,_Transfer]&&MatchQ[preparation,Manual],
+                                Sequence@@{
+                                  PrewetLabware -> preresolvedPrewetLabware,
+                                  PrewetWashSolution -> preresolvedPrewetWashSolution
+                                },
+                                Nothing
+                              ],
                               Upload->False
                             }
                           ]
@@ -4257,6 +4503,13 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                               Nothing
                             ],
                             resolverPlateReaderRule,
+                            If[MatchQ[primitive,_Transfer]&&MatchQ[preparation,Manual],
+                              Sequence@@{
+                                PrewetLabware -> preresolvedPrewetLabware,
+                                PrewetWashSolution -> preresolvedPrewetWashSolution
+                              },
+                              Nothing
+                            ],
                             Upload->False
                           }
                         ];
@@ -4300,6 +4553,13 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                               Nothing
                             ],
                             resolverPlateReaderRule,
+                            If[MatchQ[primitive,_Transfer]&&MatchQ[preparation,Manual],
+                              Sequence@@{
+                                PrewetLabware -> preresolvedPrewetLabware,
+                                PrewetWashSolution -> preresolvedPrewetWashSolution
+                              },
+                              Nothing
+                            ],
                             Upload->False
                           }
                         ];
@@ -4350,6 +4610,13 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                               If[MemberQ[Options[resolverFunction][[All,1]], "Preparation"],
                                 Preparation->preparation,
                                 Nothing
+                              ],
+                              If[MatchQ[primitive,_Transfer]&&MatchQ[preparation,Manual],
+                                Sequence@@{
+                                  PrewetLabware -> preresolvedPrewetLabware,
+                                  PrewetWashSolution -> preresolvedPrewetWashSolution
+                                },
+                                Nothing
                               ]
                             }
                           ]
@@ -4373,6 +4640,13 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                             ],
                             If[MemberQ[Options[resolverFunction][[All,1]], "Preparation"],
                               Preparation->preparation,
+                              Nothing
+                            ],
+                            If[MatchQ[primitive,_Transfer]&&MatchQ[preparation,Manual],
+                              Sequence@@{
+                                PrewetLabware -> preresolvedPrewetLabware,
+                                PrewetWashSolution -> preresolvedPrewetWashSolution
+                              },
                               Nothing
                             ],
                             resolverPlateReaderRule
@@ -4440,7 +4714,14 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                             resolvedPrimitiveImageSampleRule,
                             resolvedPrimitiveMeasureVolumeRule,
                             resolvedPrimitiveMeasureWeightRule,
-                            resolverPlateReaderRule
+                            resolverPlateReaderRule,
+                            If[MatchQ[primitive,_Transfer]&&MatchQ[preparation,Manual],
+                              Sequence@@{
+                                PrewetLabware -> preresolvedPrewetLabware,
+                                PrewetWashSolution -> preresolvedPrewetWashSolution
+                              },
+                              Nothing
+                            ]
                           }
                         ];
 

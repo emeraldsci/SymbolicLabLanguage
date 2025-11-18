@@ -716,6 +716,13 @@ validItemBlankQTests[packet:PacketP[Model[Item, Blank]]]:={
 
 
 (* ::Subsection::Closed:: *)
+(*validItemCannulaQTests*)
+
+
+validItemCannulaQTests[packet:PacketP[Model[Item, Cannula]]]:={};
+
+
+(* ::Subsection::Closed:: *)
 (*validModelItemCrossFlowFilterQTests*)
 
 
@@ -3803,6 +3810,7 @@ registerValidQTestFunction[Model[Item, Consumable, Blade],validModelItemConsumab
 registerValidQTestFunction[Model[Item, Consumable, Sandpaper],validModelItemConsumableSandpaperQTests];
 registerValidQTestFunction[Model[Item, CrossFlowFilter],validModelItemCrossFlowFilterQTests];
 registerValidQTestFunction[Model[Item, Blank],validItemBlankQTests];
+registerValidQTestFunction[Model[Item, Cannula],validItemCannulaQTests];
 registerValidQTestFunction[Model[Item, Plunger],validModelItemPlungerQTests];
 registerValidQTestFunction[Model[Item, Cap],validModelItemCapQTests];
 registerValidQTestFunction[Model[Item, PlateSeal],validModelItemPlateSealQTests];

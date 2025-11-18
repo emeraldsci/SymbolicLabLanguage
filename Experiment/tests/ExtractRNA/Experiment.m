@@ -35,7 +35,7 @@ DefineTests[ExperimentExtractRNA,
 		Example[{Basic, "Extract RNA from multiple living cell samples containing different cell types:"},
 			ExperimentExtractRNA[
 				{
-					Object[Sample, "Adherent mammalian cell sample 1 for ExperimentExtractRNA "<>$SessionUUID],
+					Object[Sample, "Suspension yeast cell sample in 2mL Tube for ExperimentExtractRNA "<>$SessionUUID],
 					Object[Sample, "Suspension bacteria cell sample 2 for ExperimentExtractRNA "<>$SessionUUID]
 				},
 				Output -> {Result, Options}
@@ -6486,9 +6486,9 @@ SymbolSetUp :> (
 		{
 			existsFilter,
 			method0, method1, method2, method3, method4, method5, method6, method7, method8,
-			tube0, plate0, plate1, plate2, plate3, plate4, plate5, plate6, plate7, plate8, plate9, plate10, plate11, plate12, plate13,
+			tube0, tube1, plate0, plate1, plate2, plate3, plate4, plate5, plate6, plate7, plate8, plate9, plate10, plate11, plate12, plate13,
 			targetAnalyte0,
-			sample0, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12a, sample12b, sample13, sample14
+			sample0, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12a, sample12b, sample13, sample14, sample15
 		},
 
 		$CreatedObjects = {};
@@ -6534,7 +6534,8 @@ SymbolSetUp :> (
 			Object[Method, Extraction, RNA, "Test Method 1 for Conflicting MBS options (Test for ExperimentExtractRNA) " <> $SessionUUID],
 			Object[Method, Extraction, RNA, "Test Method 2 for Conflicting MBS options (Test for ExperimentExtractRNA) " <> $SessionUUID],
 			Object[Method, Extraction, RNA, "Test Method 3 for Conflicting MBS options (Test for ExperimentExtractRNA) " <> $SessionUUID],
-			Object[Method, Extraction, RNA, "Test Invalid Method 1 for method validity check test (Test for ExperimentExtractRNA) " <> $SessionUUID]
+			Object[Method, Extraction, RNA, "Test Invalid Method 1 for method validity check test (Test for ExperimentExtractRNA) " <> $SessionUUID],
+			Object[Sample, "Suspension yeast cell sample in 2mL Tube for ExperimentExtractRNA "<>$SessionUUID]
 		}];
 
 		EraseObject[
@@ -6580,7 +6581,8 @@ SymbolSetUp :> (
 					Object[Method, Extraction, RNA, "Test Method 1 for Conflicting MBS options (Test for ExperimentExtractRNA) " <> $SessionUUID],
 					Object[Method, Extraction, RNA, "Test Method 2 for Conflicting MBS options (Test for ExperimentExtractRNA) " <> $SessionUUID],
 					Object[Method, Extraction, RNA, "Test Method 3 for Conflicting MBS options (Test for ExperimentExtractRNA) " <> $SessionUUID],
-					Object[Method, Extraction, RNA, "Test Invalid Method 1 for method validity check test (Test for ExperimentExtractRNA) " <> $SessionUUID]
+					Object[Method, Extraction, RNA, "Test Invalid Method 1 for method validity check test (Test for ExperimentExtractRNA) " <> $SessionUUID],
+					Object[Sample, "Suspension yeast cell sample in 2mL Tube for ExperimentExtractRNA "<>$SessionUUID]
 				},
 				existsFilter
 			],
@@ -6698,15 +6700,22 @@ SymbolSetUp :> (
 
 		(* Upload Test Containers *)
 
-		{tube0} = {Upload[
+		{tube0, tube1} = Upload[{
 			<|
 				Type -> Object[Container, Vessel],
 				Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-				Name -> "Test 50mL sample tube 0 for ExperimentExtractRNA "<>$SessionUUID,
+				Name -> "Test 50mL sample tube 0 for ExperimentExtractRNA " <> $SessionUUID,
+				Site -> Link[$Site],
+				DeveloperObject -> True
+			|>,
+			<|
+				Type -> Object[Container, Vessel],
+				Model -> Link[Model[Container, Vessel, "2mL Tube"], Objects],
+				Name -> "Test 2mL sample tube 1 for ExperimentExtractRNA " <> $SessionUUID,
 				Site -> Link[$Site],
 				DeveloperObject -> True
 			|>
-		]};
+		}];
 
 		{plate0, plate1, plate2, plate3, plate4, plate5, plate6, plate7, plate8, plate9, plate10, plate11, plate12, plate13} = Upload[{
 			<|
@@ -6816,7 +6825,7 @@ SymbolSetUp :> (
 			PolymerType -> RNA
 		]};
 
-		{sample0, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12a, sample12b, sample13, sample14} = UploadSample[
+		{sample0, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12a, sample12b, sample13, sample14, sample15} = UploadSample[
 			{
 				{{100 VolumePercent, Model[Molecule, "Water"]}},
 				{{100 VolumePercent, Model[Cell, Mammalian, "HEK293"]}},
@@ -6833,7 +6842,8 @@ SymbolSetUp :> (
 				{{100 VolumePercent, Model[Molecule, "Water"]}},
 				{{100 VolumePercent, Model[Molecule, "Water"]}},
 				{{100 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
-				{{100 VolumePercent, Model[Molecule, "Water"]}} (* TODO :: change to RNA sample *)
+				{{100 VolumePercent, Model[Molecule, "Water"]}}, (* TODO :: change to RNA sample *)
+				{{100 VolumePercent, Model[Cell, Yeast, "Pichia Pastoris"]}}
 			},
 			(*{{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, targetAnalyte0}},
 			{{95 VolumePercent, Model[Cell, Mammalian, "HEK293"]}, {5 VolumePercent, targetAnalyte0}},
@@ -6858,7 +6868,8 @@ SymbolSetUp :> (
 				{"A1", plate11},
 				{"B1", plate11},
 				{"A1", plate12},
-				{"A1", plate13}
+				{"A1", plate13},
+				{"A1", tube1}
 			},
 			Name -> {
 				"Water test sample 0 for ExperimentExtractRNA "<>$SessionUUID,
@@ -6876,7 +6887,8 @@ SymbolSetUp :> (
 				"Extracted RNA sample 12a for plate with multiple samples "<>$SessionUUID,
 				"Extracted RNA sample 12b for plate with multiple samples "<>$SessionUUID,
 				"Living cell sample with unspecified cell type for ExperimentExtractRNA "<>$SessionUUID,
-				"Extracted RNA sample 14 with small volume for ExperimentExtractRNA "<>$SessionUUID
+				"Extracted RNA sample 14 with small volume for ExperimentExtractRNA "<>$SessionUUID,
+				"Suspension yeast cell sample in 2mL Tube for ExperimentExtractRNA "<>$SessionUUID
 			},
 			InitialAmount -> {
 				0.2 Milliliter,
@@ -6894,7 +6906,8 @@ SymbolSetUp :> (
 				0.2 Milliliter,
 				0.2 Milliliter,
 				0.2 Milliliter,
-				0.03 Milliliter
+				0.03 Milliliter,
+				0.2 Milliliter
 			},
 			CellType -> {
 				Null,
@@ -6912,7 +6925,8 @@ SymbolSetUp :> (
 				Null,
 				Null,
 				Null,
-				Null
+				Null,
+				Yeast
 			},
 			CultureAdhesion -> {
 				Null,
@@ -6930,7 +6944,8 @@ SymbolSetUp :> (
 				Null,
 				Null,
 				Adherent,
-				Null
+				Null,
+				Suspension
 			},
 			Living -> {
 				False,
@@ -6948,7 +6963,8 @@ SymbolSetUp :> (
 				False,
 				False,
 				True,
-				False
+				False,
+				True
 			},
 			State -> Liquid,
 			FastTrack -> True,
@@ -6964,7 +6980,7 @@ SymbolSetUp :> (
 					Append[Analytes] -> Link[targetAnalyte0]
 				|>
 			}]&,
-			{sample0, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12a, sample12b, sample13, sample14}
+			{sample0, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12a, sample12b, sample13, sample14, sample15}
 		];
 
 		Upload[<|Object -> sample5, Status -> Discarded|>];
@@ -7017,7 +7033,8 @@ SymbolTearDown :> (
 			Object[Method, Extraction, RNA, "Test Method 1 for Conflicting MBS options (Test for ExperimentExtractRNA) " <> $SessionUUID],
 			Object[Method, Extraction, RNA, "Test Method 2 for Conflicting MBS options (Test for ExperimentExtractRNA) " <> $SessionUUID],
 			Object[Method, Extraction, RNA, "Test Method 3 for Conflicting MBS options (Test for ExperimentExtractRNA) " <> $SessionUUID],
-			Object[Method, Extraction, RNA, "Test Invalid Method 1 for method validity check test (Test for ExperimentExtractRNA) " <> $SessionUUID]
+			Object[Method, Extraction, RNA, "Test Invalid Method 1 for method validity check test (Test for ExperimentExtractRNA) " <> $SessionUUID],
+			Object[Sample, "Suspension yeast cell sample in 2mL Tube for ExperimentExtractRNA "<>$SessionUUID]
 		}], ObjectP[]];
 
 		(* Erase any objects that we failed to erase in the last unit test *)

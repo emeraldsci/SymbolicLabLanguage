@@ -342,6 +342,13 @@ DefineObjectType[Model[Sensor], {
 			Category -> "Storage Information",
 			Developer->True
 		},
+		ExposedSurfaces -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if any sensitive portions of this sensor are open to the external environment and prone to contamination.",
+			Category -> "Compatibility"
+		},
 		(* --- Resources --- *)
 		RequestedResources -> {
 			Format -> Multiple,

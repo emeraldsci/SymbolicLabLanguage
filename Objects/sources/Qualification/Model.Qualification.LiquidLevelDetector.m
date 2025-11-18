@@ -38,6 +38,14 @@ DefineObjectType[Model[Qualification,LiquidLevelDetector], {
 			Description->"The amount above or below the expected height that the gage block readings may deviate by to be considered a pass.",
 			Category->"Passing Criteria"
 		},
+		GageBlockContainerModels -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Container, Box],
+			Description -> "The container model that contains a set of gage blocks for this Qualification.",
+			Category -> "Qualification Parameters"
+		},
 		(* Plate reader LLD *)
 		PlateModel->{
 			Format->Single,

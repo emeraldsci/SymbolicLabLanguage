@@ -1234,6 +1234,15 @@ validModelMaintenanceAuditGasCylindersQTests[packet:PacketP[Model[Maintenance,Au
 };
 
 
+(* ::Subsection::Closed:: *)
+(*validModelMaintenanceCalibrateThermocyclerQTests*)
+
+
+validModelMaintenanceCalibrateThermocyclerQTests[packet:PacketP[Model[Maintenance,CalibrateThermocycler]]]:={
+	NotNullFieldTest[packet,{Targets, CalibrationPlates}]
+};
+
+
 (* ::Subsection:: *)
 (* Test Registration*)
 
@@ -1314,4 +1323,4 @@ registerValidQTestFunction[Model[Maintenance, TrainInternalRobotArm],validModelM
 registerValidQTestFunction[Model[Maintenance,TreatWaste],validModelMaintenanceTreatWasteQTests];
 registerValidQTestFunction[Model[Maintenance, UpdateLiquidHandlerDeckAccuracy],validModelMaintenanceUpdateLiquidHandlerDeckAccuracyQTests];
 registerValidQTestFunction[Model[Maintenance, AuditGasCylinders],validModelMaintenanceAuditGasCylindersQTests];
-
+registerValidQTestFunction[Model[Maintenance, CalibrateThermocycler], validModelMaintenanceCalibrateThermocyclerQTests];

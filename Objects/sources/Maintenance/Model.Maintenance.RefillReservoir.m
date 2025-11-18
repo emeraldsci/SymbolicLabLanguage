@@ -204,11 +204,11 @@ DefineObjectType[Model[Maintenance, RefillReservoir], {
 			Category -> "General",
 			Developer -> True
 		},
-		FumeHood -> {
-			Format -> Single,
+		FumeHoodModels -> {
+			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Model[Instrument, FumeHood],
+			Relation -> Model[Instrument, FumeHood] | Model[Instrument, HandlingStation, FumeHood],
 			Description -> "The environment in which to equilibrate temperature of the reservoir.",
 			Category -> "General",
 			Developer -> True

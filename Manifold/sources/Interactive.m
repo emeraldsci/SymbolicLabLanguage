@@ -578,8 +578,7 @@ markClosedKernelsAsUnavailable[] := Module[{supposedlyAvailableKernels, actually
 (* a script that creates "always on" kernels so that they can be accessed outside of mathematica *)
 alwaysOnNotebooks[] := {
 	Object[LaboratoryNotebook, "Pavan Blah"],
-	Object[LaboratoryNotebook, "id:xRO9n3OjqbJj"], (* Object[LaboratoryNotebook, "cmu+torus+integration User Training"]*)
-	Object[LaboratoryNotebook, "id:XnlV5jl6LMbB"] (* Object[LaboratoryNotebook, "AfterburnerPublicKernels" *)
+	Object[LaboratoryNotebook, "id:xRO9n3OjqbJj"] (* Object[LaboratoryNotebook, "cmu+torus+integration User Training"]*)
 };
 
 createAlwaysOnKernels[] := Module[{notebooks, newKernels, updateToAvailablePackets},
@@ -593,11 +592,7 @@ createManifoldKernelsForNotebook[notebook:ObjectP[Object[LaboratoryNotebook]]] :
 	{availableKernels, maxComputations, withTimeInfo, sortedKernels, kernelsToStop, numberOfKernelsToLaunch, userObj, newKernels, pendingKernels, mathematicaVersion},
 	availableKernels = Search[Object[Software, ManifoldKernel], Notebook == notebook && Available == True];
 
-	(* Determine any specific mathematica versions to launch based on the notebook -- for now, Afterburner needs 13.3.1 *)
-	mathematicaVersion = If[MatchQ[notebook], Object[LaboratoryNotebook, "AfterburnerPublicKernels"],
-		"13.3.1",
-		Null (* This means default version *)
-	];
+	mathematicaVersion = Null; (* This means the default version *)
 
 	maxComputations = If[MatchQ[notebook, Object[LaboratoryNotebook, "Pavan Blah"]],
 		2,

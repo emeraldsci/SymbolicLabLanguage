@@ -257,11 +257,6 @@ DefineOptions[ExperimentPowderXRD,
 ];
 
 
-(*This Fume Hood model contains analytical balance + schlenk line for hermetic transfers (N2 and Argon) + IR Probe *)
-(* Model[Instrument, FumeHood, "Labconco Premier 6 Foot Variant A"] *)
-$PowderXRDFumeHoodModel = Model[Instrument, FumeHood, "id:eGakldaEnWr4"];
-
-
 (* ::Subsubsection::Closed:: *)
 (*ExperimentPowderXRD*)
 
@@ -2918,7 +2913,7 @@ powderXRDResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOp
 				PlateSealFoils -> Resource[Sample -> Model[Item, Consumable, "id:6V0npvqEWrO8" (*"Roll of Kapton Discs, 3/8" Diameter"*)]],
 				Tweezer -> Resource[Sample -> Model[Item, Tweezer, "id:8qZ1VWNwNDVZ" (*"Straight flat tip tweezer"*)]],
 				(* Operations requested transfer for this protocol be done in a fume hood. In the future we may resolve this based on the hazard class or call some ExperimentTransfer/ExperimentTransfer helper to determine the safe transfer environment. *)
-				TransferEnvironment -> Resource[Instrument -> $PowderXRDFumeHoodModel]
+				TransferEnvironment -> Resource[Instrument -> commonFumeHoodHandlingStationModels["Memoization"]]
 			},
 			{}
 		]

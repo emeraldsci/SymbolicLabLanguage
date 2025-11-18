@@ -722,7 +722,7 @@ DefineObjectType[Model[Sample], {
 			Pattern:>GreaterP[0*Liter],
 			Units->Liter Milli,
 			IndexMatching->FixedAmounts,
-			Description->"If this sample model is purchased and stored in pre-measured amounts, the amounts of dissolution solvents required to solvate each of the fixed amounts that this model is handled in.",
+			Description->"For each member of FixedAmounts, if this sample model is purchased and stored in pre-measured amounts, the amounts of dissolution solvents required to solvate each of the fixed amounts that this model is handled in.",
 			Category->"Inventory"
 		},
 		PipettingMethod->{
@@ -1028,8 +1028,15 @@ DefineObjectType[Model[Sample], {
 			Category->"Compatibility",
 			Abstract->False
 		},
+		ForeignMaterialContactDisallowed -> {
+			Format->Single,
+			Class->Expression,
+			Pattern:>BooleanP,
+			Description->"Indicates if any contact of this sample with submerged item/part is blocked.",
+			Category->"Compatibility"
+		},
 
-		(* --- Qualifications & Maintenance --- *)
+				(* --- Qualifications & Maintenance --- *)
 		QualificationFrequency->{
 			Format->Multiple,
 			Class->{Link, Real},
@@ -1078,6 +1085,14 @@ DefineObjectType[Model[Sample], {
 			Class -> Expression,
 			Pattern :> FieldP[Object[Report,Certificate,Analysis], Output->Short],
 			Description -> "A list of the required fields populated by receiving.",
+			Category -> "Quality Assurance"
+		},
+		ReceivingBatchCertificateExample -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Report,Certificate][ModelsSupported],
+			Description -> "Certificate example that contains images for where receiving batch information can be found on documentation.",
 			Category -> "Quality Assurance"
 		},
 

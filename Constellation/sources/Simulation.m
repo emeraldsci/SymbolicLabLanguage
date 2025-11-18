@@ -1143,3 +1143,15 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
     NativeSimulationID -> If[MatchQ[cloneSimulationID,_String|None],cloneSimulationID,None]
   |>]
 ];
+
+
+(* SimulatedObjectQ *)
+
+(* Singleton Overload *)
+SimulatedObjectQ[myObject:ObjectP[]] := First[SimulatedObjectQ[{myObject}]];
+
+(* Listed Overload *)
+SimulatedObjectQ[myObjects:{ObjectP[]..}] := SimulatedObjectQ[Download[myObjects, Object], Internal];
+
+(* Functional Overload *)
+SimulatedObjectQ[myObjectReferenceList_, Internal] := Map[StringStartsQ[Last[#], "id:Simulated"]&, myObjectReferenceList];
