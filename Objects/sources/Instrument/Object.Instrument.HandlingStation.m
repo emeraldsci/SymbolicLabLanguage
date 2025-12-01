@@ -10,7 +10,7 @@ DefineObjectType[Object[Instrument, HandlingStation], {
 	Cache -> Download,
 	Fields -> {
 		Deionizer -> {
-			Format -> Single,
+			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Part, Deionizer][HandlingStation],
@@ -96,7 +96,6 @@ DefineObjectType[Object[Instrument, HandlingStation], {
 			Description -> "Whether or not a flow meter is connected to the hood.",
 			Category -> "Instrument Specifications"
 		},
-		(* TODO this is to replace PlumbingAvailable field in Object[Instrument, FumeHood] *)
 		Plumbing -> {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]},Download[Field[Model],Plumbing]],

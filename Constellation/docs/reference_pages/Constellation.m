@@ -269,4 +269,164 @@ DefineUsage[TraceHistory,
 		SeeAlso -> {"Download", "Search"},
 		Author -> {"axu", "dirk.schild", "weiran.wang", "thomas"}
 	}];
+
+(* ::Subsection:: *)
+(*CreatedObjects*)
+
+DefineUsage[CreatedObjects,
+	{
+		BasicDefinitions -> {
+			{"CreatedObjects[]", "objects", "returns all objects that have been created during the current session on the current database while logging is enabled."},
+			{"CreatedObjects[startDate]", "objects", "returns all objects created since 'startDate'."},
+			{"CreatedObjects[startDate, endDate]", "objects", "returns all objects created between 'startDate' and 'endDate'."}
+		},
+		MoreInformation -> {
+			"CreatedObjects automatically tracks objects created through Upload operations when $LogCreatedObjects is True.",
+			"The tracking system is database-specific, maintaining separate logs for different Constellation domains.",
+			"Objects are stored with timestamps indicating when they were created.",
+			"Logging must be enabled via $LogCreatedObjects = True for objects to be tracked."
+		},
+		Input :> {
+			{"startDate", _?DateObjectQ, "The beginning of the time range to return created objects for."},
+			{"endDate", _?DateObjectQ, "The end of the time range to return created objects for."}
+		},
+		Output :> {
+			{"objects", {ObjectReferenceP[]...}, "A list of object references that were created within the specified time range."}
+		},
+		SeeAlso -> {
+			"SetCreatedObjectsCheckpoint",
+			"CreatedObjectsCheckpoint",
+			"Upload"
+		},
+		Author -> {"david.ascough"}
+	}
+];
+
+(* ::Subsection:: *)
+(*SetCreatedObjectsCheckpoint*)
+
+DefineUsage[SetCreatedObjectsCheckpoint,
+	{
+		BasicDefinitions -> {
+			{"SetCreatedObjectsCheckpoint[]", "tag", "creates a CreatedObjects checkpoint with the default tag (Null) for tracking objects created after this point."},
+			{"SetCreatedObjectsCheckpoint[tag]", "tag", "creates a CreatedObjects checkpoint with the specified 'tag' for tracking objects created after this point."},
+			{"SetCreatedObjectsCheckpoint[Unique]", "tag", "creates a CreatedObjects checkpoint with a unique automatically-generated tag for tracking objects created after this point."}
+		},
+		MoreInformation -> {
+			"Checkpoints allow tracking of objects created after a specific point in time.",
+			"Setting a checkpoint automatically enables object logging, if not already enabled, by setting $LogCreatedObjects to True.",
+			"Multiple named checkpoints can be maintained simultaneously.",
+			"The default checkpoint (tag = Null) maintains backwards compatibility with previous $CreatedObjects system.",
+			"Unique tags are generated using ToString[Unique[]] to ensure no conflicts."
+		},
+		Input :> {
+			{"tag", Alternatives[_String, Null, Unique], "The tag to identify this checkpoint. Use Null for default, a string for named checkpoints, or Unique for auto-generated tags."}
+		},
+		Output :> {
+			{"tag", Alternatives[_String, Null], "The tag that was used or generated for this checkpoint."}
+		},
+		SeeAlso -> {
+			"CreatedObjectsCheckpoint",
+			"UnsetCreatedObjectsCheckpoint",
+			"CreatedObjects"
+		},
+		Author -> {"david.ascough"}
+	}
+];
+
+(* ::Subsection:: *)
+(*CreatedObjectsCheckpoint*)
+
+DefineUsage[CreatedObjectsCheckpoint,
+	{
+		BasicDefinitions -> {
+			{"CreatedObjectsCheckpoint[]", "objects", "returns all objects created since the default CreatedObjects checkpoint was set."},
+			{"CreatedObjectsCheckpoint[tag]", "objects", "returns all objects created since the CreatedObjects checkpoint with the specified 'tag' was set."}
+		},
+		MoreInformation -> {
+			"Returns $Failed if the specified checkpoint tag has not been set.",
+			"Objects are returned if their creation timestamp is after the checkpoint time.",
+			"The default checkpoint (tag = Null) provides backwards compatibility with previous $CreatedObjects system.",
+			"This function does not modify or remove the checkpoint."
+		},
+		Input :> {
+			{"tag", Alternatives[_String, Null], "The tag identifying the checkpoint to return objects for."}
+		},
+		Output :> {
+			{"objects", {ObjectReferenceP[]...} | $Failed, "A list of object references created since the checkpoint, or $Failed if the checkpoint doesn't exist."}
+		},
+		SeeAlso -> {
+			"SetCreatedObjectsCheckpoint",
+			"UnsetCreatedObjectsCheckpoint",
+			"CreatedObjects"
+		},
+		Author -> {"david.ascough"}
+	}
+];
+
+(* ::Subsection:: *)
+(*UnsetCreatedObjectsCheckpoint*)
+
+DefineUsage[UnsetCreatedObjectsCheckpoint,
+	{
+		BasicDefinitions -> {
+			{"UnsetCreatedObjectsCheckpoint[]", "tag", "removes the default CreatedObjects checkpoint."},
+			{"UnsetCreatedObjectsCheckpoint[tag]", "tag", "removes the CreatedObjects checkpoint with the specified 'tag'."}
+		},
+		MoreInformation -> {
+			"Removing a checkpoint permanently deletes the reference time for that tag.",
+			"The function returns the tag that was removed for confirmation.",
+			"Attempting to remove a non-existent checkpoint does not cause an error.",
+			"The stored objects created list is not affected, only the checkpoint reference is deleted."
+		},
+		Input :> {
+			{"tag", Alternatives[_String, Null], "The tag identifying the checkpoint to remove."}
+		},
+		Output :> {
+			{"tag", Alternatives[_String, Null], "The tag of the checkpoint that was removed."}
+		},
+		SeeAlso -> {
+			"SetCreatedObjectsCheckpoint",
+			"CreatedObjectsCheckpoint",
+			"CreatedObjects"
+		},
+		Author -> {"david.ascough"}
+	}
+];
+
+(* ::Subsection:: *)
+(*EraseCreatedObjects*)
+
+DefineUsage[EraseCreatedObjects,
+	{
+		BasicDefinitions -> {
+			{"EraseCreatedObjects[]", "erasedObjects", "erases all objects created since the default CreatedObjects checkpoint was set."},
+			{"EraseCreatedObjects[tag]", "erasedObjects", "erases all objects created since the CreatedObjects checkpoint with the specified 'tag' was set."},
+			{"EraseCreatedObjects[startDate]", "erasedObjects", "erases all objects created since 'startDate'."},
+			{"EraseCreatedObjects[startDate, endDate]", "erasedObjects", "erases all objects created between 'startDate' and 'endDate'."}
+		},
+		MoreInformation -> {
+			"Objects are only erased on the current database.",
+			"Objects are erased if they still exist in the database. Already deleted objects are silently ignored.",
+			"Returns $Failed if the specified checkpoint tag has not been set.",
+			"The Force option controls whether the EraseObject confirmation dialog is shown. When Automatic, confirmation is required on production database but not on development databases."
+		},
+		Input :> {
+			{"tag", Alternatives[_String, Null], "The tag identifying the checkpoint to erase objects for."},
+			{"startDate", _?DateObjectQ, "The beginning of the time range to erase created objects for."},
+			{"endDate", _?DateObjectQ, "The end of the time range to erase created objects for."}
+		},
+		Output :> {
+			{"erasedObjects", {ObjectReferenceP[]...} | $Failed, "Returns the list of objects deleted, or $Failed if the checkpoint doesn't exist."}
+		},
+		SeeAlso -> {
+			"CreatedObjects",
+			"SetCreatedObjectsCheckpoint",
+			"CreatedObjectsCheckpoint",
+			"EraseObject"
+		},
+		Author -> {"david.ascough"}
+	}
+];
+
 (* ::Subsubsection::Closed:: *)

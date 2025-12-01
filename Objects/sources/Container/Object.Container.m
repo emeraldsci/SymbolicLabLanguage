@@ -327,6 +327,13 @@ DefineObjectType[Object[Container], {
 			Category -> "Container Information",
 			Headers ->{"Date","Change Type","Container","Position","Responsible Party"}
 		},
+		DateLastMoved->{
+			Format->Single,
+			Class->Date,
+			Pattern:>_?DateObjectQ,
+			Description->"Date this container was moved to a different container or instrument.",
+			Category->"Container Information"
+		},
 		ResourcePickingGrouping -> {
 			Format -> Single,
 			Class -> Link,

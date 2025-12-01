@@ -197,6 +197,13 @@ DefineObjectType[Object[Package], {
 			Category -> "Receiving Information",
 			Headers ->{"Date","Change Type","Container","Position","Responsible Party"}
 		},
+		DateLastMoved->{
+			Format->Single,
+			Class->Date,
+			Pattern:>_?DateObjectQ,
+			Description->"Date this package was moved to a different container or instrument.",
+			Category->"Container Information"
+		},
 		Position -> {
 			Format -> Single,
 			Class -> String,

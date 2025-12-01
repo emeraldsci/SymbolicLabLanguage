@@ -15,7 +15,7 @@
 (*validInventoryQTests*)
 
 
-validInventoryQTests[packet:PacketP[Object[Inventory]]]:={
+validInventoryQTests[packet:PacketP[Object[Inventory]]]:= {
 
 	(* --------- Shared field shaping --------- *)
 	NotNullFieldTest[packet,{StockedInventory, Status, Author, DateCreated, Site, StockingMethod, CurrentAmount, ReorderThreshold, ReorderAmount}],

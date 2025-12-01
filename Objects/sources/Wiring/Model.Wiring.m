@@ -375,6 +375,14 @@ DefineObjectType[Model[Wiring], {
 			Category -> "Qualifications & Maintenance"
 		},
 
+		ExposedSurfaces -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if any sensitive portions of this wiring component are open to the external environment and prone to contamination.",
+			Category -> "Compatibility"
+		},
+
 		(* --- Resources --- *)
 		RequestedResources -> {
 			Format -> Multiple,

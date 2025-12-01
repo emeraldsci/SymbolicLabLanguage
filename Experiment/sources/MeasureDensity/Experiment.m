@@ -1192,7 +1192,7 @@ resolveMeasureDensityOptions[mySamples:ListableP[PacketP[{Object[Sample]}]],myUn
 						MatchQ[Lookup[myMapThreadOptions, WeightStabilityDuration], Except[Automatic]],
 							Lookup[myMapThreadOptions, WeightStabilityDuration],
 						MatchQ[resolvedInstrument, ObjectP[{Object[Instrument, Balance], Model[Instrument, Balance]}]],
-							10 Second,
+							$LiquidDefaultWeightStabilityDuration,
 						True,
 							Null
 					];
@@ -1200,7 +1200,7 @@ resolveMeasureDensityOptions[mySamples:ListableP[PacketP[{Object[Sample]}]],myUn
 						MatchQ[Lookup[myMapThreadOptions, MaxWeightVariation], Except[Automatic]],
 							Lookup[myMapThreadOptions, MaxWeightVariation],
 						MatchQ[resolvedInstrument, ObjectP[{Object[Instrument, Balance], Model[Instrument, Balance]}]],
-							If[MatchQ[resolvedInstrument, ObjectP[Object[Instrument, Balance]]], 5 * fastAssocLookup[fastAssoc, resolvedInstrument, {Model, AllowedMaxVariation}], 5 * fastAssocLookup[fastAssoc, resolvedInstrument, AllowedMaxVariation]],
+							If[MatchQ[resolvedInstrument, ObjectP[Object[Instrument, Balance]]], $LiquidDefaultWeightToleranceFactor * fastAssocLookup[fastAssoc, resolvedInstrument, {Model, AllowedMaxVariation}], $LiquidDefaultWeightToleranceFactor * fastAssocLookup[fastAssoc, resolvedInstrument, AllowedMaxVariation]],
 						True,
 							Null
 					];

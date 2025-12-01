@@ -159,7 +159,7 @@ DefineObjectType[Object[UnitOperation,Dissolution],{
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Alternatives[Object[Container,Sinker],Model[Container,Sinker]],
+			Relation->Alternatives[Model[Item,Sinker],Object[Item,Sinker]],
 			IndexMatching->SampleLink,
 			Description->"For each member of SampleLink, the weighted enclosure used to keep the oral solid dosage below the surface of the media during the experiment to facilitate proper mixing.",
 			Category->"Mixing"
@@ -336,10 +336,10 @@ DefineObjectType[Object[UnitOperation,Dissolution],{
 			Category->"Sampling Filtration"
 		},
 		FilterSamples->{
-			Format->Multiple,
+			Format->Single,
 			Class->Expression,
 			Pattern:>DissolutionFiltrationTypeP,
-			Description->"Indicates the types of filtration applied to the dissolution media samples during transfer to ContainerOut. Accepts a list of filtration types that are applied in sequence. CannulaTipFiltration: filters during sample transfer through cannula tip. InLineFiltration: filters immediately after removal from vessel before entering autosampler. AutosamplerFiltration: filters before dispensing into ContainerOut (changed between aliquots). Multiple types can be specified as a list (e.g., {InLineFiltration, AutosamplerFiltration}).",
+			Description->"Indicates the type of filtration applied to the dissolution media samples during transfer to ContainerOut. Can be InLineFiltration (filters immediately after removal from vessel), AutosamplerFiltration (filters before dispensing into ContainerOut), or DualFiltration (applies both filtration types in sequence).",
 			Category->"Sampling Filtration"
 		},
 		AutosamplerFilter->{
@@ -389,27 +389,13 @@ DefineObjectType[Object[UnitOperation,Dissolution],{
 			Description->"The pore size of the filter used to filter the aliquots of samples that are taken from the dissolution medium at the specified time points before the sample is dispensed into the ContainerOut. This filter is applied after the InLineFilter and is optionally changed between each aliquot.",
 			Category->"Sampling Filtration"
 		},
-		CannulaTipFilter->{
+		Cannula->{
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Alternatives[Object[Item,Filter],Model[Item,Filter]],
-			Description->"The filters attached to cannula tips used to filter samples during transfer from the dissolution vessel to the collection container.",
-			Category->"Sampling Filtration"
-		},
-		CannulaTipFilterMaterial->{
-			Format->Single,
-			Class->Expression,
-			Pattern:>FilterMembraneMaterialP,
-			Description->"The material of the cannula tip filters used during sample transfer.",
-			Category->"Sampling Filtration"
-		},
-		CannulaTipFilterPoreSize->{
-			Format->Single,
-			Class->Real,
-			Pattern:>GreaterP[0 * Micron],
-			Units->Micron,
-			Description->"The pore size of the cannula tip filters used during sample transfer.",
+			Relation->Alternatives[Model[Item,Cannula],Object[Item,Cannula]],
+			IndexMatching->SampleLink,
+			Description->"For each member of SampleLink, the cannula used to sample media during the dissolution experiment.",
 			Category->"Sampling Filtration"
 		},
 

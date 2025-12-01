@@ -1632,15 +1632,6 @@ validContainerVesselVolumetricFlaskQTests[packet:PacketP[Object[Container,Vessel
 validContainerVesselGasWashingBottleQTests[packet:PacketP[Object[Container,Vessel,GasWashingBottle]]]:={
 };
 
-(* ::Subsection::Closed:: *)
-(* validContainerSinkerQTests *)
-
-validContainerSinkerQTests[packet:PacketP[Object[Container,Sinker]]]:={
-	NotNullFieldTest[packet,{
-		CleanRack,
-		DirtyRack
-	}]
-};
 
 (* ::Subsection::Closed:: *)
 (* validContainerDosageDispensingUnitQTests *)
@@ -2043,7 +2034,6 @@ registerValidQTestFunction[Object[Container,Safe],validContainerSafeQTests];
 registerValidQTestFunction[Object[Container,Shelf],validContainerShelfQTests];
 registerValidQTestFunction[Object[Container,ShelvingUnit],validContainerShelvingUnitQTests];
 registerValidQTestFunction[Object[Container,Shipping],validContainerShippingQTests];
-registerValidQTestFunction[Object[Container,Sinker],validContainerSinkerQTests];
 registerValidQTestFunction[Object[Container,DosageDispensingUnit],validContainerDosageDispensingUnitQTests];
 registerValidQTestFunction[Object[Container,Stand],validContainerStandQTests];
 registerValidQTestFunction[Object[Container,Syringe],validContainerSyringeQTests];

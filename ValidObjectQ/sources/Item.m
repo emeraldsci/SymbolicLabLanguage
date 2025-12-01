@@ -498,6 +498,12 @@ validItemBLIProbeQTests[packet : PacketP[Object[Item, BLIProbe]]] := {
 validItemClampQTests[packet:PacketP[Object[Item,Clamp]]]:={};
 
 
+(* ::Subsection::Closed:: *)
+(*validItemCannulaQTests*)
+
+
+validItemCannulaQTests[packet:PacketP[Object[Item,Cannula]]]:={};
+
 
 (* ::Subsection::Closed:: *)
 (*validItemConsumableQTests*)
@@ -1521,6 +1527,14 @@ validItemWeighBoatQTests[packet:PacketP[Object[Item,WeighBoat]]]:={};
 
 validItemWeighBoatWeighingFunnelQTests[packet:PacketP[Object[Item,WeighBoat,WeighingFunnel]]]:={};
 
+(* ::Subsection:: *)
+(*validItemSinkerQTests*)
+
+validItemSinkerQTests[packet:PacketP[Object[Item,Sinker]]]:={};
+
+(* ::Subsection:: *)
+(*validItemSpatulaQTests*)
+
 validItemSpatulaQTests[packet:PacketP[Object[Item,Spatula]]]:={};
 
 
@@ -1553,6 +1567,7 @@ registerValidQTestFunction[Object[Item,BoxCutter],validItemBoxCutterQTests];
 registerValidQTestFunction[Object[Item,CalibrationWeight],validItemCalibrationWeightQTests];
 registerValidQTestFunction[Object[Item,CalibrationDistanceBlock],validItemCalibrationDistanceBlockQTests];
 registerValidQTestFunction[Object[Item,Clamp],validItemClampQTests];
+registerValidQTestFunction[Object[Item,Cannula],validItemCannulaQTests];
 registerValidQTestFunction[Object[Item,Counterweight],validItemCounterweightQTests];
 registerValidQTestFunction[Object[Item, Electrode],validItemElectrodeQTests];
 registerValidQTestFunction[Object[Item, Electrode, ReferenceElectrode],validItemElectrodeReferenceElectrodeQTests];
@@ -1603,4 +1618,5 @@ registerValidQTestFunction[Object[Item,Stopper],validCoverObjectsQTests];
 registerValidQTestFunction[Object[Item, WasteLabel], validItemWasteLabelQTests];
 registerValidQTestFunction[Object[Item, WeighBoat], validItemWeighBoatQTests];
 registerValidQTestFunction[Object[Item, WeighBoat, WeighingFunnel], validItemWeighBoatWeighingFunnelQTests];
+registerValidQTestFunction[Object[Item, Sinker],validItemSinkerQTests];
 registerValidQTestFunction[Object[Item, Spatula], validItemSpatulaQTests];

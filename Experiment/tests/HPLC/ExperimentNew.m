@@ -4212,6 +4212,25 @@ DefineTests[ExperimentHPLC,
 			{LinkP[Object[Method, Gradient, "id:M8n3rxYAonm5"]]},
 			Variables:>{packet}
 		],
+		Example[
+			{Options,ColumnFlushGradient,"Specify the column flush gradient with an existing method:"},
+			(
+				packets = ExperimentHPLC[
+					{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+					Upload->False,
+					ColumnFlushGradient -> {
+						{0. Minute, 100. Percent, 0. Percent, 0. Percent, 0. Percent, 1 Milliliter/Minute, None},
+						{30. Minute, 0. Percent, 100. Percent, 0. Percent, 0. Percent, 2 Milliliter/Minute, None}
+					},
+					Instrument->Model[Instrument, HPLC, "id:N80DNjlYwwJq"]
+				];
+				shutdownMethod=Download[Lookup[packets[[1]], ShutdownMethod], Object];
+				shutdownMethodPacket=FirstCase[packets, KeyValuePattern[Object -> shutdownMethod]];
+				Lookup[shutdownMethodPacket, InitialFlowRate]
+			),
+			EqualP[2 Milliliter/Minute],
+			Variables:>{packets, shutdownMethod, shutdownMethodPacket}
+		],
 
 		(* === Options - Column Flush Detector Parameters === *)
 		Example[
@@ -4482,7 +4501,7 @@ DefineTests[ExperimentHPLC,
 		Test["Ensure that in most cases, a centrifugation subprotocol can be generated:",
 			{minTemperature, maxTemperature} = Lookup[First[Cases[Lookup[FirstCase[OptionDefinition[ExperimentHPLC], KeyValuePattern["OptionName" -> "SampleTemperature"]], "Widget"], KeyValuePattern[Type -> Quantity], Infinity]], {Min, Max}];
 			containers = Flatten[{
-				$ChromatographyLCCompatibleVials,
+				allLCCompatibleVialSearch["Memoization"],
 				Model[Container, Plate, "id:L8kPEjkmLbvW"],(*96-well 2mL Deep Well Plate*)
 				Model[Container, Vessel, "id:xRO9n3vk11pw"],(*15mL Tube*)
 				Model[Container, Vessel, "id:bq9LA0dBGGR6"](*50mL Tube*)

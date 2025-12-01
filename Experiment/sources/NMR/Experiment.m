@@ -2679,7 +2679,7 @@ nmrResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 	tweezerResource=If[MemberQ[expandedUseExternalStandard,True],Link[Resource[Sample->Model[Item, Tweezer, "Straight flat tip tweezer"],Rent->True]],Null];
 	
 	(* We also gonna ask the transfer of coaxial inserts to be finished in a fume hood *)
-	fumeHoodResource = If[MemberQ[expandedUseExternalStandard,True],Link[Resource[Instrument -> Model[Instrument, FumeHood, "Labconco Premier 6 Foot"], Time -> 1Hour]],Null];
+	fumeHoodResource = If[MemberQ[expandedUseExternalStandard,True],Link[Resource[Instrument -> commonFumeHoodHandlingStationModels["Memoization"], Time -> 1Hour]],Null];
 	insertsWashWasteContainerResource = If[MemberQ[expandedUseExternalStandard,True],Link[Resource[Sample->Model[Container, Vessel, "250mL Kimax Beaker"],Rent->True,Name->ToString[Unique[]]]],Null];
 	
 	(* get the ContainersIn with no Duplicates *)

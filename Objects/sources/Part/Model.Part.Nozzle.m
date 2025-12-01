@@ -33,7 +33,7 @@ DefineObjectType[Model[Part, Nozzle], {
 			Units->Millimeter,
 			Description->"The diameter of the nozzle at its widest point.",
 			Category->"Dimensions & Positions"
-		},	
+		},
 		MinShaftLength->{
 			Format->Single,
 			Class->Real,
@@ -65,6 +65,22 @@ DefineObjectType[Model[Part, Nozzle], {
 			Units->Millimeter,
 			Description->"The maximum allowable distance between the exit of the nozzle and its target.",
 			Category->"Operating Limits"
+		},
+		MinAperture -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0Meter],
+			Units->Millimeter,
+			Description -> "The minimum allowable dimension for a container's opening to be used with this nozzle. For Lancer dishwashers this should be double the nominal diameter of the Nozzle.",
+			Category -> "Operating Limits"
+		},
+		MaxAperture -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0Meter],
+			Units -> Millimeter,
+			Description -> "The maximum allowable dimension for a container's opening to be used with this nozzle. For Lancer dishwasher this should be no larger than the adjustable plastic support on which the aperture rests.",
+			Category -> "Operating Limits"
 		}
 	}
 }];

@@ -147,7 +147,7 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Alternatives[Object[Container,Sinker],Model[Container,Sinker]],
+			Relation->Alternatives[Model[Item,Sinker],Object[Item,Sinker]],
 			IndexMatching->SamplesIn,
 			Description->"For each member of SamplesIn, the weighted enclosure used to keep the oral solid dosage below the surface of the media during the experiment to facilitate proper mixing.",
 			Category->"Mixing"
@@ -296,10 +296,10 @@ DefineObjectType[Object[Protocol,Dissolution],{
 
 		(* --- Sampling Filtration Category --- *)
 		FilterSamples->{
-			Format->Multiple,
+			Format->Single,
 			Class->Expression,
 			Pattern:>DissolutionFiltrationTypeP,
-			Description->"Indicates the types of filtration applied to the dissolution media samples during transfer to ContainerOut. Accepts a list of filtration types that are applied in sequence. CannulaTipFiltration: filters during sample transfer through cannula tip. InLineFiltration: filters immediately after removal from vessel before entering autosampler. AutosamplerFiltration: filters before dispensing into ContainerOut (changed between aliquots). Multiple types can be specified as a list (e.g., {InLineFiltration, AutosamplerFiltration}).",
+			Description->"Indicates the type of filtration applied to the dissolution media samples during transfer to ContainerOut. Can be InLineFiltration (filters immediately after removal from vessel), AutosamplerFiltration (filters before dispensing into ContainerOut), or DualFiltration (applies both filtration types in sequence).",
 			Category->"Sampling Filtration"
 		},
 		AutosamplerFilters->{
@@ -326,27 +326,13 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Description->"For each member of SamplesIn, the filter that is used to remove impurities from the samples right after they are removed from the dissolution vessel and prior to the liquid entering the autosampler for optinal secondary filtration.",
 			Category->"Sampling Filtration"
 		},
-		CannulaTipFilters->{
+		Cannulas->{
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Alternatives[Object[Item,Filter],Model[Item,Filter]],
-			Description->"The filters attached to cannula tips used to filter samples during transfer from the dissolution vessel to the collection container.",
-			Category->"Sampling Filtration"
-		},
-		CannulaTipFilterMaterial->{
-			Format->Single,
-			Class->Expression,
-			Pattern:>FilterMembraneMaterialP,
-			Description->"The material of the cannula tip filters used during sample transfer.",
-			Category->"Sampling Filtration"
-		},
-		CannulaTipFilterPoreSize->{
-			Format->Single,
-			Class->Real,
-			Pattern:>GreaterP[0 * Micron],
-			Units->Micron,
-			Description->"The pore size of the cannula tip filters used during sample transfer.",
+			Relation->Alternatives[Model[Item,Cannula],Object[Item,Cannula]],
+			IndexMatching->SamplesIn,
+			Description->"For each member of SamplesIn, the cannula used to sample media during the dissolution experiment.",
 			Category->"Sampling Filtration"
 		},
 
@@ -392,7 +378,7 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			},
 			Relation -> {
 				Sample -> Object[Sample],
-				Destination -> (Object[Container,Sinker] | Object[Container,Basket]),
+				Destination -> (Object[Item,Sinker] | Object[Container,Basket]),
 				DosageDispensingUnit -> Object[Container,DosageDispensingUnit],
 				Cap -> Object[Item, Cap]
 			},
@@ -416,16 +402,6 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Pattern :> {_Link, _Link, LocationPositionP},
 			Relation -> {Object[Item,Filter], Object[Instrument,DissolutionApparatus], Null},
 			Description -> "A list of placements used to place the autosampler filter into the instrument.",
-			Category -> "Placements",
-			Developer -> True,
-			Headers -> {"Object to Place", "Destination Object","Destination Position"}
-		},
-		InLineFilterPlacements -> {
-			Format -> Multiple,
-			Class -> {Link, Link, String},
-			Pattern :> {_Link, _Link, LocationPositionP},
-			Relation -> {Object[Item,Filter], Object[Instrument,DissolutionApparatus], Null},
-			Description -> "A list of placements used to place the in line filter into the instrument.",
 			Category -> "Placements",
 			Developer -> True,
 			Headers -> {"Object to Place", "Destination Object","Destination Position"}
@@ -546,6 +522,114 @@ DefineObjectType[Object[Protocol,Dissolution],{
 			Description -> "The amounts of the samples that are being weighed and transported around the lab. It is quite sad that we need this field, but there is no other way to put in amount to the Transfer subprotocol we will genearate.",
 			Category -> "General",
 			Developer -> True
+		},
+		WasteContainer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Model[Container]
+			],
+			Description -> "The container used to collect waste during cleaning of the gas lines.",
+			Category -> "General",
+			Developer -> True
+		},
+		SecondaryWasteContainer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Model[Container]
+			],
+			Description -> "The container used to collect waste during cleaning of the cannulas at the end of the protocol.",
+			Category -> "General",
+			Developer -> True
+		},
+		CannulaConnections -> {
+			Format -> Multiple,
+			Class -> {Link, String, Link, String},
+			Pattern :> {_Link, ConnectorNameP, _Link, ConnectorNameP},
+			Relation -> {Object[Instrument], Null, Object[Item,Cannula], Null},
+			Description -> "The connection information for the cannulas to the isntrument. This is used to install the new cannulas used in the experiment.",
+			Headers -> {"Instrument", "Instrument Port", "Cannula", "Cannula Port"},
+			Category -> "General",
+			Developer -> True
+		},
+		CannulaDisconnections -> {
+			Format -> Multiple,
+			Class -> {Link, String, Link, String},
+			Pattern :> {_Link, ConnectorNameP, _Link, ConnectorNameP},
+			Relation -> {Object[Instrument], Null, Object[Item,Cannula], Null},
+			Description -> "The disconnection information for the cannulas from the isntrument. This is used to remove the cannulas from the instrument that were installed prior to this experiment.",
+			Headers -> {"Instrument", "Instrument Port", "Cannula", "Cannula Port"},
+			Category -> "General",
+			Developer -> True
+		},
+		ReplacementCannulas -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item,Cannula],
+			Description -> "The cannulas that are being installed on the instrument. If we are using less than 6 positions on the instrument in the protocol, this field will have all 6 cannulas regardless since we want to have identical cannulas in all positions.",
+			Category -> "General",
+			Developer -> True
+		},
+		Wrench->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[Model[Item,Wrench],Object[Item,Wrench]],
+			Description->"The wrench used to loosen and tighten the the ccollar on the dissolution shaft.",
+			Category->"General",
+			Developer->True
+		},
+		SinkerStorageRack->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[Object[Container,Rack],Model[Container,Rack]],
+			Description->"Rack to store used sinkers in after washing.",
+			Category->"General",
+			Developer->True
+		},
+		DissolutionVesselRack -> {
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[Object[Container,Rack],Model[Container,Rack]],
+			Description->"Rack to use when transporting the dissolution vessels during washing.",
+			Category->"General",
+			Developer->True
+		},
+		Sink -> {
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[Model[Instrument],Object[Instrument]],
+			Description->"Washing station used to clean the dissolution vessels at the end of the experiment.",
+			Category->"General",
+			Developer->True
+		},
+		VesselHoldingWrench->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[Model[Container],Object[Container]],
+			Description->"Wrench used to hold the dissolution vessel in place during washing.",
+			Category->"General",
+			Developer->True
+		},
+		RemovalCannulas->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[Model[Item,Cannula],Object[Item,Cannula]],
+			IndexMatching->SamplesIn,
+			Description->"For each member of SamplesIn, the list of cannulas in the order they will be removed from the instrument.",
+			Category->"Sampling Filtration",
+			Developer->True
 		}
 	}
 }];

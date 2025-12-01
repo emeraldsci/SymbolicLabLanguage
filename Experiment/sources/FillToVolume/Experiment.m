@@ -3366,6 +3366,8 @@ simulateExperimentFillToVolume[
 		solventSamples,
 		destinationSamples,
 		amountsToTransfer,
+		(* In real protocol, we update SampleHandling based on operator input, which is usually more accurate for liquid sample (Liquid | Slurry | Viscous). However, here we make sure we flip any solid sample handling of (Powder | Itemized | Paste | Brittle | Fabric | Fixed) into Liquid since we have done FillToVolume *)
+		UpdateSampleHandling -> True,
 		Upload -> False,
 		FastTrack -> True,
 		Simulation -> currentSimulation

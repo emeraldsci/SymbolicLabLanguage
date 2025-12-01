@@ -759,6 +759,13 @@ DefineObjectType[Object[Sensor], {
 			Category -> "Storage Information",
 			Headers ->  {"Date","In or Out","Container moved into or out of","Position moved into or out Of", "Person who moved the part"}
 		},
+		DateLastMoved->{
+			Format->Single,
+			Class->Date,
+			Pattern:>_?DateObjectQ,
+			Description->"Date this sensor was moved to a different container or instrument.",
+			Category->"Storage Information"
+		},
 		(* --- Resources --- *)
 		RequestedResources -> {
 			Format -> Multiple,

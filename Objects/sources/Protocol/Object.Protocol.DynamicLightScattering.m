@@ -826,6 +826,14 @@ DefineObjectType[Object[Protocol,DynamicLightScattering],{
       Category->"Data Processing",
       Developer->True
     },
+    CorrelationDataFilePath->{
+      Format->Single,
+      Class->String,
+      Pattern:>FilePathP,
+      Description->"The file path (including the file name) of the .csv file containing the correlation data from the experiment.",
+      Category->"Data Processing",
+      Developer->True
+    },
     DataFile->{
       Format->Single,
       Class->Link,

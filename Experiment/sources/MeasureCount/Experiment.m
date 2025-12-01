@@ -1141,7 +1141,7 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	(* Resolve WeightStabilityDuration and MaxWeightVariation *)
 	resolvedWeightStabilityDuration = If[MatchQ[Lookup[measureCountOptionsAssociation, WeightStabilityDuration], Except[Automatic]],
 		Lookup[measureCountOptionsAssociation, WeightStabilityDuration],
-		60 Second
+		$DefaultWeightStabilityDuration
 	];
 	(* always use Model[Instrument, Balance, "Ohaus EX225AD"], so resolve to the AllowedMaxVariation of it *)
 	resolvedMaxWeightVariation = If[MatchQ[Lookup[measureCountOptionsAssociation, MaxWeightVariation], Except[Automatic]],

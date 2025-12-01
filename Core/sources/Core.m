@@ -1486,11 +1486,12 @@ $CommandBuilderFunctions = <|
 			"PlotDigitalPCR"
 		},
 		"Sample Preparation and Diagnostics" -> {
-			"PlotConductivity",
 			"PlotpH",
-			"PlotSensor",
-			"PlotVacuumEvaporation",
 			"PlotVolume",
+			"PlotSensor",
+			"PlotWeighingTimeline",
+			"PlotConductivity",
+			"PlotVacuumEvaporation",
 			"PlotDissolvedOxygen",
 			"PlotCoulterCount"
 		},
@@ -1910,11 +1911,12 @@ $CommandBuilderFunctionsDev = <|
 			"PlotDigitalPCR"
 		},
 		"Sample Preparation and Diagnostics" -> {
-			"PlotConductivity",
 			"PlotpH",
-			"PlotSensor",
-			"PlotVacuumEvaporation",
 			"PlotVolume",
+			"PlotSensor",
+			"PlotWeighingTimeline",
+			"PlotConductivity",
+			"PlotVacuumEvaporation",
 			"PlotDissolvedOxygen",
 			"PlotCoulterCount"
 		},

@@ -435,6 +435,13 @@ DefineObjectType[Object[Instrument], {
 			Headers -> {"Date","Change Type","Container","Position","Responsible Party"},
 			Category -> "Container Specifications"
 		},
+		DateLastMoved->{
+			Format->Single,
+			Class->Date,
+			Pattern:>_?DateObjectQ,
+			Description->"Date this instrument was moved to a different container or instrument.",
+			Category->"Container Information"
+		},
 		Site -> {
 			Format -> Single,
 			Class -> Link,

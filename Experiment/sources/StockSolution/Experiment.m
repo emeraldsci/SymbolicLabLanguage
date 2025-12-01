@@ -1488,6 +1488,7 @@ DefineOptions[ExperimentStockSolution,
 		},
 		NonBiologyPostProcessingOptions,
 		SamplesOutStorageOption,
+		PrewetLabwareOptions,
 
 
 		{

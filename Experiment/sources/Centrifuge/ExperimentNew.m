@@ -3265,7 +3265,7 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 	(* Resolve WeightStabilityDuration and MaxWeightVariation *)
 	resolvedWeightStabilityDuration = If[MatchQ[Lookup[myOptions, WeightStabilityDuration], Except[Automatic]],
 		Lookup[myOptions, WeightStabilityDuration],
-		60 Second
+		$DefaultWeightStabilityDuration
 	];
 
 	(* always use Model[Instrument, Balance, "Ohaus EX6202"], so resolve to the AllowedMaxVariation of it *)

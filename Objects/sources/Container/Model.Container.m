@@ -156,22 +156,6 @@ DefineObjectType[Model[Container], {
 			Description -> "Indicates if this model is a sealed vessel containing a measured quantity of substance, meant for single-use. Ampoule will be cracked open to retrieve its contents, and discarded after use.",
 			Category -> "Container Specifications"
 		},
-		Aspiratable -> {
-			Format -> Single,
-			Class -> Boolean,
-			Pattern :> BooleanP,
-			Description -> "Indicates if this samples can be transferred out of this container when it is not Covered.",
-			Category -> "Container Specifications",
-			Abstract -> True
-		},
-		Dispensable -> {
-			Format -> Single,
-			Class -> Boolean,
-			Pattern :> BooleanP,
-			Description -> "Indicates if samples can be dispensed into this container when it is not Covered.",
-			Category -> "Container Specifications",
-			Abstract -> True
-		},
 		AssociatedAccessories -> {
 			Format -> Multiple,
 			Class -> {Link,Integer},
@@ -1014,6 +998,13 @@ DefineObjectType[Model[Container], {
 			Description -> "Indicates if this model has been validated for use with TransferDevices.",
 			Category -> "Compatibility",
 			Developer -> True
+		},
+		ExposedSurfaces -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if any sensitive portions of this container are open to the external environment and prone to contamination.",
+			Category -> "Compatibility"
 		},
 
 		(*--- Qualifications & Maintenance ---*)

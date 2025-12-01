@@ -2245,18 +2245,20 @@ resolveExperimentLiquidLiquidExtractionOptions[mySamples:{ObjectP[Object[Sample]
         ];
 
         (* Resolve Centrifuge Intensity. *)
+        (* Default to the lesser of the centrifuge's max force and the container's max force (if populated) *)
+        (* This is now robust to cases where the container's max force is greater than the centrifuge's, but still hardcodes centrifuges and their max forces *)
         centrifugeIntensity=Which[
           MatchQ[Lookup[options, CentrifugeIntensity], Except[Automatic]],
             Lookup[options, CentrifugeIntensity],
           MatchQ[centrifugeInstrument, ObjectP[Model[Instrument, Centrifuge, "id:kEJ9mqaVPAXe"]]], (* Model[Instrument, Centrifuge, "HiG4"] *)
             If[!MatchQ[Lookup[sampleContainerModelPacket, MaxCentrifugationForce], Null],
-              Lookup[sampleContainerModelPacket, MaxCentrifugationForce],
+              Min[Lookup[sampleContainerModelPacket, MaxCentrifugationForce], 3600 GravitationalAcceleration],
               3600 GravitationalAcceleration
             ],
           MatchQ[centrifugeInstrument, ObjectP[Model[Instrument, Centrifuge, "id:vXl9j57YaYrk"]]], (* Model[Instrument, Centrifuge, "VSpin"] *)
             If[!MatchQ[Lookup[sampleContainerModelPacket, MaxCentrifugationForce], Null],
-              Lookup[sampleContainerModelPacket, MaxCentrifugationForce],
-              3000 RPM
+              Min[Lookup[sampleContainerModelPacket, MaxCentrifugationForce], 1000 GravitationalAcceleration],
+              1000 GravitationalAcceleration
             ],
           True,
             Null

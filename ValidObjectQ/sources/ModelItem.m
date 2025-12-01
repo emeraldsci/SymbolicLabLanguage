@@ -716,6 +716,13 @@ validItemBlankQTests[packet:PacketP[Model[Item, Blank]]]:={
 
 
 (* ::Subsection::Closed:: *)
+(*validItemCannulaQTests*)
+
+
+validItemCannulaQTests[packet:PacketP[Model[Item, Cannula]]]:={};
+
+
+(* ::Subsection::Closed:: *)
 (*validModelItemCrossFlowFilterQTests*)
 
 
@@ -2314,7 +2321,7 @@ validModelItemFilterQTests[packet:PacketP[Model[Item,Filter]]]:=
 			{Membrane, NullP, NullP},
 			{BottleTop,_,_},
 			{CrossFlowFiltration,_,_},
-			{G2InLine|G2ProbeTip,_,_}
+			{G2InLine|QLADVInnerFilter,_,_}
 		]
 	],
 
@@ -2328,7 +2335,7 @@ validModelItemFilterQTests[packet:PacketP[Model[Item,Filter]]]:=
 			{Membrane, Except[NullP], Except[NullP]},
 			{BottleTop,Except[NullP],Except[NullP]},
 			{CrossFlowFiltration,_,_},
-			{G2InLine|G2ProbeTip,_,_}
+			{G2InLine|QLADVInnerFilter,_,_}
 		]
 	],
 
@@ -2342,7 +2349,7 @@ validModelItemFilterQTests[packet:PacketP[Model[Item,Filter]]]:=
 			{Membrane, Except[NullP]},
 			{BottleTop,Except[NullP]},
 			{CrossFlowFiltration,_},
-			{G2InLine|G2ProbeTip,_}
+			{G2InLine|QLADVInnerFilter,_}
 		]
 	]
 };
@@ -3790,6 +3797,16 @@ validModelItemSpatulaQTests[packet:PacketP[Model[Item,Spatula]]]:={
 	}]
 };
 
+(* ::Subsection:: *)
+(*validModelItemSinkerQTests*)
+
+DefineOptions[
+	validModelItemSinkerQTests,
+	Options :> {additionalValidQTestOptions}
+];
+
+validModelItemSinkerQTests[packet:PacketP[Model[Item,Sinker]], ops:OptionsPattern[]] := {};
+
 
 (* ::Subsection:: *)
 (*Test Registration *)
@@ -3803,6 +3820,7 @@ registerValidQTestFunction[Model[Item, Consumable, Blade],validModelItemConsumab
 registerValidQTestFunction[Model[Item, Consumable, Sandpaper],validModelItemConsumableSandpaperQTests];
 registerValidQTestFunction[Model[Item, CrossFlowFilter],validModelItemCrossFlowFilterQTests];
 registerValidQTestFunction[Model[Item, Blank],validItemBlankQTests];
+registerValidQTestFunction[Model[Item, Cannula],validItemCannulaQTests];
 registerValidQTestFunction[Model[Item, Plunger],validModelItemPlungerQTests];
 registerValidQTestFunction[Model[Item, Cap],validModelItemCapQTests];
 registerValidQTestFunction[Model[Item, PlateSeal],validModelItemPlateSealQTests];
@@ -3869,4 +3887,5 @@ registerValidQTestFunction[Model[Item, WasteLabel], validModelItemWasteLabelQTes
 registerValidQTestFunction[Model[Item, WilhelmyPlate],validModelItemWilhelmyPlateQTests];
 registerValidQTestFunction[Model[Item, WeighBoat], validModelItemWeighBoatQTests];
 registerValidQTestFunction[Model[Item, WeighBoat, WeighingFunnel], validModelItemWeighBoatWeighingFunnelQTests];
+registerValidQTestFunction[Model[Item, Sinker],validModelItemSinkerQTests];
 registerValidQTestFunction[Model[Item, Spatula], validModelItemSpatulaQTests];

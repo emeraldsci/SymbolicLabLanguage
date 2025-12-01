@@ -7429,6 +7429,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								fastAssocLookup[fastAssoc, instrument, {Model, Object}] /. {$Failed | NullP -> Null}
 							];
 
+							(* Set nutatorPacket to use in downstream logic *)
+							nutatorPacket = fetchPacketFromFastAssoc[instrumentModel, fastAssoc];
+
 							(* Did the user supply a rate? *)
 							rate=If[MatchQ[Lookup[myMapThreadOptions,MixRate],Automatic],
 								If[
@@ -7437,9 +7440,8 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										!NullQ[Lookup[samplePacket,ThawMixRate]]
 									],
 									Lookup[samplePacket,ThawMixRate],
-									(* Resolve to the average RPM of the set instrument. *)
-									nutatorPacket = fetchPacketFromFastAssoc[instrumentModel, fastAssoc];
 
+									(* Resolve to the average RPM of the set instrument. *)
 									(* Round to the nearest RPM. *)
 									Round[Mean[Lookup[nutatorPacket,{MinRotationRate,MaxRotationRate},1RPM]],1RPM]
 								],
@@ -7535,6 +7537,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 							(* Are there instruments that can currently support the footprint of our sample? *)
 							instrument=If[Length[potentialInstruments]>0,
 								(* Resolve rate (if we have to) to be the average rate of our first instrument. *)
+
 								rate=If[MatchQ[preResolvedRate,Automatic],
 									(* Resolve to the average RPM of the set instrument. *)
 									nutatorPacket = fetchPacketFromFastAssoc[First[potentialInstruments], fastAssoc];

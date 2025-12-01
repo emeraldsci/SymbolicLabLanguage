@@ -40,6 +40,14 @@ DefineObjectType[Model[TrainingModule], {
 			Category->"General",
 			Required->True
 		},
+		PracticeDrills->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Model[Maintenance,Training][TrainingModules],
+			Description->"Maintenance run in the lab that allow an operator to practice this skill.",
+			Category->"General"
+		},
 		Practical->{
 			Format->Single,
 			Class->Link,

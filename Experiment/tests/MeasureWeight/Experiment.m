@@ -864,7 +864,6 @@ DefineTests[
 				$EmailEnabled=False
 			}
 		],
-
 		Test["Batching field is properly populated (testing all sorts of samples and combinations of options):",
 			Module[{myProtocol},
 				myProtocol=ExperimentMeasureWeight[
@@ -931,8 +930,8 @@ DefineTests[
 						Index -> 2,
 						HandlingEnvironment -> ObjectP[],
 						CoveredContainer -> Null,
-						WeightStabilityDuration -> EqualP[60 Second],
-						MaxWeightVariation -> EqualP[0.1 Milligram]
+						WeightStabilityDuration -> EqualP[$DefaultWeightStabilityDuration],
+						MaxWeightVariation -> EqualP[0.12 Milligram]
 					|>,
 					(* 2 *)
 					<|
@@ -951,7 +950,7 @@ DefineTests[
 						Index -> 3,
 						HandlingEnvironment -> ObjectP[],
 						CoveredContainer -> Null,
-						WeightStabilityDuration -> EqualP[60 Second],
+						WeightStabilityDuration -> EqualP[$DefaultWeightStabilityDuration],
 						MaxWeightVariation -> EqualP[1 Milligram]
 					|>,
 					(* 3 *)
@@ -971,7 +970,7 @@ DefineTests[
 						Index -> 4,
 						HandlingEnvironment -> ObjectP[],
 						CoveredContainer -> Null,
-						WeightStabilityDuration -> EqualP[60 Second],
+						WeightStabilityDuration -> EqualP[$DefaultWeightStabilityDuration],
 						MaxWeightVariation -> EqualP[1 Milligram]
 					|>,
 					(* 4 *)
@@ -991,7 +990,7 @@ DefineTests[
 						Index -> 5,
 						HandlingEnvironment -> ObjectP[],
 						CoveredContainer -> Null,
-						WeightStabilityDuration -> EqualP[60 Second],
+						WeightStabilityDuration -> EqualP[$DefaultWeightStabilityDuration],
 						MaxWeightVariation -> EqualP[1 Milligram]
 					|>
 				},
@@ -1842,7 +1841,7 @@ DefineTests[
 						Batching[[All,MaxWeightVariation]]}
 				],
 				{
-					{60 Second, 60 Second},
+					{$DefaultWeightStabilityDuration, $DefaultWeightStabilityDuration},
 					balanceDefault
 				}
 			],

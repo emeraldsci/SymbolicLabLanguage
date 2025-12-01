@@ -115,8 +115,8 @@ DefineOptions[ExperimentMeasureWeight,
 (* ::Subsubsection:: *)
 (*Constants*)
 
-(* we hard code a list of shipping and receiving benches, if MeasureWeight is called inside a MaintenanceReceivingInventory, we will try to use a balance on these benches directly, without redirecting them to use a handling station elsewhere since we currently do not have a handling station in SnR room (which we should in the future, thus we should remove these hardcodings when those are online) *)
-$ShippingReceivingBench = {Object[Container, Bench, "id:rea9jlRBejL5"], Object[Container, Bench, "id:dORYzZn0Xwbb"], Object[Container, Bench, "id:O81aEB19w8Wp"]};
+(* we hard code the S&R room in ECL-2, if MeasureWeight is called inside a MaintenanceReceivingInventory, we will try to use a balance on these benches directly, without redirecting them to use a handling station elsewhere since we currently do not have a handling station in SnR room (which we should in the future, thus we should remove these hardcodings when those are online) *)
+$ShippingReceivingRoom = {Object[Container, Room, "id:1ZA60vA4pb7w"]};
 
 receivingBalanceLookup[fakeString_] := receivingBalanceLookup[fakeString] = Module[{downloads, fastAssoc, contents, balances, models},
 	If[!MemberQ[$Memoization, Experiment`Private`receivingBalanceLookup],
@@ -127,8 +127,8 @@ receivingBalanceLookup[fakeString_] := receivingBalanceLookup[fakeString] = Modu
 	downloads = Quiet[
 		Download[
 			{
-				$ShippingReceivingBench,
-				$ShippingReceivingBench
+				$ShippingReceivingRoom,
+				$ShippingReceivingRoom
 			},
 			{
 				{Repeated[Contents[[All, 2]]][Object]},
@@ -2153,7 +2153,7 @@ resolveExperimentMeasureWeightOptions[myInputs:{ObjectP[{Object[Container],Seque
 						(* otherwise, use default setting *)
 						(* Note: unlike Transfer, MeasureWeight for liquid in container should always have a cover *)
 						True,
-						60 Second
+						$DefaultWeightStabilityDuration
 					];
 
 					maxWeightVariation = Which[

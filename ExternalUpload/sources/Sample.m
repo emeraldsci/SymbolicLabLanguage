@@ -1161,6 +1161,18 @@ DefineOptions[UploadSampleModel,
 				Description -> "If containing or composed of a structural material, such as a fiber or bead, the types of such matter that may come in direct contact with fluids.",
 				ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of WettedMaterials.",
 				Category -> "Compatibility"
+			},
+			{
+				OptionName -> ForeignMaterialContactDisallowed,
+				Default -> Null,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				],
+				Description -> "Indicates if any contact of this sample with submerged item/part is blocked.",
+				ResolutionDescription -> "If modifying an existing object, automatically set to match the field value of ForeignMaterialContactDisallowed.",
+				Category -> "Compatibility"
 			}
 		]
 	},

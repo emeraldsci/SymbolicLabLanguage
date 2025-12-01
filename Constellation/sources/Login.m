@@ -186,6 +186,23 @@ handleLoginResponse[response_Association, remember:True | False, email_String]:=
 		ConnectToTrace["Production"];
 	];
 
+	(* Install compiled shared libraries containing advanced analysis functionality when in CommandCenter only. *)
+	(* For now, this means any advanced apps (like AdvancedAnalyzePeaks) will not be accessible elsewhere,      *)
+	(* Such as in plain Mathematica, Engine, etc.                                                               *)
+	If[SameQ[ECL`$ECLApplication, ECL`CommandCenter],
+		(*If the download or extraction fails, do so silently.  At the moment, the advanced analysis apps are not *)
+		(*  critical for SLL functionality.  When it is ready for GA, we can issue a message indicating what went wrong. *)
+		Quiet[
+			ExtractArchive[
+				ECL`DownloadCloudFile[ECL`Object[ECL`EmeraldCloudFile, "id:XnlV5jOzp1Kb"],
+				$TemporaryDirectory
+			],
+				FileNameJoin[{$UserBaseDirectory, "Applications"}],
+				OverwriteTarget -> True
+			]
+		]
+	];
+
 	(* 
 		log some details about loading and building (if it happened)
 		these use TraceExpression so can't run it until logged in

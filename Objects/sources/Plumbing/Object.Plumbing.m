@@ -440,6 +440,13 @@ DefineObjectType[Object[Plumbing], {
 			Headers -> {"Date","Change Type","Container","Position","Responsible Party"},
 			Category -> "Storage Information"
 		},
+		DateLastMoved->{
+			Format->Single,
+			Class->Date,
+			Pattern:>_?DateObjectQ,
+			Description->"Date this plumbing was moved to a different container or instrument.",
+			Category->"Storage Information"
+		},
 		AsepticTransportContainerType -> {
 			Format -> Single,
 			Class -> Expression,

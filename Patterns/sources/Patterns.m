@@ -415,7 +415,7 @@ ProtocolEventP=Alternatives[
 (*FilterTypeP*)
 
 
-FilterFormatP=Alternatives[Disk, Membrane, BottleTop, Centrifuge, CrossFlowFiltration, G2InLine, G2ProbeTip];
+FilterFormatP=Alternatives[Disk, Membrane, BottleTop, Centrifuge, CrossFlowFiltration, G2InLine, QLADVInnerFilter];
 
 
 (* ::Subsubsection::Closed:: *)
@@ -7878,6 +7878,7 @@ EmeraldDepartmentP=Alternatives[
 	GeneralAndAdministrative,
 	LaboratoryOperations,
 	Operations,
+	OperationsMetrics,
 	Research,
 	Sales,
 	ScientificComputing,
@@ -8992,7 +8993,7 @@ DissolutionStrategyP=Alternatives[Paddle,Basket];
 
 (* ::Subsubsection::*)
 (*Filtration types used for dissolution*)
-DissolutionFiltrationTypeP=Alternatives[InLineFiltration,AutosamplerFiltration,CannulaTipFiltration];
+DissolutionFiltrationTypeP=Alternatives[InLineFiltration,AutosamplerFiltration,DualFiltration];
 
 (* ::Subsubsection::Closed:: *)
 (*SampleDescriptionP*)
@@ -9912,10 +9913,15 @@ FootprintP = Alternatives[
 	DissolutionVessel1L,
 	DistekBasket,
 	Eclipse5300AutosamplerRack,
+	G2SampleProbe,
 	G2SampleProbeFilter,
-	G2ProbeTip,
+	G2SampleProbeRack,
+	QLADVInnerFilter,
+	DissolutionCANProbe,
 	Distek2500RTDShaftAgitator,
 	Distek2500RTDShaft,
+	DissolutionCornerRail,
+	DissolutionRail,
 	(* Footprint specifically used by QualificationEngineBenchmark for re-racking/storage tests *)
 	BenchmarkTestFootprint,
 	(* storage container footprints *)
@@ -11057,7 +11063,7 @@ CoverFootprintP = Alternatives[
 	CapPlace37x8, CapPlace38x8, CapPlace51x125, CapPlace94x85, CapPlace94x7,CapPlace95x6, 
 	CapPlaceBottle64x68, CapPlaceTube16x15, CapPlaceTube26x18,CapScrewBottle32x149,
 	CapPlaceTube40x31, CapPlaceTubeBellTop26x18, CapScrewBottle103x34,
-	CapScrewBottle104x20, CapScrewBottle113x17, CapScrewBottle114x21, CapScrewBottle122x25,
+	CapScrewBottle104x20, CapScrewBottle113x17, CapScrewBottle114x21, CapScrewBottle122x25,CapScrewBottle122x162,
 	CapScrewBottle127x267, CapScrewBottle127x67, CapScrewBottle12x18,
 	CapScrewBottle12x7, CapScrewTube15x5, CapScrewTube15x7, CapScrewBottle15x9,
 	CapScrewBottle166x48, CapScrewBottle16x19, CapScrewBottle16x9, CapScrewBottle175x35,
@@ -11122,7 +11128,7 @@ CoverFootprintP = Alternatives[
 	CapScrewBottle295x60,
 	CapScrewCarboy104x31, CapScrewCarboy74x23, CapScrewCartridge12x10,
 	CapScrewColumn7x13, CapScrewCuvette18x17, CapScrewDropletBottle18x25,
-	CapScrewDrum42x14, CapScrewFlask26x16, CapScrewFlask32x20,
+	CapScrewDrum42x14, CapScrewDrum50x5, CapScrewFlask26x16, CapScrewFlask32x20,
 	CapScrewFlask34x22, CapScrewFlask38x30, CapScrewFlask49x30,
 	CapScrewReactor20x17, CapScrewReactor32x40, CapScrewReactor41x25,
 	CapScrewReservoir145x27, CapScrewTank168x110, CapScrewTube9x7, CapScrewTube10x17,
@@ -11528,6 +11534,7 @@ FieldCategoryP=Alternatives[
 	"Precipitation",
 	"Aspiration",
 	"Dispensing",
+	"Prewet Labware",
 
 	(* For Object[Report,Inventory] and Object[Transaction] *)
 	"Order Activity",
@@ -14063,3 +14070,16 @@ UploadContainerModelTypeStringP = Alternatives[
 	"Others"
 ];
 
+
+
+(* ::Subsubsection::Closed:: *)
+(*CalibrationReportTypeP*)
+
+CalibrationReportTypeP = Alternatives[
+	(* for CalibratePlateReader *)
+	_?(StringMatchQ[#, ("Pump" | "Position" | "Wavelength") ~~	"_Calibration.html"] &),
+
+	(* for CalibrateThermocycler *)
+	(* TODO: Placeholder currently; will make this more specific when creating the procedure *)
+	_?(StringMatchQ[#, "ViiA7_Calibration" ~~ (".eds"|".txt"|".xlsx")] &)
+];

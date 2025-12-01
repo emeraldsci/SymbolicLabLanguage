@@ -527,7 +527,13 @@ validInstrumentBalanceQTests[packet:PacketP[Object[Instrument,Balance]]]:={
 		WasteContainer,
 		ArgonValve,
 		NitrogenValve
-	}]
+	}],
+
+	(* only one camera exists for monitoring the "Weighing Slot" of the balance *)
+	Test["Each balance has exactly one camera that monitors its \"Weighing Slot\":",
+		Count[Lookup[packet, Cameras], {"Weighing Slot", LinkP[Object[Part, Camera]]}],
+		1
+	]
 };
 
 validInstrumentDistanceGaugeQTests[packet:PacketP[Object[Instrument,DistanceGauge]]]:={
@@ -2420,7 +2426,19 @@ validInstrumentGravityRackQTests[packet:PacketP[Object[Instrument,GravityRack]]]
 (*validInstrumentHandlingStationQTests*)
 
 
-validInstrumentHandlingStationQTests[packet:PacketP[Object[Instrument,HandlingStation]]]:={};
+validInstrumentHandlingStationQTests[packet:PacketP[Object[Instrument,HandlingStation]]]:={
+	Test["BalanceType of the object matches up with its model's Field[BalanceType]:",
+		Module[{balanceTypes, modelBalanceTypes},
+			balanceTypes = Sort[DeleteDuplicates[Download[Lookup[packet, Balances], Mode]]];
+
+			(* get the balance types that we should find in this object from model *)
+			modelBalanceTypes = Sort[DeleteDuplicates[Download[Lookup[packet, Model], BalanceType]]];
+
+			MatchQ[balanceTypes, modelBalanceTypes]
+		],
+		True
+	]
+};
 
 
 (* ::Subsection::Closed:: *)

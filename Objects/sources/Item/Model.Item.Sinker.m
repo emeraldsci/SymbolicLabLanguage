@@ -41,3 +41,4 @@ DefineObjectType[Model[Item, Sinker], {
 		}
 	}
 }];
+

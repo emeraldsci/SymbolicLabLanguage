@@ -21,7 +21,7 @@ $TransferBalanceBenchModel = Model[Container, Bench, "id:J8AY5jwRw5o9"];
 (* $HighTechSchlenkLineTransferEnvironments is currently not used in Transfer since there is no room in that hood and also the instructions need to be updated *)
 (* Keeping this hard-coded value for future reference *)
 (* Note that the SchlenkLine field of this fume hood is NOT populated *)
-$HighTechSchlenkLineTransferEnvironments={Object[Instrument, FumeHood, "id:mnk9jOkaVWbm"](*"E6 Hood 1"*)};
+$HighTechSchlenkLineTransferEnvironments={Object[Instrument, HandlingStation, FumeHood, "id:lYq9jRO71WXY"](*"E6 Hood 1"*)};
 
 (* NOTE: These are the single probes ONLY. *)
 $WorkCellProbes={SingleProbe1, SingleProbe2, SingleProbe3, SingleProbe4, SingleProbe5, SingleProbe6, SingleProbe7, SingleProbe8};
@@ -82,9 +82,9 @@ $MicroBalanceCompatibleWeighingContainerModels = {Model[Item, WeighBoat, Weighin
 (* definitely add more to this list as we discover more, i.e. fumehood containing pH meter and schlenk lines *)
 $SpecializedHandlingStationModels = {
 	Model[Instrument, HandlingStation, FumeHood, "id:aXRlGn0rDJGB"], (* Model[Instrument, HandlingStation, FumeHood, "Fume Hood Handling Station with Schlenk Line"] *)
-	Model[Instrument, HandlingStation, FumeHood, "id:1ZA60vzObqa0"] (* Model[Instrument, HandlingStation, FumeHood, "Fumehood with pHMeter"] *)
+	Model[Instrument, HandlingStation, FumeHood, "id:1ZA60vzObqa0"], (* Model[Instrument, HandlingStation, FumeHood, "Fumehood with pHMeter"] *)
+	Model[Instrument, HandlingStation, FumeHood, "id:O81aEBlPJMex"] (* Model[Instrument, HandlingStation, FumeHood, "Fume Hood Handling Station for Waste Disposal"] *)
 };
-
 
 (* ::Subsubsection:: *)
 (*ExperimentTransfer Options*)
@@ -374,7 +374,7 @@ DefineOptions[ExperimentTransfer,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
 				Description -> "Indicates if any residual sample transferred into the intermediate container should be transferred back to the source sample. This option can only be set to True for Object[Sample] source.",
-				Category -> "General"
+				Category -> "Intermediate Decanting"
 			},
 			{
 				OptionName -> BalanceCleaningMethod,
@@ -389,6 +389,27 @@ DefineOptions[ExperimentTransfer,
 				OptionName -> OverdrawVolume,
 				Default -> Automatic,
 				Description -> "When performing a syringe transfer, the amount with which to fill the syringe with to allow for the removal of air from the syringe body, determined by adding the specified Amount and a calculated extra volume based on the needle and syringe used.",
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[0.1 Microliter, 20 Liter],
+					Units -> {1, {Microliter, {Microliter, Milliliter, Liter}}}
+				],
+				Category -> "Hidden"
+			},
+			{
+				OptionName -> BalanceReblanking,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[Always,AsNecessary,None]],
+				Description -> "Indicates the type of re-weighing performed on the balance if material loss is detected or stray material is present. Always indicates weighing container replacement whenever there is any material loss detected OR there is stray material on the outside. AsNecessary indicates weighing container replacement when there is stray material on the outside and cleaning without replacement when the outside is clean and only something is on the balance. None indicates cleaning of weighing container whenever there is any material loss detected OR there is stray material on the outside.",
+				ResolutionDescription -> "Automatically set to AsNecessary if weighing container is replaceable. Otherwise, resolves to None.",
+				Category -> "General"
+			},
+			{
+				OptionName -> DecantAmount,
+				Default -> Automatic,
+				Description -> "When performing transfer with intermediate container, the amount of source sample that is decant into intermediate container.",
 				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Quantity,
@@ -483,6 +504,7 @@ DefineOptions[ExperimentTransfer,
 		RNaseFreeTechniqueOption,
 		CountAsPassageOptions,
 		TransferCoverOptions,
+		PrewetLabwareOptions,
 
 		{
 			OptionName -> FillToVolume,
@@ -636,11 +658,11 @@ Error::AspiratorRequiresSterileTransfer="Transfers using an aspirator, including
 Error::InvalidBackfillGas="All transfers that specify the need for BackfillGas must either occur in a Instrument that is equipped with the correct gas pipe. The manipulations at indices, `3`, have a TransferEnvironment of `1` (check the ArgonHermeticTransfer/NitrogenHermeticTransfer field of the ProvidedHandlingConditions) that is not capable of fulfilling BackfillGas of `2`. If you want this transfer to occur with no BackFill needed, please specify UnsealHermeticSource->True, or reset BackfillGas TransferEnvironment options to Automatic to continue.";
 Error::TransferEnvironmentBalanceCombination="The balance(s) requested, `1`, at manipulation indices, `4`, are not located in the given transfer environment(s), `2`. The available balance models in these transfer environment(s) are, `3`. Please specify another transfer environment for the transfer to occur in or specify a different balance.";
 Error::TransferEnvironmentInstrumentCombination="The instrument(s) requested, `1`, at manipulation indices, `3`, do not have the same CultureHandling or AsepticHandling value as the given transfer environment(s), `2`. Please specify another transfer environment for the transfer to occur in or specify a different instrument.";
-Error::AspiratableOrDispensableFalse="The source containers at indices, `1`, have Aspiratable->False specified in their container models. The destination containers at indices, `2`, have Dispensable->False in their container models. Due to these invalid containers, the transfer cannot be performed. Please choose alternative sources/destinations to transfer to/from.";
 Error::InvalidTransferTemperatureGloveBox="All transfers that occur in the glove box cannot have a non-Ambient/25 Celsius SourceTemperature or DestinationTemperature specified since hot/cold transfers cannot be performed in the glove box. The manipulations at indices, `2`, that are specified to occur in the TransferEnvironment(s), `1`, have a non-Ambient SourceTemperature/DestinationTemperature. Please do not specify a SourceTemperature/DestinationTemperature if the transfer is to occur in the glove box.";
 Error::IncompatibleTransferDestinationContainer="The following source sample(s) `1` at manipulation indices, `2` are incompatible to the corresponding destination(s) `3` containing material(s) `4`. Please select destination(s) that do(es) not have ContainerMaterials which are members of the IncompatibleMaterials of the source sample(s).";
 Error::IncompatibleTransferIntermediateContainer="The following source sample(s) `1` at manipulation indices, `2` are incompatible to the corresponding intermediate container(s) `3` containing material(s) `4`. Please specify IntermediateContainer that do(es) not have ContainerMaterials which are members of the IncompatibleMaterials of the source sample(s).";
 Error::RecoupContamination="The following source sample(s) `1` at manipulation indices, `2` are not private samples while IntermediateDecantRecoup option is set to True, which can potentially result in cross-contamination of a public sample while fulfilling the source model sample (if any). Please replace the problematic source sample with an explicit object sample that can be used by your financing team, or set IntermediateDecantRecoup option to False.";
+Error::InvalidRecoup="The following source sample(s) `1` at manipulation indices, `2`, are not possible to recoup the sample back in because one or more of the following reasons: 1) it is a squeezable, hermetic, or explicitly non-dispensable container; 2) the hand pump is used. Please set IntermediateDecantRecoup to False, use a different source sample in a different container, or leave the HandPump option automatic and try again.";
 Error::IncompatibleQuantitativeTransferWeighingContainer="The following container(s) `2` at manipulation indices `3` are incompatible with QuantitativeTransfer `1`. Please set WeighingContainer to a Model[Item,WeighBoat] or Model[Item,WeighBoat,WeighingFunnel] when QuantitativeTransfer is True or allow to resolve automatically.";
 Error::NoCompatibleWeighingContainer="The transfers at  manipulation indices `1` require WeighingContainer (`2`) but no compatible ones were found. Please check the transfer amount, destination Aperture, and IncompatibleMaterials of the sample and QuantitativeTransferWashSolution (if applicable).  If Mode is Micro, only "<>ToString[$MicroBalanceCompatibleWeighingContainerModels, InputForm]<>" can be used. Please modify either amount to trasfer, destination container or quantitative transfer parameters or allow to resolve automatically.";
 Error::IncompatibleWeighingContainer="The following specified WeighingContainer (`1`) at manipulation indices (`2`) are not compatible with the transfer parameters specified. Weighing container must be compatible with the specified transfer amount, destination container Aperture, and should not include any specified IncompatibleMaterials for the sample or QuantitativeTransferWashSolution (if applicable). If Mode is Micro, only "<>ToString[$MicroBalanceCompatibleWeighingContainerModels, InputForm]<>" can be used. Please modify the specified WeighingContainer or allow to resolve automatically.";
@@ -657,7 +679,9 @@ Error::TransferInstrumentRequired="The manipulations at indices, `2`, have Instr
 Error::PlateTransferInstrumentRequired="The source samples at manipulation indices, `2`, are located in, `1`. However, these transfers are specified to occur via pouring (Instrument->Null). Transfers via pouring cannot occur if the source sample is in a plate (a container with more than one position). Please specify a different source sample or let the Instrument option automatically resolve.";
 Error::ToleranceLessThanBalanceResolution="The tolerances, `1`, given at manipulation indices, `3`, are less than the achievable Resolution of the Balances given, `2`. Please specify a tolerance that is greater than the Resolution of the balance or specify a different balance to perform the transfer";
 Error::InvalidIntermediateFunnel="The intermediate funnel(s), `1`, at manipulation indices, `4`, must have a StemDiameter less than or equal to, `2`, (to fit into the intermediate container) and must not be made up of any of the source sample's IncompatibleMaterials, `3`. Please choose a different Funnel or let the option resolve automatically.";
-Error::InvalidDestinationFunnel="The funnel(s), `1`, at manipulation indices, `5`, must have a StemDiameter less than or equal to, `2`, (to fit into the destination container), must not be made up of any of the source sample's IncompatibleMaterials, `3`, and must be of FunnelType, `4`. Please choose a different Funnel or let the option resolve automatically.";
+Error::InvalidDestinationFunnel="The funnel(s), `1`, at manipulation indices, `4`, must have a StemDiameter less than or equal to, `2`, (to fit into the destination container), must not be made up of any of the source sample's IncompatibleMaterials, `3`. Please choose a different Funnel or let the option resolve automatically.";
+Warning::ConflictDestinationFunnelType="The type of funnel(s), `1`, at manipulation indices, `3`, for destination container does not align with the sample state. The expected FunnelType is `2`. Normally, Wet funnel is used to help with Liquid sample, and Dry funnel is used for Solid sample.";
+Warning::ConflictIntermediateFunnelType="The type of funnel(s), `1`, at manipulation indices, `3`, for intermediate container does not align with the sample state. The expected FunnelType is `2`. Normally, Wet funnel is used to help with Liquid sample, and Dry funnel is used for Solid sample.";
 Error::AqueousGloveBoxSamples="The following samples, `1`, at manipulation indices, `2`, either have Model[Molecule, \"Water\"] in their Composition or are marked Aqueous->True. Aqueous samples cannot be manipulated in the glove box. Please choose different samples or a different transfer environment.";
 Warning::NonAnhydrousSample="The following liquid samples, `1`, at manipulation indices, `2`, are not marked as Anhydrous->True. Please verify that these samples will not invalidate the atmosphere of the glove box. Any damage that is done to the glove box will be billed to the user and could result in the loss of ECL privileges.";
 Error::MultichannelPipetteRequired="The manipulations at indices, `2`, have MultichannelTransfer->True but do not have a Multichannel Pipette/Aspirator set for their Instrument option (`1`). If MultichannelTransfer->True, a multichannel pipette/aspirator must be used to perform the transfer. Please let the Instrument option resolve automatically.";
@@ -689,6 +713,16 @@ Error::InvalidTransferNonDisposalSourceStorageCondition = "The source samples, `
 Error::NoTransferEnvironmentAvailable = " The manipulation(s) at indices, `1`, cannot find an available TransferEnvironment to transfer from source(s), `2`, to destination(s), `3`, for the following reasons: `4`. Please correct the input accordingly and try again.";
 Error::InvalidTransferEnvironment = "The manipulation(s) at indices, `1` have TransferEnvironment, `2`, that is not suitable for the transfer due to the following reasons: `3`. Please correct the relevant options accordingly and try again.";
 Error::VolatileHazardousSamplesInBSC = "Recirculating biosafety cabinets cannot safely handle volatile hazardous materials. `1` Please use alternative chemicals or use a chemical fume hood as the TransferEnvironment.";
+Error::InvalidBalanceReblanking = "The manipulation(s) at indices, `2` have BalanceReblanking, `1`, that is not suitable for the weighing container: `3`. BalanceReblanking can be specified as Always or AsNecessary only if the weighing container is replaceable. Please correct the relevant options accordingly and try again.";
+Error::InvalidPrewetDestination = "The PrewetLabware (`1`) for destination container(s) (`2`) at manipulation indices `3` are not valid. PrewetLabware of Model[Container,Plate] is not supported. Please modify the PrewetLabware option or allow to resolve automatically.";
+Error::IncompatiblePrewetLabwareOptions = "The PrewetLabware options (`1`) at manipulation indices `2`, respectively, are not compatible with each other. If PrewetLabware is True, NumberOfPrewetWashes cannot be Null. If PrewetLabware is False, NumberOfPrewetLabware must be Null. Please modify the incompatible options or allow to resolve automatically.";
+Warning::InvalidPrewetLabware = "The PrewetLabware option are `1` for manipulations indices `2` even though the destination is not empty. Prewetting will be done for all labware except for the destination container.";
+Error::InvalidPrewetWashSolution = "The PrewetWashSolution specified (`1`) at manipulation indices `2` are not of the same model as the Source. Please use the source as the PrewetWashSolution or allow to resolve automatically.";
+Error::NoPrewetWashSolutionFound = "No PrewetWashSolution is specified or found for manipulation indices `1`. If PrewetLabware is True, please specify an PrewetWashSolution which should either be the same as model as the liquid source, or the Solvent of a succeeding FTV or the liquid Source of a succeeding Transfer, in an MSP.";
+Error::InvalidPrewetWashVolume = "The specified PrewetWashVolume `1` at manipulation indices `2` are less than the calculated required PrewetWashVolume. Please allow to resolve automatically.";
+Error::CannotKeepSourceCovered = "The source container(s), `2`, at indices, `1`, cannot be kept covered during transfer due to: `3`. Please correct the relevant options accordingly and try again.";
+Error::CannotKeepDestinationCovered = "The destination container(s), `2`, at indices, `1`, cannot be kept covered during transfer due to: `3`. Please correct the relevant options accordingly and try again.";
+
 
 (*ExperimentTransfer*)
 
@@ -788,6 +822,7 @@ ExperimentTransfer[
 		suppliedQuantitativeTransferWashInstrument,suppliedQuantitativeTransferWashTips,suppliedBackfillNeedle,suppliedVentingNeedle,suppliedTipRinseSolution,
 		suppliedIntermediateContainer,suppliedDestinationWells,suppliedTransferEnvironments,suppliedFunnels,suppliedIntermediateFunnel,
 		suppliedSourceWells,suppliedMagnetizationRacks,suppliedKeepInstruments,suppliedDestinationRack, suppliedPipettingMethod, parentProtocol, preparedResources, suppliedCollectionContainers,
+		suppliedPrewetWashSolution,
 
 		objectSampleFields, objectSamplePacketFields, modelSamplePacketFields, objectContainerFields, objectContainerPacketFields,
 		modelContainerFields, modelContainerPacketFields, productFields, pipettingMethodFields, pipettingMethodPacketFields,
@@ -795,7 +830,7 @@ ExperimentTransfer[
 		simulatedDestinationContainerObjects, simulatedCollectionContainerObjects, allTransferModelPackets,
 
 		downloadObjects, downloadFields, simulatedSources, simulatedDestinations, listedSourcesAndDests,
-		allDownloadedStuff, userSpecifiedObjectsStatus, notDiscardedSampleQs, samplesNotDiscardedTests
+		allDownloadedStuff, userSpecifiedObjectsStatus, notDiscardedSampleQs, samplesNotDiscardedTests, modelSampleFields
 	},
 
 	(* Determine the requested return value from the function *)
@@ -975,13 +1010,15 @@ ExperimentTransfer[
 		suppliedInstrument, suppliedBalance, suppliedTips, suppliedNeedles, suppliedWeighingContainers, suppliedHandPumps, suppliedQuantitativeTransferWashSolution,
 		suppliedQuantitativeTransferWashInstrument, suppliedQuantitativeTransferWashTips, suppliedBackfillNeedle, suppliedVentingNeedle, suppliedTipRinseSolution,
 		suppliedIntermediateContainer, suppliedDestinationWells, suppliedTransferEnvironments, suppliedFunnels, suppliedIntermediateFunnel,
-		suppliedSourceWells, suppliedMagnetizationRacks, suppliedKeepInstruments, suppliedDestinationRack, suppliedPipettingMethod, parentProtocol, preparedResources, suppliedCollectionContainers
+		suppliedSourceWells, suppliedMagnetizationRacks, suppliedKeepInstruments, suppliedDestinationRack, suppliedPipettingMethod, parentProtocol, preparedResources, suppliedCollectionContainers,
+		suppliedPrewetWashSolution
 	} = Lookup[transferOptionsAssociation,
 		{
 			Instrument, Balance, Tips, Needle, WeighingContainer, HandPump, QuantitativeTransferWashSolution, QuantitativeTransferWashInstrument,
 			QuantitativeTransferWashTips, BackfillNeedle, VentingNeedle, TipRinseSolution,
 			IntermediateContainer, DestinationWell, TransferEnvironment, Funnel, IntermediateFunnel,
-			SourceWell, MagnetizationRack, KeepInstruments, DestinationRack, PipettingMethod, ParentProtocol, PreparedResources, CollectionContainer
+			SourceWell, MagnetizationRack, KeepInstruments, DestinationRack, PipettingMethod, ParentProtocol, PreparedResources, CollectionContainer,
+			PrewetWashSolution
 		}
 	];
 
@@ -990,8 +1027,9 @@ ExperimentTransfer[
 		KeepCovered, Position, Well, Density, ReversePipetting, ParticleWeight, Volume, Mass, SampleHandling, Fuming, Ventilated, Anhydrous,
 		Living, CellType, InertHandling, AsepticHandling, Pyrophoric, State, Container, IncompatibleMaterials, Notebook, SamplePreparationCacheFields[Object[Sample]]}]];
 	objectSamplePacketFields = Packet @@ objectSampleFields;
-	modelSamplePacketFields = Packet @@ Flatten[{Parafilm, AluminumFoil, PipettingMethod, TransferTemperature, TransportCondition, Living, Anhydrous,
-		Density, Products, IncompatibleMaterials, SamplePreparationCacheFields[Model[Sample]]}];
+	modelSampleFields = Flatten[{Parafilm, AluminumFoil, PipettingMethod, TransferTemperature, TransportCondition, Living, Anhydrous,
+		Density, Products, State, IncompatibleMaterials, ForeignMaterialContactDisallowed, SamplePreparationCacheFields[Model[Sample]]}];
+	modelSamplePacketFields = Packet @@ modelSampleFields;
 	objectContainerFields = DeleteDuplicates[Flatten[{Hermetic, PreviousCover, Cover, Septum, Parafilm, AluminumFoil, KeepCovered, Notebook,
 		Name, Status, Sterile, Counted, TareWeight, Weight, SolutionVolume, Dimensions,Footprint,InternalDepth,StorageCondition,ContainerMaterials, RequestedResources, KitComponents, Site, SamplePreparationCacheFields[Object[Container]]}]];
 	objectContainerPacketFields = Packet @@ objectContainerFields;
@@ -1082,28 +1120,30 @@ ExperimentTransfer[
 		(* want to Download from the models and objects for the quantitative transfer wash solution and tip rinse solution *)
 		(*35*)DeleteDuplicates@Cases[suppliedQuantitativeTransferWashSolution, ObjectP[{Model[Sample], Object[Sample]}]],
 		(*36*)DeleteDuplicates@Cases[suppliedTipRinseSolution, ObjectP[{Model[Sample], Object[Sample]}]],
-		(*37*)DeleteDuplicates@Cases[suppliedIntermediateContainer, ObjectP[Object[Container]]],
-		(*38*)DeleteDuplicates@Cases[suppliedIntermediateContainer, ObjectP[Model[Container]]],
+		(*37*)DeleteDuplicates@Cases[suppliedPrewetWashSolution, ObjectP[{Model[Sample], Object[Sample]}]],
+		(*38*)DeleteDuplicates@Cases[suppliedIntermediateContainer, ObjectP[Object[Container]]],
+		(*39*)DeleteDuplicates@Cases[suppliedIntermediateContainer, ObjectP[Model[Container]]],
 
-		(*39*)DeleteDuplicates@Cases[suppliedTransferEnvironments, ObjectP[Object[]]],
+		(*40*)DeleteDuplicates@Cases[suppliedTransferEnvironments, ObjectP[Object[]]],
 
-		(*40*)DeleteDuplicates@Cases[Flatten[{suppliedFunnels, suppliedIntermediateFunnel}], ObjectP[Object[]]],
+		(*41*)DeleteDuplicates@Cases[Flatten[{suppliedFunnels, suppliedIntermediateFunnel}], ObjectP[Object[]]],
 
-		(*41*)DeleteDuplicates@Cases[suppliedMagnetizationRacks, ObjectP[Object[Container, Rack]]],
+		(*42*)DeleteDuplicates@Cases[suppliedMagnetizationRacks, ObjectP[Object[Container, Rack]]],
 
-		(*42*)DeleteDuplicates@Download[Cases[Flatten[{suppliedPipettingMethod, Model[Method, Pipetting, "id:qdkmxzqkJlw1"]}], ObjectP[Model[Method, Pipetting]], Infinity], Object],
+		(*43*)DeleteDuplicates@Download[Cases[Flatten[{suppliedPipettingMethod, Model[Method, Pipetting, "id:qdkmxzqkJlw1"]}], ObjectP[Model[Method, Pipetting]], Infinity], Object],
 
-		(*43*){$PersonID},
+		(*44*){$PersonID},
 
-		(*44*){parentProtocol},
+		(*45*){parentProtocol},
 
-		(*45*)ToList[preparedResources],
+		(*46*)ToList[preparedResources],
 
-		(*46*)simulatedCollectionContainerObjects,
 		(*47*)simulatedCollectionContainerObjects,
-		(*48*)Flatten[{simulatedCollectionContainerObjects,simulatedContainerObjects}],
-		(*49*)simulatedSampleObjects,
-		(*50*){$DefaultQuantitativeTransferWashSolution}
+		(*48*)simulatedCollectionContainerObjects,
+		(*49*)Flatten[{simulatedCollectionContainerObjects,simulatedContainerObjects}],
+		(*50*)simulatedSampleObjects,
+		(*51*){$DefaultQuantitativeTransferWashSolution},
+		(*52*)simulatedSampleObjects
 	};
 	downloadFields = {
 		(*1*)List@objectSamplePacketFields,
@@ -1161,31 +1201,33 @@ ExperimentTransfer[
 
 		(*34*)List@Packet[Object,Model], (* suppliedHandPumps *)
 
-		(*35*){Packet[Object, Volume, Container, IncompatibleMaterials, Density, Fuming, Ventilated], Packet[Container[objectContainerFields]], Packet[Container[Model][modelContainerFields]]}, (* suppliedQuantitativeTransferWashSolution *)
+		(*35*){Packet[Model, Volume, Container, IncompatibleMaterials, Density, Fuming, Ventilated], Packet[Model[IncompatibleMaterials, Density, Fuming, Ventilated]], Packet[Container[objectContainerFields]], Packet[Container[Model][modelContainerFields]]}, (* suppliedQuantitativeTransferWashSolution *)
 
-		(*36*)List@Packet[Object, Volume, Container, IncompatibleMaterials, Fuming, Ventilated], (* suppliedTipRinseSolutionPackets *)
+		(*36*){Packet[Model, Volume, Container, IncompatibleMaterials, Density, Fuming, Ventilated], Packet[Model[IncompatibleMaterials, Density, Fuming, Ventilated]]}, (* suppliedTipRinseSolutionPackets *)
 
-		(*37*){Packet[Model[modelContainerFields]], objectContainerPacketFields, Packet[Model[VolumeCalibrations][{CalibrationFunction, EmptyDistanceDistribution, WellEmptyDistanceDistributions, TareDistanceDistribution}]]}, (* suppliedIntermediateContainerObjectPackets *)
-		(*38*){modelContainerPacketFields, Packet[VolumeCalibrations[{CalibrationFunction, EmptyDistanceDistribution, WellEmptyDistanceDistributions, TareDistanceDistribution}]]}, (* suppliedIntermediateContainerModelPackets *)
+		(*37*){Packet[Model, Volume, Container, IncompatibleMaterials, Density, Fuming, Ventilated], Packet[Model[IncompatibleMaterials, Density, Fuming, Ventilated]], Packet[Container[objectContainerFields]], Packet[Container[Model][modelContainerFields]]}, (* suppliedPrewetWashSolution *)
+
+		(*38*){Packet[Model[modelContainerFields]], objectContainerPacketFields, Packet[Model[VolumeCalibrations][{CalibrationFunction, EmptyDistanceDistribution, WellEmptyDistanceDistributions, TareDistanceDistribution}]]}, (* suppliedIntermediateContainerObjectPackets *)
+		(*39*){modelContainerPacketFields, Packet[VolumeCalibrations[{CalibrationFunction, EmptyDistanceDistribution, WellEmptyDistanceDistributions, TareDistanceDistribution}]]}, (* suppliedIntermediateContainerModelPackets *)
 
 		(* NOTE: Kind of weird, but we have the balances of each transfer environment also included in these packet lists. *)
 		(* This is to make sure that we can fulfill the requested balance after given a transfer environment. *)
 
 		(* NOTE: We also download the contents of these transfer environment objects to see what pipettes are stored in them. *)
-		(*39*){Packet[Model, Contents, Pipettes, Balances, IRProbe, SchlenkLine, BiosafetyWasteBin, Status, DeveloperObject, Site], Packet[Pipettes[{Model}]], Packet[Balances[{Model}]], Packet[Balances[Model][{Mode, MinWeight, AllowedMaxVariation}]], Packet[Model[{Positions, AsepticHandling, DefaultBiosafetyWasteBinModel, CultureHandling, BalanceType, Objects, DeveloperObject, ProvidedHandlingConditions, LocalCacheContents}]]}, (* suppliedTransferEnvironmentPackets *)
+		(*40*){Packet[Model, Contents, Pipettes, Balances, IRProbe, SchlenkLine, BiosafetyWasteBin, Status, DeveloperObject, Site], Packet[Pipettes[{Model}]], Packet[Balances[{Model}]], Packet[Balances[Model][{Mode, MinWeight, AllowedMaxVariation}]], Packet[Model[{Positions, AsepticHandling, DefaultBiosafetyWasteBinModel, CultureHandling, BalanceType, Objects, DeveloperObject, ProvidedHandlingConditions, LocalCacheContents}]]}, (* suppliedTransferEnvironmentPackets *)
 
-		(*40*){Packet[Model[{Name, StemDiameter, FunnelType}]], Packet[Model]}, (* suppliedFunnelPackets *)
+		(*41*){Packet[Model[{Name, StemDiameter, MouthDiameter, FunnelType}]], Packet[Model]}, (* suppliedFunnelPackets *)
 
-		(*41*){Packet[Model[{Name, Magnetized, Positions}]], Packet[Model]}, (* suppliedRackPackets *)
+		(*42*){Packet[Model[{Name, Magnetized, Positions}]], Packet[Model]}, (* suppliedRackPackets *)
 
-		(*42*){pipettingMethodPacketFields}, (*suppliedPipettingMethod*)
+		(*43*){pipettingMethodPacketFields}, (*suppliedPipettingMethod*)
 
-		(*43*){
+		(*44*){
 			Packet[FinancingTeams[{Notebooks, NotebooksFinanced}]],
 			Packet[SharingTeams[{Notebooks, NotebooksFinanced, ViewOnly}]]
 		},
 
-		(*44*){
+		(*45*){
 			Packet[ParentProtocol, PreparedResources, OutputUnitOperations, Site, Author],
 			Packet[Repeated[ParentProtocol][{ParentProtocol, Author, Site}]],
 			Packet[Repeated[ParentProtocol][Author][{FinancingTeams, SharingTeams}]],
@@ -1196,19 +1238,20 @@ ExperimentTransfer[
 			Packet[PreparedResources[{RentContainer, Fresh}]]
 		},
 
-		(*45*){Packet[RentContainer, Fresh]},
+		(*46*){Packet[RentContainer, Fresh]},
 
-		(*46*)List@objectContainerPacketFields,
-		(*47*)List@Packet[Model[modelContainerFields]],
-		(*48*){
+		(*47*)List@objectContainerPacketFields,
+		(*48*)List@Packet[Model[modelContainerFields]],
+		(*49*){
 			Packet[Cover[{Reusable, Model, Name}]],
 			Packet[Cover[Model][{CoverType, CoverFootprint, CrimpType, SeptumRequired, TaperGroundJointSize, Opaque, Reusable, EngineDefault, Barcode, CrimpingPressure, Name}]]
 		},
-		(*49*){
+		(*50*){
 			Packet[Container[Cover][{Reusable, Model, Name}]],
 			Packet[Container[Cover][Model][{CoverType, CoverFootprint, CrimpType, SeptumRequired, TaperGroundJointSize, Opaque, Reusable, EngineDefault, Barcode, CrimpingPressure, Name}]]
 		},
-		(*50*){Packet[Object, Volume, Container, IncompatibleMaterials,Density], Packet[Container[objectContainerFields]], Packet[Container[Model][modelContainerFields]]} (* $DefaultQuantitativeTransferWashSolution *)
+		(*51*){Packet[Object, Volume, Container, IncompatibleMaterials,Density], Packet[Container[objectContainerFields]], Packet[Container[Model][modelContainerFields]]} (* $DefaultQuantitativeTransferWashSolution *),
+		(*52*){Packet[Model[modelSampleFields]]}
 	};
 
 	(* - Big Download to make cacheBall and get the inputs in order by ID - *)
@@ -1671,7 +1714,7 @@ transferModelPackets[myOptions_List]:=transferModelPackets[myOptions]=Module[
 	(* Find the objects for which we do not have packets for. *)
 	modelsNotInSearch=Complement[allModelsFromOptions, Flatten[searchResult]];
 
-	modelContainerFields=DeleteDuplicates[Flatten[{DeveloperObject, BuiltInCover, CoverTypes, CoverFootprints, Parafilm, AluminumFoil, CoverType, CoverFootprint, CrimpType, SeptumRequired, Opaque, Reusable, EngineDefault, NotchPositions, SealType,HorizontalPitch,VerticalPitch,VolumeCalibrations,Columns,Aperture,WellDepth,Sterile,RNaseFree,Squeezable,Material,Counted, TareWeight,Weight,SolutionVolume,Object,Positions,Hermetic,Ampoule,MaxVolume,ContainerMaterials, IncompatibleMaterials,Dimensions,FunnelStemDiameter,FunnelStemLength,Graduations,GraduationTypes,GraduationLabels,CrossSectionalShape,SamplePreparationCacheFields[Model[Container]]}]];
+	modelContainerFields=DeleteDuplicates[Flatten[{DeveloperObject, BuiltInCover, CoverTypes, CoverFootprints, Parafilm, AluminumFoil, CoverType, CoverFootprint, CrimpType, SeptumRequired, Opaque, Reusable, EngineDefault, NotchPositions, SealType,HorizontalPitch,VerticalPitch,VolumeCalibrations,Columns,Aperture,WellDepth,Sterile,RNaseFree,Squeezable,Material,Counted, TareWeight,Weight,SolutionVolume,Object,Positions,Hermetic,Ampoule,MaxVolume,ContainerMaterials, IncompatibleMaterials,Dimensions,FunnelStemDiameter,FunnelStemLength,Graduations,GraduationTypes,GraduationLabels,CrossSectionalShape,Resolution,SamplePreparationCacheFields[Model[Container]]}]];
 	modelContainerPacketFields=Packet@@modelContainerFields;
 
 	(* Download packets for these models. *)
@@ -1764,7 +1807,7 @@ transferModelPackets[myOptions_List]:=transferModelPackets[myOptions]=Module[
 				(*13*){Packet[CultureHandling, Objects, DefaultBiosafetyWasteBinModel], Packet[Objects[{Contents, Pipettes, Balances, IRProbe, SchlenkLine, BiosafetyWasteBin, Status, DeveloperObject, Site}]], Packet[Objects[Pipettes][{Model, DeveloperObject}]], Packet[Objects[Balances][{Model, DeveloperObject}]], Packet[Objects[Balances][Model][{Mode, MinWeight, AllowedMaxVariation, DeveloperObject}]]}, (* allBiosafetyCabinetPackets *)
 				(*14*){Packet[CultureHandling, Objects, DeveloperObject], Packet[Objects[{Contents, Balances, Status, DeveloperObject, Site}]], Packet[Objects[Balances][{Model, DeveloperObject}]], Packet[Objects[Balances][Model][{Mode, MinWeight, AllowedMaxVariation, DeveloperObject}]]}, (* allEnclosuresPackets *)
 				(*15*){Packet[CultureHandling, Objects], Packet[Objects[{Contents, Pipettes, Balances, IRProbe, SchlenkLine, Status, DeveloperObject, Site}]], Packet[Objects[Pipettes][{Model, DeveloperObject}]], Packet[Objects[Balances][{Model, DeveloperObject}]], Packet[Objects[Balances][Model][{Mode, MinWeight, AllowedMaxVariation, DeveloperObject}]]}, (* allBenchPackets *)
-				(*16*)List@Packet[Name, StemDiameter, ContainerMaterials, FunnelType, FunnelMaterial, DeveloperObject], (* allFunnelPackets *)
+				(*16*)List@Packet[Name, StemDiameter, MouthDiameter, ContainerMaterials, FunnelType, FunnelMaterial, DeveloperObject], (* allFunnelPackets *)
 				(*17*)List@Packet[Name, Magnetized, Positions, DeveloperObject], (* allRackModelPackets *)
 				(*18*)List@Packet[Name, MaxVolume, DeveloperObject],
 				(*19*)List@Packet[DispenseHeight, IntakeTubeLength],
@@ -1965,7 +2008,7 @@ nonDeprecatedTransferModelPackets[fakeString_]:=nonDeprecatedTransferModelPacket
 		DeveloperObject, MultiProbeHeadIncompatible, BuiltInCover, CoverTypes, CoverFootprints, Parafilm, AluminumFoil,
 		CoverType, CoverFootprint, CrimpType, SeptumRequired, Opaque, Reusable, EngineDefault, NotchPositions, SealType,
 		HorizontalPitch,VerticalPitch,VolumeCalibrations,Columns,Aperture,WellDepth,Sterile,RNaseFree,Squeezable,Material,Counted,
-		TareWeight,Weight,SolutionVolume,Object,Positions,Hermetic,Ampoule,MaxVolume,IncompatibleMaterials, Products, Dimensions, FunnelStemDiameter,FunnelStemLength,Graduations, GraduationTypes, GraduationLabels, CrossSectionalShape,SamplePreparationCacheFields[Model[Container]]}]];
+		TareWeight,Weight,SolutionVolume,Object,Positions,Hermetic,Ampoule,MaxVolume,IncompatibleMaterials, Products, Dimensions, FunnelStemDiameter,FunnelStemLength,Graduations, GraduationTypes, GraduationLabels, CrossSectionalShape, Resolution, SamplePreparationCacheFields[Model[Container]]}]];
 	modelContainerPacketFields=Packet@@modelContainerFields;
 
 	(* Download the fields that we need. *)
@@ -2069,10 +2112,10 @@ nonDeprecatedTransferModelPackets[fakeString_]:=nonDeprecatedTransferModelPacket
 				(*13*){Packet[CultureHandling, AsepticHandling, Objects, DeveloperObject, DefaultBiosafetyWasteBinModel], Packet[Objects[{Contents, Pipettes, Balances, IRProbe, SchlenkLine, BiosafetyWasteBin, Status, DeveloperObject, Site}]], Packet[Objects[Pipettes][{Model, DeveloperObject}]], Packet[Objects[Balances][{Model, DeveloperObject}]], Packet[Objects[Balances][Model][{Mode, MinWeight, AllowedMaxVariation, DeveloperObject}]]}, (* allBiosafetyCabinetPackets *)
 				(*14*){Packet[CultureHandling, Objects, DeveloperObject], Packet[Objects[{Contents, Balances, Status, DeveloperObject, Site}]], Packet[Objects[Balances][{Model, DeveloperObject}]], Packet[Objects[Balances][Model][{Mode, MinWeight, AllowedMaxVariation, DeveloperObject}]]}, (* allEnclosuresPackets *)
 				(*15*){Packet[CultureHandling, Objects, DeveloperObject], Packet[Objects[{Contents, Pipettes, Balances, IRProbe, SchlenkLine, Status, DeveloperObject, Site}]], Packet[Objects[Pipettes][{Model, DeveloperObject}]], Packet[Objects[Balances][{Model, DeveloperObject}]], Packet[Objects[Balances][Model][{Mode, MinWeight, AllowedMaxVariation, DeveloperObject}]]}, (* allBenchPackets *)
-				(*16*)List@Packet[Name, StemDiameter, ContainerMaterials, FunnelType, FunnelMaterial, DeveloperObject], (* allFunnelPackets *)
+				(*16*)List@Packet[Name, StemDiameter, MouthDiameter, ContainerMaterials, FunnelType, FunnelMaterial, DeveloperObject], (* allFunnelPackets *)
 				(*17*)List@Packet[Name, Magnetized, Positions, DeveloperObject], (* allRackModelPackets *)
 				(*18*)List@Packet[Name, MaxVolume, DeveloperObject], (* allRackModelPackets *)
-				(*19*)List@Packet[Name, Graduations, GraduationTypes, GraduationLabels, CrossSectionalShape, DeveloperObject], (*allGraduatedContainers*)
+				(*19*)List@Packet[Name, Graduations, GraduationTypes, GraduationLabels, Resolution, CrossSectionalShape, DeveloperObject], (*allGraduatedContainers*)
 				(*20*)List@Packet[DispenseHeight, IntakeTubeLength],
 				(*21*)List@Packet[Dimensions],
 				(*22*)List@Packet[HandlingAtmosphere, FumeExtraction, MinVolumetricFlowRate, AsepticTechniqueEnvironment, UVSterilization, NitrogenHermeticTransfer, ArgonHermeticTransfer, SchlenkLineTransfer, IRProbe, BalanceType, Pipette],
@@ -2909,7 +2952,8 @@ resolveExperimentTransferOptions[
 		incompatibleDestinationContainerTest,incompatibleFTVIntermediateContainerTest,incompatibleFTVIntermediateDecantTest,incompatibleIntermediateContainerTest, solidSampleVolumeErrors,
 		solidSampleVolumeTest, invalidPrecisionResult, invalidPrecisionTest, instrumentRequiredResult, instrumentRequiredTest,
 		plateInstrumentRequiredResult, plateInstrumentRequiredTest, balanceToleranceResult, balanceToleranceTest,
-		funnelDestinationResult, funnelDestinationTest, funnelIntermediateResult, funnelIntermediateTest, aqueousGloveBoxErrors,
+		funnelDestinationResult, funnelDestinationTest, funnelIntermediateResult, funnelIntermediateTest,
+		funnelTypeDestinationResult, funnelTypeIntermediateResult, aqueousGloveBoxErrors,
 		anhydrousGloveBoxWarnings, aqueousGloveBoxTest, invalidMultichannelTransferTest, invalidMultichannelTransferInstrumentResult,
 		invalidCellAspiratorTest, invalidCellAspiratorResult, layerSupernatantLiquidErrors, layerSupernatantTest,
 		aspirationLayerSupernatantMismatchTest, aspirationLayerSupernatantMismatchResult, layerInstrumentMismatchTest,
@@ -2926,13 +2970,14 @@ resolveExperimentTransferOptions[
 		sterileTransfersAreInBSCResult, sterileTransfersAreInBSCTest, compatibleTransfersEnvWithInstrumentResult,
 		compatibleTransfersEnvWithInstrumentTest, aspiratorsRequireSterileTransferResult, aspiratorsRequireSterileTransferTest,
 		backfillGasResult, backfillGasTest, invalidQuantitativeTransferVolumes, quantitativeTransferVolumeTest,
-		invalidTransferEnvironmentBalanceResult, invalidTransferEnvironmentBalanceTest, aspiratableOrDispensableFalseResult,
-		aspiratableOrDispensableFalseTest, invalidTransferTemperatureResult, transferTemperatureTest, sterileTransfersAreInSTAR,
+		invalidTransferEnvironmentBalanceResult, invalidTransferEnvironmentBalanceTest,
+		invalidTransferTemperatureResult, transferTemperatureTest, sterileTransfersAreInSTAR,
 		sterileTransfersAreInSTARTest, conflictingRestrictSourceAndDestinationResult, asepticHandlingSourceDestinationWarnings,
 		aspirationMixVolumeErrors, dispenseMixVolumeErrors, multichannelAspirationMixWarnings, multichannelDispenseMixWarnings,
 		smallQuantityQuantitativeTransfers, smallQuantityQuantitativeTransferTest, noTransferEnvironmentAvailableErrors, noTransferEnvironmentAvailableOptions,
-		noTransferEnvironmentAvailableTest, invalidTransferEnvironmentErrors, invalidTransferEnvironmentOptions, invalidTransferEnvironmentTest,
+		noTransferEnvironmentAvailableTest, invalidTransferEnvironmentErrors, incompatiblePrewetLabwareErrors, invalidPrewetDestinationErrors, invalidPrewetWashVolumeErrors, invalidPrewetLabwareWarnings, invalidPrewetWashSolutionErrors, noPrewetWashSolutionFoundErrors, invalidTransferEnvironmentOptions, invalidTransferEnvironmentTest, invalidPrewetDestination, invalidPrewetLabwareOptions, invalidPrewetWashVolumeOptions, invalidPrewetLabwareTest, invalidPrewetWashSolutionTest, noPrewetWashSolutionFoundTest, invalidPrewetDestinationTest, invalidPrewetLabwareOptionsTest, invalidPrewetWashVolumeOptionsTest, invalidPrewetLabware, invalidPrewetWashSolution, noPrewetWashSolutionFound,
 		volatileHazardousSamplesInBSCError, volatileHazardousSamplesInBSCMessage, volatileHazardousSamplesInBSCTest, inputBlendedMapThreadFriendlyOptions,
+		invalidRecoupErrors,invalidRecoupTest,cannotKeepSourceCoveredErrors,cannotKeepDestinationCoveredErrors,cannotKeepSourceCoveredTest,cannotKeepDestinationCoveredTest,
 		(* *)
 		optionsAndPrecisions, roundedOptions, roundedOptionTests,
 		mapThreadFriendlyOptions, resolvedInstrument, resolvedTransferEnvironment, resolvedBalance,resolvedBalancePreCleaningMethod,
@@ -2959,7 +3004,7 @@ resolveExperimentTransferOptions[
 		resolvedDispenseMixVolume, resolvedAspirationMixRate, resolvedDispenseMixRate, resolvedAspirationPosition,
 		resolvedDispensePosition, resolvedAspirationPositionOffset, resolvedDispensePositionOffset, resolvedCorrectionCurve,
 		resolvedDynamicAspiration, resolvedDeviceChannels, volumetricFlaskFTVQ, mapThreadFriendlyOptionsWithPreResolvedOptions, parentProtocolSite,
-		specifiedSite, resolvedReplaceSourceCovers, resolvedSourceCovers, resolvedSourceSeptums, resolvedSourceStoppers,
+		specifiedSite, getPrewetWashVolume, resolvedReplaceSourceCovers, resolvedSourceCovers, resolvedSourceSeptums, resolvedSourceStoppers,
 		resolvedReplaceDestinationCovers, resolvedDestinationCovers, resolvedDestinationSeptums, resolvedDestinationStoppers,
 		resolvedLivingDestinations, invalidCoverOptions, resolvedMaxNumberOfAspirationMixes,
 		resolvedSlurryTransfer, resolvedKeepSourceCovered, resolvedKeepDestinationCovered, resolvedAspirationAngles,
@@ -2972,7 +3017,9 @@ resolveExperimentTransferOptions[
 		invalidNonDisposalSamplesInStorageConditionTests, resolvedSupplementalCertificates, restrictSourceOptions, restrictDestinationOptions,
 		resolvedRestrictSource, resolvedRestrictDestination, reversePipettingSamples,
 		resolvedOptions, mapThreadFriendlyResolvedOptions,resolvedHandlingCondition,resolvedEquivalentTransferEnvironments, resolvedOverdrawVolume, resolvedOverdrawVolumeWasteContainer, resolvedWasteContainer,
-		resolvedWeightStabilityDurations, resolvedMaxWeightVariations, resolvedTareWeightStabilityDurations, resolvedMaxTareWeightVariations, getHandlingStations,
+		resolvedWeightStabilityDurations, resolvedMaxWeightVariations, resolvedTareWeightStabilityDurations, resolvedMaxTareWeightVariations, getHandlingStations, resolvedBalanceReblanking, balanceReblankingErrors, balanceReblankingTest,
+		resolvedPrewetLabware, resolvedNumberOfPrewetWashes, resolvedPrewetWashSolutions, resolvedPrewetWashVolumes, resolvedDestinationPrewetWashVolumes, resolvedInstrumentPrewetWashVolumes,  resolvedIntermediateContainerPrewetWashVolumes, resolvedHandPumpPrewetWashVolumes, resolvedFunnelPrewetWashVolumes, resolvedIntermediateFunnelPrewetWashVolumes, resolvedTipsPrewetWashVolumes, resolvedQuantitativeTransferTipsPrewetWashVolumes,resolvedDecantAmounts,
+		noRecoupContainerP,needFumeHoodQ,
 		(* Resources *)
 		resourceRentContainerBools, resourceFreshBools,
 		(* Final *)
@@ -3040,10 +3087,42 @@ resolveExperimentTransferOptions[
 		Lookup[objectPacketLookup, UnsortedIntersection[Lookup[allHandlingConditionModelPackets, Object], Download[flattenedIn, Object]]]
 	];
 	
+	(* quick helper to find out if a solution needs a fumehood or not *)
+	needFumeHoodQ[mySample_] := Which[
+		MatchQ[mySample, ObjectP[Model[Sample]]],
+			MemberQ[
+				{
+					fastAssocLookup[fastAssoc, mySample, Fuming],
+					fastAssocLookup[fastAssoc, mySample, Ventilated]
+				},
+				True
+			],
+		(* respect object value over model value, if it is a boolean *)
+		MatchQ[mySample, ObjectP[Object[Sample]]],
+			MemberQ[
+				{
+					If[BooleanQ[fastAssocLookup[fastAssoc, mySample, Fuming]],
+						fastAssocLookup[fastAssoc, mySample, Fuming],
+						fastAssocLookup[fastAssoc, mySample, {Model, Fuming}]
+					],
+					If[BooleanQ[fastAssocLookup[fastAssoc, mySample, Ventilated]],
+						fastAssocLookup[fastAssoc, mySample, Ventilated],
+						fastAssocLookup[fastAssoc, mySample, {Model, Ventilated}]
+					]
+				},
+				True
+			],
+		True,
+			False
+	];
+
 	(* quick helper to get handling station from handling conditions, and do additional stuffs *)
 	(* input can be a single condition, or a list of condition objects *)
 	(* remember to exclude the specialized handling station models that we should not auto-resolve! *)
 	getHandlingStations[myHandlingConditions_] := UnsortedComplement[DeleteDuplicates[Flatten[Lookup[handlingConditionInstrumentLookup["Memoization"], myHandlingConditions, {}]]], $SpecializedHandlingStationModels];
+
+	(* a scoped pattern, this represents the container model that we do not want operator to pour back, i.e. container that is squeezable or hermetic, or explicitly non-dispensable *)
+	noRecoupContainerP = (KeyValuePattern[{Squeezable -> True}] | KeyValuePattern[{Hermetic -> True}]);
 
 	(* Resolve our sample prep options *)
 	{simulatedSources, simulatedCache, samplePrepTests} = {
@@ -3460,7 +3539,7 @@ resolveExperimentTransferOptions[
 		DeveloperObject, MultiProbeHeadIncompatible, BuiltInCover, CoverTypes, CoverFootprints, Parafilm, AluminumFoil,
 		CoverType, CoverFootprint, CrimpType, SeptumRequired, Opaque, Reusable, EngineDefault, NotchPositions, SealType,
 		HorizontalPitch,VerticalPitch,VolumeCalibrations,Columns,Aperture,WellDepth,Sterile,RNaseFree,Squeezable,Material,Counted,
-		TareWeight,Weight,SolutionVolume,Object,Positions,Hermetic,Ampoule,MaxVolume,IncompatibleMaterials, Products, Dimensions,FunnelStemDiameter,FunnelStemLength,Graduations, GraduationType, GraduationLabels, CrossSectionalShape,SamplePreparationCacheFields[Model[Container]]}]];
+		TareWeight,Weight,SolutionVolume,Object,Positions,Hermetic,Ampoule,MaxVolume,IncompatibleMaterials, Products, Dimensions,FunnelStemDiameter,FunnelStemLength,Graduations, GraduationType, GraduationLabels, CrossSectionalShape,Resolution,SamplePreparationCacheFields[Model[Container]]}]];
 	modelContainerPacketFields=Packet@@modelContainerFields;
 
 	availableSampleContainerModelPackets=Quiet[
@@ -4300,6 +4379,7 @@ resolveExperimentTransferOptions[
 	incompatibleDestinationContainerErrors={};
 	incompatibleIntermediateContainerErrors={};
 	recoupContaminationErrors={};
+	invalidRecoupErrors={};
 	incompatibleFTVIntermediateContainerErrors={};
 	incompatibleFTVIntermediateDecantErrors={};
 	incompatibleFTVInstrumentErrors={};
@@ -4308,7 +4388,11 @@ resolveExperimentTransferOptions[
 	solidSampleVolumeErrors={};
 	funnelDestinationResult={};
 	funnelIntermediateResult={};
+	funnelTypeDestinationResult={};
+	funnelTypeIntermediateResult={};
 	aqueousGloveBoxErrors={};
+	cannotKeepSourceCoveredErrors={};
+	cannotKeepDestinationCoveredErrors={};
 	anhydrousGloveBoxWarnings={};
 	layerSupernatantLiquidErrors={};
 	magneticRackErrors={};
@@ -4326,6 +4410,13 @@ resolveExperimentTransferOptions[
 	multichannelDispenseMixWarnings = {};
 	noTransferEnvironmentAvailableErrors = {};
 	invalidTransferEnvironmentErrors = {};
+	balanceReblankingErrors = {};
+	incompatiblePrewetLabwareErrors = {};
+	invalidPrewetDestinationErrors ={};
+	invalidPrewetWashVolumeErrors = {};
+	invalidPrewetLabwareWarnings = {};
+	invalidPrewetWashSolutionErrors = {};
+	noPrewetWashSolutionFoundErrors = {};
 
 	(*-- RESOLVE EXPERIMENT OPTIONS --*)
 
@@ -6143,6 +6234,16 @@ resolveExperimentTransferOptions[
 		]
 	];
 
+	(* Helper function to determine PrewetWashVolume for containers *)
+	(* PrewetWashVolume is based on MaxVolume of the container *)
+	getPrewetWashVolume[input_]:=Module[{washVolume},
+		washVolume = Switch[input,
+			LessP[3 Liter], Ceiling[input/(1 Liter)]*10 Milliliter,
+			GreaterEqualP[3 Liter], 40 Milliter,
+			_, 20 Milliliter
+		]
+	];
+
 	(* Define specified Site for instrument resolution below *)
 	(* If we are in a subprotocol, we must have the same site as the parent/root protocol *)
 	parentProtocolSite = If[!MatchQ[parentProtocolTree,{}],
@@ -6271,23 +6372,38 @@ resolveExperimentTransferOptions[
 		(*107*)resolvedWeightStabilityDurations,
 		(*108*)resolvedMaxWeightVariations,
 		(*109*)resolvedTareWeightStabilityDurations,
-		(*110*)resolvedMaxTareWeightVariations
+		(*110*)resolvedMaxTareWeightVariations,
+		(*111*)resolvedBalanceReblanking,
+		(*112*)resolvedPrewetLabware,
+		(*113*)resolvedNumberOfPrewetWashes,
+		(*114*)resolvedPrewetWashSolutions,
+		(*115*)resolvedPrewetWashVolumes,
+		(*116*)resolvedDestinationPrewetWashVolumes,
+		(*117*)resolvedInstrumentPrewetWashVolumes,
+		(*118*)resolvedIntermediateContainerPrewetWashVolumes,
+		(*119*)resolvedHandPumpPrewetWashVolumes,
+		(*120*)resolvedFunnelPrewetWashVolumes,
+		(*121*)resolvedIntermediateFunnelPrewetWashVolumes,
+		(*122*)resolvedTipsPrewetWashVolumes,
+		(*123*)resolvedQuantitativeTransferTipsPrewetWashVolumes,
+		(*124*)resolvedDecantAmounts
 	}=Transpose@MapThread[
 		Function[{sourceObject, sourceContainerObject, sourceContainerModelObject, destinationObject, destinationContainerObject, destinationContainerModelObject, collectionContainerSample, sourceIsModelQ, amount, destinationIsWasteQ, options, manipulationIndex, sourceInput, destinationInput},
 			Module[
 				{
 					sourcePacket, sourceContainerPacket, sourceContainerModelPacket, destinationPacket, destinationContainerPacket,incompatibleMaterialsDestinationContainer,
-					destinationContainerModelPacket, workingSourceContainerModelPacket, collectionContainerSamplePacket, convertedAmount,tips,tipType,tipModelPacket,tipMaterial,needle,
+					destinationContainerModelPacket, workingSourceContainerModelPacket, collectionContainerSamplePacket, sourceModel, sourceModelPacket,
+					convertedAmount,tips,tipType,tipModelPacket,tipMaterial,needle,
 					unsealHermeticSource, unsealHermeticDestination, backfillNeedle, backfillGas, ventingNeedle, tipRinse, tipRinseSolution,
 					tipRinseVolume, numberOfTipRinses,aspirationMix,slurryTransfer, aspirationMixType, numberOfAspirationMixes, maxNumberOfAspirationMixes, dispenseMix,
-					dispenseMixType, numberOfDispenseMixes, intermediateContainer,incompatibleMaterialsIntermediateContainer, intermediateDecant, convertedAmountAsVolume,destinationAperture, convertedAmountAsMass,allCompatibleSpatulas,idealSpatulasByCapacity,weighingContainerRequired, instrument, instrumentModel,weighingContainer, weighingContainerModel,semiResolvedQuantitativeTransferQ,semiResolvedQuantitativeTransferWashSolution, preresolvedBalanceModel, preresolvedBalanceModelMode,destinationContainerAperture,preresolvedWeighingContainersAndErrors,weighingFunnelError,weighBoatError,washSolutionIncompatibleMaterials,balance,balanceCleaningMethod, tolerance, handPump,
+					dispenseMixType, numberOfDispenseMixes, intermediateContainer,incompatibleMaterialsIntermediateContainer, intermediateDecant, convertedAmountAsVolume,destinationAperture, convertedAmountAsMass,allCompatibleSpatulas,idealSpatulasByCapacity,weighingContainerRequired, instrument, instrumentModel,preResolvedFunnel,weighingContainer, weighingContainerModel,semiResolvedQuantitativeTransferQ,semiResolvedQuantitativeTransferWashSolution, preresolvedBalanceModel, preresolvedBalanceModelMode,destinationContainerAperture,preresolvedWeighingContainersAndErrors,weighingFunnelError,weighBoatError,washSolutionIncompatibleMaterials,balance,balanceCleaningMethod, tolerance, handPump,
 					reversePipetting, quantitativeTransfer, quantitativeTransferWashSolution, quantitativeTransferWashVolume,
 					numberOfQuantitativeTransferWashes, validQuantitativeTransferWashTips,quantitativeTransferWashTips,quantitativeTransferWashTipsModel,validQuantitativeTransferWashInstrument, quantitativeTransferWashInstrument,quantitativeTransferWashInstrumentModel,
 					destinationAmountAsVolume, sourceAmountAsVolume, workingDestinationContainerModelPacket, asepticHandlingSourceDestinationWarning,
 					rnaseFreeTechnique,sterileTechnique,transferEnvironment,
 					preResolvedSourceTemperature,sourceTemperature, sourceEquilibrationTime, maxSourceEquilibrationTime, sourceEquilibrationCheck,
 					preResolvedDestinationTemperature, destinationTemperature, destinationEquilibrationTime, maxDestinationEquilibrationTime, coolingTime, solidificationTime, flameDestination, parafilmDestination, mnTransferQ,
-					destinationEquilibrationCheck, sourceRoundedAmount, roundedAmount, volumePrecisionRoundQ, funnel, intermediateFunnel, pillCrusher, includeSachetPouch, sachetIntermediateContainer,
+					destinationEquilibrationCheck, sourceRoundedAmount, roundedAmount, volumePrecisionRoundQ, funnel, intermediateFunnel, funnelType, potentialFunnels, potentialFunnelsAllType,funnelModel, intermediateFunnelType, intermediatePotentialFunnels, intermediatePotentialFunnelsAllType, intermediateContainerAperture, intermediateFunnelModel, pillCrusher, includeSachetPouch, sachetIntermediateContainer,
 					cultureHandling, supernatant, aspirationLayer, maxMagnetizationTime, magnetizationTime, semiResolvedSterileTechnique,
 					magnetization, magnetizationRack, sourceContainer, sourceSampleGrouping, sourceLabel, sourceContainerLabel, destinationLabel,
 					destinationContainerLabel, compatibleBalanceModels, pipettingMethod, pipettingMethodObject, pipettingMethodPacket,
@@ -6299,7 +6415,8 @@ resolveExperimentTransferOptions[
 					sourceContainerCover,allowSourceContainerReCover,intermediateContainerSemiResolved,workingSourceContainerModelPacketSemiResolved,
 					resolveIntermediateContainer, semiResolvedHandlingConditions, semiResolvedTransferEnvironment, handlingConditions, transferEnvironmentResolutionStrings,
 					equivalentTransferEnvironments, overdrawVolume, fumeHoodRequested, weightStabilityDuration, maxWeightVariation, modelDefaultMaxVariation, tareWeightStabilityDuration, maxTareWeightVariation,
-					needBalanceQ, smallVolumeTransferQ
+					needBalanceQ, smallVolumeTransferQ, balanceReblanking,  prewetLabware, numberOfPrewetWashes, prewetWashSolution, prewetWashVolume,estimatedPrewetWashVolume,destinationPrewetWashVolume, instrumentPrewetWashVolume, intermediateContainerPrewetWashVolume, handPumpPrewetWashVolume, funnelPrewetWashVolume, intermediateFunnelPrewetWashVolume, tipPrewetWashVolume, quantitativeTransferWashTipPrewetWashVolume,decantAmount,
+					preResolvedPrewetWashSolution
 				},
 
 
@@ -6318,6 +6435,10 @@ resolveExperimentTransferOptions[
 						{workingSourceSamplePackets, workingSourceContainerPackets, workingSourceContainerModelPackets, workingDestinationSamplePackets, workingDestinationContainerPackets, workingDestinationContainerModelPackets, workingCollectionContainerSamplePackets}
 					}
 				];
+
+				(* Get the source sample's model packet as well *)
+				sourceModel = Download[Lookup[sourcePacket, Model], Object];
+				sourceModelPacket = fetchPacketFromFastAssoc[sourceModel, fastAssoc];
 
 				(* figure out if we are doing MxN MultiProbeHead transfer *)
 				mnTransferQ = And[
@@ -6412,24 +6533,79 @@ resolveExperimentTransferOptions[
 				convertedAmountAsVolume=If[MatchQ[convertedAmount, VolumeP],
 					convertedAmount,
 					Which[
+						(* Case 1 - Count Amount *)
+						(* Case 1-1 *)
 						(* If sample is a tablet, and both SolidUnitWeight and Density are populated, use them to calculate expected volume *)
-						MatchQ[convertedAmount, CountP] && MatchQ[Lookup[sourcePacket, SolidUnitWeight], MassP] && MatchQ[Lookup[sourcePacket, Density], DensityP],
+						And[
+							MatchQ[convertedAmount, CountP],
+							MatchQ[Lookup[sourcePacket, SolidUnitWeight], MassP],
+							MatchQ[Lookup[sourcePacket, Density], DensityP]
+						],
 							convertedAmount*Lookup[sourcePacket, SolidUnitWeight]/Lookup[sourcePacket, Density],
-						(* If sample is a tablet, but Mass instead of SolidUnitWeight is populated, use mass instead *)
-						MatchQ[convertedAmount, CountP] && MatchQ[Lookup[sourcePacket, Mass], MassP] && MatchQ[Lookup[sourcePacket, Density], DensityP],
-							convertedAmount*Lookup[sourcePacket, Mass]/Lookup[sourcePacket, Density],
-						(* If sample is a tablet, and either SolidUnitWeight or mass is populated but density is not, use a default density of 0.7976 g/ml (75% of water) *)
-						MatchQ[convertedAmount, CountP] && MatchQ[Lookup[sourcePacket, SolidUnitWeight], MassP],
+
+						(* Case 1-2 *)
+						(* If sample is a tablet with model, and both SolidUnitWeight and Density are populated for the model, use them to calculate expected volume *)
+						And[
+							MatchQ[convertedAmount, CountP],
+							!NullQ[sourceModelPacket],
+							MatchQ[Lookup[sourceModelPacket, SolidUnitWeight], MassP],
+							MatchQ[Lookup[sourceModelPacket, Density], DensityP]
+						],
+							convertedAmount*Lookup[sourceModelPacket, SolidUnitWeight]/Lookup[sourceModelPacket, Density],
+
+						(* Case 1-3 *)
+						(* If sample is a tablet, but Mass (this is total mass) and Count instead of SolidUnitWeight is populated, use Mass/Count as the unit mass *)
+						(* Note there is no corresponding Model case for this as Count/Mass are associated with Object only *)
+						And[
+							MatchQ[convertedAmount, CountP],
+							MatchQ[Lookup[sourcePacket, Mass], MassP],
+							MatchQ[Lookup[sourcePacket, Count], CountP],
+							MatchQ[Lookup[sourcePacket, Density], DensityP]
+						],
+							convertedAmount*(Lookup[sourcePacket, Mass]/Lookup[sourcePacket, Count])/Lookup[sourcePacket, Density],
+
+						(* Case 1-4 *)
+						(* If sample is a tablet, and SolidUnitWeight is populated but density is not, use a default density of 0.7976 g/ml (80% of water) *)
+						And[
+							MatchQ[convertedAmount, CountP],
+							MatchQ[Lookup[sourcePacket, SolidUnitWeight], MassP]
+						],
 							(convertedAmount*Lookup[sourcePacket, SolidUnitWeight]/Quantity[0.997`, ("Grams")/("Milliliters")])*1.25,
-						MatchQ[convertedAmount, CountP] && MatchQ[Lookup[sourcePacket, Mass], MassP],
-							(convertedAmount*Lookup[sourcePacket, Mass]/Quantity[0.997`, ("Grams")/("Milliliters")])*1.25,
-						(* If sample is a tablet but mass and SolidUnitWeight are both missing, then use default mass of 1g and default density of 0.7976 g/ml (75% of water) *)
+
+						(* Case 1-5 *)
+						(* If sample is a tablet with model, and SolidUnitWeight is populated but density is not, use a default density of 0.7976 g/ml (80% of water) *)
+						And[
+							MatchQ[convertedAmount, CountP],
+							!NullQ[sourceModelPacket],
+							MatchQ[Lookup[sourceModelPacket, SolidUnitWeight], MassP]
+						],
+							(convertedAmount*Lookup[sourceModelPacket, SolidUnitWeight]/Quantity[0.997`, ("Grams")/("Milliliters")])*1.25,
+
+						(* Case 1-6 *)
+						(* If sample is a tablet, and Mass (this is total mass) and Count are populated but density is not, use a default density of 0.7976 g/ml (80% of water) *)
+						(* Note there is no corresponding Model case for this as Count/Mass are associated with Object only *)
+						And[
+							MatchQ[convertedAmount, CountP],
+							MatchQ[Lookup[sourcePacket, Mass], MassP],
+							MatchQ[Lookup[sourcePacket, Count], CountP]
+						],
+							(convertedAmount*(Lookup[sourcePacket, Mass]/Lookup[sourcePacket, Count])/Quantity[0.997`, ("Grams")/("Milliliters")])*1.25,
+
+
+						(* Case 1-7 *)
+						(* If sample is a tablet but Mass/Count pair and SolidUnitWeight are both missing, then use default mass of 1g and default density of 0.7976 g/ml (80% of water) *)
 						MatchQ[convertedAmount, CountP],
 							(convertedAmount*1 Gram/Quantity[0.997`, ("Grams")/("Milliliters")])*1.25,
-						(* Otherwise, amount is represented by mass and we need to look up sample density to calculate volume *)
+
+						(* Case 2 - Mass Amount *)
+						(* Otherwise, amount is represented by mass and we need to look up sample density or model density to calculate volume *)
 						MatchQ[Lookup[sourcePacket, Density], DensityP],
 							convertedAmount/Lookup[sourcePacket, Density],
-						(* Finally, if density is not available, use default value 0.7976 g/ml (75% of water) *)
+
+                        !NullQ[sourceModelPacket] && MatchQ[Lookup[sourceModelPacket, Density], DensityP],
+							convertedAmount/Lookup[sourceModelPacket, Density],
+
+						(* Finally, if density is not available, use default value 0.7976 g/ml (80% of water) *)
 						True,
 							(convertedAmount/Quantity[0.997`, ("Grams")/("Milliliters")]) * 1.25
 					]
@@ -6441,6 +6617,8 @@ resolveExperimentTransferOptions[
 					Which[
 						MatchQ[convertedAmount, CountP] && MatchQ[Lookup[sourcePacket, SolidUnitWeight], MassP],
 							convertedAmount*Lookup[sourcePacket, SolidUnitWeight],
+						MatchQ[convertedAmount, CountP] && !NullQ[sourceModelPacket] && MatchQ[Lookup[sourceModelPacket, SolidUnitWeight], MassP],
+							convertedAmount*Lookup[sourceModelPacket, SolidUnitWeight],
 						MatchQ[convertedAmount, CountP],
 							convertedAmount*1 Gram,
 						MatchQ[Lookup[sourcePacket, Density], DensityP],
@@ -6619,6 +6797,61 @@ resolveExperimentTransferOptions[
 					Ambient
 				];
 
+				(* Advance PrewetLabware master switch resolution here, and pre-resolve PrewetWashSolution *)
+				prewetLabware = Which[
+					MatchQ[Lookup[options, PrewetLabware], Except[Automatic]],
+						Lookup[options, PrewetLabware],
+
+					(* If any other PrewetLabware options are NOT Automatic|Null, set to True *)
+					MatchQ[Lookup[options, NumberOfPrewetWashes], Except[Automatic | Null]] || MatchQ[Lookup[options, PrewetWashVolume], Except[Automatic | Null]] || MatchQ[Lookup[options, PrewetWashSolution], Except[Automatic | Null]],
+						True,
+
+					(* Otherwise, set to default *)
+					True,
+						$DefaultPrewetLabware
+				];
+
+				numberOfPrewetWashes = Which[
+					MatchQ[Lookup[options, NumberOfPrewetWashes], Except[Automatic]],
+						Lookup[options, NumberOfPrewetWashes],
+
+					(* If Rinse if True, set to default *)
+					MatchQ[prewetLabware, True],
+						$DefaultNumberOfPrewetWashes,
+
+					True,
+						Null
+				];
+
+				(* when pre-resolving prewet wash solutions, we do not consider QuantitativeTransferWashSolution FOR NOW, since: *)
+				(* 1) the only purpose of preResolvedPrewetWashSolution is for resolving the need for a fumehood *)
+				(* 2) prewet solution would be auto-resolved to be the same as QuantitativeTransferWashSolution *)
+				(* 3) we already take QuantitativeTransferWashSolution into consideration when checking the need for a fumehood *)
+				preResolvedPrewetWashSolution = Which[
+					MatchQ[Lookup[options, PrewetWashSolution], Except[Automatic]],
+						Lookup[options, PrewetWashSolution],
+
+					MatchQ[prewetLabware, Except[True]],
+						Null,
+
+					MatchQ[Lookup[sourcePacket, State], Liquid],
+						sourceInput,
+					(* if sample is solid and QuantitativeTransfer is False, look ahead to other Transfers to the same destination and pick the nearest liquid Source *)
+					MatchQ[manipulationIndex, LessP[Length[mySources]]] && MatchQ[Cases[
+						Transpose[{workingDestinationContainerPackets, mySources, Lookup[workingSourceSamplePackets, State], myAmounts}][[manipulationIndex + 1 ;;]],
+						{ObjectP[Lookup[workingDestinationContainerPackets[[manipulationIndex]], Object]], _, Liquid, _}
+					], Except[{}]],
+						ReverseSortBy[
+							Cases[
+								Transpose[{workingDestinationContainerPackets, mySources, Lookup[workingSourceSamplePackets, State], myAmounts}][[manipulationIndex + 1 ;;]],
+								{ObjectP[Lookup[workingDestinationContainerPackets[[manipulationIndex]], Object]], _, Liquid, _}
+							],
+							#[[4]] &
+						][[1]][[2]],
+					True,
+						Null
+				];
+
 				(* a variable to store a list of strings that states how the HandlingStation/TransferEnvironment is resolved *)
 				transferEnvironmentResolutionStrings = {};
 
@@ -6731,13 +6964,14 @@ resolveExperimentTransferOptions[
 								
 								(* if user provides a ventilated/fuming quantitative wash solution, we need to use a fumehood too *)
 								(* our default solution is water for now so need to check that along with the quantitative resolution *)
-								TrueQ[fastAssocLookup[fastAssoc, Lookup[options, QuantitativeTransferWashSolution], Fuming]],
-								TrueQ[fastAssocLookup[fastAssoc, Lookup[options, QuantitativeTransferWashSolution], Ventilated]],
+								needFumeHoodQ[Lookup[options, QuantitativeTransferWashSolution]],
 
 								(* if user provides a ventilated/fuming tip rinse solution, we need to use a fumehood too *)
 								(* our default solution is water for now so need to check that along with the tip rinse resolution *)
-								TrueQ[fastAssocLookup[fastAssoc, Lookup[options, TipRinseSolution], Fuming]],
-								TrueQ[fastAssocLookup[fastAssoc, Lookup[options, TipRinseSolution], Ventilated]],
+								needFumeHoodQ[Lookup[options, TipRinseSolution]],
+
+								(* if we need to use a prewet wash solution of ventilated/fuming type, we need to use a fumehood too *)
+								needFumeHoodQ[preResolvedPrewetWashSolution],
 
 								(* currently, we only have backfill gas lines in fumehood, so have to request fumehood if we are requesting Hermetic transfer *)
 								TrueQ[backfillRequested]
@@ -6950,15 +7184,12 @@ resolveExperimentTransferOptions[
 
 				(* abstract a shared helper to resolve a intermediate container if we are decanting since we may need to call it twice, also memoize it so it only evaluates once tho *)
 				(* All of our preferred containers can support pipette access. *)
-				(* NOTE: A 2mL Tube is the smallest tube that we allow for an intermediate container because pouring into a *)
-				(* smaller container than this is unwieldy. Ideally, we would like to allow pouring into a 50mL tube but some *)
-				(* of the more precise tips like Model[Item, Tips, "0.1 - 10 uL Tips, Low Retention, Non-Sterile"] cannot reach *)
-				(* the bottom of a 50mL tube. *)
 				resolveIntermediateContainer[myVolume_] := Set[
 					resolveIntermediateContainer[myVolume],
 					Module[{recommendedTransferOutVolume, preferredContainers, potentialGraduatedContainerModelPackets, sortedGraduatedContainers},
 						(* we are adding a 10% buffer again for the volume to be transferred out from source *)
-						recommendedTransferOutVolume = myVolume * 1.1;
+						(* The smallest decant container is 50 ml tube, whose resolution is 5 mL*)
+						recommendedTransferOutVolume = Max[myVolume * 1.1, 5 Milliliter];
 
 						(* get the preferred containers with All->True so it returns a list of recommended container models *)
 						(*check the source container in case we are trying to pour into a very small container from a very large bottle*)
@@ -6966,14 +7197,7 @@ resolveExperimentTransferOptions[
 						(*this should be ok since with a smaller volume it will be possible to pour with control. The minimum amount can be enforced in the procedure for decants into 50 mL tubes*)
 						(* this will keep the result of tipsCanAspirateQ in line with reality *)
 						(* we also always want to pick up a container that has graduation lines so operator can know the level roughly when they pour *)
-						preferredContainers = If[MatchQ[recommendedTransferOutVolume, LessEqualP[1.9 Milliliter]],
-
-							If[MatchQ[Lookup[sourceContainerModelPacket, MaxVolume], GreaterEqualP[1 Liter]],
-								PreferredContainer[50 Milliliter, IncompatibleMaterials -> Lookup[sourcePacket, IncompatibleMaterials], Sterile -> sterileTechnique, All -> True],
-								PreferredContainer[1.9 Milliliter, IncompatibleMaterials -> Lookup[sourcePacket, IncompatibleMaterials], Sterile -> sterileTechnique, All -> True]
-							],
-							PreferredContainer[recommendedTransferOutVolume, IncompatibleMaterials -> Lookup[sourcePacket, IncompatibleMaterials], Sterile -> sterileTechnique, All -> True]
-						];
+						preferredContainers = PreferredContainer[recommendedTransferOutVolume, IncompatibleMaterials -> Lookup[sourcePacket, IncompatibleMaterials], Sterile -> sterileTechnique, All -> True];
 
 						(* find all graduated containers that: *)
 						potentialGraduatedContainerModelPackets = Select[
@@ -7218,11 +7442,12 @@ resolveExperimentTransferOptions[
 											PipetteType -> pipetteType
 										][[All, 1]],
 
-									(* if volumeWithRoboticTransportVolumes and convertedAmountAsVolume are equal, does not matter which one is used to find suitable tips *)
+									(* if volumeWithRoboticTransportVolumes and convertedAmountAsVolume are equal, it does not matter which one is used to find suitable tips *)
 									EqualQ[volumeWithRoboticTransportVolumes, convertedAmountAsVolume],
 										TransferDevices[
 											Model[Item, Tips],
 											convertedAmountAsVolume,
+                      IncompatibleMaterials -> Lookup[sourcePacket, IncompatibleMaterials, Null],
 											TipConnectionType -> tipConnectionType,
 											TipType -> specifiedTipType,
 											TipMaterial -> specifiedTipMaterial,
@@ -7238,6 +7463,7 @@ resolveExperimentTransferOptions[
 											tipsForAmount = TransferDevices[
 												Model[Item, Tips],
 												convertedAmountAsVolume,
+                        IncompatibleMaterials -> Lookup[sourcePacket, IncompatibleMaterials, Null],
 												TipConnectionType -> tipConnectionType,
 												TipType -> specifiedTipType,
 												TipMaterial -> specifiedTipMaterial,
@@ -7249,6 +7475,7 @@ resolveExperimentTransferOptions[
 											tipsForCorrectedAmount = TransferDevices[
 												Model[Item, Tips],
 												volumeWithRoboticTransportVolumes,
+                        IncompatibleMaterials -> Lookup[sourcePacket, IncompatibleMaterials, Null],
 												TipConnectionType -> tipConnectionType,
 												TipType -> specifiedTipType,
 												TipMaterial -> specifiedTipMaterial,
@@ -7284,9 +7511,8 @@ resolveExperimentTransferOptions[
 										(* Get all compatible tips, regardless of volume. *)
 										allCompatibleTipTuples = TransferDevices[
 											Model[Item, Tips],
-
 											All,
-
+                      IncompatibleMaterials -> Lookup[sourcePacket, IncompatibleMaterials, Null],
 											TipConnectionType -> tipConnectionType,
 											TipType -> specifiedTipType,
 											TipMaterial -> specifiedTipMaterial,
@@ -7395,7 +7621,7 @@ resolveExperimentTransferOptions[
 				
 				(* Define if we are doing an FTV to a volumetric flask - volumetricFlaskFTVQ *)
 				volumetricFlaskFTVQ = (MatchQ[Lookup[options,FillToVolume],True] || MatchQ[Lookup[options,ParentProtocol],ObjectP[Object[Protocol,FillToVolume]]]) && !MatchQ[Lookup[options,FillToVolumeOverfillingRepreparation, False],True] && MatchQ[destinationContainerModelPacket,ObjectP[{Model[Container,Vessel,VolumetricFlask],Object[Container,Vessel,VolumetricFlask]}]];
-				
+
 				(* Resolve Intermediate Decant *)
 				intermediateDecant=Which[
 					(* Did the user give us a value? *)
@@ -7458,6 +7684,26 @@ resolveExperimentTransferOptions[
 					],
 					True,
 
+					(* if transfer All, do not decant *)
+					MatchQ[amount, All],
+					False,
+
+					(* if given object sample and volume is small, do not decant *)
+					And[
+						MatchQ[Lookup[sourcePacket, Simulated, Null], Except[True]],
+						MatchQ[Lookup[sourcePacket, Volume], VolumeP],
+						MatchQ[Lookup[sourcePacket, Volume], LessEqualP[2 Milliliter]]
+					],
+					False,
+
+					(* if source container is plate, do not decant *)
+					MatchQ[Lookup[sourceContainerModelPacket, Object], ObjectP[Model[Container, Plate]]],
+					False,
+
+					(* If source model is ForeignMaterialContactDisallowed -> True, decant *)
+					MatchQ[fastAssocLookup[fastAssoc,Lookup[sourcePacket, Model],ForeignMaterialContactDisallowed], True],
+					True,
+
 					(* Otherwise, we do not need to do an intermediate decant. *)
 					True,
 					False
@@ -7474,6 +7720,43 @@ resolveExperimentTransferOptions[
 					(* We are not decanting. *)
 					True,
 						Null
+				];
+
+				(* Resolve DecantAmount *)
+				decantAmount = If[MatchQ[intermediateDecant, Except[True]],
+					(* if we do not decant, resolve to Null *)
+					Null,
+
+					(* otherwise, resolve decant based on requested volume *)
+					Module[{minDecantVolume, intermediateContainerResolution, quarterResolution, resolutionQuotient},
+						(* we want to at least decant 1.1*requested amount to intermediate container *)
+						(* the smallest decant container is 50 mL tube, whose resolution is 5 mL *)
+						minDecantVolume = Max[1.1 * convertedAmountAsVolume, 5 Milliliter];
+						(* it is impossible to decant an accurate volume, find out the resolution of intermediate container *)
+						intermediateContainerResolution = fastAssocLookup[fastAssoc,intermediateContainer,Resolution];
+						(* the most precise resolution is a quarter of resolution *)
+						quarterResolution = If[MatchQ[intermediateContainerResolution, VolumeP],
+							0.25 * intermediateContainerResolution,
+							(* give a default resolution in case the intermediate container does not have graduation line *)
+							100 Milliliter
+						];
+						(* find out the times of quarterResolution *)
+						resolutionQuotient = Quotient[minDecantVolume, quarterResolution] + 1;
+
+						(* resolve decant volume *)
+						If[
+							(* if source volume is given and it is less than the rounded decant amount, use them all *)
+							And[
+								MatchQ[Lookup[sourcePacket, Simulated, Null], Except[True]],
+								MatchQ[Lookup[sourcePacket, Volume], VolumeP],
+								Lookup[sourcePacket, Volume] < resolutionQuotient * quarterResolution
+							],
+							Lookup[sourcePacket, Volume],
+
+							(* otherwise, construct expression for procedure instruction *)
+							resolutionQuotient*quarterResolution
+						]
+					]
 				];
 
 				(* If IntermediateContainer is specified by user, and the source sample is not compatible with the intermediate container, record the error *)
@@ -8240,19 +8523,19 @@ resolveExperimentTransferOptions[
 							(* Pick the first one. *)
 							FirstOrDefault[potentialSyringes]
 						],
-					(* If we have an item and our transfer amount is All|_Integer (not using a pill crusher), get tweezers. *)
-					MatchQ[Lookup[sourcePacket, {SampleHandling, Sachet}], {Itemized, Except[True]}] && MatchQ[amount, All|_Integer],
+					(* If we have a tablet and our transfer amount is All|_Integer (not using a pill crusher), get tweezers. *)
+					MatchQ[Lookup[sourcePacket, {State, SampleHandling, Sachet}], {Solid, Itemized, Except[True]}] && MatchQ[amount, All|_Integer],
 						(* "Straight flat tip tweezer" *)
 						Model[Item, Tweezer, "id:8qZ1VWNwNDVZ"],
 					(* If we have a paste, get a transfer tube. *)
-					MatchQ[Lookup[sourcePacket, SampleHandling], Paste],
+					MatchQ[Lookup[sourcePacket, {State, SampleHandling}], {Solid, Paste}],
 						Model[Item, TransferTube, "Spectrum Disposable Transfer Tubes"],
 					(* If we have a brittle solid, get a chipping hammer. *)
-					MatchQ[Lookup[sourcePacket, SampleHandling], Brittle],
+					MatchQ[Lookup[sourcePacket, {State, SampleHandling}], {Solid, Brittle}],
 						Model[Item, ChippingHammer, "Estwing Big Blue Chipping Hammer"],
 					(* If we have a fabric, get scissors. *)
 					Or[
-						MatchQ[Lookup[sourcePacket, SampleHandling], Fabric],
+						MatchQ[Lookup[sourcePacket, {State, SampleHandling}], {Solid, Fabric}],
 						(* If we have a sachet,  use scissors to cut open the pouch, the rest of the process does not require tools *)
 						MatchQ[Lookup[sourcePacket, {SampleHandling, Sachet}], {Itemized, True}]
 					],
@@ -8530,9 +8813,13 @@ resolveExperimentTransferOptions[
 
 				(* Get the aperture of our destination container. *)
 				(* NOTE: Vessels have this number under Aperture, Plates have it under WellDiameter. *)
-				destinationContainerAperture=If[MatchQ[Lookup[destinationContainerModelPacket, Aperture], DistanceP],
-					Lookup[destinationContainerModelPacket, Aperture],
-					Lookup[destinationContainerModelPacket, WellDiameter]
+				destinationContainerAperture= Which[
+					DistanceQ[Lookup[destinationContainerModelPacket, Aperture]],
+						Lookup[destinationContainerModelPacket, Aperture],
+					DistanceQ[Lookup[destinationContainerModelPacket, WellDiameter]],
+						Lookup[destinationContainerModelPacket, WellDiameter],
+					True,
+						Null
 				];
 
 				(* Preresolve the balance option *)
@@ -8557,6 +8844,65 @@ resolveExperimentTransferOptions[
 					fastAssocLookup[fastAssoc,semiResolvedQuantitativeTransferWashSolution,IncompatibleMaterials],
 					{}
 				];
+				
+				(* Pre-resolve Funnel*)
+				(* we need to pre-resolve the Funnel to use in the resolution of the weighing container *)
+				(* We need to use a funnel if: *)
+				(* 1) The Transfer instrument is Null or a Graduated Cylinder. *)
+				(* 2) We are doing a liquid transfer and are using a weighing container -- this means we will need to pour from the *)
+				(* weighing container to the destination - the final resolution of the Funnel is changed to Null if the weighingContainer is resolved to a weighing funnel *)
+				(* resolve FunnelType based on State of Sample *)
+				(* if instrument is GraduatedCylinder, also resolve to Wet *)
+				funnelType=Which[
+					MatchQ[Lookup[sourcePacket, State], Solid],
+					Dry,
+
+					MatchQ[Lookup[sourcePacket, State], Liquid]||MatchQ[instrument, ObjectP[{Model[Container,GraduatedCylinder], Object[Container,GraduatedCylinder]}]],
+					Wet,
+
+					True,
+					{Wet,Dry}
+				];
+
+				(* find all the potential funnels*)
+				potentialFunnels = compatibleFunnels[
+					allFunnelPackets,
+					IncompatibleMaterials->Lookup[sourcePacket, IncompatibleMaterials],
+					Aperture->destinationContainerAperture,
+					FunnelType->funnelType
+				];
+
+				(* Get the funnels that can fit into our destination container ignoring the funnel type. *)
+				potentialFunnelsAllType=compatibleFunnels[
+					allFunnelPackets,
+					IncompatibleMaterials->Lookup[sourcePacket, IncompatibleMaterials],
+					Aperture->destinationContainerAperture
+				];
+
+				preResolvedFunnel=Which[
+					(* Did the user give us a value? *)
+					MatchQ[Lookup[options, Funnel], Except[Automatic]],
+					Lookup[options, Funnel],
+
+					MatchQ[resolvedPreparation, Robotic],
+					Null,
+
+					(* The Transfer instrument is Null or a Graduated Cylinder. *)
+					(* OR we are doing a liquid transfer and are using a weighing container *)
+					(* OR we are using a weighing container AND the destination is a volumetric flask AND we are NOT using tweezers *)
+					(* OR we are using a weighing container and we are doing a quantitative transfer *)
+					Or[
+						MatchQ[instrument, Null|ObjectP[{Model[Container,GraduatedCylinder], Object[Container,GraduatedCylinder]}]],
+						MatchQ[Lookup[sourcePacket, State], Liquid]&&weighingContainerRequired,
+						weighingContainerRequired && MatchQ[Lookup[destinationContainerModelPacket,Object],ObjectP[Model[Container,Vessel,VolumetricFlask]]]&&MatchQ[instrument,Except[ObjectP[{Object[Item,Tweezer],Model[Item,Tweezer]}]]],
+						weighingContainerRequired && MatchQ[semiResolvedQuantitativeTransferQ, True]
+					],
+					FirstOrDefault[potentialFunnels],
+
+					(* Otherwise, we don't need a funnel. *)
+					True,
+					Null
+				];
 
 				weighingContainer=Which[
 					(* Did the user give us a value? *)
@@ -8565,8 +8911,10 @@ resolveExperimentTransferOptions[
 						preresolvedWeighingContainersAndErrors = compatibleWeighingContainer[
 							convertedAmountAsMass,
 							convertedAmountAsVolume,
+							Lookup[destinationContainerPacket,Object],
 							allWeighingContainerModelPackets,
-							allFunnelPackets,
+							preResolvedFunnel,
+							instrument,
 							Mode->preresolvedBalanceModelMode,
 							QuantitativeTransfer->semiResolvedQuantitativeTransferQ,
 							IncompatibleMaterials->Join[Lookup[sourcePacket, IncompatibleMaterials],washSolutionIncompatibleMaterials],
@@ -8586,8 +8934,10 @@ resolveExperimentTransferOptions[
 							preresolvedWeighingContainersAndErrors = compatibleWeighingContainer[
 								convertedAmountAsMass,
 								convertedAmountAsVolume,
+								Lookup[destinationContainerPacket,Object],
 								allWeighingContainerModelPackets,
-								allFunnelPackets,
+								preResolvedFunnel,
+								instrument,
 								Mode->preresolvedBalanceModelMode,
 								QuantitativeTransfer->semiResolvedQuantitativeTransferQ,
 								IncompatibleMaterials->Join[Lookup[sourcePacket, IncompatibleMaterials],washSolutionIncompatibleMaterials],
@@ -8596,13 +8946,18 @@ resolveExperimentTransferOptions[
 
 							(* add error check here *)
 							(* If WeighingContainer resolved to Null (eg no compatible WeighingContainer was found due to IncompatibleMaterials), throw an error *)
+							(* do not include aluminum micro dish - {Model[Item, WeighBoat, "id:4pO6dMj9wqM7"], Model[Item, WeighBoat, "id:7X104vn4qJkw"]} - in the resolution *)
 							If[MatchQ[FirstOrDefault[preresolvedWeighingContainersAndErrors[[1]]],Null],
 								AppendTo[noCompatibleWeighingContainerErrors,{manipulationIndex,preresolvedWeighingContainersAndErrors[[2]]}],
 								Nothing
 							];
 
 							(* If preresolvedWeighingContainersAndErrors returns an empty list and a weighing container is required, an error is thrown later *)
-							FirstOrDefault[preresolvedWeighingContainersAndErrors[[1]]],
+							(* Only resolve to micro dish - {Model[Item, WeighBoat, "id:4pO6dMj9wqM7"], Model[Item, WeighBoat, "id:7X104vn4qJkw"]} - if balance model is Micro; compatibleWeighingContainers still return micro dish as a compatible container so it does not error out when user specifies it *)
+							If[MatchQ[preresolvedBalanceModelMode,Micro],
+								FirstOrDefault[preresolvedWeighingContainersAndErrors[[1]]],
+								FirstOrDefault[Cases[preresolvedWeighingContainersAndErrors[[1]],Except[ObjectP[{Model[Item, WeighBoat, "id:4pO6dMj9wqM7"], Model[Item, WeighBoat, "id:7X104vn4qJkw"]}]]]]
+							],
 
 							(* Liquid. Use a vessel from our preferred container list. *)
 							(* NOTE: We do not use PreferredContainer here because some of our larger preferred containers are glass and *)
@@ -8632,6 +8987,24 @@ resolveExperimentTransferOptions[
 						],
 					True,
 						Null
+				];
+
+				balanceReblanking = Which[
+					(* Did the user give us a value? *)
+					MatchQ[Lookup[options, BalanceReblanking], Except[Automatic]],
+					Lookup[options, BalanceReblanking],
+					(* if weighingContainer is Model, resolve to AsNecessary *)
+					MatchQ[weighingContainer, ObjectP[Model[]]],
+					AsNecessary,
+					(*otherwise, either we do not need a weighing container, or weighingContainer is specified object -- resolve balanceReblanking to None*)
+					True,
+					None
+				];
+
+				(* -- Error check for weighingContainer/balanceReblanking -- *)
+				(*--Error for balanceReblanking if weighing container is not a replaceable *)
+				If[MatchQ[weighingContainer, Except[ObjectP[Model]]] && MatchQ[balanceReblanking, AsNecessary|Always],
+					AppendTo[balanceReblankingErrors, {balanceReblanking, manipulationIndex, weighingContainer}]
 				];
 
 				weighingContainerModel = Which[
@@ -8945,78 +9318,109 @@ resolveExperimentTransferOptions[
 					True,
 						100 Microliter/Second
 				];
-
+				
 				(* Resolve Funnel*)
-				(* We need to use a funnel if: *)
-				(* 1) The Transfer instrument is Null or a Graduated Cylinder. *)
-				(* 2) We are doing a liquid transfer and are using a weighing container -- this means we will need to pour from the *)
-				(* weighing container to the destination. *)
-				funnel=Which[
-					(* Did the user give us a value? *)
-					MatchQ[Lookup[options, Funnel], Except[Automatic]],
-						Lookup[options, Funnel],
-					MatchQ[resolvedPreparation, Robotic],
-						Null,
-					(* The Transfer instrument is Null or a Graduated Cylinder. *)
-					(* OR we are doing a liquid transfer and are using a weighing container *)
-					(* OR we are using a weighing container and the destination is a volumetric flask *)
-					Or[
-						MatchQ[instrument, Null|ObjectP[{Model[Container,GraduatedCylinder], Object[Container,GraduatedCylinder]}]],
-						MatchQ[Lookup[sourcePacket, State], Liquid] && MatchQ[weighingContainer, ObjectP[]],
-						MatchQ[weighingContainer, Except[ObjectP[{Model[Item,WeighBoat,WeighingFunnel],Object[Item,WeighBoat,WeighingFunnel]}]]] && MatchQ[Lookup[destinationContainerModelPacket,Object],ObjectP[Model[Container,Vessel,VolumetricFlask]]],
-						MatchQ[weighingContainer, ObjectP[{Model[Item,WeighBoat],Object[Item,WeighBoat]}]] && MatchQ[weighingContainer, Except[ObjectP[{Model[Item,WeighBoat,WeighingFunnel],Object[Item,WeighBoat,WeighingFunnel]}]]] && MatchQ[semiResolvedQuantitativeTransferQ, True]
+				(* we use Null instead of the preResolvedFunnel if the weighingContainer is resolved to a weighing funnel and we don't need a funnel outside of weighing solid *)
+				funnel=If[
+					And[
+						MatchQ[Lookup[sourcePacket, State], Solid],
+						MatchQ[weighingContainer, ObjectP[{Model[Item,WeighBoat,WeighingFunnel],Object[Item,WeighBoat,WeighingFunnel]}]]
 					],
-						Module[{destinationContainerAperture,funnelType,preresolvedFunnels},
-							(* Get the aperture of our destination container. *)
-							(* NOTE: Vessels have this number under Aperture, Plates have it under WellDiameter. *)
-							destinationContainerAperture=If[MatchQ[Lookup[destinationContainerModelPacket, Aperture], DistanceP],
-								Lookup[destinationContainerModelPacket, Aperture],
-								Lookup[destinationContainerModelPacket, WellDiameter]
-							];
-
-							(* resolve FunnelType based on State of Sample *)
-							(* if instrument is GraduatedCylinder, also resolve to Wet *)
-							funnelType=Which[
-								MatchQ[Lookup[sourcePacket, State], Solid],
-								Dry,
-
-								MatchQ[Lookup[sourcePacket, State], Liquid]||MatchQ[instrument, ObjectP[{Model[Container,GraduatedCylinder], Object[Container,GraduatedCylinder]}]],
-								Wet,
-
-								True,
-								{Wet,Dry}
-							];
-
-							(* Get an initial list of compatible funnels *)
-							preresolvedFunnels=compatibleFunnels[
-								allFunnelPackets,
-								IncompatibleMaterials->Lookup[sourcePacket, IncompatibleMaterials],
-								Aperture->destinationContainerAperture,
-								FunnelType->funnelType
-							];
-
-							FirstOrDefault[preresolvedFunnels]
-							(*
-							(* If no compatible funnel comes up for solid transfer due to lack of available models, expand search to Wet funnels *)
-							If[MatchQ[funnelType,Dry]&&MatchQ[preresolvedFunnels,{}],
-								FirstOrDefault[
-									compatibleFunnels[
-										allFunnelPackets,
-										IncompatibleMaterials->Lookup[sourcePacket, IncompatibleMaterials],
-										Aperture->destinationContainerAperture,
-										FunnelType->Wet
-									]
-								],
-								FirstOrDefault[preresolvedFunnels]
-							]
-							*)
-						],
-					(* Otherwise, we don't need a funnel. *)
-					True,
-						Null
+					Null,
+					
+					preResolvedFunnel
 				];
 
+				(* Get the model of the funnel if we have an object. *)
+				funnelModel=If[MatchQ[funnel, ObjectP[{Object[Part, Funnel]}]],
+					fastAssocLookup[fastAssoc, funnel, Model],
+					funnel
+				];
+
+				(* Make sure that our funnel option can fit into our destination container. *)
+				If[MatchQ[funnel, ObjectP[{Model[Part, Funnel], Object[Part, Funnel]}]],
+					(* We have a problem if this model isn't in our potential funnels. *)
+					If[!MemberQ[potentialFunnelsAllType, ObjectP[funnelModel]],
+						AppendTo[
+							funnelDestinationResult,
+							{
+								funnel,
+								destinationContainerAperture,
+								Lookup[sourcePacket, IncompatibleMaterials],
+								manipulationIndex
+							}
+						]
+					];
+
+					(* if this model isn't in our potential funnels when funnel type is restricted *)
+					If[!MemberQ[potentialFunnels, ObjectP[funnelModel]]&&MemberQ[potentialFunnelsAllType, ObjectP[funnelModel]],
+						AppendTo[
+							funnelTypeDestinationResult,
+							{
+								funnel,
+								funnelType,
+								manipulationIndex
+							}
+						]
+					]
+
+				];
+
+
 				(* Resolve IntermediateFunnel *)
+
+				(* resolve FunnelType based on State of Sample *)
+				(* if instrument is GraduatedCylinder, also resolve to Wet *)
+				intermediateFunnelType=Which[
+					MatchQ[Lookup[sourcePacket, State], Solid],
+					Dry,
+
+					MatchQ[Lookup[sourcePacket, State], Liquid]||MatchQ[instrument, ObjectP[{Model[Container,GraduatedCylinder], Object[Container,GraduatedCylinder]}]],
+					Wet,
+
+					True,
+					{Wet,Dry}
+				];
+
+				(* find all the potential funnels*)
+				{intermediatePotentialFunnels, intermediatePotentialFunnelsAllType, intermediateContainerAperture} = If[MatchQ[intermediateContainer, ObjectP[]],
+					Module[{intermediateContainerPacket, containerAperture, funnels, funnelsAllType},
+						(* Get the model packet of the intermediate container. *)
+						intermediateContainerPacket=If[MatchQ[intermediateContainer, ObjectP[Model[Container]]],
+							fetchPacketFromFastAssoc[intermediateContainer, fastAssoc],
+							fastAssocPacketLookup[fastAssoc, intermediateContainer, Model]
+						];
+
+						(* Get the aperture of our intermediate container. *)
+						(* NOTE: Vessels have this number under Aperture, Plates have it under WellDiameter. *)
+						containerAperture=If[MatchQ[Lookup[intermediateContainerPacket, Aperture], DistanceP],
+							Lookup[intermediateContainerPacket, Aperture],
+							Lookup[intermediateContainerPacket, WellDiameter]
+						];
+
+						(* Get the funnels that can fit into our destination container considering the funnel type. *)
+						funnels = compatibleFunnels[
+							allFunnelPackets,
+							IncompatibleMaterials->Lookup[sourcePacket, IncompatibleMaterials],
+							Aperture->containerAperture,
+							FunnelType->intermediateFunnelType
+						];
+
+						(* Get the funnels that can fit into our destination container ignoring the funnel type. *)
+						funnelsAllType=compatibleFunnels[
+							allFunnelPackets,
+							IncompatibleMaterials->Lookup[sourcePacket, IncompatibleMaterials],
+							Aperture->containerAperture
+						];
+
+						(* return results for resolution and error check *)
+						{funnels, funnelsAllType, containerAperture}
+					],
+
+					(* we don't have funnels if there is no intermediate container*)
+					{{}, {}, Null}
+				];
+
 				(* We need a funnel if we're doing an intermediate decant. *)
 				intermediateFunnel=Which[
 					(* Did the user give us a value? *)
@@ -9025,46 +9429,44 @@ resolveExperimentTransferOptions[
 
 					(* Are we doing an intermediate decant? *)
 					MatchQ[intermediateContainer, ObjectP[]],
-						Module[{intermediateContainerPacket, intermediateContainerAperture,funnelType},
-							(* Get the model packet of the intermediate container. *)
-							intermediateContainerPacket=If[MatchQ[intermediateContainer, ObjectP[Model[Container]]],
-								fetchPacketFromFastAssoc[intermediateContainer, fastAssoc],
-								fastAssocPacketLookup[fastAssoc, intermediateContainer, Model]
-							];
-
-							(* Get the aperture of our intermediate container. *)
-							(* NOTE: Vessels have this number under Aperture, Plates have it under WellDiameter. *)
-							intermediateContainerAperture=If[MatchQ[Lookup[intermediateContainerPacket, Aperture], DistanceP],
-								Lookup[intermediateContainerPacket, Aperture],
-								Lookup[intermediateContainerPacket, WellDiameter]
-							];
-
-							(* resolve FunnelType based on State of Sample *)
-							(* if instrument is GraduatedCylinder, also resolve to Wet *)
-							funnelType=Which[
-								MatchQ[Lookup[sourcePacket, State], Solid],
-								Dry,
-
-								MatchQ[Lookup[sourcePacket, State], Liquid]||MatchQ[instrument, ObjectP[{Model[Container,GraduatedCylinder], Object[Container,GraduatedCylinder]}]],
-								Wet,
-
-								True,
-								{Wet,Dry}
-							];
-
-							(* Get the first funnel that can fit into our intermediate container. *)
-							FirstOrDefault[
-								compatibleFunnels[
-									allFunnelPackets,
-									IncompatibleMaterials->Lookup[sourcePacket, IncompatibleMaterials],
-									Aperture->intermediateContainerAperture,
-									FunnelType->funnelType
-								]
-							]
-						],
+						FirstOrDefault[intermediatePotentialFunnels],
 					(* Otherwise, we don't need a funnel. *)
 					True,
 						Null
+				];
+
+				(*extract the intermediateFunnel model*)
+				intermediateFunnelModel=If[MatchQ[intermediateFunnel, ObjectP[{Object[Part, Funnel]}]],
+					fastAssocLookup[fastAssoc, intermediateFunnel, Model],
+					intermediateFunnel
+				];
+
+				(* Make sure that our intermediate funnel option can fit into our intermediate container. *)
+				If[MatchQ[intermediateFunnel, ObjectP[{Model[Part, Funnel], Object[Part, Funnel]}]] && MatchQ[intermediateContainer, ObjectP[{Model[Container], Object[Container]}]],
+					(* We have a problem if this model isn't in our potential funnels. *)
+					If[!MemberQ[intermediatePotentialFunnelsAllType, ObjectP[intermediateFunnelModel]],
+						AppendTo[
+							funnelIntermediateResult,
+							{
+								intermediateFunnel,
+								intermediateContainerAperture,
+								Lookup[sourcePacket, IncompatibleMaterials],
+								manipulationIndex
+							}
+						]
+					];
+
+					(* We have a problem if this model isn't in our potential funnels. *)
+					If[!MemberQ[intermediatePotentialFunnels, ObjectP[intermediateFunnelModel]]&&MemberQ[intermediatePotentialFunnelsAllType, ObjectP[intermediateFunnelModel]],
+						AppendTo[
+							funnelTypeIntermediateResult,
+							{
+								intermediateFunnel,
+								intermediateFunnelType,
+								manipulationIndex
+							}
+						]
+					];
 				];
 
 				(* Resolve Balance *)
@@ -9872,7 +10274,13 @@ resolveExperimentTransferOptions[
 						Lookup[options, KeepSourceCovered],
 					(* Are we doing this manually and if so, is UnsealHermeticSource not set to True? *)
 					MatchQ[resolvedPreparation, Manual] && MatchQ[unsealHermeticSource, Except[True]],
-						True,
+						(* the keep source/destination covered instructions currently only do not make sense to Crimp/Seal types *)
+						(* if source has a cover, check the cover's CoverType *)
+						If[MatchQ[sourceContainerCover, ObjectP[]],
+							!MatchQ[fastAssocLookup[fastAssoc, sourceContainerCover, {Model, CoverType}], Crimp],
+							(* otherwise check container's CoverTypes *)
+							!MemberQ[Lookup[workingSourceContainerModelPacket, CoverTypes], Crimp]
+						],
 					(* Are we doing this robotically and is KeepCovered set in the source sample or container, or is SterileTechnique already True? *)
 					And[
 						MatchQ[resolvedPreparation, Robotic],
@@ -9970,7 +10378,13 @@ resolveExperimentTransferOptions[
 					(* Are we doing this manually and if so, is UnsealHermeticDestination not set to True? *)
 					(* NOTE: We can't keep the destination covered if we're using a balance. *)
 					MatchQ[resolvedPreparation, Manual] && MatchQ[unsealHermeticDestination, Except[True]] && !MatchQ[instrument, ObjectP[{Model[Instrument, Balance], Object[Instrument, Balance]}]],
-						True,
+						(* the keep source/destination covered instructions currently only do not make sense to Crimp/Seal types *)
+						(* if destination has a cover, check the cover's CoverType *)
+						If[MatchQ[Lookup[destinationContainerPacket, Cover], ObjectP[]],
+							!MatchQ[fastAssocLookup[fastAssoc, Lookup[destinationContainerPacket, Cover], {Model, CoverType}], Crimp],
+							(* otherwise check container model's CoverTypes *)
+							!MemberQ[Lookup[workingDestinationContainerModelPacket, CoverTypes], Crimp]
+						],
 					(* Are we doing this robotically and is KeepCovered set in the destination sample or container, or is SterileTechnique already True? *)
 					And[
 						MatchQ[resolvedPreparation, Robotic],
@@ -10208,6 +10622,214 @@ resolveExperimentTransferOptions[
 				(* Resolve the LivingDestination option - because this option has a Default, there isn't much resolution to do here	*)
 				livingDestination = Lookup[options, LivingDestination];
 
+				(* Other PrewetLabware options *)
+
+				prewetWashSolution = Which[
+					MatchQ[Lookup[options, PrewetWashSolution],Except[Automatic]],
+					Lookup[options, PrewetWashSolution],
+
+					MatchQ[prewetLabware,Except[True]],
+					Null,
+
+					MatchQ[Lookup[sourcePacket,State],Liquid],
+					sourceInput,
+
+					(* if sample is solid, use quantitativeTransferWashSolution *)
+					MatchQ[quantitativeTransfer,True],
+					quantitativeTransferWashSolution,
+
+					True,
+					preResolvedPrewetWashSolution
+				];
+
+
+				(* calculate PrewetWashVolume per labware *)
+				destinationPrewetWashVolume = If[MatchQ[prewetLabware, True],
+					getPrewetWashVolume[Lookup[destinationContainerModelPacket,MaxVolume]]
+				];
+
+				instrumentPrewetWashVolume =Which[
+					MatchQ[prewetLabware,True]&&MatchQ[instrument, ObjectP[{Object[Container,GraduatedCylinder],Model[Container,GraduatedCylinder]}]],
+					getPrewetWashVolume[fastAssocLookup[fastAssoc,instrument,MaxVolume]],
+
+					MatchQ[prewetLabware,True]&&MatchQ[instrument, ObjectP[{Object[Container,Syringe],Model[Container,Syringe]}]]&&MatchQ[fastAssocLookup[fastAssoc,instrument,Reusable],True],
+					getPrewetWashVolume[fastAssocLookup[fastAssoc,instrument,MaxVolume]],
+
+					True,
+					Null
+				];
+
+				intermediateContainerPrewetWashVolume = If[MatchQ[prewetLabware,True]&&MatchQ[intermediateContainer,ObjectP[]],
+					getPrewetWashVolume[fastAssocLookup[fastAssoc,intermediateContainer,MaxVolume]],
+					Null
+				];
+
+				(* this is an estimate of a single pump amount *)
+				handPumpPrewetWashVolume = If[MatchQ[prewetLabware,True]&&MatchQ[handPump,ObjectP[]],
+					20 Milliliter,
+					Null
+				];
+
+				funnelPrewetWashVolume = If[MatchQ[prewetLabware,True]&&MatchQ[funnel,ObjectP[]],
+					If[MatchQ[fastAssocLookup[fastAssoc,Funnel,MouthDiameter], LessP[80 Millimeter]],
+						10 Milliliter,
+						20 Milliliter
+					],
+					Null
+				];
+
+				intermediateFunnelPrewetWashVolume = If[MatchQ[prewetLabware,True]&&MatchQ[funnel,ObjectP[]],
+					If[MatchQ[fastAssocLookup[fastAssoc,IntermediateFunnel,MouthDiameter], LessP[80 Millimeter]],
+						10 Milliliter,
+						20 Milliliter
+					],
+					Null
+				];
+
+				(* in FTV, we use transfer pipette as dropper and this is specified in the Tips field *)
+				tipPrewetWashVolume = Which[
+					MatchQ[prewetLabware,True]&&MatchQ[tips,ObjectP[{Model[Item, Consumable, "id:bq9LA0J1xmBd"]}]],
+					10 Milliliter,
+
+					MatchQ[prewetLabware,True]&&MatchQ[tips,ObjectP[]],
+					Module[{tipMaxVolume},
+						(* Get the volume of the tip that we're using. *)
+						(* If we were unable to find the tips, just default to 500 Microliter. We will yell about the lack of tips later. *)
+						tipMaxVolume=Which[
+							MatchQ[tips, ObjectP[Object[Item, Tips]]],
+							fastAssocLookup[fastAssoc, tips, {Model, MaxVolume}],
+							MatchQ[tips, ObjectP[Model[Item, Tips]]],
+							fastAssocLookup[fastAssoc, tips, MaxVolume],
+							True,
+							500 Microliter
+						];
+
+						(* Use 10 mL or the MaxVolume of the tip when doing a tip rinse, whichever is smaller. *)
+						Min[{10 Milliliter, tipMaxVolume}]
+					],
+
+					True,
+					Null
+				];
+
+				quantitativeTransferWashTipPrewetWashVolume = If[MatchQ[prewetLabware,True]&&MatchQ[quantitativeTransferWashTips,ObjectP[]],
+					Module[{tipMaxVolume},
+						(* Get the volume of the tip that we're using. *)
+						(* If we were unable to find the tips, just default to 500 Microliter. We will yell about the lack of tips later. *)
+						tipMaxVolume=Which[
+							MatchQ[tips, ObjectP[Object[Item, Tips]]],
+							fastAssocLookup[fastAssoc, quantitativeTransferWashTips, {Model, MaxVolume}],
+							MatchQ[tips, ObjectP[Model[Item, Tips]]],
+							fastAssocLookup[fastAssoc, quantitativeTransferWashTips, MaxVolume],
+							True,
+							500 Microliter
+						];
+
+						(* Use 10 mL or the MaxVolume of the tip when doing a tip rinse, whichever is smaller. *)
+						Min[{10 Milliliter, tipMaxVolume}]
+					],
+					Null
+				];
+
+				estimatedPrewetWashVolume=If[MatchQ[prewetLabware,True],
+					Ceiling[
+						Total[
+								Cases[{
+									destinationPrewetWashVolume*numberOfPrewetWashes,
+									instrumentPrewetWashVolume*numberOfPrewetWashes,
+									intermediateContainerPrewetWashVolume*numberOfPrewetWashes,
+									handPumpPrewetWashVolume*numberOfPrewetWashes,
+									funnelPrewetWashVolume*numberOfPrewetWashes,
+									intermediateFunnelPrewetWashVolume*numberOfPrewetWashes,
+									(* For tips that requires low volumes, we estimate the resource required to be at least 10mL since we have to pour at least 10 mL into the beaker *)
+									(tipPrewetWashVolume*numberOfPrewetWashes)/.(LessP[10 Milliliter]->10 Milliliter),
+									(quantitativeTransferWashTips*numberOfPrewetWashes)/.(LessP[10 Milliliter]->10 Milliliter)
+								},_Quantity]
+						],
+						10 Milliliter
+					],
+					Null
+				];
+
+				prewetWashVolume = Which[
+					MatchQ[Lookup[options, PrewetWashVolume],Except[Automatic]],
+					Lookup[options, PrewetWashVolume],
+
+					MatchQ[prewetLabware, True],
+					estimatedPrewetWashVolume,
+
+					True,
+					Null
+				];
+
+				(* -- Error check for PrewetLabware options -- *)
+				(* If the destination container is a plate, throw an error *)
+				If[MatchQ[Lookup[options, PrewetLabware]]&&MatchQ[destinationContainerPacket,ObjectP[{Object[Container,Plate],Model[Container,Plate]}]],
+					AppendTo[invalidPrewetDestinationErrors,{Lookup[options,PrewetLabware],Lookup[destinationContainerPacket,Object],manipulationIndex}]
+				];
+
+				(* If user specified a PrewetWashVolume different from the calculated estimate, throw error *)
+				If[MatchQ[prewetLabware,True]&&MatchQ[Lookup[options, PrewetWashVolume],Except[Automatic]]&&!MatchQ[prewetWashVolume,LessEqualP[estimatedPrewetWashVolume]],
+					AppendTo[invalidPrewetWashVolumeErrors, {Lookup[options, PrewetWashVolume],manipulationIndex}]
+				];
+
+				If[
+					Or[
+						And[
+							MatchQ[Lookup[options,PrewetLabware],True],
+							Or[
+								MatchQ[Lookup[options, NumberOfPrewetWashes], Null],
+								MatchQ[Lookup[options, PrewetWashVolume], Null]
+							]
+						],
+						And[
+							MatchQ[Lookup[options,PrewetLabware],False|Null],
+							Or[
+								MatchQ[Lookup[options, NumberOfPrewetWashes], _Integer],
+								MatchQ[Lookup[options, PrewetWashVolume], _Quantity]
+							]
+						]
+					],
+					AppendTo[incompatiblePrewetLabwareErrors, {Lookup[options,PrewetLabware],Lookup[options,NumberOfPrewetWashes],Lookup[options,PrewetWashVolume],manipulationIndex}]
+				];
+
+				(* Error check for valid PrewetWashSolution *)
+				(* NOTE that if source State is Solid, but a PrewetWashSolution is specified, this is allowed since it can be a liquid solution from a future FTV primitive in an MSP *)
+				Switch[{prewetLabware,Lookup[options,PrewetWashSolution],Lookup[sourcePacket,State]},
+					(* If PrewetLabware is True but PrewetWashSolution is not of the same model as the source sample (if liquid), throw error *)
+					{True,ObjectP[Model[Sample]],Liquid},
+						If[!MatchQ[Lookup[options,PrewetWashSolution],ObjectP[Lookup[sourcePacket,Model]]],
+							AppendTo[invalidPrewetWashSolutionErrors,{Lookup[options,PrewetWashSolution],manipulationIndex}],
+							Nothing
+
+						],
+					(* If PrewetLabware is True but PrewetWashSolution is not of the same model as the source sample (if liquid), throw error *)
+					{True,ObjectP[Object[Sample]],Liquid},
+					If[!MatchQ[fastAssocLookup[fastAssoc,Lookup[options,PrewetWashSolution],Model],ObjectP[Lookup[sourcePacket,Model]]],
+						AppendTo[invalidPrewetWashSolutionErrors,{Lookup[options,PrewetWashSolution],manipulationIndex}],
+						Nothing
+					],
+
+					_,
+					Nothing
+				];
+
+				(* If PrewetLabware is True but PrewetWashSolution is Null, no appropriate solution was found in the future primitives of the MSP or within transfer and throws error message that will ask user to specify a PrewetWashSolution *)
+				If[MatchQ[prewetLabware,True]&&MatchQ[prewetWashSolution,Null],
+					AppendTo[noPrewetWashSolutionFoundErrors,manipulationIndex],
+					Nothing
+				];
+
+				(* If PrewetLabware is True, but destination is not empty, throw error *)
+				If[
+					And[
+						MatchQ[Lookup[options,PrewetLabware],True],
+						MatchQ[Lookup[destinationContainerPacket,Contents],Except[{}]]||(MatchQ[Lookup[destinationContainerPacket,Contents],{}]&&MemberQ[Lookup[workingDestinationContainerPackets[[;;manipulationIndex-1]],Object,{}],ObjectP[Lookup[destinationContainerPacket,Object]]])
+					],
+					AppendTo[invalidPrewetLabwareWarnings, {Lookup[options, PrewetLabware], manipulationIndex}]
+
+				];
+
 				(* -- Error check for missing samples, overaspiration and overfilled samples -- *)
 				(* Lists to append to: missingSampleErrors, overaspirationWarnings, overfilledErrors *)
 
@@ -10325,10 +10947,35 @@ resolveExperimentTransferOptions[
 							instrument,
 							ObjectP[{
 								Model[Item, Spatula],
-								Object[Item, Spatula]
+								Object[Item, Spatula],
+								Model[Item, Tweezer],
+								Object[Item, Tweezer],
+								Model[Item, TransferTube],
+								Object[Item, TransferTube],
+								Model[Item, ChippingHammer],
+								Object[Item, ChippingHammer],
+								Model[Item, Scissors],
+								Object[Item, Scissors]
 							}]
 						],
 						MatchQ[Lookup[sourcePacket, State], Except[Solid]]
+					],
+						AppendTo[instrumentCapacityErrors, {Instrument, instrument, convertedAmount, manipulationIndex}],
+
+					And[
+						MatchQ[
+							instrument,
+							ObjectP[{
+								Model[Item, Tweezer],
+								Object[Item, Tweezer]
+							}]
+						],
+						(* Avoid duplicate error *)
+						MatchQ[Lookup[sourcePacket, State], Solid],
+						Or[
+							MatchQ[amount, Except[CountP]],
+							MatchQ[Lookup[sourcePacket, SampleHandling], Except[Itemized]]
+						]
 					],
 						AppendTo[instrumentCapacityErrors, {Instrument, instrument, convertedAmount, manipulationIndex}],
 
@@ -10584,122 +11231,12 @@ resolveExperimentTransferOptions[
 					AppendTo[solidSampleVolumeErrors, {Download[sourcePacket,Object], manipulationIndex}];
 				];
 
-				(* Make sure that our funnel option can fit into our destination container. *)
-				If[MatchQ[funnel, ObjectP[{Model[Part, Funnel], Object[Part, Funnel]}]],
-					Module[{destinationContainerAperture,funnelModel,potentialFunnels,funnelType},
-						(* Get the aperture of our destination container. *)
-						(* NOTE: Vessels have this number under Aperture, Plates have it under WellDiameter. *)
-						destinationContainerAperture=If[MatchQ[Lookup[destinationContainerModelPacket, Aperture], DistanceP],
-							Lookup[destinationContainerModelPacket, Aperture],
-							Lookup[destinationContainerModelPacket, WellDiameter]
-						];
-
-						(* Get the model of the funnel if we have an object. *)
-						funnelModel=If[MatchQ[funnel, ObjectP[{Object[Part, Funnel]}]],
-							fastAssocLookup[fastAssoc, funnel, Model],
-							funnel
-						];
-
-						(* resolve FunnelType based on State of Sample *)
-						(* if instrument is GraduatedCylinder, also resolve to Wet *)
-						funnelType=Which[
-							MatchQ[Lookup[sourcePacket, State], Solid],
-							Dry,
-
-							MatchQ[Lookup[sourcePacket, State], Liquid]||MatchQ[instrument, ObjectP[{Model[Container,GraduatedCylinder], Object[Container,GraduatedCylinder]}]],
-							Wet,
-
-							True,
-							{Wet,Dry}
-						];
-
-						(* Get the first funnel that can fit into our destination container. *)
-						potentialFunnels=compatibleFunnels[
-							allFunnelPackets,
-							IncompatibleMaterials->Lookup[sourcePacket, IncompatibleMaterials],
-							Aperture->destinationContainerAperture,
-							FunnelType->funnelType
-						];
-
-						(* We have a problem if this model isn't in our potential funnels. *)
-						If[!MemberQ[potentialFunnels, ObjectP[funnelModel]],
-							AppendTo[
-								funnelDestinationResult,
-								{
-									funnel,
-									destinationContainerAperture,
-									Lookup[sourcePacket, IncompatibleMaterials],
-									funnelType,
-									manipulationIndex
-								}
-							]
-						]
-					]
-				];
-
-				(* Make sure that our intermediate funnel option can fit into our intermediate container. *)
-				If[MatchQ[intermediateFunnel, ObjectP[{Model[Part, Funnel], Object[Part, Funnel]}]] && MatchQ[intermediateContainer, ObjectP[{Model[Container], Object[Container]}]],
-					Module[{intermediateContainerPacket,intermediateContainerAperture,funnelModel,potentialFunnels,funnelType},
-						(* Get the model packet of the intermediate container. *)
-						intermediateContainerPacket=If[MatchQ[intermediateContainer, ObjectP[Model[Container]]],
-							fetchPacketFromFastAssoc[intermediateContainer, fastAssoc],
-							fastAssocPacketLookup[fastAssoc, intermediateContainer, Model]
-						];
-
-						(* Get the aperture of our intermediate container. *)
-						(* NOTE: Vessels have this number under Aperture, Plates have it under WellDiameter. *)
-						intermediateContainerAperture=If[MatchQ[Lookup[intermediateContainerPacket, Aperture], DistanceP],
-							Lookup[intermediateContainerPacket, Aperture],
-							Lookup[intermediateContainerPacket, WellDiameter]
-						];
-
-						(* resolve FunnelType based on State of Sample *)
-						(* if instrument is GraduatedCylinder, also resolve to Wet *)
-						funnelType=Which[
-							MatchQ[Lookup[sourcePacket, State], Solid],
-							Dry,
-
-							MatchQ[Lookup[sourcePacket, State], Liquid]||MatchQ[instrument, ObjectP[{Model[Container,GraduatedCylinder], Object[Container,GraduatedCylinder]}]],
-							Wet,
-
-							True,
-							{Wet,Dry}
-						];
-
-						(* Get the first funnel that can fit into our destination container. *)
-						potentialFunnels=compatibleFunnels[
-							allFunnelPackets,
-							IncompatibleMaterials->Lookup[sourcePacket, IncompatibleMaterials],
-							Aperture->intermediateContainerAperture,
-							FunnelType->funnelType
-						];
-
-						(* Get the model of the funnel if we have an object. *)
-						funnelModel=If[MatchQ[intermediateFunnel, ObjectP[{Object[Part, Funnel]}]],
-							fastAssocLookup[fastAssoc, intermediateFunnel, Model],
-							intermediateFunnel
-						];
-
-						(* We have a problem if this model isn't in our potential funnels. *)
-						If[!MemberQ[potentialFunnels, ObjectP[funnelModel]],
-							AppendTo[
-								funnelIntermediateResult,
-								{
-									intermediateFunnel,
-									intermediateContainerAperture,
-									Lookup[sourcePacket, IncompatibleMaterials],
-									manipulationIndex
-								}
-							]
-						]
-					]
-				];
 
 				(* -- Error check for IntermediateContainer and IntermediateDecant when in FTV -- *)
 				(* FTV to VolumetricFlask only allows Model[Container, Vessel, "id:kEJ9mqaVPPD8"] as IntermediateContainer *)
 				Which[
 					(*If specified option is a Model*)
-					MatchQ[Lookup[options, IntermediateContainer],ObjectP[Model[Container]]],
+					MatchQ[Lookup[options, IntermediateContainer],ObjectP[Model[Container]]|Null],
 						If[MatchQ[Lookup[options, IntermediateContainer], Except[ObjectP[Model[Container, Vessel, "id:kEJ9mqaVPPD8"]]]]
 							&&(volumetricFlaskFTVQ),
 							AppendTo[incompatibleFTVIntermediateContainerErrors,{Lookup[options, IntermediateContainer],manipulationIndex,Lookup[destinationContainerModelPacket,Object],Model[Container, Vessel, "id:kEJ9mqaVPPD8"]}];
@@ -10802,6 +11339,52 @@ resolveExperimentTransferOptions[
 					AppendTo[reversePipettingSamples, {Lookup[sourcePacket, Object], manipulationIndex}];
 				];
 
+				(* Error check on KeepSourceCovered compatibility *)
+				Which[
+					!TrueQ[keepSourceCovered] || !MatchQ[resolvedPreparation, Manual],
+						Null,
+					(* We cannot set KeepDestinationCovered to True if any of following is True: *)
+					(* 1. DestinationContainer is Crimp cover type *)
+					(* destination cover is True *)
+					If[MatchQ[sourceContainerCover, ObjectP[]],
+						MatchQ[fastAssocLookup[fastAssoc, sourceContainerCover, {Model, CoverType}], Crimp],
+						(* otherwise check container model's CoverTypes *)
+						MemberQ[Lookup[workingSourceContainerModelPacket, CoverTypes], Crimp]
+					],
+						(* append a string for now so we know why this failed and can be more explicit in the error message *)
+						AppendTo[cannotKeepSourceCoveredErrors, {manipulationIndex, sourceContainerObject, "IncompatibleCoverType", {KeepSourceCovered}}],
+					(* 2. UnsealHermeticDestination is set to True *)
+					MatchQ[unsealHermeticSource, True],
+						AppendTo[cannotKeepSourceCoveredErrors, {manipulationIndex, sourceContainerObject, "UnsealHermeticCover", {KeepSourceCovered, UnsealHermeticSource}}],
+					True,
+						Null
+				];
+
+				(* Error check on KeepDestinationCovered compatibility *)
+				Which[
+					!TrueQ[keepDestinationCovered] || !MatchQ[resolvedPreparation, Manual],
+						Null,
+					(* We cannot set KeepDestinationCovered to True if any of following is True: *)
+					(* 1. DestinationContainer is Crimp cover type *)
+					(* destination cover is True *)
+					If[MatchQ[Lookup[destinationContainerPacket, Cover], ObjectP[]],
+						MatchQ[fastAssocLookup[fastAssoc, Lookup[destinationContainerPacket, Cover], {Model, CoverType}], Crimp],
+						(* otherwise check container model's CoverTypes *)
+						MemberQ[Lookup[workingDestinationContainerModelPacket, CoverTypes], Crimp]
+					],
+						(* append a string for now so we know why this failed and can be more explicit in the error message *)
+						AppendTo[cannotKeepDestinationCoveredErrors, {manipulationIndex, destinationContainerObject, "IncompatibleCoverType", {KeepDestinationCovered}}],
+					(* 2. UnsealHermeticDestination is set to True *)
+					MatchQ[unsealHermeticDestination, True],
+						AppendTo[cannotKeepDestinationCoveredErrors, {manipulationIndex, destinationContainerObject, "UnsealHermeticCover", {KeepDestinationCovered, UnsealHermeticDestination}}],
+					(* 3. We are using a balance *)
+					MatchQ[instrument, ObjectP[{Model[Instrument, Balance], Object[Instrument, Balance]}]],
+						AppendTo[cannotKeepDestinationCoveredErrors, {manipulationIndex, destinationContainerObject, "Balance", {KeepDestinationCovered, Instrument}}],
+					True,
+						Null
+				];
+
+
 				(* -- Simulate any changes in our working cache packets. -- *)
 
 				(* Sample Fields to simulate: State, Volume, Mass *)
@@ -10826,6 +11409,13 @@ resolveExperimentTransferOptions[
 										Max[{
 											Lookup[sourcePacket, Mass] - convertedAmountAsMass,
 											0 Gram
+										}],
+										Null
+									],
+									Count->If[MatchQ[Lookup[sourcePacket, Count], CountP] && MatchQ[convertedAmount, CountP],
+										Max[{
+											Lookup[sourcePacket, Count] - convertedAmount,
+											0
 										}],
 										Null
 									]
@@ -11054,11 +11644,11 @@ resolveExperimentTransferOptions[
 					(* if we are not using balance or we are doing robotic, no need for this at all *)
 					needBalanceQ,
 						Null,
-					(* if we are transferring small amount of liquid, and using balance, set to 10 Second, allow a larger variation due to possible evaporation (5x of balance's model's allowed max variation), otherwise, set to 60 Second and balance default *)
+					(* if we are transferring small amount of liquid, and using balance, set to 10 Second, allow a larger variation due to possible evaporation (5x of balance's model's allowed max variation), otherwise, set to 180 Second and balance default *)
 					smallVolumeTransferQ,
-						10 Second,
+						$LiquidDefaultWeightStabilityDuration,
 					True,
-						60 Second
+						$DefaultWeightStabilityDuration
 				];
 
 				maxWeightVariation = Which[
@@ -11068,9 +11658,9 @@ resolveExperimentTransferOptions[
 					(* if we are not using balance or we are doing robotic, no need for this at all *)
 					needBalanceQ,
 						Null,
-					(* if we are transferring small amount of liquid, and using balance, set to 10 Second, allow a larger variation due to possible evaporation (5x of balance's model's allowed max variation), otherwise, set to 60 Second and balance default *)
+					(* if we are transferring small amount of liquid, and using balance, set to 10 Second, allow a larger variation due to possible evaporation (5x of balance's model's allowed max variation), otherwise, set to 180 Second and balance default *)
 					smallVolumeTransferQ,
-						5 * modelDefaultMaxVariation,
+						$LiquidDefaultWeightToleranceFactor * modelDefaultMaxVariation,
 					True,
 						modelDefaultMaxVariation
 				];
@@ -11082,9 +11672,15 @@ resolveExperimentTransferOptions[
 					(* if we are not using balance or we are doing robotic, no need for this at all *)
 					needBalanceQ,
 						Null,
+					(* match WeightStabilityDuration unless we are doing small amount of liquid transfer *)
+					!smallVolumeTransferQ && MatchQ[weightStabilityDuration, TimeP],
+						weightStabilityDuration,
+					(* In the case of small amount of liquid transfer, we should have a longer duration for tare weight, unless the user has provided an even larger value for WeightStabilityDuration *)
+					smallVolumeTransferQ && MatchQ[weightStabilityDuration, TimeP],
+						Max[weightStabilityDuration, $DefaultWeightStabilityDuration],
 					(* otherwise always default to 60s *)
 					True,
-						60 Second
+						$DefaultWeightStabilityDuration
 				];
 
 				maxTareWeightVariation = Which[
@@ -11094,9 +11690,37 @@ resolveExperimentTransferOptions[
 					(* if we are not using balance or we are doing robotic, no need for this at all *)
 					needBalanceQ,
 						Null,
+					(* match MaxWeightVariation unless we are doing small amount of liquid transfer. In the case of small amount of liquid transfer, we should have a tighter max variation *)
+					!smallVolumeTransferQ && MatchQ[maxWeightVariation, MassP],
+						maxWeightVariation,
+					(* In the case of small amount of liquid transfer, we should have a tighter variation for tare weight, unless the user has provided an even tighter value for MaxWeightVariation *)
+					smallVolumeTransferQ && MatchQ[maxWeightVariation, MassP],
+						Min[maxWeightVariation, modelDefaultMaxVariation],
 					(* otherwise always default to 60s *)
 					True,
 						modelDefaultMaxVariation
+				];
+
+				(* cannot recoup if any of the following: *)
+				If[
+					Or[
+						(* if our source sample is in a squeezable/hermetic container, or a non-dispensable container, we cannot set IntermediateDecantRecoup to True *)
+						And[
+							TrueQ[Lookup[options, IntermediateDecantRecoup]],
+							MatchQ[sourceContainerModelPacket, noRecoupContainerP]
+						],
+						(* if we are using a graduated cylinder but our source sample is in a squeezable/hermetic container, or a non-dispensable container, we cannot set IntermediateDecantRecoup to True *)
+						And[
+							MatchQ[instrument, ObjectP[{Object[Container, GraduatedCylinder], Model[Container, GraduatedCylinder]}]],
+							MatchQ[sourceContainerModelPacket, noRecoupContainerP]
+						],
+						(* if we are using a handpump, hand pump would have been setup inside the working source and it is not possible to do recoup *)
+						And[
+							MatchQ[handPump, ObjectP[]],
+							TrueQ[Lookup[options, IntermediateDecantRecoup]]
+						]
+					],
+					AppendTo[invalidRecoupErrors, {sourceInput, manipulationIndex}]
 				];
 
 				(* Return our options in the order that we will transpose them. *)
@@ -11210,7 +11834,21 @@ resolveExperimentTransferOptions[
 					(*107*)weightStabilityDuration,
 					(*108*)maxWeightVariation,
 					(*109*)tareWeightStabilityDuration,
-					(*110*)maxTareWeightVariation
+					(*110*)maxTareWeightVariation,
+					(*111*)balanceReblanking,
+					(*112*)prewetLabware,
+					(*113*)numberOfPrewetWashes,
+					(*114*)prewetWashSolution,
+					(*115*)prewetWashVolume,
+					(*116*)destinationPrewetWashVolume,
+					(*117*)instrumentPrewetWashVolume,
+					(*118*)intermediateContainerPrewetWashVolume,
+					(*119*)handPumpPrewetWashVolume,
+					(*120*)funnelPrewetWashVolume,
+					(*121*)intermediateFunnelPrewetWashVolume,
+					(*122*)tipPrewetWashVolume,
+					(*123*)quantitativeTransferWashTipPrewetWashVolume,
+					(*124*)decantAmount
 				}
 			]
 		],
@@ -11263,8 +11901,8 @@ resolveExperimentTransferOptions[
 	(* Resolve WasteContainer which is used to hold extra volume from intermediate container when IntermediateDecantRecoup is False OR waste from handpump/handpump adapter *)
 	resolvedWasteContainer = Which[
 		(* If we already have an object, use it! This happens if we are generating Transfer with the resolved options stored in MSP *)
-		!MatchQ[Lookup[myOptions,WasteContainer],Automatic],
-		Lookup[myOptions,WasteContainer],
+		!MatchQ[Lookup[myOptions,WasteContainer],Automatic|Null],
+			Lookup[myOptions,WasteContainer],
 		Or[
 			(* FillToVolume with VolumetricFlask where we always need an intermediate container with transfer pipet and do not want to pour back *)
 			And[
@@ -11275,18 +11913,22 @@ resolveExperimentTransferOptions[
 				!MatchQ[Lookup[myOptions,FillToVolumeOverfillingRepreparation, False],True],
 				MemberQ[workingDestinationContainerModelPackets,ObjectP[{Model[Container,Vessel,VolumetricFlask],Object[Container,Vessel,VolumetricFlask]}]]
 			],
-			(* We need to do IntermediateDecant, but we are not doing recoup *)
 			MemberQ[
-				Transpose[{resolvedIntermediateDecant,Lookup[myOptions, IntermediateDecantRecoup]}],
-				{True,False}
+				Transpose[{workingSourceContainerModelPackets, resolvedIntermediateDecant, resolvedInstrument, Lookup[myOptions, IntermediateDecantRecoup]}],
+				Alternatives[
+					(* We need to do IntermediateDecant, but we are not doing recoup *)
+					{_, True, _, False},
+					(* We need to use a graduated cylinder, but we are not doing recoup *)
+					{_, _, ObjectP[{Object[Container, GraduatedCylinder], Model[Container, GraduatedCylinder]}], False}
+				]
 			],
 			(* We are using a handpump *)
 			MemberQ[resolvedHandPump, ObjectP[]]
 		],
-		Model[Container, Vessel, "250mL Glass Bottle"],
+			Model[Container, Vessel, "250mL Glass Bottle"],
 		True,
-		(* Otherwise no waste container needed *)
-		Null
+			(* Otherwise no waste container needed *)
+			Null
 	];
 
 
@@ -11599,7 +12241,21 @@ resolveExperimentTransferOptions[
 			WeightStabilityDuration -> resolvedWeightStabilityDurations,
 			MaxWeightVariation -> resolvedMaxWeightVariations,
 			TareWeightStabilityDuration -> resolvedTareWeightStabilityDurations,
-			MaxTareWeightVariation -> resolvedMaxTareWeightVariations
+			MaxTareWeightVariation -> resolvedMaxTareWeightVariations,
+			BalanceReblanking -> resolvedBalanceReblanking,
+			PrewetLabware -> resolvedPrewetLabware,
+			NumberOfPrewetWashes -> resolvedNumberOfPrewetWashes,
+			PrewetWashSolution -> resolvedPrewetWashSolutions,
+			PrewetWashVolume -> resolvedPrewetWashVolumes,
+			DestinationPrewetWashVolume -> resolvedDestinationPrewetWashVolumes,
+			InstrumentPrewetWashVolume -> resolvedInstrumentPrewetWashVolumes,
+			IntermediateContainerPrewetWashVolume -> resolvedIntermediateContainerPrewetWashVolumes,
+			HandPumpPrewetWashVolume -> resolvedHandPumpPrewetWashVolumes,
+			FunnelPrewetWashVolume -> resolvedFunnelPrewetWashVolumes,
+			IntermediateFunnelPrewetWashVolume -> resolvedIntermediateFunnelPrewetWashVolumes,
+			TipsPrewetWashVolume -> resolvedTipsPrewetWashVolumes,
+			QuantitativeTransferTipsPrewetWashVolume -> resolvedQuantitativeTransferTipsPrewetWashVolumes,
+			DecantAmount -> resolvedDecantAmounts
 		}
 	];
 
@@ -11865,8 +12521,17 @@ resolveExperimentTransferOptions[
 			ObjectToString[funnelDestinationResult[[All,1]], Cache->simulatedCache],
 			ObjectToString[funnelDestinationResult[[All,2]]],
 			funnelDestinationResult[[All,3]],
-			funnelDestinationResult[[All,4]],
-			funnelDestinationResult[[All,5]]
+			funnelDestinationResult[[All,4]]
+		]
+	];
+
+	(* Give a warning if funnel option does not have the correct funnel type. *)
+	If[Length[funnelTypeDestinationResult] > 0 && messages,
+		Message[
+			Warning::ConflictDestinationFunnelType,
+			ObjectToString[funnelTypeDestinationResult[[All,1]], Cache->simulatedCache],
+			funnelTypeDestinationResult[[All,2]],
+			funnelTypeDestinationResult[[All,3]]
 		]
 	];
 
@@ -11883,6 +12548,16 @@ resolveExperimentTransferOptions[
 			ObjectToString[funnelIntermediateResult[[All,2]]],
 			funnelIntermediateResult[[All,3]],
 			funnelIntermediateResult[[All,4]]
+		]
+	];
+
+	(* Give a warning if funnel option does not have the correct funnel type. *)
+	If[Length[funnelTypeIntermediateResult] > 0 && messages,
+		Message[
+			Warning::ConflictIntermediateFunnelType,
+			ObjectToString[funnelTypeIntermediateResult[[All,1]], Cache->simulatedCache],
+			funnelTypeIntermediateResult[[All,2]],
+			funnelTypeIntermediateResult[[All,3]]
 		]
 	];
 
@@ -12722,37 +13397,6 @@ resolveExperimentTransferOptions[
 		]
 	];
 
-	(* Check for Aspiratable->False or Dispensable->False containers. *)
-	(* NOTE: We don't change these fields in the working container model packets, so it's fine to check these fields outside of the big MapThread. *)
-	aspiratableOrDispensableFalseResult=MapThread[
-		Function[{sourceContainerPacket, sourceContainerModelPacket, destinationContainerPacket, destinationContainerModelPacket, manipulationIndex},
-			Sequence@@{
-				If[MatchQ[Lookup[sourceContainerModelPacket, Aspiratable], False],
-					{Source, sourceContainerPacket, manipulationIndex},
-					Nothing
-				],
-				If[MatchQ[Lookup[sourceContainerModelPacket, Dispensable], False],
-					{Destination, destinationContainerPacket, manipulationIndex},
-					Nothing
-				]
-			}
-		],
-		{workingSourceContainerPackets, workingSourceContainerModelPackets, workingDestinationContainerPackets, workingDestinationContainerModelPackets, Range[Length[myAmounts]]}
-	];
-
-	aspiratableOrDispensableFalseTest=If[Length[aspiratableOrDispensableFalseResult]==0,
-		Test["All source container models are not Aspiratable->False and all destination container models are not Dispensable->False:",True,True],
-		Test["All source container models are not Aspiratable->False and all destination container models are not Dispensable->False:",False,True]
-	];
-
-	If[Length[aspiratableOrDispensableFalseResult] > 0 && messages,
-		Message[
-			Error::AspiratableOrDispensableFalse,
-			Cases[aspiratableOrDispensableFalseResult, {Source, _, _}][[All,3]],
-			Cases[aspiratableOrDispensableFalseResult, {Destination, _, _}][[All,3]]
-		]
-	];
-
 	(* We cannot do hot/cold transfers in the glove box. Check for this. *)
 	invalidTransferTemperatureResult=MapThread[
 		Function[{options, manipulationIndex},
@@ -12827,7 +13471,7 @@ resolveExperimentTransferOptions[
 							{},
 							ObjectP[{Model[Instrument,Pipette], Object[Instrument,Pipette]}],
 							{Tips},
-							ObjectP[{Model[Item, Spatula], Object[Item, Spatula]}],
+							ObjectP[{Model[Item, Spatula], Object[Item, Spatula], Model[Item, Tweezer], Object[Item, Tweezer], Model[Item, TransferTube], Object[Item, TransferTube], Model[Item, ChippingHammer], Object[Item, ChippingHammer], Model[Item, Scissors], Object[Item, Scissors]}],
 							{Balance},
 							ObjectP[{Model[Instrument,Aspirator], Object[Instrument,Aspirator]}],
 							{Tips},
@@ -12836,7 +13480,7 @@ resolveExperimentTransferOptions[
 						]
 					],
 					Switch[amount,
-						MassP,
+						(MassP|CountP),
 							{Balance},
 						_,
 							{}
@@ -12871,7 +13515,7 @@ resolveExperimentTransferOptions[
 						{hermeticOptions, tipOptions},
 					{ObjectP[{Model[Instrument, Pipette], Object[Instrument, Pipette]}],_,_},
 						{hermeticOptions},
-					{ObjectP[{Model[Item, Spatula], Object[Item, Spatula]}],_,_},
+					{ObjectP[{Model[Item, Spatula], Object[Item, Spatula], Model[Item, Tweezer], Object[Item, Tweezer], Model[Item, TransferTube], Object[Item, TransferTube], Model[Item, ChippingHammer], Object[Item, ChippingHammer], Model[Item, Scissors], Object[Item, Scissors]}],_,_},
 						{tipOptions},
 					{_,_,_},
 						{}
@@ -13218,6 +13862,20 @@ resolveExperimentTransferOptions[
 		Test["We are not recouping residual sample in IntermediateContainer back to a public or model sample:", False, True]
 	];
 
+	(* check if we are trying to recoup intermediate container liquid back to a public sample or model sample, which is not allowed *)
+	If[Length[invalidRecoupErrors] > 0 && messages,
+		Message[
+			Error::InvalidRecoup,
+			ObjectToString[invalidRecoupErrors[[All, 1]], Cache -> simulatedCache],
+			invalidRecoupErrors[[All, 2]]
+		]
+	];
+
+	invalidRecoupTest = If[Length[invalidRecoupErrors] == 0,
+		Test["We are not recouping residual sample that is in a squeezable, hermetic, or non-dispensable container, or in a container installed with a hand pump:", True, True],
+		Test["We are not recouping residual sample that is in a squeezable, hermetic, or non-dispensable container, or in a container installed with a hand pump:", False, True]
+	];
+
 	(* Check that the user did not give us a spatula that cannot fit inside the destination aperture *)
 	If[Length[incompatibleSpatulaWidthErrors] > 0 && messages,
 		Message[
@@ -13301,6 +13959,51 @@ resolveExperimentTransferOptions[
 	aqueousGloveBoxTest=If[Length[aqueousGloveBoxErrors] == 0,
 		Test["Aqueous samples are not manipulated in the glove box:", True, True],
 		Test["Aqueous samples are not manipulated in the glove box:", False, True]
+	];
+	
+	(* Error check on KeepSourceCovered/KeepDestinationCovered compatibility *)
+	If[Length[cannotKeepSourceCoveredErrors] > 0 && messages,
+		Message[
+			Error::CannotKeepSourceCovered,
+			cannotKeepSourceCoveredErrors[[All, 1]],
+			ObjectToString[cannotKeepSourceCoveredErrors[[All, 2]], Cache -> simulatedCache],
+			(* change the error description depends on how this errored out *)
+			Lookup[
+				{
+					"IncompatibleCoverType" -> "The destination container is of Crimp cover type.",
+					"UnsealHermeticCover" -> "The UnsealHermeticDestination option is set to True.",
+					"Balance" -> "The destination container cannot stay covered when using a balance."
+				},
+				cannotKeepSourceCoveredErrors[[All, 3]],
+				"Undetermined reasons"
+			]
+		]
+	];
+	If[Length[cannotKeepDestinationCoveredErrors] > 0 && messages,
+		Message[
+			Error::CannotKeepDestinationCovered,
+			cannotKeepDestinationCoveredErrors[[All, 1]],
+			ObjectToString[cannotKeepDestinationCoveredErrors[[All, 2]], Cache -> simulatedCache],
+			(* change the error description depends on how this errored out *)
+			Lookup[
+				{
+					"IncompatibleCoverType" -> "The destination container is of Crimp cover type.",
+					"UnsealHermeticCover" -> "The UnsealHermeticDestination option is set to True.",
+					"Balance" -> "The destination container cannot stay covered when using a balance."
+				},
+				cannotKeepDestinationCoveredErrors[[All, 3]],
+				"Undetermined reasons"
+			]
+		]
+	];
+
+	cannotKeepSourceCoveredTest = If[Length[cannotKeepSourceCoveredErrors] == 0,
+		Test["The KeepSourceCovered option is compatibility with source container and other options.", True, True],
+		Test["The KeepSourceCovered option is compatibility with source container and other options.", False, True]
+	];
+	cannotKeepDestinationCoveredTest = If[Length[cannotKeepDestinationCoveredErrors] == 0,
+		Test["The KeepDestinationCovered option is compatibility with source container and other options.", True, True],
+		Test["The KeepDestinationCovered option is compatibility with source container and other options.", False, True]
 	];
 
 	(* Check that the user didn't give us WeighingContainer->Null with a non-empty destination container. *)
@@ -13924,6 +14627,115 @@ resolveExperimentTransferOptions[
 		Test["The specified TransferEnvironment is suitable to fulfill the user-specified transfers:", False, True]
 	];
 
+	invalidPrewetDestination = If[Length[invalidPrewetDestinationErrors] > 0 && messages,
+		Message[
+			Error::InvalidPrewetDestination,
+			invalidPrewetDestinationErrors[[All,1]],
+			ObjectToString[invalidPrewetDestinationErrors[[All, 2]], Cache -> simulatedCache],
+			invalidPrewetDestinationErrors[[All,3]]
+		];
+		{PrewetLabware},
+		{}
+	];
+
+	invalidPrewetDestinationTest = If[Length[invalidPrewetDestinationErrors] == 0,
+		Test["The Destination container is not a Model[Container,Plate] if PrewetLabware is True:", True, True],
+		Test["The Destination container is not a Model[Container,Plate] if PrewetLabware is True:", False, True]
+	];
+
+	invalidPrewetLabwareOptions = If[Length[incompatiblePrewetLabwareErrors] > 0 && messages,
+		(* throw message *)
+		Message[
+			Error::IncompatiblePrewetLabwareOptions,
+			Transpose[{incompatiblePrewetLabwareErrors[[All, 1]],incompatiblePrewetLabwareErrors[[All, 2]], incompatiblePrewetLabwareErrors[[All, 3]]}],
+			incompatiblePrewetLabwareErrors[[All, 4]]
+		];
+		{PrewetLabware, NumberOfPrewetWashes, PrewetWashVolume},
+		{}
+	];
+
+	invalidPrewetLabwareOptionsTest = If[Length[incompatiblePrewetLabwareErrors] == 0,
+		Test["The specified PrewetLabware, NumberOfPrewetWashes, and PrewetWashVolume are compatible with each other:", True, True],
+		Test["The specified PrewetLabware, NumberOfPrewetWashes, and PrewetWashVolume are compatible with each other:", False, True]
+	];
+
+	invalidPrewetWashVolumeOptions = If[Length[invalidPrewetWashVolumeErrors] > 0 && messages,
+		(* throw message *)
+		Message[
+			Error::InvalidPrewetWashVolume,
+			invalidPrewetWashVolumeErrors[[All,1]],
+			invalidPrewetWashVolumeErrors[[All,2]]
+		];
+		{PrewetWashVolume},
+		{}
+	];
+
+	invalidPrewetWashVolumeOptionsTest = If[Length[invalidPrewetWashVolumeErrors] == 0,
+		Test["The specified PrewetWashVolume is equal to the calculated PrewetWashVolume:", True, True],
+		Test["The specified PrewetWashVolume is equal to the calculated PrewetWashVolume:", False, True]
+	];
+
+	invalidPrewetLabware = If[Length[invalidPrewetLabwareWarnings] > 0 && messages && Not[MatchQ[$ECLApplication, Engine]],
+		(* throw message *)
+
+		Message[
+			Warning::InvalidPrewetLabware,
+			invalidPrewetLabwareWarnings[[All, 1]],
+			invalidPrewetLabwareWarnings[[All, 2]]
+		];
+	];
+
+	invalidPrewetLabwareTest = If[Length[invalidPrewetLabwareWarnings] == 0,
+		Warning["The specified PrewetLabware is True if, and only if, the destination container is empty:", True, True],
+		Warning["The specified PrewetLabware is True if, and only if, the destination container is empty:", False, True]
+	];
+
+	invalidPrewetWashSolution = If[Length[invalidPrewetWashSolutionErrors] > 0 && messages,
+		(* throw message *)
+		Message[
+			Error::InvalidPrewetWashSolution,
+			invalidPrewetWashSolutionErrors[[All, 1]],
+			invalidPrewetWashSolutionErrors[[All, 2]]
+		];
+		{PrewetWashSolution},
+		{}
+	];
+
+	invalidPrewetWashSolutionTest = If[Length[invalidPrewetWashSolutionErrors] == 0,
+		Test["The specified PrewetWashSolution is of the same model as a liquid Source:", True, True],
+		Test["The specified PrewetWashSolution is of the same model as a liquid Source:", False, True]
+	];
+
+	noPrewetWashSolutionFound = If[Length[noPrewetWashSolutionFoundErrors] > 0 && messages,
+		(* throw message *)
+		Message[
+			Error::NoPrewetWashSolutionFound,
+			noPrewetWashSolutionFoundErrors
+		];
+		{PrewetWashSolution},
+		{}
+	];
+
+	noPrewetWashSolutionFoundTest = If[Length[noPrewetWashSolutionFoundErrors] == 0,
+		Test["PrewetWashSolution was resolved to be an object if PrewetLabware is True:", True, True],
+		Test["PrewetWashSolution was resolved to be an object if PrewetLabware is True:", False, True]
+	];
+
+	(* Check that the user specified BalanceReblanking does not match with weighing container. *)
+	If[Length[balanceReblankingErrors] > 0 && messages,
+		Message[
+			Error::InvalidBalanceReblanking,
+			balanceReblankingErrors[[All,1]],
+			balanceReblankingErrors[[All,2]],
+			ObjectToString[balanceReblankingErrors[[All,3]], Cache->simulatedCache]
+		]
+	];
+
+	balanceReblankingTest=If[Length[balanceReblankingErrors] == 0,
+		Test["BalanceReblanking must be None if weighing container is not replaceable:", True, True],
+		Test["BalanceReblanking must be None if weighing container is not replaceable:", False, True]
+	];
+
 	(* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
 	invalidInputs=DeleteDuplicates[Flatten[{
 		invalidWellResult[[All,1]],
@@ -13932,7 +14744,6 @@ resolveExperimentTransferOptions[
 		hermeticDestinationErrors[[All,1]],
 		requiredOrCantBeSpecifiedResult[[All,1]],
 		weighingContainerErrors[[All,1]],
-		aspiratableOrDispensableFalseResult[[All,2]],
 		gaseousSampleErrors[[All,1]],
 		incompatibleDestinationContainerErrors[[All,1]],
 		incompatibleDestinationContainerErrors[[All,3]],
@@ -14010,6 +14821,10 @@ resolveExperimentTransferOptions[
 			{}
 		],
 		If[Length[recoupContaminationErrors]>0,
+			{IntermediateDecantRecoup},
+			{}
+		],
+		If[Length[invalidRecoupErrors]>0,
 			{IntermediateDecantRecoup},
 			{}
 		],
@@ -14164,6 +14979,10 @@ resolveExperimentTransferOptions[
 			{RestrictSource, RestrictDestination},
 			{}
 		],
+		If[Length[balanceReblankingErrors]>0,
+			{WeighingContainer, BalanceReblanking},
+			{}
+		],
 		(* For experiments that teh developer marks the post processing samples as Living -> True, we need to add potential failing options to invalidOptions list in order to properly fail the resolver *)
 		If[MemberQ[Values[resolvedPostProcessingOptions],$Failed],
 			PickList[Keys[resolvedPostProcessingOptions],Values[resolvedPostProcessingOptions],$Failed],
@@ -14171,7 +14990,14 @@ resolveExperimentTransferOptions[
 		invalidSamplesInStorageConditionOptions,
 		invalidNonDisposalSamplesInStorageConditionOptions,
 		noTransferEnvironmentAvailableOptions,
-		invalidTransferEnvironmentOptions
+		invalidTransferEnvironmentOptions,
+		invalidPrewetDestination,
+		invalidPrewetLabwareOptions,
+		invalidPrewetWashVolumeOptions,
+		invalidPrewetWashSolution,
+		noPrewetWashSolutionFound,
+		cannotKeepSourceCoveredErrors[[All, -1]],
+		cannotKeepDestinationCoveredErrors[[All, -1]]
 	}]];
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
@@ -14216,7 +15042,6 @@ resolveExperimentTransferOptions[
 			compatibleTransfersEnvWithInstrumentTest,
 			backfillGasTest,
 			invalidTransferEnvironmentBalanceTest,
-			aspiratableOrDispensableFalseTest,
 			transferTemperatureTest,
 			gaseousSampleTest,
 			incompatibleDestinationContainerTest,
@@ -14224,6 +15049,7 @@ resolveExperimentTransferOptions[
 			incompatibleFTVIntermediateDecantTest,
 			incompatibleIntermediateContainerTest,
 			recoupContaminationTest,
+			invalidRecoupTest,
 			solidSampleVolumeTest,
 			roundedOptionTests,
 			roundedTransferAmountTest,
@@ -14268,7 +15094,15 @@ resolveExperimentTransferOptions[
 			smallQuantityQuantitativeTransferTest,
 			noTransferEnvironmentAvailableTest,
 			invalidTransferEnvironmentTest,
-			volatileHazardousSamplesInBSCTest
+			invalidPrewetDestinationTest,
+			invalidPrewetLabwareOptionsTest,
+			invalidPrewetWashVolumeOptionsTest,
+			invalidPrewetLabwareTest,
+			invalidPrewetWashSolutionTest,
+			noPrewetWashSolutionFoundTest,
+			volatileHazardousSamplesInBSCTest,
+			cannotKeepSourceCoveredTest,
+			cannotKeepDestinationCoveredTest
 		}]
 	}
 ];
@@ -14630,13 +15464,14 @@ transferResourcePackets[
 				instrumentAndSourceToResource, transposedSourcesAndInstruments, combinedSources, combinedDestinations, combinedAmounts, combinedIndices,
 				combinedMapThreadFriendlyOptions, pillCrusherResource, nonEmptyDestinations,funnelAssoc,mappedDestinationContents,funnelResources, intermediateFunnelResources,
 				handPumpWasteContainerResource, tipRinseSolutionResources, tipRinseSolutionAndVolume, quantitativeTransferWashSolutionResources,
-				quantitativeTransferWashSolutionAndVolume, sharedHandPumpAndAdapterResources, allHandPumps,allHandPumpAdapterPackets, sharedInstrumentResources, reusableSpatulas,reusableSpatulaResources,countedSpatulas, countedSpatulaResources, availablePipetteObjectsAndModels,
+				quantitativeTransferWashSolutionAndVolume, sharedHandPumpAndAdapterResources, allHandPumpAdapterPackets, sharedInstrumentResources, reusableSpatulas,reusableSpatulaResources,countedSpatulas, countedSpatulaResources, availablePipetteObjectsAndModels,
 				resourcesNotToPickUpFront, manualProtocolPacket,
 				expandedQuantitativeTransferWashTips, allTips, talliedTips, tipToResourceListLookup, popTipResource,
 				destinationContainerResources, expandedShell, combinedShell, expandCombinedList, flameDestinations, flameSourceResources, roundToInstrumentResolution,
 				combinedAmountsRounded, combinedAmountsAsVolume, pipetteDialImages, aspirationMixPipetteDialImages, dispenseMixPipetteDialImages, transferInstMaxVolumes, transferInstResolutions,
-				transferInstChannels, transferInstPipetteTypes, discardSources, graduatedCylinderImages, serologicalPipetteImages, intermediateContainerImages, splitTransferEnvironments, overdrawVolumeContainerResource, wasteContainerResource, syringeImages,
-				transferManualUnitOperationPacketsWithRequiredObjects, transferManualUnitOperationRequiredResourceTuples
+				transferInstChannels, transferInstPipetteTypes, discardSources, graduatedCylinderImages, serologicalPipetteImages, intermediateContainerImages, splitTransferEnvironments, overdrawVolume, overdrawVolumeContainerResource, wasteContainerResource, balanceCleaningBrushResource, waterBasedCleaningWipesResource, alcoholBasedCleaningWipesResource, syringeImages, destinationPrewetWashVolumeImages, intermediateContainerPrewetWashVolumeImages, instrumentPrewetWashVolumeImages, tipsPrewetWashVolumeImages, funnelPrewetWashVolumeImages, intermediateFunnelPrewetWashVolumeImages, handPumpPrewetWashVolumeImages, quantitativeTransferTipsPrewetWashVolumeImages,
+				transferManualUnitOperationPacketsWithRequiredObjects, transferManualUnitOperationRequiredResourceTuples,
+				prewetWashSolutionAndVolume,prewetWashSolutionObjectResourceLookup, prewetWashIntermediateContainerResourceLookup,prewetWashWasteContainerResourceLookup,displayedDecantAmountAsVolumes
 			},
 
 			(* Expand the QuantitativeTransferWashTips options by NumberOfQuantitativeTransferWashes since we want to use a new tip for each wash *)
@@ -14789,16 +15624,6 @@ transferResourcePackets[
 				Tally[countedSpatulas,#1===#2&]
 			];
 
-			(* Create resources for all of the hand pumps. *)
-			allHandPumps=Cases[Lookup[myResolvedOptions, HandPump], ObjectP[{Model[Part, HandPump], Object[Part, HandPump]}]]/.{link_Link:>Download[link, Object]};
-			sharedHandPumpResources=(
-				Download[#, Object]->Resource[
-					Sample->#,
-					Name->CreateUUID[],
-					Rent->True
-				]
-			&)/@DeleteDuplicates[allHandPumps];
-
 			(* Create resources for the quantitative transfer wash solution. *)
 			quantitativeTransferWashSolutionAndVolume = MapThread[
 				If[MatchQ[#1, ObjectP[]],
@@ -14823,6 +15648,31 @@ transferResourcePackets[
 					]
 				]
 					&)/@DeleteDuplicates[Cases[Lookup[myResolvedOptions, QuantitativeTransferWashSolution], ObjectP[]]/.{link_Link:>Download[link, Object]}];
+
+			(* Create resources for the prewet wash solution. *)
+			prewetWashSolutionAndVolume = MapThread[
+				If[MatchQ[#1, ObjectP[]],
+					({#1, #2}/.{link_Link:>Download[link, Object]}),
+					Nothing
+				]&,
+				{Lookup[myResolvedOptions, PrewetWashSolution], Lookup[myResolvedOptions, PrewetWashVolume]}
+			];
+
+			prewetWashSolutionObjectResourceLookup=(
+				Download[#, Object]->If[MatchQ[#, ObjectP[Model[Sample]]],
+					Resource[
+						Sample->#,
+						Name->CreateUUID[],
+						Amount->Total[Cases[prewetWashSolutionAndVolume, {#, _}][[All,2]]] * 1.1,
+						Container->PreferredContainer[Total[Cases[prewetWashSolutionAndVolume, {#, _}][[All,2]]] * 1.1, IncompatibleMaterials -> fastAssocLookup[fastAssoc, #, IncompatibleMaterials]]
+					],
+					Resource[
+						Sample->#,
+						Name->CreateUUID[],
+						Amount->Total[Cases[prewetWashSolutionAndVolume, {#, _}][[All,2]]] * 1.1
+					]
+				]
+					&)/@DeleteDuplicates[Cases[Lookup[myResolvedOptions, PrewetWashSolution], ObjectP[]]/.{link_Link:>Download[link, Object]}];
 
 			(* Create resources for the tip rinse solution. *)
 			tipRinseSolutionAndVolume=Transpose[{Lookup[myResolvedOptions, TipRinseSolution], Lookup[myResolvedOptions, TipRinseVolume]}]/.{link_Link:>Download[link, Object]};
@@ -14869,6 +15719,34 @@ transferResourcePackets[
 			wasteContainerResource = If[MatchQ[Lookup[myResolvedOptions, WasteContainer], ObjectP[]],
 				Resource[
 					Sample -> Lookup[myResolvedOptions, WasteContainer],
+					Name -> CreateUUID[],
+					Rent -> True
+				],
+				Null
+			];
+			
+			(* Balance Cleaning Tools Resources - BalanceCleaningBrush, WaterBasedCleaningWipes, AlcoholBasedCleaningWipes *)
+			balanceCleaningBrushResource = If[MemberQ[Lookup[myResolvedOptions,Balance],ObjectP[]],
+				Resource[
+					Sample -> Model[Item, Consumable, "id:8qZ1VWkY377b"],(*Model[Item, Consumable, "Antistatic Brush (Narrow Brush Width, Long Handle)"]*)
+					Name -> CreateUUID[],
+					Rent -> True
+				],
+				Null
+			];
+			
+			waterBasedCleaningWipesResource = If[MemberQ[Lookup[myResolvedOptions,Balance],ObjectP[]],
+				Resource[
+					Sample -> Model[Item, Consumable, "id:eGakldewPqzz"],(*Model[Item, Consumable, "Pre-moistened DI Wipes, 100% pure deionized water"]*)
+					Name -> CreateUUID[],
+					Rent -> True
+				],
+				Null
+			];
+			
+			alcoholBasedCleaningWipesResource = If[MemberQ[Lookup[myResolvedOptions,Balance],ObjectP[]],
+				Resource[
+					Sample -> Model[Item, Consumable, "id:XnlV5jNGWBDo"], (*Model[Item, Consumable, "Pre-moistened 70% IPA, 30% pure deionized water Wipes"]*)
 					Name -> CreateUUID[],
 					Rent -> True
 				],
@@ -14929,6 +15807,32 @@ transferResourcePackets[
 						Null
 					]],
 					{combinedDestinations,combinedResourceRentContainerBool}];
+
+			prewetWashIntermediateContainerResourceLookup = (
+				Download[#, Object]->If[MatchQ[#, ObjectP[]],
+					Resource[
+						Sample->Model[Container, Vessel, "id:xRO9n3vk11mz"], (*Model[Container, Vessel, "50mL Pyrex Beaker"]*)
+						Name->CreateUUID[],
+						Rent->True
+					],
+					Null
+				]
+					&)/@DeleteDuplicates[Cases[Lookup[myResolvedOptions, PrewetWashSolution], ObjectP[]]/.{link_Link:>Download[link, Object]}];
+
+			prewetWashWasteContainerResourceLookup=(
+				Download[#, Object]->If[MatchQ[#, ObjectP[]],
+					Resource[
+						Sample->Switch[Total[Cases[prewetWashSolutionAndVolume, {#, _}][[All,2]]] * 1.1,
+							LessP[250 Milliliter],Model[Container, Vessel, "id:BYDOjv1VAA8m"], (* Model[Container, Vessel, "250mL Kimax Beaker"] *)
+							LessP[500 Milliliter],Model[Container, Vessel, "id:R8e1PjRDbbOv"], (* Model[Container, Vessel, "600mL Pyrex Beaker"] *)
+							_, Model[Container, Vessel, "id:O81aEB4kJJJo"] (*Model[Container, Vessel, "1000mL Glass Beaker"]*)
+						],
+						Name->CreateUUID[],
+						Rent->True
+					],
+					Null
+				]
+					&)/@DeleteDuplicates[Cases[Lookup[myResolvedOptions, PrewetWashSolution], ObjectP[]]/.{link_Link:>Download[link, Object]}];
 
 				(* We share graduated cylinders and syringes if the source is the same. *)
 				transposedSourcesAndInstruments=Cases[
@@ -15747,7 +16651,7 @@ transferResourcePackets[
 							],
 						MatchQ[Lookup[options, WeighingContainer], ObjectP[{Object[Item]}]],
 							If[
-								MatchQ[fastAssocLookup[fastAssoc, fastAssocPacketLookup[fastAssoc,Lookup[options, SachetIntermediateContainer],Model], Counted],True],
+								MatchQ[fastAssocLookup[fastAssoc, fastAssocPacketLookup[fastAssoc,Lookup[options, WeighingContainer],Model], Counted],True],
 								Resource[
 									Sample -> Lookup[options, WeighingContainer],
 									Amount -> 1
@@ -16122,458 +17026,629 @@ transferResourcePackets[
 				{Lookup[combinedMapThreadFriendlyOptions, Instrument], combinedAmountsAsVolume}
 			];
 
-			(* Map over each of our resolve transfers and make a Object[UnitOperation, Transfer] for it. *)
-			transferManualUnitOperationPackets=UploadUnitOperation[
-				MapThread[
-					Function[{source, destination, amount, roundedAmount, roundedAmountAsVolume, sourceResource, transferEnvironmentResource, balanceResource, backfillNeedleResource, ventingNeedleResource, intermediateContainerResource, indexMatchedMagnetizationSampleResource, options, sourceIncubator, destinationIncubator, weighingContainerResource, destinationResource, pipetteDialImage, aspirationMixPipetteDialImage, dispenseMixPipetteDialImage, graduatedCylinderImage, serologicalPipetteImage, intermediateContainerImage, discardSource, sachetIntermediateContainerResource,funnelResource,intermediateFunnelResource, syringeImage,handPumpAndAdapter},
-						Module[{nonHiddenTransferOptions, weighingContainer, sachetIntermediateContainer},
-							(* Only include non-hidden options from Transfer. *)
-							nonHiddenTransferOptions=Lookup[
-								Cases[OptionDefinition[ExperimentTransfer], KeyValuePattern["Category"->Except["Hidden"]]],
-								"OptionSymbol"
+			(* construct DisplayedDecantAmountAsVolume for procedure instruction *)
+			displayedDecantAmountAsVolumes = MapThread[
+				Function[{decantVolume, intermediateContainer},
+					If[NullQ[decantVolume],
+						(* if we do not decant, resolve to Null *)
+						Null,
+
+						(* otherwise, construct instruction based on decant volume *)
+						Module[{intermediateContainerResolution, quarterResolution, resolutionQuotient, resolutionRemainder},
+							(* find out the resolution of intermediate container *)
+							intermediateContainerResolution = fastAssocLookup[fastAssoc,intermediateContainer,Resolution];
+							(* the most precise resolution is a quarter of resolution *)
+							quarterResolution = If[MatchQ[intermediateContainerResolution, VolumeP],
+								0.25 * intermediateContainerResolution,
+								(* give a default resolution in case the intermediate container does not have graduation line *)
+								100 Milliliter
 							];
+							(* find out the times of quarterResolution *)
+							{resolutionQuotient, resolutionRemainder} = QuotientRemainder[Round[decantVolume, 0.01 Milliliter], UnitConvert[quarterResolution, Milliliter]];
 
-							(* pull stuff out of the options here so we don't have to do it again and again below *)
-							{weighingContainer,sachetIntermediateContainer} = Download[Lookup[options, {WeighingContainer,SachetIntermediateContainer}], Object];
+							(* decant volume should be times of quaterResolution if we have enough sample *)
+							If[resolutionRemainder > 0 Liter,
+								(* if resolutionRemainder is not 0, we must have to use all the sample *)
+								"All (the entire amount of the sample)",
 
-							(* Override any options with resource. *)
-							Transfer@Join[
-								Cases[Normal[options], Verbatim[Rule][Alternatives@@nonHiddenTransferOptions|MultichannelTransferName|RentDestinationContainer|LivingDestination, _]],
-								{
-									(* NOTE: We always make resources for the containers, not the samples. This is because we want the container *)
-									(* objects, not the sample objects to show up in the engine instructions. *)
-									Source-> If[MatchQ[Lookup[options, MultichannelTransferName], Null],
-										sourceResource,
-										ConstantArray[
+								(* otherwise, construct expression based on mod of 4 *)
+								Switch[Mod[resolutionQuotient, 4],
+									1,
+									ToString[UnitScale[resolutionQuotient*quarterResolution]]<>" (one quarter over the graduation line of " <>ToString[UnitScale[(resolutionQuotient-1)*quarterResolution]] <>")",
+									2,
+									ToString[UnitScale[resolutionQuotient*quarterResolution]]<>" (one half over the graduation line of " <>ToString[UnitScale[(resolutionQuotient-2)*quarterResolution]] <>")",
+									3,
+									ToString[UnitScale[resolutionQuotient*quarterResolution]]<>" (three quarters over the graduation line of " <>ToString[UnitScale[(resolutionQuotient-3)*quarterResolution]] <>")",
+									0,
+									ToString[UnitScale[resolutionQuotient*quarterResolution]]<>" (the graduation line of " <>ToString[UnitScale[resolutionQuotient*quarterResolution]] <>")"
+								]
+							]
+						]
+					]
+				],
+				{Lookup[combinedMapThreadFriendlyOptions, DecantAmount], Lookup[combinedMapThreadFriendlyOptions, IntermediateContainer]}
+			];
+
+
+			(* Create beaker images for Prewet pouring tasks *)
+			{
+				destinationPrewetWashVolumeImages,
+				intermediateContainerPrewetWashVolumeImages,
+				instrumentPrewetWashVolumeImages,
+				tipsPrewetWashVolumeImages,
+				funnelPrewetWashVolumeImages,
+				intermediateFunnelPrewetWashVolumeImages,
+				handPumpPrewetWashVolumeImages,
+				quantitativeTransferTipsPrewetWashVolumeImages
+			} = Map[
+				Function[{volumeOption},
+					MapThread[
+						Function[{washSolution, amount},
+							If[MatchQ[washSolution, ObjectP[]] && MatchQ[amount, VolumeP],
+								Module[{graphic},
+
+									(* Generate MM graphics for the volume in container *)
+									graphic = Quiet[
+										PlotContainer[Lookup[prewetWashIntermediateContainerResourceLookup,washSolution][Sample], amount, FieldOfView -> All],
+										{Error::VolumeOutsidePlottableRange, Error::UnableToPlotContainerModel, Warning::VolumeOutsideOfGraduations}
+									];
+									(* If we were able to generate the graphic.. *)
+									If[MatchQ[graphic, _Graphics],
+										(*.. upload the MM graphics convert to image Image and call UploadCloudFile with the upload option.*)
+										Block[{$DisableVerbosePrinting = True}, UploadCloudFile[Image[graphic], Upload -> upload]],
+										Null
+									]
+								],
+								Null
+							]
+						],
+						{Lookup[combinedMapThreadFriendlyOptions, PrewetWashSolution], Lookup[combinedMapThreadFriendlyOptions, volumeOption]}
+					]
+				],
+				{
+					DestinationPrewetWashVolume,
+					IntermediateContainerPrewetWashVolume,
+					InstrumentPrewetWashVolume,
+					TipsPrewetWashVolume,
+					FunnelPrewetWashVolume,
+					IntermediateFunnelPrewetWashVolume,
+					HandPumpPrewetWashVolume,
+					QuantitativeTransferTipsPrewetWashVolume
+				}
+			];
+
+			(* Map over each of our resolve transfers and make a Object[UnitOperation, Transfer] for it. *)
+			transferManualUnitOperationPackets= Module[{initialPackets},
+
+				(* call UploadUnitOperation to populate the option-related fields *)
+				initialPackets = UploadUnitOperation[
+					MapThread[
+						Function[{source, destination, amount, roundedAmount, roundedAmountAsVolume, sourceResource, transferEnvironmentResource, balanceResource, backfillNeedleResource, ventingNeedleResource, intermediateContainerResource, indexMatchedMagnetizationSampleResource, options, sourceIncubator, destinationIncubator, weighingContainerResource, destinationResource, pipetteDialImage, aspirationMixPipetteDialImage, dispenseMixPipetteDialImage, graduatedCylinderImage, serologicalPipetteImage, intermediateContainerImage, discardSource, sachetIntermediateContainerResource, funnelResource, intermediateFunnelResource, syringeImage, destinationPrewetWashVolumeImage, intermediateContainerPrewetWashVolumeImage, instrumentPrewetWashVolumeImage, tipsPrewetWashVolumeImage, funnelPrewetWashVolumeImage, intermediateFunnelPrewetWashVolumeImage, handPumpPrewetWashVolumeImage, quantitativeTransferTipsPrewetWashVolumeImage, handPumpAndAdapter, displayedDecantAmountAsVolume},
+							Module[{nonHiddenTransferOptions, weighingContainer, sachetIntermediateContainer},
+								(* Only include non-hidden options from Transfer. *)
+								nonHiddenTransferOptions = Lookup[
+									Cases[OptionDefinition[ExperimentTransfer], KeyValuePattern["Category" -> Except["Hidden"]]],
+									"OptionSymbol"
+								];
+
+								(* pull stuff out of the options here so we don't have to do it again and again below *)
+								{weighingContainer, sachetIntermediateContainer} = Download[Lookup[options, {WeighingContainer, SachetIntermediateContainer}], Object];
+
+								(* Override any options with resource. *)
+								Transfer@Join[
+									Cases[Normal[options], Verbatim[Rule][Alternatives @@ nonHiddenTransferOptions | MultichannelTransferName | RentDestinationContainer | LivingDestination, _]],
+									{
+										(* NOTE: We always make resources for the containers, not the samples. This is because we want the container *)
+										(* objects, not the sample objects to show up in the engine instructions. *)
+										Source -> If[MatchQ[Lookup[options, MultichannelTransferName], Null],
 											sourceResource,
-											Length[Lookup[multichannelNameToSourceWells, Lookup[options, MultichannelTransferName]]]
-										]
-									],
-
-									Destination->Module[{destination},
-										destination=If[MatchQ[destination, Waste],
-											Waste,
-											destinationResource
-										];
-
-										(* NOTE: Make sure to expand the destination if we're doing MultichannelTransfer because we're passing *)
-										(* FastTrack->True to UploadUnitOperation which means that everything has to be pre-expanded. *)
-										If[MatchQ[Lookup[options, MultichannelTransferName], Null],
-											destination,
 											ConstantArray[
-												destination,
+												sourceResource,
 												Length[Lookup[multichannelNameToSourceWells, Lookup[options, MultichannelTransferName]]]
 											]
-										]
-									],
-
-									Amount->amount,
-
-									DisplayedAmount -> If[MatchQ[roundedAmount, All],
-										"All (the entire amount of the sample)",
-										ToString[roundedAmount]
-									],
-									DisplayedAmountAsVolume -> If[MatchQ[roundedAmountAsVolume, All],
-										"All (the entire amount of the sample)",
-										ToString[roundedAmountAsVolume]
-									],
-
-									DisplayedAspirationMixVolume->If[MatchQ[Lookup[options, AspirationMixVolume], VolumeP],
-										"set the pipette to "<>ToString[Lookup[options, AspirationMixVolume]],
-										""
-									],
-
-									DisplayedDispenseMixVolume->If[MatchQ[Lookup[options, DispenseMixVolume], VolumeP],
-										"set the pipette to "<>ToString[Lookup[options, DispenseMixVolume]],
-										""
-									],
-
-									DestinationRack->Which[
-										(* It was resolved to an object *)
-										MatchQ[Lookup[options, DestinationRack], ObjectP[Object[Container]]],
-										Resource[
-											Sample->Lookup[options, DestinationRack],
-											Rent->True,
-											Name->(ToString[Lookup[options, DestinationRack]]<>" destination rack")
 										],
-										(* If using weighing container or sachet weigh boat, non-selfstanding destination container will not need to be on balance. *)
-										MemberQ[{weighingContainer,sachetIntermediateContainer},ObjectP[]],
-										Null,
-										(* Otherwise will need to look at the destination container to find a suitable rack *)
-										True,
-										Switch[destination,
-											ObjectP[Object[Sample]],
-											Module[{destinationContainerModelPacket,destinationContainerModel,rack},
-												destinationContainerModelPacket=fastAssocPacketLookup[fastAssoc, Download[destination, Object], {Container, Model}];
 
-												destinationContainerModel=Lookup[destinationContainerModelPacket,Object];
+										Destination -> Module[{destination},
+											destination = If[MatchQ[destination, Waste],
+												Waste,
+												destinationResource
+											];
 
-												rack=If[MatchQ[Lookup[destinationContainerModelPacket,SelfStanding,Null],True],
-													Null,
-													RackFinder[destinationContainerModel]
-												];
+											(* NOTE: Make sure to expand the destination if we're doing MultichannelTransfer because we're passing *)
+											(* FastTrack->True to UploadUnitOperation which means that everything has to be pre-expanded. *)
+											If[MatchQ[Lookup[options, MultichannelTransferName], Null],
+												destination,
+												ConstantArray[
+													destination,
+													Length[Lookup[multichannelNameToSourceWells, Lookup[options, MultichannelTransferName]]]
+												]
+											]
+										],
 
-												If[MatchQ[rack,ObjectP[]]&&MatchQ[amount,MassP],
+										Amount -> amount,
+
+										DisplayedAmount -> If[MatchQ[roundedAmount, All],
+											"All (the entire amount of the sample)",
+											ToString[roundedAmount]
+										],
+										DisplayedAmountAsVolume -> If[MatchQ[roundedAmountAsVolume, All],
+											"All (the entire amount of the sample)",
+											ToString[roundedAmountAsVolume]
+										],
+
+										DisplayedAspirationMixVolume -> If[MatchQ[Lookup[options, AspirationMixVolume], VolumeP],
+											"set the pipette to " <> ToString[Lookup[options, AspirationMixVolume]],
+											""
+										],
+
+										DisplayedDispenseMixVolume -> If[MatchQ[Lookup[options, DispenseMixVolume], VolumeP],
+											"set the pipette to " <> ToString[Lookup[options, DispenseMixVolume]],
+											""
+										],
+
+										DestinationRack -> Which[
+											(* It was resolved to an object *)
+											MatchQ[Lookup[options, DestinationRack], ObjectP[Object[Container]]],
+											Resource[
+												Sample -> Lookup[options, DestinationRack],
+												Rent -> True,
+												Name -> (ToString[Lookup[options, DestinationRack]] <> " destination rack")
+											],
+											(* If using weighing container or sachet weigh boat, non-selfstanding destination container will not need to be on balance. *)
+											MemberQ[{weighingContainer, sachetIntermediateContainer}, ObjectP[]],
+											Null,
+											(* Otherwise will need to look at the destination container to find a suitable rack *)
+											True,
+											Switch[destination,
+												ObjectP[Object[Sample]],
+												Module[{destinationContainerModelPacket, destinationContainerModel, rack},
+													destinationContainerModelPacket = fastAssocPacketLookup[fastAssoc, Download[destination, Object], {Container, Model}];
+
+													destinationContainerModel = Lookup[destinationContainerModelPacket, Object];
+
+													rack = If[MatchQ[Lookup[destinationContainerModelPacket, SelfStanding, Null], True],
+														Null,
+														RackFinder[destinationContainerModel]
+													];
+
+													If[MatchQ[rack, ObjectP[]] && MatchQ[amount, MassP],
+														Resource[
+															Sample -> rack,
+															Rent -> True,
+															Name -> (ToString[rack] <> " destination rack")
+														],
+														Null
+													]
+												],
+												ObjectP[Object[Container]],
+												Module[{destinationContainerModelPacket, destinationContainerModel, rack},
+													destinationContainerModelPacket = fastAssocPacketLookup[fastAssoc, Download[destination, Object], Model];
+
+													destinationContainerModel = Lookup[destinationContainerModelPacket, Object];
+
+													rack = If[MatchQ[Lookup[destinationContainerModelPacket, SelfStanding, Null], True],
+														Null,
+														RackFinder[destinationContainerModel]
+													];
+
+													If[MatchQ[rack, ObjectP[]] && MatchQ[amount, MassP],
+														Resource[
+															Sample -> rack,
+															Rent -> True,
+															Name -> (ToString[rack] <> " destination rack")
+														],
+														Null
+													]
+												],
+												{_Integer, ObjectP[Object[Container]]} | {_String, ObjectP[Object[Container]]},
+												Module[{destinationContainerModelPacket, destinationContainerModel, rack},
+													destinationContainerModelPacket = fastAssocPacketLookup[fastAssoc, Download[destination[[2]], Object], Model];
+
+													destinationContainerModel = Lookup[destinationContainerModelPacket, Object];
+
+													rack = If[MatchQ[Lookup[destinationContainerModelPacket, SelfStanding, Null], True],
+														Null,
+														RackFinder[destinationContainerModel]
+													];
+
+													If[MatchQ[rack, ObjectP[]] && MatchQ[amount, MassP],
+														Resource[
+															Sample -> rack,
+															Rent -> True,
+															Name -> (ToString[rack] <> " destination rack")
+														],
+														Null
+													]
+												],
+												ObjectP[Model[Container]] | {_Integer, ObjectP[Model[Container]]},
+												Module[{destinationContainerModelPacket, destinationContainerModel, rack},
+													destinationContainerModelPacket = If[MatchQ[destination, ObjectP[Model[Container]]],
+														fetchPacketFromFastAssoc[Download[destination, Object], fastAssoc],
+														fetchPacketFromFastAssoc[Download[destination[[2]], Object], fastAssoc]
+													];
+
+													destinationContainerModel = Lookup[destinationContainerModelPacket, Object];
+
+													rack = If[MatchQ[Lookup[destinationContainerModelPacket, SelfStanding, Null], True],
+														Null,
+														RackFinder[destinationContainerModel]
+													];
+
+													If[MatchQ[rack, ObjectP[]] && MatchQ[amount, MassP],
+														Resource[
+															Sample -> rack,
+															Rent -> True,
+															Name -> (ToString[rack] <> " destination rack")
+														],
+														Null
+													]
+												],
+												_,
+												Null
+											]
+										],
+
+										(* Are we doing a multichannel transfer? If so, we will have multiple wells and multiple tips. *)
+										If[MatchQ[Lookup[options, MultichannelTransferName], Null],
+											Sequence @@ {
+												MultichannelTransfer -> {False},
+												SourceWell -> {Lookup[options, SourceWell]},
+												DestinationWell -> {Lookup[options, DestinationWell]},
+												(* add in special case of when we need a Model[Item,Consumable] tip with a GraduatedCylinder to Volumetric Flask transfer in FillToVolume *)
+												Tips -> {If[MatchQ[Lookup[options, Tips], ObjectP[Model[Item, Consumable]] | ObjectP[Object[Item, Consumable]]],
 													Resource[
-														Sample->rack,
-														Rent->True,
-														Name->(ToString[rack]<>" destination rack")
+														Sample -> Lookup[options, Tips],
+														Name -> CreateUUID[]
 													],
-													Null
+													popTipResource[Lookup[options, Tips]]
+												]},
+												TipType -> {Lookup[options, TipType]},
+												TipMaterial -> {Lookup[options, TipMaterial]}
+											},
+											Sequence @@ {
+												MultichannelTransfer -> True,
+												SourceWell -> Lookup[multichannelNameToSourceWells, Lookup[options, MultichannelTransferName]],
+												DestinationWell -> Lookup[multichannelNameToDestinationWells, Lookup[options, MultichannelTransferName]],
+												Tips -> popTipResource /@ Lookup[multichannelNameToTips, Lookup[options, MultichannelTransferName]],
+												TipType -> Lookup[options, TipType],
+												TipMaterial -> Lookup[options, TipMaterial],
+												NumberOfMultichannelTips -> Length[Lookup[multichannelNameToSourceWells, Lookup[options, MultichannelTransferName]]]
+											}
+										],
+
+										HandlingCondition -> Link[Lookup[options, HandlingCondition]],
+										TransferEnvironment -> transferEnvironmentResource,
+										CapRacks -> capRackResourcesForBSC,
+										Instrument -> Switch[Lookup[options, Instrument],
+											(* These can be shared between transfers -- we'll tell operators to wipe down the spatulas. *)
+											ObjectP[sharedInstrumentTypes],
+											Lookup[sharedInstrumentResources, Download[Lookup[options, Instrument], Object]],
+											ObjectP[{Model[Container, Syringe], Object[Container, Syringe], Model[Container, GraduatedCylinder], Object[Container, GraduatedCylinder]}],
+											Lookup[instrumentAndSourceToResource, Key[{source /. {x : LinkP[] | PacketP[] :> Download[x, Object]}, Download[Lookup[options, Instrument], Object]}]],
+											(* Otherwise, make a unique resource -- we will not share in between transfers. *)
+											ObjectP[{Model[Instrument], Object[Instrument]}],
+											Resource[
+												Instrument -> Lookup[options, Instrument],
+												Name -> CreateUUID[]
+											],
+											ObjectP[{Model[Item, Spatula], Object[Item, Spatula]}],
+											Which[
+												MemberQ[reusableSpatulas, Download[Lookup[options, Instrument], Object]],
+												Lookup[reusableSpatulaResources, Download[Lookup[options, Instrument], Object]],
+												MemberQ[countedSpatulas, Download[Lookup[options, Instrument], Object]],
+												Lookup[countedSpatulaResources, Download[Lookup[options, Instrument], Object]],
+												(* For non-counted OR reusable spatula with cleaning method, create individual resource *)
+												True,
+												Resource[
+													Sample -> Download[Lookup[options, Instrument], Object],
+													Name -> CreateUUID[],
+													Rent -> If[MatchQ[Lookup[options, Instrument], ObjectP[Model[Item]]],
+														MatchQ[fastAssocLookup[fastAssoc, Lookup[options, Instrument], Reusable], True],
+														MatchQ[Lookup[fastAssocPacketLookup[fastAssoc, Lookup[options, Instrument], Model], Reusable, Null], True]
+													]
 												]
 											],
+											ObjectP[],
+											Resource[
+												Sample -> Lookup[options, Instrument],
+												Name -> CreateUUID[]
+											],
+											_,
+											Null
+										],
+										Balance -> balanceResource,
+										BalancePreCleaningMethod -> Lookup[options, BalancePreCleaningMethod],
+										BalanceCleaningMethod -> Lookup[options, BalanceCleaningMethod],
+										TabletCrusher -> If[MatchQ[Lookup[options, TabletCrusher], ObjectP[]],
+											pillCrusherResource,
+											Null
+										],
+										TabletCrusherBag -> If[MatchQ[Lookup[options, TabletCrusher], ObjectP[]],
+											Resource[
+												Sample -> Model[Item, TabletCrusherBag, "id:WNa4ZjK6menE"],
+												Name -> CreateUUID[],
+												Amount -> 1 Unit
+											],
+											Null
+										],
+										IncludeSachetPouch -> Lookup[options, IncludeSachetPouch],
+										SachetIntermediateContainer -> sachetIntermediateContainerResource,
+										ReversePipetting -> Lookup[options, ReversePipetting],
+										AspirationLayer -> Lookup[options, AspirationLayer],
+										DisplayedAspirationLayer -> If[MatchQ[Lookup[options, AspirationLayer], Null],
+											"",
+											"Place the needle/pipette into layer " <> ToString[Lookup[options, AspirationLayer]] <> " (counting from the top of the source container before any aspiration). If the layers in this sample are not clearly defined, aspirate from the top of the sample if the intended layer is the first layer, otherwise, aspirate from the closest layer possible."
+										],
+										DestinationLayer -> Lookup[options, DestinationLayer],
+										DisplayedDestinationLayer -> If[MatchQ[Lookup[options, DestinationLayer], Null],
+											"",
+											"Place the needle/pipette into layer " <> ToString[Lookup[options, DestinationLayer]] <> " (counting from the top of the destination container before any dispensing). If the layers in this sample are not clearly defined, dispense into the top of the sample if the intended layer is the first layer, otherwise, dispense into the closest layer possible."
+										],
+										Needle -> If[MatchQ[Lookup[options, Needle], ObjectP[]],
+											Resource[
+												Sequence @@ {Sample -> Lookup[options, Needle],
+													(* if the needle is reusable, Rent it *)
+													If[MatchQ[Lookup[options, Needle], Alternatives @@ reusableNeedleModels], Rent -> True, Nothing],
+													Name -> CreateUUID[]}
+											],
+											Null
+										],
+										Funnel -> funnelResource,
+
+										Magnetization -> Lookup[options, Magnetization],
+										MagnetizationSamples -> Flatten[{indexMatchedMagnetizationSampleResource}],
+										MagnetizationRack -> If[MatchQ[Lookup[options, MagnetizationRack], ObjectP[]],
+											Lookup[magnetizationRackResourceLookup, Download[Lookup[options, MagnetizationRack], Object]]],
+										MagnetizationTime -> Lookup[options, MagnetizationTime],
+										MaxMagnetizationTime -> Lookup[options, MaxMagnetizationTime],
+
+										WeighingContainer -> weighingContainerResource,
+
+										WeighingContainerRack -> Switch[weighingContainer,
 											ObjectP[Object[Container]],
-											Module[{destinationContainerModelPacket,destinationContainerModel,rack},
-												destinationContainerModelPacket=fastAssocPacketLookup[fastAssoc, Download[destination, Object], Model];
+											Module[{weighingContainerModelPacket, weighingContainerModel, rack},
+												weighingContainerModelPacket = fastAssocPacketLookup[fastAssoc, weighingContainer, Model];
 
-												destinationContainerModel=Lookup[destinationContainerModelPacket,Object];
+												weighingContainerModel = Lookup[weighingContainerModelPacket, Object];
 
-												rack=If[MatchQ[Lookup[destinationContainerModelPacket,SelfStanding,Null],True],
+												rack = If[MatchQ[Lookup[weighingContainerModelPacket, SelfStanding, Null], True],
 													Null,
-													RackFinder[destinationContainerModel]
+													RackFinder[weighingContainerModel]
 												];
 
-												If[MatchQ[rack,ObjectP[]]&&MatchQ[amount,MassP],
+												If[MatchQ[rack, ObjectP[]],
 													Resource[
-														Sample->rack,
-														Rent->True,
-														Name->(ToString[rack]<>" destination rack")
+														Sample -> rack,
+														Name -> CreateUUID[],
+														Rent -> True
 													],
 													Null
 												]
 											],
-											{_Integer, ObjectP[Object[Container]]}|{_String, ObjectP[Object[Container]]},
-											Module[{destinationContainerModelPacket,destinationContainerModel,rack},
-												destinationContainerModelPacket=fastAssocPacketLookup[fastAssoc, Download[destination[[2]], Object], Model];
+											ObjectP[Model[Container]],
+											Module[{weighingContainerModelPacket, weighingContainerModel, rack},
+												weighingContainerModelPacket = fetchPacketFromFastAssoc[weighingContainer, fastAssoc];
 
-												destinationContainerModel=Lookup[destinationContainerModelPacket,Object];
+												weighingContainerModel = Lookup[weighingContainerModelPacket, Object];
 
-												rack=If[MatchQ[Lookup[destinationContainerModelPacket,SelfStanding,Null],True],
+												rack = If[MatchQ[Lookup[weighingContainerModelPacket, SelfStanding, Null], True],
 													Null,
-													RackFinder[destinationContainerModel]
+													RackFinder[weighingContainerModel]
 												];
 
-												If[MatchQ[rack,ObjectP[]]&&MatchQ[amount,MassP],
+												If[MatchQ[rack, ObjectP[]],
 													Resource[
-														Sample->rack,
-														Rent->True,
-														Name->(ToString[rack]<>" destination rack")
-													],
-													Null
-												]
-											],
-											ObjectP[Model[Container]]|{_Integer, ObjectP[Model[Container]]},
-											Module[{destinationContainerModelPacket,destinationContainerModel,rack},
-												destinationContainerModelPacket=If[MatchQ[destination, ObjectP[Model[Container]]],
-													fetchPacketFromFastAssoc[Download[destination, Object], fastAssoc],
-													fetchPacketFromFastAssoc[Download[destination[[2]], Object], fastAssoc]
-												];
-
-												destinationContainerModel=Lookup[destinationContainerModelPacket,Object];
-
-												rack=If[MatchQ[Lookup[destinationContainerModelPacket,SelfStanding,Null],True],
-													Null,
-													RackFinder[destinationContainerModel]
-												];
-
-												If[MatchQ[rack,ObjectP[]]&&MatchQ[amount,MassP],
-													Resource[
-														Sample->rack,
-														Rent->True,
-														Name->(ToString[rack]<>" destination rack")
+														Sample -> rack,
+														Name -> CreateUUID[],
+														Rent -> True
 													],
 													Null
 												]
 											],
 											_,
 											Null
-										]
-									],
-
-									(* Are we doing a multichannel transfer? If so, we will have multiple wells and multiple tips. *)
-									If[MatchQ[Lookup[options, MultichannelTransferName], Null],
-										Sequence@@{
-											MultichannelTransfer-> {False},
-											SourceWell-> {Lookup[options, SourceWell]},
-											DestinationWell->{Lookup[options, DestinationWell]},
-											(* add in special case of when we need a Model[Item,Consumable] tip with a GraduatedCylinder to Volumetric Flask transfer in FillToVolume *)
-											Tips-> {If[MatchQ[Lookup[options, Tips],ObjectP[Model[Item,Consumable]]|ObjectP[Object[Item,Consumable]]],
-												Resource[
-													Sample->Lookup[options, Tips],
-													Name->CreateUUID[]
-												],
-												popTipResource[Lookup[options, Tips]]
-											]},
-											TipType-> {Lookup[options, TipType]},
-											TipMaterial-> {Lookup[options, TipMaterial]}
-										},
-										Sequence@@{
-											MultichannelTransfer-> True,
-											SourceWell-> Lookup[multichannelNameToSourceWells, Lookup[options, MultichannelTransferName]],
-											DestinationWell-> Lookup[multichannelNameToDestinationWells, Lookup[options, MultichannelTransferName]],
-											Tips-> popTipResource /@ Lookup[multichannelNameToTips, Lookup[options, MultichannelTransferName]],
-											TipType-> Lookup[options, TipType],
-											TipMaterial-> Lookup[options, TipMaterial],
-											NumberOfMultichannelTips-> Length[Lookup[multichannelNameToSourceWells, Lookup[options, MultichannelTransferName]]]
-										}
-									],
-
-									HandlingCondition->Link[Lookup[options, HandlingCondition]],
-									TransferEnvironment-> transferEnvironmentResource,
-									CapRacks -> capRackResourcesForBSC,
-									Instrument->Switch[Lookup[options, Instrument],
-										(* These can be shared between transfers -- we'll tell operators to wipe down the spatulas. *)
-										ObjectP[sharedInstrumentTypes],
-										Lookup[sharedInstrumentResources, Download[Lookup[options, Instrument], Object]],
-										ObjectP[{Model[Container, Syringe], Object[Container, Syringe], Model[Container, GraduatedCylinder], Object[Container, GraduatedCylinder]}],
-										Lookup[instrumentAndSourceToResource, Key[{source /. {x:LinkP[]|PacketP[] :> Download[x, Object]}, Download[Lookup[options, Instrument], Object]}]],
-										(* Otherwise, make a unique resource -- we will not share in between transfers. *)
-										ObjectP[{Model[Instrument], Object[Instrument]}],
-										Resource[
-											Instrument->Lookup[options, Instrument],
-											Name->CreateUUID[]
 										],
-										ObjectP[{Model[Item,Spatula], Object[Item,Spatula]}],
-										Which[
-											MemberQ[reusableSpatulas,Download[Lookup[options,Instrument],Object]],
-												Lookup[reusableSpatulaResources, Download[Lookup[options,Instrument],Object]],
-											MemberQ[countedSpatulas,Download[Lookup[options,Instrument],Object]],
-												Lookup[countedSpatulaResources, Download[Lookup[options,Instrument],Object]],
-											(* For non-counted OR reusable spatula with cleaning method, create individual resource *)
-											True,
-												Resource[
-													Sample -> Download[Lookup[options,Instrument],Object],
-													Name->CreateUUID[],
-													Rent->If[MatchQ[Lookup[options, Instrument],ObjectP[Model[Item]]],
-														MatchQ[fastAssocLookup[fastAssoc, Lookup[options, Instrument], Reusable],True],
-														MatchQ[Lookup[fastAssocPacketLookup[fastAssoc,Lookup[options, Instrument],Model],Reusable,Null],True]
-													]
-												]
+										Tolerance -> If[MatchQ[Lookup[options, Tolerance], MassP],
+											Lookup[options, Tolerance],
+											Null
 										],
-										ObjectP[],
-										Resource[
-											Sample->Lookup[options, Instrument],
-											Name->CreateUUID[]
+
+										HandPump -> FirstOrDefault[handPumpAndAdapter, Null],
+										HandPumpAdapter -> LastOrDefault[handPumpAndAdapter, Null],
+
+										HandPumpWasteContainer -> If[MatchQ[Lookup[options, HandPump], ObjectP[]],
+											(* NOTE: We use a single 1L beaker to collect anything left in our hand pump when we disconnect it. *)
+											handPumpWasteContainerResource,
+											Null
 										],
-										_,
-										Null
-									],
-									Balance-> balanceResource,
-									BalancePreCleaningMethod->Lookup[options,BalancePreCleaningMethod],
-									BalanceCleaningMethod->Lookup[options,BalanceCleaningMethod],
-									TabletCrusher->If[MatchQ[Lookup[options, TabletCrusher], ObjectP[]],
-										pillCrusherResource,
-										Null
-									],
-									TabletCrusherBag->If[MatchQ[Lookup[options, TabletCrusher], ObjectP[]],
-										Resource[
-											Sample -> Model[Item, TabletCrusherBag, "id:WNa4ZjK6menE"],
-											Name -> CreateUUID[],
-											Amount -> 1 Unit
+										QuantitativeTransfer -> Lookup[options, QuantitativeTransfer],
+										QuantitativeTransferWashSolution -> If[MatchQ[Lookup[options, QuantitativeTransferWashSolution], ObjectP[]],
+											Lookup[quantitativeTransferWashSolutionResources, Download[Lookup[options, QuantitativeTransferWashSolution], Object]],
+											Null
 										],
-										Null
-									],
-									IncludeSachetPouch -> Lookup[options, IncludeSachetPouch],
-									SachetIntermediateContainer -> sachetIntermediateContainerResource,
-									ReversePipetting-> Lookup[options, ReversePipetting],
-									AspirationLayer-> Lookup[options, AspirationLayer],
-									DisplayedAspirationLayer->If[MatchQ[Lookup[options, AspirationLayer], Null],
-										"",
-										"Place the needle/pipette into layer "<>ToString[Lookup[options, AspirationLayer]]<>" (counting from the top of the source container before any aspiration). If the layers in this sample are not clearly defined, aspirate from the top of the sample if the intended layer is the first layer, otherwise, aspirate from the closest layer possible."
-									],
-									DestinationLayer-> Lookup[options, DestinationLayer],
-									DisplayedDestinationLayer->If[MatchQ[Lookup[options, DestinationLayer], Null],
-										"",
-										"Place the needle/pipette into layer "<>ToString[Lookup[options, DestinationLayer]]<>" (counting from the top of the destination container before any dispensing). If the layers in this sample are not clearly defined, dispense into the top of the sample if the intended layer is the first layer, otherwise, dispense into the closest layer possible."
-									],
-									Needle->If[MatchQ[Lookup[options, Needle], ObjectP[]],
-										Resource[
-											Sequence @@ {Sample -> Lookup[options, Needle],
-												(* if the needle is reusable, Rent it *)
-												If[MatchQ[Lookup[options, Needle], Alternatives @@ reusableNeedleModels], Rent -> True, Nothing],
-												Name -> CreateUUID[]}
+										QuantitativeTransferWashVolume -> Lookup[options, QuantitativeTransferWashVolume],
+										QuantitativeTransferWashInstrument -> If[MatchQ[Lookup[options, QuantitativeTransferWashInstrument], ObjectP[]],
+											Lookup[sharedInstrumentResources, Download[Lookup[options, QuantitativeTransferWashInstrument], Object]],
+											Null
 										],
-										Null
-									],
-									Funnel->funnelResource,
-
-									Magnetization-> Lookup[options, Magnetization],
-									MagnetizationSamples-> Flatten[{indexMatchedMagnetizationSampleResource}],
-									MagnetizationRack->If[MatchQ[Lookup[options,MagnetizationRack],ObjectP[]],
-										Lookup[magnetizationRackResourceLookup,Download[Lookup[options,MagnetizationRack],Object]]],
-									MagnetizationTime-> Lookup[options, MagnetizationTime],
-									MaxMagnetizationTime-> Lookup[options, MaxMagnetizationTime],
-
-									WeighingContainer->weighingContainerResource,
-
-									WeighingContainerRack->Switch[weighingContainer,
-										ObjectP[Object[Container]],
-										Module[{weighingContainerModelPacket,weighingContainerModel,rack},
-											weighingContainerModelPacket=fastAssocPacketLookup[fastAssoc, weighingContainer, Model];
-
-											weighingContainerModel=Lookup[weighingContainerModelPacket, Object];
-
-											rack=If[MatchQ[Lookup[weighingContainerModelPacket,SelfStanding,Null],True],
-												Null,
-												RackFinder[weighingContainerModel]
-											];
-
-											If[MatchQ[rack,ObjectP[]],
-												Resource[
-													Sample->rack,
-													Name->CreateUUID[],
-													Rent->True
-												],
-												Null
-											]
+										QuantitativeTransferWashTips -> popTipResource[Lookup[options, QuantitativeTransferWashTips]],
+										NumberOfQuantitativeTransferWashes -> Lookup[options, NumberOfQuantitativeTransferWashes],
+										UnsealHermeticSource -> Lookup[options, UnsealHermeticSource],
+										UnsealHermeticDestination -> Lookup[options, UnsealHermeticDestination],
+										BackfillNeedle -> backfillNeedleResource,
+										BackfillGas -> Lookup[options, BackfillGas],
+										VentingNeedle -> ventingNeedleResource,
+										TipRinse -> Lookup[options, TipRinse],
+										TipRinseSolution -> If[MatchQ[Lookup[options, TipRinseSolution], ObjectP[]],
+											Lookup[tipRinseSolutionResources, Download[Lookup[options, TipRinseSolution], Object]],
+											Null
 										],
-										ObjectP[Model[Container]],
-										Module[{weighingContainerModelPacket,weighingContainerModel,rack},
-											weighingContainerModelPacket=fetchPacketFromFastAssoc[weighingContainer, fastAssoc];
-
-											weighingContainerModel=Lookup[weighingContainerModelPacket, Object];
-
-											rack=If[MatchQ[Lookup[weighingContainerModelPacket,SelfStanding,Null],True],
-												Null,
-												RackFinder[weighingContainerModel]
-											];
-
-											If[MatchQ[rack,ObjectP[]],
-												Resource[
-													Sample->rack,
-													Name->CreateUUID[],
-													Rent->True
-												],
-												Null
-											]
+										TipRinseVolume -> Lookup[options, TipRinseVolume],
+										NumberOfTipRinses -> Lookup[options, NumberOfTipRinses],
+										AspirationMix -> Lookup[options, AspirationMix],
+										AspirationMixType -> Lookup[options, AspirationMixType],
+										NumberOfAspirationMixes -> Lookup[options, NumberOfAspirationMixes],
+										DispenseMix -> Lookup[options, DispenseMix],
+										DispenseMixType -> Lookup[options, DispenseMixType],
+										NumberOfDispenseMixes -> Lookup[options, NumberOfDispenseMixes],
+										IntermediateDecant -> Lookup[options, IntermediateDecant],
+										IntermediateContainer -> intermediateContainerResource,
+										IntermediateFunnel -> intermediateFunnelResource,
+										IntermediateDecantRecoup -> Lookup[options, IntermediateDecantRecoup],
+										DisplayedDecantAmountAsVolume -> displayedDecantAmountAsVolume,
+										DecantAmount -> Lookup[options, DecantAmount],
+										SourceTemperature -> Lookup[options, SourceTemperature] /. {Cold -> 4 Celsius},
+										SourceEquilibrationTime -> Lookup[options, SourceEquilibrationTime],
+										MaxSourceEquilibrationTime -> Lookup[options, MaxSourceEquilibrationTime],
+										SourceEquilibrationCheck -> Lookup[options, SourceEquilibrationCheck],
+										DestinationTemperature -> Lookup[options, DestinationTemperature] /. {Cold -> 4 Celsius},
+										DestinationEquilibrationTime -> Lookup[options, DestinationEquilibrationTime],
+										MaxDestinationEquilibrationTime -> Lookup[options, MaxDestinationEquilibrationTime],
+										DestinationEquilibrationCheck -> Lookup[options, DestinationEquilibrationCheck],
+										CoolingTime -> Lookup[options, CoolingTime],
+										SolidificationTime -> Lookup[options, SolidificationTime],
+										FlameDestination -> Lookup[options, FlameDestination],
+										FlameSource -> flameSourceResources,
+										SourceIncubationDevice -> sourceIncubator,
+										DestinationIncubationDevice -> destinationIncubator,
+										RentDestinationContainer -> Lookup[options, RentDestinationContainer],
+										PipetteDialImage -> Download[pipetteDialImage, Object],
+										AspirationMixPipetteDialImage -> Download[aspirationMixPipetteDialImage, Object],
+										DispenseMixPipetteDialImage -> Download[dispenseMixPipetteDialImage, Object],
+										GraduatedCylinderImage -> Download[graduatedCylinderImage, Object],
+										SerologicalPipetteImage -> Download[serologicalPipetteImage, Object],
+										IntermediateContainerImage -> Download[intermediateContainerImage, Object],
+										DiscardSourceContainerAndCover -> discardSource,
+										AllowSourceContainerReCover -> Lookup[options, AllowSourceContainerReCover],
+										OverdrawVolume -> Lookup[myResolvedOptions, OverdrawVolume],
+										OverdrawVolumeWasteContainer -> overdrawVolumeContainerResource,
+										WasteContainer -> wasteContainerResource,
+										SyringeImage -> Download[syringeImage, Object],
+										DestinationPrewetWashVolumeImage -> Download[destinationPrewetWashVolumeImage, Object],
+										IntermediateContainerPrewetWashVolumeImage -> Download[intermediateContainerPrewetWashVolumeImage, Object],
+										InstrumentPrewetWashVolumeImage -> Download[instrumentPrewetWashVolumeImage, Object],
+										TipsPrewetWashVolumeImage -> Download[tipsPrewetWashVolumeImage, Object],
+										FunnelPrewetWashVolumeImage -> Download[funnelPrewetWashVolumeImage, Object],
+										IntermediateFunnelPrewetWashVolumeImage -> Download[intermediateFunnelPrewetWashVolumeImage, Object],
+										HandPumpPrewetWashVolumeImage -> Download[handPumpPrewetWashVolumeImage, Object],
+										QuantitativeTransferTipsPrewetWashVolumeImage -> Download[quantitativeTransferTipsPrewetWashVolumeImage, Object],
+										CountAsPassage -> Lookup[options, CountAsPassage],
+										WeightStabilityDuration -> Lookup[options, WeightStabilityDuration],
+										MaxWeightVariation -> Lookup[options, MaxWeightVariation],
+										TareWeightStabilityDuration -> Lookup[options, TareWeightStabilityDuration],
+										MaxTareWeightVariation -> Lookup[options, MaxTareWeightVariation],
+										BalanceReblanking -> Lookup[options, BalanceReblanking],
+										PrewetLabware -> Lookup[options, PrewetLabware],
+										NumberOfPrewetWashes -> Lookup[options, NumberOfPrewetWashes],
+										PrewetWashSolution -> If[MatchQ[Lookup[options, PrewetWashSolution], ObjectP[]],
+											Lookup[prewetWashSolutionObjectResourceLookup, Lookup[options, PrewetWashSolution]],
+											Null
 										],
-										_,
-										Null
-									],
-									Tolerance->If[MatchQ[Lookup[options, Tolerance], MassP],
-										Lookup[options, Tolerance],
-										Null
-									],
-									
-									HandPump->FirstOrDefault[handPumpAndAdapter, Null],
-									HandPumpAdapter->LastOrDefault[handPumpAndAdapter, Null],
-
-									HandPumpWasteContainer->If[MatchQ[Lookup[options, HandPump], ObjectP[]],
-										(* NOTE: We use a single 1L beaker to collect anything left in our hand pump when we disconnect it. *)
-										handPumpWasteContainerResource,
-										Null
-									],
-									QuantitativeTransfer-> Lookup[options, QuantitativeTransfer],
-									QuantitativeTransferWashSolution->If[MatchQ[Lookup[options, QuantitativeTransferWashSolution], ObjectP[]],
-										Lookup[quantitativeTransferWashSolutionResources, Download[Lookup[options, QuantitativeTransferWashSolution], Object]],
-										Null
-									],
-									QuantitativeTransferWashVolume-> Lookup[options, QuantitativeTransferWashVolume],
-									QuantitativeTransferWashInstrument->If[MatchQ[Lookup[options, QuantitativeTransferWashInstrument], ObjectP[]],
-										Lookup[sharedInstrumentResources, Download[Lookup[options, QuantitativeTransferWashInstrument], Object]],
-										Null
-									],
-									QuantitativeTransferWashTips-> popTipResource[Lookup[options, QuantitativeTransferWashTips]],
-									NumberOfQuantitativeTransferWashes-> Lookup[options, NumberOfQuantitativeTransferWashes],
-									UnsealHermeticSource-> Lookup[options, UnsealHermeticSource],
-									UnsealHermeticDestination-> Lookup[options, UnsealHermeticDestination],
-									BackfillNeedle-> backfillNeedleResource,
-									BackfillGas-> Lookup[options, BackfillGas],
-									VentingNeedle-> ventingNeedleResource,
-									TipRinse-> Lookup[options, TipRinse],
-									TipRinseSolution->If[MatchQ[Lookup[options, TipRinseSolution], ObjectP[]],
-										Lookup[tipRinseSolutionResources, Download[Lookup[options, TipRinseSolution], Object]],
-										Null
-									],
-									TipRinseVolume-> Lookup[options, TipRinseVolume],
-									NumberOfTipRinses-> Lookup[options, NumberOfTipRinses],
-									AspirationMix-> Lookup[options, AspirationMix],
-									AspirationMixType-> Lookup[options, AspirationMixType],
-									NumberOfAspirationMixes-> Lookup[options, NumberOfAspirationMixes],
-									DispenseMix-> Lookup[options, DispenseMix],
-									DispenseMixType-> Lookup[options, DispenseMixType],
-									NumberOfDispenseMixes-> Lookup[options, NumberOfDispenseMixes],
-									IntermediateDecant-> Lookup[options, IntermediateDecant],
-									IntermediateContainer->intermediateContainerResource,
-									IntermediateFunnel-> intermediateFunnelResource,
-									IntermediateDecantRecoup->Lookup[options, IntermediateDecantRecoup],
-									DisplayedDecantAmountAsVolume -> If[MatchQ[roundedAmountAsVolume, All],
-										"All (the entire amount of the sample)",
-										(* 10% more liquid at most to be transferred into intermediate container *)
-										ToString[roundedAmountAsVolume * 1.1]
-									],
-									SourceTemperature-> Lookup[options, SourceTemperature]/.{Cold->4 Celsius},
-									SourceEquilibrationTime-> Lookup[options, SourceEquilibrationTime],
-									MaxSourceEquilibrationTime-> Lookup[options, MaxSourceEquilibrationTime],
-									SourceEquilibrationCheck-> Lookup[options, SourceEquilibrationCheck],
-									DestinationTemperature-> Lookup[options, DestinationTemperature]/.{Cold->4 Celsius},
-									DestinationEquilibrationTime-> Lookup[options, DestinationEquilibrationTime],
-									MaxDestinationEquilibrationTime-> Lookup[options, MaxDestinationEquilibrationTime],
-									DestinationEquilibrationCheck-> Lookup[options, DestinationEquilibrationCheck],
-									CoolingTime -> Lookup[options, CoolingTime],
-									SolidificationTime -> Lookup[options, SolidificationTime],
-									FlameDestination -> Lookup[options, FlameDestination],
-									FlameSource -> flameSourceResources,
-									SourceIncubationDevice->sourceIncubator,
-									DestinationIncubationDevice->destinationIncubator,
-									RentDestinationContainer->Lookup[options, RentDestinationContainer],
-									PipetteDialImage -> Download[pipetteDialImage, Object],
-									AspirationMixPipetteDialImage -> Download[aspirationMixPipetteDialImage, Object],
-									DispenseMixPipetteDialImage -> Download[dispenseMixPipetteDialImage, Object],
-									GraduatedCylinderImage -> Download[graduatedCylinderImage, Object],
-									SerologicalPipetteImage -> Download[serologicalPipetteImage, Object],
-									IntermediateContainerImage -> Download[intermediateContainerImage, Object],
-									DiscardSourceContainerAndCover -> discardSource,
-									AllowSourceContainerReCover -> Lookup[options, AllowSourceContainerReCover],
-									OverdrawVolume -> Lookup[myResolvedOptions, OverdrawVolume],
-									OverdrawVolumeWasteContainer -> overdrawVolumeContainerResource,
-									WasteContainer -> wasteContainerResource,
-									SyringeImage -> Download[syringeImage, Object],
-									CountAsPassage -> Lookup[options, CountAsPassage],
-									WeightStabilityDuration -> Lookup[options, WeightStabilityDuration],
-									MaxWeightVariation -> Lookup[options, MaxWeightVariation],
-									TareWeightStabilityDuration -> Lookup[options, TareWeightStabilityDuration],
-									MaxTareWeightVariation -> Lookup[options, MaxTareWeightVariation]
-								}
+										PrewetWashIntermediateContainer -> If[MatchQ[Lookup[options, PrewetWashSolution], ObjectP[]],
+											Lookup[prewetWashIntermediateContainerResourceLookup, Lookup[options, PrewetWashSolution]],
+											Null
+										],
+										PrewetWashWasteContainer -> If[MatchQ[Lookup[options, PrewetWashSolution], ObjectP[]],
+											Lookup[prewetWashWasteContainerResourceLookup, Lookup[options, PrewetWashSolution]],
+											Null
+										],
+										DestinationPrewetWashVolume -> Lookup[options, DestinationPrewetWashVolume],
+										IntermediateContainerPrewetWashVolume -> Lookup[options, IntermediateContainerPrewetWashVolume],
+										InstrumentPrewetWashVolume -> Lookup[options, InstrumentPrewetWashVolume],
+										TipsPrewetWashVolume -> Lookup[options, TipsPrewetWashVolume],
+										FunnelPrewetWashVolume -> Lookup[options, FunnelPrewetWashVolume],
+										IntermediateFunnelPrewetWashVolume -> Lookup[options, IntermediateFunnelPrewetWashVolume],
+										HandPumpPrewetWashVolume -> Lookup[options, HandPumpPrewetWashVolume],
+										QuantitativeTransferTipsPrewetWashVolume -> Lookup[options, QuantitativeTransferTipsPrewetWashVolume]
+									}
+								]
 							]
+						],
+						{
+							combinedSources,
+							combinedDestinations,
+							combinedAmounts,
+							combinedAmountsRounded,
+							combinedAmountsAsVolume,
+							sourceResources,
+							transferEnvironmentResources,
+							balanceResources,
+							backfillNeedleResources,
+							ventingNeedleResources,
+							intermediateContainerResources,
+							indexMatchedMagnetizationSampleResources,
+							combinedMapThreadFriendlyOptions,
+							sourceIncubators,
+							destinationIncubators,
+							weighingContainerResources,
+							destinationContainerResources,
+							pipetteDialImages,
+							aspirationMixPipetteDialImages,
+							dispenseMixPipetteDialImages,
+							graduatedCylinderImages,
+							serologicalPipetteImages,
+							intermediateContainerImages,
+							discardSources,
+							sachetIntermediateContainerResources,
+							funnelResources,
+							intermediateFunnelResources,
+							syringeImages,
+							destinationPrewetWashVolumeImages,
+							intermediateContainerPrewetWashVolumeImages,
+							instrumentPrewetWashVolumeImages,
+							tipsPrewetWashVolumeImages,
+							funnelPrewetWashVolumeImages,
+							intermediateFunnelPrewetWashVolumeImages,
+							handPumpPrewetWashVolumeImages,
+							quantitativeTransferTipsPrewetWashVolumeImages,
+							sharedHandPumpAndAdapterResources,
+							displayedDecantAmountAsVolumes
+						}
+					],
+					UnitOperationType -> Batched,
+					Preparation -> Manual,
+					FastTrack -> True,
+					Upload -> False
+				];
+
+				(* update working source/destination *)
+				(* This is needed b/c some resources like weighboats/tips storing in the local cache area are picked at the beginning of each transfer loop, but we only update WorkingSource/WorkingDestination __ONCE__ in transfer procedure, so need to make sure when we RP the weighing containers the corresponding WorkingSource/WorkingDestination fields are also updated *)
+				MapThread[
+					Function[{packet, options, intermediateContainerResource, destinationContainer, weighingContainerResource, sachetIntermediateContainerResource},
+						Append[
+							packet,
+							<|
+								(* update WorkingSource and WorkingSourceWell if we are using a intermediate container *)
+								Sequence @@ Which[
+									(* if we are using a intermediate container and decanting, share the intermediate container resource *)
+									!NullQ[intermediateContainerResource] && TrueQ[Lookup[options, IntermediateDecant]],
+										{Replace[WorkingSource] -> {Link[intermediateContainerResource]}, Replace[WorkingSourceWell] -> {"A1"}},
+									(* if we are using a intermediate container, and we are NOT filling a VolFlask using a gradauted cylinder *)
+									!NullQ[intermediateContainerResource] && Not[And[
+										MatchQ[destinationContainer, ObjectP[{Model[Container, Vessel, VolumetricFlask], Object[Container, Vessel, VolumetricFlask]}]],
+										MatchQ[Lookup[options, Instrument], ObjectP[{Object[Container, GraduatedCylinder], Model[Container, GraduatedCylinder]}]]
+									]],
+										{Replace[WorkingSource] -> {Link[intermediateContainerResource]}, Replace[WorkingSourceWell] -> {"A1"}},
+									True,
+										{}
+								],
+
+								(* update WorkingDestination and WorkingDestinationWell if we are using a weighing container or sachet *)
+								Sequence @@ Which[
+									(* if we are using a weighing container, use that as the working source *)
+									!NullQ[weighingContainerResource],
+										{Replace[WorkingDestination] -> {Link[weighingContainerResource]}, Replace[WorkingDestinationWell] -> {"A1"}},
+									(* if we are using a sachet, use that as the working source *)
+									!NullQ[sachetIntermediateContainerResource],
+										{Replace[WorkingDestination] -> {Link[sachetIntermediateContainerResource]}, Replace[WorkingDestinationWell] -> {"A1"}},
+									True,
+										{}
+								]
+							|>
 						]
 					],
-					{
-						combinedSources,
-						combinedDestinations,
-						combinedAmounts,
-						combinedAmountsRounded,
-						combinedAmountsAsVolume,
-						sourceResources,
-						transferEnvironmentResources,
-						balanceResources,
-						backfillNeedleResources,
-						ventingNeedleResources,
-						intermediateContainerResources,
-						indexMatchedMagnetizationSampleResources,
-						combinedMapThreadFriendlyOptions,
-						sourceIncubators,
-						destinationIncubators,
-						weighingContainerResources,
-						destinationContainerResources,
-						pipetteDialImages,
-						aspirationMixPipetteDialImages,
-						dispenseMixPipetteDialImages,
-						graduatedCylinderImages,
-						serologicalPipetteImages,
-						intermediateContainerImages,
-						discardSources,
-						sachetIntermediateContainerResources,
-						funnelResources,
-						intermediateFunnelResources,
-						syringeImages,
-						sharedHandPumpAndAdapterResources
-					}
-				],
-				UnitOperationType->Batched,
-				Preparation->Manual,
-				FastTrack->True,
-				Upload->False
+					{initialPackets, combinedMapThreadFriendlyOptions, intermediateContainerResources, destinationContainers, weighingContainerResources, sachetIntermediateContainerResources}
+				]
 			];
 
 
@@ -16797,6 +17872,9 @@ transferResourcePackets[
 				Replace[IntermediateContainers]->expandCombinedList[Flatten@(FirstOrDefault/@Lookup[transferManualUnitOperationPackets, Replace[IntermediateContainerLink], Null])],
 				Replace[IntermediateFunnels]->expandCombinedList[Flatten@(FirstOrDefault/@Lookup[transferManualUnitOperationPackets, Replace[IntermediateFunnel], Null])],
 				WasteContainer->wasteContainerResource,
+				BalanceCleaningBrush -> balanceCleaningBrushResource,
+				WaterBasedCleaningWipes -> waterBasedCleaningWipesResource,
+				AlcoholBasedCleaningWipes -> alcoholBasedCleaningWipesResource,
 				Replace[SourceTemperatures]->(Lookup[myResolvedOptions, SourceTemperature]/.{Ambient->25 Celsius, Cold->4 Celsius}),
 				Replace[SourceEquilibrationTimes]->Lookup[myResolvedOptions, SourceEquilibrationTime],
 				Replace[MaxSourceEquilibrationTimes]->Lookup[myResolvedOptions, MaxSourceEquilibrationTime],
@@ -16819,6 +17897,21 @@ transferResourcePackets[
 				Replace[DestinationCovers] -> Link[Lookup[myResolvedOptions, DestinationCover]],
 				Replace[DestinationSeptums] -> Link[Lookup[myResolvedOptions, DestinationSeptum]],
 				Replace[DestinationStoppers] -> Link[Lookup[myResolvedOptions, DestinationStopper]],
+				Replace[BalanceReblankings]->Lookup[myResolvedOptions,BalanceReblanking],
+				Replace[PrewetLabware]->Lookup[myResolvedOptions,PrewetLabware],
+				Replace[NumberOfPrewetWashes]->Lookup[myResolvedOptions,NumberOfPrewetWashes],
+				Replace[PrewetWashSolutions]->expandCombinedList[Flatten@(FirstOrDefault/@Lookup[transferManualUnitOperationPackets, Replace[PrewetWashSolutionLink], Null])],
+				Replace[PrewetWashVolumes]->Lookup[myResolvedOptions, PrewetWashVolume],
+				Replace[PrewetWashIntermediateContainers]->expandCombinedList[Flatten@(FirstOrDefault/@Lookup[transferManualUnitOperationPackets, Replace[PrewetWashIntermediateContainer], Null])],
+				Replace[PrewetWashWasteContainers]->expandCombinedList[Flatten@(FirstOrDefault/@Lookup[transferManualUnitOperationPackets, Replace[PrewetWashWasteContainer], Null])],
+				Replace[DestinationPrewetWashVolumes]->Lookup[myResolvedOptions, DestinationPrewetWashVolume],
+				Replace[IntermediateContainerPrewetWashVolumes]->Lookup[myResolvedOptions, IntermediateContainerPrewetWashVolume],
+				Replace[InstrumentPrewetWashVolumes]->Lookup[myResolvedOptions, InstrumentPrewetWashVolume],
+				Replace[TipsPrewetWashVolumes]->Lookup[myResolvedOptions, TipsPrewetWashVolume],
+				Replace[FunnelPrewetWashVolumes]->Lookup[myResolvedOptions, FunnelPrewetWashVolume],
+				Replace[IntermediateFunnelPrewetWashVolumes]->Lookup[myResolvedOptions, IntermediateFunnelPrewetWashVolume],
+				Replace[HandPumpPrewetWashVolumes]->Lookup[myResolvedOptions, HandPumpPrewetWashVolume],
+				Replace[QuantitativeTransferTipsPrewetWashVolumes]->Lookup[myResolvedOptions, QuantitativeTransferTipsPrewetWashVolume],
 
 				Replace[BatchedUnitOperations]->(Link[#, Protocol]&)/@Lookup[transferManualUnitOperationPackets, Object],
 				Replace[Checkpoints]->{
@@ -16839,7 +17932,8 @@ transferResourcePackets[
 
 				Name->Lookup[myResolvedOptions, Name],
 
-				Replace[Amounts]->(myAmounts/.{All->Null, count:CountP:>(count*Unit)}),
+				(* Only do Replace on the first level because otherwise it will replace the numeric part of a unit value - ReplaceAll[{0*Gram}, {All -> Null, count : CountP :> (count*Unit)}] returns Quantity[0,Times["Grams","Unities"]] *)
+				Replace[Amounts]->Replace[ToList[myAmounts], {All->Null, count:CountP:>(count*Unit)}, 1],
 
 				(* NOTE: These are all resource picked at once so that we can minimize trips to the VLM -- EXCEPT for resources that live in other transfer environments *)
 				(* like the BSC or glove box. *)
@@ -16914,7 +18008,7 @@ transferResourcePackets[
 			];
 
 			(* Return our protocol packet and unit operation packets. *)
-			{manualProtocolPacket, transferManualUnitOperationPacketsWithRequiredObjects, Cases[Flatten[{pipetteDialImages, aspirationMixPipetteDialImages, dispenseMixPipetteDialImages, graduatedCylinderImages, syringeImages}], PacketP[]]}
+			{manualProtocolPacket, transferManualUnitOperationPacketsWithRequiredObjects, Cases[Flatten[{pipetteDialImages, aspirationMixPipetteDialImages, dispenseMixPipetteDialImages, graduatedCylinderImages, syringeImages, destinationPrewetWashVolumeImages, intermediateContainerPrewetWashVolumeImages, instrumentPrewetWashVolumeImages, tipsPrewetWashVolumeImages, funnelPrewetWashVolumeImages, intermediateFunnelPrewetWashVolumeImages, handPumpPrewetWashVolumeImages, quantitativeTransferTipsPrewetWashVolumeImages}], PacketP[]]}
 		],
 		Module[
 			{sourceResources, sourceSampleResources, destinationResources, destinationSampleResources, uniqueCollectionContainersToResourcesLookup,
@@ -18411,6 +19505,8 @@ simulateExperimentTransfer[
 				Join[sourceTransferSamples, destinationSampleQuantitativeTransferTuples[[All, 1]]],
 				Join[destinationTransferSamples, destinationSampleQuantitativeTransferTuples[[All, 2]]],
 				Join[transferAmounts, destinationSampleQuantitativeTransferTuples[[All, 3]]],
+				(* In real protocol, we update SampleHandling based on operator input, which is usually more accurate for liquid sample (Liquid | Slurry | Viscous). However, here we make sure we flip any solid sample handling of (Powder | Itemized | Paste | Brittle | Fabric | Fixed) into Liquid if we have done a liquid transfer into solid. This is necessary to make sure any downstream resolution is accurate. *)
+				UpdateSampleHandling -> True,
 				LivingDestination -> Join[livingDestinations, destinationSampleQuantitativeTransferTuples[[All, 4]]],
 				IncludeSachetPouch -> Join[includeSachetPouches, destinationSampleQuantitativeTransferTuples[[All, 5]]],
 				CountAsPassage -> Join[ustCountAsPassages, destinationSampleQuantitativeTransferTuples[[All, 6]]],
@@ -18527,6 +19623,7 @@ compatibleFunnels[funnelModelPackets_List, ops:OptionsPattern[]]:=Module[
 		KeyValuePattern[{
 			(* Include a 1.5 mm tolerance. *)
 			StemDiameter->LessEqualP[Lookup[safeOptions, Aperture] - 1.5 Millimeter],
+			MouthDiameter -> GreaterP[Lookup[safeOptions, Aperture] + 1.5 Millimeter],
 			FunnelType->Alternatives@@Lookup[safeOptions,FunnelType],
 
 			If[MatchQ[Lookup[safeOptions, IncompatibleMaterials], Null|{}|{None}],
@@ -18541,9 +19638,8 @@ compatibleFunnels[funnelModelPackets_List, ops:OptionsPattern[]]:=Module[
 		SortBy[
 			filteredFunnels,
 			{
-				(* todo: this is a temp restriction to avoid auto resolution of glass funnels, will be removed after glass funnel set up ready in lab *)
-				Position[{Polypropylene, Glass}, Lookup[#, FunnelMaterial]] &,
-				(-Lookup[#, StemDiameter]&)
+				Position[{Glass, Polypropylene}, Lookup[#, FunnelMaterial]] &,
+				Lookup[#, StemLength]&
 			}
 		],
 		Object
@@ -18560,8 +19656,8 @@ DefineOptions[compatibleWeighingContainer,
 		{Mode->Null,Null|BalanceModeP,"The type of measurement the specified balance to be used with the weighing container is capable of performing."}
 	}
 	];
-	compatibleWeighingContainer[massToTransfer:MassP,volumeToTransfer:VolumeP, allWeighBoatModelPackets_List, allFunnelPackets_List, ops:OptionsPattern[]]:=Module[
-	{safeOps, incompatibleMaterials, quantitativeTransfer, quantitativeTransferWashVolume, destinationAperture, mode,minFunnelStemDiameter,compatibleWeighingFunnelPackets,compatibleWeighingFunnels,compatibleWeighBoatPackets,compatibleWeighBoats,filteredWeighingContainers,errorSources},
+	compatibleWeighingContainer[massToTransfer:MassP,volumeToTransfer:VolumeP, destinationContainer:ObjectP[], allWeighBoatModelPackets_List, funnel:(ObjectP[]|Null), instrument:(ObjectP[]|Null), ops:OptionsPattern[]]:=Module[
+	{safeOps, incompatibleMaterials, quantitativeTransfer, quantitativeTransferWashVolume, mode, destinationAperture, compatibleWeighingFunnelPackets,compatibleWeighingFunnels,compatibleWeighBoatPackets,compatibleWeighBoats,filteredWeighingContainers,errorSources},
 	
 	(* Get our safe options. *)
 	safeOps=SafeOptions[compatibleWeighingContainer,ToList[ops]];
@@ -18583,8 +19679,6 @@ DefineOptions[compatibleWeighingContainer,
 		}
 	];
 	
-	minFunnelStemDiameter = Min[Cases[Lookup[Cases[allFunnelPackets,KeyValuePattern[{FunnelType->Dry}]],StemDiameter],_Quantity]];
-	
 	compatibleWeighingFunnelPackets = Cases[
 		allWeighBoatModelPackets,
 		KeyValuePattern[{
@@ -18595,7 +19689,7 @@ DefineOptions[compatibleWeighingContainer,
 			Material->Except[Alternatives@@incompatibleMaterials],
 			(* TODO update this to not be hardcoded once we get the correct dimensions of the weighing slot of the micro balance and use that as criteria *)
 			If[MatchQ[mode,Micro],
-				Object->ObjectP[$MicroBalanceCompatibleWeighingContainerModels[[1]]],
+				Object->ObjectP[{$MicroBalanceCompatibleWeighingContainerModels[[1]]}],
 				Nothing
 			]
 		}]
@@ -18616,7 +19710,7 @@ DefineOptions[compatibleWeighingContainer,
 			Type->Model[Item,WeighBoat],
 			Material->Except[Alternatives@@incompatibleMaterials],
 			If[MatchQ[mode,Micro],
-				Object->ObjectP[$MicroBalanceCompatibleWeighingContainerModels[[2]]],
+				Object->ObjectP[{$MicroBalanceCompatibleWeighingContainerModels[[1]],$MicroBalanceCompatibleWeighingContainerModels[[2]]}],
 				Nothing
 			]
 		}]
@@ -18637,33 +19731,29 @@ DefineOptions[compatibleWeighingContainer,
 	
 	{filteredWeighingContainers, errorSources} = Module[{weighingContainers,errors},
 		Which[
-			(* QuantitativeTransfer False, and a big enough aperture so we are sure to have compatible funnel, allow both weigh boat and weigh funnels but prioritize weigh boat *)
-			MatchQ[quantitativeTransfer,Except[True]]&&MatchQ[destinationAperture,GreaterEqualP[minFunnelStemDiameter+1.5 Millimeter]],
-			weighingContainers = Join[
+			(* If we are using tweezers, use weigh boats only *)
+			MatchQ[instrument,ObjectP[{Object[Item,Tweezer],Model[Item,Tweezer]}]],
+			
+			weighingContainers=Join[
 				compatibleWeighBoats,
 				compatibleWeighingFunnels
 			];
 			
 			errors=If[MatchQ[weighingContainers,{}],
-				{Model[Item,WeighBoat,WeighingFunnel],Model[Item,WeighBoat]},
-				{}
-			];
-			
-			{weighingContainers,errors},
-			
-			(* If QuantitativeTransfer is True and Aperture is less than the smallest StemDiameter of available funnels+tolerance (we can't use weighboat/weigh funnel combo), we require weighing funnels. If no compatibleWeighingFunnels are found, this returns {} and will error out later *)
-			MatchQ[quantitativeTransfer,True]&&MatchQ[Lookup[safeOps, Aperture],LessP[minFunnelStemDiameter+1.5 Millimeter]],
-			
-			weighingContainers=compatibleWeighingFunnels;
-			
-			errors = If[MatchQ[weighingContainers,{}],
-				{Model[Item,WeighBoat,WeighingFunnel]},
+				{Model[Item,WeighBoat],Model[Item,WeighBoat,WeighingFunnel]},
 				{}
 			];
 			{weighingContainers,errors},
 			
-			(* If QuantitativeTransfer is True and we have compatibleWeighingFunnels, prioritize weighing funnel *)
-			MatchQ[quantitativeTransfer,True]&&MatchQ[compatibleWeighingFunnels,Except[{}]],
+			(* If we have QuantitativeTransfer True OR destination VolFlask, and there is a compatible funnel, allow both weighing funnel and weigh boat but prioritize weighing funnel for resolution *)
+			And[
+				Or[
+					MatchQ[quantitativeTransfer,True],
+					MatchQ[destinationContainer,ObjectP[{Model[Container,Vessel,VolumetricFlask],Object[Container,Vessel,VolumetricFlask]}]]
+				],
+				MatchQ[funnel,ObjectP[]] (* this indicates an available funnel for solid transfer *)
+			],
+			
 			weighingContainers=Join[
 				compatibleWeighingFunnels,
 				compatibleWeighBoats
@@ -18675,12 +19765,29 @@ DefineOptions[compatibleWeighingContainer,
 			];
 			{weighingContainers,errors},
 			
-			(* Otherwise, prioritize weigh boats *)
-			(* If no compatibleWeighBoats are found, this returns {} and will error out later*)
+			(* If we have QuantitativeTransfer True OR destination VolFlask, and there is NO compatible funnel, allow only weighing funnel *)
+			Or[
+				MatchQ[quantitativeTransfer,True],
+				MatchQ[destinationContainer,ObjectP[{Model[Container,Vessel,VolumetricFlask],Object[Container,Vessel,VolumetricFlask]}]]
+			],
+			
+			weighingContainers = compatibleWeighingFunnels;
+			
+			errors=If[MatchQ[weighingContainers,{}],
+				{Model[Item,WeighBoat,WeighingFunnel]},
+				{}
+			];
+			{weighingContainers,errors},
+			
+			(* Otherwise, allow both weigh boat and weighing funnel and prioritize weigh boat *)
 			True,
-			weighingContainers=compatibleWeighBoats;
-			errors = If[MatchQ[weighingContainers,{}],
-				{Model[Item,WeighBoat]},
+			weighingContainers=Join[
+				compatibleWeighBoats,
+				compatibleWeighingFunnels
+			];
+			
+			errors=If[MatchQ[weighingContainers,{}],
+				{Model[Item,WeighBoat,WeighingFunnel],Model[Item,WeighBoat]},
 				{}
 			];
 			{weighingContainers,errors}

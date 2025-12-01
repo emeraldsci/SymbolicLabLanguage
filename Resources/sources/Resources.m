@@ -661,7 +661,8 @@ $EquivalentInstrumentModelLookup = Map[
 		},
 		{
 			Model[Instrument, Balance, "id:54n6evKx08XN"], (*Mettler Toledo XP6*)
-			Model[Instrument, Balance, "id:D8KAEvKJox0l"] (*Mettler Toledo XPR6U Ultra-Microbalance*)
+			Model[Instrument, Balance, "id:D8KAEvKJox0l"], (*Mettler Toledo XPR6U Ultra-Microbalance*)
+			Model[Instrument, Balance, "id:D8KAEvD4lJOk"] (*Mettler Toledo XPR10*)
 		},
 		(*WaterPurifier*)
 		{
@@ -922,7 +923,7 @@ RequireResources[myPackets : {PacketP[{Object[Protocol], Object[Qualification], 
 			(* Download::ObjectDoesNotExist is quieted here anyway *)
 			{samplesToDownload, instrumentsToDownload, specifiedSampleModels,modelsOrObjectSamples, containerModels, protocolObjects},
 			{
-				{Model[Object], Packet[Model[{RentByDefault,Name}]], Packet[RequestedResources[{Status, RootProtocol}]]},
+				{Model[Object], Packet[Model[{RentByDefault,Name}]], Packet[RequestedResources[{Status, RootProtocol}]], Packet[RequestedResources[Requestor[Status]]]},
 				{Model, Packet[RequestedResources[{Status, RootProtocol}]]},
 				{Packet[RentByDefault,Name]},
 				{TransportCondition},
@@ -1125,7 +1126,26 @@ RequireResources[myPackets : {PacketP[{Object[Protocol], Object[Qualification], 
 		Function[{downloadValue, root},
 			If[NullQ[downloadValue],
 				{},
-				Select[Last[downloadValue], MatchQ[Lookup[#, Status], InCart | Outstanding | InUse] && MatchQ[Lookup[#, RootProtocol], ObjectP[root]]&]
+				Module[
+					{requestedResourcePackets, requestorPackets},
+					requestedResourcePackets = downloadValue[[3]];
+					requestorPackets = downloadValue[[4]];
+					If[MatchQ[requestedResourcePackets, {}],
+						{},
+						Select[
+							Transpose[{requestedResourcePackets, requestorPackets}],
+							And[
+								(* Resource that is not fulfilled yet *)
+								MatchQ[Lookup[#[[1]], Status], InCart | Outstanding | InUse],
+								(* Requested by a subprotocol of our root protocol or by root protocol *)
+								MatchQ[Lookup[#[[1]], RootProtocol], ObjectP[root]],
+								(* Requestor protocol is NOT Completed. Note that our resource may have multiple requestors like UOs but the first requestor is always the protocol *)
+								(* We do not release a resource until it is stored so the resource might still be InUse while the requestor is completed. In that case, we do not need to "use" this resource any more and should not take it into consideration when deciding whether to create resource *)
+								!MatchQ[Lookup[#[[2,1]], Status], Completed]
+							]&
+						][[All,1]]
+					]
+				]
 			]
 		],
 		{sampleDownloadValues, sampleRootProtocols}
@@ -7359,13 +7379,16 @@ ScanValue[object:SelfContainedSampleP,cont_]:=If[
 (* return the container except in two instances: *)
 (* 1. If it is a capillary, return the container of the capillary *)
 (* 2. If sample's container is in an objectified aseptic container, return the container of the container *)
-ScanValue[object:ObjectP[Object[Sample]],cont:FluidContainerP]:=If[
-	Or[
-		MatchQ[cont, ObjectP[Object[Container, Capillary]]],
-		MatchQ[Download[cont, Container[Object]], ObjectP[Object[Container, Bag, Aseptic]]]
-	],
-	Download[cont, Container[Object]],
-	cont
+ScanValue[object:ObjectP[Object[Sample]],cont:FluidContainerP]:=Module[{containersContainer},
+	containersContainer = Download[cont, Container[Object]];
+	If[
+		Or[
+			MatchQ[cont, ObjectP[Object[Container, Capillary]]],
+			MatchQ[containersContainer, ObjectP[Object[Container, Bag, Aseptic]]]
+		],
+		containersContainer,
+		cont
+	]
 ];
 
 (* If the container is an autoclave bag, scan the container *)
