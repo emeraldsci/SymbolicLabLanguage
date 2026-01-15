@@ -105,6 +105,8 @@ installDefaultUploadFunction[
 installDefaultValidQFunction[UploadMolecule, Model[Molecule]];
 installDefaultOptionsFunction[UploadMolecule, Model[Molecule]];
 
+installDefaultVerificationFunction[UploadMolecule, Model[Molecule]];
+
 (* ::Subsubsubsection::Closed:: *)
 (*resolveUploadMoleculeOptions*)
 
@@ -137,7 +139,6 @@ resolveUploadMoleculeOptions[myType : Model[Molecule], myInputs_List, myMapThrea
 	specifiedOptionsAssociations = Association @@@ myMapThreadSpecifiedOptions;
 
 
-	(* Temporary solution before a new framework is online - handle objects that we're modifying *)
 	(* Resolve the options for the ones we're modifying *)
 	{safeOptionsExistingObjectDefaulted, existingObjectInvalidInputs, existingObjectInvalidOptions} = Module[
 		{

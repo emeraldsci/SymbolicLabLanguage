@@ -3536,13 +3536,31 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 			Variables :> {options}
 		],
 		Example[{Options, CentrifugeIntensity, "Set the CentrifugeIntensity option:"},
-			options =ExperimentCapillaryGelElectrophoresisSDS[Object[Sample, "ExperimentCESDS Test sample 1 (20 mL) "<>$SessionUUID],
-					CentrifugeTime -> 40*Minute, CentrifugeTemperature -> 10 Celsius,
-					CentrifugeIntensity -> 1000*RPM, Output -> Options];
+			options = ExperimentCapillaryGelElectrophoresisSDS[
+				Object[Sample, "ExperimentCESDS Test sample 1 (20 mL) "<>$SessionUUID],
+				CentrifugeTime -> 40 Minute,
+				CentrifugeTemperature -> 10 Celsius,
+				CentrifugeIntensity -> 1000 RPM,
+				Output -> Options
+			];
 			Lookup[options, CentrifugeIntensity],
-			1000*RPM,
+			1000 RPM,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentCapillaryGelElectrophoresisSDS[
+				Object[Sample, "ExperimentCESDS Test sample 1 (20 mL) "<>$SessionUUID],
+				CentrifugeTime -> 40 Minute,
+				CentrifugeTemperature -> 10 Celsius,
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
 		],
 		Example[{Options, CentrifugeTime, "Set the CentrifugeTime option:"},
 			options =ExperimentCapillaryGelElectrophoresisSDS[Object[Sample, "ExperimentCESDS Test sample 1 (20 mL) "<>$SessionUUID],
@@ -3743,12 +3761,27 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 			Variables :> {options}
 		],
 		Example[{Options, AliquotAmount, "Set the AliquotAmount option:"},
-			options = ExperimentCapillaryGelElectrophoresisSDS[Object[Sample,"ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
-				AliquotAmount -> 0.08*Milliliter, Output -> Options];
+			options = ExperimentCapillaryGelElectrophoresisSDS[
+				Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
+				AliquotAmount -> 0.08 Milliliter,
+				Output -> Options
+			];
 			Lookup[options, AliquotAmount],
-			0.08*Milliliter,
+			0.08 Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentCapillaryGelElectrophoresisSDS[
+				Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
+				AliquotAmount -> 0.08101 Milliliter,
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			81 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "Set the AssayVolume option:"},
 			options = ExperimentCapillaryGelElectrophoresisSDS[Object[Sample,"ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
@@ -3965,11 +3998,11 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 					Upload[<|Object->Object[Instrument, ProteinCapillaryElectrophoresis, "Maurice"], Replace[Contents]->{}|>]
 				];
 
-				sampleModel=UploadSampleModel["Unit Test Model for ExperimentCESDS (deprecated) "<>$SessionUUID,
-					Composition->{
-						{100 VolumePercent,
-							Model[Molecule,Protein,"Unknown Protein - 10 KDa"]}
+				sampleModel=UploadSampleModel[
+					{
+						{100 VolumePercent, Model[Molecule,Protein,"Unknown Protein - 10 KDa"]}
 					},
+					Name -> "Unit Test Model for ExperimentCESDS (deprecated) "<>$SessionUUID,
 					SingleUse->True,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
@@ -3977,11 +4010,12 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 					ShelfLife->12 Month,
 					UnsealedShelfLife->9 Month
 				];
-				sampleModel1=UploadSampleModel[ "Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID,
-					Composition->{
+				sampleModel1=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{10 Milligram/Milliliter,Model[Molecule,Protein,"id:o1k9jAGP83Ba"]}
 					},
+					Name -> "Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -3992,11 +4026,12 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 					BiosafetyLevel->"BSL-1",
 					IncompatibleMaterials->{None}
 				];
-				sampleModel2=UploadSampleModel[ "Unit Test 100 mg/mL bActin",
-					Composition->{
+				sampleModel2=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{100 Milligram/Milliliter,Model[Molecule,Protein,"BActin"]}
 					},
+					Name -> "Unit Test 100 mg/mL bActin",
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -4007,11 +4042,12 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 					BiosafetyLevel->"BSL-1",
 					IncompatibleMaterials->{None}
 				];
-				sampleModel3=UploadSampleModel[ "Unit Test 0.24 mM bActin model",
-					Composition->{
+				sampleModel3=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{0.24 Millimolar,Model[Molecule,Protein,"BActin"]}
 					},
+					Name -> "Unit Test 0.24 mM bActin model",
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -4022,10 +4058,12 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 					BiosafetyLevel->"BSL-1",
 					IncompatibleMaterials->{None}
 				];
-				sampleModel4=UploadSampleModel["0.5% SDS in 100mM Tris, pH 9.5 for ExperimentCESDS tests "<>$SessionUUID,
-					Composition->{
+				sampleModel4=UploadSampleModel[
+					{
 						{100Millimolar,Model[Molecule, "id:01G6nvwRWR0d"]},
-						{0.5MassPercent,Model[Molecule, "id:Y0lXejMq5eRl"]}},
+						{0.5MassPercent,Model[Molecule, "id:Y0lXejMq5eRl"]}
+					},
+					Name -> "0.5% SDS in 100mM Tris, pH 9.5 for ExperimentCESDS tests "<>$SessionUUID,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -4501,11 +4539,12 @@ DefineTests[ValidExperimentCapillaryGelElectrophoresisSDSQ,
 					cleanupCartridge,allObjects,runningBufferTop,cartridgeInsert,sampleModel,sampleModel1
 				},
 
-				sampleModel1=UploadSampleModel[ "Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID,
-					Composition->{
+				sampleModel1=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{10 Milligram/Milliliter,Model[Molecule,Protein,"id:o1k9jAGP83Ba"]}
 					},
+					Name -> "Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -4830,11 +4869,12 @@ DefineTests[
 					cleanupCartridge,allObjects,runningBufferTop,cartridgeInsert,sampleModel,sampleModel1
 				},
 
-				sampleModel1=UploadSampleModel[ "Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID,
-					Composition->{
+				sampleModel1=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{10 Milligram/Milliliter,Model[Molecule,Protein,"id:o1k9jAGP83Ba"]}
 					},
+					Name -> "Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -5157,11 +5197,12 @@ DefineTests[
 					cleanupCartridge,allObjects,runningBufferTop,cartridgeInsert,sampleModel,sampleModel1
 				},
 
-				sampleModel1=UploadSampleModel[ "Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID,
-					Composition->{
+				sampleModel1=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{10 Milligram/Milliliter,Model[Molecule,Protein,"id:o1k9jAGP83Ba"]}
 					},
+					Name -> "Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,

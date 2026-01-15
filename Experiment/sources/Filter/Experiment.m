@@ -2321,9 +2321,9 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		sampleContainerModelPackets, sampleContainerPackets, allFootprints, allFootprintCentrifugeEquipment,
 		footprintCentrifugeEquipmentLookup, messages, discardedSamplePackets, discardedInvalidInputs, discardedTest,
 		missingVolumeSamplePackets, missingVolumeInvalidInputs, missingVolumeTest, sampleVolumes, nonLiquidSamplePackets,
-		nonLiquidSampleInvalidInputs, nonLiquidSampleTest, typeInstrumentInvalidOptions, allBuchnerFunnels,
-		widestBuchnerFunnelDiameteter, typeInstrumentTest, typeAndSyringeInvalidOptions, typeAndSyringeTest, centrifugePackets,
-		allProvidedFilters, possibleAutomaticFilters, allCentrifugeDevicesFilters, expandedCentrifugeDevicesTime,
+		nonLiquidSampleInvalidInputs, nonLiquidSampleTest, typeInstrumentInvalidOptions, allBuchnerFunnels, widestBuchnerFunnelDiameteter,
+		typeInstrumentTest, typeAndSyringeInvalidOptions, typeAndSyringeTest, centrifugePackets, optionPrecisions, roundedOptions,
+		precisionTests, allProvidedFilters, possibleAutomaticFilters, allCentrifugeDevicesFilters, expandedCentrifugeDevicesTime,
 		expandedCentrifugeDevicesTemperatures, expandedCentrifugeDevicesIntensities, centrifugeTuples, uniqueCentrifugeTuples,
 		centrifugeReturnPosition, centrifugeDevicesReturn, centrifugeDevicesReplaceRule, centrifugeDevicesNonUnique,
 		centrifugesAndContainersByOptionSet, mapThreadFriendlyOptions, instrumentMismatchTypes, instrumentMismatchInstruments,
@@ -2406,7 +2406,10 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		overOccupiedFilters, overOccupiedErrorOptions, overOccupiedErrorTests, newMassesPerFilter, resolvedCounterweight,
 		noCounterweightsErrors, noCounterweightCollectionContainers, noCounterweightOptions, noCounterweightTest,
 		sameFilterConflictingOptions, sameFilterConflictingFilters, sameFilterConflictingSamples, filtrateContainerLabelToIndexReplaceRules,
-		sameFilterConflictingErrorOptions, sameFilterConflictingErrorTests, collectionContainerPlateMismatchErrorSamples,
+		sameFilterConflictingErrorOptions, sameFilterConflictingErrorTests, centrifugeModelPackets, roundedIntensities,
+		roundedRetentateWashCentrifugeIntensities, roundedPrewetFilterCentrifugeIntensities, intensityPrecisionInvalidInfos,
+		additionalRoundPrecisionInfos, updatedIntensityPrecisionInvalidInfos, updatedAdditionalRoundPrecisionInfos,
+		joinSingleQuantityString, additionalRoundPrecisionTests, collectionContainerPlateMismatchErrorSamples,
 		collectionContainerPlateMismatchErrorOptions, collectionContainerPlateMismatchErrorTests,
 		pipettingOptionNames, pipettingOptionsToPass, mapThreadFriendlyPreResolvedPipettingParameterOptions, samplesToTransfer,
 		samplesToNotTransfer, filtersToTransfer, filtersToNotTransfer, volumesToTransfer, volumesToNotTransfer, optionsToTransfer,
@@ -2816,6 +2819,38 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 	];
 
 
+	(*-- OPTION PRECISION CHECKS I--*)
+
+	(* Round non-Intensity related options *)
+	optionPrecisions = {
+		{Time, 10^-1 * Minute},
+		{MaxTime, 10^-1 * Minute},
+		{FlowRate, 10^-2 * Milliliter / Minute},
+		{Temperature, 1 Celsius},
+		{Volume, 10^-1 * Microliter},
+		{Pressure, 10^0 * PSI},
+		{RetentateWashVolume, 10^-1 * Microliter},
+		{RetentateWashDrainTime, 10^-1 * Minute},
+		{RetentateWashPressure, 10^0 * PSI},
+		{PrewetFilterTime, 10^-1 * Minute},
+		{PrewetFilterBufferVolume, 10^-1 * Microliter}
+	};
+	{roundedOptions, precisionTests} = If[gatherTests,
+		RoundOptionPrecision[
+			Association[filterOptions],
+			optionPrecisions[[All, 1]],
+			optionPrecisions[[All, 2]],
+			Output -> {Result, Tests}],
+		{
+			RoundOptionPrecision[
+				Association[filterOptions],
+				optionPrecisions[[All, 1]],
+				optionPrecisions[[All, 2]]
+			],
+			Null
+		}
+	];
+
 	(* -- CONFLICTING OPTIONS CHECKS -- *)
 
 
@@ -3002,7 +3037,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 
 	(* NOTE: MAPPING*)
 	(* Convert our options into a MapThread friendly version. *)
-	mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentFilter, filterOptions];
+	mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentFilter, roundedOptions];
 
 	(* Big MapThread to get all the options resolved *)
 	{
@@ -8366,7 +8401,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		resolvedCounterweight,
 		noCounterweightsErrors
 	} = Transpose[MapThread[
-		Function[{specifiedOptions, filter, filterModelPacket, collectionContainerModelPacket, type, resolvedExperimentOptions, filterLabel},
+		Function[{specifiedOptions, filter, filterModelPacket, collectionContainerModelPacket, type, collectionContainer, filterLabel},
 			Module[
 				{requiredCounterweight, collectionContainerHeight, filterHeight, stackHeight, noCounterweightsError,
 				counterweight, filterContentsSamples, filterContentsMass, filterTareWeight, collectionContainerTareWeight},
@@ -8379,8 +8414,8 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						fastAssocLookup[fastAssoc, filter, Contents][[All, 2]],
 						{}
 					],
-					If[MatchQ[Lookup[resolvedExperimentOptions, CollectionContainer], ObjectP[Object]],
-						fastAssocLookup[fastAssoc, Lookup[resolvedExperimentOptions, CollectionContainer], Contents][[All, 2]],
+					If[MatchQ[collectionContainer, ObjectP[Object]],
+						fastAssocLookup[fastAssoc, collectionContainer, Contents][[All, 2]],
 						{}
 					]
 				];
@@ -8436,7 +8471,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 
 			]
 		],
-		{mapThreadFriendlyOptions, resolvedFilter, filterModelPackets, collectionContainerModelPackets, resolvedFiltrationType, mapThreadFriendlyOptions, resolvedFilterLabel}
+		{mapThreadFriendlyOptions, resolvedFilter, filterModelPackets, collectionContainerModelPackets, resolvedFiltrationType, resolvedCollectionContainer, resolvedFilterLabel}
 	]];
 
 	(* Throw a message if there is no counterweight *)
@@ -8467,7 +8502,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		{}
 	];
 
-	(* mkae a test if we have a mismatch between Filter and CollectionContainer *)
+	(* make a test if we have a mismatch between Filter and CollectionContainer *)
 	collectionContainerPlateMismatchErrorTests = If[gatherTests,
 		Module[{passingInputs, passingInputsTest, nonPassingInputsTest, nonPassingInputs},
 			(* Get the inputs that pass this test. *)
@@ -8573,6 +8608,323 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 			(* Return our created tests. *)
 			{passingInputsTest, failingInputTest}
 		]
+	];
+
+	(*-- OPTION PRECISION CHECKS II --*)
+	(* Get the resolution of each centrifuge model *)
+	centrifugeModelPackets = Map[
+		Which[
+			MatchQ[#, ObjectP[Object[Instrument, Centrifuge]]],
+				fastAssocLookup[fastAssoc, #, Model],
+			MatchQ[#, ObjectP[Model[Instrument, Centrifuge]]],
+				fetchPacketFromFastAssoc[#, fastAssoc],
+			True,
+				Null
+		]&,
+		resolvedInstrument
+	];
+
+	(* If the user supplied a centrifuge intensity, check if we can attain that precision. *)
+	(* Note:since ExperimentFilter is not calling full ExperimentCentrifuge due to speed reason, we cannot *)
+	(* convert between RCF and RPM since we have no rotor info. However, if user gives a RPM and its manual centrifuge, round it if necessary; *)
+	(* if user gives a RCF and its robotic centrifuge, round it if necessary. Otherwise, do generic rounding *)
+	{
+		roundedIntensities,
+		roundedRetentateWashCentrifugeIntensities,
+		roundedPrewetFilterCentrifugeIntensities,
+		intensityPrecisionInvalidInfos,
+		additionalRoundPrecisionInfos
+	} = Transpose@MapThread[
+		Function[{userSpecifiedOptions, finalIntensity, finalRetentateWashCentrifugeIntensity, finalPrewetFilterCentrifugeIntensity, centrifugePacket},
+			Which[
+
+				(* If we are not using a Centrifuge, no need to round CentrifugeIntensity *)
+				(* If intensity is Automatic, no need to round CentrifugeIntensity *)
+				Or[
+					MatchQ[Flatten@Lookup[userSpecifiedOptions, {Intensity, RetentateWashCentrifugeIntensity, PrewetFilterCentrifugeIntensity}], {(Null|Automatic)..}],
+					!MatchQ[centrifugePacket, PacketP[Model[Instrument, Centrifuge]]]
+				],
+					{finalIntensity, finalRetentateWashCentrifugeIntensity, finalPrewetFilterCentrifugeIntensity, {}, {}},
+
+				(* If intensity is specified as a rate and the rate is attainable at the manual centrifuge precision,
+				keep the value as is and set the precision info tuples as {}. Otherwise,round the value and record the option *)
+				And[
+					MatchQ[resolvedPreparation, Manual],
+					MemberQ[Flatten@Lookup[userSpecifiedOptions, {Intensity, RetentateWashCentrifugeIntensity, PrewetFilterCentrifugeIntensity}], GreaterP[0 RPM]]
+				],
+					Module[{resolution, roundedSingleOptions, specifiedRetentateWashCentrifugeIntensity, roundedListedOption, roundedValuesPerOption},
+						resolution = Lookup[centrifugePacket, SpeedResolution];
+						(* Intensity and PrewetFilterCentrifugeIntensity options have single value per sample *)
+						roundedSingleOptions = Map[
+							If[!RPMQ[Lookup[userSpecifiedOptions, #]] || PossibleZeroQ[Mod[Lookup[userSpecifiedOptions, #], resolution]],
+								Nothing,
+								{#, Lookup[userSpecifiedOptions, #], SafeRound[Lookup[userSpecifiedOptions, #], resolution]}
+							]&,
+							{Intensity, PrewetFilterCentrifugeIntensity}
+						];
+						(* RetentateWashCentrifugeIntensity can be a list of values per sample *)
+						specifiedRetentateWashCentrifugeIntensity = Lookup[userSpecifiedOptions, RetentateWashCentrifugeIntensity];
+						roundedListedOption = If[ListQ[finalRetentateWashCentrifugeIntensity] && ListQ[specifiedRetentateWashCentrifugeIntensity],
+							MapThread[
+								If[!RPMQ[#1] || PossibleZeroQ[Mod[#1, resolution]],
+									{Null, #1, #2},
+									{RetentateWashCentrifugeIntensity, #1,  SafeRound[#1, resolution]}
+								]&,
+								{specifiedRetentateWashCentrifugeIntensity, finalRetentateWashCentrifugeIntensity}
+							],
+							(* Only when finalRetentateWashCentrifugeIntensity is Null it is possible the option is not a list of values *)
+							{
+								{Null, specifiedRetentateWashCentrifugeIntensity, finalRetentateWashCentrifugeIntensity}
+							}
+						];
+						roundedValuesPerOption = Join[
+							roundedSingleOptions,
+							Cases[roundedListedOption, {RetentateWashCentrifugeIntensity, _, _}]
+						];
+						If[MatchQ[roundedValuesPerOption, {}],
+							{finalIntensity, finalRetentateWashCentrifugeIntensity, finalPrewetFilterCentrifugeIntensity, {}, {}},
+							{
+								If[MemberQ[roundedValuesPerOption[[All, 1]], Intensity],
+									FirstCase[roundedValuesPerOption, {Intensity, GreaterP[0 RPM], GreaterP[0 RPM]}][[3]],
+									finalIntensity
+								],
+								roundedListedOption[[All, 3]],
+								If[MemberQ[roundedValuesPerOption[[All, 1]], PrewetFilterCentrifugeIntensity],
+									FirstCase[roundedValuesPerOption, {PrewetFilterCentrifugeIntensity, GreaterP[0 RPM], GreaterP[0 RPM]}][[3]],
+									finalPrewetFilterCentrifugeIntensity
+								],
+								{
+									DeleteDuplicates@roundedValuesPerOption[[All, 1]],
+									resolution,
+									Lookup[centrifugePacket, Object],
+									roundedValuesPerOption[[All, 2]],
+									roundedValuesPerOption[[All, 3]]
+								},
+								{}
+							}
+						]
+					],
+
+				(* If intensity is specified as a g and we are doing robotic, we need to check if rounding is necessary *)
+				And[
+					MatchQ[resolvedPreparation, Robotic],
+					MemberQ[Flatten@Lookup[userSpecifiedOptions, {Intensity, RetentateWashCentrifugeIntensity, PrewetFilterCentrifugeIntensity}], GreaterP[0 GravitationalAcceleration]]
+				],
+					Module[{resolution, roundedSingleOptions, specifiedRetentateWashCentrifugeIntensity, roundedListedOption, roundedValuesPerOption},
+						(* From exportCentrifugeRoboticPrimitive and VSpin/HiG manual, the precision of robotic centrifuge is 0.1G *)
+						resolution = 0.1 GravitationalAcceleration;
+						(* Intensity and PrewetFilterCentrifugeIntensity options have single value per sample *)
+						roundedSingleOptions = Map[
+							If[!MatchQ[Lookup[userSpecifiedOptions, #], GreaterP[0 GravitationalAcceleration]] || EqualQ[Lookup[userSpecifiedOptions, #], SafeRound[Lookup[userSpecifiedOptions, #], resolution]],
+								Nothing,
+								{#, Lookup[userSpecifiedOptions, #], SafeRound[Lookup[userSpecifiedOptions, #], resolution]}
+							]&,
+							{Intensity, PrewetFilterCentrifugeIntensity}
+						];
+						(* RetentateWashCentrifugeIntensity can be a list of values per sample *)
+						specifiedRetentateWashCentrifugeIntensity = Lookup[userSpecifiedOptions, RetentateWashCentrifugeIntensity];
+						roundedListedOption = If[ListQ[finalRetentateWashCentrifugeIntensity] && ListQ[specifiedRetentateWashCentrifugeIntensity],
+							MapThread[
+								If[!MatchQ[#1, GreaterP[0 GravitationalAcceleration]] || EqualQ[#1, SafeRound[#1, resolution]],
+									{Null, #1, #2},
+									{RetentateWashCentrifugeIntensity, #1,  SafeRound[#1, resolution]}
+								]&,
+								{specifiedRetentateWashCentrifugeIntensity, finalRetentateWashCentrifugeIntensity}
+							],
+							(* Only when finalRetentateWashCentrifugeIntensity is Null it is possible the option is not a list of values *)
+							{
+								{Null, specifiedRetentateWashCentrifugeIntensity, finalRetentateWashCentrifugeIntensity}
+							}
+						];
+						roundedValuesPerOption = Join[
+							roundedSingleOptions,
+							Cases[roundedListedOption, {RetentateWashCentrifugeIntensity, _, _}]
+						];
+						If[MatchQ[roundedValuesPerOption, {}],
+							{finalIntensity, finalRetentateWashCentrifugeIntensity, finalPrewetFilterCentrifugeIntensity, {}, {}},
+							{
+								If[MemberQ[roundedValuesPerOption[[All, 1]], Intensity],
+									FirstCase[roundedValuesPerOption, {Intensity, GreaterP[0 GravitationalAcceleration], GreaterP[0 GravitationalAcceleration]}][[3]],
+									finalIntensity
+								],
+								roundedListedOption[[All, 3]],
+								If[MemberQ[roundedValuesPerOption[[All, 1]], PrewetFilterCentrifugeIntensity],
+									FirstCase[roundedValuesPerOption, {PrewetFilterCentrifugeIntensity, GreaterP[0 GravitationalAcceleration], GreaterP[0 GravitationalAcceleration]}][[3]],
+									finalPrewetFilterCentrifugeIntensity
+								],
+								{
+									DeleteDuplicates@roundedValuesPerOption[[All, 1]],
+									resolution,
+									Lookup[centrifugePacket, Object],
+									roundedValuesPerOption[[All, 2]],
+									roundedValuesPerOption[[All, 3]]
+								},
+								{}
+							}
+						]
+					],
+
+				(* if we don't know the max radius of the rotor then we can't calculate the force, do generic rounding *)
+				True,
+					Module[{resolution, roundedSingleOptions, specifiedRetentateWashCentrifugeIntensity, roundedListedOption, roundedValuesPerOption},
+						resolution = {1 RPM, 0.1 GravitationalAcceleration};
+						roundedSingleOptions = Map[
+							If[Or[
+								!MatchQ[Lookup[userSpecifiedOptions, #], GreaterP[0 GravitationalAcceleration]|GreaterP[0 RPM]],
+								MatchQ[Lookup[userSpecifiedOptions, #], GreaterP[0 GravitationalAcceleration]] && EqualQ[Lookup[userSpecifiedOptions, #], RoundOptionPrecision[Lookup[userSpecifiedOptions, #], resolution[[2]]]],
+								MatchQ[Lookup[userSpecifiedOptions, #], GreaterP[0 RPM]] && EqualQ[Lookup[userSpecifiedOptions, #], RoundOptionPrecision[Lookup[userSpecifiedOptions, #], resolution[[1]]]]
+							],
+								Nothing,
+								{
+									#,
+									Lookup[userSpecifiedOptions, #],
+									If[MatchQ[Lookup[userSpecifiedOptions, #], GreaterP[0 GravitationalAcceleration]],
+										RoundOptionPrecision[Lookup[userSpecifiedOptions, #], resolution[[2]]],
+										RoundOptionPrecision[Lookup[userSpecifiedOptions, #], resolution[[1]]]
+									]
+								}
+							]&,
+							{Intensity, PrewetFilterCentrifugeIntensity}
+						];
+						(* RetentateWashCentrifugeIntensity can be a list of values per sample *)
+						specifiedRetentateWashCentrifugeIntensity = Lookup[userSpecifiedOptions, RetentateWashCentrifugeIntensity];
+						roundedListedOption = If[ListQ[finalRetentateWashCentrifugeIntensity] && ListQ[specifiedRetentateWashCentrifugeIntensity],
+							MapThread[
+								Which[
+									!MatchQ[#1, GreaterP[0 GravitationalAcceleration]|GreaterP[0 RPM]],
+										{Null, #1, #2},
+									MatchQ[#1, GreaterP[0 RPM]] && PossibleZeroQ[Mod[#1, resolution]],
+										{Null, #1, #2},
+									MatchQ[#1, GreaterP[0 GravitationalAcceleration]] && EqualQ[#1, SafeRound[#1, 0.1 GravitationalAcceleration]],
+										{Null, #1, #2},
+									MatchQ[#1, GreaterP[0 RPM]],
+										{RetentateWashCentrifugeIntensity, #1, RoundOptionPrecision[#1, resolution[[1]]]},
+									True,
+										{RetentateWashCentrifugeIntensity, #1, RoundOptionPrecision[#1, resolution[[2]]]}
+								]&,
+								{specifiedRetentateWashCentrifugeIntensity, finalRetentateWashCentrifugeIntensity}
+							],
+							(* Only when finalRetentateWashCentrifugeIntensity is Null it is possible the option is not a list of values *)
+							{
+								{Null, specifiedRetentateWashCentrifugeIntensity, finalRetentateWashCentrifugeIntensity}
+							}
+						];
+						roundedValuesPerOption = Join[
+							roundedSingleOptions,
+							Cases[roundedListedOption, {RetentateWashCentrifugeIntensity, _, _}]
+						];
+						If[MatchQ[roundedValuesPerOption, {}],
+							{finalIntensity, finalRetentateWashCentrifugeIntensity, finalPrewetFilterCentrifugeIntensity, {}, {}},
+							{
+								If[MemberQ[roundedValuesPerOption[[All, 1]], Intensity],
+									FirstCase[roundedValuesPerOption, {Intensity, _, _}][[3]],
+									finalIntensity
+								],
+								roundedListedOption[[All, 3]],
+								If[MemberQ[roundedValuesPerOption[[All, 1]], PrewetFilterCentrifugeIntensity],
+									FirstCase[roundedValuesPerOption, {PrewetFilterCentrifugeIntensity, _, _}][[3]],
+									finalPrewetFilterCentrifugeIntensity
+								],
+								{},
+								{
+									roundedValuesPerOption[[All, 1]],
+									resolution,
+									roundedValuesPerOption[[All, 2]],
+									roundedValuesPerOption[[All, 3]]
+								}
+							}
+						]
+					]
+			]
+		],
+		{mapThreadFriendlyOptions, resolvedIntensity, resolvedRetentateWashCentrifugeIntensity, resolvedPrewetFilterCentrifugeIntensity, centrifugeModelPackets}
+	];
+
+	(* Since Intensity is called FilterIntensity when doing sample prep, update the option name based on EnableSamplePreparation *)
+	updatedIntensityPrecisionInvalidInfos = DeleteCases[intensityPrecisionInvalidInfos, {}]/.If[MatchQ[Lookup[myOptions, EnableSamplePreparation], True], {}, {Intensity -> FilterIntensity}];
+	updatedAdditionalRoundPrecisionInfos = DeleteCases[additionalRoundPrecisionInfos, {}]/.If[MatchQ[Lookup[myOptions, EnableSamplePreparation], True], {}, {Intensity -> FilterIntensity}];
+	(* Helper function to display string version or RCF/RPM the same way as InstrumentPrecision warning in OptionsHandling or CentrifugePrecision in ExperimentCentrifuge *)
+	(* We do not want to use built-in ToString since GravitationalAcceleration is converted to standard acceleration due to gravity on the surface of the earth by MM *)
+	joinSingleQuantityString[rate:GreaterP[0 GravitationalAcceleration]|GreaterP[0 RPM]] := If[RPMQ[rate],
+		StringJoin[ToString[QuantityMagnitude[rate] /. (number_Real :> InputForm[number, NumberMarks -> False])], " RPM"],
+		StringJoin[ToString[QuantityMagnitude[rate] /. (number_Real :> InputForm[number, NumberMarks -> False])], " GravitationalAcceleration"]
+	];
+	If[!MatchQ[updatedIntensityPrecisionInvalidInfos, {}] && !gatherTests && !MatchQ[$ECLApplication, Engine],
+		Module[{finalRoundAndConvertedIntensities},
+			finalRoundAndConvertedIntensities = With[{$MachinePrecision = 100},
+				Map[
+					If[MatchQ[#, GreaterP[0 GravitationalAcceleration]],
+						StringJoin[ToString[NumberForm[QuantityMagnitude[#], {$MachinePrecision, 1}]], " GravitationalAcceleration"],
+						joinSingleQuantityString[#1]
+					]&,
+					Flatten[updatedIntensityPrecisionInvalidInfos[[All, 5]]]
+				]
+			];
+			Message[
+				Warning::CentrifugePrecision,
+				(*1*)joinClauses[Flatten@updatedIntensityPrecisionInvalidInfos[[All, 1]]],
+				(*2*)StringJoin[
+					joinClauses[joinSingleQuantityString /@ Flatten[updatedIntensityPrecisionInvalidInfos[[All, 4]]]],
+					" ",
+					isOrAre[DeleteDuplicates@updatedIntensityPrecisionInvalidInfos[[All, 1]][[All, 1]]]
+				],
+				(*3*)If[MatchQ[resolvedPreparation, Manual],
+					StringJoin[
+						pluralize[DeleteDuplicates@updatedIntensityPrecisionInvalidInfos[[All, 2]], "precision ", "precisions "],
+						joinClauses[joinSingleQuantityString /@ updatedIntensityPrecisionInvalidInfos[[All, 2]]],
+						" of the manual ",
+						pluralize[DeleteDuplicates@updatedIntensityPrecisionInvalidInfos[[All, 3]], "centrifuge ", "centrifuges "],
+						samplesForMessages[updatedIntensityPrecisionInvalidInfos[[All, 3]], CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> updatedSimulation]
+					],
+					(* From exportCentrifugeRoboticPrimitive and VSpin/HiG manual, the precision of robotic centrifuge is 0.1G *)
+					StringJoin[
+						"precision 0.1 GravitationalAcceleration of the robotic ",
+						pluralize[updatedIntensityPrecisionInvalidInfos[[All, 3]], "centrifuge ", "centrifuges "],
+						samplesForMessages[updatedIntensityPrecisionInvalidInfos[[All, 3]], CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> updatedSimulation]
+					]
+				],
+				(*4*)joinClauses[finalRoundAndConvertedIntensities]
+			]
+		]
+	];
+
+	If[!MatchQ[updatedAdditionalRoundPrecisionInfos, {}] && !gatherTests && !MatchQ[$ECLApplication, Engine],
+		Module[{finalRoundAndConvertedIntensities},
+			finalRoundAndConvertedIntensities = With[{$MachinePrecision = 100},
+				Map[
+					If[MatchQ[#, GreaterP[0 GravitationalAcceleration]],
+						StringJoin[ToString[NumberForm[QuantityMagnitude[#], {$MachinePrecision, 1}]], " GravitationalAcceleration"],
+						joinSingleQuantityString[#1]
+					]&,
+					Flatten[updatedAdditionalRoundPrecisionInfos[[All, 4]]]
+				]
+			];
+			Message[
+				Warning::InstrumentPrecision,
+				(*1*)joinClauses[Flatten@updatedAdditionalRoundPrecisionInfos[[All, 1]]],
+				(*2*)joinClauses[joinSingleQuantityString /@ Flatten[updatedAdditionalRoundPrecisionInfos[[All, 2]]]],
+				(*3*)joinClauses[joinSingleQuantityString /@ Flatten[updatedAdditionalRoundPrecisionInfos[[All, 3]]]],
+				(*4*)joinClauses[finalRoundAndConvertedIntensities]
+			]
+		]
+	];
+
+	(* Make warnings regarding intensity precision rounding *)
+	additionalRoundPrecisionTests = If[gatherTests,
+		Module[{failingTest, passingTest},
+			failingTest = If[!MatchQ[updatedIntensityPrecisionInvalidInfos, {}] || !MatchQ[updatedAdditionalRoundPrecisionInfos, {}],
+				Warning["The precision of any user-supplied Centrifuge Intensity options is compatible with instrumental precision:", True, False],
+				Nothing
+			];
+
+			passingTest = If[MatchQ[updatedIntensityPrecisionInvalidInfos, {}] && MatchQ[updatedAdditionalRoundPrecisionInfos, {}],
+				Warning["The precision of any user-supplied Centrifuge Intensity options is compatible with instrumental precision:", True, True],
+				Nothing
+			];
+
+			{failingTest, passingTest}
+		],
+		Nothing
 	];
 
 
@@ -8987,7 +9339,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 			FiltrateDestinationWell -> resolvedFiltrateDestinationWell,
 			SampleOut -> resolvedSampleOut,
 			SamplesOutStorageCondition -> resolvedSamplesOutStorageCondition,
-			Intensity -> resolvedIntensity,
+			Intensity -> roundedIntensities,
 			Time -> resolvedTime,
 			FilterUntilDrained -> resolvedFilterUntilDrained,
 			MaxTime -> resolvedMaxTime,
@@ -9002,7 +9354,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 			RetentateWashVolume -> resolvedRetentateWashVolume,
 			NumberOfRetentateWashes -> resolvedNumberOfRetentateWashes,
 			RetentateWashDrainTime -> resolvedRetentateWashDrainTime,
-			RetentateWashCentrifugeIntensity -> resolvedRetentateWashCentrifugeIntensity,
+			RetentateWashCentrifugeIntensity -> roundedRetentateWashCentrifugeIntensities,
 			NumberOfRetentateWashMixes -> resolvedNumberOfRetentateWashMixes,
 			RetentateCollectionMethod -> resolvedRetentateCollectionMethod,
 			ResuspensionVolume -> resolvedResuspensionVolume,
@@ -9029,7 +9381,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 			PrewetFilter -> resolvedPrewetFilter,
 			PrewetFilterTime -> resolvedPrewetFilterTime,
 			PrewetFilterBufferVolume -> resolvedPrewetFilterBufferVolume,
-			PrewetFilterCentrifugeIntensity -> resolvedPrewetFilterCentrifugeIntensity,
+			PrewetFilterCentrifugeIntensity -> roundedPrewetFilterCentrifugeIntensities,
 			PrewetFilterBuffer -> resolvedPrewetFilterBuffer,
 			PrewetFilterBufferLabel -> finalResolvedPrewetFilterBufferLabel,
 			PrewetFilterContainerOut -> resolvedPrewetFilterContainerOut,
@@ -9159,6 +9511,8 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		discardedTest,
 		missingVolumeTest,
 		nonLiquidSampleTest,
+		precisionTests,
+		additionalRoundPrecisionTests,
 		nameInvalidTest,
 		typeInstrumentTest,
 		typeAndSyringeTest,
@@ -12254,6 +12608,7 @@ Error::CollectionContainerNoCounterweights = "The following CollectionContainer(
 Error::OccludingRetentateMismatch = "If CollectOccludingRetentate is set to False, then OccludingRetentateContainer, OccludingRetentateDestinationWell, and OccludingRetentateContainerLabel cannot be specified.  If CollectOccludingRetentate is True, then these options cannot be set to Null.  Please update these options for the following sample(s): `1`.";
 Error::OccludingRetentateNotSupported = "CollectOccludingRetentate may only be set to True if FiltrationType is Syringe.  Please change the FiltrationType, or set CollectOccludingRetentate to False.";
 Error::FilterPositionDestinationWellConflict = "If CollectionContainer and FiltrateContainerOut are the same container, then FilterPosition (`1`) and FiltrateDestinationWell (`2`) must be the same values as well.  Please change one or both of these options to agree.";
+Error::OverOccupiedFilter = "The following filter(s) (`1`) in well(s) `2` cannot hold the specified amounts and will be overfilled. Please either reduce the amount to be filtered or specify more filters to be used.";
 
 (* ::Subsubsection::Closed:: *)
 (*ExperimentFilterOptions *)

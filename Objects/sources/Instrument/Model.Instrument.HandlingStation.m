@@ -17,9 +17,9 @@ DefineObjectType[Model[Instrument, HandlingStation], {
 			Category -> "Instrument Specifications"
 		},
 		NumberOfVideoCameras -> {
-			Format -> Multiple,
+			Format -> Single,
 			Class -> Integer,
-			Pattern :> GreaterP[0, 1],
+			Pattern :> GreaterEqualP[0, 1],
 			Units -> None,
 			Description -> "Indicates how many cameras are present within the HandlingStation for streaming the actions of an operator.",
 			Category -> "Instrument Specifications"

@@ -13,8 +13,8 @@
 $WorkCellsToInstruments=<|
   STAR->{
     Model[Instrument, LiquidHandler, "id:kEJ9mqaW7xZP"], (* "Hamilton STARlet" *)
-    Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"], (* "Super STAR" *)
-    Model[Instrument, LiquidHandler, "id:N80DNjkzez5W"], (*"Super STAR (with PlateWasher)"*)
+    Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"], (* "Super STAR (without PlateWasher)" *)
+    Model[Instrument, LiquidHandler, "id:N80DNjkzez5W"], (*"Super STAR"*)
     Model[Instrument, LiquidHandler, "id:R8e1PjeLn8Bj"] (* "Super STAR (Limited)" *)
   },
   bioSTAR->{
@@ -72,6 +72,7 @@ Error::NoAvailableUnitOperationMethods="The following unit operations, `1`, at i
 Error::OverwrittenLabels="The following labels, `1`, were overwritten at indices, `2`, for unit operations, `3`. Please make sure that you do not try to reuse the same label when labeling new samples/containers. Please change the labels used at these unit operation indices.";
 Error::NoUnitOperations="An empty list of unit operations was given to the function `1`. At least one unit operation must be given in order to specify a valid protocol. Please specify at least one unit operation.";
 Error::InjectionSamplesUsedElsewhere="The injection sample(s), `1`, are required by other unit operations (not as injection samples) at indices, `2`. Injection sample(s) must be placed inside of the plate reader instrument(s) and cannot be used on deck. Please split up these unit operations into multiple batches if you would like to use these samples as both injection samples and on deck.";
+Error::TooManyPlateWasherBuffers="The washing buffers, `1`, are required by WashPlate unit operations at indices, `2`, but the deck supports a maximum of four unique buffers. Please either adjust the Buffer option to reduce the number of unique buffers, or split these unit operations into multiple experiments to preserve buffer identity.";
 Warning::TransferDestinationExpanded="The unit operation, `1`, has a singleton container model listed as the destination for multiple sources. Transfer will transfer each of the specified sources into a new instance of the specified destination container model. If the same destination is desired, please consider adding an index to the container model or using the labeling system.";
 Error::WorkCellDoesntMatchPattern="The resolved work cell for the primitive, `1`, does not match WorkCellP. Please check your WorkCellResolverFunction or WorkCell option to DefinePrimitive";
 Error::WorkCellIsIncompatibleWithMethod="The following method, `1`, is set for the primitive `2`, however, the only WorkCell types compatible with this primitive are of type `3`, which conflict with the chosen method. WorkCell types bioSTAR and microbioSTAR are only compatible with ExperimentRoboticCellPreparation and STAR is only compatible with ExperimentRoboticSamplePreparation. Please review primitive method specification to allow appropriate WorkCell selection.";
@@ -113,6 +114,10 @@ resizePrimitiveFrameworkCache[]:=If[Length[Keys[$PrimitiveFrameworkResolverOutpu
     Take[Keys[$PrimitiveFrameworkResolverOutputCache], Ceiling[Length[Keys[$PrimitiveFrameworkResolverOutputCache]]/2]]
   ];
 ];
+
+(* Default PrewetLabware Options *)
+$DefaultPrewetLabware = False;
+$DefaultNumberOfPrewetWashes = 2;
 
 (* NOTE: We keep the input pattern here extremely vague because we want to give the user informative messages if their *)
 (* input doesn't match the primitive set pattern. *)
@@ -415,7 +420,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     currentPrimitiveGroupingLabeledObjects,currentPrimitiveGroupingFootprints,currentPrimitiveGroupingTips,
     fakeContainer,fakeWaterSample,currentSimulation,previousSimulation,resolvedPrimitives,currentPrimitiveGroupingDateStarted,currentPrimitiveDateStarted,primitiveMethodIndexToOptionsLookup,invalidMethodOptionsWithIndices,
     allPrimitiveOptionGroupings,allPrimitiveInputGroupings,noInstrumentsPossibleErrorsWithIndices,currentPrimitiveGroupingPotentialWorkCellInstruments, cellsPresentQ, sterileQ, cellSamplesForErrorChecking,
-    currentPrimitiveOptionGrouping,currentPrimitiveInputGrouping,allPrimitiveGroupingResources,allTipModels,heavyMagnetizationRacks,workCellModelPackets,workCellObjectPackets,tipModelPackets,microbialQ,footprintInformationKeys,allPrimitiveGroupingTips,allPrimitiveGroupingFootprints,
+    currentPrimitiveOptionGrouping,currentPrimitiveInputGrouping,allPrimitiveGroupingResources,allTipModels,heavyMagnetizationRacks,workCellModelPackets,workCellObjectPackets,tipModelPackets,tipObjectPackets,microbialQ,footprintInformationKeys,allPrimitiveGroupingTips,allPrimitiveGroupingFootprints,
     allLabelFieldsWithIndicesGroupings,allPrimitiveOptionsWithLabelFieldsGroupings,currentLabelFieldsWithIndices,
     primitiveIndexToScriptVariableLookup,outputResult,currentPrimitiveGroupingRunTimes,allPrimitiveGroupingRunTimes,
     flattenedIndexMatchingPrimitives,cacheBall,containerPackets,samplePackets,sampleModelPackets,allContainerContentsPackets,allSamplePackets,allContainerModelPackets,containerModelToPosition,allContainerPackets,
@@ -431,12 +436,12 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     startNewPrimitiveGrouping,computeLabeledObjectsAndFutureLabeledObjects,finalOutput,allPrimitiveGroupingUnitOperationPackets,allPrimitiveGroupingBatchedUnitOperationPackets,
     currentPrimitiveGroupingUnitOperationPackets,currentPrimitiveGroupingBatchedUnitOperationPackets,sanitizedPrimitivesWithUnitOperationObjects,labelFieldGroupings,
     allUnresolvedPrimitivesWithLabelFieldGroupings,previewFinalizedUnitOperations,modelContainerFields,
-    objectSampleFields,modelSampleFields,objectContainerFields,unitOperationPacketsQ,outputRules,invalidInjectorResourcesWithIndices,
+    objectSampleFields,modelSampleFields,objecobjectPtContainerFields,unitOperationPacketsQ,outputRules,invalidInjectorResourcesWithIndices,invalidPlateWasherResourcesWithIndices,
     outputUnitOperationObjectsFromCache,liquidHandlerCompatibleRacks,accumulatedFulfillableResourceQ,delayedMessagesQ,
     liquidHandlerCompatibleRackPackets,inputsFunctionQ,coverOptimizedPrimitives,addedCoverAtEndPrimitiveQ,index,coverAtEnd,
     ignoreWarnings,primitiveIndexToOutputUnitOperationLookup,tipResources,nonTipResources,gatheredTipResources,combinedTipResources,
     counterWeightResources,counterWeightResourceReplacementRules,uniqueCounterweightResources,combinedCounterWeightResources,
-    accumulatedFRQTests,userWorkCellChoice,specifiedWorkCell,containerModelFieldsList,totalWorkCellTime,
+    combinedPlateWasherBufferResources,plateWasherBufferReplacementRules,accumulatedFRQTests,userWorkCellChoice,specifiedWorkCell,containerModelFieldsList,totalWorkCellTime,
     invalidInputMagnetizationRacksWithIndices,optimizedPrimitivesWithMethods, resolvedImageSample,resolvedMeasureVolume,resolvedMeasureWeight,
     flattenedIndexMatchingPrimitivesWithCorrectedLabelSample
   },
@@ -531,7 +536,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
   (* Experiments of individual UO should call sanitizeInput first by itself. Do not throw the message in framework *)
   sanitizedPrimitivesWithUnitOperationObjects = Quiet[
     (sanitizeInputs[myPrimitives, Simulation -> simulation]/.{link:LinkP[] :> Download[link, Object]}),
-    Warning::OptionContainsUnusableObject];
+    Warning::OptionContainsUnsuitableObject];
 
   (* return early if we have nonexistent objects; the message will be thrown in sanitizeInputs *)
   If[MatchQ[sanitizedPrimitivesWithUnitOperationObjects, $Failed],
@@ -568,7 +573,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     (* Experiments of individual UO should call sanitizeInput first by itself. Do not throw the message in framework *)
     Quiet[
       (sanitizeInputs[userInputtedUnitOperationObjectsWithoutBoxForms /. userInputtedUnitOperationObjectToPrimitive, Simulation -> simulation] /. {link : LinkP[] :> Download[link, Object]}),
-      Warning::OptionContainsUnusableObject
+      Warning::OptionContainsUnsuitableObject
     ]
   ];
 
@@ -1862,7 +1867,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
   (* NOTE: The following will NOT be filled out for a ManualSamplePreparation/Experiment grouping because we have no *)
   (* footprint/tip limitations. *)
   currentPrimitiveGroupingFootprints={}; (* {{FootprintP, ObjectP[Object[Container]], ResourceP}..} *)
-  currentPrimitiveGroupingTips={}; (* {Resource[Sample->Model[Item, Tips], Amount->_Integer]..} *)
+  currentPrimitiveGroupingTips={}; (* {Resource[Sample->Model[Item, Tips]|Object[Item, Tips], Amount->_Integer]..} *)
   currentPrimitiveGroupingIntegratedInstrumentsResources={}; (* {InstrumentResourceP..} *)
   (* These are the potential Model[Instrument, LiquidHandler] or Model[Instrument, ColonyHandler]s that meet the requirements. *)
   currentPrimitiveGroupingPotentialWorkCellInstruments={}; (* {ObjectP[{Model[Instrument, LiquidHandler],Model[InstrumentColonyHandler]}]..} *)
@@ -2090,6 +2095,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     workCellObjectPackets,
     liquidHandlerCompatibleRackPackets,
     tipModelPackets,
+    tipObjectPackets,
     samplePackets,
     sampleModelPackets,
     containerPackets,
@@ -2105,6 +2111,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
           DeleteDuplicates@Download[Cases[Join[primitiveMethodIndexToOptionsLookup,{Lookup[safeOps,Instrument]}], ObjectP[Object[Instrument]], Infinity], Object],
           liquidHandlerCompatibleRacks,
           allTipModels,
+          DeleteDuplicates[Download[Cases[flattenedPrimitives, ObjectReferenceP[Object[Item, Tips]], Infinity], Object]],
           DeleteDuplicates[Download[Cases[flattenedPrimitives, ObjectReferenceP[Object[Sample]], Infinity], Object]],
           DeleteDuplicates[Download[Cases[flattenedPrimitives, ObjectReferenceP[Model[Sample]], Infinity], Object]],
           DeleteDuplicates[Download[Cases[flattenedPrimitives, ObjectReferenceP[Object[Container]], Infinity], Object]],
@@ -2116,6 +2123,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
           List@Packet[Name, Model],
           List@Packet[Name, Positions, Footprint],
           List@Packet[Object, Name, PipetteType, Sterile, RNaseFree, WideBore,Filtered,GelLoading,Aspirator, Material, AspirationDepth, TipConnectionType, MinVolume, MaxVolume, NumberOfTips, MaxStackSize, Footprint],
+          List@Packet[Object, Model, Count],
           {
             insertMe1,
             Packet[Container[objectContainerFields]],
@@ -2147,9 +2155,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     LastOrDefault[Cases[Flatten[parentProtocolStack], ObjectP[]]]
   ];
 
-  cacheBall=FlattenCachePackets[{workCellModelPackets, workCellObjectPackets, liquidHandlerCompatibleRackPackets, tipModelPackets, samplePackets, sampleModelPackets, containerPackets}];
+  cacheBall=FlattenCachePackets[{workCellModelPackets, workCellObjectPackets, liquidHandlerCompatibleRackPackets, tipModelPackets, tipObjectPackets, samplePackets, sampleModelPackets, containerPackets}];
 
-  {workCellModelPackets, workCellObjectPackets, liquidHandlerCompatibleRackPackets, tipModelPackets}=Flatten/@{workCellModelPackets, workCellObjectPackets, liquidHandlerCompatibleRackPackets, tipModelPackets};
+  {workCellModelPackets, workCellObjectPackets, liquidHandlerCompatibleRackPackets, tipModelPackets, tipObjectPackets}=Flatten/@{workCellModelPackets, workCellObjectPackets, liquidHandlerCompatibleRackPackets, tipModelPackets, tipObjectPackets};
 
   (* Get all Object[Sample]s and Model[Sample]s referenced in our primitives and see if we can find any *)
   (* microbial cells in them. This will be used for defaulting the work cell to use for each of the unit operations. *)
@@ -2312,7 +2320,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
   (* Create a variable to keep track of our FRQ tests, if we have any. *)
   frqTests={};
 
-  (* create a variable to compile together all the resources we need to call FRQ on at the end of the UOs, not between each one *)
+  (* Create a variable to compile together all the resources we need to call FRQ on at the end of the UOs, not between each one *)
   nonObjectResources={};
 
   (* Keep track of if our primitives have unfulfillable resources. *)
@@ -2644,7 +2652,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
         ],
         {{},{},{}}
       ];
-      fastCacheBall = makeFastAssocFromCache[Cases[Flatten[downloadInformation], _Association]];
+      fastCacheBall = makeFastAssocFromCache[FlattenCachePackets[{downloadInformation, cacheBall}]];
       allContainerContentsPackets=Flatten[downloadInformation[[2,All,1]]];
       allSamplePackets=Flatten[downloadInformation[[1,All,1]]];
       allContainerModelPackets=DeleteDuplicates@Flatten[{downloadInformation[[2,All,4]],downloadInformation[[3]]}];
@@ -4002,7 +4010,8 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
         SafeAddHandler[{"MessageTextFilter", messageHandler},
           Module[
             {options, simulation, tests, result, timeEstimate, errorMessagesThrownQ,
-              resolverPlateReaderRule, simulationHash, userReaderRequest},
+              resolverPlateReaderRule, simulationHash, userReaderRequest,
+              preresolvedPrewetLabware, preresolvedPrewetWashSolution},
 
             (* Helper function to see if myMessageList contains an Error. *)
             errorMessagesThrownQ[]:=MemberQ[myMessageList, KeyValuePattern[{MessageName->Hold[Verbatim[MessageName][Except[Warning],_]]}]];
@@ -4061,6 +4070,243 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
               Nothing
             ];
 
+            (* If PrewetLabware is set to True and preparation is Manual, pre-resolve options *)
+            {
+              preresolvedPrewetLabware,
+              preresolvedPrewetWashSolution
+            } = If[MatchQ[primitive,_Transfer]&&MatchQ[preparation,Manual]&&MemberQ[ToList[Lookup[safeResolverOptions,PrewetLabware]],True],
+              Module[
+                {
+                  allTransferFTVDestinationsTuples,
+                  allTransferFTVSourcesTuples,
+                  flattenedTransferFTVDestinations,
+                  flattenedTransferFTVSources,
+                  destinationSourceStateTuples,
+                  expandedPrewetLabware,
+                  expandedPrewetWashSolution,
+                  expandedNumberOfPrewetWashes,
+                  expandedPrewetWashVolume,
+                  expandedQuantitativeTransfer,
+                  expandedQuantitativeTransferWashSolution,
+                  expandedQuantitativeTransferWashVolume,
+                  expandedQuantitativeTransferWashInstrument,
+                  expandedQuantitativeTransferWashTips,
+                  expandedNumberOfQuantitativeTransferWashes
+                },
+                
+                (* create an ordered tuple of all destinations {{destination container, amount}..} - amount is Null if FTV *)
+                (* create an ordered list of all sources *)
+                (* all labels have been converted to objects *)
+                allTransferFTVDestinationsTuples={};
+                allTransferFTVSourcesTuples={};
+                Map[
+                  Function[{primitive},
+                    If[MatchQ[primitive,_Transfer]&&MatchQ[preparation,Manual],
+                      (
+                        AppendTo[
+                          allTransferFTVDestinationsTuples,
+                          MapThread[
+                            {
+                              #1/.Lookup[currentSimulation[[1]],Labels],
+                              #2
+                            }&,
+                            {Lookup[primitive[[1]],Destination],Lookup[primitive[[1]],Amount]}
+                          ]
+                        ];
+                        AppendTo[
+                          allTransferFTVSourcesTuples,
+                          Map[
+                            #1/.Lookup[currentSimulation[[1]],Labels]&,
+                            Lookup[primitive[[1]], Source]
+                          ]
+                        ];
+                      ),
+                      (
+                        AppendTo[
+                          allTransferFTVDestinationsTuples,
+                          Map[
+                            {#, Null}/.Lookup[currentSimulation[[1]],Labels]&,
+                            Lookup[primitive[[1]], Sample]
+                          ]
+                        ];
+                        AppendTo[
+                          allTransferFTVSourcesTuples,
+                          Map[
+                            #/.Lookup[currentSimulation[[1]],Labels]&,
+                            Lookup[primitive[[1]], Solvent]
+                          ]
+                        ];
+                      )
+                    ]
+                  ],
+                  Cases[coverOptimizedPrimitives[[index;;]],(_Transfer|_FillToVolume)]
+                ];
+
+                (* flatten and convert any Destination sample to container *)
+                flattenedTransferFTVDestinations = (
+                  Flatten[allTransferFTVDestinationsTuples,1]/.{
+                    destination:ObjectP[{Object[Sample]}]:>Lookup[fetchPacketFromFastAssoc[destination, fastCacheBall], Container]
+                  }
+                )/.{link_Link:>Download[link,Object]};
+                
+                flattenedTransferFTVSources = Flatten[allTransferFTVSourcesTuples,1];
+
+                (* create tuples for {destination, amount (quantity if Transfer, Null if FTV), source, sourceState} which will be used later to pre-resolve PrewetWashSolution *)
+                destinationSourceStateTuples = Map[
+                  Flatten[#]&,
+                  Transpose[{
+                    flattenedTransferFTVDestinations, (* {{destination, amount|Null}..} *)
+                    flattenedTransferFTVSources,
+                    Lookup[fetchPacketFromFastAssoc[#, fastCacheBall], State]&/@flattenedTransferFTVSources
+                  }]
+                ];
+
+                {
+                  expandedPrewetLabware,
+                  expandedPrewetWashSolution,
+                  expandedNumberOfPrewetWashes,
+                  expandedPrewetWashVolume,
+                  expandedQuantitativeTransfer,
+                  expandedQuantitativeTransferWashSolution,
+                  expandedQuantitativeTransferWashVolume,
+                  expandedQuantitativeTransferWashInstrument,
+                  expandedQuantitativeTransferWashTips,
+                  expandedNumberOfQuantitativeTransferWashes
+                } = Map[
+                  If[MatchQ[Lookup[safeResolverOptions,#],Automatic]&&MatchQ[primitive,_Transfer]&&MatchQ[preparation,Manual],
+                    ConstantArray[Automatic,Length[Lookup[allPrimitiveOptionsWithSimulatedObjects, Source]]],
+                    Lookup[safeResolverOptions,#]
+                  ]&,
+                  {
+                    PrewetLabware,
+                    PrewetWashSolution,
+                    NumberOfPrewetWashes,
+                    PrewetWashVolume,
+                    QuantitativeTransfer,
+                    QuantitativeTransferWashSolution,
+                    QuantitativeTransferWashVolume,
+                    QuantitativeTransferWashInstrument,
+                    QuantitativeTransferWashTips,
+                    NumberOfQuantitativeTransferWashes
+                  }
+                ];
+                
+                  Transpose[MapThread[
+                    Function[
+                      {
+                        source,
+                        transferIndex,
+                        specifiedPrewetLabware,
+                        specifiedPrewetWashSolution,
+                        specifiedNumberOfPrewetWashes,
+                        specifiedPrewetWashVolume,
+                        specifiedQuantitativeTransfer,
+                        specifiedQuantitativeTransferWashSolution,
+                        specifiedQuantitativeTransferWashVolume,
+                        specifiedQuantitativeTransferWashInstrument,
+                        specifiedQuantitativeTransferWashTips,
+                        specifiedNumberOfQuantitativeTransferWashes},
+                      Module[
+                        {sourceSample, finalPrewetLabware, finalPrewetWashSolution, preresolvedQuantitativeTransfer},
+        
+                        (* Get the sample object *)
+                        sourceSample=If[MatchQ[source, ObjectP[]],
+                          Download[source,Object],
+                          Null
+                        ];
+        
+                        preresolvedQuantitativeTransfer = Or[
+                          MatchQ[specifiedQuantitativeTransfer,True],
+                          MemberQ[{specifiedQuantitativeTransferWashSolution,
+                            specifiedQuantitativeTransferWashVolume,
+                            specifiedQuantitativeTransferWashInstrument,
+                            specifiedQuantitativeTransferWashTips,
+                            specifiedNumberOfQuantitativeTransferWashes},Except[Automatic|Null]]
+                        ];
+        
+                        finalPrewetLabware = Which[
+                          MatchQ[specifiedPrewetLabware,Except[Automatic]],
+                          specifiedPrewetLabware,
+          
+                          (* If any other PrewetLabware options are NOT Automatic|Null, set to True *)
+                          MatchQ[specifiedNumberOfPrewetWashes, Except[Automatic|Null]]&&MatchQ[specifiedPrewetWashVolume, Except[Automatic|Null]],
+                          True,
+          
+                          (* Otherwise, set to default *)
+                          True,
+                          $DefaultPrewetLabware
+                        ];
+        
+                        finalPrewetWashSolution = Which[
+                          MatchQ[specifiedPrewetWashSolution,Except[Automatic]],
+                          specifiedPrewetWashSolution,
+                          
+                          MatchQ[finalPrewetLabware,Except[True]],
+                          Null,
+          
+                          (* If source is a label, use source *)
+                          MatchQ[Download[sourceSample,State,Simulation->currentSimulation],Liquid],
+                          sourceSample,
+          
+                          (* If source is solid and there is quantitative transfer, use quantitative transfer solution *)
+                          MatchQ[preresolvedQuantitativeTransfer,True],
+                          Which[
+                            MatchQ[specifiedQuantitativeTransferWashSolution,ObjectP[]],
+                            specifiedQuantitativeTransferWashSolution,
+            
+                            MatchQ[specifiedQuantitativeTransferWashSolution,_String],
+                            Lookup[Lookup[currentSimulation[[1]],Labels],specifiedQuantitativeTransferWashSolution],
+            
+                            True,
+                            Null
+                          ],
+          
+                          (* If there is a future FTV primitive with the same Sample as the destination, use the Solvent of that FTV primitive - prefer to use FTV solvent to maintain specific volumes specified for other liquid transfers *)
+                          MatchQ[
+                            Cases[destinationSourceStateTuples[[transferIndex+1;;]],{flattenedTransferFTVDestinations[[transferIndex]][[1]],Null,__}],
+                            Except[{}]
+                          ],
+                          FirstCase[destinationSourceStateTuples[[transferIndex+1;;]],{flattenedTransferFTVDestinations[[transferIndex]][[1]],Null,__},{}][[3]],
+          
+                          (* If there is a future Transfer primitive with the same Destination as the destination and a liquid Source, use the Source of the Transfer primitive that has the largest Amount *)
+                          MatchQ[
+                            Cases[destinationSourceStateTuples[[transferIndex+1;;]],{flattenedTransferFTVDestinations[[transferIndex]][[1]],_Quantity,_,Liquid}],
+                            Except[{}]
+                          ],
+                          (* Sort from highest to lowest amount (tuple[[2]]), then take the first tuple and get the source sample (tuple[[3]])*)
+                          ReverseSortBy[
+                            Cases[destinationSourceStateTuples[[transferIndex+1;;]],{flattenedTransferFTVDestinations[[transferIndex]][[1]],_Quantity,_,Liquid}],
+                            #[[2]]&
+                          ][[1]][[3]],
+          
+                          True,
+                          Null
+                        ];
+        
+                        {finalPrewetLabware,finalPrewetWashSolution}
+                      ]
+                    ],
+                    {
+                      Lookup[allPrimitiveOptionsWithSimulatedObjects, Source],
+                      Range[Length[Lookup[allPrimitiveOptionsWithSimulatedObjects, Source]]],
+                      expandedPrewetLabware,
+                      expandedPrewetWashSolution,
+                      expandedNumberOfPrewetWashes,
+                      expandedPrewetWashVolume,
+                      expandedQuantitativeTransfer,
+                      expandedQuantitativeTransferWashSolution,
+                      expandedQuantitativeTransferWashVolume,
+                      expandedQuantitativeTransferWashInstrument,
+                      expandedQuantitativeTransferWashTips,
+                      expandedNumberOfQuantitativeTransferWashes
+                    }
+                  ]]
+              ],
+  
+              (* retain the values of these options *)
+              {Lookup[safeResolverOptions,PrewetLabware,Null],Lookup[safeResolverOptions,PrewetWashSolution,Null]}
+            ];
+            
             (* Evaluate the resolver function. Turn off message printing while doing so (we'll throw messages later). *)
             (* NOTE: Preparation is not an option if the experiment function can only be performed manually. *)
             (* NOTE: Do NOT send down the Cache->cacheBall option to the experiment function since the cache ball can contain *)
@@ -4228,6 +4474,13 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                                 WorkCell->resolvedWorkCell,
                                 Nothing
                               ],
+                              If[MatchQ[primitive,_Transfer]&&MatchQ[preparation,Manual],
+                                Sequence@@{
+                                  PrewetLabware -> preresolvedPrewetLabware,
+                                  PrewetWashSolution -> preresolvedPrewetWashSolution
+                                },
+                                Nothing
+                              ],
                               Upload->False
                             }
                           ]
@@ -4257,6 +4510,13 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                               Nothing
                             ],
                             resolverPlateReaderRule,
+                            If[MatchQ[primitive,_Transfer]&&MatchQ[preparation,Manual],
+                              Sequence@@{
+                                PrewetLabware -> preresolvedPrewetLabware,
+                                PrewetWashSolution -> preresolvedPrewetWashSolution
+                              },
+                              Nothing
+                            ],
                             Upload->False
                           }
                         ];
@@ -4300,6 +4560,13 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                               Nothing
                             ],
                             resolverPlateReaderRule,
+                            If[MatchQ[primitive,_Transfer]&&MatchQ[preparation,Manual],
+                              Sequence@@{
+                                PrewetLabware -> preresolvedPrewetLabware,
+                                PrewetWashSolution -> preresolvedPrewetWashSolution
+                              },
+                              Nothing
+                            ],
                             Upload->False
                           }
                         ];
@@ -4350,6 +4617,13 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                               If[MemberQ[Options[resolverFunction][[All,1]], "Preparation"],
                                 Preparation->preparation,
                                 Nothing
+                              ],
+                              If[MatchQ[primitive,_Transfer]&&MatchQ[preparation,Manual],
+                                Sequence@@{
+                                  PrewetLabware -> preresolvedPrewetLabware,
+                                  PrewetWashSolution -> preresolvedPrewetWashSolution
+                                },
+                                Nothing
                               ]
                             }
                           ]
@@ -4373,6 +4647,13 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                             ],
                             If[MemberQ[Options[resolverFunction][[All,1]], "Preparation"],
                               Preparation->preparation,
+                              Nothing
+                            ],
+                            If[MatchQ[primitive,_Transfer]&&MatchQ[preparation,Manual],
+                              Sequence@@{
+                                PrewetLabware -> preresolvedPrewetLabware,
+                                PrewetWashSolution -> preresolvedPrewetWashSolution
+                              },
                               Nothing
                             ],
                             resolverPlateReaderRule
@@ -4440,7 +4721,14 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                             resolvedPrimitiveImageSampleRule,
                             resolvedPrimitiveMeasureVolumeRule,
                             resolvedPrimitiveMeasureWeightRule,
-                            resolverPlateReaderRule
+                            resolverPlateReaderRule,
+                            If[MatchQ[primitive,_Transfer]&&MatchQ[preparation,Manual],
+                              Sequence@@{
+                                PrewetLabware -> preresolvedPrewetLabware,
+                                PrewetWashSolution -> preresolvedPrewetWashSolution
+                              },
+                              Nothing
+                            ]
                           }
                         ];
 
@@ -4768,8 +5056,8 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             Head[primitive][Association@Join[
             (* Make sure to convert all containers to samples since the functions will do this internally and we need the *)
             (* index matching to work out. *)
-            (* NOTE: ExperimentTransfer/Cover/Uncover leaves containers alone so do not do this for those experiments. *)
-            If[MatchQ[Head[primitive], Transfer|Cover|Uncover],
+            (* NOTE: ExperimentTransfer/Cover/Uncover/WashPlate leaves containers alone so do not do this for those experiments. *)
+            If[MatchQ[Head[primitive], Transfer|Cover|Uncover|WashPlate],
               Rule@@@Transpose[{Lookup[primitiveInformation, InputOptions], inputsWithNoSimulatedObjects}],
               Module[{containerToAllSampleLookup,allcontainerToSamples,positionToSampleLookup,allpositionsToSamples},
 
@@ -4828,7 +5116,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
           (*    however, if the label name doesn't exist in the unresolved options, later function can error out in the script because it can't find that label *)
 
           (* First fix problem 1 *)
-          innerOptionsIndexMatched = If[MatchQ[Head[primitive], Transfer|Cover|Uncover],
+          innerOptionsIndexMatched = If[MatchQ[Head[primitive], Transfer|Cover|Uncover|WashPlate],
             optionsWithNoSimulatedObjects,
             Module[{correctedIndexMatchingOptionValues, containerToAllSampleLengthLookup, indexMatchingOptions},
 
@@ -5203,10 +5491,10 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
               }
             }];
 
-            (* Gather the tip models that we need for this primitive. *)
+            (* Gather the tip models that we need for this primitive. Allow consideration of specific tip box input. It should less be applicable for consumables as they are disposable in nature *)
             tipResourceBlobs=Cases[
               allResourceBlobs,
-              Resource[KeyValuePattern[Sample -> LinkP[Model[Item, Tips]]|ObjectReferenceP[Model[Item, Tips]]|LinkP[Model[Item, Consumable]]|ObjectReferenceP[Model[Item, Consumable]]]]
+              Resource[KeyValuePattern[Sample -> LinkP[{Model[Item, Tips], Object[Item, Tips]}]|ObjectReferenceP[{Model[Item, Tips], Object[Item, Tips]}]|LinkP[Model[Item, Consumable]]|ObjectReferenceP[Model[Item, Consumable]]]]
             ]/.{link_Link :> Download[link, Object]};
 
             (* Further split up samplesAndContainerObjects into samples and not samples. *)
@@ -5697,9 +5985,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             allTipResources=Flatten[{tipResourceBlobs, currentPrimitiveGroupingTips}];
 
             (* Figure out the number of stacked and non-stacked tips that we're going to have in the form of *)
-            (* {{ObjectP[Model[Item, Tip]], tipCountRequired_Integer}..} *)
-            {flattenedStackedTipTuples, flattenedNonStackedTipTuples}=partitionTips[tipModelPackets, allTipResources, currentPrimitiveGrouping];
-            {singlePrimitiveFlattenedStackedTipTuples, singlePrimitiveFlattenedNonStackedTipTuples}=partitionTips[tipModelPackets, tipResourceBlobs, {resolvedPrimitive}];
+            (* {{ObjectP[{Model[Item, Tip], Object[Item. Tips}], tipCountRequired_Integer}..} *)
+            {flattenedStackedTipTuples, flattenedNonStackedTipTuples}=partitionTips[tipModelPackets, tipObjectPackets, allTipResources, currentPrimitiveGrouping];
+            {singlePrimitiveFlattenedStackedTipTuples, singlePrimitiveFlattenedNonStackedTipTuples}=partitionTips[tipModelPackets, tipObjectPackets, tipResourceBlobs, {resolvedPrimitive}];
 
             (* -- Compute the starting positions (Ambient or Incubator) of our new containers with Footprint->Plate. -- *)
             (* NOTE: In order to do this, for our current primitive grouping (with our new primitive added), we need to *)
@@ -5840,7 +6128,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                   newFootprintTally,
                   ObjectToString[allInstrumentResourceModels, Cache->cacheBall],
                   Length[flattenedStackedTipTuples],
-                  ObjectToString[flattenedStackedTipTuples[[All,1]], Cache->tipModelPackets],
+                  ObjectToString[flattenedStackedTipTuples[[All,1]], Cache->cacheBall],
 
                   (* NOTE: If we're using a tip adapter, we will be using 1 more non-stacked tip position, which can cause the deck to not fit our tips. *)
                   If[tipAdapterUsedQ,
@@ -5848,8 +6136,8 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                     Length[flattenedNonStackedTipTuples]
                   ],
                   If[tipAdapterUsedQ,
-                    ObjectToString[Append[flattenedNonStackedTipTuples[[All,1]], Model[Item, "Hamilton 96 MultiProbeHead Tip Adapter (Used for NxM shifted pipetting)"]], Cache->tipModelPackets],
-                    ObjectToString[flattenedNonStackedTipTuples[[All,1]], Cache->tipModelPackets]
+                    ObjectToString[Append[flattenedNonStackedTipTuples[[All,1]], Model[Item, "Hamilton 96 MultiProbeHead Tip Adapter (Used for NxM shifted pipetting)"]], Cache->cacheBall],
+                    ObjectToString[flattenedNonStackedTipTuples[[All,1]], Cache->cacheBall]
                   ]
                 ];
                 AppendTo[noInstrumentsPossibleErrorsWithIndices, {Head[resolvedPrimitive], index, primitive}],
@@ -5892,9 +6180,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                      newFootprintTally,
                      ObjectToString[allInstrumentResourceModels, Cache->cacheBall],
                      Length[flattenedStackedTipTuples],
-                     ObjectToString[flattenedStackedTipTuples[[All,1]], Cache->tipModelPackets],
+                     ObjectToString[flattenedStackedTipTuples[[All,1]], Cache->cacheBall],
                      Length[flattenedNonStackedTipTuples],
-                     ObjectToString[flattenedNonStackedTipTuples[[All,1]], Cache->tipModelPackets]
+                     ObjectToString[flattenedNonStackedTipTuples[[All,1]], Cache->cacheBall]
                    ];
 
                   (* NOTE: We still append here so that we can keep track of our invalid inputs. *)
@@ -6003,8 +6291,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     $PrimitiveFrameworkIndexedLabelCache=Flatten@allLabelFieldsWithIndicesGroupings;
   ];
 
+  (* Additional Resource FRQ:Tips, CounterWeight, PlateWasherBuffer *)
   (* get all the tips resources *)
-  tipResources = Select[Flatten[nonObjectResources], MatchQ[#[Sample], ObjectP[Model[Item, Tips]]] && IntegerQ[#[Amount]]&];
+  tipResources = Select[Flatten[allPrimitiveGroupingTips], (MatchQ[#[Sample], ObjectP[{Model[Item, Tips], Object[Item, Tips]}]] && IntegerQ[#[Amount]])&];
   counterWeightResources = Select[Flatten[nonObjectResources], MatchQ[#[Sample], ObjectP[Model[Item, Counterweight]]]&];
   nonTipResources = DeleteCases[Flatten[nonObjectResources], Alternatives @@ tipResources];
 
@@ -6044,12 +6333,83 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
   combinedCounterWeightResources=Download[Lookup[counterWeightResources[[All,1]],Sample,{}],Object]/.uniqueCounterweightResources;
   counterWeightResourceReplacementRules=Normal[AssociationThread[counterWeightResources,combinedCounterWeightResources]];
 
+  (* Create consolidated buffer resources for plate washer for all WashPlate UOs, not between each one *)
+  (* For example, if we have 2 WashPlate UOs, one uses water and another uses PBS, we have 2 buffer lines. If both of them use water, we only have 1 buffer line. *)
+  (* Track if more than 4 unique buffers are specified with invalidPlateWasherResourcesWithIndices *)
+  invalidPlateWasherResourcesWithIndices = {};
+  {combinedPlateWasherBufferResources, plateWasherBufferReplacementRules} = Module[
+    {primitiveHeads, washPlatePositions},
+
+    primitiveHeads = Head/@resolvedPrimitives;
+    washPlatePositions = Flatten@Position[primitiveHeads, WashPlate];
+
+    Which[
+      (* if we don't have WashPlate primitives - return empty list *)
+      Length[washPlatePositions]==0,
+        {{}, {}},
+      (* if we only have 1 WashPlate primitive- assign BufferLine to BufferA *)
+      Length[washPlatePositions]==1,
+        Module[{washPlateAssoc, bufferObject, primeVolume, washVolume, washNum, sampleContainerLabel, totalRequiredAmount, bufferResource},
+          washPlateAssoc = Extract[resolvedPrimitives, washPlatePositions][[1]];
+          {bufferObject, primeVolume, washVolume, washNum, sampleContainerLabel} = Lookup[
+            washPlateAssoc,
+            {Buffer, PrimeVolume, WashVolume, NumberOfWashes, SampleContainerLabel}
+          ];
+          (* 200ml is the dead volume for the plate washer *)
+          totalRequiredAmount = SafeRound[1.1*Total[{washNum*96*washVolume*Length[DeleteDuplicates[ToList@sampleContainerLabel]], primeVolume/.Null -> 0 Milliliter, 200 Milliliter}], 1 Milliliter];
+          bufferResource = Resource[Sample -> bufferObject, Container -> Model[Container, Vessel, "2L Glass Bottle"], Amount -> totalRequiredAmount, Name -> CreateUUID[]];
+          {{bufferResource}, {bufferObject -> {BufferA, bufferResource}}}
+        ],
+      (* if we have more than 1 WashPlate primitives-check if we can consolidate buffer resources *)
+      True,
+        Module[{washPlateAssocs, bufferObjects, totalVolumesWithoutDeadVolume, groupedBufferResources, bufferResourcesReplacement},
+          washPlateAssocs = #[[1]]& /@ resolvedPrimitives[[washPlatePositions]];
+          {bufferObjects, totalVolumesWithoutDeadVolume} = Transpose@Map[
+            Function[{washPlateAssoc},
+              Module[{bufferObject, primeVolume, washVolume, washNum, sampleContainerLabel, totalRequiredAmount},
+                {bufferObject, primeVolume, washVolume, washNum, sampleContainerLabel} = Lookup[
+                  washPlateAssoc,
+                  {Buffer, PrimeVolume, WashVolume, NumberOfWashes, SampleContainerLabel}
+                ];
+                (* Here we do not consider dead volume or pipetting error, we will add dead volume and 10% more after consolidating *)
+                totalRequiredAmount = Total[{washNum*96*washVolume*Length[DeleteDuplicates[ToList@sampleContainerLabel]], primeVolume/.Null -> 0 Milliliter}];
+                {bufferObject, totalRequiredAmount}
+              ]
+            ],
+            washPlateAssocs
+          ];
+          groupedBufferResources = GroupBy[Transpose@{bufferObjects, totalVolumesWithoutDeadVolume}, First];
+          invalidPlateWasherResourcesWithIndices = If[Length[groupedBufferResources] > 4,
+            {bufferObjects, washPlatePositions},
+            {}
+          ];
+          bufferResourcesReplacement = MapThread[
+            Function[{uniqueBuffer, indexOfBuffer},
+              Module[{bufferLine, consolidateAmountWithDeadVolume},
+                bufferLine = Switch[indexOfBuffer,
+                  1, BufferA,
+                  2, BufferB,
+                  3, BufferC,
+                  4, BufferD,
+                  _, Null
+                ];
+                consolidateAmountWithDeadVolume = SafeRound[1.1*Total[Flatten@{Lookup[groupedBufferResources, uniqueBuffer][[All, 2]], 200 Milliliter}], 1 Milliliter];
+                uniqueBuffer -> {bufferLine, Resource[Sample -> uniqueBuffer, Container -> Model[Container, Vessel, "2L Glass Bottle"], Amount -> consolidateAmountWithDeadVolume, Name -> CreateUUID[]]}
+              ]
+            ],
+            {Keys@groupedBufferResources, Range[Length[Keys@groupedBufferResources]]}
+          ];
+          {Values[bufferResourcesReplacement][[All, 2]], bufferResourcesReplacement}
+        ]
+    ]
+  ];
+
   (* call FRQ on all the accumulated resource blobs that we've gathered in the MapThread *)
   (* if UnitOperationPackets -> True, then we aren't calling FRQ because the function that called it will do it instead *)
   {accumulatedFulfillableResourceQ, accumulatedFRQTests} = Which[
     MatchQ[$ECLApplication, Engine] || unitOperationPacketsQ, {<||>, {}},
-    gatherTests, Resources`Private`fulfillableResourceQ[Flatten[{nonTipResources, combinedTipResources, combinedCounterWeightResources}], Simulation->simulation, Output -> {Result, Tests}],
-    True, {Resources`Private`fulfillableResourceQ[Flatten[{nonTipResources, combinedTipResources, combinedCounterWeightResources}], Simulation->simulation], {}}
+    gatherTests, Resources`Private`fulfillableResourceQ[Flatten[{nonTipResources, combinedTipResources, combinedCounterWeightResources, combinedPlateWasherBufferResources}], Simulation->simulation, Output -> {Result, Tests}],
+    True, {Resources`Private`fulfillableResourceQ[Flatten[{nonTipResources, combinedTipResources, combinedCounterWeightResources, combinedPlateWasherBufferResources}], Simulation->simulation], {}}
   ];
 
   (* Throw errors that we discovered during the MapThread. *)
@@ -6089,6 +6449,11 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
 
   If[Length[invalidInjectorResourcesWithIndices]>0,
     Message[Error::InjectionSamplesUsedElsewhere, ObjectToString[invalidInjectorResourcesWithIndices[[All,1]]], invalidInjectorResourcesWithIndices[[All,2]]];
+  ];
+
+  (* If we have plate washer primitives, find if the total Buffer resources are less than 5 (up to 4 lines are supported) *)
+  If[Length[invalidPlateWasherResourcesWithIndices]>0,
+    Message[Error::TooManyPlateWasherBuffers, ObjectToString[invalidPlateWasherResourcesWithIndices[[1]]], invalidPlateWasherResourcesWithIndices[[2]]];
   ];
 
   (* If we encountered FRQ problems, return $Failed. *)
@@ -6181,6 +6546,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     invalidResolverPrimitives,
     allOverwrittenLabelsWithIndices[[All,2]],
     invalidInjectorResourcesWithIndices[[All,2]],
+    If[MatchQ[invalidPlateWasherResourcesWithIndices, {}], {}, invalidPlateWasherResourcesWithIndices[[2]]],
     incompatibleWorkCellAndMethod,
     roboticCellPreparationRequired,
     invalidInputMagnetizationRacksWithIndices[[All,2]]
@@ -6919,7 +7285,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
           {outputUnitOperationPackets, Flatten[(If[MatchQ[#, {}], Null, #]&)/@First[allPrimitiveGroupingUnitOperationPackets]]}
         ];
 
-        (* Gather all up of our auxilliary packets. *)
+        (* Gather all up of our auxiliary packets. *)
         supplementaryPackets=Cases[
           Join[
             inputUnitOperationPackets,
@@ -7068,16 +7434,22 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     True,
       Module[
         {
-          protocolType,allTipResources,tipRackResources,protocolPacket,tareContainers,labeledObjects,futureLabeledObjects,uniqueInstrumentResources,instrumentResourcesWithUpdatedTimeEstimate,cellContainerLinkResources,nonCellContainerLinkResources,
-          livingCellContainerLinkResources,userSpecifiedOptions,primitiveMethodIndex,primitiveMethod,inputUnitOperationPackets,optimizedUnitOperationPackets,
-          calculatedUnitOperationPackets,supplementaryPackets,skipTareFunction,samplesIn,containersIn,tipResourceReplacementRules,
-          outputUnitOperationPackets,subOutputUnitOperationPackets,requiredObjects,plateReaderFields,simulatedObjectsToLabel, outputUnitOperationPacketsNotFlat,
-          allOutputUnitOperationPacketsWithConsolidatedInjectionSampleResources,instrumentResourceReplaceRules,overclockQ,supplementaryPacketsMinusRootProtocol,
-          overclockingPacket,finalInstrumentResources,colonyHandlerResource,liquidHandlerResource,estimatedNumberOfPositionsNeeded,
-          allTransferUnitOperations,tipAdapter,tipAdapterResourceReplacementRule,tipAdapterResource,magnetizationRackResourceReplacementRules,modelSampleResourceReplacementRules
-          ,experimentRunTime,instrumentInitializationTime,workCell,supplementalCertifications,allSupplementalCertifications},
+          protocolType,allTransferUnitOperations,tipAdapter,supplementalCertifications,labeledObjects,futureLabeledObjects,
+          allTipResources,tipRackResources,tipResourceReplacementRules,modelSampleResourceReplacementRules,
+          magnetizationRackResourceReplacementRules,skipTareFunction,tareContainers,cellContainerLinkResources,
+          nonCellContainerLinkResources,livingCellContainerLinkResources,uniqueInstrumentResources,primitiveMethod,
+          primitiveMethodIndex,liquidHandlerResourceWithoutTime,workCell,instrumentInitializationTime,experimentRunTime,
+          liquidHandlerResource,instrumentResourcesWithUpdatedTimeEstimate,instrumentResourceReplaceRules,
+          userSpecifiedOptions,inputUnitOperationPackets,optimizedUnitOperationPackets,simulatedObjectsToLabel,
+          calculatedUnitOperationPackets,tipAdapterResource,tipAdapterResourceReplacementRule,outputUnitOperationPacketsNotFlat,
+          outputUnitOperationPackets,subOutputUnitOperationPackets,plateReaderFields,plateWasherFields,
+          allOutputUnitOperationPacketsWithConsolidatedInjectionSampleAndBufferResources,
+          supplementaryPacketsMinusRootProtocol,overclockQ,overclockingPacket,supplementaryPackets,samplesIn,containersIn,
+          requiredObjects,estimatedNumberOfPositionsNeeded,finalInstrumentResources,colonyHandlerResource,protocolPacket,
+          allSupplementalCertifications
+        },
 
-        (* Depending on what function we're in, either make a ManualSamplePreparation or ManualCellPreparation protocol. *)
+        (* Depending on what function we're in, either make a RoboticSamplePreparation or RoboticCellPreparation protocol. *)
         protocolType=Lookup[First[Flatten[allPrimitiveGroupings]][[1]], PrimitiveMethod];
 
         (* figure out if we are using a tip adapter in any of the Transfer UOs in the group *)
@@ -7101,7 +7473,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
 
           (* Figure out the number of stacked and non-stacked tips that we're going to have in the form of *)
           (* {{ObjectP[Model[Item, Tip]], tipCountRequired_Integer}..} *)
-          {flattenedStackedTipTuples, flattenedNonStackedTipTuples}=partitionTips[tipModelPackets, First[allPrimitiveGroupingTips], First[allPrimitiveGroupings]];
+          {flattenedStackedTipTuples, flattenedNonStackedTipTuples}=partitionTips[tipModelPackets, tipObjectPackets, First[allPrimitiveGroupingTips], First[allPrimitiveGroupings]];
 
           (* Make resources for our stacked and non-stacked tip tuples. *)
           stackedTipResources=(Resource[Sample->#[[1]], Amount->#[[2]], UpdateCount -> False, Name->CreateUUID[]]&)/@flattenedStackedTipTuples;
@@ -7169,7 +7541,12 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             Function[
               {resourceBlob},
               Module[
-                {containerModels,containerModelPacket,containerMaxVolume,containerPositions,sampleModel,sourceTemperature,sourceEquilibrationTime,maxSourceEquilibrationTime,volume,accumulatedResourceTuplesMatchingContainerModels,existingSampleModelResourceTuples,existingContainerModelResourceTuples,containerNameVolumeTuples,containerNamePositionTuples,updatedContainerModels,containerName,well,newResourceTuple,updatedAccumulatedResourceTuples},
+                {
+                  containerModels,sampleModel,sourceTemperature,sourceEquilibrationTime,maxSourceEquilibrationTime,volume,
+                  accumulatedResourceTuplesMatchingContainerModels,existingSampleModelResourceTuples,existingContainerModelResourceTuples,
+                  containerNameVolumeTuples,containerNamePositionTuples,updatedContainerModels,containerName,well,newResourceTuple,
+                  updatedAccumulatedResourceTuples
+                },
                 (* Get all the possible models *)
                 containerModels=ToList[Download[Lookup[resourceBlob[[1]],Container],Object]];
                 (* Get the model of the sample *)
@@ -7441,7 +7818,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             {simulatedObjects, containerResult, simulatedContainers, labeledContainers, containerResources,
               sampleResult, simulatedSamples, sampleObjects, sampleResources, containerContentPackets,
               containerIncludesCellsQ, nonCellContainerResources,cellContainerResources, sampleContainsCellsQ,
-              containerIncludesLivingCellsQ, sampleContainsLivingCellsQ, nonCellSampleResources, cellSampleResources, livingCellContainerResources},
+              containerIncludesLivingCellsQ, nonCellSampleResources, cellSampleResources, livingCellContainerResources},
 
             (* Get the objects that correspond to our labels. *)
             (* NOTE: Lookup from LabeledObjects because these objects will exist immediately after resource picking. *)
@@ -7518,7 +7895,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
         primitiveMethod=Lookup[Flatten[allPrimitiveGroupings][[1]][[1]], PrimitiveMethod];
         primitiveMethodIndex=Lookup[Flatten[allPrimitiveGroupings][[1]][[1]], PrimitiveMethodIndex];
 
-        liquidHandlerResource = Module[{liquidHandler},
+        liquidHandlerResourceWithoutTime = Module[{liquidHandler},
           (* determine a liquid handler model/object to use *)
           liquidHandler = Which[
             (* if we have decided on a liquid handler object to use, use that for sure *)
@@ -7596,27 +7973,29 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
         experimentRunTime=totalWorkCellTime-instrumentInitializationTime;
 
         (* now that we have calculated the correct time that we expect to use on the instrument, we need to update the resource request *)
-        liquidHandlerResource =If[MatchQ[liquidHandlerResource,_Resource],
+        liquidHandlerResource =If[MatchQ[liquidHandlerResourceWithoutTime,_Resource],
             Resource[
-              Instrument->Lookup[liquidHandlerResource[[1]],Instrument],
+              Instrument->Lookup[liquidHandlerResourceWithoutTime[[1]],Instrument],
               (* NOTE: We should be given back valid time estimates here, but if we're not default to 1 minute so we make *)
               (* a valid resource and don't error on upload. *)
               Time->If[MatchQ[totalWorkCellTime,GreaterP[1 Minute]],totalWorkCellTime,1 Minute]
             ]
         ];
 
-        instrumentResourcesWithUpdatedTimeEstimate=(
+        instrumentResourcesWithUpdatedTimeEstimate=Map[
           Resource[
             Instrument->Lookup[#[[1]], Instrument],
             Name->CreateUUID[],
             Time->totalWorkCellTime
-          ]
-              &)/@uniqueInstrumentResources;
+          ]&,
+          uniqueInstrumentResources
+        ];
 
         (* Create instrument resource replace rules to replace instrument resources inside of the output unit operations. *)
-        instrumentResourceReplaceRules=(
-          Verbatim[Resource][KeyValuePattern[Instrument->ObjectP[Lookup[#[[1]], Instrument]]]]->#
-              &)/@instrumentResourcesWithUpdatedTimeEstimate;
+        instrumentResourceReplaceRules=Map[
+          Verbatim[Resource][KeyValuePattern[Instrument->ObjectP[Lookup[#[[1]], Instrument]]]]->#&,
+          instrumentResourcesWithUpdatedTimeEstimate
+        ];
 
         (* Get the options that the user gave us. *)
         userSpecifiedOptions=If[!MatchQ[primitiveMethodIndex, _Integer],
@@ -7859,10 +8238,30 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
           ]
         ];
 
-        (* Make sure to replace the injection sample resources inside of the plate reader output unit operations, if they *)
-        (* exist. *)
+        (* -- Compute Buffer Sample Resources for Plate Washer WashPlate Primitives -- *)
+        plateWasherFields = Module[{fields},
+          (* NOTE: We already did error checking during our MapThread to make sure that we don't have more than 4 unique buffer samples. *)
+          fields = Map[
+            Function[{bufferLineResourcePair},
+              Module[{bufferLineName},
+                bufferLineName = Switch[bufferLineResourcePair,
+                  {BufferA, _Resource}, PlateWasherBufferA,
+                  {BufferB, _Resource}, PlateWasherBufferB,
+                  {BufferC, _Resource}, PlateWasherBufferC,
+                  _, PlateWasherBufferD
+                ];
+                bufferLineName -> bufferLineResourcePair[[2]]
+              ]
+            ],
+            Values@plateWasherBufferReplacementRules
+          ]
+        ];
+
+        (* Update Instrument resources in UnitOperation to global instrument resource *)
+        (* Make sure to replace the injection sample resources inside of the plate reader output unit operations, if they exist. *)
+        (* Make sure to replace the Buffer resources inside of the plate Washer output unit operations, if they exist. *)
         (* NOTE: This contains both outputUnitOperationPackets and subOutputUnitOperationPackets. *)
-        allOutputUnitOperationPacketsWithConsolidatedInjectionSampleResources=Module[
+        allOutputUnitOperationPacketsWithConsolidatedInjectionSampleAndBufferResources = Module[
           {primaryPlateReaderInjectionSampleReplaceRules, secondaryPlateReaderInjectionSampleReplaceRules},
 
           (* Create replace rules. *)
@@ -7927,8 +8326,29 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                   ]
                 ],
 
+                (* If we have a WashPlate primitive, do the Buffer replacement *)
+                MatchQ[Lookup[outputUnitOperationPacket, Object], ObjectP[Object[UnitOperation, WashPlate]]],
+                Module[{replaceRulesForBufferLink, updatedBufferLine},
+                  replaceRulesForBufferLink = Map[
+                    (#[[1]] -> #[[2]][[2]])&,
+                    plateWasherBufferReplacementRules
+                  ];
+                  updatedBufferLine = Lookup[plateWasherBufferReplacementRules, Download[Lookup[outputUnitOperationPacket, BufferLink], Object]][[1]];
+                  Association@Append[
+                    (* NOTE: Also replace any instrument resources with our global ones. *)
+                    Normal[outputUnitOperationPacket]/.instrumentResourceReplaceRules,
+                    (* Replace the BufferLink and BufferLine values based on which Buffer it is. *)
+                    (* The UO packet from experiment should have Null as BufferLine and Object/Model sample as BufferLink *)
+                    (* After replacement, BufferLine should be BufferA-D, and BufferLink should be Resource blob *)
+                    {
+                      BufferLink -> Lookup[outputUnitOperationPacket, BufferLink]/.replaceRulesForBufferLink,
+                      BufferLine -> Lookup[outputUnitOperationPacket, BufferLine]/.(Null -> updatedBufferLine)
+                    }
+                  ]
+                ],
+
                 True,
-                (* Otherwise we have a non plate reader hamilton run: Replace any instrument resources with our global ones. *)
+                (* Otherwise we have a non plate reader/plate washer hamilton run: Replace any instrument resources with our global ones. *)
                 Association[Normal[outputUnitOperationPacket]/.instrumentResourceReplaceRules]
               ]
             ],
@@ -7936,14 +8356,13 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
           ]
         ];
 
-
-        (* Gather all up of our auxilliary packets. *)
+        (* Gather all up of our auxiliary packets. *)
         supplementaryPacketsMinusRootProtocol=Cases[
           Join[
             inputUnitOperationPackets,
             optimizedUnitOperationPackets,
             calculatedUnitOperationPackets,
-            allOutputUnitOperationPacketsWithConsolidatedInjectionSampleResources,
+            allOutputUnitOperationPacketsWithConsolidatedInjectionSampleAndBufferResources,
             Flatten@allPrimitiveGroupingBatchedUnitOperationPackets
           ],
           Except[Null]
@@ -8122,7 +8541,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
           Replace[OptimizedUnitOperations]->(Link[#, Protocol]&)/@Lookup[optimizedUnitOperationPackets, Object],
           Replace[CalculatedUnitOperations]->(Link[#, Protocol]&)/@Lookup[calculatedUnitOperationPackets, Object],
 
-          (* NOTE: We don't use allOutputUnitOperationPacketsWithConsolidatedInjectionSampleResources here since that contains *)
+          (* NOTE: We don't use allOutputUnitOperationPacketsWithConsolidatedInjectionSampleAndBufferResources here since that contains *)
           (* packets from both outputUnitOperationPackets and subOutputUnitOperationPackets. *)
           Replace[OutputUnitOperations]->(Link[#, Protocol]&)/@Lookup[outputUnitOperationPackets, Object],
 
@@ -8144,8 +8563,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
 
           Replace[RequiredInstruments]->finalInstrumentResources,
 
-          (* Include Plate Reader Fields. *)
+          (* Include Plate Reader and Plate Washer Fields. *)
           Sequence@@plateReaderFields,
+          Sequence@@plateWasherFields,
 
           Replace[LabeledObjects]->labeledObjects,
           Replace[FutureLabeledObjects]->futureLabeledObjects,
@@ -8776,7 +9196,7 @@ ValidateUnitOperationsJSON[myPrimitives_List, myOptions:OptionsPattern[]]:=Modul
     (* Experiments of individual UO should call sanitizeInput first by itself. Do not throw the message in framework *)
     sanitizedPrimitivesWithUnitOperationObjects=Quiet[
       (sanitizeInputs[myPrimitives]/.{link:LinkP[] :> Download[link, Object]}),
-      Warning::OptionContainsUnusableObject
+      Warning::OptionContainsUnsuitableObject
     ];
 
     (* Find any unit operation objects that were given as input. *)
@@ -8786,11 +9206,11 @@ ValidateUnitOperationsJSON[myPrimitives_List, myOptions:OptionsPattern[]]:=Modul
     userInputtedUnitOperationPackets=Download[userInputtedUnitOperationObjects, Packet[All]];
 
     (* Convert each of these packets into a primitive. *)
-    userInputtedUnitOperationObjectToPrimitive=(Lookup[#, Object]->ConstellationViewers`Private`UnitOperationPrimitive[#, IncludeCompletedOptions->False, IncludeEmptyOptions->False,IncludedHiddenOptions -> {WasteContainer}]&)/@userInputtedUnitOperationPackets;
+    userInputtedUnitOperationObjectToPrimitive=(Lookup[#, Object]->ConstellationViewers`Private`UnitOperationPrimitive[#, IncludeCompletedOptions->False, IncludeEmptyOptions->False, IncludedHiddenOptions -> {WasteContainer}]&)/@userInputtedUnitOperationPackets;
     (* Experiments of individual UO should call sanitizeInput first by itself. Do not throw the message in framework *)
     Quiet[
       (sanitizeInputs[sanitizedPrimitivesWithUnitOperationObjects/.userInputtedUnitOperationObjectToPrimitive]/.{link:LinkP[] :> Download[link, Object]}),
-      Warning::OptionContainsUnusableObject
+      Warning::OptionContainsUnsuitableObject
     ]
   ];
 
@@ -9755,8 +10175,9 @@ $HamiltonTipBoxBuffer=12;
 (* Authors definition for Experiment`Private`partitionTips *)
 Authors[Experiment`Private`partitionTips]:={"taylor.hochuli"};
 
-partitionTips[tipModelPackets_List, allTipResources_List, primitiveGrouping_List]:=Module[
-  {tipModelsForMultiProbeHeadTransfers, allTips, talliedTipModels, partitionedTipCountLookup, requiredStackedTipTypes, requiredNonStackedTipTypes},
+partitionTips[tipModelPackets_List, tipObjectPackets_List, allTipResources_List, primitiveGrouping_List]:=Module[
+  {tipModelsForMultiProbeHeadTransfers, allTips, talliedTips, tipObjectModelLookup, partitionedTipCountLookup,
+    requiredStackedTipTypes, requiredNonStackedTipTypes},
 
   (* Return early if we don't have any tips to partition. *)
   If[MatchQ[allTipResources, {}],
@@ -9793,7 +10214,7 @@ partitionTips[tipModelPackets_List, allTipResources_List, primitiveGrouping_List
         ];
 
         (* For pipetting Mix, the DeviceChannel is Null and automatically excluded here *)
-        Download[Cases[PickList[listedTips, listedDeviceChannel, MultiProbeHead], ObjectP[Model[Item, Tips]]], Object]
+        Download[Cases[PickList[listedTips, listedDeviceChannel, MultiProbeHead], ObjectP[{Model[Item, Tips], Object[Item, Tips]}]], Object]
       ]
     ],
     (* Consider both Transfer and pipetting Mix *)
@@ -9802,21 +10223,29 @@ partitionTips[tipModelPackets_List, allTipResources_List, primitiveGrouping_List
 
   (* Expand our tip resources so that every model is listed the number of times that tip is used. *)
   allTips=Flatten[(ConstantArray[Lookup[#[[1]], Sample], Lookup[#[[1]], Amount]]&)/@allTipResources];
-
-  (* Tally our tip models. *)
-  talliedTipModels=(Rule@@#&)/@Tally[allTips];
+  (* Tally our tip models and objects. *)
+  talliedTips=(Rule@@#&)/@Tally[allTips];
+  (* Make a tip object to model lookup. So it generates a list of object -> model, and model -> itself. *)
+  tipObjectModelLookup = If[MatchQ[#, ObjectP[Object[Item, Tips]]],
+    # -> Download[cacheLookup[tipObjectPackets, #, Model], Object],
+    # -> #
+  ]& /@ allTips;
 
   (* Build lookup relating tip type to a list of tip counts partitioned by sample. For example, if we need *)
   (* 100 300ul stackable tips, <| Model[Item, Tip, "300ul tips"] -> {4,96} ...|> *)
   partitionedTipCountLookup = Association@KeyValueMap[
-    Function[{tipModel,requiredCount},
-      Module[{tipPacket,stackSize,maxUsableTipCountPerStack,fullLayersNeeded,tipRemainder,extraLayersNeeded,numberOfFullTipBoxesNeeded,numberOfOtherLayersNeeded,tipBoxCounts},
+    Function[{tipModelOrObject,requiredCount},
+      Module[{tipModel, tipModelPacket,stackSize,maxUsableTipCountPerStack,fullLayersNeeded,tipRemainder,extraLayersNeeded,numberOfFullTipBoxesNeeded,numberOfOtherLayersNeeded,tipBoxCounts},
         (* Fetch tip model packet *)
-        tipPacket = fetchPacketFromCache[tipModel,tipModelPackets];
+        tipModel = If[MatchQ[tipModelOrObject, ObjectP[Object[Item, Tips]]],
+          Lookup[tipObjectModelLookup, tipModelOrObject],
+          tipModelOrObject
+        ];
+        tipModelPacket =fetchPacketFromCache[tipModel,tipModelPackets];
 
         (* Fetch the number of levels in a stack *)
-        stackSize = If[MatchQ[Lookup[tipPacket,MaxStackSize], GreaterP[1]],
-          Lookup[tipPacket,MaxStackSize],
+        stackSize = If[MatchQ[Lookup[tipModelPacket,MaxStackSize], GreaterP[1]],
+          Lookup[tipModelPacket,MaxStackSize],
           1
         ];
 
@@ -9825,7 +10254,7 @@ partitionTips[tipModelPackets_List, allTipResources_List, primitiveGrouping_List
         (* or incorrect tip counts in the tip objects. *)
         (* NOTE: Also, Hamilton may discard the top layer of a tip rack if it has less than 8 tips -- so $HamiltonTipBoxBuffer has *)
         (* to be AT LEAST 8. *)
-        maxUsableTipCountPerStack = Lookup[tipPacket,NumberOfTips] - $HamiltonTipBoxBuffer;
+        maxUsableTipCountPerStack = Lookup[tipModelPacket,NumberOfTips] - $HamiltonTipBoxBuffer;
 
         (* Get the number of layers of tips that we will need. *)
         {fullLayersNeeded, tipRemainder} = QuotientRemainder[requiredCount,maxUsableTipCountPerStack];
@@ -9845,16 +10274,16 @@ partitionTips[tipModelPackets_List, allTipResources_List, primitiveGrouping_List
 
         (* Create the list of the amounts of tips that we need in each of our tip boxes. *)
         tipBoxCounts = Prepend[
-          Table[Lookup[tipPacket,NumberOfTips] * stackSize, numberOfFullTipBoxesNeeded],
+          Table[Lookup[tipModelPacket,NumberOfTips] * stackSize, numberOfFullTipBoxesNeeded],
           (* NOTE: We have to add $HamiltonTipBoxBuffer here again because tipRemainder will add another layer *)
           (* to our entire request, and we want $HamiltonTipBoxBuffer on each layer we request. *)
           Which[
             tipRemainder > 0 && numberOfOtherLayersNeeded > 0,
-              (Lookup[tipPacket,NumberOfTips] * numberOfOtherLayersNeeded) + tipRemainder + $HamiltonTipBoxBuffer,
+              (Lookup[tipModelPacket,NumberOfTips] * numberOfOtherLayersNeeded) + tipRemainder + $HamiltonTipBoxBuffer,
             tipRemainder > 0,
               tipRemainder + $HamiltonTipBoxBuffer,
             numberOfOtherLayersNeeded > 0,
-              (Lookup[tipPacket,NumberOfTips] * numberOfOtherLayersNeeded),
+              (Lookup[tipModelPacket,NumberOfTips] * numberOfOtherLayersNeeded),
             True,
               Nothing
           ]
@@ -9874,20 +10303,19 @@ partitionTips[tipModelPackets_List, allTipResources_List, primitiveGrouping_List
             (* If we have more than one position on deck for this tip type, we shouldn't run into the 96 head issue. *)
             !(Length[tipBoxCounts]>1)
           ],
-          tipBoxCounts=Append[tipBoxCounts, Lookup[tipPacket,NumberOfTips] * stackSize];
+          tipBoxCounts=Append[tipBoxCounts, Lookup[tipModelPacket,NumberOfTips] * stackSize];
         ];
 
         (* Return rule *)
-        tipModel -> tipBoxCounts
+        tipModelOrObject -> tipBoxCounts
       ]
     ],
-    Association@talliedTipModels
+    Association@talliedTips
   ];
-
   (* Extract required tip types that are stacked *)
   requiredStackedTipTypes = Select[
     DeleteDuplicates[allTips],
-    TrueQ[Lookup[fetchPacketFromCache[#,tipModelPackets],MaxStackSize] > 1]&
+    TrueQ[cacheLookup[tipModelPackets, Lookup[tipObjectModelLookup, #], MaxStackSize] > 1]&
   ];
 
   (* Extract required tip types that are not stacked *)
@@ -9897,14 +10325,14 @@ partitionTips[tipModelPackets_List, allTipResources_List, primitiveGrouping_List
   (* {{tip type, tip count required}..}. *)
   {
     Join@@Map[
-      Function[tipModel,
-        {tipModel,#}&/@Lookup[partitionedTipCountLookup,tipModel]
+      Function[tipModelOrObject,
+        {tipModelOrObject,#}&/@Lookup[partitionedTipCountLookup,tipModelOrObject]
       ],
       requiredStackedTipTypes
     ],
     Join@@Map[
-      Function[tipModel,
-        {tipModel,#}&/@Lookup[partitionedTipCountLookup,tipModel]
+      Function[tipModelOrObject,
+        {tipModelOrObject,#}&/@Lookup[partitionedTipCountLookup,tipModelOrObject]
       ],
       requiredNonStackedTipTypes
     ]

@@ -7,7 +7,7 @@
 
 
 (* Authors definition for Core`Private`AddTracingDefinition *)
-Authors[Core`Private`AddTracingDefinition]:={"xu.yi"};
+Authors[Core`Private`AddTracingDefinition]:={"hiren.patel"};
 
 AddTracingDefinition[f_String, rest___] := AddTracingDefinition[Symbol[f],rest];
 AddTracingDefinition[f_Symbol, tagRules_Association] := AddTracingDefinition[f,tagRules,Null];
@@ -48,7 +48,6 @@ AddTracingDefinition[f_Symbol, tagRules_Association, optionsPosition:(_Integer|N
 							generic tags for all function calls
 						*)
                         TagTrace["sll.function.name",fstring];
-	                    TagTrace["sll.function.context",Context[f]];
 						(* TraceExpression fails if values are too large, so shorten the call if necessary *)
 	                    TagTrace["sll.function.call", shrunkenStringExpression[Hold[f[args]]]];
 	                    TagTrace["sll.function.user", ToString[$PersonID,InputForm]];

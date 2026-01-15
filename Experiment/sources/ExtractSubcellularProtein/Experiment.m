@@ -6358,7 +6358,9 @@ resolveExperimentExtractSubcellularProteinOptions[mySamples:{ObjectP[Object[Samp
       gatherTests,
       Simulation -> currentSimulation
     ],
-    {Error::InvalidSolidMediaSample, Error::InvalidInput}
+    (* We also quiet centrifuge precision warning since robotic centrifuge always trigger the warning to show both RCF and RPM if the specified value is RPM. *)
+    (* Robotic bio experiments should resolve to GravitationalAcceleration instead of resolving to RPM *)
+    {Error::InvalidSolidMediaSample, Error::InvalidInput, Warning::CentrifugePrecision}
   ];
   resolvedLysisAndGeneralOptions = Join[
     Normal[KeyDrop[resolvedLysisOptions,{SampleOutLabel,RoboticInstrument}],Association],

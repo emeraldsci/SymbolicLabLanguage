@@ -8271,6 +8271,19 @@ DefineTests[ExperimentIonChromatography,
             Variables:>{options},
             TimeConstraint->240
         ],
+        Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+            options = ExperimentIonChromatography[
+                Object[Container, Plate, "Test plate 1 for ExperimentIC tests" <> $SessionUUID],
+                CentrifugeIntensity -> 1001 RPM,
+                Output -> Options
+            ];
+            Lookup[options, CentrifugeIntensity],
+            1000 RPM,
+            EquivalenceFunction -> Equal,
+            Variables :> {options},
+            Messages :> {Warning::CentrifugePrecision},
+            TimeConstraint -> 240
+        ],
         (* Note: CentrifugeTime cannot go above 5Minute without restricting the types of centrifuges that can be used. *)
         Example[{Options,CentrifugeTime,"The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment or any aliquoting:"},
             options=ExperimentIonChromatography[Object[Container,Plate,"Test plate 1 for ExperimentIC tests" <> $SessionUUID],
@@ -8547,6 +8560,18 @@ DefineTests[ExperimentIonChromatography,
             EquivalenceFunction->Equal,
             TimeConstraint->240,
             Variables:>{options}
+        ],
+        Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+            options = ExperimentIonChromatography[
+                Object[Sample, "ExperimentIC Test Sample 1" <> $SessionUUID],
+                AliquotAmount -> 0.08101 Milliliter,
+                Output -> Options
+            ];
+            Lookup[options, AliquotAmount],
+            81 Microliter,
+            EquivalenceFunction -> Equal,
+            Variables :> {options},
+            Messages :> {Warning::AliquotAmountPrecision}
         ],
         Example[{Options,AssayVolume,"The desired total volume of the aliquoted sample plus dilution buffer:"},
             options=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],

@@ -19,7 +19,8 @@ With[
 				Types[{
 					Model[Container, Vessel],
 					Model[Container, Plate],
-					Model[Container,ExtractionCartridge]
+					Model[Container,ExtractionCartridge],
+					Model[Container, Rack]
 				}],
 				Model[Container]
 			]
@@ -39,49 +40,31 @@ With[
 				Type -> String,
 				Pattern :> FilePathP,
 				Size -> Paragraph,
-				PatternTooltip -> "The complete path to the documentation file."
+				PatternTooltip -> "The complete path to the documentation file. This documentation file must be PDF format."
 			],
 			"Product Documentation File URL" -> Widget[
 				Type -> String,
 				Pattern :> URLP,
 				Size -> Paragraph,
-				PatternTooltip -> "In the format of a valid web address that can include or exclude http://."
+				PatternTooltip -> "In the format of a valid web address that can include or exclude http://. This documentation file must be PDF format."
 			],
 			"Product Object" -> Widget[
 				Type -> Object,
 				Pattern :> ObjectP[Object[Product]]
+			],
+			"Cover Model of your Product" -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{Model[Item, Cap], Model[Item, Lid], Model[Item, PlateSeal]}]
+			],
+			"Sample Model of your Product" -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[Model[Sample]]
 			]
 		],
-		allowNullProductWidget = Alternatives[
+		nullProductWidget = Alternatives[
 			"No product information" -> Widget[
 				Type -> Enumeration,
 				Pattern :> Alternatives[Null]
-			],
-			"Product URL" -> Widget[
-				Type -> String,
-				Pattern :> URLP,
-				Size -> Paragraph,
-				PatternTooltip -> "The URL of the product page of this container."
-			],
-			"Product Documentation CloudFile" -> Widget[
-				Type -> Object,
-				Pattern :> ObjectP[Object[EmeraldCloudFile]]
-			],
-			"Product Documentation File from PC" -> Widget[
-				Type -> String,
-				Pattern :> FilePathP,
-				Size -> Paragraph,
-				PatternTooltip -> "The complete path to the documentation file."
-			],
-			"Product Documentation File URL" -> Widget[
-				Type -> String,
-				Pattern :> URLP,
-				Size -> Paragraph,
-				PatternTooltip -> "In the format of a valid web address that can include or exclude http://."
-			],
-			"Product Object" -> Widget[
-				Type -> Object,
-				Pattern :> ObjectP[Object[Product]]
 			]
 		]
 	},
@@ -155,7 +138,7 @@ With[
 						{
 							InputName -> "ProductInformation",
 							Description -> "The information of either the container itself, or where the container is available, such as spec sheet, supplier webpage url, etc.",
-							Widget -> allowNullProductWidget,
+							Widget -> Join[productWidget, nullProductWidget],
 							Expandable -> False
 						}
 					},
@@ -165,7 +148,8 @@ With[
 							Description -> "The new container model.",
 							Pattern :> ObjectP[Model[Container]]
 						}
-					}
+					},
+					CommandBuilder -> False
 				},
 				{
 					Definition -> {"UploadContainerModel[newContainerType, ProductInformation]", "ContainerModel"},
@@ -181,10 +165,10 @@ With[
 							{
 								InputName -> "ProductInformation",
 								Description -> "The information of either the container itself, or where the container is available, such as spec sheet, supplier webpage url, etc.",
-								Widget -> allowNullProductWidget,
+								Widget -> Join[productWidget, nullProductWidget],
 								Expandable -> False
 							},
-							IndexName -> "inputs"
+							IndexName -> "Input Data"
 						]
 					},
 					Outputs :> {
@@ -193,7 +177,8 @@ With[
 							Description -> "The new container model.",
 							Pattern :> ObjectP[Model[Container]]
 						}
-					}
+					},
+					CommandBuilder -> False
 				},
 				{
 					Definition -> {"UploadContainerModel[ModelToUpdate]", "ModelToUpdate"},
@@ -209,7 +194,7 @@ With[
 								],
 								Expandable -> False
 							},
-							IndexName -> "inputs"
+							IndexName -> "Input Data"
 						]
 					},
 					Outputs :> {
@@ -218,7 +203,8 @@ With[
 							Description -> "The updated container model.",
 							Pattern :> ObjectP[Model[Container]]
 						}
-					}
+					},
+					CommandBuilder -> False
 				}
 			},
 			SeeAlso -> {
@@ -302,7 +288,7 @@ With[
 						{
 							InputName -> "ProductInformation",
 							Description -> "The information of either the container itself, or where the container is available, such as spec sheet, supplier webpage url, etc.",
-							Widget -> allowNullProductWidget,
+							Widget -> Join[productWidget, nullProductWidget],
 							Expandable -> False
 						}
 					},
@@ -312,7 +298,8 @@ With[
 							Description -> "A list of options as they will be resolved by UploadContainerModelOptions[].",
 							Pattern :> {_Rule..}
 						}
-					}
+					},
+					CommandBuilder -> False
 				},
 				{
 					Definition -> {"UploadContainerModelOptions[newContainerType, ProductInformation]", "resolvedContainerModelOptions"},
@@ -328,10 +315,10 @@ With[
 							{
 								InputName -> "ProductInformation",
 								Description -> "The information of either the container itself, or where the container is available, such as spec sheet, supplier webpage url, etc.",
-								Widget -> allowNullProductWidget,
+								Widget -> Join[productWidget, nullProductWidget],
 								Expandable -> False
 							},
-							IndexName -> "inputs"
+							IndexName -> "Input Data"
 						]
 					},
 					Outputs :> {
@@ -340,7 +327,8 @@ With[
 							Description -> "A list of options as they will be resolved by UploadContainerModelOptions[].",
 							Pattern :> {_Rule..}
 						}
-					}
+					},
+					CommandBuilder -> False
 				},
 				{
 					Definition -> {"UploadContainerModelOptions[ContainerModel]", "resolvedContainerModelOptions"},
@@ -356,7 +344,7 @@ With[
 								],
 								Expandable -> False
 							},
-							IndexName -> "inputs"
+							IndexName -> "Input Data"
 						]
 					},
 					Outputs :> {
@@ -365,7 +353,8 @@ With[
 							Description -> "A list of options as they will be resolved by UploadContainerModelOptions[].",
 							Pattern :> {_Rule..}
 						}
-					}
+					},
+					CommandBuilder -> False
 				}
 			},
 			SeeAlso -> {
@@ -449,7 +438,7 @@ With[
 						{
 							InputName -> "ProductInformation",
 							Description -> "The information of either the container itself, or where the container is available, such as spec sheet, supplier webpage url, etc.",
-							Widget -> allowNullProductWidget,
+							Widget -> Join[productWidget, nullProductWidget],
 							Expandable -> False
 						}
 					},
@@ -459,7 +448,8 @@ With[
 							Description -> "A boolean that indicates if a valid container model object will be generated from the inputs of this function.",
 							Pattern :> BooleanP
 						}
-					}
+					},
+					CommandBuilder -> False
 				},
 				{
 					Definition -> {"ValidUploadContainerModelQ[newContainerType, ProductInformation]", "isValidContainerModelObject"},
@@ -475,10 +465,10 @@ With[
 							{
 								InputName -> "ProductInformation",
 								Description -> "The information of either the container itself, or where the container is available, such as spec sheet, supplier webpage url, etc.",
-								Widget -> allowNullProductWidget,
+								Widget -> Join[productWidget, nullProductWidget],
 								Expandable -> False
 							},
-							IndexName -> "inputs"
+							IndexName -> "Input Data"
 						]
 					},
 					Outputs :> {
@@ -487,7 +477,8 @@ With[
 							Description -> "A boolean that indicates if a valid container model object will be generated from the inputs of this function.",
 							Pattern :> BooleanP
 						}
-					}
+					},
+					CommandBuilder -> False
 				},
 				{
 					Definition -> {"ValidUploadContainerModelQ[ContainerModel]", "isValidContainerModelObject"},
@@ -503,7 +494,7 @@ With[
 								],
 								Expandable -> False
 							},
-							IndexName -> "inputs"
+							IndexName -> "Input Data"
 						]
 					},
 					Outputs :> {
@@ -512,7 +503,8 @@ With[
 							Description -> "A boolean that indicates if a valid container model object will be generated from the inputs of this function.",
 							Pattern :> BooleanP
 						}
-					}
+					},
+					CommandBuilder -> False
 				}
 			},
 			SeeAlso -> {
@@ -543,7 +535,7 @@ With[
 								],
 								Expandable -> False
 							},
-							IndexName -> "inputs"
+							IndexName -> "Input Data"
 						]
 					},
 					Outputs :> {

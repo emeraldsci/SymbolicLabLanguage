@@ -1613,6 +1613,14 @@ DefineTests[
 			Variables :> {options},
 			Messages :> {Warning::SampleStowaways}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentqPCR[{Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID]}, {{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}}, CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::SampleStowaways, Warning::CentrifugePrecision}
+		],
 		Example[{Options, CentrifugeTime, "Set the CentrifugeTime option:"},
 			options = ExperimentqPCR[{Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID]}, {{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}}, CentrifugeTime -> 40*Minute, Output -> Options];
 			Lookup[options, CentrifugeTime],
@@ -1775,6 +1783,19 @@ DefineTests[
 			0.08*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentqPCR[
+				{Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID]},
+				{{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}},
+				AliquotAmount -> 0.08101 Milliliter,
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			0.081 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "Set the AssayVolume option:"},
 			options = ExperimentqPCR[{Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID]}, {{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}}, AssayVolume -> 0.08*Milliliter, Output -> Options];

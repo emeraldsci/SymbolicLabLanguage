@@ -3682,8 +3682,11 @@ DefineTests[ExperimentFreezeCells,
 
 			(* Create some bacteria and mammalian models *)
 			deprecatedModel = UploadSampleModel[
-				"Bacterial cells Deprecated Model (Test for ExperimentFreezeCells)" <> $SessionUUID,
-				Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+				{
+					{95 VolumePercent, Model[Molecule, "Water"]},
+					{5 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}
+				},
+				Name -> "Bacterial cells Deprecated Model (Test for ExperimentFreezeCells)" <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 				State -> Liquid,

@@ -723,6 +723,17 @@ DefineTests[ExperimentPellet,
 			Variables:>{options}
 		],
 		Example[
+			{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentPellet[{Object[Sample, "Test water sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID]},
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
+		Example[
 			{Options,CentrifugeTime,"Specify the amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options=ExperimentPellet[{Object[Sample, "Test water sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID]},
 				CentrifugeTime->11Minute,
@@ -1004,6 +1015,19 @@ DefineTests[ExperimentPellet,
 			Lookup[options,AliquotAmount],
 			RangeP[0.9 Milliliter, 1.1 Milliliter],
 			Variables:>{options}
+		],
+		Example[
+			{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentPellet[
+				{Object[Sample, "Test water sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID]},
+				AliquotAmount -> 1.0001 Milliliter,
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			1 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[
 			{Options,TargetConcentration,"Specify the desired final concentration of analyte in the AliquotSamples after dilution of aliquots of SamplesIn with the ConcentratedBuffer and BufferDiluent which should be used in lieu of the SamplesIn for the experiment:"},
@@ -1481,7 +1505,7 @@ DefineTests[ExperimentPellet,
 					Model[Sample,"Milli-Q water"],
 					Model[Sample,"Milli-Q water"],
 					Model[Sample,"Milli-Q water"],
-					{{100 VolumePercent, Model[Cell, Mammalian, "HEK293"]}}
+					{{100 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}}
 				},
 				{
 					{"A1", emptyContainer1},
@@ -1510,14 +1534,14 @@ DefineTests[ExperimentPellet,
 					Null,
 					Null,
 					Null,
-					Mammalian
+					Bacterial
 				},
 				CultureAdhesion -> {
 					Null,
 					Null,
 					Null,
 					Null,
-					Suspension
+					Automatic
 				},
 				State -> Liquid,
 				FastTrack -> True

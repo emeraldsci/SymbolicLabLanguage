@@ -2136,7 +2136,7 @@ DefineTests[
 			  ]
 		  }],
 		  ObjectP[Object[Protocol,ManualSamplePreparation]],
-		  Messages :> {Warning::OptionContainsUnusableObject}
+		  Messages :> {Warning::OptionContainsUnsuitableObject}
 	  ]
   },
   SymbolSetUp:>{
@@ -2874,8 +2874,8 @@ DefineTests[
       }];
 
       (* Create mammalian model *)
-      mammalianModel=UploadSampleModel["Mammalian cells Model (for Experiment tests)" <> $SessionUUID,
-        Composition->{{95 VolumePercent,Model[Molecule,"Water"]},{5 VolumePercent,Model[Cell,Mammalian,"HeLa"]}},
+      mammalianModel=UploadSampleModel[{{95 VolumePercent,Model[Molecule,"Water"]},{5 VolumePercent,Model[Cell,Mammalian,"HeLa"]}},
+        Name->"Mammalian cells Model (for Experiment tests)" <> $SessionUUID,
         Expires->False,
         DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"],
         State->Liquid,
@@ -3639,7 +3639,7 @@ DefineTests[
           Centrifuge[
             Sample -> {Object[Sample, "Test water sample 6 in 96 DWP for ExperimentRoboticSamplePreparation" <> $SessionUUID]},
             Time -> 5 Minute,
-            Intensity -> 3000 RPM
+            Intensity -> 1000 GravitationalAcceleration
           ]
         }];
 
@@ -3657,7 +3657,7 @@ DefineTests[
           Centrifuge[
             Sample -> {Object[Container,Plate, "Test 96 well plate with no counterweights for ExperimentRoboticSamplePreparation"<>$SessionUUID]},
             Time -> 5 Minute,
-            Intensity -> 3000 RPM
+            Intensity -> 1000 GravitationalAcceleration
           ]
         }];
 
@@ -3963,6 +3963,90 @@ DefineTests[
         Download[protocol,OutputUnitOperations[[-1]][SampleLink]]
       ],
       {ObjectP[Model[Container, Plate]]}
+    ],
+    Example[{Additional, "Robotic test call with 2 WashPlate unit operations with the same Buffer results in the PlateWasherBufferA field being filled out:"},
+      Module[{protocol},
+        protocol = ExperimentRoboticSamplePreparation[{
+          LabelContainer[
+            Label -> {"my plate 1"},
+            Container -> {Model[Container, Plate, "96-well Polystyrene Flat-Bottom Plate, Clear"]}
+          ],
+          WashPlate[
+            Sample -> "my plate 1",
+            Priming -> True,
+            Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"]
+          ],
+          WashPlate[
+            Sample -> "my plate 1",
+            Priming -> False,
+            Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"]
+          ]
+        }];
+        Download[protocol, {PlateWasherBufferA, PlateWasherBufferB, PlateWasherBufferC, PlateWasherBufferD}]
+      ],
+      {ObjectP[Model[Sample, StockSolution, "1x PBS from 10X stock"]], Null, Null, Null}
+    ],
+    Example[{Additional, "Robotic test call with 4 WashPlate unit operations with the 4 Buffers results in the PlateWasherBufferA-D fields being filled out:"},
+      Module[{protocol},
+        protocol = ExperimentRoboticSamplePreparation[{
+          LabelContainer[
+            Label -> {"my plate 1"},
+            Container -> {Model[Container, Plate, "96-well Polystyrene Flat-Bottom Plate, Clear"]}
+          ],
+          WashPlate[
+            Sample -> "my plate 1",
+            Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"]
+          ],
+          WashPlate[
+            Sample -> "my plate 1",
+            Buffer -> Model[Sample, StockSolution, "Filtered PBS, Sterile"]
+          ],
+          WashPlate[
+            Sample -> "my plate 1",
+            Buffer -> Model[Sample, StockSolution, "0.1% Triton X-100 in PBS"]
+          ],
+          WashPlate[
+            Sample -> "my plate 1",
+            Buffer -> Model[Sample, "Milli-Q water"]
+          ]
+        }];
+        Download[protocol, {PlateWasherBufferA, PlateWasherBufferB, PlateWasherBufferC, PlateWasherBufferD}]
+      ],
+      {
+        ObjectP[Model[Sample, StockSolution, "1x PBS from 10X stock"]],
+        ObjectP[Model[Sample, StockSolution, "Filtered PBS, Sterile"]],
+        ObjectP[Model[Sample, StockSolution, "0.1% Triton X-100 in PBS"]],
+        ObjectP[Model[Sample, "Milli-Q water"]]
+      }
+    ],
+    Example[{Additional, "Robotic test call with 1 WashPlate unit operation results in RequiredResources backlink to PlateWasherBufferA:"},
+      Module[{protocol, outputUnitOperations},
+        protocol = ExperimentRoboticSamplePreparation[{
+          LabelContainer[
+            Label -> {"my plate 1"},
+            Container -> {Model[Container, Plate, "96-well Polystyrene Flat-Bottom Plate, Clear"]}
+          ],
+          WashPlate[
+            Sample -> "my plate 1",
+            Priming -> True,
+            PrimeVolume -> 300 Milliliter,
+            WashVolume -> 100 Microliter,
+            NumberOfWashes -> 2,
+            Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"]
+          ]
+        }];
+        outputUnitOperations = Download[protocol, OutputUnitOperations];
+        {
+          Download[Cases[Download[protocol, RequiredResources], {resource_, PlateWasherBufferA, ___}:> resource[Object]], {Models, ContainerModels, Amount}],
+          Download[protocol, PlateWasherBufferA],
+          Download[outputUnitOperations[[2]], {BufferLine, BufferLink}]
+        }
+      ],
+      {
+        {{{ObjectP[Model[Sample, StockSolution, "1x PBS from 10X stock"]]}, {ObjectP[Model[Container, Vessel, "2L Glass Bottle"]]}, EqualP[571 Milliliter]}},
+        ObjectP[Model[Sample, StockSolution, "1x PBS from 10X stock"]],
+        {BufferA, ObjectP[Model[Sample, StockSolution, "1x PBS from 10X stock"]]}
+      }
     ],
     Example[{Additional,"Robotic test call with 1 plate reader unit operation with no injection samples results in the Object[Protocol, RoboticSamplePreparation] fields NOT being filled out except for PrimaryPlateReader:"},
       Module[{protocol},
@@ -5118,7 +5202,7 @@ DefineTests[
           Centrifuge[
             Sample -> {Object[Sample, "Test water sample 6 in 96 DWP for ExperimentRoboticSamplePreparation" <> $SessionUUID]},
             Time -> 5 Minute,
-            Intensity -> 3000 RPM
+            Intensity -> 1000 GravitationalAcceleration
           ],
           (* Use a wait UO to not combine multiple Centrifuge UO *)
           Wait[
@@ -5127,15 +5211,15 @@ DefineTests[
           Centrifuge[
             Sample -> {Object[Sample, "Test water sample 6 in 96 DWP for ExperimentRoboticSamplePreparation" <> $SessionUUID]},
             Time -> 1 Minute,
-            Intensity -> 3000 RPM
+            Intensity -> 1000 GravitationalAcceleration
           ],
           (* Filter UO has a collection container so the total weight is different, requesting a new counterweight model *)
           Filter[
             Sample -> {Object[Sample, "Test water sample 6 in 96 DWP for ExperimentRoboticSamplePreparation" <> $SessionUUID]},
             Volume -> 300 Microliter,
-            FiltrationType->Centrifuge,
-            Intensity->500 GravitationalAcceleration,
-            Time-> 5 Minute
+            FiltrationType -> Centrifuge,
+            Intensity -> 500 GravitationalAcceleration,
+            Time -> 5 Minute
           ]
         }];
         centrifugeUOs=Cases[Download[protocol,OutputUnitOperations],ObjectP[Object[UnitOperation,Centrifuge]]];
@@ -5163,59 +5247,59 @@ DefineTests[
     Test["Request only one counterweight per model across different unit operations and allow more plates on deck:",
       ExperimentRoboticSamplePreparation[{
         LabelContainer[
-          Container->Model[Container,Plate,"96-well 2mL Deep Well Plate"],
-          Label->ToString/@Range[10]
+          Container -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+          Label -> ToString/@Range[10]
         ],
         Transfer[
-          Source->Model[Sample, "Milli-Q water"],
-          Destination->ToString/@Range[10],
-          DestinationWell->"A1",
-          Amount->500Microliter
+          Source -> Model[Sample, "Milli-Q water"],
+          Destination -> ToString/@Range[10],
+          DestinationWell -> "A1",
+          Amount -> 500Microliter
         ],
         Centrifuge[
           Sample -> {Object[Sample, "Test water sample 6 in 96 DWP for ExperimentRoboticSamplePreparation" <> $SessionUUID]},
           Time -> 5 Minute,
-          Intensity -> 3000 RPM
+          Intensity -> 1000 GravitationalAcceleration
         ],
         (* Use a wait UO to not combine multiple Centrifuge UO *)
         Wait[
-          Duration->1Minute
+          Duration -> 1 Minute
         ],
         Centrifuge[
           Sample -> {Object[Sample, "Test water sample 6 in 96 DWP for ExperimentRoboticSamplePreparation" <> $SessionUUID]},
           Time -> 1 Minute,
-          Intensity -> 3000 RPM
+          Intensity -> 1000 GravitationalAcceleration
         ],
         (* Use a wait UO to not combine multiple Centrifuge UO *)
         Wait[
-          Duration->1Minute
+          Duration -> 1 Minute
         ],
         Centrifuge[
           Sample -> {Object[Sample, "Test water sample 6 in 96 DWP for ExperimentRoboticSamplePreparation" <> $SessionUUID]},
           Time -> 1 Minute,
-          Intensity -> 3000 RPM
+          Intensity -> 1000 GravitationalAcceleration
         ],
         (* Use a wait UO to not combine multiple Centrifuge UO *)
         Wait[
-          Duration->1Minute
+          Duration -> 1 Minute
         ],
         Centrifuge[
           Sample -> {Object[Sample, "Test water sample 6 in 96 DWP for ExperimentRoboticSamplePreparation" <> $SessionUUID]},
           Time -> 1 Minute,
-          Intensity -> 3000 RPM
+          Intensity -> 1000 GravitationalAcceleration
         ],
         (* Use a wait UO to not combine multiple Centrifuge UO *)
         Wait[
-          Duration->1Minute
+          Duration -> 1 Minute
         ],
         Centrifuge[
           Sample -> {Object[Sample, "Test water sample 6 in 96 DWP for ExperimentRoboticSamplePreparation" <> $SessionUUID]},
           Time -> 1 Minute,
-          Intensity -> 3000 RPM
+          Intensity -> 1000 GravitationalAcceleration
         ]
       }],
       (* Because the counterweight is reused everytime, we can fit everything into one deck *)
-      ObjectP[Object[Protocol,RoboticSamplePreparation]]
+      ObjectP[Object[Protocol, RoboticSamplePreparation]]
     ],
     Example[{Behaviors,RequiredObjects,"When creating resources, excluded Hamilton tips from RequiredObjects and only places them in RequiredTips:"},
       Download[
@@ -6078,12 +6162,12 @@ DefineTests[
         ];
 
         (* Create test sample models *)
-        UploadSampleModel["Experiment test e.coli and LB agar sample Model " <> $SessionUUID,
-          Composition -> {
+        UploadSampleModel[{
             {15 CFU/Milliliter, Model[Cell, Bacteria, "ExperimentRoboticCellPreparation test cell model 1" <> $SessionUUID]},
             {100 VolumePercent, Model[Molecule, "Water"]},
             {(3 Gram)/(193 Milliliter), Model[Molecule, "Agarose"]}
           },
+          Name -> "Experiment test e.coli and LB agar sample Model " <> $SessionUUID,
           Expires -> True,
           ShelfLife -> 2 Week,
           UnsealedShelfLife -> 1 Hour,
@@ -6096,11 +6180,11 @@ DefineTests[
           Living -> True
         ];
 
-        UploadSampleModel["Experiment test e.coli and LB liquid sample Model " <> $SessionUUID,
-          Composition -> {
+        UploadSampleModel[{
             {15 CFU/Milliliter, Model[Cell, Bacteria, "ExperimentRoboticCellPreparation test cell model 1" <> $SessionUUID]},
             {100 VolumePercent, Model[Molecule, "Water"]}
           },
+          Name -> "Experiment test e.coli and LB liquid sample Model " <> $SessionUUID,
           Expires -> True,
           ShelfLife -> 2 Week,
           UnsealedShelfLife -> 1 Hour,
@@ -6505,8 +6589,8 @@ DefineTests[
 
       (* Create some bacteria and mammalian models *)
       bacteriaModel=UploadSampleModel[
-        "Bacterial cells Model (for ExperimentManualCellPreparation)" <> $SessionUUID,
-        Composition -> {{95 VolumePercent,Model[Molecule, "Water"]}, {5 VolumePercent,Model[Cell, Bacteria, "E.coli MG1655"]}},
+        {{95 VolumePercent,Model[Molecule, "Water"]}, {5 VolumePercent,Model[Cell, Bacteria, "E.coli MG1655"]}},
+        Name -> "Bacterial cells Model (for ExperimentManualCellPreparation)" <> $SessionUUID,
         Expires -> False,
         DefaultStorageCondition ->Model[StorageCondition, "Ambient Storage"],
         State -> Liquid,
@@ -6518,8 +6602,8 @@ DefineTests[
         CultureAdhesion -> Suspension,
         Living->True
       ];
-      mammalianModel=UploadSampleModel["Mammalian cells Model (for ExperimentManualCellPreparation)" <> $SessionUUID,
-        Composition -> {{95 VolumePercent,Model[Molecule, "Water"]}, {5 VolumePercent,Model[Cell, Mammalian, "HeLa"]}},
+      mammalianModel=UploadSampleModel[{{95 VolumePercent,Model[Molecule, "Water"]}, {5 VolumePercent,Model[Cell, Mammalian, "HeLa"]}},
+        Name -> "Mammalian cells Model (for ExperimentManualCellPreparation)" <> $SessionUUID,
         Expires -> False,
         DefaultStorageCondition ->Model[StorageCondition, "Ambient Storage"],
         State -> Liquid,
@@ -7874,10 +7958,73 @@ DefineTests[ExperimentSamplePreparation,
         },
         {___,{"transfer destination container 1",ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]}, {"transfer destination container 2", ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]},___}
       }
+    ],
+    Test["Tips objects specified in the unit operations is properly processed and populates the RequiredTips:",
+      Module[
+        {protocol, transferUO},
+        protocol = ExperimentRoboticSamplePreparation[
+          {
+            LabelSample[
+              Label -> "water",
+              Sample -> Model[Sample, "Milli-Q water"],
+              Amount -> 200 Milliliter,
+              Container -> Model[Container, Plate, "200mL Polypropylene Robotic Reservoir, non-sterile"]
+            ],
+            LabelContainer[
+              Label -> "dest",
+              Container -> Model[Container, Plate, "96-well 2mL Deep Well Plate"]
+            ],
+            Transfer[
+              Source -> "water",
+              Destination -> {"A1", "dest"},
+              Amount -> 200 Microliter,
+              Tips -> Object[Item, Tips, "Test 300 uL Hamilton tips 1 for ExperimentSamplePreparation" <> $SessionUUID]
+            ]
+          },
+          OptimizeUnitOperations -> False
+        ];
+        Download[protocol, {RequiredTips, RequiredResources}]
+      ],
+      {
+        {ObjectP[Object[Item, Tips, "Test 300 uL Hamilton tips 1 for ExperimentSamplePreparation" <> $SessionUUID]]},
+        {___, {ObjectP[Object[Resource, Sample]], RequiredTips, 1, Null}, ___}
+      }
+    ],
+    Test["Throws a message when the Tips object specified in the unit operations has less Count than requested:",
+      Module[
+        {protocol, transferUO},
+        protocol = ExperimentRoboticSamplePreparation[
+          {
+            LabelSample[
+              Label -> "water",
+              Sample -> Model[Sample, "Milli-Q water"],
+              Amount -> 200 Milliliter,
+              Container -> Model[Container, Plate, "200mL Polypropylene Robotic Reservoir, non-sterile"]
+            ],
+            LabelContainer[
+              Label -> "dest",
+              Container -> Model[Container, Plate, "96-well 2mL Deep Well Plate"]
+            ],
+            Transfer[
+              Source -> "water",
+              Destination -> {{"A1", "dest"},{"A2", "dest"}},
+              Amount -> 200 Microliter,
+              Tips -> Object[Item, Tips, "Test 300 uL Hamilton tips 2 for ExperimentSamplePreparation" <> $SessionUUID]
+            ]
+          },
+          OptimizeUnitOperations -> False
+        ];
+        Download[protocol, {RequiredTips, RequiredResources}]
+      ],
+      {
+        {ObjectP[Object[Item, Tips, "Test 300 uL Hamilton tips 2 for ExperimentSamplePreparation" <> $SessionUUID]]},
+        {___, {ObjectP[Object[Resource, Sample]], RequiredTips, 1, Null}, ___}
+      },
+      Messages:>{Warning::InsufficientVolume}
     ]
   },
   SymbolSetUp:>Module[{allObjects,existsFilter,tube1,tube2,tube3,tube4,tube5,plate6,plate7,plate8,
-    sample1,sample2,sample3,sample4,sample5,sample6,sample7,sample8},
+    sample1,sample2,sample3,sample4,sample5,sample6,sample7,sample8, testBench, tips1, tips2},
 
     (* Turn off the SamplesOutOfStock warning for unit tests *)
     Off[Warning::SamplesOutOfStock];
@@ -7903,7 +8050,10 @@ DefineTests[ExperimentSamplePreparation,
       Object[Sample,"Test water sample 6 in 96 DWP for ExperimentSamplePreparation" <> $SessionUUID],
       Object[Sample,"Test plate reader sample 7 in UV Star plate for ExperimentSamplePreparation" <> $SessionUUID],
       Object[Sample,"Test AlphaScreen sample 8 in AlphaPlate for ExperimentSamplePreparation" <> $SessionUUID],
-      Object[Protocol, HPLC, "Test HPLC Protocol for ExperimentSamplePreparation" <> $SessionUUID]
+      Object[Protocol, HPLC, "Test HPLC Protocol for ExperimentSamplePreparation" <> $SessionUUID],
+      Object[Item, Tips, "Test 300 uL Hamilton tips 1 for ExperimentSamplePreparation" <> $SessionUUID],
+      Object[Item, Tips, "Test 300 uL Hamilton tips 2 for ExperimentSamplePreparation" <> $SessionUUID],
+      Object[Container, Bench, "Test bench for ExperimentSamplePreparation" <> $SessionUUID]
     };
 
     (* Erase any objects that we failed to erase in the last unit test *)
@@ -7919,67 +8069,75 @@ DefineTests[ExperimentSamplePreparation,
     ]];
 
     (* Create some empty containers. *)
-    {tube1,tube2,tube3,tube4,tube5,plate6,plate7,plate8}=Upload[{
+    {tube1, tube2, tube3, tube4, tube5, plate6, plate7, plate8, testBench} = Upload[{
       <|
-        Type->Object[Container,Vessel],
-        Model->Link[Model[Container, Vessel, "50mL Tube"],Objects],
-        Name->"Test 50mL Tube 1 for ExperimentSamplePreparation" <> $SessionUUID,
+        Type -> Object[Container, Vessel],
+        Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+        Name -> "Test 50mL Tube 1 for ExperimentSamplePreparation" <> $SessionUUID,
         Site -> Link[$Site],
-        DeveloperObject->True
+        DeveloperObject -> True
       |>,
       <|
-        Type->Object[Container,Vessel],
-        Model->Link[Model[Container, Vessel, "50mL Tube"],Objects],
-        Name->"Test 50mL Tube 2 for ExperimentSamplePreparation" <> $SessionUUID,
+        Type -> Object[Container, Vessel],
+        Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+        Name -> "Test 50mL Tube 2 for ExperimentSamplePreparation" <> $SessionUUID,
         Site -> Link[$Site],
-        DeveloperObject->True
+        DeveloperObject -> True
       |>,
       <|
-        Type->Object[Container,Vessel],
-        Model->Link[Model[Container, Vessel, "50mL Tube"],Objects],
-        Name->"Test 50mL Tube 3 for ExperimentSamplePreparation" <> $SessionUUID,
+        Type -> Object[Container, Vessel],
+        Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+        Name -> "Test 50mL Tube 3 for ExperimentSamplePreparation" <> $SessionUUID,
         Site -> Link[$Site],
-        DeveloperObject->True
+        DeveloperObject -> True
       |>,
       <|
-        Type->Object[Container,Vessel],
-        Model->Link[Model[Container, Vessel, "50mL Tube"],Objects],
-        Name->"Test 50mL Tube 4 for ExperimentSamplePreparation" <> $SessionUUID,
+        Type -> Object[Container, Vessel],
+        Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+        Name -> "Test 50mL Tube 4 for ExperimentSamplePreparation" <> $SessionUUID,
         Site -> Link[$Site],
-        DeveloperObject->True
+        DeveloperObject -> True
       |>,
       <|
-        Type->Object[Container,Vessel],
-        Model->Link[Model[Container, Vessel, "50mL Tube"],Objects],
-        Name->"Test 50mL Tube 5 for ExperimentSamplePreparation" <> $SessionUUID,
+        Type -> Object[Container, Vessel],
+        Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+        Name -> "Test 50mL Tube 5 for ExperimentSamplePreparation" <> $SessionUUID,
         Site -> Link[$Site],
-        DeveloperObject->True
+        DeveloperObject -> True
       |>,
       <|
-        Type->Object[Container,Plate],
-        Model->Link[Model[Container,Plate,"96-well 2mL Deep Well Plate"],Objects],
-        Name->"Test 96 DWP for ExperimentSamplePreparation" <> $SessionUUID,
+        Type -> Object[Container, Plate],
+        Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"], Objects],
+        Name -> "Test 96 DWP for ExperimentSamplePreparation" <> $SessionUUID,
         Site -> Link[$Site],
-        DeveloperObject->True
+        DeveloperObject -> True
       |>,
       <|
-        Type->Object[Container,Plate],
-        Model->Link[Model[Container, Plate, "96-well UV-Star Plate"],Objects],
-        Name->"Test 96-well UV Star Plate for ExperimentSamplePreparation" <> $SessionUUID,
+        Type -> Object[Container, Plate],
+        Model -> Link[Model[Container, Plate, "96-well UV-Star Plate"], Objects],
+        Name -> "Test 96-well UV Star Plate for ExperimentSamplePreparation" <> $SessionUUID,
         Site -> Link[$Site],
-        DeveloperObject->True
+        DeveloperObject -> True
       |>,
       <|
-        Type->Object[Container,Plate],
-        Model->Link[Model[Container, Plate, "AlphaPlate Half Area 96-Well Gray Plate"],Objects],
-        Name->"Test 96-well AlphaPlate for ExperimentSamplePreparation" <> $SessionUUID,
+        Type -> Object[Container, Plate],
+        Model -> Link[Model[Container, Plate, "AlphaPlate Half Area 96-Well Gray Plate"], Objects],
+        Name -> "Test 96-well AlphaPlate for ExperimentSamplePreparation" <> $SessionUUID,
         Site -> Link[$Site],
-        DeveloperObject->True
+        DeveloperObject -> True
+      |>,
+      <|
+        Type -> Object[Container, Bench],
+        Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+        Name -> "Test bench for ExperimentSamplePreparation" <> $SessionUUID,
+        DeveloperObject -> True,
+        StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+        Site -> Link[$Site]
       |>
     }];
 
     (* Create some samples for testing purposes *)
-    {sample1,sample2,sample3,sample4,sample5,sample6,sample7,sample8}=UploadSample[
+    {sample1,sample2,sample3,sample4,sample5,sample6,sample7,sample8, tips1, tips2}=UploadSample[
       (* NOTE: We over-ride the SampleHandling of these models so that we get consistent test results. *)
       {
         Model[Sample, "Milli-Q water"],
@@ -7989,7 +8147,9 @@ DefineTests[ExperimentSamplePreparation,
         Model[Sample, "id:vXl9j5qEn66B"], (* "Sodium carbonate, anhydrous" *)
         Model[Sample, "Milli-Q water"],
         Model[Sample,StockSolution,"0.2M FITC"],
-        Model[Sample,StockSolution,"0.2M FITC"]
+        Model[Sample,StockSolution,"0.2M FITC"],
+        Model[Item, Tips, "300 uL Hamilton tips, non-sterile"],
+        Model[Item, Tips, "300 uL Hamilton tips, non-sterile"]
       },
       {
         {"A1",tube1},
@@ -7999,7 +8159,9 @@ DefineTests[ExperimentSamplePreparation,
         {"A1",tube5},
         {"A1",plate6},
         {"A1",plate7},
-        {"A1",plate8}
+        {"A1",plate8},
+        {"Work Surface", testBench},
+        {"Work Surface", testBench}
       },
       Name->{
         "Test water sample 1 in 50mL Tube for ExperimentSamplePreparation" <> $SessionUUID,
@@ -8009,7 +8171,9 @@ DefineTests[ExperimentSamplePreparation,
         "Test powder sample 5 in 50mL Tube for ExperimentSamplePreparation" <> $SessionUUID,
         "Test water sample 6 in 96 DWP for ExperimentSamplePreparation" <> $SessionUUID,
         "Test plate reader sample 7 in UV Star plate for ExperimentSamplePreparation" <> $SessionUUID,
-        "Test AlphaScreen sample 8 in AlphaPlate for ExperimentSamplePreparation" <> $SessionUUID
+        "Test AlphaScreen sample 8 in AlphaPlate for ExperimentSamplePreparation" <> $SessionUUID,
+        "Test 300 uL Hamilton tips 1 for ExperimentSamplePreparation" <> $SessionUUID,
+        "Test 300 uL Hamilton tips 2 for ExperimentSamplePreparation" <> $SessionUUID
       },
       InitialAmount->{
         25 Milliliter,
@@ -8019,7 +8183,9 @@ DefineTests[ExperimentSamplePreparation,
         10 Gram,
         1 Milliliter,
         200 Microliter,
-        200 Microliter
+        200 Microliter,
+        96,
+        1
       },
       SampleHandling->{
         Liquid,
@@ -8029,7 +8195,9 @@ DefineTests[ExperimentSamplePreparation,
         Powder,
         Liquid,
         Liquid,
-        Liquid
+        Liquid,
+        Null,
+        Null
       }
     ];
 
@@ -8042,7 +8210,9 @@ DefineTests[ExperimentSamplePreparation,
       <|Object->sample5,Status->Available,DeveloperObject->True|>,
       <|Object->sample6,Status->Available,DeveloperObject->True|>,
       <|Object->sample7,Status->Available,DeveloperObject->True|>,
-      <|Object->sample8,Status->Available,DeveloperObject->True|>
+      <|Object->sample8,Status->Available,DeveloperObject->True|>,
+      <|Object -> tips1, Status -> Available, DeveloperObject -> True|>,
+      <|Object -> tips2, Status -> Available, DeveloperObject -> True|>
     }];
 
     Upload[<|Type->Object[Protocol,HPLC],Name->"Test HPLC Protocol for ExperimentSamplePreparation" <> $SessionUUID|>];
@@ -8070,7 +8240,10 @@ DefineTests[ExperimentSamplePreparation,
       Object[Sample,"Test water sample 6 in 96 DWP for ExperimentSamplePreparation" <> $SessionUUID],
       Object[Sample,"Test plate reader sample 7 in UV Star plate for ExperimentSamplePreparation" <> $SessionUUID],
       Object[Sample,"Test AlphaScreen sample 8 in AlphaPlate for ExperimentSamplePreparation" <> $SessionUUID],
-      Object[Protocol, HPLC, "Test HPLC Protocol for ExperimentSamplePreparation" <> $SessionUUID]
+      Object[Protocol, HPLC, "Test HPLC Protocol for ExperimentSamplePreparation" <> $SessionUUID],
+      Object[Item, Tips, "Test 300 uL Hamilton tips 1 for ExperimentSamplePreparation" <> $SessionUUID],
+      Object[Item, Tips, "Test 300 uL Hamilton tips 2 for ExperimentSamplePreparation" <> $SessionUUID],
+      Object[Container, Bench, "Test bench for ExperimentSamplePreparation" <> $SessionUUID]
     };
 
     (* Erase any objects that we failed to erase in the last unit test *)

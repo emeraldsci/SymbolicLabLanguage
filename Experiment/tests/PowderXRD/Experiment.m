@@ -671,6 +671,14 @@ DefineTests[ExperimentPowderXRD,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentPowderXRD[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options, CentrifugeTime, "Set the CentrifugeTime option:"},
 			options = ExperimentPowderXRD[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], CentrifugeTime -> 40*Minute, Output -> Options];
 			Lookup[options, CentrifugeTime],
@@ -826,6 +834,14 @@ DefineTests[ExperimentPowderXRD,
 			0.08*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentPowderXRD[Object[Sample, "ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], AliquotAmount -> 0.08101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			81 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "Set the AssayVolume option:"},
 			options = ExperimentPowderXRD[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], AssayVolume -> 0.08*Milliliter, Output -> Options];

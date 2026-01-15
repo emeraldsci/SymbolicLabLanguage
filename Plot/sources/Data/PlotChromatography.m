@@ -468,6 +468,9 @@ PlotChromatography[primaryData:rawPlotInputP,inputOptions:OptionsPattern[]]:=raw
 	PlotChromatography,
 	(*we need to check if the primary data was specified, if not then we need to figure out what kind of data is present instead of just assuming absorbance*)
 	Module[{safeOptions,primaryDataOption},
+		TagTrace["sll.function.call", 1];
+		TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{inputOptions}], "{" | "}"], " "->""]];
+
 		safeOptions=SafeOptions[PlotChromatography, ToList[inputOptions]];
 
 		(*is the primary data still automatic?*)
@@ -506,6 +509,9 @@ PlotChromatography[
 	}],
 	ops: OptionsPattern[PlotChromatography]
 ] := Module[{safeOps, output, data, previewPlot, plots, resolvedOptions, finalResult, outputPlot, outputOptions},
+
+	TagTrace["sll.function.call", 2];
+	TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{ops}], "{" | "}"], " "->""]];
 
 	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
 	safeOps=SafeOptions[PlotChromatography, ToList[ops]];
@@ -584,6 +590,9 @@ PlotChromatography[input:ListableP[ObjectP[Object[Data,Chromatography]]]|Listabl
 		validTransformUnitsQ,almostResolvedTargetUnits,xTransformationFunctions,resolvedGradientPackets,resolvedTransformPackets,
 		fluidTypes, secondaryDataLookup, airAlarms, newDisplayOptions, airAlarmEpilog, airAlarmsTransformed, verticalLineOption,verticalLineEpilog
 	},
+
+	TagTrace["sll.function.call", 3];
+	TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{inputOptions}], "{" | "}"], " "->""]];
 
 	(* Make sure we're working with a list of options *)
 	listedOptions = ToList[inputOptions];
@@ -1253,4 +1262,10 @@ PlotChromatography[input:ListableP[ObjectP[Object[Data,Chromatography]]]|Listabl
 ];
 
 (* Doubly listed oveerload *)
-PlotChromatography[input:{{ObjectP[]..}..},inputOptions:OptionsPattern[PlotChromatography]]:=PlotChromatography[#,inputOptions]&/@input;
+PlotChromatography[input:{{ObjectP[]..}..},inputOptions:OptionsPattern[PlotChromatography]]:=(
+
+	TagTrace["sll.function.call", 4];
+	TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{inputOptions}], "{" | "}"], " "->""]];
+
+	PlotChromatography[#,inputOptions]&/@input
+);

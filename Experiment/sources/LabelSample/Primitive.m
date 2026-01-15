@@ -2237,7 +2237,7 @@ simulateLabelSamplePrimitive[myUnitOperationPacket:PacketP[],myLabels:{_String..
       If[Length[specifiedEHSOptions]==0 || NullQ[sampleObject],
         Nothing,
         Module[{allChangePackets},
-          (* Sometimes generateChangePackets generates auxilliary cloud file packets if URLs are provided *)
+          (* Sometimes generateChangePackets generates auxiliary cloud file packets if URLs are provided *)
           allChangePackets=ExternalUpload`Private`generateChangePackets[Object[Sample],specifiedEHSOptions];
 
           Flatten[{

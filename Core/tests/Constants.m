@@ -51,5 +51,38 @@ DefineTests[
 	}
 ];
 
+
+(* ::Subsubsection::Closed:: *)
+(*SafeNow*)
+
+DefineTests[
+	SafeNow,
+	{
+		Example[{Basic, "SafeNow returns the same DateObject as Now under normal circumstances:"},
+			SafeNow[],
+			RangeP[Now - 1 Millisecond, Now]
+		],
+		Example[{Basic, "SafeNow is not altered by Block of Now:"},
+			Block[{Now = DateObject[{2025, 01, 01, 0, 0, 0}]},
+				{Now, SafeNow[]}
+			],
+			{DateObject[{2025, 01, 01, 0, 0, 0}], RangeP[DateObject[] - 1 Millisecond, DateObject[]]}
+		],
+		Example[{Basic, "SafeNow is not altered by stub of Now:"},
+			{Now, SafeNow[]},
+			{DateObject[{2025, 01, 01, 0, 0, 0}], RangeP[DateObject[] - 1 Millisecond, DateObject[]]},
+			Stubs :> {Now = DateObject[{2025, 01, 01, 0, 0, 0}]}
+		],
+		Example[{Additional, "SafeNow cannot be modified using Block:"},
+			Block[{SafeNow},
+				SafeNow[] = DateObject[{2025, 01, 01, 0, 0, 0}];
+				SafeNow[]
+			],
+			_,
+			Messages :> {Block::lockv}
+		]
+	}
+];
+
 (* ::Section:: *)
 (*End Test Package*)

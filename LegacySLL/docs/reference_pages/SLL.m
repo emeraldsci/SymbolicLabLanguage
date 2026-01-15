@@ -399,6 +399,36 @@ DefineUsage[
 
 
 
+(* ::Subsection::Closed:: *)
+(*UploadValidPackets*)
+
+
+DefineUsage[
+	UploadValidPackets,
+	{
+		BasicDefinitions -> {
+			{"UploadValidPackets[packets]", "uploadResults", "uploads valid 'packets' to the database and returns a message about any invalid packets."}
+		},
+		MoreInformation -> {
+			"Packets are validated using ValidUploadQ before upload and only valid packets are uploaded.",
+			"UploadValidPackets should only be used when each packet is fully independent of all other packets to ensure the database is left in a consistent state.",
+			"If all valid packets pass ValidUploadQ, they are uploaded in bulk."
+		},
+		Input :> {
+			{"packets", {PacketP[]..}, "A list of packets to upload."}
+		},
+		Output :> {
+			{"uploadResults", {ObjectReferenceP[]...} | {}, "The new or updated objects."}
+		},
+		SeeAlso -> {
+			"Upload",
+			"ValidUploadQ"
+		},
+		Author -> {"hayley"}
+	}
+];
+
+
 (* ::Subsection:: *)
 (*optionsToTable*)
 

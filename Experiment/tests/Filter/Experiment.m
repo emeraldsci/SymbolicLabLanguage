@@ -2721,6 +2721,14 @@ DefineTests[ExperimentFilter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentFilter[Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentFilter[Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID], CentrifugeTime -> 10*Minute, Output -> Options];
 			Lookup[options, CentrifugeTime],
@@ -2772,6 +2780,15 @@ DefineTests[ExperimentFilter,
 			0.08*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentFilter[Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID], AliquotAmount -> 0.08101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			81 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision},
+			TimeConstraint -> 1200
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentFilter[Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID], AssayVolume -> 0.08*Milliliter, Output -> Options];
@@ -2974,6 +2991,109 @@ DefineTests[ExperimentFilter,
 				ExperimentFilter[containerID, Simulation -> simulationToPassIn, Output -> Options]
 			],
 			{__Rule}
+		],
+		Example[{Messages, "InstrumentPrecision", "Throws a warning if option Time is rounded:"},
+			Lookup[ExperimentFilter[
+				Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
+				FiltrationType -> Centrifuge,
+				Time -> 10.11 Minute,
+				Output -> Options
+			], Time],
+			10.1 Minute,
+			Messages :> {Warning::InstrumentPrecision}
+		],
+		Example[{Messages, "InstrumentPrecision", "Throws a warning if option Temperature is rounded in increments of 1 Celsius:"},
+			Lookup[ExperimentFilter[
+				Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
+				FiltrationType -> Centrifuge,
+				Temperature -> 12.2 Celsius,
+				Output -> Options
+			], Temperature],
+			12 Celsius,
+			Messages :> {Warning::InstrumentPrecision}
+		],
+		Example[{Messages, "InstrumentPrecision", "Throws a warning if option FlowRate is rounded:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FlowRate -> 3.001 Milliliter / Minute,
+					FiltrateContainerOut -> Model[Container, Vessel, "50mL Tube"],
+					Output -> Options
+				],
+				FlowRate
+			],
+			3 Milliliter / Minute,
+			Messages :> {Warning::InstrumentPrecision}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if option Intensity as RPM is rounded for manual prep:"},
+			Lookup[ExperimentFilter[
+				Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID],
+				FiltrationType -> Centrifuge,
+				Intensity -> 1001 RPM,
+				Output -> Options
+			], Intensity],
+			1000 RPM,
+			Messages :> {Warning::CentrifugePrecision}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if option RetentateWashCentrifugeIntensity as RPM is rounded for manual prep:"},
+			options = ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
+				FiltrationType -> Centrifuge,
+				RetentateWashBuffer -> Model[Sample, "Milli-Q water"],
+				RetentateWashVolume -> 0.1 Milliliter,
+				RetentateWashCentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, RetentateWashCentrifugeIntensity],
+			{EqualP[1000 RPM]},
+			Messages :> {Warning::CentrifugePrecision},
+			Variables :> {options}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if option PrewetFilterCentrifugeIntensity as RPM is rounded for manual prep:"},
+			options = ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
+				FiltrationType -> Centrifuge,
+				PrewetFilterCentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, PrewetFilterCentrifugeIntensity],
+			EqualP[1000 RPM],
+			Messages :> {Warning::CentrifugePrecision},
+			Variables :> {options}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if option Intensity as RCF is rounded for robotic prep:"},
+			Lookup[ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
+				Volume -> 300 Microliter,
+				FiltrationType -> Centrifuge,
+				Intensity -> 200.123 GravitationalAcceleration,
+				Preparation -> Robotic,
+				Output -> Options
+			], Intensity],
+			{EqualP[200.1 GravitationalAcceleration]},
+			Messages :> {Warning::CentrifugePrecision}
+		],
+		Example[{Messages, "InstrumentPrecision", "Throws a warning if option Intensity as RCF is rounded for manual prep:"},
+			Lookup[ExperimentFilter[
+				Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID],
+				FiltrationType -> Centrifuge,
+				Intensity -> 200.123 GravitationalAcceleration,
+				Output -> Options
+			], Intensity],
+			EqualP[200.1 GravitationalAcceleration],
+			Messages :> {Warning::InstrumentPrecision}
+		],
+		Example[{Messages, "InstrumentPrecision", "Throws a warning if option Intensity as RPM is rounded for robotic prep:"},
+			Lookup[ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
+				Volume -> 300 Microliter,
+				FiltrationType -> Centrifuge,
+				Intensity -> 1000.1 RPM,
+				Preparation -> Robotic,
+				Output -> Options
+			], Intensity],
+			{1000 RPM},
+			Messages :> {Warning::InstrumentPrecision}
 		],
 		Example[{Messages, "OccludingRetentateMismatch", "If CollectOccludingRetentate is set to False, then OccludingRetentateContainer, OccludingRetentateDestinationWell, and OccludingRetentateContainerLabel must not be specified:"},
 			ExperimentFilter[
@@ -3646,6 +3766,17 @@ DefineTests[ExperimentFilter,
 			],
 			$Failed,
 			Messages :> {Error::PrewetFilterIncompatibleWithFilterType, Error::InvalidOption}
+		],
+		Example[{Messages, "OverOccupiedFilter", "Cannot over-occupy a specified filter object:"},
+			ExperimentFilter[
+				{
+					Object[Sample, "Filter Test Sample with 2L" <> $SessionUUID],
+					Object[Sample, "Filter Test Sample with 500 mL" <> $SessionUUID]
+				},
+				Filter -> Object[Item, Filter, "Filter Test Membrane Filter" <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::OverOccupiedFilter, Error::InvalidOption}
 		]
 	},
 	Parallel -> True,
@@ -3727,7 +3858,8 @@ DefineTests[ExperimentFilter,
 				Object[Container, Plate, "Filter Test heavy plate"<>$SessionUUID],
 
 				Object[Container, Vessel, "Filter Test tube with cell sample " <> $SessionUUID],
-				Object[Sample, "Filter Test cell sample 1 " <> $SessionUUID]
+				Object[Sample, "Filter Test cell sample 1 " <> $SessionUUID],
+				Object[Item, Filter, "Filter Test Membrane Filter" <> $SessionUUID]
 			};
 
 			(* Check whether the names we want to give below already exist in the database *)
@@ -3737,19 +3869,21 @@ DefineTests[ExperimentFilter,
 			Quiet[EraseObject[PickList[objects, existsFilter], Force -> True, Verbose -> False]];
 
 		];
-		Module[{objectID1, objectID2, objectID3, objectID4, firstUpload, secondUpload},
+		Module[{objectID1, objectID2, objectID3, objectID4, objectID5, firstUpload, secondUpload},
 
 			(*create an ID that we'll use for the kitting*)
 			{
 				objectID1,
 				objectID2,
 				objectID3,
-				objectID4
+				objectID4,
+				objectID5
 			} = CreateID[{
 				Object[Container, Vessel, Filter],
 				Object[Container, Vessel, Filter],
 				Object[Container, Vessel],
-				Object[Container, Vessel]
+				Object[Container, Vessel],
+				Object[Item, Filter]
 			}];
 
 
@@ -4104,8 +4238,14 @@ DefineTests[ExperimentFilter,
 						Replace[PositionPlotting] -> Download[Model[Container, Plate, Filter, "id:eGakld0955Lo"], PositionPlotting],
 						Replace[Positions] -> Download[Model[Container, Plate, Filter, "id:eGakld0955Lo"], Positions],
 						DeveloperObject -> True
+					],
+					Association[
+						Type -> Object[Item, Filter],
+						Model -> Link[Model[Item, Filter, "Filter Test Membrane Filter"], Objects],
+						Name -> "Filter Test Membrane Filter" <> $SessionUUID,
+						DeveloperObject -> True,
+						Site -> Link[$Site]
 					]
-
 				}
 			];
 
@@ -4273,7 +4413,8 @@ DefineTests[ExperimentFilter,
 			Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID],
 
 			Object[Container, Vessel, "Filter Test tube with cell sample " <> $SessionUUID],
-			Object[Sample, "Filter Test cell sample 1 " <> $SessionUUID]
+			Object[Sample, "Filter Test cell sample 1 " <> $SessionUUID],
+			Object[Item, Filter, "Filter Test Membrane Filter" <> $SessionUUID]
 		};
 
 		(* Check whether the names we want to give below already exist in the database *)

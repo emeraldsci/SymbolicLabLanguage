@@ -93,7 +93,9 @@ DefineObjectType[Object[UnitOperation,Transfer],
 					Object[Container],
 
 					(* NOTE: This is only going to be a Model[Sample] if we're going to use a water purifier. *)
-					Model[Sample]
+					Model[Sample],
+					(* allow models since this can be a model from IntermediateContainerLink that has not been resource picked yet *)
+					Model[Container]
 				],
 				Description -> "The current container in which our source sample is in, after any intermediate transfers.",
 				Category -> "General",
@@ -195,7 +197,10 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Relation -> Alternatives[
 					Object[Sample],
 					Object[Container],
-					Object[Item]
+					Object[Item],
+					(* allow models since this can be a model from WeighingContainerLink/SachetIntermediateContainer that has not been resource picked yet *)
+					Model[Container],
+					Model[Item]
 				],
 				Description -> "The current container to transfer our sample from WorkingSample into.",
 				Category -> "General",
@@ -323,7 +328,6 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Category -> "General",
 				IndexMatching -> SourceLink
 			},
-
 			WorkingSourceWell->{
 				Format -> Multiple,
 				Class -> String,
@@ -642,6 +646,34 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Pattern :> _String,
 				Relation -> Null,
 				Description -> "The container that will be placed on the Balance and used to weigh out the specified amount of the source that will be transferred to the destination.",
+				Category -> "General",
+				Migration->SplitField
+			},
+			PreciseTransfer -> {
+				Format -> Multiple,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if the syringe should be weighed before and after the transfer is performed.",
+				Category -> "General"
+			},
+			SyringeRackLink->{
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Model[Container, Rack],
+					Object[Container, Rack]
+				],
+				Description -> "The container that will be placed on the Balance and used to weigh the syringe used when PreciseTransfer is specified.",
+				Category -> "General",
+				Migration->SplitField
+			},
+			SyringeRackString->{
+				Format -> Multiple,
+				Class -> String,
+				Pattern :> _String,
+				Relation -> Null,
+				Description -> "The container that will be placed on the Balance and used to weigh the syringe used when PreciseTransfer is specified.",
 				Category -> "General",
 				Migration->SplitField
 			},
@@ -1116,6 +1148,15 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Class -> String,
 				Pattern :> _String,
 				Description -> "The amount to transfer into intermediate container, converted to a Volume, as a string, as it will be displayed to the operator in the procedure.",
+				Category -> "General",
+				Developer -> True
+			},
+			DecantAmount->{
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Liter],
+				Units -> Milliliter,
+				Description -> "The amount to transfer into intermediate container, converted to a volume.",
 				Category -> "General",
 				Developer -> True
 			},
@@ -1641,6 +1682,14 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Description -> "For Volumetric FillToVolume transfer, indicates whether the final sample volume reaches the graduation line of the volumetric flask without exceeding it. If the volume is below the line, additional solvent is added. A TargetVolumeToleranceAchieved value of False indicates that the liquid level has gone above the graduation line.",
 				Category -> "Fill to Volume"
 			},
+			FillToVolumeCurrentStatus -> {
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> (Overfilled | Continue | Next | Complete),
+				Description -> "During Volumetric FillToVolume transfer, indicates the current sample addition status. If FillToVolumeCurrentStatus is Overfilled, the volumetric flask is over filled; if FillToVolumeCurrentStatus is Next, the next addition will be using a different addition tool (beaker vs. pipette); if FillToVolumeCurrentStatus is Continue, the next addition will keep using the same addition tool; if FillToVolumeCurrentStatus is Complete, liquid level touches the graduation line and addition will stop.",
+				Category -> "Fill to Volume",
+				Developer -> True
+			},
 			LiquidLevelDetector -> {
 				Format -> Single,
 				Class -> Link,
@@ -1706,6 +1755,21 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				},
 				Headers -> {"Objects to move", "BSC to move to", "Position to move to"},
 				Description -> "The specific positions into which objects should be moved into the transfer environment's biosafety cabinet at the beginning of this unit operation.",
+				Category -> "General",
+				Developer -> True
+			},
+			UnbaggingObjects -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Object[Container],
+					Object[Item],
+					Object[Sample],
+					Object[Part],
+					Object[Instrument]
+				],
+				Description -> "The objects which may be inside of aseptic bags that need to be removed once inside of the biosafety cabinet.",
 				Category -> "General",
 				Developer -> True
 			},
@@ -2173,6 +2237,15 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Category -> "General",
 				Developer -> True
 			},
+			ContainersToPrecover -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Container],
+				Description -> "The source and destination containers that are covered at the beginning of current transfer loop. These are usually empty containers that don't have a cover to begin with, covering them at the start of the protocol makes sure that we don't have to resource pick a cover in the middle of the transfer.",
+				Category -> "General",
+				Developer -> True
+			},
 			AspirationClassifications -> {
 				Format -> Multiple,
 				Class -> Expression,
@@ -2317,7 +2390,279 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Description -> "Objects required for the current unit operation that are not picked upfront at the beginning of the protocol.",
 				Category -> "General",
 				Developer -> True
-			}
+			},
+			BalanceReblanking ->{
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> Alternatives[Always,AsNecessary,None],
+				Description -> "Indicates the type of re-weighing performed on the balance if material loss is detected or stray material is present. Always indicates weighing container replacement whenever there is any material loss detected OR there is stray material on the outside. AsNecessary indicates weighing container replacement when there is stray material on the outside and cleaning without replacement when the outside is clean and only something is on the balance. None indicates cleaning of weighing container whenever there is any material loss detected OR there is stray material on the outside.",
+				Category -> "General"
+			},
+			PrewetLabware->{
+				Format -> Multiple,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if labware used with the Source sample is rinsed with PrewetWashSolution, NumberOfPrewetWashes times, prior to use.",
+				Category->"Prewet Labware"
+			},
+			NumberOfPrewetWashes->{
+				Format -> Multiple,
+				Class -> Integer,
+				Pattern :> GreaterEqualP[0],
+				Units -> None,
+				Description -> "The number of times labware used with source sample is rinsed with PrewetWashSolution before use with the source sample.",
+				Category->"Prewet Labware"
+			},
+			NumberOfPrewetWashesPerformed->{
+				Format -> Single,
+				Class -> Integer,
+				Pattern :> GreaterEqualP[0],
+				Units -> None,
+				Description -> "Indicates the number of pre wet washes that have been performed,  to rinse off possible contaminants and prepare the labware for use.",
+				Category -> "Prewet Labware",
+				Developer -> True
+			},
+			PrewetWashVolume->{
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Liter],
+				Units -> Milliliter,
+				Description -> "The total volume of the PrewetWashSolution that is used to rinse labware (Destination, IntermediateContainer, Instrument (graduated cylinder, syringe), Funnel, IntermediateFunnel, Tips, QuantitativeTransferWashTips), NumberOfPrewetWashes times, to rinse off possible contaminants and prepare the labware for use.",
+				Category->"Prewet Labware"
+			},
+			PrewetWashSolutionLink->{
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Model[Sample],
+					Object[Sample]
+				],
+				Description -> "The solution that is used to rinse labware (Destination, IntermediateContainer, Instrument (graduated cylinder, syringe), Funnel, IntermediateFunnel, QuantitativeTransferWashTips), NumberOfPrewetWashes times, to rinse off possible contaminants and prepare the labware for use.",
+				Category -> "General",
+				Migration->SplitField
+			},
+			PrewetWashSolutionString->{
+				Format -> Multiple,
+				Class -> String,
+				Pattern :> _String,
+				Relation -> Null,
+				Description -> "The solution that is used to rinse labware (Destination, IntermediateContainer, Instrument (graduated cylinder, syringe), Funnel, IntermediateFunnel, QuantitativeTransferWashTips), NumberOfPrewetWashes times, to rinse off possible contaminants and prepare the labware for use.",
+				Category -> "General",
+				Migration->SplitField
+			},
+			PrewetWashIntermediateContainer->{
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Model[Container],
+					Object[Container]
+				],
+				Description -> "The container that is used to hold the PrewetWashSolution prior to rinsing of labware, NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+				Category->"Prewet Labware"
+			},
+			PrewetWashWasteContainer->{
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Model[Container],
+					Object[Container]
+				],
+				Description -> "The container that is used to hold the waste generated in rinsing labware with PrewetWashSolution, NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+				Category->"Prewet Labware"
+			},
+			PrewetWashIntermediateContainerWashVolume->{
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Liter],
+				Units -> Milliliter,
+				Description -> "The volume of the PrewetWashSolution that is used to rinse PrewetWashIntermediateContainer, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+				Category->"Prewet Labware"
+			},
+			PrewetWashIntermediateContainerWashVolumeImage -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "An image that imitates what the PrewetWashIntermediateContainer should look like when filled with the PrewetWashSolution to the target PrewetWashIntermediateContainerWashVolume.",
+				Category -> "General",
+				Developer -> True
+			},
+			DestinationPrewetWashVolume->{
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Liter],
+				Units -> Milliliter,
+				Description -> "The volume of the PrewetWashSolution that is used to rinse destination container, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+				Category->"Prewet Labware"
+			},
+			DestinationPrewetWashVolumeImage -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "An image that imitates what the PrewetWashIntermediateContainer should look like when filled with the PrewetWashSolution to the target DestinationPrewetWashVolume.",
+				Category -> "General",
+				Developer -> True
+			},
+			DestinationPrewetWashType ->{
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> Alternatives[ShakeWithSecuredCap,ShakeWithLooseCap,Swirl],
+				Description -> "Indicates the process with which the destination container is prewetted. ShakeWithSecuredCap indicates the container is capped with either a screw or snap cap, then shaken. ShakeWithLooseCap indicates the container is capped, with a finger or a hand securing the cap on the container as it is shaken. Swirl indicates the prewet wash solution is swirled around the inside of the container while it is uncapped.",
+				Category -> "General",
+				Developer->True
+			},
+			IntermediateContainerPrewetWashVolume->{
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Liter],
+				Units -> Milliliter,
+				Description -> "The volume of the PrewetWashSolution that is used to rinse the intermediate container, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+				Category->"Prewet Labware"
+			},
+			IntermediateContainerPrewetWashVolumeImage -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "An image that imitates what the PrewetWashIntermediateContainer should look like when filled with the PrewetWashSolution to the target IntermediateContainerPrewetWashVolume.",
+				Category -> "General",
+				Developer -> True
+			},
+			IntermediateContainerPrewetWashType ->{
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> Alternatives[ShakeWithSecuredCap,ShakeWithLooseCap,Swirl],
+				Description -> "Indicates the process with which the intermediate container is prewetted. ShakeWithSecuredCap indicates the container is capped with either a screw or snap cap, then shaken. ShakeWithLooseCap indicates the container is capped, with a finger or a hand securing the cap on the container as it is shaken. Swirl indicates the prewet wash solution is swirled around the inside of the container while it is uncapped.",
+				Category -> "General",
+				Developer->True
+			},
+			InstrumentPrewetWashVolume->{
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Liter],
+				Units -> Milliliter,
+				Description -> "The volume of the PrewetWashSolution that is used to rinse the instrument (graduated cylinder or syringe), per wash amd NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+				Category->"Prewet Labware"
+			},
+			InstrumentPrewetWashVolumeImage -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "An image that imitates what the PrewetWashIntermediateContainer should look like when filled with the PrewetWashSolution to the target InstrumentPrewetWashVolume.",
+				Category -> "General",
+				Developer -> True
+			},
+			TipsPrewetWashVolume->{
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Liter],
+				Units -> Milliliter,
+				Description -> "The volume of the PrewetWashSolution that is used to rinse tips, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+				Category->"Prewet Labware"
+			},
+			TipsPrewetWashVolumeImage -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "An image that imitates what the PrewetWashIntermediateContainer should look like when filled with the PrewetWashSolution to the target TipsPrewetWashVolume.",
+				Category -> "General",
+				Developer -> True
+			},
+			FunnelPrewetWashVolume->{
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Liter],
+				Units -> Milliliter,
+				Description -> "The volume of the PrewetWashSolution that is used to rinse Funnel, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+				Category->"Prewet Labware"
+			},
+			FunnelPrewetWashVolumeImage -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "An image that imitates what the PrewetWashIntermediateContainer should look like when filled with the PrewetWashSolution to the target FunnelPrewetWashVolume.",
+				Category -> "General",
+				Developer -> True
+			},
+			IntermediateFunnelPrewetWashVolume->{
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Liter],
+				Units -> Milliliter,
+				Description -> "The volume of the PrewetWashSolution that is used to rinse IntermediateFunnel, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+				Category->"Prewet Labware"
+			},
+			IntermediateFunnelPrewetWashVolumeImage -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "An image that imitates what the PrewetWashIntermediateContainer should look like when filled with the PrewetWashSolution to the target IntermediateFunnelPrewetWashVolume.",
+				Category -> "General",
+				Developer -> True
+			},
+			HandPumpPrewetWashVolume->{
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Liter],
+				Units -> Milliliter,
+				Description -> "The volume of the PrewetWashSolution that is used to rinse HandPump, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+				Category->"Prewet Labware"
+			},
+			HandPumpPrewetWashVolumeImage -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "An image that imitates what the PrewetWashIntermediateContainer should look like when filled with the PrewetWashSolution to the target HandPumpPrewetWashVolume.",
+				Category -> "General",
+				Developer -> True
+			},
+			QuantitativeTransferTipsPrewetWashVolume->{
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Liter],
+				Units -> Milliliter,
+				Description -> "The volume of the PrewetWashSolution that is used to rinse QuantitativeTransferTips, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+				Category->"Prewet Labware"
+			},
+			QuantitativeTransferTipsPrewetWashVolumeImage -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "An image that imitates what the PrewetWashIntermediateContainer should look like when filled with the PrewetWashSolution to the target QuantitativeTransferTipsPrewetWashVolume.",
+				Category -> "General",
+				Developer -> True
+			},
+      PreOvenDryDestinationContainer->{
+        Format -> Multiple,
+        Class -> Boolean,
+        Pattern :> BooleanP,
+        Description -> "Indicates if the destination glassware is dried in an oven prior to transfer.",
+        Category->"Oven Drying"
+      },
+      PreDepyrogenateDestinationContainer->{
+        Format -> Multiple,
+        Class -> Boolean,
+        Pattern :> BooleanP,
+        Description -> "Indicates if the destination glassware is depyrogenated in an oven prior to transfer.",
+        Category->"Oven Drying"
+      },
+      PostOvenDryDestination->{
+        Format -> Multiple,
+        Class -> Boolean,
+        Pattern :> BooleanP,
+        Description -> "Indicates if the destination sample is dried in an oven after transfer.",
+        Category->"Oven Drying"
+      }
 		}
 	}
 ];

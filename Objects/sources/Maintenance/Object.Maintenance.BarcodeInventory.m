@@ -20,7 +20,14 @@ DefineObjectType[Object[Maintenance, BarcodeInventory], {
                 Object[Sensor],
                 Object[Plumbing],
                 Object[Wiring],
-                Object[Instrument]
+                Object[Instrument],
+                Object[Container][BarcodeInventory],
+                Object[Item][BarcodeInventory],
+                Object[Part][BarcodeInventory],
+                Object[Sensor][BarcodeInventory],
+                Object[Plumbing][BarcodeInventory],
+                Object[Wiring][BarcodeInventory],
+                Object[Instrument][BarcodeInventory]
             ],
             Description -> "The items which SLL object stickers will be printed and affixed in this maintenance.",
             Category -> "General"
@@ -308,6 +315,48 @@ DefineObjectType[Object[Maintenance, BarcodeInventory], {
             Relation -> Object[Container],
             Description -> "The container objects that contain tablets or sachets and need to be counted upon being received.",
             Category -> "Inventory"
+        },
+        ExcessItemsCount -> {
+            Format -> Multiple,
+            Class -> Integer,
+            Pattern :> GreaterEqualP[0, 1],
+            Description -> "The number of extra items found by the operator in this labeling procedure.",
+            Category -> "Inventory",
+            Developer -> True
+        },
+        MissingObjects -> {
+            Format -> Multiple,
+            Class -> Link,
+            Pattern :> _Link,
+            Relation -> Alternatives[
+                Object[Container],
+                Object[Item],
+                Object[Part],
+                Object[Sensor],
+                Object[Plumbing],
+                Object[Wiring],
+                Object[Instrument]
+            ],
+            Description -> "The physical objects intended to be labeled that are missing or discarded due to a shipping error.",
+            Category -> "Inventory",
+            Developer -> True
+        },
+        CurrentExcessItems -> {
+            Format -> Multiple,
+            Class -> Link,
+            Pattern :> _Link,
+            Relation -> Alternatives[
+                Object[Container],
+                Object[Item],
+                Object[Part],
+                Object[Sensor],
+                Object[Plumbing],
+                Object[Wiring],
+                Object[Instrument]
+            ],
+            Description -> "The extra items found during labeling that weren't included in the initial BarcodedItems as the shipped quantity exceeded what was requested.",
+            Category -> "Inventory",
+            Developer -> True
         }
     }
 }];

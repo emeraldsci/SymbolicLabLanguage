@@ -146,6 +146,17 @@ DefineObjectType[Object[Maintenance,Shipping], {
 			Description -> "The balance used to weigh packages prepared by this maintenance.",
 			Category -> "General"
 		},
+		HandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Instrument, HandlingStation],
+				Model[Instrument, HandlingStation]
+			],
+			Description -> "The environment in which the packages are weighed.",
+			Category -> "General"
+		},
 		PeanutsDispenser -> {
 			Format -> Single,
 			Class -> Link,

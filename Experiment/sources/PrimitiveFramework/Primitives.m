@@ -5975,6 +5975,83 @@ crossflowFiltrationPrimitive = Module[
 
 
 
+(* ::Subsection::Closed:: *)
+(*WashPlate Primitive*)
+
+
+(* ::Code::Initialization:: *)
+washPlatePrimitive = Module[{washPlateSharedOptions, washPlateNonIndexMatchingSharedOptions, washPlateIndexMatchingSharedOptions},
+  (* Copy over all of the options from ExperimentIncubate -- except for the funtopia shared options (Cache, Upload, etc.) *)
+  washPlateSharedOptions = UnsortedComplement[
+    Options[ExperimentWashPlate][[All, 1]],
+    Flatten[{Options[ProtocolOptions][[All, 1]], $NonUnitOperationSharedOptions}]
+  ];
+
+  washPlateNonIndexMatchingSharedOptions = UnsortedComplement[
+    washPlateSharedOptions,
+    Cases[OptionDefinition[ExperimentWashPlate], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
+  ];
+
+  washPlateIndexMatchingSharedOptions = UnsortedComplement[
+    washPlateSharedOptions,
+    washPlateNonIndexMatchingSharedOptions
+  ];
+
+  DefinePrimitive[WashPlate,
+    (* Input Options *)
+    Options :> {
+      IndexMatching[
+        {
+          OptionName -> Sample,
+          Default -> Null,
+          Description -> "The samples or containers that should be washed.",
+          AllowNull -> False,
+          Category -> "General",
+          Widget -> Widget[
+            Type -> Object,
+            Pattern :> ObjectP[{Object[Sample], Object[Container]}]
+          ],
+          Required -> True
+        },
+        IndexMatchingParent -> Sample
+      ]
+    },
+    (* Shared Options *)
+    With[{insertMe = {
+      IndexMatching[
+        Sequence @@ ({ExperimentWashPlate, Symbol[#]}&) /@ washPlateIndexMatchingSharedOptions,
+        IndexMatchingParent -> Sample
+      ],
+      If[Length[washPlateNonIndexMatchingSharedOptions] == 0,
+        Nothing,
+        Sequence @@ ({ExperimentWashPlate, Symbol[#]}&) /@ washPlateNonIndexMatchingSharedOptions
+      ]
+    }
+    },
+      SharedOptions :> insertMe
+    ],
+    Methods -> {RoboticSamplePreparation},
+    WorkCells -> {STAR},
+    MethodResolverFunction -> Experiment`Private`resolveWashPlateMethod,
+    WorkCellResolverFunction -> Experiment`Private`resolveWashPlateWorkCell,
+    ExperimentFunction -> ExperimentWashPlate,
+    RoboticExporterFunction -> InternalExperiment`Private`exportWashPlateRoboticPrimitive,
+    RoboticParserFunction -> InternalExperiment`Private`parseWashPlateRoboticPrimitive,
+    OutputUnitOperationParserFunction -> None,
+    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "ELISAWashPlate.png"}]],
+    LabeledOptions -> {
+      Sample -> SampleLabel,
+      Null -> SampleContainerLabel
+    },
+    InputOptions -> {Sample},
+    Generative -> False,
+    Category -> "Sample Preparation",
+    Description -> "Aspirate from and then dispense buffer to input sample containers to wash their liquid contents.",
+    Author -> {"lige.tonggu", "dima"}
+  ]
+];
+
+
 (* ::Subsection:: *)
 (*PickColonies Primitive*)
 pickColoniesPrimitive=Module[
@@ -6773,6 +6850,7 @@ DefinePrimitiveSet[
     grindPrimitive,
     measureMeltingPointPrimitive,
     crossflowFiltrationPrimitive,
+    washPlatePrimitive,
 
     (* Cell Related Unit Operations *)
     thawCellsPrimitive,
@@ -6868,6 +6946,7 @@ DefinePrimitiveSet[
     microwaveDigestionPrimitive,
     measureContactAnglePrimitive,
     dynamicLightScatteringPrimitive,
+    washPlatePrimitive,
 
     (* Synthesis *)
     pcrPrimitive,
@@ -6991,7 +7070,8 @@ DefinePrimitiveSet[
     dilutePrimitive,
     magneticBeadSeparationPrimitive,
     liquidLiquidExtractionPrimitive,
-    precipitatePrimitive
+    precipitatePrimitive,
+    washPlatePrimitive
   },
   MethodOptions:>{
     RoboticSamplePreparation:>{

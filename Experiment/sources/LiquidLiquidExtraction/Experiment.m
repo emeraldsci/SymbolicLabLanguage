@@ -1067,7 +1067,7 @@ ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],my
   validSamplePreparationResult=Check[
     (* Simulate sample preparation. *)
     {mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationSimulation}=simulateSamplePreparationPacketsNew[
-      ExperimentPellet,
+      ExperimentLiquidLiquidExtraction,
       listedSamples,
       listedOptions
     ],
@@ -1360,7 +1360,7 @@ ExperimentLiquidLiquidExtraction[mySamples:ListableP[ObjectP[Object[Sample]]],my
       Module[{primitive,nonHiddenOptions,experimentFunction,samplesMaybeWithModels},
         (* convert the samples to models if we had model inputs originally *)
         (* if we don't have a simulation or a single prep unit op, then we know we didn't have a model input *)
-        (* NOTE: this is important. Need to use samplePreparationSimulation here and not simulation. This is because mySamples needs to get converted to model via the simulation _before_ SimulateResources is called in simulateExperimentPellet *)
+        (* NOTE: this is important. Need to use samplePreparationSimulation here and not simulation. This is because mySamples needs to get converted to model via the simulation _before_ SimulateResources is called in liquidLiquidExtractionResourcePackets *)
         (* otherwise, the same label will point at two different IDs, and that's going to cause problems *)
         samplesMaybeWithModels=If[NullQ[samplePreparationSimulation] || Not[MatchQ[Lookup[resolvedOptions,PreparatoryUnitOperations],{_[_LabelSample]}]],
           mySamples,
@@ -2245,18 +2245,20 @@ resolveExperimentLiquidLiquidExtractionOptions[mySamples:{ObjectP[Object[Sample]
         ];
 
         (* Resolve Centrifuge Intensity. *)
+        (* Default to the lesser of the centrifuge's max force and the container's max force (if populated) *)
+        (* This is now robust to cases where the container's max force is greater than the centrifuge's, but still hardcodes centrifuges and their max forces *)
         centrifugeIntensity=Which[
           MatchQ[Lookup[options, CentrifugeIntensity], Except[Automatic]],
             Lookup[options, CentrifugeIntensity],
           MatchQ[centrifugeInstrument, ObjectP[Model[Instrument, Centrifuge, "id:kEJ9mqaVPAXe"]]], (* Model[Instrument, Centrifuge, "HiG4"] *)
             If[!MatchQ[Lookup[sampleContainerModelPacket, MaxCentrifugationForce], Null],
-              Lookup[sampleContainerModelPacket, MaxCentrifugationForce],
+              Min[Lookup[sampleContainerModelPacket, MaxCentrifugationForce], 3600 GravitationalAcceleration],
               3600 GravitationalAcceleration
             ],
           MatchQ[centrifugeInstrument, ObjectP[Model[Instrument, Centrifuge, "id:vXl9j57YaYrk"]]], (* Model[Instrument, Centrifuge, "VSpin"] *)
             If[!MatchQ[Lookup[sampleContainerModelPacket, MaxCentrifugationForce], Null],
-              Lookup[sampleContainerModelPacket, MaxCentrifugationForce],
-              3000 RPM
+              Min[Lookup[sampleContainerModelPacket, MaxCentrifugationForce], 1000 GravitationalAcceleration],
+              1000 GravitationalAcceleration
             ],
           True,
             Null
@@ -5740,7 +5742,7 @@ liquidLiquidExtractionResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]
       ],
       (* NOTE: We quiet this because when transferring from the phase separator, we're actually not sure how much volume *)
       (* will be in the top/bottom so we just go with the max volume to make sure that we get both of the phases. *)
-      {Warning::OveraspiratedTransfer, Warning::ConflictingSourceAndDestinationAsepticHandling}
+      {Warning::OveraspiratedTransfer, Warning::ConflictingSourceAndDestinationAsepticHandling, Warning::CentrifugePrecision}
     ];
 
     (* Create our own output unit operation packet, linking up the "sub" robotic unit operation objects. *)

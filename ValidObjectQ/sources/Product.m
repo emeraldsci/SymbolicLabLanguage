@@ -23,37 +23,69 @@ Error::RequiredTogetherOptionsConflictFromExternalSource = "For input type `1`, 
 Error::RequiredOptions="The options `1` are required but are currently set to Null for input(s) `2`. Please specify values for these options.";
 Error::UnableToFindInfo = "`4` was unable to find information about the following options `1` from `3` for input(s) `2`. Please specify values for these options manually.";
 Error::UnableToResolveOption = "The options `1` are required but are not able to be determined automatically for input type `2`. Please specify values for these options manually.";
-Error::ManufacturerOptions="The options {Manufacturer,ManufacturerCatalogNumber} should both be specified or both be set to Null. Currently their values are `1`. Please change the values of these options.";
 Error::NameIsPartOfSynonyms="The Name of this input type `1` must be a member of its Synonyms. Please change the value of these options.";
-Error::DefaultContainerModel="Products that are self-contained must not have the DefaultContainerModel option specified. Please change the value of this option.";
-Error::ProductAmount="If this product is self contained, Amount must not be specified. If this product is not self contained, Amount must be specified. Please change the values of these options.";
-Error::EmeraldSuppliedProductSamples="If Emerald Cloud Lab is the supplier of this product, NumberOfItems must be 1. Currently, its value is `1`. Please change the value of this option.";
-Error::EmeraldSuppliedProductContainer="If Emerald Cloud Lab is the supplier of this product, DefaultContainerModel must be a preferred vessel. To see the possible preferred vessels, evaluate PreferredContainer[All]. Please change the value of this option.";
-Error::AmountUnitState="The option Amount must match the model's state of matter. Currently, Amount is `1` and the product model's state of matter is `2`. This does not match. Liquid can have amount specified as Mass if Density is informed. Please change the value of these options.";
-Error::PricePerUnitRequired="If `1` is not supplied by Emerald Cloud Lab, the Price option must be specified. Please change the value of this option.";
-Error::TabletSachetFields="The options Amount and CountPerSample cannot both be informed at the same time, unless the product model is a Model[Sample] that is a Tablet or Sachet. Please change the value of these fields.";
-Error::InvalidKitOptions="If the KitComponents option was specified and not Null, the following options must also be specified: `1`.  These options must be Null if creating a kit.";
-Error::InvalidSampleType="The KitComponents option was specified, but the SampleType option was not set to Kit.  This option must be set to Kit if creating a kit.";
-Error::SingleKitComponent="The KitComponents option was specified, but only one component was provided.  A kit must have at least two separate components; if only one component is desired, use the non-kit options.";
-Error::InvalidContainerIndexPosition="The KitComponents option was specified, but for at least one entry the ContainerIndex and/or Position entires were specified incorrectly.  For each entry of KitComponents, ContainerIndex and Position must not be Null if ProductModel is a NonSelfContainedSampleModel, and must be Null if ProductModel is anything else.";
-Error::RepeatedContainerIndex="The KitComponents repeats ContainerIndex entries in cases where the DefaultContainerModel is a Model[Container,Vessel]. Please specify a unique ContainerIndex for each component.";
-Error::KitModelAlreadyHasProduct="The KitComponents option was specified, but for the following component ProductModel(s) `1`, a product already exists for that item (see the Products and KitProducts fields).  ProductModels in kits must be exclusive to that kit and cannot have other products tied to them.";
-Error::StickerKitInParallelUnused="StickerKitInParallel can only be set if KitComponents is supplied. Please check these values for `1`.";
-Error::InvalidProductSite="The Site field is not a member of the ExperimentSites of `1`. The value of Site can be `2` or Null if the product pricing is not site dependent.";
-Error::DefaultContainerModelTooManyPositions="If DefaultContainerModel is specified as a Model[Container,Plate], then the plate can not have more than 1 well.";
+Error::DefaultContainerModel="Products that are not sample or chemical must not have the `1` option specified. Please change the value of this option.";
+Error::ProductAmount="`1` must be specified for sample type product except if the sample is tablet or sachet. Please provide value for `1` option.";
+Error::ProductAmountFromExternalSource = "`1` must be specified for sample type product except if the sample is tablet or sachet, however it can't be found from `2`. Please provide value for `1` option.";
+Error::EmeraldSuppliedProductSamples="If Emerald Cloud Lab is the supplier of this product, `1` must be 1. Currently, its value is `2`. Please change the value of this option.";
+Error::AmountUnitState="The option `3` must match the model's state of matter. Currently, Amount is `1` and the product model's state of matter is `2`. This does not match. Solid cannot have amount specified in volume units. Please correct the Amount option.";
+Error::AmountUnitStateFromExternalSource = "The option `3` must match the model's state of matter. Currently, Amount is `1` according to `4` and the product model's state of matter is `2`. This does not match. Solid cannot have amount specified in volume units. Please manually correct the Amount option.";
+Error::PricePerUnitRequired="If `1` is not supplied by Emerald Cloud Lab, the `2` option must be specified. Please change the value of this option.";
+Error::PricePerUnitRequiredFromExternalSource="If `1` is not supplied by Emerald Cloud Lab, the `2` option must be specified but can't be found from `3`. Please change the value of this option.";
+Error::TabletSachetFields="The options `1` and `2` cannot both be informed at the same time, unless the product model is a Model[Sample] that is a Tablet or Sachet. Please change the value of these fields.";
+Error::InvalidKitOptions="If the `1` option was specified and not Null, the following options must be Null: `2` in order to create a kit. Please change `2` to Null, or change `1` to Null.";
+Error::InvalidKitOptionsFromExternalSource="Since you have specified `1` option, the following options must be Null: `2` in order to create a kit, but they are currently set to `3` according to `4`. Please set `2` to Null manually, or change `1` to Null.";
+Error::InvalidKitOptionsWithExternalSource="You have specified `2` option to `3`, however option `1` is set to non-Null according to `4`, which means `2` must be Null. Please set `2` to Null manually, or change `1` to Null.";
+Error::InvalidKitOptionsBetweenExternalSource="Option `1` is set to non-Null and `2` is set to `3`, both according to `4`, however this is not allowed. Please set `2` to Null manually, or change `1` to Null.";
+Error::InvalidSampleType="Since the `1` option was specified, the `2` option must be set to Kit, which is not the case now. Please change `2` to Kit, or set `1` to Null.";
+Error::InvalidSampleTypeFromExternalSource="Since the `1` option was specified, the `2` option must be set to Kit, but it's currently set to `3` according to `4`. Please change `2` to Kit, or set `1` to Null.";
+Error::InvalidSampleTypeWithExternalSource="You have set `2` option to `3`, which is not allowed since `1` option is set to non-Null according to `4`, which means `2` must be Kit. Please change `2` to Kit, or manually set `1` to Null.";
+Error::InvalidSampleTypeBetweenExternalSource="The `2` option to `3` and `1` option is set to non-Null, both according to `4`, which is not allowed. Please change `2` to Kit, or manually set `1` to Null.";
+Error::SingleKitComponent="The `1` option was specified, but only one component was provided. A kit must have at least two separate components; if only one component is desired, use the non-kit options and inputs, such as DefaultContainerModel, ProductModel, DefaultCoverModel, Amount, CountPerSample.";
+Error::SingleKitComponentFromExternalSource="The option `1` was set to `2` according to `3`, which has only one component. This is not allowed; a kit must have at least two separate components. If only one component is desired, use the non-kit options and inputs, such as DefaultContainerModel, ProductModel, DefaultCoverModel, Amount, CountPerSample.";
+Error::InvalidContainerIndexPosition="The `1` option was specified, but for at least one entry the ContainerIndex and/or Position entries were specified incorrectly. For each entry of KitComponents, ContainerIndex and Position must not be Null if ProductModel is a NonSelfContainedSampleModel, and must be Null if ProductModel is anything else.";
+Error::RepeatedContainerIndex="The ContainerIndex entries in the `1` option cannot be repeated in cases where the DefaultContainerModel is a Model[Container,Vessel]. Please specify a unique ContainerIndex for each component.";
+Error::StickerKitInParallelNotAllowed="Since you did not provide value for `2` option, `1` must be set to Null. Please change your `1` to Null, or supply values for `2`.";
+Error::StickerKitInParallelNotAllowedFromExternalSource="The `1` option was set to `3` according to `4`, which is not allowed because you have set `2` option to Null. Please either manually set `1` to Null, or supply values for `2`.";
+Error::StickerKitInParallelNotAllowedBetweenExternalSource="The `1` option was set to `3`, while option `2` was set to Null, both according to `4`. This is not allowed; please manually set `1` to Null, or supply values for `2`.";
+Error::InvalidProductSite="The current `1` option `2` is not a member of an allowed ExperimentSites. The value of Site can be `3` or Null if the product pricing is not site dependent.";
+Error::InvalidProductSiteFromExternalSource = "The current `1` option is set to `2` according to `4`, is not a member of an allowed ExperimentSites. The value of Site can be `3` or Null if the product pricing is not site dependent.";
+Error::DefaultContainerModelTooManyPositions="A Model[Container,Plate] with more than 1 well cannot be specified as the `1` option. Please use an alternative or leave the option Null. If you are trying to create a product of a plate which contains multiple samples, please use the KitComponents option instead.";
 Error::UnsupportedAsepticReceiving="`1`, indicating the use of aseptic sample receiving techniques; however, `2`, indicating the use of standard receiving techniques. If aseptic receiving techniques are desired, please set `3`. If standard receiving techniques are desired, please set `4`.";
 Error::IncompatibleAsepticShippingAndReceiving="`1`";
 Error::AsepticRebaggingContainerTypeRequired="`1`";
-Error::CountedProduct="`1` must have CountPerSample when the associated product model is marked as counted. Otherwise CountPerSample can't be provided.";
+Error::CountedProduct="`1` option must be specified when the associated ProductModel is marked as counted. Please provide value to option `1`.";
+Error::CountedProductFromExternalSource="`1` option must be specified when the associated ProductModel is marked as counted, however UploadProduct is not able to find information from `2`. Please manually supply value for `1`.";
+Error::NotCountedProduct="`1` option must be Null when the associated ProductModel is not marked as counted. Please set option `1` to Null.";
+Error::NotCountedProductFromExternalSource="`1` option must be Null when the associated ProductModel is marked as counted, however UploadProduct incorrectly set it to `3` according to `2`. Please manually set option `1` to Null.";
+Error::MutuallyExclusiveOptions = "The following two options: `1` and `2` are mutually exclusive, meaning one and only one of the two must be specified, and the other one must be Null. Please check your options and correct that accordingly.";
+Error::CountedKitProduct = "Counted models are not allowed to be included as part of the KitComponent option since product has no way to track the initial count. Please either remove that model from KitComponent, or create a new non-kit product of that single model.";
+Error::DeprecatedModelOption = "The following model(s) `2` in the `1` option(s) are deprecated and therefore cannot be used. Please check your options and provide alternatives.";
+Error::StockSolutionProduct = "You have specified a Model[Sample, StockSolution] as the ProductModel option, which is not allowed except for external Model[Sample, StockSolution, Standard]. If you believe this product should be ordered from external supplier, please find or create an equivalent Model[Sample] or Model[Sample, StockSolution, Standard] and use that instead; if you believe this product should be prepared in lab via ECL, Please use UploadInventory function instead of UploadProduct.";
+Error::PublicProductModel = "You have specified a public model `1` as the ProductModel option, which is not allowed. Only ECL personnel are allowed to create public Object[Product] using a public ProductModel. Please use an alternative ProductModel, or contact ECL to have this product created, if needed.";
+Error::MissingDefaultContainerModel = "You have to specify the DefaultContainerModel for the sample product since you have already specified DefaultCoverModel. Please either set DefaultCoverModel to Null, or specify the DefaultContainerModel as well.";
 
-validProductQTests[packet : PacketP[Object[Product]]] := Module[
+DefineOptions[
+	validProductQTests,
+	Options :> {additionalValidQTestOptions}
+];
+
+validProductQTests[packet : PacketP[Object[Product]], ops:OptionsPattern[]] := Module[
 	{
 		supplier,identifier,resolvedKitComponents,kitProductModels,kitQ,validContainerIndex,validVesselIndex,nameAlreadyExistsQ,prodExistsQ,
 		existingInventoryObjs,prodModelPacket,kitModelCounts,defaultContainerModelPacket,allTypes,disallowedPublicSamples,openContainer,
 		experimentSites,asepticReceivingIndicatedString,standardReceivingIndicatedString,asepticReceivingCorrectionString,
 		standardReceivingCorrectionString,incompatibleAsepticShippingAndReceivingString,
-		asepticRebaggingContainerTypeRequiredString
+		asepticRebaggingContainerTypeRequiredString, safeOps, fieldSource, cache, object, fastAssoc,
+		allowedExperimentSitesList
 	},
+
+	(* read options *)
+	safeOps = SafeOptions[validProductQTests, ToList[ops]];
+	{fieldSource, cache} = Lookup[safeOps, #]& /@ {FieldSource, Cache};
+	object = Lookup[packet, Object];
+
+	fastAssoc = updateFastAssoc[{{Products, Packet[Deprecated,CountPerSample]}}, packet, cache];
 
 	(* Stash the object reference of the supplier but with the Name and not the ID *)
 	supplier = Download[Lookup[packet, Supplier], Object];
@@ -65,7 +97,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 	kitProductModels = Lookup[resolvedKitComponents, ProductModel, Null];
 	kitQ = MatchQ[resolvedKitComponents, {(_Association)..}];
 
-	(* figure out if we're making a new product or not, and if something with this name already exists  *)
+	(* figure out if we're making a new product or not, and if something with this name already exists *)
 	{prodExistsQ, nameAlreadyExistsQ} = If[MatchQ[Lookup[packet, Name], Null],
 		{
 			DatabaseMemberQ[packet],
@@ -120,8 +152,11 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 			KitComponents[[All,ProductModel]][Counted],
 			Packet[DefaultContainerModel[{Deprecated,OpenContainer,Positions}]],
 			Notebook[Financers][ExperimentSites][Object]
-		}
+		},
+		Cache -> cache
 	], {Download::FieldDoesntExist, Download::MissingField}];
+
+	allowedExperimentSitesList = Download[Flatten[{experimentSites}], Object];
 
 	(* Get OpenContainer value from product model *)
 	openContainer=If[NullQ[prodModelPacket],Null,Lookup[prodModelPacket,OpenContainer]];
@@ -144,7 +179,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 	validVesselIndex = If[kitQ,
 		Module[{indexContainerPairs,duplicatedIndices},
 
-			(* Make a list of all container index and container model pairs  *)
+			(* Make a list of all container index and container model pairs *)
 			indexContainerPairs=Lookup[resolvedKitComponents,{ContainerIndex,DefaultContainerModel}];
 
 			(* Create a list of all duplicated indices *)
@@ -301,42 +336,50 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				Name,
 				NumberOfItems
 			},
-			Message -> {Hold[Error::RequiredOptions], identifier}
+			Message -> Automatic,
+			FieldSource -> fieldSource,
+			ParentFunction -> "UploadProduct"
 		],
 
 		RequiredTogetherTest[
 			packet,
 			{Manufacturer, ManufacturerCatalogNumber},
-			Message -> {Hold[Error::RequiredTogetherOptions], identifier, {Manufacturer, ManufacturerCatalogNumber}}
+			Message -> Automatic
 		],
 
 		(* -- Site tests -- *)
 
 		(* verify that the site is valid for the customer. For any active product, site must be in ExperimentSites. *)
-		Test["Private products have a Site field that is Null or a member of the ExperimentSites:",
-			If[
-				Or[
-					MatchQ[Lookup[packet, Site, Null], Null],
-					MatchQ[Lookup[packet, Notebook, Null], Null] (*skip public products*)
-				],
-				True,
-				MemberQ[Download[Flatten[ToList[experimentSites]], Object], Download[Lookup[packet, Site], Object]]
+		Test["Private products have a Site field that is Null or a member of the ExperimentSites ("<>ToString[allowedExperimentSitesList, FormatType -> InputForm]<>"):",
+			Or[
+				MatchQ[Lookup[packet, Site, Null], Null],
+				MatchQ[Lookup[packet, Notebook, Null], Null], (*skip public products*)
+				MemberQ[allowedExperimentSitesList, Download[Lookup[packet, Site], Object]]
 			],
 			True,
-			Message -> {Hold[Error::InvalidProductSite], Lookup[packet, Site, Null], Download[Flatten[ToList[experimentSites]], Object]}
+			Message -> Switch[Lookup[fieldSource, Site],
+				User, {Hold[Error::InvalidProductSite], Site, Lookup[packet, Site, Null], allowedExperimentSitesList},
+				Template, {Hold[Error::InvalidProductSiteFromExternalSource], Site, Lookup[packet, Site, Null], allowedExperimentSitesList, "Template option"},
+				Field, {Hold[Error::InvalidProductSiteFromExternalSource], Site, Lookup[packet, Site, Null], allowedExperimentSitesList, "database"},
+				(* This option can't come from resolver or parser, so no need to handle those cases separately *)
+				_, {Hold[Error::InvalidProductSite], Site, Lookup[packet, Site, Null], allowedExperimentSitesList}
+			]
 		],
 
-		Test["Public products have a Site field matching an EmeraldFacility or Null:",
-			If[
-				Or[
-					MatchQ[Lookup[packet, Site, Null], Null],
-					MatchQ[Lookup[packet, Notebook, Null], ObjectP[]] (*skip private products*)
-				],
-				True,
+		Test["Public products have a Site field that is Null or a member of Emerald facilities:",
+			Or[
+				MatchQ[Lookup[packet, Site, Null], Null],
+				MatchQ[Lookup[packet, Notebook, Null], ObjectP[]], (*skip private products*)
 				MemberQ[ECLSites, Download[Lookup[packet, Site], Object]]
 			],
 			True,
-			Message -> {Hold[Error::InvalidProductSite], Lookup[packet, Site, Null], Download[Flatten[ToList[experimentSites]], Object]}
+			Message -> Switch[Lookup[fieldSource, Site],
+				User, {Hold[Error::InvalidProductSite], Site, Lookup[packet, Site, Null], ECLSites},
+				Template, {Hold[Error::InvalidProductSiteFromExternalSource], Site, Lookup[packet, Site, Null], ECLSites, "Template option"},
+				Field, {Hold[Error::InvalidProductSiteFromExternalSource], Site, Lookup[packet, Site, Null], ECLSites, "database"},
+				(* This option can't come from resolver or parser, so no need to handle those cases separately *)
+				_, {Hold[Error::InvalidProductSite], Site, Lookup[packet, Site, Null], ECLSites}
+			]
 		],
 
 		Test["If KitComponents is not populated, then StickerKitInParallel must not be populated:",
@@ -345,15 +388,20 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				True
 			],
 			True,
-			Message -> {Hold[Error::StickerKitInParallelUnused], identifier}
+			Message -> Switch[Lookup[fieldSource, {StickerKitInParallel, KitComponents}],
+				{(User | Resolved), _}, {Hold[Error::StickerKitInParallelNotAllowed], StickerKitInParallel, KitComponents},
+				{Template, (User | Resolved)}, {Hold[Error::StickerKitInParallelNotAllowedFromExternalSource], StickerKitInParallel, KitComponents, Lookup[packet, StickerKitInParallel], "Template option"},
+				{Field, (User | Resolved)}, {Hold[Error::StickerKitInParallelNotAllowedFromExternalSource], StickerKitInParallel, KitComponents, Lookup[packet, StickerKitInParallel], "database"},
+				{Template, Template}, {Hold[Error::StickerKitInParallelNotAllowedBetweenExternalSource], StickerKitInParallel, KitComponents, Lookup[packet, StickerKitInParallel], "Template option"},
+				{Field, Field}, {Hold[Error::StickerKitInParallelNotAllowedBetweenExternalSource], StickerKitInParallel, KitComponents, Lookup[packet, StickerKitInParallel], "database"},
+				{_, _}, {Hold[Error::StickerKitInParallelNotAllowed], StickerKitInParallel, KitComponents}
+			]
 		],
 
-		Test["If KitComponents is not populated, ProductModel must be populated:",
-			If[MatchQ[Lookup[packet, KitComponents, {}], {}],
-				MatchQ[Lookup[packet, ProductModel], ObjectP[]],
-				True
-			],
-			True
+		UniquelyInformedTest[packet,
+			{ProductModel, KitComponents},
+			Message -> Automatic,
+			FieldSource -> fieldSource
 		],
 
 		Test["If KitComponents is populated, SampleType must be Kit:",
@@ -361,46 +409,131 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				True,
 				MatchQ[Lookup[packet, SampleType], Kit]
 			],
-
 			True,
-			Message -> {Hold[Error::InvalidSampleType], identifier}
+			Message -> Switch[Lookup[fieldSource, {KitComponents, SampleType}],
+				{User, User}, {Hold[Error::InvalidSampleType], KitComponents, SampleType},
+				{User, Template}, {Hold[Error::InvalidSampleTypeFromExternalSource], KitComponents, SampleType, Lookup[packet, SampleType], "Template option"},
+				{User, External}, {Hold[Error::InvalidSampleTypeFromExternalSource], KitComponents, SampleType, Lookup[packet, SampleType], "Supplier webpage"},
+				{User, Field}, {Hold[Error::InvalidSampleTypeFromExternalSource], KitComponents, SampleType, Lookup[packet, SampleType], "database"},
+				{Template, User}, {Hold[Error::InvalidSampleTypeWithExternalSource], KitComponents, SampleType, Lookup[packet, SampleType], "Template option"},
+				{External, User}, {Hold[Error::InvalidSampleTypeWithExternalSource], KitComponents, SampleType, Lookup[packet, SampleType], "Supplier webpage"},
+				{Field, User}, {Hold[Error::InvalidSampleTypeWithExternalSource], KitComponents, SampleType, Lookup[packet, SampleType], "database"},
+				{Template, Template}, {Hold[Error::InvalidSampleTypeBetweenExternalSource], KitComponents, SampleType, Lookup[packet, SampleType], "Template option"},
+				{External, External}, {Hold[Error::InvalidSampleTypeBetweenExternalSource], KitComponents, SampleType, Lookup[packet, SampleType], "Supplier webpage"},
+				{Field, Field}, {Hold[Error::InvalidSampleTypeBetweenExternalSource], KitComponents, SampleType, Lookup[packet, SampleType], "database"},
+				{_, _}, {Hold[Error::InvalidSampleType], KitComponents, SampleType}
+			]
 		],
 
-		Test["If KitComponents is populated, DefaultContainerModel, Amount, CountPerSample, and ProductModel must all be Null:",
+		Test["If KitComponents is populated, DefaultContainerModel must be Null:",
 			If[MatchQ[Lookup[packet, KitComponents, {}], {}],
 				True,
-				MatchQ[Lookup[packet, {DefaultContainerModel, Amount, CountPerSample, ProductModel}], {Null, Null, Null, Null}]
+				MatchQ[Lookup[packet, DefaultContainerModel], Null]
 			],
 			True,
-			Message -> {Hold[Error::InvalidKitOptions], {DefaultContainerModel, Amount, CountPerSample, ProductModel}}
+			Message -> Switch[Lookup[fieldSource, {KitComponents, DefaultContainerModel}],
+				{User, User}, {Hold[Error::InvalidKitOptions], KitComponents, DefaultContainerModel},
+				{User, Template}, {Hold[Error::InvalidKitOptionsFromExternalSource], KitComponents, DefaultContainerModel, Lookup[packet, DefaultContainerModel], "Template option"},
+				{User, Field}, {Hold[Error::InvalidKitOptionsFromExternalSource], KitComponents, DefaultContainerModel, Lookup[packet, DefaultContainerModel], "database"},
+				{Template, User}, {Hold[Error::InvalidKitOptionsWithExternalSource], KitComponents, DefaultContainerModel, Lookup[packet, DefaultContainerModel], "Template option"},
+				{Field, User}, {Hold[Error::InvalidKitOptionsWithExternalSource], KitComponents, DefaultContainerModel, Lookup[packet, DefaultContainerModel], "database"},
+				{Template, Template}, {Hold[Error::InvalidKitOptionsBetweenExternalSource], KitComponents, DefaultContainerModel, Lookup[packet, DefaultContainerModel], "Template option"},
+				{Field, Field}, {Hold[Error::InvalidKitOptionsBetweenExternalSource], KitComponents, DefaultContainerModel, Lookup[packet, DefaultContainerModel], "database"},
+				{_, _}, {Hold[Error::InvalidKitOptions], KitComponents, DefaultContainerModel}
+			]
+		],
+
+		Test["If KitComponents is populated, Amount must be Null:",
+			If[MatchQ[Lookup[packet, KitComponents, {}], {}],
+				True,
+				MatchQ[Lookup[packet, Amount], Null]
+			],
+			True,
+			Message -> Switch[Lookup[fieldSource, {KitComponents, Amount}],
+				{User, User}, {Hold[Error::InvalidKitOptions], KitComponents, Amount},
+				{User, Template}, {Hold[Error::InvalidKitOptionsFromExternalSource], KitComponents, Amount, Lookup[packet, Amount], "Template option"},
+				{User, Field}, {Hold[Error::InvalidKitOptionsFromExternalSource], KitComponents, Amount, Lookup[packet, Amount], "database"},
+				{Template, User}, {Hold[Error::InvalidKitOptionsWithExternalSource], KitComponents, Amount, Lookup[packet, Amount], "Template option"},
+				{Field, User}, {Hold[Error::InvalidKitOptionsWithExternalSource], KitComponents, Amount, Lookup[packet, Amount], "database"},
+				{Template, Template}, {Hold[Error::InvalidKitOptionsBetweenExternalSource], KitComponents, Amount, Lookup[packet, Amount], "Template option"},
+				{Field, Field}, {Hold[Error::InvalidKitOptionsBetweenExternalSource], KitComponents, Amount, Lookup[packet, Amount], "database"},
+				{_, _}, {Hold[Error::InvalidKitOptions], KitComponents, Amount}
+			]
+		],
+
+		Test["If KitComponents is populated, CountPerSample must be Null:",
+			If[MatchQ[Lookup[packet, KitComponents, {}], {}],
+				True,
+				MatchQ[Lookup[packet, CountPerSample], Null]
+			],
+			True,
+			Message -> Switch[Lookup[fieldSource, {KitComponents, CountPerSample}],
+				{User, User}, {Hold[Error::InvalidKitOptions], KitComponents, CountPerSample},
+				{User, Template}, {Hold[Error::InvalidKitOptionsFromExternalSource], KitComponents, CountPerSample, Lookup[packet, CountPerSample], "Template option"},
+				{User, Field}, {Hold[Error::InvalidKitOptionsFromExternalSource], KitComponents, CountPerSample, Lookup[packet, CountPerSample], "database"},
+				{Template, User}, {Hold[Error::InvalidKitOptionsWithExternalSource], KitComponents, CountPerSample, Lookup[packet, CountPerSample], "Template option"},
+				{Field, User}, {Hold[Error::InvalidKitOptionsWithExternalSource], KitComponents, CountPerSample, Lookup[packet, CountPerSample], "database"},
+				{Template, Template}, {Hold[Error::InvalidKitOptionsBetweenExternalSource], KitComponents, CountPerSample, Lookup[packet, CountPerSample], "Template option"},
+				{Field, Field}, {Hold[Error::InvalidKitOptionsBetweenExternalSource], KitComponents, CountPerSample, Lookup[packet, CountPerSample], "database"},
+				{_, _}, {Hold[Error::InvalidKitOptions], KitComponents, CountPerSample}
+			]
 		],
 
 		Test["If KitComponents is populated, it must have more than one entry (otherwise it is not a kit):",
 			MatchQ[Length[Lookup[packet, KitComponents, {}]], 0 | GreaterEqualP[2, 1]],
 			True,
-			Message -> {Hold[Error::SingleKitComponent]}
+			Message -> Switch[Lookup[fieldSource, KitComponents],
+				User, {Hold[Error::SingleKitComponent], KitComponents},
+				Template, {Hold[Error::SingleKitComponentFromExternalSource], KitComponents, Lookup[packet, KitComponents], "Template option"},
+				Field, {Hold[Error::SingleKitComponentFromExternalSource], KitComponents, Lookup[packet, KitComponents], "database"},
+				_, {Hold[Error::SingleKitComponent], KitComponents}
+			]
 		],
-		
-		
 
-		Test[
-			"The contents of the Name field is a member of the Synonyms field:",
+		Test["The contents of the Name field is a member of the Synonyms field:",
 			MemberQ[Lookup[packet, Synonyms], Lookup[packet, Name]],
 			True,
 			Message -> {Hold[Error::NameIsPartOfSynonyms], identifier}
 		],
 
-		Test["CountPerSample is provided if and only if the product model is counted:",
+		Test["CountPerSample is provided if the product model is counted:",
 			(* Samples have Tablet field which is similar to Counted, but has its own checks. Kits also get their own test *)
-			If[kitQ || MatchQ[prodModelPacket, ObjectP[Model[Sample]]],
-				True,
+			Or[
+				kitQ,
+				MatchQ[prodModelPacket, ObjectP[Model[Sample]]],
 				MatchQ[
-					{Lookup[prodModelPacket, Counted], Lookup[packet, CountPerSample, Null]},
-					{Null|False|$Failed, Null} | {True, _Integer}
+					{If[NullQ[prodModelPacket], Null, Lookup[prodModelPacket, Counted]], Lookup[packet, CountPerSample, Null]},
+					{Null|False|$Failed, _} | {True, _Integer}
 				]
 			],
 			True,
-			Message -> {Hold[Error::CountedProduct], identifier}
+			Message -> Switch[Lookup[fieldSource, CountPerSample],
+				User, {Hold[Error::CountedProduct], CountPerSample},
+				Template, {Hold[Error::CountedProductFromExternalSource], CountPerSample, "Template option"},
+				External, {Hold[Error::CountedProductFromExternalSource], CountPerSample, "supplier webpage"},
+				Field, {Hold[Error::CountedProductFromExternalSource], CountPerSample, "database"},
+				_, {Hold[Error::CountedProduct], CountPerSample}
+			]
+		],
+
+		Test["CountPerSample is provided only if the product model is counted:",
+			(* Samples have Tablet field which is similar to Counted, but has its own checks. Kits also get their own test *)
+			Or[
+				kitQ,
+				MatchQ[prodModelPacket, ObjectP[Model[Sample]]],
+				MatchQ[
+					{If[NullQ[prodModelPacket], Null, Lookup[prodModelPacket, Counted]], Lookup[packet, CountPerSample, Null]},
+					{Null|False|$Failed, Null} | {True, _}
+				]
+			],
+			True,
+			Message -> Switch[Lookup[fieldSource, CountPerSample],
+				User, {Hold[Error::NotCountedProduct], CountPerSample},
+				Template, {Hold[Error::NotCountedProductFromExternalSource], CountPerSample, "Template option", Lookup[packet, CountPerSample]},
+				External, {Hold[Error::NotCountedProductFromExternalSource], CountPerSample, "supplier webpage", Lookup[packet, CountPerSample]},
+				Field, {Hold[Error::NotCountedProductFromExternalSource], CountPerSample, "database", Lookup[packet, CountPerSample]},
+				_, {Hold[Error::NotCountedProduct], CountPerSample}
+			]
 		],
 
 		Test["Kits can't have any counted models as the product has no way to track the initial count:",
@@ -428,7 +561,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				{True, NullP, _},
 				{True, Except[NullP], _}
 			],
-			Message -> {Hold[Error::TabletSachetFields], identifier}
+			Message -> {Hold[Error::TabletSachetFields], Amount, CountPerSample}
 		],
 
 		Test["If the product is for a sample that is not self-contained, Amount is informed (unless the sample contains Tablets or Sachets):",
@@ -438,15 +571,21 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 					Alternatives[
 						{SelfContainedSampleModelP, NullP, NullP},
 						(* Make a hard-coded exception for packing peanuts, which are a consumable but need Amount for pricing *)
-						{NonSelfContainedSampleModelP | ObjectP[Model[Sample, Consumable, "id:R8e1PjpkODwJ"]], NullP | False, Except[NullP]},
-						{NonSelfContainedSampleModelP | ObjectP[Model[Sample, Consumable, "id:R8e1PjpkODwJ"]], True, _}
+						{NonSelfContainedSampleModelP | ObjectP[Model[Item, Consumable, "id:R8e1PjpkODwJ"]], NullP | False, Except[NullP]},
+						{NonSelfContainedSampleModelP | ObjectP[Model[Item, Consumable, "id:R8e1PjpkODwJ"]], True, _}
 					]
 
 				],
 				True
 			],
 			True,
-			Message -> {Hold[Error::ProductAmount], identifier}
+			Message -> Switch[Lookup[fieldSource, Amount],
+				(User | Resolved), {Hold[Error::ProductAmount], Amount},
+				External, {Hold[Error::ProductAmountFromExternalSource], Amount, "supplier webpage"},
+				Template, {Hold[Error::ProductAmountFromExternalSource], Amount, "template object"},
+				Field, {Hold[Error::ProductAmountFromExternalSource], Amount, "database"},
+				_, {Hold[Error::ProductAmount], Amount}
+			]
 		],
 		
 		Test["If DefaultContainerModel is informed, it is not Deprecated:",
@@ -458,28 +597,28 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 		],
 
 		(* DefaultContainerModel should NOT be null for NonSelfContainedSampleModelP, *)
-		(* or, alternatively, a Model[Container,ProteinCapillaryElectrophoresisCartridgep *)
+		(* or, alternatively, a Model[Container,ProteinCapillaryElectrophoresisCartridge] *)
 		(* product that isnt a sample but contains an insert, so needs DefaultContainerModel populated *)
 		Test["If the product is for anything but a non-self-contained sample (except cartridge inserts, which are an exception), DefaultContainerModel is Null:",
 			If[MatchQ[Lookup[packet, ProductModel], Except[Alternatives[NonSelfContainedSampleModelP, ObjectP[Model[Container, ProteinCapillaryElectrophoresisCartridgeInsert]]]]],
 				MatchQ[
 					{Lookup[packet, ProductModel], Lookup[packet, DefaultContainerModel]},
-					{Except[NonSelfContainedSampleModelP], NullP} | {NonSelfContainedSampleModelP, _}
+					{Except[NonSelfContainedSampleModelP], NullP} | {NonSelfContainedSampleModelP, _} | {Null, _}
 				],
 				True
 			],
 			True,
-			Message -> {Hold[Error::DefaultContainerModel], identifier}
+			Message -> {Hold[Error::DefaultContainerModel], DefaultContainerModel}
 		],
 
 		(* DefaultContainerModel cannot have more than 1 position if it is a plate *)
 		Test["If the DefaultContainerModel is a Model[Container,Plate], the container cannot have more than 1 position:",
-			If[MatchQ[defaultContainerModelPacket,TypeP[Model[Container,Plate]]],
+			If[MatchQ[defaultContainerModelPacket, PacketP[Model[Container,Plate]]],
 				MatchQ[Length[Lookup[defaultContainerModelPacket,Positions]], 1],
 				True
 			],
 			True,
-			Message -> {Hold[Error::DefaultContainerModelTooManyPositions]}
+			Message -> {Hold[Error::DefaultContainerModelTooManyPositions], DefaultContainerModel}
 		],
 
 		(* Tests if product is made at Emerald *)
@@ -490,7 +629,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				{Object[Company, Supplier, "id:eGakld01qrkB"], 1},
 				{Except[Object[Company, Supplier, "id:eGakld01qrkB"]], _}
 			],
-			Message -> {Hold[Error::EmeraldSuppliedProductSamples], identifier}
+			Message -> {Hold[Error::EmeraldSuppliedProductSamples], NumberOfItems, Lookup[packet, NumberOfItems]}
 		],
 		
 		Test["Products cannot exist for Model[Sample, StockSolution]s (external Model[Sample, StockSolution, Standard]s are ok):",
@@ -500,26 +639,67 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 			],
 			True
 		],
-		
-		Test["Amount must be appropriate for the model state:",
+
+		Test["Amount must be appropriate for liquid with known density:",
+			Module[{amount, density},
+				amount = Lookup[packet, Amount];
+				density = Lookup[packet, Density];
+				If[QuantityQ[amount] && !MatchQ[density, Null],
+					With[{modelState = Lookup[prodModelPacket, State]},
+						Or[
+							(* Liquid can have amount specified as Mass or Volume if Density is informed *)
+							!MatchQ[modelState, Liquid],
+							MassQ[amount] && MatchQ[modelState, Liquid],
+							VolumeQ[amount] && MatchQ[modelState, Liquid]
+						]
+					],
+					True
+				]
+			],
+			True
+		],
+
+		Test["Amount must be appropriate for liquid without known density:",
+			Module[{amount, density},
+				amount = Lookup[packet, Amount];
+				density = Lookup[packet, Density];
+				If[QuantityQ[amount] && MatchQ[density, Null],
+					With[{modelState = Lookup[prodModelPacket, State]},
+						Or[
+							(* Liquid can have amount specified as Volume only if Density is not informed *)
+							!MatchQ[modelState, Liquid],
+							VolumeQ[amount] && MatchQ[modelState, Liquid]
+						]
+					],
+					True
+				]
+			],
+			True
+		],
+
+		Test["Amount must be appropriate for solid:",
 			Module[{amount, density},
 				amount = Lookup[packet, Amount];
 				density = Lookup[packet, Density];
 				If[QuantityQ[amount],
 					With[{modelState = Lookup[prodModelPacket, State]},
 						Or[
-							(* Liquid can have amount specified as Mass if Density is informed *)
-							MassQ[amount] && !MatchQ[density, Null] && MatchQ[modelState, Liquid],
-							VolumeQ[amount] && MatchQ[modelState, Liquid],
-							(MassQ[amount] || AmountQ[amount] || MatchQ[amount,GreaterP[0Unit,1Unit]]) && MatchQ[modelState, Solid],
-							MatchQ[modelState, Null | Gas]
+							(* Solid can have amount specified as Mass, count or Mole *)
+							!MatchQ[modelState, Solid],
+							(MassQ[amount] || AmountQ[amount] || MatchQ[amount,GreaterP[0Unit,1Unit]]) && MatchQ[modelState, Solid]
 						]
 					],
 					True
 				]
 			],
 			True,
-			Message -> {Hold[Error::AmountUnitState], Lookup[packet,Amount],If[MatchQ[prodModelPacket,PacketP[]],Lookup[prodModelPacket,State],Null]}
+			Message -> Switch[Lookup[fieldSource, Amount],
+				(User | Resolved), {Hold[Error::AmountUnitState], Lookup[packet,Amount],If[MatchQ[prodModelPacket,PacketP[]],Lookup[prodModelPacket,State],Null], Amount},
+				External, {Hold[Error::AmountUnitStateFromExternalSource], Lookup[packet,Amount],If[MatchQ[prodModelPacket,PacketP[]],Lookup[prodModelPacket,State],Null], Amount, "supplier webpage"},
+				Template, {Hold[Error::AmountUnitStateFromExternalSource], Lookup[packet,Amount],If[MatchQ[prodModelPacket,PacketP[]],Lookup[prodModelPacket,State],Null], Amount, "template object"},
+				Field, {Hold[Error::AmountUnitStateFromExternalSource], Lookup[packet,Amount],If[MatchQ[prodModelPacket,PacketP[]],Lookup[prodModelPacket,State],Null], Amount, "database"},
+				_, {Hold[Error::AmountUnitState], Lookup[packet,Amount],If[MatchQ[prodModelPacket,PacketP[]],Lookup[prodModelPacket,State],Null], Amount}
+			]
 		],
 
 		(* If product isn't supplied by ET / ECL, it must have a list price *)
@@ -530,7 +710,13 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				True
 			],
 			True,
-			Message -> {Hold[Error::PricePerUnitRequired], identifier}
+			Message -> Switch[Lookup[fieldSource, Price],
+				(User | Resolved), {Hold[Error::PricePerUnitRequired], identifier, Price},
+				External, {Hold[Error::PricePerUnitRequiredFromExternalSource], identifier, Price, "supplier webpage"},
+				Template, {Hold[Error::PricePerUnitRequiredFromExternalSource], identifier, Price, "template object"},
+				Field, {Hold[Error::PricePerUnitRequiredFromExternalSource], identifier, Price, "database"},
+				_, {Hold[Error::PricePerUnitRequired], identifier, Price}
+			]
 		],
 
 		(* If a product is stocked (i.e., has an existing inventory object for it) it must have a price *)
@@ -571,7 +757,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 			True
 		],
 
-		Test["If Product or ProductModel are not public, the other must also not be public:",
+		Test["If ProductModel is not public, Product must also not be public:",
 			Or[
 				(* if ProductModel isn't populated (i.e., we have a kit) then don't worry about this test *)
 				NullQ[Lookup[packet, ProductModel]],
@@ -591,16 +777,30 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 			True
 		],
 
+		Test["If ProductModel is public, Product must also be public:",
+			Or[
+				(* if ProductModel isn't populated (i.e., we have a kit) then don't worry about this test *)
+				NullQ[Lookup[packet, ProductModel]],
+				(* if we are not specifying Notebook in the packet and $AllowPublicObjects goes to True
+				it is equivalent to Notebook will be Null *)
+				Or[
+					NullQ[Lookup[packet, Notebook]],
+					And[MatchQ[Lookup[packet, Notebook], _Missing],TrueQ[$AllowPublicObjects]]
+				]&& NullQ[Lookup[prodModelPacket, Notebook]]
+			],
+			True
+		],
+
 		Test["ContainerIndex is not repeated for any kit components whose DefaultContainerModel is a Model[Container,Vessel]:",
 			kitQ && MemberQ[validVesselIndex, False],
 			False,
-			Message -> {Hold[Error::RepeatedContainerIndex], identifier}
+			Message -> {Hold[Error::RepeatedContainerIndex], KitComponents}
 		],
 
 		Test["ContainerIndex/Position is correctly set:",
 			kitQ && MemberQ[validContainerIndex, False],
 			False,
-			Message -> {Hold[Error::InvalidContainerIndexPosition], identifier}
+			Message -> {Hold[Error::InvalidContainerIndexPosition], KitComponents}
 		],
 
 		(* if the product already exists then who cares, or if the name doesn't already exist we're also good *)
@@ -664,32 +864,10 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 ];
 
 errorToOptionMap[Object[Product]] := {
-	"Error::RequiredOptions" -> {Author,
-		Supplier,
-		CatalogNumber,
-		CatalogDescription,
-		Packaging,
-		SampleType,
-		Name,
-		NumberOfItems},
-	"Error::RequiredTogetherOptions" -> {Manufacturer, ManufacturerCatalogNumber},
-	"Error::StickerKitInParallelUnused" -> {KitComponents, StickerKitInParallel},
-	"Error::InvalidSampleType" -> {KitComponents, SampleType},
-	"Error::InvalidKitOptions" -> {KitComponents, DefaultContainerModel, Amount, CountPerSample, ProductModel},
-	"Error::SingleKitComponent" -> {KitComponents},
-	"Error::InvalidContainerIndexPosition" -> {KitComponents, ContainerIndex, Position},
-	"Error::NameIsPartOfSynonyms" -> {Name, Synonyms},
-	"Error::TabletSachetFields" -> {Amount, CountPerSample},
-	"Error::DefaultContainerModel" -> {ProductModel, "NonSelfContainedSampleModelP"},
-	"Error::EmeraldSuppliedProductSamples" -> {Supplier, NumberOfItems},
-	"Error::AmountUnitState" -> {Amount,State},
-	"Error::PricePerUnitRequired" -> {Price},
-	"Error::ProductAmount" -> {Amount},
-	"Error::InvalidContainerIndexPosition" -> {ContainerIndex, Position},
-	"Error::KitModelAlreadyHasProduct" -> KitComponents,
 	"Error::NonUniqueName" -> Name,
 	"Error::UnsupportedAsepticReceiving" -> {Sterile, SealedContainer, AsepticShippingContainerType},
-	"Error::IncompatibleAsepticShippingAndReceiving" -> {AsepticShippingContainerType,AsepticRebaggingContainerType}
+	"Error::IncompatibleAsepticShippingAndReceiving" -> {AsepticShippingContainerType,AsepticRebaggingContainerType},
+	"Error::AsepticRebaggingContainerTypeRequired" -> {AsepticShippingContainerType,AsepticRebaggingContainerType}
 };
 
 

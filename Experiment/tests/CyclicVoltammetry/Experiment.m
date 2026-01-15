@@ -2222,15 +2222,35 @@ DefineTests[ExperimentCyclicVoltammetry,
 			options = ExperimentCyclicVoltammetry[
 				Object[Sample,"Example 5mM Ferrocene 0.1M [NBu4][PF6] in acetonitrile liquid sample for CyclicVoltammetry tests" <> $SessionUUID],
 				PreparedSample -> True,
-				CentrifugeIntensity->1000*RPM,
+				CentrifugeIntensity -> 1000 RPM,
 				Output -> Options
 			];
-			Lookup[options,CentrifugeIntensity],
-			1000*RPM,
-			EquivalenceFunction->Equal,
-			TimeConstraint->240,
-			Variables:>{options},
-			SetUp :> (Off[Warning::SamplesOutOfStock];$CreatedObjects = {}),
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			TimeConstraint -> 240,
+			Variables :> {options},
+			SetUp :> (Off[Warning::SamplesOutOfStock]; $CreatedObjects = {}),
+			TearDown :> (
+				EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
+				Unset[$CreatedObjects]
+			)
+		],
+
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentCyclicVoltammetry[
+				Object[Sample,"Example 5mM Ferrocene 0.1M [NBu4][PF6] in acetonitrile liquid sample for CyclicVoltammetry tests" <> $SessionUUID],
+				PreparedSample -> True,
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			TimeConstraint -> 240,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision},
+			SetUp :> (Off[Warning::SamplesOutOfStock]; $CreatedObjects = {}),
 			TearDown :> (
 				EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
 				Unset[$CreatedObjects]

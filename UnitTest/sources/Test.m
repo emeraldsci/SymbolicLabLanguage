@@ -203,7 +203,7 @@ Test[description_String, expressionUnderTest_, expected_, ops:OptionsPattern[]]:
 
 														heldExpression=HoldForm[expressionUnderTest];
 														heldExpectedResult=HoldForm[expected];
-														startDate = Now;
+														startDate = ECL`SafeNow[];
 														(*Evaluate the expression under test, and record how long it takes to execute*)
 														{executionTime,actual}=AbsoluteTiming[
 															CheckAbort[
@@ -211,7 +211,7 @@ Test[description_String, expressionUnderTest_, expected_, ops:OptionsPattern[]]:
 																$MessageFailure
 															]
 														];
-														endDate = Now;
+														endDate = ECL`SafeNow[];
 														(*After the comparison calculation is done, Defer the evaluation of the actual result
                             such that it preserve the state of evaluation within the stubbed environment*)
 

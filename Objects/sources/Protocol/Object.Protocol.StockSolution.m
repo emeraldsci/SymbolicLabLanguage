@@ -791,6 +791,22 @@ DefineObjectType[Object[Protocol, StockSolution], {
 			Category -> "Sample Preparation",
 			Developer -> True
 		},
+		OvenDryGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of StockSolutionModels, indicates whether any glassware introduced in this protocol (including, if relevant, any transfer destination containers and filtration apparatuses) are oven dried before use.",
+			Category -> "Sample Preparation",
+			IndexMatching -> StockSolutionModels
+		},
+		DepyrogenateGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of StockSolutionModels, indicates whether any glassware introduced in this protocol (including, if relevant, any transfer destination containers and filtration apparatuses) are oven dried before use.",
+			Category -> "Sample Preparation",
+			IndexMatching -> StockSolutionModels
+		},
 
 		(* --- Autoclaving --- *)
 		AutoclaveSamples -> {

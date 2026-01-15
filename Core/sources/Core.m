@@ -1218,7 +1218,12 @@ $ObjectBuilders=<|
 	Model[Item, Column] -> UploadColumn,
 	Model[Container, Vessel] -> UploadContainerModel,
 	Model[Container, Plate] -> UploadContainerModel,
-	Model[Container, ExtractionCartridge] -> UploadContainerModel
+	Model[Container, ExtractionCartridge] -> UploadContainerModel,
+	Model[Container] -> UploadContainerModel,
+	Model[Item, Cap] -> UploadCoverModel,
+	Model[Item, Lid] -> UploadCoverModel,
+	Model[Item, PlateSeal] -> UploadCoverModel,
+	Model[ProprietaryFormulation] -> UploadProprietaryFormulation
 |>;
 
 
@@ -1486,11 +1491,12 @@ $CommandBuilderFunctions = <|
 			"PlotDigitalPCR"
 		},
 		"Sample Preparation and Diagnostics" -> {
-			"PlotConductivity",
 			"PlotpH",
-			"PlotSensor",
-			"PlotVacuumEvaporation",
 			"PlotVolume",
+			"PlotSensor",
+			"PlotWeighingTimeline",
+			"PlotConductivity",
+			"PlotVacuumEvaporation",
 			"PlotDissolvedOxygen",
 			"PlotCoulterCount"
 		},
@@ -1603,7 +1609,8 @@ $CommandBuilderFunctions = <|
 			"DefineTags",
 			"DefineComposition",
 			"DefineSolvent",
-			"DefineEHSInformation"
+			"DefineEHSInformation",
+			"UploadSampleProperties"
 		},
 		"Defining Model Fulfillment" -> {
 			"UploadSampleModel",
@@ -1910,11 +1917,12 @@ $CommandBuilderFunctionsDev = <|
 			"PlotDigitalPCR"
 		},
 		"Sample Preparation and Diagnostics" -> {
-			"PlotConductivity",
 			"PlotpH",
-			"PlotSensor",
-			"PlotVacuumEvaporation",
 			"PlotVolume",
+			"PlotSensor",
+			"PlotWeighingTimeline",
+			"PlotConductivity",
+			"PlotVacuumEvaporation",
 			"PlotDissolvedOxygen",
 			"PlotCoulterCount"
 		},
@@ -2030,7 +2038,8 @@ $CommandBuilderFunctionsDev = <|
 			"DefineTags",
 			"DefineComposition",
 			"DefineSolvent",
-			"DefineEHSInformation"
+			"DefineEHSInformation",
+			"UploadSampleProperties"
 		},
 		"Defining Model Fulfillment" -> {
 			"UploadSampleModel",
@@ -2043,7 +2052,8 @@ $CommandBuilderFunctionsDev = <|
 			"UploadCompanySupplier",
 			"UploadCompanyService",
 			"UploadReferenceElectrodeModel",
-			"UploadContainerModel"
+			"UploadContainerModel",
+			"UploadCoverModel"
 		},
 		"Defining Sample Components" -> {
 			"UploadMolecule",
@@ -2075,7 +2085,11 @@ $CommandBuilderFunctionsDev = <|
 		},
 		"Defining Manifold Jobs" -> {"Compute"},
 		"Verifying User-Created Objects" -> {
-			"UploadVerifiedContainerModel"
+			"VerifyObjects",
+			"UploadVerifiedContainerModel",
+			"UploadVerifiedCoverModel",
+			"UploadVerifiedSampleModel",
+			"UploadVerifiedMolecule"
 		}
 	|>,
 	"Search" -> <||>

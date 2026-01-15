@@ -750,7 +750,7 @@ DefineObjectType[Object[Protocol, AbsorbanceSpectroscopy], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation] | Object[Protocol, ManualSamplePreparation] | Object[Protocol, RoboticSamplePreparation] | Object[Notebook, Script],
+			Relation -> Object[Protocol,SampleManipulation] | Object[Protocol, ManualSamplePreparation] | Object[Protocol, RoboticSamplePreparation] | Object[Notebook, Script] | Object[Protocol,RoboticCellPreparation] | Object[Protocol,ManualCellPreparation],
 			Description -> "The sample preparation protocol used to transfer the samples from the cuvettes into the ContainersOut for storage after the experiment.",
 			Category -> "Sample Storage",
 			Developer -> True
@@ -767,7 +767,7 @@ DefineObjectType[Object[Protocol, AbsorbanceSpectroscopy], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Alternatives[Object[Protocol, SampleManipulation], Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticSamplePreparation], Object[Notebook, Script]],
+			Relation -> Alternatives[Object[Protocol, SampleManipulation], Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticSamplePreparation], Object[Notebook, Script], Object[Protocol,RoboticCellPreparation], Object[Protocol,ManualCellPreparation]],
 			Description -> "The sample preparation protocol used to transfer buffer into the moat wells.",
 			Category -> "General"
 		},

@@ -45,7 +45,7 @@ DefineObjectType[Object[UnitOperation, OvenDry], {
       Format -> Multiple,
       Class -> String,
       Pattern :> _String,
-      Description -> "For each member of SampleLink, the label of the sample that is analyzed.",
+      Description -> "For each member of SampleLink, the label of the sample that is dried.",
       Category -> "General",
       Developer -> True,
       IndexMatching -> SampleLink
@@ -55,6 +55,42 @@ DefineObjectType[Object[UnitOperation, OvenDry], {
       Class -> String,
       Pattern :> _String,
       Description -> "For each member of SampleLink, the label of the sample's container.",
+      Category -> "General",
+      Developer -> True,
+      IndexMatching -> SampleLink
+    },
+    SamplesOut -> {
+      Format -> Multiple,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Object[Sample],
+      Description -> "For each member of SampleLink, the SamplesOut (only for samples, rather than containers) after any necessary transfers.",
+      Category -> "General",
+      IndexMatching -> SampleLink
+    },
+    SampleOutLabel -> {
+      Format -> Multiple,
+      Class -> String,
+      Pattern :> _String,
+      Description -> "For each member of SampleLink, the label of the sample that is dried after any necessary transfers.",
+      Category -> "General",
+      Developer -> True,
+      IndexMatching -> SampleLink
+    },
+    ContainersOut -> {
+      Format -> Multiple,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Object[Container],
+      Description -> "For each member of SampleLink, the ContainersOut after any necessary transfers.",
+      Category -> "General",
+      IndexMatching -> SampleLink
+    },
+    ContainerOutLabel -> {
+      Format -> Multiple,
+      Class -> String,
+      Pattern :> _String,
+      Description -> "For each member of SampleLink, the label of the container of the sample that is dried after any necessary transfers.",
       Category -> "General",
       Developer -> True,
       IndexMatching -> SampleLink

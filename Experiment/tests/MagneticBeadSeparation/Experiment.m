@@ -2082,6 +2082,25 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			22 Microliter,
 			Variables:>{options}
 		],
+		Example[{Options,Volume,"Volume can be specified as All, and buffer volumes are reasonably set accordingly:"},
+			options=ExperimentMagneticBeadSeparation[
+				Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+				Volume -> All,
+				PreWash->True,
+				Output->Options
+			];
+			Lookup[options, {Volume, PreWashBufferVolume}],
+			{All, EqualP[1 Milliliter]},
+			Variables:>{options}
+		],
+		Example[{Options,Volume,"Volume can be specified as All for robotic prep:"},
+			ExperimentMagneticBeadSeparation[
+				Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+				Volume -> All,
+				Preparation -> Robotic
+			],
+			ObjectP[Object[Protocol, RoboticSamplePreparation]]
+		],
 		Example[{Options,AnalyteAffinityLabel,"AnalyteAffinityLabel can be specified:"},
 			options=ExperimentMagneticBeadSeparation[
 				Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
@@ -4836,7 +4855,30 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			{"My Test Container Out Label"},
 			Variables:>{options}
 		],
-
+		Example[{Additional,"StorageCondition options are respected for Robotic preparation:"},
+			protocol = ExperimentMagneticBeadSeparation[
+				Object[Sample, "ExperimentMagneticBeadSeparation test 2mL tube 3 sample" <> $SessionUUID],
+				Volume -> 0.5 Milliliter,
+				PreWashCollectionStorageCondition -> Model[StorageCondition, "Refrigerator"],
+				MagneticBeadCollectionStorageCondition -> Disposal,
+				ElutionCollectionStorageCondition -> Model[StorageCondition, "Refrigerator"],
+				Preparation -> Robotic
+			];
+			(* Check the Transfer unit operations in the RoboticUnitOperations of the MBS output UO *)
+			Cases[
+				Quiet@Download[
+					protocol,
+					OutputUnitOperations[[1]][RoboticUnitOperations][{Object, SamplesInStorageCondition, SamplesOutStorageCondition}]],
+				{ObjectP[Object[UnitOperation, Transfer]], _, _}
+			],
+			{
+				{_, _, _},(* Transfer of beads in and prewash buffer in *)
+				{_, _, {Refrigerator, Null}},(* Collect prewash buffer and then add sample in *)
+				{_, {Disposal, Null}, {Refrigerator, Null}},(* Collect MBS purified sample, and add elution buffer *)
+				{_, _, {Refrigerator}}(* Collect elution sample *)
+			},
+			Variables:>{protocol}
+		],
 
 		(*===Shared sample prep options tests===*)
 		Example[{Additional,"Use the sample preparation options to prepare samples before the main experiment:"},
@@ -4956,6 +4998,18 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			1000*RPM,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentMagneticBeadSeparation[
+				Object[Sample, "ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
 		],
 		(*Note: Put your sample in a 2mL tube for the following test*)
 		Example[{Options,CentrifugeInstrument,"The centrifuge that will be used to spin the provided samples prior to starting the experiment:"},
@@ -5115,6 +5169,14 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			0.5*Milliliter,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentMagneticBeadSeparation[Object[Sample, "ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID], AliquotAmount -> 0.5001Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			0.5 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,AssayVolume,"The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options=ExperimentMagneticBeadSeparation[Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],AssayVolume->0.5*Milliliter,Output->Options];

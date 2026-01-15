@@ -146,11 +146,11 @@ DefineObjectType[Object[Plumbing], {
 		},
 		RestrictedLog -> {
 			Format -> Multiple,
-			Class -> {Date, Boolean, Link},
-			Pattern :> {_?DateObjectQ, BooleanP, _Link},
-			Relation -> {Null, Null, Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification]},
+			Class -> {Date, Boolean, Link, String},
+			Pattern :> {_?DateObjectQ, BooleanP, _Link, _String},
+			Relation -> {Null, Null, Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification], Null},
 			Description -> "A log of changes made to this plumbing component's restricted status.",
-			Headers -> {"Date", "Restricted", "Responsible Party"},
+			Headers -> {"Date", "Restricted", "Responsible Party", "Reason"},
 			Category -> "Organizational Information"
 		},
 		Missing -> {
@@ -176,6 +176,16 @@ DefineObjectType[Object[Plumbing], {
 			Description->"A log of changes made to this sample's Missing status.",
 			Headers->{"Date", "Restricted", "Responsible Party"},
 			Category->"Organizational Information"
+		},
+		PrintStickersLog -> {
+			Format -> Multiple,
+			Class -> {Date, Link},
+			Pattern :> {_?DateObjectQ, _Link},
+			Relation -> {Null, Alternatives[Object[User], Object[Protocol], Object[Maintenance], Object[Qualification]]},
+			Description -> "Indicates times at which stickers were printed for this plumbing.",
+			Headers -> {"Date", "Responsible Party"},
+			Category -> "Organizational Information",
+			Developer -> True
 		},
 
 		(* --- Plumbing Information --- *)
@@ -351,6 +361,14 @@ DefineObjectType[Object[Plumbing], {
 			Description -> "The receiving protocol in which this plumbing component was received into the lab.",
 			Category -> "Inventory"
 		},
+		BarcodeInventory -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Maintenance, BarcodeInventory][BarcodedItems],
+			Description -> "The MaintenanceBarcodeInventory in which the SLL object sticker of this plumbing component is affixed.",
+			Category -> "Inventory"
+		},
 
 		(* --- Storage --- *)
 		StorageCondition -> {
@@ -439,6 +457,13 @@ DefineObjectType[Object[Plumbing], {
 			Description -> "The location history of the plumbing component.",
 			Headers -> {"Date","Change Type","Container","Position","Responsible Party"},
 			Category -> "Storage Information"
+		},
+		DateLastMoved->{
+			Format->Single,
+			Class->Date,
+			Pattern:>_?DateObjectQ,
+			Description->"Date this plumbing was moved to a different container or instrument.",
+			Category->"Storage Information"
 		},
 		AsepticTransportContainerType -> {
 			Format -> Single,

@@ -163,16 +163,16 @@ DefineObjectType[Model[Molecule], {
 			Class -> Link,
 			Pattern :> ObjectP[Model[Molecule]],
 			Relation -> Model[Molecule],
-			Description -> "The tags that this molecule contains which enable detection and quantification of the molecule through methods that don't require physical binding, such fluorescence (e.g. Alexa Fluor 488). Molecules can be used as DetectionLabels when they have DetectionLabel->True.",
-			Category -> "Physical Properties"
+			Description -> "The substructures that are contained within this molecule which enable detection and quantification of the molecule through methods that don't require physical binding, such as fluorescence (e.g. Alexa Fluor 488). Molecules can be used as DetectionLabels when they have DetectionLabel->True.",
+			Category -> "Molecular Labeling"
 		},
 		AffinityLabels -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> ObjectP[Model[Molecule]],
 			Relation -> Model[Molecule],
-			Description -> "The tags that this molecule contains which enable detection and quantification of the molecule through physical binding (e.g. His tag). Molecules can be used as DetectionLabels when they have AffinityLabel->True.",
-			Category -> "Physical Properties"
+			Description -> "The substructures that are contained within this molecule which enable detection and quantification of the molecule through physical binding (e.g. His tag). Molecules can be used as DetectionLabels when they have AffinityLabel->True.",
+			Category -> "Molecular Labeling"
 		},
 		Targets -> {
 			Format -> Multiple,

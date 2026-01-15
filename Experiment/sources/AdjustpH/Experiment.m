@@ -740,6 +740,7 @@ Error::AdjustpHContainerTooSmall="The specified aliquot container, or sample con
 This is likely to cause pHAdjustment to fail. Consider changing the specifications of Aliquot and AliquotContainer, or specify a smaller FixedAdditions volume with a more concentrated acid/base.";
 Error::ConflictingTitrationMethod="TitrationMethod and titrating options for samples `1` do not agree. The TitrationMethod is specified to be Robotic but incompatible options are specified. When TitrationMethod is Robotic, pHMixType must be Stir, pHMeter model must be SevenExcellence pH meter, pHProbeType must be Immersion, pHAliquot must be False, RecoupSample must be False, Titrate must be True, TitratingAcid and TritratingBase must not be Solid, pHMixUntilDissolved must be False, TitrationInstrument must not be Null and pHMixInstrument must be OverheadStirrer. Please check the titrating options and make sure they are compatible with specified TitrationMethod.";
 Error::ConflictingTitrationInstrument="TitrationInstrument and TitrationMethod for samples `1` do not agree. The TitrationInstrument Model[Instrument, pHTitrator, \"Microlab 600 (ML600) pH Titrator\"] can only be used when TitrationMethod is Robotic. Please check the specified TitrationInstrument and make sure it is not conflicting with TitrationMethod.";
+Warning::AliquotContainerOutWarning="The sample `1` will be transferred into container `2` in order to facilitate pH adjustment. Please set Aliquot to False if this is not desired.";
 
 $DefaultRoboticMixingImpeller = Model[Part, StirrerShaft, "id:9RdZXvNroMdJ"]; (*Model[Part, StirrerShaft, "SM-4500-06 PTFEE Impeller without Tape"]*)
 
@@ -1390,7 +1391,7 @@ DefineOptions[
 
 resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalpHs:{pHP..},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentAdjustpHOptions]]:=Module[
 	{
-		outputSpecification,output,gatherTests,messages,cache,samplePrepOptions,adjustpHOptions,simulatedSamplesMain,resolvedSamplePrepOptionsMain,updatedSimulationMain,samplePrepTests,simulatedSamplePackets,simulatedSampleContainers,samplePackets,specifiedHistoricalData,specifiedFixedAdditions, specifiedTitratingAcid,specifiedTitratingBase,specifiedAliquotContainers,dataFields,sampleFields,downloadData,aliquotContainerPackets, pHProbes,overheadStirrers,fixedAdditionSamples,fixedAdditionsConflicts,fixedAdditionsConflictSamples,fixedAdditionsConflictOptions, fixedAdditionsConflictTest,specifiedTitrate,noAdditions,noAdditionSamples,noAdditionOptions,noAdditionsTest,badTitrations,badTitrationSamples,invalidTitrateOptions,specifiedMixWhileTitrating, specifiedpHMixType,validMixWhiles,invalidMixSamples,overheadMixingRequiredOptions,overheadMixingRequiredTest,specifiedMaxAdditionVolumes,validMaxVolumes,invalidMaxVolumeSamples,badMaxVolumeOptions, maxVolumeTest,specifiedMinpHs,specifiedMaxpHs,resolvedMinpHs,resolvedMaxpHs,resolvedMaxAdditionVolumes,preresolvedProbe,resolvedAliquots, resolvedAliquotContainers,resolvedOutputContainers,resolvedpHOptions,resolvedMixOptions,allOptions,allTests,probePackets,simulatedSampleContainerModelPackets,resolvedAliquotOptions, aliquotTests,optionsWithResolvedAliquots,resolvedPostProcessingOptions,experimentMeasurepHPassedOptions,replacedMeasurepHOptions,experimentMixPassedOptions,replacedMixOptions, resolvedHistoricalData,resolvedFixedAdditions,replacedpHNamesOptions,replacedMixNamesOptions,resolvedProbe,resolvedProbeType, specifiedNumberOfReplicates,fixedAdditionModels,fixedAdditionModelsNullReplaced,additionModelLookup,numberOfReplicatesNullToOne,specifiedAliquotAmount,candidateBeakerPackets, candidateBeakers,calculatedAliquotAmounts,aliquotAmountRequired,preferredBeaker,minpHProbeDiamter,clearances,possibleImpellers,replicateAliquotRequired,measurepHTests,mixTests,aliquoteReplicateConflictQ,aliquoteReplicateConflictTest,invalidTitrateComboTest,resolverSafeOps, specifiedAliquot,specifiedConsolidateAliquote,resolverResolvedOptions,otherExperimentOptions,searchQs,noHistoricalDataQs,searchConditionsStringent,searchConditionsLoose,searchConditionsStringentDeNulled, searchConditionsLooseDeNulled,searchConditions,numberOfSearches,searchResults,searchResolvedHistoricalData,searchPositions,searchReplaceRules,noHistoricalDataPositions, noHistoricalDataRules,combinedReplaceRules,searchResultsPackets,pastLogsWithResolvedNullModelReplaced,fullCache,fullCacheWithSearchResults,historicalDataSamplesInVolume,protocolSamplesInVolume,sampleVolumeConvertingFactors, calculatedAliquotContainerVolume,mixAliquotRequiredWithResolvedMix,aliquotRequiredWithConsiderations,aliquotTargetContainers,specifiedpHMixUntilDissolved, specifiedpHMixInstrument,specifiedpHMixTime,specifiedMaxpHMixTime,specifiedpHMixDutyCycle,specifiedpHMixRate,specifiedNumberOfpHMixes,specifiedMaxNumberOfpHMixes,specifiedpHMixVolume,specifiedpHMixTemperature, specifiedMaxpHMixTemperature,specifiedSonicationAmplitude,specifiedMixOptionsTransposed,preResolvedpHMixType,preResolvedpHMixUntilDissolved,preResolvedpHMixInstrument,preResolvedpHMixTime,preResolvedMaxpHMixTime, preResolvedpHMixDutyCycle,preResolvedpHMixRate,preResolvedNumberOfpHMixes,preResolvedMaxNumberOfpHMixes,preResolvedpHMixVolume,preResolvedpHMixTemperature,preResolvedMaxpHMixTemperature,preResolvedSonicationAmplitude, preResolvedMixOptions,updatedSimulatedSamplesMain,updatedresolvedSamplePrepOptionsMain,updatedSamplePrepTests,resolvedFixedAdditionSampleStates,resolvedFixedAdditionSamples,mixingInstrumentModels,impellers,preResolvedMixOptionsMaxTempNull,preResolvedMixOptionsMaxTempTimeNull,aliquotContainerCondensed,simulatedSampleContainerPackets, specifiedKeepInstruments,invalidOptions,sampleContainers,sampleContainerModels,calculatedFixedAdditions,sampleVolumes,pHRangeConflictingTests, pHRangeConflictingSamples,aliquoteReplicateConflictOptions,pHRangeConflictingOptions,resolvedTitratingAcids,resolvedTitratingBases,specifiedAsssayVolume,specifiedDestinationWell,specifiedAliquotContainer, specifiedAliquotSampleStorageCondition,specifiedTargetConcentration,aliquotAmountRequiredDeList,specifiedContainerOut,historicalDataOvershotQs,resolvedTitratingAcidsInModel, resolvedTitratingBasesInModel,simulatedSampleModels,simulatedSampleModelPackets,specifiedModelsOut,modelMinpHs,modelMaxpHs,modelNominalpHs,resolvedModelOut,titrantsModelToObjectReplacementRulesAll, titrantsModelToObjectReplacementRulesSearched,searchResolvedHistoricalDataObjectified,numberSimulatedSamples,expandedMixOptions,expandedMeasurepHOptions,simulatedSampleModelPacketsToAssoc, maxAdditionVolumeAliquotRequired,simulation,secondUpdatedSimulationMain,updatedCacheWithSecondSamplePrepSimulation,skipSecondPrepQ,specifiedSimulation, specifiedPreparatoryPrimitives,prePreResolvedMixType,AliquotRequiredWithVolumetricFlasks,aliquotQ,resolvedAliquotAmountWithNumberOfReplicates,updatedSimulatedSamplePackets, updatedSimulatedSampleContainers,updatesSimulatedSampleVolumes,maxBeakerVolume,specifiedMaxAcidAmountPerCycle,specifiedMaxBaseAmountPerCycle,resolvedTitratingAcidsStates,resolvedTitratingBasesStates, simulatedSampleVolumes,resolvedMaxAcidAmountPerCycle,resolvedMaxBaseAmountPerCycle,modelsOutpHingAcid,modelsOutpHingBase,modelsOutMaxNumberOfpHingCycles,modelsOutMaxAdditionVolume,modelsOutMaxAcidAmountPerCycle, modelsOutMaxBaseAmountPerCycle,modelsOutTotalVolume,resolvedMaxNumberOfCycles,modelsOutPackets,fetchModelOutValue,specifiedMaxNumberOfCycles,modelsOutMaxpHs,modelsOutMinpHs,acidStatusAmountConformQs, acidStatusAmountConflictingSamples,acidAmountTest,baseStatusAmountConformQs,baseStatusAmountConflictingSamples,baseAmountTest,titratingBaseAmountConflictingOptions,titratingAcidAmountConflictingOptions, samplesWithContainerTooSmall,containerTooSmallTest,samplePacketsForMaxAdditionVolumes,sampleContainerModelPacketsForMaxAdditionVolumes,resolvedMaxAdditionVolumeAliquotErrorTuple,aliquotContainerTooSmallQs, sampleContainerModelPackets,searchConditionsFailedDeNulled,pHAchievedQs,containerTooSmallOptions,preResolveMixOptions,solidTitrantQs,spikedAmountsConverted, searchConditionsFailed,resolvedHistoricalDataPackets,resolvedHistoricalLogs,sampleContainerMaxVolumes,resolvedMaxAdditionVolumesWithNumberOfReplicates,totalPossibleVolumes, modelContainerFields,resolvedSampleLabel,resolvedSampleContainerLabel, searchConditionsStringentNoFixedAdditions, searchConditionsLooseNoFixedAdditions,searchConditionsFailedNoFixedAdditions, searchConditionsStringentNoFixedAdditionsDeNulled, searchConditionsLooseNoFixedAdditionsDeNulled,searchConditionsFailedNoFixedAdditionsDeNulled,searchResultsStringentFixedAdditions, searchResultsStringentNoFixedAdditions,searchResultsLooseFixedAdditions,searchResultsLooseNoFixedAdditions, searchResultsFailedFixedAdditions,searchResultsFailedNoFixedAdditions, resolvedTitrationMethod, preresolvedpHMeter, preresolvedpHAliquot, specifiedTitrationMethod, specifiedTitrationInstrument, specifiedpHMeterModel, specifiedProbeType, specifiedProbeModel, specifiedpHAliquot, specifiedpHMeter, rawpHMeterModel, specifiedProbe, rawProbeModel, specifiedpHAliquotVolume, titrationMethodConflictingSamples, titrationMethodConflictQs, titrationMethodConflictingOptions,specifiedRecoupSample, titrationMethodTest, resolvedTitrationInstrument, possibleTitratorCaps,sampleContainerCalibrationFunctions, sampleContainerVolumeCalibrationPackets, sampleContainerVolumeCalibrations, titrationContainerModels,titrationContainerModelPackets, roboticTitrationCaps, roboticTitrationCapPackets, roboticTitrationContainer, roboticTitrationContainerCap, roboticTitrationProbe, preresolvedProbeRobotic, preresolvedCapRobotic, roboticTitrationAliquotCaps, 	titrationInstrumentTest,titrationInstrumentConflictingOptions, titrationInstrumentConflictingSamples, titrationInstrumentCompatibleQs, possiblepHTitrators, rawpHTitratorsAssociate, pHTitratorspHMeters, pHTitratorsMixInstruments, validSampleContainerVolumeCalibrationPackets, updatedMaxBaseAmountPerCycle, updatedMaxAcidAmountPerCycle, updatedMaxNumberOfCycles,specifiedSite, resolvedSite, specifiedAssayVolume, specifiedTargetConcentrationAnalyte, preResolvedAnalyte, potentialAnalytesToUse, sampleCompositionPackets, potentialAnalytePackets, resolvedAssayVolumeAliquotQ, resolvedAssayVolume, workingSampleVolumes, maxSafeMixRates, safeMixRateMismatches, safeMixRateMismatchOptions, safeMixRateMismatchInputs, safeMixRateInvalidOptions, safeMixRateTest, maxSafeMixRatesMissingInvalidInputs, maxSafeMixRatesMissingTest, invalidInputs, preResolvedWashSolutions, preResolvedSecondaryWashSolutions, pHInstrumentsObjects
+		outputSpecification,output,gatherTests,messages,cache,samplePrepOptions,adjustpHOptions,simulatedSamplesMain,resolvedSamplePrepOptionsMain,updatedSimulationMain,samplePrepTests,simulatedSamplePackets,simulatedSampleContainers,samplePackets,specifiedHistoricalData,specifiedFixedAdditions, specifiedTitratingAcid,specifiedTitratingBase,specifiedAliquotContainers,dataFields,sampleFields,downloadData,aliquotContainerPackets, pHProbes,overheadStirrers,fixedAdditionSamples,fixedAdditionsConflicts,fixedAdditionsConflictSamples,fixedAdditionsConflictOptions, fixedAdditionsConflictTest,specifiedTitrate,noAdditions,noAdditionSamples,noAdditionOptions,noAdditionsTest,badTitrations,badTitrationSamples,invalidTitrateOptions,specifiedMixWhileTitrating, specifiedpHMixType,validMixWhiles,invalidMixSamples,overheadMixingRequiredOptions,overheadMixingRequiredTest,specifiedMaxAdditionVolumes,validMaxVolumes,invalidMaxVolumeSamples,badMaxVolumeOptions, maxVolumeTest,specifiedMinpHs,specifiedMaxpHs,resolvedMinpHs,resolvedMaxpHs,resolvedMaxAdditionVolumes,preresolvedProbe,resolvedAliquots, resolvedAliquotContainers,resolvedOutputContainers,resolvedpHOptions,resolvedMixOptions,allOptions,allTests,probePackets,simulatedSampleContainerModelPackets,resolvedAliquotOptions, aliquotTests,optionsWithResolvedAliquots,resolvedPostProcessingOptions,experimentMeasurepHPassedOptions,replacedMeasurepHOptions,experimentMixPassedOptions,replacedMixOptions, resolvedHistoricalData,resolvedFixedAdditions,replacedpHNamesOptions,replacedMixNamesOptions,resolvedProbe,resolvedProbeType, specifiedNumberOfReplicates,fixedAdditionModels,fixedAdditionModelsNullReplaced,additionModelLookup,numberOfReplicatesNullToOne,specifiedAliquotAmount,candidateBeakerPackets, candidateBeakers,calculatedAliquotAmounts,aliquotAmountRequired,preferredBeaker,minpHProbeDiamter,clearances,possibleImpellers,replicateAliquotRequired,measurepHTests,mixTests,aliquoteReplicateConflictQ,aliquoteReplicateConflictTest,invalidTitrateComboTest,resolverSafeOps, specifiedAliquot,specifiedConsolidateAliquote,resolverResolvedOptions,otherExperimentOptions,searchQs,noHistoricalDataQs,searchConditionsStringent,searchConditionsLoose,searchConditionsStringentDeNulled, searchConditionsLooseDeNulled,searchConditions,numberOfSearches,searchResults,searchResolvedHistoricalData,searchPositions,searchReplaceRules,noHistoricalDataPositions, noHistoricalDataRules,combinedReplaceRules,searchResultsPackets,pastLogsWithResolvedNullModelReplaced,fullCache,fullCacheWithSearchResults,historicalDataSamplesInVolume,protocolSamplesInVolume,sampleVolumeConvertingFactors, calculatedAliquotContainerVolume,mixAliquotRequiredWithResolvedMix,aliquotRequiredWithConsiderations,aliquotTargetContainers,specifiedpHMixUntilDissolved, specifiedpHMixInstrument,specifiedpHMixTime,specifiedMaxpHMixTime,specifiedpHMixDutyCycle,specifiedpHMixRate,specifiedNumberOfpHMixes,specifiedMaxNumberOfpHMixes,specifiedpHMixVolume,specifiedpHMixTemperature, specifiedMaxpHMixTemperature,specifiedSonicationAmplitude,specifiedMixOptionsTransposed,preResolvedpHMixType,preResolvedpHMixUntilDissolved,preResolvedpHMixInstrument,preResolvedpHMixTime,preResolvedMaxpHMixTime, preResolvedpHMixDutyCycle,preResolvedpHMixRate,preResolvedNumberOfpHMixes,preResolvedMaxNumberOfpHMixes,preResolvedpHMixVolume,preResolvedpHMixTemperature,preResolvedMaxpHMixTemperature,preResolvedSonicationAmplitude, preResolvedMixOptions,updatedSimulatedSamplesMain,updatedresolvedSamplePrepOptionsMain,updatedSamplePrepTests,resolvedFixedAdditionSampleStates,resolvedFixedAdditionSamples,mixingInstrumentModels,impellers,preResolvedMixOptionsMaxTempNull,preResolvedMixOptionsMaxTempTimeNull,aliquotContainerCondensed,simulatedSampleContainerPackets, specifiedKeepInstruments,invalidOptions,sampleContainers,sampleContainerModels,calculatedFixedAdditions,sampleVolumes,pHRangeConflictingTests, pHRangeConflictingSamples,aliquoteReplicateConflictOptions,pHRangeConflictingOptions,resolvedTitratingAcids,resolvedTitratingBases,specifiedAsssayVolume,specifiedDestinationWell,specifiedAliquotContainer, specifiedAliquotSampleStorageCondition,specifiedTargetConcentration,aliquotAmountRequiredDeList,specifiedContainerOut,historicalDataOvershotQs,resolvedTitratingAcidsInModel, resolvedTitratingBasesInModel,simulatedSampleModels,simulatedSampleModelPackets,specifiedModelsOut,modelMinpHs,modelMaxpHs,modelNominalpHs,resolvedModelOut,titrantsModelToObjectReplacementRulesAll, titrantsModelToObjectReplacementRulesSearched,searchResolvedHistoricalDataObjectified,numberSimulatedSamples,expandedMixOptions,expandedMeasurepHOptions,simulatedSampleModelPacketsToAssoc, maxAdditionVolumeAliquotRequired,simulation,secondUpdatedSimulationMain,updatedCacheWithSecondSamplePrepSimulation,skipSecondPrepQ,specifiedSimulation, specifiedPreparatoryPrimitives,prePreResolvedMixType,AliquotRequiredWithVolumetricFlasks,aliquotQ,resolvedAliquotAmountWithNumberOfReplicates,updatedSimulatedSamplePackets, updatedSimulatedSampleContainers,updatesSimulatedSampleVolumes,maxBeakerVolume,specifiedMaxAcidAmountPerCycle,specifiedMaxBaseAmountPerCycle,resolvedTitratingAcidsStates,resolvedTitratingBasesStates, simulatedSampleVolumes,resolvedMaxAcidAmountPerCycle,resolvedMaxBaseAmountPerCycle,modelsOutpHingAcid,modelsOutpHingBase,modelsOutMaxNumberOfpHingCycles,modelsOutMaxAdditionVolume,modelsOutMaxAcidAmountPerCycle, modelsOutMaxBaseAmountPerCycle,modelsOutTotalVolume,resolvedMaxNumberOfCycles,modelsOutPackets,fetchModelOutValue,specifiedMaxNumberOfCycles,modelsOutMaxpHs,modelsOutMinpHs,acidStatusAmountConformQs, acidStatusAmountConflictingSamples,acidAmountTest,baseStatusAmountConformQs,baseStatusAmountConflictingSamples,baseAmountTest,titratingBaseAmountConflictingOptions,titratingAcidAmountConflictingOptions, samplesWithContainerTooSmall,containerTooSmallTest,samplePacketsForMaxAdditionVolumes,sampleContainerModelPacketsForMaxAdditionVolumes,resolvedMaxAdditionVolumeAliquotErrorTuple,aliquotContainerTooSmallQs, sampleContainerModelPackets,searchConditionsFailedDeNulled,pHAchievedQs,containerTooSmallOptions,preResolveMixOptions,solidTitrantQs,spikedAmountsConverted, searchConditionsFailed,resolvedHistoricalDataPackets,resolvedHistoricalLogs,sampleContainerMaxVolumes,resolvedMaxAdditionVolumesWithNumberOfReplicates,totalPossibleVolumes, modelContainerFields,resolvedSampleLabel,resolvedSampleContainerLabel, searchConditionsStringentNoFixedAdditions, searchConditionsLooseNoFixedAdditions,searchConditionsFailedNoFixedAdditions, searchConditionsStringentNoFixedAdditionsDeNulled, searchConditionsLooseNoFixedAdditionsDeNulled,searchConditionsFailedNoFixedAdditionsDeNulled,searchResultsStringentFixedAdditions, searchResultsStringentNoFixedAdditions,searchResultsLooseFixedAdditions,searchResultsLooseNoFixedAdditions, searchResultsFailedFixedAdditions,searchResultsFailedNoFixedAdditions, resolvedTitrationMethod, preresolvedpHMeter, preresolvedpHAliquot, specifiedTitrationMethod, specifiedTitrationInstrument, specifiedpHMeterModel, specifiedProbeType, specifiedProbeModel, specifiedpHAliquot, specifiedpHMeter, rawpHMeterModel, specifiedProbe, rawProbeModel, specifiedpHAliquotVolume, titrationMethodConflictingSamples, titrationMethodConflictQs, titrationMethodConflictingOptions,specifiedRecoupSample, titrationMethodTest, resolvedTitrationInstrument, possibleTitratorCaps,sampleContainerCalibrationFunctions, sampleContainerVolumeCalibrationPackets, sampleContainerVolumeCalibrations, titrationContainerModels,titrationContainerModelPackets, roboticTitrationCaps, roboticTitrationCapPackets, roboticTitrationContainer, roboticTitrationContainerCap, roboticTitrationProbe, preresolvedProbeRobotic, preresolvedCapRobotic, roboticTitrationAliquotCaps, 	titrationInstrumentTest,titrationInstrumentConflictingOptions, titrationInstrumentConflictingSamples, titrationInstrumentCompatibleQs, possiblepHTitrators, rawpHTitratorsAssociate, pHTitratorspHMeters, pHTitratorsMixInstruments, validSampleContainerVolumeCalibrationPackets, updatedMaxBaseAmountPerCycle, updatedMaxAcidAmountPerCycle, updatedMaxNumberOfCycles,specifiedSite, resolvedSite, specifiedAssayVolume, specifiedTargetConcentrationAnalyte, preResolvedAnalyte, potentialAnalytesToUse, sampleCompositionPackets, potentialAnalytePackets, resolvedAssayVolumeAliquotQ, resolvedAssayVolume, workingSampleVolumes, maxSafeMixRates, safeMixRateMismatches, safeMixRateMismatchOptions, safeMixRateMismatchInputs, safeMixRateInvalidOptions, safeMixRateTest, maxSafeMixRatesMissingInvalidInputs, maxSafeMixRatesMissingTest, invalidInputs, preResolvedWashSolutions, preResolvedSecondaryWashSolutions, pHInstrumentsObjects, aliquotQNotSpecified
 	},
 
 	(* Determine the requested output format of this function. *)
@@ -2597,72 +2598,6 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 	pHTitratorspHMeters = Cases[Download[Lookup[rawpHTitratorsAssociate, pHMeter, Null], Object], ObjectP[]];
 	pHTitratorsMixInstruments = Cases[Download[Lookup[rawpHTitratorsAssociate, MixInstrument, Null], Object], ObjectP[]];
 
-	(* TitrationMethod conflict check *)
-	titrationMethodConflictQs=MapThread[
-		Which[
-			(*If TitrationMethod is not resolved or is resolved to Manual, no conflicts*)
-			MatchQ[#1,Except[Robotic]],
-			True,
-			(*If TitrationMethod is resolved Robotic but associated option is not compatible, give conflicts*)
-			MatchQ[#1,Robotic]&&
-					Or@@{
-						MatchQ[#2,Except[Automatic|Stir]],
-						MatchQ[#3,Except[Alternatives[Automatic, Model[Instrument, pHMeter, "id:R8e1PjeAn4B4"], Sequence @@ pHTitratorspHMeters]]],
-						MatchQ[#4,Surface],
-						MatchQ[#5,Except[Automatic|Null|Model[Part, pHProbe, "id:jLq9jXvP7jLx"]|Model[Part, pHProbe, "id:J8AY5jDmW5BZ"]]], (*Model[Part, pHProbe, "InLab Reach Pro-225"]|Model[Part, pHProbe, "InLab Micro Pro-ISM"]*)
-						MatchQ[#6,True],
-						MatchQ[#7,False],
-						MatchQ[#8,True],
-						MatchQ[#9,Except[Alternatives[Automatic, Model[Instrument, OverheadStirrer, "id:rea9jlRRmN05"], Sequence @@ pHTitratorsMixInstruments]]],
-						MatchQ[#10,Except[Automatic|Null]],
-						MatchQ[#11,Except[Null]]&&MatchQ[Lookup[fetchPacketFromCache[#11,fullCache],State,Null],Solid],
-						MatchQ[#12,Except[Null]]&&MatchQ[Lookup[fetchPacketFromCache[#12,fullCache],State,Null],Solid],
-						MatchQ[#13,True],
-						MatchQ[#14, Except[Automatic]]||MatchQ[#15, Except[Automatic]],
-						MatchQ[#16,Null]
-					},
-			False,
-
-			True,
-			True
-		]&,
-		{
-			(*1*)specifiedTitrationMethod,
-			(*2*)specifiedpHMixType,
-			(*3*)specifiedpHMeterModel,
-			(*4*)specifiedProbeType,
-			(*5*)specifiedProbeModel,
-			(*6*)specifiedpHAliquot,
-			(*7*)specifiedTitrate,
-			(*8*)specifiedpHMixUntilDissolved,
-			(*9*)specifiedpHMixInstrument,
-			(*10*)specifiedpHAliquotVolume,
-			(*11*)resolvedTitratingBases,
-			(*12*)resolvedTitratingAcids,
-			(*13*)specifiedRecoupSample,
-			(*14*)specifiedAliquotContainer,
-			(*15*)specifiedDestinationWell,
-			(*16*)specifiedTitrationInstrument
-		}
-	];
-
-	titrationMethodConflictingSamples=PickList[mySamples,titrationMethodConflictQs,False];
-
-	titrationMethodConflictingOptions=If[!(And@@titrationMethodConflictQs),{TitrationMethod, pHMixType, pHMeter, ProbeType, Probe, pHAliquot, Titrate, pHMixUntilDissolved, pHMixInstrument, pHAliquotVolume, TitratingBase, TitratingAcid, RecoupSample},{}];
-
-
-	If[!(And@@titrationMethodConflictQs)&&!gatherTests,
-		Message[Error::ConflictingTitrationMethod,titrationMethodConflictingSamples]
-	];
-
-	titrationMethodTest=If[gatherTests,
-		Test["Specified TitrationMethod and associated options should not conflict",
-			And@@titrationMethodConflictQs,
-			True
-		],
-		{}
-	];
-
 	(* -- Resolve TitrationMethod -- *)
 
 	(* findpHTitrationCaps returns all the possible caps that can be used for the sample container in robotic titration*)
@@ -2710,10 +2645,12 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 			MatchQ[#10,Except[Null]]&&MatchQ[Lookup[fetchPacketFromCache[#10,fullCache],State,Null],Solid],Manual,
 			(*If TitratingBase is specified to Solid, resolve to Manual*)
 			MatchQ[#11,Except[Null]]&&MatchQ[Lookup[fetchPacketFromCache[#11,fullCache],State,Null],Solid],Manual,
-			(*If AliquotContainer or DestinationWell is specified, resolve to Manual because we might need to aliquot to the desired containers for robotic titration. *)
-			MatchQ[#15, Except[Automatic]]||MatchQ[#16, Except[Automatic]], Manual,
 			(*If we could not find a compatible cap for sample container and (Aliquot is specified False or we could not find a container to aliquot into), resolve to Manual*)
 			MatchQ[#12, {}]&&(MatchQ[#13, False]||NullQ[#14]), Manual,
+			(*If AliquotContainer is specified and does not match with robotic titration container, resolve to Manual *)
+			MatchQ[#15, Except[Automatic|Null|ObjectP[#14]]], Manual,
+			(*If DestinationWell is specified, resolve to Manual *)
+			MatchQ[#16, Except[Automatic|Null]], Manual,
 			(*If TitrationInstrument is Null, resolve to Manual*)
 			MatchQ[#17,Null],Manual,
 			(*If ProbeType is specified to be Surface, resolve to Manual*)
@@ -2748,6 +2685,74 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 			(*20*)specifiedMaxpHMixTemperature
 		}
 	];
+
+	(* TitrationMethod conflict check *)
+	titrationMethodConflictQs=MapThread[
+		Which[
+			(*If TitrationMethod is not resolved or is resolved to Manual, no conflicts*)
+			MatchQ[#1,Except[Robotic]],
+			True,
+			(*If TitrationMethod is resolved Robotic but associated option is not compatible, give conflicts*)
+			MatchQ[#1,Robotic]&&
+					Or@@{
+						MatchQ[#2,Except[Automatic|Stir]],
+						MatchQ[#3,Except[Alternatives[Automatic, Model[Instrument, pHMeter, "id:R8e1PjeAn4B4"], Sequence @@ pHTitratorspHMeters]]],
+						MatchQ[#4,Surface],
+						MatchQ[#5,Except[Automatic|Null|Model[Part, pHProbe, "id:jLq9jXvP7jLx"]|Model[Part, pHProbe, "id:J8AY5jDmW5BZ"]]], (*Model[Part, pHProbe, "InLab Reach Pro-225"]|Model[Part, pHProbe, "InLab Micro Pro-ISM"]*)
+						MatchQ[#6,True],
+						MatchQ[#7,False],
+						MatchQ[#8,True],
+						MatchQ[#9,Except[Alternatives[Automatic, Model[Instrument, OverheadStirrer, "id:rea9jlRRmN05"], Sequence @@ pHTitratorsMixInstruments]]],
+						MatchQ[#10,Except[Automatic|Null]],
+						MatchQ[#11,Except[Null]]&&MatchQ[Lookup[fetchPacketFromCache[#11,fullCache],State,Null],Solid],
+						MatchQ[#12,Except[Null]]&&MatchQ[Lookup[fetchPacketFromCache[#12,fullCache],State,Null],Solid],
+						MatchQ[#13,True],
+						MatchQ[#14,Null],
+						MatchQ[#15, {}]&&(MatchQ[#16, False]||NullQ[#17])
+					},
+			False,
+
+			True,
+			True
+		]&,
+		{
+			(*1*)resolvedTitrationMethod,
+			(*2*)specifiedpHMixType,
+			(*3*)specifiedpHMeterModel,
+			(*4*)specifiedProbeType,
+			(*5*)specifiedProbeModel,
+			(*6*)specifiedpHAliquot,
+			(*7*)specifiedTitrate,
+			(*8*)specifiedpHMixUntilDissolved,
+			(*9*)specifiedpHMixInstrument,
+			(*10*)specifiedpHAliquotVolume,
+			(*11*)resolvedTitratingBases,
+			(*12*)resolvedTitratingAcids,
+			(*13*)specifiedRecoupSample,
+			(*14*)specifiedTitrationInstrument,
+			(*15*)possibleTitratorCaps,
+			(*16*)specifiedAliquot,
+			(*17*)roboticTitrationContainer
+		}
+	];
+
+	titrationMethodConflictingSamples=PickList[mySamples,titrationMethodConflictQs,False];
+
+	titrationMethodConflictingOptions=If[!(And@@titrationMethodConflictQs),{TitrationMethod, pHMixType, pHMeter, ProbeType, Probe, pHAliquot, Titrate, pHMixUntilDissolved, pHMixInstrument, pHAliquotVolume, TitratingBase, TitratingAcid, RecoupSample},{}];
+
+
+	If[!(And@@titrationMethodConflictQs)&&!gatherTests,
+		Message[Error::ConflictingTitrationMethod,titrationMethodConflictingSamples]
+	];
+
+	titrationMethodTest=If[gatherTests,
+		Test["Specified TitrationMethod and associated options should not conflict",
+			And@@titrationMethodConflictQs,
+			True
+		],
+		{}
+	];
+
 
 	(* Update MaxNumberOfCycles and MaxAcidAmountPerCycle/MaxBaseAmountPerCycle if titrationMethod is Robotic and these options were not specified*)
 	(* Originally, MaxNumberOfCycles is default to 10, MaxAcidAmountPerCycle/MaxBaseAmountPerCycle is 2.5% of initial volume. *)
@@ -3096,6 +3101,17 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 			(*6*)resolvedTitrationMethod,
 			(*7*)roboticTitrationContainer
 		}
+	];
+
+	(* Give a warning if we want to do aliquot when user does not request *)
+	(* Find out the samples for which user did not request aliquot but we need to aliquot *)
+	aliquotQNotSpecified = MapThread[And[#1, MatchQ[#2, Except[True]]]&, {aliquotQ, specifiedAliquot}];
+	If[MemberQ[aliquotQNotSpecified, True] && messages && Not[MatchQ[$ECLApplication, Engine]],
+		Message[
+			Warning::AliquotContainerOutWarning,
+			ObjectToString[PickList[simulatedSamplesMain, aliquotQNotSpecified], Cache -> fullCache], ObjectToString[PickList[aliquotTargetContainers, aliquotQNotSpecified], Cache -> fullCache]
+		],
+		Nothing
 	];
 
 	(* Check if MixRate is safe -- These two errors won't be thrown twice in ExperimentIncubate because we do not specify StirBar option when we call incubate resolver *)
@@ -4400,7 +4416,7 @@ simulateExperimentAdjustpH[
 		fixedAdditionTransferPackets,titrantToMaxAdditionVolumeRules,titrantToMaxAdditionVolumeMergedAssoc,titrantToInitialVolumeRules,
 		titrantToInitialVolumeMergedAssoc,allTitrantsDeDup,allTitrantsDeDupUpdatedVolumes,numberOfTitrants,titrantsVolumeUpdatePackets,
 		samplespHUpdatePackets,currentSamplePackets,samplesModelUpdatePackets,discardReagentUpdatePacktes,simulationWithLabels,
-		fixedAdditionsObjectifiedNoLink,protocolPacketFixedAdditionObjectified,sampleContainers,fixedAdditionSamples
+		fixedAdditionsObjectifiedNoLink,protocolPacketFixedAdditionObjectified,sampleContainers,fixedAdditionSamples, containersOut, samplesIn, aliquotContainerOutPackets, sampleInCompositions
 	},
 
 	(* Lookup our cache and simulation. *)
@@ -4448,17 +4464,21 @@ simulateExperimentAdjustpH[
 		fixedAdditions,
 		titratingAcidVolumes,
 		titratingBsesVolumes,
-		sampleContainers
+		sampleContainers,
+		sampleInCompositions,
+		samplesIn
 	}=Quiet[
 		Download[
 			protocolObject,
 			{
-				Packet[TitratingAcids,TitratingBases,FixedAdditions,FixedAdditionSamples,LowCalibrationBuffer,MediumCalibrationBuffer,HighCalibrationBuffer,MaxAdditionVolumes,NominalpHs,ModelsOut],
+				Packet[TitratingAcids,TitratingBases,FixedAdditions,FixedAdditionSamples,LowCalibrationBuffer,MediumCalibrationBuffer,HighCalibrationBuffer,MaxAdditionVolumes,NominalpHs,ModelsOut, ContainersOut],
 				Packet[FixedAdditionSamples[Model]],
 				FixedAdditions,
 				TitratingAcids[Volume],
 				TitratingBases[Volume],
-				SamplesIn[Containers]
+				SamplesIn[Container],
+				SamplesIn[Composition],
+				SamplesIn
 			},
 			Cache->cache,
 			Simulation->currentSimulation
@@ -4475,6 +4495,7 @@ simulateExperimentAdjustpH[
 	calibrants=Lookup[protocolPacket,{LowCalibrationBuffer,MediumCalibrationBuffer,HighCalibrationBuffer,WashSolution}];
 	nominalpHs=Lookup[protocolPacket,NominalpHs];
 	modelsOut=Lookup[protocolPacket,ModelsOut];
+	containersOut = Lookup[protocolPacket, ContainersOut];
 
 
 	(* Update FixedAdditions with objects from FixedAdditionSamples *)
@@ -4551,7 +4572,47 @@ simulateExperimentAdjustpH[
 
 	currentSimulation = UpdateSimulation[currentSimulation, Simulation[discardReagentUpdatePacktes]];
 
-	(* We don't do aliquots for premitivies FOR NOW so there won't be aliquots, so there won't be ContainerOut *)
+	(* Simulate Aliquot ContainerOut *)
+	aliquotContainerOutPackets = MapThread[
+		Function[{containerOut, sampleContainer, modelOut, sampleIn, sampleInComposition},
+			If[MatchQ[containerOut, ObjectP[sampleContainer]],
+				(* if container out is sample container, we do not need to simulate for Aliquot*)
+				{},
+
+				(* Otherwise, simulate container out sample *)
+				Module[{containerOutSamplePacket, containerOutSample, transferToContainerOutPacket, aliquotPackets},
+
+					(*simulate sample for ContainerOut *)
+					containerOutSamplePacket = UploadSample[
+						If[NullQ[modelOut], sampleInComposition, modelOut],
+						{"A1",containerOut},
+						UpdatedBy->protocolObject,
+						Simulation->currentSimulation,
+						SimulationMode -> True,
+						FastTrack->True,
+						Upload->False
+					];
+					containerOutSample = Lookup[containerOutSamplePacket[[1]], Object];
+					currentSimulation = UpdateSimulation[currentSimulation, Simulation[Flatten[{containerOutSamplePacket}]]];
+
+					(* simulate transfer from sampleContainer to containerOut*)
+					transferToContainerOutPacket = UploadSampleTransfer[
+						sampleIn,
+						containerOutSample,
+						All,
+						Simulation -> currentSimulation,
+						UpdatedBy->protocolObject,
+						Upload->False
+					];
+					currentSimulation = UpdateSimulation[currentSimulation, Simulation[Flatten[{transferToContainerOutPacket}]]];
+
+					(* return all the packets *)
+					aliquotPackets = Flatten[{containerOutSamplePacket, transferToContainerOutPacket}]
+				]
+			]
+		],
+		{containersOut, sampleContainers, Lookup[samplesModelUpdatePackets, Model], samplesIn, sampleInCompositions}
+	];
 
 	simulationWithLabels=Simulation[
 		Labels->Join[
@@ -4618,8 +4679,8 @@ findpHTitratorCaps[modelContainerPacket : PacketP[], calibrationFunction : (_Qua
 
 	possibleCaps = If[Length[capsCandidates] > 0 && (!additionVolumeTooLargeQ)&& (!NullQ[calibrationFunction]),
 		Module[{minHeight,minVolume},
-			(* Calculate the required min liquid height/volume to reach the probe *)
-			minHeight = internalDepth - Lookup[capsCandidates, InternalDepth];
+			(* Calculate the required min liquid height/volume to reach the probe, set 50 Millimeter tolerance since the minDepths of Model[Instrument, pHMeter, "SevenExcellence (for pH) for Robotic Titration"] is 30 mm for fully immersion *)
+			minHeight = internalDepth - Lookup[capsCandidates, InternalDepth] + 50 Millimeter;
 			minVolume = calibrationFunction[#]&/@minHeight;
 			PickList[capsCandidates[Object], minVolume, LessP[sampleVolume]]
 		],

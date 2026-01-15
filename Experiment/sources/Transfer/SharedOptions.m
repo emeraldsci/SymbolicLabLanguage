@@ -212,7 +212,7 @@ DefineOptionSet[TransferCoverOptions :> {
 				Type->Enumeration,
 				Pattern:>BooleanP
 			],
-			Description->"Indicates if the cover on the source container should be \"peaked\" off when transferred into/out of instead of taken off completely when performing Manual Transfers in order to reduce chances of contamination or minimize light exposure. When performing robotic manipulations, this indicates that the container should be re-covered after any manipulation that uncovers it is completed.",
+			Description->"Indicates if the cover on the source container should be \"peaked\" off when transferred into/out of instead of taken off completely when performing Manual Transfers in order to reduce chances of contamination or minimize light exposure. For manual preparation, this option is only applicable for transferring using a pipette. For robotic preparation, this indicates that the container should be re-covered after any manipulation that uncovers it is completed.",
 			Category->"Container Covering"
 		},
 		{
@@ -295,7 +295,7 @@ DefineOptionSet[TransferCoverOptions :> {
 				Type->Enumeration,
 				Pattern:>BooleanP
 			],
-			Description->"Indicates if the cover on the destination container should be \"peaked\" off when transferred into/out of instead of taken off completely when performing Manual Transfers in order to reduce chances of contamination or minimize light exposure. When performing robotic manipulations, this indicates that the container should be re-covered after any manipulation that uncovers it is completed.",
+			Description->"Indicates if the cover on the destination container should be \"peaked\" off when transferred into/out of instead of taken off completely when performing Manual Transfers in order to reduce chances of contamination or minimize light exposure. For manual preparation, this option is only applicable for transferring using a pipette. For robotic preparation, this indicates that the container should be re-covered after any manipulation that uncovers it is completed.",
 			Category->"Container Covering"
 		},
 		{
@@ -1984,3 +1984,204 @@ DefineOptionSet[CountAsPassageOptions :> {
 		}
 	]
 }];
+
+(* ::Subsection::Closed:: *)
+(* RinseOptions *)
+
+DefineOptionSet[PrewetLabwareOptions :> {
+	IndexMatching[
+		IndexMatchingInput -> "experiment samples",
+		{
+			OptionName->PrewetLabware,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to True if any of the other PrewetLabware options are set. Otherwise, is set to False.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Enumeration,
+				Pattern:>BooleanP
+			],
+			Description->"Indicates if labware used with the Source sample is rinsed with PrewetWashSolution, NumberOfPrewetWashes times, prior to use.",
+			Category->"Prewet Labware"
+		},
+		{
+			OptionName->NumberOfPrewetWashes,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to 2 if any of the other PrewetLabware options are set. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Number,
+				Pattern:>GreaterP[0, 1]
+			],
+			Description->"The number of times labware used with source sample is rinsed with PrewetWashSolution before use with the source sample.",
+			Category->"Prewet Labware"
+		},
+		{
+			OptionName->PrewetWashVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to the calculated total of volume times NumberOfPrewetWashes required to rinse all relevant labware (Destination, IntermediateContainer, Instrument (graduated cylinder, syringe), Funnel, IntermediateFunnel, Tips, QuantitativeTransferWashTips) that are used with the Source sample.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The total volume of the PrewetWashSolution that is used to rinse labware (Destination, IntermediateContainer, Instrument (graduated cylinder, syringe), Funnel, IntermediateFunnel, Tips, QuantitativeTransferWashTips), NumberOfPrewetWashes times, to rinse off possible contaminants and prepare the labware for use.",
+			Category->"Prewet Labware"
+		},
+		{
+			OptionName->PrewetWashSolution,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to source sample if PrewetLabware is True and source State is Liquid. If source sample State is Solid and there is a succeeding FillToVolume of same destination in a ManualSamplePreparation or ManualCellPreparation protocol, use the Solvent in FillToVolume. If source sample State is Solid and there is a succeeding transfer to the same destination in an ManualSamplePreparation or ManualCellPreparation protocol with a liquid Source, use the liquid Source. Otherwise, set to Null",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Object,
+				Pattern:>ObjectP[{
+					Model[Sample],
+					Object[Sample]
+				}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials"
+					}
+				}
+			],
+			Description->"The solution that is used to rinse labware (Destination, IntermediateContainer, Instrument (graduated cylinder, syringe), Funnel, IntermediateFunnel, QuantitativeTransferWashTips), NumberOfPrewetWashes times, to rinse off possible contaminants and prepare the labware for use.",
+			Category->"Prewet Labware"
+		},
+    {
+      OptionName->PrewetWashIntermediateContainer,
+      Default->Automatic,
+      ResolutionDescription -> "Automatically set to a beaker based on the largest individual prewet volume if PrewetLabware is True. Otherwise, is set to Null.",
+      AllowNull->True,
+      Widget->Widget[
+        Type->Object,
+        Pattern:>ObjectP[{
+          Model[Container, Vessel],
+          Object[Container, Vessel]
+        }]
+      ],
+      Description -> "The container that is used to hold the PrewetWashSolution prior to rinsing of labware, NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+      Category->"Hidden"
+    },
+		{
+			OptionName->PrewetWashIntermediateContainerWashVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to a volume based on the MaxVolume of the PrewetWashIntermediateContainer if PrewetLabware is True. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The volume of the PrewetWashSolution that is used to rinse destination container, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Hidden"
+		},
+		{
+			OptionName->DestinationPrewetWashVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to a volume based on the MaxVolume of the destination container (10 Milliliter per 1 Liter MaxVolume, in increments of 10 Milliliter) if PrewetLabware is True. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The volume of the PrewetWashSolution that is used to rinse destination container, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Hidden"
+		},
+		{
+			OptionName->InstrumentPrewetWashVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to a volume based on the MaxVolume of the instrument (GraduatedCylinder, Syringe) (10 Milliliter per 1 Liter MaxVolume, in increments of 10 Milliliter) if PrewetLabware is True and Instrument is either a GraduatedCylinder or a Syringe. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The volume of the PrewetWashSolution that is used to rinse the instrument (graduated cylinder or syringe), per wash amd NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Hidden"
+		},
+		{
+			OptionName->IntermediateContainerPrewetWashVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to a volume based on the MaxVolume of the intermediate container (10 Milliliter per 1 Liter MaxVolume, in increments of 10 Milliliter) if PrewetLabware is True and IntermediateContainer is an object. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The volume of the PrewetWashSolution that is used to rinse the intermediate container, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Hidden"
+		},
+		{
+			OptionName->HandPumpPrewetWashVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to 20 Milliliter (estimated amount dispensed in a single pump) if PrewetLabware is True and HandPump is an object. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The volume of the PrewetWashSolution that is used to rinse HandPump, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Hidden"
+		},
+		{
+			OptionName->FunnelPrewetWashVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to a volume based on the MouthDiameter of the funnel (10 Milliliter if MouthDiameter is less than 80 Millimeter, 20 Milliliter if MouthDiameter is greater than 80 Millimeter) if PrewetLabware is True and Funnel is an object. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The volume of the PrewetWashSolution that is used to rinse Funnel, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Hidden"
+		},
+		{
+			OptionName->IntermediateFunnelPrewetWashVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to a volume based on the MouthDiameter of the funnel (10 Milliliter if MouthDiameter is less than 80 Millimeter, 20 Milliliter if MouthDiameter is greater than 80 Millimeter) if PrewetLabware is True and Funnel is an object. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The volume of the PrewetWashSolution that is used to rinse IntermediateFunnel, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Hidden"
+		},
+		{
+			OptionName->TipsPrewetWashVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set 10 Milliter or MaxVolume of Tips, whichever is smaller, if PrewetLabware is True and Tips is an object. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The volume of the PrewetWashSolution that is used to rinse tips, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Hidden"
+		},
+		{
+			OptionName->QuantitativeTransferTipsPrewetWashVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set 10 Milliter or MaxVolume of QuantitativeTransferWashTips, whichever is smaller, if PrewetLabware is True and QuantitativeTransferWashTips is an object. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The volume of the PrewetWashSolution that is used to rinse QuantitativeTransferTips, per wash and NumberOfPrewetWashes times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Hidden"
+		}
+	]
+}];
+
+

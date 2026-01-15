@@ -177,14 +177,6 @@ DefineObjectType[Model[Sensor], {
 			Description -> "Products ordering information for this model if this model is part of one or more kits.",
 			Category -> "Inventory"
 		},
-		StickeredUponArrival -> {
-			Format -> Single,
-			Class -> Expression,
-			Pattern :> BooleanP,
-			Description -> "Indicates if a sticker should be attached to this item during Receive Inventory, or if the unpeeled sticker should be stored with the item and affixed during resource picking.",
-			Category -> "Inventory",
-			Developer->True
-		},
 		StickerPositionOnReceiving -> {
 			Format -> Single,
 			Class -> Expression,
@@ -341,6 +333,13 @@ DefineObjectType[Model[Sensor], {
 			Description -> "Indicates if objects of this model are likely to be damaged if they are stored in a homogeneous pile. Fragile objects are stored by themselves or in positions for which the objects are unlikely to contact each other.",
 			Category -> "Storage Information",
 			Developer->True
+		},
+		ExposedSurfaces -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if any sensitive portions of this sensor are open to the external environment and prone to contamination.",
+			Category -> "Compatibility"
 		},
 		(* --- Resources --- *)
 		RequestedResources -> {

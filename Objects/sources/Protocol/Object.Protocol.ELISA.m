@@ -113,7 +113,7 @@ DefineObjectType[Object[Protocol, ELISA],
 				Format -> Single,
 				Class -> Link,
 				Pattern :> _Link,
-				Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
+				Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script]| Object[Protocol,RoboticCellPreparation] | Object[Protocol,ManualCellPreparation],
 				Description -> "The sample manipulation protocol used for the dilution, spiking, and antibody mixing of Samples, Standards, and Blanks.",
 				Category -> "General"
 			},
@@ -121,7 +121,7 @@ DefineObjectType[Object[Protocol, ELISA],
 				Format -> Single,
 				Class -> Link,
 				Pattern :> _Link,
-				Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
+				Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script]| Object[Protocol,RoboticCellPreparation] | Object[Protocol,ManualCellPreparation],
 				Description -> "The sample manipulation protocol used for the dilution of antibodies and reference antigen using their corresponding diluents.",
 				Category -> "General"
 			},
@@ -139,6 +139,14 @@ DefineObjectType[Object[Protocol, ELISA],
 				Pattern :> ObjectP[Object[Protocol]],
 				Relation -> Object[Protocol],
 				Description -> "The ExperimentIncubation protocol used for the coating of ELISAPlate(s).",
+				Category -> "General"
+			},
+			PlateWasherMaintenance -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Maintenance, Clean, PlateWasher],
+				Description -> "The cleaning maintenance protocol that is enqueued in the protocol and is to run immediately after the protocol is completed in order to ensure proper cleaning of plate washer manifold tubes for the next sample run.",
 				Category -> "General"
 			},
 			(* ----------Files------------ *)
@@ -724,6 +732,13 @@ DefineObjectType[Object[Protocol, ELISA],
 				Category -> "Antibody Antigen Preparation",
 				IndexMatching -> SamplesIn
 			},
+			SecondaryAntibodyDilutionOnDeck -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates whether the SecondaryAntibody and SecondaryAntibodyDiluent are mixed prior to being added to the assay plate(s) on deck during the immunosorbent step instead of during sample assembly.",
+				Category -> "Antibody Antigen Preparation"
+			},
 			SecondaryAntibodyDiluent -> {
 				Format -> Single,
 				Class -> Link,
@@ -1055,6 +1070,13 @@ DefineObjectType[Object[Protocol, ELISA],
 				Description -> "The speed at which the assay plate(s) are shaken (orbitally, at a radius of 2 mm) during PrimaryAntibodyImmunosorbent incubation.",
 				Category -> "Immunosorbent Step"
 			},
+			PrimaryAntibodyImmunosorbentWashing -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if a final washing step is performed at the end of PrimaryAntibodyImmunosorbent incubation to wash off unbound PrimaryAntibody.",
+				Category -> "Immunosorbent Step"
+			},
 			PrimaryAntibodyImmunosorbentWashVolume -> {
 				Format -> Single,
 				Description -> "The volume of WashBuffer added per wash cycle to rinse off the unbound PrimaryAntibody after PrimaryAntibody incubation.",
@@ -1091,6 +1113,13 @@ DefineObjectType[Object[Protocol, ELISA],
 				Pattern :> GreaterEqualP[0 RPM],
 				Units -> RPM,
 				Description -> "TThe speed at which the assay plate(s) are shaken (orbitally, at a radius of 2 mm) during SecondaryAntibodyImmunosorbent incubation.",
+				Category -> "Immunosorbent Step"
+			},
+			SecondaryAntibodyImmunosorbentWashing-> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if a final washing step is performed at the end of SecondaryAntibodyImmunosorbent incubation to wash off unbound SecondaryAntibody.",
 				Category -> "Immunosorbent Step"
 			},
 			SecondaryAntibodyImmunosorbentWashVolume -> {

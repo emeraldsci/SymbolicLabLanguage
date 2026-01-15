@@ -1853,6 +1853,15 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			Variables :> {options},
 			TimeConstraint -> 500
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000*RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			TimeConstraint -> 500,
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (1.5 mL)" <> $SessionUUID], CentrifugeTime -> 40*Minute, Instrument -> Model[Instrument, PlateReader, "Lunatic"], Output -> Options];
 			Lookup[options, CentrifugeTime],
@@ -2069,6 +2078,15 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			0.08*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options},
+			TimeConstraint -> 500
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID], AliquotAmount -> 0.08101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			81 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision},
 			TimeConstraint -> 500
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},

@@ -646,7 +646,6 @@ $EquivalentInstrumentModelLookup = Map[
 		(*Balances*)
 		(*Note that Model[Instrument, Balance, "id:N80DNj1Gr5RD"] (Ohaus EX124) has a much larger MinWeight, and we won't include it as a possible alternative model for the others, but if EX124 is requested, we can select PA124/PA224 *)
 		{
-			Model[Instrument, Balance, "id:vXl9j5qEnav7"],(*Ohaus Pioneer PA124*)
 			Model[Instrument, Balance, "id:KBL5DvYl3zGN"],(*Ohaus Pioneer PA224*)
 			Model[Instrument, Balance, "id:rea9jl5Vl1ae"] (*Ohaus EX225AD*)
 		},
@@ -654,14 +653,14 @@ $EquivalentInstrumentModelLookup = Map[
 			{Model[Instrument, Balance, "id:N80DNj1Gr5RD"](*Ohaus EX124*)},
 			{
 				Model[Instrument, Balance, "id:N80DNj1Gr5RD"], (*Ohaus EX124*)
-				Model[Instrument, Balance, "id:vXl9j5qEnav7"], (*Ohaus Pioneer PA124*)
 				Model[Instrument, Balance, "id:KBL5DvYl3zGN"],(*Ohaus Pioneer PA224*)
 				Model[Instrument, Balance, "id:rea9jl5Vl1ae"] (*Ohaus EX225AD*)
 			}
 		},
 		{
 			Model[Instrument, Balance, "id:54n6evKx08XN"], (*Mettler Toledo XP6*)
-			Model[Instrument, Balance, "id:D8KAEvKJox0l"] (*Mettler Toledo XPR6U Ultra-Microbalance*)
+			Model[Instrument, Balance, "id:D8KAEvKJox0l"], (*Mettler Toledo XPR6U Ultra-Microbalance*)
+			Model[Instrument, Balance, "id:D8KAEvD4lJOk"] (*Mettler Toledo XPR10*)
 		},
 		(*WaterPurifier*)
 		{
@@ -922,7 +921,7 @@ RequireResources[myPackets : {PacketP[{Object[Protocol], Object[Qualification], 
 			(* Download::ObjectDoesNotExist is quieted here anyway *)
 			{samplesToDownload, instrumentsToDownload, specifiedSampleModels,modelsOrObjectSamples, containerModels, protocolObjects},
 			{
-				{Model[Object], Packet[Model[{RentByDefault,Name}]], Packet[RequestedResources[{Status, RootProtocol}]]},
+				{Model[Object], Packet[Model[{RentByDefault,Name}]], Packet[RequestedResources[{Status, RootProtocol}]], Packet[RequestedResources[Requestor[Status]]]},
 				{Model, Packet[RequestedResources[{Status, RootProtocol}]]},
 				{Packet[RentByDefault,Name]},
 				{TransportCondition},
@@ -1125,7 +1124,27 @@ RequireResources[myPackets : {PacketP[{Object[Protocol], Object[Qualification], 
 		Function[{downloadValue, root},
 			If[NullQ[downloadValue],
 				{},
-				Select[Last[downloadValue], MatchQ[Lookup[#, Status], InCart | Outstanding | InUse] && MatchQ[Lookup[#, RootProtocol], ObjectP[root]]&]
+				Module[
+					{requestedResourcePackets, requestorPackets},
+					requestedResourcePackets = downloadValue[[3]];
+					requestorPackets = downloadValue[[4]];
+					If[MatchQ[requestedResourcePackets, {}],
+						{},
+						Select[
+							Transpose[{requestedResourcePackets, requestorPackets}],
+							And[
+								(* Resource that is not fulfilled yet *)
+								MatchQ[Lookup[#[[1]], Status], InCart | Outstanding | InUse],
+								(* Requested by a subprotocol of our root protocol or by root protocol *)
+								MatchQ[Lookup[#[[1]], RootProtocol], ObjectP[root]],
+								(* Requestor protocol is NOT Completed. Note that our resource may have multiple requestors like UOs but the first requestor is always the protocol *)
+								(* We do not release a resource until it is stored so the resource might still be InUse while the requestor is completed. In that case, we do not need to "use" this resource any more and should not take it into consideration when deciding whether to create resource *)
+								(* if the requestor is a UO, we cannot check its Status *)
+								!(MatchQ[Lookup[#[[2, 1]], Status], Completed] || MatchQ[Lookup[#[[2, 1]], Object], Except[ObjectP[{Object[Protocol], Object[Qualification], Object[Maintenance]}]]])
+							]&
+						][[All,1]]
+					]
+				]
 			]
 		],
 		{sampleDownloadValues, sampleRootProtocols}
@@ -2494,6 +2513,8 @@ DefineOptions[
 	Options :> {
 		{Messages -> True, BooleanP, "When True, prints any messages fulfillableResourceQ generates."},
 		{Subprotocol -> False, ListableP[BooleanP], "Indicates if the protocol for which resources are being created is a child protocol."},
+		(* This option only applies to resource blob input overloads. For Object[Resource], RootProtocol should be populated already. *)
+		{RootProtocol -> Null, ListableP[Null | ObjectP[{Object[Protocol], Object[Qualification], Object[Maintenance]}]], "The highest-level parent protocol that requested these resources.", IndexMatching -> Input},
 		{Author :> $PersonID, ListableP[ObjectP[Object[User]]], "The user who authored the root protocol responsible for creating these resources.", IndexMatching -> Input},
 		{Site -> Automatic, Automatic|ObjectP[Object[Container,Site]], "If specified, this is the Site all resources must be fulfilled at."},
 		{SkipSampleMovementWarning -> {}, {} | ListableP[ObjectP[Object[Sample]]], "Specifies the sample(s) for which SamplesMustBeMoved warning should not be triggered."},
@@ -2523,7 +2544,7 @@ Error::MissingObjects = "Unable to find object(s) `1` in the database. Please ch
 Error::SamplesMarkedForDisposal = "The following object(s) specified are flagged for disposal: `1`.  If you don't wish to dispose of these samples, please run CancelDiscardSamples on them.";
 Warning::DeprecatedProduct = "The following model(s) that were requested have no non-deprecated products associated with them: `1`.  In the event that all is consumed before the protocol is run, ECL will not be able to order more and may abort this protocol.";
 Error::DeprecatedModels = "The following model object(s) specified are deprecated: `1`.  Please check the Deprecated field for the models in question, or provide samples with alternative, non-deprecated models.";
-Warning::ExpiredSamples = "The following input samples are marked expired: `1`, but we can continue with them anyway.  Please cancel the experiment if you would not like to use these samples marked as expired.";
+Warning::ExpiredSamples = "The following sample objects are marked expired: `1`. Their expirations dates are `2`. These samples are able to still be used in the protocol, but may negatively affect your results. Please cancel the protocol if you would not like to use these samples.";
 Error::InstrumentsNotOwned = "The following instrument(s) specified are not part a Notebook financed by one of the current financing teams: `1`.  Please check the Notebook field of these objects and the Financers field of that Notebook.";
 Error::RetiredInstrument = "The following specified instruments are retired: `1`.  Please check the Status of the instruments in question, or provide alternative, non-Retired instruments to use.";
 Error::DeprecatedInstrument = "The following specified instrument models are deprecated: `1`.  Please check the Deprecated field of the instrument models in question, or provide alternative, non-Deprecated instruments to use.";
@@ -2543,6 +2564,7 @@ Error::NoSuitableSite="None of your ECL facilities contain all the requested ins
 Warning::NoAvailableStoragePosition="The following instruments request storage inside of the instruments that have reached the maximum storage capacity: `1`. Please check the available positions of the instrument, or provide an alternative instrument or instrument model.";
 Error::InvalidSterileRequest="The following input model(s) or object(s) `1` do not have Sterile -> True, but the resource requesting them requires them to be sterile. Please check the sterility of these samples, or provide alternative sterile samples to use.";
 Error::ContainerNotSterile="The following container(s) `1` do not have Sterile -> True, but the resource requesting them requires them to be sterile.  Please check the sterility of the specified container, or provided alternative sterile containers to use.";
+Error::TrainingModelOutsideOfTraining="The following Models(s) `1` have TrainingModel -> True, but the RootProtocol of the resource requesting is not a Training.  Please swap this Model out for a non-training version.";
 
 (* empty list case *)
 fulfillableResourceQ[{}, ops : OptionsPattern[]] := Module[
@@ -2572,11 +2594,25 @@ fulfillableResourceQ[myResourceBlob_Resource, ops : OptionsPattern[]] := fulfill
 fulfillableResourceQ[myResourceBlobs : {__Resource}, ops : OptionsPattern[]] := Module[
 	{safeOps, fastTrack, outputFormat, resourcePackets, resourceChangePackets, keys, values, newKeys, cache, simulation,
 		nameObjects, idObjects, nameReplaceRules, noNameResourceBlobs, objects, verbose,
-		simulatedQ, nonSimulatedObjects, simulatedObjects, nonSimulatedResourcesBlobs, myResourceBlobsObjects},
+		simulatedQ, nonSimulatedObjects, simulatedObjects, nonSimulatedResourceTuples, nonSimulatedResourcesBlobs, nonSimulatedResourceRootProtocols, myResourceBlobsObjects, rootProtocol, expandedRootProtocol},
 
 	(* get the safe options *)
 	safeOps = SafeOptions[fulfillableResourceQ, ToList[ops]];
-	{fastTrack, cache, simulation, verbose, outputFormat} = Lookup[safeOps, {FastTrack, Cache, Simulation, Verbose, OutputFormat}];
+	{fastTrack, cache, simulation, verbose, outputFormat, rootProtocol} = Lookup[safeOps, {FastTrack, Cache, Simulation, Verbose, OutputFormat, RootProtocol}];
+
+	(* expand the RootProtocol option if it isn't already *)
+	expandedRootProtocol = If[MatchQ[rootProtocol, _List],
+		rootProtocol,
+		ConstantArray[rootProtocol, Length[myResourceBlobs]]
+	];
+
+	(* if the length of expandedRootProtocol is mismatched with the input blobs, then throw an error *)
+	If[Not[SameLengthQ[expandedRootProtocol, myResourceBlobs]],
+		(
+			Message[Error::OptionLengthMismatch, RootProtocol, Length[myResourceBlobs]];
+			Return[$Failed]
+		)
+	];
 
 	(* NOTE: If our simulation isn't updated, update it. *)
 	simulation=If[!MatchQ[simulation, SimulationP] || MatchQ[Lookup[simulation[[1]], Updated], True],
@@ -2647,19 +2683,25 @@ fulfillableResourceQ[myResourceBlobs : {__Resource}, ops : OptionsPattern[]] := 
 	];
 
 	(* Only check if non-simulated objects are fulfillable. *)
-	nonSimulatedResourcesBlobs = (
-		If[MemberQ[#, Alternatives @@ simulatedObjects, Infinity],
+	nonSimulatedResourceTuples = MapThread[
+		If[MemberQ[#1, Alternatives @@ simulatedObjects, Infinity],
 			Nothing,
-			#
-		]
-	&) /@ myResourceBlobsObjects;
+			{#1, #2}
+		]&,
+		{myResourceBlobsObjects, expandedRootProtocol}
+	];
+
+	{nonSimulatedResourcesBlobs, nonSimulatedResourceRootProtocols} = If[MatchQ[nonSimulatedResourceTuples, {}],
+		{{}, {}},
+		Transpose[nonSimulatedResourceTuples]
+	];
 
 	(* have the blobs that don't have any names in their packets anymore *)
 	noNameResourceBlobs = nonSimulatedResourcesBlobs /. nameReplaceRules;
 
 	(* convert the input resource blobs into resource packets using the function resourceToPacket (defined in this same file above and also used by RequireResources) *)
 	(* SimulationMode -> True because it's faster and we don't really care about the resource objects here anyway if we're from the blob overload *)
-	resourceChangePackets = resourceToPacket[noNameResourceBlobs, Simulation -> simulation, SimulationMode -> True];
+	resourceChangePackets = resourceToPacket[noNameResourceBlobs, RootProtocol -> nonSimulatedResourceRootProtocols, Simulation -> simulation, SimulationMode -> True];
 
 	(* get the keys and values for the resource change packets *)
 	keys = Keys[#]& /@ resourceChangePackets;
@@ -2727,7 +2769,7 @@ fulfillableResourceQ[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 				expiredSamples, instrumentUndergoingMaintenance, samplesOutOfStock, deprecatedProduct, samplesInTransit,
 				samplesShippedToUser, rentedKits, enoughUsesSample, enoughVolumeUsesSample, uniqueVolumeUsesSample,
 				nonScalableStockSolutionVolumeTooHigh, possibleSite, noInstrumentForStorage, invalidSterileRequest,
-				containerNotSterile, ownedInstrument
+				containerNotSterile, invalidTrainingModelRequest, ownedInstrument
 			},
 
 			(* if resource blobs were provided, do Sample/Models/Instrument/InstrumentModels exist? *)
@@ -2960,6 +3002,13 @@ fulfillableResourceQ[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 				False
 			}};
 
+			(* If the resource requests a TrainingModel but the RootProtocol of the requestor is not a training *)
+			invalidTrainingModelRequest = {Test, {
+				StringJoin["If the resource requests a TrainingModel but the RootProtocol of the requestor is not a training:"],
+				MemberQ[Lookup[fulfillableResourceAssoc, InvalidTrainingModelRequest], ObjectP[#]],
+				False
+			}};
+
 			(* return two outputs, one only booleans, and another full list of the object and all the test results for this input *)
 			{
 				(* verbose result, construct the tests and warnings to pass on. the type of test is specified in the first element of the tuple *)
@@ -2998,7 +3047,8 @@ fulfillableResourceQ[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 							possibleSite,
 							noInstrumentForStorage,
 							invalidSterileRequest,
-							containerNotSterile
+							containerNotSterile,
+							invalidTrainingModelRequest
 						}
 					]]
 				},
@@ -3031,7 +3081,8 @@ fulfillableResourceQ[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 							nonScalableStockSolutionVolumeTooHigh,
 							possibleSite,
 							invalidSterileRequest,
-							containerNotSterile
+							containerNotSterile,
+							invalidTrainingModelRequest
 						}
 					]]
 				}
@@ -3228,6 +3279,9 @@ fulfillableResourcesP = AssociationMatchP[
 		(* list of resources where Sterile -> True in the resource, but not in the specified container model *)
 		ContainerNotSterile -> {ObjectP[Object[Resource]]...},
 
+		(* list of resources where TrainingModel -> True for the requested Model, but RootProtocol is not a Training *)
+		InvalidTrainingModelRequest -> {ObjectP[Object[Resource]]...},
+
 		(* the list of all resources requesting samples that are not on site and need to be shipped *)
 		SamplesOffSite -> {ObjectP[Object[Resource]]...},
 
@@ -3300,6 +3354,7 @@ fulfillableResources[{}, ops : OptionsPattern[]] := Module[{specifiedSite},
 		NonScalableStockSolutionVolumeTooHigh -> {},
 		InvalidSterileRequest -> {},
 		ContainerNotSterile -> {},
+		InvalidTrainingModelRequest -> {},
 		SamplesOffSite -> {},
 		Site -> If[MatchQ[specifiedSite, ObjectP[]], specifiedSite, $Site]
 	|>
@@ -3388,16 +3443,16 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 		samplesAndContainersReplaceRules, postSecondDownloadPackets, undergoingMaintenanceResourcePackets,
 		typesAndSearchConditions, typesAndSearchConditionsNoDupes, typesToSearchOverNoDupes, modelSearchConditionsNoDupes,
 		discardedSamples, discardedResources, expiredBooleans, expiredSamples, expiredResources, notDeprecatedBool,
-		deprecatedModels, deprecatedResources, allProductPackets, oneProductPerResource, consumableProdNotDeprecatedBool,
-		matchingSterileBool, sterileMismatchResources, sterileMismatchObjs, containerNotSterileResources, matchingSterileContainerBool,
-		containerNotSterileObjs, allAllowedNotebooksPerInstrumentResource, allInstrumentResourceStatuses,
+		deprecatedModels, deprecatedResources, allProductPackets, oneProductPerResource, consumableProdNotDeprecatedBool, containerInvalidTrainingModelObs,
+		matchingSterileBool, sterileMismatchResources, sterileMismatchObjs, containerNotSterileResources, containerInvalidTrainingModelResources, matchingSterileContainerBool,
+		containerNotSterileObjs, allAllowedNotebooksPerInstrumentResource, allInstrumentResourceStatuses, matchingTrainingModelTrainingProtocol,
 		requestedInstrumentNotebookPackets, canUseSpecificInstrumentQ, notOwnedInstrumentResources, notOwnedInstruments,
 		consumableResourceProdNotDeprecated, consumableProdsNotDeprecated, consumableNoProdBool, totalVolProdNotDeprecatedBool,
 		totalVolResourceProdNotDeprecated, totalVolProdsNotDeprecated, totalVolNoProdBool, modelVolProdNotDeprecatedBool,
 		modelVolResourceProdNotDeprecated, modelVolProdsNotDeprecated, modelVolNoProdBool, modelReservedPackets,
 		modelReservedAmount, availableAmountAllModels, consumablesAvailable, allResourceStatuses, canUseSpecificSample,
 		notOwnedSamples, notOwnedResources, shippingToECLBools, samplesShippingToECLResources, samplesShippingToECL,
-		requestedSampleNotebookPackets, resourcesToUseWithAuthor, nullNotebookQ, now, samplesAndContainersNoDupes,
+		requestedSampleNotebookPackets, reqestedSampleRootProtocol,resourcesToUseWithAuthor, nullNotebookQ, now, samplesAndContainersNoDupes,
 		samplesAndContainersRules, oneProductPerResourceToSearchNoDupes, modelPacketsToSearchNoDupes,
 		allPacketsWithNotebook, combinedNonFulfillableResources, hermeticQReplaceRules, modelHermeticQs,
 		fulfillable, subprotocol, subprotocolBooleans, subprotocolResources, consumableDeprecatedProdBool,
@@ -3526,26 +3581,27 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 		Switch[#,
 			ObjectP[Object[Resource, Sample]],
 				{
-					Packet[Models, Sample, Amount, ContainerModels, ContainerName, Well, Status, Rent, NumberOfUses, VolumeOfUses, Sterile],
-					Packet[Sample[{Volume, Mass, Count, Size, Model, Container, AwaitingDisposal, Status, ExpirationDate, Contents, RequestedResources, Notebook, Destination, NumberOfUses, VolumeOfUses, Site, Sterile}]],
-					Packet[Sample[RequestedResources][{Status, Amount, NumberOfUses, VolumeOfUses, ExactAmount, Tolerance, Sterile, Rent}]],
-					Packet[Models[{Reusable, CleaningMethod, Deprecated, Products, KitProducts, Autoclave, StorageBuffer, MaxNumberOfUses, MaxVolumeOfUses, RequestedResources, PrepareInResuspensionContainer, VolumeIncrements, StorageBuffer, Sterile, State, Density, Notebook}]],
-					Packet[ContainerModels[{MaxVolume, Deprecated, MaxTemperature, Sterile}]],
-					Packet[Sample[Container][{Contents}]],
-					Packet[Sample[Container][Model][{Reusable, CleaningMethod, Deprecated, Products, RequestedResources, Notebook, MaxTemperature, Sterile}]],
-					Packet[Models[Products][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
-					Packet[Models[KitProducts][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
-					Packet[Sample[Notebook][Financers]],
-					Packet[RootProtocol[Notebook][Financers][DefaultExperimentSite][Object]],
+					(*1*) Packet[Models, Sample, Amount, ContainerModels, ContainerName, Well, Status, Rent, NumberOfUses, VolumeOfUses, Sterile],
+					(*2*) Packet[Sample[{Volume, Mass, Count, Size, Model, Container, AwaitingDisposal, Status, ExpirationDate, Contents, RequestedResources, Notebook, Destination, NumberOfUses, VolumeOfUses, Site, Sterile}]],
+					(*3*) Packet[Sample[RequestedResources][{Status, Amount, NumberOfUses, VolumeOfUses, ExactAmount, Tolerance, Sterile, Rent}]],
+					(*4*) Packet[Models[{Reusable, CleaningMethod, Deprecated, Products, KitProducts, Autoclave, StorageBuffer, MaxNumberOfUses, MaxVolumeOfUses, RequestedResources, PrepareInResuspensionContainer, VolumeIncrements, StorageBuffer, Sterile, State, Density, Notebook, TrainingModel}]],
+					(*5*) Packet[ContainerModels[{MaxVolume, Deprecated, MaxTemperature, Sterile, TrainingModel}]],
+					(*6*) Packet[Sample[Container][{Contents}]],
+					(*7*) Packet[Sample[Container][Model][{Reusable, CleaningMethod, Deprecated, Products, RequestedResources, Notebook, MaxTemperature, Sterile}]],
+					(*8*) Packet[Models[Products][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
+					(*9*) Packet[Models[KitProducts][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
+					(*10*) Packet[Sample[Notebook][Financers]],
+					(*11*) Packet[RootProtocol[Notebook][Financers][DefaultExperimentSite][Object]],
 					(* the following Download fields are specifically in the case where Models were not automatically included in the resource packets *)
-					Packet[Sample[Model][{Reusable, CleaningMethod, Deprecated, Products, KitProducts, Autoclave, StorageBuffer, MaxNumberOfUses, MaxVolumeOfUses, RequestedResources, PrepareInResuspensionContainer, VolumeIncrements, StorageBuffer, Sterile, State, Density, Notebook}]],
-					Packet[Sample[Model][Products][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
-					Packet[Sample[Model][KitProducts][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
+					(*12*) Packet[Sample[Model][{Reusable, CleaningMethod, Deprecated, Products, KitProducts, Autoclave, StorageBuffer, MaxNumberOfUses, MaxVolumeOfUses, RequestedResources, PrepareInResuspensionContainer, VolumeIncrements, StorageBuffer, Sterile, State, Density, Notebook, TrainingModel}]],
+					(*13*) Packet[Sample[Model][Products][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
+					(*14*) Packet[Sample[Model][KitProducts][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
 					(* these fields are for if you have a resource for a container that holds the "main" sample in the protocol *)
-					Packet[Models[ProductsContained][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
-					Packet[Models[KitProductsContainers][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
-					Packet[Sample[Model][ProductsContained][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
-					Packet[Sample[Model][KitProductsContainers][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]]
+					(*15*) Packet[Models[ProductsContained][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
+					(*16*) Packet[Models[KitProductsContainers][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
+					(*17*) Packet[Sample[Model][ProductsContained][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
+					(*18*) Packet[Sample[Model][KitProductsContainers][{Deprecated, EstimatedLeadTime, NotForSale, Stocked, CountPerSample, KitComponents, Amount, Price, Sterile}]],
+					(*19*) Packet[RootProtocol]
 				},
 			ObjectP[Object[Resource, Instrument]],
 				{
@@ -3621,6 +3677,9 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 
 	(* get the packets for the Notebook of each of the requested samples *)
 	requestedSampleNotebookPackets = allSamplePackets[[All, 10]];
+
+	(* get the packets for the RootProtocol of the requested samples *)
+	reqestedSampleRootProtocol = allSamplePackets[[All, 19]];
 
 	(* --- Need to do some wonky stuff for getting the RequestedResources of all the Models since that often has a bunch of duplicates that can be sped up (and is otherwise super slow if we had only one Download above) --- *)
 
@@ -3969,7 +4028,7 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 
 	(* throw a message for the expired samples *)
 	If[messages && Not[MatchQ[expiredResources, {}]] && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Warning::ExpiredSamples, Download[expiredSamples, Object]]
+		Message[Warning::ExpiredSamples, Lookup[expiredSamples, Object], Lookup[expiredSamples, ExpirationDate]]
 	];
 
 	(* --- For all Object[Resource, Sample] objects, are the model(s) deprecated? *)
@@ -4047,6 +4106,37 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 		{sampleResourcePackets, allContainerModelPackets}
 	];
 
+	(* --- For all Object[Resource, Sample] objects, if the specified container models TrainingModel -> True, are the RootProtocols Object[Qualification, Training]? --- *)
+	(* if True, then that means everything is fine; if False, then that's not fulfillable *)
+	matchingTrainingModelTrainingProtocol = MapThread[
+		Function[{modelPacket, rootProtocol, containerModel, resourcePacket},
+			Which[
+				(* If the RootProtocol is a Training, then we're fine and don't need to go further *)
+				MatchQ[Lookup[rootProtocol,RootProtocol], ObjectP[{Object[Qualification, Training],Object[Maintenance, Training]}]],
+					True,
+				 (* If the sample doesn't have a model we are fine, we need not check any further *)
+				NullQ[modelPacket],
+					True,
+					(* We have to guard against samples with no Models, the ideal way is to just limit the check to Containers to avoid anything else unexpected *)
+				And[
+					Or[
+						MemberQ[Lookup[resourcePacket, Models], ObjectP[Model[Container]]],
+						MemberQ[Lookup[resourcePacket, ContainerModels], ObjectP[Model[Container]]]
+					],
+					MemberQ[Lookup[modelPacket, TrainingModel], True]
+				],
+					False,
+				(* If the requested sample is a TrainingModel, then return False *)
+				MemberQ[Lookup[containerModel, TrainingModel], True],
+					False,
+				(* Otherwise, we're okay, return True *)
+				True,
+					True
+				]
+		],
+		{allModelPackets, reqestedSampleRootProtocol, allContainerModelPackets, sampleResourcePackets}
+	];
+
 	(* get the sterile mismatch resources, and then pull out he requested container models that were improperly _not_ sterile *)
 	containerNotSterileResources = PickList[sampleResourcePackets, matchingSterileContainerBool, False];
 	containerNotSterileObjs = Flatten[PickList[allContainerModelPackets, matchingSterileContainerBool, False]];
@@ -4054,6 +4144,16 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 	(* throw a message for the sterile container mismatch samples *)
 	If[messages && Not[MatchQ[containerNotSterileObjs, {}]],
 		Message[Error::ContainerNotSterile, Download[containerNotSterileObjs, Object]]
+	];
+
+	(* get the resources that are requesting TrainingModels when RootProtocol is not a Taining, and then pull out he requested container models that are TrainingModels *)
+	containerInvalidTrainingModelResources = PickList[sampleResourcePackets, matchingTrainingModelTrainingProtocol, False];
+	containerInvalidTrainingModelObs = Flatten[PickList[Transpose[{allModelPackets, allContainerModelPackets}], matchingTrainingModelTrainingProtocol, False]];
+
+	(* throw a message for the sterile container mismatch samples *)
+	If[messages && Not[MatchQ[containerInvalidTrainingModelObs, {}]],
+		(* Because this could come in container or as a direct sample, we can also end up with the actual sample when the resource's Container field is the problem. So we narrow what can make it to the error *)
+		Message[Error::TrainingModelOutsideOfTraining, Cases[Download[containerInvalidTrainingModelObs, Object], (ObjectP[Model[Container]] | ObjectP[Model[Part, Funnel]])]]
 	];
 
 	(* --- For all Object[Resource, Sample] objects, if a sample was specifically indicated, does that sample's notebook match a notebook owned by the requestor? --- *)
@@ -4684,15 +4784,41 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 			With[
 				{
 					modelClause = Model == (Alternatives @@ Lookup[modelPacket, Object]),
-					(*we explicitly forbid reuse of InUse covers so we don't steal covers from other containers while we are fulfilling a Model resource*)
-					(*we also forbid a non-reusable container to be picked as Available, just in case they were used in another protocol with no sample uploaded to it due to it being used as intermediate container or some other bug *)
-					(* if the model is dishwashable, only allowed stocked *)
 					statusClause = Which[
-						MatchQ[Lookup[modelPacket, Object], {ObjectP[Join[CoverModelTypes, {Model[Item, Stopper], Model[Item, Septum]}, {Model[Item, WeighBoat, WeighingFunnel]}]]..}],
+						(* Forbid reuse of InUse covers so we don't steal covers from other containers while we are fulfilling a Model resource*)
+						And[
+							MatchQ[Lookup[modelPacket, Object], {ObjectP[Join[CoverModelTypes, {Model[Item, Stopper], Model[Item, Septum]}]]..}],
+							MatchQ[Lookup[modelPacket, CleaningMethod], {CleaningMethodP..}]
+						],
+							Status == Stocked,
+						MatchQ[Lookup[modelPacket, Object], {ObjectP[Join[CoverModelTypes, {Model[Item, Stopper], Model[Item, Septum]}]]..}],
 							Status == (Available | Stocked),
 
+						(* Weigh boats that are individually IDed should be single use, do not allow re-using them *)
+						And[
+							MatchQ[Lookup[modelPacket, Object], {ObjectP[{Model[Item, WeighBoat]}]..}],
+							MatchQ[Lookup[modelPacket, Counted], {Except[True]..}]
+						],
+							Status == Stocked,
+
+						(* Spatulas should not be re-used unless they are reusable but not washable (metal spatulas are wiped within Transfer procedure) or counted *)
+						And[
+							MatchQ[Lookup[modelPacket, Object], {ObjectP[{Model[Item, Spatula]}]..}],
+							MatchQ[Lookup[modelPacket, Counted], {Except[True]..}],
+							Or[
+								MatchQ[Lookup[modelPacket, Reusable], {Except[True]..}],
+								And[
+									MatchQ[Lookup[modelPacket, Reusable], {True..}],
+									MatchQ[Lookup[modelPacket, CleaningMethod], {CleaningMethodP..}]
+								]
+							]
+						],
+							Status == Stocked,
+
+						(*we also forbid a non-reusable container to be picked as Available, just in case they were used in another protocol with no sample uploaded to it due to it being used as intermediate container or some other bug *)
+						(* if the model is dishwashable, only allowed stocked *)
 						Or[
-							MatchQ[Lookup[modelPacket, CleaningMethod], CleaningMethodP],
+							MatchQ[Lookup[modelPacket, CleaningMethod], {CleaningMethodP..}],
 							MatchQ[Lookup[modelPacket, Object], {ObjectP[FluidContainerModelTypes]..}] && MatchQ[Lookup[modelPacket, Reusable], {Except[True]..}]
 						],
 							Status == Stocked,
@@ -6102,7 +6228,8 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 			sitelessSampleResourcesAfterProductFilter,
 			sitelessInstrumentResources,
 			sterileMismatchResources,
-			containerNotSterileResources
+			containerNotSterileResources,
+			containerInvalidTrainingModelResources
 		}
 	]];
 
@@ -6306,6 +6433,7 @@ fulfillableResources[myResources : {ObjectP[Object[Resource]]..}, ops : OptionsP
 		NonScalableStockSolutionVolumeTooHigh -> nonScalableStockSolutionResourcePackets,
 		InvalidSterileRequest -> sterileMismatchResources,
 		ContainerNotSterile -> containerNotSterileResources,
+		InvalidTrainingModelRequest -> containerInvalidTrainingModelResources,
 		SamplesOffSite -> resourcesToBeShipped,
 		Site -> resolvedSite
 	|>
@@ -6660,7 +6788,7 @@ ModelInstances[myRequestedModels:{ObjectP[{Model[Sample],Model[Item]}]..},myRequ
 	downloadValues = Quiet[
 		Download[
 			{myRequestedModels,allContainerModels},
-			{{Packet[AlternativePreparations, CleaningMethod]},{Object}}
+			{{Packet[AlternativePreparations, CleaningMethod, Counted, Reusable]},{Object}}
 		]
 	];
 
@@ -6783,25 +6911,61 @@ ModelInstances[myRequestedModels:{ObjectP[{Model[Sample],Model[Item]}]..},myRequ
 
 				(*we explicitly forbid reuse of InUse covers so we don't steal covers from other containers while we are fulfilling a Model resource*)
 				(*also exclude weighing funnel for repeated resource picking - they are individually IDed, and we have retry logic to pick new weighing funnels after the initial ones are already picked. For example, if we need to retry for our first transfer, we don't want the weighing funnel we picked for the second transfer to be used here for retry. Instead we need to pick a new one. *)
-				statusQuery = If[MatchQ[sampleType, TypeP[Join[CoverObjectTypes, {Object[Item, Stopper], Object[Item, Septum]}, {Object[Item, WeighBoat, WeighingFunnel]}]]],
-					And[
-						Status == pickableStatus,
-						CurrentProtocol == Null
-					],
-					Or[
+				statusQuery = Which[
+					(* Forbid reuse of InUse covers so we don't steal covers from other containers while we are fulfilling a Model resource*)
+					MatchQ[sampleType, TypeP[Join[CoverObjectTypes, {Object[Item, Stopper], Object[Item, Septum]}]]],
 						And[
 							Status == pickableStatus,
 							CurrentProtocol == Null
 						],
-						(* rootProtocol may be Null if we're calling this from ExperimentTransfer in which case we only want the Available|Stocked criteria above *)
-						If[MatchQ[myRootProtocol, Null],
-							False,
+
+					(* Weigh boats that are individually IDed should be single use, do not allow re-using them *)
+					And[
+						MatchQ[sampleType, TypeP[Object[Item, WeighBoat]]],
+						MatchQ[Lookup[requestedModelPacket, Counted], Except[True]]
+					],
+						And[
+							Status == Stocked,
+							CurrentProtocol == Null
+						],
+
+					(* Spatulas should not be re-used unless they are reusable but not washable (metal spatulas are wiped within Transfer procedure) or counted *)
+					And[
+						MatchQ[sampleType, TypeP[Object[Item, Spatula]]],
+						MatchQ[Lookup[requestedModelPacket, Counted], Except[True]],
+						MatchQ[Lookup[requestedModelPacket, Reusable], Except[True]]
+					],
+						And[
+							Status == Stocked,
+							CurrentProtocol == Null
+						],
+					And[
+						MatchQ[sampleType, TypeP[Object[Item, Spatula]]],
+						MatchQ[Lookup[requestedModelPacket, Counted], Except[True]],
+						MatchQ[Lookup[requestedModelPacket, Reusable], True],
+						MatchQ[Lookup[requestedModelPacket, CleaningMethod], CleaningMethodP]
+					],
+						And[
+							Status == Stocked,
+							CurrentProtocol == Null
+						],
+
+					(* This includes spatula that is reusable but not washable *)
+					True,
+						Or[
 							And[
-								Status == InUse,
-								CurrentProtocol == myRootProtocol
+								Status == pickableStatus,
+								CurrentProtocol == Null
+							],
+							(* rootProtocol may be Null if we're calling this from ExperimentTransfer in which case we only want the Available|Stocked criteria above *)
+							If[MatchQ[myRootProtocol, Null],
+								False,
+								And[
+									Status == InUse,
+									CurrentProtocol == myRootProtocol
+								]
 							]
 						]
-					]
 				];
 
 				(* Position query - for resource with ContainerName and Well *)
@@ -7359,13 +7523,16 @@ ScanValue[object:SelfContainedSampleP,cont_]:=If[
 (* return the container except in two instances: *)
 (* 1. If it is a capillary, return the container of the capillary *)
 (* 2. If sample's container is in an objectified aseptic container, return the container of the container *)
-ScanValue[object:ObjectP[Object[Sample]],cont:FluidContainerP]:=If[
-	Or[
-		MatchQ[cont, ObjectP[Object[Container, Capillary]]],
-		MatchQ[Download[cont, Container[Object]], ObjectP[Object[Container, Bag, Aseptic]]]
-	],
-	Download[cont, Container[Object]],
-	cont
+ScanValue[object:ObjectP[Object[Sample]],cont:FluidContainerP]:=Module[{containersContainer},
+	containersContainer = Download[cont, Container[Object]];
+	If[
+		Or[
+			MatchQ[cont, ObjectP[Object[Container, Capillary]]],
+			MatchQ[containersContainer, ObjectP[Object[Container, Bag, Aseptic]]]
+		],
+		containersContainer,
+		cont
+	]
 ];
 
 (* If the container is an autoclave bag, scan the container *)

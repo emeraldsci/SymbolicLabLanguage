@@ -3076,13 +3076,31 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 			Variables :> {options}
 		],
 		Example[{Options, CentrifugeIntensity, "Set the CentrifugeIntensity option:"},
-			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (20 mL) "<>$SessionUUID],
-				CentrifugeTime -> 40*Minute, CentrifugeTemperature -> 10 Celsius,
-				CentrifugeIntensity -> 1000*RPM, Output -> Options];
+			options = ExperimentCapillaryIsoelectricFocusing[
+				Object[Sample,"ExperimentCIEF Test sample 1 (20 mL) "<>$SessionUUID],
+				CentrifugeTime -> 40 Minute,
+				CentrifugeTemperature -> 10 Celsius,
+				CentrifugeIntensity -> 1000 RPM,
+				Output -> Options
+			];
 			Lookup[options, CentrifugeIntensity],
-			1000*RPM,
+			1000 RPM,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentCapillaryIsoelectricFocusing[
+				Object[Sample,"ExperimentCIEF Test sample 1 (20 mL) "<>$SessionUUID],
+				CentrifugeTime -> 40 Minute,
+				CentrifugeTemperature -> 10 Celsius,
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
 		],
 		Example[{Options, CentrifugeTime, "Set the CentrifugeTime option:"},
 			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (20 mL) "<>$SessionUUID],
@@ -3273,12 +3291,27 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 			Variables :> {options}
 		],
 		Example[{Options, AliquotAmount, "Set the AliquotAmount option:"},
-			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 3 (100 uL) "<>$SessionUUID],
-				AliquotAmount -> 0.08*Milliliter, Output -> Options];
+			options = ExperimentCapillaryIsoelectricFocusing[
+				Object[Sample,"ExperimentCIEF Test sample 3 (100 uL) "<>$SessionUUID],
+				AliquotAmount -> 0.08 Milliliter,
+				Output -> Options
+			];
 			Lookup[options, AliquotAmount],
-			0.08*Milliliter,
+			0.08 Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentCapillaryIsoelectricFocusing[
+				Object[Sample,"ExperimentCIEF Test sample 3 (100 uL) "<>$SessionUUID],
+				AliquotAmount -> 0.08101 Milliliter,
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			0.081 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "Set the AssayVolume option:"},
 			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 3 (100 uL) "<>$SessionUUID],
@@ -3544,11 +3577,11 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 					Upload[<|Object->Object[Instrument, ProteinCapillaryElectrophoresis, "Maurice"], Replace[Contents]->{}|>]
 				];
 
-				sampleModel=UploadSampleModel["Unit test Model for ExperimentCIEF (deprecated) "<>$SessionUUID,
-					Composition->{
-						{100 VolumePercent,
-							Model[Molecule,Protein,"Unknown Protein - 10 KDa"]}
+				sampleModel=UploadSampleModel[
+					{
+						{100 VolumePercent, Model[Molecule,Protein,"Unknown Protein - 10 KDa"]}
 					},
+					Name -> "Unit test Model for ExperimentCIEF (deprecated) "<>$SessionUUID,
 					SingleUse->True,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
@@ -3556,11 +3589,12 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 					ShelfLife->12 Month,
 					UnsealedShelfLife->9 Month
 				];
-				sampleModel1=UploadSampleModel["10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID,
-					Composition->{
+				sampleModel1=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{10 Milligram/Milliliter,Model[Molecule,Protein,"id:o1k9jAGP83Ba"]}
 					},
+					Name -> "10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -3571,11 +3605,12 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 					BiosafetyLevel->"BSL-1",
 					IncompatibleMaterials->{None}
 				];
-				sampleModel2=UploadSampleModel["10 mg/mL bActin for cIEF tests "<>$SessionUUID,
-					Composition->{
+				sampleModel2=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{10 Milligram/Milliliter,Model[Molecule,Protein,"BActin"]}
 					},
+					Name -> "10 mg/mL bActin for cIEF tests "<>$SessionUUID,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -3586,11 +3621,12 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 					BiosafetyLevel->"BSL-1",
 					IncompatibleMaterials->{None}
 				];
-				sampleModel3=UploadSampleModel[ "0.24 mM bActin "<>$SessionUUID,
-					Composition->{
+				sampleModel3=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{0.24 Millimolar,Model[Molecule,Protein,"BActin"]}
 					},
+					Name -> "0.24 mM bActin "<>$SessionUUID,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -3601,11 +3637,12 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 					BiosafetyLevel->"BSL-1",
 					IncompatibleMaterials->{None}
 				];
-				sampleModel4=UploadSampleModel["0.5% SDS in 100mM Tris, pH 9.5 "<>$SessionUUID,
-					Composition -> {{Quantity[100, "Millimolar"],
-						Link[Model[Molecule, "id:01G6nvwRWR0d"],
-							"01G6nv1ZlzO7"]}, {Quantity[0.5, IndependentUnit["MassPercent"]],
-						Link[Model[Molecule, "id:Y0lXejMq5eRl"], "1ZA60vZdXlGw"]}},
+				sampleModel4=UploadSampleModel[
+					{
+						{100 Millimolar, Model[Molecule, "id:01G6nvwRWR0d"]},
+						{0.5 MassPercent, Model[Molecule, "id:Y0lXejMq5eRl"]}
+					},
+					Name -> "0.5% SDS in 100mM Tris, pH 9.5 "<>$SessionUUID,
 					Expires -> True,
 					ShelfLife -> Quantity[365.`, "Days"],
 					UnsealedShelfLife->2 Week,
@@ -4088,11 +4125,12 @@ DefineTests[ValidExperimentCapillaryIsoelectricFocusingQ,
 					anolyte,std,catholyte,mc05,flx,urea,ampholyte,piMarker1,piMarker2,arg,mc1,container13,container14
 				},
 
-				sampleModel1=UploadSampleModel["10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID,
-					Composition->{
+				sampleModel1=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{10 Milligram/Milliliter,Model[Molecule,Protein,"id:o1k9jAGP83Ba"]}
 					},
+					Name -> "10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -4389,11 +4427,12 @@ DefineTests[
 						anolyte,std,catholyte,mc05,flx,urea,ampholyte,piMarker1,piMarker2,arg,mc1,container13,container14
 					},
 
-					sampleModel1=UploadSampleModel["10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID,
-						Composition->{
+					sampleModel1=UploadSampleModel[
+						{
 							{100 VolumePercent,Model[Molecule,"Water"]},
 							{10 Milligram/Milliliter,Model[Molecule,Protein,"id:o1k9jAGP83Ba"]}
 						},
+						Name -> "10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID,
 						State->Liquid,
 						DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 						Expires->True,
@@ -4690,11 +4729,12 @@ DefineTests[
 						anolyte,std,catholyte,mc05,flx,urea,ampholyte,piMarker1,piMarker2,arg,mc1,container13,container14
 					},
 
-					sampleModel1=UploadSampleModel["10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID,
-						Composition->{
+					sampleModel1=UploadSampleModel[
+						{
 							{100 VolumePercent,Model[Molecule,"Water"]},
 							{10 Milligram/Milliliter,Model[Molecule,Protein,"id:o1k9jAGP83Ba"]}
 						},
+						Name -> "10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID,
 						State->Liquid,
 						DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 						Expires->True,

@@ -34,3 +34,34 @@ DefineUsage[DefineConstant,
 			"platform"
 		}
 	}];
+
+
+
+(* ::Subsubsection::Closed:: *)
+(*SafeNow*)
+DefineUsage[SafeNow,
+	{
+		BasicDefinitions -> {
+			{"SafeNow[]", "dateTime", "returns a DateObject representing the current moment in time, that isn't affected by overwriting the definition of Now."}
+		},
+		MoreInformation -> {
+			"Defined in the same way as the Now function, however its value is not affected by Block/Stub of Now symbol.",
+			"SafeNow symbol is Locked, preventing the symbol for being Blocked or Stubbed.",
+			"Important for core infrastructure that requires the correct time, even when the value of Now is overridden, such as in the unit testing environment.",
+			"The value of SafeNow can still be corrupted by redefining DateObject[] but this should never be done."
+		},
+		Input :> {
+		},
+		Output :> {
+			{"dateTime", _?DateObjectQ, "A DateObject representing the current moment in time."}
+		},
+		SeeAlso -> {
+			"Protect",
+			"Now",
+			"Locked"
+		},
+		Author -> {
+			"david.ascough"
+		}
+	}
+];

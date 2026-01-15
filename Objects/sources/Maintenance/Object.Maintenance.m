@@ -364,7 +364,8 @@ With[
 					Object[Item][Maintenance],
 					Object[Plumbing],
 					Object[Wiring],
-					Object[Product]
+					Object[Product],
+					Object[User]
 				],
 				Description -> "The designated object that this maintenance is intended to service.",
 				Category -> "General",
@@ -1836,6 +1837,14 @@ With[
 				Description -> "The history of glove replacements during this protocol in the form: {Date, Glove Box, Operator}. This field records when gloves were replaced, which gloves  were used, and who performed the replacement.",
 				Headers -> {"Date", "Glove Box", "Operator"},
 				Category -> "Health & Safety",
+				Developer -> True
+			},
+			AsanaTaskID -> {
+				Format -> Single,
+				Class -> String,
+				Pattern :> _String,
+				Description -> "ID number of the Asana task created for the Scientific Instrumentation team to track this maintenance.",
+				Category -> "Organizational Information",
 				Developer -> True
 			},
 

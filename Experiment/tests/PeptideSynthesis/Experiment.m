@@ -3660,7 +3660,7 @@ DefineTests[
 					{},
 
 					ObjectP[Model[Instrument,PeptideSynthesizer]],
-					ObjectP[Model[Instrument,FumeHood]],
+					ObjectP[Model[Instrument,HandlingStation,FumeHood]],
 					Null,
 					{ObjectP[Model[Container,Vessel]]},
 					{ObjectP[Model[Container,ReactionVessel]]},

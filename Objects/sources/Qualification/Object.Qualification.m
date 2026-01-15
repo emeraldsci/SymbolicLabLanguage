@@ -186,6 +186,14 @@ With[
 				Category -> "Organizational Information",
 				Abstract -> True
 			},
+			Verification -> {
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> BooleanP,
+				Description -> "Indicates if this qualification is performed as a daily check of instrument performance.",
+				Category -> "Organizational Information",
+				Developer -> True
+			},
 
 			(* Analysis & Reports *)
 			DeveloperQualification -> {

@@ -296,8 +296,9 @@ DefineOptions[checkObjectsInOptions,
 ];
 (* Message *)
 
-Warning::OptionContainsUnusableObject = "The following options contain specified object instances that have a
-defective state and will require troubleshooting in the lab:`1` To avoid potential delays in processing, please consider using a Model instead.";
+Warning::OptionContainsUnsuitableObject = "The following options contain specified object instances that have a
+problematic state and might require troubleshooting in the lab:`1`. These samples may be either missing or expired. If expired, the samples can still be used in the protocol, but may negatively affect your results.
+To avoid potential delays in processing, please consider using a Model instead.";
 
 checkObjectsInOptions[myOptions:{_Rule...}, mySimulationOps: Rule[Simulation, _]] := Module[
 	{typesToCheck, optionObjects, simulation, objectPackets, defectiveOptionClauses},
@@ -374,8 +375,8 @@ checkObjectsInOptions[myOptions:{_Rule...}, mySimulationOps: Rule[Simulation, _]
 		myOptions
 	];
 	(* If we have any defective object in options, join all clauses *)
-	If[MatchQ[defectiveOptionClauses, {(_String)..}],
-		Message[Warning::OptionContainsUnusableObject, StringJoin[Sequence@@defectiveOptionClauses]]
+	If[MatchQ[defectiveOptionClauses, {(_String)..}] && !MatchQ[$ECLApplication, Engine],
+		Message[Warning::OptionContainsUnsuitableObject, StringJoin[Sequence@@defectiveOptionClauses]]
 	]
 ];
 
@@ -1807,7 +1808,7 @@ simulateSamplePreparationPacketsNew[myFunction_Symbol,mySamples:ListableP[Listab
 	(* Experiments should call sanitizeInput first by itself. Do not throw the message again *)
 	{samplesByID, experimentOptionsByIDWithPreparedModel} = Quiet[
 		sanitizeInputs[mySamples, flatOptions, Simulation -> simulation],
-		Warning::OptionContainsUnusableObject
+		Warning::OptionContainsUnsuitableObject
 	];
 
 	(* sanitizeInputs will throw the message itself; just need to return $Failed here  *)
@@ -6105,10 +6106,70 @@ resolveAliquotOptions[myFunction_,mySamples:{ListableP[NonSelfContainedSampleP].
 	StartUniqueLabelsSession[];
 
 	(* call the ExperimentAliquot resolver *)
+	(* Quiet AliquotAmountPrecision and rethrow this warning if needed *)
 	{resolvedAliquotedAliquotOptions, aliquotResolutionTests} = Which[
-		MatchQ[aliquotedSamples, {}], {{}, {}},
-		gatherTests, ExperimentAliquot[aliquotedSamples, ReplaceRule[renamedAliquotOptions, {Output -> {Options, Tests}, Cache -> cache, Simulation -> updatedSimulation, EnableSamplePreparation -> True}]],
-		True, {ExperimentAliquot[aliquotedSamples, ReplaceRule[renamedAliquotOptions, {Output -> Options, Cache -> cache, Simulation -> updatedSimulation, EnableSamplePreparation -> True}]], Null}
+		MatchQ[aliquotedSamples, {}],
+			{{}, {}},
+		gatherTests,
+			ExperimentAliquot[
+				aliquotedSamples,
+				ReplaceRule[renamedAliquotOptions, {Output -> {Options, Tests}, Cache -> cache, Simulation -> updatedSimulation, EnableSamplePreparation -> True}]
+			],
+		True,
+			{
+				Quiet[
+					ExperimentAliquot[
+						aliquotedSamples,
+						ReplaceRule[renamedAliquotOptions, {Output -> Options, Cache -> cache, Simulation -> updatedSimulation, EnableSamplePreparation -> True}]
+					],
+					{Warning::AliquotAmountPrecision}
+				],
+				Null
+			}
+	];
+
+	If[!MatchQ[aliquotedSamples, {}] && !gatherTests && !MatchQ[$ECLApplication, Engine],
+		Module[{flattenedInputAmounts, flattenedResolvedAmounts, roundedAmountWarningQs},
+			flattenedInputAmounts = Flatten@Lookup[renamedAliquotOptions, Amount, Automatic];
+			flattenedResolvedAmounts = Flatten@Lookup[resolvedAliquotedAliquotOptions, Amount];
+			roundedAmountWarningQs = If[Length[flattenedInputAmounts] == Length[flattenedResolvedAmounts],
+				MapThread[
+					Function[{amount, roundedAmount},
+						Which[
+							!MassQ[amount] && !VolumeQ[amount],
+								False,
+							MatchQ[amount, Except[Automatic|All]] && MatchQ[roundedAmount, Except[All]] && EqualQ[amount, roundedAmount],
+								False,
+							True,
+								Module[{achievalbeResolution},
+									achievalbeResolution = Quiet[Check[AchievableResolution[amount], $Failed,Error::MinimumAmount], {Error::MinimumAmount, Warning::AmountRounded}];
+									If[MatchQ[achievalbeResolution, $Failed],
+										(* If we are throwing min amount warning, no need to throw AliquotAmountPrecision warning as well*)
+										False,
+										True
+									]
+							]
+						]
+					],
+					{flattenedInputAmounts, flattenedResolvedAmounts}
+				],
+				(* If samples are pooled, do not throw warning *)
+				{False}
+			];
+			(* Note:this warning is essentially the same as what ExperimentAliquot throws. We quiet the warning in ExperimentAliquot and throw it here so we can have the correct option name *)
+			If[MemberQ[roundedAmountWarningQs, True],
+				Message[
+					Warning::AliquotAmountPrecision,
+					(*1*)StringJoin[
+						"AliquotAmount ",
+						isOrAre[DeleteDuplicates[PickList[flattenedInputAmounts, roundedAmountWarningQs]]]
+					],
+					(*2*)Experiment`Private`joinClauses[PickList[flattenedInputAmounts, roundedAmountWarningQs]],
+					(*3*)pluralize[DeleteDuplicates[PickList[flattenedInputAmounts, roundedAmountWarningQs]], "exceeds", "exceed"],
+					(*4*)Experiment`Private`joinClauses[PickList[flattenedResolvedAmounts, roundedAmountWarningQs]]
+				]
+			]
+		]
 	];
 
 	(* End the new label session. *)

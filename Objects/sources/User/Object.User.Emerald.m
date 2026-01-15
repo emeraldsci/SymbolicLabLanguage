@@ -87,14 +87,6 @@ DefineObjectType[Object[User,Emerald], {
 			Description -> "The Emerald employees that this employee directly manages.",
 			Category -> "Company Information"
 		},
-		Department -> {
-			Format -> Single,
-			Class -> Expression,
-			Pattern :> EmeraldDepartmentP,
-			Description -> "The department at Emerald that the user reports to.",
-			Category -> "Organizational Information",
-			Abstract -> True
-		},
 		Site->{
 			Format->Single,
 			Class->Link,
@@ -262,6 +254,23 @@ DefineObjectType[Object[User,Emerald], {
 			Relation -> {Null, Null, Object[User] | Object[Protocol] | Object[Qualification] | Object[Maintenance]},
 			Description -> "A log of the OperationStatus changes for this user.",
 			Headers -> {"Date", "Status", "Responsible Party"},
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		ActiveSciOps -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this user is currently on shift on the Scientific Operations team.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		ActiveSciOpsLog -> {
+			Format -> Multiple,
+			Class -> {Date, Boolean},
+			Pattern :> {_?DateObjectQ, BooleanP},
+			Description -> "A log of times when this user was on shift for the Scinetific Operations team.",
+			Headers -> {"Date", "Active"},
 			Category -> "Organizational Information",
 			Developer -> True
 		},

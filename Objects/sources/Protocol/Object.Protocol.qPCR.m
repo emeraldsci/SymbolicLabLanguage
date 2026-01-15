@@ -146,7 +146,7 @@ DefineObjectType[Object[Protocol,qPCR],{
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script] | Object[Protocol,RoboticCellPreparation] | Object[Protocol,ManualCellPreparation],
 			Description -> "The robotic sample manipulation protocol generated as a result of the execution of ArrayCardPreparatoryPrimitives.",
 			Category -> "Sample Loading"
 		},

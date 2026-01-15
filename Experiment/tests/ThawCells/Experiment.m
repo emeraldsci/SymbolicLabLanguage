@@ -311,11 +311,11 @@ DefineTests[ExperimentThawCells,
         ];
 
         UploadSampleModel[
-          "Test Adherent Mammalian Model 1 for ExperimentThawCells "<>$SessionUUID,
-          Composition->{
+          {
             {70 VolumePercent,Model[Cell, Mammalian, "HeLa"]},
             {30 VolumePercent, Model[Molecule,"Glycerol"]}
           },
+          Name -> "Test Adherent Mammalian Model 1 for ExperimentThawCells "<>$SessionUUID,
           IncompatibleMaterials->{None},
           Expires->False,
           DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
@@ -328,11 +328,11 @@ DefineTests[ExperimentThawCells,
         ];
 
         UploadSampleModel[
-          "Test Adherent Mammalian Model 2 for ExperimentThawCells "<>$SessionUUID,
-          Composition->{
+          {
             {70 VolumePercent,Model[Cell, Mammalian, "HEK293"]},
             {30 VolumePercent, Model[Molecule,"Glycerol"]}
           },
+          Name -> "Test Adherent Mammalian Model 2 for ExperimentThawCells "<>$SessionUUID,
           IncompatibleMaterials->{None},
           Expires->False,
           DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
@@ -345,11 +345,11 @@ DefineTests[ExperimentThawCells,
         ];
 
         UploadSampleModel[
-          "Test Suspension Mammalian Model 3 for ExperimentThawCells "<>$SessionUUID,
-          Composition->{
+          {
             {70 VolumePercent,Model[Cell, Mammalian, "SiHa"]},
             {30 VolumePercent, Model[Molecule,"Glycerol"]}
           },
+          Name -> "Test Suspension Mammalian Model 3 for ExperimentThawCells "<>$SessionUUID,
           IncompatibleMaterials->{None},
           Expires->False,
           DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
@@ -362,11 +362,11 @@ DefineTests[ExperimentThawCells,
         ];
 
         UploadSampleModel[
-          "Test Bacterial Model 4 for ExperimentThawCells "<>$SessionUUID,
-          Composition->{
+          {
             {70 VolumePercent,Model[Cell, Bacteria, "E.coli MG1655"]},
             {30 VolumePercent, Model[Molecule,"Glycerol"]}
           },
+          Name -> "Test Bacterial Model 4 for ExperimentThawCells "<>$SessionUUID,
           IncompatibleMaterials->{None},
           Expires->False,
           DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],

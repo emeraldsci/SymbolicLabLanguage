@@ -2465,6 +2465,14 @@ DefineTests[ExperimentDNASequencing,
       EquivalenceFunction->Equal,
       Variables:>{options}
     ],
+    Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+      options = ExperimentDNASequencing[Object[Sample, "ExperimentDNASequencing test sample 1"<>$SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+      Lookup[options, CentrifugeIntensity],
+      1000RPM,
+      EquivalenceFunction -> Equal,
+      Variables :> {options},
+      Messages :> {Warning::CentrifugePrecision}
+    ],
     (*Note: Put your sample in a 2mL tube for the following test*)
     Example[{Options,CentrifugeInstrument,"The centrifuge that will be used to spin the provided samples prior to starting the experiment:"},
       options=ExperimentDNASequencing[Object[Sample,"ExperimentDNASequencing test sample in 2mL tube"<>$SessionUUID],CentrifugeInstrument->Model[Instrument,Centrifuge,"Microfuge 16"],Output->Options];
@@ -2627,6 +2635,14 @@ DefineTests[ExperimentDNASequencing,
       5*Microliter,
       EquivalenceFunction->Equal,
       Variables:>{options}
+    ],
+    Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+      options = ExperimentDNASequencing[Object[Sample, "ExperimentDNASequencing test sample 1"<>$SessionUUID], AliquotAmount -> 5.001 Microliter, Output -> Options];
+      Lookup[options, AliquotAmount],
+      5 Microliter,
+      EquivalenceFunction -> Equal,
+      Variables :> {options},
+      Messages :> {Warning::AliquotAmountPrecision}
     ],
     Example[{Options,AssayVolume,"The desired total volume of the aliquoted sample plus dilution buffer:"},
       options=ExperimentDNASequencing[Object[Sample,"ExperimentDNASequencing test sample 1"<>$SessionUUID],AssayVolume->5*Microliter,Output->Options];
@@ -3136,15 +3152,6 @@ DefineTests[ExperimentDNASequencing,
 
         (*Make some test sample models*)
         testSampleModels=UploadSampleModel[
-          {
-            "ExperimentDNASequencing test DNA sample"<>$SessionUUID,
-            "ExperimentDNASequencing test DNA sample (Deprecated)"<>$SessionUUID,
-            "ExperimentDNASequencing test DNA sample with Null composition"<>$SessionUUID,
-            "ExperimentDNASequencing test Master Mix with BigDye Direct composition"<>$SessionUUID,
-            "ExperimentDNASequencing test DNA sample with multiple oligomers"<>$SessionUUID,
-            "ExperimentDNASequencing test solid DNA sample"<>$SessionUUID
-          },
-          Composition->
               {
                 {{10 Micromolar,Model[Molecule,Oligomer,"ExperimentDNASequencing test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
                 {{10 Micromolar,Model[Molecule,Oligomer,"ExperimentDNASequencing test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
@@ -3152,6 +3159,14 @@ DefineTests[ExperimentDNASequencing,
                 {{10 Micromolar,Model[Molecule,"LIZ Dye"]},{100 VolumePercent,Model[Molecule,"Water"]}},
                 {{10 Micromolar,Model[Molecule,Oligomer,"ExperimentDNASequencing test DNA molecule"<>$SessionUUID]},{10 Micromolar,Model[Molecule,Oligomer,"ExperimentDNASequencing test DNA molecule"<>$SessionUUID]}},
                 {{100 MassPercent,Model[Molecule,Oligomer,"ExperimentDNASequencing test DNA molecule"<>$SessionUUID]}}
+              },
+              Name -> {
+                "ExperimentDNASequencing test DNA sample"<>$SessionUUID,
+                "ExperimentDNASequencing test DNA sample (Deprecated)"<>$SessionUUID,
+                "ExperimentDNASequencing test DNA sample with Null composition"<>$SessionUUID,
+                "ExperimentDNASequencing test Master Mix with BigDye Direct composition"<>$SessionUUID,
+                "ExperimentDNASequencing test DNA sample with multiple oligomers"<>$SessionUUID,
+                "ExperimentDNASequencing test solid DNA sample"<>$SessionUUID
               },
           IncompatibleMaterials->ConstantArray[{None},6],
           Expires->ConstantArray[True,6],
@@ -3548,12 +3563,11 @@ DefineTests[ExperimentDNASequencingOptions,
         (*Make some test sample models*)
         testSampleModels=UploadSampleModel[
           {
+            {{10 Micromolar,Model[Molecule,Oligomer,"ExperimentDNASequencingOptions test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}}
+          },
+          Name -> {
             "ExperimentDNASequencingOptions test DNA sample"<>$SessionUUID
           },
-          Composition->
-              {
-                {{10 Micromolar,Model[Molecule,Oligomer,"ExperimentDNASequencingOptions test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}}
-              },
           IncompatibleMaterials->ConstantArray[{None},1],
           Expires->ConstantArray[True,1],
           ShelfLife->ConstantArray[2 Year,1],
@@ -3771,12 +3785,11 @@ DefineTests[ExperimentDNASequencingPreview,
         (*Make some test sample models*)
         testSampleModels=UploadSampleModel[
           {
+            {{10 Micromolar,Model[Molecule,Oligomer,"ExperimentDNASequencingPreview test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}}
+          },
+          Name -> {
             "ExperimentDNASequencingPreview test DNA sample"<>$SessionUUID
           },
-          Composition->
-              {
-                {{10 Micromolar,Model[Molecule,Oligomer,"ExperimentDNASequencingPreview test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}}
-              },
           IncompatibleMaterials->ConstantArray[{None},1],
           Expires->ConstantArray[True,1],
           ShelfLife->ConstantArray[2 Year,1],
@@ -4009,12 +4022,11 @@ DefineTests[ValidExperimentDNASequencingQ,
         (*Make some test sample models*)
         testSampleModels=UploadSampleModel[
           {
+            {{10 Micromolar,Model[Molecule,Oligomer,"ValidExperimentDNASequencingQ test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}}
+          },
+          Name -> {
             "ValidExperimentDNASequencingQ test DNA sample"<>$SessionUUID
           },
-          Composition->
-              {
-                {{10 Micromolar,Model[Molecule,Oligomer,"ValidExperimentDNASequencingQ test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}}
-              },
           IncompatibleMaterials->ConstantArray[{None},1],
           Expires->ConstantArray[True,1],
           ShelfLife->ConstantArray[2 Year,1],

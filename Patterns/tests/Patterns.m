@@ -2607,3 +2607,37 @@ DefineTests[CellsFrozen,
 		Unset[$CreatedObjects]
 	)
 ];
+
+(* ::Subsection:: *)
+(* CalibrationReportTypeP *)
+DefineTests["CalibrationReportTypeP",
+	{
+		Example[{Basic, "Returns True for \"Pump_Calibration.html\":"},
+			MatchQ["Pump_Calibration.html", CalibrationReportTypeP],
+			True
+		],
+		Example[{Basic, "Returns True for \"Wavelength_Calibration.html\":"},
+			MatchQ["Wavelength_Calibration.html", CalibrationReportTypeP],
+			True
+		],
+		Example[{Basic, "Returns True for \"Position_Calibration.html\":"},
+			MatchQ["Position_Calibration.html", CalibrationReportTypeP],
+			True
+		],
+		(* Input is not a string *)
+		Example[{Messages,"strse", "Returns False if input is a symbol:"},
+			MatchQ[Pump_Calibration.html, CalibrationReportTypeP],
+			False,
+			Messages :>{StringMatchQ::strse}
+		],
+		(* Input missing .html extension *)
+		Test["Returns False if .html extension is missing:",
+			MatchQ["Pump_Calibration", CalibrationReportTypeP],
+			False
+		],
+		Test["Returns False if file name doesn't match:",
+			MatchQ["Proton_Calibration.html", CalibrationReportTypeP],
+			False
+		]
+	}
+];

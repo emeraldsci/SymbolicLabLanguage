@@ -1590,7 +1590,7 @@ uncoverResourcePackets[
 			uniqueEnvironmentResources=(#->Which[
 				(* special treatment for fumehood, we do not really care which model to use for uncovering if we are really going to use a fumehood, so just allow all models *)
 				MatchQ[#, ObjectP[Model[Instrument, HandlingStation, FumeHood, "id:1ZA60vzEmYv0"]]],
-					With[{currentFumeHoodModels= UnsortedComplement[Cases[transferModelsSearch["Memoization"][[23]], ObjectP[Model[Instrument, HandlingStation, FumeHood]]], $SpecializedHandlingStationModels]},
+					With[{currentFumeHoodModels= commonFumeHoodHandlingStationModels["Memoization"]},
 						Resource[Instrument -> currentFumeHoodModels]
 					],
 				MatchQ[#, ObjectP[{Model[Container], Object[Container]}]],

@@ -186,14 +186,6 @@ DefineObjectType[Model[Item, PlateSeal], {
 			Category -> "Organizational Information",
 			AdminWriteOnly -> True
 		},
-		PendingParameterization -> {
-			Format -> Single,
-			Class -> Boolean,
-			Pattern :> BooleanP,
-			Description -> "Indicate whether this model is awaiting measurement and assessment of physical properties in the lab.",
-			Category -> "Organizational Information",
-			Developer -> True
-		},
 		Weight -> {
 			Format -> Single,
 			Class -> Real,

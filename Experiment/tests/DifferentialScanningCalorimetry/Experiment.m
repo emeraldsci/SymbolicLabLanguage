@@ -646,11 +646,19 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, CentrifugeIntensity, "Set the CentrifugeIntensity option:"},
-			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], CentrifugeIntensity -> 1000*RPM, Output -> Options];
+			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], CentrifugeIntensity -> 1000 RPM, Output -> Options];
 			Lookup[options, CentrifugeIntensity],
-			1000*RPM,
+			1000 RPM,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
 		],
 		Example[{Options, CentrifugeTime, "Set the CentrifugeTime option:"},
 			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], CentrifugeTime -> 40*Minute, Output -> Options];
@@ -812,6 +820,14 @@ DefineTests[
 			400 Microliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], AliquotAmount -> 400.01 Microliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			400 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,AliquotSampleLabel,"Specify a label for the aliquoted sample:"},
 			options=ExperimentDifferentialScanningCalorimetry[
@@ -1039,11 +1055,12 @@ DefineTests[
 				}];
 
 				(*create all of the models*)
-				dnaModelPacket = UploadSampleModel["Test DNA oligomer model for DSC"<> $SessionUUID,
-					Composition -> {
+				dnaModelPacket = UploadSampleModel[
+					{
 						{0.1 Milli * Molar, Model[Molecule, Oligomer, "Test DNA IM for DSC"<> $SessionUUID]},
 						{100 VolumePercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Test DNA oligomer model for DSC"<> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "id:N80DNj1r04jW"],
 					Flammable -> False,
@@ -1059,11 +1076,12 @@ DefineTests[
 					Upload -> False
 				];
 
-				pnaModelPacket = UploadSampleModel["Test PNA oligomer model for DSC"<> $SessionUUID,
-					Composition -> {
+				pnaModelPacket = UploadSampleModel[
+					{
 						{0.1 Milli * Molar, Model[Molecule, Oligomer, "Test PNA IM for DSC"<> $SessionUUID]},
 						{100 VolumePercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Test PNA oligomer model for DSC"<> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "id:N80DNj1r04jW"],
 					Flammable -> False,

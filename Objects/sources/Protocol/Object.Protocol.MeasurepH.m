@@ -626,6 +626,26 @@ DefineObjectType[Object[Protocol, MeasurepH], {
 			Headers -> {"Object to Place", "Destination Object","Destination Position"},
 			Category -> "Placements",
 			Developer -> True
+		},
+
+		(* These two fields are added temporarily to track if updatedMeasurepHFileQ can properly check temperature *)
+		CurrentTemperature -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Celsius],
+			Units -> Celsius,
+			Description -> "The current temperature reading used by execute function.",
+			Category -> "General",
+			Developer->True
+		},
+		TemperatureFile -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation->Object[EmeraldCloudFile],
+			Description -> "The uploaded files of the raw data containing the current temperature reading used by execute function.",
+			Category -> "General",
+			Developer -> True
 		}
 	}
 }];

@@ -58,10 +58,27 @@ errorToOptionMap[Object[Method,LyseCells]]:={};
 (*validMethodWashPlateQTest*)
 
 validMethodWashPlateQTest[packet: PacketP[Object[Method, WashPlate]]]:= {
-	RequiredTogetherTest[packet, {AspirateTravelRate, AspiratePositionings, AspirateDelay}],
-	RequiredTogetherTest[packet, {FinalAspirateTravelRate, FinalAspiratePositionings, FinalAspirateDelay}],
-	RequiredTogetherTest[packet, {DispenseFlowRate, DispensePositionings, DispenseVacuumDelay}],
-	NotNullFieldTest[packet, {Instruments, CrosswiseAspiration, FinalAspirate, BottomWash}]
+
+	Test["If FinalAspiration is set to True, FinalAspirationPositionOffset and FinalAspirateTravelRate must be populated:",
+		{Lookup[packet, FinalAspiration], Lookup[packet, FinalAspirationPositionOffset], Lookup[packet, FinalAspirateTravelRate], Lookup[packet, FinalAspirateDelay]},
+		Alternatives[
+			{True, _Association, _Integer, _},
+			{False, Null, Null, Null}
+		]
+	],
+
+	Test["If CrosswiseAspiration is set to True, CrosswiseAspirationPositionOffset must be populated:",
+		{Lookup[packet, CrosswiseAspiration], Lookup[packet, CrosswiseAspirationPositionOffset]},
+		Alternatives[
+			{True, _Association},
+			{False, Null}
+		]
+	],
+
+	NotNullFieldTest[
+		packet,
+		{Instrument, CrosswiseAspiration, FinalAspiration, BottomWash, AspirationPositionOffset, AspirateTravelRate, DispensePositionOffset, DispenseFlowRate}
+	]
 };
 
 

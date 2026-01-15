@@ -457,10 +457,10 @@ ExperimentMeasureDensity[myInputs:{ObjectP[{Object[Sample],Model[Sample]}]..},my
 			},
 			{
 				allSamplePackets,
-				{Packet[Mode, AllowedMaxVariation]},
+				{Packet[Mode, AllowedMaxVariation, MinWeight, MaxUSPMinWeight]},
 				{
 					Packet[Model],
-					Packet[Model[Mode, AllowedMaxVariation]]
+					Packet[Model[Mode, AllowedMaxVariation, MinWeight, MaxUSPMinWeight]]
 				}
 			},
 			Cache->cacheOption,
@@ -608,7 +608,7 @@ resolveMeasureDensityOptions[mySamples:ListableP[PacketP[{Object[Sample]}]],myUn
 		resolvedPostProcessingOptions,requiredAliquotAmounts,densityMeterModel,fastAssoc,compatibleMaterialsInvalidInputs,
 		compatibleMaterialsBool,compatibleMaterialsTests,viscosityCorrections,measurementMethods,measurementTemperatures,instruments,
 		firstWashSolutions,secondaryWashSolutions,tertiaryWashSolutions,washCycles,washVolumes,airWaterChecks,invalidAirWaterCheckErrors,
-		invalidAirWaterCheckOptions,invalidAirWaterCheckTests,weightStabilityDurations,maxWeightVariations
+		invalidAirWaterCheckOptions,invalidAirWaterCheckTests,weightStabilityDurations,maxWeightVariations,inaccurateBalanceWarnings
 	},
 
 	(* Determine the requested output format of this function. *)
@@ -961,7 +961,8 @@ resolveMeasureDensityOptions[mySamples:ListableP[PacketP[{Object[Sample]}]],myUn
 		invalidAirWaterCheckErrors,
 		airWaterChecks,
 		weightStabilityDurations,
-		maxWeightVariations
+		maxWeightVariations,
+		inaccurateBalanceWarnings
 	}=Transpose[
 		MapThread[
 			Function[{mySample,myMapThreadOptions},
@@ -969,36 +970,25 @@ resolveMeasureDensityOptions[mySamples:ListableP[PacketP[{Object[Sample]}]],myUn
 					invalidTemperatureError,incompatibleInstrumentError,incompatibleVolumeError,unResolvedMeasurementVolume,sampleVol,numberOfReplicates,methodVentilatedError,instrumentVentilatedError,
 					viscosityCorrection,unResolvedMethod,resolvedMethod, microBalanceSpecifiedQ, measurementTemperature,
 					unResolvedInstrument,resolvedInstrument,firstWashSolution,secondaryWashSolution, tertiaryWashSolution,
-					washCycle,washVolume, invalidAirWaterCheckError, airWaterCheck, weightStabilityDuration, maxWeightVariation},
+					washCycle,washVolume, invalidAirWaterCheckError, airWaterCheck, weightStabilityDuration, maxWeightVariation, measurementWeight, inaccurateBalanceWarning},
 
 					(* Setup our error tracking variables *)
-					(* Set to a constant array of False to conserve functionality between resolvers in case options and errors expand here *)
-					{insufficientVolumeError}=ConstantArray[False,1];
-					(* Set to a constant array of False to conserve functionality between resolvers in case options and errors expand here *)
-					{invalidWashSolutionError}=ConstantArray[False,1];
-					(* Set to a constant array of False to conserve functionality between resolvers in case options and errors expand here *)
-					{invalidSecondaryWashSolutionError}=ConstantArray[False,1];
-					(* Set to a constant array of False to conserve functionality between resolvers in case options and errors expand here *)
-					{invalidTertiaryWashSolutionError}=ConstantArray[False,1];
-					(* Set to a constant array of False to conserve functionality between resolvers in case options and errors expand here *)
-					{invalidWashVolumeError}=ConstantArray[False,1];
-					(* Set to a constant array of False to conserve functionality between resolvers in case options and errors expand here *)
-					{invalidWashCyclesError}=ConstantArray[False,1];
-					(* Set to a constant array of False to conserve functionality between resolvers in case options and errors expand here *)
-					{invalidTemperatureError}=ConstantArray[False,1];
-					(* Set to a constant array of False to conserve functionality between resolvers in case options and errors expand here *)
-					{invalidViscosityCorrectionError}=ConstantArray[False,1];
-					(* Set to a constant array of False to conserve functionality between resolvers in case options and errors expand here *)
-					{incompatibleInstrumentError}=ConstantArray[False,1];
-					(* Set to a constant array of False to conserve functionality between resolvers in case options and errors expand here *)
-					{incompatibleVolumeError}=ConstantArray[False,1];
-					(* Set to a constant array of False to conserve functionality between resolvers in case options and errors expand here *)
-					{methodVentilatedError}=ConstantArray[False,1];
-					(* Set to a constant array of False to conserve functionality between resolvers in case options and errors expand here *)
-					{instrumentVentilatedError}=ConstantArray[False,1];
-
-					(* Set to a constant array of False to conserve functionality between resolvers in case options and errors expand here *)
-					{invalidAirWaterCheckError}=ConstantArray[False,1];
+					{
+						insufficientVolumeError,
+						invalidWashSolutionError,
+						invalidSecondaryWashSolutionError,
+						invalidTertiaryWashSolutionError,
+						invalidWashVolumeError,
+						invalidWashCyclesError,
+						invalidTemperatureError,
+						invalidViscosityCorrectionError,
+						incompatibleInstrumentError,
+						incompatibleVolumeError,
+						methodVentilatedError,
+						instrumentVentilatedError,
+						invalidAirWaterCheckError,
+						inaccurateBalanceWarning
+					} = ConstantArray[False, 14];
 
 					(*MASTER SWITCH RESOLUTION: Resolve which measurement method to use for the experiment*)
 
@@ -1192,7 +1182,7 @@ resolveMeasureDensityOptions[mySamples:ListableP[PacketP[{Object[Sample]}]],myUn
 						MatchQ[Lookup[myMapThreadOptions, WeightStabilityDuration], Except[Automatic]],
 							Lookup[myMapThreadOptions, WeightStabilityDuration],
 						MatchQ[resolvedInstrument, ObjectP[{Object[Instrument, Balance], Model[Instrument, Balance]}]],
-							10 Second,
+							$LiquidDefaultWeightStabilityDuration,
 						True,
 							Null
 					];
@@ -1200,7 +1190,7 @@ resolveMeasureDensityOptions[mySamples:ListableP[PacketP[{Object[Sample]}]],myUn
 						MatchQ[Lookup[myMapThreadOptions, MaxWeightVariation], Except[Automatic]],
 							Lookup[myMapThreadOptions, MaxWeightVariation],
 						MatchQ[resolvedInstrument, ObjectP[{Object[Instrument, Balance], Model[Instrument, Balance]}]],
-							If[MatchQ[resolvedInstrument, ObjectP[Object[Instrument, Balance]]], 5 * fastAssocLookup[fastAssoc, resolvedInstrument, {Model, AllowedMaxVariation}], 5 * fastAssocLookup[fastAssoc, resolvedInstrument, AllowedMaxVariation]],
+							If[MatchQ[resolvedInstrument, ObjectP[Object[Instrument, Balance]]], $LiquidDefaultWeightToleranceFactor * fastAssocLookup[fastAssoc, resolvedInstrument, {Model, AllowedMaxVariation}], $LiquidDefaultWeightToleranceFactor * fastAssocLookup[fastAssoc, resolvedInstrument, AllowedMaxVariation]],
 						True,
 							Null
 					];
@@ -1261,6 +1251,26 @@ resolveMeasureDensityOptions[mySamples:ListableP[PacketP[{Object[Sample]}]],myUn
 						MatchQ[unResolvedMeasurementVolume,Automatic]&&MatchQ[resolvedMethod,FixedVolumeWeight]&&!TrueQ[recoupSample],Min[800 Microliter,Round[Convert[0.9*(sampleVol/numberOfReplicates),Microliter],1]]
 
 					];
+					
+					(* convert the measurement volumes to weight if we somehow knows a density from sample or sample model beforehand *)
+					measurementWeight = Which[
+						DensityQ[Lookup[mySample, Density]],
+							measurementVolume * Lookup[mySample, Density],
+						DensityQ[fastAssocLookup[fastAssoc, Lookup[mySample, Object], {Model, Density}]],
+							measurementVolume * fastAssocLookup[fastAssoc, Lookup[mySample, Object], {Model, Density}],
+						True,
+							Null
+					];
+					
+					(* throw a warning if we find out that the potential weight, is larger than MaxUSPMinWeight of the balance, we currently only allow microbalance so there is no way that user can do about it, so this warning is more for just let them know that this inaccuracy exists inevitably *)
+					inaccurateBalanceWarning = And[
+						MatchQ[resolvedInstrument, ObjectP[{Object[Instrument, Balance], Model[Instrument, Balance]}]],
+						MassQ[measurementWeight],
+						If[MatchQ[resolvedInstrument, ObjectP[Object[Instrument, Balance]]],
+							MatchQ[measurementWeight, RangeP[fastAssocLookup[fastAssoc, resolvedInstrument, {Model, MinWeight}], fastAssocLookup[fastAssoc, resolvedInstrument, {Model, MaxUSPMinWeight}], Inclusive -> Left]],
+							MatchQ[measurementWeight, RangeP[fastAssocLookup[fastAssoc, resolvedInstrument, MinWeight], fastAssocLookup[fastAssoc, resolvedInstrument, MaxUSPMinWeight], Inclusive -> Left]]
+						]
+					];
 
 					(* Gather MapThread results *)
 					{
@@ -1290,7 +1300,8 @@ resolveMeasureDensityOptions[mySamples:ListableP[PacketP[{Object[Sample]}]],myUn
 						invalidAirWaterCheckError,
 						airWaterCheck,
 						weightStabilityDuration,
-						maxWeightVariation
+						maxWeightVariation,
+						inaccurateBalanceWarning
 					}
 				]
 			],
@@ -1895,6 +1906,23 @@ resolveMeasureDensityOptions[mySamples:ListableP[PacketP[{Object[Sample]}]],myUn
 		{}
 	];
 
+	(*throw the inaccurate balance warning if we are given a balance that cannot measure the transfer out liquid weight with USP confidence *)
+	If[MemberQ[inaccurateBalanceWarnings, True] && !gatherTests && !MatchQ[$ECLApplication, Engine],
+		Message[
+			Warning::InaccurateBalance,
+			StringForm[
+				"The transfer out Volume of, `3`, for sample(s), `1`, at indices, `2`, cannot be measured by the balance(s), `4`, because they are only capable of measuring weights that are greater than or equal to `5` with USP accuracy (as defined in USP <1251>). The protocol is still executable in lab but please be mindful of the potential weight inaccuracy as a result of using these balances.",
+				ObjectToString[PickList[mySamples, inaccurateBalanceWarnings], Simulation -> updatedSimulation],
+				PickList[Range[Length[mySamples]], inaccurateBalanceWarnings],
+				PickList[measurementVolumes, inaccurateBalanceWarnings],
+				ObjectToString[PickList[instruments, inaccurateBalanceWarnings], Simulation -> updatedSimulation],
+				If[MatchQ[#, ObjectP[Object[Instrument, Balance]]],
+					fastAssocLookup[fastAssoc, #, {Model, MaxUSPMinWeight}],
+					fastAssocLookup[fastAssoc, #, MaxUSPMinWeight]
+				]& /@ PickList[instruments, inaccurateBalanceWarnings]
+			]
+		]
+	];
 
 	(* Determine how much volume the protocol will require. This ONLY applies if MeasureDensity -> True and RecoupSample -> False *)
 	requiredAliquotAmounts = MapThread[
@@ -2049,7 +2077,7 @@ measureDensityResourcePackets[mySamples:{PacketP[Object[Sample]]..},myResolvedOp
 		batchedTipResources,resortedTipResources,resortedFirstWashSolutions,resortedSecondaryWashSolutions,resortedTertiaryWashSolutions,
 		densityMeterSampleOptionsNoKeys,fixedVolWeightSampleOptionsNoKeys, preWashSolution,secondaryPreWashSolution,tertiaryPreWashSolution,
 		airWaterCheckSolution,densityMeterWashSyringesLookup,densityMeterPreWashSyringes,densityMeterSecondaryPreWashSyringes,
-		densityMeterTertiaryPreWashSyringes,densityMeterAirWaterCheckSyringe,simulation
+		densityMeterTertiaryPreWashSyringes,densityMeterAirWaterCheckSyringe,simulation,balanceResource, handlingEnvironmentResource
 	},
 
 	(* Stash safe options *)
@@ -2296,7 +2324,7 @@ measureDensityResourcePackets[mySamples:{PacketP[Object[Sample]]..},myResolvedOp
 	containersInObjects = DeleteDuplicates@Download[Lookup[mySamples,Container],Object];
 
 	resolvedInstrument=DeleteDuplicates[Lookup[myExpandedBatchedSampleOptions,Instrument]];
-	resolvedBalance = Download[Cases[resolvedInstrument, ObjectP[{Object[Instrument, Balance], Model[Instrument, Balance]}]], Object];
+	resolvedBalance = DeleteDuplicates[Download[Cases[resolvedInstrument, ObjectP[{Object[Instrument, Balance], Model[Instrument, Balance]}]], Object]];
 	resolvedDensityMeter = Download[Cases[resolvedInstrument, ObjectP[{Object[Instrument, DensityMeter], Model[Instrument, DensityMeter]}]], Object];
 
 	samplesInResources=Map[
@@ -2309,6 +2337,42 @@ measureDensityResourcePackets[mySamples:{PacketP[Object[Sample]]..},myResolvedOp
 	samplesInDensityMeterResources=Flatten[(ConstantArray[#,numberOfReplicates]&)/@Extract[samplesInResources,densityMeterSamplePositions]];
 	samplesInFVWResources=Flatten[(ConstantArray[#,numberOfReplicates]&)/@Extract[samplesInResources,fixedVolWeightSamplePositions]];
 	batchedSamplesInResources=Join[samplesInDensityMeterResources,samplesInFVWResources];
+
+	(* make resource for balance and handling station that the balance may be in *)
+	{balanceResource, handlingEnvironmentResource} = If[MatchQ[myExpandedFVWSamples, {}],
+		{Null, Null},
+		(* NOTE: if we resolve balance to a object, then we have to take the first element, since InstrumentResourceP DO NOT support being passed a list of OBJECTS *)
+		If[MemberQ[resolvedBalance, ObjectP[Object[Instrument, Balance]]],
+			With[{balanceObject = FirstCase[resolvedBalance, ObjectP[Object[Instrument, Balance]]]},
+				{
+					Resource[Instrument -> balanceObject, Time -> (5 Minute) * Length[samplesInFVWResources]],
+					Module[{handlingStationObject},
+						(* get the handling station models - we only want non-specialized ambient handling stations *)
+						handlingStationObject = First[Lookup[Lookup[Experiment`Private`balanceHandlingStationLookup["Memoization"], handlingStationObject, {}], "Object", {}], Null];
+
+						If[NullQ[handlingStationObject],
+							Null,
+							Resource[Instrument -> handlingStationObject, Time -> (5 Minute) * Length[samplesInFVWResources]]
+						]
+					]
+				}
+			],
+			(* otherwise we can be dealing with a list of balance models and that's fine *)
+			{
+				Resource[Instrument -> resolvedBalance, Time -> (5 Minute) * Length[samplesInFVWResources]],
+				Module[{handlingStationModels},
+					(* get the handling station models - we only want non-specialized ambient handling stations *)
+					handlingStationModels = Cases[DeleteDuplicates[Flatten[Lookup[Lookup[Experiment`Private`balanceHandlingStationLookup["Memoization"], #, {}], "Model", {}]& /@ ToList[resolvedBalance]]], Except[ObjectP[$SpecializedHandlingStationModels], ObjectP[Model[Instrument, HandlingStation, Ambient]]]];
+
+					If[Length[handlingStationModels] > 0,
+						Resource[Instrument -> handlingStationModels, Time -> (5 Minute) * Length[samplesInFVWResources]],
+						Null
+					]
+				]
+			}
+		]
+	];
+
 
 	measurementContainerResources=PadLeft[
 		(Table[
@@ -2861,11 +2925,8 @@ measureDensityResourcePackets[mySamples:{PacketP[Object[Sample]]..},myResolvedOp
 		PreWashSolution -> preWashSolution,
 		SecondaryPreWashSolution -> secondaryPreWashSolution,
 		TertiaryPreWashSolution -> tertiaryPreWashSolution,
-		Balance->
-			If[MatchQ[myExpandedFVWSamples,{}],
-				Null,
-				Link[Resource[Instrument->DeleteDuplicates[resolvedBalance],Time->(5 Minute)*Length[samplesInFVWResources]]]
-			],
+		Balance -> balanceResource,
+		HandlingEnvironment -> handlingEnvironmentResource,
 		Instrument ->
 			If[MatchQ[myExpandedDensityMeterSamples,{}],
 				Null,

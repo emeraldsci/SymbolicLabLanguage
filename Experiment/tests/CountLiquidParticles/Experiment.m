@@ -796,6 +796,18 @@ DefineTests[
 			Variables :> {options},
 			EquivalenceFunction -> Equal
 		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentCountLiquidParticles[
+				{Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]},
+				AliquotAmount -> 15.01 Milliliter,
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			15 Milliliter,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision},
+			EquivalenceFunction -> Equal
+		],
 		Example[{Options, DiscardFirstRun, "Specify if the first run of the experiment will be discarded during the data collection:"},
 			protocol = ExperimentCountLiquidParticles[
 				{Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]},
@@ -1200,6 +1212,21 @@ DefineTests[
 			Lookup[options, CentrifugeIntensity],
 			1000 RPM,
 			Variables :> {options}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentCountLiquidParticles[
+				{
+					Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
+					Object[Sample, "Test 5 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
+					Object[Sample, "Test 15 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]
+				},
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
 		],
 		Example[{Options, CentrifugeTime, "Specify the amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentCountLiquidParticles[

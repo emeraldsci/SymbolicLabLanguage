@@ -1567,6 +1567,18 @@ DefineTests[
 	}
 ];
 
+(* ::Subsubsection::Closed:: *)
+(*UploadVerifiedMolecule*)
+(* TODO: Dummy test right now. In order for VPRQ to pass, exported function must have a test. Will need to add actual tests later *)
+
+DefineTests[UploadVerifiedMolecule,
+	{
+		Test["Function returns the input object if all ValidObjectQ tests are passing:",
+			UploadVerifiedMolecule[Model[Molecule, "Water"], Verify -> True],
+			ObjectP[Model[Molecule, "Water"]]
+		]
+	}
+];
 
 
 (* ::Subsubsection::Closed:: *)

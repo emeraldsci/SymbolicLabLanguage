@@ -1282,7 +1282,36 @@ DefineTests[
 			Download[protocol, RequiredResources[[All, 1]][{Object, Sample, Models}]],
 			(* the key point here is that there is only one resource created and not two; that's because the resource blob requesting a specific sample is already requested by its parent protocol *)
 			{{ObjectP[Object[Resource, Sample]], Null, {ObjectP[Model[Sample, "id:M8n3rx0DjPrE"]]}}},
-			Variables :> {protocol}
+			Variables :> {protocol},
+			(* Make sure the protocol is Processing so the resource is still "current" *)
+			SetUp:>(
+				Upload[<|Object->Object[Protocol, PAGE, "id:6V0npvmJXqe8"],Status->Processing|>];
+				$CreatedObjects = {}
+			)
+		],
+		Test["If a subprotocol is requesting a specific sample that another subprotocol of the same root has already reserved with a pending resource BUT the requestor is completed, create a resource for this item as normal:",
+			protocol = RequireResources[
+				<|
+					Type -> Object[Protocol, Transfer],
+					Replace[SamplesIn] -> {
+						Link[Resource[Sample -> Object[Sample, "id:3em6ZvL4prMB"], Amount -> 10*Milliliter], Protocols],
+						Link[Resource[Sample -> Model[Sample, "id:M8n3rx0DjPrE"], Amount -> 10*Milliliter], Protocols]
+					}
+				|>,
+				RootProtocol -> Object[Protocol, PAGE, "id:6V0npvmJXqe8"]
+			];
+			Download[protocol, RequiredResources[[All, 1]][{Object, Sample, Models}]],
+			(* the key point here is that there are two resources created and the first one is for the resource that has another reserved request *)
+			{
+				{ObjectP[Object[Resource, Sample]], ObjectP[Object[Sample, "id:3em6ZvL4prMB"]], _},
+				{ObjectP[Object[Resource, Sample]], Null, {ObjectP[Model[Sample, "id:M8n3rx0DjPrE"]]}}
+			},
+			Variables :> {protocol},
+			(* Make sure the protocol is Completed so the resource is no longer pending request *)
+			SetUp:>(
+				Upload[<|Object->Object[Protocol, PAGE, "id:6V0npvmJXqe8"],Status->Completed|>];
+				$CreatedObjects = {}
+			)
 		],
 		Test["Auto-generate a container resource for a water resource:",
 			protocol = With[
@@ -2888,8 +2917,6 @@ DefineTests[fulfillableResourceQ,
 						PreferredIllumination -> Side,
 						Unimageable -> False,
 						DisposableCaps -> True,
-						Aspiratable -> True,
-						Dispensable -> True,
 						MinTemperature -> -100 Celsius,
 						MaxTemperature -> 200 Celsius,
 						MinVolume -> 10 Microliter,
@@ -2923,8 +2950,6 @@ DefineTests[fulfillableResourceQ,
 						PreferredIllumination -> Side,
 						Unimageable -> False,
 						DisposableCaps -> True,
-						Aspiratable -> True,
-						Dispensable -> True,
 						MinTemperature -> -100 Celsius,
 						MaxTemperature -> 200 Celsius,
 						MinVolume -> 10 Microliter,
@@ -3063,11 +3088,11 @@ DefineTests[fulfillableResourceQ,
 				}];
 
 				testSterileModel1 = UploadSampleModel[
-					"Test sterile model 1 for fulfillableResourceQ unit tests" <> $SessionUUID,
-					Composition -> {
+					{
 						{100 VolumePercent, Model[Molecule, "Water"]},
 						{100 Milligram / Milliliter, Model[Molecule, "Sodium Chloride"]}
 					},
+					Name -> "Test sterile model 1 for fulfillableResourceQ unit tests" <> $SessionUUID,
 					State -> Liquid,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Expires -> True,
@@ -3080,11 +3105,11 @@ DefineTests[fulfillableResourceQ,
 					Sterile -> True
 				];
 				testSterileModel2 = UploadSampleModel[
-					"Test sterile model 2 for fulfillableResourceQ unit tests" <> $SessionUUID,
-					Composition -> {
+					{
 						{100 VolumePercent, Model[Molecule, "Water"]},
 						{100 Milligram / Milliliter, Model[Molecule, "Sodium Chloride"]}
 					},
+					Name -> "Test sterile model 2 for fulfillableResourceQ unit tests" <> $SessionUUID,
 					State -> Liquid,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Expires -> True,
@@ -3098,11 +3123,11 @@ DefineTests[fulfillableResourceQ,
 					Products -> {sterileProduct1}
 				];
 				testSterileModel3 = UploadSampleModel[
-					"Test sterile model 3 for fulfillableResourceQ unit tests" <> $SessionUUID,
-					Composition -> {
+					{
 						{100 VolumePercent, Model[Molecule, "Water"]},
 						{100 Milligram / Milliliter, Model[Molecule, "Sodium Chloride"]}
 					},
+					Name -> "Test sterile model 3 for fulfillableResourceQ unit tests" <> $SessionUUID,
 					State -> Liquid,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Expires -> True,
@@ -3756,6 +3781,23 @@ DefineTests[fulfillableResources,
 			{{True}, {ObjectP[Object[Resource, Sample]]}},
 			Messages :> {Warning::SamplesInTransit}
 		],
+		Example[{Messages, "TrainingModelOutsideOfTraining", "If a resource's sample or container is a TrainingModel but protocol is a training, throw no error:"},
+			Lookup[fulfillableResources[{
+				Object[Resource, Sample, "Test TrainingModel resource 1 for fulfillableResources" <> $SessionUUID],
+				Object[Resource, Sample, "Test TrainingModel resource 2 for fulfillableResources" <> $SessionUUID]
+			}], {Fulfillable}],
+			{{True, True}}
+		],
+		Example[{Messages, "TrainingModelOutsideOfTraining", "If a resource's sample is a TrainingModel but protocol is not a training, throw error to to swap for non-TrainingModel:"},
+			Lookup[fulfillableResources[Object[Resource, Sample, "Test TrainingModel resource 3 for fulfillableResources" <> $SessionUUID]], {Fulfillable}],
+			{{False}},
+			Messages :> {Error::TrainingModelOutsideOfTraining, Error::InvalidInput}
+		],
+		Example[{Messages, "TrainingModelOutsideOfTraining", "If a resource's container is a TrainingModel but protocol is not a training, throw error to to swap for non-TrainingModel:"},
+			Lookup[fulfillableResources[Object[Resource, Sample, "Test TrainingModel resource 4 for fulfillableResources" <> $SessionUUID]], {Fulfillable}],
+			{{False}},
+			Messages :> {Error::TrainingModelOutsideOfTraining, Error::InvalidInput}
+		],
 		Example[{Messages, "SamplesShippedFromECL", "If a resource's sample has a status of Transit and the destination is not ECL, throw error and return False and list sample in SamplesShippedFromECL key:"},
 			Lookup[fulfillableResources[Resource[Sample -> Object[Sample, "Chemical for FulfillableResourceQ unit tests (SamplesShippedFromECL)"], Amount -> 100 Microliter]], {Fulfillable,SamplesShippedFromECL}],
 			{{False}, {ObjectP[Object[Resource, Sample]]}},
@@ -3895,6 +3937,7 @@ DefineTests[fulfillableResources,
 				NonScalableStockSolutionVolumeTooHigh -> {},
 				InvalidSterileRequest -> {},
 				ContainerNotSterile -> {},
+				InvalidTrainingModelRequest -> {},
 				SamplesOffSite -> {},
 				Site -> ObjectP[Object[Container, Site]]
 			|>
@@ -4166,7 +4209,14 @@ DefineTests[fulfillableResources,
 				Object[Resource, Instrument, "Test Resource 1 For fulfillableResources Tests " <> $SessionUUID],
 				Object[Resource, Instrument, "Test Resource 2 For fulfillableResources Tests " <> $SessionUUID],
 				Object[Resource, Instrument, "Test Resource 3 For fulfillableResources Tests " <> $SessionUUID],
-				Object[Resource, Instrument, "Test Resource 4 For fulfillableResources Tests " <> $SessionUUID]
+				Object[Resource, Instrument, "Test Resource 4 For fulfillableResources Tests " <> $SessionUUID],
+				Model[Container, Vessel, "Test TrainingModel Bottle for fulfillableResources" <> $SessionUUID],
+				Object[Qualification, Training, VolumetricFlask, "Test training protocol for fulfillableResources" <> $SessionUUID],
+				Object[Protocol, AbsorbanceIntensity, "Test protocol for fulfillableResources" <> $SessionUUID],
+				Object[Resource, Sample, "Test TrainingModel resource 1 for fulfillableResources" <> $SessionUUID],
+				Object[Resource, Sample, "Test TrainingModel resource 2 for fulfillableResources" <> $SessionUUID],
+				Object[Resource, Sample, "Test TrainingModel resource 3 for fulfillableResources" <> $SessionUUID],
+				Object[Resource, Sample, "Test TrainingModel resource 4 for fulfillableResources" <> $SessionUUID]
 			};
 			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
 			EraseObject[existingObjs, Force -> True, Verbose -> False]
@@ -4421,7 +4471,8 @@ DefineTests[fulfillableResources,
 							Link[hplcInstrument3, Model, linkID12],
 							Link[hplcInstrument4, Model, linkID14]
 						},
-						Name -> "Test HPLC Model 1 For fulfillableResources Tests " <> $SessionUUID
+						Name -> "Test HPLC Model 1 For fulfillableResources Tests " <> $SessionUUID,
+						DeveloperObject -> True
 					|>,
 					<|
 						Object -> hplcInstrument1,
@@ -4596,6 +4647,70 @@ DefineTests[fulfillableResources,
 				UploadInstrumentStatus[{testCrystalIncubator,testCrystalIncubator2,testCrystalIncubator3}, ConstantArray[Available,3]];
 				(* Upload a plate to the only storage slot of the test crystal incubator so it can not accept more plates. *)
 				ECL`InternalUpload`UploadLocation[xtalPlate, {"Plate Slot", testCrystalIncubator}];
+
+				(*--- TrainingModel Container Model, Resource, and Protocol setup ---*)
+				(* Container Model *)
+				Upload[
+					<|
+						Type -> Model[Container, Vessel],
+						Name -> "Test TrainingModel Bottle for fulfillableResources" <> $SessionUUID,
+						Replace[Positions]->{<|Name -> "A1", Footprint -> Null,
+							MaxWidth -> Quantity[0.041275, "Meters"],
+							MaxDepth -> Quantity[0.041275, "Meters"],
+							MaxHeight -> Quantity[0.161925, "Meters"]|>},
+						TrainingModel -> True
+					|>
+				];
+
+				(* Protocol *)
+				Upload[
+					{
+						<|
+							Type -> Object[Qualification, Training, VolumetricFlask],
+							Name -> "Test training protocol for fulfillableResources" <> $SessionUUID
+						|>,
+						<|
+							Type -> Object[Protocol, AbsorbanceIntensity],
+							Name -> "Test protocol for fulfillableResources" <> $SessionUUID
+						|>
+					}
+				];
+
+				(* Resources *)
+				Upload[
+					{
+						<|Type -> Object[Resource, Sample],
+							Name -> "Test TrainingModel resource 1 for fulfillableResources" <> $SessionUUID,
+							Replace[Models] -> Link[Model[Container, Vessel, "Test TrainingModel Bottle for fulfillableResources" <> $SessionUUID]],
+							RootProtocol ->	Link[Object[Qualification, Training, VolumetricFlask, "Test training protocol for fulfillableResources" <> $SessionUUID], SubprotocolRequiredResources],
+							Replace[Requestor] -> Link[Object[Qualification, Training, VolumetricFlask, "Test training protocol for fulfillableResources" <> $SessionUUID], RequiredResources, 1],
+							Status -> Outstanding
+						|>,
+						<|Type -> Object[Resource, Sample],
+							Name -> "Test TrainingModel resource 2 for fulfillableResources" <> $SessionUUID,
+							Replace[Models] -> Link[Model[Sample, "Milli-Q water"]],
+							Replace[ContainerModels] -> Link[Model[Container, Vessel, "Test TrainingModel Bottle for fulfillableResources" <> $SessionUUID]],
+							RootProtocol ->	Link[Object[Qualification, Training, VolumetricFlask, "Test training protocol for fulfillableResources" <> $SessionUUID], SubprotocolRequiredResources],
+							Replace[Requestor] -> Link[Object[Qualification, Training, VolumetricFlask, "Test training protocol for fulfillableResources" <> $SessionUUID], RequiredResources, 1],
+							Status -> Outstanding
+						|>,
+						<|Type -> Object[Resource, Sample],
+							Name -> "Test TrainingModel resource 3 for fulfillableResources" <> $SessionUUID,
+							Replace[Models] -> Link[Model[Container, Vessel, "Test TrainingModel Bottle for fulfillableResources" <> $SessionUUID]],
+							RootProtocol ->	Link[Object[Protocol, AbsorbanceIntensity, "Test protocol for fulfillableResources" <> $SessionUUID], SubprotocolRequiredResources],
+							Replace[Requestor] -> Link[Object[Protocol, AbsorbanceIntensity, "Test protocol for fulfillableResources" <> $SessionUUID], RequiredResources, 1],
+							Status -> Outstanding
+						|>,
+						<|Type -> Object[Resource, Sample],
+							Name -> "Test TrainingModel resource 4 for fulfillableResources" <> $SessionUUID,
+							Replace[Models] -> Link[Model[Sample, "Milli-Q water"]],
+							Replace[ContainerModels] -> Link[Model[Container, Vessel, "Test TrainingModel Bottle for fulfillableResources" <> $SessionUUID]],
+							RootProtocol ->	Link[Object[Protocol, AbsorbanceIntensity, "Test protocol for fulfillableResources" <> $SessionUUID], SubprotocolRequiredResources],
+							Replace[Requestor] -> Link[Object[Protocol, AbsorbanceIntensity, "Test protocol for fulfillableResources" <> $SessionUUID], RequiredResources, 1],
+							Status -> Outstanding
+						|>
+					}
+				];
 			]
 		];
 	),
@@ -4652,7 +4767,14 @@ DefineTests[fulfillableResources,
 				Object[Resource, Instrument, "Test Resource 1 For fulfillableResources Tests " <> $SessionUUID],
 				Object[Resource, Instrument, "Test Resource 2 For fulfillableResources Tests " <> $SessionUUID],
 				Object[Resource, Instrument, "Test Resource 3 For fulfillableResources Tests " <> $SessionUUID],
-				Object[Resource, Instrument, "Test Resource 4 For fulfillableResources Tests " <> $SessionUUID]
+				Object[Resource, Instrument, "Test Resource 4 For fulfillableResources Tests " <> $SessionUUID],
+				Model[Container, Vessel, "Test TrainingModel Bottle for fulfillableResources" <> $SessionUUID],
+				Object[Qualification, Training, VolumetricFlask, "Test training protocol for fulfillableResources" <> $SessionUUID],
+				Object[Protocol, AbsorbanceIntensity, "Test protocol for fulfillableResources" <> $SessionUUID],
+				Object[Resource, Sample, "Test TrainingModel resource 1 for fulfillableResources" <> $SessionUUID],
+				Object[Resource, Sample, "Test TrainingModel resource 2 for fulfillableResources" <> $SessionUUID],
+				Object[Resource, Sample, "Test TrainingModel resource 3 for fulfillableResources" <> $SessionUUID],
+				Object[Resource, Sample, "Test TrainingModel resource 4 for fulfillableResources" <> $SessionUUID]
 			}], ObjectP[]];
 
 			existingObjects = PickList[allObjects, DatabaseMemberQ[allObjects]];
@@ -5254,6 +5376,85 @@ DefineTests[ModelInstances,
 		    ],
 			{}
 		],
+		Example[{Additional, "Returns an empty list if no stocked spatula is available for non-counted, non-reusable spatula model:"},
+			ModelInstances[
+				Model[Item, Spatula, "Test Spatula Model 1 for ModelInstances unit tests " <> $SessionUUID],
+				Null,
+				{},
+				{Object[LaboratoryNotebook, "id:rea9jlRZkrjx"]},
+				Object[Protocol, ManualSamplePreparation, "ModelInstances Test MSP Protocol " <> $SessionUUID],
+				Object[Protocol, Transfer, "ModelInstances Test Transfer Protocol " <> $SessionUUID]
+			],
+			{}
+		],
+		Example[{Additional, "Returns Available objects for counted spatulas:"},
+			ModelInstances[
+				Model[Item, Spatula, "Test Spatula Model 2 for ModelInstances unit tests " <> $SessionUUID],
+				1,
+				{},
+				{Object[LaboratoryNotebook, "id:rea9jlRZkrjx"]},
+				Object[Protocol, ManualSamplePreparation, "ModelInstances Test MSP Protocol " <> $SessionUUID],
+				Object[Protocol, Transfer, "ModelInstances Test Transfer Protocol " <> $SessionUUID]
+			],
+			{KeyValuePattern["Value" -> ObjectP[Object[Item, Spatula, "Test Spatula Object 2-1 for ModelInstances unit tests " <> $SessionUUID]]]}
+		],
+		Example[{Additional, "Returns an empty list if no stocked spatula is available for reusable and washable spatula model:"},
+			ModelInstances[
+				Model[Item, Spatula, "Test Spatula Model 3 for ModelInstances unit tests " <> $SessionUUID],
+				Null,
+				{},
+				{Object[LaboratoryNotebook, "id:rea9jlRZkrjx"]},
+				Object[Protocol, ManualSamplePreparation, "ModelInstances Test MSP Protocol " <> $SessionUUID],
+				Object[Protocol, Transfer, "ModelInstances Test Transfer Protocol " <> $SessionUUID]
+			],
+			{}
+		],
+		Example[{Additional, "Returns Available objects for reusable but not washable spatulas:"},
+			ModelInstances[
+				Model[Item, Spatula, "Test Spatula Model 4 for ModelInstances unit tests " <> $SessionUUID],
+				Null,
+				{},
+				{Object[LaboratoryNotebook, "id:rea9jlRZkrjx"]},
+				Object[Protocol, ManualSamplePreparation, "ModelInstances Test MSP Protocol " <> $SessionUUID],
+				Object[Protocol, Transfer, "ModelInstances Test Transfer Protocol " <> $SessionUUID]
+			],
+			{KeyValuePattern["Value" -> ObjectP[Object[Item, Spatula, "Test Spatula Object 4-1 for ModelInstances unit tests " <> $SessionUUID]]]}
+		],
+		Example[{Additional, "Returns an empty list if no stocked spatula is available for non-counted, non-reusable spatula model (Resource version):"},
+			ModelInstances[
+				Object[Resource, Sample, "Test Spatula Resource 2-1 for ModelInstances unit Tests " <> $SessionUUID],
+				Object[Protocol, Transfer, "Spatula Test Transfer Protocol 2 (Processing) for ModelInstances unit tests " <> $SessionUUID]
+			],
+			{}
+		],
+		Example[{Additional, "Returns Available and InUse objects for counted spatulas (Resource version):"},
+			ModelInstances[
+				Object[Resource, Sample, "Test Spatula Resource 2-2 for ModelInstances unit Tests " <> $SessionUUID],
+				Object[Protocol, Transfer, "Spatula Test Transfer Protocol 2 (Processing) for ModelInstances unit tests " <> $SessionUUID]
+			],
+			{
+				KeyValuePattern["Value" -> ObjectP[Object[Item, Spatula, "Test Spatula Object 2-1 for ModelInstances unit tests " <> $SessionUUID]]],
+				KeyValuePattern["Value" -> ObjectP[Object[Item, Spatula, "Test Spatula Object 2-2 for ModelInstances unit tests " <> $SessionUUID]]]
+			}
+		],
+		Example[{Additional, "Returns an empty list if no stocked spatula is available for reusable and washable spatula model (Resource version):"},
+			ModelInstances[
+				Object[Resource, Sample, "Test Spatula Resource 2-3 for ModelInstances unit Tests " <> $SessionUUID],
+				Object[Protocol, Transfer, "Spatula Test Transfer Protocol 2 (Processing) for ModelInstances unit tests " <> $SessionUUID]
+			],
+			{}
+		],
+		Example[{Additional, "Returns Available objects for reusable but not washable spatula (Resource version):"},
+			ModelInstances[
+				Object[Resource, Sample, "Test Spatula Resource 2-4 for ModelInstances unit Tests " <> $SessionUUID],
+				Object[Protocol, Transfer, "Spatula Test Transfer Protocol 2 (Processing) for ModelInstances unit tests " <> $SessionUUID]
+			],
+			{
+				KeyValuePattern["Value" -> ObjectP[Object[Item, Spatula, "Test Spatula Object 4-1 for ModelInstances unit tests " <> $SessionUUID]]],
+				KeyValuePattern["Value" -> ObjectP[Object[Item, Spatula, "Test Spatula Object 4-2 for ModelInstances unit tests " <> $SessionUUID]]]
+
+			}
+		],
 		(* Containers are not supported right now - only Samples and Items
 		Example[{Basic, "In the case where a container is requested, empty stocked containers are returned:"},
 			ModelInstances[
@@ -5323,11 +5524,12 @@ DefineTests[ModelInstances,
 			{KeyValuePattern["Value" -> ObjectP[Object[Sample, "Test sample 4 for ModelInstances unit tests" <> $SessionUUID]]]}
 		]
 	},
-	SymbolSetUp :> Module[{allObjects,existsFilter,sampleModel,tube1,tube2,tube3,plate,sample1,sample2,sample3,sample4,parentMSPProtocol,transferProtocol,resources,sampleResource,containerResource,cffProtocolID,
-		filterResourcePacket,cffFilterResource,rspProtocolID,rspResourcePacket,rspProtocolResources},
+	SymbolSetUp :> Module[{testBench, allObjects,existsFilter,sampleModel,tube1,tube2,tube3,plate,sample1,sample2,sample3,sample4,parentMSPProtocol,transferProtocol,resources,sampleResource,containerResource,cffProtocolID,
+		filterResourcePacket,cffFilterResource,rspProtocolID,rspResourcePacket,rspProtocolResources,spatulaModels,spatulaObjects,spatulaMSPProtocol, spatulaTransferProtocol1, spatulaTransferProtocol2, spatulaTransferProtocol1Resources, spatulaTransferProtocol2Resources},
 		$CreatedObjects = {};
 
 		allObjects = {
+			Object[Container, Bench, "Test bench for ModelInstances tests"<>$SessionUUID],
 			Object[Sample, "Test sample 1 for ModelInstances unit tests" <> $SessionUUID],
 			Object[Sample, "Test sample 2 for ModelInstances unit tests" <> $SessionUUID],
 			Object[Sample, "Test sample 3 for ModelInstances unit tests" <> $SessionUUID],
@@ -5346,7 +5548,30 @@ DefineTests[ModelInstances,
 			Object[Resource, Sample, "Plate Resource Sample 1 for ModelInstances unit tests" <> $SessionUUID],
 			Object[Resource, Sample, "Plate Resource Sample 2 for ModelInstances unit tests" <> $SessionUUID],
 			Object[Resource, Sample, "Plate Resource Sample 3 for ModelInstances unit tests" <> $SessionUUID],
-			Model[Sample, "Test sample model for ModelInstances unit tests" <> $SessionUUID]
+			Model[Sample, "Test sample model for ModelInstances unit tests" <> $SessionUUID],
+			Object[Protocol, ManualSamplePreparation, "Spatula Test MSP Protocol for ModelInstances unit tests " <> $SessionUUID],
+			Object[Protocol, Transfer, "Spatula Test Transfer Protocol 1 (Completed) for ModelInstances unit tests " <> $SessionUUID],
+			Object[Protocol, Transfer, "Spatula Test Transfer Protocol 2 (Processing) for ModelInstances unit tests " <> $SessionUUID],
+			Model[Item, Spatula, "Test Spatula Model 1 for ModelInstances unit tests " <> $SessionUUID],
+			Model[Item, Spatula, "Test Spatula Model 2 for ModelInstances unit tests " <> $SessionUUID],
+			Model[Item, Spatula, "Test Spatula Model 3 for ModelInstances unit tests " <> $SessionUUID],
+			Model[Item, Spatula, "Test Spatula Model 4 for ModelInstances unit tests " <> $SessionUUID],
+			Object[Item, Spatula, "Test Spatula Object 1-1 for ModelInstances unit tests " <> $SessionUUID],
+			Object[Item, Spatula, "Test Spatula Object 1-2 for ModelInstances unit tests " <> $SessionUUID],
+			Object[Item, Spatula, "Test Spatula Object 2-1 for ModelInstances unit tests " <> $SessionUUID],
+			Object[Item, Spatula, "Test Spatula Object 2-2 for ModelInstances unit tests " <> $SessionUUID],
+			Object[Item, Spatula, "Test Spatula Object 3-1 for ModelInstances unit tests " <> $SessionUUID],
+			Object[Item, Spatula, "Test Spatula Object 3-2 for ModelInstances unit tests " <> $SessionUUID],
+			Object[Item, Spatula, "Test Spatula Object 4-1 for ModelInstances unit tests " <> $SessionUUID],
+			Object[Item, Spatula, "Test Spatula Object 4-2 for ModelInstances unit tests " <> $SessionUUID],
+			Object[Resource, Sample, "Test Spatula Resource 1-1 for ModelInstances unit Tests " <> $SessionUUID],
+			Object[Resource, Sample, "Test Spatula Resource 1-2 for ModelInstances unit Tests " <> $SessionUUID],
+			Object[Resource, Sample, "Test Spatula Resource 1-3 for ModelInstances unit Tests " <> $SessionUUID],
+			Object[Resource, Sample, "Test Spatula Resource 1-4 for ModelInstances unit Tests " <> $SessionUUID],
+			Object[Resource, Sample, "Test Spatula Resource 2-1 for ModelInstances unit Tests " <> $SessionUUID],
+			Object[Resource, Sample, "Test Spatula Resource 2-2 for ModelInstances unit Tests " <> $SessionUUID],
+			Object[Resource, Sample, "Test Spatula Resource 2-3 for ModelInstances unit Tests " <> $SessionUUID],
+			Object[Resource, Sample, "Test Spatula Resource 2-4 for ModelInstances unit Tests " <> $SessionUUID]
 		};
 
 		(* Erase any objects that we failed to erase in the last unit test *)
@@ -5354,11 +5579,20 @@ DefineTests[ModelInstances,
 
 		Quiet[EraseObject[PickList[allObjects, existsFilter], Force -> True, Verbose -> False]];
 
-		sampleModel = UploadSampleModel["Test sample model for ModelInstances unit tests" <> $SessionUUID,
-			Composition->{
+		testBench = Upload[
+			<|
+				Type->Object[Container,Bench],
+				Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],
+				Name->"Test bench for ModelInstances tests"<>$SessionUUID,
+				Site->Link[$Site]
+			|>
+		];
+		
+		sampleModel = UploadSampleModel[{
 				{100 VolumePercent, Model[Molecule, "Water"]},
 				{100 Milligram/Milliliter, Model[Molecule, "Sodium Chloride"]}
 			},
+			Name -> "Test sample model for ModelInstances unit tests" <> $SessionUUID,
 			State -> Liquid,
 			DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 			Expires -> True,
@@ -5497,7 +5731,124 @@ DefineTests[ModelInstances,
 			<|Object -> rspProtocolResources[[1]], Name -> "Plate Resource Sample 1 for ModelInstances unit tests" <> $SessionUUID|>,
 			<|Object -> rspProtocolResources[[2]], Name -> "Plate Resource Sample 2 for ModelInstances unit tests" <> $SessionUUID|>,
 			<|Object -> rspProtocolResources[[3]], Name -> "Plate Resource Sample 3 for ModelInstances unit tests" <> $SessionUUID|>
-		}]
+		}];
+
+		(* Spatulas*)
+		Block[
+			{
+				$AllowPublicObjects = True,
+				$Notebook = Null
+			},
+			spatulaModels = Upload[
+				MapThread[
+					<|
+						Type -> Model[Item, Spatula],
+						Name -> "Test Spatula Model "<>ToString[#1]<>" for ModelInstances unit tests " <> $SessionUUID,
+						Counted -> #2,
+						Reusable -> #3,
+						CleaningMethod -> #4,
+						DefaultStorageCondition -> Link[Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)]],
+						Transfer[Notebook] -> Link[$Notebook, Objects]
+					|>&,
+					{
+						Range[4],
+						{Null, True, Null, Null},
+						{Null, Null, True, True},
+						{Null, Null, DishwashPlastic, Null}
+					}
+				]
+			];
+
+			spatulaMSPProtocol = Upload[
+				<|
+					Type -> Object[Protocol, ManualSamplePreparation],
+					Transfer[Notebook] -> Link[$Notebook, Objects],
+					Status -> Processing,
+					Name -> "Spatula Test MSP Protocol for ModelInstances unit tests " <> $SessionUUID
+				|>
+			];
+
+			spatulaObjects = ECL`InternalUpload`UploadSample[
+				Flatten[ConstantArray[#,2]&/@spatulaModels],
+				ConstantArray[
+					{"Bench Top Slot", testBench},
+					8
+				],
+				Status -> {Available, InUse, Available, InUse, Available, InUse, Available, InUse},
+				UpdatedBy -> spatulaMSPProtocol,
+				Name -> {
+					"Test Spatula Object 1-1 for ModelInstances unit tests " <> $SessionUUID,
+					"Test Spatula Object 1-2 for ModelInstances unit tests " <> $SessionUUID,
+					"Test Spatula Object 2-1 for ModelInstances unit tests " <> $SessionUUID,
+					"Test Spatula Object 2-2 for ModelInstances unit tests " <> $SessionUUID,
+					"Test Spatula Object 3-1 for ModelInstances unit tests " <> $SessionUUID,
+					"Test Spatula Object 3-2 for ModelInstances unit tests " <> $SessionUUID,
+					"Test Spatula Object 4-1 for ModelInstances unit tests " <> $SessionUUID,
+					"Test Spatula Object 4-2 for ModelInstances unit tests " <> $SessionUUID
+				},
+				InitialAmount -> {Null, Null, 100, 100, Null, Null, Null, Null},
+				Notebook -> $Notebook
+			];
+
+			spatulaTransferProtocol1 = RequireResources[
+				<|
+					Type -> Object[Protocol, Transfer],
+					Transfer[Notebook] -> Link[$Notebook, Objects],
+					Status -> Completed,
+					Name -> "Spatula Test Transfer Protocol 1 (Completed) for ModelInstances unit tests " <> $SessionUUID,
+					ParentProtocol -> Link[spatulaMSPProtocol, Subprotocols],
+					RootProtocol -> Link[spatulaMSPProtocol],
+					Replace[RequiredObjects] -> (Resource[Sample->#]&/@spatulaModels)
+				|>
+			];
+
+			spatulaTransferProtocol1Resources = Download[spatulaTransferProtocol1, RequiredResources[[All,1]][Object]];
+
+			Upload[
+				MapThread[
+					<|Object -> #1, Name -> #2, Transfer[Notebook] -> Link[$Notebook, Objects], Sample -> Link[#3]|>&,
+					{
+						spatulaTransferProtocol1Resources,
+						{
+							"Test Spatula Resource 1-1 for ModelInstances unit Tests " <> $SessionUUID,
+							"Test Spatula Resource 1-2 for ModelInstances unit Tests " <> $SessionUUID,
+							"Test Spatula Resource 1-3 for ModelInstances unit Tests " <> $SessionUUID,
+							"Test Spatula Resource 1-4 for ModelInstances unit Tests " <> $SessionUUID
+						},
+						spatulaObjects[[{2,4,6,8}]]
+					}
+				]
+			];
+
+			spatulaTransferProtocol2 = RequireResources[
+				<|
+					Type -> Object[Protocol, Transfer],
+					Transfer[Notebook] -> Link[$Notebook, Objects],
+					Status -> Processing,
+					Name -> "Spatula Test Transfer Protocol 2 (Processing) for ModelInstances unit tests " <> $SessionUUID,
+					ParentProtocol -> Link[spatulaMSPProtocol, Subprotocols],
+					RootProtocol -> Link[spatulaMSPProtocol],
+					Replace[RequiredObjects] -> (Resource[Sample->#]&/@spatulaModels)
+				|>
+			];
+
+			spatulaTransferProtocol2Resources = Download[spatulaTransferProtocol2, RequiredResources[[All,1]][Object]];
+
+			Upload[
+				MapThread[
+					<|Object -> #1, Name -> #2, Transfer[Notebook] -> Link[$Notebook, Objects]|>&,
+					{
+						spatulaTransferProtocol2Resources,
+						{
+							"Test Spatula Resource 2-1 for ModelInstances unit Tests " <> $SessionUUID,
+							"Test Spatula Resource 2-2 for ModelInstances unit Tests " <> $SessionUUID,
+							"Test Spatula Resource 2-3 for ModelInstances unit Tests " <> $SessionUUID,
+							"Test Spatula Resource 2-4 for ModelInstances unit Tests " <> $SessionUUID
+						}
+					}
+				]
+			];
+		];
 
 	],
 	SymbolTearDown :> Module[{},

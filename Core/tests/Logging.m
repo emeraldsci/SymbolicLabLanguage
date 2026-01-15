@@ -44,7 +44,9 @@ DefineTests[AddTracingDefinition,{
     Test["All functions have tracing definitions on top:",
         Module[{plotFunctions, analysisFunctions, definitionContainsTraceBlockerQ},
             plotFunctions = Map[ Symbol, Flatten[ Values[ $CommandBuilderFunctions["Plot"] ] ] ];
-            analysisFunctions = Map[ Symbol, Flatten[ Values[ $CommandBuilderFunctions["Analysis"] ] ] ];
+            (* AdvancedAnalyzePeaks is currently implemented in DVA's shared library,
+               and is not using SciComp's tracing functionality. *)
+            analysisFunctions = Map[ Symbol, DeleteCases[Flatten[ Values[ $CommandBuilderFunctions["Analysis"] ] ], "AdvancedAnalyzePeaks"] ];
             (* does left-hand side of first (top) definition contain the tracklog blocking symbol? *)
             definitionContainsTraceBlockerQ[symbol_Symbol] := StringContainsQ[ToString[DownValues[symbol][[1,1]]], "$tracelog"];
             (* 

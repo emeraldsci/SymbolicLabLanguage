@@ -2787,14 +2787,32 @@ DefineTests[ExperimentCapillaryELISA,
 		],
 		Example[{Options, CentrifugeIntensity, "The rotational speed or the force that will be applied to the samples by centrifugation prior to starting the experiment:"},
 			options = ExperimentCapillaryELISA[
-				Object[Sample, "ExperimentCapillaryELISA test  sample 2 without pre-loaded analyte" <> $SessionUUID], CentrifugeIntensity -> 1000 * RPM, Output -> Options];
+				Object[Sample, "ExperimentCapillaryELISA test  sample 2 without pre-loaded analyte" <> $SessionUUID],
+				CentrifugeIntensity -> 1000 RPM,
+				Output -> Options
+			];
 			Lookup[options, CentrifugeIntensity],
-			1000 * RPM,
+			1000 RPM,
 			EquivalenceFunction -> Equal,
 			Variables :> {options},
 			Stubs :> {
 				Search[Object[ManufacturingSpecification, CapillaryELISACartridge]] = {}
 			}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentCapillaryELISA[
+				Object[Sample, "ExperimentCapillaryELISA test  sample 2 without pre-loaded analyte" <> $SessionUUID],
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Stubs :> {
+				Search[Object[ManufacturingSpecification, CapillaryELISACartridge]] = {}
+			},
+			Messages :> {Warning::CentrifugePrecision}
 		],
 		(* Note: CentrifugeTime cannot go above 5Minute without restricting the types of centrifuges that can be used. *)
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
@@ -3080,6 +3098,17 @@ DefineTests[ExperimentCapillaryELISA,
 			0.5 * Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options},
+			Stubs :> {
+				Search[Object[ManufacturingSpecification, CapillaryELISACartridge]] = {}
+			}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentCapillaryELISA[Object[Sample, "ExperimentCapillaryELISA test  sample 2 without pre-loaded analyte" <> $SessionUUID], AliquotAmount -> 0.5111 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			0.511 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision},
 			Stubs :> {
 				Search[Object[ManufacturingSpecification, CapillaryELISACartridge]] = {}
 			}
@@ -6964,18 +6993,18 @@ DefineTests[ExperimentCapillaryELISA,
 					testSampleModelPacket5
 				} = UploadSampleModel[
 					{
-						"ExperimentCapillaryELISA test  sample model 1 with pre-loaded analyte" <> $SessionUUID,
-						"ExperimentCapillaryELISA test  sample model 2 without pre-loaded analyte" <> $SessionUUID,
-						"ExperimentCapillaryELISA test  sample model 3 with pre-loaded analytes" <> $SessionUUID,
-						"ExperimentCapillaryELISA test  sample model 4 with pre-loaded analyte" <> $SessionUUID,
-						"ExperimentCapillaryELISA test  sample model 5 without pre-loaded analyte" <> $SessionUUID
-					},
-					Composition -> {
 						{{1000Picogram / Milliliter, preloadedAnalyte1}, {100VolumePercent, Model[Molecule, "Water"]}},
 						{{1000Picogram / Milliliter, customizableAnalyte1}, {100 VolumePercent, Model[Molecule, "Water"]}},
 						{{1000Picogram / Milliliter, preloadedAnalyte1}, {1000Picogram / Milliliter, preloadedAnalyte2}, {1000Picogram / Milliliter, preloadedAnalyte3}, {1000Picogram / Milliliter, preloadedAnalyte4}, {100VolumePercent, Model[Molecule, "Water"]}},
 						{{1000Picogram / Milliliter, preloadedAnalyte2}, {100VolumePercent, Model[Molecule, "Water"]}},
 						{{1000Picogram / Milliliter, customizableAnalyte2}, {100 VolumePercent, Model[Molecule, "Water"]}}
+					},
+					Name -> {
+						"ExperimentCapillaryELISA test  sample model 1 with pre-loaded analyte" <> $SessionUUID,
+						"ExperimentCapillaryELISA test  sample model 2 without pre-loaded analyte" <> $SessionUUID,
+						"ExperimentCapillaryELISA test  sample model 3 with pre-loaded analytes" <> $SessionUUID,
+						"ExperimentCapillaryELISA test  sample model 4 with pre-loaded analyte" <> $SessionUUID,
+						"ExperimentCapillaryELISA test  sample model 5 without pre-loaded analyte" <> $SessionUUID
 					},
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Refrigerator"],
@@ -7676,8 +7705,11 @@ DefineTests[
 
 				(* Make some test sample models *)
 				testSampleModel1 = UploadSampleModel[
-					"ValidExperimentCapillaryELISAQ test sample model 1 with pre-loaded analyte" <> $SessionUUID,
-					Composition -> {{1000Picogram / Milliliter, preloadedAnalyte1}, {100VolumePercent, Model[Molecule, "Water"]}},
+					{
+						{1000Picogram / Milliliter, preloadedAnalyte1},
+						{100VolumePercent, Model[Molecule, "Water"]}
+					},
+					Name -> "ValidExperimentCapillaryELISAQ test sample model 1 with pre-loaded analyte" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Refrigerator"],
 					State -> Liquid
@@ -7685,8 +7717,11 @@ DefineTests[
 				Upload[<|Object -> testSampleModel1, Replace[Analytes] -> {Link[preloadedAnalyte1]}|>];
 
 				testSampleModel2 = UploadSampleModel[
-					"ValidExperimentCapillaryELISAQ test sample model 2 without pre-loaded analyte" <> $SessionUUID,
-					Composition -> {{1000Picogram / Milliliter, customizableAnalyte1}, {100 VolumePercent, Model[Molecule, "Water"]}},
+					{
+						{1000Picogram / Milliliter, customizableAnalyte1},
+						{100 VolumePercent, Model[Molecule, "Water"]}
+					},
+					Name -> "ValidExperimentCapillaryELISAQ test sample model 2 without pre-loaded analyte" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Refrigerator"],
 					State -> Liquid
@@ -8168,8 +8203,11 @@ DefineTests[
 
 				(* Make some test sample models *)
 				testSampleModel1 = UploadSampleModel[
-					"ExperimentCapillaryELISAOptions test sample model 1 with pre-loaded analyte" <> $SessionUUID,
-					Composition -> {{1000Picogram / Milliliter, preloadedAnalyte1}, {100VolumePercent, Model[Molecule, "Water"]}},
+					{
+						{1000Picogram / Milliliter, preloadedAnalyte1},
+						{100VolumePercent, Model[Molecule, "Water"]}
+					},
+					Name -> "ExperimentCapillaryELISAOptions test sample model 1 with pre-loaded analyte" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Refrigerator"],
 					State -> Liquid
@@ -8177,8 +8215,11 @@ DefineTests[
 				Upload[<|Object -> testSampleModel1, Replace[Analytes] -> {Link[preloadedAnalyte1]}|>];
 
 				testSampleModel2 = UploadSampleModel[
-					"ExperimentCapillaryELISAOptions test sample model 2 without pre-loaded analyte" <> $SessionUUID,
-					Composition -> {{1000Picogram / Milliliter, customizableAnalyte1}, {100 VolumePercent, Model[Molecule, "Water"]}},
+					{
+						{1000Picogram / Milliliter, customizableAnalyte1},
+						{100 VolumePercent, Model[Molecule, "Water"]}
+					},
+					Name -> "ExperimentCapillaryELISAOptions test sample model 2 without pre-loaded analyte" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Refrigerator"],
 					State -> Liquid
@@ -8660,8 +8701,11 @@ DefineTests[
 
 				(* Make some test sample models *)
 				testSampleModel1 = UploadSampleModel[
-					"ExperimentCapillaryELISAPreview test sample model 1 with pre-loaded analyte" <> $SessionUUID,
-					Composition -> {{1000Picogram / Milliliter, preloadedAnalyte1}, {100VolumePercent, Model[Molecule, "Water"]}},
+					{
+						{1000Picogram / Milliliter, preloadedAnalyte1},
+						{100VolumePercent, Model[Molecule, "Water"]}
+					},
+					Name -> "ExperimentCapillaryELISAPreview test sample model 1 with pre-loaded analyte" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Refrigerator"],
 					State -> Liquid
@@ -8669,8 +8713,11 @@ DefineTests[
 				Upload[<|Object -> testSampleModel1, Replace[Analytes] -> {Link[preloadedAnalyte1]}|>];
 
 				testSampleModel2 = UploadSampleModel[
-					"ExperimentCapillaryELISAPreview test sample model 2 without pre-loaded analyte" <> $SessionUUID,
-					Composition -> {{1000Picogram / Milliliter, customizableAnalyte1}, {100 VolumePercent, Model[Molecule, "Water"]}},
+					{
+						{1000Picogram / Milliliter, customizableAnalyte1},
+						{100 VolumePercent, Model[Molecule, "Water"]}
+					},
+					Name -> "ExperimentCapillaryELISAPreview test sample model 2 without pre-loaded analyte" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Refrigerator"],
 					State -> Liquid

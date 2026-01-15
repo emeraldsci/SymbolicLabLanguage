@@ -73,13 +73,13 @@ DefineUsage[ExperimentCoverOptions,
 					{
 						OutputName->"ResolvedOptions",
 						Description->"The full set of options which determine how the covering will be performed.",
-						Pattern:>BooleanP
+						Pattern:>{Rule[_Symbol, Except[Automatic|$Failed]]|RuleDelayed[_Symbol,Except[Automatic|$Failed]]...}
 					}
 				}
 			}
 		},
 		SeeAlso -> {
-			"ExperimentCoverOptions",
+			"ValidExperimentCoverQ",
 			"ExperimentCover",
 			"ExperimentManualSamplePreparation"
 		},

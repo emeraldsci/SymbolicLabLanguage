@@ -969,11 +969,11 @@ AnalyzeTotalProteinQuantification[myProtocol:ObjectP[Object[Protocol,TotalProtei
 	uploadSamplePropertiesResult=Which[
 		(* The case where both Upload and UploadConcentration are true, we upload the new SamplesIn TotalProteinConcentrations where *)
 		suppliedUploadConcentration&&upload,
-			ECL`InternalUpload`UploadSampleProperties[uniqueSamplesIn,TotalProteinConcentration->uniqueSamplesInTotalProteinConcentrations],
+			ECL`UploadSampleProperties[uniqueSamplesIn,TotalProteinConcentration->uniqueSamplesInTotalProteinConcentrations],
 
 		(* The case where UploadConcentration is True but Upload is False, we call UploadSampleProperties with Upload to False to get the change packets that we will return at the end of the function *)
 		suppliedUploadConcentration&&!upload,
-			ECL`InternalUpload`UploadSampleProperties[uniqueSamplesIn,TotalProteinConcentration->uniqueSamplesInTotalProteinConcentrations,Upload->False],
+			ECL`UploadSampleProperties[uniqueSamplesIn,TotalProteinConcentration->uniqueSamplesInTotalProteinConcentrations,Upload->False],
 
 		(* In all other cases, return Null *)
 		True,

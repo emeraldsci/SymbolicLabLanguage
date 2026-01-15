@@ -223,12 +223,6 @@ DefineTests[ExperimentFillToVolume,
 			True,
 			Variables :> {options}
 		],
-		Example[{Options, Needle, "Specify the needle with which to perform the transfer.  Note that this refers to the _first_ transfer; if transferring a large amount and then transferring a small amount to reach the proper volume, another needle may be used for the final transfer:"},
-			options = ExperimentFillToVolume[Object[Sample, "Example plate sample 1 for ExperimentFillToVolume tests" <> $SessionUUID], 0.5 Milliliter, Solvent -> Model[Sample, "Milli-Q water"], Needle -> Model[Item,Needle,"Reusable Stainless Steel Non-Coring 6 in x 18G Needle"], Output -> Options];
-			Lookup[options, Needle],
-			ObjectP[Model[Item,Needle,"Reusable Stainless Steel Non-Coring 6 in x 18G Needle"]],
-			Variables :> {options}
-		],
 		Example[{Options, Needle, "Disposable blunt-tip needles are defaulted to if a syringe is specified and neither of the source and destination are hermetic:"},
 			options = ExperimentFillToVolume[Object[Sample, "Example plate sample 1 for ExperimentFillToVolume tests" <> $SessionUUID], 0.5 Milliliter, Solvent -> Model[Sample, "Milli-Q water"], Instrument -> Model[Container, Syringe, "id:P5ZnEj4P88P0"], Output -> Options];
 			Download[Lookup[options, Needle], {Bevel, Reusable}],
@@ -242,7 +236,7 @@ DefineTests[ExperimentFillToVolume,
 			Variables :> {options}
 		],
 		Example[{Options, HandPump, "Specify the hand pump to use to obtain the specified solvent:"},
-			options = ExperimentFillToVolume[Object[Sample, "Example sample 1 for ExperimentFillToVolume tests" <> $SessionUUID], 30 Milliliter, Solvent -> Model[Sample, "Toluene, Reagent Grade"], HandPump -> Model[Part, HandPump, "Polyethylene Carboy Hand Pump"], Output -> Options];
+			options = ExperimentFillToVolume[Object[Sample, "Example sample 1 for ExperimentFillToVolume tests" <> $SessionUUID], 30 Milliliter, Solvent -> Model[Sample, StockSolution, "5M Sodium Chloride"], HandPump -> Model[Part, HandPump, "Polyethylene Carboy Hand Pump"], Output -> Options];
 			Lookup[options, HandPump],
 			ObjectP[Model[Part, HandPump, "Polyethylene Carboy Hand Pump"]],
 			Variables :> {options}
@@ -366,15 +360,23 @@ DefineTests[ExperimentFillToVolume,
 			protocol = ExperimentFillToVolume[{Object[Sample, "Example sample 1 for ExperimentFillToVolume tests" <> $SessionUUID], Object[Sample, "Example volumetric flask sample 1 for ExperimentFillToVolume tests" <> $SessionUUID]}, {30 Milliliter, 100 Milliliter}, Solvent -> Model[Sample, "Milli-Q water"], Method -> {Ultrasonic, Volumetric}];
 			Download[protocol,{WasteContainer,BatchedUnitOperations[WasteContainer],BatchedUnitOperations[TransferUnitOperations][WasteContainer]}],
 			{
-				ObjectP[Model[Container, Vessel, "id:J8AY5jwzPPR7"]],
-				{Null,ObjectP[Model[Container, Vessel, "id:J8AY5jwzPPR7"]]},
-				{{Null},{ObjectP[Model[Container, Vessel, "id:J8AY5jwzPPR7"]]}}
+				ObjectP[Model[Container, Vessel, "id:3em6Zv9Njjbv"]],
+				{Null,ObjectP[Model[Container, Vessel, "id:3em6Zv9Njjbv"]]},
+				{{Null},{ObjectP[Model[Container, Vessel, "id:3em6Zv9Njjbv"]]}}
 			},
 			Variables :> {protocol}
 		],
 		Test["For Volumetric FillToVolume, the same WasteContainer can be passed down to Transfer subprotocols:",
 			(* Do the series of subprotocols just as normal FTV procedure *)
-			ftvProtocol = ExperimentFillToVolume[Object[Sample, "Example volumetric flask sample 1 for ExperimentFillToVolume tests" <> $SessionUUID], 100 Milliliter, Solvent -> Model[Sample, "Milli-Q water"]];
+			ftvProtocol = ExperimentFillToVolume[
+				Object[Sample, "Example volumetric flask sample 1 for ExperimentFillToVolume tests" <> $SessionUUID],
+				100 Milliliter,
+				Solvent -> Model[Sample, "Milli-Q water"],
+				(* don't _really_ need to specify this, but we had a testing-only issue where a semi-deprecated handling station was getting resolved to here and that was messing up the downstream stuff *)
+				(* now, I have explicitly set it and if this one becomes deprecated, the source is less mysterious *)
+				TransferEnvironment -> Model[Instrument, HandlingStation, Ambient, "Full Benchtop Handling Station with Micro and Analytical Balance"]
+
+			];
 			transferUO = Download[ftvProtocol,BatchedUnitOperations[[1]][TransferUnitOperations][[1]][Object]];
 			Upload[<|Object->transferUO,WasteContainer->Link[Object[Container, Vessel, "Example waste container for ExperimentFillToVolume tests" <> $SessionUUID]]|>];
 			mspProtocol = ExperimentManualSamplePreparation[transferUO,ParentProtocol->ftvProtocol];
@@ -652,6 +654,11 @@ DefineTests[ExperimentFillToVolume,
 			$Failed,
 			Messages :> {Error::FillToVolumeEmptyPosition, Error::InvalidOption}
 		],
+		Example[{Messages, "FillToVolumeEmptyPosition", "If DestinationWell is specified to a position that is empty in an empty container, an error is thrown cleanly:"},
+			ExperimentFillToVolume[Object[Container, Vessel, "Example empty container for ExperimentFillToVolume tests" <> $SessionUUID], 10 Milliliter, DestinationWell -> "A1", Solvent -> Model[Sample, "Milli-Q water"]],
+			$Failed,
+			Messages :> {Error::FillToVolumeEmptyPosition, Error::InvalidOption}
+		],
 		Example[{Messages, "FillToVolumeIncompatibleMethod", "Method must only be set to Volumetric if in a volumetric flask, or else an error is thrown:"},
 			ExperimentFillToVolume[Object[Sample, "Example sample 1 for ExperimentFillToVolume tests" <> $SessionUUID], 50 Milliliter, Method -> Volumetric, Solvent -> Model[Sample, "Milli-Q water"]],
 			$Failed,
@@ -792,6 +799,7 @@ DefineTests[ExperimentFillToVolume,
 				Object[Container, Vessel, "Example container 1 for ExperimentFillToVolume tests" <> $SessionUUID],
 				Object[Container, Vessel, "Example container 2 for ExperimentFillToVolume tests" <> $SessionUUID],
 				Object[Container, Vessel, "Example container 3 for ExperimentFillToVolume tests" <> $SessionUUID],
+				Object[Container, Vessel, "Example empty container for ExperimentFillToVolume tests" <> $SessionUUID],
 				Object[Container, Vessel, VolumetricFlask, "Example volumetric flask 1 for ExperimentFillToVolume" <> $SessionUUID],
 				Object[Container, Vessel, VolumetricFlask, "Example volumetric flask 2 for ExperimentFillToVolume" <> $SessionUUID],
 				Object[Container, Vessel, VolumetricFlask, "Example volumetric flask 3 for ExperimentFillToVolume" <> $SessionUUID],
@@ -822,7 +830,7 @@ DefineTests[ExperimentFillToVolume,
 			Module[
 				{
 					exampleBench,
-					tube1, tube2, tube3, volumetricFlask1, volumetricFlask2, volumetricFlask3, ultrasonicIncompatible1, plate1, solventContainer1, solventContainer2, wasteContainer,
+					tube1, tube2, tube3, volumetricFlask1, volumetricFlask2, volumetricFlask3, ultrasonicIncompatible1, plate1, solventContainer1, solventContainer2, wasteContainer, emptyContainer,
 					tubeSample1, tubeSample2, tubeSample3, volumetricFlaskSample1, ultrasonicIncompatibleSample1, volumetricFlaskSample2, plateSample1, volumetricFlaskSample3, solventSample1, solventSample2,
 					templateProtocol,
 					allObjs
@@ -833,6 +841,7 @@ DefineTests[ExperimentFillToVolume,
 					tube1,
 					tube2,
 					tube3,
+					emptyContainer,
 					volumetricFlask1,
 					volumetricFlask2,
 					volumetricFlask3,
@@ -846,6 +855,7 @@ DefineTests[ExperimentFillToVolume,
 						Model[Container, Vessel, "50mL Tube"],
 						Model[Container, Vessel, "50mL Tube"],
 						Model[Container, Vessel, "1mg brown thin tube"],
+						Model[Container, Vessel, "50mL Tube"],
 						Model[Container, Vessel, VolumetricFlask, "100 mL Glass Volumetric Flask"],
 						Model[Container, Vessel, VolumetricFlask, "100 mL Glass Volumetric Flask"],
 						Model[Container, Vessel, VolumetricFlask, "25 mL Glass Volumetric Flask"],
@@ -856,6 +866,7 @@ DefineTests[ExperimentFillToVolume,
 						Model[Container, Vessel, "50mL Tube"]
 					},
 					{
+						{"Work Surface", exampleBench},
 						{"Work Surface", exampleBench},
 						{"Work Surface", exampleBench},
 						{"Work Surface", exampleBench},
@@ -879,12 +890,14 @@ DefineTests[ExperimentFillToVolume,
 						Available,
 						Available,
 						Available,
+						Available,
 						Available
 					},
 					Name -> {
 						"Example container 1 for ExperimentFillToVolume tests" <> $SessionUUID,
 						"Example container 2 for ExperimentFillToVolume tests" <> $SessionUUID,
 						"Example container 3 for ExperimentFillToVolume tests" <> $SessionUUID,
+						"Example empty container for ExperimentFillToVolume tests" <> $SessionUUID,
 						"Example volumetric flask 1 for ExperimentFillToVolume" <> $SessionUUID,
 						"Example volumetric flask 2 for ExperimentFillToVolume" <> $SessionUUID,
 						"Example volumetric flask 3 for ExperimentFillToVolume" <> $SessionUUID,
@@ -998,6 +1011,7 @@ DefineTests[ExperimentFillToVolume,
 				Object[Container, Vessel, "Example container 1 for ExperimentFillToVolume tests" <> $SessionUUID],
 				Object[Container, Vessel, "Example container 2 for ExperimentFillToVolume tests" <> $SessionUUID],
 				Object[Container, Vessel, "Example container 3 for ExperimentFillToVolume tests" <> $SessionUUID],
+				Object[Container, Vessel, "Example empty container for ExperimentFillToVolume tests" <> $SessionUUID],
 				Object[Container, Vessel, VolumetricFlask, "Example volumetric flask 1 for ExperimentFillToVolume" <> $SessionUUID],
 				Object[Container, Vessel, VolumetricFlask, "Example volumetric flask 2 for ExperimentFillToVolume" <> $SessionUUID],
 				Object[Container, Vessel, VolumetricFlask, "Example volumetric flask 3 for ExperimentFillToVolume" <> $SessionUUID],

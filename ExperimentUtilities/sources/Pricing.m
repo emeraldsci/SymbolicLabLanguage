@@ -6230,6 +6230,16 @@ DefineOptions[PriceMaterials,
 			Description -> "Determines whether the output table of this function consolidates all pricing information by Notebook, Protocol, Material, or not at all.",
 			Category -> "General"
 		},
+		{
+			OptionName -> Split,
+			Default -> Null,
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP],
+			Description -> "Determines whether the output of this function is shows separate tables for Reusable vs Non-Reusable materials.",
+			Category -> "General"
+		},
 		CacheOption
 	}
 ];
@@ -6421,30 +6431,36 @@ priceMaterialsCore[
 	ops:OptionsPattern[]
 ]:=Module[
 	{
-		safeOps, output, cache, consolidation, allProtocols, allTransactionsOrders,
+		safeOps, output, cache, consolidation, split, allProtocols, allTransactionsOrders,
 		allProtocolValues, allTransactionValues,
 		uniqueModels, uniqueProducts, uniqueContainers, uniqueSites, uniqueDefaultContainers,
 		allProtocolsDownloadPacketsRaw, packetRulesProtocols, resourceProducts,
 		protocolPackets, resourcePackets, resourceProductPackets,
 		resourceSamplePackets, resourceSampleModelPackets, resourceSampleContainerModelPackets, resourceContainerModelPackets, defaultStorageConditionPackets,
 		containerResourcePackets, siteModelPackets, troubleshootingReportPackets, outputTransactionsOrders, outputProtocols, joinedAmounts, joinedPricingRate, joinedPrice, joinedDate, joinedTags,
-		joinedNotebooks, joinedSources, joinedSamples, joinedNames, joinedNamesNoNull, outputListsSortedBySources, outputListsSortedByMaterials, pricingOutputOrderPriority,
+		joinedNotebooks, joinedSources, joinedSamples, joinedNames, joinedNamesNoNull, outputListsSortedBySources, outputListsSortedBySourcesReusable, outputListsSortedBySourcesNonReusable, outputListsSortedByMaterials, outputListsSortedByMaterialsReusable, outputListsSortedByMaterialsNonReusable, pricingOutputOrderPriority,
 		outputListsSortedByPricing, sortedNotebooks, sortedSources, sortedSamples, sortedNames, sortedAmounts, sortedPricingRate, sortedPrice, sortedDate,
-		sortedTags, transposedOutputs, allDataTable, associationDataTable, associationOutput, tableOutput, noNotebookDataTable, noProtocolDataTable,
-		gatheredByNotebook, notebookConsolidatedPreTotal, notebookConsolidatedTotals, notebookConsolidatedTable, gatheredByProtocol, protocolConsolidatedPreTotal,
-		protocolConsolidatedTotals, protocolConsolidatedTable, gatheredByMaterial, materialConsolidatedPreTotal, materialConsolidatedTotals, materialConsolidatedTable,
-		numNotebooks, numProts, dataTableToUse, totalInputPrice, subtotalRows, dataWithSubtotal, columnHeaders, tableTitle,
-		sortedFlattenedData, filteredResourceSampleContentsPackets, joinedSite, sortedSite, outputListsTax, totalTax, namePackets, nameLookups, taxExemptPackets, updatedOutputListsTax,
+		sortedTags, transposedOutputs, allDataTableReusable, allDataTableNonReusable, associationDataTable, associationOutput, tableOutputReusable, tableOutputNonReusable,totalTable, finalTable, noNotebookDataTableReusable, noNotebookDataTableNonReusable, noProtocolDataTableReusable, noProtocolDataTableNonReusable,
+		gatheredByNotebookReusable, gatheredByNotebookNonReusable, notebookConsolidatedPreTotalReusable, notebookConsolidatedPreTotalNonReusable, notebookConsolidatedTotalsReusable, notebookConsolidatedTotalsNonReusable, notebookConsolidatedTableReusable, notebookConsolidatedTableNonReusable, gatheredByProtocol, gatheredByProtocolReusable, gatheredByProtocolNonReusable, protocolConsolidatedPreTotalReusable, protocolConsolidatedPreTotalNonReusable,
+		protocolConsolidatedTotalsReusable, protocolConsolidatedTotalsNonReusable, protocolConsolidatedTableReusable, protocolConsolidatedTableNonReusable, gatheredByMaterialReusable, gatheredByMaterialNonReusable, materialConsolidatedPreTotalReusable, materialConsolidatedPreTotalNonReusable, materialConsolidatedTotalsReusable, materialConsolidatedTotalsNonReusable, materialConsolidatedTableReusable, materialConsolidatedTableNonReusable,
+		numNotebooksReusable, numProtsReusable, numNotebooksNonReusable, numProtsNonReusable, dataTableToUseReusable, dataTableToUseNonReusable, totalInputPrice, totalInputPriceReusable, totalInputPriceNonReusable, subtotalRowsReusable, subtotalRowsNonReusable, dataWithSubtotalReusable, dataWithSubtotalNonReusable, columnHeadersReusable, columnHeadersNonReusable, tableTitleReusable, tableTitleNonReusable,
+		sortedFlattenedData, filteredResourceSampleContentsPackets, joinedSite, joinedReusability,
+		joinedSamplesReusable, joinedNotebooksReusable, joinedSourcesReusable, joinedNamesNoNullReusable, joinedTagsReusable, joinedAmountsReusable, joinedPricingRateReusable, joinedPriceReusable, joinedDateReusable, joinedSiteReusable, joinedSamplesNonReusable, joinedNotebooksNonReusable, joinedSourcesNonReusable, joinedNamesNoNullNonReusable, joinedTagsNonReusable, joinedAmountsNonReusable, joinedPricingRateNonReusable, joinedPriceNonReusable, joinedDateNonReusable, joinedSiteNonReusable,
+		allDataTable, tableOutput, noNotebookDataTable,  noProtocolDataTable,
+		gatheredByNotebook, notebookConsolidatedPreTotal, notebookConsolidatedTotals,  notebookConsolidatedTable, protocolConsolidatedPreTotal,
+		protocolConsolidatedTotals, protocolConsolidatedTable,  gatheredByMaterial, materialConsolidatedPreTotal,  materialConsolidatedTotals,  materialConsolidatedTable,
+		numNotebooks, numProts,  dataTableToUse,  subtotalRows,  dataWithSubtotal,  columnHeaders,  tableTitle,
+		sortedSite, sortedReusability, sortedSamplesReusable, sortedNotebooksReusable, sortedSourcesReusable, sortedNamesReusable, sortedTagsReusable, sortedAmountsReusable, sortedPricingRateReusable, sortedPriceReusable, sortedDateReusable, sortedSiteReusable, sortedSamplesNonReusable, sortedNotebooksNonReusable, sortedSourcesNonReusable, sortedNamesNonReusable, sortedTagsNonReusable, sortedAmountsNonReusable, sortedPricingRateNonReusable, sortedPriceNonReusable, sortedDateNonReusable, sortedSiteNonReusable, outputListsTax, outputListsTaxReusable, outputListsTaxNonReusable, totalTax, totalTaxReusable, totalTaxNonReusable, namePackets, nameLookups, taxExemptPackets, updatedOutputListsTax, updatedOutputListsTaxReusable, updatedOutputListsTaxNonReusable,
 
 		(* error checking *)
 		likelyNoAccessObjects, veryLikelyNoAccessObjects, noAccessObjectPositions,
 		filteredResourcePackets, filteredResourceSamplePackets, filteredModels, filteredContainers, filteredDefaultContainers,
-		processedModels, fastAssoc, alignments, dividerPositions, dividers
+		processedModels, fastAssoc, alignments, alignmentsReusable, alignmentsNonReusable, dividerPositions, dividers
 	},
 
 	(* get the safe options and pull out the OutputFormat option *)
 	safeOps=SafeOptions[PriceMaterials, ToList[ops]];
-	{output, consolidation, cache}=Lookup[safeOps, {OutputFormat, Consolidation, Cache}];
+	{output, consolidation, cache, split}=Lookup[safeOps, {OutputFormat, Consolidation, Cache, Split}];
 
 	(* split the input by protocols and transactions *)
 	allProtocols=Cases[mySources, ObjectP[{Object[Protocol], Object[Maintenance], Object[Qualification]}]];
@@ -6665,7 +6681,7 @@ priceMaterialsCore[
 	(* get the output lists from priceMaterialsProtocols and outputTransactionsOrders if there are any*)
 	(* the output contains the following lists in that exact order: notebooks, sources, objects, names, price-categories, amounts, pricePerUnits, prices, and dates *)
 	outputProtocols=If[MatchQ[allProtocolValues, {}],
-		{{}, {}, {}, {}, {}, {}, {}, {}, {}, {}},
+		{{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}},
 		priceMaterialsProtocols[
 			protocolPackets, troubleshootingReportPackets, resourcePackets, resourceProductPackets, resourceSamplePackets, resourceSampleModelPackets,
 			resourceSampleContainerModelPackets, resourceContainerModelPackets, defaultStorageConditionPackets, containerResourcePackets, siteModelPackets
@@ -6673,7 +6689,7 @@ priceMaterialsCore[
 	];
 
 	outputTransactionsOrders=If[MatchQ[allTransactionValues, {}],
-		{{}, {}, {}, {}, {}, {}, {}, {}, {}, {}},
+		{{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}},
 		priceMaterialsTransactionOrder[allTransactionValues]
 	];
 
@@ -6691,7 +6707,7 @@ priceMaterialsCore[
 	transposedOutputs=Transpose[{outputProtocols, outputTransactionsOrders}];
 
 	(* extract the individual output lists that will serve as input for the output table *)
-	{joinedNotebooks, joinedSources, joinedSamples, joinedNames, joinedTags, joinedAmounts, joinedPricingRate, joinedPrice, joinedDate, joinedSite}=Map[
+	{joinedNotebooks, joinedSources, joinedSamples, joinedNames, joinedTags, joinedAmounts, joinedPricingRate, joinedPrice, joinedDate, joinedSite, joinedReusability}=Map[
 		Flatten[transposedOutputs[[#]]] &, Range[Length[outputProtocols]]];
 
 	(* add the Model ID instead of the name in case we don't have a Name *)
@@ -6704,10 +6720,70 @@ priceMaterialsCore[
 	];
 
 	(* transpose all output lists and gather by the sources (joinedSources) *)
-	outputListsSortedBySources=GatherBy[Transpose[{joinedSamples, joinedNotebooks, joinedSources, joinedNamesNoNull, joinedTags, joinedAmounts, joinedPricingRate, joinedPrice, joinedDate, joinedSite}], Part[#, 3]&];
+	{
+		joinedSamplesReusable,
+		joinedNotebooksReusable,
+		joinedSourcesReusable,
+		joinedNamesNoNullReusable,
+		joinedTagsReusable,
+		joinedAmountsReusable,
+		joinedPricingRateReusable,
+		joinedPriceReusable,
+		joinedDateReusable,
+		joinedSiteReusable
+	}=Map[
+		PickList[#, joinedReusability, True]&,
+		{
+			joinedSamples,
+			joinedNotebooks,
+			joinedSources,
+			joinedNamesNoNull,
+			joinedTags,
+			joinedAmounts,
+			joinedPricingRate,
+			joinedPrice,
+			joinedDate,
+			joinedSite
+		}
+	];
+	
+	{
+		joinedSamplesNonReusable,
+		joinedNotebooksNonReusable,
+		joinedSourcesNonReusable,
+		joinedNamesNoNullNonReusable,
+		joinedTagsNonReusable,
+		joinedAmountsNonReusable,
+		joinedPricingRateNonReusable,
+		joinedPriceNonReusable,
+		joinedDateNonReusable,
+		joinedSiteNonReusable
+	}=Map[
+		PickList[#, joinedReusability, False|Null]&,
+		{
+			joinedSamples,
+			joinedNotebooks,
+			joinedSources,
+			joinedNamesNoNull,
+			joinedTags,
+			joinedAmounts,
+			joinedPricingRate,
+			joinedPrice,
+			joinedDate,
+			joinedSite
+		}
+	];
+	
+	outputListsSortedBySources=GatherBy[Transpose[{joinedSamples, joinedNotebooks, joinedSources, joinedNamesNoNull, joinedTags, joinedAmounts, joinedPricingRate, joinedPrice, joinedDate, joinedSite, joinedReusability}], Part[#, 3]&];
+	
+	outputListsSortedBySourcesReusable=GatherBy[Transpose[{joinedSamplesReusable, joinedNotebooksReusable, joinedSourcesReusable, joinedNamesNoNullReusable, joinedTagsReusable, joinedAmountsReusable, joinedPricingRateReusable, joinedPriceReusable, joinedDateReusable, joinedSiteReusable, Cases[joinedReusability,True]}], Part[#, 3]&];
+	
+	outputListsSortedBySourcesNonReusable=GatherBy[Transpose[{joinedSamplesNonReusable, joinedNotebooksNonReusable, joinedSourcesNonReusable, joinedNamesNoNullNonReusable, joinedTagsNonReusable, joinedAmountsNonReusable, joinedPricingRateNonReusable, joinedPriceNonReusable, joinedDateNonReusable, joinedSiteNonReusable, Cases[joinedReusability,(False|Null)]}], Part[#, 3]&];
 
 	(* gather the protocol-gathered lists by materials (joinedSamples) *)
 	outputListsSortedByMaterials=Flatten[Map[GatherBy[#, First] &, outputListsSortedBySources], 1];
+	outputListsSortedByMaterialsReusable=Flatten[Map[GatherBy[#, First] &, outputListsSortedBySourcesReusable], 1];
+	outputListsSortedByMaterialsNonReusable=Flatten[Map[GatherBy[#, First] &, outputListsSortedBySourcesNonReusable], 1];
 
 
 	(* We used to report all the "Product List Price" and "Product Tax" of each sample/protocol:
@@ -6734,6 +6810,11 @@ priceMaterialsCore[
 	(* Pick the lines of "Product Tax" to add up *)
 	outputListsTax=Map[Cases[#, _?(MatchQ[#[[5]], "Product Tax"] &)] &,
 		outputListsSortedByMaterials];
+	outputListsTaxReusable=Map[Cases[#, _?(MatchQ[#[[5]], "Product Tax"] &)] &,
+		outputListsSortedByMaterialsReusable];
+	outputListsTaxNonReusable=Map[Cases[#, _?(MatchQ[#[[5]], "Product Tax"] &)] &,
+		outputListsSortedByMaterialsNonReusable];
+	
 	(* if taxExempt is True, we do not charge the tax. *)
 	updatedOutputListsTax = Map[
 		Function[{outputList},
@@ -6760,18 +6841,78 @@ priceMaterialsCore[
 		],
 		Flatten[outputListsTax, 1]
 	];
+	
+	updatedOutputListsTaxReusable = Map[
+		Function[{outputList},
+			Module[{notebook, teams, taxExempts},
+				(* get the corresponding notebook *)
+				notebook = outputList[[2]];
+				(* find out the financers of this notebook *)
+				teams = If[NullQ[notebook],
+					{},
+					Download[Lookup[fetchPacketFromCache[notebook, taxExemptPackets], Financers], Object]
+				];
+				(* we allow multiple financers for one notebook, so get the taxExempt of all the financing teams *)
+				taxExempts = If[teams == {},
+					{},
+					Lookup[fetchPacketFromCache[#, taxExemptPackets], TaxExempt]&/@teams
+				];
+				If[MemberQ[taxExempts, True],
+					(* if taxExempt is True, we update this line so tax is 0 *)
+					Join[outputList[[1;;7]], {0 USD}, outputList[[9;;10]]],
+					(* Otherwise, keep it *)
+					outputList
+				]
+			]
+		],
+		Flatten[outputListsTaxReusable, 1]
+	];
+	
+	updatedOutputListsTaxNonReusable = Map[
+		Function[{outputList},
+			Module[{notebook, teams, taxExempts},
+				(* get the corresponding notebook *)
+				notebook = outputList[[2]];
+				(* find out the financers of this notebook *)
+				teams = If[NullQ[notebook],
+					{},
+					Download[Lookup[fetchPacketFromCache[notebook, taxExemptPackets], Financers], Object]
+				];
+				(* we allow multiple financers for one notebook, so get the taxExempt of all the financing teams *)
+				taxExempts = If[teams == {},
+					{},
+					Lookup[fetchPacketFromCache[#, taxExemptPackets], TaxExempt]&/@teams
+				];
+				If[MemberQ[taxExempts, True],
+					(* if taxExempt is True, we update this line so tax is 0 *)
+					Join[outputList[[1;;7]], {0 USD}, outputList[[9;;10]]],
+					(* Otherwise, keep it *)
+					outputList
+				]
+			]
+		],
+		Flatten[outputListsTaxNonReusable, 1]
+	];
 
 	(* add up all the tax to report *)
 	totalTax = If[Flatten[updatedOutputListsTax] == {},
 		0 USD,
-		Total[updatedOutputListsTax[[All, -3]]]
+		Total[updatedOutputListsTax[[All, -4]]]
+	];
+	totalTaxReusable = If[Flatten[updatedOutputListsTaxReusable] == {},
+		0 USD,
+		Total[updatedOutputListsTaxReusable[[All, -4]]]
+	];
+	totalTaxNonReusable = If[Flatten[updatedOutputListsTaxNonReusable] == {},
+		0 USD,
+		Total[updatedOutputListsTaxNonReusable[[All, -4]]]
 	];
 
 	(* extract the values after filtering our items that are priced by weight/volume but have Amount not in those units *)
 	(* we achieve this by checking if units are compatible after inverting price rate and removing USD from it *)
-	{sortedSamples, sortedNotebooks, sortedSources, sortedNames, sortedTags, sortedAmounts, sortedPricingRate, sortedPrice, sortedDate, sortedSite}=If[
-		MatchQ[sortedFlattenedData, ConstantArray[{}, 10]],
-		ConstantArray[{}, 10],
+	{sortedSamples, sortedNotebooks, sortedSources, sortedNames, sortedTags, sortedAmounts, sortedPricingRate, sortedPrice, sortedDate, sortedSite, sortedReusability}=If[
+		MatchQ[sortedFlattenedData, ConstantArray[{}, 11]],
+		ConstantArray[{}, 11],
 		Transpose[
 			DeleteCases[
 				Transpose[sortedFlattenedData],
@@ -6779,7 +6920,62 @@ priceMaterialsCore[
 			]
 		]
 	];
-
+	
+	{
+		sortedSamplesReusable,
+		sortedNotebooksReusable,
+		sortedSourcesReusable,
+		sortedNamesReusable,
+		sortedTagsReusable,
+		sortedAmountsReusable,
+		sortedPricingRateReusable,
+		sortedPriceReusable,
+		sortedDateReusable,
+		sortedSiteReusable
+	} = Map[
+		PickList[#,sortedReusability,True]&,
+		{
+			sortedSamples,
+			sortedNotebooks,
+			sortedSources,
+			sortedNames,
+			sortedTags,
+			sortedAmounts,
+			sortedPricingRate,
+			sortedPrice,
+			sortedDate,
+			sortedSite
+		}
+	];
+	
+	{
+		sortedSamplesNonReusable,
+		sortedNotebooksNonReusable,
+		sortedSourcesNonReusable,
+		sortedNamesNonReusable,
+		sortedTagsNonReusable,
+		sortedAmountsNonReusable,
+		sortedPricingRateNonReusable,
+		sortedPriceNonReusable,
+		sortedDateNonReusable,
+		sortedSiteNonReusable
+	} = Map[
+		PickList[#,sortedReusability,False|Null]&,
+		{
+			sortedSamples,
+			sortedNotebooks,
+			sortedSources,
+			sortedNames,
+			sortedTags,
+			sortedAmounts,
+			sortedPricingRate,
+			sortedPrice,
+			sortedDate,
+			sortedSite
+		}
+	];
+	
+	
 	(* generate the table of items that will be displayed in a table *)
 	(* Note: We do not have discount for PriceMaterials to apply. In order to plot table similarly as other price functions, which is to report Value and Charge, we will list the rate and price twice. *)
 	allDataTable=MapThread[
@@ -6795,6 +6991,36 @@ priceMaterialsCore[
 			]
 		],
 		{sortedNotebooks, sortedSources, sortedNames, UnitScale[sortedAmounts, Simplify -> False], sortedPricingRate, sortedPrice, sortedSite}
+	];
+	
+	allDataTableReusable=MapThread[
+		Function[{notebook, source, sample, amount, rate, price, site},
+			Switch[{amount, rate, output, consolidation},
+				(* delete all the cases where the amount used or pricing rate is Null *)
+				{Null, _, _, _}, Nothing,
+				{_, Null, _, _}, Nothing,
+				(* need to do NumberForm shenanigans if OutputFormat -> Table and Consolidation -> Null because that allows the correct number of decimal points *)
+				{_, _, Table, Null}, {notebook, source, site, sample, NumberForm[amount, {\[Infinity], 1}], NumberForm[rate, {\[Infinity], 2}], NumberForm[price, {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}], NumberForm[price, {\[Infinity], 2}]},
+				(* if Consolidation -> Except[Null], then we're going to do the NumberForm shenanigans below so we shouldn't do them here *)
+				{_, _, _, _}, {notebook, source, site, sample, amount, rate,  price, rate, price}
+			]
+		],
+		{sortedNotebooksReusable, sortedSourcesReusable, sortedNamesReusable, UnitScale[sortedAmountsReusable, Simplify -> False], sortedPricingRateReusable, sortedPriceReusable, sortedSiteReusable}
+	];
+	
+	allDataTableNonReusable=MapThread[
+		Function[{notebook, source, sample, amount, rate, price, site},
+			Switch[{amount, rate, output, consolidation},
+				(* delete all the cases where the amount used or pricing rate is Null *)
+				{Null, _, _, _}, Nothing,
+				{_, Null, _, _}, Nothing,
+				(* need to do NumberForm shenanigans if OutputFormat -> Table and Consolidation -> Null because that allows the correct number of decimal points *)
+				{_, _, Table, Null}, {notebook, source, site, sample, NumberForm[amount, {\[Infinity], 1}], NumberForm[rate, {\[Infinity], 2}], NumberForm[price, {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}], NumberForm[price, {\[Infinity], 2}]},
+				(* if Consolidation -> Except[Null], then we're going to do the NumberForm shenanigans below so we shouldn't do them here *)
+				{_, _, _, _}, {notebook, source, site, sample, amount, rate,  price, rate, price}
+			]
+		],
+		{sortedNotebooksNonReusable, sortedSourcesNonReusable, sortedNamesNonReusable, UnitScale[sortedAmountsNonReusable, Simplify -> False], sortedPricingRateNonReusable, sortedPriceNonReusable, sortedSiteNonReusable}
 	];
 
 	(* generate the table of items that will be displayed in an association. *)
@@ -6838,6 +7064,36 @@ priceMaterialsCore[
 		],
 		{sortedSources, sortedNames, UnitScale[sortedAmounts, Simplify -> False], sortedPricingRate, sortedPrice, sortedSite}
 	];
+	
+	noNotebookDataTableReusable=MapThread[
+		Function[{source, sample, amount, rate, price, site},
+			Switch[{amount, rate, output, consolidation},
+				(* the below 2 cases are when the amount used or pricing rate is Null *)
+				{Null, _, _, _}, Nothing,
+				{_, Null, _, _}, Nothing,
+				(* need to do NumberForm shenanigans if OutputFormat -> Table and Consolidation -> Null because that allows the correct number of decimal points *)
+				{_, _, Table, Null}, {source, site, sample, NumberForm[amount, {\[Infinity], 1}],NumberForm[rate, {\[Infinity], 2}],  NumberForm[price, {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}],  NumberForm[price, {\[Infinity], 2}]},
+				(* if Consolidation -> Except[Null], then we're going to do the NumberForm shenanigans below so we shouldn't do them here *)
+				{_, _, _, _}, {source, site, sample, amount, rate, price, rate, price}
+			]
+		],
+		{sortedSourcesReusable, sortedNamesReusable, UnitScale[sortedAmountsReusable, Simplify -> False], sortedPricingRateReusable, sortedPriceReusable, sortedSiteReusable}
+	];
+	
+	noNotebookDataTableNonReusable=MapThread[
+		Function[{source, sample, amount, rate, price, site},
+			Switch[{amount, rate, output, consolidation},
+				(* the below 2 cases are when the amount used or pricing rate is Null *)
+				{Null, _, _, _}, Nothing,
+				{_, Null, _, _}, Nothing,
+				(* need to do NumberForm shenanigans if OutputFormat -> Table and Consolidation -> Null because that allows the correct number of decimal points *)
+				{_, _, Table, Null}, {source, site, sample, NumberForm[amount, {\[Infinity], 1}],NumberForm[rate, {\[Infinity], 2}],  NumberForm[price, {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}],  NumberForm[price, {\[Infinity], 2}]},
+				(* if Consolidation -> Except[Null], then we're going to do the NumberForm shenanigans below so we shouldn't do them here *)
+				{_, _, _, _}, {source, site, sample, amount, rate, price, rate, price}
+			]
+		],
+		{sortedSourcesNonReusable, sortedNamesNonReusable, UnitScale[sortedAmountsNonReusable, Simplify -> False], sortedPricingRateNonReusable, sortedPriceNonReusable, sortedSiteNonReusable}
+	];
 
 	(* generate the table of items that will be displayed that also omits the Notebook and Protocol columns (because all items belong to the same notebook and protocol) *)
 	noProtocolDataTable=MapThread[
@@ -6854,17 +7110,58 @@ priceMaterialsCore[
 		],
 		{sortedTags, sortedNames, UnitScale[sortedAmounts, Simplify -> False], sortedPricingRate, sortedPrice}
 	];
+	
+	noProtocolDataTableReusable=MapThread[
+		Function[{tag, sample, amount, rate, price},
+			Switch[{amount, rate, output, consolidation},
+				(* the below 2 cases are when the amount used or pricing rate is Null *)
+				{Null, _, _, _}, Nothing,
+				{_, Null, _, _}, Nothing,
+				(* need to do NumberForm shenanigans if OutputFormat -> Table and Consolidation -> Null because that allows the correct number of decimal points *)
+				{_, _, Table, Null}, {sample, NumberForm[amount, {\[Infinity], 1}], NumberForm[rate, {\[Infinity], 2}], NumberForm[price, {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}], NumberForm[price, {\[Infinity], 2}]},
+				(* if Consolidation -> Except[Null], then we're going to do the NumberForm shenanigans below so we shouldn't do them here *)
+				{_, _, _, _}, {sample, amount, rate, price, rate, price}
+			]
+		],
+		{sortedTagsReusable, sortedNamesReusable, UnitScale[sortedAmountsReusable, Simplify -> False], sortedPricingRateReusable, sortedPriceReusable}
+	];
+	
+	noProtocolDataTableNonReusable=MapThread[
+		Function[{tag, sample, amount, rate, price},
+			Switch[{amount, rate, output, consolidation},
+				(* the below 2 cases are when the amount used or pricing rate is Null *)
+				{Null, _, _, _}, Nothing,
+				{_, Null, _, _}, Nothing,
+				(* need to do NumberForm shenanigans if OutputFormat -> Table and Consolidation -> Null because that allows the correct number of decimal points *)
+				{_, _, Table, Null}, {sample, NumberForm[amount, {\[Infinity], 1}], NumberForm[rate, {\[Infinity], 2}], NumberForm[price, {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}], NumberForm[price, {\[Infinity], 2}]},
+				(* if Consolidation -> Except[Null], then we're going to do the NumberForm shenanigans below so we shouldn't do them here *)
+				{_, _, _, _}, {sample, amount, rate, price, rate, price}
+			]
+		],
+		{sortedTagsNonReusable, sortedNamesNonReusable, UnitScale[sortedAmountsNonReusable, Simplify -> False], sortedPricingRateNonReusable, sortedPriceNonReusable}
+	];
 
 	(* --- Generate the consolidated data tables, depending on what/whether the Consolidation option was specified --- *)
 
 	(* group all the rows in the data table by Notebook *)
 	(*{Notebook, Protocol, Site, MaterialName, Amount, ValueRate, Value, ChargeRate, Charge}*)
 	gatheredByNotebook=GatherBy[allDataTable, #[[1]]&];
+	gatheredByNotebookReusable=GatherBy[allDataTableReusable, #[[1]]&];
+	gatheredByNotebookNonReusable=GatherBy[allDataTableNonReusable, #[[1]]&];
 
 	(* make a simplified table for pricing grouped by notebook, before we do the Total call *)
 	notebookConsolidatedPreTotal=Map[
 		{#[[1, 1]], DeleteCases[#[[All, 7]], Null],DeleteCases[#[[All, 9]], Null]}&,
 		gatheredByNotebook
+	];
+	notebookConsolidatedPreTotalReusable=Map[
+		{#[[1, 1]], DeleteCases[#[[All, 7]], Null],DeleteCases[#[[All, 9]], Null]}&,
+		gatheredByNotebookReusable
+	];
+	
+	notebookConsolidatedPreTotalNonReusable=Map[
+		{#[[1, 1]], DeleteCases[#[[All, 7]], Null],DeleteCases[#[[All, 9]], Null]}&,
+		gatheredByNotebookNonReusable
 	];
 
 	(* get the total for each notebook *)
@@ -6873,21 +7170,49 @@ priceMaterialsCore[
 		{NumberForm[Total[#[[2]]], {\[Infinity], 2}], NumberForm[Total[#[[3]]], {\[Infinity], 2}]}&,
 		notebookConsolidatedPreTotal
 	];
+	notebookConsolidatedTotalsReusable=Map[
+		{NumberForm[Total[#[[2]]], {\[Infinity], 2}], NumberForm[Total[#[[3]]], {\[Infinity], 2}]}&,
+		notebookConsolidatedPreTotalReusable
+	];
+	
+	notebookConsolidatedTotalsNonReusable=Map[
+		{NumberForm[Total[#[[2]]], {\[Infinity], 2}], NumberForm[Total[#[[3]]], {\[Infinity], 2}]}&,
+		notebookConsolidatedPreTotalNonReusable
+	];
 
 	(* generate the simplified-by-notebook table *)
 	notebookConsolidatedTable=MapThread[
 		Join[{First[#1]}, #2]&,
 		{notebookConsolidatedPreTotal, notebookConsolidatedTotals}
 	];
+	notebookConsolidatedTableReusable=MapThread[
+		Join[{First[#1]}, #2]&,
+		{notebookConsolidatedPreTotalReusable, notebookConsolidatedTotalsReusable}
+	];
+	
+	notebookConsolidatedTableNonReusable=MapThread[
+		Join[{First[#1]}, #2]&,
+		{notebookConsolidatedPreTotalNonReusable, notebookConsolidatedTotalsNonReusable}
+	];
 
 	(* group all the rows in the data table by source *)
 	(*{Notebook, Protocol, Site, MaterialName, Amount, ValueRate, Value, ChargeRate, Charge}*)
 	gatheredByProtocol=GatherBy[allDataTable, #[[2]]&];
+	gatheredByProtocolReusable=GatherBy[allDataTableReusable, #[[2]]&];
+	gatheredByProtocolNonReusable=GatherBy[allDataTableNonReusable, #[[2]]&];
 
 	(* make a simplified table for pricing grouped by protocol, before we do the Total call *)
 	protocolConsolidatedPreTotal=Map[
 		{#[[1, 2]], DeleteCases[#[[All, 7]], Null],DeleteCases[#[[All, 9]], Null]}&,
 		gatheredByProtocol
+	];
+	protocolConsolidatedPreTotalReusable=Map[
+		{#[[1, 2]], DeleteCases[#[[All, 7]], Null],DeleteCases[#[[All, 9]], Null]}&,
+		gatheredByProtocolReusable
+	];
+	protocolConsolidatedPreTotalNonReusable=Map[
+		{#[[1, 2]], DeleteCases[#[[All, 7]], Null],DeleteCases[#[[All, 9]], Null]}&,
+		gatheredByProtocolNonReusable
 	];
 
 	(* get the total for each source *)
@@ -6896,21 +7221,49 @@ priceMaterialsCore[
 		{NumberForm[Total[#[[2]]], {\[Infinity], 2}], NumberForm[Total[#[[3]]], {\[Infinity], 2}]}&,
 		protocolConsolidatedPreTotal
 	];
+	protocolConsolidatedTotalsReusable=Map[
+		{NumberForm[Total[#[[2]]], {\[Infinity], 2}], NumberForm[Total[#[[3]]], {\[Infinity], 2}]}&,
+		protocolConsolidatedPreTotalReusable
+	];
+	
+	protocolConsolidatedTotalsNonReusable=Map[
+		{NumberForm[Total[#[[2]]], {\[Infinity], 2}], NumberForm[Total[#[[3]]], {\[Infinity], 2}]}&,
+		protocolConsolidatedPreTotalNonReusable
+	];
 
 	(* generate the simplified-by-protocol table *)
 	protocolConsolidatedTable=MapThread[
 		Join[{First[#1]}, #2]&,
 		{protocolConsolidatedPreTotal, protocolConsolidatedTotals}
 	];
+	protocolConsolidatedTableReusable=MapThread[
+		Join[{First[#1]}, #2]&,
+		{protocolConsolidatedPreTotalReusable, protocolConsolidatedTotalsReusable}
+	];
+	
+	protocolConsolidatedTableNonReusable=MapThread[
+		Join[{First[#1]}, #2]&,
+		{protocolConsolidatedPreTotalNonReusable, protocolConsolidatedTotalsNonReusable}
+	];
 
 	(* group all the rows in the data table by material *)
 	(*{Notebook, Protocol, Site, MaterialName, Amount, ValueRate, Value, ChargeRate, Charge}*)
 	gatheredByMaterial=GatherBy[allDataTable, #[[4]]&];
+	gatheredByMaterialReusable=GatherBy[allDataTableReusable, #[[4]]&];
+	gatheredByMaterialNonReusable=GatherBy[allDataTableNonReusable, #[[4]]&];
 
 	(* make a simplified table for pricing grouped by material, before we do the Total call *)
 	materialConsolidatedPreTotal=Map[
 		{#[[1, 4]], DeleteCases[#[[All, 7]], Null],DeleteCases[#[[All, 9]], Null]}&,
 		gatheredByMaterial
+	];
+	materialConsolidatedPreTotalReusable=Map[
+		{#[[1, 4]], DeleteCases[#[[All, 7]], Null],DeleteCases[#[[All, 9]], Null]}&,
+		gatheredByMaterialReusable
+	];
+	materialConsolidatedPreTotalNonReusable=Map[
+		{#[[1, 4]], DeleteCases[#[[All, 7]], Null],DeleteCases[#[[All, 9]], Null]}&,
+		gatheredByMaterialNonReusable
 	];
 
 	(* get the total for each material *)
@@ -6919,11 +7272,27 @@ priceMaterialsCore[
 		{NumberForm[Total[#[[2]]], {\[Infinity], 2}], NumberForm[Total[#[[3]]], {\[Infinity], 2}]}&,
 		materialConsolidatedPreTotal
 	];
+	materialConsolidatedTotalsReusable=Map[
+		{NumberForm[Total[#[[2]]], {\[Infinity], 2}], NumberForm[Total[#[[3]]], {\[Infinity], 2}]}&,
+		materialConsolidatedPreTotalReusable
+	];
+	materialConsolidatedTotalsNonReusable=Map[
+		{NumberForm[Total[#[[2]]], {\[Infinity], 2}], NumberForm[Total[#[[3]]], {\[Infinity], 2}]}&,
+		materialConsolidatedPreTotalNonReusable
+	];
 
 	(* generate the simplified-by-protocol table *)
 	materialConsolidatedTable=MapThread[
 		Join[{First[#1]}, #2]&,
 		{materialConsolidatedPreTotal, materialConsolidatedTotals}
+	];
+	materialConsolidatedTableReusable=MapThread[
+		Join[{First[#1]}, #2]&,
+		{materialConsolidatedPreTotalReusable, materialConsolidatedTotalsReusable}
+	];
+	materialConsolidatedTableNonReusable=MapThread[
+		Join[{First[#1]}, #2]&,
+		{materialConsolidatedPreTotalNonReusable, materialConsolidatedTotalsNonReusable}
 	];
 
 	(* --- Construct the tables --- *)
@@ -6931,6 +7300,11 @@ priceMaterialsCore[
 	(* get the number of notebooks and number of sources specified in this function *)
 	numNotebooks=Length[DeleteDuplicates[sortedNotebooks]];
 	numProts=Length[DeleteDuplicates[sortedSources]];
+	numNotebooksReusable=Length[DeleteDuplicates[sortedNotebooksReusable]];
+	numProtsReusable=Length[DeleteDuplicates[sortedSourcesReusable]];
+	
+	numNotebooksNonReusable=Length[DeleteDuplicates[sortedNotebooksNonReusable]];
+	numProtsNonReusable=Length[DeleteDuplicates[sortedSourcesNonReusable]];
 
 	(* generate the data table we are going to output (i.e., pick the one that has the appropriate number of columns, omitting the Notebook and/Or Source columns as necessary, or the one that goes with what was specified in the Consolidation option) *)
 	dataTableToUse=Switch[{consolidation, numNotebooks, numProts},
@@ -6945,11 +7319,45 @@ priceMaterialsCore[
 		(* in all other cases, display the entire DataTable *)
 		{_, _, _}, ReverseSortBy[allDataTable,Last]
 	];
+	
+	dataTableToUseReusable=Switch[{consolidation, numNotebooksReusable, numProtsReusable},
+		(* the below 3 cases are the different consolidated datatables when the Consolidation -> Notebook, Source or Material *)
+		{Notebook, _, _}, ReverseSortBy[notebookConsolidatedTableReusable,Last],
+		{Protocol, _, _}, ReverseSortBy[protocolConsolidatedTableReusable,Last],
+		{Material, _, _}, ReverseSortBy[materialConsolidatedTableReusable,Last],
+		(* when no Consolidation is chosen and only a single Notebook and a single Source are present, omit the notebook and Source column *)
+		{_, 1, 1}, ReverseSortBy[noProtocolDataTableReusable,Last],
+		(* when no Consolidation is chosen and only a single Notebook (with several Sources) are present, omit the notebook column *)
+		{_, 1, _}, ReverseSortBy[noNotebookDataTableReusable,Last],
+		(* in all other cases, display the entire DataTable *)
+		{_, _, _}, ReverseSortBy[allDataTableReusable,Last]
+	];
+	
+	dataTableToUseNonReusable=Switch[{consolidation, numNotebooksNonReusable, numProtsNonReusable},
+		(* the below 3 cases are the different consolidated datatables when the Consolidation -> Notebook, Source or Material *)
+		{Notebook, _, _}, ReverseSortBy[notebookConsolidatedTableNonReusable,Last],
+		{Protocol, _, _}, ReverseSortBy[protocolConsolidatedTableNonReusable,Last],
+		{Material, _, _}, ReverseSortBy[materialConsolidatedTableNonReusable,Last],
+		(* when no Consolidation is chosen and only a single Notebook and a single Source are present, omit the notebook and Source column *)
+		{_, 1, 1}, ReverseSortBy[noProtocolDataTableNonReusable,Last],
+		(* when no Consolidation is chosen and only a single Notebook (with several Sources) are present, omit the notebook column *)
+		{_, 1, _}, ReverseSortBy[noNotebookDataTableNonReusable,Last],
+		(* in all other cases, display the entire DataTable *)
+		{_, _, _}, ReverseSortBy[allDataTableNonReusable,Last]
+	];
 
 	(* get the total price for the entire input; this will be returned if OutputFormat -> Price *)
 	totalInputPrice=If[MatchQ[DeleteCases[sortedPrice, Null], {}],
 		0 * USD,
 		Total[DeleteCases[sortedPrice, Null]]
+	];
+	totalInputPriceReusable=If[MatchQ[DeleteCases[sortedPriceReusable, Null], {}],
+		0 * USD,
+		Total[DeleteCases[sortedPriceReusable, Null]]
+	];
+	totalInputPriceNonReusable=If[MatchQ[DeleteCases[sortedPriceNonReusable, Null], {}],
+		0 * USD,
+		Total[DeleteCases[sortedPriceNonReusable, Null]]
 	];
 
 	(* generate the subtotal row with the appropriate number of columns *)
@@ -6963,6 +7371,29 @@ priceMaterialsCore[
 		{_, 1, _}, {{"", "", "", "", "", "", "", ""}, {"", "", "", "", "Total Value", totalInputPrice, "Total Charge", totalInputPrice}, {"", "", "", "", "", "", "Total Tax", totalTax}, {"", "", "", "", "", "", "Total Charge with Tax", totalTax + totalInputPrice}},
 		(* for protocol overload, when the entire data table is displayed without omitting any columns *)
 		{_, _, _}, {{"", "", "", "", "", "", "", "", ""}, {"", "", "", "", "", "Total Value", totalInputPrice, "Total Charge", totalInputPrice}, {"", "", "", "", "", "", "", "Total Tax", totalTax}, {"", "", "", "", "", "", "", "Total Charge with Tax", totalTax + totalInputPrice}}
+	];
+	
+	
+	subtotalRowsReusable=Switch[{consolidation, numNotebooksReusable, numProtsReusable},
+		(* when Consolidation -> Notebook, Source, or Material *)
+		{Notebook | Protocol | Material, _, _}, {{"", "", ""}, {"Total", totalInputPriceReusable, totalInputPriceReusable}, {"", "Total Tax", totalTaxReusable}, {"", "Total Price with Tax", totalTaxReusable + totalInputPriceReusable}},
+		(* when the output is single notebook and a single protocol and both the notebook and protocol columns are omitted *)
+		{_, 1, 1}, {{"", "", "", "", "", ""}, {"", "", "Total Value", totalInputPriceReusable, "Total Charge", totalInputPriceReusable}, {"", "", "", "", "Total Tax", totalTaxReusable}, {"", "", "", "", "Total Charge with Tax", totalTaxReusable + totalInputPriceReusable}},
+		(* for protocol overload, when the output is single notebook and the notebook column is omitted *)
+		{_, 1, _}, {{"", "", "", "", "", "", "", ""}, {"", "", "", "", "Total Value", totalInputPriceReusable, "Total Charge", totalInputPriceReusable}, {"", "", "", "", "", "", "Total Tax", totalTaxReusable}, {"", "", "", "", "", "", "Total Charge with Tax", totalTaxReusable + totalInputPriceReusable}},
+		(* for protocol overload, when the entire data table is displayed without omitting any columns *)
+		{_, _, _}, {{"", "", "", "", "", "", "", "", ""}, {"", "", "", "", "", "Total Value", totalInputPriceReusable, "Total Charge", totalInputPriceReusable}, {"", "", "", "", "", "", "", "Total Tax", totalTaxReusable}, {"", "", "", "", "", "", "", "Total Charge with Tax", totalTaxReusable + totalInputPriceReusable}}
+	];
+	
+	subtotalRowsNonReusable=Switch[{consolidation, numNotebooksNonReusable, numProtsNonReusable},
+		(* when Consolidation -> Notebook, Source, or Material *)
+		{Notebook | Protocol | Material, _, _}, {{"", "", ""}, {"Total", totalInputPriceNonReusable, totalInputPriceNonReusable}, {"", "Total Tax", totalTaxNonReusable}, {"", "Total Price with Tax", totalTaxNonReusable + totalInputPriceNonReusable}},
+		(* when the output is single notebook and a single protocol and both the notebook and protocol columns are omitted *)
+		{_, 1, 1}, {{"", "", "", "", "", ""}, {"", "", "Total Value", totalInputPriceNonReusable, "Total Charge", totalInputPriceNonReusable}, {"", "", "", "", "Total Tax", totalTaxNonReusable}, {"", "", "", "", "Total Charge with Tax", totalTaxNonReusable + totalInputPriceNonReusable}},
+		(* for protocol overload, when the output is single notebook and the notebook column is omitted *)
+		{_, 1, _}, {{"", "", "", "", "", "", "", ""}, {"", "", "", "", "Total Value", totalInputPriceNonReusable, "Total Charge", totalInputPriceNonReusable}, {"", "", "", "", "", "", "Total Tax", totalTaxNonReusable}, {"", "", "", "", "", "", "Total Charge with Tax", totalTaxNonReusable + totalInputPriceNonReusable}},
+		(* for protocol overload, when the entire data table is displayed without omitting any columns *)
+		{_, _, _}, {{"", "", "", "", "", "", "", "", ""}, {"", "", "", "", "", "Total Value", totalInputPriceNonReusable, "Total Charge", totalInputPriceNonReusable}, {"", "", "", "", "", "", "", "Total Tax", totalTaxNonReusable}, {"", "", "", "", "", "", "", "Total Charge with Tax", totalTaxNonReusable + totalInputPriceNonReusable}}
 	];
 
 	(* generate the column header row with the appropriate number of columns *)
@@ -6981,23 +7412,74 @@ priceMaterialsCore[
 		{_, _, _}, {"Notebook", "Source Protocol", "Site", "Material Name", Tooltip["Amount", "The amount of material"], Tooltip["Rate","Pricing rate according to Material before any discount is applied"], Tooltip["Value","Price of the materials before any discount is applied"],
 			Tooltip["Rate","Pricing rate according to Material after any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]}
 	];
+	
+	columnHeadersReusable=Switch[{consolidation, numNotebooksReusable, numProtsReusable},
+		(* the below 3 cases are when Consolidation -> Notebook, Source, or Material *)
+		{Notebook, _, _}, {"Notebook", Tooltip["Value","Price of the materials before any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		{Protocol, _, _}, {"Source", Tooltip["Value","Price of the materials before any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		{Material, _, _}, {"Material Name", Tooltip["Value","Price of the materials before any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		(* when the output is single notebook and a single Source and both the notebook and Source columns are omitted *)
+		{_, 1, 1}, {"Material Name", Tooltip["Amount", "The amount of material"], Tooltip["Rate","Pricing rate according to Material before any discount is applied"], Tooltip["Value","Price of the materials before any discount is applied"],
+			Tooltip["Rate","Pricing rate according to Material after any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		(* when the output is single notebook and the notebook column is omitted *)
+		{_, 1, _}, {"Source Protocol", "Site", "Material Name", Tooltip["Amount", "The amount of material"], Tooltip["Rate","Pricing rate according to Material before any discount is applied"], Tooltip["Value","Price of the materials before any discount is applied"],
+			Tooltip["Rate","Pricing rate according to Material after any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		(* when the entire data table is displayed without omitting any columns *)
+		{_, _, _}, {"Notebook", "Source Protocol", "Site", "Material Name", Tooltip["Amount", "The amount of material"], Tooltip["Rate","Pricing rate according to Material before any discount is applied"], Tooltip["Value","Price of the materials before any discount is applied"],
+			Tooltip["Rate","Pricing rate according to Material after any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]}
+	];
+	
+	columnHeadersNonReusable=Switch[{consolidation, numNotebooksNonReusable, numProtsNonReusable},
+		(* the below 3 cases are when Consolidation -> Notebook, Source, or Material *)
+		{Notebook, _, _}, {"Notebook", Tooltip["Value","Price of the materials before any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		{Protocol, _, _}, {"Source", Tooltip["Value","Price of the materials before any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		{Material, _, _}, {"Material Name", Tooltip["Value","Price of the materials before any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		(* when the output is single notebook and a single Source and both the notebook and Source columns are omitted *)
+		{_, 1, 1}, {"Material Name", Tooltip["Amount", "The amount of material"], Tooltip["Rate","Pricing rate according to Material before any discount is applied"], Tooltip["Value","Price of the materials before any discount is applied"],
+			Tooltip["Rate","Pricing rate according to Material after any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		(* when the output is single notebook and the notebook column is omitted *)
+		{_, 1, _}, {"Source Protocol", "Site", "Material Name", Tooltip["Amount", "The amount of material"], Tooltip["Rate","Pricing rate according to Material before any discount is applied"], Tooltip["Value","Price of the materials before any discount is applied"],
+			Tooltip["Rate","Pricing rate according to Material after any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		(* when the entire data table is displayed without omitting any columns *)
+		{_, _, _}, {"Notebook", "Source Protocol", "Site", "Material Name", Tooltip["Amount", "The amount of material"], Tooltip["Rate","Pricing rate according to Material before any discount is applied"], Tooltip["Value","Price of the materials before any discount is applied"],
+			Tooltip["Rate","Pricing rate according to Material after any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]}
+	];
 
 	(* make the title for the table *)
-	tableTitle="Material Pricing";
+	tableTitle="Material Pricing: Reusable and Non-Reusable";
+	tableTitleReusable="Material Pricing: Reusable";
+	tableTitleNonReusable="Material Pricing: Non-Reusable";
 
 	(* get the whole data table with the subtotal row appended to it *)
 	dataWithSubtotal=Join[dataTableToUse, subtotalRows];
-
+	dataWithSubtotalReusable=Join[dataTableToUseReusable, subtotalRowsReusable];
+	dataWithSubtotalNonReusable=Join[dataTableToUseNonReusable, subtotalRowsNonReusable];
+	
 	alignments = Switch[{consolidation, numNotebooks, numProts},
 		{Notebook|Protocol|Material, _, _}, {Left, Center},
 		{_, 1, 1}, {Left, Center},
 		{_, 1, _}, {Left, Left, Left, Center},
 		{_, _, _}, {Left, Left, Left, Left, Center}
 	];
+	
+	alignmentsReusable = Switch[{consolidation, numNotebooksReusable, numProtsReusable},
+		{Notebook|Protocol|Material, _, _}, {Left, Center},
+		{_, 1, 1}, {Left, Center},
+		{_, 1, _}, {Left, Left, Left, Center},
+		{_, _, _}, {Left, Left, Left, Left, Center}
+	];
+	alignmentsNonReusable = Switch[{consolidation, numNotebooksNonReusable, numProtsNonReusable},
+		{Notebook|Protocol|Material, _, _}, {Left, Center},
+		{_, 1, 1}, {Left, Center},
+		{_, 1, _}, {Left, Left, Left, Center},
+		{_, _, _}, {Left, Left, Left, Left, Center}
+	];
+	
 	dividerPositions = If[MatchQ[consolidation, Notebook|Protocol|Material],
 		{1, -1, -3},
 		{1, -1, -3, -5}
 	];
+	
 	dividers = {
 		{
 			{{Directive[GrayLevel[0.8]]}}, #1 ->
@@ -7043,7 +7525,8 @@ priceMaterialsCore[
 							Item[Style["Charge", FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
 								FontFamily -> "Helvetica"], Alignment -> Center],
 							SpanFromLeft}]},
-					{}
+					{{Item[Style[tableTitle, FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
+						FontFamily -> "Helvetica"], Alignment -> Center]}}
 				],
 				{Item[Style[#, FontWeight -> Bold, FontFamily -> "Helvetica"], Alignment -> Center] & /@ columnHeaders},
 				dataWithSubtotal/.nameLookups
@@ -7066,11 +7549,179 @@ priceMaterialsCore[
 					}
 		]
 	];
+	tableOutputReusable=If[MatchQ[dataTableToUseReusable, {}],
+		"",
+		Grid[
+			Join[
+				If[NullQ[consolidation],
+					{Join[
+						{Item[Style[tableTitleReusable, FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
+							FontFamily -> "Helvetica"], Alignment -> Center]},
+						ConstantArray[SpanFromLeft, Max[Length[columnHeadersReusable] - 5, 0]],
+						{Item[Style["Value", FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
+							FontFamily -> "Helvetica"], Alignment -> Center],
+							SpanFromLeft,
+							Item[Style["Charge", FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
+								FontFamily -> "Helvetica"], Alignment -> Center],
+							SpanFromLeft}]},
+					{{Item[Style[tableTitleReusable, FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
+						FontFamily -> "Helvetica"], Alignment -> Center]}}
+				],
+				{Item[Style[#, FontWeight -> Bold, FontFamily -> "Helvetica"], Alignment -> Center] & /@ columnHeadersReusable},
+				dataWithSubtotalReusable/.nameLookups
+			],
+			Alignment -> {alignmentsReusable, Center},
+			Frame -> All,
+			Spacings -> 1,
+			Dividers -> dividers,
+			ItemStyle -> {{
+				{Directive[FontFamily -> "Helvetica", FontSize -> 10]},
+				{Directive[FontFamily -> "Arial", FontSize -> 10]}},
+				{Directive[FontWeight -> Bold, FontSize -> 10]},
+				{{-1, -1} -> Bold}
+			},
+			ItemSize->Switch[{consolidation, numNotebooksNonReusable, numProtsNonReusable},
+				{Notebook|Protocol|Material,_,_}, {{28,8,5},Automatic},
+				{_, 1, 1},{{28,3,5,5,8,5},Automatic},
+				{_,1,_},{{25,5,25,5,8,5,8,5},Automatic},
+				{_, _, _},{{20,20,5,20,5,8,5,8,5},Automatic}
+			],
+			Background ->
+					{None,
+						If[NullQ[consolidation],
+							{RGBColor["#E2E2E2"], {RGBColor["#E2E2E2"],None}},
+							{{RGBColor["#E2E2E2"],None}}]
+					}
+		]
+	];
+	
+	tableOutputNonReusable=If[MatchQ[dataTableToUseNonReusable, {}],
+		"",
+		Grid[
+			Join[
+				If[NullQ[consolidation],
+					{Join[
+						{Item[Style[tableTitleNonReusable, FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
+							FontFamily -> "Helvetica"], Alignment -> Center]},
+						ConstantArray[SpanFromLeft, Max[Length[columnHeadersNonReusable] - 5, 0]],
+						{Item[Style["Value", FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
+							FontFamily -> "Helvetica"], Alignment -> Center],
+							SpanFromLeft,
+							Item[Style["Charge", FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
+								FontFamily -> "Helvetica"], Alignment -> Center],
+							SpanFromLeft}]},
+					{{Item[Style[tableTitleReusable, FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
+						FontFamily -> "Helvetica"], Alignment -> Center]}}
+				],
+				{Item[Style[#, FontWeight -> Bold, FontFamily -> "Helvetica"], Alignment -> Center] & /@ columnHeadersNonReusable},
+				dataWithSubtotalNonReusable/.nameLookups
+			],
+			Alignment -> {alignmentsNonReusable, Center},
+			Frame -> All,
+			Spacings -> 1,
+			Dividers -> dividers,
+			ItemStyle -> {{
+				{Directive[FontFamily -> "Helvetica", FontSize -> 10]},
+				{Directive[FontFamily -> "Arial", FontSize -> 10]}},
+				{Directive[FontWeight -> Bold, FontSize -> 10]},
+				{{-1, -1} -> Bold}
+			},
+			ItemSize->Switch[{consolidation, numNotebooksNonReusable, numProtsNonReusable},
+				{Notebook|Protocol|Material,_,_}, {{28,8,5},Automatic},
+				{_, 1, 1},{{28,3,5,5,8,5},Automatic},
+				{_,1,_},{{25,5,25,5,8,5,8,5},Automatic},
+				{_, _, _},{{20,20,5,20,5,8,5,8,5},Automatic}
+			],
+			Background ->
+				{None,
+					If[NullQ[consolidation],
+						{RGBColor["#E2E2E2"], {RGBColor["#E2E2E2"],None}},
+						{{RGBColor["#E2E2E2"],None}}]
+				}
+		]
+	];
+	
+	totalTable=Grid[
+		Switch[{consolidation, numNotebooks, numProts},
+			{Notebook|Protocol|Material,_,_},
+				{
+					{"","Non-Reusable",totalInputPriceNonReusable+totalTaxNonReusable},
+					{"","Reusable",totalInputPriceReusable+totalTaxReusable},
+					{"TOTAL (Non-Reusable and Reusable)","Total Charge with Tax",totalInputPrice+totalTax}
+				},
+			{_, 1, 1},
+				{
+					{"",Sequence@@ConstantArray["",3],"Non-Reusable",totalInputPriceNonReusable+totalTaxNonReusable},
+					{"",Sequence@@ConstantArray["",3],"Reusable",totalInputPriceReusable+totalTaxReusable},
+					{"TOTAL (Non-Reusable and Reusable)",Sequence@@ConstantArray["",3],"Total Charge with Tax",totalInputPrice+totalTax}
+				},
+			{_,1,_},
+				{
+					{"",Sequence@@ConstantArray["",5],"Non-Reusable",totalInputPriceNonReusable+totalTaxNonReusable},
+					{"",Sequence@@ConstantArray["",5],"Reusable",totalInputPriceReusable+totalTaxReusable},
+					{"TOTAL (Non-Reusable and Reusable)",Sequence@@ConstantArray["",5],"Total Charge with Tax",totalInputPrice+totalTax}
+				},
+			{_, _, _},
+				{
+					{"",Sequence@@ConstantArray["",6],"Non-Reusable",totalInputPriceNonReusable+totalTaxNonReusable},
+					{"",Sequence@@ConstantArray["",6],"Reusable",totalInputPriceReusable+totalTaxReusable},
+					{"TOTAL (Non-Reusable and Reusable)",Sequence@@ConstantArray["",6],"Total Charge with Tax",totalInputPrice+totalTax}
+				}
+		],
+		ItemSize->Switch[{consolidation, numNotebooks, numProts},
+			{Notebook|Protocol|Material,_,_}, {{28,8,5},Automatic},
+			{_, 1, 1},{{28,3,5,5,8,5},Automatic},
+			{_,1,_},{{25,5,25,5,8,5,8,5},Automatic},
+			{_, _, _},{{20,20,5,20,5,8,5,8,5},Automatic}
+		],
+		Alignment -> {{Left,Center}, Center},
+		Frame -> All,
+		Spacings -> 1,
+		ItemStyle -> {
+			{
+				{Directive[FontFamily -> "Helvetica", FontSize -> 10]},
+				{Directive[FontFamily -> "Arial", FontSize -> 10]}
+			},
+			{
+				None,
+				None,
+				Directive[FontWeight -> Bold, FontSize -> 10]
+			},
+			{
+				{-1, -1} -> Bold,
+				{-1, -2} -> Bold
+			}
+		},
+		Dividers -> {
+			{
+				Directive[GrayLevel[0.5], Thickness[2]],
+				{Directive[GrayLevel[0.9]]},
+				Directive[GrayLevel[0.5], Thickness[2]],
+				Directive[GrayLevel[0.9]],
+				Directive[GrayLevel[0.5], Thickness[2]]
+			},
+			{
+				Directive[GrayLevel[0.5], Thickness[2]],
+				{Directive[GrayLevel[0.9]]},
+				Directive[GrayLevel[0.5], Thickness[2]]
+			}
+		},
+		Background ->
+			{None,
+				
+				{{RGBColor["#E2E2E2"],None}}
+			}
+	];
+	
+	finalTable = If[MatchQ[split,True],
+		Grid[{{tableOutputNonReusable}, {tableOutputReusable}, {totalTable}}, Alignment -> Left, Spacings -> 0],
+		tableOutput
+	];
 
 	(* use the OutputFormat option to provide the output *)
 	Switch[output,
 		(* when OutputFormat -> Table *)
-		Table, tableOutput,
+		Table, finalTable,
 		(* when OutputFormat -> Association *)
 		Association, associationOutput,
 		(* when OutputFormat -> TotalPrice *)
@@ -7132,7 +7783,7 @@ priceMaterialsProtocols[
 	gatheredProtocolDateCompleted, consolidatedProtocolNotebooks, consolidatedProtocolNames, consolidatedProtocols, consolidatedObjects, consolidatedProtocolTags,
 	consolidatedProtocolPricePerUnit, consolidatedProtocolDates, consolidatedProtocolSampleAmounts, consolidatedProtocolPrices, totalProtocolOutput, excludedSampleResourceBool,
 	refundedProtocols, refundStatus, refundedResourceBool, reusabilityLookup, sampleToModelLookup, protocolSites, payableSites,
-	totalProtocolSites, gatheredInformation, gatheredSite, consolidatesSite, invalidAmountResourcePackets
+	totalProtocolSites, gatheredInformation, gatheredSite, gatheredReusability, consolidatesSite, consolidateReusability, invalidAmountResourcePackets
 	},
 
 	(* default the unspecified or incorrectly specified options; pull out AllowSubprotocols *)
@@ -7674,7 +8325,7 @@ priceMaterialsProtocols[
 
 	(*---in the next part, list items are gathered and consolidated into one list entry if they originate from the same protocol, plus if the associated objects are from the same model, plus if the price tag is identical ---*)
 	(*in the first step bring the protocol, object, site, and price tag together into one*)
-	transposedProtocolsAndObjects=Transpose[{totalProtocolSamplesObjects, totalProtocolObjects, totalProtocolTags, totalProtocolSites}];
+	transposedProtocolsAndObjects=Transpose[{totalProtocolSamplesObjects, totalProtocolObjects, totalProtocolTags, totalProtocolSites, Lookup[reusabilityLookup,totalProtocolSamplesObjects, Null]/.$Failed->Null}];
 
 	(*in the second step gather them if list entries (protocol, material object, and tag)) are identical,and extract back the gathered protocol, object, and tag lists *)
 	gatheredInformation=Gather[transposedProtocolsAndObjects];
@@ -7682,6 +8333,7 @@ priceMaterialsProtocols[
 	gatheredProtocols=gatheredInformation[[All, All, 2]];
 	gatheredTags=gatheredInformation[[All, All, 3]];
 	gatheredSite=gatheredInformation[[All,All,4]];
+	gatheredReusability=gatheredInformation[[All,All,5]];
 
 	(* ==Define Function:gatherByObjectAndProtocolAndTag==*)
 	(*Use this helper function to consolidate the lists by sample objects that originate from the same protocol and are from the same model*)
@@ -7703,8 +8355,8 @@ priceMaterialsProtocols[
 	(*consolidate the gathered notebook,objects,models,names,dates, priceperunit and tags list so that there is one item per list. Since they should be identical,the first entry can be taken*)
 	{
 		consolidatedProtocolNotebooks, consolidatedProtocolNames, consolidatedProtocols, consolidatedObjects,
-		consolidatedProtocolTags, consolidatedProtocolPricePerUnit, consolidatedProtocolDates, consolidatesSite
-	}=Map[First /@ #&, {gatheredProtocolNotebooks, gatheredProtocolSampleNames, gatheredProtocols, gatheredObjects, gatheredTags, gatheredProtocolPricePerUnit, gatheredProtocolDateCompleted, gatheredSite}];
+		consolidatedProtocolTags, consolidatedProtocolPricePerUnit, consolidatedProtocolDates, consolidatesSite, consolidateReusability
+	}=Map[First /@ #&, {gatheredProtocolNotebooks, gatheredProtocolSampleNames, gatheredProtocols, gatheredObjects, gatheredTags, gatheredProtocolPricePerUnit, gatheredProtocolDateCompleted, gatheredSite, gatheredReusability}];
 
 	(*consolidate the gathered price and amount lists, by summing up the list entries *)
 	{consolidatedProtocolSampleAmounts, consolidatedProtocolPrices}=Map[
@@ -7721,7 +8373,7 @@ priceMaterialsProtocols[
 	(* put together the output lists in the correct order for the output table *)
 	totalProtocolOutput={
 		consolidatedProtocolNotebooks, consolidatedProtocols, consolidatedObjects, consolidatedProtocolNames, consolidatedProtocolTags, consolidatedProtocolSampleAmounts,
-		consolidatedProtocolPricePerUnit, consolidatedProtocolPrices, consolidatedProtocolDates, consolidatesSite
+		consolidatedProtocolPricePerUnit, consolidatedProtocolPrices, consolidatedProtocolDates, consolidatesSite, consolidateReusability
 		}
 
 ];
@@ -7745,20 +8397,20 @@ priceMaterialsProtocols[
 priceMaterialsTransactionOrder[myTransactionOrderPackets:{{({(PacketP[{Object[], Model[]}] | Null)...} | PacketP[{Object[], Model[]}] ... | {Null} | Null) ...} ...}]:=Module[{
 	allTransactionPackets, transactionCanceledBool, allSupplierTransactionPackets, transactionHasSupplierBool, toBeIgnoredBool,
 	toBePricedTransactionPackets, fulfillmentBool, allTransactionOrderPackets,
-	orderQuantities, allTransactionOrderProductPackets, productModels, samplesPerItemInOrders, indexMatchedProductPackets, allTransactionModelPackets,
+	orderQuantities, allTransactionOrderProductPackets, productModels, samplesPerItemInOrders, modelReusableLookup, productReusableLookup, indexMatchedProductPackets, allTransactionModelPackets,
 	flatTransactionModelNames, transactionObjects, indexMatchedTransactionObjects, transactionNotebooks, indexMatchedTransactionNotebooks, transactionDates,
 	indexMatchedTransactionDates, indexMatchedProducts, gatheredProducts, indexMatchedOrderProductPackets,
 	transactionOrderProductPricePerUnit, transactionOrderSamplesPerItem, transactionOrderListPrice, allTransactionOrderSitePackets, transactionOrderTaxrate,
 	indexMatchedTaxrate, transactionOrderTaxPrice, flatCancelledTransactionBool, allCancelledTransactionModels, flatFulfilledTransactionBool,
 	indexmatchFilterForTransactions, transactionProductPricing, transactionTaxPricing, flatTransactionMaterialObject, recTransactionNotebooks,
 	recTransactionObjects, recTransactionMaterialObject, recTransactionNames, recTransactionDates, filtTransactionNotebooks, filtTransactionObjects,
-	filtTransactionMaterialObject, filtTransactionNames, filtTransactionDates, transposedTransactionProducts, gatheredTransactionMaterial,
+	filtTransactionMaterialObject, filtTransactionNames, filtTransactionDates, transposedTransactionProducts, gatheredTransactionMaterial,gatheredReusable,
 	gatheredTransactionObjects, gatherByModelAndObject, gatheredTransactionNotebooks, gatheredTransactionName, gatheredTransactionProductPrice,
 	gatheredTransactionTaxPrice, gatheredTransactionDates, consolidatedTransactionNotebooks, consolidatedTransactionNames,
-	consolidatedTransactionObjects, consolidatedTransactionMaterial, consolidatedTransactionDates, consolidatedTransactionProductPrice,
+	consolidatedTransactionObjects, consolidatedTransactionMaterial, consolidatedReusable, consolidatedTransactionDates, consolidatedTransactionProductPrice,
 	consolidatedTransactionTaxPrice, consolidatedTransactionAmounts, consolidatedTransactionProductPricingRate, consolidatedTransactionTaxPricingRate,
 	allTransactionPrices, transactionPriceNotNullBool, totalTransactionPrices, totalTransactionPricePerUnit, totalTransactionNotebooks,
-	totalTransactionObjects, totalTransactionMaterial, totalTransactionNames, totalTransactionAmounts, totalTransactionDates, totalTransactionTags,
+	totalTransactionObjects, totalTransactionMaterial, totalTransactionNames, totalTransactionAmounts, totalTransactionDates, totalReusable, totalTransactionTags,
 	totalTransactionOutput, orderModels, refundBool, totalTransactionSites
 },
 
@@ -7812,7 +8464,26 @@ priceMaterialsTransactionOrder[myTransactionOrderPackets:{{({(PacketP[{Object[],
 	allTransactionOrderProductPackets=myTransactionOrderPackets[[All, 3]];
 	productModels=Map[Download[Lookup[#, ProductModel], Object]&, allTransactionOrderProductPackets];
 	samplesPerItemInOrders=Map[Lookup[#, NumberOfItems]&, allTransactionOrderProductPackets];
-
+	
+	(* We need to do a Download here to create an association of Model->Reusable *)
+	modelReusableLookup = Map[
+		#[[1]] -> #[[2]]&,
+		Quiet[Download[
+			Lookup[Flatten[allTransactionOrderProductPackets, 1], ProductModel],
+			{Object, Reusable}
+		],Download::FieldDoesntExist] /. $Failed -> Null
+	];
+	
+	productReusableLookup = Map[
+		Function[{productPacket},
+			Lookup[productPacket,Object]->Lookup[
+				modelReusableLookup,
+				Lookup[productPacket,ProductModel][Object]
+			]
+		],
+		Flatten[allTransactionOrderProductPackets,1]
+	];
+	
 	(* expand the Product packets of ordered transactions with the samples ordered *)
 	(* need to multiple by the number of samples per product and by the quantity ordered *)
 	indexMatchedProductPackets=MapThread[
@@ -7839,7 +8510,7 @@ priceMaterialsTransactionOrder[myTransactionOrderPackets:{{({(PacketP[{Object[],
 		],
 		{productModels, orderQuantities, samplesPerItemInOrders}
 	];
-
+	
 	(* get the model packets from Transaction Order Packet *)
 	(* since we are getting this via the ProductModel, need to expand the list by multiplying the quantity order and the samples per item *)
 	allTransactionModelPackets=
@@ -7971,14 +8642,14 @@ priceMaterialsTransactionOrder[myTransactionOrderPackets:{{({(PacketP[{Object[],
 	];
 
 	(* using the helper function, gather notebook,name, prices, date and tag lists *)
-	{gatheredTransactionNotebooks, gatheredTransactionName, gatheredTransactionProductPrice, gatheredTransactionTaxPrice, gatheredTransactionDates, gatheredTransactionMaterial}=
-		gatherByModelAndObject[{Download[filtTransactionNotebooks, Object], filtTransactionNames, transactionProductPricing, transactionTaxPricing, filtTransactionDates, filtTransactionMaterialObject}];
+	{gatheredTransactionNotebooks, gatheredTransactionName, gatheredTransactionProductPrice, gatheredTransactionTaxPrice, gatheredTransactionDates, gatheredTransactionMaterial, gatheredReusable}=
+		gatherByModelAndObject[{Download[filtTransactionNotebooks, Object], filtTransactionNames, transactionProductPricing, transactionTaxPricing, filtTransactionDates, filtTransactionMaterialObject, Lookup[productReusableLookup,filtTransactionMaterialObject]}];
 
 	(* consolidate the gathered notebook,objects,models,names, dates,and tags list so that there is one item per list. Since they should be identical, the first entry can be taken *)
 	(* this can also be done for the receiving pricing since only one receiving cost is applied for each model. The other price lists will be treated differently (see below) *)
-	{consolidatedTransactionNotebooks, consolidatedTransactionNames, consolidatedTransactionObjects, consolidatedTransactionMaterial, consolidatedTransactionDates}=Map[
+	{consolidatedTransactionNotebooks, consolidatedTransactionNames, consolidatedTransactionObjects, consolidatedTransactionMaterial, consolidatedTransactionDates, consolidatedReusable}=Map[
 		First /@ # &,
-		{gatheredTransactionNotebooks, gatheredTransactionName, gatheredTransactionObjects, gatheredTransactionMaterial, gatheredTransactionDates}
+		{gatheredTransactionNotebooks, gatheredTransactionName, gatheredTransactionObjects, gatheredTransactionMaterial, gatheredTransactionDates, gatheredReusable}
 	];
 
 	(*sum up the price for each consolidated transaction entry *)
@@ -8019,9 +8690,9 @@ priceMaterialsTransactionOrder[myTransactionOrderPackets:{{({(PacketP[{Object[],
 	totalTransactionPricePerUnit=PickList[Join[consolidatedTransactionProductPricingRate, consolidatedTransactionTaxPricingRate], transactionPriceNotNullBool, True];
 
 	(*join all transaction notebooks,objects,product models,model names.These are identical for all 2 lists (1 list for the product price, 1 list for the tax price).Filter for those entries where the price is not Null*)
-	{totalTransactionNotebooks, totalTransactionObjects, totalTransactionMaterial, totalTransactionNames, totalTransactionAmounts, totalTransactionDates}=Map[
+	{totalTransactionNotebooks, totalTransactionObjects, totalTransactionMaterial, totalTransactionNames, totalTransactionAmounts, totalTransactionDates, totalReusable}=Map[
 		PickList[Join[#, #], transactionPriceNotNullBool, True]&,
-		{consolidatedTransactionNotebooks, consolidatedTransactionObjects, consolidatedTransactionMaterial, consolidatedTransactionNames, consolidatedTransactionAmounts, consolidatedTransactionDates}
+		{consolidatedTransactionNotebooks, consolidatedTransactionObjects, consolidatedTransactionMaterial, consolidatedTransactionNames, consolidatedTransactionAmounts, consolidatedTransactionDates, consolidatedReusable}
 	];
 
 	(*construct the tag list,which consists of a list of Product strings,tax strings *)
@@ -8044,7 +8715,7 @@ priceMaterialsTransactionOrder[myTransactionOrderPackets:{{({(PacketP[{Object[],
 	(* join all the lists into one output *)
 	totalTransactionOutput={
 		totalTransactionNotebooks, totalTransactionObjects, totalTransactionMaterial, totalTransactionNames, totalTransactionTags, totalTransactionAmounts,
-		totalTransactionPricePerUnit, totalTransactionPrices, totalTransactionDates, totalTransactionSites
+		totalTransactionPricePerUnit, totalTransactionPrices, totalTransactionDates, totalTransactionSites, totalReusable
 		}
 
 ];
@@ -12161,7 +12832,7 @@ priceCleaningProtocols[
 		safeOptions, allowSubprotocolsQ, refundStatus, nonRefundedProtPackets, protocolObjects, protocolNotebooks,
 
 		(* filtering out the washable packets *)
-		allWashableObjectPackets, allWashableModelPackets, allWashedObjectStatuses, washableObjectsP,
+		allWashableObjectPackets, allWashableModelPackets, allWashedObjectStatuses, washableObjectsP, excludedWashableObjectsP, washablePattern,
 		allAutoclavedObjectPackets, allAutoclavedModelPackets,
 		allWashedModelPackets, allWashedObjectPackets, allWashableThingsTuples,
 		allFulfilledWashedObjectPackets, allFulfilledWashedModelPackets, allAutoclavedObjectStatuses,
@@ -12218,29 +12889,32 @@ priceCleaningProtocols[
 	(* autoclaving is based on the Sterile Field of the Model (Sterile -> True) means it will get autoclaved after dishwashing *)
 
 	(* make a pattern for washable types in case this needs to get updated in the future *)
-	washableObjectsP=ObjectP[{Object[Container], Object[Item], Object[Part]}];
+	washableObjectsP=ObjectP[{Object[Container], Object[Item], Object[Part], Object[Wiring], Object[Plumbing]}];
+	(* covers are always washed with bottles no matter of the resource request. exclude them from pricing *)
+	excludedWashableObjectsP=ObjectP[CoverObjectTypes];
+	washablePattern=_?((MatchQ[#, washableObjectsP]&&!MatchQ[#,excludedWashableObjectsP])&);
 
 	(* this is a list of lists that is index matched with the input protocols *)
 	allWashableObjectPackets=Map[
-		Cases[#, washableObjectsP]&,
+		Cases[#, washablePattern]&,
 		myObjectPackets
 	];
 
 	(* extract the matching model packets for each washable object *)
 	allWashableModelPackets=MapThread[
-		PickList[#2, #1, washableObjectsP]&,
+		PickList[#2, #1, washablePattern]&,
 		{myObjectPackets, myModelPackets}
 	];
 
 	(* extract the resources *)
 	allWashableResourcePackets=MapThread[
-		PickList[#2, #1, washableObjectsP]&,
+		PickList[#2, #1, washablePattern]&,
 		{myObjectPackets, myResourcePackets}
 	];
 
 	(* from the washable packets, determine which ones were actually washed *)
 	allWashableThingsTuples=MapThread[
-		Transpose[{#1, #2, #3}]&,
+		DeleteDuplicatesBy[Transpose[{#1, #2, #3}],Lookup[#[[1]],Object]&]&,
 		{allWashableObjectPackets, allWashableModelPackets, allWashableResourcePackets}
 	];
 

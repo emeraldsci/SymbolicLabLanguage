@@ -194,20 +194,20 @@ DefineObjectType[Object[Protocol, PNASynthesis], {
 			Developer->True,
 			Headers-> {"Object to Place", "Placement Tree"}
 		},
-		BottleReplacements->{
-			Format->Multiple,
-			Class->{Sample->Link,Container->Link,Destination->Link,Funnel->Link,FumeHood->Link},
-			Pattern:>{Sample->_Link,Container->_Link,Destination->_Link,Funnel->_Link,FumeHood->_Link},
-			Relation-> {
+		BottleReplacements -> {
+			Format -> Multiple,
+			Class -> {Sample -> Link, Container -> Link, Destination -> Link, Funnel -> Link, FumeHood -> Link},
+			Pattern :> {Sample -> _Link, Container -> _Link, Destination -> _Link, Funnel -> _Link, FumeHood -> _Link},
+			Relation -> {
 				Sample -> (Object[Sample] | Model[Sample]),
 				Container -> Object[Container],
 				Destination -> (Object[Container] | Model[Container]),
 				Funnel -> (Object[Part, Funnel] | Model[Part, Funnel]),
-				FumeHood -> (Object[Instrument, FumeHood] | Model[Instrument,FumeHood])
+				FumeHood -> (Object[Instrument, FumeHood] | Model[Instrument, FumeHood] | Object[Instrument, HandlingStation, FumeHood] | Model[Instrument, HandlingStation, FumeHood])
 			},
 			Description -> "The solvent Samples that had their Containers checked for damage in a FumeHood. Damaged containers have their Sample transferred via Funnel to replacement Destinations.",
-			Category->"Instrument Setup",
-			Developer->True
+			Category -> "Instrument Setup",
+			Developer -> True
 		},
 		SynthesisFileNames->{
 			Format->Multiple,

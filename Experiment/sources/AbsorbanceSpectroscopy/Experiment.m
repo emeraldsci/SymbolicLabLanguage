@@ -3364,6 +3364,13 @@ resolveAbsorbanceOptions[
 						{
 							Lookup[cuvetteMixPackets[[1]],RecommendedFillVolume],
 							Lookup[cuvetteMixPackets[[1]],Object]
+						},
+
+						(* we will not aliquot the samples, take the Volume of the Sample and null for cuvetteContainerModel *)
+						MatchQ[Lookup[options,Aliquot],False],
+						{
+							Lookup[samplePacket,Volume],
+							Null
 						}
 					]];
 

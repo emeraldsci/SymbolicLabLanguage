@@ -235,8 +235,8 @@ validReportCertificateAnalysisQTests[packet:PacketP[Object[Report,Certificate,An
 		True
 	],
 
-	(** All receiving batch information fields required by the certified sample's model are populated **)
-	(* Object[Sample] *)
+	(** All receiving batch information fields required by the certified sample/container's model are populated **)
+	(* Object[Sample] and Object[Container, Plate] *)
 	RequiredTogetherTest[
 		SafeEvaluate[{Download[Lookup[packet, MaterialsCertified], Model[ReceivingBatchInformation]]},
 			Download[Lookup[packet, MaterialsCertified], Model[ReceivingBatchInformation]]
@@ -293,7 +293,7 @@ registerValidQTestFunction[Object[Report, Locations],validReportLocationsQTests]
 registerValidQTestFunction[Object[Report, Receipt],validReportReceiptQTests];
 registerValidQTestFunction[Object[Report, QueueTimes],validReportQueueTimesQTests];
 registerValidQTestFunction[Object[Report, ShippingPrices],validReportShippingPricesQTests];
-registerValidQTestFunction[Object[Report, Certificate,Analysis],validReportCertificateQTests];
+registerValidQTestFunction[Object[Report, Certificate],validReportCertificateQTests];
 registerValidQTestFunction[Object[Report, Certificate,Analysis],validReportCertificateAnalysisQTests];
-registerValidQTestFunction[Object[Report, Certificate,Analysis],validReportCertificateCalibrationQTests];
-registerValidQTestFunction[Object[Report, Certificate,Analysis],validReportCertificateInstrumentValidationQTests];
+registerValidQTestFunction[Object[Report, Certificate,Calibration],validReportCertificateCalibrationQTests];
+registerValidQTestFunction[Object[Report, Certificate,InstrumentValidation],validReportCertificateInstrumentValidationQTests];

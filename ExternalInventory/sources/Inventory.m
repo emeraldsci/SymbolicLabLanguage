@@ -55,6 +55,7 @@ DefineOptions[
 		{FontFamily -> "Bitstream Vera Sans Mono", _String, "The font family that will be used for description text on printed stickers.", Category -> Hidden},
 		{Output -> Notebook, Notebook | Graphics, "Specifies whether to return a notebook object or a list of graphics objects of the created stickers.", Category -> Hidden},
 		{Interactive -> False, BooleanP,"Specifies whether the interactive printer selection pop up should appear.", Category -> Hidden},
+		{UpdatedBy -> $PersonID, ObjectP[{Object[User], Object[Protocol], Object[Qualification], Object[Maintenance]}], "Specifies the person or protocol that printed stickers"},
 		FastTrackOption,
 		UploadOption,
 		CacheOption
@@ -162,7 +163,7 @@ PrintStickers[myTransaction:ObjectP[Object[Transaction, ShipToECL]], ops:Options
 (* --- SLL Object/Packet/Link input, for printing Object stickers --- *)
 PrintStickers[objects:ListableP[ObjectP[{Object[Sample], Object[Container], Object[Instrument], Object[Part], Object[Sensor], Object[Plumbing], Object[Wiring], Object[Item], Object[Package]}]], ops:OptionsPattern[]]:=Module[
 	{safeOps, resolvedOps, incomingCache, updatedCache, updatedOps, barcodeTexts, stickerTexts, objectsList,
-		stickerModels, stickerModelPackets, modelPackets, objectPackets, modelObjects, uploadPacket},
+		stickerModels, stickerModelPackets, modelPackets, objectPackets, modelObjects, uploadPacket, updatedBy, safeObjectsList},
 
 	safeOps=SafeOptions[PrintStickers, ToList[ops]];
 
@@ -171,6 +172,7 @@ PrintStickers[objects:ListableP[ObjectP[{Object[Sample], Object[Container], Obje
 
 	(* Make sure that singleton input is wrapped in a list before continuing *)
 	objectsList=ToList[objects];
+	safeObjectsList = Download[objectsList, Object];
 
 	(* If any of the input objects are not in the database, throw an error and return Failed. *)
 	With[{databaseMembers=DatabaseMemberQ[objectsList]},
@@ -219,15 +221,21 @@ PrintStickers[objects:ListableP[ObjectP[{Object[Sample], Object[Container], Obje
 		modelPackets
 	];
 
-	uploadPacket=If[MatchQ[$PersonID, ObjectP[]],
-		Association[
-			Object -> $PersonID,
-			Append[PrintStickersLog] -> Map[
-				{Now, Link[#]}&,
-				objectsList
-			]
-		],
-		Null
+	(* log who printed the stickers, and for which objects *)
+	updatedBy = Lookup[resolvedOps, UpdatedBy];
+	uploadPacket=Which[
+
+		MatchQ[updatedBy, ObjectP[Object[User]]],
+		Flatten[{
+			<|Object -> updatedBy, Append[PrintStickersLog] -> Map[{Now, Link[#]}&, safeObjectsList]|>,
+			<|Object-> #, Append[PrintStickersLog]-> {Now, Link[updatedBy]}|>&/@DeleteDuplicates[safeObjectsList]
+		}],
+
+		MatchQ[updatedBy, ObjectP[]],
+		<|Object-> #, Append[PrintStickersLog]-> {Now, Link[updatedBy]}|>&/@DeleteDuplicates[safeObjectsList],
+
+		True,
+		{}
 	];
 
 	If[OptionValue[Upload] && !NullQ[uploadPacket],
@@ -248,7 +256,7 @@ PrintStickers[
 
 	{safeOps, resolvedOps, modelObjects, incomingCache, updatedCache, updatedOps,
 		barcodeTexts, stickerTexts, uploadPacket, objectsList, stickerModels, expandedAndFlattenedObjects,
-		stickerModelPackets, modelPackets, objectPackets, expandedPositions, badObjs, badDestRequests},
+		stickerModelPackets, modelPackets, objectPackets, expandedPositions, badObjs, badDestRequests,updatedBy, safeObjectsList},
 
 	safeOps=SafeOptions[PrintStickers, ToList[ops]];
 
@@ -257,6 +265,7 @@ PrintStickers[
 
 	(* Make sure that singleton input is wrapped in a list before continuing *)
 	objectsList=ToList[objects];
+	safeObjectsList = Download[objectsList, Object];
 
 	(* If any of the input objects are not in the database, throw an error and return Failed. *)
 	With[{databaseMembers=DatabaseMemberQ[objectsList]},
@@ -396,15 +405,21 @@ PrintStickers[
 		expandedPositions
 	];
 
-	uploadPacket=If[MatchQ[$PersonID, ObjectP[]],
-		Association[
-			Object -> $PersonID,
-			Append[PrintStickersLog] -> Map[
-				{Now, Link[#]}&,
-				objectsList
-			]
-		],
-		Null
+	(* log who printed the stickers, and what stickers they printed *)
+	updatedBy = Lookup[resolvedOps, UpdatedBy];
+	uploadPacket=Which[
+
+		MatchQ[updatedBy, ObjectP[Object[User]]],
+		Flatten[{
+			<|Object -> updatedBy, Append[PrintStickersLog] -> Map[{Now, Link[#]}&, safeObjectsList]|>,
+			<|Object-> #, Append[PrintStickersLog]-> {Now, Link[updatedBy]}|>&/@DeleteDuplicates[safeObjectsList]
+		}],
+
+		MatchQ[updatedBy, ObjectP[]],
+		<|Object-> #, Append[PrintStickersLog]-> {Now, Link[updatedBy]}|>&/@DeleteDuplicates[safeObjectsList],
+
+		True,
+		{}
 	];
 
 	If[OptionValue[Upload] && !NullQ[uploadPacket],
