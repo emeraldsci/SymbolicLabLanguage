@@ -17,11 +17,18 @@ DefineObjectType[Model[Instrument, HandlingStation], {
 			Category -> "Instrument Specifications"
 		},
 		NumberOfVideoCameras -> {
-			Format -> Multiple,
+			Format -> Single,
 			Class -> Integer,
-			Pattern :> GreaterP[0, 1],
+			Pattern :> GreaterEqualP[0, 1],
 			Units -> None,
 			Description -> "Indicates how many cameras are present within the HandlingStation for streaming the actions of an operator.",
+			Category -> "Instrument Specifications"
+		},
+		Specialized -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this handling station supports additional capabilities such as pH measurement, Schlenk line operations, or waste handling through purpose-built equipment, and is only selected when explicitly requested in experiment functions.",
 			Category -> "Instrument Specifications"
 		},
 		Ventilated -> {

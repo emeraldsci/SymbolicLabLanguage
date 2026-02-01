@@ -1019,8 +1019,8 @@ DefineTests[ExperimentImageColoniesPreview,
 
 				(* Create some sample models *)
 				solidMediaBacteriaModel = UploadSampleModel[
-					"Solid Media Bacterial cells Model for ExperimentImageColoniesPreview" <> $SessionUUID,
-					Composition -> {{95 MassPercent, Model[Molecule, "Agarose"]}, {5 MassPercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					{{95 MassPercent, Model[Molecule, "Agarose"]}, {5 MassPercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					Name -> "Solid Media Bacterial cells Model for ExperimentImageColoniesPreview" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,
@@ -1128,8 +1128,8 @@ DefineTests[ExperimentImageColoniesOptions,
 
 				(* Create some sample models *)
 				solidMediaBacteriaModel = UploadSampleModel[
-					"Solid Media Bacterial cells Model for ExperimentImageColoniesOptions" <> $SessionUUID,
-					Composition -> {{95 MassPercent, Model[Molecule, "Agarose"]}, {5 MassPercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					{{95 MassPercent, Model[Molecule, "Agarose"]}, {5 MassPercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					Name -> "Solid Media Bacterial cells Model for ExperimentImageColoniesOptions" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,
@@ -1267,8 +1267,8 @@ DefineTests[ImageColonies,
 
 				(* Create some sample models *)
 				solidMediaBacteriaModel = UploadSampleModel[
-					"Solid Media Bacterial cells Model for ImageColonies" <> $SessionUUID,
-					Composition -> {{95 MassPercent, Model[Molecule, "Agarose"]}, {5 MassPercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					{{95 MassPercent, Model[Molecule, "Agarose"]}, {5 MassPercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					Name -> "Solid Media Bacterial cells Model for ImageColonies" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,

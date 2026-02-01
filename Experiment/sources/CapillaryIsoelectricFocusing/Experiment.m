@@ -105,15 +105,15 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 			Category->"Hidden"
 		},
 		{
-			OptionName->NumberOfReplicates,
-			Default->Null,
-			Description->"The number of times each sample will be injected. For example, when NumberOfReplicates is set to 2, each sample will be run twice consecutively. By default, this option means technical replicates that are injected from the same position on the assay plate. Unless different aliquot containers are used for the replicates with ConsolidateAliquots->False, the replicates will be injected from different aliquots of the sample.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Number,
-				Pattern:>GreaterEqualP[2,1]
+			OptionName -> NumberOfReplicates,
+			Default -> Automatic,
+			Description -> "The number of times each sample will be injected. For example, when NumberOfReplicates is set to 2, each sample will be run twice consecutively. By default, this option means technical replicates that are injected from the same position on the assay plate.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Number,
+				Pattern :> GreaterEqualP[1,1]
 			],
-			Category->"General"
+			Category -> "General"
 		},
 		(* Instrument Preparation Options *)
 		{
@@ -2201,8 +2201,8 @@ Error::CIEFBlanksFalseOptionsSpecifiedError="IncludeBlanks was set to False whil
 Error::CIEFStandardsFalseOptionsSpecifiedError="IncludeStandards was set to False while other related options have been specified for Standards. Please set IncludeStandards to True or change the related options to Null or Automatic.";
 Error::CIEFIncompatibleCartridge="The specified experiment cartridge `1` is not compatible with capillary Isoelectric Focusing. Set Cartridge to an Object or Model that is compatible with ExperimentType cIEF.";
 Error::CIEFDiscardedCartridge="The specified cartridge `1` for capillary Isoelectric Focusing experiment has been discarded. Please choose another Cartridge object or model.";
-Error::InjectionTableReplicatesSpecified="Both an injection table and number of replicates were specified. Please specify either InjectionTable or NumberOfReplicates, but not both.";
-Error::InjectionTableVolumeZero="An entry in the injection table `1` has been specified with a 0 Microliter volume. Please use the NumberOfReplicates option to set repeated injections.";
+(* Error::InjectionTableNumberOfReplicatesConflict is shared with CESDS. *)
+(* Error::InjectionTableVolumeZero is shared with CESDS. *)
 Error::TooManyInjectionsCapillaryIsoelectricFocusing="The number of injections specified for samples, standards, and blanks (`1`) exceeds the number of injections possible for each batch (100, or 96 if OnBoardMixing is used). Please consider splitting this protocol to multiple protocols.";
 Error::NotEnoughUsesLeftOnCIEFCartridge="This protocol requires more injections than the capillary Isoelectric Focusing cartridge `1` has left (`2` injections). Please consider splitting this protocol or using another cartridge.";
 Warning::NotEnoughOptimalUsesLeftOnCIEFCartridge="This protocol requires more injections than the capillary Isoelectric Focusing cartridge `1` has left for optimal conditions (`2` injections). Please consider splitting this protocol or using another cartridge.";
@@ -3017,6 +3017,8 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			standardResolverCantFixIsoelectricPointMarkersMismatchErrors,standardSumOfVolumesOverTotalvolumeErrors,
 			standardTrueFrequencyNullErrors,standardUnresolveableDenatureReagentConcentrationUnitMismatchErrors,
 			standardVoltageDurationStepErrors,resolvedSampleLabel,resolvedSampleContainerLabel,
+			numberOfReplicatesFromInjectionTable, resolvedNumberOfReplicates,
+			injectionTableNumberOfReplicatesConflictOptions, injectionTableNumberOfReplicatesConflictTest,
 
 			(* conflicting options *)
 			blankMakeMasterMixOptionsSetBool,blankPremadeMasterMixWithmakeMasterMixOptionsSetQ,blanksFalseOptionsSpecifiedInvalidOption,
@@ -3024,13 +3026,13 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			injectionTableContainsAllQ,invalidInjectionTableOption,invalidInjectionTableTest,makeOnesOwnMasterMixOptions,
 			nameInvalidOptions,notEnoughOptimalUsesLeftOption,notEnoughOptimalUsesLeftOptionTest,notEnoughUsesLeftOption,
 			notEnoughUsesLeftOptionTest,notEnoughUsesLeftQ,	optimalUsesLeftOnCartridge,injectionTableVolumeZeroInvalidOption,
-			injectionTableVolumeZeroInvalidTest,injectionTableWithReplicatesInvalidOption,injectionTableWithReplicatesInvalidTest,
-			specifiedNumberOfReplicates,volumeZeroInjectionTableBool,premadeMasterMixOptions,premadeMasterMixWithmakeMasterMixOptionsSetInvalidOption,
-			premadeMasterMixWithmakeMasterMixOptionsSetInvalidOptionTest,premadeMasterMixWithmakeMasterMixOptionsSetQ,
-			preMadeMasterMixWithMakeOwnInvalidOptions,preMadeMasterMixWithMakeOwnInvalidSamples,sampleCountInvalidOption,
-			sampleCountQ,sampleCountTest,samplesMakeMasterMixOptionsSetBool,samplesMissingFromInjectionTables,
-			standardsFalseOptionsSpecifiedInvalidOption,standardsFalseOptionsSpecifiedTest,standardMakeMasterMixOptionsSetBool,
-			standardPremadeMasterMixWithmakeMasterMixOptionsSetQ,usesLeftOnCartridge,validNameQ,validNameTest,
+			injectionTableVolumeZeroInvalidTest, specifiedNumberOfReplicates,volumeZeroInjectionTableBool,premadeMasterMixOptions,
+			premadeMasterMixWithmakeMasterMixOptionsSetInvalidOption, premadeMasterMixWithmakeMasterMixOptionsSetInvalidOptionTest,
+			premadeMasterMixWithmakeMasterMixOptionsSetQ, preMadeMasterMixWithMakeOwnInvalidOptions,
+			preMadeMasterMixWithMakeOwnInvalidSamples, sampleCountInvalidOption, sampleCountQ, sampleCountTest,
+			samplesMakeMasterMixOptionsSetBool,samplesMissingFromInjectionTables, standardsFalseOptionsSpecifiedInvalidOption,
+			standardsFalseOptionsSpecifiedTest, standardMakeMasterMixOptionsSetBool, standardPremadeMasterMixWithmakeMasterMixOptionsSetQ,
+			usesLeftOnCartridge, validNameQ, validNameTest,
 
 			(* Unresolved options tests*)
 			ampholyteConcentrationNullErrorsInvalidOptions,ampholyteConcentrationNullErrorsTests,
@@ -3498,7 +3500,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			resolveIncludeStandards,
 			(* if none were specified, check the injection table, if no injection table was specified, just give the default, but at the right amount. *)
 			If[MatchQ[Lookup[roundedCIEFOptions,InjectionTable],Except[Automatic]],
-				Select[Lookup[roundedCIEFOptions,InjectionTable],MatchQ[First[#],Standard]&][[All,2]],
+				Cases[Lookup[roundedCIEFOptions, InjectionTable], {Standard, _, GreaterP[0 Microliter]}][[All,2]],
 				ConstantArray[Model[Sample,StockSolution,"Resuspended cIEF System Suitability Peptide Panel"],requiredStandards]
 			],
 			True,Null
@@ -3603,7 +3605,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			],
 			resolveIncludeBlanks,
 			If[MatchQ[Lookup[roundedCIEFOptions,InjectionTable],Except[Automatic|Null]],
-				Select[Lookup[roundedCIEFOptions,InjectionTable],MatchQ[First[#],Blank]&][[All,2]],
+				Cases[Lookup[roundedCIEFOptions, InjectionTable], {Blank, _, GreaterP[0 Microliter]}][[All,2]],
 				ConstantArray[Model[Sample,"Milli-Q water"],requiredBlanks]
 			],
 			True,Null
@@ -3859,33 +3861,28 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 		grab volumes to pass to the mapthread *)
 		specifiedInjectionTable = Lookup[roundedCapillaryIsoelectricFocusingOptions, InjectionTable];
 
-		(* check if both Injection table AND NumberOfReplicates were specified. if they were, error out *)
 		(* grab number of replicates *)
 		specifiedNumberOfReplicates=Lookup[roundedCapillaryIsoelectricFocusingOptions,NumberOfReplicates];
 
-		(* raise error if both an injection table and NumberOfReplicates were specified *)
-		injectionTableWithReplicatesInvalidOption=If[MatchQ[specifiedInjectionTable,Except[Automatic]]&&MatchQ[specifiedNumberOfReplicates,Except[Null]]&&messages,
-			(
-				Message[Error::InjectionTableReplicatesSpecified];
-				{InjectionTable, NumberOfReplicates}
-			),
-			{}
-		];
-
-		(* If we need to gather tests, generate the tests for injection table and replicates check *)
-		injectionTableWithReplicatesInvalidTest=If[gatherTests,
-			Test["Only one of the InjectionTable and NumberOfReplicates options is specified:",
-				MatchQ[specifiedInjectionTable,Except[Automatic]]&&MatchQ[specifiedNumberOfReplicates,Except[Null]],
-				False
-			],
-			Nothing
-		];
-
 		(* see if any of the specified volumes is zero *)
 		volumeZeroInjectionTableBool = If[MatchQ[specifiedInjectionTable,Except[Automatic]],
-			#==0Microliter& /@ specifiedInjectionTable[[All,3]],
+			Module[{uniqueEntries},
+				uniqueEntries = DeleteDuplicates[Download[specifiedInjectionTable[[All, 2]], Object]];
+				Map[MatchQ[
+					FirstCase[specifiedInjectionTable, {_, ObjectP[#], _}][[3]],
+					EqualP[0 Microliter]
+				]&,
+					(* Map over: *)
+					uniqueEntries
+				]
+			],
 			{False}
 		];
+
+		(* TODO: Check that there is no conflict between IncludeStandards and StandardOptions and InjectionTable, (same for blanks, ladders)*)
+		(* TODO: Check that there is no conflict between specified Samples/Standards/Blanks/Ladders and InjectionTable. *)
+		(* TODO: Check that there are no conflicts between the length of options for and prepared vials. *)
+		(* TODO: Are models that appear in the InjectionTable (accepted by Standards/Blanks/Ladders) always unique vials for each entry or should it be the same vial. *)
 
 		(* Injection table with volume zero *)
 		injectionTableVolumeZeroInvalidOption=If[Or@@volumeZeroInjectionTableBool&&messages,
@@ -3898,7 +3895,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 
 		(* If we need to gather tests, generate the tests for injection table and replicates check *)
 		injectionTableVolumeZeroInvalidTest=If[gatherTests,
-			Test["None of the volumes specified in InjectionTable is 0 Microliter:",
+			Test["The first volumes specified in InjectionTable for any sample, blank, standard, or ladder is not 0 Microliter:",
 				Or@@volumeZeroInjectionTableBool,
 				False
 			],
@@ -3906,7 +3903,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 		];
 
 		(* to make sure we don't use an invalid injection table later, keep this boolean *)
-		injectionTableValidQ = !(MatchQ[specifiedInjectionTable,Except[Automatic]]&&MatchQ[specifiedNumberOfReplicates,Except[Null]])&&!Or@@volumeZeroInjectionTableBool;
+		injectionTableValidQ = !Or@@volumeZeroInjectionTableBool;
 
 		(* Informing volumes from the injection table runs the risk of it not being compatible with specified samples/standards/blanks *)
 		injectionTableSamplesNotCompatibleQ = If[MatchQ[specifiedInjectionTable,Except[Automatic]],
@@ -3925,7 +3922,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 
 		injectionTableSampleVolumes = If[Not[injectionTableSamplesNotCompatibleQ]&&injectionTableValidQ,
 			Switch[specifiedInjectionTable,
-				{{_,ObjectP[],VolumeP|Automatic}..}, Cases[specifiedInjectionTable, {Sample,ObjectP[],VolumeP|Automatic}][[All,3]],
+				{{_,ObjectP[],VolumeP|Automatic}..}, Cases[specifiedInjectionTable, {Sample,ObjectP[],GreaterP[0 Microliter]|Automatic}][[All,3]],
 				Automatic, ConstantArray[Automatic, Length[mySamples]]
 			],
 			(* If samples in injection tables don't match samplesIn, don't inform volume, we'll raise an error a bit later *)
@@ -5533,7 +5530,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 		(* if there is a user specified an injection table, and if they did, grab volumes to pass to the mapthread  *)
 		injectionTableStandardVolumes =If[Not[injectionTableStandardNotCompatibleQ],
 			Switch[specifiedInjectionTable,
-				{{_,ObjectP[],VolumeP|Automatic}..}, Cases[specifiedInjectionTable, {Standard,ObjectP[],VolumeP|Automatic}][[All,3]],
+				{{_,ObjectP[],VolumeP|Automatic}..}, Cases[specifiedInjectionTable, {Standard,ObjectP[],GreaterP[0 Microliter]|Automatic}][[All,3]],
 				Automatic, ConstantArray[Automatic, Length[resolvedStandards]]
 			],
 			(* If samples in injection tables don't match Standard, don't inform volume, we'll raise an error a bit later *)
@@ -5587,7 +5584,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 		(* if there is a user specified an injection table, and if they did, grab volumes to pass to the mapthread  *)
 		injectionTableBlankVolumes =If[Not[injectionTableBlankNotCompatibleQ],
 			Switch[specifiedInjectionTable,
-				{{_,ObjectP[],VolumeP|Automatic}..}, Cases[specifiedInjectionTable, {Blank,ObjectP[],VolumeP|Automatic}][[All,3]],
+				{{_,ObjectP[],VolumeP|Automatic}..}, Cases[specifiedInjectionTable, {Blank,ObjectP[],GreaterP[0 Microliter]|Automatic}][[All,3]],
 				Automatic, ConstantArray[Automatic, Length[resolvedBlanks]]
 			],
 			(* If samples in injection tables don't match Standard, don't inform volume, we'll raise an error a bit later *)
@@ -7457,7 +7454,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 		resolvedInjectionTable=If[MatchQ[Lookup[roundedCapillaryIsoelectricFocusingOptions,InjectionTable],Automatic],
 			Module[{samplesInjectionTable,blanksInjectionTable,replicates,restructuredSamplesList},
 				(* add Sample type and repeat as NumberOfReplicates *)
-				replicates = Lookup[roundedCapillaryIsoelectricFocusingOptions,NumberOfReplicates]/.Null:>1;
+				replicates = Lookup[roundedCapillaryIsoelectricFocusingOptions,NumberOfReplicates]/.Automatic:>1;
 				(* Replicates are repeated injections from the same vial, and thus, do Not require any sample and volume should be 0 Microliter *)
 				samplesInjectionTable=MapThread[
 					Function[{object,volume,aliquotBool,index},
@@ -12076,6 +12073,59 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			True,False
 		];
 
+		(* If the user specified the injection table we need to parse it to figure out how many replicates they indicated. *)
+		(* Null indicates that the number of replicates varies sample to sample. *)
+		numberOfReplicatesFromInjectionTable = Module[{injectionTableGatheredBySample, replicatesByUniqueSamplePrep},
+			(* Pull out the sample and gather by the object reference. *)
+			injectionTableGatheredBySample = GatherBy[Cases[resolvedInjectionTable, {Sample, _, _, _}], Part[#, 2]&];
+
+			(* For each unique object reference in the injection table.. *)
+			replicatesByUniqueSamplePrep = Flatten[Map[Function[{sublist},
+				(* Get the length of each unique preparation and its replicates (e.g. >0, 0 ,0 is 3 replicates) *)
+				SequenceSplit[sublist[[All, 3]], {initial:GreaterP[0 Microliter], replicates:EqualP[0 Microliter]...} :> Length[{replicates}] + 1]],
+				injectionTableGatheredBySample
+			]];
+
+			(* If the number of replicates is constant for all sample preps, set it to that. Otherwise, Null. *)
+			If[MatchQ[DeleteDuplicates[replicatesByUniqueSamplePrep], {_}],
+				First[DeleteDuplicates[replicatesByUniqueSamplePrep]],
+				Null
+			]
+		];
+
+		resolvedNumberOfReplicates = Which[
+			(* If NumberOfReplicates was user-provided use that. *)
+			MatchQ[specifiedNumberOfReplicates, Except[Automatic]],
+			specifiedNumberOfReplicates,
+			(* If both NumberOfReplicates and InjectionTable were unspecified, set to Null since there are no replicates. *)
+			MatchQ[{specifiedNumberOfReplicates, specifiedInjectionTable}, {Automatic, Automatic}],
+			1,
+			True,
+			(* Otherwise, infer NumberOfReplicates from the injection table if possible. *)
+			numberOfReplicatesFromInjectionTable
+		];
+
+		injectionTableNumberOfReplicatesConflictOptions = If[!MatchQ[resolvedNumberOfReplicates, numberOfReplicatesFromInjectionTable],
+			Message[Error::InjectionTableNumberOfReplicatesConflict];
+			{InjectionTable, NumberOfReplicates},
+			{}
+		];
+
+		injectionTableNumberOfReplicatesConflictTest = If[gatherTests,
+			(* create warning for failing samples *)
+			{If[Length[injectionTableNumberOfReplicatesConflictOptions] > 0,
+				Test["The NumberOfReplicates option agrees with the number of replicate sample injections listed in the InjectionTable:",
+					False,
+					True
+				],
+				Test["The NumberOfReplicates option agrees with the number of replicate sample injections listed in the InjectionTable:",
+					True,
+					True
+				]
+			]},
+			{}
+		];
+
 
 		(* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
 		invalidInputs=DeleteDuplicates[Flatten[{
@@ -12093,7 +12143,6 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			standardsFalseOptionsSpecifiedInvalidOption,
 			sampleCountInvalidOption,
 			notEnoughUsesLeftOption,
-			injectionTableWithReplicatesInvalidOption,
 			injectionTableVolumeZeroInvalidOption,
 			invalidInjectionTableOption,
 			nullTotalVolumeErrorsOptions,
@@ -12141,7 +12190,8 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			cathodicSpacerVolumeNullInvalidOptions,
 			cathodicSpacerConcentrationNullInvalidOptions,
 			cathodicSpacerConcentrationVolumeMismatchInvalidOptions,
-			sumOfVolumesOverTotalvolumeInvalidOptions
+			sumOfVolumesOverTotalvolumeInvalidOptions,
+			injectionTableNumberOfReplicatesConflictOptions
 		}]];
 
 		(* Throw Error::InvalidInput if there are invalid inputs. *)
@@ -12162,14 +12212,14 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 		(* Prepare options to send to resolveAliquotOptions *)
 		aliquotOptions=ReplaceRule[
 			myOptions,
-			Join[{ConsolidateAliquots->resolvedConsolidation},resolvedSamplePrepOptions]
+			Join[{ConsolidateAliquots->resolvedConsolidation, NumberOfReplicates -> 1},resolvedSamplePrepOptions]
 		];
 
 		(* Resolve Aliquot Options *)
 		(* get the RequiredAliquotAmount. Note that this must always be greater than the specified SampleAmount *)
 		(* If we are consolidating aliquots for our replicates, we will only do injection from one sample volume *)
 	requiredAliquotAmounts=If[TrueQ[resolvedConsolidation],
-		Map[Function[volume,volume*1.05/(specifiedNumberOfReplicates/.(Null:>1))],resolvedSampleVolume],
+		Map[Function[volume,volume*1.05/(resolvedNumberOfReplicates/.(Null:>1))],resolvedSampleVolume],
 		Map[Function[volume,volume*1.05],resolvedSampleVolume]
 	];
 
@@ -12238,7 +12288,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			SampleTemperature->Lookup[roundedCapillaryIsoelectricFocusingOptions,SampleTemperature]/. Ambient :> $AmbientTemperature,
 			InjectionTable->resolvedInjectionTable[[All, ;; -2]],
 			MatchedInjectionTable->resolvedInjectionTable,
-			NumberOfReplicates->Lookup[roundedCapillaryIsoelectricFocusingOptions,NumberOfReplicates],
+			NumberOfReplicates -> resolvedNumberOfReplicates,
 			Anolyte->Lookup[roundedCapillaryIsoelectricFocusingOptions,Anolyte],
 			Catholyte->Lookup[roundedCapillaryIsoelectricFocusingOptions,Catholyte],
 			ElectroosmoticConditioningBuffer->Lookup[roundedCapillaryIsoelectricFocusingOptions,ElectroosmoticConditioningBuffer],
@@ -12423,7 +12473,6 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 				expandNestedIndexMatchedTests,
 				validNameTest,
 				sampleCountTest,
-				injectionTableWithReplicatesInvalidTest,
 				injectionTableVolumeZeroInvalidTest,
 				notEnoughUsesLeftOptionTest,
 				notEnoughOptimalUsesLeftOptionTest,
@@ -12481,7 +12530,8 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 				cathodicSpacerVolumeNullTests,
 				cathodicSpacerConcentrationNullTests,
 				cathodicSpacerConcentrationVolumeMismatchTests,
-				sumOfVolumesOverTotalvolumeTests
+				sumOfVolumesOverTotalvolumeTests,
+				injectionTableNumberOfReplicatesConflictTest
 			}]
 		}
 	];
@@ -12847,12 +12897,12 @@ DefineOptions[
 capillaryIsoelectricFocusingResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{___Rule}, myResolvedOptions:{___Rule},ops:OptionsPattern[]]:=Module[
 	{
 		expandedInputs, expandedResolvedOptions,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,messages,inheritedCache,
-		samplePackets,expandedAliquotVolume,sampleVolumes,pairedSamplesInAndVolumes,sampleVolumeRules,optionsWithVolume,
+		samplePackets, sampleOnlyInjectionTable, replicatePositionsBySample, nonFirstReplicateSampleIndex, expandedAliquotVolume,sampleVolumes,pairedSamplesInAndVolumes,sampleVolumeRules,optionsWithVolume,
 		sampleResourceReplaceRules,instrumentTime,instrumentResource,protocolPacket,sharedFieldPacket,finalizedPacket,
-		allResourceBlobs,fulfillable, frqTests,testsRule,resultRule,allDownloadValues,cache,sampleReplicates,samplesWithReplicates,replaceVolumesForReplicates,
+		allResourceBlobs,fulfillable, frqTests,testsRule,resultRule,allDownloadValues,cache,samplesWithReplicates,replaceVolumesForReplicates,
 		expandedOptionsWithReplicates, optionsWithReplicates,uniqueSamples,uniqueSamplePackets,sampleContainers,uniqueContainers,uniquePlateContainers,
 		standardOptionList,blankOptionList,standardOptions,blankOptions,standards,includeStandards,blanks,includeBlanks,
-		numberOfReplicatesRules,standardsReplicates,blanksReplicates,standardsWithReplicates,standardOptionsWithReplicates,
+		standardsReplicates,blanksReplicates,standardsWithReplicates,standardOptionsWithReplicates,
 		blanksWithReplicates,blankOptionsWithReplicates,standardResourceRules,blankResourceRules,resolvedSampleVolume,
 		injectionTableToUpload,totalInjections,optionsWithReplicatesAssociation,standardOptionsWithReplicatesAssociation,
 		blankOptionsWithReplicatesAssociation,injectionOverheadTime,sampleTimes,standardTimes,blankTimes,premadeMasterMixObjects,
@@ -12863,7 +12913,9 @@ capillaryIsoelectricFocusingResourcePackets[mySamples:{ObjectP[Object[Sample]]..
 		denaturationAgentResourceRules,electroosmoticFlowBlockerObjects,electroosmoticFlowBlockerVolumes,electroosmoticFlowBlockerResourceRules,
 		diluentTuples,diluentsVolumeOptions,diluentObjects,diluentVolumes,diluentResourceRules,runTime,setupTime,exposureTimesToUpload,
 		updatedSimulation,simulation,originalSampleObjects,simulatedSamples,numberOfWellsForOBM,
-
+		standardOnlyInjectionTable, standardReplicatePositionsBySample, nonFirstReplicateStandardSampleIndex,
+		blankOnlyInjectionTable, blankReplicatePositionsBySample, nonFirstReplicateBlankSampleIndex,
+		replaceVolumesForAccessoryReplicates,
 		(* resources *)
 		plateContainerResources,plateSealResources,samplesInResources, standardResources,blankResources, cartridgeResource,
 		anolyteResource,catholyteResource,electroosmoticConditioningBufferResource,fluorescenceCalibrationStandardResource,
@@ -12937,53 +12989,65 @@ capillaryIsoelectricFocusingResourcePackets[mySamples:{ObjectP[Object[Sample]]..
 	samplePackets = allDownloadValues[[1]];
 
 	(* -- Generate resources for the SamplesIn -- *)
-	(* Pull out the number of replicates; make sure all Nulls become 1 *)
-	sampleReplicates = Lookup[myResolvedOptions, NumberOfReplicates] /. {Null -> 1};
+	(* Use the Sample-only injection table to determine the position of replicates for expanding samples and options. *)
+	sampleOnlyInjectionTable = Cases[Lookup[myResolvedOptions, InjectionTable], {Sample, ___}];
 
-	(*expand the options based on the number of replicates *)
-	{samplesWithReplicates, expandedOptionsWithReplicates} = expandNumberOfReplicates[ExperimentCapillaryIsoelectricFocusing, Download[mySamples, Object], expandedResolvedOptions];
+	(* Initialize lists to track where the ladder and its replicates are listed in the ladder-only injection table. *)
+	replicatePositionsBySample = {};
+
+	Map[Function[{sample}, Module[{nonZeroVolumePositions, indices},
+		(* Find the non-zero volume position(s) of the sample. *)
+		nonZeroVolumePositions = Flatten@Position[sampleOnlyInjectionTable, {_, ObjectP[sample], GreaterP[0 Microliter]}];
+		(* Remove any indices we've already assigned to earlier ladder and their replicates. *)
+		indices = Cases[nonZeroVolumePositions, Except[Alternatives@@Flatten[replicatePositionsBySample]]];
+
+		(* Return indices for this ladder sample and its replicates: *)
+		AppendTo[replicatePositionsBySample,
+			(* If there are more than 1 non-zero ladder samples in the list, we limit replicates with an upper bound of the next non-zero ladder sample *)
+			If[Length[indices] > 1,
+				Cases[Flatten@Position[sampleOnlyInjectionTable, {_, ObjectP[sample], _}], RangeP[indices[[1]], indices[[2]] - 1]],
+				(* Otherwise all the zero-volume ladder samples listed after this index replicates. *)
+				Cases[Flatten@Position[sampleOnlyInjectionTable, {_, ObjectP[sample], _}], GreaterEqualP[indices[[1]]]]
+			]
+		]
+	]],
+		originalSampleObjects
+	];
+
+	(* Expand the options based on the number and location of the replicates. *)
+	{samplesWithReplicates, expandedOptionsWithReplicates} = expandNumberOfReplicates[
+		ExperimentCapillaryIsoelectricFocusing,
+		(* Samples and their replicate positions in the sample-only injection table. *)
+		Transpose[{originalSampleObjects, replicatePositionsBySample}],
+		expandedResolvedOptions
+	];
 
 	(* Replicates are injected NumberOfReplicates times, but do not need additional resources (except NumberOfUses for the cartridge), we need to set their reagent volumes to 0 microliter so no additional resources are used *)
-	optionsWithVolume = {SampleVolume, TotalVolume, PremadeMasterMixVolume, AmpholyteVolume, IsoelectricPointMarkersVolume, ElectroosmoticFlowBlockerVolume,
-		DenaturationReagentVolume, AnodicSpacerVolume, CathodicSpacerVolume};
+	optionsWithVolume = <|
+		Sample -> {SampleVolume, TotalVolume, PremadeMasterMixVolume, AmpholyteVolume, IsoelectricPointMarkersVolume, ElectroosmoticFlowBlockerVolume, DenaturationReagentVolume, AnodicSpacerVolume, CathodicSpacerVolume},
+		Standard -> {StandardVolume, StandardTotalVolume, StandardPremadeMasterMixVolume, StandardAmpholyteVolume, StandardIsoelectricPointMarkersVolume, StandardElectroosmoticFlowBlockerVolume, StandardDenaturationReagentVolume, StandardAnodicSpacerVolume, StandardCathodicSpacerVolume},
+		Blank -> {BlankVolume, BlankTotalVolume, BlankPremadeMasterMixVolume, BlankAmpholyteVolume, BlankIsoelectricPointMarkersVolume, BlankElectroosmoticFlowBlockerVolume, BlankDenaturationReagentVolume, BlankAnodicSpacerVolume, BlankCathodicSpacerVolume}
+	|>;
 
-	(* Build rules for replacing values in expanded options (this isn't very elegant, but it works..) *)
-	(* need to check if Aliquot-> True, in which case, don't change anything..  *)
-	replaceVolumesForReplicates =
-		Rule[
-			#,
-			(* we use TakeList to make sure the list structure is kept if we have nested lists *)
-			If[Depth[Lookup[expandedOptionsWithReplicates, #]]<4,
-				(* if not nested, go ahead and flatten *)
-				Flatten[MapThread[
-						(* replace values that are not the first replicate for each object in samplesIn with 0 Microliter. *)
-						(* NOTE: this will only work when replicates are expanded in the following fashion {1,2,...} -> {1,1,1,2,2,2,...} *)
-						Function[{values, aliquotBool},
-							If[And@@aliquotBool,
-								(* if Aliquot->True, don't change things *)
-								values,
-								(* if Aliquot->False, change volumes to 0Microliter, this is a technical replicate *)
-								{First[values], Rest[values] /. VolumeP -> 0 Microliter}]],
-							{Partition[Lookup[expandedOptionsWithReplicates, #], sampleReplicates], Partition[Lookup[expandedOptionsWithReplicates, Aliquot], sampleReplicates]}
-				]],
-				(* if nested, go ahead and flatten but remember you want to unflatten right after *)
-				TakeList[
-					Flatten[MapThread[
-						(* replace values that are not the first replicate for each object in samplesIn with 0 Microliter. *)
-						(* NOTE: this will only work when replicates are expanded in the following fashion {1,2,...} -> {1,1,1,2,2,2,...} *)
-						Function[{values, aliquotBool},
-							If[And@@aliquotBool,
-								(* if Aliquot->True, don't change things *)
-								values,
-								(* if Aliquot->False, change volumes to 0Microliter, this is a technical replicate *)
-								{First[values], Rest[values] /. VolumeP -> 0 Microliter}]],
-						{Partition[Lookup[expandedOptionsWithReplicates, #], sampleReplicates], Partition[Lookup[expandedOptionsWithReplicates, Aliquot], sampleReplicates]}
-					]],
-					Length/@Lookup[expandedOptionsWithReplicates, #]
+	(* Build rules for replacing values in expanded options *)
+	replaceVolumesForReplicates = Function[{optionKey},
+		optionKey -> MapThread[
+			(* replace values that are not the first replicate for each object in samplesIn with 0 Microliter. *)
+			(* NOTE: this will only work when replicates are expanded in the following fashion {1,2,...} -> {1,1,1,2,2,2,...} *)
+			Function[{value, aliquotBool, index},
+				(* If Aliquot is False, this is not the first index corresponding to this sample in the replicate-expanded options, and the value is a volume.. *)
+				If[!aliquotBool && MemberQ[nonFirstReplicateSampleIndex, index] && MatchQ[value, VolumeP],
+					(* .. overwrite the volume with 0 Microliters. *)
+					0 Microliter,
+					(* Otherwise leave the option unchanged. *)
+					value
 				]
-			]
-			(* We map this over all relevant options *)
-		]& /@ optionsWithVolume;
+			],
+			(* MapThread over: *)
+			{Lookup[expandedOptionsWithReplicates, optionKey], Lookup[expandedOptionsWithReplicates, Aliquot], Range[Length[samplesWithReplicates]]}
+		]
+		(* Map over: *)
+	] /@ Lookup[optionsWithVolume, Sample];
 
 	(* Now we can replace the volumes in the expandedOptionsWithReplicates to reflect true volume requirements *)
 	optionsWithReplicates = ToList @ Join[Association[expandedOptionsWithReplicates], Association[replaceVolumesForReplicates]];
@@ -13072,30 +13136,118 @@ capillaryIsoelectricFocusingResourcePackets[mySamples:{ObjectP[Object[Sample]]..
 		includeBlanks
 	} = Lookup[myResolvedOptions, {Standards, IncludeStandards,	Blanks, IncludeBlanks},Null];
 
-	(* Get number of replicates for each type of sample and convert expressions to an integer number of replicates *)
-	numberOfReplicatesRules = {Null:> 1, First:>1, Last:>1, FirstAndLast:>2, frequency_Integer:>Floor[Length[samplesWithReplicates]/frequency]};
+	If[includeStandards,
+		(* Filter the injection table to be just standards. *)
+		standardOnlyInjectionTable = Cases[Lookup[myResolvedOptions, InjectionTable], {Standard, ___}];
 
-	standardsReplicates = If[includeStandards, First@Lookup[myResolvedOptions, StandardFrequency, Null] /. numberOfReplicatesRules];
-	blanksReplicates = If[includeBlanks, First@Lookup[myResolvedOptions, BlankFrequency, Null] /. numberOfReplicatesRules];
+		(* Initialize lists to track where the standard and its replicates are listed in the standard-only injection table. *)
+		standardReplicatePositionsBySample = {};
+
+		Map[Function[{standard}, Module[{nonZeroVolumePositions, indices},
+			(* Find the non-zero volume position(s) of the standard. *)
+			nonZeroVolumePositions = Flatten@Position[standardOnlyInjectionTable, {_, ObjectP[standard], GreaterP[0 Microliter]}];
+			(* Remove any indices we've already assigned to earlier standards and their replicates. *)
+			indices = Cases[nonZeroVolumePositions, Except[Alternatives@@Flatten[standardReplicatePositionsBySample]]];
+
+			(* Return indices for this standard sample and its replicates: *)
+			AppendTo[standardReplicatePositionsBySample,
+				(* If there are more than 1 non-zero standard samples in the list, we limit replicates with an upper bound of the next non-zero standard sample *)
+				If[Length[indices] > 1,
+					Cases[Flatten@Position[standardOnlyInjectionTable, {_, ObjectP[standard], _}], RangeP[indices[[1]], indices[[2]] - 1]],
+					(* Otherwise all the zero-volume standard samples listed after this index replicates. *)
+					Cases[Flatten@Position[standardOnlyInjectionTable, {_, ObjectP[standard], _}], GreaterEqualP[indices[[1]]]]
+				]
+			]
+		]],
+			standards
+		];
+
+		(* For options related to preparing the sample, we may need to replace their options later. Determine those potential indexes here. *)
+		nonFirstReplicateStandardSampleIndex = Flatten[Rest /@ standardReplicatePositionsBySample]
+	];
+
+	If[includeBlanks,
+		(* Filter the injection table to be just blanks. *)
+		blankOnlyInjectionTable = Cases[Lookup[myResolvedOptions, InjectionTable], {Blank, ___}];
+
+		(* Initialize lists to track where the blank and its replicates are listed in the blank-only injection table. *)
+		blankReplicatePositionsBySample = {};
+
+		Map[Function[{blank}, Module[{nonZeroVolumePositions, indices},
+		(* Find the non-zero volume position(s) of the blank. *)
+			nonZeroVolumePositions = Flatten@Position[blankOnlyInjectionTable, {_, ObjectP[blank], GreaterP[0 Microliter]}];
+			(* Remove any indices we've already assigned to earlier blanks and their replicates. *)
+			indices = Cases[nonZeroVolumePositions, Except[Alternatives@@Flatten[blankReplicatePositionsBySample]]];
+
+			(* Return indices for this blank sample and its replicates: *)
+			AppendTo[blankReplicatePositionsBySample,
+				(* If there are more than 1 non-zero blank samples in the list, we limit replicates with an upper bound of the next non-zero blank sample *)
+				If[Length[indices] > 1,
+					Cases[Flatten@Position[blankOnlyInjectionTable, {_, ObjectP[blank], _}], RangeP[indices[[1]], indices[[2]] - 1]],
+					(* Otherwise all the zero-volume blank samples listed after this index replicates. *)
+					Cases[Flatten@Position[blankOnlyInjectionTable, {_, ObjectP[blank], _}], GreaterEqualP[indices[[1]]]]
+				]
+			]
+		]],
+			blanks
+		];
+
+		(* For options related to preparing the sample, we may need to replace their options later. Determine those potential indexes here. *)
+		nonFirstReplicateBlankSampleIndex = Flatten[Rest /@ blankReplicatePositionsBySample]
+	];
 
 	(* expand each of blanks/standards *)
 	{standardsWithReplicates, standardOptionsWithReplicates} = If[includeStandards,
-		expandNumberOfReplicatesIndexMatchingParent[Download[standards, Object], standardOptions, standardsReplicates],
-		{{},{}}];
+		expandNumberOfReplicatesIndexMatchingParent[
+			Transpose[{Download[standards, Object], standardReplicatePositionsBySample}],
+			standardOptions
+		],
+		{{},{}}
+	];
+
 	{blanksWithReplicates, blankOptionsWithReplicates} = If[includeBlanks,
-		expandNumberOfReplicatesIndexMatchingParent[Download[blanks, Object], blankOptions,blanksReplicates],
-		{{},{}}];
+		expandNumberOfReplicatesIndexMatchingParent[
+			Transpose[{Download[blanks, Object], blankReplicatePositionsBySample}],
+			blankOptions
+		],
+		{{},{}}
+	];
+
+	replaceVolumesForAccessoryReplicates = Flatten[MapThread[Function[{type, replicates, optionSubset, indicies},
+		Function[{optionKey},
+			optionKey -> MapThread[
+				(* replace values that are not the first replicate for each object in ladders, standards, or blanks with 0 Microliter. *)
+				Function[{value, index},
+					(* If this is not the first index corresponding to this sample in the replicate-expanded options, and the value is a volume.. *)
+					If[MemberQ[indicies, index] && MatchQ[value, VolumeP],
+						(* .. overwrite the volume with 0 Microliters. *)
+						0 Microliter,
+						(* Otherwise leave the option unchanged. *)
+						value
+					]
+				],
+				(* MapThread over: *)
+				{Lookup[optionSubset, optionKey], Range[Length[replicates]]}
+			]
+			(* Map over: *)
+		] /@ Lookup[optionsWithVolume, type]
+	],
+		Transpose[{
+			If[includeStandards, {Standard, standardsWithReplicates, standardOptionsWithReplicates, nonFirstReplicateStandardSampleIndex}, Nothing],
+			If[includeBlanks, {Blank, blanksWithReplicates, blankOptionsWithReplicates, nonFirstReplicateBlankSampleIndex}, Nothing]
+		}]
+	]];
 
 	(* Make resource rules and specify them for each standard or blank replicate *)
 	(* make a list of replacement rules for standards*)
-	standardResourceRules = sampleResourceRules[standardsWithReplicates, Lookup[standardOptionsWithReplicates, StandardVolume, {}], includeStandards];
+	standardResourceRules = sampleResourceRules[standardsWithReplicates, Lookup[replaceVolumesForAccessoryReplicates, StandardVolume, {}], includeStandards];
 	(* if we're including any standards, replace objects with resources. if not, nothing to do here and return an empty list *)
 	standardResources = If[includeStandards,
 		Replace[standardsWithReplicates, standardResourceRules, {1}],
 		{}];
 
 	(* make a list of replacement rules for blanks*)
-	blankResourceRules = sampleResourceRules[blanksWithReplicates, Lookup[blankOptionsWithReplicates, BlankVolume, {}], includeBlanks];
+	blankResourceRules = sampleResourceRules[blanksWithReplicates, Lookup[replaceVolumesForAccessoryReplicates, BlankVolume, {}], includeBlanks];
 	(* if we're including any blanks, replace objects with resources. if not, nothing to do here and return an empty list *)
 	blankResources = If[includeBlanks,
 		Replace[blanksWithReplicates, blankResourceRules, {1}],
@@ -13146,7 +13298,11 @@ capillaryIsoelectricFocusingResourcePackets[mySamples:{ObjectP[Object[Sample]]..
 		optionsWithReplicatesAssociation,
 		standardOptionsWithReplicatesAssociation,
 		blankOptionsWithReplicatesAssociation
-	} = Association[#]& /@ {optionsWithReplicates,standardOptionsWithReplicates,blankOptionsWithReplicates};
+	} = Association[#]&/@{
+		optionsWithReplicates,
+		ToList @ Join[Association[standardOptionsWithReplicates], Association[replaceVolumesForAccessoryReplicates]],
+		ToList @ Join[Association[blankOptionsWithReplicates], Association[replaceVolumesForAccessoryReplicates]]
+	};
 
 	(* below are a couple of functions to help streamline making resources *)
 	(* to make adding the prefix to fields easier *)
@@ -13565,7 +13721,7 @@ capillaryIsoelectricFocusingResourcePackets[mySamples:{ObjectP[Object[Sample]]..
 		Cartridge -> Link[cartridgeResource],
 		RunTime->runTime,
 		Replace[InjectionTable] -> injectionTableToUpload,
-		NumberOfReplicates -> sampleReplicates,
+		NumberOfReplicates -> Lookup[myResolvedOptions, NumberOfReplicates],
 		SampleTemperature -> Lookup[myResolvedOptions, SampleTemperature]/. Ambient :> $AmbientTemperature,
 
 		(* instrument setup *)

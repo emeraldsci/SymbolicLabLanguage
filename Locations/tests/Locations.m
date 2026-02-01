@@ -2065,7 +2065,7 @@ DefineTests[
 						Replace[CoverFootprints] -> {Lid1WellDish, LidSBSUniversal, SealSBS},
 						CrossSectionalShape -> Rectangle,
 						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-						DepthMargin -> Quantity[1.7, "Millimeters"],
+						DepthMargin -> Quantity[5, "Millimeters"],
 						Dimensions -> {Quantity[0.1272, "Meters"], Quantity[0.085, "Meters"],Quantity[0.014, "Meters"]},
 						Expires -> False,
 						Footprint -> Plate,

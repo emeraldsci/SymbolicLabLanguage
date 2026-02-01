@@ -404,11 +404,23 @@ DefineTests[
 			}
 		],
 		Example[{Options, AliquotAmount, "The amount of each sample that should be transferred from the SamplesIn into the AliquotSamples which should be used in lieu of the SamplesIn for the experiment:"},
-			options = ExperimentCentrifuge[Object[Sample, "10 mL sample in 50 mL tube for ExperimentCentrifuge testing (1)" <> $SessionUUID], AliquotAmount -> 0.08 * Milliliter, Output -> Options];
+			options = ExperimentCentrifuge[Object[Sample, "10 mL sample in 50 mL tube for ExperimentCentrifuge testing (1)" <> $SessionUUID], AliquotAmount -> 0.08 Milliliter, Output -> Options];
 			Lookup[options, AliquotAmount],
-			0.08 * Milliliter,
+			0.08 Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options},
+			Stubs :> {
+				$PersonID = Object[User, "Test user for notebook-less test protocols"],
+				$EmailEnabled = False
+			}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentCentrifuge[Object[Sample, "10 mL sample in 50 mL tube for ExperimentCentrifuge testing (1)" <> $SessionUUID], AliquotAmount -> 0.08101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			0.081 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision},
 			Stubs :> {
 				$PersonID = Object[User, "Test user for notebook-less test protocols"],
 				$EmailEnabled = False
@@ -1488,16 +1500,56 @@ DefineTests[
 			Messages :> {Error::NoTransferContainerFound, Error::InvalidInput}
 		],
 
-
-		Example[{Messages, "CentrifugePrecision", "Gives a warning and rounds the rate option if the rate is more precise than the achievable precision of the specified centrifuge:"},
-			Download[ExperimentCentrifuge[
-				{Object[Sample, "Sample oligo, 1mL, 15 mL container for ExperimentCentrifuge testing" <> $SessionUUID]},
-				Intensity -> Quantity[544, ("Revolutions") / ("Minutes")]
+		Example[{Messages, "CentrifugePrecision", "Gives a warning and rounds the rate option if the rate in RPM is more precise than the achievable precision of the specified manual centrifuge:"},
+			Download[
+				ExperimentCentrifuge[
+					{Object[Sample, "Sample oligo, 1mL, 15 mL container for ExperimentCentrifuge testing" <> $SessionUUID]},
+					Intensity -> 544 RPM
+				],
+				OutputUnitOperations[Intensity]
 			],
-				OutputUnitOperations[Intensity]],
-			{{Quantity[540, ("Revolutions") / ("Minutes")]}},
+			{{540 RPM}},
 			Messages :> {Warning::CentrifugePrecision},
 			EquivalenceFunction -> Equal
+		],
+		Example[{Messages, "CentrifugePrecision", "Gives a warning and rounds the rate option if the rate in RCF is more precise than the achievable precision of the specified manual centrifuge:"},
+			protocol = ExperimentCentrifuge[
+				{Object[Sample, "Sample oligo, 1mL, 15 mL container for ExperimentCentrifuge testing" <> $SessionUUID]},
+				Intensity -> 1500 GravitationalAcceleration
+			];
+			centrifugeUOOutput = FirstCase[Download[protocol, OutputUnitOperations], ObjectP[Object[UnitOperation, Centrifuge]]];
+			centrifugeUOInput = FirstCase[Download[protocol, InputUnitOperations], ObjectP[Object[UnitOperation, Centrifuge]]];
+			Download[{centrifugeUOInput, centrifugeUOOutput}, Intensity],
+			{{1500 GravitationalAcceleration}, {2540 RPM}},
+			Messages :> {Warning::CentrifugePrecision},
+			EquivalenceFunction -> Equal,
+			Variables :> {protocol, centrifugeUOInput, centrifugeUOOutput}
+		],
+		Example[{Messages, "CentrifugePrecision", "Gives a warning and rounds the rate option if the rate is more precise than the achievable precision of the specified robotic centrifuge:"},
+			protocol = ExperimentCentrifuge[
+				{Object[Container, Plate, "96-well plate with 3 1mL samples for ExperimentCentrifuge testing (1)" <> $SessionUUID]},
+				Intensity -> 200.123 GravitationalAcceleration,
+				Preparation -> Robotic
+			];
+			centrifugeUO = FirstCase[Download[protocol, OutputUnitOperations], ObjectP[Object[UnitOperation, Centrifuge]]];
+			Download[centrifugeUO, Intensity],
+			{EqualP[200.1 GravitationalAcceleration]..},
+			Messages :> {Warning::CentrifugePrecision},
+			Variables :> {protocol, centrifugeUO}
+		],
+		Example[{Messages, "CentrifugePrecision", "Gives a warning and rounds the rate option if the rate in RPM is more precise than the achievable precision of the specified robotic centrifuge:"},
+			protocol = ExperimentCentrifuge[
+				{Object[Container, Plate, "96-well plate with 3 1mL samples for ExperimentCentrifuge testing (1)" <> $SessionUUID]},
+				Intensity -> 2000 RPM,
+				Rotor -> Model[Container, CentrifugeRotor, "id:xRO9n3vk11k5"],
+				Preparation -> Robotic
+			];
+			centrifugeUOOutput = FirstCase[Download[protocol, OutputUnitOperations], ObjectP[Object[UnitOperation, Centrifuge]]];
+			centrifugeUOInput = FirstCase[Download[protocol, InputUnitOperations], ObjectP[Object[UnitOperation, Centrifuge]]];
+			Download[{centrifugeUOInput, centrifugeUOOutput}, Intensity],
+			{{2000 RPM..}, {EqualP[492 GravitationalAcceleration]..}},
+			Messages :> {Warning::CentrifugePrecision},
+			Variables :> {protocol, centrifugeUOInput, centrifugeUOOutput}
 		],
 
 		Example[{Messages, "SampleStowaways", "If there are non-input samples in the same containers as any input samples, samples will be transferred to exclude non-input samples:"},
@@ -1629,7 +1681,7 @@ DefineTests[
 					Instrument -> Model[Instrument, Centrifuge, "Avanti J-15R"]
 				],
 				OutputUnitOperations[Intensity]],
-			{{Quantity[967.04, "StandardAccelerationOfGravity"]}}
+			{{2040 RPM}}
 		],
 
 		Example[{Messages, "ConflictingOptionsWithinContainer", "If samples in the same container are requested to be centrifuged with different time, temperature, instrument, or intensity, the samples will be transferred to different containers:"},
@@ -1794,7 +1846,7 @@ DefineTests[
 
 		Test["Makes the expected resources:",
 			Module[{protocol, requiredResources, centrifugeResources, groupedCentrifuges, centrifugeMatch, sampleResources,
-				sampleMatch, bucketResources, bucketMatch, balanceResource, balanceMatch, rackResources, rackMatch},
+				sampleMatch, bucketResources, bucketMatch, balanceResource, balanceMatch, rackResources, rackMatch, handlingStationResource, handlingStationMatch},
 				protocol = ExperimentCentrifuge[{
 					Object[Container, Plate, "96-well plate with 3 1mL samples for ExperimentCentrifuge testing (1)" <> $SessionUUID],
 					Object[Container, Plate, "96-well plate with 9 1mL samples for ExperimentCentrifuge testing" <> $SessionUUID],
@@ -1885,13 +1937,17 @@ DefineTests[
 				balanceResource = Cases[requiredResources, {LinkP[], Balance, ___}];
 				balanceMatch = MatchQ[balanceResource, {{LinkP[Object[Resource, Instrument]], Balance, Null, Null}}];
 
+				(* Expect one handling station resource *)
+				handlingStationResource = Cases[requiredResources, {LinkP[], HandlingEnvironment, ___}];
+				handlingStationMatch = MatchQ[handlingStationResource, {{LinkP[Object[Resource, Instrument]], HandlingEnvironment, Null, Null}}];
+
 				(* Expect 2 rack resources *)
 				rackResources = Cases[requiredResources, {LinkP[], TareRacks, ___}];
 				rackMatch = MatchQ[rackResources, {{LinkP[Object[Resource, Sample]], TareRacks, 1, Null}}];
 
-				{centrifugeMatch, sampleMatch, bucketMatch, balanceMatch, rackMatch}
+				{centrifugeMatch, sampleMatch, bucketMatch, balanceMatch, handlingStationMatch, rackMatch}
 			],
-			{True, True, True, True, True},
+			{True, True, True, True, True, True},
 			(* This test is pretty slow locally, but oh my *)
 			TimeConstraint -> 50000
 		],
@@ -2196,7 +2252,7 @@ DefineTests[
 			];
 			Equal[
 				Download[protocol, {WeightStabilityDuration, MaxWeightVariation}],
-				{60 Second, 0.02 Gram}
+				{$DefaultWeightStabilityDuration, 0.02 Gram}
 			],
 			True,
 			Variables :> {protocol}

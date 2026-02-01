@@ -1590,7 +1590,7 @@ uncoverResourcePackets[
 			uniqueEnvironmentResources=(#->Which[
 				(* special treatment for fumehood, we do not really care which model to use for uncovering if we are really going to use a fumehood, so just allow all models *)
 				MatchQ[#, ObjectP[Model[Instrument, HandlingStation, FumeHood, "id:1ZA60vzEmYv0"]]],
-					With[{currentFumeHoodModels= UnsortedComplement[Cases[transferModelsSearch["Memoization"][[23]], ObjectP[Model[Instrument, HandlingStation, FumeHood]]], $SpecializedHandlingStationModels]},
+					With[{currentFumeHoodModels= commonFumeHoodHandlingStationModels["Memoization"]},
 						Resource[Instrument -> currentFumeHoodModels]
 					],
 				MatchQ[#, ObjectP[{Model[Container], Object[Container]}]],
@@ -2080,7 +2080,7 @@ calculateCoverEnvironment[objectSamplePackets_,containerRepeatedContainers_,opti
 
 	(* BSC is required for crimping (right now). *)
 	MatchQ[Lookup[options, Instrument], ObjectP[{Model[Instrument, Crimper], Object[Instrument, Crimper]}]],
-		Model[Instrument, HandlingStation, BiosafetyCabinet, "id:AEqRl9xveX7p"], (*Biosafety Cabinet Handling Station for Tissue Culture*)
+		Model[Instrument, HandlingStation, BiosafetyCabinet, "id:XnlV5jNYpXYP"], (*Transfer Biosafety Hood 1 Handling Station*)
 
 	(* Is our container already in a suitable environment (and not SterileTechnique or crimping)? *)
 	And[

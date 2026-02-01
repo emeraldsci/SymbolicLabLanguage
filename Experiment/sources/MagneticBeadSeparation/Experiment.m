@@ -6959,70 +6959,72 @@ generateWashStagePrimitivesInResourcePacket[
 	expAssayContainerLabels:ListableP[Alternatives[_String,Null],3],
 	expAssayWells:ListableP[Alternatives[_String,Null],3],
 	expMagnetizationRacks:ListableP[ObjectP[],3],
-  expUnresolvedMagnetizationRacks:ListableP[Alternatives[ObjectP[],Automatic,Null],3],
-	stageBufferLabels:ListableP[Alternatives[_String,Null],3]
+ 	expUnresolvedMagnetizationRacks:ListableP[Alternatives[ObjectP[],Automatic,Null],3],
+	stageBufferLabels:ListableP[Alternatives[_String,Null],3],
+	stageCollectionStorageConditions : ListableP[Alternatives[SampleStorageTypeP, Disposal, Null], 3]
 ]:=MapThread[
 	Function[
 		{
 			stageBoolsBatch,stageBufferVolumesBatch,stageMagnetizationTimesBatch,stageAspirationVolumesBatch,stageAspirationPositionsBatch,stageAspirationPositionOffsetsBatch,numberOfStagesBatch,
-			stageAirDriesBatch,stageAirDryTimesBatch,stageMixesBatch,stageMixTypesBatch,stageMixTimesBatch,stageMixRatesBatch,numberOfStageMixesBatch,stageMixVolumesBatch,stageMixTemperaturesBatch, stageMixTipTypesBatch, stageMixTipMaterialsBatch,stageDestinationWellsBatch,stageCollectionContainerLabelsBatch,assayContainerLabelsBatch,assayWellsBatch,magnetizationRacksBatch,unresolvedMagnetizationRacksBatch,stageBufferLabelsBatch
+			stageAirDriesBatch,stageAirDryTimesBatch,stageMixesBatch,stageMixTypesBatch,stageMixTimesBatch,stageMixRatesBatch,numberOfStageMixesBatch,stageMixVolumesBatch,stageMixTemperaturesBatch, stageMixTipTypesBatch, stageMixTipMaterialsBatch,stageDestinationWellsBatch,stageCollectionContainerLabelsBatch,assayContainerLabelsBatch,assayWellsBatch,magnetizationRacksBatch,unresolvedMagnetizationRacksBatch,stageBufferLabelsBatch, stageCollectionStorageConditionsBatch
 		},
 		Module[{maxNumStages,numberOfStagesBatchBools,mixingBools,transferAndMixPrimitives,waitPrimitive},
 			(* Get the max number of times we are PreWashing in this batch *)
 			maxNumStages=Max[DeleteCases[numberOfStagesBatch,Null],{0}];
 
 			(* Table that number of prewashes *)
-			transferAndMixPrimitives=Table[
+			transferAndMixPrimitives = Table[
 
 				(* See what samples we use this round *)
-				numberOfStagesBatchBools=(LessEqualQ[i,#])&/@numberOfStagesBatch;
-				mixingBools=MapThread[(LessEqualQ[i,#1]&&TrueQ[#2])&,{numberOfStagesBatch,stageMixesBatch}];
+				numberOfStagesBatchBools = (LessEqualQ[i, #])& /@ numberOfStagesBatch;
+				mixingBools = MapThread[(LessEqualQ[i, #1] && TrueQ[#2])&, {numberOfStagesBatch, stageMixesBatch}];
 
-				If[Or@@numberOfStagesBatchBools,
+				If[Or @@ numberOfStagesBatchBools,
 					{
 						(* Transfer preWashBuffer into assay container *)
 						Transfer[
-							Source->PickList[stageBufferLabelsBatch,numberOfStagesBatchBools][[All,i]],
-							Destination->Transpose[{PickList[assayWellsBatch,numberOfStagesBatchBools],PickList[assayContainerLabelsBatch,numberOfStagesBatchBools]}],
-							Amount->PickList[stageBufferVolumesBatch,numberOfStagesBatchBools],
-							MultichannelTransfer->False
+							Source -> PickList[stageBufferLabelsBatch, numberOfStagesBatchBools][[All, i]],
+							Destination -> Transpose[{PickList[assayWellsBatch, numberOfStagesBatchBools], PickList[assayContainerLabelsBatch, numberOfStagesBatchBools]}],
+							Amount -> PickList[stageBufferVolumesBatch, numberOfStagesBatchBools],
+							MultichannelTransfer -> False
 						],
 						(* Mix if necessary. Only choosing the samples that we are using this round and that we mix *)
-						If[Or@@mixingBools,
+						If[Or @@ mixingBools,
 							Mix[
-								Sample->Transpose[{PickList[assayWellsBatch,numberOfStagesBatchBools],PickList[assayContainerLabelsBatch,numberOfStagesBatchBools]}],
-								MixType->PickList[stageMixTypesBatch,mixingBools],
-								Time->PickList[stageMixTimesBatch,mixingBools],
-								MixRate->PickList[stageMixRatesBatch,mixingBools],
-								NumberOfMixes->PickList[numberOfStageMixesBatch,mixingBools],
-								MixVolume->PickList[stageMixVolumesBatch,mixingBools],
-                MixFlowRate->Replace[PickList[stageMixTypesBatch,mixingBools],{Except[Pipette]->Null,Pipette->500 Microliter/Second},2],(*give it a higher default than in Mix which is only 100 Microliter/Second*)
-                MixPosition -> Replace[PickList[stageMixTypesBatch,mixingBools],{Except[Pipette]->Null,Pipette->Bottom},2],(*give it a default other than in Mix which is LiquidLevel*)
-                MixPositionOffset-> Replace[PickList[stageMixTypesBatch,mixingBools],{Except[Pipette]->Null,Pipette->1 Millimeter},2],(*give it a smaller default other than in Mix which is 2mm*)
-								Temperature->PickList[stageMixTemperaturesBatch,mixingBools],
-								TipType->PickList[stageMixTipTypesBatch,mixingBools],
-								TipMaterial->PickList[stageMixTipMaterialsBatch,mixingBools]
+								Sample -> Transpose[{PickList[assayWellsBatch, numberOfStagesBatchBools], PickList[assayContainerLabelsBatch, numberOfStagesBatchBools]}],
+								MixType -> PickList[stageMixTypesBatch, mixingBools],
+								Time -> PickList[stageMixTimesBatch, mixingBools],
+								MixRate -> PickList[stageMixRatesBatch, mixingBools],
+								NumberOfMixes -> PickList[numberOfStageMixesBatch, mixingBools],
+								MixVolume -> PickList[stageMixVolumesBatch, mixingBools],
+								MixFlowRate -> Replace[PickList[stageMixTypesBatch, mixingBools], {Except[Pipette] -> Null, Pipette -> 500 Microliter / Second}, 2], (*give it a higher default than in Mix which is only 100 Microliter/Second*)
+								MixPosition -> Replace[PickList[stageMixTypesBatch, mixingBools], {Except[Pipette] -> Null, Pipette -> Bottom}, 2], (*give it a default other than in Mix which is LiquidLevel*)
+								MixPositionOffset -> Replace[PickList[stageMixTypesBatch, mixingBools], {Except[Pipette] -> Null, Pipette -> 1 Millimeter}, 2], (*give it a smaller default other than in Mix which is 2mm*)
+								Temperature -> PickList[stageMixTemperaturesBatch, mixingBools],
+								TipType -> PickList[stageMixTipTypesBatch, mixingBools],
+								TipMaterial -> PickList[stageMixTipMaterialsBatch, mixingBools]
 							],
 							Nothing
 						],
 						(* Move to the magnet then transfer to collection container *)
 						Transfer[
-							Source->Transpose[{PickList[assayWellsBatch,numberOfStagesBatchBools],PickList[assayContainerLabelsBatch,numberOfStagesBatchBools]}],
-							Destination->Transpose[{PickList[stageDestinationWellsBatch,numberOfStagesBatchBools][[All,i]],PickList[stageCollectionContainerLabelsBatch,numberOfStagesBatchBools][[All,i]]}],
-							Amount->PickList[stageAspirationVolumesBatch,numberOfStagesBatchBools],
-							Magnetization->True,
-							MagnetizationTime->PickList[stageMagnetizationTimesBatch,numberOfStagesBatchBools],
-							MagnetizationRack->PickList[magnetizationRacksBatch,numberOfStagesBatchBools],
-              UnresolvedMagnetizationRackFromParentProtocol -> PickList[unresolvedMagnetizationRacksBatch,numberOfStagesBatchBools],
-							AspirationPosition->PickList[stageAspirationPositionsBatch,numberOfStagesBatchBools],
-              AspirationPositionOffset->PickList[stageAspirationPositionOffsetsBatch,numberOfStagesBatchBools],
-              AspirationMix -> False,
-							MultichannelTransfer->False
+							Source -> Transpose[{PickList[assayWellsBatch, numberOfStagesBatchBools], PickList[assayContainerLabelsBatch, numberOfStagesBatchBools]}],
+							Destination -> Transpose[{PickList[stageDestinationWellsBatch, numberOfStagesBatchBools][[All, i]], PickList[stageCollectionContainerLabelsBatch, numberOfStagesBatchBools][[All, i]]}],
+							Amount -> PickList[stageAspirationVolumesBatch, numberOfStagesBatchBools],
+							Magnetization -> True,
+							MagnetizationTime -> PickList[stageMagnetizationTimesBatch, numberOfStagesBatchBools],
+							MagnetizationRack -> PickList[magnetizationRacksBatch, numberOfStagesBatchBools],
+							UnresolvedMagnetizationRackFromParentProtocol -> PickList[unresolvedMagnetizationRacksBatch, numberOfStagesBatchBools],
+							AspirationPosition -> PickList[stageAspirationPositionsBatch, numberOfStagesBatchBools],
+							AspirationPositionOffset -> PickList[stageAspirationPositionOffsetsBatch, numberOfStagesBatchBools],
+							AspirationMix -> False,
+							MultichannelTransfer -> False,
+							SamplesOutStorageCondition -> PickList[stageCollectionStorageConditionsBatch, numberOfStagesBatchBools]
 						]
 					},
 					Nothing
 				],
-				{i,1,maxNumStages}
+				{i, 1, maxNumStages}
 			];
 
 			(* If a sample in this batch is set to air dry, air dry the batch *)
@@ -7036,7 +7038,7 @@ generateWashStagePrimitivesInResourcePacket[
 		]
 	],
 	{
-		stageBools, stageBufferVolumes, stageMagnetizationTimes, stageAspirationVolumes,stageAspirationPositions,stageAspirationPositionOffsets, numberOfStages, stageAirDries, stageAirDryTimes, stageMixes, stageMixTypes, stageMixTimes, stageMixRates, numberOfStageMixes, stageMixVolumes, stageMixTemperatures, stageMixTipTypes, stageMixTipMaterials, stageDestinationWells, stageCollectionContainerLabels, expAssayContainerLabels, expAssayWells, expMagnetizationRacks, expUnresolvedMagnetizationRacks,stageBufferLabels
+		stageBools, stageBufferVolumes, stageMagnetizationTimes, stageAspirationVolumes,stageAspirationPositions,stageAspirationPositionOffsets, numberOfStages, stageAirDries, stageAirDryTimes, stageMixes, stageMixTypes, stageMixTimes, stageMixRates, numberOfStageMixes, stageMixVolumes, stageMixTemperatures, stageMixTipTypes, stageMixTipMaterials, stageDestinationWells, stageCollectionContainerLabels, expAssayContainerLabels, expAssayWells, expMagnetizationRacks, expUnresolvedMagnetizationRacks,stageBufferLabels, stageCollectionStorageConditions
 	}
 ];
 
@@ -9380,7 +9382,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 	invalidContainerOutLabelLengthErrors,mismatchedContainerOutLabelErrors,
 
 		(* MapThread resolved options *)
-		resolvedVolumes,resolvedMagnetizationRacks,unresolvedMagnetizationRacks,resolvedTargets,resolvedAnalyteAffinityLabels,resolvedMagneticBeadAffinityLabels,resolvedMagneticBeads,objectAndOptionToMixOptionLookup,
+		resolvedVolumes, sanitizedResolvedVolumes, resolvedMagnetizationRacks,unresolvedMagnetizationRacks,resolvedTargets,resolvedAnalyteAffinityLabels,resolvedMagneticBeadAffinityLabels,resolvedMagneticBeads,objectAndOptionToMixOptionLookup,
 
 		resolvedPreWashes,resolvedPreWashBuffers,resolvedPreWashBufferVolumes,resolvedPreWashMixTimes,resolvedPreWashMixTemperatures,resolvedPreWashMixes,resolvedPreWashMixTypes,resolvedPreWashMixRates,
 		resolvedPreWashMixVolumes,resolvedNumberOfPreWashMixes,resolvedPreWashMagnetizationTimes,resolvedPreWashAspirationVolumes,resolvedPreWashCollectionContainers,
@@ -9839,7 +9841,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 	allMagneticBeadIdentityModels=Search[Model[Resin],Magnetic==True];
 
 	(*Pull out user specified storage condition objects Model[StorageCondition]*)
-	storageConditionsNoLink=Download[Cases[Flatten[{preWashCollectionStorageConditions,equilibrationCollectionStorageConditions,loadingCollectionStorageConditions, washCollectionStorageConditions,secondaryWashCollectionStorageConditions,tertiaryWashCollectionStorageConditions,quaternaryWashCollectionStorageConditions,quinaryWashCollectionStorageConditions,senaryWashCollectionStorageConditions,septenaryWashCollectionStorageConditions,elutionCollectionStorageConditions}],ObjectP[]],Object];
+	storageConditionsNoLink=Download[Cases[Flatten[{preWashCollectionStorageConditions,equilibrationCollectionStorageConditions,loadingCollectionStorageConditions, washCollectionStorageConditions,secondaryWashCollectionStorageConditions,tertiaryWashCollectionStorageConditions,quaternaryWashCollectionStorageConditions,quinaryWashCollectionStorageConditions,senaryWashCollectionStorageConditions,septenaryWashCollectionStorageConditions,elutionCollectionStorageConditions, magneticBeadCollectionStorageConditions}],ObjectP[]],Object];
 	storageConditionModels=Cases[storageConditionsNoLink,ObjectP[Model[StorageCondition]]];
 
 	(*Get all the packets and fields we need to download*)
@@ -10406,31 +10408,45 @@ resolveExperimentMagneticBeadSeparationOptions[
 	];
 
 	(* Resolve Volume *)
-	resolvedVolumes=MapThread[
-		Function[{sample,specifiedVolume},
-
-			(* If volume is specifed by the user, keep it *)
-			If[MatchQ[specifiedVolume,Except[Automatic]],
-				specifiedVolume,
-
-				(* Otherwise choose minimum based on resolved preparation *)
-				If[MatchQ[resolvedPreparation,Manual],
-					Min[fastAssocLookup[combinedFastAssoc,sample,Volume],25. Milliliter],
-					Min[fastAssocLookup[combinedFastAssoc,sample,Volume],1. Milliliter]
-				]
+	(* If there is All specified, sanitizedResolvedVolumes turn it into actual volume to feed the mapthread, but do still return the specified All*)
+	{resolvedVolumes, sanitizedResolvedVolumes} = Transpose@MapThread[
+		Function[{sample, specifiedVolume},
+			Module[{sampleVolume, resolvedVolume, sanitizedVolume},
+				(* Pull the volume of the sample. Always round down as we cannot pull more than the sample has. *)
+				sampleVolume = SafeRound[
+					fastAssocLookup[combinedFastAssoc, sample, Volume],
+					10^-1 Microliter,
+					Round->Down
+				];
+				resolvedVolume = Which[
+					MatchQ[specifiedVolume, Except[Automatic]],
+						(* If volume is specifed by the user, keep it *)
+						specifiedVolume,
+					(* Choose a min based on preparation *)
+					MatchQ[resolvedPreparation, Manual],
+						Min[sampleVolume, 25. Milliliter],
+					True,
+						Min[sampleVolume, 1. Milliliter]
+				];
+				sanitizedVolume = If[MatchQ[resolvedVolume, All],
+					sampleVolume,
+					resolvedVolume
+				];
+				(* return *)
+				{resolvedVolume, sanitizedVolume}
 			]
 		],
-		{flatSamples,Flatten@volumes}
+		{flatSamples, Flatten@volumes}
 	];
 
 	(*Resolve MagneticBeadVolume*)
 	resolvedMagneticBeadVolumes=If[MatchQ[magneticBeadVolumes,{Automatic..}],
-		SafeRound[(Max/@resolvedVolumes)/10., 10^-1 Microliter],
+		SafeRound[(Max/@sanitizedResolvedVolumes)/10., 10^-1 Microliter],
 		magneticBeadVolumes
 	];
 
 	(*Update roundedMBSOptions with the resolved independent option values*)
-	updatedRoundedMBSOptions=<|ReplaceRule[Normal[roundedMBSOptions,Association],{Volume->resolvedVolumes,MagneticBeadVolume->resolvedMagneticBeadVolumes,Preparation->resolvedPreparation}]|>;
+	updatedRoundedMBSOptions=<|ReplaceRule[Normal[roundedMBSOptions,Association],{Volume->sanitizedResolvedVolumes,MagneticBeadVolume->resolvedMagneticBeadVolumes,Preparation->resolvedPreparation}]|>;
 
 	(*---Resolve MapThread options---*)
 	(*Convert our options into a MapThread friendly version*)
@@ -19305,7 +19321,7 @@ experimentMagneticBeadSeparationResourcePackets[
 		nestedSamplesWithReplicates,resolvedOptionsWithReplicates,flatSamplesWithReplicates,prependReplicateNumber,
 
 		preparation,volumes,magneticBeads,magneticBeadVolumes,magnetizationRacks,unresolvedMagnetizationRacks,sampleLabels,separationMode,selectionStrategy,analyteAffinityLabels,targets,
-		sampleContainerLabels,assayContainers,parentProtocol,sampleOutLabels,containerOutLabels, magneticBeadAffinityLabels,numberOfReplicates,
+		sampleContainerLabels,assayContainers,parentProtocol,sampleOutLabels,containerOutLabels, magneticBeadAffinityLabels,numberOfReplicates, magneticBeadCollectionStorageConditions, storageConditionModels, storageConditionModelToSymbolLookup,
 
 		(* Get needed options *)
 		preWashes,preWashBuffers,preWashBufferVolumes,preWashMagnetizationTimes,preWashAspirationVolumes,numberOfPreWashes,
@@ -19419,7 +19435,7 @@ experimentMagneticBeadSeparationResourcePackets[
 	(*Look up the resolved option values we need*)
 	{
 		preparation,volumes,magneticBeads,magneticBeadVolumes,magnetizationRacks,unresolvedMagnetizationRacks,separationMode,selectionStrategy,analyteAffinityLabels,targets,
-		sampleLabels,sampleContainerLabels,assayContainers,parentProtocol,sampleOutLabels,containerOutLabels, magneticBeadAffinityLabels,numberOfReplicates,
+		sampleLabels,sampleContainerLabels,assayContainers,parentProtocol,sampleOutLabels,containerOutLabels, magneticBeadAffinityLabels,numberOfReplicates, magneticBeadCollectionStorageConditions,
 
 		preWashes,preWashBuffers,preWashBufferVolumes,preWashMagnetizationTimes,preWashAspirationVolumes,numberOfPreWashes,
 		preWashAirDries,preWashAirDryTimes,preWashMixes,preWashMixTypes,preWashMixTimes,preWashMixRates,numberOfPreWashMixes,
@@ -19474,7 +19490,7 @@ experimentMagneticBeadSeparationResourcePackets[
 		}=Lookup[resolvedOptionsWithReplicates,
 		{
 			Preparation, Volume, MagneticBeads, MagneticBeadVolume, MagnetizationRack, UnresolvedMagnetizationRack, SeparationMode, SelectionStrategy, AnalyteAffinityLabel, Target,
-			SampleLabel, SampleContainerLabel, AssayContainer, ParentProtocol, SampleOutLabel, ContainerOutLabel, MagneticBeadAffinityLabel,NumberOfReplicates,
+			SampleLabel, SampleContainerLabel, AssayContainer, ParentProtocol, SampleOutLabel, ContainerOutLabel, MagneticBeadAffinityLabel,NumberOfReplicates, MagneticBeadCollectionStorageCondition,
 
 			PreWash, PreWashBuffer, PreWashBufferVolume, PreWashMagnetizationTime, PreWashAspirationVolume, NumberOfPreWashes,
 			PreWashAirDry, PreWashAirDryTime, PreWashMix, PreWashMixType, PreWashMixTime, PreWashMixRate, NumberOfPreWashMixes,
@@ -20442,9 +20458,10 @@ experimentMagneticBeadSeparationResourcePackets[
 		],
 		Module[
 			{
-				newLabelSampleUO, oldResourceToNewResourceRules, magneticBeadSourceVolumeLookup,bufferLabelLookup,preWashBufferLabels,equilibrationBufferLabels,washBufferLabels,elutionBufferLabels,
+				sanitizedVolumes, newLabelSampleUO, oldResourceToNewResourceRules, magneticBeadSourceVolumeLookup,bufferLabelLookup,preWashBufferLabels,equilibrationBufferLabels,washBufferLabels,elutionBufferLabels,
 				magneticBeadLabelLookup,magneticBeadLabels,labelPrimitives,magneticBeadPrimitives,
 				preWashPrimitives,equilibrationPrimitives,loadingPrimitives,washPrimitives,elutionPrimitives,
+				duplicateFreeBeadsLabelSampleTuples, magneticBeadStorageUpdatePrimitive, usedBeadSampleLabels,
 				secondaryWashBufferLabels,secondaryWashPrimitives,
 				tertiaryWashBufferLabels,tertiaryWashPrimitives,
 				quaternaryWashBufferLabels,quaternaryWashPrimitives,
@@ -20457,6 +20474,25 @@ experimentMagneticBeadSeparationResourcePackets[
 				roboticUnitOperationPacketsCorrectedResources
 			},
 
+			(* All is not acceptable by many helpers that expect a real volume. Sanitize in case we have All as volume *)
+			sanitizedVolumes = MapThread[
+				Function[{volumeBatch, sampleBatch},
+					MapThread[
+						Function[{volume,sample},
+							If[MatchQ[volume, All],
+								SafeRound[
+									fastAssocLookup[inheritedFastAssoc, sample, Volume],
+									10^-1 Microliter,
+									Round->Down
+								],
+								volume
+							]
+						],
+						{volumeBatch, sampleBatch}
+					]
+				],
+				{volumes, myNestedSamples}
+			];
 
 			(* === Generate all of the primitives we need. === *)
 
@@ -20672,7 +20708,8 @@ experimentMagneticBeadSeparationResourcePackets[
 					flattenedSamples=Flatten@Join[{nestedSamplesWithReplicates, magneticBeadsInfo[[All,1]], bufferInfo[[All,1]]}];
 					flattenedLabels=Flatten@Join[{sampleLabels, magneticBeadsInfo[[All,2]], bufferInfo[[All,2]]}];
 					flattenedContainerLabels=Flatten@Join[{sampleContainerLabels,magneticBeadsInfo[[All,4]],bufferInfo[[All,4]]}];
-					flattenedAmounts=Flatten@Join[{volumes,magneticBeadsInfo[[All,3]],bufferInfo[[All,3]]}];
+					(* All is not a thing for LabelSample. It essentially means label the whole sample.*)
+					flattenedAmounts=Flatten@Join[{sanitizedVolumes,magneticBeadsInfo[[All,3]],bufferInfo[[All,3]]}];
 
 					(* Link everything together *)
 					connectedTuples=Transpose[{flattenedSamples,flattenedLabels,flattenedContainerLabels,flattenedAmounts}];
@@ -20737,6 +20774,28 @@ experimentMagneticBeadSeparationResourcePackets[
 			(* Do a mapthread for each stage (and the magnetic beads) over the batches to generate the primitives *)
 			(* They will threaded together correctly at the end *)
 
+			(* The storage condition can be set to Model[StorageCondition] in MBS but Transfer only takes symbols. Need to create a lookup for potential translation. *)
+
+			(*Pull out user specified storage condition objects Model[StorageCondition]*)
+			storageConditionModels = Download[Cases[Flatten[{
+				preWashCollectionStorageConditions,
+				equilibrationCollectionStorageConditions,
+				loadingCollectionStorageConditions,
+				washCollectionStorageConditions,
+				secondaryWashCollectionStorageConditions,
+				tertiaryWashCollectionStorageConditions,
+				quaternaryWashCollectionStorageConditions,
+				quinaryWashCollectionStorageConditions,
+				senaryWashCollectionStorageConditions,
+				septenaryWashCollectionStorageConditions,
+				elutionCollectionStorageConditions
+			}], ObjectP[Model[StorageCondition]]], Object];
+
+			storageConditionModelToSymbolLookup = Map[
+				# -> fastAssocLookup[inheritedFastAssoc, #, StorageCondition]&,
+				storageConditionModels
+			];
+
 			(* --- Magnetic Beads --- *)
 			magneticBeadPrimitives=MapThread[
 				Function[
@@ -20760,7 +20819,7 @@ experimentMagneticBeadSeparationResourcePackets[
 			];
 
 			(* --- PreWash --- *)
-			preWashPrimitives=generateWashStagePrimitivesInResourcePacket[preWashes,preWashBufferVolumes,preWashMagnetizationTimes,preWashAspirationVolumes,preWashAspirationPositions, preWashAspirationPositionOffsets,numberOfPreWashes, preWashAirDries,preWashAirDryTimes,preWashMixes,preWashMixTypes,preWashMixTimes,preWashMixRates,numberOfPreWashMixes, preWashMixVolumes,preWashMixTemperatures, preWashMixTipTypes,preWashMixTipMaterials,preWashDestinationWells,preWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,preWashBufferLabels];
+			preWashPrimitives=generateWashStagePrimitivesInResourcePacket[preWashes,preWashBufferVolumes,preWashMagnetizationTimes,preWashAspirationVolumes,preWashAspirationPositions, preWashAspirationPositionOffsets,numberOfPreWashes, preWashAirDries,preWashAirDryTimes,preWashMixes,preWashMixTypes,preWashMixTimes,preWashMixRates,numberOfPreWashMixes, preWashMixVolumes,preWashMixTemperatures, preWashMixTipTypes,preWashMixTipMaterials,preWashDestinationWells,preWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,preWashBufferLabels, preWashCollectionStorageConditions/.storageConditionModelToSymbolLookup];
 
 			(* --- Equilibration --- *)
 			equilibrationPrimitives=MapThread[
@@ -20791,40 +20850,41 @@ experimentMagneticBeadSeparationResourcePackets[
 								MultichannelTransfer->False
 							],
 							(* Mix if necessary. Only choosing the samples that we are using this round and that we mix *)
-							If[Or@@mixingBools,
+							If[Or @@ mixingBools,
 								Mix[
-									Sample->Transpose[{PickList[assayWellsBatch,mixingBools],PickList[assayContainerLabelsBatch,mixingBools]}],
-									MixType->PickList[equilibrationMixTypesBatch,mixingBools],
-									Time->PickList[equilibrationMixTimesBatch,mixingBools],
-									MixRate->PickList[equilibrationMixRatesBatch,mixingBools],
-									NumberOfMixes->PickList[numberOfEquilibrationMixesBatch,mixingBools],
-									MixVolume->PickList[equilibrationMixVolumesBatch,mixingBools],
-                  MixFlowRate->Replace[PickList[equilibrationMixTypesBatch,mixingBools],{Except[Pipette]->Null,Pipette->500 Microliter/Second},2],(*give it a higher default than in Mix which is only 100 Microliter/Second*)
-                  MixPosition -> Replace[PickList[equilibrationMixTypesBatch,mixingBools],{Except[Pipette]->Null,Pipette->Bottom},2],(*give it a default other than in Mix which is LiquidLevel*)
-                  MixPositionOffset-> Replace[PickList[equilibrationMixTypesBatch,mixingBools],{Except[Pipette]->Null,Pipette->1 Millimeter},2],(*give it a smaller default other than in Mix which is 2mm*)
-									Temperature->PickList[equilibrationMixTemperaturesBatch,mixingBools],
-									TipType->PickList[equilibrationMixTipTypesBatch,mixingBools],
-									TipMaterial->PickList[equilibrationMixTipMaterialsBatch,mixingBools]
+									Sample -> Transpose[{PickList[assayWellsBatch, mixingBools], PickList[assayContainerLabelsBatch, mixingBools]}],
+									MixType -> PickList[equilibrationMixTypesBatch, mixingBools],
+									Time -> PickList[equilibrationMixTimesBatch, mixingBools],
+									MixRate -> PickList[equilibrationMixRatesBatch, mixingBools],
+									NumberOfMixes -> PickList[numberOfEquilibrationMixesBatch, mixingBools],
+									MixVolume -> PickList[equilibrationMixVolumesBatch, mixingBools],
+									MixFlowRate -> Replace[PickList[equilibrationMixTypesBatch, mixingBools], {Except[Pipette] -> Null, Pipette -> 500 Microliter / Second}, 2], (*give it a higher default than in Mix which is only 100 Microliter/Second*)
+									MixPosition -> Replace[PickList[equilibrationMixTypesBatch, mixingBools], {Except[Pipette] -> Null, Pipette -> Bottom}, 2], (*give it a default other than in Mix which is LiquidLevel*)
+									MixPositionOffset -> Replace[PickList[equilibrationMixTypesBatch, mixingBools], {Except[Pipette] -> Null, Pipette -> 1 Millimeter}, 2], (*give it a smaller default other than in Mix which is 2mm*)
+									Temperature -> PickList[equilibrationMixTemperaturesBatch, mixingBools],
+									TipType -> PickList[equilibrationMixTipTypesBatch, mixingBools],
+									TipMaterial -> PickList[equilibrationMixTipMaterialsBatch, mixingBools]
 								],
 								Nothing
 							],
 							(* Move to the magnet then transfer to collection container *)
 							Transfer[
-								Source->Transpose[{PickList[assayWellsBatch,equilibrationsBatch],PickList[assayContainerLabelsBatch,equilibrationsBatch]}],
-								Destination->Transpose[{PickList[equilibrationDestinationWellsBatch,equilibrationsBatch][[All,1]],PickList[equilibrationCollectionContainerLabelsBatch,equilibrationsBatch][[All,1]]}],
-								Amount->PickList[equilibrationAspirationVolumesBatch,equilibrationsBatch],
-								Magnetization->True,
-								MagnetizationTime->PickList[equilibrationMagnetizationTimesBatch,equilibrationsBatch],
-								MagnetizationRack->PickList[magnetizationRacksBatch, equilibrationsBatch],
-								UnresolvedMagnetizationRackFromParentProtocol -> PickList[unresolvedMagnetizationRacksBatch,equilibrationsBatch],
-								AspirationPosition->PickList[equilibrationAspirationPositionsBatch,equilibrationsBatch],
-								AspirationPositionOffset->PickList[equilibrationAspirationPositionOffsetsBatch,equilibrationsBatch],
+								Source -> Transpose[{PickList[assayWellsBatch, equilibrationsBatch], PickList[assayContainerLabelsBatch, equilibrationsBatch]}],
+								Destination -> Transpose[{PickList[equilibrationDestinationWellsBatch, equilibrationsBatch][[All, 1]], PickList[equilibrationCollectionContainerLabelsBatch, equilibrationsBatch][[All, 1]]}],
+								Amount -> PickList[equilibrationAspirationVolumesBatch, equilibrationsBatch],
+								Magnetization -> True,
+								MagnetizationTime -> PickList[equilibrationMagnetizationTimesBatch, equilibrationsBatch],
+								MagnetizationRack -> PickList[magnetizationRacksBatch, equilibrationsBatch],
+								UnresolvedMagnetizationRackFromParentProtocol -> PickList[unresolvedMagnetizationRacksBatch, equilibrationsBatch],
+								AspirationPosition -> PickList[equilibrationAspirationPositionsBatch, equilibrationsBatch],
+								AspirationPositionOffset -> PickList[equilibrationAspirationPositionOffsetsBatch, equilibrationsBatch],
 								AspirationMix -> False,
-								MultichannelTransfer->False
+								MultichannelTransfer -> False,
+								SamplesOutStorageCondition -> PickList[equilibrationCollectionStorageConditionsBatch, equilibrationsBatch]
 							],
 							(* Generate a Wait primitive if we are asked to air dry *)
-							If[Length[PickList[equilibrationAirDryTimesBatch,airDryingBools]]>0,
-								Wait[Duration->Max[PickList[equilibrationAirDryTimesBatch,airDryingBools]]],
+							If[Length[PickList[equilibrationAirDryTimesBatch, airDryingBools]] > 0,
+								Wait[Duration -> Max[PickList[equilibrationAirDryTimesBatch, airDryingBools]]],
 								Nothing
 							]
 						},
@@ -20835,7 +20895,7 @@ experimentMagneticBeadSeparationResourcePackets[
 				{
 					equilibrations,equilibrationBuffers,equilibrationBufferVolumes,equilibrationMagnetizationTimes,equilibrationAspirationVolumes,equilibrationAspirationPositions,equilibrationAspirationPositionOffsets,
 					equilibrationAirDries,equilibrationAirDryTimes,equilibrationMixes,equilibrationMixTypes,equilibrationMixTimes,equilibrationMixRates,numberOfEquilibrationMixes,
-					equilibrationMixVolumes,equilibrationMixTemperatures,equilibrationCollectionContainers,equilibrationCollectionStorageConditions,
+					equilibrationMixVolumes,equilibrationMixTemperatures,equilibrationCollectionContainers,equilibrationCollectionStorageConditions/.storageConditionModelToSymbolLookup,
 					equilibrationMixTipTypes,
 					equilibrationMixTipMaterials,equilibrationDestinationWells,
 					equilibrationCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,equilibrationBufferLabels
@@ -20851,7 +20911,7 @@ experimentMagneticBeadSeparationResourcePackets[
 						loadingMixVolumesBatch,loadingMixTemperaturesBatch,loadingCollectionContainersBatch,loadingCollectionStorageConditionsBatch,
 						loadingMixTipTypesBatch,
 						loadingMixTipMaterialsBatch,loadingDestinationWellsBatch,
-						loadingCollectionContainerLabelsBatch,assayContainerLabelsBatch,assayWellsBatch,magnetizationRacksBatch,unresolvedMagnetizationRacksBatch,sampleLabelsBatch,sampleOutLabelsBatch
+						loadingCollectionContainerLabelsBatch,assayContainerLabelsBatch,assayWellsBatch,magnetizationRacksBatch,unresolvedMagnetizationRacksBatch,sampleLabelsBatch,sampleOutLabelsBatch, elutionsBatch
 					},
 					{
 						(* Transfer loadingBuffer into assay container *)
@@ -20895,7 +20955,8 @@ experimentMagneticBeadSeparationResourcePackets[
 							AspirationPosition->loadingAspirationPositionsBatch,
 							AspirationPositionOffset->loadingAspirationPositionOffsetsBatch,
 							AspirationMix -> False,
-							MultichannelTransfer->False
+							MultichannelTransfer->False,
+							SamplesOutStorageCondition -> loadingCollectionStorageConditionsBatch
 						],
 						(* Generate a Wait primitive if we are asked to air dry *)
 						If[Length[PickList[loadingAirDryTimesBatch,loadingAirDriesBatch]]>0,
@@ -20905,29 +20966,29 @@ experimentMagneticBeadSeparationResourcePackets[
 					}
 				],
 				{
-					volumes,loadingMagnetizationTimes,loadingAspirationVolumes,loadingAspirationPositions,loadingAspirationPositionOffsets,
+					sanitizedVolumes,loadingMagnetizationTimes,loadingAspirationVolumes,loadingAspirationPositions,loadingAspirationPositionOffsets,
 					loadingAirDries,loadingAirDryTimes,loadingMixes,loadingMixTypes,loadingMixTimes,loadingMixRates,numberOfLoadingMixes,
-					loadingMixVolumes,loadingMixTemperatures,loadingCollectionContainers,loadingCollectionStorageConditions,
+					loadingMixVolumes,loadingMixTemperatures,loadingCollectionContainers,loadingCollectionStorageConditions/.storageConditionModelToSymbolLookup,
 					loadingMixTipTypes,
 					loadingMixTipMaterials,loadingDestinationWells,
-					loadingCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,sampleLabels,sampleOutLabels
+					loadingCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,sampleLabels,sampleOutLabels, elutions
 				}
 			];
 
 			(* --- Wash --- *)
-			washPrimitives=generateWashStagePrimitivesInResourcePacket[washes,washBufferVolumes,washMagnetizationTimes,washAspirationVolumes,washAspirationPositions, washAspirationPositionOffsets,numberOfWashes, washAirDries,washAirDryTimes,washMixes,washMixTypes,washMixTimes,washMixRates,numberOfWashMixes, washMixVolumes,washMixTemperatures, washMixTipTypes,washMixTipMaterials,washDestinationWells,washCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,washBufferLabels];
+			washPrimitives=generateWashStagePrimitivesInResourcePacket[washes,washBufferVolumes,washMagnetizationTimes,washAspirationVolumes,washAspirationPositions, washAspirationPositionOffsets,numberOfWashes, washAirDries,washAirDryTimes,washMixes,washMixTypes,washMixTimes,washMixRates,numberOfWashMixes, washMixVolumes,washMixTemperatures, washMixTipTypes,washMixTipMaterials,washDestinationWells,washCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,washBufferLabels, washCollectionStorageConditions/.storageConditionModelToSymbolLookup];
 			(* --- SecondaryWash --- *)
-			secondaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[secondaryWashes,secondaryWashBufferVolumes,secondaryWashMagnetizationTimes,secondaryWashAspirationVolumes,secondaryWashAspirationPositions, secondaryWashAspirationPositionOffsets,numberOfSecondaryWashes, secondaryWashAirDries,secondaryWashAirDryTimes,secondaryWashMixes,secondaryWashMixTypes,secondaryWashMixTimes,secondaryWashMixRates,numberOfSecondaryWashMixes, secondaryWashMixVolumes,secondaryWashMixTemperatures, secondaryWashMixTipTypes,secondaryWashMixTipMaterials,secondaryWashDestinationWells,secondaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,secondaryWashBufferLabels];
+			secondaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[secondaryWashes,secondaryWashBufferVolumes,secondaryWashMagnetizationTimes,secondaryWashAspirationVolumes,secondaryWashAspirationPositions, secondaryWashAspirationPositionOffsets,numberOfSecondaryWashes, secondaryWashAirDries,secondaryWashAirDryTimes,secondaryWashMixes,secondaryWashMixTypes,secondaryWashMixTimes,secondaryWashMixRates,numberOfSecondaryWashMixes, secondaryWashMixVolumes,secondaryWashMixTemperatures, secondaryWashMixTipTypes,secondaryWashMixTipMaterials,secondaryWashDestinationWells,secondaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,secondaryWashBufferLabels, secondaryWashCollectionStorageConditions/.storageConditionModelToSymbolLookup];
 			(* --- TertiaryWash --- *)
-			tertiaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[tertiaryWashes,tertiaryWashBufferVolumes,tertiaryWashMagnetizationTimes,tertiaryWashAspirationVolumes,tertiaryWashAspirationPositions, tertiaryWashAspirationPositionOffsets,numberOfTertiaryWashes, tertiaryWashAirDries,tertiaryWashAirDryTimes,tertiaryWashMixes,tertiaryWashMixTypes,tertiaryWashMixTimes,tertiaryWashMixRates,numberOfTertiaryWashMixes, tertiaryWashMixVolumes,tertiaryWashMixTemperatures, tertiaryWashMixTipTypes,tertiaryWashMixTipMaterials,tertiaryWashDestinationWells,tertiaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,tertiaryWashBufferLabels];
+			tertiaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[tertiaryWashes,tertiaryWashBufferVolumes,tertiaryWashMagnetizationTimes,tertiaryWashAspirationVolumes,tertiaryWashAspirationPositions, tertiaryWashAspirationPositionOffsets,numberOfTertiaryWashes, tertiaryWashAirDries,tertiaryWashAirDryTimes,tertiaryWashMixes,tertiaryWashMixTypes,tertiaryWashMixTimes,tertiaryWashMixRates,numberOfTertiaryWashMixes, tertiaryWashMixVolumes,tertiaryWashMixTemperatures, tertiaryWashMixTipTypes,tertiaryWashMixTipMaterials,tertiaryWashDestinationWells,tertiaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,tertiaryWashBufferLabels, tertiaryWashCollectionStorageConditions/.storageConditionModelToSymbolLookup];
 			(* --- QuaternaryWash --- *)
-			quaternaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[quaternaryWashes,quaternaryWashBufferVolumes,quaternaryWashMagnetizationTimes,quaternaryWashAspirationVolumes,quaternaryWashAspirationPositions, quaternaryWashAspirationPositionOffsets,numberOfQuaternaryWashes, quaternaryWashAirDries,quaternaryWashAirDryTimes,quaternaryWashMixes,quaternaryWashMixTypes,quaternaryWashMixTimes,quaternaryWashMixRates,numberOfQuaternaryWashMixes, quaternaryWashMixVolumes,quaternaryWashMixTemperatures, quaternaryWashMixTipTypes,quaternaryWashMixTipMaterials,quaternaryWashDestinationWells,quaternaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,quaternaryWashBufferLabels];
+			quaternaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[quaternaryWashes,quaternaryWashBufferVolumes,quaternaryWashMagnetizationTimes,quaternaryWashAspirationVolumes,quaternaryWashAspirationPositions, quaternaryWashAspirationPositionOffsets,numberOfQuaternaryWashes, quaternaryWashAirDries,quaternaryWashAirDryTimes,quaternaryWashMixes,quaternaryWashMixTypes,quaternaryWashMixTimes,quaternaryWashMixRates,numberOfQuaternaryWashMixes, quaternaryWashMixVolumes,quaternaryWashMixTemperatures, quaternaryWashMixTipTypes,quaternaryWashMixTipMaterials,quaternaryWashDestinationWells,quaternaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,quaternaryWashBufferLabels, quaternaryWashCollectionStorageConditions/.storageConditionModelToSymbolLookup];
 			(* --- QuinaryWash --- *)
-			quinaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[quinaryWashes,quinaryWashBufferVolumes,quinaryWashMagnetizationTimes,quinaryWashAspirationVolumes,quinaryWashAspirationPositions, quinaryWashAspirationPositionOffsets,numberOfQuinaryWashes, quinaryWashAirDries,quinaryWashAirDryTimes,quinaryWashMixes,quinaryWashMixTypes,quinaryWashMixTimes,quinaryWashMixRates,numberOfQuinaryWashMixes, quinaryWashMixVolumes,quinaryWashMixTemperatures, quinaryWashMixTipTypes,quinaryWashMixTipMaterials,quinaryWashDestinationWells,quinaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,quinaryWashBufferLabels];
+			quinaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[quinaryWashes,quinaryWashBufferVolumes,quinaryWashMagnetizationTimes,quinaryWashAspirationVolumes,quinaryWashAspirationPositions, quinaryWashAspirationPositionOffsets,numberOfQuinaryWashes, quinaryWashAirDries,quinaryWashAirDryTimes,quinaryWashMixes,quinaryWashMixTypes,quinaryWashMixTimes,quinaryWashMixRates,numberOfQuinaryWashMixes, quinaryWashMixVolumes,quinaryWashMixTemperatures, quinaryWashMixTipTypes,quinaryWashMixTipMaterials,quinaryWashDestinationWells,quinaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,quinaryWashBufferLabels, quinaryWashCollectionStorageConditions/.storageConditionModelToSymbolLookup];
 			(* --- SenaryWash --- *)
-			senaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[senaryWashes,senaryWashBufferVolumes,senaryWashMagnetizationTimes,senaryWashAspirationVolumes,senaryWashAspirationPositions, senaryWashAspirationPositionOffsets,numberOfSenaryWashes, senaryWashAirDries,senaryWashAirDryTimes,senaryWashMixes,senaryWashMixTypes,senaryWashMixTimes,senaryWashMixRates,numberOfSenaryWashMixes, senaryWashMixVolumes,senaryWashMixTemperatures, senaryWashMixTipTypes,senaryWashMixTipMaterials,senaryWashDestinationWells,senaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,senaryWashBufferLabels];
+			senaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[senaryWashes,senaryWashBufferVolumes,senaryWashMagnetizationTimes,senaryWashAspirationVolumes,senaryWashAspirationPositions, senaryWashAspirationPositionOffsets,numberOfSenaryWashes, senaryWashAirDries,senaryWashAirDryTimes,senaryWashMixes,senaryWashMixTypes,senaryWashMixTimes,senaryWashMixRates,numberOfSenaryWashMixes, senaryWashMixVolumes,senaryWashMixTemperatures, senaryWashMixTipTypes,senaryWashMixTipMaterials,senaryWashDestinationWells,senaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,senaryWashBufferLabels, senaryWashCollectionStorageConditions/.storageConditionModelToSymbolLookup];
 			(* --- SeptenaryWash --- *)
-			septenaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[septenaryWashes,septenaryWashBufferVolumes,septenaryWashMagnetizationTimes,septenaryWashAspirationVolumes,septenaryWashAspirationPositions, septenaryWashAspirationPositionOffsets,numberOfSeptenaryWashes, septenaryWashAirDries,septenaryWashAirDryTimes,septenaryWashMixes,septenaryWashMixTypes,septenaryWashMixTimes,septenaryWashMixRates,numberOfSeptenaryWashMixes, septenaryWashMixVolumes,septenaryWashMixTemperatures, septenaryWashMixTipTypes,septenaryWashMixTipMaterials,septenaryWashDestinationWells,septenaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,septenaryWashBufferLabels];
+			septenaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[septenaryWashes,septenaryWashBufferVolumes,septenaryWashMagnetizationTimes,septenaryWashAspirationVolumes,septenaryWashAspirationPositions, septenaryWashAspirationPositionOffsets,numberOfSeptenaryWashes, septenaryWashAirDries,septenaryWashAirDryTimes,septenaryWashMixes,septenaryWashMixTypes,septenaryWashMixTimes,septenaryWashMixRates,numberOfSeptenaryWashMixes, septenaryWashMixVolumes,septenaryWashMixTemperatures, septenaryWashMixTipTypes,septenaryWashMixTipMaterials,septenaryWashDestinationWells,septenaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,septenaryWashBufferLabels, septenaryWashCollectionStorageConditions/.storageConditionModelToSymbolLookup];
 
 			(* --- Elution --- *)
 			elutionPrimitives=MapThread[
@@ -20981,21 +21042,22 @@ experimentMagneticBeadSeparationResourcePackets[
 									],
 									(* Move to the magnet then transfer to collection container *)
 									Transfer[
-										Source->Transpose[{PickList[assayWellsBatch,numberOfElutionsBatchBools],PickList[assayContainerLabelsBatch,numberOfElutionsBatchBools]}],
-										Destination->Transpose[{PickList[elutionDestinationWellsBatch,numberOfElutionsBatchBools][[All,i]],PickList[elutionCollectionContainerLabelsBatch,numberOfElutionsBatchBools][[All,i]]}],
-										If[MatchQ[selectionStrategy,Positive],
-											DestinationLabel->PickList[sampleOutLabelsBatch,numberOfElutionsBatchBools][[All,i]],
-											DestinationLabel->Automatic
-										],
-										Amount->PickList[elutionAspirationVolumesBatch,numberOfElutionsBatchBools],
-										Magnetization->True,
-										MagnetizationTime->PickList[elutionMagnetizationTimesBatch,numberOfElutionsBatchBools],
-										MagnetizationRack->PickList[magnetizationRacksBatch,numberOfElutionsBatchBools],
-										UnresolvedMagnetizationRackFromParentProtocol -> PickList[unresolvedMagnetizationRacksBatch,numberOfElutionsBatchBools],
-										AspirationPosition->PickList[elutionAspirationPositionsBatch,numberOfElutionsBatchBools],
-										AspirationPositionOffset->PickList[elutionAspirationPositionOffsetsBatch,numberOfElutionsBatchBools],
-										AspirationMix -> False,
-										MultichannelTransfer->False
+										Sequence @@ {Source -> Transpose[{PickList[assayWellsBatch, numberOfElutionsBatchBools], PickList[assayContainerLabelsBatch, numberOfElutionsBatchBools]}],
+											Destination -> Transpose[{PickList[elutionDestinationWellsBatch, numberOfElutionsBatchBools][[All, i]], PickList[elutionCollectionContainerLabelsBatch, numberOfElutionsBatchBools][[All, i]]}],
+											If[MatchQ[selectionStrategy, Positive],
+												DestinationLabel -> PickList[sampleOutLabelsBatch, numberOfElutionsBatchBools][[All, i]],
+												DestinationLabel -> Automatic
+											],
+											Amount -> PickList[elutionAspirationVolumesBatch, numberOfElutionsBatchBools],
+											Magnetization -> True,
+											MagnetizationTime -> PickList[elutionMagnetizationTimesBatch, numberOfElutionsBatchBools],
+											MagnetizationRack -> PickList[magnetizationRacksBatch, numberOfElutionsBatchBools],
+											UnresolvedMagnetizationRackFromParentProtocol -> PickList[unresolvedMagnetizationRacksBatch, numberOfElutionsBatchBools],
+											AspirationPosition -> PickList[elutionAspirationPositionsBatch, numberOfElutionsBatchBools],
+											AspirationPositionOffset -> PickList[elutionAspirationPositionOffsetsBatch, numberOfElutionsBatchBools],
+											AspirationMix -> False,
+											MultichannelTransfer -> False,
+											SamplesOutStorageCondition -> PickList[elutionCollectionStorageConditionsBatch, numberOfElutionsBatchBools]}
 									]
 								},
 								Nothing
@@ -21007,7 +21069,7 @@ experimentMagneticBeadSeparationResourcePackets[
 				{
 					elutions,elutionBuffers,elutionBufferVolumes,elutionMagnetizationTimes,elutionAspirationVolumes,elutionAspirationPositions, elutionAspirationPositionOffsets,numberOfElutions,
 					elutionMixes,elutionMixTypes,elutionMixTimes,elutionMixRates,numberOfElutionMixes,
-					elutionMixVolumes,elutionMixTemperatures,elutionCollectionContainers,elutionCollectionStorageConditions,
+					elutionMixVolumes,elutionMixTemperatures,elutionCollectionContainers,elutionCollectionStorageConditions/.storageConditionModelToSymbolLookup,
 					elutionMixTipTypes,elutionMixTipMaterials,elutionDestinationWells,
 					elutionCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,elutionBufferLabels,
 					sampleOutLabels
@@ -21045,6 +21107,20 @@ experimentMagneticBeadSeparationResourcePackets[
 				Label-> Flatten@sampleOutLabels
 			];
 
+			(* Use LabelSample primitive to update the StorageCondition of the used beads left in the assay containers *)
+			(* Note that this primitive has to occur after all the transfer primitives are done, otherwise it will cause conflicting storage conditions in compiler. Because it is possible that an assay container is not done at the end of a sample's Loading/Elution collection,i.e. assay container ready for disposal if set so, when there are multiple batches. For example, sample1 is done MBS, and same time sample2&3 starts. *)
+			duplicateFreeBeadsLabelSampleTuples = DeleteDuplicates[Transpose[
+				Flatten/@{assayContainerLabels, assayWells, magneticBeadCollectionStorageConditions}
+			]];
+			(* Make labels for the used beads *)
+			usedBeadSampleLabels = CreateUniqueLabel["MBS used beads"]&/@duplicateFreeBeadsLabelSampleTuples;
+			(* Generate the final LabelSample primitive to update storage condition *)
+			magneticBeadStorageUpdatePrimitive = LabelSample[
+				Sample -> MapThread[{#1, #2}&, {duplicateFreeBeadsLabelSampleTuples[[All,2]], duplicateFreeBeadsLabelSampleTuples[[All,1]]}],
+				Label -> usedBeadSampleLabels,
+				StorageCondition -> duplicateFreeBeadsLabelSampleTuples[[All,3]]
+			];
+
 			(* Thread the primitives together in the correct order *)
 			allPrimitives=Flatten[
 				Join[
@@ -21054,7 +21130,7 @@ experimentMagneticBeadSeparationResourcePackets[
 						Join[#1,#2,#3,#4,#5,#6,#7,#8,#9,#10,#11]&,
 						{preWashPrimitives,equilibrationPrimitives,loadingPrimitives,washPrimitives,secondaryWashPrimitives, tertiaryWashPrimitives, quaternaryWashPrimitives, quinaryWashPrimitives, senaryWashPrimitives, septenaryWashPrimitives,elutionPrimitives}
 					],
-					{sampleOutLabelingPrimitive}
+					{sampleOutLabelingPrimitive, magneticBeadStorageUpdatePrimitive}
 				]
 			];
 
@@ -21139,7 +21215,7 @@ experimentMagneticBeadSeparationResourcePackets[
 				(*===Loading===*)
 				{loadingSamplesToUpdate,loadingSampleLabelsToUpdate,loadingCompositionsToUpdate} = updateSamplesCompositionOfStage[
 					sampleLabels,Loading,
-					loadingDestinationWells, loadingCollectionContainerLabels, workingSampleCompositions,volumes,analyteAffinityLabels,targets,magneticBeadResins,
+					loadingDestinationWells, loadingCollectionContainerLabels, workingSampleCompositions,sanitizedVolumes,analyteAffinityLabels,targets,magneticBeadResins,
 					separationMode,selectionStrategy,
 					(*Downloaded packets*)
 					containerSampleInfoPackets,containerContentsPackets,roboticSimulation
@@ -21269,7 +21345,7 @@ experimentMagneticBeadSeparationResourcePackets[
 							elutionDestinationWells,
 							elutionCollectionContainerLabels,
 							unflattenListHelper[workingSampleCompositions,sampleLabels],
-							volumes,
+							sanitizedVolumes,
 							analyteAffinityLabels,
 							targets,
 							unflattenListHelper[magneticBeadResins,sampleLabels]
@@ -21281,7 +21357,7 @@ experimentMagneticBeadSeparationResourcePackets[
 				(*===PreWash===*)
 				{preWashSamplesToUpdate,preWashSampleLabelsToUpdate,preWashCompositionsToUpdate} = updateSamplesCompositionOfStage[
 					sampleLabels,PreWash,
-					preWashDestinationWells, preWashCollectionContainerLabels, workingSampleCompositions,volumes,analyteAffinityLabels,targets,magneticBeadResins,
+					preWashDestinationWells, preWashCollectionContainerLabels, workingSampleCompositions,sanitizedVolumes,analyteAffinityLabels,targets,magneticBeadResins,
 					separationMode,selectionStrategy,
 					(*Downloaded packets*)
 					containerSampleInfoPackets,containerContentsPackets,roboticSimulation
@@ -21290,7 +21366,7 @@ experimentMagneticBeadSeparationResourcePackets[
 				(*===Equilibration===*)
 				{equilibrationSamplesToUpdate,equilibrationSampleLabelsToUpdate,equilibrationCompositionsToUpdate} = updateSamplesCompositionOfStage[
 					sampleLabels,Equilibration,
-					equilibrationDestinationWells, equilibrationCollectionContainerLabels, workingSampleCompositions,volumes,analyteAffinityLabels,targets,magneticBeadResins,
+					equilibrationDestinationWells, equilibrationCollectionContainerLabels, workingSampleCompositions,sanitizedVolumes,analyteAffinityLabels,targets,magneticBeadResins,
 					separationMode,selectionStrategy,
 					(*Downloaded packets*)
 					containerSampleInfoPackets,containerContentsPackets,roboticSimulation
@@ -21298,7 +21374,7 @@ experimentMagneticBeadSeparationResourcePackets[
 				(*===Wash===*)
 				{washSamplesToUpdate,washSampleLabelsToUpdate,washCompositionsToUpdate} = updateSamplesCompositionOfStage[
 					sampleLabels,Wash,
-					washDestinationWells, washCollectionContainerLabels, workingSampleCompositions,volumes,analyteAffinityLabels,targets,magneticBeadResins,
+					washDestinationWells, washCollectionContainerLabels, workingSampleCompositions,sanitizedVolumes,analyteAffinityLabels,targets,magneticBeadResins,
 					separationMode,selectionStrategy,
 					(*Downloaded packets*)
 					containerSampleInfoPackets,containerContentsPackets,roboticSimulation
@@ -21307,7 +21383,7 @@ experimentMagneticBeadSeparationResourcePackets[
 				(*===SecondaryWash===*)
 				{secondaryWashSamplesToUpdate,secondaryWashSampleLabelsToUpdate,secondaryWashCompositionsToUpdate} = updateSamplesCompositionOfStage[
 					sampleLabels,Wash,
-					secondaryWashDestinationWells, secondaryWashCollectionContainerLabels, workingSampleCompositions,volumes,analyteAffinityLabels,targets,magneticBeadResins,
+					secondaryWashDestinationWells, secondaryWashCollectionContainerLabels, workingSampleCompositions,sanitizedVolumes,analyteAffinityLabels,targets,magneticBeadResins,
 					separationMode,selectionStrategy,
 					(*Downloaded packets*)
 					containerSampleInfoPackets,containerContentsPackets,roboticSimulation
@@ -21316,7 +21392,7 @@ experimentMagneticBeadSeparationResourcePackets[
 				(*===TertiaryWash===*)
 				{tertiaryWashSamplesToUpdate,tertiaryWashSampleLabelsToUpdate,tertiaryWashCompositionsToUpdate} = updateSamplesCompositionOfStage[
 					sampleLabels,Wash,
-					tertiaryWashDestinationWells, tertiaryWashCollectionContainerLabels, workingSampleCompositions,volumes,analyteAffinityLabels,targets,magneticBeadResins,
+					tertiaryWashDestinationWells, tertiaryWashCollectionContainerLabels, workingSampleCompositions,sanitizedVolumes,analyteAffinityLabels,targets,magneticBeadResins,
 					separationMode,selectionStrategy,
 					(*Downloaded packets*)
 					containerSampleInfoPackets,containerContentsPackets,roboticSimulation
@@ -21325,7 +21401,7 @@ experimentMagneticBeadSeparationResourcePackets[
 				(*===QuaternaryWash===*)
 				{quaternaryWashSamplesToUpdate,quaternaryWashSampleLabelsToUpdate,quaternaryWashCompositionsToUpdate} = updateSamplesCompositionOfStage[
 					sampleLabels,Wash,
-					quaternaryWashDestinationWells, quaternaryWashCollectionContainerLabels, workingSampleCompositions,volumes,analyteAffinityLabels,targets,magneticBeadResins,
+					quaternaryWashDestinationWells, quaternaryWashCollectionContainerLabels, workingSampleCompositions,sanitizedVolumes,analyteAffinityLabels,targets,magneticBeadResins,
 					separationMode,selectionStrategy,
 					(*Downloaded packets*)
 					containerSampleInfoPackets,containerContentsPackets,roboticSimulation
@@ -21334,7 +21410,7 @@ experimentMagneticBeadSeparationResourcePackets[
 				(*===QuinaryWash===*)
 				{quinaryWashSamplesToUpdate,quinaryWashSampleLabelsToUpdate,quinaryWashCompositionsToUpdate} = updateSamplesCompositionOfStage[
 					sampleLabels,Wash,
-					quinaryWashDestinationWells, quinaryWashCollectionContainerLabels, workingSampleCompositions,volumes,analyteAffinityLabels,targets,magneticBeadResins,
+					quinaryWashDestinationWells, quinaryWashCollectionContainerLabels, workingSampleCompositions,sanitizedVolumes,analyteAffinityLabels,targets,magneticBeadResins,
 					separationMode,selectionStrategy,
 					(*Downloaded packets*)
 					containerSampleInfoPackets,containerContentsPackets,roboticSimulation
@@ -21343,7 +21419,7 @@ experimentMagneticBeadSeparationResourcePackets[
 				(*===SenaryWash===*)
 				{senaryWashSamplesToUpdate,senaryWashSampleLabelsToUpdate,senaryWashCompositionsToUpdate} = updateSamplesCompositionOfStage[
 					sampleLabels,Wash,
-					senaryWashDestinationWells, senaryWashCollectionContainerLabels, workingSampleCompositions,volumes,analyteAffinityLabels,targets,magneticBeadResins,
+					senaryWashDestinationWells, senaryWashCollectionContainerLabels, workingSampleCompositions,sanitizedVolumes,analyteAffinityLabels,targets,magneticBeadResins,
 					separationMode,selectionStrategy,
 					(*Downloaded packets*)
 					containerSampleInfoPackets,containerContentsPackets,roboticSimulation
@@ -21352,7 +21428,7 @@ experimentMagneticBeadSeparationResourcePackets[
 				(*===SeptenaryWash===*)
 				{septenaryWashSamplesToUpdate,septenaryWashSampleLabelsToUpdate,septenaryWashCompositionsToUpdate} = updateSamplesCompositionOfStage[
 					sampleLabels,Wash,
-					septenaryWashDestinationWells, septenaryWashCollectionContainerLabels, workingSampleCompositions,volumes,analyteAffinityLabels,targets,magneticBeadResins,
+					septenaryWashDestinationWells, septenaryWashCollectionContainerLabels, workingSampleCompositions,sanitizedVolumes,analyteAffinityLabels,targets,magneticBeadResins,
 					separationMode,selectionStrategy,
 					(*Downloaded packets*)
 					containerSampleInfoPackets,containerContentsPackets,roboticSimulation

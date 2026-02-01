@@ -458,7 +458,8 @@ PlotSupportTimeline[specifiedProtocols : (All | ListableP[TypeP[{Object[Protocol
 						Object[Instrument, LiquidHandler],
 						Model == Alternatives @@ {
 							Model[Instrument, LiquidHandler, "id:kEJ9mqaW7xZP"],
-							Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"]
+							Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"],
+							Model[Instrument, LiquidHandler, "id:N80DNjkzez5W"]
 						}
 					],
 					Name

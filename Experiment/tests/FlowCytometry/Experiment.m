@@ -1827,6 +1827,14 @@ DefineTests[
 			1000*RPM,
 			EquivalenceFunction -> Equal
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentFlowCytometry[Object[Sample, "sample 1 in 2mL tube for ExperimentFlowCytometry testing"<> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options, CentrifugeTime, "Set the CentrifugeTime option:"},
 			options = ExperimentFlowCytometry[Object[Sample, "sample 1 in 2mL tube for ExperimentFlowCytometry testing"<> $SessionUUID], CentrifugeTime -> 40*Minute, Output -> Options];
 			Lookup[options, CentrifugeTime],
@@ -1961,6 +1969,14 @@ DefineTests[
 			Lookup[options, AliquotAmount],
 			400 Microliter,
 			EquivalenceFunction -> Equal
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentFlowCytometry[Object[Sample, "sample 1 in 2mL tube for ExperimentFlowCytometry testing"<> $SessionUUID], AliquotAmount -> 400.01 Microliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			400 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "Set the AssayVolume option:"},
 			options = ExperimentFlowCytometry[Object[Sample, "sample 1 in 2mL tube for ExperimentFlowCytometry testing"<> $SessionUUID], AssayVolume -> 400 Microliter, Output -> Options];

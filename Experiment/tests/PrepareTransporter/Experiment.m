@@ -86,8 +86,7 @@ DefineTests[ExperimentPrepareTransporter,
 				Lookup[Download[protocol, ResolvedOptions], Transporter]
 			},
 			{
-				(* 1 more count when heaters are involved because we also need a fume hood *)
-				{ObjectP[Object[Resource, Instrument]], ObjectP[Object[Resource, Instrument]], ObjectP[Object[Resource, Instrument]]},
+				{ObjectP[Object[Resource, Instrument]], ObjectP[Object[Resource, Instrument]]},
 				{ObjectP[Model[Instrument, PortableHeater]], ObjectP[Model[Instrument, PortableCooler]]},
 				{ObjectP[Model[Instrument, PortableHeater]], ObjectP[Model[Instrument, PortableHeater]], ObjectP[Model[Instrument, PortableCooler]], ObjectP[Model[Instrument, PortableHeater]]}
 			},
@@ -104,8 +103,7 @@ DefineTests[ExperimentPrepareTransporter,
 				ParentProtocol -> Object[Protocol, HPLC, "Test protocol 1 for ExperimentPrepareTransporter" <> $SessionUUID]
 			];
 			DeleteDuplicates[Cases[Download[protocol, RequiredResources[[All,1]][Object]], ObjectP[Object[Resource, Instrument]]]],
-			(* 1 more count when heaters are involved because we also need a fume hood *)
-			{ObjectP[Object[Resource, Instrument]], ObjectP[Object[Resource, Instrument]]},
+			{ObjectP[Object[Resource, Instrument]]},
 			Variables :> {protocol}
 		],
 		Example[{Additional, "When multiple identical Model[Container] are supplied as input, it will be interpreted as having multiple instances of the same kind of container:"},
@@ -119,8 +117,7 @@ DefineTests[ExperimentPrepareTransporter,
 				ParentProtocol -> Object[Protocol, HPLC, "Test protocol 1 for ExperimentPrepareTransporter" <> $SessionUUID]
 			];
 			DeleteDuplicates[Cases[Download[protocol, RequiredResources[[All,1]][Object]], ObjectP[Object[Resource, Instrument]]]],
-			(* 1 more count when heaters are involved because we also need a fume hood *)
-			{ObjectP[Object[Resource, Instrument]], ObjectP[Object[Resource, Instrument]], ObjectP[Object[Resource, Instrument]], ObjectP[Object[Resource, Instrument]]},
+			{ObjectP[Object[Resource, Instrument]], ObjectP[Object[Resource, Instrument]], ObjectP[Object[Resource, Instrument]]},
 			Variables :> {protocol}
 		],
 		Example[{Options, Upload, "Function output packet instead of object if Upload -> False:"},

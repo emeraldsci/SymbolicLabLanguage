@@ -121,15 +121,15 @@ DefineOptions[ExperimentCapillaryGelElectrophoresisSDS,
 			Category->"Hidden"
 		},
 		{
-			OptionName->NumberOfReplicates,
-			Default->Null,
-			Description->"The number of times each sample will be injected. For example, when NumberOfReplicates is set to 2, each sample will be run twice consecutively. By default, this option means technical replicates that are injected from the same position on the assay plate. Unless different aliquot containers are used for the replicates with ConsolidateAliquots->False, the replicates will be injected from different aliquots of the sample.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Number,
-				Pattern:>GreaterEqualP[2,1]
+			OptionName -> NumberOfReplicates,
+			Default -> Automatic,
+			Description -> "The number of times each sample will be injected. By default, this option means technical replicates that are injected from the same position on the assay plate.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Number,
+				Pattern :> GreaterEqualP[1,1]
 			],
-			Category->"General"
+			Category -> "General"
 		},
 		(* Instrument Preparation Options *)
 		{
@@ -2437,8 +2437,9 @@ DefineOptions[ExperimentCapillaryGelElectrophoresisSDS,
 Error::IncompatibleCartridge="The specified experiment cartridge `1` is not compatible with CapillaryGelElectrophoresis. Set Cartridge to an Object or Model that's ExperimentType is CESDS.";
 Error::DiscardedCartridge="The specified cartridge `1` for CapillaryGelElectrophoresis experiment has been discarded. Please choose another Cartridge object or model.";
 Error::InjectionTableMismatch="The specified injection table is different from the specified SamplesIn, Ladders, Standards, and/or Blanks. The following objects differ (present in either the InjectionTable or inputs, but not both): `1`. Please make sure that all samples, ladders, standards, and blanks in the injection table are also specified in SamplesIn, Standards, and Blanks, or set to Automatic for the InjectionTable to be resolved based of the inputs.";
+Error::InjectionTableNumberOfReplicatesConflict="The specified NumberOfReplicates conflicts with the NumberOfReplicates in the injection table.";
 Error::InjectionTableReplicatesSpecified="Both an injection table and number of replicates were specified. Please specify either InjectionTable or NumberOfReplicates, but not both.";
-Error::InjectionTableVolumeZero="An entry in the injection table `1` has been specified with a 0 Microliter volume. Please use the NumberOfReplicates option to set repeated injections.";
+Error::InjectionTableVolumeZero="An entry in the InjectionTable `1` has been specified with a 0 Microliter Volume indicating it as a replicate of an earlier sample. However, the InjectionTable contains no earlier injection of the sample with a volume greater than 0 Microliter. Please revise the InjectionTable or allow it to resolve automatically with the NumberOfReplicates option.";
 Error::TooManyInjectionsCapillaryGelElectrophoresis="The number of injections specified for samples, ladders, standards, and blanks (`1`) exceeds the number of injections possible for each batch (48). Please consider splitting this protocol to multiple protocols.";
 Error::NotEnoughUsesLeftOnCartridge="This protocol requires more injections than the cartridge `1` has left (`2` injections). Please consider splitting this protocol or using another cartridge.";
 Warning::NotEnoughOptimalUsesLeftOnCartridge="This protocol requires more injections than the cartridge `1` has left for optimal conditions (`2` injections). Please consider splitting this protocol or using another cartridge.";
@@ -3066,7 +3067,7 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 		discardedLadders,discardedLadderTest,discardedSamplePackets,discardedTest,email,engineQ,enoughLaddersForUniqueOptionSetsQ,enoughLaddersForUniqueOptionSetsTest,
 		expandedBlanksOptions,expandedLaddersOptions,expandedStandardsOptions,fastTrack,gatherTests,hamiltonCompatibleContainers,includeBlankOptionBool,includeLadderOptionBool,
 		includeStandardOptionBool,incompatibleCartridgeInvalidOption,incompatibleCartridgeTest,inheritedCache,injectionPrecisionTests,injectionTableContainsAllQ,injectionTableValidQ,
-		injectionTableVolumeZeroInvalidOption,injectionTableVolumeZeroInvalidTest,injectionTableWithReplicatesInvalidOption,injectionTableWithReplicatesInvalidTest,
+		injectionTableVolumeZeroInvalidOption,injectionTableVolumeZeroInvalidTest,
 		instrumentModelPacket,internalReferenceDilutionFactorNullErrors,internalReferenceDilutionFactorNullInvalidOptions,internalReferenceDilutionFactorNullInvalidSamples,
 		internalReferenceDilutionFactorNullOptions,internalReferenceDilutionFactorNullTests,internalReferenceNullErrors,internalReferenceNullInvalidOptions,
 		internalReferenceNullNullInvalidSamples,internalReferenceNullOptions,internalReferenceNullTests,internalReferenceVolumeDilutionFactorMismatchInvalidOptions,
@@ -3177,8 +3178,8 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 		roundedInjectionTableBlankVolumes,injectionTableBlankVolumes,lengthCorrectedInjectionTableLadderVolumes,lengthCorrectedInjectionTableStandardVolumes,
 		lengthCorrectedInjectionTableBlankVolumes,injectionTableSamplesNotCompatibleQ,injectionTableLaddersNotCompatibleQ,
 		injectionTableStandardNotCompatibleQ,injectionTableBlankNotCompatibleQ,incubationOptions,includeIncubationOptionBool,
-		resolvedIncludeIncubation,simulation,volumeZeroInjectionTableBool,
-		resolvedSampleLabel,resolvedSampleContainerLabel
+		resolvedIncludeIncubation,simulation,volumeZeroInjectionTableBool, numberOfReplicatesFromInjectionTable, resolvedNumberOfReplicates,
+		resolvedSampleLabel,resolvedSampleContainerLabel, injectionTableNumberOfReplicatesConflictOptions, injectionTableNumberOfReplicatesConflictTest
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -3523,33 +3524,28 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 	(* before resolving anything, we need to see if the user specified an injection table, and if they did, grab volumes to pass to the mapthread  *)
 	specifiedInjectionTable=Lookup[roundedCapillaryGelElectrophoresisSDSOptions,InjectionTable];
 
-	(* check if both Injection table AND NumberOfReplicates were specified. if they were, error out *)
 	(* grab number of replicates *)
 	specifiedNumberOfReplicates=Lookup[roundedCapillaryGelElectrophoresisSDSOptions,NumberOfReplicates];
 
-	(* raise error if both an injection table and NumberOfReplicates were specified *)
-	injectionTableWithReplicatesInvalidOption=If[MatchQ[specifiedInjectionTable,Except[Automatic]]&&MatchQ[specifiedNumberOfReplicates,Except[Null]]&&messages,
-		(
-			Message[Error::InjectionTableReplicatesSpecified];
-			{InjectionTable, NumberOfReplicates}
-		),
-		{}
-	];
-
-	(* If we need to gather tests, generate the tests for injection table and replicates check *)
-	injectionTableWithReplicatesInvalidTest=If[gatherTests,
-		Test["Only one of the InjectionTable and NumberOfReplicates options is specified:",
-			MatchQ[specifiedInjectionTable,Except[Automatic]]&&MatchQ[specifiedNumberOfReplicates,Except[Null]],
-			False
-		],
-		Nothing
-	];
-
 	(* see if any of the specified volumes is zero *)
 	volumeZeroInjectionTableBool = If[MatchQ[specifiedInjectionTable,Except[Automatic]],
-		#==0Microliter& /@ specifiedInjectionTable[[All,3]],
+		Module[{uniqueEntries},
+			uniqueEntries = DeleteDuplicates[Download[specifiedInjectionTable[[All, 2]], Object]];
+			Map[MatchQ[
+				FirstCase[specifiedInjectionTable, {_, ObjectP[#], _}][[3]],
+				EqualP[0 Microliter]
+			]&,
+				(* Map over: *)
+				uniqueEntries
+			]
+		],
 		{False}
 	];
+
+	(* TODO: Check that there is no conflict between IncludeStandards and StandardOptions and InjectionTable, (same for blanks, ladders)*)
+	(* TODO: Check that there is no conflict between specified Samples/Standards/Blanks/Ladders and InjectionTable. *)
+	(* TODO: Check that there are no conflicts between the length of options for and prepared vials. *)
+	(* TODO: Are models that appear in the InjectionTable (accepted by Standards/Blanks/Ladders) always unique vials for each entry or should it be the same vial. *)
 
 	(* Injection table with volume zero *)
 	injectionTableVolumeZeroInvalidOption=If[Or@@volumeZeroInjectionTableBool&&messages,
@@ -3562,15 +3558,17 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 
 	(* If we need to gather tests, generate the tests for injection table and replicates check *)
 	injectionTableVolumeZeroInvalidTest=If[gatherTests,
-		Test["None of the volumes specified in InjectionTable is 0 Microliter:",
+		Test["The first volumes specified in InjectionTable for any sample, blank, standard, or ladder is not 0 Microliter:",
 			Or@@volumeZeroInjectionTableBool,
 			False
 		],
 		Nothing
 	];
 
+
+
 	(* to make sure we don't use an invalid injection table later, keep this boolean *)
-	injectionTableValidQ = !(MatchQ[specifiedInjectionTable,Except[Automatic]]&&MatchQ[specifiedNumberOfReplicates,Except[Null]])&&!Or@@volumeZeroInjectionTableBool;
+	injectionTableValidQ = !Or@@volumeZeroInjectionTableBool;
 
 	(* Informing volumes from the injection table runs the risk of it not being compatible with specified samples/ladders/standards/blanks *)
 	(* to avoid this breaking the mapthread, make sure ladders are compatible, and if not, inform volume from sampleVolume *)
@@ -3590,7 +3588,7 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 
 	injectionTableSampleVolumes=If[Not[injectionTableSamplesNotCompatibleQ]&&injectionTableValidQ,
 		Switch[specifiedInjectionTable,
-			{{_,ObjectP[],VolumeP|Automatic}..},Cases[specifiedInjectionTable,{Sample,ObjectP[],VolumeP|Automatic}][[All,3]],
+			{{_,ObjectP[],VolumeP|Automatic}..},Cases[specifiedInjectionTable,{Sample,ObjectP[],GreaterP[0 Microliter]|Automatic}][[All,3]],
 			Automatic,ConstantArray[Automatic,Length[mySamples]]
 		],
 		(* If samples in injection tables don't match samplesIn, don't inform volume, we'll raise an error a bit later *)
@@ -5024,7 +5022,7 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 		],
 		resolveIncludeLadders,
 		If[MatchQ[Lookup[roundedCapillaryGelElectrophoresisSDSOptions,InjectionTable],Except[Automatic|Null]],
-			Select[Lookup[roundedCapillaryGelElectrophoresisSDSOptions,InjectionTable],MatchQ[First[#],Ladder]&][[All,2]],
+			Cases[Lookup[roundedCapillaryGelElectrophoresisSDSOptions, InjectionTable], {Ladder, _, GreaterP[0 Microliter]}][[All,2]],
 			If[MatchQ[Lookup[roundedCapillaryGelElectrophoresisSDSOptions,Ladders],{Automatic..}],
 				Lookup[roundedCapillaryGelElectrophoresisSDSOptions,Ladders]/.Automatic:>Model[Sample, "Unstained Protein Standard"],
 				ConstantArray[Model[Sample, "Unstained Protein Standard"],Max[requiredLadders,uniqueOptionCombinations]]
@@ -5127,7 +5125,7 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 	(* if there is a user specified an injection table, and if they did, grab volumes to pass to the mapthread  *)
 	injectionTableLadderVolumes=If[Not[injectionTableLaddersNotCompatibleQ],
 		Switch[specifiedInjectionTable,
-			{{_,ObjectP[],VolumeP|Automatic}..},Cases[specifiedInjectionTable,{Ladder,ObjectP[],VolumeP|Automatic}][[All,3]],
+			{{_,ObjectP[],VolumeP|Automatic}..},Cases[specifiedInjectionTable,{Ladder,ObjectP[],GreaterP[0 Microliter]|Automatic}][[All,3]],
 			Automatic,ConstantArray[Automatic,Length[resolvedLadders]]
 		],
 		(* If samples in injection tables don't match Ladders, don't inform volume, we'll raise an error a bit later *)
@@ -6965,7 +6963,7 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 		],
 		resolveIncludeStandards,
 		If[MatchQ[Lookup[roundedCapillaryGelElectrophoresisSDSOptions,InjectionTable],Except[Automatic|Null]],
-			Select[Lookup[roundedCapillaryGelElectrophoresisSDSOptions,InjectionTable],MatchQ[First[#],Standard]&][[All,2]],
+			Cases[Lookup[roundedCapillaryGelElectrophoresisSDSOptions, InjectionTable], {Standard, _, GreaterP[0 Microliter]}][[All,2]],
 			Lookup[roundedCapillaryGelElectrophoresisSDSOptions,Standards]/.Automatic:>Model[Sample,StockSolution, "Resuspended CESDS IgG Standard"]],
 		True,Null
 	];
@@ -7020,7 +7018,7 @@ resolveCapillaryGelElectrophoresisSDSOptions[mySamples:{ObjectP[Object[Sample]].
 	(* if there is a user specified an injection table, and if they did, grab volumes to pass to the mapthread  *)
 	injectionTableStandardVolumes=If[Not[injectionTableStandardNotCompatibleQ],
 		Switch[specifiedInjectionTable,
-			{{_,ObjectP[],VolumeP|Automatic}..},Cases[specifiedInjectionTable,{Standard,ObjectP[],VolumeP|Automatic}][[All,3]],
+			{{_,ObjectP[],VolumeP|Automatic}..},Cases[specifiedInjectionTable,{Standard,ObjectP[],GreaterP[0 Microliter]|Automatic}][[All,3]],
 			Automatic,ConstantArray[Automatic,Length[resolvedStandards]]
 		],
 		(* If samples in injection tables don't match Standard, don't inform volume, we'll raise an error a bit later *)
@@ -7114,7 +7112,7 @@ there is an error check later, but we want to make sure we don't break the MapTh
 		],
 		resolveIncludeBlanks,
 		If[MatchQ[Lookup[roundedCapillaryGelElectrophoresisSDSOptions,InjectionTable],Except[Automatic|Null]],
-			Select[Lookup[roundedCapillaryGelElectrophoresisSDSOptions,InjectionTable],MatchQ[First[#],Blank]&][[All,2]],
+			Cases[Lookup[roundedCapillaryGelElectrophoresisSDSOptions, InjectionTable], {Blank, _, GreaterP[0 Microliter]}][[All,2]],
 			ConstantArray[Model[Sample,"1% SDS in 100mM Tris, pH 9.5"],requiredBlanks]
 		],
 		True,Null
@@ -7170,7 +7168,7 @@ there is an error check later, but we want to make sure we don't break the MapTh
 	(* if there is a user specified an injection table, and if they did, grab volumes to pass to the mapthread  *)
 	injectionTableBlankVolumes=If[Not[injectionTableBlankNotCompatibleQ],
 		Switch[specifiedInjectionTable,
-			{{_,ObjectP[],VolumeP|Automatic}..},Cases[specifiedInjectionTable,{Blank,ObjectP[],VolumeP|Automatic}][[All,3]],
+			{{_,ObjectP[],VolumeP|Automatic}..},Cases[specifiedInjectionTable,{Blank,ObjectP[],GreaterP[0 Microliter]|Automatic}][[All,3]],
 			Automatic,ConstantArray[Automatic,Length[resolvedBlanks]]
 		],
 		(* If samples in injection tables don't match Standard, don't inform volume, we'll raise an error a bit later *)
@@ -8687,7 +8685,7 @@ there is an error check later, but we want to make sure we don't break the MapTh
 	(* If there is a user specified injection table, check if there is agreement between samples on the injection list and in options,
 	if not, don't bother trying to populate volumes, we're raising an error a bit later *)
 
-	injectionTableContainsAllQ=If[MatchQ[specifiedInjectionTable,Except[Automatic]]&&NullQ[specifiedNumberOfReplicates],
+	injectionTableContainsAllQ=If[MatchQ[specifiedInjectionTable,Except[Automatic]],
 		Not[Or@@{
 			injectionTableSamplesNotCompatibleQ,
 			injectionTableLaddersNotCompatibleQ,
@@ -8730,7 +8728,7 @@ there is an error check later, but we want to make sure we don't break the MapTh
 		MatchQ[Lookup[roundedCapillaryGelElectrophoresisSDSOptions,InjectionTable],Automatic]&&injectionTableContainsAllQ&&Not[Or@@volumeZeroInjectionTableBool],
 		Module[{samplesInjectionTable,blanksInjectionTable,ladderInjectionTable,replicates,restructuredSamplesList},
 			(* add Sample type and repeat as NumberOfReplicates *)
-			replicates=Lookup[roundedCapillaryGelElectrophoresisSDSOptions,NumberOfReplicates]/.Null:>1;
+			replicates=Lookup[roundedCapillaryGelElectrophoresisSDSOptions,NumberOfReplicates]/.Automatic:>1;
 			(* Replicates are repeated injections from the same vial, and thus, do Not require any sample and volume should be 0 Microliter *)
 			samplesInjectionTable=MapThread[
 				Function[{object,volume,aliquotBool,index},
@@ -11988,6 +11986,59 @@ there is an error check later, but we want to make sure we don't break the MapTh
 		True,False
 	];
 
+	(* If the user specified the injection table we need to parse it to figure out how many replicates they indicated. *)
+	(* Null indicates that the number of replicates varies sample to sample. *)
+	numberOfReplicatesFromInjectionTable = Module[{injectionTableGatheredBySample, replicatesByUniqueSamplePrep},
+		(* Pull out the sample and gather by the object reference. *)
+		injectionTableGatheredBySample = GatherBy[Cases[resolvedInjectionTable, {Sample, _, _, _}], Part[#, 2]&];
+
+		(* For each unique object reference in the injection table.. *)
+		replicatesByUniqueSamplePrep = Flatten[Map[Function[{sublist},
+			(* Get the length of each unique preparation and its replicates (e.g. >0, 0 ,0 is 3 replicates) *)
+			SequenceSplit[sublist[[All, 3]], {initial:GreaterP[0 Microliter], replicates:EqualP[0 Microliter]...} :> Length[{replicates}] + 1]],
+			injectionTableGatheredBySample
+		]];
+
+		(* If the number of replicates is constant for all sample preps, set it to that. Otherwise, Null. *)
+		If[MatchQ[DeleteDuplicates[replicatesByUniqueSamplePrep], {_}],
+			First[DeleteDuplicates[replicatesByUniqueSamplePrep]],
+			Null
+		]
+	];
+
+	resolvedNumberOfReplicates = Which[
+		(* If NumberOfReplicates was user-provided use that. *)
+		MatchQ[specifiedNumberOfReplicates, Except[Automatic]],
+		specifiedNumberOfReplicates,
+		(* If both NumberOfReplicates and InjectionTable were unspecified, set to Null since there are no replicates. *)
+		MatchQ[{specifiedNumberOfReplicates, specifiedInjectionTable}, {Automatic, Automatic}],
+		1,
+		True,
+		(* Otherwise, infer NumberOfReplicates from the injection table if possible. *)
+		numberOfReplicatesFromInjectionTable
+	];
+
+	injectionTableNumberOfReplicatesConflictOptions = If[!MatchQ[resolvedNumberOfReplicates, numberOfReplicatesFromInjectionTable],
+		Message[Error::InjectionTableNumberOfReplicatesConflict];
+		{InjectionTable, NumberOfReplicates},
+		{}
+	];
+
+	injectionTableNumberOfReplicatesConflictTest = If[gatherTests,
+			(* create warning for failing samples *)
+			{If[Length[injectionTableNumberOfReplicatesConflictOptions] > 0,
+				Test["The NumberOfReplicates option agrees with the number of replicate sample injections listed in the InjectionTable:",
+					False,
+					True
+				],
+				Test["The NumberOfReplicates option agrees with the number of replicate sample injections listed in the InjectionTable:",
+					True,
+					True
+				]
+			]},
+		{}
+	];
+
 	(* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
 	invalidInputs=DeleteDuplicates[Flatten[{
 		deprecatedInvalidInputs,
@@ -12002,7 +12053,6 @@ there is an error check later, but we want to make sure we don't break the MapTh
 		invalidInjectionTableOption,
 		sampleCountInvalidOption,
 		notEnoughUsesLeftOption,
-		injectionTableWithReplicatesInvalidOption,
 		injectionTableVolumeZeroInvalidOption,
 		invalidInjectionTableOption,
 		supernatantVolumeInvalidOptions,
@@ -12038,7 +12088,8 @@ there is an error check later, but we want to make sure we don't break the MapTh
 		validContainerStoragConditionInvalidOptions,
 		premadeMasterMixDiluentNullInvalidOptions,
 		totalVolumeNullInvalidOptions,
-		volumeNullInvalidOptions
+		volumeNullInvalidOptions,
+		injectionTableNumberOfReplicatesConflictOptions
 	}]];
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
@@ -12059,12 +12110,13 @@ there is an error check later, but we want to make sure we don't break the MapTh
 	(* Prepare options to send to resolveAliquotOptions *)
 	aliquotOptions=ReplaceRule[
 		myOptions,
-		Join[{ConsolidateAliquots->resolvedConsolidation},resolvedSamplePrepOptions]
+		(* NumberOfReplicates are injections from the same vial so we do not need to aliquot additionally for each replicate *)
+		Join[{ConsolidateAliquots->resolvedConsolidation, NumberOfReplicates -> 1},resolvedSamplePrepOptions]
 	];
 
 	(* get the RequiredAliquotAmount. Note that this must always be greater than the specified SampleAmount *)
 	requiredAliquotAmounts=If[TrueQ[resolvedConsolidation],
-		Map[Function[volume,volume*1.1/(specifiedNumberOfReplicates/.(Null:>1))],resolvedSampleVolume],
+		Map[Function[volume,volume*1.1/(resolvedNumberOfReplicates/.(Null:>1))],resolvedSampleVolume],
 		Map[Function[volume,volume*1.1],resolvedSampleVolume]
 	];
 
@@ -12141,7 +12193,7 @@ there is an error check later, but we want to make sure we don't break the MapTh
 			{{Sample, First[mySamples], 0 Microliter, 1}},
 			resolvedInjectionTable
 		],
-		NumberOfReplicates->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,NumberOfReplicates],
+		NumberOfReplicates -> resolvedNumberOfReplicates,
 		ConditioningAcid->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,ConditioningAcid],
 		ConditioningBase->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,ConditioningBase],
 		ConditioningWashSolution->Lookup[roundedCapillaryGelElectrophoresisSDSOptions,ConditioningWashSolution],
@@ -12356,7 +12408,6 @@ there is an error check later, but we want to make sure we don't break the MapTh
 			compatibleMaterialsTests,
 			validNameTest,
 			sampleCountTest,
-			injectionTableWithReplicatesInvalidTest,
 			injectionTableVolumeZeroInvalidTest,
 			invalidInjectionTableTest,
 			notEnoughUsesLeftOptionTest,
@@ -12397,7 +12448,8 @@ there is an error check later, but we want to make sure we don't break the MapTh
 			bothSDSBranchesSetTest,
 			premadeMasterMixDiluentNullTests,
 			totalVolumeNullTests,
-			volumeNullTests
+			volumeNullTests,
+			injectionTableNumberOfReplicatesConflictTest
 		}] (* add test objects for resolved options as they are written, so you can test *)
 	}
 ];
@@ -12483,6 +12535,65 @@ expandNumberOfReplicatesIndexMatchingParent[mySamples_List,myOptions_Association
 	{expandedSamples,expandedOptions}
 ];
 
+Error::InvalidReplicatePositionsForIndexMatchedOptions = "Replicate positions for index-matched options are either missing or repeated. Please contact ECL personnel for support.";
+
+(* to expandOptions for IndexMatchingParent rather than IndexMatching Input *)
+expandNumberOfReplicatesIndexMatchingParent[mySamplesAndReplicatePositions:{{_, {__Integer}}..}, myOptions_Association]:=Module[
+	{mySamples, myReplicatePositions, expansionLength, expandedOption, expandedOptions,expandedSamples},
+	(* we are getting only options that are indexMatched, so we know they'll have to be expanded. since these are not samples, we are expanding in an alternating fashion e.g, {1,2} with 2 replicates becomes {1,2,1,2} *)
+
+	(* Parse the samples and positions from the mySamplesAndReplicatePositions input. *)
+	mySamples = mySamplesAndReplicatePositions[[All, 1]];
+	myReplicatePositions = mySamplesAndReplicatePositions[[All, 2]];
+
+	(* Find the largest position to expand to. *)
+	expansionLength = Max[Flatten[myReplicatePositions]];
+
+	(* Quick check for errors to ensure all the placeholder values below will be replaced and they won't be replaced more than once. *)
+	If[!MatchQ[Sort[Flatten[myReplicatePositions]], Range[expansionLength]],
+		Message[Error::InvalidReplicatePositionsForIndexMatchedOptions];
+		(* Do not expand if the replicate position inputs are invalid. *)
+		Return[{mySamples, myOptions}]
+	];
+
+	(* Expand Samples *)
+
+	(* Initialize a list of placeholders for expanded samples. *)
+	expandedSamples = ConstantArray[PlaceholderForExpandNumberOfReplicatesIndexMatchingParent, expansionLength];
+
+	(* For each sample and replicate position list: *)
+	MapThread[Function[{sample, replicatePositions},
+		(* Overwrite the placeholder value with the sample at the indicated positions. *)
+		Map[(expandedSamples[[#]] = sample)&, replicatePositions]
+	],
+		{mySamples, myReplicatePositions}
+	];
+
+
+	(* To expand options, we will map over options and expand as above *)
+	expandedOptions = MapThread[Function[{optionName, optionValue},
+			(* To expand, initialize a placeholder list for the expanded option values. *)
+			expandedOption = ConstantArray[PlaceholderForExpandNumberOfReplicatesIndexMatchingParent, expansionLength];
+
+			(* For each sample and replicate position list: *)
+			MapThread[Function[{value, replicatePositions},
+				(* Overwrite the placeholder value with the optional value at the indicated positions. *)
+				Map[(expandedOption[[#]] = value)&, replicatePositions]
+			],
+				{optionValue, myReplicatePositions}
+			];
+
+			(* Return a rule with the option key pointing to the expanded option values. *)
+			optionName -> expandedOption
+		],
+		(* MapThread over: *)
+		{Keys[myOptions], Values[myOptions]}
+	];
+
+	(* Return our expanded samples and options. *)
+	{expandedSamples, expandedOptions}
+];
+
 (* This function is used to create rules for replacing objects with resources in expanded sample lists (for ladders, standards, and blanks) *)
 sampleResourceRules[mySamplesWithReplicates:{ObjectP[{Model[Sample],Object[Sample]}]...},myExpandedVolumes:{VolumeP...},includeSamples_?BooleanQ]:=Module[
 	{pairedObjectsVolumes,objectVolumeRules,objectResourceReplaceRules},
@@ -12550,7 +12661,7 @@ DefineOptions[
 capillaryGelElectrophoresisSDSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{___Rule},myResolvedOptions:{___Rule},ops:OptionsPattern[]]:=Module[
 	{
 		expandedInputs,expandedResolvedOptions,outputSpecification,output,gatherTests,messages,
-		inheritedCache,sampleReplicates,samplePackets,
+		inheritedCache,samplePackets, sampleOnlyInjectionTable, replicatePositionsBySample, nonFirstReplicateSampleIndex,
 		sampleVolumes,pairedSamplesInAndVolumes,sampleVolumeRules,sampleResourceReplaceRules,
 		instrumentTime,protocolPacket,sharedFieldPacket,finalizedPacket,optionsWithVolume,replaceVolumesForReplicates,
 		allResourceBlobs,fulfillable,frqTests,testsRule,resultRule,allDownloadValues,cartridgeType,cache,samplesWithReplicates,
@@ -12569,6 +12680,10 @@ capillaryGelElectrophoresisSDSResourcePackets[mySamples:{ObjectP[Object[Sample]]
 		alkylatingAgentResourceRules,sdsBufferTuples,sdsBufferObjects,sdsBufferVolumes,sdsBufferResourceRules,
 		cartridgePacket,diluentTuples,diluentObjects,diluentVolumes,diluentResourceRules,sdsBufferChoice,injectionTableToUpload,
 		diluentsVolumeOptions,runTime,updatedSimulation,simulation,originalSampleObjects,simulatedSamples,
+		ladderOnlyInjectionTable, ladderReplicatePositionsBySample, nonFirstReplicateLadderSampleIndex,
+		standardOnlyInjectionTable, standardReplicatePositionsBySample, nonFirstReplicateStandardSampleIndex,
+		blankOnlyInjectionTable, blankReplicatePositionsBySample, nonFirstReplicateBlankSampleIndex,
+		replaceVolumesForAccessoryReplicates,
 		(* resources *)
 		instrumentResource,plateSealResource,plateContainerResources,plateSealResources,
 		samplesInResources,ladderResources,standardResources,blankResources,ladderPremadeMasterMixResources,
@@ -12584,8 +12699,8 @@ capillaryGelElectrophoresisSDSResourcePackets[mySamples:{ObjectP[Object[Sample]]
 		bottomRunningBufferResource,topRunningBufferResource,topRunningBufferBackupResource,diluentResources,ladderDiluentResources,standardDiluentResources,
 		blankDiluentResources,assayContainersResource,capResources,waterBeakerResource,cleanupCartridgeResource,
 		cleanupCartridgeWashResources,CleanupCartridgeCapResources,cartridgeInsertReplacementResource
-
 	},
+
 	(* expand the resolved options if they weren't expanded already *)
 	{expandedInputs,expandedResolvedOptions}=ExpandIndexMatchedInputs[ExperimentCapillaryGelElectrophoresisSDS,{mySamples},myResolvedOptions];
 
@@ -12635,32 +12750,69 @@ capillaryGelElectrophoresisSDSResourcePackets[mySamples:{ObjectP[Object[Sample]]
 	samplePackets=allDownloadValues[[1]];
 
 	(* -- Generate resources for the SamplesIn -- *)
-	(* Pull out the number of replicates; make sure all Nulls become 1 *)
-	sampleReplicates=Lookup[myResolvedOptions,NumberOfReplicates]/.{Null->1};
+	(* Use the Sample-only injection table to determine the position of replicates for expanding samples and options. *)
+	sampleOnlyInjectionTable = Cases[Lookup[myResolvedOptions, InjectionTable], {Sample, ___}];
 
-	(*expand the options based on the number of replicates *)
-	{samplesWithReplicates,expandedOptionsWithReplicates}=expandNumberOfReplicates[ExperimentCapillaryGelElectrophoresisSDS,Download[mySamples,Object],expandedResolvedOptions];
+	(* Initialize lists to track where the ladder and its replicates are listed in the ladder-only injection table. *)
+	replicatePositionsBySample = {};
+
+	Map[Function[{sample}, Module[{nonZeroVolumePositions, indices},
+		(* Find the non-zero volume position(s) of the sample. *)
+		nonZeroVolumePositions = Flatten@Position[sampleOnlyInjectionTable, {_, ObjectP[sample], GreaterP[0 Microliter]}];
+		(* Remove any indices we've already assigned to earlier ladder and their replicates. *)
+		indices = Cases[nonZeroVolumePositions, Except[Alternatives@@Flatten[replicatePositionsBySample]]];
+
+		(* Return indices for this ladder sample and its replicates: *)
+		AppendTo[replicatePositionsBySample,
+			(* If there are more than 1 non-zero ladder samples in the list, we limit replicates with an upper bound of the next non-zero ladder sample *)
+			If[Length[indices] > 1,
+				Cases[Flatten@Position[sampleOnlyInjectionTable, {_, ObjectP[sample], _}], RangeP[indices[[1]], indices[[2]] - 1]],
+				(* Otherwise all the zero-volume ladder samples listed after this index replicates. *)
+				Cases[Flatten@Position[sampleOnlyInjectionTable, {_, ObjectP[sample], _}], GreaterEqualP[indices[[1]]]]
+			]
+		]
+	]],
+		originalSampleObjects
+	];
+
+	(* For options related to preparing the sample, we may need to replace their options later. Determine those potential indexes here. *)
+	nonFirstReplicateSampleIndex = Flatten[Rest /@ replicatePositionsBySample];
+
+	(* Expand the options based on the number and location of the replicates. *)
+	{samplesWithReplicates, expandedOptionsWithReplicates} = expandNumberOfReplicates[
+		ExperimentCapillaryGelElectrophoresisSDS,
+		(* Samples and their replicate positions in the sample-only injection table. *)
+		Transpose[{originalSampleObjects, replicatePositionsBySample}],
+		expandedResolvedOptions
+	];
 
 	(* Replicates are injected NumberOfReplicates times, but do not need additional resources (except NumberOfUses for the cartridge), we need to set their reagent volumes to 0 microliter so no additional resources are used *)
-	optionsWithVolume={SampleVolume,TotalVolume,PremadeMasterMixVolume,InternalReferenceVolume,ConcentratedSDSBufferVolume,
-		SDSBufferVolume,ReducingAgentVolume,AlkylatingAgentVolume,SedimentationSupernatantVolume};
+	optionsWithVolume=<|
+		Sample -> {SampleVolume, TotalVolume, PremadeMasterMixVolume, InternalReferenceVolume, ConcentratedSDSBufferVolume, SDSBufferVolume, ReducingAgentVolume, AlkylatingAgentVolume, SedimentationSupernatantVolume},
+		Ladder -> {LadderVolume, LadderTotalVolume, LadderPremadeMasterMixVolume, LadderInternalReferenceVolume, LadderConcentratedSDSBufferVolume, LadderSDSBufferVolume, LadderReducingAgentVolume, LadderAlkylatingAgentVolume, LadderSedimentationSupernatantVolume},
+		Standard -> {StandardVolume, StandardTotalVolume, StandardPremadeMasterMixVolume, StandardInternalReferenceVolume, StandardConcentratedSDSBufferVolume, StandardSDSBufferVolume, StandardReducingAgentVolume, StandardAlkylatingAgentVolume, StandardSedimentationSupernatantVolume},
+		Blank -> {BlankVolume, BlankTotalVolume, BlankPremadeMasterMixVolume, BlankInternalReferenceVolume, BlankConcentratedSDSBufferVolume, BlankSDSBufferVolume, BlankReducingAgentVolume, BlankAlkylatingAgentVolume, BlankSedimentationSupernatantVolume}
+	|>;
 
 	(* Build rules for replacing values in expanded options *)
-	replaceVolumesForReplicates=Rule[
-		#,
-		Flatten[MapThread[
+	replaceVolumesForReplicates = Function[{optionKey},
+		optionKey -> MapThread[
 			(* replace values that are not the first replicate for each object in samplesIn with 0 Microliter. *)
 			(* NOTE: this will only work when replicates are expanded in the following fashion {1,2,...} -> {1,1,1,2,2,2,...} *)
-			Function[{values,aliquotBool},
-				If[And@@aliquotBool,
-					(* if Aliquot->True, don't change things *)
-					values,
-					(* if Aliquot->False, change volumes to 0Microliter, this is a technical replicate *)
-					{First[values],Rest[values]/.VolumeP->0 Microliter}]],
-			{Partition[Lookup[expandedOptionsWithReplicates,#],sampleReplicates],Partition[Lookup[expandedOptionsWithReplicates,Aliquot],sampleReplicates]}
-		]]
-		(* We map this over all relevant options *)
-	]&/@optionsWithVolume;
+			Function[{value, aliquotBool, index},
+				(* If Aliquot is False, this is not the first index corresponding to this sample in the replicate-expanded options, and the value is a volume.. *)
+				If[!aliquotBool && MemberQ[nonFirstReplicateSampleIndex, index] && MatchQ[value, VolumeP],
+					(* .. overwrite the volume with 0 Microliters. *)
+					0 Microliter,
+					(* Otherwise leave the option unchanged. *)
+					value
+				]
+			],
+			(* MapThread over: *)
+			{Lookup[expandedOptionsWithReplicates, optionKey], Lookup[expandedOptionsWithReplicates, Aliquot], Range[Length[samplesWithReplicates]]}
+		]
+		(* Map over: *)
+	] /@ Lookup[optionsWithVolume, Sample];
 
 	(* Now we can replace the volumes in the expandedOptionsWithReplicates to reflect true volume requirements *)
 	optionsWithReplicates=ToList @ Join[Association[expandedOptionsWithReplicates],Association[replaceVolumesForReplicates]];
@@ -12762,36 +12914,162 @@ capillaryGelElectrophoresisSDSResourcePackets[mySamples:{ObjectP[Object[Sample]]
 	(* Get number of replicates for each type of sample and convert expressions to an integer number of replicates *)
 	numberOfReplicatesRules={Null:>1,First:>1,Last:>1,FirstAndLast:>2,frequency_Integer:>Floor[Length[samplesWithReplicates]/frequency]};
 
-	laddersReplicates=If[includeLadders,First@Lookup[myResolvedOptions,LadderFrequency,Null]/.numberOfReplicatesRules];
-	standardsReplicates=If[includeStandards,First@Lookup[myResolvedOptions,StandardFrequency,Null]/.numberOfReplicatesRules];
-	blanksReplicates=If[includeBlanks,First@Lookup[myResolvedOptions,BlankFrequency,Null]/.numberOfReplicatesRules];
+	If[includeLadders,
+		(* Filter the injection table to be just ladders. *)
+		ladderOnlyInjectionTable = Cases[Lookup[myResolvedOptions, InjectionTable], {Ladder, ___}];
+
+		(* Initialize lists to track where the ladder and its replicates are listed in the ladder-only injection table. *)
+		ladderReplicatePositionsBySample = {};
+
+		Map[Function[{ladder}, Module[{nonZeroVolumePositions, indices},
+			(* Find the non-zero volume position(s) of the ladder. *)
+			nonZeroVolumePositions = Flatten@Position[ladderOnlyInjectionTable, {_, ObjectP[ladder], GreaterP[0 Microliter]}];
+			(* Remove any indices we've already assigned to earlier ladder and their replicates. *)
+			indices = Cases[nonZeroVolumePositions, Except[Alternatives@@Flatten[ladderReplicatePositionsBySample]]];
+
+			(* Return indices for this ladder sample and its replicates: *)
+			AppendTo[ladderReplicatePositionsBySample,
+				(* If there are more than 1 non-zero ladder samples in the list, we limit replicates with an upper bound of the next non-zero ladder sample *)
+				If[Length[indices] > 1,
+					Cases[Flatten@Position[ladderOnlyInjectionTable, {_, ObjectP[ladder], _}], RangeP[indices[[1]], indices[[2]] - 1]],
+					(* Otherwise all the zero-volume ladder samples listed after this index replicates. *)
+					Cases[Flatten@Position[ladderOnlyInjectionTable, {_, ObjectP[ladder], _}], GreaterEqualP[indices[[1]]]]
+				]
+			]
+		]],
+			ladders
+		];
+
+		(* For options related to preparing the sample, we may need to replace their options later. Determine those potential indexes here. *)
+		nonFirstReplicateLadderSampleIndex = Flatten[Rest /@ ladderReplicatePositionsBySample]
+	];
+
+	If[includeStandards,
+		(* Filter the injection table to be just standards. *)
+		standardOnlyInjectionTable = Cases[Lookup[myResolvedOptions, InjectionTable], {Standard, ___}];
+
+		(* Initialize lists to track where the standard and its replicates are listed in the standard-only injection table. *)
+		standardReplicatePositionsBySample = {};
+
+		Map[Function[{standard}, Module[{nonZeroVolumePositions, indices},
+			(* Find the non-zero volume position(s) of the standard. *)
+			nonZeroVolumePositions = Flatten@Position[standardOnlyInjectionTable, {_, ObjectP[standard], GreaterP[0 Microliter]}];
+			(* Remove any indices we've already assigned to earlier standards and their replicates. *)
+			indices = Cases[nonZeroVolumePositions, Except[Alternatives@@Flatten[standardReplicatePositionsBySample]]];
+
+			(* Return indices for this standard sample and its replicates: *)
+			AppendTo[standardReplicatePositionsBySample,
+				(* If there are more than 1 non-zero standard samples in the list, we limit replicates with an upper bound of the next non-zero standard sample *)
+				If[Length[indices] > 1,
+					Cases[Flatten@Position[standardOnlyInjectionTable, {_, ObjectP[standard], _}], RangeP[indices[[1]], indices[[2]] - 1]],
+					(* Otherwise all the zero-volume standard samples listed after this index replicates. *)
+					Cases[Flatten@Position[standardOnlyInjectionTable, {_, ObjectP[standard], _}], GreaterEqualP[indices[[1]]]]
+				]
+			]
+		]],
+			standards
+		];
+
+		(* For options related to preparing the sample, we may need to replace their options later. Determine those potential indexes here. *)
+		nonFirstReplicateStandardSampleIndex = Flatten[Rest /@ standardReplicatePositionsBySample]
+	];
+
+	If[includeBlanks,
+		(* Filter the injection table to be just blanks. *)
+		blankOnlyInjectionTable = Cases[Lookup[myResolvedOptions, InjectionTable], {Blank, ___}];
+
+		(* Initialize lists to track where the blank and its replicates are listed in the blank-only injection table. *)
+		blankReplicatePositionsBySample = {};
+
+		Map[Function[{blank}, Module[{nonZeroVolumePositions, indices},
+			(* Find the non-zero volume position(s) of the blank. *)
+			nonZeroVolumePositions = Flatten@Position[blankOnlyInjectionTable, {_, ObjectP[blank], GreaterP[0 Microliter]}];
+			(* Remove any indices we've already assigned to earlier blanks and their replicates. *)
+			indices = Cases[nonZeroVolumePositions, Except[Alternatives@@Flatten[blankReplicatePositionsBySample]]];
+
+			(* Return indices for this blank sample and its replicates: *)
+			AppendTo[blankReplicatePositionsBySample,
+				(* If there are more than 1 non-zero blank samples in the list, we limit replicates with an upper bound of the next non-zero blank sample *)
+				If[Length[indices] > 1,
+					Cases[Flatten@Position[blankOnlyInjectionTable, {_, ObjectP[blank], _}], RangeP[indices[[1]], indices[[2]] - 1]],
+					(* Otherwise all the zero-volume blank samples listed after this index replicates. *)
+					Cases[Flatten@Position[blankOnlyInjectionTable, {_, ObjectP[blank], _}], GreaterEqualP[indices[[1]]]]
+				]
+			]
+		]],
+			blanks
+		];
+
+		(* For options related to preparing the sample, we may need to replace their options later. Determine those potential indexes here. *)
+		nonFirstReplicateBlankSampleIndex = Flatten[Rest /@ blankReplicatePositionsBySample]
+	];
 
 	(* expand each of ladders/blanks/standards *)
 	{laddersWithReplicates,ladderOptionsWithReplicates}=If[includeLadders,
-		expandNumberOfReplicatesIndexMatchingParent[Download[ladders,Object],ladderOptions,laddersReplicates],
-		{{},{}}];
+		expandNumberOfReplicatesIndexMatchingParent[
+			Transpose[{Download[ladders, Object], ladderReplicatePositionsBySample}],
+			ladderOptions
+		],
+		{{},{}}
+	];
+
 	{standardsWithReplicates,standardOptionsWithReplicates}=If[includeStandards,
-		expandNumberOfReplicatesIndexMatchingParent[Download[standards,Object],standardOptions,standardsReplicates],
-		{{},{}}];
+		expandNumberOfReplicatesIndexMatchingParent[
+			Transpose[{Download[standards, Object], standardReplicatePositionsBySample}],
+			standardOptions
+		],
+		{{},{}}
+	];
+
 	{blanksWithReplicates,blankOptionsWithReplicates}=If[includeBlanks,
-		expandNumberOfReplicatesIndexMatchingParent[Download[blanks,Object],blankOptions,blanksReplicates],
-		{{},{}}];
+		expandNumberOfReplicatesIndexMatchingParent[
+			Transpose[{Download[blanks, Object], blankReplicatePositionsBySample}],
+			blankOptions
+		],
+		{{},{}}
+	];
+
+	replaceVolumesForAccessoryReplicates = Flatten[MapThread[Function[{type, replicates, optionSubset, indicies},
+	Function[{optionKey},
+		optionKey -> MapThread[
+			(* replace values that are not the first replicate for each object in ladders, standards, or blanks with 0 Microliter. *)
+			Function[{value, index},
+				(* If this is not the first index corresponding to this sample in the replicate-expanded options, and the value is a volume.. *)
+				If[MemberQ[indicies, index] && MatchQ[value, VolumeP],
+					(* .. overwrite the volume with 0 Microliters. *)
+					0 Microliter,
+					(* Otherwise leave the option unchanged. *)
+					value
+				]
+			],
+			(* MapThread over: *)
+			{Lookup[optionSubset, optionKey], Range[Length[replicates]]}
+		]
+		(* Map over: *)
+	] /@ Lookup[optionsWithVolume, type]
+	],
+		Transpose[{
+			If[includeLadders, {Ladder, laddersWithReplicates, ladderOptionsWithReplicates, nonFirstReplicateLadderSampleIndex}, Nothing],
+			If[includeStandards, {Standard, standardsWithReplicates, standardOptionsWithReplicates, nonFirstReplicateStandardSampleIndex}, Nothing],
+			If[includeBlanks, {Blank, blanksWithReplicates, blankOptionsWithReplicates, nonFirstReplicateBlankSampleIndex}, Nothing]
+		}]
+	]];
 
 	(* Make resource rules and specify them for each ladder, standard or blank replicate *)
 	(* make a list of replacement rules *)
-	ladderResourceRules=sampleResourceRules[laddersWithReplicates,Lookup[ladderOptionsWithReplicates,LadderVolume,{}],includeLadders];
+	ladderResourceRules=sampleResourceRules[laddersWithReplicates,Lookup[replaceVolumesForAccessoryReplicates,LadderVolume,{}],includeLadders];
 	(* if we're including any ladders, replace objects with resources. if not, nothing to do here and return an empty list *)
 	ladderResources=If[includeLadders,
 		Replace[laddersWithReplicates,ladderResourceRules,{1}],
 		{}];
 
-	standardResourceRules=sampleResourceRules[standardsWithReplicates,Lookup[standardOptionsWithReplicates,StandardVolume,{}],includeStandards];
+	standardResourceRules=sampleResourceRules[standardsWithReplicates,Lookup[replaceVolumesForAccessoryReplicates,StandardVolume,{}],includeStandards];
 	(* if we're including any standards, replace objects with resources. if not, nothing to do here and return an empty list *)
 	standardResources=If[includeStandards,
 		Replace[standardsWithReplicates,standardResourceRules,{1}],
 		{}];
 
-	blankResourceRules=sampleResourceRules[blanksWithReplicates,Lookup[blankOptionsWithReplicates,BlankVolume,{}],includeBlanks];
+	blankResourceRules=sampleResourceRules[blanksWithReplicates,Lookup[replaceVolumesForAccessoryReplicates,BlankVolume,{}],includeBlanks];
 	(* if we're including any blanks, replace objects with resources. if not, nothing to do here and return an empty list *)
 	blankResources=If[includeBlanks,
 		Replace[blanksWithReplicates,blankResourceRules,{1}],
@@ -12873,7 +13151,12 @@ regardless of the number of injections to be made *)
 		ladderOptionsWithReplicatesAssociation,
 		standardOptionsWithReplicatesAssociation,
 		blankOptionsWithReplicatesAssociation
-	}=Association[#]&/@{optionsWithReplicates,ladderOptionsWithReplicates,standardOptionsWithReplicates,blankOptionsWithReplicates};
+	}=Association[#]&/@{
+		optionsWithReplicates,
+		ToList @ Join[Association[ladderOptionsWithReplicates], Association[replaceVolumesForAccessoryReplicates]],
+		ToList @ Join[Association[standardOptionsWithReplicates], Association[replaceVolumesForAccessoryReplicates]],
+		ToList @ Join[Association[blankOptionsWithReplicates], Association[replaceVolumesForAccessoryReplicates]]
+	};
 
 	(* below are a couple of functions to help streamline making resources *)
 	(* to make adding the prefix to fields easier *)
@@ -13308,7 +13591,7 @@ regardless of the number of injections to be made *)
 		Cartridge->Link[cartridgeResource],
 		RunTime->runTime,
 		Replace[InjectionTable]->injectionTableToUpload,
-		NumberOfReplicates->sampleReplicates,
+		NumberOfReplicates -> Lookup[myResolvedOptions, NumberOfReplicates],
 		SampleTemperature->Lookup[myResolvedOptions,SampleTemperature]/.Ambient:>$AmbientTemperature,
 		(* instrument setup and general options *)
 		ConditioningAcid->Link[conditioningAcidResource],
@@ -14313,23 +14596,43 @@ replaceAutomaticVolumes[injectionTable:{{_,ObjectP[],VolumeP|Automatic, _Integer
 
 		output = Switch[currentObject[[1]],
 			Sample,
-			If[MatchQ[currentObject[[3]], Automatic|Null]||First[sampleVolumes]!=currentObject[[3]],
+			Which[
+				(* If we are at a replicate index no need to do anything. *)
+				MatchQ[currentObject[[3]], EqualP[0 Microliter]],
+				currentObject,
+				MatchQ[currentObject[[3]], Automatic|Null]||First[sampleVolumes]!=currentObject[[3]],
 				{currentObject[[1]], currentObject[[2]], First[sampleVolumes], currentObject[[4]]},
+				True,
 				currentObject
 			],
 			Standard,
-			If[MatchQ[currentObject[[3]], Automatic|Null]||First[standardVolumes]!=currentObject[[3]],
+			Which[
+				(* If we are at a replicate index no need to do anything. *)
+				MatchQ[currentObject[[3]], EqualP[0 Microliter]],
+				currentObject,
+				MatchQ[currentObject[[3]], Automatic|Null]||First[standardVolumes]!=currentObject[[3]],
 				{currentObject[[1]], currentObject[[2]], First[standardVolumes], currentObject[[4]]},
+				True,
 				currentObject
 			],
 			Ladder,
-			If[MatchQ[currentObject[[3]], Automatic|Null]||First[ladderVolumes]!=currentObject[[3]],
+			Which[
+				(* If we are at a replicate index no need to do anything. *)
+				MatchQ[currentObject[[3]], EqualP[0 Microliter]],
+				currentObject,
+				MatchQ[currentObject[[3]], Automatic|Null]||First[ladderVolumes]!=currentObject[[3]],
 				{currentObject[[1]], currentObject[[2]], First[ladderVolumes], currentObject[[4]]},
+				True,
 				currentObject
 			],
 			Blank,
-			If[MatchQ[currentObject[[3]], Automatic|Null]||First[blankVolumes]!=currentObject[[3]],
+			Which[
+				(* If we are at a replicate index no need to do anything. *)
+				MatchQ[currentObject[[3]], EqualP[0 Microliter]],
+				currentObject,
+				MatchQ[currentObject[[3]], Automatic|Null]||First[blankVolumes]!=currentObject[[3]],
 				{currentObject[[1]], currentObject[[2]], First[blankVolumes], currentObject[[4]]},
+				True,
 				currentObject
 			]];
 
@@ -14338,7 +14641,7 @@ replaceAutomaticVolumes[injectionTable:{{_,ObjectP[],VolumeP|Automatic, _Integer
 
 (*inductiveCase *)
 replaceAutomaticVolumes[injectionTable:{{_,ObjectP[],VolumeP|Automatic,_Integer}..}, updatedInjectionTable:{{_,ObjectP[],VolumeP,_Integer}...}, sampleVolumes_List, standardVolumes_List, blankVolumes_List, ladderVolumes_List]:=
-	Module[{sample, standard, blank, ladder, output,currentObject},
+		Module[{sample, standard, blank, ladder, output,currentObject},
 		(* grab the first item in the injection table, check it's identity, compare volumes and populate the injection table if needed *)
 		(* Also, we need to make sure we pass the right volumes on, trimming the one we just used *)
 		currentObject=If[Depth[injectionTable]<4,
@@ -14348,24 +14651,40 @@ replaceAutomaticVolumes[injectionTable:{{_,ObjectP[],VolumeP|Automatic,_Integer}
 		];
 		{output,sample, standard, blank, ladder} = Switch[currentObject[[1]],
 			Sample,
-			If[MatchQ[currentObject[[3]], Automatic|Null]||First[sampleVolumes]!=currentObject[[3]],
+			Which[
+				(* If we are at a replicate index no need to do anything. *)
+				MatchQ[currentObject[[3]], EqualP[0 Microliter]],
+				{currentObject, sampleVolumes, standardVolumes, blankVolumes, ladderVolumes},
+				MatchQ[currentObject[[3]], Automatic|Null]||First[sampleVolumes]!=currentObject[[3]],
 				{{currentObject[[1]], currentObject[[2]], First[sampleVolumes], currentObject[[4]]},Rest[sampleVolumes],standardVolumes,blankVolumes,ladderVolumes},
-				{currentObject,Rest[sampleVolumes],standardVolumes,blankVolumes,ladderVolumes}
+				True, {currentObject,Rest[sampleVolumes],standardVolumes,blankVolumes,ladderVolumes}
 			],
 			Ladder,
-			If[MatchQ[currentObject[[3]], Automatic|Null]||First[ladderVolumes]!=currentObject[[3]],
+			Which[
+				(* If we are at a replicate index no need to do anything. *)
+				MatchQ[currentObject[[3]], EqualP[0 Microliter]],
+				{currentObject, sampleVolumes, standardVolumes, blankVolumes, ladderVolumes},
+				MatchQ[currentObject[[3]], Automatic|Null]||First[ladderVolumes]!=currentObject[[3]],
 				{{currentObject[[1]], currentObject[[2]], First[ladderVolumes], currentObject[[4]]},sampleVolumes,Rest[ladderVolumes],blankVolumes,ladderVolumes},
-				{currentObject,sampleVolumes,standardVolumes,blankVolumes, Rest[ladderVolumes]}
+				True, {currentObject,sampleVolumes,standardVolumes,blankVolumes, Rest[ladderVolumes]}
 			],
 			Standard,
-			If[MatchQ[currentObject[[3]], Automatic|Null]||First[standardVolumes]!=currentObject[[3]],
+			Which[
+				(* If we are at a replicate index no need to do anything. *)
+				MatchQ[currentObject[[3]], EqualP[0 Microliter]],
+				{currentObject, sampleVolumes, standardVolumes, blankVolumes, ladderVolumes},
+				MatchQ[currentObject[[3]], Automatic|Null]||First[standardVolumes]!=currentObject[[3]],
 				{{currentObject[[1]], currentObject[[2]], First[standardVolumes], currentObject[[4]]},sampleVolumes,Rest[standardVolumes],blankVolumes,ladderVolumes},
-				{currentObject,sampleVolumes,Rest[standardVolumes],blankVolumes,ladderVolumes}
+				True, {currentObject,sampleVolumes,Rest[standardVolumes],blankVolumes,ladderVolumes}
 			],
 			Blank,
-			If[MatchQ[currentObject[[3]], Automatic|Null]||First[blankVolumes]!=currentObject[[3]],
+			Which[
+				(* If we are at a replicate index no need to do anything. *)
+				MatchQ[currentObject[[3]], EqualP[0 Microliter]],
+				{currentObject, sampleVolumes, standardVolumes, blankVolumes, ladderVolumes},
+				MatchQ[currentObject[[3]], Automatic|Null]||First[blankVolumes]!=currentObject[[3]],
 				{{currentObject[[1]], currentObject[[2]], First[blankVolumes], currentObject[[4]]},sampleVolumes,standardVolumes,Rest[blankVolumes],ladderVolumes},
-				{currentObject,sampleVolumes,standardVolumes,Rest[blankVolumes],ladderVolumes}
+				True, {currentObject,sampleVolumes,standardVolumes,Rest[blankVolumes],ladderVolumes}
 			]];
 
 		(* next, we run another round, until we get to the very end *)
@@ -14545,12 +14864,6 @@ assignCEPlateWell[
 	(* First, get positions of true samples and repeated injections *)
 	samplePositions = Flatten@Position[myInjectionTable, KeyValuePattern[Volume -> GreaterP[0 Microliter]]];
 
-	(* repeated injections would have a volume = 0 Microliter, so we can pull those out *)
-	repeatedSamplesPos = Flatten@Position[myInjectionTable,KeyValuePattern[Volume -> EqualP[0 Microliter]]];
-
-	(* Next, to make sure we know where to put them back, we need to adjust their positions by index *)
-	repeatedSamplesPosAdjustedPosition = MapIndexed[#1 - First@#2 &, repeatedSamplesPos];
-
 	(* Now we can allocate a well for each true sample *)
 	positionedSamples = MapIndexed[
 		Function[{association, index},
@@ -14559,41 +14872,22 @@ assignCEPlateWell[
 		myInjectionTable[[samplePositions]]
 	];
 
-	(* To assign a well for repeated injections, we need to identify a well that is identical to this one in positionedSamples
-	from all but the separation conditions (if there are multiple ones, pick the one which has a smaller position. *)
-
-	repeatedSamples = MapThread[
-		Function[{repeat,position},
-			Module[{sameTypePositions, precedingPosition, precedingElementWellDesignation},
-				(* to help make the association a pattern, we will take the relevant keys and convert them to a list of rules *)
-				sameTypePositions =	Cases[positionedSamples,KeyValuePattern[Type -> repeat[Type]]];
-
-				(* get the index of the preceding true sample of the same type *)
-				precedingPosition = Last[Cases[Lookup[sameTypePositions,Position], _?(#<position&)]];
-
-				(* get the Well in the injectionTable entry for the preceding sample based on its position *)
-				precedingElementWellDesignation = Last@Lookup[Cases[positionedSamples,KeyValuePattern[Position -> precedingPosition]],Well];
-				(* add the correct well to the repeated sample *)
-				Append[repeat, {Well -> precedingElementWellDesignation}]
-
-			]],
-		{myInjectionTable[[repeatedSamplesPos]],repeatedSamplesPos}
-	];
-
-	(* And, finally, we can insert those back to the injectionTable, without an allocated position (reminder, adding to position+1 because
-	we want them *After* that position *)
-	Flatten@multipleInsertByPosition[positionedSamples, repeatedSamples, repeatedSamplesPosAdjustedPosition + 1]
+	(* Reconstruct the injection table appending the appropriate Well to the associations. *)
+	MapIndexed[Function[{association, index},
+		Append[
+			association,
+			Well -> Lookup[
+				(* Find the first 'positionedSample' of the same Sample above this row of the injection table  *)
+				FirstCase[
+					Reverse[positionedSamples],
+					KeyValuePattern[{
+						Position -> LessEqualP[First[index]],
+						Sample -> ObjectP[association[Sample]]
+					}]
+					(* Use the assigned Well value from that 'positionedSample' for the Well of this row. *)
+				], Well]
+		]
+	],
+		myInjectionTable
+	]
 ];
-
-(* ::Subsubsection::Closed:: *)
-(*multipleInsertByPosition*)
-
-(* helper function to insert objects in specific locations (thanks StackExchange!) *)
-multipleInsertByPosition[
-	inputList_,
-	elementsToAdd_,
-	positionToAdd_
-] :=
-	Module[{expandedList = Riffle[inputList, 0, {1, -1, 2}], extendedPositions = positionToAdd*2 - 1},
-		expandedList[[extendedPositions]] = elementsToAdd;
-		expandedList[[Sort[Join[extendedPositions, Range[2, 2*Length@inputList, 2]]]]]];

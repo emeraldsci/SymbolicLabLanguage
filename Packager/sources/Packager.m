@@ -933,14 +933,21 @@ ReloadPackage[package_String]:=With[
 	LoadUsage[package];
 ];
 
+removePackage::LockedSymbol="The symbol `1` is Locked and can't be updated by reloading a package. Please fully reload your kernel if you need to update this symbol.";
+
 removePackage[package_String]:=Module[
 	{metadata=PackageMetadata[package]},
 
 	Block[{$Context=metadata["Context"]},
 		Scan[
 			Function[symbolName,
-				Unprotect[symbolName];
-				ClearAll[symbolName];
+				(* Clear symbol if possible *)
+				If[MemberQ[Attributes[symbolName], Locked],
+					Message[removePackage::LockedSymbol, symbolName],
+
+					Unprotect[symbolName];
+					ClearAll[symbolName];
+				]
 			],
 			(*All private symbols and public functions in this package*)
 			Join[
@@ -1155,9 +1162,9 @@ installAbsoluteGraphicsPatch[]:=(
 (*
 The following lines serve to TEMPORARILY patch three changes Mathematica 13.2 with regards to temperature
 unit conversions.
-	1.  Quantity["DegreesCelcius"] is redefined so that it is always measured relative to absolute zero.
-		This affects the addition / subtraction of Quantity["DegreesCelcius"].
-	2.  All arithmetic operations involving Quantity["DegreesCelcius"] get automatically converted to
+	1.  Quantity["DegreesCelsius"] is redefined so that it is always measured relative to absolute zero.
+		This affects the addition / subtraction of Quantity["DegreesCelsius"].
+	2.  All arithmetic operations involving Quantity["DegreesCelsius"] get automatically converted to
 		Quantity["Kelvin"].
 	3.  UnitDimensions["Micro" IndependentUnit["EmeraldUnit"]] now returns an extra pair of { }.
 
@@ -1212,8 +1219,6 @@ installUnitConversionPatch[]:=
 		(*Partially Fix issue #2 above*)
 		QuantityUnits`$AutoNormalizeCompoundTemperatureUnits = False;
 	];
-
-
 
 
 revertQuantityUnitsPaclet[sllDir_]:=
@@ -1306,9 +1311,6 @@ revertQuantityUnitsPaclet[sllDir_]:=
 
 
 	];
-
-
-
 
 installOtherUnitFixes[]:=
 	Module[{},
@@ -1413,35 +1415,66 @@ installOtherUnitFixes[]:=
 				Protect[Quantity];
 			);
 		];
-
-		(*
-			Add upvalues to Quantity to catch comparisons of temperature units
-			This is not the best but works.
-			If it turns to be slow we can try to fix at lower level
-		*)
-		If[$VersionNumber > 13.2,
-			(
-				containsTemperatureQ[x_Quantity]:= MemberQ[UnitDimensions[x],{"TemperatureUnit",_}];
-				containsTemperatureQ[_] := False;
-
-				Unprotect[Quantity];
-
-				(* two argument unit comparison *)
-				Quantity /: (h : (Greater | GreaterEqual | Equal | Less | LessEqual))[
-					qa : Quantity[x_, unA_], qb : Quantity[y_, unB_]/; containsTemperatureQ[qb]
-				] := h[QuantityMagnitude@qa, QuantityMagnitude@UnitConvert[qb, unA]];
-
-				(* three argument unit comparison *)
-				Quantity /: (h : (Greater | GreaterEqual | Equal | Less | LessEqual))[
-					qa : Quantity[x_, unA_], qb : Quantity[y_, unB_]/; containsTemperatureQ[qb], qc : Quantity[z_, unC_]/; containsTemperatureQ[qc]
-				] := h[QuantityMagnitude@qa, QuantityMagnitude@UnitConvert[qb, unA], QuantityMagnitude@UnitConvert[qc, unA]];
-
-				Protect[Quantity];
-			);
-		];
 	];
 
+(* ====================== 14.2 units loading fixes =========================== *)
 
+(*
+	Upon quitting (restarting kernel without closing notebook) in Wolfram 14.2, the DownValues and Attributes of MixedUnit get wiped and then not reinitialized.
+	If MixedUnit has no DownValues Set them to their expected values
+*)
+installMixedUnitFix[]:=(
+	If[Length[DownValues[MixedUnit]] == 0,
+		(* Unprotect *)
+		Unprotect[MixedUnit];
+
+		(* Reset the downvalues *)
+		MixedUnit["ArcDMS"] := MixedUnit @ {"AngularDegrees", "Arcminutes", "Arcseconds"};
+		MixedUnit["ArcMS"] := MixedUnit @ {"Arcminutes", "Arcseconds"};
+		MixedUnit["DHMS"] := MixedUnit @ {"Days", "Hours", "Minutes", "Seconds"};
+		MixedUnit["FI"] := MixedUnit @ {"Feet", "Inches"};
+		MixedUnit["HMS"] := MixedUnit @ {"Hours", "Minutes", "Seconds"};
+		MixedUnit["MDHMS"] := MixedUnit @ {"Months", "Days", "Hours", "Minutes", "Seconds"};
+		MixedUnit["MS"] := MixedUnit @ {"Minutes", "Seconds"};
+		MixedUnit["RightAscensionHMS"] := MixedUnit @ {"HoursOfRightAscension", "MinutesOfRightAscension", "SecondsOfRightAscension"};
+		MixedUnit["USDC"] := MixedUnit @ {"USDollars", "USCents"};
+		MixedUnit["YFI"] := MixedUnit @ {"Yards", "Feet", "Inches"};
+		MixedUnit["YMDHMS"] := MixedUnit @ {"Years", "Months", "Days", "Hours", "Minutes", "Seconds"};
+
+		(* Also re-establish its attributes *)
+		SetAttributes[MixedUnit, ReadProtected];
+
+		(* Reprotect *)
+		Protect[MixedUnit];
+	]
+);
+
+(*
+	In Wolfram 14.2 the - automatically gets pulled outside of the quantity for DegreesCelsius and DegreesFahrenheit.
+	Add UpValues to Quantity to force the -1 back inside
+*)
+installNegativeTemperatureQuantityFix[]:=Module[{},
+	Unprotect[Quantity];
+	Quantity /: Times[-1, Quantity[x_, "DegreesCelsius"]] := Quantity[-x, "DegreesCelsius"];
+	Quantity /: Times[-1, Quantity[x_, "DegreesFahrenheit"]] := Quantity[-x, "DegreesFahrenheit"];
+	Protect[Quantity];
+];
+
+(*
+	14.2 Change:
+		Adjust the order of the downvalues of QuantityUnits`Private`iUnitConvert. In Wolfram 14.2,
+		The order the Downvalues get sorted in changes and as a result the iUnitConvert overload
+
+		QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q_Quantity?QuantityQ, QuantityUnits`Private`d_]
+
+		gets put wayyy higher in the stack. This is an issue because this overload should be more of a catch all.
+		This means that we hit this overload, which results in a Quantity::unkunit error even if there is a valid
+		overload futher in the Downvalues list. In order to fix this, we reset the order of the downvalues to mirror
+		the behavior of MM 13.3.
+*)
+resetiUnitConvertDownValues[]:=Module[{},
+	DownValues[QuantityUnits`Private`iUnitConvert] = {HoldPattern[QuantityUnits`Private`iUnitConvert[]]:>(Message[UnitConvert::argrx,UnitConvert,0];Throw[False,"iUnitConvert"]),HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q_?QuantityQ,(Dated[QuantityUnits`Private`unit_,QuantityUnits`Private`date_])?KnownUnitQ]]:>If[IntegerQ[QuantityUnits`Private`date],QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q,DatedUnit[QuantityUnits`Private`unit,{QuantityUnits`Private`date}]],QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q,DatedUnit[QuantityUnits`Private`unit,QuantityUnits`Private`date]]],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`a_Association,QuantityUnits`Private`target_:"SIBase"]]:>(QuantityUnits`Private`convertAssociation[#1,QuantityUnits`Private`target]&)/@QuantityUnits`Private`a/;AssociationQ[QuantityUnits`Private`a],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`ts_TemporalData,QuantityUnits`Private`target_:"SIBase"]]:>QuantityUnits`Private`convertTimeSeries[QuantityUnits`Private`ts,QuantityUnits`Private`target],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`sa_?StructuredArray`StructuredArrayQ,QuantityUnits`Private`newunit_]]:>QuantityUnits`Private`StructuredArrayUnitConvert[QuantityUnits`Private`sa,QuantityUnits`Private`newunit],HoldPattern[QuantityUnits`Private`iUnitConvert[HoldPattern[QuantityUnits`Private`x_Entity],___]]:>QuantityUnits`Private`x,HoldPattern[QuantityUnits`Private`iUnitConvert[_,_,QuantityUnits`Private`args__]]:>(Message[UnitConvert::argrx,UnitConvert,Length[{QuantityUnits`Private`args}]+2,2];Throw[False,"iUnitConvert"]),HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`exp_?QuantityQ]]:>QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`exp,"SIBase"],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`unit_?KnownUnitQ]]:>QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`unit,"SIBase"],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`s_String]/;!KnownUnitQ[QuantityUnits`Private`s]]:>With[{QuantityUnits`Private`q=Quantity[QuantityUnits`Private`s]},If[Quiet[QuantityQ[QuantityUnits`Private`q]],QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q,"SIBase"],Throw[False,"iUnitConvert"]]],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`n_?NumericQ]]:>QuantityUnits`Private`n,HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`exp_,"Base"]]:>QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`exp,"SIBase"],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`n_?NumericQ,"SIBase"]]:>QuantityUnits`Private`n,HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q:{Quantity[_,QuantityUnits`Private`unit_]..},QuantityUnits`Private`args_?KnownUnitQ]]:>With[{QuantityUnits`Private`r=Catch[QuantityUnits`Private`bulkUnitConvert[QuantityUnits`Private`q,QuantityUnits`Private`args],QuantityUnits`Private`$tag]},QuantityUnits`Private`r/;QuantityUnits`Private`r=!=False],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`l_List,QuantityUnits`Private`arg_List]/;Length[QuantityUnits`Private`l]===Length[QuantityUnits`Private`arg]]:>Which[ArrayDepth[QuantityUnits`Private`l]>ArrayDepth[QuantityUnits`Private`arg],(UnitConvert[#1,QuantityUnits`Private`arg]&)/@QuantityUnits`Private`l,ArrayDepth[QuantityUnits`Private`l]==ArrayDepth[QuantityUnits`Private`arg],MapThread[UnitConvert,{QuantityUnits`Private`l,QuantityUnits`Private`arg},ArrayDepth[QuantityUnits`Private`l]],True,Message[UnitConvert::arrdpt]],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`quantities:{_Quantity?QuantityQ..},"SIBase"]]:>(UnitConvert[#1,"SIBase"]&)/@QuantityUnits`Private`quantities,HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`quantities:{_Quantity?QuantityQ..},QuantityUnits`Private`targetunit_Quantity?QuantityQ]]:>(UnitConvert[#1,QuantityUnits`Private`targetunit]&)/@QuantityUnits`Private`quantities,HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`list:{_Quantity?QuantityQ..},QuantityUnits`Private`targetunit_?KnownUnitQ]]:>(If[Head[#1]===Quantity,UnitConvert[#1,QuantityUnits`Private`targetunit],#1,Message[UnitConvert::failed];$Failed]&)/@QuantityUnits`Private`list,HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`list:{_Quantity..},QuantityUnits`Private`targetunit_Quantity]]:>(If[Head[#1]===Quantity,UnitConvert[#1,QuantityUnits`Private`targetunit],#1,Message[UnitConvert::failed];$Failed]&)/@QuantityUnits`Private`list,HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`l_List,QuantityUnits`Private`arg___]]:>(UnitConvert[#1,QuantityUnits`Private`arg]&)/@QuantityUnits`Private`l,HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`arg_,QuantityUnits`Private`l_List]]:>(UnitConvert[QuantityUnits`Private`arg,#1]&)/@QuantityUnits`Private`l,HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q_Quantity,QuantityUnits`Private`unit_?KnownUnitQ]]:>With[{QuantityUnits`Private`r=Catch[QuantityUnits`Private`fastConvert[QuantityUnits`Private`q,QuantityUnits`Private`unit],QuantityUnits`Private`$tag]},QuantityUnits`Private`r/;QuantityUnits`Private`r=!=$Failed],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q_?QuantityQ,QuantityUnits`Private`d_?DateObjectQ]]:>QuantityUnits`Private`unitConvertForDate[QuantityUnits`Private`q,QuantityUnits`Private`d],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`u_?KnownUnitQ,QuantityUnits`Private`d_?DateObjectQ]]:>QuantityUnits`Private`unitConvertForDate[Quantity[QuantityUnits`Private`u],QuantityUnits`Private`d],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`n_?NumericQ,QuantityUnits`Private`system_String]/;MemberQ[{"SI","Imperial","Metric"},QuantityUnits`Private`system]]:>QuantityUnits`Private`n,HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`s1_String,QuantityUnits`Private`s2_String]/;!MemberQ[QuantityUnits`Private`$UnitSystems,QuantityUnits`Private`s2]/;!KnownUnitQ[QuantityUnits`Private`s1]||!KnownUnitQ[QuantityUnits`Private`s2]]:>With[{QuantityUnits`Private`q1=Quantity[QuantityUnits`Private`s1],QuantityUnits`Private`q2=Quantity[QuantityUnits`Private`s2]},If[Quiet[QuantityQ[QuantityUnits`Private`q1]&&QuantityQ[QuantityUnits`Private`q2]],QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q1,QuantityUnits`Private`q2],Throw[False,"iUnitConvert"]]],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`s1_String,QuantityUnits`Private`arg2_]/;!KnownUnitQ[QuantityUnits`Private`s1]]:>With[{QuantityUnits`Private`q1=Quantity[QuantityUnits`Private`s1]},If[Quiet[QuantityQ[QuantityUnits`Private`q1]],QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q1,QuantityUnits`Private`arg2],Throw[False,"iUnitConvert"]]],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`arg1_,QuantityUnits`Private`s2_String]/;!MemberQ[QuantityUnits`Private`$UnitSystems,QuantityUnits`Private`s2]&&!KnownUnitQ[QuantityUnits`Private`s2]]:>With[{QuantityUnits`Private`q2=Quantity[QuantityUnits`Private`s2]},If[Quiet[QuantityQ[QuantityUnits`Private`q2]],QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`arg1,QuantityUnits`Private`q2],Throw[False,"iUnitConvert"]]],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`u_?KnownUnitQ,QuantityUnits`Private`arg_]]:>With[{QuantityUnits`Private`q=Quantity[1,QuantityUnits`Private`u]},If[Quiet[QuantityQ[QuantityUnits`Private`q]||NumericQ[QuantityUnits`Private`q]],QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q,QuantityUnits`Private`arg],Throw[False,"iUnitConvert"]]],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`u_,QuantityUnits`Private`arg_]/;KnownUnitQ[QuantityUnits`Private`u]]:>With[{QuantityUnits`Private`q=Quantity[1,QuantityUnits`Private`u]},If[Quiet[QuantityQ[QuantityUnits`Private`q]],QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q,QuantityUnits`Private`arg],Throw[False,"iUnitConvert"]]],HoldPattern[QuantityUnits`Private`iUnitConvert[(QuantityUnits`Private`q:Quantity[QuantityUnits`Private`mag_,QuantityUnits`Private`unit_])?QuantityQ,QuantityUnits`Private`unit_]]:>QuantityUnits`Private`q,HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q_Quantity?QuantityQ,HoldPattern[MixedRadix[QuantityUnits`Private`args__]]]]:>QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q,MixedUnit[{QuantityUnits`Private`args}]],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`quantity_Quantity?QuantityQ,QuantityUnits`Private`mr_MixedUnit]]:>QuantityUnits`Private`MixedUnitConvert[QuantityUnits`Private`quantity,QuantityUnits`Private`mr],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`quantity_Quantity?QuantityQ,"SIBase"]]:>Module[{QuantityUnits`Private`q=QuantityUnits`Private`quantity},If[QuantityUnits`Private`MixedUnitQ[QuantityUnits`Private`quantity],QuantityUnits`Private`q=QuantityUnits`Private`unmixMixedUnitQuantity[QuantityUnits`Private`quantity]];QuantityUnits`Private`c2sibu[QuantityUnits`Private`q]],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`quantity_Quantity?QuantityQ,QuantityUnits`Private`unitsystem_String]/;QuantityUnits`Private`hasCurrencyQ[QuantityUnits`Private`quantity]&&MemberQ[{"SI","Imperial","Metric"},QuantityUnits`Private`unitsystem]]:>QuantityUnits`Private`quantity,HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`quantity_Quantity?QuantityQ,QuantityUnits`Private`unitsystem:"SI"|"Imperial"|"Metric"]]:>QuantityUnits`Private`unitSystemConvert[QuantityUnits`Private`quantity,QuantityUnits`Private`unitsystem],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`quantity_Quantity?QuantityQ,QuantityUnits`Private`targetunit_?KnownUnitQ]/;QuantityUnits`Private`MixedUnitQ[QuantityUnits`Private`quantity]]:>QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`unmixMixedUnitQuantity[QuantityUnits`Private`quantity],QuantityUnits`Private`targetunit],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`quantity_Quantity?QuantityQ,QuantityUnits`Private`targetunit_Quantity?QuantityQ]]:>UnitConvert[QuantityUnits`Private`quantity,QuantityUnit[QuantityUnits`Private`targetunit]],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`n_?NumericQ,QuantityUnits`Private`t_]/;MemberQ[{"DimensionlessUnit","PureUnities"},QuantityUnits`Private`t]]:>QuantityUnits`Private`n,HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`n_?NumericQ,_?NumericQ]]:>QuantityUnits`Private`n,HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`n_?NumericQ,QuantityUnits`Private`targ_?KnownUnitQ]]:>If[UnitDimensions[QuantityUnits`Private`targ]==={},With[{QuantityUnits`Private`value=QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`targ,"SIBase"]},Quantity[QuantityUnits`Private`n/QuantityUnits`Private`value,QuantityUnits`Private`targ]],Message[Quantity::compat,"DimensionlessUnit",QuantityUnits`Private`targ];Throw[$Failed,"iUnitConvert"]],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`n_?NumericQ,QuantityUnits`Private`targ_?QuantityQ]]:>If[UnitDimensions[QuantityUnits`Private`targ]==={},With[{QuantityUnits`Private`value=QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`targ,"SIBase"],QuantityUnits`Private`unit=QuantityUnit[QuantityUnits`Private`targ]},Quantity[QuantityUnits`Private`n/QuantityUnits`Private`value,QuantityUnits`Private`unit]],Message[Quantity::compat,"DimensionlessUnit",QuantityUnit[QuantityUnits`Private`targ]];Throw[$Failed,"iUnitConvert"]],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q_Quantity?QuantityQ,QuantityUnits`Private`n_?NumericQ]/;UnitDimensions[QuantityUnits`Private`q]==={}]:>QuantityUnits`Private`QuantityExpand[QuantityUnits`Private`q],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q_Quantity?QuantityQ,QuantityUnits`Private`n_?NumericQ]]:>(Message[Quantity::compat,"DimensionlessUnit",QuantityUnit[QuantityUnits`Private`q]];Throw[$Failed,"iUnitConvert"]),HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q_Quantity?QuantityQ,QuantityUnits`Private`d_]/;!KnownUnitQ[QuantityUnits`Private`d]]:>With[{QuantityUnits`Private`res=Quantity[1,QuantityUnits`Private`d]},If[QuantityQ[QuantityUnits`Private`res],QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q,QuantityUnits`Private`res],Throw[False,"iUnitConvert"]]],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`expr:Except[_Quantity|_List]]]:>QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`expr,"SIBase"],HoldPattern[QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q:Quantity[_,QuantityUnits`Private`unit_],QuantityUnits`Private`target_]/;!CompatibleUnitQ[QuantityUnits`Private`unit,QuantityUnits`Private`target]]:>If[$AllowSloppyUnitConvertsion,Module[{QuantityUnits`Private`iud=UnitDimensions[QuantityUnits`Private`unit],QuantityUnits`Private`ud=UnitDimensions[QuantityUnits`Private`target],QuantityUnits`Private`tu},If[MatchQ[QuantityUnits`Private`iud,{__List}]&&MatchQ[QuantityUnits`Private`ud,{__List}]&&SubsetQ[QuantityUnits`Private`iud/. QuantityUnits`Private`n_Integer:>Abs[QuantityUnits`Private`n],QuantityUnits`Private`ud/. QuantityUnits`Private`n_Integer:>Abs[QuantityUnits`Private`n]]&&(QuantityUnits`Private`tu=QuantityUnits`Private`getTargetUnitFromInputAndTargetUnit[QuantityUnits`Private`q,QuantityUnits`Private`target];CompatibleUnitQ[QuantityUnits`Private`unit,QuantityUnits`Private`tu]),QuantityUnits`Private`iUnitConvert[QuantityUnits`Private`q,QuantityUnits`Private`tu],Message[Quantity::compat,QuantityUnits`Private`unit,QuantityUnits`Private`target];$Failed]],Message[Quantity::compat,QuantityUnits`Private`unit,QuantityUnits`Private`target];$Failed],HoldPattern[QuantityUnits`Private`iUnitConvert[___]]:>False};
+];
 
 
 SetAttributes[FunctionPackage,HoldFirst];
@@ -2042,15 +2075,25 @@ LoadDistro[configFile_String, options:OptionsPattern[]]:=Module[
 		$MM13$RevertQuantityUnits = True;
 	];
 
+	(* 13.2+ Units Fixes *)
 	If[
 		$VersionNumber >= 13.2`,
-		(* revertQuantityUnitsPaclet is not compatible with MM 14.2 because it reads the QuantityUnits.m file differently than 13.3 and I can't edit the source code since the file is encoded and I don't have the source of where the encoding came from *)
-		If[$VersionNumber < 14.2`,
-			revertQuantityUnitsPaclet[sllDir],
-			installUnitConversionPatch[]
-		];
-		installOtherUnitFixes[]; (* always *)
-		installAbsoluteGraphicsPatch[]; (* always *)
+		(
+			revertQuantityUnitsPaclet[sllDir];
+			installUnitConversionPatch[];
+			installOtherUnitFixes[]; (* always *)
+			installAbsoluteGraphicsPatch[]; (* always *)
+
+		)
+	];
+	(* 14.2+ Units Fixes *)
+	If[
+		$VersionNumber >= 14.2`,
+		(
+			installMixedUnitFix[];
+			installNegativeTemperatureQuantityFix[];
+			resetiUnitConvertDownValues[];
+		)
 	];
 	tocPatch13=AbsoluteTime[];
 

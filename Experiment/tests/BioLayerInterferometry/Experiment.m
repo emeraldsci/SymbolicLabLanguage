@@ -3646,11 +3646,19 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, CentrifugeIntensity, "The rotational speed or the force that will be applied to the samples by centrifugation prior to starting the experiment or any aliquoting:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 8 (1.5 mL)" <> $SessionUUID], CentrifugeIntensity -> 1000*RPM, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 8 (1.5 mL)" <> $SessionUUID], CentrifugeIntensity -> 1000 RPM, Output -> Options];
       Lookup[options, CentrifugeIntensity],
-      1000*RPM,
+      1000 RPM,
       EquivalenceFunction -> Equal,
       Variables :> {options}
+    ],
+    Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 8 (1.5 mL)" <> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+      Lookup[options, CentrifugeIntensity],
+      1000 RPM,
+      EquivalenceFunction -> Equal,
+      Variables :> {options},
+      Messages :> {Warning::CentrifugePrecision}
     ],
     (* Note: CentrifugeTime cannot go above 5Minute without restricting the types of centrifuges that can be used. *)
     Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment or any aliquoting:"},
@@ -3829,6 +3837,14 @@ DefineTests[ExperimentBioLayerInterferometry,
       0.28*Milliliter,
       EquivalenceFunction -> Equal,
       Variables :> {options}
+    ],
+    Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 8 (1.5 mL)" <> $SessionUUID], AliquotAmount -> 0.2811 Milliliter, Output -> Options];
+      Lookup[options, AliquotAmount],
+      0.281 Milliliter,
+      EquivalenceFunction -> Equal,
+      Variables :> {options},
+      Messages :> {Warning::AliquotAmountPrecision}
     ],
     Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
       options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 8 (1.5 mL)" <> $SessionUUID], AssayVolume -> 0.28*Milliliter, Output -> Options];

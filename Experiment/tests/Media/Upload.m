@@ -105,7 +105,7 @@ DefineTests[UploadMedia,
 			Variables:>{mediaModel}
 		],
 		Example[{Options,Resuspension,"Use Resuspension option to indicate if the stock solution has a fixed amount component that should be resuspended in its original container first:"},
-			mediaModel =With[{ampicillin = UploadSampleModel["Fixed amount ampicillin for UploadMedia"<>$SessionUUID,Composition->{{100*MassPercent,Model[Molecule,"Ampicillin"]}},FixedAmounts->{50Milligram},TransferOutSolventVolumes->{100Milliliter},SingleUse->True,SampleHandling->Fixed,State->Solid,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
+			mediaModel =With[{ampicillin = UploadSampleModel[{{100*MassPercent,Model[Molecule,"Ampicillin"]}},Name->"Fixed amount ampicillin for UploadMedia"<>$SessionUUID,FixedAmounts->{50Milligram},TransferOutSolventVolumes->{100Milliliter},SingleUse->True,SampleHandling->Fixed,State->Solid,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
 				UploadMedia[
 					{
 						{50 Milligram, ampicillin},
@@ -121,12 +121,12 @@ DefineTests[UploadMedia,
 			Variables:>{mediaModel}
 		],
 		Example[{Options,StockSolutionTemplate,"Use preparation defaults from an existing solution for a different formula:"},
-			With[{newLB = UploadSampleModel["LB Broth Miller Template Model for UploadMedia"<>$SessionUUID,
-				Composition->{
+			With[{newLB = UploadSampleModel[{
 					{20*MassPercent,Model[Molecule,"Yeast Extract"]},
 					{40*MassPercent,Model[Molecule,"Tryptone"]},
 					{40*MassPercent,Model[Molecule,"Sodium Chloride"]}
 				},
+				Name->"LB Broth Miller Template Model for UploadMedia"<>$SessionUUID,
 				State->Solid, Expires->False, MSDSFile -> NotApplicable, DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
 				UploadMedia[{{25 Gram,newLB}},
 					Model[Sample, "Milli-Q water"],
@@ -194,7 +194,7 @@ DefineTests[UploadMedia,
 			Messages:>{Error::DropOutInGellingAgents,Warning::RedundantGellingAgents,Error::InvalidOption}
 		],
 		Example[{Messages,"GellingAgentMissingMeltingPoint","Throw an error if MeltingPoint is not specified for a component in the specified GellingAgents option:"},
-			With[{agarMissingMP = UploadSampleModel["Agar without Melting Point for UploadMedia"<>$SessionUUID,Composition->{{100*MassPercent,Model[Molecule,"Agar"]}},State->Solid,MeltingPoint->Null,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
+			With[{agarMissingMP = UploadSampleModel[{{100*MassPercent,Model[Molecule,"Agar"]}},Name->"Agar without Melting Point for UploadMedia"<>$SessionUUID,State->Solid,MeltingPoint->Null,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
 				UploadMedia[
 					{
 						{25 Gram,Model[Sample,"LB Broth Miller (Sigma Aldrich)"]}
@@ -343,7 +343,7 @@ DefineTests[UploadMedia,
 			];
 			
 			(* Test LB solid media with 2% Agar *)
-			With[{agar = UploadSampleModel["Agar for UploadMedia"<>$SessionUUID,Composition->{{100*MassPercent,Model[Molecule,"Agar"]}},State->Solid,MeltingPoint->85*Celsius,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
+			With[{agar = UploadSampleModel[{{100*MassPercent,Model[Molecule,"Agar"]}},Name->"Agar for UploadMedia"<>$SessionUUID,State->Solid,MeltingPoint->85*Celsius,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
 				UploadMedia[
 					{
 						Model[Sample,Media,"LB Broth, Miller"],
@@ -362,7 +362,7 @@ DefineTests[UploadMedia,
 			];
 			
 			(* Test LB liquid media with 50ug/mL Ampicillin *)
-			With[{ampicillin = UploadSampleModel["Ampicillin for UploadMedia"<>$SessionUUID,Composition->{{100*MassPercent,Model[Molecule,"Ampicillin"]}},State->Solid,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
+			With[{ampicillin = UploadSampleModel[{{100*MassPercent,Model[Molecule,"Ampicillin"]}},Name->"Ampicillin for UploadMedia"<>$SessionUUID,State->Solid,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
 				UploadMedia[
 					Model[Sample,Media,"Test media model for UploadMedia (LB, liquid)"<>$SessionUUID],
 					Supplements->{{50*Milligram,ampicillin}},

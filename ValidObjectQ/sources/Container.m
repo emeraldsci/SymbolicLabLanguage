@@ -145,6 +145,14 @@ validContainerQTests[packet:PacketP[Object[Container]]]:=Module[
 			True
 		],
 
+		Test["If Status is UndergoingMaintenance, the container must be capable of undergoing maintenance:",
+			If[MatchQ[Lookup[packet, Status], UndergoingMaintenance],
+				MatchQ[packet, ObjectP[InternalUpload`Private`$UndergoingMaintenanceTypes]],
+				True
+			],
+			True
+		],
+
 		(* Cameras *)
 		Test["Positions monitored by the cameras exist on the Container:",
 			Module[{allowedPosition, monitoredLocations},
@@ -1632,15 +1640,6 @@ validContainerVesselVolumetricFlaskQTests[packet:PacketP[Object[Container,Vessel
 validContainerVesselGasWashingBottleQTests[packet:PacketP[Object[Container,Vessel,GasWashingBottle]]]:={
 };
 
-(* ::Subsection::Closed:: *)
-(* validContainerSinkerQTests *)
-
-validContainerSinkerQTests[packet:PacketP[Object[Container,Sinker]]]:={
-	NotNullFieldTest[packet,{
-		CleanRack,
-		DirtyRack
-	}]
-};
 
 (* ::Subsection::Closed:: *)
 (* validContainerDosageDispensingUnitQTests *)
@@ -2043,7 +2042,6 @@ registerValidQTestFunction[Object[Container,Safe],validContainerSafeQTests];
 registerValidQTestFunction[Object[Container,Shelf],validContainerShelfQTests];
 registerValidQTestFunction[Object[Container,ShelvingUnit],validContainerShelvingUnitQTests];
 registerValidQTestFunction[Object[Container,Shipping],validContainerShippingQTests];
-registerValidQTestFunction[Object[Container,Sinker],validContainerSinkerQTests];
 registerValidQTestFunction[Object[Container,DosageDispensingUnit],validContainerDosageDispensingUnitQTests];
 registerValidQTestFunction[Object[Container,Stand],validContainerStandQTests];
 registerValidQTestFunction[Object[Container,Syringe],validContainerSyringeQTests];

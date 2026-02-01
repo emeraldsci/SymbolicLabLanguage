@@ -574,7 +574,7 @@ ExperimentEvaporate[myInputs:ListableP[{ObjectP[Object[Sample]]..}], myOptions:O
 		{Upload, Confirm, CanaryBranch, ParentProtocol, Email}
 	];
 
-	(* adjust the email option based on the upload optoin *)
+	(* adjust the email option based on the upload option *)
 	emailOption = If[!MatchQ[emailOption, Automatic], rawEmailOption,
 		If[And[uploadOption, MemberQ[output, Result]], True, False]
 	];
@@ -3545,7 +3545,6 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 		sampleVolumesToReserve, simulatedSamples, simulatedCache, fastAssocSimulatedCache,
 		sampleResourceReplaceRules, expPooledSamplesIn,
 		samplesInResources, containersIn, estimatedRunTimes, instruments,
-		balanceResources,
 		simulatedContainers,
 		simulatedModelContainers,
 		pooledContainerModel,
@@ -3560,8 +3559,6 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 		aliquotContainers,
 
 		vacEvapMethods,
-
-		weightVerificationTime,
 
 		evapUntilDryVals, maxEvapTimes, tempEquilTimes, rampTimes, evapTimes, evapTemps,
 		rinseSolutionObjVolPairs,
@@ -3580,7 +3577,6 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 		placeHolderInstResources,
 		batchContainerLengths,
 		batchSampleLengths,
-		balances,
 
 		bathFluidResources,
 		cleanedEvapParams,
@@ -3799,33 +3795,6 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	(* Determine which instrument we'll use *)
 	instruments = Lookup[myResolvedOptions, Instrument];
 
-	(* Figure out how long it will take to verify the weights of the containers and counterweights *)
-	(* TODO: Limit this to SpeedVacs *)
-	weightVerificationTime = 2 * Length[containersIn] * (2 Minute);
-
-	(* TODO: This gets more complicated because it's 2minutes * number of containers IN THIS BATCH *)
-	(* Balance Resource for weighing the samples/buckets *)
-	balanceResources = If[MatchQ[#, SpeedVac],
-		Resource[
-			Instrument -> Model[Instrument, Balance, "id:o1k9jAGvbWMA"],
-			Time -> weightVerificationTime
-		],
-		Null
-	]& /@ evapTypes;
-
-	balances = If[MatchQ[#, SpeedVac],
-		Model[Instrument, Balance, "id:o1k9jAGvbWMA"],
-		Null
-	]& /@ evapTypes;
-
-	(* Build resources for balancing solutions *)
-	(* TODO: more intelligently account for amount here *)
-	(* TODO: Determine if we have to create these resources here *)
-	(*balancingSolutionResources = If[!NullQ[#],
-		Resource[Sample->#,Amount->1Liter],
-		Null
-	]&/@Lookup[myResolvedOptions,BalancingSolution];*)
-
 	(* Evaporation flask resources *)
 	evaporationContainerResources = If[!NullQ[#], Link@Resource[Sample -> #, Name -> ToString[Unique[]]], Null]& /@ Lookup[myResolvedOptions, EvaporationFlask];
 
@@ -3944,7 +3913,7 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 			(*25*)Link /@ condensateRecoveryContainers,
 
 			(* SpeedVac Parameters *)
-			(*26*)Link /@ balances,
+			(*26*)ConstantArray[Null, Length[expPooledSamplesIn]], (* Balance is deprecated *)
 			(*27*)Link /@ Lookup[myResolvedOptions, BalancingSolution],
 			(*28*)Link /@ Lookup[myResolvedOptions, VacuumEvaporationMethod],
 
@@ -4722,7 +4691,6 @@ evaporateResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 			Replace[Instruments] -> Link /@ instruments,
 			Replace[ReadyCheckResourcePlaceholders] -> Link /@ placeHolderInstResources,
 
-			Replace[Balances] -> balanceResources,
 			Replace[BalancingSolutions] -> Link /@ Lookup[evapParamsRaw, BalancingSolution], (* NOTE: This is a simple link as the compiler builds resources based on sample weights *)
 			Replace[CentrifugeBuckets] -> Link /@ batchedSpeedVacBuckets,
 			Replace[CentrifugeRacks] -> Link /@ batchedCentrifugeTubeRacks,

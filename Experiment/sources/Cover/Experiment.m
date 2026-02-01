@@ -169,7 +169,7 @@ DefineOptions[ExperimentCover,
 				OptionName -> Instrument,
 				Default -> Automatic,
 				Description -> "The device used to help secure the cover to the top of the container.",
-				ResolutionDescription -> "Automatically set to a Model[Part, Crimper] that has the same CoverFootprint as the calculated Cover if CoverType->Crimp (if one exists), or a Model[Instrument, Crimper] that has the same CoverFootprint as the calculated Cover if CoverType->Crimp.  Otherwise, set to a Model[Instrument, PlateSealer] that has the same CoverFootprint as the calculated Cover if CoverType->Seal. Otherwise, is set to Null.",
+				ResolutionDescription -> "Automatically set to a Model[Part, Crimper] that has the same CoverFootprint as the calculated Cover if CoverType->Crimp (if one exists and the Septum option is Null), or a Model[Instrument, Crimper] that has the same CoverFootprint as the calculated Cover if CoverType -> Crimp.  Otherwise, set to a Model[Instrument, PlateSealer] that has the same CoverFootprint as the calculated Cover if CoverType->Seal. Otherwise, is set to Null.",
 				AllowNull -> True,
 				Category -> "General",
 				Widget -> Widget[
@@ -2170,8 +2170,14 @@ resolveExperimentCoverOptions[
 					MatchQ[resolvedPreparation, Robotic] && MatchQ[coverType, Place],
 						Null,
 
-					(* If we're using a crimp cap, we need to get a crimper. If a hand crimper exists for the chosen footprint, use that.  Otherwise, use the pneumatic one *)
-					MatchQ[coverType, Crimp] && MemberQ[Lookup[crimperPartModelPackets, CoverFootprint], Lookup[coverModelPacket, CoverFootprint]],
+					(* If we're using a crimp cap, we need to get a crimper. If a hand crimper exists for the chosen footprint AND we don't need a septum, use that.  Otherwise, use the pneumatic one *)
+					(* Septum exception is because using a septum can make the process a lot more problematic and we only tested the caps-already-have-a-built-in-septum case for the hand crimper *)
+					(* if we empirically find that using a septum with a hand crimper is fine then we can update this code and the procedure accordingly, but that's not where we are now *)
+					And[
+						MatchQ[coverType, Crimp],
+						MemberQ[Lookup[crimperPartModelPackets, CoverFootprint], Lookup[coverModelPacket, CoverFootprint]],
+						NullQ[septum]
+					],
 						FirstCase[crimperPartModelPackets, packet:KeyValuePattern[{CoverFootprint -> Lookup[coverModelPacket, CoverFootprint]}] :> Lookup[packet, Object]],
 					MatchQ[coverType, Crimp],
 						Lookup[
@@ -2457,7 +2463,15 @@ resolveExperimentCoverOptions[
 					calculateCoverEnvironment[
 						objectSamplePackets,
 						containerRepeatedContainers,
-						Join[calculateCoverEnvironmentOptions, <|Preparation -> resolvedPreparation, ActiveCart -> activeCart|>]
+						(* it's important to pass in any relevant resolved options here; previoulsy we didn't do this and the resolved Instrument option wasn't being followed because this function only knew about the unresolved value *)
+						Join[
+							calculateCoverEnvironmentOptions,
+							<|
+								Preparation -> resolvedPreparation,
+								ActiveCart -> activeCart,
+								Instrument -> instrument
+							|>
+						]
 					]
 				];
 
@@ -3614,7 +3628,7 @@ coverResourcePackets[
 			uniqueEnvironmentResources=(#->Which[
 				(* special treatment for fumehood, we do not really care which model to use for uncovering if we are really going to use a fumehood, so just allow all models *)
 				MatchQ[#, ObjectP[Model[Instrument, HandlingStation, FumeHood, "id:1ZA60vzEmYv0"]]],
-					With[{currentFumeHoodModels= UnsortedComplement[Cases[transferModelsSearch["Memoization"][[23]], ObjectP[Model[Instrument, HandlingStation, FumeHood]]], $SpecializedHandlingStationModels]},
+					With[{currentFumeHoodModels= commonFumeHoodHandlingStationModels["Memoization"]},
 						Resource[Instrument -> currentFumeHoodModels]
 					],
 				MatchQ[#, ObjectP[{Model[Container], Object[Container]}]],

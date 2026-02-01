@@ -433,6 +433,25 @@ DefineOptions[PlotChromatography,
 			Category -> "Data Specifications",
 			Widget -> Widget[Type->Enumeration,Pattern:>Alternatives[Volume]]
 		},
+		{
+			OptionName -> HammingWindowWidth,
+			Default -> Medium,
+			Description -> "The width of the Hamming window that is convolved with the Absorbance data before plotting. The setting can be Null (no convolution), one of Small, Medium, or Large - corresponding to 1, 2, or 4 seconds, or a numeric value between 0.0125 seconds and 5.0 seconds. No convolution is applied for data other than Absorbance.",
+			AllowNull -> True,
+			Category -> "Data Specifications",
+			Widget -> Alternatives[
+				Widget[
+					Type -> Enumeration,
+					(* HPLCSmoothingTimeConstantP = Small, Medium, Large. When no SmoothingTimeConstant is used, this option is set to Null*)
+					Pattern :> HPLCSmoothingTimeConstantP
+				],
+				Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[0.0125 Second, 5 Second], (*can be only specific values. related to AbsorbanceSamplingRate setting *)
+					Units -> {Second, {Second, Millisecond}}
+				]
+			]
+		},
 		OutputOption
 	},
 	SharedOptions :> {
@@ -447,6 +466,7 @@ DefineOptions[PlotChromatography,
 
 (* Other messages are defined in PlotData file as they are shared among the other functions there *)
 Warning::CannotTransform3DData="The x-axis of the data cannot be transformed if the data is 3D. Plot will be generated without the transform.";
+Warning::UnableToTransform="PlotChromatography is unable to transform the x-axis when also applying the Hamming window. Set HammingWindowWidth->Null to allow transforming the x-axis.";
 Warning::CannotTransformMassSpecData="Cannot transform the x-axis of the mass spec data to be volume. Plot will be generated without the transform.";
 Warning::InvalidTargetUnits="The target units specified `1` do not match the option TransformX. Plot will be generated without the transform.";
 Warning::UndefinedFlowRate="The flow rate is not specified. Plot will be generated without the transform.";
@@ -468,6 +488,9 @@ PlotChromatography[primaryData:rawPlotInputP,inputOptions:OptionsPattern[]]:=raw
 	PlotChromatography,
 	(*we need to check if the primary data was specified, if not then we need to figure out what kind of data is present instead of just assuming absorbance*)
 	Module[{safeOptions,primaryDataOption},
+		TagTrace["sll.function.call", 1];
+		TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{inputOptions}], "{" | "}"], " "->""]];
+
 		safeOptions=SafeOptions[PlotChromatography, ToList[inputOptions]];
 
 		(*is the primary data still automatic?*)
@@ -506,6 +529,9 @@ PlotChromatography[
 	}],
 	ops: OptionsPattern[PlotChromatography]
 ] := Module[{safeOps, output, data, previewPlot, plots, resolvedOptions, finalResult, outputPlot, outputOptions},
+
+	TagTrace["sll.function.call", 2];
+	TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{ops}], "{" | "}"], " "->""]];
 
 	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
 	safeOps=SafeOptions[PlotChromatography, ToList[ops]];
@@ -580,10 +606,13 @@ PlotChromatography[input:ListableP[ObjectP[Object[Data,Chromatography]]]|Listabl
 		changingGradientQ,detectors,bestPrimaryField,bestSecondaryField,analysisFields,massSpecDataQ,populatedPrimaryFields,
 		resolvedPlotType,requestedWavelengthInRange,resolvedWavelength,sideLabels,options3D,full3DOptions,gradientB,requestedPrimaryData,
 		resolvedPrimaryData,requestedSecondaryData,resolvedSecondaryData,resolvedOps,result,options,zoomablePlot,
-		minMasses, maxMasses, targetMasses,flowRates,requestedTransformX,resolvedTransformX,validTransformXQ,xAxisUnit,
+		minMasses, maxMasses, targetMasses,flowRates,requestedTransformX,resolvedTransformX,hammingWindowWidth,validTransformXQ,xAxisUnit,
 		validTransformUnitsQ,almostResolvedTargetUnits,xTransformationFunctions,resolvedGradientPackets,resolvedTransformPackets,
 		fluidTypes, secondaryDataLookup, airAlarms, newDisplayOptions, airAlarmEpilog, airAlarmsTransformed, verticalLineOption,verticalLineEpilog
 	},
+
+	TagTrace["sll.function.call", 3];
+	TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{inputOptions}], "{" | "}"], " "->""]];
 
 	(* Make sure we're working with a list of options *)
 	listedOptions = ToList[inputOptions];
@@ -625,6 +654,14 @@ PlotChromatography[input:ListableP[ObjectP[Object[Data,Chromatography]]]|Listabl
 	secondaryDataLookup = OptionDefault[OptionValue[SecondaryData]];
 	requestedSecondaryData = If[MatchQ[secondaryDataLookup,Except[Automatic]],ToList@secondaryDataLookup, secondaryDataLookup];
 	requestedTransformX=OptionDefault[OptionValue[TransformX]];
+	hammingWindowWidth=Replace[
+		OptionDefault[OptionValue[HammingWindowWidth]],
+		{
+			Small :> 1 Second,
+			Medium :> 2 Second,
+			Large :> 4 Second
+		}
+	];
 
 	plotTypes3D = ContourPlot|DensityPlot|ListPlot3D;
 
@@ -834,6 +871,7 @@ PlotChromatography[input:ListableP[ObjectP[Object[Data,Chromatography]]]|Listabl
 		resolvedTransformX&&MemberQ[flowRates,{}],Message[Warning::UndefinedFlowRate];False,
 		resolvedTransformX&&massSpecDataQ,Message[Warning::CannotTransformMassSpecData];False,
 		resolvedTransformX&&(MatchQ[requestedPlotType,plotTypes3D]),Message[Warning::CannotTransform3DData];False,
+		resolvedTransformX&&hammingWindowWidth=!=Null,Message[Warning::UnableToTransform];False,
 		resolvedTransformX&&!massSpecDataQ&&!(MatchQ[requestedPlotType,plotTypes3D]),True,
 		True,False
 	];
@@ -1115,6 +1153,9 @@ PlotChromatography[input:ListableP[ObjectP[Object[Data,Chromatography]]]|Listabl
 				]
 			];
 
+			(*Before producing the plots, apply the hamming window to all Absorbance data.*)
+			updatedPackets = MapAt[applyHammingWindow[#, hammingWindowWidth]&, updatedPackets, {All, Key[Absorbance]}];
+
 			(* Call EmeraldListLinePlot with these resolved options, forcing Output\[Rule]{Result,Options}. *)
 			ellpResult=packetToELLP[updatedPackets,PlotChromatography,resolvedOpsWithOutput];
 
@@ -1253,4 +1294,45 @@ PlotChromatography[input:ListableP[ObjectP[Object[Data,Chromatography]]]|Listabl
 ];
 
 (* Doubly listed oveerload *)
-PlotChromatography[input:{{ObjectP[]..}..},inputOptions:OptionsPattern[PlotChromatography]]:=PlotChromatography[#,inputOptions]&/@input;
+PlotChromatography[input:{{ObjectP[]..}..},inputOptions:OptionsPattern[PlotChromatography]]:=(
+
+	TagTrace["sll.function.call", 4];
+	TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{inputOptions}], "{" | "}"], " "->""]];
+
+	PlotChromatography[#,inputOptions]&/@input
+);
+
+(*Convolves the Hamming window kernel with the given QuantityArray*)
+applyHammingWindow[qa_QuantityArray, size: ECL`GreaterP[0 ECL`Minute]] :=
+	Module[{
+		meanSpacing,
+		windowPoints,
+		unitlessData,
+		xUnits,
+		yUnits,
+		hammingKernel,
+		unitlessConvolvedData
+	},
+
+		unitlessData = QuantityMagnitude[qa];
+		{xUnits, yUnits} = qa["UnitBlock"];
+		meanSpacing = Quantity[Mean[Differences[QuantityMagnitude[qa[[All, 1]]]]], xUnits];
+		windowPoints = UnitConvert[size/meanSpacing];
+
+		hammingKernel = Table[0.54 - 0.46 Cos[2 Pi n / (windowPoints - 1)], {n, 1,windowPoints}];
+
+		If[Length[hammingKernel] == 0, Return[qa, Module]];
+
+		unitlessConvolvedData = ListConvolve[
+			hammingKernel/Total[hammingKernel],
+			unitlessData[[All, 2]],
+			{1, 1},
+			unitlessData[[1, 2]]
+		];
+
+		QuantityArray[Transpose[{unitlessData[[All, 1]], unitlessConvolvedData}], {xUnits, yUnits}]
+	];
+
+(* Window size of Null means do not apply Hamming window function to data, just return the original QuantityArray*)
+(* Or if the Absorbance is Null, just return the Null *)
+applyHammingWindow[qa_, _] := qa;

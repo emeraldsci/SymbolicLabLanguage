@@ -224,7 +224,7 @@ DefineTests[SameSequenceQ,{
 		SameSequenceQ["GCACA","GCACA",Polymer->RNA],
 		True
 	],
-	Example[{Options,Degeneracy,"Degeneracy option set to true will check to see if degenrate sequences could be the same:"},
+	Example[{Options,Degeneracy,"Degeneracy option set to true will check to see if degenerate sequences could be the same:"},
 		SameSequenceQ["GCACA","GCNCA",Degeneracy->True],
 		True
 	],

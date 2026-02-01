@@ -2189,23 +2189,23 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 				crossFlowExceedCapacityQ=False;
 				
 				(* Resolve the volume within the current bounds of the experiment *)
-				resolvedSampleInVolume=Which[
+				resolvedSampleInVolume = Which[
 					(* Use the user specified value *)
-					MatchQ[Lookup[optionSet,SampleInVolume], Except[Automatic]],Lookup[optionSet,SampleInVolume],
+					MatchQ[Lookup[optionSet, SampleInVolume], Except[Automatic]], Lookup[optionSet, SampleInVolume],
 
 					(* Resolve the sample in volume for KR2i*)
-					(preResolvedSampleInVolume <= instrumentMaxVolume) && Not[uPulseQ], Max[UnitConvert[preResolvedSampleInVolume,Milliliter],100 Milliliter],
+					(preResolvedSampleInVolume <= instrumentMaxVolume) && Not[uPulseQ], Round[Max[UnitConvert[preResolvedSampleInVolume, Milliliter], 100 Milliliter], 1 Microliter],
 					
 					(* Resolve it for uPulse *)
-					(preResolvedSampleInVolume <= instrumentMaxVolume), Min[UnitConvert[preResolvedSampleInVolume,Milliliter],50 Milliliter],
+					(preResolvedSampleInVolume <= instrumentMaxVolume), Round[Min[UnitConvert[preResolvedSampleInVolume, Milliliter], 50 Milliliter], 1 Microliter],
 					
 					(* Throw a warning saying we are capping the sample volume and return instrumentMaxVolume *)
 					uPulseQ, (
-						crossFlowExceedCapacityQ=True;
+						crossFlowExceedCapacityQ = True;
 						45 Milliliter
 					),
 					True, (
-						crossFlowExceedCapacityQ=True;
+						crossFlowExceedCapacityQ = True;
 						2 Liter
 					)
 				];
@@ -2966,7 +2966,7 @@ resolveExperimentCrossFlowFiltrationOptions[mySamples:ListableP[ObjectP[Object[S
 					True
 				];
 				(* Calculate the theoretical maximum of the volume -- this is the entire amount that gets left behind based on targets *)
-				theoreticalRetentateVolume=resolvedSampleInVolume-concentrationPermeateVolume;
+				theoreticalRetentateVolume=Round[resolvedSampleInVolume-concentrationPermeateVolume,1 Microliter];
 				
 				(* Resolve the retentate out volume *)
 				resolvedRetentateAliquotVolume=Which[

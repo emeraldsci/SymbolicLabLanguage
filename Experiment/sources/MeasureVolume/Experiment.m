@@ -3524,7 +3524,7 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 	expandedAndFilteredRecoupSample = PickList[Lookup[myExpandedOptions,RecoupSample],measureDensity,True];
 	(*numberOfDensityReplicatesOption = PickList[Lookup[myExpandedOptions,NumberOfMeasureDensityReplicates],measureDensity,True];*)
 
-	(* format the optoins for storage in the named field*)
+	(* format the options for storage in the named field*)
 	measureDensityParameters = If[AnyTrue[measureDensity,TrueQ],
 		MapThread[
 			Association[

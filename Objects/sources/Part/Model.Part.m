@@ -139,6 +139,13 @@ DefineObjectType[Model[Part], {
 			Description -> "Indicates how parts of this model are contained in an aseptic barrier and if they need to be unbagged before being used in a protocol, maintenance, or qualification.",
 			Category -> "Storage Information"
 		},
+		ExposedSurfaces -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if any sensitive portions of this part are open to the external environment and prone to contamination.",
+			Category -> "Compatibility"
+		},
 		
 		(* --- Plumbing Information --- *)
 		Connectors -> {
@@ -210,14 +217,6 @@ DefineObjectType[Model[Part], {
 			Relation -> Object[Product][KitComponents, ProductModel],
 			Description -> "Products ordering information for this model if this model is part of one or more kits.",
 			Category -> "Inventory"
-		},
-		StickeredUponArrival -> {
-			Format -> Single,
-			Class -> Expression,
-			Pattern :> BooleanP,
-			Description -> "Indicates if a sticker should be attached to this item during Receive Inventory, or if the unpeeled sticker should be stored with the item and affixed during resource picking.",
-			Category -> "Inventory",
-			Developer->True
 		},
 		StickerPositionOnReceiving -> {
 			Format -> Single,

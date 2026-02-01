@@ -96,12 +96,12 @@ validModelWiringQTests[packet:PacketP[Model[Wiring]]] := {
 (* ::Subsection:: *)
 (*validModelWiringCableQTests*)
 
-validModelWiringCableQTests[packet:PacketP[Model[Wiring,CircuitBreaker]]]:={};
+validModelWiringCableQTests[packet: PacketP[Model[Wiring, Cable]]] := {};
 
 (* ::Subsection:: *)
 (*validModelWiringCableAdapterQTests*)
 
-validModelWiringCableAdapterQTests[packet:PacketP[Model[Wiring,CircuitBreaker]]]:={};
+validModelWiringCableAdapterQTests[packet: PacketP[Model[Wiring, CableAdapter]]] := {};
 
 (* ::Subsection:: *)
 (*validModelWiringCircuitBreakerQTests*)

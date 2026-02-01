@@ -8438,6 +8438,7 @@ resolveMixIncubateStockSolutionOptions[
 				MixType->Which[
 					MatchQ[Lookup[options, MixType], Automatic] && Not[mixBool], Null,
 					MatchQ[Lookup[options, MixType], MixTypeP|Null], Lookup[options, MixType],
+					(* Prefer Invert as otherwise we will resolve to Shake *)
 					MatchQ[container, ObjectP[Model[Container,Vessel,VolumetricFlask]]] && Not[TimeQ[modelMixTime]], Invert,
 					passModelValueQ, maybeMixType,
 					True, Automatic

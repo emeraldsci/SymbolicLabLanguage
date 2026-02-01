@@ -1339,6 +1339,14 @@ DefineTests[
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentIncubate[Object[Sample, "Test water sample in 50mL tube for ExperimentIncubate"<>$SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options,CentrifugeTime,"The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options=ExperimentIncubate[Object[Sample,"Test water sample in 50mL tube for ExperimentIncubate"<>$SessionUUID],CentrifugeTime->5*Minute,Output->Options];
 			Lookup[options,CentrifugeTime],
@@ -1488,6 +1496,14 @@ DefineTests[
 			10*Milliliter,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentIncubate[Object[Sample, "Test water sample in 50mL tube for ExperimentIncubate"<>$SessionUUID], AliquotAmount -> 10.001 Milliliter, AliquotContainer -> Model[Container, Vessel, "50mL Tube"], Output -> Options];
+			Lookup[options, AliquotAmount],
+			10 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,AssayVolume,"The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options=ExperimentIncubate[Object[Sample,"Test water sample in 50mL tube for ExperimentIncubate"<>$SessionUUID],AssayVolume->10*Milliliter,Output->Options];
@@ -3119,6 +3135,14 @@ DefineTests[
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentMix[Object[Sample, "Test water sample in 50mL tube for ExperimentMix"<>$SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options,CentrifugeTime,"The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options=ExperimentMix[Object[Sample,"Test water sample in 50mL tube for ExperimentMix"<>$SessionUUID],CentrifugeTime->5*Minute,Output->Options];
 			Lookup[options,CentrifugeTime],
@@ -3268,6 +3292,14 @@ DefineTests[
 			10*Milliliter,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentMix[Object[Sample, "Test water sample in 50mL tube for ExperimentMix"<>$SessionUUID], AliquotAmount -> 10.001 Milliliter, AliquotContainer -> Model[Container, Vessel, "50mL Tube"], Output -> Options];
+			Lookup[options, AliquotAmount],
+			10 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,AssayVolume,"The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options=ExperimentMix[Object[Sample,"Test water sample in 50mL tube for ExperimentMix"<>$SessionUUID],AssayVolume->10*Milliliter,Output->Options];
@@ -7166,26 +7198,26 @@ DefineTests[
 		];
 		Block[{$DeveloperUpload=True},
 			(* upload the model samples of just water with different DefaultStorageConditions *)
-			UploadSampleModel["Test Model Sample" <> $SessionUUID,
-				Composition->{{100 VolumePercent,Model[Molecule,"Water"]}},
+			UploadSampleModel[{{100 VolumePercent,Model[Molecule,"Water"]}},
+				Name->"Test Model Sample" <> $SessionUUID,
 				Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"],
 				State->Liquid,BiosafetyLevel->"BSL-1",Flammable->False,MSDSFile -> NotApplicable,IncompatibleMaterials->{None}];
 
 			(* upload the model samples of just water with different DefaultStorageConditions *)
-			UploadSampleModel["Test Model Sample with Deep Freezer storage" <> $SessionUUID,
-				Composition->{{100 VolumePercent,Model[Molecule,"Water"]}},
+			UploadSampleModel[{{100 VolumePercent,Model[Molecule,"Water"]}},
+				Name->"Test Model Sample with Deep Freezer storage" <> $SessionUUID,
 				Expires->False,DefaultStorageCondition->Model[StorageCondition,"Deep Freezer"],
 				State->Liquid,BiosafetyLevel->"BSL-1",Flammable->False,MSDSFile -> NotApplicable,IncompatibleMaterials->{None}];
 
 			(* upload the model samples of just water with different DefaultStorageConditions *)
-			UploadSampleModel["Test Model Sample Flammable" <> $SessionUUID,
-				Composition->{{100 VolumePercent,Model[Molecule,"Water"]}},
+			UploadSampleModel[{{100 VolumePercent,Model[Molecule,"Water"]}},
+				Name->"Test Model Sample Flammable" <> $SessionUUID,
 				Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage, Flammable"],
 				State->Liquid,BiosafetyLevel->"BSL-1",Flammable->True,MSDSFile -> NotApplicable,IncompatibleMaterials->{None}];
 
 			(* upload the model samples of just water with different DefaultStorageCondition of Freezer *)
-			UploadSampleModel["Test Model Sample DefaultStorageCondition Freezer" <> $SessionUUID,
-				Composition->{{100 VolumePercent,Model[Molecule,"Water"]}},
+			UploadSampleModel[{{100 VolumePercent,Model[Molecule,"Water"]}},
+				Name->"Test Model Sample DefaultStorageCondition Freezer" <> $SessionUUID,
 				Expires->False,DefaultStorageCondition->Model[StorageCondition,"Freezer"],
 				ThawTemperature->0Celsius,
 				State->Liquid,BiosafetyLevel->"BSL-1",MSDSFile -> NotApplicable,IncompatibleMaterials->{None}];

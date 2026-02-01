@@ -790,8 +790,8 @@ ExperimentPeptideSynthesis[myInputs:ListableP[Alternatives[ObjectP[{Model[Sample
 			If[!DatabaseMemberQ[Model[Sample,newName]],
 
 				First@UploadSampleModel[
-					newName,
-					Composition->{{100 MassPercent,newIdentityModel}},
+					{{100 MassPercent,newIdentityModel}},
+					Name -> newName,
 					DefaultStorageCondition -> Model[StorageCondition,"id:N80DNj1r04jW"],
 					Expires->False,
 					ShelfLife->Null,
@@ -820,8 +820,8 @@ ExperimentPeptideSynthesis[myInputs:ListableP[Alternatives[ObjectP[{Model[Sample
 			(* TODO this should be a Search? *)
 			If[!DatabaseMemberQ[Model[Sample,newName]],
 				First@UploadSampleModel[
-					newName,
-					Composition->{{100 MassPercent,newIdentityModel}},
+					{{100 MassPercent,newIdentityModel}},
+					Name -> newName,
 					DefaultStorageCondition -> Model[StorageCondition,"id:N80DNj1r04jW"],
 					Expires->False,
 					ShelfLife->Null,
@@ -4019,7 +4019,7 @@ peptideSynthesisResourcePackets[
 	
 	
 	(* find all the non-deprecated fume hood models *)
-	fumeHoodModels=Search[Model[Instrument,FumeHood],Deprecated != True];
+	fumeHoodModels=commonFumeHoodHandlingStationModels["Memoization"];
 	
 	synthesizerResource=Link[Resource[Name->ToString[Unique[]],Instrument->Lookup[myResolvedOptions,Instrument],Time->synthesisTimeEstimate]];
 	fumeHoodResource=Link[Resource[Name->ToString[Unique[]],Instrument->fumeHoodModels,Time->2 Hour]];

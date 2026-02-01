@@ -138,11 +138,11 @@ DefineObjectType[Object[Container], {
 		},
 		RestrictedLog -> {
 			Format -> Multiple,
-			Class -> {Date, Boolean, Link},
-			Pattern :> {_?DateObjectQ, BooleanP, _Link},
-			Relation -> {Null, Null, Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification]},
+			Class -> {Date, Boolean, Link, String},
+			Pattern :> {_?DateObjectQ, BooleanP, _Link, _String},
+			Relation -> {Null, Null, Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification], Null},
 			Description -> "A log of changes made to this container's restricted status.",
-			Headers -> {"Date", "Restricted", "Responsible Party"},
+			Headers -> {"Date", "Restricted", "Responsible Party", "Reason"},
 			Category -> "Organizational Information"
 		},
 		StoredOnCart -> {
@@ -181,7 +181,7 @@ DefineObjectType[Object[Container], {
 		Status -> {
 			Format -> Single,
 			Class -> Expression,
-			Pattern :> SampleStatusP,
+			Pattern :> SampleStatusP | UndergoingMaintenance,
 			Description -> "Current usage state of the container. Meanings are as follows: Available (opened and in use); Stocked (not yet opened); Discarded (discarded or no longer in use); Reserved (earmarked for use in a particular protocol, control or maintenance); Flagged (involved in a protocol that required troubleshooting; integrity unknown).",
 			Category -> "Organizational Information",
 			Abstract -> True
@@ -189,7 +189,7 @@ DefineObjectType[Object[Container], {
 		StatusLog -> {
 			Format -> Multiple,
 			Class -> {Expression, Expression, Link},
-			Pattern :> {_?DateObjectQ, SampleStatusP, _Link},
+			Pattern :> {_?DateObjectQ, SampleStatusP|UndergoingMaintenance, _Link},
 			Relation -> {Null, Null, Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification]},
 			Description -> "A log of changes made to the container's status.",
 			Category -> "Organizational Information",
@@ -201,6 +201,14 @@ DefineObjectType[Object[Container], {
 			Class -> Expression,
 			Pattern :> BooleanP,
 			Description -> "Indicates that this object is being used for test purposes only and is not supported by standard SLL features.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		PermanentSticker -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the object is labeled with a durable sticker that does not easily detach.",
 			Category -> "Organizational Information",
 			Developer -> True
 		},
@@ -290,6 +298,26 @@ DefineObjectType[Object[Container], {
 			Category -> "Cover Information"
 		},
 
+		(*--- Liner Information ---*)
+		Liners -> {
+			Format -> Multiple,
+			Class -> {String, Link},
+			Pattern :> {_String, _Link},
+			Relation -> {Null, Object[Item, Liner][LinedContainer]},
+			Description -> "The protective insert(s) that is currently positioned within or on top of this container. No position indicates that the whole container is lined.",
+			Category -> "Liner Information",
+			Headers -> {"Position", "Liner in Position"}
+		},
+		LinerLog -> {
+			Format -> Multiple,
+			Class -> {Date, Expression, Link, String, Link},
+			Pattern :> {_?DateObjectQ, In | Out, _Link, _String, _Link},
+			Relation -> {Null, Null, Object[Item, Liner], Null, Object[Protocol] | Object[Maintenance] | Object[Qualification] | Object[User]},
+			Description -> "A historical record of the placement or removal of liners within or on top of this container. No position indicates that the whole container is lined.",
+			Category -> "Liner Information",
+			Headers -> {"Date", "Action", "Liner", "Position", "Responsible Party"}
+		},
+
 		(*--- Container Information ---*)
 		Container -> {
 			Format -> Single,
@@ -326,6 +354,13 @@ DefineObjectType[Object[Container], {
 			Description -> "The location history of the container. Lines recording a movement to container and position of Null, Null respectively indicate the item being discarded.",
 			Category -> "Container Information",
 			Headers ->{"Date","Change Type","Container","Position","Responsible Party"}
+		},
+		DateLastMoved->{
+			Format->Single,
+			Class->Date,
+			Pattern:>_?DateObjectQ,
+			Description->"Date this container was moved to a different container or instrument.",
+			Category->"Container Information"
 		},
 		ResourcePickingGrouping -> {
 			Format -> Single,
@@ -609,6 +644,16 @@ DefineObjectType[Object[Container], {
 			Description -> "A historical record of when the container was last washed.",
 			Category -> "Container History",
 			Headers -> {"Date","Dishwash Protocol"}
+		},
+		PrintStickersLog -> {
+			Format -> Multiple,
+			Class -> {Date, Link},
+			Pattern :> {_?DateObjectQ, _Link},
+			Relation -> {Null, Alternatives[Object[User], Object[Protocol], Object[Maintenance], Object[Qualification]]},
+			Description -> "Indicates times at which stickers were printed for this container.",
+			Headers -> {"Date", "Responsible Party"},
+			Category -> "Container History",
+			Developer -> True
 		},
 
 		(* --- Storage & Handling --- *)
@@ -1058,6 +1103,14 @@ DefineObjectType[Object[Container], {
 				Object[Maintenance, ReceiveInventory][Containers]
 			],
 			Description -> "The MaintenanceReceiveInventory in which this container was received.",
+			Category -> "Inventory"
+		},
+		BarcodeInventory -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Maintenance, BarcodeInventory][BarcodedItems],
+			Description -> "The MaintenanceBarcodeInventory in which the SLL object sticker of this container is affixed.",
 			Category -> "Inventory"
 		},
 		QCDocumentationFiles -> {

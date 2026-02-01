@@ -4091,7 +4091,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 							Invert
 						],
 					(* Is any temperature related option set to non-Automatic? *)
-					MatchQ[Lookup[myMapThreadOptions,AnnealingTime],Except[Null|Automatic]]||MatchQ[Lookup[myMapThreadOptions,Temperature],Except[Automatic]],
+					MatchQ[Lookup[myMapThreadOptions,AnnealingTime],Except[Null|Automatic]]||MatchQ[Lookup[myMapThreadOptions,Temperature],Except[Null|Automatic|Ambient]],
 						Module[{resolvedTemperature,footprintCompatibleInstruments,aliquotInstrumentResult},
 							(* Is Temperature set? *)
 							resolvedTemperature=If[MatchQ[Lookup[myMapThreadOptions,Temperature],Except[Automatic]],
@@ -7429,6 +7429,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								fastAssocLookup[fastAssoc, instrument, {Model, Object}] /. {$Failed | NullP -> Null}
 							];
 
+							(* Set nutatorPacket to use in downstream logic *)
+							nutatorPacket = fetchPacketFromFastAssoc[instrumentModel, fastAssoc];
+
 							(* Did the user supply a rate? *)
 							rate=If[MatchQ[Lookup[myMapThreadOptions,MixRate],Automatic],
 								If[
@@ -7437,9 +7440,8 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										!NullQ[Lookup[samplePacket,ThawMixRate]]
 									],
 									Lookup[samplePacket,ThawMixRate],
-									(* Resolve to the average RPM of the set instrument. *)
-									nutatorPacket = fetchPacketFromFastAssoc[instrumentModel, fastAssoc];
 
+									(* Resolve to the average RPM of the set instrument. *)
 									(* Round to the nearest RPM. *)
 									Round[Mean[Lookup[nutatorPacket,{MinRotationRate,MaxRotationRate},1RPM]],1RPM]
 								],
@@ -7535,6 +7537,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 							(* Are there instruments that can currently support the footprint of our sample? *)
 							instrument=If[Length[potentialInstruments]>0,
 								(* Resolve rate (if we have to) to be the average rate of our first instrument. *)
+
 								rate=If[MatchQ[preResolvedRate,Automatic],
 									(* Resolve to the average RPM of the set instrument. *)
 									nutatorPacket = fetchPacketFromFastAssoc[First[potentialInstruments], fastAssoc];
@@ -9944,7 +9947,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 					(* Switch based off of this mix type. *)
 					Switch[mixType,
 						Invert|Pipette,
-							(* We can choose any container to invert since it's by an indivial container basis. *)
+							(* We can choose any container to invert since it's by an individual container basis. *)
 							(* potentialAliquotContainers is ordered from smallest to largest so take the first. *)
 							({First[potentialAliquotContainersList[[#]]],Null,Null,#}&)/@aliquotInformation[[All,2]],
 						Vortex|Shake|Roll|Stir|Sonicate|Homogenize,
@@ -15771,7 +15774,7 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 								compatibleInstruments
 						],
 					Homogenize,
-						If[MatchQ[sampleContainerModel,ObjectP[Model[Container,Vessel,VolumetricFlask]]],
+						If[MatchQ[sampleContainerModel,ObjectP[Model[Container,Vessel,VolumetricFlask]]]&&!MemberQ[output,Containers],
 							(* No Homogenize for volumetric flask *)
 							{},
 							(* Make sure that for each compatible instrument, there is an sonication horn that is compatible with our container. *)
@@ -15829,14 +15832,13 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 								]
 							]
 						],
-					Disrupt|Nutate,
-						If[MatchQ[sampleContainerModel,ObjectP[Model[Container,Vessel,VolumetricFlask]]],
-							(* No Disrupt|Nutate for volumetric flask *)
+					_,
+						(* No Mix for volumetric flask except Shake/Sonicate mentioned above *)
+						(* If we are considering aliquot, we may allow other mix types *)
+						If[MatchQ[sampleContainerModel,ObjectP[Model[Container,Vessel,VolumetricFlask]]]&&!MemberQ[output,Containers],
 							{},
 							compatibleInstruments
-						],
-					_,
-						compatibleInstruments
+						]
 				];
 
 				(* Were we asked to compute potentialAliquotContainers? *)

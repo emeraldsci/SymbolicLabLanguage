@@ -1187,7 +1187,7 @@ DefineTests[ExperimentBioconjugation,
 				Output->Options
 			], {Warning::InvalidSampleAnalyteConcentrations, Warning::CentrifugePrecision}];
 			Lookup[options,PreWashCentrifugationIntensity],
-			{{Null,805.14 GravitationalAcceleration}},
+			{{Null,3000 RPM}},(*manual centrifuge will convert GravitationalAcceleration to RPM if possible in ExperimentCentrifuge*)
 			EquivalenceFunction->Equal,
 			Variables:>{options},
 			TimeConstraint->1000
@@ -2958,7 +2958,7 @@ DefineTests[ExperimentBioconjugation,
 				Output->Options
 			], {Warning::InvalidSampleAnalyteConcentrations, Warning::CentrifugePrecision}];
 			Lookup[options,PostActivationWashCentrifugationIntensity],
-			{{805.14 GravitationalAcceleration,Null}},
+			{{3000 RPM,Null}},(*manual centrifuge will convert GravitationalAcceleration to RPM if possible in ExperimentCentrifuge*)
 			Variables:>{options},
 			TimeConstraint->1000
 		],
@@ -5338,6 +5338,24 @@ DefineTests[ExperimentBioconjugation,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = Quiet[
+				ExperimentBioconjugation[
+					{
+						{Object[Sample, "Experiment Bioconjugation test sample 1"<>$SessionUUID], Object[Sample, "Experiment Bioconjugation test sample 2"<>$SessionUUID]}
+					},
+					{Model[Molecule,Protein, "Experiment Bioconjugation test identity model 1"<>$SessionUUID]},
+					CentrifugeIntensity -> 1001 RPM,
+					Output -> Options
+				],
+				{Warning::InvalidSampleAnalyteConcentrations, Warning::UnknownReactantsStoichiometry, Warning::UnknownProductStoichiometry}
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options,CentrifugeTime,"The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options=Quiet[ExperimentBioconjugation[{
 					{Object[Sample, "Experiment Bioconjugation test sample 1"<>$SessionUUID], Object[Sample, "Experiment Bioconjugation test sample 2"<>$SessionUUID]}
@@ -5600,6 +5618,30 @@ DefineTests[ExperimentBioconjugation,
 			50*Milliliter,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = Quiet[
+				ExperimentBioconjugation[
+					{
+						{Object[Sample, "Experiment Bioconjugation test sample 1"<>$SessionUUID], Object[Sample, "Experiment Bioconjugation test sample 2"<>$SessionUUID]}
+					},
+					{Model[Molecule, Protein, "Experiment Bioconjugation test identity model 1"<>$SessionUUID]},
+					AliquotAmount -> 50.1 Milliliter,
+					AliquotContainer -> {
+						{
+							{1, Model[Container, Vessel, "50mL Tube"]},
+							{2, Model[Container, Vessel, "50mL Tube"]}
+						}
+					},
+					Output -> Options
+				],
+				{Warning::InvalidSampleAnalyteConcentrations, Warning::UnknownReactantsStoichiometry, Warning::UnknownProductStoichiometry, Warning::TotalAliquotVolumeTooLarge, Warning::InsufficientVolume, Warning::InsufficientVolume}
+			];
+			Lookup[options, AliquotAmount],
+			50 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,AssayVolume,"The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options=Quiet[ExperimentBioconjugation[{
@@ -5926,15 +5968,15 @@ DefineTests[ExperimentBioconjugation,
 				(*Upload Model samples so we can upload new sample objects later.*)
 				UploadSampleModel[
 					{
+						{{1 Milligram/Milliliter,Model[Molecule,Protein,"Experiment Bioconjugation test identity model 1"<>$SessionUUID]}},
+						{{1 Milligram/Milliliter,Model[Molecule,Protein,"Experiment Bioconjugation test identity model 1"<>$SessionUUID]}},
+						{{Null,Null}}
+					},
+					Name -> {
 						"Experiment Bioconjugation model test sample 1"<>$SessionUUID,
 						"Experiment Bioconjugation model test sample 2"<>$SessionUUID,
 						"Experiment Bioconjugation model test sample Null identity model"<>$SessionUUID
 					},
-					Composition-> {
-						{{1 Milligram/Milliliter,Model[Molecule,Protein,"Experiment Bioconjugation test identity model 1"<>$SessionUUID]}},
-						{{1 Milligram/Milliliter,Model[Molecule,Protein,"Experiment Bioconjugation test identity model 1"<>$SessionUUID]}},
-						{{Null,Null}}
-				 },
 					IncompatibleMaterials->{{None},{None},{None}},
 					Expires->{True,True,True},
 					ShelfLife->{1 Year,1 Year,1 Year},

@@ -19,7 +19,7 @@
 DefineOptions[FractionMono,
 	Options :> {
 		{Polymer -> Automatic, PolymerP | Automatic, "The polymer type that defines the potnetial alphabaet a valid sequence should be composed of.  Automatic will attempt to match all known polymer types."},
-		{Degeneracy -> True, BooleanP, "If set to true, the degenrate alphabet will be considered valid."},
+		{Degeneracy -> True, BooleanP, "If set to true, the degenerate alphabet will be considered valid."},
 		{FastTrack -> False, BooleanP, "Skip strict checks.", Category->Hidden}
 	}
 ];
@@ -78,7 +78,7 @@ FractionMono[seqs:{SequenceP..},monoToCnts:{{SequenceP..}..}, ops:OptionsPattern
 DefineOptions[FractionGC,
 	Options :> {
 		{Polymer -> Automatic, PolymerP | Automatic, "The polymer type that defines the potnetial alphabaet a valid sequence should be composed of.  Automatic will attempt to match all known polymer types."},
-		{Degeneracy -> True, BooleanP, "If set to true, the degenrate alphabet will be considered valid."},
+		{Degeneracy -> True, BooleanP, "If set to true, the degenerate alphabet will be considered valid."},
 		{FastTrack -> False, BooleanP, "Skip strict checks.", Category->Hidden}
 	}
 ];
@@ -105,7 +105,7 @@ SetAttributes[FractionGC,{Listable}];
 
 DefineOptions[FractionAT,
 	Options :> {
-		{Degeneracy -> True, BooleanP, "If set to true, the degenrate alphabet will be considered valid."},
+		{Degeneracy -> True, BooleanP, "If set to true, the degenerate alphabet will be considered valid."},
 		{FastTrack -> False, BooleanP, "Skip strict checks.", Category->Hidden}
 	}
 ];
@@ -132,7 +132,7 @@ SetAttributes[FractionAT,{Listable}];
 
 DefineOptions[FractionAU,
 	Options :> {
-		{Degeneracy -> True, BooleanP, "If set to true, the degenrate alphabet will be considered valid."},
+		{Degeneracy -> True, BooleanP, "If set to true, the degenerate alphabet will be considered valid."},
 		{FastTrack -> False, BooleanP, "Skip strict checks.", Category->Hidden}
 	}
 ];
@@ -160,7 +160,7 @@ SetAttributes[FractionAU,{Listable}];
 DefineOptions[FractionPyrimidine,
 	Options :> {
 		{Polymer -> Automatic, DNA | RNA | PNA | Peptide | Modification | Automatic, "The polymer type that defines the potnetial alphabaet a valid sequence should be composed of.  Automatic will attempt to match all known polymer types."},
-		{Degeneracy -> True, BooleanP, "If set to true, the degenrate alphabet will be considered valid."},
+		{Degeneracy -> True, BooleanP, "If set to true, the degenerate alphabet will be considered valid."},
 		{FastTrack -> False, BooleanP, "Skip strict checks.", Category->Hidden}
 	}
 ];
@@ -182,7 +182,7 @@ SetAttributes[FractionPyrimidine,{Listable}];
 DefineOptions[FractionPurine,
 	Options :> {
 		{Polymer -> Automatic, DNA | RNA | PNA | Peptide | Modification | Automatic, "The polymer type that defines the potnetial alphabaet a valid sequence should be composed of.  Automatic will attempt to match all known polymer types."},
-		{Degeneracy -> True, BooleanP, "If set to true, the degenrate alphabet will be considered valid."},
+		{Degeneracy -> True, BooleanP, "If set to true, the degenerate alphabet will be considered valid."},
 		{FastTrack -> False, BooleanP, "Skip strict checks.", Category->Hidden}
 	}
 ];
@@ -2042,7 +2042,7 @@ possibleSubsequences[template:SequenceP,included:({SequenceP...}|Null),ops:Optio
 	(* determine the length of each subsequene *)
 	k=SequenceLength[template,Polymer->type,FastTrack->True];
 
-	(* extract the degenrate alphabets as a set of rules *)
+	(* extract the degenerate alphabets as a set of rules *)
 	degenerateRules=Physics`Private`lookupModelOligomer[type,DegenerateAlphabet];
 
 	(* generate the Monomers of the template *)
@@ -2684,7 +2684,7 @@ GenerateSequence[motifMap:{(_String->{SequenceP..})..},junct:{{_String,_String}.
 	(* If Verbose is on set up the evaluation monitor for viewing as it progresses *)
 	If[OptionValue[Verbose],PrintTemporary[Dynamic[Evaluate[OptionValue[EvaluationMonitor]][]]]];
 
-	(* Get started on genration *)
+	(* Get started on generation *)
 	finishedMap=Block[{$RecursionLimit=\[Infinity],$IterationLimit=\[Infinity]},
 		GenerateSequence[preparedMap,junct,k,initialPosition,Exclude->initialExclude,ops]
 	];

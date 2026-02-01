@@ -520,6 +520,22 @@ DefineObjectType[Model[Qualification,HPLC], {
 			Pattern :> GreaterP[0],
 			Description -> "When testing the proportioning valves, the maximum accepted variance in the extrapolated pH value.",
 			Category -> "Gradient Proportioning Test"
+		},
+		MinPressure -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*PSI],
+			Units -> PSI,
+			Description -> "The minimum mean pressure allowed for segments of the pump health check in this model of qualification.",
+			Category -> "Pump Health Test"
+		},
+		MaxPressureStandardDeviation -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*PSI],
+			Units -> PSI,
+			Description -> "The maximum pressure standard deviation allowed for segments of the pump health check in this model of qualification.",
+			Category -> "Pump Health Test"
 		}
 	}
 }];

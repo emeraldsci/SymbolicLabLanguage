@@ -159,7 +159,7 @@ DefineObjectType[Object[UnitOperation,Dissolution],{
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Alternatives[Object[Container,Sinker],Model[Container,Sinker]],
+			Relation->Alternatives[Model[Item,Sinker],Object[Item,Sinker]],
 			IndexMatching->SampleLink,
 			Description->"For each member of SampleLink, the weighted enclosure used to keep the oral solid dosage below the surface of the media during the experiment to facilitate proper mixing.",
 			Category->"Mixing"
@@ -410,6 +410,15 @@ DefineObjectType[Object[UnitOperation,Dissolution],{
 			Pattern:>GreaterP[0 * Micron],
 			Units->Micron,
 			Description->"The pore size of the cannula tip filters used during sample transfer.",
+			Category->"Sampling Filtration"
+		},
+		Cannula->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[Model[Item,Cannula],Object[Item,Cannula]],
+			IndexMatching->SampleLink,
+			Description->"For each member of SampleLink, the cannula used to sample media during the dissolution experiment.",
 			Category->"Sampling Filtration"
 		},
 

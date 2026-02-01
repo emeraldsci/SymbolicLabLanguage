@@ -9,6 +9,74 @@
 
 
 (* ::Subsection:: *)
+(*UploadValidPackets*)
+
+
+DefineTests[UploadValidPackets,
+	{
+		Example[{Basic, "Upload a list of valid packets:"},
+			UploadValidPackets[{<|
+				Type -> Object[User],
+				Name -> "Test User 1 for UploadValidPackets " <> $SessionUUID
+			|>}],
+			{ObjectP[Object[User]]}
+		],
+
+		Example[{Basic, "Returns an empty list when given an empty list:"},
+			UploadValidPackets[{}],
+			{}
+		],
+
+		Example[{Basic, "Handles a single packet:"},
+			UploadValidPackets[<|
+				Type -> Object[User],
+				Name -> "Test User 2 for UploadValidPackets " <> $SessionUUID
+			|>],
+			ObjectP[Object[User]]
+		],
+
+		Example[{Messages, "InvalidPackets", "Show a message when invalid packets are provided:"},
+			UploadValidPackets[{
+				<|
+					Type -> Object[User],
+					Name -> "Test User 3 for UploadValidPackets " <> $SessionUUID
+				|>,
+				<|
+					(* Invalid packet - missing required Type field *)
+					Name -> "Invalid packet"
+				|>
+			}],
+			{ObjectP[Object[User]]},
+			Messages :> {UploadValidPackets::InvalidPackets}
+		],
+
+		Test["Returns empty list when all packets are invalid:",
+			UploadValidPackets[{
+				<|(* Invalid packet - missing Type *)
+					Name -> "Invalid packet 1"
+				|>,
+				<|(* Invalid packet - missing Type *)
+					Name -> "Invalid packet 2"
+				|>
+			}],
+			{},
+			Messages :> {UploadValidPackets::InvalidPackets}
+		],
+
+		Test["Handles non-packet formatted input:",
+			UploadValidPackets[{1, 2, 3, "I'm not a packet", {}}],
+			{},
+			Messages :> {UploadValidPackets::InvalidPackets}
+		]
+	},
+	SymbolSetUp:>(SetCreatedObjectsCheckpoint["UploadValidPackets Unit Tests"]),
+	SymbolTearDown:>EraseCreatedObjects["UploadValidPackets Unit Tests"]
+];
+
+
+
+
+(* ::Subsection:: *)
 (* ObjectToFilePath *)
 
 
@@ -199,6 +267,11 @@ DefineTests[
 		Test["Upload packets don't break the function and remain unevaluated:",
 			NamedObject[<|Type -> Object[Sample], Status -> Available, Name -> "Test Sample"|>],
 			<|Type -> Object[Sample], Status -> Available, Name -> "Test Sample"|>
+		],
+		Test["If a packet is provided where the name is Null, the ID form object is returned (a database trip is not required):",
+			RepeatedTiming[NamedObject[<|Name->Null,Object->Model[Sample,"id:testID"],ID->"id:testID",Type->Model[Sample]|>]],
+			(* This should be more like 0.01 but a database trip will take more than 0.1 *)
+			{LessP[0.1], Model[Sample,"id:testID"]}
 		]
 	}
 ];
@@ -220,8 +293,15 @@ DefineTests[PDBIDExistsQ,
 		],
 		Example[{Basic,"Return true if the provied string is in the PDB ID database:"},
 			PDBIDExistsQ["5MAC"],
+			True
+		],
+		Example[{Messages,UnexpectedError,"Return a message if an unexpected value is returned:"},
+			PDBIDExistsQ["5MAC"],
 			True,
-			TimeConstraint->200
+			Messages :> {PDBIDExistsQ::UnexpectedError},
+			Stubs:>{
+				URLRead[_,{"StatusCode","Body"}]:=<|"StatusCode"->"500","Body"->"Oops"|>
+			}
 		]
 	}
 ];
@@ -484,7 +564,8 @@ DefineTests[TransferDevices,
 		],
 		Test["Returns all the devices and their ranges:",
 			TransferDevices[All,All],
-			{{_,_,_,_}..}
+			(* for balance, we might return a fifth element in the tuple, which is only used by ExperimentTransfer for now *)
+			{{_,_,_,_,___}..}
 		]
 	}
 ];

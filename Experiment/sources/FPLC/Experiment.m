@@ -4021,7 +4021,7 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 		allTests, expandedStandardOptions, expandedBlankOptions, resolvedOptionsForInjectionTable,resolvedBlankBufferC, resolvedBlankBufferD,
 		resolvedColumn, specifiedExpandedBlankGradients, specifiedExpandedBlankGradientPackets, injectionTableStandards,
 		multipleGradientsColumnPrimeFlushOptions, multipleGradientsColumnPrimeFlushTest, fakeInjectionTable, injectionTableBlanks,
-		resolvedInjectionTableWithoutInjectionType, specifiedSamplePumpWash,
+		resolvedInjectionTableWithoutInjectionType, specifiedSamplePumpWash, roundedAliquotAmounts, amountPrecisionValidBoolLists,
 		resolvedColumnRefreshFrequency, specifiedExpandedStandardGradients, resolvedFlowInjectionPurgeCycle, flowInjectionPurgeCycleConflictQ,
 		specifiedInjectionTable, specifiedInjectionTableBlankGradients, specifiedInjectionTableStandardGradients,
 		resolvedGradients, resolvedGradientAs, resolvedGradientBs, resolvedGradientStarts, resolvedGradientEnds,
@@ -7322,7 +7322,7 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 	injectionTypeLookup=Lookup[roundedOptionsAssociation,InjectionType];
 
 	(* resolve the InjectionVolume option *)
-	(* note that the trick here is that the old AKTA doens't have an autosampler, and also can't get arbitrarily-large injections *)
+	(* note that the trick here is that the old AKTA doesn't have an autosampler, and also can't get arbitrarily-large injections *)
 	(* thus, if we have an autosampler (i.e., the avants) and we're above the "max" injection volume, that's still fine (but you can't use the autosampler) *)
 	(* I recognize that there is some irony in the fact that I'm only allowing something to go above the "max" injection volume only if it has an autosampler but in that context we're not actually using it *)
 	resolvedInjectionVolumesNotRounded = MapThread[
@@ -7347,6 +7347,26 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 			Lookup[roundedOptionsAssociation, InjectionVolume],
 			injectionTableSampleInjectionVolumes
 		}
+	];
+	(* Since we are resolving the final AliquotAmount with dead volume, we pre-check AliquotAmountPrecision here instead of using shared resolveAliquotOptions *)
+	{roundedAliquotAmounts, amountPrecisionValidBoolLists} = Transpose@Map[
+		If[MatchQ[#, VolumeP] && !EqualQ[#, RoundOptionPrecision[#, 10^0 Microliter]],
+			{RoundOptionPrecision[#, 10^0 Microliter], True},
+			{#, False}
+		]&,
+		Lookup[samplePrepOptions, AliquotAmount]
+	];
+	If[MemberQ[amountPrecisionValidBoolLists, True] && !gatherTests && !MatchQ[$ECLApplication, Engine],
+		Message[
+			Warning::AliquotAmountPrecision,
+			(*1*)StringJoin[
+			"AliquotAmount ",
+			isOrAre[DeleteDuplicates[PickList[Lookup[samplePrepOptions, AliquotAmount], amountPrecisionValidBoolLists]]]
+		],
+			(*2*)joinClauses[PickList[Lookup[samplePrepOptions, AliquotAmount], amountPrecisionValidBoolLists]],
+			(*3*)pluralize[DeleteDuplicates[Lookup[samplePrepOptions, AliquotAmount], amountPrecisionValidBoolLists], "exceeds", "exceed"],
+			(*4*)joinClauses[PickList[roundedAliquotAmounts, amountPrecisionValidBoolLists]]
+		]
 	];
 
 	(* Lookup the specified SamplePumpWash option *)
@@ -8927,21 +8947,9 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 		]
 	];
 
-	(* Resolve aliquot options. Since we want the samples packed as *)
+	(* Resolve aliquot options. Note we quiet the AliquotAmountPrecision since AliquotAmount has thrown rounding error earlier *)
 	{resolvedAliquotOptions, resolveAliquotOptionTests} = If[gatherTests,
-		resolveAliquotOptions[
-			ExperimentFPLC,
-			Download[mySamples, Object],
-			simulatedSamples,
-			preresolvedAliquotOptions,
-			RequiredAliquotAmounts -> requiredAliquotVolumes,
-			RequiredAliquotContainers -> targetAliquotContainers,
-			AliquotWarningMessage -> "because the given samples are not in containers that are compatible with FPLC instruments.",
-			Output -> {Result, Tests},
-			Cache -> cache,
-			Simulation->updatedSimulation
-		],
-		{
+		Quiet[
 			resolveAliquotOptions[
 				ExperimentFPLC,
 				Download[mySamples, Object],
@@ -8950,9 +8958,27 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 				RequiredAliquotAmounts -> requiredAliquotVolumes,
 				RequiredAliquotContainers -> targetAliquotContainers,
 				AliquotWarningMessage -> "because the given samples are not in containers that are compatible with FPLC instruments.",
-				Output -> Result,
+				Output -> {Result, Tests},
 				Cache -> cache,
-				Simulation->updatedSimulation
+				Simulation -> updatedSimulation
+			],
+			Warning::AliquotAmountPrecision
+		],
+		{
+			Quiet[
+				resolveAliquotOptions[
+					ExperimentFPLC,
+					Download[mySamples, Object],
+					simulatedSamples,
+					preresolvedAliquotOptions,
+					RequiredAliquotAmounts -> requiredAliquotVolumes,
+					RequiredAliquotContainers -> targetAliquotContainers,
+					AliquotWarningMessage -> "because the given samples are not in containers that are compatible with FPLC instruments.",
+					Output -> Result,
+					Cache -> cache,
+					Simulation -> updatedSimulation
+				],
+				Warning::AliquotAmountPrecision
 			],
 			{}
 		}
@@ -11227,7 +11253,7 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 	(*if we're swapping mixers*)
 	mixerResource=Which[
 		(*if we're not using a mixer, then just take a column join*)
-		Lookup[myResolvedOptions,MixerVolume]==0 Milliliter, Link@Resource[Sample->Model[Plumbing, ColumnJoin, "Union 1/16\" female - 1/16\" female"],Rent->True],
+		Lookup[myResolvedOptions, MixerVolume] == 0 Milliliter, Link@Resource[Sample -> Model[Plumbing, ColumnJoin, "id:WNa4ZjKGoMpL"](*Union 1/16" female - 1/16" female*), Rent -> True],
 		(*if it's just the default, then we leave this Null and we'll inform in compiler. We don't not want to create resource*)
 		Lookup[fetchPacketFromFastAssoc[Lookup[resolvedInstrumentModelPacket,DefaultMixer],fastAssoc],Volume]==Lookup[myResolvedOptions,MixerVolume],Null,
 		(*otherwise, find the appropriate mixer*)

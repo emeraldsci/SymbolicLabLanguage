@@ -498,6 +498,12 @@ validItemBLIProbeQTests[packet : PacketP[Object[Item, BLIProbe]]] := {
 validItemClampQTests[packet:PacketP[Object[Item,Clamp]]]:={};
 
 
+(* ::Subsection::Closed:: *)
+(*validItemCannulaQTests*)
+
+
+validItemCannulaQTests[packet:PacketP[Object[Item,Cannula]]]:={};
+
 
 (* ::Subsection::Closed:: *)
 (*validItemConsumableQTests*)
@@ -611,6 +617,54 @@ validItemLidSpacerQTests[packet:PacketP[Object[Item,LidSpacer]]]:={
 	]
 
 };
+
+
+
+(* ::Subsection::Closed:: *)
+(*validItemLinerQTests*)
+
+
+validItemLinerQTests[packet:PacketP[Object[Item, Liner]]]:=Module[
+	{modelPacket, modelCustomCut, sourceLiner},
+
+	(* Download the model packet *)
+	modelPacket = If[!NullQ[Lookup[packet, Model]],
+		Download[Lookup[packet, Model], Packet[CustomCut]],
+		Null
+	];
+
+	(* Extract relevant fields *)
+	modelCustomCut = If[!NullQ[modelPacket],
+		Lookup[modelPacket, CustomCut],
+		Null
+	];
+
+	sourceLiner = Download[Lookup[packet, SourceLiner], Object];
+
+	{
+		(* If Model[CustomCut] -> True, SourceLiner must be populated *)
+		Test["If the liner's Model has CustomCut set to True, SourceLiner must be populated:",
+			{modelCustomCut, sourceLiner},
+			{True, Except[Null]} | {Except[True], _}
+		],
+
+		(* If Model[CustomCut] != True, SourceLiner must not be populated *)
+		Test["If the liner's Model does not have CustomCut set to True, SourceLiner must not be populated:",
+			{modelCustomCut, sourceLiner},
+			{Except[True], Null} | {True, _}
+		],
+
+		(* SourceLiner must not reference itself *)
+		Test["SourceLiner must not reference itself:",
+			Or[
+				NullQ[sourceLiner],
+				!MatchQ[sourceLiner, Lookup[packet, Object]]
+			],
+			True
+		]
+	}
+];
+
 
 
 (* ::Subsection::Closed:: *)
@@ -1521,6 +1575,14 @@ validItemWeighBoatQTests[packet:PacketP[Object[Item,WeighBoat]]]:={};
 
 validItemWeighBoatWeighingFunnelQTests[packet:PacketP[Object[Item,WeighBoat,WeighingFunnel]]]:={};
 
+(* ::Subsection:: *)
+(*validItemSinkerQTests*)
+
+validItemSinkerQTests[packet:PacketP[Object[Item,Sinker]]]:={};
+
+(* ::Subsection:: *)
+(*validItemSpatulaQTests*)
+
 validItemSpatulaQTests[packet:PacketP[Object[Item,Spatula]]]:={};
 
 
@@ -1537,6 +1599,7 @@ registerValidQTestFunction[Object[Item, Cap, ElectrodeCap], validItemCapElectrod
 registerValidQTestFunction[Object[Item, Cap, ElectrodeCap, CalibrationCap], validItemCapElectrodeCapCalibrationCapQTests];
 registerValidQTestFunction[Object[Item,CalibrationDistanceBlock],validItemCalibrationDistanceBlockQTests];
 registerValidQTestFunction[Object[Item,LidSpacer],validItemLidSpacerQTests];
+registerValidQTestFunction[Object[Item, Liner],validItemLinerQTests];
 registerValidQTestFunction[Object[Item,Column],validItemColumnQTests];
 registerValidQTestFunction[Object[Item,ColumnHolder],validItemColumnHolderQTests];
 registerValidQTestFunction[Object[Item,Consumable,Blade],validItemConsumableBladeQTests];
@@ -1553,6 +1616,7 @@ registerValidQTestFunction[Object[Item,BoxCutter],validItemBoxCutterQTests];
 registerValidQTestFunction[Object[Item,CalibrationWeight],validItemCalibrationWeightQTests];
 registerValidQTestFunction[Object[Item,CalibrationDistanceBlock],validItemCalibrationDistanceBlockQTests];
 registerValidQTestFunction[Object[Item,Clamp],validItemClampQTests];
+registerValidQTestFunction[Object[Item,Cannula],validItemCannulaQTests];
 registerValidQTestFunction[Object[Item,Counterweight],validItemCounterweightQTests];
 registerValidQTestFunction[Object[Item, Electrode],validItemElectrodeQTests];
 registerValidQTestFunction[Object[Item, Electrode, ReferenceElectrode],validItemElectrodeReferenceElectrodeQTests];
@@ -1603,4 +1667,5 @@ registerValidQTestFunction[Object[Item,Stopper],validCoverObjectsQTests];
 registerValidQTestFunction[Object[Item, WasteLabel], validItemWasteLabelQTests];
 registerValidQTestFunction[Object[Item, WeighBoat], validItemWeighBoatQTests];
 registerValidQTestFunction[Object[Item, WeighBoat, WeighingFunnel], validItemWeighBoatWeighingFunnelQTests];
+registerValidQTestFunction[Object[Item, Sinker],validItemSinkerQTests];
 registerValidQTestFunction[Object[Item, Spatula], validItemSpatulaQTests];

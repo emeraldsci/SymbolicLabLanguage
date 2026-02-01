@@ -55,6 +55,7 @@
 		"Ignore",
 		"InputFormat",
 		"InterruptibleOption",
+        "InventoryManagementTypesP",
 		"Landscape",
 		"Lowercase",
 		"MaterialsObjects",
@@ -114,6 +115,7 @@
 		"Template",
 		"TipType",
 		"TrackingNumber",
+		"TrainingPracticeOptions",
 		"TransactionObject",
 		"TransferDevices",
 		"TroubleshootingComments",
@@ -122,6 +124,7 @@
 		"TroubleshootingObject",
 		"UltracentrifugeCompatible",
 		"Upload",
+		"UploadValidPackets",
 		"UploadOption",
 		"UserName",
 		"VacuumFlask",
@@ -130,6 +133,7 @@
 		"WideBore",
 		"Wrap",
 		"$EmailEnabled",
+        "$InventoryManagementTypes",
 		"$PreferredContainerCoverLookup"
 	]
 }

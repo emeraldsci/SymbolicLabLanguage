@@ -1557,102 +1557,12 @@ getFieldHeadersWithDefault[value_, key_Symbol, type:TypeP[]]:=Module[{},
 
 getHeaderItems[columnKeys_List] := Style[#, Bold, LineBreakWithin -> False, FontFamily -> "Helvetica", FontSize -> 11, RGBColor["#4A4A4A"]]& /@ columnKeys;
 
-(* --- Type Inspect --- *)
-(* Listable version *)
-Inspect[myTypes:{TypeP[]..}, ops:OptionsPattern[Inspect]]:=Module[{safeOps},
 
-	(* Safely extract the options so they fit to pattern definitions *)
-	safeOps=SafeOptions[Inspect, ToList[ops]];
-
-	(* Map with perserved options over all the types *)
-	Inspect[#, safeOps]& /@ myTypes
-];
-
-Inspect[myType:TypeP[], ops:OptionsPattern[Inspect]]:=Module[
-	{
-		safeOps, output, abstractFields, myFields, typeDescription, groupedFields, categoryList, allKeyGroups, allDecriptionsGroups, allPatternGroups,
-		formatedCategories, formattedKeys, formatKeyDescriptionPairs, gridItems, gridDisplay, formatedTitle, developerOption, resolvedOps
-	},
-
-	(* Safely extract the options so they fit to pattern definitions *)
-	safeOps=SafeOptions[Inspect, ToList[ops]];
-
-	(* Requested output, either a single value or list of Alternatives[Result,Options,Preview,Tests] *)
-	output=Lookup[safeOps, Output];
-
-	(* Extract the description of the type from the stored structure of the database *)
-	typeDescription=(Description /. LookupTypeDefinition[myType]);
-
-	(* If Abstract is true remove non-abstract fields from database definitions *)
-	abstractFields=If[(Abstract /. safeOps),
-		Select[ECL`Fields /. LookupTypeDefinition[myType], MemberQ[Last[#], Abstract -> True]&],
-		ECL`Fields /. LookupTypeDefinition[myType]
-	];
-
-	(* Resolve the Developer option. If an option is specified, use that option, otherwise resolve based on $PersonID. *)
-	developerOption=If[BooleanQ[Developer /. safeOps],
-		Developer /. safeOps,
-		MatchQ[$PersonID, ObjectP[Object[User, Emerald, Developer]]]
-	];
-
-	(* If Developer is false remove developer fields from database definitions *)
-	myFields=If[!developerOption,
-		Select[abstractFields, !MemberQ[Last[#], Developer -> True]&],
-		abstractFields
-	];
-
-	(* Break up the field definitions by Category *)
-	groupedFields=GatherBy[myFields, (Category /. Last[#])&];
-
-	(* Extract the list of all of the categories *)
-	categoryList=Category /. (groupedFields[[All, 1, 2]]);
-
-	(* Put togeather a list of lists of keys for field in each category *)
-	allKeyGroups=groupedFields[[All, All, 1]];
-
-	(* Put togeather a list of list of descriptions for field in each category *)
-	allDecriptionsGroups=Description /. groupedFields[[All, All, 2]];
-
-	(* Put togeather a list of lists of all the patterns *)
-	allPatternGroups=Pattern /. groupedFields[[All, All, 2]];
-
-	(* Format the categories displays for each category *)
-	formatedCategories=formatCategory /@ categoryList;
-
-	(* Format the keys with pattern mouse overs *)
-	formattedKeys=MapThread[Function[{keyGroup, patternGroup}, MapThread[formatKey[#1, #2]&, {keyGroup, patternGroup}]], {allKeyGroups, allPatternGroups}];
-
-	(* format the key with the descriptions *)
-	formatKeyDescriptionPairs=MapThread[Function[{keyGroup, descriptionGroup}, MapThread[{#1, Item[Style[ToString[#2], FontFamily -> "Helvetica", FontSize -> 11, RGBColor["#4A4A4A"]]]}&, {keyGroup, descriptionGroup}]], {formattedKeys, allDecriptionsGroups}];
-
-	(* Generate a formated title for the display that includes the type and its description *)
-	formatedTitle=formatTypeTitle[myType, typeDescription];
-
-	(* Shuffle the categories back on top of each gathered packet and flatten out the bunch to generate the final list of stuff that goes in the grid *)
-	gridItems=Join[formatedTitle, Flatten[Riffle[formatedCategories, formatKeyDescriptionPairs], 1]];
-
-	(* Update the resolved options *)
-	resolvedOps=ReplaceRule[safeOps,
-		{
-			Date -> None,
-			Developer -> developerOption
-		}
-	];
-
-	(* Return Formated Grid of information *)
-	gridDisplay=Grid[gridItems,
-		Alignment -> {{Left, Left}},
-		Background -> {None, {{RGBColor["#E2E2E2"], None}}},
-		Frame -> solidFrame
-	];
-
-	(* Return the result according to the output specification *)
-	output /. {
-		Result -> gridDisplay,
-		Preview -> Pane[gridDisplay /. {Rule[ItemSize, _] :> Rule[ItemSize, Scaled[0.5]]}, ImageSize -> {Full, 300}, Scrollbars -> {False, True}, Alignment -> Center],
-		Tests -> {},
-		Options -> resolvedOps
-	}
+Inspect[TypeP[], OptionsPattern[Inspect]]:=NotebookOpen[
+	DownloadCloudFile[Object[EmeraldCloudFile, "id:dORYzZmRr6DE"], $TemporaryDirectory];
+	DownloadCloudFile[Object[EmeraldCloudFile, "id:dORYzZmRr6xp"], $TemporaryDirectory];
+	DownloadCloudFile[Object[EmeraldCloudFile, "id:eGakldDaO9E4"], $TemporaryDirectory];
+	DownloadCloudFile[Object[EmeraldCloudFile, "id:BYDOjveDp5rm"], $TemporaryDirectory]
 ];
 
 

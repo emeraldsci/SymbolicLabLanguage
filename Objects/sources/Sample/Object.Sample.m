@@ -149,6 +149,24 @@ DefineObjectType[Object[Sample], {
 			Headers->{"Date", "Missing", "Responsible Party"},
 			Category->"Organizational Information"
 		},
+		PrintStickersLog -> {
+			Format -> Multiple,
+			Class -> {Date, Link},
+			Pattern :> {_?DateObjectQ, _Link},
+			Relation -> {Null, Alternatives[Object[User], Object[Protocol], Object[Maintenance], Object[Qualification]]},
+			Description -> "Indicates times at which stickers were printed for this sample.",
+			Headers -> {"Date", "Responsible Party"},
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		PermanentSticker -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the object is labeled with a durable sticker that does not easily detach.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
 		Restricted->{
 			Format->Single,
 			Class->Boolean,
@@ -158,11 +176,11 @@ DefineObjectType[Object[Sample], {
 		},
 		RestrictedLog->{
 			Format->Multiple,
-			Class->{Date, Boolean, Link},
-			Pattern:>{_?DateObjectQ, BooleanP, _Link},
-			Relation->{Null, Null, Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification]},
+			Class->{Date, Boolean, Link, String},
+			Pattern:>{_?DateObjectQ, BooleanP, _Link, _String},
+			Relation->{Null, Null, Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification], Null},
 			Description->"A log of changes made to this sample's restricted status.",
-			Headers->{"Date", "Restricted", "Responsible Party"},
+			Headers->{"Date", "Restricted", "Responsible Party", "Reason"},
 			Category->"Organizational Information"
 		},
 		Destination->{
@@ -245,6 +263,13 @@ DefineObjectType[Object[Sample], {
 			Description->"The location history of the sample. Lines recording a movement to container and position of {Null, Null} respectively indicate the item being discarded.",
 			Category->"Container Information",
 			Headers->{"Date", "Change Type", "Container", "Position", "Responsible Party"}
+		},
+		DateLastMoved->{
+			Format->Single,
+			Class->Date,
+			Pattern:>_?DateObjectQ,
+			Description->"Date this sample was moved to a different container or instrument.",
+			Category->"Container Information"
 		},
 		Position->{
 			Format->Single,

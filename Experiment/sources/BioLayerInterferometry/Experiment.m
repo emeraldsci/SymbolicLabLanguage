@@ -4763,7 +4763,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     {}
   ];
 
-  (* Warn the use if they have specified solutions, time, etc that wont be used because the flag in RegenertionParameters is no on *)
+  (* Warn the use if they have specified solutions, time, etc that wont be used because the flag in RegenerationParameters is no on *)
   If[!MatchQ[unusedRegenerationOptions,{}]&&!gatherTests&&Not[MatchQ[$ECLApplication, Engine]],
     Message[Warning::UnusedBLIRegenerationOptions, unusedRegenerationOptions]
   ];

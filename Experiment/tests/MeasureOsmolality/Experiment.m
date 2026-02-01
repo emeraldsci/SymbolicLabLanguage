@@ -657,6 +657,17 @@ DefineTests[
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentMeasureOsmolality[Object[Sample, "Test Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options,CentrifugeTime,"The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options=ExperimentMeasureOsmolality[Object[Sample,"Test Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],
 				CentrifugeTime->5 Minute,
@@ -898,6 +909,19 @@ DefineTests[
 			95 Microliter,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentMeasureOsmolality[
+				Object[Sample, "Test Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],
+				AliquotAmount -> 95.01 Microliter,
+				AliquotContainer -> Model[Container, Vessel, "1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"],
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			95 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,AssayVolume,"The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options=ExperimentMeasureOsmolality[Object[Sample,"Test Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],

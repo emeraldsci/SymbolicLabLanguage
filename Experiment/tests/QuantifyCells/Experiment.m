@@ -38,6 +38,30 @@ DefineTests[ExperimentQuantifyCells,
 			],
 			ObjectP[Object[Protocol, RoboticCellPreparation]]
 		],
+		Example[{Additional, "The robotic cell preparation protocol to quantify the cell concentration has resources correctly populated in the QuantifyCells unit operation:"},
+			protocol = ExperimentQuantifyCells[
+				Object[Sample, "test sample 3 for ExperimentQuantifyCells " <> $SessionUUID],
+				Wavelength -> 600*Nanometer,
+				AbsorbanceBlank -> Object[Sample, "test sample 9 for ExperimentQuantifyCells " <> $SessionUUID],
+				Preparation -> Robotic
+			];
+			{protocolResources, qcUOResources} = Download[
+				protocol,
+				{
+					RequiredResources,
+					OutputUnitOperations[[1]][RequiredResources]
+				}
+			];
+			{
+				(* Does qcUO has correctly requested both sample and instrument resources and back link to the correct fields *)
+				MemberQ[qcUOResources, {LinkP[Object[Resource, Instrument]], Instruments, _, _}],
+				MemberQ[qcUOResources, {LinkP[Object[Resource, Sample]], SampleLink, _, _}],
+				(* Are resources in the qcUO also listed under the root RCP's resources, so that we don't have duplicated resource for one thing *)
+				MemberQ[protocolResources, {ObjectP[#], _, _, _}]& /@ qcUOResources[[All, 1]]
+			},
+			{True, True, {True..}},
+			Variables :> {protocol, protocolResources, qcUOResources}
+		],
 		Example[{Additional, "Correctly assign the sample labels to be the aliquot labels from previous experiment if MultiMethodAliquots is set to Shared:"},
 			prot = ExperimentQuantifyCells[
 				{

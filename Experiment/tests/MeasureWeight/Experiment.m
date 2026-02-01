@@ -864,7 +864,6 @@ DefineTests[
 				$EmailEnabled=False
 			}
 		],
-
 		Test["Batching field is properly populated (testing all sorts of samples and combinations of options):",
 			Module[{myProtocol},
 				myProtocol=ExperimentMeasureWeight[
@@ -894,6 +893,7 @@ DefineTests[
 			(* Note that because we now use Sample Object ID instead of Sample Object Name, the sorting of samples using the same Balance may be different every time *)
 			{
 				{
+
 					(* 5 *)
 					<|
 						WorkingContainerIn -> Null,
@@ -931,8 +931,8 @@ DefineTests[
 						Index -> 2,
 						HandlingEnvironment -> ObjectP[],
 						CoveredContainer -> Null,
-						WeightStabilityDuration -> EqualP[60 Second],
-						MaxWeightVariation -> EqualP[0.1 Milligram]
+						WeightStabilityDuration -> EqualP[$DefaultWeightStabilityDuration],
+						MaxWeightVariation -> EqualP[Download[Model[Instrument, Balance, "id:rea9jl5Vl1ae"], AllowedMaxVariation]]
 					|>,
 					(* 2 *)
 					<|
@@ -951,7 +951,7 @@ DefineTests[
 						Index -> 3,
 						HandlingEnvironment -> ObjectP[],
 						CoveredContainer -> Null,
-						WeightStabilityDuration -> EqualP[60 Second],
+						WeightStabilityDuration -> EqualP[$DefaultWeightStabilityDuration],
 						MaxWeightVariation -> EqualP[1 Milligram]
 					|>,
 					(* 3 *)
@@ -971,7 +971,7 @@ DefineTests[
 						Index -> 4,
 						HandlingEnvironment -> ObjectP[],
 						CoveredContainer -> Null,
-						WeightStabilityDuration -> EqualP[60 Second],
+						WeightStabilityDuration -> EqualP[$DefaultWeightStabilityDuration],
 						MaxWeightVariation -> EqualP[1 Milligram]
 					|>,
 					(* 4 *)
@@ -991,7 +991,7 @@ DefineTests[
 						Index -> 5,
 						HandlingEnvironment -> ObjectP[],
 						CoveredContainer -> Null,
-						WeightStabilityDuration -> EqualP[60 Second],
+						WeightStabilityDuration -> EqualP[$DefaultWeightStabilityDuration],
 						MaxWeightVariation -> EqualP[1 Milligram]
 					|>
 				},
@@ -1175,7 +1175,8 @@ DefineTests[
 				{"A1", "A1"},
 				{_String, _String}
 			},
-			Variables :> {options, prepUOs}
+			Variables :> {options, prepUOs},
+			Messages :> {Warning::InaccurateBalance}
 		],
 		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
 			ExperimentMeasureWeight[
@@ -1184,7 +1185,16 @@ DefineTests[
 				Aliquot -> True,
 				Mix -> True
 			],
-			ObjectP[Object[Protocol, MeasureWeight]]
+			ObjectP[Object[Protocol, MeasureWeight]],
+			Messages :> {Warning::InaccurateBalance}
+		],
+		Example[{Messages, "InaccurateBalance", "Throw a warning if we resolved a balance that cannot measure the weight confidently:"},
+			ExperimentMeasureWeight[
+				Model[Sample, "Ammonium hydroxide"],
+				PreparedModelAmount -> 0.5 Milliliter
+			],
+			ObjectP[Object[Protocol, MeasureWeight]],
+			Messages :> {Warning::InaccurateBalance}
 		],
 		Example[{Options,PreparatoryUnitOperations,"Specify prepared samples for ExperimentMeasureWeight:"},
 			Download[ExperimentMeasureWeight["My NestedIndexMatching Sample"<> $SessionUUID,
@@ -1323,6 +1333,14 @@ DefineTests[
 			1000*RPM,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentMeasureWeight[Object[Sample, "Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing"<> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
 		],
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentMeasureWeight[Object[Sample,"Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing"<> $SessionUUID], CentrifugeTime -> 5*Minute,CentrifugeInstrument->Model[Instrument, Centrifuge, "Avanti J-15R"], Output -> Options];
@@ -1492,6 +1510,15 @@ DefineTests[
 			0.08*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentMeasureWeight[Object[Sample, "Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing" <> $SessionUUID], AliquotAmount -> 0.08101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			81 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision},
+			TimeConstraint -> 500
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentMeasureWeight[Object[Sample,"Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing"<> $SessionUUID], AssayVolume -> 0.08*Milliliter, Output -> Options];
@@ -1842,7 +1869,7 @@ DefineTests[
 						Batching[[All,MaxWeightVariation]]}
 				],
 				{
-					{60 Second, 60 Second},
+					{$DefaultWeightStabilityDuration, $DefaultWeightStabilityDuration},
 					balanceDefault
 				}
 			],
@@ -2011,7 +2038,7 @@ DefineTests[
 							Site -> Link[$Site],
 							DeveloperObject -> True|>,
 						<|Type -> Object[Instrument, Balance],
-							Model -> Link[Model[Instrument, Balance, "Ohaus Pioneer PA124"], Objects],
+							Model -> Link[Model[Instrument, Balance, "Ohaus Pioneer PA224"], Objects],
 							Name -> "Fake Balance 2 Testing MeasureWeight" <> $SessionUUID,
 							Status -> Running,
 							Site -> Link[$Site],
@@ -2477,6 +2504,7 @@ DefineTests[
 			]&)
 		]
 	},
+	TurnOffMessages :> {Warning::InaccurateBalance},
 	SymbolSetUp:>{
 		Module[{allObjects,existingObjects,testBench,numberOfSamples,testContainers,testSamples},
 
@@ -2597,6 +2625,7 @@ DefineTests[
 			Null
 		]
 	},
+	TurnOffMessages :> {Warning::InaccurateBalance},
 	SymbolSetUp:>{
 		Module[{allObjects,existingObjects,testBench,numberOfSamples,testContainers,testSamples},
 
@@ -2888,13 +2917,12 @@ DefineTests[MeasureWeight,
 			ObjectP[Object[Protocol,ManualSamplePreparation]]
 		]
 	},
+	TurnOffMessages :> {Warning::InaccurateBalance, Warning::SamplesOutOfStock, Warning::InstrumentUndergoingMaintenance},
 	SymbolSetUp:>{
 		Module[{allObjects,existingObjects,testBench,numberOfSamples,testContainers,testSamples},
 
 			ClearMemoization[];
 
-			Off[Warning::SamplesOutOfStock];
-			Off[Warning::InstrumentUndergoingMaintenance];
 
 			(*Gather all the objects and models created in SymbolSetUp*)
 			allObjects={
@@ -2972,8 +3000,6 @@ DefineTests[MeasureWeight,
 			(*Erase all the created objects and models*)
 			Quiet[EraseObject[existingObjects,Force->True,Verbose->False]];
 
-			On[Warning::SamplesOutOfStock];
-			On[Warning::InstrumentUndergoingMaintenance];
 
 			ClearMemoization[];
 		];

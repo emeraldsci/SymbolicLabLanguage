@@ -626,6 +626,42 @@ DefineObjectType[Object[Protocol, MeasurepH], {
 			Headers -> {"Object to Place", "Destination Object","Destination Position"},
 			Category -> "Placements",
 			Developer -> True
+		},
+
+		(* These two fields are added temporarily to track if updatedMeasurepHFileQ can properly check temperature *)
+		CurrentTemperature -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Celsius],
+			Units -> Celsius,
+			Description -> "The current temperature reading used by execute function.",
+			Category -> "General",
+			Developer->True
+		},
+		TemperatureFile -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation->Object[EmeraldCloudFile],
+			Description -> "The uploaded files of the raw data containing the current temperature reading used by execute function.",
+			Category -> "General",
+			Developer -> True
+		},
+		WashSolutionUnitOperations -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> SamplePreparationP,
+			Description -> "The set of instructions specifying the aliquots of working samples to wash solutions.",
+			Category -> "General",
+			Developer -> True
+		},
+		WashSolutionManipulations -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Protocol,ManualSamplePreparation]|Object[Notebook,Script],
+			Description -> "The sample preparation protocol used to aliquot the working samples to wash solutions.",
+			Category -> "General"
 		}
 	}
 }];

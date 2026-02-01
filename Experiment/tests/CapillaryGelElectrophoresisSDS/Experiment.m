@@ -2716,9 +2716,10 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "InjectionTableReplicatesSpecified","If both an injectionTable and number of replicates are specified, raise an error:"},
+		Example[{Messages, "InjectionTableNumberOfReplicatesConflict","If the number of replicates in the InjectionTable conflicts with the NumberOfReplicates option, raise an error:"},
 			ExperimentCapillaryGelElectrophoresisSDS[Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],SampleVolume->5Microliter,
-				Blanks -> Model[Sample, "1% SDS in 100mM Tris, pH 9.5"],BlankVolume->30Microliter,
+				Blanks -> {Model[Sample, "1% SDS in 100mM Tris, pH 9.5"], Model[Sample, "1% SDS in 100mM Tris, pH 9.5"]},
+				BlankVolume->30Microliter,
 				NumberOfReplicates->2,
 				InjectionTable ->
 					{{Blank, Model[Sample, "1% SDS in 100mM Tris, pH 9.5"],30Microliter},
@@ -2727,16 +2728,16 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 				Output->Options],
 			_List,
 			Messages:>{
-				Error::InjectionTableReplicatesSpecified,
+				Error::InjectionTableNumberOfReplicatesConflict,
 				Error::InvalidOption
 			}
 		],
 		Example[{Messages, "InjectionTableVolumeZero","If an injectionTable is specified with volume 0 microliter, raise an error:"},
 			ExperimentCapillaryGelElectrophoresisSDS[Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],SampleVolume->5Microliter,
 				InjectionTable ->
-					{{Blank, Model[Sample, "1% SDS in 100mM Tris, pH 9.5"],30Microliter},
+					{{Blank, Model[Sample, "1% SDS in 100mM Tris, pH 9.5"],0Microliter},
 						{Sample, Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],5Microliter},
-						{Blank, Model[Sample, "1% SDS in 100mM Tris, pH 9.5"],0Microliter}},
+						{Blank, Model[Sample, "1% SDS in 100mM Tris, pH 9.5"],30Microliter}},
 				Output->Options],
 			_List,
 			Messages:>{
@@ -3371,7 +3372,7 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 					Quantity[4.54545, IndependentUnit["VolumePercent"]]
 				},
 				{
-					Quantity[ 200., "Microliters"],
+					Quantity[200., "Microliters"],
 					Quantity[200., "Microliters"]
 				}
 			},
@@ -3536,13 +3537,31 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 			Variables :> {options}
 		],
 		Example[{Options, CentrifugeIntensity, "Set the CentrifugeIntensity option:"},
-			options =ExperimentCapillaryGelElectrophoresisSDS[Object[Sample, "ExperimentCESDS Test sample 1 (20 mL) "<>$SessionUUID],
-					CentrifugeTime -> 40*Minute, CentrifugeTemperature -> 10 Celsius,
-					CentrifugeIntensity -> 1000*RPM, Output -> Options];
+			options = ExperimentCapillaryGelElectrophoresisSDS[
+				Object[Sample, "ExperimentCESDS Test sample 1 (20 mL) "<>$SessionUUID],
+				CentrifugeTime -> 40 Minute,
+				CentrifugeTemperature -> 10 Celsius,
+				CentrifugeIntensity -> 1000 RPM,
+				Output -> Options
+			];
 			Lookup[options, CentrifugeIntensity],
-			1000*RPM,
+			1000 RPM,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentCapillaryGelElectrophoresisSDS[
+				Object[Sample, "ExperimentCESDS Test sample 1 (20 mL) "<>$SessionUUID],
+				CentrifugeTime -> 40 Minute,
+				CentrifugeTemperature -> 10 Celsius,
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
 		],
 		Example[{Options, CentrifugeTime, "Set the CentrifugeTime option:"},
 			options =ExperimentCapillaryGelElectrophoresisSDS[Object[Sample, "ExperimentCESDS Test sample 1 (20 mL) "<>$SessionUUID],
@@ -3743,12 +3762,27 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 			Variables :> {options}
 		],
 		Example[{Options, AliquotAmount, "Set the AliquotAmount option:"},
-			options = ExperimentCapillaryGelElectrophoresisSDS[Object[Sample,"ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
-				AliquotAmount -> 0.08*Milliliter, Output -> Options];
+			options = ExperimentCapillaryGelElectrophoresisSDS[
+				Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
+				AliquotAmount -> 0.08 Milliliter,
+				Output -> Options
+			];
 			Lookup[options, AliquotAmount],
-			0.08*Milliliter,
+			0.08 Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentCapillaryGelElectrophoresisSDS[
+				Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
+				AliquotAmount -> 0.08101 Milliliter,
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			81 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "Set the AssayVolume option:"},
 			options = ExperimentCapillaryGelElectrophoresisSDS[Object[Sample,"ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
@@ -3965,11 +3999,11 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 					Upload[<|Object->Object[Instrument, ProteinCapillaryElectrophoresis, "Maurice"], Replace[Contents]->{}|>]
 				];
 
-				sampleModel=UploadSampleModel["Unit Test Model for ExperimentCESDS (deprecated) "<>$SessionUUID,
-					Composition->{
-						{100 VolumePercent,
-							Model[Molecule,Protein,"Unknown Protein - 10 KDa"]}
+				sampleModel=UploadSampleModel[
+					{
+						{100 VolumePercent, Model[Molecule,Protein,"Unknown Protein - 10 KDa"]}
 					},
+					Name -> "Unit Test Model for ExperimentCESDS (deprecated) "<>$SessionUUID,
 					SingleUse->True,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
@@ -3977,11 +4011,12 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 					ShelfLife->12 Month,
 					UnsealedShelfLife->9 Month
 				];
-				sampleModel1=UploadSampleModel[ "Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID,
-					Composition->{
+				sampleModel1=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{10 Milligram/Milliliter,Model[Molecule,Protein,"id:o1k9jAGP83Ba"]}
 					},
+					Name -> "Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -3992,11 +4027,12 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 					BiosafetyLevel->"BSL-1",
 					IncompatibleMaterials->{None}
 				];
-				sampleModel2=UploadSampleModel[ "Unit Test 100 mg/mL bActin",
-					Composition->{
+				sampleModel2=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{100 Milligram/Milliliter,Model[Molecule,Protein,"BActin"]}
 					},
+					Name -> "Unit Test 100 mg/mL bActin",
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -4007,11 +4043,12 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 					BiosafetyLevel->"BSL-1",
 					IncompatibleMaterials->{None}
 				];
-				sampleModel3=UploadSampleModel[ "Unit Test 0.24 mM bActin model",
-					Composition->{
+				sampleModel3=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{0.24 Millimolar,Model[Molecule,Protein,"BActin"]}
 					},
+					Name -> "Unit Test 0.24 mM bActin model",
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -4022,10 +4059,12 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 					BiosafetyLevel->"BSL-1",
 					IncompatibleMaterials->{None}
 				];
-				sampleModel4=UploadSampleModel["0.5% SDS in 100mM Tris, pH 9.5 for ExperimentCESDS tests "<>$SessionUUID,
-					Composition->{
+				sampleModel4=UploadSampleModel[
+					{
 						{100Millimolar,Model[Molecule, "id:01G6nvwRWR0d"]},
-						{0.5MassPercent,Model[Molecule, "id:Y0lXejMq5eRl"]}},
+						{0.5MassPercent,Model[Molecule, "id:Y0lXejMq5eRl"]}
+					},
+					Name -> "0.5% SDS in 100mM Tris, pH 9.5 for ExperimentCESDS tests "<>$SessionUUID,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -4501,11 +4540,12 @@ DefineTests[ValidExperimentCapillaryGelElectrophoresisSDSQ,
 					cleanupCartridge,allObjects,runningBufferTop,cartridgeInsert,sampleModel,sampleModel1
 				},
 
-				sampleModel1=UploadSampleModel[ "Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID,
-					Composition->{
+				sampleModel1=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{10 Milligram/Milliliter,Model[Molecule,Protein,"id:o1k9jAGP83Ba"]}
 					},
+					Name -> "Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -4830,11 +4870,12 @@ DefineTests[
 					cleanupCartridge,allObjects,runningBufferTop,cartridgeInsert,sampleModel,sampleModel1
 				},
 
-				sampleModel1=UploadSampleModel[ "Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID,
-					Composition->{
+				sampleModel1=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{10 Milligram/Milliliter,Model[Molecule,Protein,"id:o1k9jAGP83Ba"]}
 					},
+					Name -> "Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -5085,18 +5126,6 @@ DefineTests[
 		Example[{Basic,"No preview is currently available for ExperimentCapillaryGelElectrophoresisSDS:"},
 			ExperimentCapillaryGelElectrophoresisSDSPreview[Object[Sample,"ExperimentCESDSPreview Test sample 1 (100 uL)" <> $SessionUUID]],
 			Null
-		],
-		Example[{Basic,"Return Null for multiple samples:"},
-			ExperimentCapillaryGelElectrophoresisSDSPreview[{Object[Sample,"ExperimentCESDSPreview Test sample 1 (100 uL)" <> $SessionUUID],Object[Sample,"ExperimentCESDSPreview Test sample 1 (100 uL)" <> $SessionUUID]}],
-			Null
-		],
-		Example[{Additional,"If you wish to understand how the experiment will be performed, try using ExperimentCapillaryGelElectrophoresisSDSOptions:"},
-			ExperimentCapillaryGelElectrophoresisSDSOptions[Object[Sample,"ExperimentCESDSPreview Test sample 1 (100 uL)" <> $SessionUUID]],
-			_Grid
-		],
-		Example[{Additional,"The inputs and options can also be checked to verify that the experiment can be safely run using ValidExperimentCapillaryGelElectrophoresisSDSQ:"},
-			ValidExperimentCapillaryGelElectrophoresisSDSQ[Object[Sample,"ExperimentCESDSPreview Test sample 1 (100 uL)" <> $SessionUUID]],
-			True
 		]
 	},
 	Stubs:>{ (* Set global Variables *)
@@ -5119,49 +5148,28 @@ DefineTests[
 		Module[{objs,existingObjs},
 			objs=Quiet[Cases[
 				Flatten[{
+					Model[Sample,"Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID],
 					Object[Container,Bench,"Unit Test bench for ExperimentCESDSPreview tests" <> $SessionUUID],
 					Object[Container,Vessel,"Unit Test container 1 for ExperimentCESDSPreview tests" <> $SessionUUID],
-					Object[Container,Vessel,"Unit Test container 2 for ExperimentCESDSPreview tests" <> $SessionUUID],
-					Object[Container,Plate,"Unit Test container for reagents in ExperimentCESDSPreview tests" <> $SessionUUID],
-					Model[Sample,"Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test sample 1 (discarded)" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test sample 1 (100 uL)" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test 14.3M 2-mercaptoethanol" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test 250mM Iodoacetamide" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test 1% SDS in 100mM Tris, pH 9.5" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test Molecular weight ladder" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test CESDS IgG Standard" <> $SessionUUID],
-					Object[Item,Consumable,"ExperimentCESDSPreview Test CESDS Running Buffer - Top" <> $SessionUUID],
-					Object[Item,Consumable,"ExperimentCESDSPreview test CleanupCartridge" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test CESDS Running Buffer - Bottom" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test CESDS Separation Matrix" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test CESDS Conditioning Acid" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test CESDS Conditioning Base" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test CESDS Internal Standard 25X" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test CESDS Wash Solution" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test CESDS 0.5% SDS" <> $SessionUUID],
-					Object[Container, ProteinCapillaryElectrophoresisCartridgeInsert,"ExperimentCESDSPreview test CESDS cartridge Insert" <> $SessionUUID],
-					Object[Container,ProteinCapillaryElectrophoresisCartridge,"CESDS-Plus Cartridge test Object 1 for ExperimentCESDSPreview "<>$SessionUUID],
-					Object[Container,ProteinCapillaryElectrophoresisCartridge,"cIEF Cartridge test Object 1 for ExperimentCESDSPreview" <> $SessionUUID]
+					Object[Sample,"ExperimentCESDSPreview Test sample 1 (100 uL)" <> $SessionUUID]
 				}],
 				ObjectP[]
 			]];
 			existingObjs=PickList[objs,DatabaseMemberQ[objs]];
 			EraseObject[existingObjs,Force->True,Verbose->False] (* make sure nothing is left over from previous test, cleanup whatever was left *)
 		];
-		Block[{$AllowSystemsProtocols=True},(* must use Block here, rather than With, With wont set it back to original value *)
+		Block[{$AllowSystemsProtocols = True, $DeveloperUpload = True},(* must use Block here, rather than With, With wont set it back to original value *)
 			Module[
 				{
-					fakeBench,container,container2,sample,sample2,cartridge1,cartridge2,reagentContainer,bme,iam,
-					sampleBuffer,ladder,igGStd,runningBufferBottom,sepMatrix,condAcid,condBase,intStd,washSolution,
-					cleanupCartridge,allObjects,runningBufferTop,cartridgeInsert,sampleModel,sampleModel1
+					sampleModel1, testBench, container,sample
 				},
 
-				sampleModel1=UploadSampleModel[ "Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID,
-					Composition->{
+				sampleModel1=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{10 Milligram/Milliliter,Model[Molecule,Protein,"id:o1k9jAGP83Ba"]}
 					},
+					Name -> "Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -5173,7 +5181,7 @@ DefineTests[
 					IncompatibleMaterials->{None}
 				];
 
-				fakeBench=Upload[
+				testBench=Upload[
 					<|
 						Type->Object[Container,Bench],
 						Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],
@@ -5183,182 +5191,41 @@ DefineTests[
 						Site -> Link[$Site]
 					|>];
 
-				cartridge1=
-					Upload[
-						<|
-							Name-> "CESDS-Plus Cartridge test Object 1 for ExperimentCESDSPreview "<>$SessionUUID,
-							Type->Object[Container,ProteinCapillaryElectrophoresisCartridge],
-							Model-> Link[Model[Container,ProteinCapillaryElectrophoresisCartridge, "CESDS-Plus"],Objects],
-							NumberOfUses->75,
-							DeveloperObject->True,
-							Status->Available,
-							Site -> Link[$Site]
-						|>
-					];
-				cartridge2=
-					Upload[<|Name->"cIEF Cartridge test Object 1 for ExperimentCESDSPreview" <> $SessionUUID,
-						Type->Object[Container,ProteinCapillaryElectrophoresisCartridge],
-						Model->
-							Link[Model[Container,ProteinCapillaryElectrophoresisCartridge,
-								"cIEF"],Objects],
-						NumberOfUses->25,
-						DeveloperObject->True, Status->Available,
-						Site -> Link[$Site]|>];
-
-				cartridgeInsert = Upload@<|
-					Type ->Object[Container, ProteinCapillaryElectrophoresisCartridgeInsert],
-					Model ->Link[Model[Container, ProteinCapillaryElectrophoresisCartridgeInsert, "CESDS Cartridge Insert"], Objects],
-					Name -> "ExperimentCESDSPreview test CESDS cartridge Insert" <> $SessionUUID,
-					Status -> Available,
-					DeveloperObject->True,
-					Site -> Link[$Site]
-				|>;
-
 				{
-					container,
-					container2,
-					reagentContainer
+					container
 				}=UploadSample[
 					{
-						Model[Container, Vessel, "New 0.5mL Tube with 2mL Tube Skirt"],
-						Model[Container, Vessel, "New 0.5mL Tube with 2mL Tube Skirt"],
-						Model[Container, Plate, "96-well 2mL Deep Well Plate"]
+						Model[Container, Vessel, "New 0.5mL Tube with 2mL Tube Skirt"]
 					},
 					{
-						{"Work Surface",fakeBench},
-						{"Work Surface",fakeBench},
-						{"Work Surface",fakeBench}
+						{"Work Surface", testBench}
 
 					},
 					Status->Available,
 					Name->{
-						"Unit Test container 1 for ExperimentCESDSPreview tests" <> $SessionUUID,
-						"Unit Test container 2 for ExperimentCESDSPreview tests" <> $SessionUUID,
-						"Unit Test container for reagents in ExperimentCESDSPreview tests" <> $SessionUUID
+						"Unit Test container 1 for ExperimentCESDSPreview tests" <> $SessionUUID
 					}
 				];
 
 				{
-					(*1*)sample,
-					(*2*)sample2,
-					(*12*)bme,
-					(*13*)iam,
-					(*14*)sampleBuffer,
-					(*15*)ladder,
-					(*16*)igGStd,
-					(*17*)runningBufferBottom,
-					(*18*)sepMatrix,
-					(*19*)condAcid,
-					(*20*)condBase,
-					(*21*)intStd,
-					(*22*)washSolution
+					(*1*)sample
 				}=UploadSample[
 					{
-						(*1*)Model[Sample,"Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID],
-						(*1*)Model[Sample,"Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID],
-						(*12*)Model[Sample,"2-Mercaptoethanol"],
-						(*13*)Model[Sample, StockSolution,"250mM Iodoacetamide"],
-						(*15*)Model[Sample,"1% SDS in 100mM Tris, pH 9.5"],
-						(*16*)Model[Sample, "Unstained Protein Standard"],
-						(*17*)Model[Sample,StockSolution, "Resuspended CESDS IgG Standard"],
-						(*18*)Model[Sample,"CESDS Running Buffer - Bottom"],
-						(*19*)Model[Sample,"CESDS Separation Matrix"],
-						(*20*)Model[Sample,"CESDS Conditioning Acid"],
-						(*21*)Model[Sample,"CESDS Conditioning Base"],
-						(*22*)Model[Sample,StockSolution, "Resuspended CESDS Internal Standard 25X"],
-						(*23*)Model[Sample,"CESDS Wash Solution"]
+						(*1*)Model[Sample,"Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID]
 					},
 					{
-						(*1*){"A1",container},
-						(*2*){"A1",container2},
-						(*12*){"A1",reagentContainer},
-						(*13*){"A2",reagentContainer},
-						(*14*){"A3",reagentContainer},
-						(*15*){"A4",reagentContainer},
-						(*16*){"A5",reagentContainer},
-						(*17*){"A7",reagentContainer},
-						(*18*){"A8",reagentContainer},
-						(*19*){"A9",reagentContainer},
-						(*20*){"A10",reagentContainer},
-						(*21*){"A11",reagentContainer},
-						(*22*){"A12",reagentContainer}
+						(*1*){"A1",container}
 					},
 					InitialAmount->{
-						(*1*)100*Microliter,
-						(*2*)100*Microliter,
-						(*12*)2*Milliliter,
-						(*13*)2*Milliliter,
-						(*14*)2*Milliliter,
-						(*15*)2*Milliliter,
-						(*16*)2*Milliliter,
-						(*17*)2*Milliliter,
-						(*18*)2*Milliliter,
-						(*19*)2*Milliliter,
-						(*20*)2*Milliliter,
-						(*21*)2*Milliliter,
-						(*22*)2*Milliliter
+						(*1*)100*Microliter
 					},
 					Name->{
-						(*1*)"ExperimentCESDSPreview Test sample 1 (100 uL)" <> $SessionUUID,
-						(*2*)"ExperimentCESDSPreview Test sample 1 (discarded)" <> $SessionUUID,
-						(*12*)"ExperimentCESDSPreview Test 14.3M 2-mercaptoethanol" <> $SessionUUID,
-						(*13*)"ExperimentCESDSPreview Test 250mM Iodoacetamide" <> $SessionUUID,
-						(*14*)"ExperimentCESDSPreview Test 1% SDS in 100mM Tris, pH 9.5" <> $SessionUUID,
-						(*15*)"ExperimentCESDSPreview Test Molecular weight ladder" <> $SessionUUID,
-						(*16*)"ExperimentCESDSPreview Test CESDS IgG Standard" <> $SessionUUID,
-						(*17*)"ExperimentCESDSPreview Test CESDS Running Buffer - Bottom" <> $SessionUUID,
-						(*18*)"ExperimentCESDSPreview Test CESDS Separation Matrix" <> $SessionUUID,
-						(*19*)"ExperimentCESDSPreview Test CESDS Conditioning Acid" <> $SessionUUID,
-						(*20*)"ExperimentCESDSPreview Test CESDS Conditioning Base" <> $SessionUUID,
-						(*21*)"ExperimentCESDSPreview Test CESDS Internal Standard 25X" <> $SessionUUID,
-						(*22*)"ExperimentCESDSPreview Test CESDS Wash Solution" <> $SessionUUID
+						(*1*)"ExperimentCESDSPreview Test sample 1 (100 uL)" <> $SessionUUID
 					},
 					StorageCondition->{
-						(*1*)Link[Model[StorageCondition,"Ambient Storage"]],
-						(*2*)Link[Model[StorageCondition,"Ambient Storage"]],
-						(*12*)Link[Model[StorageCondition,"Ambient Storage"]],
-						(*13*)Link[Model[StorageCondition,"Ambient Storage"]],
-						(*14*)Link[Model[StorageCondition,"Ambient Storage"]],
-						(*15*)Link[Model[StorageCondition,"Ambient Storage"]],
-						(*16*)Link[Model[StorageCondition,"Ambient Storage"]],
-						(*17*)Link[Model[StorageCondition,"Ambient Storage"]],
-						(*18*)Link[Model[StorageCondition,"Ambient Storage"]],
-						(*19*)Link[Model[StorageCondition,"Ambient Storage"]],
-						(*20*)Link[Model[StorageCondition,"Ambient Storage"]],
-						(*21*)Link[Model[StorageCondition,"Ambient Storage"]],
-						(*22*)Link[Model[StorageCondition,"Ambient Storage"]]
+						(*1*)Link[Model[StorageCondition,"Ambient Storage"]]
 					}
-				];
-
-				cleanupCartridge = Upload@<|
-					Type -> Object[Item, Consumable],
-					Model ->Link[Model[Item, Consumable,"CESDS Cartridge Cleanup Column"], Objects],
-					Name ->"ExperimentCESDSPreview test CleanupCartridge" <> $SessionUUID,
-					StorageCondition ->Link[Model[StorageCondition, "Ambient Storage"]],
-					NumberOfUses -> 0,
-					Status -> Available,
-					Site -> Link[$Site]
-				|>;
-
-				runningBufferTop= Upload[<|Type -> Object[Item, Consumable],
-					Model -> Link[
-						Model[Item, Consumable,
-							"Prefilled Top Running Buffer Vial"], Objects],
-					Name -> "ExperimentCESDSPreview Test CESDS Running Buffer - Top" <> $SessionUUID,
-					DeveloperObject -> True,
-					StorageCondition ->
-						Link[Model[StorageCondition, "Ambient Storage"]],
-					NumberOfUses -> 0, Status -> Available,
-					Site -> Link[$Site]|>];
-
-				(* upload other items needed for testing the protocol All of those are Developer object -> True AwaitingStorageUpdate-> Null so that they are not treated as real objects in lab if messed something up *)
-				allObjects=Cases[Flatten[{container,container2,sample,sample2,cartridge1,cartridge2,reagentContainer,
-					bme,iam,sampleBuffer,ladder,igGStd,runningBufferBottom,sepMatrix,condAcid,condBase,intStd,washSolution,
-					cleanupCartridge}],ObjectP[]];
-				Upload[<|Object->#,DeveloperObject->True,AwaitingStorageUpdate->Null|> &/@allObjects];
-				Upload[Cases[Flatten[{
-					<|Object->sample2, Status->Discarded,Model->Null|>
-				}],PacketP[]]];
+				]
 			]
 		]
 	),
@@ -5370,30 +5237,10 @@ DefineTests[
 		Module[{objs,existingObjs},
 			objs=Quiet[Cases[
 				Flatten[{
+					Model[Sample,"Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID],
 					Object[Container,Bench,"Unit Test bench for ExperimentCESDSPreview tests" <> $SessionUUID],
 					Object[Container,Vessel,"Unit Test container 1 for ExperimentCESDSPreview tests" <> $SessionUUID],
-					Object[Container,Vessel,"Unit Test container 2 for ExperimentCESDSPreview tests" <> $SessionUUID],
-					Object[Container,Plate,"Unit Test container for reagents in ExperimentCESDSPreview tests" <> $SessionUUID],
-					Model[Sample,"Unit Test 10 mg/mL BSA Fraction V "<>$SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test sample 1 (discarded)" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test sample 1 (100 uL)" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test 14.3M 2-mercaptoethanol" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test 250mM Iodoacetamide" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test 1% SDS in 100mM Tris, pH 9.5" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test Molecular weight ladder" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test CESDS IgG Standard" <> $SessionUUID],
-					Object[Item,Consumable,"ExperimentCESDSPreview Test CESDS Running Buffer - Top" <> $SessionUUID],
-					Object[Item,Consumable,"ExperimentCESDSPreview test CleanupCartridge" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test CESDS Running Buffer - Bottom" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test CESDS Separation Matrix" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test CESDS Conditioning Acid" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test CESDS Conditioning Base" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test CESDS Internal Standard 25X" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test CESDS Wash Solution" <> $SessionUUID],
-					Object[Sample,"ExperimentCESDSPreview Test CESDS 0.5% SDS" <> $SessionUUID],
-					Object[Container, ProteinCapillaryElectrophoresisCartridgeInsert,"ExperimentCESDSPreview test CESDS cartridge Insert" <> $SessionUUID],
-					Object[Container,ProteinCapillaryElectrophoresisCartridge,"CESDS-Plus Cartridge test Object 1 for ExperimentCESDSPreview "<>$SessionUUID],
-					Object[Container,ProteinCapillaryElectrophoresisCartridge,"cIEF Cartridge test Object 1 for ExperimentCESDSPreview" <> $SessionUUID]
+					Object[Sample,"ExperimentCESDSPreview Test sample 1 (100 uL)" <> $SessionUUID]
 				}],
 				ObjectP[]
 			]];

@@ -57,8 +57,8 @@ DefineTests[GenerateExperimentReview,
         ],
 
         Test["Generates a review of a MeasurepH protocol:",
-            GenerateExperimentReview[Object[Protocol, MeasurepH, "id:KBL5DvPp6l3J"]];
-            Object[Protocol, MeasurepH, "id:KBL5DvPp6l3J"][ExperimentReviewNotebook],
+            GenerateExperimentReview[Object[Protocol, MeasurepH, "id:kEJ9mqG4WW7p"]];
+            Object[Protocol, MeasurepH, "id:kEJ9mqG4WW7p"][ExperimentReviewNotebook],
             ObjectP[Object[EmeraldCloudFile]],
             SetUp :> (
                 $CreatedObjects = {};
@@ -967,6 +967,10 @@ DefineTests[mspPrimaryData,
             mspPrimaryData[Object[Protocol, ManualSamplePreparation, "id:O81aEB1jDblo"]],
             {_Labeled}
         ],
+        Example[{Additional, "Generate a TabView figure showing details about the unit operations in a MSP protocol that contains a Centrifuge unit operation:"},
+            mspPrimaryData[Object[Protocol,ManualSamplePreparation,"id:Z1lqpMv0z9a5"]],
+            {_Labeled}
+        ],
         Example[{Basic, "Generate a TabView figure showing details about the unit operations in a MSP protocol that contains Transfer and FillToVolume unit operations:"},
             mspPrimaryData[Object[Protocol, ManualSamplePreparation, "id:XnlV5jNELD8Z"]],
             {_Labeled}
@@ -981,10 +985,6 @@ DefineTests[mspPrimaryData,
         ],
         Example[{Additional, "Generate a TabView figure showing details about the unit operations in a MSP protocol that contains Incubate unit operations wherein streams of Object[Instrument, OverheadStirrer]s were recorded (fewer streams than samples case):"},
             mspPrimaryData[Object[Protocol, ManualSamplePreparation, "id:xRO9n3E5eL1w"]],
-            {_Labeled}
-        ],
-        Example[{Additional, "Generate a TabView figure showing details about the unit operations in a MSP protocol that contains Incubate unit operations wherein streams of Object[Instrument, OverheadStirrer]s were recorded (multiple MixTypes case):"},
-            mspPrimaryData[Object[Protocol, ManualSamplePreparation, "id:wqW9BPzDEDdM"]],
             {_Labeled}
         ],
         Example[{Additional, "Generate a TabView figure showing details about the unit operations in a MSP protocol that contains a Transfer unit operation wherein WeightAppearance images were taken:"},
@@ -1234,12 +1234,8 @@ DefineTests[measurepHPrimaryData,
             measurepHPrimaryData[Object[Protocol, MeasurepH, "id:7X104v6ajDKd"]],
             {_Column}
         ],
-        Example[{Basic, "Generate summary and data tables for an Object[Protocol, MeasurepH] with multiple samples whose pH values were measured multiple times, where no calibration data is provided:"},
-            measurepHPrimaryData[Object[Protocol, MeasurepH, "id:3em6Zvr3Zz9B"]],
-            {_Column}
-        ],
         Example[{Basic, "Generate summary and data tables for an Object[Protocol, MeasurepH] with multiple samples whose pH values were measured multiple times, and for which multiple calibrations were performed:"},
-            measurepHPrimaryData[Object[Protocol, MeasurepH, "id:9RdZXvNjz8X9"]],
+            measurepHPrimaryData[Object[Protocol, MeasurepH, "id:kEJ9mqG4WW7p"]],
             {_Column}
         ]
     }

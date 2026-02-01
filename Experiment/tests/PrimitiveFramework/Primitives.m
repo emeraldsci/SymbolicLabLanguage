@@ -726,8 +726,7 @@ DefineTests[AdjustpH,
             TitratingAcid->"acid sample"
           ]
         }],
-        ObjectP[Object[Protocol, ManualSamplePreparation]],
-        Messages :> {Warning::SampleMustBeMoved}
+        ObjectP[Object[Protocol, ManualSamplePreparation]]
       ]
     },
     SymbolSetUp:>(

@@ -2063,6 +2063,14 @@ DefineTests[ExperimentPCR,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentPCR[Object[Sample, "ExperimentPCR test sample 1"<>$SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		(*Note: Put your sample in a 2mL tube for the following test*)
 		Example[{Options,CentrifugeInstrument,"The centrifuge that will be used to spin the provided samples prior to starting the experiment:"},
 			options=ExperimentPCR[Object[Sample,"ExperimentPCR test sample in 2mL tube"<>$SessionUUID],CentrifugeInstrument->Model[Instrument,Centrifuge,"Microfuge 16"],Output->Options];
@@ -2221,6 +2229,14 @@ DefineTests[ExperimentPCR,
 			0.5*Milliliter,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentPCR[Object[Sample, "ExperimentPCR test sample 1"<>$SessionUUID], AliquotAmount -> 0.5001Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			0.5 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,AssayVolume,"The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options=ExperimentPCR[Object[Sample,"ExperimentPCR test sample 1"<>$SessionUUID],AssayVolume->0.5*Milliliter,Output->Options];
@@ -2787,8 +2803,8 @@ DefineTests[ExperimentPCROptions,
 
 				(*Make a test sample model*)
 				UploadSampleModel[
-					"ExperimentPCROptions test DNA sample"<>$SessionUUID,
-					Composition->{{10 Micromolar,Model[Molecule,Oligomer,"ExperimentPCROptions test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
+					{{10 Micromolar,Model[Molecule,Oligomer,"ExperimentPCROptions test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
+					Name -> "ExperimentPCROptions test DNA sample"<>$SessionUUID,
 					IncompatibleMaterials->{None},
 					Expires->True,
 					ShelfLife->2 Year,
@@ -2938,8 +2954,8 @@ DefineTests[ExperimentPCRPreview,
 
 				(*Make a test sample model*)
 				UploadSampleModel[
-					"ExperimentPCRPreview test DNA sample"<>$SessionUUID,
-					Composition->{{10 Micromolar,Model[Molecule,Oligomer,"ExperimentPCRPreview test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
+					{{10 Micromolar,Model[Molecule,Oligomer,"ExperimentPCRPreview test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
+					Name -> "ExperimentPCRPreview test DNA sample"<>$SessionUUID,
 					IncompatibleMaterials->{None},
 					Expires->True,
 					ShelfLife->2 Year,
@@ -3102,8 +3118,8 @@ DefineTests[ValidExperimentPCRQ,
 
 				(*Make a test sample model*)
 				UploadSampleModel[
-					"ValidExperimentPCRQ test DNA sample"<>$SessionUUID,
-					Composition->{{10 Micromolar,Model[Molecule,Oligomer,"ValidExperimentPCRQ test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
+					{{10 Micromolar,Model[Molecule,Oligomer,"ValidExperimentPCRQ test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
+					Name -> "ValidExperimentPCRQ test DNA sample"<>$SessionUUID,
 					IncompatibleMaterials->{None},
 					Expires->True,
 					ShelfLife->2 Year,
@@ -3313,8 +3329,8 @@ DefineTests[PCR,
 				
 				(*Make a test sample model*)
 				UploadSampleModel[
-					"PCR primitive test DNA sample"<>$SessionUUID,
-					Composition->{{10 Micromolar,Model[Molecule,Oligomer,"PCR primitive test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
+					{{10 Micromolar,Model[Molecule,Oligomer,"PCR primitive test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
+					Name -> "PCR primitive test DNA sample"<>$SessionUUID,
 					IncompatibleMaterials->{None},
 					Expires->True,
 					ShelfLife->2 Year,

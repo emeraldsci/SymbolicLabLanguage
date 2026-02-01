@@ -455,6 +455,17 @@ DefineTests[ExperimentCircularDichroism,
 			Variables:>{options}
 		],
 		Example[
+			{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentCircularDichroism[{Object[Sample, "ExperimentCircularDichroism Test (-) CSA Sample"<>$SessionUUID], Object[Sample, "ExperimentCircularDichroism Test ee=+50% sample"<>$SessionUUID], Object[Sample, "ExperimentCircularDichroism Test ee=0% sample"<>$SessionUUID]},
+				AliquotAmount -> 177.01 Microliter,
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			177 Microliter,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
+		],
+		Example[
 			{Options,AssayVolume,"Specify the desired total volume of the aliquoted sample plus dilution buffer:"},
 			options=ExperimentCircularDichroism[{Object[Sample, "ExperimentCircularDichroism Test (-) CSA Sample"<>$SessionUUID], Object[Sample, "ExperimentCircularDichroism Test ee=+50% sample"<>$SessionUUID], Object[Sample, "ExperimentCircularDichroism Test ee=0% sample"<>$SessionUUID]},
 				AssayVolume->150Microliter,
@@ -745,6 +756,17 @@ DefineTests[ExperimentCircularDichroism,
 			1000RPM,
 			Variables:>{options},
 			Messages:>{Warning::SampleStowaways}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentCircularDichroism[
+				{Object[Sample, "ExperimentCircularDichroism Test (-) CSA Sample"<>$SessionUUID], Object[Sample, "ExperimentCircularDichroism Test ee=+50% sample"<>$SessionUUID], Object[Sample, "ExperimentCircularDichroism Test ee=0% sample"<>$SessionUUID]},
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			Variables :> {options},
+			Messages :> {Warning::SampleStowaways, Warning::CentrifugePrecision}
 		],
 		Example[
 			{Options,CentrifugeTime,"Specify the amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},

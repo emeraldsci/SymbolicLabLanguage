@@ -18,12 +18,7 @@ DefineTests[ExperimentRamanSpectroscopy,
       ExperimentRamanSpectroscopy[
         Object[Sample,"RamanSpectroscopy Test Solid 1"]
       ],
-      ObjectP[Object[Protocol, RamanSpectroscopy]],
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      ObjectP[Object[Protocol, RamanSpectroscopy]]
     ],
     Example[{Basic, "Perform Raman spectroscopy on multiple samples:"},
       ExperimentRamanSpectroscopy[
@@ -36,23 +31,13 @@ DefineTests[ExperimentRamanSpectroscopy,
           Object[Sample,"RamanSpectroscopy Test Liquid 3"]
         }
       ],
-      ObjectP[Object[Protocol, RamanSpectroscopy]],
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      ObjectP[Object[Protocol, RamanSpectroscopy]]
     ],
     Example[{Basic, "Perform Raman spectroscopy on a single container:"},
       ExperimentRamanSpectroscopy[
         Object[Container, Vessel, "Fake container 1 for RamanSpectroscopy tests" <> $SessionUUID]
       ],
-      ObjectP[Object[Protocol, RamanSpectroscopy]],
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      ObjectP[Object[Protocol, RamanSpectroscopy]]
     ],
 
 
@@ -103,11 +88,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SampleType],
       {Powder, Liquid, Tablet},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options},
       Messages:>{Error::IncompatibleRamanSampleTypes, Error::InvalidOption}
     ],
@@ -136,11 +116,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SampleType],
       {Liquid, Tablet, Powder},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options},
       Messages:>{Error::IncompatibleRamanSampleTypes, Error::InvalidOption},
       TimeConstraint -> 500
@@ -152,11 +127,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SampleType],
       Tablet,
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, SampleType, "Automatically resolve the SampleType based on the TabletProcessing options:"},
@@ -167,11 +137,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SampleType],
       Powder,
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, SampleType, "Specify the SampleType to match the input type or to call TabletProcessing options:"},
@@ -182,11 +147,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, TabletProcessing],
      {Grind, Whole},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options},
       Messages:>{Error::IncompatibleRamanSampleTypes, Error::InvalidOption}
     ],
@@ -201,11 +161,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, TabletProcessing],
       Whole,
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, TabletProcessing, "Automatically resolve the TabletProcessing option based on the type of input samples and SampleType:"},
@@ -216,11 +171,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, TabletProcessing],
       Grind,
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, TabletProcessing, "Set the TabletProcessing option to measure a cut or whole tablet:"},
@@ -235,11 +185,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, TabletProcessing],
       {LargestCrossSection, SmallestCrossSection, Whole},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -251,11 +196,6 @@ DefineTests[ExperimentRamanSpectroscopy,
         Output -> Options];
       Lookup[options, Instrument],
       ObjectP[Model[Instrument, RamanSpectrometer, "THz Raman WPS"]],
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -267,11 +207,6 @@ DefineTests[ExperimentRamanSpectroscopy,
         Output -> Options];
       Lookup[options, CalibrationCheck],
       True,
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -283,11 +218,6 @@ DefineTests[ExperimentRamanSpectroscopy,
         Output -> Options];
       Lookup[options, ReadPattern],
       Row,
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -302,11 +232,6 @@ DefineTests[ExperimentRamanSpectroscopy,
         Output -> Options];
       Lookup[options, ReadRestTime],
       {2 Second, 1 Second},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -321,11 +246,6 @@ DefineTests[ExperimentRamanSpectroscopy,
         Output -> Options];
       Lookup[options, NumberOfReads],
       {3,5},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -340,11 +260,6 @@ DefineTests[ExperimentRamanSpectroscopy,
         Output -> Options];
       Lookup[options, BackgroundRemove],
       {True, False},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -359,11 +274,6 @@ DefineTests[ExperimentRamanSpectroscopy,
         Output -> Options];
       Lookup[options, CosmicRadiationFilter],
       {True, False},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -381,11 +291,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, LaserPower],
       Optimize,
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, LaserPower, "Set LaserPower to a fixed percentage of the maximum power:"},
@@ -396,11 +301,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, LaserPower],
       20 Percent,
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -413,11 +313,6 @@ DefineTests[ExperimentRamanSpectroscopy,
         Output -> Options];
       Lookup[options, ExposureTime],
       100 Millisecond,
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -439,11 +334,6 @@ DefineTests[ExperimentRamanSpectroscopy,
         Null,
         ObjectP[Object[Sample,"RamanSpectroscopy Test Solid 2"]]
       },
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, AdjustmentSample, "Specify that the LaserPower and ExposureTime are to be optimized using the sample itself:"},
@@ -462,11 +352,6 @@ DefineTests[ExperimentRamanSpectroscopy,
         ObjectP[Object[Sample,"RamanSpectroscopy Test Solid 1"]],
         ObjectP[Object[Sample,"RamanSpectroscopy Test Solid 2"]]
       },
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, AdjustmentSample, "Automatically resolve AdjustmentSample based on the value of LaserPower or ExposureTime:"},
@@ -484,11 +369,6 @@ DefineTests[ExperimentRamanSpectroscopy,
         ObjectP[Object[Sample,"RamanSpectroscopy Test Solid 1"]],
         ObjectP[Object[Sample,"RamanSpectroscopy Test Solid 2"]]
       },
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, AdjustmentSample, "Set AdjustmentSample to a member of Blank for SamplesIn:"},
@@ -504,11 +384,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, AdjustmentSample],
       {ObjectP[Object[Sample,"RamanSpectroscopy Test Solid 1"]], ObjectP[Object[Sample, "RamanSpectroscopy Test Solid 3"]]},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -526,11 +401,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, AdjustmentTarget],
       {60 Percent, 20 Percent},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, AdjustmentTarget, "Automatically resolve the AdjustmentTarget based on the values of LaserPower and ExposureTime:"},
@@ -546,11 +416,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, AdjustmentTarget],
       {50 Percent, 50 Percent, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -569,11 +434,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, AdjustmentEmissionWavelength],
       {Max,Max, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, AdjustmentEmissionWavelength, "Set the AdjustmentEmissionWavelength to indicate the wavelength used for adjusting the ExposureTime and/or LaserPower:"},
@@ -589,11 +449,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, AdjustmentEmissionWavelength],
       {Max, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -614,11 +469,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, InvertedMicroscopeImage],
       {False, True},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, InvertedMicroscopeImage, "Automatically set InvertedMicroscopeImage to True when the image parameters are specified:"},
@@ -632,11 +482,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, InvertedMicroscopeImage],
       True,
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, InvertedMicroscopeImage, "Automatically set InvertedMicroscopeImage to True when the image parameters are specified:"},
@@ -650,11 +495,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, InvertedMicroscopeImage],
       True,
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -671,11 +511,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, MicroscopeImageLightIntensity],
       {10 Percent, 20 Percent},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, MicroscopeImageLightIntensity, "The LED brightness will be rounded to match the instrument precision:"},
@@ -703,11 +538,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, MicroscopeImageLightIntensity],
       {10 Percent, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -724,11 +554,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, MicroscopeImageExposureTime],
       {Optimize, 10 Millisecond},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, MicroscopeImageExposureTime, "The exposure time for optical imaging using MicroscopeImageExposureTime is rounded to match the instrument precision:"},
@@ -756,11 +581,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, MicroscopeImageExposureTime],
       {Optimize, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -779,11 +599,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, FloodLight],
       True,
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, FloodLight, "Automatically resolve the FloodLight option based on the value of ObjectiveMagnification:"},
@@ -794,11 +609,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, FloodLight],
       True,
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -813,11 +623,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, ObjectiveMagnification],
       10,
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, ObjectiveMagnification, "Set the ObjectiveMagnification for each sample to control the beam spot size:"},
@@ -832,11 +637,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, ObjectiveMagnification],
       {20,10,4},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, ObjectiveMagnification, "Automatically resolve the ObjectiveMagnification based on the value of FloodLight and InvertedMicroscopeImage:"},
@@ -852,11 +652,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, ObjectiveMagnification],
       {2, Null, 10},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -885,11 +680,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SamplingPattern],
       {SinglePoint, Spiral, Grid},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, SamplingPattern, "Set a single SamplingPattern for all given samples:"},
@@ -904,11 +694,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SamplingPattern],
       Spiral,
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -928,11 +713,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SamplingTime],
       {100 Second, 200 Second, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, SamplingTime, "Automatically resolve SamplingTime based on the SamplingPattern:"},
@@ -947,11 +727,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SamplingTime],
       {600 Second, 600 Second, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -970,11 +745,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SpiralInnerDiameter],
       {100 Micrometer, 100 Micrometer, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, SpiralInnerDiameter, "The inner diameter of a Spiral or FilledSpiral SamplingPattern is rounded to match instrument precision:"},
@@ -1003,11 +773,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SpiralInnerDiameter],
       {50 Micrometer, 50 Micrometer, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, SpiralInnerDiameter, "Automatically resolve the SpiralInnerDiameter based on the SamplingPattern and SpiralOuterDiameter:"},
@@ -1022,11 +787,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SpiralInnerDiameter],
       {1 Micrometer, 1 Micrometer},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -1045,11 +805,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SpiralOuterDiameter],
       {200 Micrometer, 600 Micrometer, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, SpiralOuterDiameter, "The outer diameter of a Spiral or FilledSpiral SamplingPattern is rounded to match instrument precision:"},
@@ -1078,11 +833,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SpiralOuterDiameter],
       {200 Micrometer, 200 Micrometer, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, SpiralOuterDiameter, "Automatically resolve the SpiralOuterDiameter based on the SamplingPattern and SpiralInnerDiameter:"},
@@ -1097,11 +847,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SpiralOuterDiameter],
       {600 Micrometer, 300 Micrometer},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -1120,11 +865,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SpiralFillArea],
       {120 Percent, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, SpiralFillArea, "The percent coverage of a FilledSpiral SamplingPattern is rounded to match instrument precision:"},
@@ -1153,11 +893,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SpiralFillArea],
       {60 Percent, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -1176,11 +911,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SpiralResolution],
       {1 Micrometer, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, SpiralResolution, "The distance between consecutive measurement points in the FilledSpiral pattern is rounded to match instrument precision:"},
@@ -1209,11 +939,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SpiralResolution],
       {50 Micrometer, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -1231,11 +956,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SamplingXDimension],
       {200 Micrometer, 300 Micrometer},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, SamplingXDimension, "The SamplingXDimension is rounded to match instrument precision:"},
@@ -1264,11 +984,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SamplingXDimension],
       {200 Micrometer, 100 Micrometer},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, SamplingYDimension, "Set the SamplingYDimension for SamplingPattern -> Grid or FilledSquare:"},
@@ -1283,11 +998,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SamplingYDimension],
       {200 Micrometer, 300 Micrometer},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, SamplingYDimension, "The SamplingYDimension is rounded to match instrument precision:"},
@@ -1316,11 +1026,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SamplingYDimension],
       {200 Micrometer, 100 Micrometer},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -1338,11 +1043,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SamplingZDimension],
       {10 Micrometer, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, SamplingZDimension, "The SamplingZDimension for rounded to match instrument precision:"},
@@ -1371,11 +1071,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SamplingZDimension],
       {0 Micrometer, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -1393,11 +1088,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SamplingXStepSize],
       {10 Micrometer, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, SamplingXStepSize, "Automatically resolve the SamplingXStepSize for SamplingPattern -> Grid:"},
@@ -1411,11 +1101,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SamplingXStepSize],
       {20 Micrometer, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables:>{options}
     ],
 
@@ -1431,11 +1116,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SamplingYStepSize],
       {10 Micrometer, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, SamplingYStepSize, "Automatically resolve the SamplingYStepSize for SamplingPattern -> Grid:"},
@@ -1449,11 +1129,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SamplingYStepSize],
       {20 Micrometer, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -1471,11 +1146,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, SamplingZStepSize],
       {10 Micrometer, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -1493,11 +1163,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, FilledSquareNumberOfTurns],
       {Null, 20},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, FilledSquareNumberOfTurns, "Automatically resolve the FilledSquareNumberOfTurns for SamplingPattern -> FilledSquare:"},
@@ -1511,11 +1176,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, FilledSquareNumberOfTurns],
       {Null, 5},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -1534,11 +1194,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, NumberOfRings],
       {20, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, NumberOfRings, "Automatically resolve the NumberOfRings based on the SamplingPattern:"},
@@ -1552,11 +1207,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, NumberOfRings],
       {5, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -1574,11 +1224,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, RingSpacing],
       {10 Micrometer, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, RingSpacing, "The spacing between the concentric rings in the Rings SamplingPattern is rounded to match instrument precision:"},
@@ -1607,11 +1252,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, RingSpacing],
       {100 Micrometer, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -1629,11 +1269,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, NumberOfSamplingPoints],
       {20, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, NumberOfSamplingPoints, "Automatically resolve the total number of points measured in the Rings SamplingPattern:"},
@@ -1647,11 +1282,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, NumberOfSamplingPoints],
       {30, Null},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
 
@@ -1669,11 +1299,6 @@ DefineTests[ExperimentRamanSpectroscopy,
       ];
       Lookup[options, NumberOfShots],
       {10,3},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      ),
       Variables :> {options}
     ],
     Example[{Options, NumberOfShots, "Automatically resolve the number of repeated measurements of each point in Grid or SinglePoint SamplingPatterns:"},
@@ -1944,6 +1569,14 @@ DefineTests[ExperimentRamanSpectroscopy,
       EquivalenceFunction -> Equal,
       Variables :> {options}
     ],
+    Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+      options = ExperimentRamanSpectroscopy[Object[Sample, "RamanSpectroscopy Test Liquid 3"], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+      Lookup[options, CentrifugeIntensity],
+      1000 RPM,
+      EquivalenceFunction -> Equal,
+      Variables :> {options},
+      Messages :> {Warning::CentrifugePrecision}
+    ],
     (* Note: CentrifugeTime cannot go above 5Minute without restricting the types of centrifuges that can be used. *)
     Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment or any aliquoting:"},
       options = ExperimentRamanSpectroscopy[Object[Sample,"RamanSpectroscopy Test Liquid 3"], CentrifugeTime -> 5*Minute, Output -> Options];
@@ -2100,6 +1733,14 @@ DefineTests[ExperimentRamanSpectroscopy,
       0.28*Milliliter,
       EquivalenceFunction -> Equal,
       Variables :> {options}
+    ],
+    Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+      options = ExperimentRamanSpectroscopy[Object[Sample, "RamanSpectroscopy Test Liquid 3"], AliquotAmount -> 0.2801 Milliliter, Output -> Options];
+      Lookup[options, AliquotAmount],
+      0.28 Milliliter,
+      EquivalenceFunction -> Equal,
+      Variables :> {options},
+      Messages :> {Warning::AliquotAmountPrecision}
     ],
     Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
       options = ExperimentRamanSpectroscopy[Object[Sample,"RamanSpectroscopy Test Liquid 3"], AssayVolume -> 0.28*Milliliter, Output -> Options];
@@ -2341,12 +1982,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         Object[Sample, "RamanSpectroscopy Small Test Solid 1"]
       ],
       $Failed,
-      Messages :> {Error::RamanNotEnoughSample, Error::InvalidInput},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::RamanNotEnoughSample, Error::InvalidInput}
     ],
 
 
@@ -2361,12 +1997,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SampleType -> {Powder, Powder}
       ],
       $Failed,
-      Messages :> {Error::IncorrectRamanSampleType, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::IncorrectRamanSampleType, Error::InvalidOption}
     ],
 
     Example[{Messages, "RamanSampleTypeRequiresDissolution", "If the SampleType -> Liquid but the State of the sample is Solid, an error will be thrown:"},
@@ -2378,12 +2009,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SampleType -> {Liquid, Liquid}
       ],
       $Failed,
-      Messages :> {Error::RamanSampleTypeRequiresDissolution, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::RamanSampleTypeRequiresDissolution, Error::InvalidOption}
     ],
     Example[{Messages, "InvalidRamanTabletProcessingRequested", "If the SampleType -> Liquid but the sample is a tablet, an error will be thrown:"},
       ExperimentRamanSpectroscopy[
@@ -2394,12 +2020,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SampleType -> {Liquid, Liquid}
       ],
       $Failed,
-      Messages :> {Error::InvalidRamanTabletProcessingRequested, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::InvalidRamanTabletProcessingRequested, Error::InvalidOption}
     ],
     Example[{Messages, "RamanTabletProcessingInconsistancy", "If the SampleType -> Solid for a tablet sample but TabletProcessing is not Grind or Automatic, an error will be thrown:"},
       ExperimentRamanSpectroscopy[
@@ -2408,12 +2029,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         TabletProcessing -> Whole
       ],
       $Failed,
-      Messages :> {Error::RamanTabletProcessingInconsistancy, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::RamanTabletProcessingInconsistancy, Error::InvalidOption}
     ],
 
     (* -- TabletProcessing -- *)
@@ -2424,12 +2040,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         TabletProcessing -> Whole
       ],
       $Failed,
-      Messages :> {Error::UnusedRamanTabletProcessing, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::UnusedRamanTabletProcessing, Error::InvalidOption}
     ],
     Example[{Messages, "MissingRamanTabletProcessing" , "If the sample is a tablet and the TabletProcessing parameters are not specified or automatic, an error will be thrown:"},
       ExperimentRamanSpectroscopy[
@@ -2437,12 +2048,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         TabletProcessing -> Null
       ],
       $Failed,
-      Messages :> {Error::MissingRamanTabletProcessing, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::MissingRamanTabletProcessing, Error::InvalidOption}
     ],
 
 
@@ -2459,12 +2065,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         ObjectiveMagnification -> 10
       ],
       $Failed,
-      Messages :> {Error::RamanObjectiveMisMatch, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::RamanObjectiveMisMatch, Error::InvalidOption}
     ],
     Example[{Messages, "NoRamanObjective" , "If FloodLight is False, ObjectiveMagnification must be specified:"},
       ExperimentRamanSpectroscopy[
@@ -2473,12 +2074,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         ObjectiveMagnification -> Null
       ],
       $Failed,
-      Messages :> {Error::NoRamanObjective, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::NoRamanObjective, Error::InvalidOption}
     ],
     Example[{Messages, "MissingRamanAdjustmentTarget" , "If an adjustment is performed used AdjustmentTarget must not be Null:"},
       ExperimentRamanSpectroscopy[
@@ -2487,12 +2083,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         AdjustmentTarget -> Null
       ],
       $Failed,
-      Messages :> {Error::MissingRamanAdjustmentTarget, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::MissingRamanAdjustmentTarget, Error::InvalidOption}
     ],
     Example[{Messages, "NoRamanAdjustmentTargetRequired" , "If no adjustment is performed, AdjustmentTarget should not be informed:"},
       ExperimentRamanSpectroscopy[
@@ -2502,12 +2093,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         AdjustmentTarget -> 50 Percent
       ],
       $Failed,
-      Messages :> {Error::NoRamanAdjustmentTargetRequired, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::NoRamanAdjustmentTargetRequired, Error::InvalidOption}
     ],
     Example[{Messages, "MissingRamanAdjustmentSample" , "If an adjustment is performed, AdjustmentSample must not be Null:"},
       ExperimentRamanSpectroscopy[
@@ -2516,12 +2102,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         AdjustmentSample -> Null
       ],
       $Failed,
-      Messages :> {Error::MissingRamanAdjustmentSample, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::MissingRamanAdjustmentSample, Error::InvalidOption}
     ],
     Example[{Messages, "RamanAdjustmentSamplesNotPresent" , "AdjustmentSamples must be a member of SamplesIn or Blank:"},
       ExperimentRamanSpectroscopy[
@@ -2530,12 +2111,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         AdjustmentSample -> Object[Sample,"RamanSpectroscopy Test Tablet 2"]
       ],
       $Failed,
-      Messages :> {Error::RamanAdjustmentSamplesNotPresent, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::RamanAdjustmentSamplesNotPresent, Error::InvalidOption}
     ],
     Example[{Messages, "NoRamanAdjustmentSampleRequired" , "If no adjustment is performed, AdjustmentSample should not be informed:"},
       ExperimentRamanSpectroscopy[
@@ -2545,12 +2121,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         AdjustmentSample -> Object[Sample,"RamanSpectroscopy Test Tablet 1"]
       ],
       $Failed,
-      Messages :> {Error::NoRamanAdjustmentSampleRequired, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::NoRamanAdjustmentSampleRequired, Error::InvalidOption}
     ],
     Example[{Messages, "MissingRamanAdjustmentEmissionWavelength" , "If an adjustment is performed, AdjustmentEmissionWavelength must not be Null:"},
       ExperimentRamanSpectroscopy[
@@ -2559,12 +2130,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         AdjustmentEmissionWavelength -> Null
       ],
       $Failed,
-      Messages :> {Error::MissingRamanAdjustmentEmissionWavelength, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::MissingRamanAdjustmentEmissionWavelength, Error::InvalidOption}
     ],
     Example[{Messages, "NoRamanAdjustmentEmissionWavelengthRequired" , "If no adjustment is performed, AdjustmentEmissionWavelength should not be informed:"},
       ExperimentRamanSpectroscopy[
@@ -2574,12 +2140,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         AdjustmentEmissionWavelength -> 2000*1/Centimeter
       ],
       $Failed,
-      Messages :> {Error::NoRamanAdjustmentEmissionWavelengthRequired, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::NoRamanAdjustmentEmissionWavelengthRequired, Error::InvalidOption}
     ],
 
 
@@ -2594,12 +2155,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         MicroscopeImageLightIntensity -> Null
       ],
       $Failed,
-      Messages:>{Error::MissingRamanMicroscopeImageLightIntensity, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages:>{Error::MissingRamanMicroscopeImageLightIntensity, Error::InvalidOption}
     ],
     Example[{Messages, "MissingRamanMicroscopeImageExposureTime", "If InvertedMicroscopeImage -> True, the MicroscopeImageExposureTime must not be Null :"},
       ExperimentRamanSpectroscopy[
@@ -2608,12 +2164,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         MicroscopeImageExposureTime -> Null
       ],
       $Failed,
-      Messages:>{Error::MissingRamanMicroscopeImageExposureTime, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages:>{Error::MissingRamanMicroscopeImageExposureTime, Error::InvalidOption}
     ],
     Example[{Messages, "UnusedRamanMicroscopeImageExposureTime", "If MicroscopeImageExposureTime is set but InvertedMicroscopeImage -> False, an error is thrown:"},
       ExperimentRamanSpectroscopy[
@@ -2622,12 +2173,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         MicroscopeImageExposureTime -> 100 Millisecond
       ],
       $Failed,
-      Messages:>{Error::UnusedRamanMicroscopeImageExposureTime,Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages:>{Error::UnusedRamanMicroscopeImageExposureTime,Error::InvalidOption}
     ],
     Example[{Messages, "UnusedRamanMicroscopeImageLightIntensity", "If MicroscopeImageLightIntensity is set but InvertedMicroscopeImage -> False, an error is thrown:"},
       ExperimentRamanSpectroscopy[
@@ -2636,12 +2182,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         MicroscopeImageLightIntensity -> 80 Percent
       ],
       $Failed,
-      Messages:>{Error::UnusedRamanMicroscopeImageLightIntensity,Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages:>{Error::UnusedRamanMicroscopeImageLightIntensity,Error::InvalidOption}
     ],
 
     (* ---------------------- *)
@@ -2656,12 +2197,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SpiralOuterDiameter -> 9999 Micrometer
       ],
       $Failed,
-      Messages :> {Error::RamanSamplingPatternOutOfBounds, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::RamanSamplingPatternOutOfBounds, Error::InvalidOption}
     ],
     Example[{Messages, "RamanMaxSpeedExceeded", "If the specified parameters require the sample stage to move a t a speed beyond its capabilities, an error is thrown:"},
       ExperimentRamanSpectroscopy[
@@ -2673,12 +2209,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SamplingTime -> 1 Second
       ],
       $Failed,
-      Messages :> {Error::RamanMaxSpeedExceeded, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::RamanMaxSpeedExceeded, Error::InvalidOption}
     ],
     Example[{Messages, "RamanSwappedInnerOuterDiameter" , "If the inner spiral diameter is larger than the outer spiral diameter, an error is thrown:"},
       ExperimentRamanSpectroscopy[
@@ -2688,12 +2219,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SpiralOuterDiameter -> 90 Micrometer
       ],
       $Failed,
-      Messages :> {Error::RamanSwappedInnerOuterDiameter, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::RamanSwappedInnerOuterDiameter, Error::InvalidOption}
     ],
     Example[{Messages, "RamanSwappedXDimensionStepSize" , "If the SamplingXDimension is Smaller than the SamplingXStepSize, an error is thrown:"},
       ExperimentRamanSpectroscopy[
@@ -2703,12 +2229,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SamplingXStepSize -> 100 Micrometer
       ],
       $Failed,
-      Messages :> {Error::RamanSwappedXDimensionStepSize, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::RamanSwappedXDimensionStepSize, Error::InvalidOption}
     ],
     Example[{Messages, "RamanSwappedYDimensionStepSize" , "If the SamplingYDimension is Smaller than the SamplingYStepSize, an error is thrown:"},
       ExperimentRamanSpectroscopy[
@@ -2718,12 +2239,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SamplingYStepSize -> 100 Micrometer
       ],
       $Failed,
-      Messages :> {Error::RamanSwappedYDimensionStepSize, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::RamanSwappedYDimensionStepSize, Error::InvalidOption}
     ],
     Example[{Messages, "RamanSwappedZDimensionStepSize" , "If the SamplingZDimension is Smaller than the SamplingZStepSize, an error is thrown:"},
       ExperimentRamanSpectroscopy[
@@ -2733,12 +2249,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SamplingZStepSize -> 10 Micrometer
       ],
       $Failed,
-      Messages :> {Error::RamanSwappedZDimensionStepSize, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::RamanSwappedZDimensionStepSize, Error::InvalidOption}
     ],
     Example[{Messages, "MissingRamanSamplingCoordinates", "When SamplingPattern -> Coordinates, SamplingCoordinates must not be Null:"},
       ExperimentRamanSpectroscopy[
@@ -2747,12 +2258,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SamplingCoordinates -> Null
       ],
       $Failed,
-      Messages :> {Error::MissingRamanSamplingCoordinates, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::MissingRamanSamplingCoordinates, Error::InvalidOption}
     ],
 
     Example[{Messages, "RamanMissingNumberOfSamplingPoints", "When SamplingPattern -> Rings, NumberOfSamplingPoints must not be Null:"},
@@ -2762,12 +2268,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         NumberOfSamplingPoints -> Null
       ],
       $Failed,
-      Messages :> {Error::RamanMissingNumberOfSamplingPoints, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::RamanMissingNumberOfSamplingPoints, Error::InvalidOption}
     ],
 
     Example[{Messages, "RamanMissingNumberOfRings", "When SamplingPattern -> Rings, NumberOfRings must not be Null:"},
@@ -2777,12 +2278,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         NumberOfRings -> Null
       ],
       $Failed,
-      Messages :> {Error::RamanMissingNumberOfRings, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::RamanMissingNumberOfRings, Error::InvalidOption}
     ],
 
     Example[{Messages, "MissingNumberOfShots", "When SamplingPattern -> Rings, Grid, Coordinates, or SinglePoint, NumberOfShots must not be Null:"},
@@ -2792,12 +2288,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         NumberOfShots -> Null
       ],
       $Failed,
-      Messages :> {Error::MissingNumberOfShots, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::MissingNumberOfShots, Error::InvalidOption}
     ],
 
     Example[{Messages, "MissingRamanSamplingTime",  "When SamplingPattern -> FilledSpiral, SamplingTime must not be Null:"},
@@ -2807,12 +2298,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SamplingTime -> Null
       ],
       $Failed,
-      Messages :> {Error::MissingRamanSamplingTime, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::MissingRamanSamplingTime, Error::InvalidOption}
     ],
 
     Example[{Messages, "RamanMissingSpiralInnerDiameter",  "When SamplingPattern -> Spiral or FilledSpiral, SpiralInnerDiameter must not be Null:"},
@@ -2822,12 +2308,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SpiralInnerDiameter -> Null
       ],
       $Failed,
-      Messages :> {Error::RamanMissingSpiralInnerDiameter, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::RamanMissingSpiralInnerDiameter, Error::InvalidOption}
     ],
 
     Example[{Messages, "RamanMissingSpiralOuterDiameter",  "When SamplingPattern -> Spiral or FilledSpiral, SpiralOuterDiameter must not be Null:"},
@@ -2837,12 +2318,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SpiralOuterDiameter -> Null
       ],
       $Failed,
-      Messages :> {Error::RamanMissingSpiralOuterDiameter, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::RamanMissingSpiralOuterDiameter, Error::InvalidOption}
     ],
 
     Example[{Messages, "RamanMissingSpiralResolution",  "When SamplingPattern -> FilledSpiral, SpiralResolution must not be Null:"},
@@ -2852,12 +2328,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SpiralResolution -> Null
       ],
       $Failed,
-      Messages :> {Error::RamanMissingSpiralResolution, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::RamanMissingSpiralResolution, Error::InvalidOption}
     ],
 
     Example[{Messages, "RamanMissingSpiralFillArea",  "When SamplingPattern -> FilledSpiral, SpiralFillArea must not be Null:"},
@@ -2867,12 +2338,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SpiralFillArea -> Null
       ],
       $Failed,
-      Messages :> {Error::RamanMissingSpiralFillArea, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::RamanMissingSpiralFillArea, Error::InvalidOption}
     ],
 
     Example[{Messages, "RamanMissingFilledSquareNumberOfTurns",  "When SamplingPattern -> FilledSquare, FilledSquareNumberOfTurns must not be Null:"},
@@ -2882,12 +2348,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         FilledSquareNumberOfTurns -> Null
       ],
       $Failed,
-      Messages :> {Error::RamanMissingFilledSquareNumberOfTurns, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::RamanMissingFilledSquareNumberOfTurns, Error::InvalidOption}
     ],
 
     Example[{Messages, "ExcessiveRamanSamplingTime", "If the sampling pattern parameters result in excessively long sampling times, an error is thrown:"},
@@ -2897,12 +2358,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SamplingTime -> 9999 Second
       ],
       $Failed,
-      Messages :> {Error::ExcessiveRamanSamplingTime, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::ExcessiveRamanSamplingTime, Error::InvalidOption}
     ],
 
     Example[{Messages, "LongRamanSamplingTime", "If the sampling pattern parameters result in a long sampling time, a warning is thrown:"},
@@ -2913,12 +2369,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         NumberOfShots -> 2000
       ],
       ObjectP[Object[Protocol, RamanSpectroscopy]],
-      Messages :> {Warning::LongRamanSamplingTime},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Warning::LongRamanSamplingTime}
     ],
 
     Example[{Messages, "MissingRamanSamplingDimension", "When SamplingPattern -> Grid, SamplingXDimension must not be Null:"},
@@ -2928,12 +2379,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SamplingXDimension -> Null
       ],
       $Failed,
-      Messages :> {Error::MissingRamanSamplingDimension, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::MissingRamanSamplingDimension, Error::InvalidOption}
     ],
 
     Example[{Messages, "MissingRamanSamplingStepSize",  "When SamplingPattern -> Grid, SamplingXStepSize must not be Null:"},
@@ -2943,12 +2389,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SamplingXStepSize -> Null
       ],
       $Failed,
-      Messages :> {Error::MissingRamanSamplingStepSize, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::MissingRamanSamplingStepSize, Error::InvalidOption}
     ],
 
     Example[{Messages, "UnusedRamanSamplingPatternParameterOption", "If parameters are specified which are not required for the selected SamplingPattern, an error will be thrown:"},
@@ -2958,12 +2399,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SpiralInnerDiameter -> 20 Micrometer
       ],
       $Failed,
-      Messages :> {Error::UnusedRamanSamplingPatternParameterOption, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::UnusedRamanSamplingPatternParameterOption, Error::InvalidOption}
     ],
 
 
@@ -2980,12 +2416,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         SamplingCoordinates -> {{10.1 Micrometer, 10.5 Micrometer, 0 Micrometer},{20.1 Micrometer, 50.5 Micrometer, 0 Micrometer},{40.1 Micrometer, 30.5 Micrometer, 0 Micrometer}}
       ],
       ObjectP[Object[Protocol, RamanSpectroscopy]],
-      Messages :> {Warning::RamanSamplingCoordinatesPrecision},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Warning::RamanSamplingCoordinatesPrecision}
     ],
     Example[{Messages, "InstrumentPrecision", "If an option is given with higher precision than the instrument can achieve, the value is rounded to the instrument precision and a warning is displayed:"},
       ExperimentRamanSpectroscopy[
@@ -2993,12 +2424,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         LaserPower -> 20.1 Percent
       ],
       ObjectP[Object[Protocol, RamanSpectroscopy]],
-      Messages :> {Warning::InstrumentPrecision},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Warning::InstrumentPrecision}
     ],
     Example[{Messages, "TooManyRamanSampleInputs", "If there are too many samples to be measured in a single plate for the specified SampleType, and error will be thrown:"},
       ExperimentRamanSpectroscopy[
@@ -3007,24 +2433,14 @@ DefineTests[ExperimentRamanSpectroscopy,
         TabletProcessing -> Whole
       ],
      $Failed,
-      Messages :> {Error::TooManyRamanSampleInputs, Error::InvalidInput},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::TooManyRamanSampleInputs, Error::InvalidInput}
     ],
     Example[{Messages, "IncompatibleRamanSampleTypes", "All samples must have SampleType -> Liquid or Powder, or all have SampleType -> Tablet:"},
       ExperimentRamanSpectroscopy[
         {Object[Sample,"RamanSpectroscopy Test Tablet 1"], Object[Sample,"RamanSpectroscopy Test Liquid 1"]}
       ],
       $Failed,
-      Messages :> {Error::IncompatibleRamanSampleTypes, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::IncompatibleRamanSampleTypes, Error::InvalidOption}
     ],
     Example[{Messages, "InvalidRamanBlankFormFactor", "Blank must be in liquid or solid form, not Tablets:"},
       ExperimentRamanSpectroscopy[
@@ -3032,12 +2448,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         Blank -> {Object[Sample,"RamanSpectroscopy Test Tablet 1"], Window}
       ],
       $Failed,
-      Messages :> {Error::InvalidRamanBlankFormFactor, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::InvalidRamanBlankFormFactor, Error::InvalidOption}
     ],
     Example[{Messages, "TabletWithRamanBlankSample", "The Blank option is not supported for tablet inputs:"},
       ExperimentRamanSpectroscopy[
@@ -3045,12 +2456,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         Blank -> {Window, Object[Sample,"RamanSpectroscopy Test Liquid 1"]}
       ],
       $Failed,
-      Messages :> {Error::TabletWithRamanBlankSample, Error::InvalidOption},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Error::TabletWithRamanBlankSample, Error::InvalidOption}
     ],
     Example[{Messages, "RamanSampleWithoutBlank", "The user will be warned if Liquid/Solid samples do not have any blank specified:"},
       ExperimentRamanSpectroscopy[
@@ -3058,12 +2464,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         Blank -> {Window, None}
       ],
       ObjectP[Object[Protocol, RamanSpectroscopy]],
-      Messages :> {Warning::RamanSampleWithoutBlank},
-      SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
-      TearDown :> (
-        EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-        Unset[$CreatedObjects]
-      )
+      Messages :> {Warning::RamanSampleWithoutBlank}
     ],
     Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
       ExperimentRamanSpectroscopy[
@@ -3089,10 +2490,10 @@ DefineTests[ExperimentRamanSpectroscopy,
   Stubs:>{
     $EmailEnabled=False
   },
-  SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
+  TurnOffMessages :> {Warning::InaccurateBalance, Warning::SamplesOutOfStock, Warning::InstrumentUndergoingMaintenance},
+  SetUp :> (SetCreatedObjectsCheckpoint["ExperimentRamanSpectroscopy unit test"]),
+  TearDown :> (EraseCreatedObjects["ExperimentRamanSpectroscopy unit test"]),
   SymbolSetUp :> (
-    Off[Warning::SamplesOutOfStock];
-    Off[Warning::InstrumentUndergoingMaintenance];
 
     Module[{objs, existingObjs},
       objs = Quiet[Cases[
@@ -3352,8 +2753,6 @@ DefineTests[ExperimentRamanSpectroscopy,
     ]
   ),
   SymbolTearDown :> (
-    On[Warning::SamplesOutOfStock];
-    On[Warning::InstrumentUndergoingMaintenance];
 
     Module[{objs, existingObjs},
       objs = Quiet[Cases[

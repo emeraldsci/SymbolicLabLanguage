@@ -415,7 +415,7 @@ ProtocolEventP=Alternatives[
 (*FilterTypeP*)
 
 
-FilterFormatP=Alternatives[Disk, Membrane, BottleTop, Centrifuge, CrossFlowFiltration, G2InLine, G2ProbeTip];
+FilterFormatP=Alternatives[Disk, Membrane, BottleTop, Centrifuge, CrossFlowFiltration, G2InLine, QLADVInnerFilter];
 
 
 (* ::Subsubsection::Closed:: *)
@@ -4292,7 +4292,7 @@ CountryWithCountyP:=Alternatives["Ireland","United Kingdom"];
 (*StreetAddressP*)
 
 
-StreetAddressP:=_String?(StringLength[#] <= 35 &);
+StreetAddressP:=_String?(StringLength[#] <= 50 &);
 
 
 (* ::Subsubsection::Closed:: *)
@@ -6272,6 +6272,7 @@ MetalP = Alternatives[
 	AnodisedAluminum,
 	Brass,
 	Bronze,
+	CarbideSteel,
 	CarbonSteel,
 	CastIron,
 	Chrome,
@@ -7120,7 +7121,7 @@ ZeroCompositionP = Alternatives[Alternatives[EqualP[0 Molar], EqualP[0 Gram/Lite
 (*ModelCompositionP*)
 
 
-ModelCompositionP={{CompositionP,IdentityModelP}..};
+ModelCompositionP={{Alternatives[CompositionP, Null], Alternatives[IdentityModelP, Null]}..};
 
 
 (* ::Subsubsection::Closed:: *)
@@ -7821,6 +7822,7 @@ EmeraldPositionP=Alternatives[
 	"Director of Research",
 	"Director of Scientific Computing",
 	"Director of Scientific Development",
+	"Director of Scientific Operations",
 	"Director of Systems Diagnostics",
 	"Director of HR",
 	"Facilities Technician",
@@ -7847,7 +7849,9 @@ EmeraldPositionP=Alternatives[
 	"Scientific Instrumentation Engineer",
 	"Scientific Education Engineer",
 	"Scientific Developer",
+	"Scientific Operations Engineer",
 	"Scientific Operations Support",
+	"Scientific Operations Technician",
 	"Senior Accountant",
 	"Software Engineer",
 	"Spokesrooster",
@@ -7878,6 +7882,7 @@ EmeraldDepartmentP=Alternatives[
 	GeneralAndAdministrative,
 	LaboratoryOperations,
 	Operations,
+	OperationsMetrics,
 	Research,
 	Sales,
 	ScientificComputing,
@@ -7886,6 +7891,7 @@ EmeraldDepartmentP=Alternatives[
 	User,
 	ScientificInfrastructure,
 	ScientificInstrumentation,
+	ScientificOperations,
 	ScientificSolutions
 ];
 
@@ -8992,7 +8998,7 @@ DissolutionStrategyP=Alternatives[Paddle,Basket];
 
 (* ::Subsubsection::*)
 (*Filtration types used for dissolution*)
-DissolutionFiltrationTypeP=Alternatives[InLineFiltration,AutosamplerFiltration,CannulaTipFiltration];
+DissolutionFiltrationTypeP=Alternatives[CannulaTipFiltration,InLineFiltration,AutosamplerFiltration];
 
 (* ::Subsubsection::Closed:: *)
 (*SampleDescriptionP*)
@@ -9831,6 +9837,7 @@ FootprintP = Alternatives[
 	Vial18mm,
 	Vial20mm,
 	Vial22mm,
+  Vial30mm,
 	(* Syringes *)
 	Syringe1mL,
 	Syringe3mL,
@@ -9912,10 +9919,15 @@ FootprintP = Alternatives[
 	DissolutionVessel1L,
 	DistekBasket,
 	Eclipse5300AutosamplerRack,
+	G2SampleProbe,
 	G2SampleProbeFilter,
-	G2ProbeTip,
+	G2SampleProbeRack,
+	QLADVInnerFilter,
+	DissolutionCANProbe,
 	Distek2500RTDShaftAgitator,
 	Distek2500RTDShaft,
+	DissolutionCornerRail,
+	DissolutionRail,
 	(* Footprint specifically used by QualificationEngineBenchmark for re-racking/storage tests *)
 	BenchmarkTestFootprint,
 	(* storage container footprints *)
@@ -11046,7 +11058,7 @@ CoverFootprintP::usage="The footprint of the cover that is to be placed on a con
 CoverFootprintP = Alternatives[
 	CapPlace130x8, CapScrewBottle47x26, CapScrewBottle48x6, Cap13425, Cap1420PlaceFlask, Cap15425, Cap20400, Cap20415, Cap22400,
 	Cap24400, Cap2440PlaceFlask, Cap24415, Cap28400, Cap28410, Cap38430,
-	Cap53B, Cap83B, CapBODPlaceFlask, CapBottleScrew15x10, CapCrimpBottle14x7,
+	Cap53B, Cap83B, Cap9x26, CapBODPlaceFlask, CapBottleScrew15x10, CapCrimpBottle14x7,
 	CapCrimpBottle21x7, CapCrimpBottle21x8, CapCrimpBottle22x9,
 	CapCrimpBottle27x8, CapCrimpVial11x6, CapCrimpVial20x8,
 	CapCrimp23x43,Cap42x32,Cap22x8,
@@ -11057,19 +11069,19 @@ CoverFootprintP = Alternatives[
 	CapPlace37x8, CapPlace38x8, CapPlace51x125, CapPlace94x85, CapPlace94x7,CapPlace95x6, 
 	CapPlaceBottle64x68, CapPlaceTube16x15, CapPlaceTube26x18,CapScrewBottle32x149,
 	CapPlaceTube40x31, CapPlaceTubeBellTop26x18, CapScrewBottle103x34,
-	CapScrewBottle104x20, CapScrewBottle113x17, CapScrewBottle114x21, CapScrewBottle122x25,
-	CapScrewBottle127x267, CapScrewBottle127x67, CapScrewBottle12x18,
+	CapScrewBottle104x20, CapScrewBottle113x17, CapScrewBottle114x16, CapScrewBottle114x21, CapScrewBottle122x25,
+	CapScrewBottle122x162, CapScrewBottle127x267, CapScrewBottle127x67, CapScrewBottle12x18,
 	CapScrewBottle12x7, CapScrewTube15x5, CapScrewTube15x7, CapScrewBottle15x9,
 	CapScrewBottle166x48, CapScrewBottle16x19, CapScrewBottle16x9, CapScrewBottle175x35,
 	CapScrewBottle17x13, CapScrewBottle18x10, CapScrewBottle19x20,
 	CapScrewBottle19x26, CapScrewBottle21x11, CapScrewBottle21x12,
 	CapScrewBottle21x13, CapScrewBottle21x15, CapScrewBottle21x16,
-	CapScrewBottle21x21, CapScrewBottle22x10, CapScrewBottle22x11, CapScrewBottle22x12,
+	CapScrewBottle21x21, CapScrewBottle21x30, CapScrewBottle22x10, CapScrewBottle22x11, CapScrewBottle22x12,
 	CapScrewBottle22x15, CapScrewBottle22x16, CapScrewBottle22x22, CapScrewBottle22x40, CapScrewBottle23x11,
 	CapScrewBottle23x12, CapScrewBottle23x14, CapScrewBottle23x15,
 	CapScrewBottle24x11, CapScrewBottle24x15, CapScrewBottle24x16,
 	CapScrewBottle24x17, CapScrewBottle24x18, CapScrewBottle24x19, CapScrewBottle24x20,
-	CapScrewBottle24x21, CapScrewBottle25x10, CapScrewBottle25x11,
+	CapScrewBottle24x21, CapScrewBottle24x22, CapScrewBottle25x10, CapScrewBottle25x11,
 	CapScrewBottle25x12, CapScrewBottle25x14, CapScrewBottle25x20,
 	CapScrewBottle25x52, CapScrewBottle26x12, CapScrewBottle26x20,
 	CapScrewBottle26x21, CapScrewBottle26x22, CapScrewBottle27x11,
@@ -11111,7 +11123,7 @@ CoverFootprintP = Alternatives[
 	CapScrewBottle58x79, CapScrewBottle59x11, CapScrewBottle59x30, CapScrewBottle59x39,
 	CapScrewBottle60x13, CapScrewBottle60x19, CapScrewBottle60x30,CapScrewBottle60x36,
 	CapScrewBottle60x38, CapScrewBottle61x21, CapScrewBottle61x22, CapScrewBottle62x21,
-	CapScrewBottle63x22, CapScrewBottle64x27, CapScrewBottle65x18,
+	CapScrewBottle63x22, CapScrewBottle64x27, CapScrewBottle64x30, CapScrewBottle65x18,
 	CapScrewBottle66x27, CapScrewBottle67x11, CapScrewBottle68x17, CapScrewBottle68x18,
 	CapScrewBottle68x27, CapScrewBottle68x37, CapScrewBottle70x40, CapScrewBottle72x12,
 	CapScrewBottle73x12, CapScrewBottle75x46, CapScrewBottle78x30, CapScrewBottle78x32,
@@ -11122,14 +11134,15 @@ CoverFootprintP = Alternatives[
 	CapScrewBottle295x60,
 	CapScrewCarboy104x31, CapScrewCarboy74x23, CapScrewCartridge12x10,
 	CapScrewColumn7x13, CapScrewCuvette18x17, CapScrewDropletBottle18x25,
-	CapScrewDrum42x14, CapScrewFlask26x16, CapScrewFlask32x20,
+	CapScrewDrum42x14, CapScrewDrum50x5, CapScrewFlask26x16, CapScrewFlask32x20,
 	CapScrewFlask34x22, CapScrewFlask38x30, CapScrewFlask49x30,
+	CapScrewJar120x20,
 	CapScrewReactor20x17, CapScrewReactor32x40, CapScrewReactor41x25,
 	CapScrewReservoir145x27, CapScrewTank168x110, CapScrewTube9x7, CapScrewTube10x17,
 	CapScrewTube10x18, CapScrewTube10x7, CapScrewTube11x6, CapScrewTube11x13, CapScrewTube11x17,
 	CapScrewTube11x21, CapScrewTube11x30, CapScrewTube12x6, CapScrewTube12x9, CapScrewTube12x10,
 	CapScrewTube12x15, CapScrewTube12x17, CapScrewTube12x18,
-	CapScrewTube12x27,CapScrewTube12x3, CapScrewTube12x5, CapScrewTube13x10, CapScrewTube13x2,
+	CapScrewTube12x27, CapScrewTube12x3, CapScrewTube12x5, CapScrewTube13x10, CapScrewTube13x2,
 	CapScrewTube13x11, CapScrewTube13x14, CapScrewTube13x15,
 	CapScrewTube13x17, CapScrewTube13x20, CapScrewTube13x21, CapScrewTube13x5,
 	CapScrewTube13x6, CapScrewTube13x6Brown, CapScrewTube13x8, CapScrewTube13x9,
@@ -11150,8 +11163,8 @@ CoverFootprintP = Alternatives[
 	CapScrewVial19x11, CapScrewVial19x13, CapScrewVial21x12,
 	CapScrewVial24x12, CapScrewVial31x12, CapScrewVial40x38,
 	CapScrewVial40x44, CapScrewVial40x45, CapScrewVial40x52,
-	CapSize6PlaceFlask, CapSize7PlaceFlask, CapSize10PlaceFlask,
-	CapSize12PlaceFlask, CapSize13PlaceFlask, CapSize16PlaceFlask,
+	CapSize5RubberStopper, CapSize6PlaceFlask, CapSize6RubberStopper, CapSize7PlaceFlask, CapSize7RubberStopper, CapSize8RubberStopper,
+	CapSize10PlaceFlask, CapSize12PlaceFlask, CapSize13PlaceFlask, CapSize16PlaceFlask,
 	CapSize19PlaceFlask, CapSize22PlaceFlask,
 	CapSize27PlaceFlask, CapSize38PlaceFlask,
 	CapSize9PlaceFlask, CapSnap7x6, CapSnap66x7, CapSnap11x33, CapSnap11x35, CapSnap12x1, CapSnap12x28, CapSnap13x1, CapSnap13x2, CapSnap13x3, CapSnap12x35, CapSnap19x3,
@@ -11179,7 +11192,8 @@ CoverFootprintP = Alternatives[
 	CrossFlowContainerCap250mL,CrossFlowContainerCap500mL, SIQualCap,CapSnap27x21,CapScrewTube18x14,Cap11x27,CapSnap38x6,
 	Cap57x83, CapScrewSpigotCarboy20L, Cap13x3, CapScrewBottle24x12,
 	SmallBeakerLid, MediumBeakerLid, LargeBeakerLid,
-	MoledularSieveNarrowTubeCap, MolecularSieveRotatableTubeCap
+	MoledularSieveNarrowTubeCap, MolecularSieveRotatableTubeCap,
+	CentrifugeBucketCoverJS4750, CentrifugeBucketCoverJS4750u
 ];
 
 
@@ -11192,6 +11206,24 @@ CoverTypeP::usage="The different types of covers that are supported in the ECL."
 CoverTypeP = Crimp | Seal | Screw | Snap | Place | Pry | AluminumFoil;
 
 
+(* ::Subsubsection::Closed:: *)
+(*coveringTypesObjects*)
+coveringTypesObjects = {
+	Object[Item, Cap],
+	Object[Item, Cap, ElectrodeCap],
+	Object[Item, Cap, ElectrodeCap, CalibrationCap],
+	Object[Item, Lid].
+	Object[Item, PlateSeal]
+};
+
+(*coveringTypesModels*)
+coveringTypesModels = {
+	Model[Item, Cap], 
+	Model[Item, Cap, ElectrodeCap], 
+ 	Model[Item, Cap, ElectrodeCap, CalibrationCap], 
+	Model[Item, Lid], 
+ 	Model[Item, PlateSeal]
+};
 
 (* ::Subsubsection::Closed:: *)
 (*SealTypeP*)
@@ -11434,6 +11466,7 @@ FieldCategoryP=Alternatives[
 	"General",
 	"Container Information",
 	"Cover Information",
+	"Liner Information",
 	"Method Information",
 	"Model Information",
 	"Usage Information",
@@ -11528,6 +11561,8 @@ FieldCategoryP=Alternatives[
 	"Precipitation",
 	"Aspiration",
 	"Dispensing",
+	"PreRinse Labware",
+	"Oven Drying",
 
 	(* For Object[Report,Inventory] and Object[Transaction] *)
 	"Order Activity",
@@ -11863,7 +11898,6 @@ ProtocolCategoryP=Alternatives[
 	"Equilibration",
 	"Loading",
 	"Elution",
-	"PreFlush",
 
 	(* PAGE *)
 	"Running the Gel",
@@ -12001,7 +12035,6 @@ ProtocolCategoryP=Alternatives[
 	"Copy Number",
 	"Quantification Cycle",
 	"Endogenous Control",
-	"Cycle Parameters",
 	"Dye Assay",
 	"Probe Assay",
 	"Passive Control",
@@ -12129,6 +12162,7 @@ ProtocolCategoryP=Alternatives[
 	"Flow Linearity Test",
 	"Fraction Collection Test",
 	"Gradient Proportioning Test",
+	"Pump Health Test",
 	"Stray Light Test",
 	"Wavelength Accuracy Test",
 	"Flow Injection Test",
@@ -13716,6 +13750,11 @@ GantryTypeP:=Alternatives[Cartesian,SCARA,Delta];
 GripperTypeP:=Alternatives[Paddle,ExtendedReachPaddle,RoundJaw];
 
 (* ::Subsubsection::Closed:: *)
+(*GuidedCorrectionCategoryP*)
+
+GuidedCorrectionCategoryP:=Alternatives[MissingVolume,Spill,Overfill,MissingItem,InventoryMismatch];
+
+(* ::Subsubsection::Closed:: *)
 (*StorageOrientationP*)
 
 
@@ -14007,6 +14046,88 @@ HandlingAtmosphereP = Alternatives[
 ];
 
 (* ::Subsubsection::Closed:: *)
+(*VerificationRequriedTypes*)
+VerificationRequiredTypes = {
+	Model[Sample],
+	Model[Molecule],
+	Model[Container],
+	Model[Item]
+};
+
+VerificationRequiredTypeP = TypeP[VerificationRequiredTypes];
+
+(* ::Subsubsection::Closed:: *)
+(*UploadContainerModelTypeStringP*)
+
+(* This input pattern is a user-friendly, human readable input for UploadContainerModel meant to be used in CCD only *)
+UploadContainerModelTypeStringP = Alternatives[
+	"Tube or bottle",
+	"Volumetric flask",
+	"Plate",
+	"Tube filter",
+	"Plate filter",
+	"Solid-phase extraction cartridge",
+	"Capillary ELISA plate",
+	"Others"
+];
+
+(* ::Subsubsection::Closed:: *)
+(*UploadCoverModelTypeStringP*)
+
+UploadCoverModelTypeStringP = Alternatives[
+	"Bottle or carboy cap",
+	"Tube or vial cap",
+	"Stopper or septa",
+	"Plate lid",
+	"Plate seal",
+	"Others"
+];
+
+ContainerProductRelationP = Alternatives[
+	ProductModel,
+	DefaultContainerModel,
+	KitComponents,
+	KitComponentsContainerModel
+];
+
+CoverProductRelationP = Alternatives[
+	ProductModel,
+	DefaultCoverModel,
+	KitComponents,
+	KitComponentsCoverModel
+];
+
+(* ::Subsubsection::Closed:: *)
+(*UploadProductTypeStringP*)
+UploadProductTypeStringP = DeleteCases[
+	Flatten[Alternatives[
+		"Sample or chemical",
+		UploadContainerModelTypeStringP,
+		UploadCoverModelTypeStringP,
+		"Chromatography Column",
+		"Others/Unknown"
+	]],
+	"Others"
+];
+
+(* ::Subsubsection::Closed:: *)
+(* AutomaticProductModelTypeP *)
+
+AutomaticProductModelTypeP = Alternatives[
+	Model[Sample],
+	Model[Container, Vessel],
+	Model[Container, Vessel, Filter],
+	Model[Container, Plate],
+	Model[Container, Plate, Filter],
+	Model[Container, Plate, Irregular, CapillaryELISA],
+	Model[Container, ExtractionCartridge],
+	Model[Item, Column],
+	Model[Item, Cap],
+	Model[Item, Lid],
+	Model[Item, PlateSeal]
+];
+
+(* ::Subsubsection::Closed:: *)
 (*GraduationTypeP*)
 
 GraduationTypeP = Alternatives[
@@ -14063,3 +14184,29 @@ UploadContainerModelTypeStringP = Alternatives[
 	"Others"
 ];
 
+
+(* ::Subsubsection::Closed:: *)
+(*CalibrationReportTypeP*)
+
+CalibrationReportTypeP = Alternatives[
+	(* for CalibratePlateReader *)
+	_?(StringMatchQ[#, ("Pump" | "Position" | "Wavelength") ~~	"_Calibration.html"] &),
+
+	(* for CalibrateThermocycler *)
+	(* TODO: Placeholder currently; will make this more specific when creating the procedure *)
+	_?(StringMatchQ[#, ("ViiA7_BackgroundCalibrationReport"|"ViiA7_ROICalibrationReport"|"ViiA7_UniformityCalibrationReport"|"ViiA7_DyeCalibrationReport"|"ViiA7_NormalizationCalibrationReport")
+		~~ (".eds"|".txt"|".xlsx"|".pdf")] &
+	)
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*qPCRCalibrationTypeP*)
+
+qPCRCalibrationTypeP = Alternatives[
+	Background,
+	RegionOfInterest,
+	Uniformity,
+	Dye,
+	Normalization
+];

@@ -684,7 +684,7 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 				{
 					objectSamplePacketFields,
 					Packet[Container[Model][SamplePreparationCacheFields[Model[Container]]]],
-					Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,CalibrationFunction,DateCreated}]]
+					Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,CalibrationFunction,DateCreated, Anomalous, Deprecated, DeveloperObject, EmptyDistanceDistribution}]]
 				},
 				{
 					Packet[Name,Object,Objects,TemperatureCorrection,WettedMaterials,Dimensions,ProbeLengths,ProbeDiameters,MinpHs,MaxpHs,MinDepths,MinSampleVolumes,ProbeTypes,AssociatedAccessories, TemperatureCorrection, AcquisitionTimeControl],
@@ -703,7 +703,7 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 				},
 				{
 					Packet[SamplePreparationCacheFields[Model[Container]]],
-					Packet[VolumeCalibrations[{LiquidLevelDetectorModel,CalibrationFunction,DateCreated}]]
+					Packet[VolumeCalibrations[{LiquidLevelDetectorModel,CalibrationFunction,DateCreated, Anomalous, Deprecated, DeveloperObject, EmptyDistanceDistribution}]]
 				},
 				{
 					Packet[pH, TransportTemperature, Name, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State, Volume],
@@ -978,7 +978,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				{
 					objectSamplePacketFields,
 					Packet[Container[Model][{Name,VolumeCalibrations,MaxVolume, Aperture, Dimensions, IncompatibleMaterials, WellDiameter, WellDimensions}]],
-					Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,CalibrationFunction,DateCreated}]]
+					Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,CalibrationFunction,DateCreated, Anomalous, Deprecated, DeveloperObject, EmptyDistanceDistribution}]]
 				},
 				{
 					Packet[Name,Object,Objects,WettedMaterials,Dimensions,ProbeLengths,ProbeDiameters,MinpHs,MaxpHs,MinDepths,MinSampleVolumes,ProbeTypes,TemperatureCorrection,AcquisitionTimeControl],
@@ -998,7 +998,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				},
 				{
 					Packet[Name, MaxVolume, Aperture, Dimensions, WellDiameter, WellDimensions],
-					Packet[VolumeCalibrations[{LiquidLevelDetectorModel,CalibrationFunction,DateCreated}]]
+					Packet[VolumeCalibrations[{LiquidLevelDetectorModel,CalibrationFunction,DateCreated, Anomalous, Deprecated, DeveloperObject, EmptyDistanceDistribution}]]
 				},
 				{
 					Packet[pH,TransportTemperature,Name,Deprecated,Sterile,LiquidHandlerIncompatible,Tablet,SolidUnitWeight,State,Volume],
@@ -1038,7 +1038,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 	volumeCalibrationPackets=allSampleDownloadValues[[All,3]];
 
 	(*only consider the calibration packets with a liquid level monitor*)
-	latestVolumeCalibrationPacket=Map[If[Length[#]>0,FirstCase[#,KeyValuePattern[LiquidLevelDetectorModel->Except[Null]]],Null]&,volumeCalibrationPackets];
+	latestVolumeCalibrationPacket=Map[If[Length[#]>0,FirstCase[#,KeyValuePattern[{Anomalous -> Except[True], Deprecated -> Except[True], DeveloperObject -> Except[True], EmptyDistanceDistribution -> Except[Null], LiquidLevelDetectorModel -> ObjectP[]}]],Null]&,volumeCalibrationPackets];
 
 	(*combine the calibration information into the container model packets.*)
 	combinedContainerPackets=MapThread[If[Not[NullQ[#2]],
@@ -1062,7 +1062,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 	firstPotentialCalibration=Map[
 		If[Length[#]>0,
 			Last[
-				Cases[#,KeyValuePattern[LiquidLevelDetectorModel->Except[Null]]]
+				Cases[#,KeyValuePattern[{Anomalous->Except[True],Deprecated->Except[True],DeveloperObject->Except[True], EmptyDistanceDistribution->Except[Null], LiquidLevelDetectorModel -> ObjectP[]}]]
 			],
 			Null
 		]&,
@@ -3061,12 +3061,9 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Model[Sample]]]&&washProbe,
 				Link[Resource[Sample -> washSolution, Amount -> $MeasurepHWashSolutionMinVolume, Container-> Model[Container, Vessel, "15mL Tube"], Name->ToString[Unique[]]]],
 
-				(* If given an Object[Sample] that is one of the input samples, aliquot 4 mL of the sample into a new container for washing *)
-				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Object[Sample]]]&&MemberQ[probeSamples, ObjectP[washSolution]]&&washProbe,
-				Link[Resource[Sample -> washSolution, Amount -> $MeasurepHWashSolutionMinVolume, Container-> Model[Container, Vessel, "15mL Tube"], Name->ToString[Unique[]], ExactAmount->True]],
-
-				(* If given an Object[Sample] that is NOT one of the input samples, generate a resource for that sample and do not aliquot it. *)
-				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Object[Sample]]]&&!MemberQ[probeSamples, ObjectP[washSolution]]&&washProbe,
+				(* If given an Object[Sample] generate a resource for that sample *)
+				(* Note: If given an Object[Sample] that is one of the input samples, we will aliquot 4 mL of the sample into a new container for washing using WashSolutionUnitOperations in compiler and update the resource after primitives completed *)
+				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Object[Sample]]]&&washProbe,
 				Link[Resource[Sample -> washSolution, Name->ToString[Unique[]]]],
 
 				(* otherwise, do not make a resource *)
@@ -3086,12 +3083,9 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Model[Sample]]]&&washProbe,
 				Link[Resource[Sample -> washSolution, Amount -> $MeasurepHWashSolutionMinVolume, Container-> Model[Container, Vessel, "15mL Tube"], Name->ToString[Unique[]]]],
 
-				(* If given an Object[Sample] that is one of the input samples, aliquot 4 mL of the sample into a new container for washing *)
-				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Object[Sample]]]&&MemberQ[probeSamples, ObjectP[washSolution]]&&washProbe,
-				Link[Resource[Sample -> washSolution, Amount -> $MeasurepHWashSolutionMinVolume, Container-> Model[Container, Vessel, "15mL Tube"], Name->ToString[Unique[]], ExactAmount->True]],
-
-				(* If given an Object[Sample] that is NOT one of the input samples, generate a resource for that sample and do not aliquot it. *)
-				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Object[Sample]]]&&!MemberQ[probeSamples, ObjectP[washSolution]]&&washProbe,
+				(* If given an Object[Sample] generate a resource for that sample *)
+				(* Note: If given an Object[Sample] that is one of the input samples, we will aliquot 4 mL of the sample into a new container for washing using WashSolutionUnitOperations in compiler and update the resource after primitives completed *)
+				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Object[Sample]]]&&washProbe,
 				Link[Resource[Sample -> washSolution, Name->ToString[Unique[]]]],
 
 				(* otherwise, do not make a resource *)

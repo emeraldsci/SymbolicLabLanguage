@@ -33,12 +33,21 @@ DefineTests[ExperimentVisualInspection,
 		],
 
 		Example[{Options, AliquotAmount, "Specify the AliquotAmount option:"},
-			options = ExperimentVisualInspection[Object[Sample,"Test sample for ExperimentVisualInspection (aliquot true)"<>$SessionUUID], AliquotAmount->2 Milliliter, Output->Options];
+			options = ExperimentVisualInspection[Object[Sample, "Test sample for ExperimentVisualInspection (aliquot true)"<>$SessionUUID], AliquotAmount -> 2 Milliliter, Output -> Options];
 			Lookup[options, AliquotAmount],
 			2 Milliliter,
-			EquivalenceFunction->Equal,
+			EquivalenceFunction -> Equal,
 			Variables :> {options},
 			Messages :> {Warning::SampleMustBeMoved}
+		],
+
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentVisualInspection[Object[Sample, "Test sample for ExperimentVisualInspection (aliquot true)"<>$SessionUUID], AliquotAmount -> 2.001 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			2 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::SampleMustBeMoved, Warning::AliquotAmountPrecision}
 		],
 
 		Example[{Options, AssayVolume, "Specify the AssayVolume option:"},
@@ -395,6 +404,19 @@ DefineTests[ExperimentVisualInspection,
 			1000*RPM,
 			Messages :> {Warning::AliquotRequired,Warning::SampleMustBeMoved},
 			EquivalenceFunction->Equal,
+			Variables :> {options}
+		],
+
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentVisualInspection[
+				Object[Sample, "Test sample for ExperimentVisualInspection (aliquot true)"<>$SessionUUID],
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			Messages :> {Warning::AliquotRequired,Warning::SampleMustBeMoved, Warning::CentrifugePrecision},
+			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
 
@@ -913,8 +935,8 @@ DefineTests[ExperimentVisualInspection,
 				FastTrack->True
 			];
 			
-			UploadSampleModel["Test sample model for ExperimentVisualInspection"<>$SessionUUID,
-				Composition->{{100VolumePercent,Model[Molecule,"Water"]},{1 Molar,Model[Molecule,"Uracil"]}},
+			UploadSampleModel[{{100VolumePercent,Model[Molecule,"Water"]},{1 Molar,Model[Molecule,"Uracil"]}},
+				Name->"Test sample model for ExperimentVisualInspection"<>$SessionUUID,
 				State->Liquid,
 				Expires->False,
 				MSDSFile -> NotApplicable,
@@ -994,8 +1016,7 @@ DefineTests[ExperimentVisualInspection,
 			];
 			
 			(* 10x PBS with BSA *)
-			UploadSampleModel["10x PBS with BSA for ExperimentVisualInspection"<>$SessionUUID,
-				Composition->{
+			UploadSampleModel[{
 					{100VolumePercent,Model[Molecule,"Water"]},
 					{151.515Micromolar,Model[Molecule,Protein,"Bovine Albumin"]},
 					{17.6Millimolar,Model[Molecule, "Potassium Phosphate (Dibasic)"]},
@@ -1003,6 +1024,7 @@ DefineTests[ExperimentVisualInspection,
 					{27 Millimolar,Link[Model[Molecule,"Potassium Chloride"]]},
 					{1.37 Molar,Link[Model[Molecule,"Sodium Chloride"]]}
 				},
+				Name->"10x PBS with BSA for ExperimentVisualInspection"<>$SessionUUID,
 				Expires->False,
 				DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 				State->Liquid,
@@ -1255,8 +1277,8 @@ DefineTests[VisualInspection,
 					FastTrack->True
 				];
 
-				UploadSampleModel["Test sample model for VisualInspection Primitive"<>$SessionUUID,
-					Composition->{{100VolumePercent,Model[Molecule,"Water"]},{1 Molar,Model[Molecule,"Uracil"]}},
+				UploadSampleModel[{{100VolumePercent,Model[Molecule,"Water"]},{1 Molar,Model[Molecule,"Uracil"]}},
+					Name->"Test sample model for VisualInspection Primitive"<>$SessionUUID,
 					State->Liquid,
 					Expires->False,
 					MSDSFile -> NotApplicable,
@@ -1582,8 +1604,8 @@ DefineTests[ExperimentVisualInspectionOptions,
 				FastTrack->True
 			];
 			
-			UploadSampleModel["Test sample model for ExperimentVisualInspectionOptions"<>$SessionUUID,
-				Composition->{{100VolumePercent,Model[Molecule,"Water"]},{1 Molar,Model[Molecule,"Uracil"]}},
+			UploadSampleModel[{{100VolumePercent,Model[Molecule,"Water"]},{1 Molar,Model[Molecule,"Uracil"]}},
+				Name->"Test sample model for ExperimentVisualInspectionOptions"<>$SessionUUID,
 				State->Liquid,
 				Expires->False,
 				MSDSFile -> NotApplicable,
@@ -1931,8 +1953,8 @@ DefineTests[ValidExperimentVisualInspectionQ,
 					Name->"Test Bench for ValidExperimentVisualInspectionQ"<>$SessionUUID,
 					FastTrack->True
 				];
-				UploadSampleModel["Test sample model for ValidExperimentVisualInspectionQ"<>$SessionUUID,
-					Composition->{{100VolumePercent,Model[Molecule,"Water"]},{1 Molar,Model[Molecule,"Uracil"]}},
+				UploadSampleModel[{{100VolumePercent,Model[Molecule,"Water"]},{1 Molar,Model[Molecule,"Uracil"]}},
+					Name->"Test sample model for ValidExperimentVisualInspectionQ"<>$SessionUUID,
 					State->Liquid,
 					Expires->False,
 					MSDSFile -> NotApplicable,

@@ -19,7 +19,6 @@
 $MemoizeProductParseResult = True;
 
 (* Define this feature flag to switch between python and MM parser *)
-(* TODO turn on this feature flag once new pyECL is released *)
 $UsePyeclProductParser = True;
 
 (* Define this feature flag to switch between regular and ai-aided parsing for python *)
@@ -580,7 +579,7 @@ parseProductURL[url:(Null | _String)] := Module[
 	{
 		pyECLReturn, supplierInput, cleanedName, cleanedDescription, cleanedAssoc, result,
 		cleanedPrice, cleanedAmount, cleanedNumberOfItems, firstAttemptResults, correctedPrice,
-		timeLimit
+		sampleType, packaging, resolvedSupplier, resolvedImageURL
 	},
 
 	supplierInput = Switch[url,
@@ -721,18 +720,51 @@ parseProductURL[url:(Null | _String)] := Module[
 		Null
 	]];
 
+	(* Try to parse SampleType *)
+	sampleType = resolveSampleTypesFromString[cleanedName, cleanedDescription];
+
+	(* resolve Packaging *)
+	packaging = If[TrueQ[cleanedNumberOfItems > 1],
+		Case,
+		Single
+	];
+
+	(* Resolve Supplier *)
+	resolvedSupplier = Switch[url,
+		FisherScientificURLP, Object[Company, Supplier, "id:wqW9BP7JADxA"], (* "Fisher Scientific" *)
+		ThermoFisherURLP, Object[Company, Supplier, "id:D8KAEvdq1RB3"], (* "Thermo Fisher Scientific" *)
+		MilliporeSigmaURLP, Object[Company, Supplier, "id:6V0npvK6Gxba"], (* "Sigma Aldrich" *)
+		_String?(StringContainsQ[#, "www.vwr.com"] &), Object[Company, Supplier, "id:kEJ9mqaVz5Op"], (* "VWR International" *)
+		_String?(StringContainsQ[#, "www.avantorsciences.com"] &), Object[Company, Supplier, "id:P5ZnEj4PA6AL"], (* "Avantor" *)
+		_String?(StringContainsQ[#, "amazon.com"] &), Object[Company, Supplier, "id:wqW9BP4YrxDB"], (* "Amazon" *)
+		_String?(StringContainsQ[#, "www.grainger.com"] &), Object[Company, Supplier, "id:01G6nvkK4xbY"], (* "Grainger" *)
+		_, Null
+	];
+
+	(* Resolve ImageFile URL: In most cases no change needed except some special cases explained below *)
+	resolvedImageURL = If[NullQ[Lookup[pyECLReturn, "image"]],
+		Null,
+		Switch[supplierInput,
+			(* for sigma we need to add the www.sigmaaldrich.com head. Also, we need special header to download image from sigma *)
+			"sigma",
+				downloadSigmaImage[Lookup[pyECLReturn, "image"]],
+			(* For thermo sometimes it's missing the www.thermofisher.com header *)
+			"thermo",
+				formatThermoImage[Lookup[pyECLReturn, "image"]],
+			_,
+				Lookup[pyECLReturn, "image"]
+		]
+	];
+
 	cleanedAssoc = Join[
 		pyECLReturn,
 		<|
 			"title" -> cleanedName,
 			"description" -> cleanedDescription,
 			ProductURL -> url,
-			Supplier -> Switch[supplierInput,
-				"fisher", Object[Company, Supplier, "Fisher Scientific"],
-				"thermo", Object[Company, Supplier, "Thermo Fisher Scientific"],
-				"sigma", Object[Company, Supplier, "Sigma Aldrich"],
-				_, Null
-			],
+			Supplier -> resolvedSupplier,
+			SampleType -> sampleType,
+			Packaging -> packaging,
 			"price" -> If[MatchQ[correctedPrice, _?NumberQ],
 				correctedPrice * 1 USD,
 				Null
@@ -745,9 +777,7 @@ parseProductURL[url:(Null | _String)] := Module[
 				cleanedNumberOfItems,
 				Null
 			],
-			(* TODO for now do not export image because image option does not support url or local file path *)
-			(* once current release is merged, we will be able to get the improved framework function and should be able to take care of that *)
-			"image" -> Null
+			"image" -> resolvedImageURL
 		|>
 	];
 
@@ -818,7 +848,7 @@ findProductPriceAgain[catalogNumber_String, supplier_String] := Switch[supplier,
 			rawPrice = pricingAssociation["priceAndAvailability"][cleanedProductID][[1]]["price"];
 
 			Quiet[Check[
-				ToExpression[StringCases[rawPrice, NumberString]],
+				ToExpression[First[StringCases[rawPrice, NumberString], Null]],
 				Null
 			]]
 		],
@@ -828,6 +858,140 @@ findProductPriceAgain[catalogNumber_String, supplier_String] := Switch[supplier,
 		Null
 ];
 
+(* helper to format sigma image URL and download it *)
+(* This is to solve two problems: *)
+(* 1. A lot of times the full url of an internal image is not shown on the html page, the www.sigmaaldrich.com part is omitted. *)
+(*    as a result, the image url returned by the parser (both conventional and AI-based) will miss the www.sigmaaldrich.com head *)
+(*    For example, a product's image url from parser could be /deepweb/assets/product_12345_image.jpg. This can't be accessed unless we add the domain head *)
+(* 	  www.sigmaaldrich.com/deepweb/assets/product_12345_image.jpg is the correct form of url that we can actually download the image *)
+(* 2. Accessing sigma website requires special Headers, which means a regular URLDownload[imageURL] will fail. So if we simply pass the image URL to UploadProduct *)
+(*    The function will eventually fail because it can't download the image from that url and thus can't make EmeraldCloudFile upload *)
+(*    To circumvent that problem, we define this helper which contains the required headers, download the image to a local file directory, and feed this file path to UploadProduct *)
+
+(* Output of this function will be a local file path *)
+
+downloadSigmaImage[sigmaImageURL_String] := Module[
+	{correctedImageURL, httpRequestHeaders, localFilePath},
+
+	(* Correct the format of image url *)
+	correctedImageURL = Which[
+		(* If the image url starts with http/https, keep it as is *)
+		StringStartsQ[sigmaImageURL, "https://www.sigmaaldrich.com", IgnoreCase -> True], sigmaImageURL,
+		(* If the image url starts with www.sigmaaldrich.com, keep it as is *)
+		StringStartsQ[sigmaImageURL, "www.sigmaaldrich.com", IgnoreCase -> True], sigmaImageURL,
+		(* If the image url starts with /deepweb/assets, add https://www.sigmaaldrich.com/ in the beginning *)
+		StringStartsQ[sigmaImageURL, "/deepweb/assets", IgnoreCase -> True], "https://www.sigmaaldrich.com/" <> sigmaImageURL,
+		(* Finally, if the string is already a local file path, keep it as is *)
+		MatchQ[sigmaImageURL, FilePathP], sigmaImageURL,
+		(* Catch-all *)
+		True, Null
+	];
+
+	(* Define headers for HTTPRequest that sigma allows; without this we won't be able to download the file *)
+	httpRequestHeaders = <|
+		"accept"->"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7'",
+		"accept-language"->"en-US,en;q=0.9'",
+		"cache-control"->"no-cache'",
+		"pragma"->"no-cache",
+		"priority"->"u=0, i",
+		"sec-ch-ua"->"\"Chromium\";v=\"136\",\"Google Chrome\";v=\"136\",\"Not.A/Brand\";v=\"99\"","sec-ch-ua-mobile"->"?0",
+		"sec-ch-ua-platform"->"\"macOS\"",
+		"sec-fetch-dest"->"document",
+		"sec-fetch-mode"->"navigate",
+		"sec-fetch-site"->"same-origin",
+		"sec-fetch-user"->"?1",
+		"service-worker-navigation-preload"->"true",
+		"upgrade-insecure-requests"->"1",
+		"user-agent"->"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.3"
+	|>;
+
+	(* If the image is url, download it and output the local directory, otherwise keep the same *)
+	localFilePath = If[MatchQ[correctedImageURL, URLP],
+		First[
+			URLDownload[
+				HTTPRequest[
+					correctedImageURL,
+					<|
+						Method -> "GET",
+						"Headers" -> httpRequestHeaders
+					|>
+				]
+			]
+		],
+		correctedImageURL
+	];
+
+	(* Finally, verify that the local file path actually exist; if for any reason it doesn't, that means our download failed *)
+	(* In that case, output Null *)
+	If[FileExistsQ[localFilePath],
+		localFilePath,
+		Null
+	]
+
+];
+
+(* helper to format image from thermo. Similar to downloadSigmaImage, but only need to fix problem 1 *)
+(*    A lot of times the full url of an internal image is not shown on the html page, the www.thermofisher.com part is omitted. *)
+(*    as a result, the image url returned by the parser (both conventional and AI-based) will miss the www.thermofisher.com head *)
+(*    For example, a product's image url from parser could be /deepweb/assets/product_12345_image.jpg. This can't be accessed unless we add the domain head *)
+(* 	  www.thermofisher.com/deepweb/assets/product_12345_image.jpg is the correct form of url that we can actually download the image *)
+
+(* Output of this function will be a url whose format is corrected and can be downloaded *)
+
+formatThermoImage[myURL_String]:=Module[
+	{urlWithHeader, imageMissingSizeQ},
+
+	(* Sometimes the parsed URL is missing the www.thermofisher.com/ header *)
+	urlWithHeader = If[MatchQ[myURL, URLP],
+		myURL,
+		"www.thermofisher.com"<>myURL
+	];
+
+	(* The image url is supposed to end in this format: identifier.jpg-size.jpg. e.g., 12-23-5.jpg-650.jpg *)
+	(* Sometimes, the -size.jpg part is missing. Seems especially common for ai-parser. Going to fix that here *)
+	imageMissingSizeQ = StringEndsQ[myURL, ".jpg"] && !StringMatchQ[myURL, ___~~".jpg-"~~Repeated[DigitCharacter, {3, 3}]~~".jpg"];
+	If[imageMissingSizeQ,
+		urlWithHeader<>"-650.jpg",
+		urlWithHeader
+	]
+];
+
+(* Define shared widgets *)
+productModelNoKitWidget := Alternatives[
+	"Product of a single existing component" -> Widget[
+		Type -> Object,
+		Pattern :> ObjectP[{
+			Model[Sample],
+			Model[Container],
+			Model[Sensor],
+			Model[Part],
+			Model[Plumbing],
+			Model[Wiring],
+			Model[Item]
+		}]
+	],
+	"Product of a single new component" -> Widget[
+		Type -> Enumeration,
+		Pattern :> UploadProductTypeStringP
+	],
+	"Product of a single new component defined by SLL Type" -> Widget[
+		Type -> Enumeration,
+		Pattern :> AutomaticProductModelTypeP
+	]
+];
+
+productModelWidget := Join[
+	Alternatives[
+		"Product of a kit (multiple components)" -> Widget[
+			Type -> Enumeration,
+			Pattern :> Alternatives[Kit]
+		]
+	],
+	productModelNoKitWidget
+];
+
+
+
 
 (* ::Subsubsection::Closed:: *)
 (*DefineOptions*)
@@ -835,453 +999,927 @@ findProductPriceAgain[catalogNumber_String, supplier_String] := Switch[supplier,
 
 DefineOptions[UploadProduct,
 	Options :> {
-		{
-			OptionName -> Synonyms,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Adder[
-				Widget[
+		IndexMatching[
+			IndexMatchingInput -> "Input Data",
+			NameOption,
+			{
+				OptionName -> Synonyms,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Adder[
+					Widget[
+						Type -> String,
+						Pattern :> _String,
+						Size -> Word
+					]
+				],
+				Description -> "List of possible alternative names this product goes by.",
+				ResolutionDescription -> "When creating new Object[Product], automatically set to the same as Name option. When modifying existing Object[Product], set to its current value.",
+				Category -> "Organizational Information"
+			},
+			(* This option is set to Hidden because user is supposed to directly put ProductModel into input. This option is only meant for updating existing product objects *)
+			{
+				OptionName -> ProductModel,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> productModelWidget,
+				Description -> "The model for the samples that this product generates when purchased.",
+				ResolutionDescription -> "If the productObject is set, automatically set to match the field value of ProductModel.",
+				Category -> "Product Specifications"
+			},
+			{
+				OptionName -> ImageFile,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"Use image from URL:" -> Widget[
+						Type -> String,
+						Pattern :> URLP,
+						PatternTooltip -> "The URL of the catalog image of this product.",
+						Size -> Line
+					],
+					"Use image from local file" -> Widget[
+						Type -> String,
+						Pattern :> FilePathP,
+						PatternTooltip -> "The complete file path to the catalog image of this product.",
+						Size -> Line
+					],
+					"Use existing cloud file" -> Widget[
+						Type -> Object,
+						Pattern :> ObjectP[Object[EmeraldCloudFile]]
+					]
+				],
+				Description -> "The catalog image of this product provided by the supplier.",
+				ResolutionDescription -> "Automatically read from the product webpage if the ProductURLLink input is provided. If the productObject is set, automatically set to match the field value of ImageFile.",
+				Category -> "Physical Appearance"
+			},
+			{
+				OptionName -> Template,
+				Default -> Null,
+				Description -> "An exiting Object[Product] whose values will be used as defaults for any options not specified by the user.",
+				AllowNull -> True,
+				Category -> "Product Specifications",
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[Object[Product]],
+					ObjectTypes -> {Object[Product]}
+				]
+			},
+			{
+				OptionName -> CatalogNumber,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
 					Type -> String,
 					Pattern :> _String,
 					Size -> Word
-				]
-			],
-			Description -> "List of possible alternative names this product goes by.",
-			Category -> "Organizational Information"
-		},
-		{
-			OptionName -> ProductModel,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Object,
-				Pattern :> ObjectP[{
-					Model[Sample],
-					Model[Container],
-					Model[Sensor],
-					Model[Part],
-					Model[Plumbing],
-					Model[Wiring],
-					Model[Item]
-				}]
-			],
-			Description -> "The model for the samples that this product generates when purchased.",
-			Category -> "Product Specifications"
-		},
-		{
-			OptionName -> ImageFile,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> String,
-				Pattern :> URLP,
-				PatternTooltip -> "The URL of the catalog image of this product.",
-				Size -> Line
-			],
-			Description -> "The URL of the catalog image of this product.",
-			Category -> "Product Specifications"
-		},
-		{
-			OptionName -> ProductListing,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> String,
-				Pattern :> _String,
-				PatternTooltip -> "Full name under which the product is listed, including make and model where relevant.",
-				Size -> Line
-			],
-			Description -> "Full name under which the product is listed, including make and model where relevant.",
-			Category -> "Product Specifications"
-		},
-		{
-			OptionName -> CatalogDescription,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> String,
-				Pattern :> _String,
-				PatternTooltip -> "The full description of the item as it is listed in the supplier's catalog including any relevant information on the number of samples per item, the sample type, and/or the amount per sample if that information is included in the suppliers catalog list and necessary to place an order for the correct unit of the item which this product represents.",
-				Size -> Line
-			],
-			Description -> "The full description of the item as it is listed in the supplier's catalog including any relevant information on the number of samples per item, the sample type, and/or the amount per sample if that information is included in the suppliers catalog list and necessary to place an order for the correct unit of the item which this product represents.",
-			Category -> "Product Specifications"
-		},
-		{
-			OptionName -> Supplier,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Object,
-				Pattern :> ObjectP[Object[Company, Supplier]]
-			],
-			Description -> "Company that supplies this product.",
-			Category -> "Product Specifications"
-		},
-		{
-			OptionName -> CatalogNumber,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> String,
-				Pattern :> _String,
-				PatternTooltip -> "Number or code that should be used to purchase this item from the supplier.",
-				Size -> Word
-			],
-			Description -> "Number or code that should be used to purchase this item from the supplier.",
-			Category -> "Product Specifications"
-		},
-		{
-			OptionName -> Manufacturer,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Object,
-				Pattern :> ObjectP[Object[Company, Supplier]]
-			],
-			Description -> "The company that manufactures this product, when different from the supplier.",
-			Category -> "Product Specifications"
-		},
-		{
-			OptionName -> ManufacturerCatalogNumber,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> String,
-				Pattern :> _String,
-				PatternTooltip -> "Number or code that the manufacturer uses to refer to this product, when the manufacturer is different from the supplier.",
-				Size -> Word
-			],
-			Description -> "Number or code that the manufacturer uses to refer to this product, when the manufacturer is different from the supplier.",
-			Category -> "Product Specifications"
-		},
-		{
-			OptionName -> ProductURL,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> String,
-				Pattern :> URLP,
-				PatternTooltip -> "Supplier webpage for the product.",
-				Size -> Line
-			],
-			Description -> "Supplier webpage for the product.",
-			Category -> "Product Specifications"
-		},
-		{
-			OptionName -> Packaging,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Enumeration,
-				Pattern :> PackagingP
-			],
-			Description -> "Specify whether this product comes in a case (which contains multiple items) or comes in a single item.",
-			Category -> "Product Specifications"
-		},
-		{
-			OptionName -> SampleType,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Enumeration,
-				Pattern :> SampleDescriptionP
-			],
-			Description -> "The description of a single sample contained within an item of this product.",
-			Category -> "Product Specifications"
-		},
-		{
-			OptionName -> NumberOfItems,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Number,
-				Pattern :> GreaterP[0, 1]
-			],
-			Description -> "Number of samples in each order of one unit of the catalog number, e.g. 24 (plates per case).",
-			Category -> "Product Specifications"
-		},
-		{
-			OptionName -> DefaultContainerModel,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Object,
-				Pattern :> ObjectP[{
-					Model[Container, Vessel],
-					Model[Container, ReactionVessel],
-					Model[Container, GasCylinder],
-					Model[Container, Bag],
-					Model[Container, Shipping],
-					Model[Container, Plate],
-					Model[Container, MicroscopeSlide]
-				}]
-			],
-			Description -> "The model of the container that the sample arrives in upon delivery. If a Model[Container,Plate] is given, the plate must only have 1 well.",
-			Category -> "Product Specifications"
-		},
-		{
-			OptionName -> Amount,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Alternatives[
-				"Volume" -> Widget[
-					Type -> Quantity,
-					Pattern :> RangeP[1 Microliter, 20 Liter],
-					Units -> {1, {Microliter, {Microliter, Milliliter, Liter}}}
 				],
-				"Mass" -> Widget[
-					Type -> Quantity,
-					Pattern :> RangeP[1 Picogram, 20 Kilogram],
-					Units -> {1, {Milligram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}
+				Description -> "Number or code that should be used to refer to and purchase this item from the supplier.",
+				ResolutionDescription -> "Automatically read from the product webpage if the ProductURLLink input is provided. If the productObject is set, automatically set to match the field value of CatalogNumber.",
+				Category -> "Product Specifications"
+			},
+			{
+				OptionName -> CatalogDescription,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> String,
+					Pattern :> _String,
+					Size -> Line
 				],
-				"Count" -> Widget[
-					Type -> Quantity,
-					Pattern :> GreaterP[0 Unit, 1 Unit],
-					Units -> {1, {Unit, {Unit}}}
-				]
-			],
-			Description -> "Amount that comes with each sample.",
-			Category -> "Product Specifications"
-		},
-		{
-			OptionName -> Density,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Quantity,
-				Pattern :> RangeP[1 Milligram / Liter, 1 Kilogram / Milliliter],
-				Units -> CompoundUnit[{1, {Gram, {Milligram, Gram, Kilogram}}}, {-1, {Microliter, {Microliter, Milliliter, Liter}}}]
-			],
-			Description -> "Relation between mass of the product and volume.",
-			Category -> "Product Specification"
-		},
-		{
-			OptionName -> CountPerSample,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Number,
-				Pattern :> GreaterP[0]
-			],
-			Description -> "Count of individual items that comes with each sample (e.g. 100 for a 100 frits in a bag).",
-			Category -> "Product Specifications"
-		},
-		{
-			OptionName -> KitComponents,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Adder[
-				{
-					"NumberOfItems" -> Widget[
-						Type -> Number,
-						Pattern :> GreaterEqualP[1, 1]
+				Description -> "The full description of the item as it is listed in the supplier's catalog including any relevant information on the number of samples per item, the sample type, and/or the amount per sample if that information is included in the suppliers catalog list and necessary to place an order for the correct unit of the item which this product represents.",
+				ResolutionDescription -> "Automatically read from the product webpage if the ProductURLLink input is provided. If the productObject is set, automatically set to match the field value of CatalogDescription.",
+				Category -> "Product Specifications"
+			},
+			{
+				OptionName -> Packaging,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> PackagingP
+				],
+				Description -> "Specify whether this product comes in a case (which contains multiple items) or comes in a single item.",
+				ResolutionDescription -> "Automatically read from the product webpage if the ProductURLLink input is provided. If the productObject is set, automatically set to match the field value of Packaging.",
+				Category -> "Product Specifications"
+			},
+			{
+				OptionName -> SampleType,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> SampleDescriptionP
+				],
+				Description -> "The description of a single sample contained within an item of this product.",
+				ResolutionDescription -> "Automatically read from the product webpage if the ProductURLLink input is provided. If the productObject is set, automatically set to match the field value of SampleType.",
+				Category -> "Product Specifications"
+			},
+			{
+				OptionName -> Amount,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"Volume" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[1 Microliter, 100 Liter],
+						Units -> {1, {Microliter, {Microliter, Milliliter, Liter}}}
 					],
-					"ProductModel" -> Widget[
+					"Mass" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[1 Picogram, 100 Kilogram],
+						Units -> {1, {Milligram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}
+					],
+					"Count" -> Widget[
+						Type -> Quantity,
+						Pattern :> GreaterP[0 Unit, 1 Unit],
+						Units -> {1, {Unit, {Unit}}}
+					]
+				],
+				Description -> "The quantity of material contained in each individual sample of this product.",
+				ResolutionDescription -> "Automatically read from the product webpage if the ProductURLLink input is provided. If the productObject is set, automatically set to match the field value of Amount.",
+				Category -> "Product Specifications"
+			},
+			{
+				OptionName -> NumberOfItems,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Number,
+					Pattern :> GreaterP[0, 1]
+				],
+				Description -> "Number of samples in each order of one unit of the catalog number, e.g. if a plate product comes in case of 24 units, this options should be set to 24.",
+				ResolutionDescription -> "Automatically read from the product webpage if the ProductURLLink input is provided. If the productObject is set, automatically set to match the field value of NumberOfItems.",
+				Category -> "Product Specifications"
+			},
+			{
+				OptionName -> ProductListing,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> String,
+					Pattern :> _String,
+					PatternTooltip -> "Full name under which the product is listed, including make and model where relevant.",
+					Size -> Line
+				],
+				Description -> "Full name under which the product is listed, including make and model where relevant.",
+				ResolutionDescription -> "If the productObject is set, automatically set to match the field value of ProductListing.",
+				Category -> "Product Specifications"
+			},
+			{
+				OptionName -> CountPerSample,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Number,
+					Pattern :> GreaterP[0]
+				],
+				Description -> "The number of individual items that comes with each sample (e.g. 100 for a box of 100 pipette tips).",
+				ResolutionDescription -> "Automatically read from the product webpage if the ProductURLLink input is provided. If the productObject is set, automatically set to match the field value of CountPerSample.",
+				Category -> "Product Specifications"
+			},
+			{
+				OptionName -> Supplier,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"Existing supplier" -> Widget[
+						Type -> Object,
+						Pattern :> ObjectP[Object[Company, Supplier]],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Suppliers"
+							}
+						}
+					],
+					"Supplier Name" -> Widget[
+						Type -> String,
+						Pattern :> _String,
+						Size -> Word
+					],
+					"Supplier homepage" -> Widget[
+						Type -> String,
+						Pattern :> URLP,
+						Size -> Line,
+						PatternTooltip -> "The URL of supplier homepage."
+					]
+				],
+				Description -> "The company from which this product is ordered and purchased.",
+				ResolutionDescription -> "Automatically read from the product webpage if the ProductURLLink input is provided. If the productObject is set, automatically set to match the field value of Supplier.",
+				Category -> "Provider Information"
+			},
+			{
+				OptionName -> Manufacturer,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"Existing manufacturer" -> Widget[
+						Type -> Object,
+						Pattern :> ObjectP[Object[Company, Supplier]],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Suppliers"
+							}
+						}
+					],
+					"Manufacturer Name" -> Widget[
+						Type -> String,
+						Pattern :> _String,
+						Size -> Word
+					],
+					"Manufacturer homepage" -> Widget[
+						Type -> String,
+						Pattern :> URLP,
+						Size -> Line,
+						PatternTooltip -> "The URL of the manufacturer homepage."
+					]
+				],
+				Description -> "The company that makes this product, if different from the supplier.",
+				ResolutionDescription -> "If the productObject is set, automatically set to match the field value of Manufacturer.",
+				Category -> "Provider Information"
+			},
+			{
+				OptionName -> ManufacturerCatalogNumber,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> String,
+					Pattern :> _String,
+					PatternTooltip -> "Number or code that the manufacturer uses to refer to this product, when the manufacturer is different from the supplier.",
+					Size -> Word
+				],
+				Description -> "Number or code that the manufacturer uses to refer to this product, when the manufacturer is different from the supplier.",
+				ResolutionDescription -> "If the productObject is set, automatically set to match the field value of ManufacturerCatalogNumber.",
+				Category -> "Provider Information"
+			},
+			{
+				OptionName -> Price,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> GreaterEqualP[0 * USD],
+					Units -> {1, {USD, {USD}}}
+				],
+				Description -> "Supplier listed price for one unit of this product.",
+				ResolutionDescription -> "When creating new Object[Product], if the product url is provided, will attempt to read from the product webpage. If the productObject is set, automatically set to match the field value of Price.",
+				Category -> "Pricing Information"
+			},
+			{
+				OptionName -> Site,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[Object[Container, Site]]
+				],
+				Description -> "The ECL facility at which the product can be purchased. Null indicates that the product can be purchased at any ECL location.",
+				ResolutionDescription -> "If the productObject is set, automatically set to match the field value of Site.",
+				Category -> "Pricing Information"
+			},
+			{
+				OptionName -> ShippedClean,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				],
+				Description -> "For product of empty containers, indicates that this product arrive ready to be used without needing to be dishwashed.",
+				ResolutionDescription -> "If the productObject is set, automatically set to match the field value of ShippedClean.",
+				Category -> "Health & Safety"
+			},
+			{
+				OptionName -> Sterile,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				],
+				Description -> "Indicates if samples of this product are free from microbial contamination when received from the supplier.",
+				ResolutionDescription -> "If the productObject is set, automatically set to match the field value of Sterile.",
+				Category -> "Health & Safety"
+			},
+			{
+				OptionName -> AsepticShippingContainerType,
+				Default -> Automatic,
+				Description -> "The manner in which an aseptic product is packed and shipped by the manufacturer. A value of None indicates that the product is not shipped in any specifically aseptic packaging, while a value of Null indicates no available information.",
+				ResolutionDescription -> "If the productObject is set, automatically set to match the field value of AsepticShippingContainerType.",
+				AllowNull -> True,
+				Category -> "Health & Safety",
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> AsepticShippingContainerTypeP
+				]
+			},
+			{
+				OptionName -> AsepticRebaggingContainerType,
+				Default -> Automatic,
+				Description -> "Describes the type of container items of this product will be transferred to if they arrive in a non-resealable aseptic shipping container.",
+				ResolutionDescription -> "If the productObject is set, automatically set to match the field value of AsepticRebaggingContainerType.",
+				AllowNull -> True,
+				Category -> "Health & Safety",
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> AsepticTransportContainerTypeP
+				]
+			},
+			{
+				OptionName -> DefaultContainerModel,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"Create New Container Model" -> Widget[
+						Type -> Enumeration,
+						Pattern :> Alternatives[
+							Model[Container, Vessel],
+							Model[Container, Plate]
+						]
+					],
+					"Use Existing Container Model" -> Widget[
 						Type -> Object,
 						Pattern :> ObjectP[{
-							Model[Sample],
-							Model[Container],
-							Model[Item],
-							Model[Sensor],
-							Model[Part],
-							Model[Plumbing],
-							Model[Wiring]
+							Model[Container, Vessel],
+							Model[Container, ReactionVessel],
+							Model[Container, GasCylinder],
+							Model[Container, Bag],
+							Model[Container, Shipping],
+							Model[Container, Plate],
+							Model[Container, MicroscopeSlide]
 						}]
-					],
-					"DefaultContainerModel" -> Alternatives[
-						Widget[
-							Type -> Object,
-							Pattern :> ObjectP[Model[Container]]
-						],
-						Widget[
-							Type -> Enumeration,
-							Pattern :> Alternatives[Null]
+					]
+				],
+				Description -> "The model of the container that the sample arrives in upon delivery. If a Model[Container,Plate] is given, the plate must only have 1 well.",
+				ResolutionDescription -> "If the productObject is set, automatically set to match the field value of DefaultContainerModel.",
+				Category -> "Container Specifications"
+			},
+			{
+				OptionName -> DefaultCoverModel,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"Create New Cover Model" -> Widget[
+						Type -> Enumeration,
+						Pattern :> Alternatives[
+							Model[Item, Cap],
+							Model[Item, Lid],
+							Model[Item, PlateSeal]
 						]
 					],
-					"Amount" -> Alternatives[
-						"Volume" -> Widget[
-							Type -> Quantity,
-							Pattern :> RangeP[1 Nanoliter, 20 Liter],
-							Units -> {1, {Microliter, {Microliter, Milliliter, Liter}}}
-						],
-						"Mass" -> Widget[
-							Type -> Quantity,
-							Pattern :> RangeP[1 Nanogram, 20 Kilogram],
-							Units -> {1, {Milligram, {Milligram, Gram, Kilogram}}}
-						],
-						"Count" -> Widget[
-							Type -> Quantity,
-							Pattern :> GreaterP[0 Unit, 1 Unit],
-							Units -> {1, {Unit, {Unit}}}
-						],
-						Widget[
-							Type -> Enumeration,
-							Pattern :> Alternatives[Null]
-						]
-					],
-					"Position" -> Alternatives[
-						Widget[
-							Type -> Enumeration,
-							Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-							PatternTooltip -> "Enumeration must be any well from A1 to P24."
-						],
-						Widget[
-							Type -> Enumeration,
-							Pattern :> Alternatives[Null]
-						]
-					],
-					"ContainerIndex" -> Alternatives[
-						Widget[
+					"Use Existing Cover Model" -> Widget[
+						Type -> Object,
+						Pattern :> ObjectP[{
+							Model[Item, Cap],
+							Model[Item, Lid],
+							Model[Item, PlateSeal]
+						}]
+					]
+				],
+				Description -> "The model of the cover that seals the container in which the sample arrives in upon delivery.",
+				ResolutionDescription -> "If the productObject is set, automatically set to match the field value of DefaultCoverModel.",
+				Category -> "Cover Information"
+			},
+			{
+				OptionName -> SealedContainer,
+				Default -> Automatic,
+				Description -> "Indicates whether the items of this product arrive as sealed containers with caps or lids. If SealedContainer -> True, no special storage handling will be performed, even if Sterile -> True.",
+				ResolutionDescription -> "If the productObject is set, automatically set to match the field value of SealedContainer.",
+				AllowNull -> True,
+				Category -> "Cover Information",
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				]
+			},
+			{
+				OptionName -> StoreInOriginalContainer,
+				Default -> Automatic,
+				Description -> "Indicates whether the items of this product should be stored in their original bulk container provided by the supplier.",
+				ResolutionDescription -> "Automatically set to True if the ProductModel or DefaultContainerModel are ampoule or permanently sealed, and the NumberOfItems are greater than 1.",
+				AllowNull -> True,
+				Category -> "Container Specifications",
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				]
+			},
+			{
+				OptionName -> Density,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[1 Milligram / Liter, 1 Kilogram / Milliliter],
+					Units -> CompoundUnit[{1, {Gram, {Milligram, Gram, Kilogram}}}, {-1, {Microliter, {Microliter, Milliliter, Liter}}}]
+				],
+				Description -> "For product of chemical samples, indicate the ratio between mass and volume. This option does not apply to other type of products.",
+				ResolutionDescription -> "When creating new Object[Product], if a sample model is provided as the ProductModelObject input, will set to the density of that sample model. If the productObject is set, automatically set to match the field value of Density.",
+				Category -> "Physical Properties"
+			},
+			{
+				OptionName -> KitComponents,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Adder[
+					{
+						"NumberOfItems" -> Widget[
 							Type -> Number,
 							Pattern :> GreaterEqualP[1, 1]
 						],
-						Widget[
-							Type -> Enumeration,
-							Pattern :> Alternatives[Null]
-						]
-					],
-					"DefaultCoverModel"->Alternatives[
-						Widget[
-							Type->Object,
-							Pattern:>ObjectP[{Model[Item,Cap],Model[Item,Lid]}]
+						"ProductModel" -> productModelNoKitWidget,
+						"DefaultContainerModel" -> Alternatives[
+							"Create New Container Model" -> Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[
+									Model[Container, Vessel],
+									Model[Container, Plate]
+								]
+							],
+							"Use Existing Container Model" -> Widget[
+								Type -> Object,
+								Pattern :> ObjectP[{
+									Model[Container, Vessel],
+									Model[Container, ReactionVessel],
+									Model[Container, GasCylinder],
+									Model[Container, Bag],
+									Model[Container, Shipping],
+									Model[Container, Plate],
+									Model[Container, MicroscopeSlide]
+								}]
+							],
+							"No Container" -> Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[Null]
+							]
 						],
-						Widget[
+						"Amount" -> Alternatives[
+							"Volume" -> Widget[
+								Type -> Quantity,
+								Pattern :> RangeP[1 Nanoliter, 20 Liter],
+								Units -> {1, {Microliter, {Microliter, Milliliter, Liter}}}
+							],
+							"Mass" -> Widget[
+								Type -> Quantity,
+								Pattern :> RangeP[1 Nanogram, 20 Kilogram],
+								Units -> {1, {Milligram, {Milligram, Gram, Kilogram}}}
+							],
+							"Count" -> Widget[
+								Type -> Quantity,
+								Pattern :> GreaterP[0 Unit, 1 Unit],
+								Units -> {1, {Unit, {Unit}}}
+							],
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[Null]
+							]
+						],
+						"Position" -> Alternatives[
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+								PatternTooltip -> "Enumeration must be any well from A1 to P24."
+							],
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[Null]
+							]
+						],
+						"ContainerIndex" -> Alternatives[
+							Widget[
+								Type -> Number,
+								Pattern :> GreaterEqualP[1, 1]
+							],
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[Null]
+							]
+						],
+						"DefaultCoverModel"->Alternatives[
+							"Create New Cover Model" -> Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[
+									Model[Item, Cap],
+									Model[Item, Lid],
+									Model[Item, PlateSeal]
+								]
+							],
+							"Use Existing Cover Model" -> Widget[
+								Type -> Object,
+								Pattern :> ObjectP[{
+									Model[Item, Cap],
+									Model[Item, Lid],
+									Model[Item, PlateSeal]
+								}]
+							],
+							"No Container" -> Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[Null]
+							]
+						],
+						"OpenContainer"->Widget[
 							Type->Enumeration,
-							Pattern:>Alternatives[Null]
+							Pattern:>BooleanP
 						]
-					],
-					"OpenContainer"->Widget[
-						Type->Enumeration,
-						Pattern:>BooleanP
-					]
-				}
-			],
-			Description -> "All information about the components of this kit product.  For every entry, the indices refer to 1.) The number of copies of the given kit component in the kit, 2.) The model for the samples that this component of the kit will generate, 3.) The model of the container that this kit component arrives in, 4.) The amount that comes with each sample, 5.) The position in the DefaultContainerModel in which this arrives, 6.) The index of the container in which it appears (such that if two different kit components share a ContainerIndex, they will go into the same container, like with a plate), 7) The model of the lid or cap the default container model accepts, and 8) whether the container can be covered.",
-			Category -> "Product Specifications"
-		},
-		{
-			OptionName -> ShippedClean,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Enumeration,
-				Pattern :> BooleanP
-			],
-			Description -> "Indicates that samples of this product arrive ready to be used without needing to be dishwashed.",
-			Category -> "Inventory"
-		},
-		{
-			OptionName -> Sterile,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Enumeration,
-				Pattern :> BooleanP
-			],
-			Description -> "Indicates that samples of this product arrive sterile from the manufacturer.",
-			Category -> "Product Specifications"
-		},
-		{
-			OptionName -> Price,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Quantity,
-				Pattern :> GreaterEqualP[0 * USD],
-				Units -> {1, {USD, {USD}}}
-			],
-			Description -> "Supplier listed price for one unit of this product.",
-			Category -> "Pricing Information"
-		},
-		{
-			OptionName -> Site,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Object,
-				Pattern :> ObjectP[Object[Container, Site]]
-			],
-			Description -> "The ECL facility at which the product can be purchased. Null indicates that the product can be purchased at any ECL location.",
-			Category -> "Pricing Information"
-		},
-		{
-			OptionName -> OpenContainer,
-			Default -> Null,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Enumeration,
-				Pattern :> BooleanP
-			],
-			Description -> "Indicates that the container contents are exposed to the open environment when in use and can not be sealed off via capping.",
-			Category -> "Hidden"
-		},
-		{
-			OptionName -> UsageFrequency,
-			Default -> High,
-			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Enumeration,
-				Pattern :> UsageFrequencyP
-			],
-			Description -> "An estimate of how often this product is purchased from ECL's inventory for use in experiments and subsequently restocked. Products which are used more frequently carry smaller stocking fees as they must be stored in inventory for a shorter period of time then more rarely consumed items.",
-			Category -> "Hidden"
-		},
-		{
-			OptionName -> Template,
-			Default -> Null,
-			Description -> "A template Object[Product] whose values will be used as defaults for any options not specified by the user.",
-			AllowNull -> True,
-			Category -> "Product Specifications",
-			Widget -> Widget[
-				Type -> Object,
-				Pattern :> ObjectP[Object[Product]],
-				ObjectTypes -> {Object[Product]}
-			]
-		},
-		{
-			OptionName -> SealedContainer,
-			Default -> Null,
-			Description -> "Indicates whether the items of this product arrive as sealed containers with caps or lids. If SealedContainer -> True, no special storage handling will be performed, even if Sterile -> True.",
-			AllowNull -> True,
-			Category -> "Product Specifications",
-			Widget -> Widget[
-				Type -> Enumeration,
-				Pattern :> BooleanP
-			]
-		},
-		{
-			OptionName -> AsepticShippingContainerType,
-			Default -> Null,
-			Description -> "The manner in which an aseptic product is packed and shipped by the manufacturer. A value of None indicates that the product is not shipped in any specifically aseptic packaging, while a value of Null indicates no available information.",
-			AllowNull -> True,
-			Category -> "Product Specifications",
-			Widget -> Widget[
-				Type -> Enumeration,
-				Pattern :> AsepticShippingContainerTypeP
-			]
-		},
-		{
-			OptionName -> AsepticRebaggingContainerType,
-			Default -> Null,
-			Description -> "Describes the type of container items of this product will be transferred to if they arrive in a non-resealable aseptic shipping container.",
-			AllowNull -> True,
-			Category -> "Product Specifications",
-			Widget -> Widget[
-				Type -> Enumeration,
-				Pattern :> AsepticTransportContainerTypeP
-			]
-		},
-		NameOption,
-		UploadOption,
-		OutputOption,
-		CacheOption
+					}
+				],
+				Description -> "All information about the components of this kit product, i.e., a product contains multiple different components.  For every entry, the indices refer to 1.) The number of copies of the given kit component in the kit, 2.) The model for the samples that this component of the kit will generate, 3.) The model of the container that this kit component arrives in, 4.) The amount that comes with each sample, 5.) The position in the DefaultContainerModel in which this arrives, 6.) The index of the container in which it appears (such that if two different kit components share a ContainerIndex, they will go into the same container, like with a plate), 7) The model of the lid or cap the default container model accepts, and 8) whether the container can be covered.",
+				ResolutionDescription -> "If the productObject is set, automatically set to match the field value of KitComponents.",
+				Category -> "Kit Specifications"
+			},
+			{
+				OptionName -> OpenContainer,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				],
+				Description -> "Indicates that the container contents are exposed to the open environment when in use and can not be sealed off via capping.",
+				ResolutionDescription -> "If the productObject is set, automatically set to match the field value of OpenContainer.",
+				Category -> "Hidden"
+			},
+			{
+				OptionName -> UsageFrequency,
+				Default -> High,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> UsageFrequencyP
+				],
+				Description -> "An estimate of how often this product is purchased from ECL's inventory for use in experiments and subsequently restocked. Products which are used more frequently carry smaller stocking fees as they must be stored in inventory for a shorter period of time then more rarely consumed items.",
+				ResolutionDescription -> "If the productObject is set, automatically set to match the field value of UsageFrequency.",
+				Category -> "Hidden"
+			},
+			{
+				OptionName -> StickerKitInParallel,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				],
+				Description -> "Indicate if the SLL object sticker of same component of all kits should be affixed together when multiple counts of kit were ordered in one run, instead of affixing all components from one kit, then move to the next kit.",
+				ResolutionDescription -> "If the productObject is set, automatically set to match the field value of StickerKitInParallel.",
+				Category -> "Hidden"
+			},
+			(* This option is set to Hidden because user is supposed to directly put URL into input. This option is only meant for updating existing product objects *)
+			{
+				OptionName -> ProductURL,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> String,
+					Pattern :> URLP,
+					PatternTooltip -> "Supplier webpage for the product.",
+					Size -> Line
+				],
+				Description -> "Supplier webpage for the product.",
+				ResolutionDescription -> "If the productObject is set, automatically set to match the field value of ProductURL.",
+				Category -> "Hidden"
+			}
+		],
+		ExternalUploadHiddenOptions,
+		UnresolvedInputsOptions
 	}
 ];
 
 
 (* ::Subsubsection:: *)
 (*Code*)
+
+(* A quick memoized function to record name of $PersonID. This is used to construct name if Name is not available *)
+userName[string_String] := userName[string] = Module[{},
+	AppendTo[$Memoization, ExternalUpload`Private`userName];
+	Download[$PersonID, Name]
+];
+
+(* ::Subsubsection::Closed:: *)
+(*createProductModel*)
+createProductModel[myType:TypeP[], myOptions:{_Rule...}] := Module[
+	{
+		rawName, modelName, uploadFunctionOption, productURL, productObject,
+		productModelObject, productModelRelevantPackets
+	},
+	(* Read the Name from supplied option *)
+	rawName = Lookup[myOptions, Name, Null];
+
+	modelName = Which[
+		(* If the name is Null, make a unique name based on the label *)
+		NullQ[rawName],
+		ToString[Unique[ProductModel]]<>" for user "<>userName["user"],
+
+		(* If we are dealing with Model[Sample], use the rawName directly *)
+		MatchQ[myType, TypeP[Model[Sample]]],
+		rawName,
+
+		(* Other wise, join the label and name *)
+		True,
+		"ProductModel of "<>rawName
+	];
+
+	productURL = Lookup[myOptions, ProductURL, Null];
+	(* Only read the Product option if ProductURL is not available *)
+	productObject = If[NullQ[productURL],
+		Lookup[myOptions, Product, Null],
+		Null
+	];
+
+	(* Construct option needed for executeDefaultUploadFunction *)
+	uploadFunctionOption = Switch[myType,
+		(* For containers, URL is required. Also supply the name, and set Force -> True *)
+		TypeP[Model[Container]],
+		{ProductURL -> productURL, Product -> productObject, Name -> modelName, Force -> True, ProductRelation -> ProductModel},
+		(* For covers, similar to container, but note that since we are working on ProductModel, we need to have the StandaloneCoverProduct -> True *)
+		TypeP[{Model[Item, Cap], Model[Item, PlateSeal], Model[Item, Lid]}],
+		{ProductURL -> productURL, Product -> productObject, Name -> modelName, Force -> True, ProductRelation -> ProductModel},
+		(* For sample, we need the name *)
+		(* TODO @David can probably provide more insight on what other options we can inherit *)
+		TypeP[Model[Sample]],
+		{Name -> modelName},
+		(* For Column, we need the name *)
+		TypeP[Model[Item, Column]],
+		{Name -> modelName},
+		(* Any other cases use empty option *)
+		_,
+		{}
+	];
+
+	(* Call executeDefaultUploadFunction *)
+	{productModelObject, productModelRelevantPackets} = executeDefaultUploadFunction[myType, uploadFunctionOption, "ProductModel", Force -> True];
+
+	(* Register memoization *)
+	If[!MemberQ[$Memoization, ExternalUpload`Private`createProductModel],
+		AppendTo[$Memoization, ExternalUpload`Private`createProductModel]
+	];
+	Set[createProductModel[myType, myOptions], {productModelObject, productModelRelevantPackets}];
+
+	(* Finally output results *)
+	{productModelObject, productModelRelevantPackets}
+
+];
+
+createProductModel[myType:TypeP[], myOptions:{_Rule...}, Object] := First[createProductModel[myType, myOptions]];
+createProductModel[myType:TypeP[], myOptions:{_Rule...}, Packet] := Last[createProductModel[myType, myOptions]];
+
+(* ::Subsubsection::Closed:: *)
+(*createContainerModel*)
+createContainerModel[myType:TypeP[], myOptions:{_Rule...}] := Module[
+	{
+		rawName, modelName, uploadFunctionOption, productURL, productObject,
+		defaultContainerModelObject, defaultContainerModelRelevantPackets
+	},
+	(* Read the Name from supplied option *)
+	rawName = Lookup[myOptions, Name, Null];
+
+	modelName = If[NullQ[rawName],
+		(* If the name is Null, make a unique name based on the label *)
+		ToString[Unique[DefaultContainerModel]]<>" for user "<>userName["user"],
+		"DefaultContainerModel of "<>rawName
+	];
+
+	productURL = Lookup[myOptions, ProductURL, Null];
+
+	(* Construct option needed for executeDefaultUploadFunction *)
+	uploadFunctionOption = {ProductURL -> productURL, Name -> modelName, Force -> True, ProductRelation -> DefaultContainerModel};
+
+	(* Call executeDefaultUploadFunction *)
+	{defaultContainerModelObject, defaultContainerModelRelevantPackets} = executeDefaultUploadFunction[myType, uploadFunctionOption, "DefaultContainerModel", Force -> True];
+
+	(* Register memoization *)
+	If[!MemberQ[$Memoization, ExternalUpload`Private`createContainerModel],
+		AppendTo[$Memoization, ExternalUpload`Private`createContainerModel]
+	];
+	Set[createContainerModel[myType, myOptions], {defaultContainerModelObject, defaultContainerModelRelevantPackets}];
+
+	(* Finally output results *)
+	{defaultContainerModelObject, defaultContainerModelRelevantPackets}
+
+];
+
+createContainerModel[myType:TypeP[], myOptions:{_Rule...}, Object] := First[createContainerModel[myType, myOptions]];
+createContainerModel[myType:TypeP[], myOptions:{_Rule...}, Packet] := Last[createContainerModel[myType, myOptions]];
+
+(* ::Subsubsection::Closed:: *)
+(*createCoverModel*)
+createCoverModel[myType:TypeP[], myOptions:{_Rule...}] := Module[
+	{
+		rawName, modelName, uploadFunctionOption, productURL, productObject,
+		defaultCoverModelObject, defaultCoverModelRelevantPackets
+	},
+	(* Read the Name from supplied option *)
+	rawName = Lookup[myOptions, Name, Null];
+
+	modelName = If[NullQ[rawName],
+		(* If the name is Null, make a unique name based on the label *)
+		ToString[Unique[DefaultContainerModel]]<>" for user "<>userName["user"],
+		"DefaultContainerModel of "<>rawName
+	];
+
+	productURL = Lookup[myOptions, ProductURL, Null];
+
+	(* Construct option needed for executeDefaultUploadFunction *)
+	uploadFunctionOption = {ProductURL -> productURL, Name -> modelName, Force -> True, ProductRelation -> DefaultCoverModel};
+
+	(* Call executeDefaultUploadFunction *)
+	{defaultCoverModelObject, defaultCoverModelRelevantPackets} = executeDefaultUploadFunction[myType, uploadFunctionOption, "DefaultCoverModel", Force -> True];
+
+	(* Register memoization *)
+	If[!MemberQ[$Memoization, ExternalUpload`Private`createCoverModel],
+		AppendTo[$Memoization, ExternalUpload`Private`createCoverModel]
+	];
+	Set[createCoverModel[myType, myOptions], {defaultCoverModelObject, defaultCoverModelRelevantPackets}];
+
+	(* Finally output results *)
+	{defaultCoverModelObject, defaultCoverModelRelevantPackets}
+
+];
+
+createCoverModel[myType:TypeP[], myOptions:{_Rule...}, Object] := First[createCoverModel[myType, myOptions]];
+createCoverModel[myType:TypeP[], myOptions:{_Rule...}, Packet] := Last[createCoverModel[myType, myOptions]];
+
+(* ::Subsubsection::Closed:: *)
+(*executeUploadForKitComponents*)
+executeUploadForKitComponents[myKitComponents_, myOptions:{_Rule...}] := Module[
+	{
+		kitComponentsNewModelInfoTuple, productURL, productName, newModelInfoTupleGroupedByUploadFunction,
+		allNewModelPositionAssoc, unflattenedNewModelPackets, newModelPackets, joinedNewModelPositionAssoc,
+		kitComponentsOptionValueWithNewModels, newModelRequestedQ
+	},
+
+	(* Shortcut 1: If the KitComponent option value is not a list with at least one entry, return Null right away *)
+	If[!(MatchQ[myKitComponents, _List] && Length[myKitComponents] > 0),
+		Return[{myKitComponents, {}}, Module]
+	];
+
+	(* shortcut 2: Check if KitComponents has any Type entry. If not, that means no new model needs to be created *)
+	newModelRequestedQ = TrueQ[MemberQ[myKitComponents, TypeP[], 2]];
+
+	If[!newModelRequestedQ,
+		Return[{myKitComponents, {}}, Module]
+	];
+
+	{productURL, productName} = Lookup[myOptions, {ProductURL, Name}, Null];
+
+	(* Gather the information for new models into a big tuple. The format of tuple is *)
+	(* {{UploadFunction, Type, kit index, item index, Field index (2 for ProductModel, 3 for DefaultContainerModel, 7 for DefaultCoverModel), Options}..} *)
+	(* kit index and Field is the position of this model in KitComponents; item index is an incrementing counter to distinguishing different items *)
+	(* For example If I have a kit of 1 plate and 1 vessel, vessel contains 1 sample and plate contains 3; then the kit index for the plates can be 2,3,4 but item index would only be 2 *)
+	kitComponentsNewModelInfoTuple = Flatten[
+		MapIndexed[
+			Function[{kitComponent, kitIndex},
+				Module[
+					{
+						kitProductModel, kitDefaultContainerModel, kitDefaultCoverModel, kitContainerIndex,
+						newProductModelQ, newContainerModelQ, newCoverModelQ, productModelOptions, containerModelOptions,
+						coverModelOptions
+					},
+
+					{kitProductModel, kitDefaultContainerModel, kitContainerIndex, kitDefaultCoverModel} = kitComponent[[{2, 3, 6, 7}]];
+
+					(* Note that, we may need to upload new models for ProductModel, DefaultContainerModel and DefaultCoverModel *)
+
+					(* Find if we need to create new models *)
+					{newProductModelQ, newContainerModelQ, newCoverModelQ} = MatchQ[#, TypeP[]]& /@ {kitProductModel, kitDefaultContainerModel, kitDefaultCoverModel};
+
+					(* Compute options for executeDefaultUploadFunction for ProductModel *)
+					productModelOptions = If[newProductModelQ,
+						Join[
+							{
+								Name -> "ProductModel of KitComponent-"<>ToString[First[kitIndex]]<>" of "<>productName,
+								Force -> True
+							},
+							Switch[kitProductModel,
+								TypeP[{Model[Container], Model[Item, Cap], Model[Item, Lid], Model[Item, PlateSeal]}],
+								{
+									ProductRelation -> KitComponents,
+									ProductURL -> productURL
+								},
+								(* TODO when ready add support for Model[Sample] using UploadSampleModel *)
+								_,
+								{}
+							]
+						],
+						Null
+					];
+
+					(* Compute options for executeDefaultUploadFunction for DefaultContainerModel. Note that the index should be the container index instead of KitComponents index *)
+					containerModelOptions = If[newContainerModelQ,
+						{
+							Name -> "DefaultContainerModel of KitComponent-"<>ToString[kitContainerIndex]<>" of "<>productName,
+							Force -> True,
+							ProductRelation -> KitComponentsContainerModel,
+							ProductURL -> productURL
+						},
+						Null
+					];
+
+					coverModelOptions = If[newCoverModelQ,
+						{
+							Name -> "DefaultCoverModel of KitComponent-"<>ToString[kitContainerIndex]<>" of "<>productName,
+							Force -> True,
+							ProductRelation -> KitComponentsCoverModel,
+							ProductURL -> productURL
+						},
+						Null
+					];
+
+					(* Output the desired tuple *)
+					{
+						If[newProductModelQ,
+							{identifyUploadFunction[kitProductModel], kitProductModel, First[kitIndex], First[kitIndex], 2, productModelOptions},
+							Nothing
+						],
+						If[newContainerModelQ,
+							{identifyUploadFunction[kitDefaultContainerModel], kitDefaultContainerModel, First[kitIndex], kitContainerIndex, 3, containerModelOptions},
+							Nothing
+						],
+						If[newCoverModelQ,
+							{identifyUploadFunction[kitDefaultCoverModel], kitDefaultCoverModel, First[kitIndex], kitContainerIndex, 7, coverModelOptions},
+							Nothing
+						]
+					}
+
+				]
+			],
+			myKitComponents
+		],
+		1
+	];
+
+	(* group the info tuple by upload function. This way we can create multiple objects of the same/similar type in one run *)
+	newModelInfoTupleGroupedByUploadFunction = GatherBy[kitComponentsNewModelInfoTuple, First];
+
+	(* Construct options and call executeDefaultUploadFunction for each upload functions *)
+
+	{allNewModelPositionAssoc, unflattenedNewModelPackets} = Transpose[
+		Map[
+			Function[{singleBlock},
+				Module[
+					{
+						types, kitIndicies, itemIndicies, fields, indexMatchingOptions,
+						singleBlockNoDuplicates, itemIndiciesNoDup, uploadFunction, mergedOptions, objectsFromDefaultUpload,
+						packetsFromDefaultUpload, itemIndexToObjectLookup, kitObjectPositionLookup
+					},
+
+					(* Extract the kit and item indecies as well as fields in the single block *)
+					{kitIndicies, itemIndicies, fields} = Transpose[singleBlock][[{3, 4, 5}]];
+					uploadFunction = singleBlock[[1, 1]];
+
+
+					(* remove duplicated model creation request, indicated by duplicated item index *)
+					singleBlockNoDuplicates = DeleteDuplicatesBy[singleBlock, #[[4]]&];
+
+					(* extract the Type, options and item index from the block without duplicates *)
+					{types, itemIndiciesNoDup, indexMatchingOptions} = Transpose[singleBlockNoDuplicates][[{2, 4, 6}]];
+
+					(* Right now the options are in the form of list of list of rules: {{Option1 -> Value1ForObject1, ..}, {Option1 -> Value1ForObject2, ..}..} *)
+					(* The function is expecting a single list of rules: {Option1 -> {Value1ForObject1, Value1ForObject2, ..}, ..} *)
+					(* merge the listed options *)
+					mergedOptions = mergeMapThreadFriendlyOptions[indexMatchingOptions, uploadFunction, "Input Data"];
+
+					(* call executeDefaultUploadFunction *)
+					{objectsFromDefaultUpload, packetsFromDefaultUpload} = executeDefaultUploadFunction[types, mergedOptions, "Kit Components", Force -> True];
+
+					(* relate item index to the newly created models *)
+					itemIndexToObjectLookup = AssociationThread[itemIndiciesNoDup, objectsFromDefaultUpload];
+
+					(* Construct an association of {kit index, field} -> object. This will later be used to find out where the newly created models should go into *)
+					kitObjectPositionLookup = Association[
+						MapThread[
+							Function[{position, itemIndex},
+								position -> Lookup[itemIndexToObjectLookup, itemIndex, Null]
+							],
+							{Transpose[{kitIndicies, fields}], itemIndicies}
+						]
+					];
+
+					{kitObjectPositionLookup, packetsFromDefaultUpload}
+
+				]
+			],
+			newModelInfoTupleGroupedByUploadFunction
+		]
+	];
+
+	joinedNewModelPositionAssoc = Join @@ allNewModelPositionAssoc;
+	newModelPackets = Flatten[unflattenedNewModelPackets];
+
+	(* Now, use ReplacePart to replace the type inputs in KitComponents options to the newly created objects *)
+	kitComponentsOptionValueWithNewModels = ReplacePart[myKitComponents, joinedNewModelPositionAssoc];
+
+	(* Register memoization *)
+	If[!MemberQ[$Memoization, ExternalUpload`Private`executeUploadForKitComponents],
+		AppendTo[$Memoization, ExternalUpload`Private`executeUploadForKitComponents]
+	];
+	Set[executeUploadForKitComponents[myKitComponents, myOptions], {kitComponentsOptionValueWithNewModels, newModelPackets}];
+
+	(* Output the corrected KitComponents option value and the upload packets *)
+	{kitComponentsOptionValueWithNewModels, newModelPackets}
+
+];
 
 
 (* ::Subsubsection::Closed:: *)
@@ -1291,21 +1929,33 @@ DefineOptions[resolveUploadProductOptions, Options :> {
 	HelperOutputOption
 }];
 
+$ProductStringToTypeLookup = Join[
+	$ContainerModelStringToTypeLookup,
+	$CoverModelStringToTypeLookup,
+	<|
+		"Sample or chemical" -> Model[Sample],
+		"Chromatography Column" -> Model[Item, Column],
+		"Others/Unknown" -> Null
+	|>
+];
+
 (* Helper function to resolve the options to our function. *)
 (* Takes in a list of inputs and a list of options, return a list of resolved options. *)
-resolveUploadProductOptions[myURL:(URLP | Null), myNewModelType:(TypeP[] | Null), myOptions_, myRawOptions_, fastAssoc_Association, myResolveOptions:OptionsPattern[]]:=Module[
+resolveUploadProductOptions[myType_, myListedInputs:{(Null | URLP | ObjectP[Object[Product]])..}, myOptions_, myRawOptions_, myResolveOptions:OptionsPattern[]]:=Module[
 	{
-		listedOptions, outputOption, myOptionsAssociation, testsRule, resultRule, parsedInput, myMergedOptions,
-		myFinalizedOptions, optionsWithAuthor, optionsWithType, resolvedKitComponents, kitQ,
-		allKitModelPackets, optionsWithCorrectKitComponents, productModelPacket, resolvedDensity, optionsWithNotebook,
-		resolvedSynonyms, unresolvedName, unresolvedSynonyms, resolvedName, productModel, unresolvedDensity, allKitModels,
-		productModelConflictQ, productModelConflictOptions, productModelConflicTests, containerCoverConflictQ,
-		defaultCoverModel, defaultContainerModel, containerCoverConflictOptions, containerCoverConflictTests,
-		allTests, allFailingOptions, kitContainerCoverConflictQs, kitContainerCoverConflictOptions,
-		kitContainerCoverConflictTests, resolvedAmount, unresolvedAmount, rawOptionsNoAutomatic,
-		unresolvedImageFile, imageFilePath, validImageURLQ, validImagePathQ, resolvedImageFile,
-		imageFilePacket, resolvedImageFileObject, templateOp, templatePacket, templatedSafeOps,
-		parsedOptions
+		listedOptions, outputOption, strict, developerQ, cache, fastAssoc, mapThreadResolvedOptions,
+		allVOQPassedQs, allVOQMessages, allVOQInvalidOptions, allVOQTests, templateOnExistingProductErrors, productModelUploadErrors,
+		imageURLErrors, imagePathErrors, defaultContainerModelUploadErrors, defaultCoverModelUploadErrors,
+		nameErrors, gatherTests, messageQ,
+		invalidTemplateOptions, invalidTemplateTests, resolvedImageFileOptions, invalidImageURLOptions,
+		invalidImageFilePathOptions, invalidImageURLTests, invalidImageFilePathTests, invalidProductModelInputs,
+		invalidProductModelTests, resolvedDefaultContainerModelOption, invalidDefaultContainerModelOptions,
+		invalidDefaultContainerModelTests, resolvedDefaultCoverModelOption, invalidDefaultCoverModelOptions,
+		invalidDefaultCoverModelTests, allFailingOptions, invalidInputs, allTests, splittedMessages,
+		groupedMessages, mergedMessage, emptyParsedOptions, myCorrectedInputs, unresolvedAllSuppliers,
+		allSearchClauses, validSearchClauses, validSearchClauseQ, searchResults, uniqueSupplierFromSearch,
+		overallSupplier, optionsWithSupplier, rawOptionsWithSupplier, now, unresolvedInputsFromOption, unresolvedInputs,
+		simulateDummyPackets, redundantURLQs, redundantURLTests
 	},
 
 	(* Convert the options to this function into a list. *)
@@ -1317,567 +1967,1187 @@ resolveUploadProductOptions[myURL:(URLP | Null), myNewModelType:(TypeP[] | Null)
 		Output /. listedOptions
 	];
 
-	(* Convert the options to an association. *)
-	myOptionsAssociation=Association @@ myOptions;
+	(* Check if external user or developer is running the function *)
+	developerQ = MatchQ[$PersonID, ObjectP[Object[User, Emerald]]];
 
-	(* -- AutoFill based on the information we're given. -- *)
-
-	(* First, download all of the information that we have from the internet *)
-	parsedInput = If[TrueQ[$UsePyeclProductParser],
-		parseProductURL[myURL],
-		Switch[myURL,
-			(* UploadProduct[] *)
-			Null,
-			{},
-
-			(* UploadProduct[thermoURL], if we could not retrieve anything from website after trying 10 times, return an empty association *)
-			ThermoFisherURLP,
-			With[{rawParsedInput=retryConnection[parseThermoProductURL[myURL], 3]}, If[MatchQ[rawParsedInput,$Failed], {}, rawParsedInput]],
-
-			(* UploadProduct[fisherSciURL], if we could not retrieve anything from website after trying 10 times, return an empty association *)
-			FisherScientificURLP,
-			With[{rawParsedInput=retryConnection[parseFisherProductURL[myURL], 3]}, If[MatchQ[rawParsedInput,$Failed], {}, rawParsedInput]],
-
-			(* UploadProduct[sigmaURL], if we could not retrieve anything from website after trying 3 times, return an empty association *)
-			(* decreased retry times here since sigma website may block us b/c we retried too often *)
-			MilliporeSigmaURLP,
-			With[{rawParsedInput=retryConnection[parseSigmaProductURL[myURL], 3]}, If[MatchQ[rawParsedInput,$Failed], {}, rawParsedInput]]
-		]
+	(* Resolve Strict option *)
+	strict = If[MatchQ[Lookup[First[myOptions], Strict], Automatic],
+		(* If Strict -> Automatic, set to True if any of the following is true: *)
+		Or[developerQ, !$AllowUserInvalidObjectUploads],
+		(* Otherwise just use the option value *)
+		TrueQ[Lookup[First[myOptions], Strict]]
 	];
 
-	(* Remove all parsed options with value = Null *)
-	parsedOptions = If[MatchQ[parsedInput, ($Failed | {} | <||>)],
+	now = Now;
+
+	(* extract cache packets and make fastAssoc *)
+	cache = Lookup[First[myOptions], Cache, {}];
+	fastAssoc = Experiment`Private`makeFastAssocFromCache[cache];
+
+	(* Check if we are gathering tests and therefore should not throw messages *)
+	gatherTests = MemberQ[ToList[Lookup[First[myOptions], Output]], Tests];
+	messageQ = !gatherTests;
+
+	(* Extract the UnresolvedInputs option *)
+
+	unresolvedInputsFromOption = Lookup[First[myRawOptions], UnresolvedInputs, {}];
+
+	(* Find and format the UnresolvedInputs, expand to index match *)
+	(* The format is {{URL1, object/type/string1}, {URL2, object/type/string2}} *)
+	unresolvedInputs = Switch[unresolvedInputsFromOption,
+		(* If UnresolvedInputs option are not provided, that means we were using the empty input overload *)
+		(* In that case, append a Null for each entry as the URL *)
 		{},
-		KeyValueMap[
-			Function[{key, value},
-				If[NullQ[value],
-					Nothing,
-					key -> value
+			ConstantArray[Null, Length[myListedInputs]],
+		(* If the Unresolved option are provided, and it's a single URL or Null, that means we are using single url overload. *)
+		(* In that case simply wrap the input with a list so it index-match *)
+		URLP | Null,
+			{unresolvedInputsFromOption},
+		(* Any other cases keep it unchanged *)
+		_,
+			unresolvedInputsFromOption
+	];
+
+	(* Define an Option -> Null rule list. If product URL parsing fails, we use that as the parsed option for error checking *)
+	emptyParsedOptions = Map[
+		# -> Null&,
+		{Name, Amount, Price, NumberOfItems, CatalogDescription, CatalogNumber, Image, Supplier, Packaging, SampleType}
+	];
+
+	(* Do part of resolution of Supplier option outside the big MapThread. This is because we need to do Search and we want to avoid mapping search *)
+	unresolvedAllSuppliers = Lookup[myOptions, Supplier];
+
+	overallSupplier = resolveCompanies[unresolvedAllSuppliers, Supplier];
+
+	(* Combine the Supplier option into unresolved options *)
+	optionsWithSupplier = MapThread[
+		Function[{option, supplier},
+			ReplaceRule[option, {Supplier -> supplier}]
+		],
+		{myOptions, overallSupplier}
+	];
+
+	(* If Supplier presents in the raw option, also replace that *)
+	rawOptionsWithSupplier = MapThread[
+		Function[{option, supplier},
+			If[KeyExistsQ[option, Supplier],
+				ReplaceRule[option, {Supplier -> supplier}],
+				option
+			]
+		],
+		{myRawOptions, overallSupplier}
+	];
+
+	(* Helper function to create dummy auxiliary packets as the ProductModel or DefaultContainerModel *)
+	(* Those packets won't be uploaded, the purpose is to pass that to ValidObjectQ tests *)
+	(* For example, If someone call UploadProduct with DefaultContainerModel -> Model[Container, Vessel], indicating a new container model needs to be created as DefaultContainerModel *)
+	(* we want to make a dummy Model[Container, Vessel] object and packet so that VOQ of the product does not fail because of this container model *)
+
+	simulateDummyPackets[myField:Alternatives[ProductModel, DefaultContainerModel], mySimulatedObject:ObjectReferenceP[]] := Module[
+		{type},
+
+		type = Download[mySimulatedObject, Type];
+
+		If[MatchQ[myField, ProductModel],
+			<|
+				Object -> mySimulatedObject,
+				Type -> type,
+				Tablet -> False,
+				Sachet -> False,
+				State -> Null,
+				Notebook -> Link[$Notebook],
+				Counted -> False
+			|>,
+			<|
+				Object -> mySimulatedObject,
+				Type -> type,
+				Deprecated -> False,
+				OpenContainer -> False,
+				Positions -> {<|
+					Name -> "A1",
+					Footprint -> Null,
+					MaxWidth -> 1 Meter,
+					MaxDepth -> 1 Meter,
+					MaxHeight -> 1 Meter
+				|>}
+			|>
+		]
+
+	];
+
+
+	(* Do a big MapThread to resolve all index-matching options *)
+	{
+		mapThreadResolvedOptions,
+		allVOQPassedQs,
+		allVOQMessages,
+		allVOQInvalidOptions,
+		allVOQTests,
+		templateOnExistingProductErrors,
+		productModelUploadErrors,
+		imageURLErrors,
+		imagePathErrors,
+		defaultContainerModelUploadErrors,
+		defaultCoverModelUploadErrors,
+		nameErrors,
+		redundantURLQs
+	} = Transpose[
+		MapThread[
+			Function[{input, option, rawOption, rawInput},
+				Module[
+					{
+						template, newProductQ, templatePacket, templatedSafeOps, templateOnExistingModelQ, productURL,
+						optionsFromParser, parseFromWebQ, missingParsableInfoQ, parsedInput, rawOptionsNoAutomatic,
+						mergedOption, unresolvedName, unresolvedSynonyms, resolvedName, resolvedSynonyms, unresolvedProductModel,
+						resolvedProductModel, productModelPacket, productObject, newProductModelOptions, unresolvedDensity,
+						unresolvedAmount, resolvedAmount, resolvedDensity, unresolvedImageFile, imageFilePath,
+						validImageURLQ, validImagePathQ, resolvedImageFile, imageFilePacket, resolvedImageFileObject,
+						unresolvedDefaultContainerModel, finalizedOptions, resolvedDefaultContainerModel,
+						unresolvedDefaultCoverModel, resolvedDefaultCoverModel, resolvedProductModelObject,
+						failedToCreateProductModelQ, resolvedDefaultContainerModelObject, failedToCreateDefaultContainerModelQ,
+						resolvedDefaultCoverModelObject, failedToCreateDefaultCoverModelQ, optionsForChangePacket,
+						repeatedNameQ, namedProductObject, changePacket, existingProductPacket, defaultContainerModelPacket,
+						defaultCoverModelPacket, voqPassed, voqMessages, voqInvalidOptions, voqTests, kitQ, unresolvedSampleType,
+						resolvedSampleType, supplierFromMergedOptions, resolvedSupplier, unresolvedKitComponents, productName,
+						unresolvedOptions, redundantURLQ, unresolvedStoreInOriginalContainer, resolvedStoreInOriginalContainer
+					},
+
+					(* Gather some basic info *)
+
+					(* Are we making a new product, or updating existing one? If our input is an Object[Product], then we are surely updating an existing one *)
+					newProductQ = !MatchQ[input, ObjectP[Object[Product]]];
+
+
+					productObject = If[newProductQ,
+						Null,
+						(* If modifying existing object, find its ID *)
+						input
+					];
+
+					(* If modifying an existing product, extract its packet *)
+					existingProductPacket = If[newProductQ,
+						<||>,
+						Experiment`Private`fetchPacketFromFastAssoc[productObject, fastAssoc]
+					];
+
+					(* ----Apply Template---- *)
+
+					(* Lookup the Template option *)
+					template = Lookup[option, Template, Null];
+					(* extract template packet *)
+					templatePacket = Experiment`Private`fetchPacketFromFastAssoc[template, fastAssoc];
+					(* Apply template if Template is specified and we are creating new product *)
+					templatedSafeOps = Which[
+						(* if Template is specified and we are creating new product, apply template using Template option *)
+						newProductQ && MatchQ[templatePacket, PacketP[]],
+						resolveTemplateOptions[
+							UploadProduct,
+							templatePacket,
+							rawOption,
+							option,
+							Exclude -> {
+								Name,
+								Synonyms,
+								ImageFile,
+								ProductListing,
+								CatalogNumber,
+								ManufacturerCatalogNumber,
+								ProductURL,
+								KitComponents,
+								ProductModel,
+								UnresolvedInputs,
+								UnresolvedOptions
+							}
+						],
+						(* If we are updating existing Object[Product], copy field values from database *)
+						!newProductQ,
+						resolveDefaultUploadFunctionOptions[Object[Product],
+							input,
+							option,
+							rawOption
+						],
+						(* Any other cases don't change the option *)
+						True,
+						option
+					];
+
+					(* If we specified Template option for existing Object[Product], record this error with the variable below*)
+					templateOnExistingModelQ = If[MatchQ[templatePacket, PacketP[]],
+						!newProductQ,
+						False
+					];
+
+					(* ----Parse webpage---- *)
+
+					(* Find the ProductURL, It can be either from input or option. Take input as higher priority *)
+					productURL = If[MatchQ[input, URLP],
+						input,
+						Lookup[templatedSafeOps, ProductURL, Null]
+					];
+
+					(* If URL is provided in both input and options, record this and throw warning later *)
+					redundantURLQ = MatchQ[input, URLP] && MatchQ[Lookup[templatedSafeOps, ProductURL, Null], URLP];
+
+					(* List all options that can be found from webpage parser *)
+					optionsFromParser = {Supplier, Name, Amount, Price, NumberOfItems, CatalogDescription, CatalogNumber, ImageFile};
+					(* Check if we are still missing any info that can be parsed. *)
+					missingParsableInfoQ = MemberQ[Lookup[templatedSafeOps, optionsFromParser], (Null | Automatic)];
+					(* Only try to parse from web if we are missing at least one field that's potentially available from web. This is to save time *)
+					parseFromWebQ = And[MatchQ[productURL, _String], missingParsableInfoQ];
+
+					(* Now actually parse the info from supplier webpage *)
+					parsedInput = Which[
+						(* If parseFromWebQ == False, don't do anything *)
+						!parseFromWebQ,
+						{},
+						(* Otherwise do the parsing. If we are using python parser, call parseProductURL *)
+						TrueQ[$UsePyeclProductParser],
+						parseProductURL[productURL],
+						(* Otherwise use the SLL parser *)
+						True,
+						Switch[productURL,
+							(* UploadProduct[] *)
+							Null,
+							{},
+
+							(* UploadProduct[thermoURL], if we could not retrieve anything from website after trying 10 times, return an empty association *)
+							ThermoFisherURLP,
+							With[{rawParsedInput=retryConnection[parseThermoProductURL[productURL], 3]}, If[MatchQ[rawParsedInput,$Failed], {}, rawParsedInput]],
+
+							(* UploadProduct[fisherSciURL], if we could not retrieve anything from website after trying 10 times, return an empty association *)
+							FisherScientificURLP,
+							With[{rawParsedInput=retryConnection[parseFisherProductURL[productURL], 3]}, If[MatchQ[rawParsedInput,$Failed], {}, rawParsedInput]],
+
+							(* UploadProduct[sigmaURL], if we could not retrieve anything from website after trying 3 times, return an empty association *)
+							(* decreased retry times here since sigma website may block us b/c we retried too often *)
+							MilliporeSigmaURLP,
+							With[{rawParsedInput=retryConnection[parseSigmaProductURL[productURL], 3]}, If[MatchQ[rawParsedInput,$Failed], {}, rawParsedInput]]
+						]
+					];
+
+					(* ---- Merge user option, templated option and parsed option into one ---- *)
+					(* idea is template overwrites safe options, parser overwrites template, and user-specified options overwrites parser *)
+
+					(* Take the raw option and remove options with Automatic option value *)
+					rawOptionsNoAutomatic = Select[rawOption, !MatchQ[Values[#], Automatic]&];
+					(* We use a double Replace Rule to fulfill the purpose. First, take the SafeOptions and replace with auto-parsed option *)
+					(* Then, replace that with user-supplied option (EVEN IF it's Null, so that user can correct an incorrectly-parsed option) *)
+					(* However, exclude XX -> Automatic from the raw options. *)
+					mergedOption = If[MatchQ[parsedInput, $Failed],
+						ReplaceRule[
+							templatedSafeOps,
+							rawOptionsNoAutomatic
+						],
+						ReplaceRule[
+							ReplaceRule[
+								templatedSafeOps,
+								Normal[parsedInput, Association]
+							],
+							rawOptionsNoAutomatic
+						]
+					];
+
+					(* ---- Resolve options ---- *)
+
+					(* Find ProductModel. Note, When creating new Object[Product], the ProductModel is supplied as input, not option *)
+					unresolvedProductModel = Lookup[mergedOption, ProductModel] /. $ProductStringToTypeLookup;
+
+					(* Resovle Name and Synonyms. *)
+					unresolvedName = Lookup[mergedOption, Name];
+					unresolvedSynonyms = Lookup[mergedOption, Synonyms];
+
+					{resolvedName, resolvedSynonyms} = Which[
+						(* If Name is Null but Synonyms is not, use the first entry from Synonyms as Name *)
+						NullQ[unresolvedName] && MatchQ[unresolvedSynonyms, _List] && Length[unresolvedSynonyms] > 0,
+						{First[unresolvedSynonyms], unresolvedSynonyms},
+						(* If both Name and Synonyms are Null or {}, keep that unchanged *)
+						NullQ[unresolvedName] && MatchQ[unresolvedSynonyms, (Null | {} | Automatic)],
+						{Null, Null},
+						(* If Name is not Null but Synonyms is, use Name as Synonyms *)
+						MatchQ[unresolvedSynonyms, (Null | {} | Automatic)],
+						{unresolvedName, {unresolvedName}},
+						(* If Name is Automatic, try to resolve from product model name *)
+						MatchQ[unresolvedName, Automatic] && MatchQ[unresolvedProductModel, ObjectP[]],
+						ConstantArray[{"New product for "<>ToString[Experiment`Private`fastAssocLookup[fastAssoc, unresolvedProductModel, Name]]}, 2],
+						(* If both are not Null and Synonyms already contain the name, do not change *)
+						MatchQ[unresolvedSynonyms, _List] && MemberQ[unresolvedSynonyms, unresolvedName],
+						{unresolvedName, unresolvedSynonyms},
+						(* If both are not Null and Synonyms do not contain Name. Add Name to Synonyms *)
+						MatchQ[unresolvedSynonyms, _List] && !MemberQ[unresolvedSynonyms, unresolvedName],
+						{unresolvedName, Prepend[unresolvedSynonyms, unresolvedName]},
+						(* All other case set tp Null *)
+						True,
+						{Null, Null}
+					];
+
+					namedProductObject = If[NullQ[resolvedName],
+						productObject,
+						Join[Object[Product], Object[resolvedName]]
+					];
+
+					(* Check if the product name already exist in database *)
+					repeatedNameQ = If[newProductQ && MatchQ[namedProductObject, _Object],
+						DatabaseMemberQ[namedProductObject],
+						(* When dealing with existing product, only check this error if the name will be modified *)
+						If[!MatchQ[resolvedName, Lookup[existingProductPacket, Name]],
+							DatabaseMemberQ[namedProductObject],
+							False
+						]
+					];
+
+					(* Resolve ProductModel *)
+
+					(* Suppose we need to make a new model for ProductModel, assemble the options *)
+					newProductModelOptions = {
+						Name -> resolvedName,
+						ProductURL -> productURL,
+						(* Note, here we use the named form instead of ID form when creating new product. This is because if user re-run the function, product ID would change *)
+						(* But as long as the name does not change, we are fine *)
+						Product -> If[newProductQ, namedProductObject, productObject]
+					};
+
+					(* Resolve ProductModel option *)
+
+					(* Get the ProductModel object for VOQ checking packet *)
+					resolvedProductModelObject = Which[
+						(* If the productModel is Null, Kit or Automatic, set to Null *)
+						MatchQ[unresolvedProductModel, (NullP | Kit | Automatic)],
+							Null,
+						(* If the ProductModel is an Object, keep using it. *)
+						MatchQ[unresolvedProductModel, ObjectP[]],
+							unresolvedProductModel,
+						(* If the ProductModel is a type, simulate an object ID *)
+						MatchQ[unresolvedProductModel, TypeP[]],
+							SimulateCreateID[unresolvedProductModel],
+						(* All other cases set to Null *)
+						True,
+							Null
+					];
+					(* Resolve the option *)
+					resolvedProductModel = If[MatchQ[resolvedProductModelObject, ObjectP[]],
+						unresolvedProductModel,
+						Null
+					];
+					(* If our ProductModel option is a Type, but we failed to create object, record this error *)
+					failedToCreateProductModelQ = And[MatchQ[unresolvedProductModel, TypeP[]], MatchQ[resolvedProductModelObject, Except[ObjectP[]]]];
+
+					(* Read the ProductModel packet *)
+					productModelPacket = Which[
+						(* If the ProductModel is an existing Object,read from fastAssoc. *)
+						MatchQ[unresolvedProductModel, ObjectP[]],
+						Experiment`Private`fetchPacketFromFastAssoc[unresolvedProductModel, fastAssoc],
+
+						(* If we need to make a new packet, simulate one *)
+						MatchQ[unresolvedProductModel, TypeP[]] && MatchQ[resolvedProductModelObject, ObjectP[]],
+						simulateDummyPackets[ProductModel, resolvedProductModelObject],
+
+						(* All other cases set to <||> *)
+						True,
+						<||>
+					];
+
+					(* resolve density *)
+					unresolvedDensity = Lookup[mergedOption, Density, Null];
+
+					resolvedDensity = Which[
+						(* if user specified Density, use it *)
+						!NullQ[unresolvedDensity],
+						unresolvedDensity,
+						(* if we have density in the model packet, use it *)
+						!NullQ[productModelPacket] && !NullQ[Lookup[productModelPacket, Density, Null]],
+						Lookup[productModelPacket, Density],
+						(* Otherwise, return Null *)
+						True,
+						Null
+					];
+
+					(* Resolve Amount: only need to change integer to count *)
+					unresolvedAmount = Lookup[mergedOption, Amount];
+
+					resolvedAmount = If[MatchQ[unresolvedAmount, _Integer],
+						unresolvedAmount * 1 Unit,
+						unresolvedAmount
+					];
+
+					(* Error-checking on ImageFile option *)
+					unresolvedImageFile = Lookup[mergedOption, ImageFile];
+
+					(* Try to validate ImageFile *)
+					imageFilePath = Switch[unresolvedImageFile,
+						URLP,
+						downloadAndValidateURL[unresolvedImageFile, "productImage.jpg", ImageQ[Import[#]]&],
+
+						FilePathP,
+						validateLocalFile[unresolvedImageFile, ImageQ[Import[#]]&],
+
+						_,
+						Null
+					];
+
+					(* Set the two error-checking variables accordingly *)
+					{validImageURLQ, validImagePathQ} = Switch[{unresolvedImageFile, imageFilePath},
+						(* If validation failed and the supplied ImageFile option is URL, set validImageURLQ to False *)
+						{URLP, $Failed},
+						{False, True},
+						(* If validation failed and the supplied ImageFile option is local file path, set validImagePathQ to False *)
+						{FilePathP, $Failed},
+						{True, False},
+						_,
+						{True, True}
+					];
+
+					(* Resolve ImageFile option: change Automatic to Null, otherwise no change (At this point, Automatic means we didn't get the image url from parser and user didn't provide one) *)
+					resolvedImageFile = If[MatchQ[unresolvedImageFile, Automatic],
+						Null,
+						unresolvedImageFile
+					];
+
+					(* Upload the ImageFile if we can *)
+					imageFilePacket = If[MatchQ[imageFilePath, _String],
+						pathToCloudFilePacket[imageFilePath],
+						<||>
+					];
+					(* resolve the ImageFile field for packet *)
+					resolvedImageFileObject = Which[
+						(* If input option is already object: use it *)
+						MatchQ[resolvedImageFile, ObjectP[]],
+						resolvedImageFile,
+						(* If input option is URL or local file path, and validation passed, upload the file *)
+						MatchQ[imageFilePacket, PacketP[]],
+						Lookup[imageFilePacket, Object, Null],
+						(* Otherwise set to Null *)
+						True,
+						Null
+					];
+
+					(* Resolve DefaultContainerModel *)
+					unresolvedDefaultContainerModel = Lookup[mergedOption, DefaultContainerModel];
+					(* Resolve the DefaultContainerModel object for packet *)
+					resolvedDefaultContainerModelObject = Which[
+						(* If the DefaultContainerModel is Null or Automatic, set to Null *)
+						MatchQ[unresolvedDefaultContainerModel, (NullP | Automatic)],
+						Null,
+						(* If the DefaultContainerModel is an Object, keep using it. *)
+						MatchQ[unresolvedDefaultContainerModel, ObjectP[]],
+						unresolvedDefaultContainerModel,
+						(* If the DefaultContainerModel is a type, simulate a new object *)
+						MatchQ[unresolvedDefaultContainerModel, TypeP[]],
+						SimulateCreateID[unresolvedDefaultContainerModel],
+						(* All other cases set to Null *)
+						True,
+						Null
+					];
+					(* Resolve the option *)
+					resolvedDefaultContainerModel = If[MatchQ[resolvedDefaultContainerModelObject, ObjectP[]],
+						unresolvedDefaultContainerModel,
+						Null
+					];
+					(* If we need to create a new model but failed, record this error *)
+					failedToCreateDefaultContainerModelQ = And[MatchQ[unresolvedDefaultContainerModel, TypeP[]], MatchQ[resolvedDefaultContainerModelObject, Except[ObjectP[]]]];
+
+					(* Read the DefaultContainerModel packet *)
+					defaultContainerModelPacket = Which[
+						(* If the ProductModel is an existing Object,read from fastAssoc. *)
+						MatchQ[unresolvedDefaultContainerModel, ObjectP[]],
+						Experiment`Private`fetchPacketFromFastAssoc[unresolvedDefaultContainerModel, fastAssoc],
+
+						(* If we just made a new product, read the new packet *)
+						MatchQ[unresolvedDefaultContainerModel, TypeP[]] && MatchQ[resolvedDefaultContainerModel, ObjectP[]],
+						simulateDummyPackets[DefaultContainerModel, resolvedDefaultContainerModel],
+
+						(* All other cases set to <||> *)
+						True,
+						<||>
+					];
+
+					(* Resolve DefaultConverModel *)
+					unresolvedDefaultCoverModel = Lookup[mergedOption, DefaultCoverModel];
+					(* Resolve the object for packet *)
+					resolvedDefaultCoverModelObject = Which[
+						(* If the DefaultCoverModel is Null or Automatic, set to Null *)
+						MatchQ[unresolvedDefaultCoverModel, (NullP | Automatic)],
+						Null,
+						(* If the DefaultCoverModel is an Object, keep using it. *)
+						MatchQ[unresolvedDefaultCoverModel, ObjectP[]],
+						unresolvedDefaultCoverModel,
+						(* If the DefaultCoverModel is a type, call createContainerModel to create a new model *)
+						MatchQ[unresolvedDefaultCoverModel, TypeP[]],
+						SimulateCreateID[unresolvedDefaultCoverModel],
+						(* All other cases set to Null *)
+						True,
+						Null
+					];
+					(* Resolve the option *)
+					resolvedDefaultCoverModel = If[MatchQ[resolvedDefaultCoverModelObject, ObjectP[]],
+						unresolvedDefaultCoverModel,
+						Null
+					];
+					(* If we need to create a new model but failed, record this error *)
+					failedToCreateDefaultCoverModelQ = And[MatchQ[unresolvedDefaultCoverModel, TypeP[]], MatchQ[resolvedDefaultCoverModelObject, Except[ObjectP[]]]];
+
+					(* Read the DefaultCoverModel packet *)
+					defaultCoverModelPacket = Which[
+						(* If the ProductModel is an existing Object,read from fastAssoc. *)
+						MatchQ[unresolvedDefaultCoverModel, ObjectP[]],
+						Experiment`Private`fetchPacketFromFastAssoc[unresolvedDefaultCoverModel, fastAssoc],
+
+						(* If we just made a new product, use an empty packet *)
+						MatchQ[unresolvedDefaultCoverModel, TypeP[]] && MatchQ[resolvedDefaultCoverModel, ObjectP[]],
+						<| Object -> resolvedDefaultCoverModelObject, Type -> unresolvedDefaultCoverModel |>,
+
+						(* All other cases set to <||> *)
+						True,
+						<||>
+					];
+
+					(* Resolve the StoreInOriginalContainer field *)
+					unresolvedStoreInOriginalContainer = Lookup[mergedOption, StoreInOriginalContainer];
+
+					resolvedStoreInOriginalContainer = Which[
+						(* If the option is specified, use it *)
+						MatchQ[unresolvedStoreInOriginalContainer, BooleanP],
+							unresolvedStoreInOriginalContainer,
+						(* If the NumberOfItems is Null or 1, set to False *)
+						!TrueQ[Lookup[mergedOption, NumberOfItems] > 1],
+							False,
+						(* Check the productModelPacket. If either Ampoule -> True or PermanentlySealed -> True, set to True *)
+						MatchQ[Lookup[productModelPacket, {Ampoule, PermanentlySealed}, False], {True, _}|{_, True}],
+							True,
+						(* Check the defaultContainerModelPacket. If either Ampoule -> True or PermanentlySealed -> True, set to True *)
+						MatchQ[Lookup[defaultContainerModelPacket, {Ampoule, PermanentlySealed}, False], {True, _}|{_, True}],
+							True,
+						(* All other cases set to False *)
+						True,
+							False
+					];
+
+					(* Find if the product is a kit *)
+					unresolvedKitComponents = Lookup[mergedOption, KitComponents];
+
+					kitQ = Or[
+						MatchQ[unresolvedProductModel, Kit],
+						MatchQ[unresolvedKitComponents, _List] && Length[unresolvedKitComponents] > 0
+					];
+
+					(* Resolve the KitComponents. The hard part is it's possible that user will request creation of new models *)
+					(* We don't want to map executeDefultUploadFunction over all kit components, that's slow. Instead, let's group all requested models by Type and call one single executeDefaultUploadFunction per type, not per component *)
+					(* For that purpose, we first map over KitComponents to construct a tuple. The structure of the tuple would be *)
+					(* {{type, index, Field, options}...} *)
+
+					(* Use a name for this product for option computing. If our resolved Name is Null, auto generate one *)
+					productName = If[StringQ[resolvedName],
+						resolvedName,
+						ToString[Unique[Product]]<>" created by "<>userName["user"]
+					];
+
+					(* Do a second round resolution of SampleType: If we are making a Kit, and SampleType is Automatic or Null, set to Kit *)
+					unresolvedSampleType = Lookup[mergedOption, SampleType];
+					resolvedSampleType = If[MatchQ[unresolvedSampleType, Null | Automatic] && kitQ,
+						Kit,
+						unresolvedSampleType
+					];
+
+					(* Resolve Supplier *)
+					(* Find the Supplier option from merged option *)
+					supplierFromMergedOptions = Lookup[mergedOption, Supplier, Null];
+
+					(* In most cases, that's the final resolved supplier. However, if the user supplied Name or website as supplier *)
+					(* But we failed to find one unique Object[Company, Supplier] for that input, let's resolve to Null *)
+					resolvedSupplier = If[MatchQ[supplierFromMergedOptions, (Automatic | _String)],
+						Null,
+						supplierFromMergedOptions
+					];
+
+					(* register the UnresolvedOptions *)
+					unresolvedOptions = Normal[KeyDrop[rawOption, {UnresolvedInputs, UnresolvedOptions, Cache}], Association];
+
+					(* construct finalized options *)
+					finalizedOptions = ReplaceRule[
+						mergedOption,
+						{
+							Name -> resolvedName,
+							ProductModel -> resolvedProductModel,
+							Synonyms -> resolvedSynonyms,
+							Density -> resolvedDensity,
+							Amount -> resolvedAmount,
+							ImageFile -> resolvedImageFile,
+							Strict -> strict,
+							DefaultContainerModel -> resolvedDefaultContainerModel,
+							DefaultCoverModel -> resolvedDefaultCoverModel,
+							SampleType -> resolvedSampleType,
+							Supplier -> resolvedSupplier,
+							(* register UnresolvedInputs option if and only if creating new objects *)
+							If[newProductQ,
+								UnresolvedInputs -> rawInput,
+								UnresolvedInputs -> Null
+							],
+							(* register UnresolvedInputs option if and only if creating new objects *)
+							If[newProductQ,
+								UnresolvedOptions -> unresolvedOptions,
+								UnresolvedOptions -> Null
+							],
+							StoreInOriginalContainer -> resolvedStoreInOriginalContainer
+						}
+					] /. Automatic -> Null;
+
+					(* ----Run VOQ error checking---- *)
+
+					(* Create change packet *)
+					optionsForChangePacket = ReplaceRule[
+						mergedOption,
+						{
+							Object -> productObject,
+							Type -> Object[Product],
+							Name -> resolvedName,
+							ProductModel -> resolvedProductModelObject,
+							Synonyms -> resolvedSynonyms,
+							Density -> resolvedDensity,
+							Amount -> resolvedAmount,
+							ImageFile -> resolvedImageFileObject,
+							Strict -> strict,
+							DefaultContainerModel -> resolvedDefaultContainerModelObject,
+							DefaultCoverModel -> resolvedDefaultCoverModelObject,
+							SampleType -> resolvedSampleType,
+							Author -> $PersonID,
+							Supplier -> resolvedSupplier,
+							StoreInOriginalContainer -> resolvedStoreInOriginalContainer
+						} /. {$Failed -> Null}
+					];
+
+					changePacket = generateChangePackets[Object[Product], optionsForChangePacket, ExistingPacket -> existingProductPacket];
+
+					{voqPassed, voqMessages, voqInvalidOptions, voqTests} = If[Or[!$AllowUserInvalidObjectUploads, TrueQ[strict]],
+						(* Skip VOQ tests if 1) Strict == False and 2) $AllowUserInvalidObjectUploads = True *)
+						RunOptionValidationTests[changePacket,
+							Message -> False,
+							UnresolvedOptions -> rawOption,
+							ParsedOptions -> If[MatchQ[parsedInput, $Failed], emptyParsedOptions, Normal[parsedInput, Association]],
+							TemplateOptions -> If[newProductQ && (!NullQ[template]), templatedSafeOps, {}],
+							Cache -> Cases[Flatten[{existingProductPacket, productModelPacket, imageFilePacket, defaultContainerModelPacket, defaultCoverModelPacket}], PacketP[]],
+							Output -> {Result, Messages, InvalidOptions, Tests},
+							InvalidOptionsDetermination -> Both
+						],
+						{True, {}, {}, {}}
+					];
+
+					(* Output results *)
+					{
+						finalizedOptions,
+						voqPassed,
+						voqMessages,
+						voqInvalidOptions,
+						voqTests,
+						templateOnExistingModelQ,
+						failedToCreateProductModelQ,
+						!validImageURLQ,
+						!validImagePathQ,
+						failedToCreateDefaultContainerModelQ,
+						failedToCreateDefaultCoverModelQ,
+						repeatedNameQ,
+						redundantURLQ
+					}
+
 				]
 			],
-			parsedInput
+			{myListedInputs, optionsWithSupplier, rawOptionsWithSupplier, unresolvedInputs}
 		]
 	];
 
-	(* -- Make sure that we do not overwrite any of the user's supplied OPTIONS. -- *)
-	rawOptionsNoAutomatic = Select[myRawOptions, !MatchQ[Values[#], Automatic]&];
+	(* ----Error checking and throw messages---- *)
 
-	(* We use a double Replace Rule to fulfill the purpose. First, take the SafeOptions and replace with auto-parsed option *)
-	(* Then, replace that with user-supplied option (EVEN IF it's Null, so that user can correct an incorrectly-parsed option) *)
-	(* However, exclude XX -> Automatic from the raw options. *)
-	myMergedOptions = ReplaceRule[
-		ReplaceRule[
-			myOptions,
-			parsedOptions
+	(* Check if we attempted to apply Template when modifying existing Object[Product] *)
+	invalidTemplateOptions = If[MemberQ[templateOnExistingProductErrors, True] && messageQ,
+		Message[Error::CannotSpecifyTemplate, PickList[myListedInputs, templateOnExistingProductErrors]];
+		{Template},
+		{}
+	];
+
+	invalidTemplateTests = If[gatherTests,
+		Test["Template option must not be specified when modifying existing Object[Product]:",
+			templateOnExistingProductErrors,
+			{False..}
 		],
-		rawOptionsNoAutomatic
+		{}
 	];
 
-	(* Resovle Name and Synonyms. *)
-	unresolvedName = Lookup[myMergedOptions, Name];
-	unresolvedSynonyms = Lookup[myMergedOptions, Synonyms];
-
-	{resolvedName, resolvedSynonyms} = Which[
-		(* If Name is Null but Synonyms is not, use the first entry from Synonyms as Name *)
-		NullQ[unresolvedName] && MatchQ[unresolvedSynonyms, _List] && Length[unresolvedSynonyms] > 0,
-			{First[unresolvedSynonyms], unresolvedSynonyms},
-		(* If both Name and Synonyms are Null or {}, keep that unchanged *)
-		NullQ[unresolvedName] && MatchQ[unresolvedSynonyms, (Null | {})],
-			{Null, Null},
-		(* If Name is not Null but Synonyms is, use Name as Synonyms *)
-		MatchQ[unresolvedSynonyms, (Null | {})],
-			{unresolvedName, {unresolvedName}},
-		(* If both are not Null and Synonyms already contain the name, do not change *)
-		MemberQ[unresolvedSynonyms, unresolvedName],
-			{unresolvedName, unresolvedSynonyms},
-		(* Only remaining possibility is that both are not Null and Synonyms do not contain Name. Add Name to Synonyms *)
-		True,
-			{unresolvedName, Prepend[unresolvedSynonyms, unresolvedName]}
+	If[MemberQ[redundantURLQs, True] && messageQ && !MatchQ[$ECLApplication, Engine],
+		Message[Warning::RedundantProductURL]
 	];
 
-	(* get a packet of the Object[Sample] this Product is associated with *)
-	productModel = Lookup[myMergedOptions, ProductModel];
-
-	productModelPacket=If[MatchQ[productModel, ObjectP[Model[Sample]]],
-		Experiment`Private`fetchPacketFromFastAssoc[productModel, fastAssoc]
-	];
-
-	(* resolve density *)
-	unresolvedDensity = Lookup[myMergedOptions, Density, Null];
-
-	resolvedDensity = Which[
-		(* if user specified Density, use it *)
-		!NullQ[unresolvedDensity],
-			unresolvedDensity,
-		(* if we have density in the model packet, use it *)
-		!NullQ[productModelPacket] && !NullQ[Lookup[productModelPacket, Density, Null]],
-			Lookup[productModelPacket, Density],
-		(* Otherwise, return Null *)
-		True,
-			Null
-	];
-
-	(* Make sure not to overwrite any of the user's specified options. *)
-	myFinalizedOptions = ReplaceRule[
-		myMergedOptions,
-		{
-			Name -> resolvedName,
-			Synonyms -> resolvedSynonyms,
-			Density -> resolvedDensity
-		}
-	];
-
-	(* pull out KitComponents because that changes a lot of what we do below *)
-	resolvedKitComponents=Lookup[myFinalizedOptions, KitComponents];
-	kitQ=Not[NullQ[resolvedKitComponents]];
-
-	(* If we have to return Result from this function, compute our result. *)
-	resultRule=Result -> If[MemberQ[ToList[outputOption], Result],
-
-		(* Return our list of options. *)
-		myFinalizedOptions,
-
-		(* We don't have to return the Output. Return Null. *)
-		Null
-	];
-
-	(* If we have to return Tests from this function, gather up our list of tests. *)
-	testsRule=Tests -> If[MemberQ[ToList[outputOption], Tests],
-		(* We have to return Tests. Construct a list of Tests. *)
-		(* Add the Author->___ rule to our option set such that the validQ tests work (they are expecting an already formed packet. *)
-		optionsWithAuthor=Append[myFinalizedOptions, Append[Author] -> Link[$PersonID]];
-
-		(* Append Type->Object[Product] to make this a valid packet. *)
-		optionsWithType=Append[optionsWithAuthor, Type -> Object[Product]];
-
-		(* if KitComponents is Null, replace that with {} here *)
-		optionsWithCorrectKitComponents=If[NullQ[Lookup[optionsWithType, KitComponents]],
-			Append[optionsWithType, KitComponents -> {}],
-			optionsWithType
-		];
-
-		(* need to add Notebook in based on $Notebook *)
-		optionsWithNotebook=Append[optionsWithCorrectKitComponents, Notebook -> Link[$Notebook, Objects]];
-
-		(* Return the Model[Sample] and Model[Sample] tests. *)
-		Join[
-			{Test["The Name of this Object[Product] is unique in Constellation if a Name is specified:",
-				!SameQ[Lookup[optionsWithNotebook, Name], Null] && Length[Search[Object[Product], Name == Lookup[optionsWithNotebook, Name]]] >= 1,
-				False
-			]},
-			ValidObjectQ`Private`validProductQTests[optionsWithNotebook]
+	redundantURLTests = If[gatherTests,
+		Warning["If the URL of this product is used as input, the value from ProductURL option will be ignored:",
+			redundantURLQs,
+			{True..}
 		],
-		(* We don't have to return Tests. Return Null. *)
-		Null
+		{}
+	];
+
+	(* Check if Image option has any problem *)
+	resolvedImageFileOptions = Lookup[mapThreadResolvedOptions, ImageFile];
+
+	invalidImageURLOptions = If[MemberQ[imageURLErrors, True] && messageQ,
+		Message[Error::InvalidFileURL, ImageFile, PickList[resolvedImageFileOptions, imageURLErrors]];
+		{ImageFile},
+		{}
+	];
+
+	invalidImageFilePathOptions = If[MemberQ[imagePathErrors, True] && messageQ,
+		Message[Error::InvalidFileDirectory, ImageFile, PickList[resolvedImageFileOptions, imagePathErrors]];
+		{ImageFile},
+		{}
+	];
+
+	invalidImageURLTests = If[gatherTests,
+		Test["If an URL is provided as ImageFile option, it must points to a downloadable image:",
+			imageURLErrors,
+			{False..}
+		],
+		{}
+	];
+
+	invalidImageFilePathTests = If[gatherTests,
+		Test["If a file path is provided as ImageFile option, it must exist and can be imported as image:",
+			imagePathErrors,
+			{False..}
+		],
+		{}
+	];
+
+	(* check if auto-upload of ProductModel is successful *)
+
+	invalidProductModelInputs = If[MemberQ[productModelUploadErrors, True] && messageQ && strict,
+		Message[Error::UnableToCreateModel, PickList[myListedInputs, productModelUploadErrors], "ProductModelObject input", PickList[myListedInputs, productModelUploadErrors]];
+		PickList[myListedInputs, productModelUploadErrors],
+		{}
+	];
+
+	invalidProductModelTests = If[gatherTests,
+		Test["If a Type is supplied as ProductModelObject input, function must be able to create a new model of that type:",
+			productModelUploadErrors,
+			{False..}
+		],
+		{}
+	];
+
+	(* Check if auto-upload of DefaultContainerModel is successful *)
+	resolvedDefaultContainerModelOption = Lookup[mapThreadResolvedOptions, DefaultContainerModel];
+
+	invalidDefaultContainerModelOptions = If[MemberQ[defaultContainerModelUploadErrors, True] && messageQ && strict,
+		Message[Error::UnableToCreateModel, PickList[myListedInputs, myListedInputs], "DefaultContainerModel option", PickList[myListedInputs, defaultContainerModelUploadErrors]];
+		{DefaultContainerModel},
+		{}
+	];
+
+	invalidDefaultContainerModelTests = If[gatherTests,
+		Test["If a Type is supplied as DefaultContainerModel option, function must be able to create a new model of that type:",
+			defaultContainerModelUploadErrors,
+			{False..}
+		],
+		{}
+	];
+
+	(* Check if auto-upload of DefaultCoverModel is successful *)
+	resolvedDefaultCoverModelOption = Lookup[mapThreadResolvedOptions, DefaultCoverModel];
+
+	invalidDefaultCoverModelOptions = If[MemberQ[defaultCoverModelUploadErrors, True] && messageQ && strict,
+		Message[Error::UnableToCreateModel, PickList[myListedInputs, myListedInputs], "DefaultCoverModel option", PickList[myListedInputs, defaultCoverModelUploadErrors]];
+		{DefaultCoverModel},
+		{}
+	];
+
+	invalidDefaultCoverModelTests = If[gatherTests,
+		Test["If a Type is supplied as DefaultCoverModel option, function must be able to create a new model of that type:",
+			defaultCoverModelUploadErrors,
+			{False..}
+		],
+		{}
+	];
+
+	(* Throw messages from RunOptionValidationTests here *)
+	(* Split the hold form of the message into message name and arguments. e.g. Hold[Error::RequiredOptions, 1, 2, 3] -> {Hold[Error::RequiredOptions], {1, 2, 3}} *)
+	splittedMessages = Replace[Flatten[allVOQMessages], HoldPattern[Hold[x_, y___]] :> {Hold[x], {y}}, 1];
+	(* group the error message by the message name *)
+	groupedMessages = GroupBy[splittedMessages, First];
+	(* Merge the messages with the same message name, and combine all arguements at the same position *)
+	mergedMessage = KeyValueMap[
+		Function[{messageName, allMessages},
+			Join[
+				messageName,
+				Hold @@ (DeleteDuplicates /@ Transpose[allMessages[[All, 2]]])
+			]
+		],
+		groupedMessages
+	];
+	(* Throw all messages *)
+	If[messageQ,
+		Message @@@ mergedMessage
+	];
+
+	allFailingOptions = DeleteDuplicates[
+		Flatten[{
+			invalidTemplateOptions,
+			invalidImageURLOptions,
+			invalidImageFilePathOptions,
+			invalidDefaultContainerModelOptions,
+			invalidDefaultCoverModelOptions,
+			allVOQInvalidOptions
+		}]
+	];
+
+	invalidInputs = invalidProductModelInputs;
+
+	allTests = Cases[
+		Flatten[{
+			invalidTemplateTests,
+			invalidImageURLTests,
+			invalidImageFilePathTests,
+			invalidProductModelTests,
+			invalidDefaultContainerModelTests,
+			invalidDefaultCoverModelTests,
+			redundantURLTests,
+			allVOQTests
+		}],
+		TestP
 	];
 
 	(* Return the output. *)
-	outputOption /. {testsRule, resultRule, Preview -> Null}
+	<|
+		Result -> mapThreadResolvedOptions,
+		InvalidInputs -> invalidInputs,
+		InvalidOptions -> allFailingOptions,
+		Tests -> allTests
+	|>
 ];
 
+(* ::Subsubsection::Closed:: *)
+(*Main Packet constructor*)
+
+DefineOptions[generateUploadProductMainPackets, SharedOptions :> {generateDefaultUploadPackets}];
+
+generateUploadProductMainPackets[myType:TypeP[], myInputs:{(Null | URLP | ObjectP[Object[Product]])..}, myOptions_List, ops:OptionsPattern[]] := Module[
+	{
+		safeOps, appendToFieldsQ, objectPacket, optionsWithNewModels, modelAuxiliaryPackets,
+		mainPacket, cloudFileAuxiliaryPackets, generateDefaultUploadPacketsInvalidOptions,
+		kitComponents, updatedKitComponents, kitComponentsPackets
+	},
+
+	safeOps = SafeOptions[generateUploadProductMainPackets, ToList[ops]];
+	{appendToFieldsQ, objectPacket} = Lookup[safeOps, {Append, ExistingPacket}];
+
+	(* Basically, there are 3 fields that need special care: ProductModel, DefaultContainerModel, DefaultCoverModel *)
+	(* These fields need special care because we may auto-create new models for them *)
+	{optionsWithNewModels, modelAuxiliaryPackets} = Transpose[MapThread[
+		Function[{option, input},
+			Module[
+				{
+					productModel, productModelObject, productModelPacket, productObjectForModelCreation,
+					productName, modelCreationOption, correctedOptions, auxiliaryPackets, defaultContainerModel,
+					defaultContainerModelObject, defaultContainerModelPacket, defaultCoverModel,
+					defaultCoverModelObject, defaultCoverModelPacket, allKitContainers, kitComponentsFieldDefinition,
+					kitComponentsFieldWithoutKitProductsContainers, safeTotal, kitContainerCounts, kitComponentsProductContainersEntry,
+					fullKitComponentsFieldValue, kitQ
+				},
+
+				productName = Lookup[option, Name];
+
+				productObjectForModelCreation = If[MatchQ[input, ObjectP[Object[Product]]],
+					input,
+					If[NullQ[productName],
+						Null,
+						Join[Object[Product], Object[productName]]
+					]
+				];
+
+				modelCreationOption = {
+					Name -> productName,
+					ProductURL -> Lookup[option, ProductURL],
+					Product -> productObjectForModelCreation
+				};
+
+				(* correct the ProductModel *)
+				productModel = Lookup[option, ProductModel];
+
+				(* Call createProductModel to access the memoized object and packet *)
+				{productModelObject, productModelPacket} = If[MatchQ[productModel, TypeP[]],
+					createProductModel[productModel, modelCreationOption],
+					(* If we don't need to create new model, don't change the ProductModel option *)
+					{productModel, {}}
+				];
+
+				(* Do the same thing for DefaultContainerModel and DefaultCoverModel *)
+				defaultContainerModel = Lookup[option, DefaultContainerModel];
+
+				(* Call createProductModel to access the memoized object and packet *)
+				{defaultContainerModelObject, defaultContainerModelPacket} = If[MatchQ[defaultContainerModel, TypeP[]],
+					createContainerModel[defaultContainerModel, modelCreationOption],
+					(* If we don't need to create new model, don't change the DefaultContainerModel option *)
+					{defaultContainerModel, {}}
+				];
+
+				defaultCoverModel = Lookup[option, DefaultCoverModel];
+
+				(* Call createProductModel to access the memoized object and packet *)
+				{defaultCoverModelObject, defaultCoverModelPacket} = If[MatchQ[defaultCoverModel, TypeP[]],
+					createCoverModel[defaultCoverModel, modelCreationOption],
+					(* If we don't need to create new model, don't change the DefaultCoverModel option *)
+					{defaultCoverModel, {}}
+				];
+
+				kitComponents = Lookup[option, KitComponents];
+
+				(* Call executeUploadForKitComponents to upload new models in KitComponents. This function will return the input without any change if no new models are needed *)
+				{updatedKitComponents, kitComponentsPackets} = executeUploadForKitComponents[kitComponents, modelCreationOption];
+
+				(* Format the KitComponents field. In addition to changing the indexed multiple into named multiple, we also want to add entries for KitProductsContainers *)
+
+				(* Check if we actually has a kit or not *)
+				kitQ = TrueQ[ListQ[kitComponents] && Length[kitComponents] > 0];
+				(* If we have a kit, call formatFieldValue to construct the "normal" part *)
+				kitComponentsFieldDefinition = Lookup[Lookup[LookupTypeDefinition[Object[Product]], Fields], KitComponents];
+				kitComponentsFieldWithoutKitProductsContainers = If[kitQ,
+					First[formatFieldValue[Object[Product], KitComponents, updatedKitComponents, kitComponentsFieldDefinition]],
+					Null
+				];
+
+				(* Manually construct entries with backlink to KitProductsContainers field *)
+				allKitContainers = If[kitQ,
+					DeleteDuplicates[updatedKitComponents[[All, 3]]],
+					{}
+				];
+
+				(* Find count of each kit containers *)
+
+				(* small helper *)
+				safeTotal[list_List] := Replace[Total[DeleteCases[list, Null]], 0 -> Null];
+
+				kitContainerCounts = If[kitQ,
+					Map[
+						Function[{container},
+							safeTotal[Select[updatedKitComponents, MatchQ[#[[3]], container]&][[All, 1]]]
+						],
+						allKitContainers
+					],
+					{}
+				];
+
+				kitComponentsProductContainersEntry = If[kitQ,
+					MapThread[
+						<|
+							NumberOfItems -> #2,
+							ProductModel -> Link[#1, KitProductsContainers],
+							DefaultContainerModel -> Null,
+							Amount -> Null,
+							Position -> Null,
+							ContainerIndex -> Null,
+							DefaultCoverModel -> Null,
+							OpenContainer -> False
+						|>&,
+						{allKitContainers, kitContainerCounts}
+					],
+					Null
+				];
+
+				fullKitComponentsFieldValue = If[kitQ,
+					Join[kitComponentsFieldWithoutKitProductsContainers, kitComponentsProductContainersEntry],
+					kitComponents
+				];
+
+				(* Apply the options *)
+				correctedOptions = ReplaceRule[option,
+					{
+						ProductModel -> productModelObject,
+						DefaultContainerModel -> defaultContainerModelObject,
+						DefaultCoverModel -> defaultCoverModelObject,
+						KitComponents -> fullKitComponentsFieldValue,
+						Author -> $PersonID
+					}
+				];
+
+				auxiliaryPackets = Flatten[{productModelPacket, defaultContainerModelPacket, defaultCoverModelPacket, kitComponentsPackets}];
+
+				{correctedOptions, auxiliaryPackets}
+
+			]
+		],
+		{myOptions, myInputs}
+	]];
+
+	{mainPacket, cloudFileAuxiliaryPackets, generateDefaultUploadPacketsInvalidOptions} = generateDefaultUploadPackets[
+		Object[Product],
+		myInputs,
+		optionsWithNewModels,
+		Append -> True,
+		ExistingPacket -> Cases[objectPacket, PacketP[Object[Product]]]
+	];
+
+	{
+		mainPacket,
+		Flatten[{cloudFileAuxiliaryPackets, modelAuxiliaryPackets}],
+		generateDefaultUploadPacketsInvalidOptions
+	}
+
+];
 
 (* ::Subsubsection::Closed:: *)
 (*Public Function*)
 
 
-Error::FailedTestForProduct="The following tests have failed, resulting in an invalid product: `1`.";
+Error::UnableToCreateModel = "We were not able to automatically create a new `1` as the `2` for input `3`. Please try to create that model separately first.";
+Warning::RedundantProductURL = "Since you have already specified an URL as input, the ProductURL option will be ignored.";
 
 
-(* Overload for the case of no input arguments *)
-UploadProduct[myOptions:OptionsPattern[]]:=UploadProduct[Null, myOptions];
+(* Overload for the case of incomplete input arguments *)
+$AllowedProductModels = {
+	Model[Sample],
+	Model[Container],
+	Model[Sensor],
+	Model[Part],
+	Model[Plumbing],
+	Model[Wiring],
+	Model[Item]
+};
 
-UploadProduct[myInput_, myOptions:OptionsPattern[UploadProduct]]:=Module[
-	{listedOptions, safeOptions, safeOptionTests, validLengths, validLengthTests, outputSpecification, output,
-		gatherTests, voqTests, resolvedOptionsResult, optionsWithValidAmount, passedQ, resolvedOptions, optionsRule, previewRule, testsRule,
-		resultRule, optionsWithAuthors, optionsWithType, optionsWithoutNulls, linkFields, optionsWithLinkFields,
-		relationFields, relationFieldToTwoWayField, optionsWithTwoWayLinkFields, multipleFields, optionsWithMultiples, optionsWithDeprecated,
-		optionswithStructureImage, functionSpecificOptions, optionsWithoutFunctionOptions, finalizedPacket, templateOp,
-		templateObj, templatedSafeOps, optionsWithTemplate, optionsWithKitComponents, kitComponents, failedTestDescriptions, savedMessageList,
-		objectsToDownload, downloadedStuff, fastAssoc, cache, packetsToUpload
-	},
+(* no URL singleton overload *)
+UploadProduct[myOptions:OptionsPattern[]] := Module[
+	{listedOps},
+	listedOps = ToList[myOptions];
 
-	(* Make sure we are working with a list of options *)
-	listedOptions=ToList[myOptions];
-
-	(* Determine the requested return value from the function *)
-	outputSpecification=If[MatchQ[Lookup[listedOptions, Output], Missing["KeyAbsent", Output]],
-		Result,
-		Lookup[listedOptions, Output]
-	];
-	output=ToList[outputSpecification];
-
-	(* Determine if we should keep a running list of tests *)
-	gatherTests=MemberQ[output, Tests];
-
-	(* Call SafeOptions to make sure all options match pattern *)
-	{safeOptions, safeOptionTests}=If[gatherTests,
-		SafeOptions[UploadProduct, listedOptions, Output -> {Result, Tests}, AutoCorrect -> False],
-		{SafeOptions[UploadProduct, listedOptions, AutoCorrect -> False], Null}
-	];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths, validLengthTests}=Switch[myInput,
-		(* UploadProduct[myThermoFisherURL] *)
-		ThermoFisherURLP,
-		ValidInputLengthsQ[UploadProduct, {myInput}, listedOptions, 1, Output -> {Result, Tests}],
-
-		(* UploadProduct[myMilliporeSigmaURL] *)
-		MilliporeSigmaURLP,
-		ValidInputLengthsQ[UploadProduct, {myInput}, listedOptions, 2, Output -> {Result, Tests}],
-
-		(* UploadProduct[myFisherScientificURL] *)
-		FisherScientificURLP,
-		ValidInputLengthsQ[UploadProduct, {myInput}, listedOptions, 3, Output -> {Result, Tests}],
-
-		(* UploadProduct[] *)
-		Null,
-		ValidInputLengthsQ[UploadProduct, {}, listedOptions, 4, Output -> {Result, Tests}]
-	];
-
-	(* If the specified options do not match their patterns return $Failed *)
-	If[MatchQ[safeOptions, $Failed],
-		Return[Lookup[listedOptions, Output] /. {
-			Result -> $Failed,
-			Tests -> safeOptionTests,
-			Options -> $Failed,
-			Preview -> Null
-		}]
-	];
-
-	(* If option lengths are invalid return $Failed *)
-	If[!validLengths,
-		Return[outputSpecification /. {
-			Result -> $Failed,
-			Tests -> Join[safeOptionTests, validLengthTests],
-			Options -> $Failed,
-			Preview -> Null
-		}]
-	];
-
-	(* Store the value from the Template option *)
-	templateOp=Lookup[safeOptions, Template];
-
-	(* Gather information on the provided Objects *)
-	templateObj=Download[
-		templateOp
-	];
-
-	(* Replaces any rules that were not specified by the user with a value from the template *)
-	templatedSafeOps=resolveTemplateOptions[
-		UploadProduct,
-		templateObj,
-		listedOptions,
-		safeOptions,
-		Exclude -> {
-			Name,
-			Synonyms,
-			ImageFile,
-			ProductListing,
-			CatalogNumber,
-			ManufacturerCatalogNumber,
-			ProductURL,
-			KitComponents
-		}
-	];
-
-	(* Do a big download here on all Objects in the options *)
-	objectsToDownload = Cases[Flatten[Values[templatedSafeOps]], ObjectP[]];
-
-	downloadedStuff = Download[objectsToDownload, Packet[All]];
-
-	cache = Lookup[safeOptions, Cache, {}];
-
-	fastAssoc = Experiment`Private`makeFastAssocFromCache[
-		Experiment`Private`FlattenCachePackets[{cache, downloadedStuff}]
-	];
-
-	(* Call resolveUploadCompanySupplierOptions *)
-	(* Check will return $Failed if InvalidInput/InvalidOption is thrown, indicating we cannot actually return the standard result *)
-	resolvedOptionsResult=Check[
-		resolvedOptions=resolveUploadProductOptions[myInput, Null, templatedSafeOps, listedOptions, fastAssoc],
-		$Failed,
-		{Error::InvalidInput, Error::InvalidOption}
-	];
-
-	(* generate the beginning of the packet *)
-
-	(* Add unit to Amount if we are given integer directly *)
-	optionsWithValidAmount = ReplaceRule[
-		resolvedOptions,
-		Amount -> If[MatchQ[Lookup[resolvedOptions,Amount,Null],_Integer],
-			Lookup[resolvedOptions,Amount,Null]*Unit,
-			Lookup[resolvedOptions,Amount,Null]
-		]
-	];
-
-	(* Add Author to be $PersonID *)
-	optionsWithAuthors = Join[optionsWithValidAmount, {Author -> $PersonID}];
-
-	(* Add Type to be Object[Product] *)
-	optionsWithType = Append[optionsWithAuthors, Type -> Object[Product]];
-
-	(* Add Template option value *)
-	optionsWithTemplate = Append[optionsWithType, Template -> Lookup[resolvedOptions, Template]];
-
-	(* Remove any options that are Null. *)
-	optionsWithoutNulls = (If[SameQ[#[[2]], Null], Nothing, #]&) /@ optionsWithType;
-
-	(* For fields that are links, wrap a link head around the value. *)
-	linkFields = {Author, Site};
-	optionsWithLinkFields = Map[
-		If[MemberQ[linkFields, #[[1]]],
-			#[[1]] -> Link[#[[2]]],
-			#
-		]&,
-		optionsWithoutNulls
-	];
-
-	(* For fields that are links and have relations, make a two-way link. *)
-	relationFields = {ProductModel, Supplier, Manufacturer, DefaultContainerModel, Orders, Template};
-	relationFieldToTwoWayField = <|
-		ProductModel -> Products,
-		Supplier -> Products,
-		Manufacturer -> Products,
-		DefaultContainerModel -> ProductsContained,
-		Orders -> Products,
-		Template -> ProductsTemplated
-	|>;
-	optionsWithTwoWayLinkFields = Map[
-		If[MemberQ[relationFields, #[[1]]],
-			#[[1]] -> Link[#[[2]], relationFieldToTwoWayField[#[[1]]]],
-			#
-		]&,
-		optionsWithLinkFields
-	];
-
-	(* pull out the KitComponents right now *)
-	kitComponents = Lookup[optionsWithTwoWayLinkFields, KitComponents, {}];
-
-	(* change the options explicitly rather than the bonkers stuff above to have the KitComponents option populate the field properly *)
-	optionsWithKitComponents = ReplaceRule[
-		optionsWithTwoWayLinkFields,
-		KitComponents -> Map[
-			<|
-				NumberOfItems -> #[[1]],
-				ProductModel -> Link[#[[2]], KitProducts],
-				DefaultContainerModel -> Link[#[[3]]],
-				Amount -> If[MatchQ[#[[4]],_Integer],#[[4]]*Unit,#[[4]]],
-				Position -> #[[5]],
-				ContainerIndex -> #[[6]],
-				DefaultCoverModel -> Link[#[[7]]],
-				OpenContainer -> #[[8]]
-			|>&,
-			(* don't want to map over a Null since this is a multiple field and it has to be {}, not Null *)
-			If[NullQ[kitComponents], {}, kitComponents]
-		]
-	];
-
-	(* Put Append around any keys that are a multiple field. *)
-	multipleFields = {Synonyms, KitComponents};
-	optionsWithMultiples = (If[MemberQ[multipleFields, #[[1]]], Append[#[[1]]] -> #[[2]], #]&) /@ optionsWithKitComponents;
-
-	(* Download the Structure image separately to make sure it has a valid image extension. Some pages serve it as a .cgi *)
-	(* Import the image before uploading it. This will auUploadProductObjecttomatically make the file extension the correct format. *)
-	(* TODO for now this may upload image file with invalid format, but later once the next release happens, we'll change this to the improved downloadAndValidateURL function *)
-	optionswithStructureImage = Map[
-		(
-			If[SameQ[ImageFile, #[[1]]],
-				With[{insertMe = #[[2]]}, #[[1]] -> Link[UploadCloudFile[Import[insertMe]]]],
-				#
-			]&
-		),
-		optionsWithMultiples
-	];
-
-	(* Add Deprecated\[Rule]False *)
-	optionsWithDeprecated = Append[optionswithStructureImage, Deprecated -> False];
-
-	(* Remove function specific options. *)
-	functionSpecificOptions = {Upload, Output, Cache, Strict};
-	optionsWithoutFunctionOptions = (If[MemberQ[functionSpecificOptions, #[[1]]], Nothing, #]&) /@ optionsWithDeprecated;
-
-	(* Convert to an Association (packets are associations) *)
-	finalizedPacket = Association @@ optionsWithoutFunctionOptions;
-
-	(* Clear $MessageList so that we can dump the error messages for the next line -- this is necessary because the errors for bad options are being thrown in VOQ, which we need to harvest and convert to options here. MM will record all thrown message for an evaluation in $MessageList. We are dumping all existing messages up to this point, so that we can hijack MM's internal message setup to return a nice list of messages thrown in the VOQ below *)
-	savedMessageList = $MessageList;
-	Unprotect[$MessageList];
-	$MessageList = {};
-	Protect[$MessageList];
-
-	(* need to add Notebook to the finalized packets because otherwise we'll get weird errors about $Notebook missing *)
-	(* although only append $Notebook when it is actually an object, otherwise just let raw Upload handles it *)
-	{{passedQ, failedTestDescriptions}, voqTests} =If[gatherTests,
-		ValidObjectQMessages[
-			myInput,
-			If[MatchQ[$Notebook, ObjectP[Object[LaboratoryNotebook]]],
-				Append[finalizedPacket,
-					Notebook->Link[$Notebook]
-				],
-				finalizedPacket
-			],
-			ToList[myOptions],
-			Output -> {Result, Tests}
-		],
-		{
-			ValidObjectQMessages[
-				myInput,
-				If[MatchQ[$Notebook, ObjectP[Object[LaboratoryNotebook]]],
-					Append[finalizedPacket,
-						Notebook->Link[$Notebook]
-					],
-					finalizedPacket
-				],
-				ToList[myOptions],
-				Output -> Result
-			],
-			{}
-		}
-	];
-
-	(* Throw an error if we have any failed tests *)
-	Which[
-
-		(* If VOQ threw an error because of bad options *)
-		!passedQ && !gatherTests && MatchQ[$MessageList, Except[{}]], Module[{errorNames, invalidOptions},
-
-		(* Get the error messages *)
-		errorNames=ToString /@ Cases[$MessageList, HoldForm[MessageName[Error | Warning, _String]]];
-
-		(* Lookup the error options *)
-		invalidOptions=Flatten[Lookup[ValidObjectQ`Private`errorToOptionMap[Object[Product]], errorNames, Nothing]];
-
-		(* Throw a message with our error *)
-		Message[Error::InvalidOption, invalidOptions]
-	],
-
-		(* If VOQ did not throw an error but we are about to return Null because we failed a VOQ test *)
-		!passedQ && !gatherTests && MatchQ[failedTestDescriptions, Except[{}]], Message[Error::FailedTestForProduct, StringRiffle[StringReplace[failedTestDescriptions, ":" -> ""], {"\"", "\", \"", "\""}]]
-	];
-
-	(* Add any messages we had from before to $MessageList *)
-	Unprotect[$MessageList];
-	$MessageList=Join[savedMessageList, $MessageList];
-	Protect[$MessageList];
-
-	(* --- Generate rules for each possible Output value ---  *)
-
-	(* Prepare the Options result if we were asked to do so *)
-	optionsRule=Options -> If[MemberQ[output, Options],
-		RemoveHiddenOptions[UploadProduct, resolvedOptions],
-		Null
-	];
-
-	(* Prepare the Preview result if we were asked to do so *)
-	(* There is no preview for this function. *)
-	previewRule=Preview -> Null;
-
-	(* Prepare the Test result if we were asked to do so *)
-	testsRule=Tests -> If[MemberQ[output, Tests],
-		(* Join all existing tests generated by helper functions with any additional tests *)
-		Flatten[Join[safeOptionTests, validLengthTests, voqTests]],
-		Null
-	];
-
-	(* Prepare the standard result if we were asked for it and we can safely do so *)
-	resultRule=Result -> If[MemberQ[output, Result] && !MatchQ[resolvedOptionsResult, $Failed] && passedQ,
-
-		(* Check the Upload option. If Upload\[Rule]True, upload the object. If Upload\[Rule]False, return the packet. *)
-		If[Lookup[resolvedOptions, Upload],
-			(* Note: Upload will change our RuleDelayeds into Rules. *)
-			Upload[finalizedPacket],
-			(* Otherwise, leave the RuleDelayed in place such that we are not unnecessarily uploading Cloud Files. *)
-			finalizedPacket
-		],
-		Null
-	];
-	outputSpecification /. {previewRule, optionsRule, testsRule, resultRule}
+	UploadProduct[Null,
+		ReplaceRule[listedOps, {UnresolvedInputs -> {}}]
+	]
 ];
 
+(* Main overload is defined via installDefaultUploadFunction *)
+installDefaultUploadFunction[
+	UploadProduct,
+	Object[Product],
+	InstallNameOverload -> True,
+	InstallObjectOverload -> True,
+	OptionResolver -> resolveUploadProductOptions,
+	DocumentationDefinitionNumber -> 4,
+	PacketCreationFunction -> generateUploadProductMainPackets,
+	InputPattern :> Alternatives[
+		ObjectP[Object[Product]],
+		URLP,
+		Null
+	],
+	RunOptionValidationTests -> False
+];
 
 (* ::Subsubsection::Closed:: *)
 (*Valid Function*)
 
+(* Single input overload *)
+installDefaultValidQFunction[UploadProduct, Object[Product]];
 
-DefineOptions[ValidUploadProductQ,
-	Options :> {
-		VerboseOption,
-		OutputFormatOption
-	},
-	SharedOptions :> {UploadProduct}
-];
-
+(* Zero input overload *)
 
 ValidUploadProductQ[myOptions:OptionsPattern[]]:=ValidUploadProductQ[Null, myOptions];
-
-ValidUploadProductQ[myInput_, myOptions:OptionsPattern[]]:=Module[
-	{preparedOptions, functionTests, initialTestDescription, allTests, verbose, outputFormat},
-
-	(* Remove the Verbose option and add Output->Tests to get the options ready for <Function> *)
-	preparedOptions=Normal@KeyDrop[Append[ToList[myOptions], Output -> Tests], {Verbose, OutputFormat}];
-
-	(* Call the function to get a list of tests *)
-	functionTests=UploadProduct[myInput, preparedOptions];
-
-	initialTestDescription="All provided options and inputs match their provided patterns (no further testing can proceed if this test fails):";
-
-	allTests=If[MatchQ[functionTests, $Failed],
-		{Test[initialTestDescription, False, True]},
-
-		Module[{initialTest},
-			initialTest=Test[initialTestDescription, True, True];
-
-			Join[{initialTest}, functionTests]
-		]
-	];
-
-	(* determine the Verbose and OutputFormat options; quiet the OptionValue::nodef message in case someone just passed nonsense *)
-	{verbose, outputFormat}=OptionDefault[OptionValue[{Verbose, OutputFormat}]];
-
-	(* Run the tests as requested *)
-	RunUnitTest[<|"ValidUploadProductQ" -> allTests|>, OutputFormat -> outputFormat, Verbose -> verbose]["ValidUploadProductQ"]
-];
 
 
 (* ::Subsubsection::Closed:: *)
 (*Option Function*)
 
+(* Single input overload *)
+installDefaultOptionsFunction[UploadProduct, Object[Product]];
 
-DefineOptions[UploadProductOptions,
-	Options :> {
-		{
-			OptionName -> OutputFormat,
-			Default -> Table,
-			AllowNull -> False,
-			Widget -> Widget[Type -> Enumeration, Pattern :> (Table | List)],
-			Description -> "Determines whether the function returns a table or a list of the options.",
-			Category -> "Protocol"
-		}
-	},
-	SharedOptions :> {UploadProduct}
-];
-
-
+(* zero input overload *)
 UploadProductOptions[myOptions:OptionsPattern[]]:=UploadProductOptions[Null, myOptions];
 
-UploadProductOptions[myInput:_, myOptions:OptionsPattern[]]:=Module[
-	{listedOps, outOps, options},
+(* ::Subsubsection::Closed:: *)
+(*Verification Function*)
 
-	(* get the options as a list *)
-	listedOps=ToList[myOptions];
-
-	outOps=DeleteCases[listedOps, (OutputFormat -> _) | (Output -> _)];
-
-	options=UploadProduct[myInput, Append[outOps, Output -> Options]];
-
-	(* Return the option as a list or table *)
-	If[MatchQ[Lookup[listedOps, OutputFormat, Table], Table],
-		LegacySLL`Private`optionsToTable[options, UploadProduct],
-		options
-	]
+installDefaultVerificationFunction[UploadProduct,
+	"product",
+	Object[Product],
+	OptionCategoryChange -> {
+		<| Options -> ProductURL, Category -> "Product Specifications" |>
+	}
 ];
 
+(* ::Subsubsection::Closed:: *)
+(*helper*)
+resolveCompanies[myCompanyList:{(ObjectP[Object[Company]] | _String | Null | Automatic)..}, myCompanyType:Alternatives[Supplier, Service, Shipper]] := Module[
+	{allSearchClauses, validSearchClauseQ, validSearchClauses, searchResults, uniqueSupplierFromSearch, overallSupplier, type},
 
+	(* Construct the search clauses *)
+	allSearchClauses = Map[
+		Function[{supplier},
+			Module[{stringToSearch, searchClause},
+
+				(* We'll do a Search of StringContainsQ[field, string]. Construct the string for search now *)
+				stringToSearch = Switch[supplier,
+					(* If the user entered a webpage url, clean it up using following rules *)
+					URLP,
+					Which[
+						(* If the url contains 'www.', remove the http(s):\\ before that, also remove anything after / or \ *)
+						StringQ[First[StringCases[supplier, "www." ~~ Shortest[___] ~~ ("/" | "\\" | EndOfString)]]],
+							(* e.g., http://www.amazon.com/us/en becomes www.amazon.com *)
+							StringDelete[First[StringCases[supplier, "www." ~~ Shortest[___] ~~ ("/" | "\\" | EndOfString)]], ("/" | "\\")],
+						(* If the url does not contain 'www.' but contain "/" or '\", keep everything before "/" or "'"\", remove whatever after that *)
+						StringQ[First[StringCases[supplier, Shortest[___] ~~ ("/" | "\\" | EndOfString)]]],
+							(* e.g., amazon.com/us/en/product123456 becomes amazon.com *)
+							StringDelete[First[StringCases[supplier, Shortest[___] ~~ ("/" | "\\" | EndOfString)]], ("/" | "\\")],
+						(* Finally if neither case applies, don't do any modification *)
+						True,
+							supplier
+					],
+					(* If the user entered a Name, split strings apart by space and hyphens *)
+					_String,
+					StringSplit[supplier, (" " | "-")],
+					_,
+					Null
+				];
+
+				searchClause = Switch[stringToSearch,
+					(* If the stringToSearch is a single string, user input must be URL *)
+					_String,
+					(* Suppress the error, because StringContainsQ will try to evaluate here *)
+					Quiet[StringContainsQ[Website, stringToSearch, IgnoreCase -> True]],
+					(* If the stringToSearch is a list of strings, user input must be name *)
+					{_String..},
+					Quiet[And @@ (StringContainsQ[Name, #, IgnoreCase -> True]& /@ stringToSearch)],
+					(* All other case don't search *)
+					_,
+					Null
+				];
+
+				(* Output searchClause *)
+				searchClause
+			]
+		],
+		myCompanyList
+	];
+
+	type = Object[Company, myCompanyType];
+
+	(* Record in a list of Boolean whether we have a valid search clause *)
+	validSearchClauseQ = Not[NullQ[#]]& /@ allSearchClauses;
+
+	validSearchClauses = PickList[allSearchClauses, validSearchClauseQ];
+
+	(* Do the search *)
+	searchResults = If[Length[validSearchClauses] > 0,
+		Search[ConstantArray[{type}, Length[validSearchClauses]], Evaluate[validSearchClauses]],
+		{}
+	];
+
+	(* extract one unique supplier per search *)
+	uniqueSupplierFromSearch = If[Length[searchResults] > 0,
+		(* For each search clause, if we found one and only one supplier, use that, otherwise use the input *)
+		MapThread[
+			Function[{searchRes, input},
+				If[Length[searchRes] == 1, First[searchRes], input]
+			],
+			{searchResults, PickList[myCompanyList, validSearchClauseQ]}
+		],
+		{}
+	];
+
+	(* Combine the Supplier from search and those which don't need search *)
+	overallSupplier = RiffleAlternatives[uniqueSupplierFromSearch, PickList[myCompanyList, validSearchClauseQ, False],validSearchClauseQ]
+
+];
 
 
 (* ::Subsection::Closed:: *)
@@ -1901,7 +3171,28 @@ DefineOptions[UploadInventory,
 					Pattern :> ObjectP[{Model[Sample], Model[Container], Model[Part], Model[Item], Model[Plumbing], Model[Wiring], Model[Sensor]}],
 					PreparedSample->False,
 					PreparedContainer->False
-				]
+				],
+				Category -> "Organizational Information"
+			},
+			{
+				OptionName -> PreferredProduct,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"Specify if using current Product input:" -> Widget[
+						Type -> Enumeration,
+						Pattern :> BooleanP
+					],
+					"Specify which object to use:" -> Widget[
+						Type -> Object,
+						Pattern :> ObjectP[{Object[Product], Model[Sample, StockSolution], Model[Sample, Matrix], Model[Sample, Media]}],
+						PreparedSample -> False,
+						PreparedContainer -> False
+					]
+				],
+				Description -> "When creating a new inventory object, indicates if the input product will be used as the default product when placing orders. For existing objects, specifies which product will be used as the default.",
+				ResolutionDescription -> "Automatically set to True when creating new Inventory object, and set to the current field value when modifying existing object.",
+				Category -> "Organizational Information"
 			},
 			{
 				OptionName -> Name,
@@ -2010,70 +3301,6 @@ DefineOptions[UploadInventory,
 						Pattern:>Alternatives[All]
 					]
 				]
-			},
-			(* Note: These options will be removed when UploadInventory is reviewed as part of the Sample Intake updates *)
-			{
-				OptionName -> Expires,
-				Default -> Automatic,
-				Description -> "Indicates if the samples this inventory keeps in stock expire after the time specified in ShelfLife/UnsealedShelfLife.",
-				ResolutionDescription -> "Automatically set to True if ShelfLife or UnsealedShelfLife are populated or if Expires -> True for the specified ModelStocked.  Automatically set to False otherwise.",
-				AllowNull -> True,
-				Category -> "Expiration",
-				Widget -> Widget[
-					Type -> Enumeration,
-					Pattern :> BooleanP
-				]
-			},
-			{
-				OptionName -> ShelfLife,
-				Default -> Automatic,
-				Description -> "The length of time after the DateCreated of the sample this inventory keeps in stock is recommended for use before it should be discarded.",
-				ResolutionDescription -> "Automatically set to the ShelfLife of the ModelStocked.",
-				AllowNull -> True,
-				Category -> "Expiration",
-				Widget -> Widget[
-					Type -> Quantity,
-					Pattern :> GreaterP[0 Day],
-					Units -> Day
-				]
-			},
-			{
-				OptionName -> UnsealedShelfLife,
-				Default -> Automatic,
-				Description -> "The length of time after the DateUnsealed of the sample this inventory keeps in stock is recommended for use before it should be discarded.",
-				ResolutionDescription -> "Automatically set to the UnsealedShelfLife of the ModelStocked.",
-				AllowNull -> True,
-				Category -> "Expiration",
-				Widget -> Widget[
-					Type -> Quantity,
-					Pattern :> GreaterP[0 Day],
-					Units -> Day
-				]
-			},
-			{
-				OptionName -> MaxNumberOfUses,
-				Default -> Automatic,
-				Description -> "The number of times the ModelStocked can be used before needing to be discarded and/or replaced.",
-				ResolutionDescription -> "Automatically set to the MaxNumberOfUses of ModelStocked if that field exists, or Null otherwise.",
-				AllowNull -> True,
-				Category -> "Expiration",
-				Widget -> Widget[
-					Type -> Number,
-					Pattern :> GreaterP[0., 1.]
-				]
-			},
-			{
-				OptionName -> MaxNumberOfHours,
-				Default -> Automatic,
-				Description -> "The number of hours the ModelStocked can be used before needing to be discarded and/or replaced.",
-				ResolutionDescription -> "Automatically set to the MaxNumberOfHours of ModelStocked if that field exists, or Null otherwise.",
-				AllowNull -> True,
-				Category -> "Expiration",
-				Widget -> Widget[
-					Type -> Quantity,
-					Pattern :> GreaterP[0 Hour],
-					Units -> Hour
-				]
 			}
 		],
 		UploadOption,
@@ -2095,11 +3322,8 @@ Error::IndividualSiteRequired="For the following input(s) `1`, multiple sites we
 Error::LowReorderAmount = "ReorderAmount cannot be less than ReorderThreshold. Please change ReorderAmount (`1`) to values greater than or equal to ReorderThreshold (`2`) for input(s) `3`.";
 Error::AuthorNotFinancerMember = "`1`";
 Error::InventorySiteCannotBeChanged="For the following input(s) `1`, the Site at which this inventory will be stocked is requested to be changed to `2`. Site changes are not permitted for existing inventories - please create a new inventory with the same parameters using UploadInventory.";
-
-(* Follow messages will be removed with Sample Intake mods *)
-Error::ExpirationDateMismatch="For the following input(s) `1`, the Expires, ShelfLife, and UnsealedShelfLife options are incompatible.  If Expires is set to True, then at least one of ShelfLife and UnsealedShelfLife must be specified.  If set to False, both must not be specified.  Please adjust these options, or allow them to be set automatically.";
-Error::MaxNumberOfUsesInvalid="For the following input(s) `1`, the MaxNumberOfUses option was specified.  However, if creating or editing an inventory object for a stock solution, or if creating or editing one for a product whose ModelStocked lacks the MaxNumberOfUses field, then this option must not be specified.  Please set it to Null, or allow it to be set automatically.";
-Error::MaxNumberOfHoursInvalid="For the following input(s) `1`, the MaxNumberOfUses option was specified.  However, if creating or editing an inventory object for a stock solution, or if creating or editing one for a product whose ModelStocked lacks the MaxNumberOfHours field, then this option must not be specified.  Please set it to Null, or allow it to be set automatically.";
+Error::InvalidPreferredProduct = "For the following input(s) `1` the PreferredProduct option does not match with the input. When creating new Object[Inventory] only Booleans are allowed, while when modifying existing Object[Inventory] only objects are allowed. Please leave the option as Automatic, or change accordingly.";
+Error::InvalidPreferredProductObject = "For the following input(s) `1` the PreferredProduct option is set `2`, which is not one of the StockedInventory field values. This is not allowed when modifying existing Object[Inventory]. Please leave the option as Automatic, or change it to one of the current StockedInventory field value of the inventory object(s).";
 
 
 (* empty list overload; always return {}*)
@@ -2240,6 +3464,7 @@ UploadInventory[myExistingInventories:{ObjectP[Object[Inventory]]..}, myOptions:
 				safeFieldUpdate[options, Name -> Lookup[options, Name]],
 				safeFieldUpdate[options, Status -> Lookup[options, Status]],
 				safeFieldUpdate[options, Site -> Link[Lookup[options, Site]]],
+				safeFieldUpdate[options, PreferredProduct -> Link[Lookup[options, PreferredProduct]]],
 				safeFieldUpdate[options, StockingMethod -> Lookup[options, StockingMethod]],
 				safeFieldUpdate[options, ReorderThreshold,
 					{
@@ -2252,12 +3477,7 @@ UploadInventory[myExistingInventories:{ObjectP[Object[Inventory]]..}, myOptions:
 						ReorderAmount -> Replace[Lookup[options, ReorderAmount], x_Integer :> x * Unit, {0}],
 						Append[ReorderAmountLog] -> {Now, Replace[Lookup[options, ReorderAmount], x_Integer :> x * Unit, {0}]}
 					}
-				],
-				safeFieldUpdate[options, Expires -> Lookup[options, Expires]],
-				safeFieldUpdate[options, ShelfLife -> Lookup[options, ShelfLife]],
-				safeFieldUpdate[options, UnsealedShelfLife -> Lookup[options, UnsealedShelfLife]],
-				safeFieldUpdate[options, MaxNumberOfUses -> Lookup[options, MaxNumberOfUses]],
-				safeFieldUpdate[options, MaxNumberOfHours -> Lookup[options, MaxNumberOfHours]]
+				]
 			|>
 		],
 		{myExistingInventories, filteredMapThreadFriendlyOptions}
@@ -2417,6 +3637,7 @@ UploadInventory[myProductsOrModels:{ObjectP[{Model[Sample, StockSolution], Model
 					Author -> Link[$PersonID],
 					Site -> Link[#1],
 					StockingMethod -> Lookup[options, StockingMethod],
+					PreferredProduct -> Link[Lookup[options, PreferredProduct]],
 					ReorderThreshold -> Replace[Lookup[options, ReorderThreshold], x_Integer :> x * Unit, {0}],
 					Append[ReorderThresholdLog] -> {Now, Replace[Lookup[options, ReorderThreshold], x_Integer :> x * Unit, {0}]},
 					ReorderAmount -> Replace[Lookup[options, ReorderAmount], x_Integer :> x * Unit, {0}],
@@ -2442,11 +3663,6 @@ UploadInventory[myProductsOrModels:{ObjectP[{Model[Sample, StockSolution], Model
 						VolumeP, {Now, 0 Milliliter},
 						_, {Now, 0 Unit}
 					],
-					Expires -> Lookup[options, Expires],
-					ShelfLife -> Lookup[options, ShelfLife],
-					UnsealedShelfLife -> Lookup[options, UnsealedShelfLife],
-					MaxNumberOfUses -> Lookup[options, MaxNumberOfUses],
-					MaxNumberOfHours -> Lookup[options, MaxNumberOfHours],
 					Name -> Lookup[options, Name]<>" "<>#2
 				|>&,
 				{sites, siteNames}
@@ -2506,10 +3722,7 @@ resolveUploadInventoryOptions[
 		resolvedStatus, resolvedSite, resolvedStockingMethod, resolvedReorderThreshold, resolvedReorderAmount,
 		existingInventoryPossibleModelPackets, existingInventoryProdPackets, modelStockedNotAllowedQs, invalidReorderAmountTests,
 		stockingMethodInvalidQs, stockingMethodInvalidThresholdQs, reorderStateMismatchQs, reorderStateMismatchOptions, types, productFinancerPackets,
-		maxNumUsesInvalidOptions, maxNumUsesInvalidTests, reorderStateMismatchTests, expiresShelfLifeMismatchOptions,
-		expiresShelfLifeMismatchTests, expiresShelfLifeMismatchQs, resolvedExpires, resolvedShelfLife, authorTests,
-		resolvedUnsealedShelfLife, resolvedMaxNumberOfUses, resolvedMaxNumberOfHours, maxNumHoursInvalidOptions,
-		maxNumHoursInvalidQs, maxNumUsesInvalidQs, inputsToUse, gatherTests, messages, maxNumHoursInvalidTests,
+		reorderStateMismatchTests, authorTests, inputsToUse, gatherTests, messages,
 		modelStockedNotNullInvalidOptions, modelStockedNotNullInvalidTests, modelStockedNotAllowedOptions, personIDNotebooks,
 		modelStockedNotAllowedTests, stockingMethodInvalidOptions, stockingMethodInvalidTests, cache, resolvedNotebook,
 		potentialFutureObjs, nameAlreadyExistsQs, productModelDeprecatedQ, productModelDeprecatedInputs, productModelDeprecatedTests,
@@ -2517,7 +3730,9 @@ resolveUploadInventoryOptions[
 		resolvedName, conflictingNameQs, productToSiteLookup, inventoryToSiteLookup, userSitesForProducts, userSitesForInventories,
 		noSiteQs, siteChangeQs, invalidSiteQs, existingInventoryToAllQs, noSiteTests, invalidSiteTests, reorderAmountTests,
 		badAllSiteTests, noSiteOptions, invalidSiteOptions, badAllSiteOptions,allowedNotebooksForProducts, allowedMembersForProducts,
-		lowReorderAmountQs, reorderAmountOptions, invalidSiteChangeOptions, reorderAmountChangeQs, reorderAmountModificationTests
+		lowReorderAmountQs, reorderAmountOptions, invalidSiteChangeOptions, reorderAmountChangeQs, reorderAmountModificationTests,
+		resolvedPreferredProduct, preferredProductInvalidQs, invalidBooleanPreferredProductOptions, invalidBooleanPreferredProductTests,
+		preferredProductInvalidObjectQs, preferredProductInvalidObjectOptions, preferredProductInvalidObjectTests
 	},
 
 	(* -------------------- *)
@@ -2559,7 +3774,7 @@ resolveUploadInventoryOptions[
 				Packet[Notebook[Financers][{ExperimentSites, NotebooksFinanced, Members}]]
 			},
 			{
-				Packet[StockedInventory, Status, Site, Notebook, StockingMethod, ReorderThreshold, ReorderAmount, ModelStocked, Expires, ShelfLife, UnsealedShelfLife, MaxNumberOfUses, MaxNumberOfHours, Name],
+				Packet[StockedInventory, Status, Site, Notebook, StockingMethod, ReorderThreshold, ReorderAmount, ModelStocked, Expires, ShelfLife, UnsealedShelfLife, MaxNumberOfUses, MaxNumberOfHours, Name, PreferredProduct],
 				Packet[StockedInventory[{ProductModel, KitComponents, State, Expires, ShelfLife, UnsealedShelfLife, CountPerSample, Amount, TotalVolume, NumberOfItems}]],
 				Notebook[Financers][ExperimentSites][Object],
 				Packet[StockedInventory[ProductModel][{State, Tablet, Expires, ShelfLife, UnsealedShelfLife, MaxNumberOfUses, MaxNumberOfHours}]],
@@ -2794,38 +4009,32 @@ resolveUploadInventoryOptions[
 		resolvedStockingMethod,
 		resolvedReorderThreshold,
 		resolvedReorderAmount,
-		resolvedExpires,
-		resolvedShelfLife,
-		resolvedUnsealedShelfLife,
-		resolvedMaxNumberOfUses,
-		resolvedMaxNumberOfHours,
+		resolvedPreferredProduct,
 		modelStockedNotNullInvalidQs,
 		modelStockedNotAllowedQs,
 		stockingMethodInvalidQs,
 		stockingMethodInvalidThresholdQs,
 		reorderStateMismatchQs,
 		lowReorderAmountQs,
-		expiresShelfLifeMismatchQs,
-		maxNumUsesInvalidQs,
-		maxNumHoursInvalidQs,
 		resolvedState,
 		resolvedName,
 		noSiteQs,
 		siteChangeQs,
 		invalidSiteQs,
 		existingInventoryToAllQs,
-		reorderAmountChangeQs
+		reorderAmountChangeQs,
+		preferredProductInvalidQs,
+		preferredProductInvalidObjectQs
 	}=Transpose[MapThread[
 		Function[{prodOrModel, existingInventory, options, existingInventoryProdPacketsPerInventory},
 			Module[
 				{specifiedModelStocked, modelStocked, modelStockedNotNullInvalidQ, modelStockedPacket, specifiedStatus, status,
 					specifiedSite, site, specifiedStockingMethod, specifiedReorderThreshold, specifiedReorderAmount, stockingMethod,
-					reorderThreshold, reorderAmount, state, allowedModelsStocked, modelStockedNotAllowedQ, stockingMethodInvalidQ,stockingMethodInvalidThresholdQ,
-					reorderStateMismatchQ, specifiedExpires, specifiedShelfLife, lowReorderAmountQ,
-					specifiedUnsealedShelfLife, specifiedMaxNumberOfUses, specifiedMaxNumberOfHours,
-					expires, shelfLife, unsealedShelfLife, maxNumberOfHours, reorderAmountChangeQ,
-					expiresShelfLifeMismatchQ, maxNumberOfUses, maxNumUsesInvalidQ, maxNumHoursInvalidQ, modelFields,
-					newName, noSiteQ, siteChangeQ, invalidSiteQ, existingInventoryToAllQ
+					reorderThreshold, reorderAmount, state, allowedModelsStocked, modelStockedNotAllowedQ, stockingMethodInvalidQ,
+					stockingMethodInvalidThresholdQ, reorderStateMismatchQ, lowReorderAmountQ,
+					reorderAmountChangeQ, modelFields,
+					newName, noSiteQ, siteChangeQ, invalidSiteQ, existingInventoryToAllQ, preferredProduct, specifiedPreferredProduct,
+					preferredProductInvalidQ, preferredProductInvalidObjectQ
 				},
 
 				(* set our error tracking variables *)
@@ -2836,11 +4045,10 @@ resolveUploadInventoryOptions[
 					stockingMethodInvalidThresholdQ,
 					reorderStateMismatchQ,
 					lowReorderAmountQ,
-					expiresShelfLifeMismatchQ,
-					maxNumUsesInvalidQ,
-					maxNumHoursInvalidQ,
-					reorderAmountChangeQ
-				} = {False, False, False, False, False, False, False, False, False, False};
+					reorderAmountChangeQ,
+					preferredProductInvalidQ,
+					preferredProductInvalidObjectQ
+				} = {False, False, False, False, False, False, False, False, False};
 
 				(* pull out the specified option values *)
 				{
@@ -2850,12 +4058,42 @@ resolveUploadInventoryOptions[
 					specifiedStockingMethod,
 					specifiedReorderThreshold,
 					specifiedReorderAmount,
-					specifiedExpires,
-					specifiedShelfLife,
-					specifiedUnsealedShelfLife,
-					specifiedMaxNumberOfUses,
-					specifiedMaxNumberOfHours
-				} = Lookup[options, {ModelStocked, Status, Site, StockingMethod, ReorderThreshold, ReorderAmount, Expires, ShelfLife, UnsealedShelfLife, MaxNumberOfUses, MaxNumberOfHours}];
+					specifiedPreferredProduct
+				} = Lookup[options, {ModelStocked, Status, Site, StockingMethod, ReorderThreshold, ReorderAmount, PreferredProduct}];
+
+				(* Resolve the PreferredProduct option *)
+				preferredProduct = Which[
+					(* If option is set to an object, use that object *)
+					MatchQ[specifiedPreferredProduct, ObjectP[]], specifiedPreferredProduct,
+					(* If option is set to False or Null, we are not setting any product object as PreferredProduct. Thus, set this option value to Null *)
+					MatchQ[specifiedPreferredProduct, (False | Null)], Null,
+					(* When creating new Inventory: If option is set to True or Automatic, set the option value to current product or model *)
+					MatchQ[specifiedPreferredProduct, (True | Automatic)] && NullQ[existingInventory], If[NullQ[prodOrModel], Null, Lookup[prodOrModel, Object]],
+					(* When modifying existing Inventory: If option is set to Automatic, set the option value to the current PreferredProduct field value *)
+					!NullQ[existingInventory] && MatchQ[specifiedPreferredProduct, Automatic], Lookup[existingInventory, PreferredProduct],
+					(* Any other case set to Null *)
+					True, Null
+				];
+
+				(* If we are modifying existing Object[Inventory], we should not expect Boolean as PreferredProduct option. Throw error if that happens *)
+				(* Similarly, if we are creating new Object[Inventory], we should not expect Object as PreferredProduct option *)
+				preferredProductInvalidQ = Or[
+					And[
+						!NullQ[existingInventory],
+						MatchQ[specifiedPreferredProduct, BooleanP]
+					],
+					And[
+						NullQ[existingInventory],
+						MatchQ[specifiedPreferredProduct, ObjectP[]]
+					]
+				];
+
+				(* If we are modifying existing Object[Inventory], the PreferredProduct must be one of the StockedInventory. If not, throw error *)
+				preferredProductInvalidObjectQ = And[
+					!NullQ[existingInventory],
+					MatchQ[preferredProduct, ObjectP[]],
+					!MemberQ[Download[Lookup[existingInventory, StockedInventory], Object], Download[preferredProduct, Object]]
+				];
 
 				(* need to resolve ModelStocked immediately *)
 				(* obviously if people specify whatever go with that *)
@@ -3107,81 +4345,6 @@ resolveUploadInventoryOptions[
 					reorderAmount < reorderThreshold
 				];
 
-				(* Resolve the Expires option *)
-				(* 0.) Obviously if it's already specified, pick that *)
-				(* 1.) If an existing inventory, pick that value *)
-				(* 2.) If the ShelfLife or UnsealedShelfLife options were specified, then this becomes True *)
-				(* 3.) If ModelStocked is a sample or if we're dealing with a stock solution, set to True if Expires is True already *)
-				(* 4.) Otherwise, say False *)
-				expires=Which[
-					MatchQ[specifiedExpires, BooleanP], specifiedExpires,
-					MatchQ[existingInventory, ObjectP[Object[Inventory]]], Lookup[existingInventory, Expires],
-					TimeQ[specifiedShelfLife] || TimeQ[specifiedUnsealedShelfLife], True,
-					MatchQ[modelStockedPacket, ObjectP[]], TrueQ[Lookup[modelStockedPacket, Expires]] || TimeQ[Lookup[modelStockedPacket, ShelfLife]] || TimeQ[Lookup[modelStockedPacket, UnsealedShelfLife]],
-					MatchQ[prodOrModel, ObjectP[Model[Sample]]], TrueQ[Lookup[prodOrModel, Expires]] || TimeQ[Lookup[prodOrModel, ShelfLife]] || TimeQ[Lookup[prodOrModel, UnsealedShelfLife]],
-					True, False
-				];
-
-				(* Resolve the ShelfLife option *)
-				(* 0.) Obviously if it's already specified, pick that *)
-				(* 1.) If an existing inventory, pick that value *)
-				(* 2.) If Expires is set to False, then set to Null *)
-				(* 3.) If Expires is set to True, then pull ShelfLife from ModelStocked or the specified stock solution *)
-				(* 4.) Otherwise, set to Null*)
-				shelfLife=Which[
-					MatchQ[specifiedShelfLife, Except[Automatic]], specifiedShelfLife,
-					MatchQ[existingInventory, ObjectP[Object[Inventory]]], Lookup[existingInventory, ShelfLife],
-					Not[expires], Null,
-					expires && MatchQ[modelStockedPacket, ObjectP[]], Replace[Lookup[modelStockedPacket, ShelfLife], {Except[TimeP] -> Null}, {0}],
-					expires && MatchQ[prodOrModel, ObjectP[Model[Sample]]], Replace[Lookup[prodOrModel, ShelfLife], {Except[TimeP] -> Null}, {0}],
-					True, Null
-				];
-
-				(* Resolve the UnsealedShelfLife option *)
-				(* 0.) Obviously if it's already specified, pick that *)
-				(* 1.) If an existing inventory, pick that value *)
-				(* 2.) If Expires is set to False, then set to Null *)
-				(* 3.) If Expires is set to True, then pull ShelfLife from ModelStocked or the specified stock solution *)
-				(* 4.) Otherwise, set to Null*)
-				unsealedShelfLife=Which[
-					MatchQ[specifiedUnsealedShelfLife, Except[Automatic]], specifiedUnsealedShelfLife,
-					MatchQ[existingInventory, ObjectP[Object[Inventory]]], Lookup[existingInventory, UnsealedShelfLife],
-					Not[expires], Null,
-					expires && MatchQ[modelStockedPacket, ObjectP[]], Replace[Lookup[modelStockedPacket, UnsealedShelfLife], {Except[TimeP] -> Null}, {0}],
-					expires && MatchQ[prodOrModel, ObjectP[Model[Sample]]], Replace[Lookup[prodOrModel, UnsealedShelfLife], {Except[TimeP] -> Null}, {0}],
-					True, Null
-				];
-
-				(* flip a switch if Expires is True and ShelfLife and UnsealedShelfLife are Null, or if Expires is False and ShelfLife or UnsealedShelfLife are specified *)
-				expiresShelfLifeMismatchQ=Or[
-					expires && NullQ[shelfLife] && NullQ[unsealedShelfLife],
-					Not[expires] && (TimeQ[shelfLife] || TimeQ[unsealedShelfLife])
-				];
-
-				(* Resolve the MaxNumberOfUses option *)
-				(* 0.) Obviously if it's already specified, pick that *)
-				(* 1.) If an existing inventory, pick that value *)
-				(* 2.) If MaxNumberOfUses is an integer in ModelStocked, then use that *)
-				(* 3.) Otherwise, set to Null *)
-				maxNumberOfUses=Which[
-					MatchQ[specifiedMaxNumberOfUses, UnitsP[Unit]], specifiedMaxNumberOfUses,
-					MatchQ[existingInventory, ObjectP[Object[Inventory]]], Lookup[existingInventory, MaxNumberOfUses],
-					MatchQ[modelStockedPacket, ObjectP[]] && IntegerQ[Lookup[modelStockedPacket, MaxNumberOfUses]], Lookup[modelStockedPacket, MaxNumberOfUses],
-					True, Null
-				];
-
-				(* Resolve the MaxNumberOfHours option *)
-				(* 0.) Obviously if it's already specified, pick that *)
-				(* 1.) If an existing inventory, pick that value *)
-				(* 2.) If MaxNumberOfHours is an integer in ModelStocked, then use that *)
-				(* 3.) Otherwise, set to Null *)
-				maxNumberOfHours=Which[
-					MatchQ[specifiedMaxNumberOfHours, UnitsP[Hour]], specifiedMaxNumberOfHours,
-					MatchQ[existingInventory, ObjectP[Object[Inventory]]], Lookup[existingInventory, MaxNumberOfHours],
-					MatchQ[modelStockedPacket, ObjectP[]] && TimeQ[Lookup[modelStockedPacket, MaxNumberOfHours]], Lookup[modelStockedPacket, MaxNumberOfHours],
-					True, Null
-				];
-
 				(* pull out the type definition for the relevant model *)
 				modelFields=Which[
 					MatchQ[modelStockedPacket, ObjectP[]], ECL`Fields[Lookup[modelStockedPacket, Type], Output -> Short],
@@ -3195,10 +4358,6 @@ resolveUploadInventoryOptions[
 					True, Lookup[prodOrModel, Name]
 				];
 
-				(* flip an error switch if MaxNumberOfUses is specified but there is no relevant field for the model *)
-				maxNumUsesInvalidQ=IntegerQ[maxNumberOfUses] && Not[MemberQ[modelFields, MaxNumberOfUses]];
-				maxNumHoursInvalidQ=TimeQ[maxNumberOfHours] && Not[MemberQ[modelFields, MaxNumberOfHours]];
-
 				(* what to return*)
 				{
 					modelStocked,
@@ -3207,27 +4366,22 @@ resolveUploadInventoryOptions[
 					stockingMethod,
 					reorderThreshold,
 					reorderAmount,
-					expires,
-					shelfLife,
-					unsealedShelfLife,
-					maxNumberOfUses,
-					maxNumberOfHours,
+					preferredProduct,
 					modelStockedNotNullInvalidQ,
 					modelStockedNotAllowedQ,
 					stockingMethodInvalidQ,
 					stockingMethodInvalidThresholdQ,
 					reorderStateMismatchQ,
 					lowReorderAmountQ,
-					expiresShelfLifeMismatchQ,
-					maxNumUsesInvalidQ,
-					maxNumHoursInvalidQ,
 					state,
 					newName,
 					noSiteQ,
 					siteChangeQ,
 					invalidSiteQ,
 					existingInventoryToAllQ,
-					reorderAmountChangeQ
+					reorderAmountChangeQ,
+					preferredProductInvalidQ,
+					preferredProductInvalidObjectQ
 				}
 			]
 		],
@@ -3701,30 +4855,73 @@ resolveUploadInventoryOptions[
 		]
 	];
 
-	(* -- Invalid expiration -- *)
+	(* -- Invalid PreferredProduct -- *)
 
-	(* throw a message if the Expiration options don't agree with themselves *)
-	expiresShelfLifeMismatchOptions=If[MemberQ[expiresShelfLifeMismatchQs, True] && messages,
+	(* when modifying existing Object[Inventory], throw an error if PreferredProduct -> Boolean *)
+	invalidBooleanPreferredProductOptions=If[MemberQ[preferredProductInvalidQs, True] && messages,
 		(
-			Message[Error::ExpirationDateMismatch, ToString[PickList[inputsToUse, expiresShelfLifeMismatchQs]]];
-			{Expires, ShelfLife, UnsealedShelfLife}
+			Message[Error::InvalidPreferredProduct, ToString[PickList[inputsToUse, preferredProductInvalidQs]]];
+			{PreferredProduct}
+		),
+		{}
+	];
+
+	(* generate InvalidPreferredProduct tests*)
+	invalidBooleanPreferredProductTests=If[gatherTests,
+		Module[{failingInputs, passingInputs, failingInputTests, passingInputTests},
+
+			(* get the inputs that fail this test *)
+			failingInputs=PickList[inputsToUse, preferredProductInvalidQs];
+
+			(* get the inputs that pass this test *)
+			passingInputs=PickList[inputsToUse, preferredProductInvalidQs, False];
+
+			(* create a test for the non-passing inputs *)
+			failingInputTests=If[Length[failingInputs] > 0,
+				Test["For the provided inputs "<>ToString[failingInputs]<>", Boolean is allowed as PreferredProduct option only if we are creating new Object[Inventory], and Object is allowed only when we are modifying existing Object[Inventory]:",
+					False,
+					True
+				],
+				Nothing
+			];
+
+			(* create a test for the passing inputs *)
+			passingInputTests=If[Length[passingInputs] > 0,
+				Test["For the provided inputs "<>ToString[passingInputs]<>", Boolean is allowed as PreferredProduct option only if we are creating new Object[Inventory], and Object is allowed only when we are modifying existing Object[Inventory]",
+					True,
+					True
+				],
+				Nothing
+			];
+
+			(* return the created tests *)
+			{passingInputTests, failingInputTests}
+
+		]
+	];
+
+	(* when modifying existing Object[Inventory], throw an error if PreferredProduct was set to an object that's not part of the StockedInventory *)
+	preferredProductInvalidObjectOptions=If[MemberQ[preferredProductInvalidObjectQs, True] && messages,
+		(
+			Message[Error::InvalidPreferredProductObject, ToString[PickList[inputsToUse, preferredProductInvalidObjectQs]], ToString[PickList[resolvedPreferredProduct, preferredProductInvalidObjectQs]]];
+			{PreferredProduct}
 		),
 		{}
 	];
 
 	(* generate ExpirationDateMismatch tests*)
-	expiresShelfLifeMismatchTests=If[gatherTests,
+	preferredProductInvalidObjectTests=If[gatherTests,
 		Module[{failingInputs, passingInputs, failingInputTests, passingInputTests},
 
 			(* get the inputs that fail this test *)
-			failingInputs=PickList[inputsToUse, expiresShelfLifeMismatchQs];
+			failingInputs=PickList[inputsToUse, preferredProductInvalidObjectQs];
 
 			(* get the inputs that pass this test *)
-			passingInputs=PickList[inputsToUse, expiresShelfLifeMismatchQs, False];
+			passingInputs=PickList[inputsToUse, preferredProductInvalidObjectQs, False];
 
 			(* create a test for the non-passing inputs *)
 			failingInputTests=If[Length[failingInputs] > 0,
-				Test["For the provided inputs "<>ToString[failingInputs]<>", the Expires, ShelfLife, and UnsealedShelfLife options are compatible with each other:",
+				Test["For the provided inputs "<>ToString[failingInputs]<>", If we are modifying an existing Object[Inventory] and an Object is specified as the PreferredProduct option, that object must be part of StockedInventory field:",
 					False,
 					True
 				],
@@ -3733,97 +4930,7 @@ resolveUploadInventoryOptions[
 
 			(* create a test for the passing inputs *)
 			passingInputTests=If[Length[passingInputs] > 0,
-				Test["For the provided inputs "<>ToString[passingInputs]<>", the Expires, ShelfLife, and UnsealedShelfLife options are compatible with each other:",
-					True,
-					True
-				],
-				Nothing
-			];
-
-			(* return the created tests *)
-			{passingInputTests, failingInputTests}
-
-		]
-	];
-
-	(* -- Invalid MaxNumberOfUses -- *)
-
-	(* throw a message if MaxNumberOfUses is set for a type that doesn't have it*)
-	maxNumUsesInvalidOptions=If[MemberQ[maxNumUsesInvalidQs, True] && messages,
-		(
-			Message[Error::MaxNumberOfUsesInvalid, ToString[PickList[inputsToUse, maxNumUsesInvalidQs]]];
-			{MaxNumberOfUses}
-		),
-		{}
-	];
-
-	(* generate MaxNumberOfUsesInvalid tests*)
-	maxNumUsesInvalidTests=If[gatherTests,
-		Module[{failingInputs, passingInputs, failingInputTests, passingInputTests},
-
-			(* get the inputs that fail this test *)
-			failingInputs=PickList[inputsToUse, maxNumUsesInvalidQs];
-
-			(* get the inputs that pass this test *)
-			passingInputs=PickList[inputsToUse, maxNumUsesInvalidQs, False];
-
-			(* create a test for the non-passing inputs *)
-			failingInputTests=If[Length[failingInputs] > 0,
-				Test["For the provided inputs "<>ToString[failingInputs]<>", MaxNumberOfUses is specified if and only if MaxNumberOfUses exists in the specified ModelStocked:",
-					False,
-					True
-				],
-				Nothing
-			];
-
-			(* create a test for the passing inputs *)
-			passingInputTests=If[Length[passingInputs] > 0,
-				Test["For the provided inputs "<>ToString[passingInputs]<>", MaxNumberOfUses is specified if and only if MaxNumberOfUses exists in the specified ModelStocked:",
-					True,
-					True
-				],
-				Nothing
-			];
-
-			(* return the created tests *)
-			{passingInputTests, failingInputTests}
-
-		]
-	];
-
-	(* -- Invalid MaxNumberOfHours -- *)
-
-	(* throw a message if MaxNumberOfHours is set for a type that doesn't have it*)
-	maxNumHoursInvalidOptions=If[MemberQ[maxNumHoursInvalidQs, True] && messages,
-		(
-			Message[Error::MaxNumberOfHoursInvalid, ToString[PickList[inputsToUse, maxNumHoursInvalidQs]]];
-			{MaxNumberOfHours}
-		),
-		{}
-	];
-
-	(* generate MaxNumberOfHoursInvalid tests*)
-	maxNumHoursInvalidTests=If[gatherTests,
-		Module[{failingInputs, passingInputs, failingInputTests, passingInputTests},
-
-			(* get the inputs that fail this test *)
-			failingInputs=PickList[inputsToUse, maxNumHoursInvalidQs];
-
-			(* get the inputs that pass this test *)
-			passingInputs=PickList[inputsToUse, maxNumHoursInvalidQs, False];
-
-			(* create a test for the non-passing inputs *)
-			failingInputTests=If[Length[failingInputs] > 0,
-				Test["For the provided inputs "<>ToString[failingInputs]<>", MaxNumberOfHours is specified if and only if MaxNumberOfHours exists in the specified ModelStocked:",
-					False,
-					True
-				],
-				Nothing
-			];
-
-			(* create a test for the passing inputs *)
-			passingInputTests=If[Length[passingInputs] > 0,
-				Test["For the provided inputs "<>ToString[passingInputs]<>", MaxNumberOfHours is specified if and only if MaxNumberOfHours exists in the specified ModelStocked:",
+				Test["For the provided inputs "<>ToString[passingInputs]<>", If we are modifying an existing Object[Inventory] and an Object is specified as the PreferredProduct option, that object must be part of StockedInventory field:",
 					True,
 					True
 				],
@@ -3848,13 +4955,12 @@ resolveUploadInventoryOptions[
 		stockingMethodInvalidOptions,
 		reorderStateMismatchOptions,
 		reorderAmountOptions,
-		expiresShelfLifeMismatchOptions,
-		maxNumUsesInvalidOptions,
-		maxNumHoursInvalidOptions,
 		noSiteOptions,
 		invalidSiteOptions,
 		badAllSiteOptions,
-		invalidSiteChangeOptions
+		invalidSiteChangeOptions,
+		invalidBooleanPreferredProductOptions,
+		preferredProductInvalidObjectOptions
 	}]];
 
 	(* throw the InvalidOption error if necessary *)
@@ -3873,12 +4979,11 @@ resolveUploadInventoryOptions[
 		reorderAmountModificationTests,
 		reorderStateMismatchTests,
 		reorderAmountTests,
-		expiresShelfLifeMismatchTests,
-		maxNumUsesInvalidTests,
-		maxNumHoursInvalidTests,
 		noSiteTests,
 		invalidSiteTests,
-		badAllSiteTests
+		badAllSiteTests,
+		invalidBooleanPreferredProductTests,
+		preferredProductInvalidObjectTests
 	}], _EmeraldTest];
 
 	(* combine all the resolved options*)
@@ -3889,11 +4994,7 @@ resolveUploadInventoryOptions[
 		StockingMethod -> resolvedStockingMethod,
 		ReorderThreshold -> resolvedReorderThreshold,
 		ReorderAmount -> resolvedReorderAmount,
-		Expires -> resolvedExpires,
-		ShelfLife -> resolvedShelfLife,
-		UnsealedShelfLife -> resolvedUnsealedShelfLife,
-		MaxNumberOfUses -> resolvedMaxNumberOfUses,
-		MaxNumberOfHours -> resolvedMaxNumberOfHours,
+		PreferredProduct -> resolvedPreferredProduct,
 		Name -> resolvedName,
 		Upload -> Lookup[myOptions, Upload],
 		Cache -> cache,

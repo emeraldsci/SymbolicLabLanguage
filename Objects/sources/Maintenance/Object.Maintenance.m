@@ -364,7 +364,8 @@ With[
 					Object[Item][Maintenance],
 					Object[Plumbing],
 					Object[Wiring],
-					Object[Product]
+					Object[Product],
+					Object[User]
 				],
 				Description -> "The designated object that this maintenance is intended to service.",
 				Category -> "General",
@@ -1802,12 +1803,13 @@ With[
 				Developer -> True,
 				Category -> "Placements"
 			},
-			ErrorRecoveryLog -> {
+			GuidedCorrectionLog -> {
 				Format -> Multiple,
 				Class -> {
 					Date -> Date,
 					Procedure -> String,
 					TaskID -> String,
+					CorrectionCategory -> Expression,
 					Subprotocol -> Link,
 					ResponsibleOperator -> Link
 				},
@@ -1815,6 +1817,7 @@ With[
 					Date -> _?DateObjectQ,
 					Procedure -> _String,
 					TaskID -> _String,
+					CorrectionCategory -> GuidedCorrectionCategoryP,
 					Subprotocol -> _Link,
 					ResponsibleOperator -> _Link
 				},
@@ -1822,10 +1825,11 @@ With[
 					Date -> Null,
 					Procedure -> Null,
 					TaskID -> Null,
+					CorrectionCategory -> Null,
 					Subprotocol -> Alternatives[Object[Protocol], Object[Maintenance], Object[Qualification]],
-					ResponsibleOperator -> Object[User, Emerald][ErrorRecoveryEvents, RootProtocol]
+					ResponsibleOperator -> Object[User, Emerald][GuidedCorrectionEvents, RootProtocol]
 				},
-				Description -> "The error recovery procedures triggered during execution of this protocol.",
+				Description -> "The guided correction procedures triggered during execution of this protocol.",
 				Category -> "Organizational Information"
 			},
 			GloveChangeLog -> {
@@ -1836,6 +1840,14 @@ With[
 				Description -> "The history of glove replacements during this protocol in the form: {Date, Glove Box, Operator}. This field records when gloves were replaced, which gloves  were used, and who performed the replacement.",
 				Headers -> {"Date", "Glove Box", "Operator"},
 				Category -> "Health & Safety",
+				Developer -> True
+			},
+			AsanaTaskID -> {
+				Format -> Single,
+				Class -> String,
+				Pattern :> _String,
+				Description -> "ID number of the Asana task created for the Scientific Instrumentation team to track this maintenance.",
+				Category -> "Organizational Information",
 				Developer -> True
 			},
 

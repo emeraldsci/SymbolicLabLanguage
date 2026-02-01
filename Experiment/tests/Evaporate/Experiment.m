@@ -755,6 +755,14 @@ DefineTests[ExperimentEvaporate,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentEvaporate[Object[Sample,"Evaporate Test Water Sample5" <> $SessionUUID], AliquotAmount -> 0.08101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			81 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
+		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentEvaporate[Object[Sample,"Evaporate Test Water Sample5" <> $SessionUUID], AssayVolume -> 0.08*Milliliter, Output -> Options];
 			Lookup[options, AssayVolume],
@@ -1144,10 +1152,10 @@ DefineTests[ExperimentEvaporate,
 				}];
 
 				sampleModel=UploadSampleModel[
-					{"Test 40mer DNA oligomer sample model for ExperimentEvaporate tests"<>$SessionUUID},
-					Composition->{{
+					{{
 						{20 * Micromolar,Model[Molecule,Oligomer,"Test 40mer DNA Model Molecule for ExperimentEvaporate tests"<>$SessionUUID]}
 					}},
+					Name -> {"Test 40mer DNA oligomer sample model for ExperimentEvaporate tests"<>$SessionUUID},
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Flammable->False,
 					Acid->False,

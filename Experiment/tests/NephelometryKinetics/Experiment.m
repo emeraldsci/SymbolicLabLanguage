@@ -1815,7 +1815,7 @@ DefineTests[ExperimentNephelometryKinetics,
 		Example[{Messages, "NephelometryNoStandardCurve", "If Method is CellCount, the sample Analyte(s) specified must be Model[Cell]s with a StandardCurve that relates NephelometricTurbidityUnit to Cell/mL:"},
 			ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 2 (cell)" <> $SessionUUID],
 				Method -> CellCount,
-				Analyte -> Model[Cell, "ExperimentNephelometryKinetics test cell Analyte no StandardCurves" <> $SessionUUID]
+				Analyte -> Model[Cell, Mammalian, "ExperimentNephelometryKinetics test cell Analyte no StandardCurves" <> $SessionUUID]
 			],
 			$Failed,
 			SetUp:>($CreatedObjects={}),
@@ -2774,6 +2774,14 @@ DefineTests[ExperimentNephelometryKinetics,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentNephelometryKinetics[Object[Sample, "ExperimentNephelometryKinetics test sample 1" <> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		(*Note: Put your sample in a 2mL tube for the following test*)
 		Example[{Options,CentrifugeInstrument,"The centrifuge that will be used to spin the provided samples prior to starting the experiment:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample in 2mL tube" <> $SessionUUID],CentrifugeInstrument->Model[Instrument,Centrifuge,"Microfuge 16"],Output->Options];
@@ -2954,6 +2962,14 @@ DefineTests[ExperimentNephelometryKinetics,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentNephelometryKinetics[Object[Sample, "ExperimentNephelometryKinetics test sample 1"<>$SessionUUID], AliquotAmount -> 5.001 Microliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			5 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
+		],
 		Example[{Options,AssayVolume,"The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],AssayVolume->5*Microliter,Output->Options];
 			Lookup[options,AssayVolume],
@@ -3077,8 +3093,8 @@ DefineTests[ExperimentNephelometryKinetics,
 
 				Object[Analysis,StandardCurve, "ExperimentNephelometryKinetics fake standard curve for testing" <> $SessionUUID],
 				Model[Molecule,Oligomer,"ExperimentNephelometryKinetics test DNA molecule" <> $SessionUUID],
-				Model[Cell, "ExperimentNephelometryKinetics test cell Analyte with StandardCurves" <> $SessionUUID],
-				Model[Cell,"ExperimentNephelometryKinetics test cell Analyte no StandardCurves" <> $SessionUUID],
+				Model[Cell, Mammalian, "ExperimentNephelometryKinetics test cell Analyte with StandardCurves" <> $SessionUUID],
+				Model[Cell, Mammalian, "ExperimentNephelometryKinetics test cell Analyte no StandardCurves" <> $SessionUUID],
 
 				Model[Sample,"ExperimentNephelometryKinetics test DNA sample" <> $SessionUUID],
 				Model[Sample,"ExperimentNephelometryKinetics test DNA sample (Deprecated)" <> $SessionUUID],
@@ -3208,7 +3224,7 @@ DefineTests[ExperimentNephelometryKinetics,
 
 				testCellStandardCurves=Upload[
 					<|
-						Type -> Model[Cell],
+						Type -> Model[Cell,Mammalian],
 						Name -> "ExperimentNephelometryKinetics test cell Analyte with StandardCurves" <> $SessionUUID,
 						Replace[StandardCurves] -> {Link[Object[Analysis, StandardCurve, "ExperimentNephelometryKinetics fake standard curve for testing" <> $SessionUUID]]},
 						Notebook -> Null
@@ -3217,7 +3233,7 @@ DefineTests[ExperimentNephelometryKinetics,
 
 				testCellNoStandardCurves=Upload[
 					<|
-						Type -> Model[Cell],
+						Type -> Model[Cell, Mammalian],
 						Name -> "ExperimentNephelometryKinetics test cell Analyte no StandardCurves" <> $SessionUUID,
 						Notebook -> Null
 					|>
@@ -3239,7 +3255,7 @@ DefineTests[ExperimentNephelometryKinetics,
 							{{10 Micromolar,Model[Molecule,Oligomer,"ExperimentNephelometryKinetics test DNA molecule" <> $SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
 							{{Null, Null}},
 							{{10 Micromolar,Model[Molecule,Oligomer,"ExperimentNephelometryKinetics test DNA molecule" <> $SessionUUID]},{10 Micromolar,Model[Molecule,Oligomer,"ExperimentNephelometryKinetics test DNA molecule" <> $SessionUUID]}},
-							{{10 Micromolar,Model[Cell,"ExperimentNephelometryKinetics test cell Analyte with StandardCurves" <> $SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
+							{{10 Micromolar,Model[Cell,Mammalian,"ExperimentNephelometryKinetics test cell Analyte with StandardCurves" <> $SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
 							{{100 VolumePercent,Model[Molecule,"Water"]}}
 						},
 					IncompatibleMaterials->ConstantArray[{None},6],
@@ -3385,8 +3401,8 @@ DefineTests[ExperimentNephelometryKinetics,
 
 				Object[Analysis,StandardCurve, "ExperimentNephelometryKinetics fake standard curve for testing" <> $SessionUUID],
 				Model[Molecule,Oligomer,"ExperimentNephelometryKinetics test DNA molecule" <> $SessionUUID],
-				Model[Cell, "ExperimentNephelometryKinetics test cell Analyte with StandardCurves" <> $SessionUUID],
-				Model[Cell,"ExperimentNephelometryKinetics test cell Analyte no StandardCurves" <> $SessionUUID],
+				Model[Cell, Mammalian, "ExperimentNephelometryKinetics test cell Analyte with StandardCurves" <> $SessionUUID],
+				Model[Cell, Mammalian, "ExperimentNephelometryKinetics test cell Analyte no StandardCurves" <> $SessionUUID],
 
 				Model[Sample,"ExperimentNephelometryKinetics test DNA sample" <> $SessionUUID],
 				Model[Sample,"ExperimentNephelometryKinetics test DNA sample (Deprecated)" <> $SessionUUID],

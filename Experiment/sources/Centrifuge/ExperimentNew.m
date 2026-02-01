@@ -245,7 +245,7 @@ Error::NoTransferContainerFound = "The samples `1` must be transferred to a diff
 Error::SamplesNotInFilterContainer = "The sample(s) `1` have been specified to be collected in the CollectionContainer(s), `2`, however, the samples are not in a Model[Container, Plate, Filter] that has a Plate footprint or a Model[Container, Vessel, Filter]. Samples must be in a filter container in order to be collected. Please do not specify the CollectionContainer option for these samples or set the Aliquot->True option and aliquot the samples into a filter plate or vessel before the start of the experiment.";
 Error::ConflictingCollectionContainers = "The sample(s) `1` have different CollectionContainer(s), `2`, specified. However, these samples are in the same container. Samples in the same container must be filtered into the same collection container. Please change the CollectionContainer option or let it resolve automatically.";
 Error::InvalidCounterweights = "The CounterbalanceWeight `1` are not sufficiently close to the weights of any Model[Item,Counterweight]. Please provide weights within `2` of a Model[Item,Counterweight] with the same footprint.";
-Warning::CentrifugePrecision="The specified intensities `1` are not attainable by the precisions `2` of the centrifuge that will be used. Therefore, these intensities have been rounded to `3`.";
+Warning::CentrifugePrecision = "The option `1` specified as `2` not attainable by the `3` that will be used. Therefore, these intensities have been rounded to `4`.";
 Warning::ContainerCentrifugeIncompatible="The samples `1` are in containers that cannot fit on the centrifuges `2`. These samples will be transferred to `3`.";
 Warning::SterileConflict="Sterile was set as False but some samples are marked as sterile. The experiment will proceed with a non-sterile instrument. If this is not desired, please adjust the sterile option.";
 Error::RotorRotorGeometryConflict = "For sample(s) `1`, the specified Rotor `2` are `3`, which do not match the specified RotorGeometry `4`. Please change the Rotor or RotorGeometry option or let it resolve automatically.";
@@ -362,19 +362,16 @@ ExperimentCentrifuge[myInputs : ListableP[ObjectP[{Object[Container], Object[Sam
 
 (* Sample input/core overload*)
 ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : OptionsPattern[]] := Module[
-	{listedSamples, listedOptions, outputSpecification, output, gatherTests, validSamplePreparationResult, mySamplesWithPreparedSamples,
-		myOptionsWithPreparedSamples,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,
-		safeOpsNamed, safeOps, safeOpsTests, validLengths, validLengthTests, optionsResolverOnly,
-		returnEarlyBecauseOptionsResolverOnly, returnEarlyBecauseFailuresQ,collectionContainerOption,
-		templatedOptions, templateTests, inheritedOptions, expandedSafeOps, cacheBall, resolvedOptionsResult,
-		resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions, sampleObjects, centrifugeOption,allCentrifugeEquipmentPackets,
-		allPreferredContainers, samplePackets, centrifugeFields, centrifugeRotorOption, centrifugeRotorFields,
-		allCounterweights, counterweightModelFields, updatedSimulation,
-		thingsToDownload, fieldsToDownload, downloadedStuff, protocolPacketWithResources, resourcePacketTests, protocolObject,
-		sampleFields, objectContainerFields, modelContainerFields, resolvedPreparation, centrifugeInstruments,
-		centrifugeRotors, centrifugeBuckets, centrifugeAdapters, sampleContainers, uniqueSampleContainers, centrifugeModelFields, centrifugeRotorModelFields,
-		centrifugeBucketModelFields, centrifugeAdapterModelFields, simulation, performSimulationQ, simulatedProtocol,
-		cacheToUse, specifiedParentProtocol
+	{
+		listedSamples, listedOptions, outputSpecification, output, gatherTests, validSamplePreparationResult, mySamplesWithPreparedSamples,
+		myOptionsWithPreparedSamples, mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation,
+		safeOpsNamed, safeOps, safeOpsTests, validLengths, validLengthTests, templatedOptions, templateTests, inheritedOptions,
+		expandedSafeOps, centrifugeOption, centrifugeFields, centrifugeRotorOption, centrifugeRotorFields, collectionContainerOption,
+		allCounterweights, counterweightModelFields, allCentrifugeEquipmentPackets, allPreferredContainers, thingsToDownload,
+		sampleFields, objectContainerFields, modelContainerFields, fieldsToDownload, cacheToUse, downloadedStuff,
+		sampleObjects,  samplePackets, cacheBall, resolvedOptionsResult, resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions,
+		resolvedPreparation, optionsResolverOnly, returnEarlyBecauseOptionsResolverOnly, returnEarlyBecauseFailuresQ,
+		performSimulationQ, protocolPacketWithResources, resourcePacketTests, simulation, simulatedProtocol, protocolObject
 	},
 
 	(* Determine the requested return value from the function *)
@@ -413,7 +410,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 	];
 
 	(* Call sanitize-inputs to clean any named objects *)
-	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps, $Failed],
@@ -482,21 +479,21 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 	centrifugeRotorOption = Lookup[expandedSafeOps, Rotor];
 
 	(* Get the collection container option *)
-	collectionContainerOption=Lookup[expandedSafeOps,CollectionContainer];
+	collectionContainerOption = Lookup[expandedSafeOps, CollectionContainer];
 
 	(* Centrifuge defaults to model, but can be specified as an object. Get the appropriate fields to download. *)
 	centrifugeRotorFields = Switch[#,
-		ObjectP[Model[Container,CentrifugeRotor]], {Packet[Name, MaxRadius, MaxForce, MaxRotationRate, MaxImbalance, Footprint, Positions, AvailableLayouts, RotorType, DefaultStorageCondition, RotorAngle]},
-		ObjectP[Object[Container,CentrifugeRotor]], {Packet[StorageCondition],Packet[Field[StorageCondition[{StorageCondition}]]],Packet[Model],Packet[Field[Model[{Name, MaxRadius, MaxForce, MaxRotationRate, MaxImbalance, Footprint, Positions, AvailableLayouts, RotorType, DefaultStorageCondition, RotorAngle}]]]},
+		ObjectP[Model[Container, CentrifugeRotor]], {Packet[Name, MaxRadius, MaxForce, MaxRotationRate, MaxImbalance, Footprint, Positions, AvailableLayouts, RotorType, DefaultStorageCondition, RotorAngle]},
+		ObjectP[Object[Container, CentrifugeRotor]], {Packet[StorageCondition], Packet[Field[StorageCondition[{StorageCondition}]]], Packet[Model], Packet[Field[Model[{Name, MaxRadius, MaxForce, MaxRotationRate, MaxImbalance, Footprint, Positions, AvailableLayouts, RotorType, DefaultStorageCondition, RotorAngle}]]]},
 		Automatic, {}
 	]& /@ ToList[centrifugeRotorOption];
 
 
 	(* Find all the counterweights models *)
-	allCounterweights=allCounterweightsSearch["Memoization"];
+	allCounterweights = allCounterweightsSearch["Memoization"];
 
 	(* Download the necessary fields from the counterweight models *)
-	counterweightModelFields={Packet[Footprint, Weight, Name, RentByDefault, Dimensions]};
+	counterweightModelFields = {Packet[Footprint, Weight, Name, RentByDefault, Dimensions]};
 
 	(* Separate download to fetch centrifuge/rotor/bucket information required for subsequent resolution steps *)
 	(* Find all centrifuge-related objects (instruments, rotors, and buckets) from which we might need information *)
@@ -529,7 +526,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 	(* Sample Fields. *)
 	sampleFields = SamplePreparationCacheFields[Object[Sample], Format -> Packet];
 	objectContainerFields = SamplePreparationCacheFields[Object[Container]];
-	modelContainerFields = Union[SamplePreparationCacheFields[Model[Container]],ToList[{DestinationContainerModel,Counterweights}]];
+	modelContainerFields = Union[SamplePreparationCacheFields[Model[Container]], ToList[{DestinationContainerModel, Counterweights}]];
 
 	(* Format the fields to download *)
 	fieldsToDownload = Join[
@@ -570,7 +567,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 	sampleObjects = Lookup[Transpose[samplePackets][[1]], Object];
 
 	(* Download dump *)
-	cacheBall = FlattenCachePackets[{Lookup[expandedSafeOps, Cache, {}], Flatten[{downloadedStuff,allCentrifugeEquipmentPackets}]}];
+	cacheBall = FlattenCachePackets[{Lookup[expandedSafeOps, Cache, {}], Flatten[{downloadedStuff, allCentrifugeEquipmentPackets}]}];
 
 	(* Build the resolved options *)
 	resolvedOptionsResult = Check[
@@ -685,7 +682,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 
 		(* If we're doing Preparation->Robotic and Upload->True, call ExperimentRoboticSamplePreparation with our primitive. *)
 		MatchQ[resolvedPreparation, Robotic],
-			Module[{primitive,nonHiddenOriginOptions, samplesMaybeWithModels},
+			Module[{primitive, nonHiddenOriginOptions, samplesMaybeWithModels},
 
 				(* convert the samples to models if we had model inputs originally *)
 				(* if we don't have a simulation or a single prep unit op, then we know we didn't have a model input *)
@@ -702,10 +699,10 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 
 				(* Create our transfer primitive to feed into RoboticSamplePreparation. *)
 				(* Remove any hidden options before returning. *)
-				nonHiddenOriginOptions=RemoveHiddenPrimitiveOptions[Centrifuge,listedOptions];
-				primitive=Centrifuge@@Join[
+				nonHiddenOriginOptions = RemoveHiddenPrimitiveOptions[Centrifuge, listedOptions];
+				primitive = Centrifuge@@Join[
 					{
-						Sample->samplesMaybeWithModels
+						Sample -> samplesMaybeWithModels
 					},
 					nonHiddenOriginOptions
 				];
@@ -716,7 +713,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 
 					DownValues[ExperimentCentrifuge]={};
 
-					ExperimentCentrifuge[___, options:OptionsPattern[]]:=Module[{frameworkOutputSpecification},
+					ExperimentCentrifuge[___, options:OptionsPattern[]] := Module[{frameworkOutputSpecification},
 						(* Lookup the output specification the framework is asking for. *)
 						frameworkOutputSpecification=Lookup[ToList[options], Output];
 
@@ -756,19 +753,19 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 		(* If we're doing Preparation->Manual AND our ParentProtocol isn't ManualSamplePreparation, generate an *)
 		(* Object[Protocol, ManualSamplePreparation]. *)
 		And[
-			!MatchQ[Lookup[safeOps,ParentProtocol], ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation]}]],
+			!MatchQ[Lookup[safeOps, ParentProtocol], ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation]}]],
 			MatchQ[Lookup[resolvedOptions, PreparatoryUnitOperations], Null|{}],
 			MatchQ[Lookup[resolvedOptions, Incubate], {False..}],
 			(* NOTE: No Centrifuge prep for Centrifuge. *)
 			MatchQ[Lookup[resolvedOptions, Filtration], {False..}],
 			MatchQ[Lookup[resolvedOptions, Aliquot], {False..}]
 		],
-			Module[{primitive, nonHiddenOptions,nonHiddenOriginOptions},
-				nonHiddenOptions=RemoveHiddenOptions[ExperimentCentrifuge,collapsedResolvedOptions];
-				nonHiddenOriginOptions=RemoveHiddenPrimitiveOptions[Centrifuge,listedOptions];
-				primitive=Centrifuge@@Join[
+			Module[{primitive, nonHiddenOptions, nonHiddenOriginOptions},
+				nonHiddenOptions = RemoveHiddenOptions[ExperimentCentrifuge, collapsedResolvedOptions];
+				nonHiddenOriginOptions = RemoveHiddenPrimitiveOptions[Centrifuge, listedOptions];
+				primitive = Centrifuge@@Join[
 					{
-						Sample->mySamples
+						Sample -> mySamples
 					},
 					nonHiddenOriginOptions
 				];
@@ -776,19 +773,19 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 				(* Remove any hidden options before returning.*)
 				(* Memoize the value of ExperimentCentrifuge so the framework doesn't spend time resolving it again.*)
 				Internal`InheritedBlock[{ExperimentCentrifuge, $PrimitiveFrameworkResolverOutputCache},
-					$PrimitiveFrameworkResolverOutputCache=<||>;
+					$PrimitiveFrameworkResolverOutputCache = <||>;
 
-					DownValues[ExperimentCentrifuge]={};
+					DownValues[ExperimentCentrifuge] = {};
 
-					ExperimentCentrifuge[___, options:OptionsPattern[]]:=Module[{frameworkOutputSpecification},
+					ExperimentCentrifuge[___, options: OptionsPattern[]] := Module[{frameworkOutputSpecification},
 						(* Lookup the output specification the framework is asking for. *)
-						frameworkOutputSpecification=Lookup[ToList[options], Output];
+						frameworkOutputSpecification = Lookup[ToList[options], Output];
 
 						frameworkOutputSpecification/.{
 							Options -> nonHiddenOptions,
 							Preview -> Null,
 							Simulation -> simulation,
-							RunTime -> (Max[Lookup[nonHiddenOptions,Time]]+1Minute)
+							RunTime -> (Max[Lookup[nonHiddenOptions, Time]] + 1 Minute)
 						}
 					];
 
@@ -840,7 +837,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 		],
 		Preview -> Null,
 		Simulation -> simulation,
-		RunTime -> (Max[Lookup[collapsedResolvedOptions,Time]]+1Minute)
+		RunTime -> (Max[Lookup[collapsedResolvedOptions, Time]] + 1 Minute)
 	}
 ];
 
@@ -855,7 +852,8 @@ DefineOptions[
 ];
 
 resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentCentrifugeOptions]]:=Module[
-	{outputSpecification,output,gatherTests,messages,cache,samplePrepOptions,simulatedSamples,resolvedSamplePrepOptions,updatedSimulation,
+	{
+		outputSpecification,output,gatherTests,messages,cache,samplePrepOptions,simulatedSamples,resolvedSamplePrepOptions,updatedSimulation,
 		centrifugeNewOptions,sampleDownloads, specifiedEmail,specifiedUpload,resolvedEmail,
 		resolvedPostProcessingOptions,specifiedParentProtocol, samplePackets, sampleContainerModelPackets,sampleContainerPackets,
 		discardedSamplePackets,discardedInvalidInputs, discardedTest,roundedOptions,precisionTests,invalidInputs,invalidOptions,
@@ -865,7 +863,8 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 		noTransferFoundBools, centrifugeInvalidOptions,centrifugeCompatibleTests,noCentrifugeFoundInvalidOptions,
 		noCentrifugeFoundTests, noTransferContainerInvalidInputs,noTransferContainerTests, semiResolvedCentrifugesAsModel,
 		centrifugeModelCounts,centrifugesByFrequency,resolvedCentrifugeLists,roundedIntensities, intensityPrecisionValidBools,
-		semiResolvedTargetContainerModels,resolvedCentrifugeModels,resolvedRotors,resolvedBuckets,maxRadii,optionsWithRoundedIntensity,intensityPrecisionTests, resolvedCentrifugesAsModelLists,resolvedCentrifugesAsModels,resolvedCentrifuges,
+		semiResolvedTargetContainerModels,resolvedCentrifugeModels,resolvedRotors,resolvedBuckets,maxRadii,optionsWithRoundedIntensity,
+		intensityPrecisionTests, resolvedCentrifugesAsModelLists,resolvedCentrifugesAsModels,resolvedCentrifuges,
 		resolvedCentrifugeModelPackets,centrifugeRateResolutions,centrifugeMaxRates,resolvedIntensities, groupedContainerPackets,
 		groupedSamples, groupedTargetContainers, groupedTimes, groupedTemperatures, groupedIndexes, centrifugeTransferTests,
 		sampleContainerContents, stowAwayBools, stowAways, stowawayTest, targetContainerWithStowAwayTransfers, infoByContainerSet,
@@ -1082,12 +1081,23 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 	(if we find that a sample needs to be transferred but can't find a container to transfer it to.) *)
 
 
-	(*-- OPTION PRECISION CHECKS --*)
+	(*-- OPTION PRECISION CHECKS I--*)
 
 	(* - Check that temperature is not more precise than 1C and time not more than 1s - *)
-	{roundedOptions,precisionTests}=If[gatherTests,
-		RoundOptionPrecision[Association[centrifugeNewOptions],{Temperature,Time},{1 Celsius,1 Second},Output->{Result,Tests}],
-		{RoundOptionPrecision[Association[centrifugeNewOptions],{Temperature,Time},{1 Celsius,1 Second}],Null}
+	{roundedOptions, precisionTests} = If[gatherTests,
+		RoundOptionPrecision[
+			Association[centrifugeNewOptions],
+			{Temperature, Time},
+			{1 Celsius, 1 Second},
+			Output -> {Result, Tests}],
+		{
+			RoundOptionPrecision[
+				Association[centrifugeNewOptions],
+				{Temperature, Time},
+				{1 Celsius, 1 Second}
+			],
+			Null
+		}
 	];
 
 	(* Note that intensity precision isn't checked until we know the centrifuge that will be used and the container that the sample will be in
@@ -2626,8 +2636,8 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 		]&,
 		resolvedCentrifugesAsModels
 	];
-	
 
+	(*-- OPTION PRECISION CHECKS II --*)
 	(* Get the resolution of each centrifuge model *)
 	centrifugeRateResolutions = Lookup[resolvedCentrifugeModelPackets,SpeedResolution,Null];
 
@@ -2635,53 +2645,61 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 	because we won't know what container the sample will be in (in case a transfer is required to fit on the centrifuge)
 	and because we don't know the centrifuge until now unless centrifuge was specified. Without knowing both the
 	container and centrifuge, we can't convert between force and rate to do the precision check.) *)
-	{roundedIntensities, intensityPrecisionValidBools} = Transpose[MapThread[Function[{intensity,maxRadius,resolution,centrifuge},
-		Which[
+	{roundedIntensities, intensityPrecisionValidBools} = Transpose@MapThread[
+		Function[{intensity, maxRadius, resolution, centrifuge},
+			Which[
 
-		(* If intensity is Automatic or if we couldn't resolve the centrifuge due to invalid input,
-		keep the value as is and set the precision validity bool as True *)
-			MatchQ[intensity,Automatic] || NullQ[centrifuge],
-			{intensity,True},
+				(* If intensity is Automatic or if we couldn't resolve the centrifuge due to invalid input,
+			keep the value as is and set the precision validity bool as True *)
+				MatchQ[intensity, Automatic] || NullQ[centrifuge],
+					{intensity, True},
 
-		(* If intensity is specified as a rate and the rate is attainable at the centrifuge precision,
-			keep the value as is and set the precision validity bool as True. Otherwise,
-			round the value and set the precision validity bool as False *)
-			MatchQ[intensity,GreaterP[0 RPM]],
-			If[PossibleZeroQ[Mod[intensity,resolution]],
-				{intensity,True},
-				{Round[intensity,resolution],False}
-			],
+				(* If intensity is specified as a rate and the rate is attainable at the manual centrifuge precision,
+				keep the value as is and set the precision validity bool as True. Otherwise,
+				round the value and set the precision validity bool as False *)
+				RPMQ[intensity] && MatchQ[resolvedPreparation, Manual],
+					If[PossibleZeroQ[Mod[intensity, resolution]],
+						{intensity, True},
+						{SafeRound[intensity, resolution], False}
+					],
 
-		(* If we have to convert force to RPM, we can't really do the precision check since the units are different, skip it *)
-			True,
-			{intensity,True}
-		]
-	],{specifiedIntensities,maxRadii,centrifugeRateResolutions,resolvedCentrifuges}]];
-	(* Update the options with the rounded intensities *)
-	optionsWithRoundedIntensity = ReplaceRule[Normal[roundedOptions],Intensity -> roundedIntensities];
+				(* If intensity is specified as g and the rate is attainable at the manual centrifuge precision,
+				keep the value as is and set the precision validity bool as True. Otherwise,
+				round the value and set the precision validity bool as False *)
+				MatchQ[intensity, GreaterP[0 GravitationalAcceleration]] && MatchQ[resolvedPreparation, Manual] && !NullQ[maxRadius],
+					Module[{convertedRPM, roundedRPM, convertedBackRCF, roundedRCF},
+						convertedRPM = RCFToRPM[intensity, maxRadius];
+						roundedRPM = SafeRound[convertedRPM, resolution];
+						convertedBackRCF = RPMToRCF[roundedRPM, maxRadius];
+						roundedRCF = SafeRound[convertedBackRCF, 0.1 GravitationalAcceleration];
+						{roundedRCF, EqualQ[intensity, roundedRCF]}
+					],
 
-	(* If we had to round the intensity, throw a warning *)
-	If[MemberQ[intensityPrecisionValidBools,False]&&!gatherTests&&!MatchQ[$ECLApplication,Engine],
-		Message[Warning::CentrifugePrecision, ObjectToString[PickList[specifiedIntensities,intensityPrecisionValidBools,False]],ObjectToString[PickList[centrifugeRateResolutions,intensityPrecisionValidBools,False]],ObjectToString[PickList[roundedIntensities,intensityPrecisionValidBools,False]]]
-	];
+				(* If intensity is specified as a rate and we are doing robotic, we need to convert rate to RCF *)
+				RPMQ[intensity] && MatchQ[resolvedPreparation, Robotic] && !NullQ[maxRadius],
+					Module[{convertedRCF, roundedRCF, convertedBackRPM, roundedRPM},
+						convertedRCF = RPMToRCF[intensity, maxRadius];
+						(* From exportCentrifugeRoboticPrimitive and VSpin/HiG manual, the precision of robotic centrifuge is 0.1G *)
+						roundedRCF = SafeRound[convertedRCF, 0.1 GravitationalAcceleration];
+						convertedBackRPM = RCFToRPM[roundedRCF, maxRadius];
+						roundedRPM = SafeRound[convertedBackRPM, 0.1 RPM];
+						{roundedRPM, EqualQ[intensity, roundedRPM]}
+					],
 
-	(* Make warnings regarding intensity precision rounding*)
-	intensityPrecisionTests=If[gatherTests,
-		Module[{failingTest,passingTest},
-			failingTest=If[MemberQ[intensityPrecisionValidBools,False],
-				Warning["The precision of any user-supplied Intensity options is compatible with instrumental precision:",True,False],
-				Nothing
-			];
+				(* If intensity is specified as a g and we are doing robotic, we need to check if rounding is necessary *)
+				MatchQ[intensity, GreaterP[0 GravitationalAcceleration]] && MatchQ[resolvedPreparation, Robotic],
+					(* From exportCentrifugeRoboticPrimitive and VSpin/HiG manual, the precision of robotic centrifuge is 0.1G *)
+					{SafeRound[intensity, 0.1 GravitationalAcceleration], EqualQ[intensity, SafeRound[intensity, 0.1 GravitationalAcceleration]]},
 
-			passingTest=If[MemberQ[intensityPrecisionValidBools,True],
-				Warning["The precision of any user-supplied Intensity options is compatible with instrumental precision:",True,True],
-				Nothing
-			];
-
-			{failingTest,passingTest}
+				(* if we don't know the max radius of the rotor then we can't calculate the force, skip it *)
+				True,
+					{intensity, True}
+			]
 		],
-		Nothing
+		{specifiedIntensities, maxRadii, centrifugeRateResolutions, resolvedCentrifuges}
 	];
+	(* Update the options with the rounded intensities *)
+	optionsWithRoundedIntensity = ReplaceRule[Normal[roundedOptions], Intensity -> roundedIntensities];
 
 	(* --- Resolve Intensity --- *)
 
@@ -2694,27 +2712,119 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 	(*If Intensity is specified, use it. Otherwise, calculate from 1/5 of the centrifuge max rate (rounded to centrifuge precision)
 	and give the result units of force since this is more relevant than rate. (If centrifuge could not be resolved due to invalid input, resolve intensity to Null.) *)
 	resolvedIntensities = MapThread[
-		Function[{intensity,maxRadius,minRate,maxRate,resolution,centrifuge},
+		Function[{intensity, maxRadius, minRate, maxRate, resolution, centrifuge},
 			Which[
-				MatchQ[intensity,Except[Automatic]],
-					(*if we can, we should convert RPM to G right here, if we are doing robotic *)
-					If[Not[NullQ[maxRadius]]&&Not[CompatibleUnitQ[intensity,1 GravitationalAcceleration]]&&roboticPritimitveQ,
-						RPMToRCF[intensity,maxRadius],
-						(*if we don't have a max radius and we are not doing robotic, that means the conversion shouldnt be made and thus we stick with specified intensity *)
-						intensity
+				MatchQ[intensity, Except[Automatic]],
+				(* Note:here I am keeping the logic of converting specified intensity to different unit. Not sure why we modify user options here *)
+				(* The only thing clear is robotic centrifuge prefers G, manual centrifuge prefers RPM *)
+					Which[
+						(*if we can, we should convert RPM to G right here, if we are doing robotic *)
+						Not[NullQ[maxRadius]] && Not[CompatibleUnitQ[intensity, 1 GravitationalAcceleration]] && roboticPritimitveQ,
+							SafeRound[RPMToRCF[intensity, maxRadius], 0.1 GravitationalAcceleration],
+						(*if we can, we should convert G to RPM right here, if we are doing manual *)
+						Not[NullQ[maxRadius]] && !RPMQ[intensity] && RPMQ[resolution] && MatchQ[resolvedPreparation, Manual],
+							SafeRound[RCFToRPM[intensity, maxRadius], resolution],
+						(*if we don't have a max radius or G for robotic/RPM for manual, that means the conversion shouldnt be made and thus we stick with specified intensity *)
+						True,
+							intensity
 					],
 
 				(* if we don't know the max radius of the rotor then we can't calculate the force, in that case stick with RPM *)
-				NullQ[maxRadius],Round[Max[{(maxRate/5),minRate*1.1}],resolution],
+				NullQ[maxRadius], SafeRound[Max[{(maxRate/5), minRate*1.1}], resolution],
 
-				MatchQ[centrifuge,ObjectP[]],
-				RPMToRCF[Round[Max[{(maxRate/5),minRate*1.1}],resolution], maxRadius],
+				(* if we know the max radius of the rotor and preparation is robotic, use G as unit *)
+				MatchQ[centrifuge, ObjectP[]] && roboticPritimitveQ,
+					Module[{convertedToRCF, roundedRCF},
+						convertedToRCF = RPMToRCF[Max[{(maxRate/5), minRate*1.1}], maxRadius];
+						roundedRCF = SafeRound[convertedToRCF, 0.1 GravitationalAcceleration]
+					],
 
-				NullQ[centrifuge],
-				Null
+				(* if we know the max radius of the rotor and preparation is manual, use RPM as unit *)
+				MatchQ[centrifuge, ObjectP[]],
+					SafeRound[Max[{(maxRate/5), minRate*1.1}], resolution],
+
+				NullQ[centrifuge], Null
 			]
 		],
-		{roundedIntensities,maxRadii,centrifugeMinRates,centrifugeMaxRates,centrifugeRateResolutions,resolvedCentrifuges}
+		{roundedIntensities, maxRadii, centrifugeMinRates, centrifugeMaxRates, centrifugeRateResolutions, resolvedCentrifuges}
+	];
+
+	(* If we had to round the intensity, throw a warning *)
+	If[MemberQ[intensityPrecisionValidBools, False] && !gatherTests && !MatchQ[$ECLApplication, Engine],
+		Module[
+			{
+				specifiedIntensitiesToRound, centrifugeResolutions, relatedCentrifuges, roundedSpecifiedIntensities,
+				resolvedRelatedIntensities, joinSingleQuantityString, finalRoundAndConvertedIntensities
+			},
+			specifiedIntensitiesToRound = PickList[specifiedIntensities, intensityPrecisionValidBools, False];
+			centrifugeResolutions = PickList[centrifugeRateResolutions, intensityPrecisionValidBools, False];
+			relatedCentrifuges = PickList[resolvedCentrifuges, intensityPrecisionValidBools, False];
+			roundedSpecifiedIntensities = PickList[roundedIntensities, intensityPrecisionValidBools, False];
+			resolvedRelatedIntensities = PickList[resolvedIntensities, intensityPrecisionValidBools, False];
+			joinSingleQuantityString[rate:GreaterP[0 GravitationalAcceleration]|GreaterP[0 RPM]] := If[RPMQ[rate],
+				StringJoin[ToString[QuantityMagnitude[rate] /. (number_Real :> InputForm[number, NumberMarks -> False])], " RPM"],
+				StringJoin[ToString[QuantityMagnitude[rate] /. (number_Real :> InputForm[number, NumberMarks -> False])], " GravitationalAcceleration"]
+			];
+			finalRoundAndConvertedIntensities = With[{$MachinePrecision = 100},
+				MapThread[
+					Which[
+						MatchQ[#1, GreaterP[0 GravitationalAcceleration]] && RPMQ[#2],
+							(* If we do convert from RPM to G, or vice versa, list both values *)
+							StringJoin[ToString[NumberForm[QuantityMagnitude[#1], {$MachinePrecision, 1}]], " GravitationalAcceleration (equivalent to ", joinSingleQuantityString[#2], ")"],
+						MatchQ[#2, GreaterP[0 GravitationalAcceleration]] && RPMQ[#1],
+							StringJoin[joinSingleQuantityString[#1], " (equivalent to ", ToString[NumberForm[QuantityMagnitude[#2], {$MachinePrecision, 1}]], " GravitationalAcceleration)"],
+						RPMQ[#2],
+							joinSingleQuantityString[#2],
+						True,
+							StringJoin[ToString[NumberForm[QuantityMagnitude[#1], {$MachinePrecision, 1}]], " GravitationalAcceleration"]
+					]&,
+					{roundedSpecifiedIntensities, resolvedRelatedIntensities}
+				]
+			];
+			Message[
+				Warning::CentrifugePrecision,
+				(*1*)If[MatchQ[Lookup[myOptions, EnableSamplePreparation], True], "Intensity", "CentrifugeIntensity"],
+				(*2*)StringJoin[
+				joinClauses[joinSingleQuantityString /@ specifiedIntensitiesToRound],
+				" ",
+				isOrAre[DeleteDuplicates[specifiedIntensitiesToRound]]
+			],
+				(*3*)If[MatchQ[resolvedPreparation, Manual],
+				StringJoin[
+					pluralize[DeleteDuplicates@centrifugeResolutions, "precision ", "precisions "],
+					joinClauses[joinSingleQuantityString /@ centrifugeResolutions],
+					" of the manual ",
+					pluralize[DeleteDuplicates@relatedCentrifuges, "centrifuge ", "centrifuges "],
+					samplesForMessages[relatedCentrifuges, CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> updatedSimulation]
+				],
+				(* From exportCentrifugeRoboticPrimitive and VSpin/HiG manual, the precision of robotic centrifuge is 0.1G *)
+				StringJoin[
+					"precision 0.1 GravitationalAcceleration of the robotic ",
+					pluralize[DeleteDuplicates@relatedCentrifuges, "centrifuge ", "centrifuges "],
+					samplesForMessages[relatedCentrifuges, CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> updatedSimulation]
+				]
+			],
+				(*4*)joinClauses[finalRoundAndConvertedIntensities]
+			]
+		]
+	];
+
+	(* Make warnings regarding intensity precision rounding *)
+	intensityPrecisionTests = If[gatherTests,
+		Module[{failingTest, passingTest},
+			failingTest = If[MemberQ[intensityPrecisionValidBools, False],
+				Warning["The precision of any user-supplied Intensity options is compatible with instrumental precision:", True, False],
+				Nothing
+			];
+
+			passingTest = If[MemberQ[intensityPrecisionValidBools, True],
+				Warning["The precision of any user-supplied Intensity options is compatible with instrumental precision:", True, True],
+				Nothing
+			];
+
+			{failingTest, passingTest}
+		],
+		Nothing
 	];
 
 	(* - Validate the Name option - *)
@@ -3265,7 +3375,7 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 	(* Resolve WeightStabilityDuration and MaxWeightVariation *)
 	resolvedWeightStabilityDuration = If[MatchQ[Lookup[myOptions, WeightStabilityDuration], Except[Automatic]],
 		Lookup[myOptions, WeightStabilityDuration],
-		60 Second
+		$DefaultWeightStabilityDuration
 	];
 
 	(* always use Model[Instrument, Balance, "Ohaus EX6202"], so resolve to the AllowedMaxVariation of it *)
@@ -3490,6 +3600,7 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 		Tests -> Flatten[
 			{
 				discardedTest,
+				precisionTests,
 				centrifugeCompatibleTests,
 				noCentrifugeFoundTests,
 				noTransferContainerTests,
@@ -3572,7 +3683,8 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 
 		adapterResourcesIndexMatchedToContainer, secondaryAdapterResourcesIndexMatchedToContainer, tareRackIndexMatched,
 		tertiaryAdapterResourcesIndexMatchedToContainer, counterbalanceAdapterLinksIndexMatchedToContainer, tareRackResourcesIndexMatched,
-		secondaryCounterbalanceAdapterLinksIndexMatchedToContainer, tertiaryCounterbalanceAdapterLinksIndexMatchedToContainer
+		secondaryCounterbalanceAdapterLinksIndexMatchedToContainer, tertiaryCounterbalanceAdapterLinksIndexMatchedToContainer,
+		handlingEnvironmentResource
 	},
 
 	resolvedOptionsExpanded=RemoveHiddenOptions[ExperimentCentrifuge, myResolvedOptions];
@@ -4257,9 +4369,25 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 
 	(* ExperimentMeasureWeight doesn't accept plates and also doesn't populate container weight (only sample weight and tare weight of the empty container).
 	 So, we make resources for a balance and tare racks, have custom tasks in the procedure for measuring container weight, and have sections in the compile and parse for dealing with the weight data. *)
-	balanceResource = Resource[
-		Instrument -> $CentrifugeBalanceModel,
-		Time -> (1 Minute * Length[containersIn])
+	(* Make a resource for handling stations that the balance would be in *)
+	{balanceResource, handlingEnvironmentResource} = If[MatchQ[Lookup[myResolvedOptions, CounterbalanceWeight], {MassP..}],
+		{Null, Null},
+		{
+			(* balance resource *)
+			Resource[
+				Instrument -> $CentrifugeBalanceModel,
+				Time -> (1 Minute * Length[containersIn])
+			],
+			Module[{handlingStationModels},
+				(* get the handling station models - we only want non-specialized ambient handling stations *)
+				handlingStationModels = Cases[Lookup[Lookup[Experiment`Private`balanceHandlingStationLookup["Memoization"], $CentrifugeBalanceModel, {}], "Model", {}], Except[ObjectP[specializedHandlingStationModels["Memoization"]], ObjectP[Model[Instrument, HandlingStation, Ambient]]]];
+
+				If[Length[handlingStationModels] > 0,
+					Resource[Instrument -> handlingStationModels, Time -> (1 Minute * Length[containersIn])],
+					Null
+				]
+			]
+		}
 	];
 
 	(* Get all the racks from the cache*)
@@ -4481,10 +4609,8 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 				Replace[TertiaryCounterbalanceAdapters] -> tertiaryCounterbalanceAdapterLinksIndexMatchedToContainer,
 				Replace[Times] -> expandedTimes,
 				Replace[Temperatures] -> expandedTemperatures,
-				Balance -> If[MatchQ[Lookup[myResolvedOptions,CounterbalanceWeight],{MassP..}],
-					Null,
-					balanceResource
-				],
+				Balance -> Link[balanceResource],
+				HandlingEnvironment -> Link[handlingEnvironmentResource],
 				WeightStabilityDuration -> If[MatchQ[Lookup[myResolvedOptions,CounterbalanceWeight],{MassP..}],
 					Null,
 					Lookup[myResolvedOptions,WeightStabilityDuration]

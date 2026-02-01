@@ -833,6 +833,14 @@ DefineTests[
 			Variables:>{options},
 			Messages:>{Warning::AliquotRequired}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options=ExperimentDegas[Object[Sample,"Degas Test Water Sample1"<> $SessionUUID],CentrifugeIntensity->1001RPM,CentrifugeAliquotContainer->Model[Container,Vessel,"50mL Tube"],Output->Options];
+			Lookup[options,CentrifugeIntensity],
+			1000RPM,
+			EquivalenceFunction->Equal,
+			Variables:>{options},
+			Messages:>{Warning::AliquotRequired,Warning::CentrifugePrecision}
+		],
 		Example[{Options,CentrifugeTime,"The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options=ExperimentDegas[Object[Sample,"Degas Test Water Sample1"<> $SessionUUID],CentrifugeTime->5*Minute,CentrifugeAliquotContainer->Model[Container,Vessel,"50mL Tube"],Output->Options];
 			Lookup[options,CentrifugeTime],
@@ -998,6 +1006,14 @@ DefineTests[
 			2 * Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentDegas[Object[Sample, "Degas Test Water Sample2" <> $SessionUUID], AliquotAmount -> 2.001 Milliliter, AliquotContainer -> Model[Container, Vessel, "id:pZx9joxev3k0"] (*Model[Container, Vessel, "10 mL Schlenk Flask, 14/20 Outer Joint with Chem-Cap High Vacuum Valve"]*), Output -> Options];
+			Lookup[options, AliquotAmount],
+			2 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,AssayVolume,"The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options=ExperimentDegas[Object[Sample,"Degas Test Water Sample2"<> $SessionUUID],AssayVolume->95*Microliter,Output->Options];

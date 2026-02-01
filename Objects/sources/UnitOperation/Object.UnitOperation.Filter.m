@@ -1124,6 +1124,35 @@ DefineObjectType[Object[UnitOperation, Filter], {
 			IndexMatching -> SampleLink
 		},
 
+		(* Oven drying fields *)
+		OvenDryGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of SampleLink, indicates whether the collection container (and, if relevant, any glassware belonging to the filter apparatus) are oven dried before filtration.",
+			Category -> "Filtration",
+			IndexMatching -> SampleLink
+		},
+		DepyrogenateGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of SampleLink, indicates whether the collection container (and, if relevant, any glassware belonging to the filter apparatus) are depyrogenated in an oven before filtration.",
+			Category -> "Filtration",
+			IndexMatching -> SampleLink
+		},
+		OvenGlassware -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container, Vessel],
+				Object[Part, Funnel]
+			],
+			Description -> "The glassware that is oven dried or depyrogenated before filtration.",
+			Category -> "Filtration"
+		},
+
 		(* pipetting fields *)
 		Tips -> {
 			Format -> Multiple,

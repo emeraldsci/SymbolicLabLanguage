@@ -112,20 +112,6 @@ DefineObjectType[Object[Qualification,Training,ParameterizeContainer], {
       Description -> "The user inputted number of columns of wells in the plate.",
       Category -> "General"
     },
-    AspiratableUserInput -> {
-      Format -> Single,
-      Class -> Boolean,
-      Pattern :> BooleanP,
-      Description -> "The user inputted indication if this samples can be transferred out of this container when it is not Covered.",
-      Category -> "General"
-    },
-    DispensableUserInput -> {
-      Format -> Single,
-      Class -> Boolean,
-      Pattern :> BooleanP,
-      Description -> "The user inputted indication if samples can be dispensed into this container when it is not Covered.",
-      Category -> "General"
-    },
     ReusabilityUserInput -> {
       Format -> Single,
       Class -> Boolean,

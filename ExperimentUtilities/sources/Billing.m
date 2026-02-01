@@ -83,7 +83,7 @@ runSyncBillingCore[teams:{ObjectP[Object[Team, Financing]]..}, ops:OptionsPatter
 		AbsoluteTiming[
 			TimeConstrained[
 				SyncBilling[#, Notify -> True],
-				7200
+				18000
 			]
 		]&,
 		teams

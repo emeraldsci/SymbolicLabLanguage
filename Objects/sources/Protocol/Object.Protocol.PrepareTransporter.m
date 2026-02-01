@@ -108,7 +108,7 @@ DefineObjectType[Object[Protocol, PrepareTransporter], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Alternatives[Object[Instrument, FumeHood], Model[Instrument, FumeHood]],
+			Relation -> Alternatives[Object[Instrument, FumeHood], Model[Instrument, FumeHood], Object[Instrument, HandlingStation, FumeHood], Model[Instrument, HandlingStation, FumeHood]],
 			Description -> "FumeHood in which operator configures portable heater.",
 			Category -> "General"
 		},

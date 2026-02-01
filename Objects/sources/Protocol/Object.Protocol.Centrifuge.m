@@ -19,6 +19,17 @@ DefineObjectType[Object[Protocol, Centrifuge], {
 			Description -> "The balance instrument used to weigh the input containers to ensure the centrifuge is balanced properly.",
 			Category -> "Centrifuge Balancing"
 		},
+		HandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Instrument, HandlingStation],
+				Model[Instrument, HandlingStation]
+			],
+			Description -> "The environment in which the input containers are weighed.",
+			Category -> "Centrifuge Balancing"
+		},
 		ContainerWeights -> {
 			Format -> Multiple,
 			Class -> Link,

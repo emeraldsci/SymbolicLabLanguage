@@ -201,7 +201,7 @@ DefineTests[PlotChromatography,
 			ValidGraphicsP[]
 		],
 		Example[{Options,TransformX,"Transform the units of the x-axis to be Volume instead of Time:"},
-			PlotChromatography[Object[Data, Chromatography, "id:M8n3rx0l7738"],TransformX->Volume],
+			PlotChromatography[Object[Data, Chromatography, "id:M8n3rx0l7738"],TransformX->Volume, HammingWindowWidth->Null],
 			ValidGraphicsP[]
 		],
 		Example[{Messages,"AllWavelengths","Cannot specify a specific wavelength when plotting 3D Data:"},
@@ -219,6 +219,11 @@ DefineTests[PlotChromatography,
 			ValidGraphicsP[],
 			Messages:>{Error::DimensionMismatch,Error::InvalidOption}
 		],
+		Example[{Messages, "UnableToTransform", "Cannot transform data if HammingWindowingWidth is not Null:"},
+			PlotChromatography[Object[Data, Chromatography, "id:M8n3rx0l7738"], TransformX->Volume],
+			ValidGraphicsP[],
+			Messages:>{Warning::UnableToTransform}
+		],
 		Example[{Messages,"CannotTransform3DData","Cannot Transform 3D Data. Will throw a warning and then plot the data without the transform:"},
 			PlotChromatography[Object[Data, Chromatography, "id:eGakldJ8EEz1"], PlotType -> ListPlot3D,TransformX->Volume],
 			ValidGraphicsP[],
@@ -230,7 +235,7 @@ DefineTests[PlotChromatography,
 			Messages:>{Warning::CannotTransformMassSpecData}
 		],
 		Example[{Messages,"InvalidTargetUnits","If specified TargetUnits do not match transformation specification. Will throw a warning and then plot the data without the transform:"},
-			PlotChromatography[Object[Data, Chromatography, "id:eGakldJ8EEz1"],TransformX->Volume,TargetUnits->{Minute,MilliAbsorbanceUnit}],
+			PlotChromatography[Object[Data, Chromatography, "id:eGakldJ8EEz1"],TransformX->Volume,TargetUnits->{Minute,MilliAbsorbanceUnit},HammingWindowWidth->Null],
 			ValidGraphicsP[],
 			Messages:>{Warning::InvalidTargetUnits}
 		],
