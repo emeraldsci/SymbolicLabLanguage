@@ -215,7 +215,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
         Syringe->None,
         Sterile->None,
         FilterHousing->None,
-        Intensity->GravitationalAcceleration,
+        Intensity->RPM,
         Time->Minute,
         Temperature->Celsius|None
       },
@@ -249,7 +249,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
       Units->{
         Pellet->None,
         Instrument->None,
-        Intensity->GravitationalAcceleration,
+        Intensity->RPM,
         Time->Minute,
         Temperature->Celsius|None
       },
@@ -331,7 +331,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
+      Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script]| Object[Protocol,RoboticCellPreparation] | Object[Protocol,ManualCellPreparation]|Object[Notebook, Script],
       Description -> "The sample manipulation protocols used to wash and resuspend the samples prior to activation or conjugation.",
       Category -> "PreWash"
     },
@@ -460,7 +460,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
+      Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script]| Object[Protocol,RoboticCellPreparation] | Object[Protocol,ManualCellPreparation],
       Description -> "The sample manipulation protocol used to assemble and incubate the activation reaction.",
       Category -> "Activation"
     },
@@ -604,7 +604,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
         MolecularWeightCutoff->None,
         Syringe->None,
         Sterile->None,
-        Intensity->GravitationalAcceleration,
+        Intensity->RPM,
         Time->Minute,
         Temperature->Celsius|None
       },
@@ -638,7 +638,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
       Units->{
         Pellet->None,
         Instrument->None,
-        Intensity->GravitationalAcceleration,
+        Intensity->RPM,
         Time->Minute,
         Temperature->Celsius|None
       },
@@ -860,7 +860,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
+      Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script]| Object[Protocol,RoboticCellPreparation] | Object[Protocol,ManualCellPreparation],
       Description -> "The sample manipulation protocol used assemble and incubate the conjugation reaction.",
       Category -> "Conjugation"
     },
@@ -903,7 +903,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
       Units->{
         Pellet->None,
         Instrument->None,
-        Intensity->GravitationalAcceleration,
+        Intensity->RPM,
         Time->Minute,
         Temperature->Celsius|None,
         Target->None
@@ -1010,7 +1010,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
+      Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script]| Object[Protocol,RoboticCellPreparation] | Object[Protocol,ManualCellPreparation],
       Description -> "The sample manipulation protocol used assemble and incubate the quenching reaction.",
       Category -> "Quenching"
     },
@@ -1150,7 +1150,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
         MolecularWeightCutoff->None,
         Syringe->None,
         Sterile->None,
-        Intensity->GravitationalAcceleration,
+        Intensity->RPM,
         Time->Minute,
         Temperature->Celsius|None,
         Target->None
@@ -1289,7 +1289,7 @@ DefineObjectType[Object[Protocol, Bioconjugation], {
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
+      Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script]| Object[Protocol,RoboticCellPreparation] | Object[Protocol,ManualCellPreparation],
       Description -> "The sample manipulation protocol used execute the post-conjugation workup.",
       Category -> "Post-Conjugation Workup"
     },

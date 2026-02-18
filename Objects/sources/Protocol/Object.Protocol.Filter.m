@@ -201,6 +201,23 @@ DefineObjectType[Object[Protocol, Filter], {
 			Category -> "Filtration",
 			Developer -> True
 		},
+		(* oven drying fields *)
+		OvenDryGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of SamplesIn, indicates whether the collection container (and, if relevant, any glassware belonging to the filter apparatus) are oven dried before filtration.",
+			Category -> "Filtration",
+			IndexMatching -> SamplesIn
+		},
+		DepyrogenateGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of SamplesIn, indicates whether the collection container (and, if relevant, any glassware belonging to the filter apparatus) are depyrogenated in an oven before filtration.",
+			Category -> "Filtration",
+			IndexMatching -> SamplesIn
+		},
 		(* --- Centrifugation --- *)
 		CentrifugeSpeeds -> {
 			Format -> Multiple,

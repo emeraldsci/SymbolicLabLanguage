@@ -1617,7 +1617,7 @@ DefineObjectType[Object[Protocol, CapillaryELISA],
 				Format -> Single,
 				Class -> Link,
 				Pattern :> _Link,
-				Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
+				Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script] |  Object[Protocol,RoboticCellPreparation] | Object[Protocol,ManualCellPreparation],
 				Description -> "The sample manipulation protocol used to prepare antibody samples and standard samples for capillary ELISA experiments.",
 				Category -> "Sample Preparation"
 			},

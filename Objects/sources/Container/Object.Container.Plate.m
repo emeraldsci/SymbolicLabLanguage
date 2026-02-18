@@ -171,6 +171,14 @@ DefineObjectType[Object[Container, Plate], {
 			Description->"The certificate of analysis for this plate's batch number containing certified physical property data used of this plate used in calibrations.",
 			Category->"Quality Assurance"
 		},
+		CalibrationReports -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Calibration, Thermocycler][CalibrationPlate],
+			Description -> "The calibration reports generated using this plate as a standard.",
+			Category -> "Quality Assurance"
+		},
 		(* Health & Safety *)
 		MSDSRequired->{
 			Format->Single,

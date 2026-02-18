@@ -352,3 +352,96 @@ DefineTests[
 		]
 	}
 ];
+
+
+(* ::Subsubsection::Closed:: *)
+(*TransposeOrEmpty*)
+
+DefineTests[
+	TransposeOrEmpty,
+	{
+		Example[{Basic, "Transposes a non-empty list using standard Transpose:"},
+			TransposeOrEmpty[{{1, 2, 3}, {4, 5, 6}}, 3],
+			{{1, 4}, {2, 5}, {3, 6}}
+		],
+		Example[{Basic, "Returns a list of empty lists, of the specified length, when the input list is empty:"},
+			TransposeOrEmpty[{}, 3],
+			{{}, {}, {}}
+		],
+		Example[{Basic, "Assignment to a list of variables remains safe when a non-empty list is provided:"},
+			Module[{a, b, c},
+				{a, b, c} = TransposeOrEmpty[{}, 3];
+				{a, b, c}
+			],
+			{{}, {}, {}}
+		],
+		Example[{Basic, "Use operator form for readability with bulky code:"},
+			Module[{a, b, c},
+				{a, b, c} = TransposeOrEmpty[3] @ Module[
+					{step1, step2, step3},
+
+					(* Bulky code *)
+					step1 = 1;
+					step2 = 2;
+					step3 = 3;
+
+					(* That might return an empty list *)
+					{}
+				];
+				{a, b, c}
+			],
+			{{}, {}, {}}
+		],
+		Example[{Additional, "Perform a normal transpose on a non-empty list and assign directly to a list of variables:"},
+			Module[{a, b, c},
+				{a, b, c} = TransposeOrEmpty[
+					{
+						{"a1", "b1", "c1"},
+						{"a2", "b2", "c2"},
+						{"a3", "b3", "c3"}
+					},
+					3
+				];
+				{a, b, c}
+			],
+			{
+				{"a1", "a2", "a3"},
+				{"b1", "b2", "b3"},
+				{"c1", "c2", "c3"}
+			}
+		],
+		Example[{Additional, "The assignmentLength parameter is ignored for non-empty lists:"},
+			TransposeOrEmpty[{{1, 2}, {3, 4}}, 100],
+			{{1, 3}, {2, 4}}
+		],
+		Test["Handles single-row transposition:",
+			TransposeOrEmpty[{{1, 2, 3}}, 3],
+			{{1}, {2}, {3}}
+		],
+		Test["Handles single-column transposition:",
+			TransposeOrEmpty[{{1}, {2}, {3}}, 1],
+			{{1, 2, 3}}
+		],
+		Test["Returns single empty list when assignmentLength is 1:",
+			TransposeOrEmpty[{}, 1],
+			{{}}
+		],
+		Test["Handles zero assignmentLength by returning empty list:",
+			TransposeOrEmpty[{}, 0],
+			{}
+		],
+		Test["Transpose of non-rectangular lists still fails as expected:",
+			TransposeOrEmpty[{{1, 2}, {3, 4, 5}}, 2],
+			Transpose[_List],
+			Messages :> {Transpose::nmtx}
+		],
+		Test["Operator form performs a standard transpose with a non-empty list:",
+			TransposeOrEmpty[3][{{1, 2, 3}, {4, 5, 6}}],
+			{{1, 4}, {2, 5}, {3, 6}}
+		],
+		Test["Operator form returns a list of empty lists, of the specified length, when the input list is empty:",
+			TransposeOrEmpty[5][{}],
+			{{}, {}, {}, {}, {}}
+		]
+	}
+];

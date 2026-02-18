@@ -185,7 +185,7 @@ DefineTests[
 
 		Example[{Basic, "Look up a field from a type:"},
 			LookupTypeDefinition[Object[Sample], Name],
-			KeyValuePattern[{Format -> Single, Class -> String, Description -> "Name of this Object."}]
+			KeyValuePattern[{Format -> Single, Class -> String, Description -> _String?(StringStartsQ[#, "User defined string by which"] &)}]
 		],
 
 		Example[{Basic, "Look up an attribute from a field:"},
@@ -212,7 +212,7 @@ DefineTests[
 					Lookup[check, Description]
 				}
 			],
-			{Single, String, "Name of this Object."}
+			{Single, String, _String?(StringStartsQ[#, "User defined string by which"] &)}
 		],
 		Test["Look up the field definition for ID:",
 			With[

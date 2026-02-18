@@ -1441,180 +1441,240 @@ DefineTests[pluralize,
 (* ::Subsection:: *)
 (*ValidOpenPathsQ*)
 DefineTests[ValidOpenPathsQ,
-  {
-    Example[{Basic, "Indicates if OpenPaths is specified properly in all options for the specified function:"},
-      Module[{testFunction},
-        DefineOptions[testFunction,
-          Options :> {
-            {
-              OptionName -> Tips,
-              Default -> Automatic,
-              AllowNull -> True,
-              Widget -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{
-                  Model[Item, Tips],
-                  Object[Item, Tips]
-                }],
-                OpenPaths -> {
-                  {
-                    Object[Catalog, "Root"],
-                    "Labware",
-                    "Pipette Tips"
-                  }
-                }
-              ],
-              Description -> "The pipette tips used to aspirate and dispense the retentate wash and resuspension buffers."
-            }
-          }
-        ];
-        testFunction[]:=Null;
-        ValidOpenPathsQ[testFunction]
-      ],
-      True
-    ],
-    Example[{Basic, "If OpenPaths is not specified at all for an option that takes models, products, or methods, returns False:"},
-      Module[{testFunction},
-        DefineOptions[testFunction,
-          Options :> {
-            {
-              OptionName -> Tips,
-              Default -> Automatic,
-              AllowNull -> True,
-              Widget -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{
-                  Model[Item, Tips],
-                  Object[Item, Tips]
-                }]
-              ],
-              Description -> "The pipette tips used to aspirate and dispense the retentate wash and resuspension buffers."
-            }
-          }
-        ];
-        testFunction[]:=Null;
-        ValidOpenPathsQ[testFunction]
-      ],
-      False
-    ],
-    Example[{Options, OutputFormat, "If OutputFormat is set to Options instead of Boolean, a list of options that are failing ValidOpenPathsQ is returned:"},
-      Module[{testFunction},
-        DefineOptions[testFunction,
-          Options :> {
-            {
-              OptionName -> Tips,
-              Default -> Automatic,
-              AllowNull -> True,
-              Widget -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{
-                  Model[Item, Tips],
-                  Object[Item, Tips]
-                }]
-              ],
-              Description -> "The pipette tips used to aspirate and dispense the retentate wash and resuspension buffers."
-            }
-          }
-        ];
-        testFunction[]:=Null;
-        ValidOpenPathsQ[testFunction, OutputFormat -> Options]
-      ],
-      {Tips}
-    ],
-    Example[{Additional, "Hidden options don't need to have OpenPaths specified:"},
-      Module[{testFunction},
-        DefineOptions[testFunction,
-          Options :> {
-            {
-              OptionName -> Tips,
-              Default -> Automatic,
-              AllowNull -> True,
-              Widget -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{
-                  Model[Item, Tips],
-                  Object[Item, Tips]
-                }]
-              ],
-              Description -> "The pipette tips used to aspirate and dispense the retentate wash and resuspension buffers.",
-              Category -> "Hidden"
-            }
-          }
-        ];
-        testFunction[]:=Null;
-        ValidOpenPathsQ[testFunction]
-      ],
-      True
-    ],
-    Example[{Additional, "Also check the usage and return False if we don't have open paths there:"},
-      Module[{testFunction},
-        DefineUsage[testFunction,
-          {
-            BasicDefinitions -> {
-              {
-                Definition -> {"testFunction[Sample]", "Null"},
-                Description -> "always returns Null.",
-                Inputs :> {
-                  IndexMatching[
-                    {
-                      InputName -> "Sample",
-                      Description -> "The input Model[Sample]",
-                      Widget -> Widget[
-                        Type -> Object,
-                        Pattern :> ObjectP[Model[Sample]]
-                      ],
-                      Expandable -> False
-                    },
-                    IndexName -> "experiment samples"
-                  ]
-                },
-                Outputs :> {
-                  {
-                    OutputName -> "Null",
-                    Description -> "Always returns Null.",
-                    Pattern :> Null
-                  }
-                }
-              }
-            },
-            MoreInformation -> {},
-            SeeAlso -> {
-              "PickList",
-              "ExperimentNMR",
-              "WhyCantIPickThisSample"
-            },
-            Author -> {"steven"}
-          }
-        ];
-        DefineOptions[testFunction,
-          Options :> {
-            {
-              OptionName -> Tips,
-              Default -> Automatic,
-              AllowNull -> True,
-              Widget -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{
-                  Model[Item, Tips],
-                  Object[Item, Tips]
-                }],
-                OpenPaths -> {
-                  {
-                    Object[Catalog, "Root"],
-                    "Labware",
-                    "Pipette Tips"
-                  }
-                }
-              ],
-              Description -> "The pipette tips used to aspirate and dispense the retentate wash and resuspension buffers.",
-              Category -> "Hidden"
-            }
-          }
-        ];
-        testFunction[ObjectP[]]:=Null;
-        ValidOpenPathsQ[testFunction]
-      ],
-      False
-    ]
-  }
+	{
+		Example[{Basic, "Indicates if OpenPaths is specified properly in all options for the specified function:"},
+			Module[{testFunction},
+				DefineOptions[testFunction,
+					Options :> {
+						{
+							OptionName -> Tips,
+							Default -> Automatic,
+							AllowNull -> True,
+							Widget -> Widget[
+								Type -> Object,
+								Pattern :> ObjectP[{
+									Model[Item, Tips],
+									Object[Item, Tips]
+								}],
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Labware",
+										"Pipette Tips"
+									}
+								}
+							],
+							Description -> "The pipette tips used to aspirate and dispense the retentate wash and resuspension buffers.",
+							Category -> "General"
+						}
+					}
+				];
+				testFunction[] := Null;
+				ValidOpenPathsQ[testFunction]
+			],
+			True
+		],
+		Example[{Basic, "If OpenPaths is not specified at all for an option that takes models, products, or methods, returns False:"},
+			Module[{testFunction},
+				DefineOptions[testFunction,
+					Options :> {
+						{
+							OptionName -> Tips,
+							Default -> Automatic,
+							AllowNull -> True,
+							Widget -> Widget[
+								Type -> Object,
+								Pattern :> ObjectP[{
+									Model[Item, Tips],
+									Object[Item, Tips]
+								}]
+							],
+							Description -> "The pipette tips used to aspirate and dispense the retentate wash and resuspension buffers."
+						}
+					}
+				];
+				testFunction[] := Null;
+				ValidOpenPathsQ[testFunction]
+			],
+			False
+		],
+		Example[{Options, OutputFormat, "If OutputFormat is set to Options instead of Boolean, a list of options that are failing ValidOpenPathsQ is returned:"},
+			Module[{testFunction},
+				DefineOptions[testFunction,
+					Options :> {
+						{
+							OptionName -> Tips,
+							Default -> Automatic,
+							AllowNull -> True,
+							Widget -> Widget[
+								Type -> Object,
+								Pattern :> ObjectP[{
+									Model[Item, Tips],
+									Object[Item, Tips]
+								}]
+							],
+							Description -> "The pipette tips used to aspirate and dispense the retentate wash and resuspension buffers."
+						}
+					}
+				];
+				testFunction[] := Null;
+				ValidOpenPathsQ[testFunction, OutputFormat -> Options]
+			],
+			{Tips}
+		],
+		Example[{Additional, "Hidden options don't need to have OpenPaths specified:"},
+			Module[{testFunction},
+				DefineOptions[testFunction,
+					Options :> {
+						{
+							OptionName -> Tips,
+							Default -> Automatic,
+							AllowNull -> True,
+							Widget -> Widget[
+								Type -> Object,
+								Pattern :> ObjectP[{
+									Model[Item, Tips],
+									Object[Item, Tips]
+								}]
+							],
+							Description -> "The pipette tips used to aspirate and dispense the retentate wash and resuspension buffers.",
+							Category -> "Hidden"
+						}
+					}
+				];
+				testFunction[] := Null;
+				ValidOpenPathsQ[testFunction]
+			],
+			True
+		],
+		Example[{Additional, "Also check the usage and return False if we don't have open paths there:"},
+			Module[{testFunction},
+				DefineUsage[testFunction,
+					{
+						BasicDefinitions -> {
+							{
+								Definition -> {"testFunction[Sample]", "Null"},
+								Description -> "always returns Null.",
+								Inputs :> {
+									IndexMatching[
+										{
+											InputName -> "Sample",
+											Description -> "The input Model[Sample]",
+											Widget -> Widget[
+												Type -> Object,
+												Pattern :> ObjectP[Model[Sample]]
+											],
+											Expandable -> False
+										},
+										IndexName -> "experiment samples"
+									]
+								},
+								Outputs :> {
+									{
+										OutputName -> "Null",
+										Description -> "Always returns Null.",
+										Pattern :> Null
+									}
+								}
+							}
+						},
+						MoreInformation -> {},
+						SeeAlso -> {
+							"PickList",
+							"ExperimentNMR",
+							"WhyCantIPickThisSample"
+						},
+						Author -> {"steven"}
+					}
+				];
+				DefineOptions[testFunction,
+					Options :> {
+						{
+							OptionName -> Tips,
+							Default -> Automatic,
+							AllowNull -> True,
+							Widget -> Widget[
+								Type -> Object,
+								Pattern :> ObjectP[{
+									Model[Item, Tips],
+									Object[Item, Tips]
+								}],
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Labware",
+										"Pipette Tips"
+									}
+								}
+							],
+							Description -> "The pipette tips used to aspirate and dispense the retentate wash and resuspension buffers.",
+							Category -> "Hidden"
+						}
+					}
+				];
+				testFunction[ObjectP[]] := Null;
+				ValidOpenPathsQ[testFunction]
+			],
+			False
+		]
+	},
+	SymbolSetUp :> (
+		Module[{newRootID, newLabwareID, newPipetteTipsID, rootExistsQ, labwareObj, pipetteTipsObj, rootContentPackets,
+			labwareExistsQ, pipetteTipsExistsQ, rootPacket, labwarePacket, pipetteTipsPacket},
+			(* make IDs for the root, labware, and pipette tips and upload them if they don't already exist *)
+			(* these should exist, but in case they don't we're making them *)
+			{newRootID, newLabwareID, newPipetteTipsID} = CreateID[{Object[Catalog], Object[Catalog], Object[Catalog]}];
+
+			rootExistsQ = DatabaseMemberQ[Object[Catalog, "Root"]];
+
+			rootContentPackets = If[rootExistsQ,
+				FlattenCachePackets[
+					Quiet[
+						Download[Object[Catalog, "Root"], {Packet[Contents[Folder]], Packet[Contents[Contents][Folder]]}],
+						Download::FieldDoesntExist
+					]
+				],
+				{}
+			];
+
+			labwareObj = SelectFirst[rootContentPackets, MatchQ[Lookup[#, Folder], "Labware"]&, Null];
+			labwareExistsQ = Not[NullQ[labwareObj]];
+			pipetteTipsObj = SelectFirst[rootContentPackets, MatchQ[Lookup[#, Folder], "Pipette Tips"]&, Null];
+			pipetteTipsExistsQ = Not[NullQ[labwareObj]];
+
+			(* make the upload packets.  This is rather weird if some exist and some don't *)
+			rootPacket = Which[
+				(* if root exists and labware exists then don't need to do anything *)
+				rootExistsQ && labwareExistsQ, Nothing,
+				(* if root exists but not labware, then append to the existing root *)
+				rootExistsQ,
+					<|Object -> Object[Catalog, "Root"], Append[Contents] -> {Link[newLabwareID]}|>,
+				(* if neither exists then make a new one *)
+				(* note that it is not possible for root to exist but labware not *)
+				True,
+					<|Object -> newRootID, Name -> "Root", Append[Contents] -> {Link[newLabwareID]}|>
+			];
+			labwarePacket = Which[
+				labwareExistsQ && pipetteTipsExistsQ, Nothing,
+				labwareExistsQ,
+					<|Object -> labwareObj, Append[Contents] -> {Link[newPipetteTipsID]}|>,
+				True,
+					<|Object -> newLabwareID, Name -> "Test Labware Catalog for ValidOpenPathsQ tests " <> $SessionUUID, Folder -> "Labware", Append[Contents] -> {Link[newPipetteTipsID]}|>
+			];
+			pipetteTipsPacket = If[pipetteTipsExistsQ,
+				Nothing,
+				<|Object -> newPipetteTipsID, Name -> "Test Pipette Tips Catalog for ValidOpenPathsQ tests " <> $SessionUUID, Folder -> "Pipette Tips"|>
+			];
+
+			Upload[{rootPacket, labwarePacket, pipetteTipsPacket}];
+
+		]
+	),
+	SymbolTearDown :> (Unset[actualPackets]),
+	Stubs :> {
+		allCatalogPackets[_] := Quiet[
+			FlattenCachePackets[Download[Object[Catalog, "Root"], {Packet[Contents, Folder, Name], Packet[Contents[{Contents, Folder, Name}]], Packet[Contents[Contents][{Contents, Folder, Name}]]}]],
+			Download::FieldDoesntExist
+		]
+	}
 ];

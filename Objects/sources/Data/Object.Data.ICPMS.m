@@ -197,7 +197,7 @@ DefineObjectType[Object[Data, ICPMS], {
 			Description->"Instrument reading of nebulizer argon gas pressure during injection.",
 			Category -> "Method Information"
 		},
-		AuxillaryGasFlowRate -> {
+		AuxiliaryGasFlowRate -> {
 			Format -> Single,
 			Class -> Real,
 			Pattern:>GreaterP[0 Liter/Minute],

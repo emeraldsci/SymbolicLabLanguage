@@ -726,8 +726,7 @@ DefineTests[AdjustpH,
             TitratingAcid->"acid sample"
           ]
         }],
-        ObjectP[Object[Protocol, ManualSamplePreparation]],
-        Messages :> {Warning::SampleMustBeMoved}
+        ObjectP[Object[Protocol, ManualSamplePreparation]]
       ]
     },
     SymbolSetUp:>(
@@ -1050,4 +1049,96 @@ DefineTests[MeasureMeltingPoint,
   Stubs:>{
     $PersonID=Object[User,"Test user for notebook-less test protocols"]
   }
+];
+
+(* ::Subsection::Closed:: *)
+(* OvenDry *)
+DefineTests[OvenDry,
+  {
+    Example[{Basic, "OvenDry can accept a container input:"},
+      ExperimentSamplePreparation[{
+        LabelContainer[
+          Label -> "my container",
+          Container -> Model[Container, Vessel, "id:J8AY5jwzPPR7"] (* "250mL Glass Bottle" *)
+        ],
+        OvenDry[
+          Sample -> "my container"
+        ]
+      }],
+      ObjectP[Object[Protocol, ManualSamplePreparation]]
+    ],
+    Example[{Basic, "OvenDry can accept a sample input:"},
+      Quiet[ExperimentSamplePreparation[{
+        LabelContainer[
+          Label -> "my container",
+          Container -> Model[Container, Vessel, "id:J8AY5jwzPPR7"] (* "250mL Glass Bottle" *)
+        ],
+        Transfer[
+          Source -> Model[Sample, "id:BYDOjv1VA88z"], (* "Sodium Chloride" *)
+          Destination -> "my container",
+          Amount -> 100 Milligram,
+          DestinationLabel -> "my sample"
+        ],
+        OvenDry[
+          Sample -> "my sample"
+        ]
+      }], Warning::InaccurateBalance],
+      ObjectP[Object[Protocol, ManualSamplePreparation]]
+    ],
+    Example[{Basic, "Options from OvenDry can be used in the unit operation equivalently:"},
+      ExperimentSamplePreparation[{
+        OvenDry[
+          Sample -> Object[Container, Vessel, "OvenDry Unit Operation Test Container 1" <> $SessionUUID],
+          OvenTemperature -> 150 Celsius
+        ]
+      }],
+      ObjectP[Object[Protocol, ManualSamplePreparation]]
+    ]
+  },
+  SymbolSetUp:> (
+    Module[{objects, existsFilter},
+      (* list of test objects *)
+      objects = {
+        Object[Container, Vessel, "OvenDry Unit Operation Test Container 1" <> $SessionUUID],
+        Object[Container, Bench, "Test Bench for OvenDry Unit Operation" <> $SessionUUID]
+      };
+
+      (* Check whether the names we want to give below already exist in the database *)
+      existsFilter = DatabaseMemberQ[objects];
+
+      (* Erase any objects that we failed to erase in the last unit test. *)
+      Quiet[EraseObject[PickList[objects, existsFilter], Force -> True, Verbose -> False]];
+    ];
+    Block[{$DeveloperUpload = True},
+      Module[{testBench},
+        testBench = Upload[<|
+          Type -> Object[Container, Bench],
+          Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+          Name -> "Test Bench for OvenDry Unit Operation" <> $SessionUUID,
+          StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+          Site -> Link[$Site]
+        |>];
+
+        UploadSample[Model[Container, Vessel, "id:J8AY5jwzPPR7"], (* "250mL Glass Bottle" *)
+          {"Bench Top Slot", testBench},
+          Name -> "OvenDry Unit Operation Test Container 1" <> $SessionUUID
+        ]
+      ]
+    ];
+  ),
+  SymbolTearDown:>(
+    Module[{objects, existsFilter},
+      (* list of test objects *)
+      objects = {
+        Object[Container, Vessel, "OvenDry Unit Operation Test Container 1" <> $SessionUUID],
+        Object[Container, Bench, "Test Bench for OvenDry Unit Operation" <> $SessionUUID]
+      };
+
+      (* Check whether the names we want to give below already exist in the database *)
+      existsFilter = DatabaseMemberQ[objects];
+
+      (* Erase any objects that we failed to erase in the last unit test. *)
+      Quiet[EraseObject[PickList[objects, existsFilter], Force -> True, Verbose -> False]];
+    ]
+  )
 ];

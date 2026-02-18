@@ -305,6 +305,16 @@ validCalibrationVolumeQTests[packet:PacketP[Object[Calibration, Volume]]]:={
 };
 
 
+(* ::Subsection::Closed:: *)
+(*validCalibrationVolumeQTests*)
+validCalibrationThermocyclerQTests[packet:PacketP[Object[Calibration, Thermocycler]]]:={
+	NotNullFieldTest[InstrumentCalibrated, ReportFilePDF, CalibrationDate, ReportGenerationDate, CalibrationPlate],
+
+	(* Report generation date must be after the calibration date *)
+	FieldComparisonTest[packet,{ReportGenerationDate, CalibrationDate},GreaterThan]
+};
+
+
 
 (* ::Subsection::Closed:: *)
 (* Test Registration *)
@@ -325,3 +335,4 @@ registerValidQTestFunction[Object[Calibration, Sensor, Temperature],validCalibra
 registerValidQTestFunction[Object[Calibration, Sensor, Weight],validCalibrationSensorWeightQTests];
 registerValidQTestFunction[Object[Calibration, Bufferbot],validCalibrationBufferbotQTests];
 registerValidQTestFunction[Object[Calibration, Sensor, BubbleCounter],validCalibrationSensorBubbleCounterQTests];
+registerValidQTestFunction[Object[Calibration, Thermocycler], validCalibrationThermocyclerQTests];

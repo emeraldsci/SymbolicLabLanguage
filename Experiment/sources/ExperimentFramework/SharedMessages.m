@@ -26,6 +26,7 @@ Error::ConflictingMethodRequirements="The following requirements can only be per
 
 
 Warning::InstrumentPrecision="The machine precision of `1` has a resolution of `2`. Therefore, `3` will have to be rounded to `4` to proceed. To avoid automatic rounding, please provide a value that meets the resolution.";
+Warning::InaccurateBalance="`1`"; (* different functions may have this check and the texts may be slightly different, so leaving the freedom here *)
 
 
 (* ::Subsection:: *)

@@ -217,3 +217,38 @@ DefineUsage[ToList,
 		},
 	Author->{"scicomp", "brad"}
 }];
+
+
+(* ::Subsubsection::Closed:: *)
+(*TransposeOrEmpty*)
+
+
+DefineUsage[TransposeOrEmpty,
+	{
+		BasicDefinitions -> {
+			{"TransposeOrEmpty[list, lengthOfAssignment]", "transposedList", "performs a simple transpose on 'list' unless the list is empty, in which case a list of empty lists is returned, of length 'lengthOfAssignment'."},
+			{"TransposeOrEmpty[lengthOfAssignment]", "operator", "represents an operator form of TransposeOrEmpty that can be applied to a list."}
+		},
+		MoreInformation -> {
+			"TransposeOrEmpty ensures safe assignment to a list of variables when performing a transpose.",
+			"For example, {aList, bList} = Transpose[{{a1, b1}, {a2, b2}, ..., {aN, bN}}] is a commonly used expression, however it will fail if attempting to transpose an empty list - Transpose[{}] = {}.",
+			"TransposeOrEmpty takes in an additional argument for the length of the assignment, so that transposing an empty list assigns out an empty list to each variable.",
+			"TransposeOrEmpty essentially provides an inverse to Transpose[{{}, {}, ...}] = {}."
+		},
+		Input :>
+			{
+				{"list", _, "An expression to transpose."},
+				{"lengthOfAssignment", GreaterP[0, 1], "The length of empty lists to return if an empty list is supplied."}
+			},
+		Output :>
+			{
+				{"transposedList", _List, "The transposed list, or list of empty lists of the specified length."}
+			},
+		SeeAlso ->
+			{
+				"List",
+				"ToList"
+			},
+		Author -> {"david.ascough"}
+	}
+];

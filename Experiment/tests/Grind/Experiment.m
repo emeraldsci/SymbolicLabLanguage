@@ -145,7 +145,32 @@ DefineTests[ExperimentGrind,
 			Variables :> {options},
 			EquivalenceFunction -> EqualQ
 		],
-
+		Example[
+			{Options, Amount, "If the input sample is counted, then Amount may be specified as a count and not just as a mass:"},
+			Download[
+				ExperimentGrind[
+					Object[Sample, "Test sample for ExperimentGrind 16 " <> $SessionUUID],
+					Amount -> 3
+				],
+				{Amounts, BatchedUnitOperations[[1]][AmountVariableUnit]}
+			],
+			{
+				{EqualP[3 Unit]},
+				{EqualP[3 Unit]}
+			}
+		],
+		Example[
+			{Messages, "CountedGrindAmount", "If the input sample is counted, then Amount may be specified as a count and not just as a mass:"},
+			ExperimentGrind[
+				Object[Sample, "Test sample for ExperimentGrind 1 " <> $SessionUUID],
+				Amount -> 3
+			],
+			$Failed,
+			Messages :> {
+				Error::CountedGrindAmount,
+				Error::InvalidOption
+			}
+		],
 		Example[
 			{Options, Fineness, "Determine the Fineness of the sample (the largest size of the particles of the sample):"},
 			options = ExperimentGrind[
@@ -180,6 +205,16 @@ DefineTests[ExperimentGrind,
 			Lookup[options, GrindingContainer],
 			ObjectP[PreferredGrindingContainer[Model[Instrument, Grinder, "BeadBug3"], 1 Gram, 1 Gram / Milliliter]],
 			Variables :> {options}
+		],
+		Example[
+			{Options, GrindingContainer, "If the sample is already in the grinding container, don't Transfer:"},
+			protocol = ExperimentGrind[
+				{Object[Sample, "Test sample for ExperimentGrind 1 " <> $SessionUUID], Object[Sample, "Test sample for ExperimentGrind 16 " <> $SessionUUID]},
+				GrindingContainer -> {Object[Container, Vessel, "Test container for ExperimentGrind 1 " <> $SessionUUID], Automatic}
+			];
+			Download[protocol, GrindingContainerTransfer],
+			{False, True},
+			Variables :> {protocol}
 		],
 
 		Example[

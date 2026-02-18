@@ -5539,7 +5539,7 @@ DefineTests[sanitizeInputs,
 				{_Rule..},
 				{_Rule..}
 			},
-			Messages :> {Warning::OptionContainsUnusableObject},
+			Messages :> {Warning::OptionContainsUnsuitableObject},
 			SetUp :> (
 				Upload[<|
 					Type -> Object[Item, Filter],
@@ -5570,7 +5570,7 @@ DefineTests[sanitizeInputs,
 				{_Rule..},
 				{_Rule..}
 			},
-			Messages :> {Warning::OptionContainsUnusableObject},
+			Messages :> {Warning::OptionContainsUnsuitableObject},
 			SetUp :> (
 				Upload[<|
 					Type -> Object[Item, Filter],
@@ -7237,10 +7237,10 @@ DefineTests[
 		Example[{Basic, "SamplePreparationCacheFields returns the fields associated with an Object[Sample] input:"},
 			SamplePreparationCacheFields[Object[Sample]],
 			{
-				Object, Type, Name, State, BiosafetyLevel, CellType, CultureAdhesion, SampleHandling, Composition,
+				Object, Type, Name, State, BiosafetyLevel, CellType, CultureAdhesion, BiohazardDisposal, SampleHandling, Composition,
 				Analytes, Solvent, MassConcentration, Concentration, Volume, Mass, Count, Status, Model, Position,
 				Container, Living, Sterile, StorageCondition, MeltingPoint, ThawTime, ThawTemperature, MaxThawTime, ThawMixType,
-				ThawMixRate, ThawMixTime, ThawNumberOfMixes, TransportTemperature, Tablet, Sachet, SolidUnitWeight,
+				ThawMixRate, ThawMixTime, ThawNumberOfMixes, TransportTemperature, Tablet, Capsule, Sachet, SolidUnitWeight,
 				LiquidHandlerIncompatible, Site, RequestedResources, Conductivity, IncompatibleMaterials, pH, KitComponents,
 				AsepticHandling, Density, Fuming, InertHandling, ParticleWeight, PipettingMethod, Pyrophoric,
 				ReversePipetting, RNaseFree, TransferTemperature, TransportCondition, Ventilated, Well, SurfaceTension,
@@ -7252,7 +7252,7 @@ DefineTests[
 			{
 				Conductivity, IncompatibleMaterials, pH, KitComponents, RequestedResources, Products, KitProducts,
 				MaxThawTime, Solvent, SampleHandling, CellType, CultureAdhesion, BiosafetyLevel, Composition, Analytes, TransportTemperature,
-				Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, Sachet, SolidUnitWeight, State, MolecularWeight, MeltingPoint,
+				Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, Capsule, Sachet, SolidUnitWeight, State, MolecularWeight, MeltingPoint,
 				ThawTime, ThawTemperature, Dimensions, ExtinctionCoefficients, UsedAsSolvent, AsepticHandling, Density, Fuming, InertHandling,
 				ParticleWeight, PipettingMethod, Pyrophoric, ReversePipetting, RNaseFree, TransferTemperature, TransportCondition, Ventilated, SurfaceTension,
 				Parafilm, AluminumFoil, Living, Flammable, DOTHazardClass
@@ -7655,8 +7655,11 @@ DefineTests[
 
 				(* Make a test Model[Sample] *)
 				modelSample1 = UploadSampleModel[
-					"Bacterial sample model for resolveManualFrameworkFunction tests " <> $SessionUUID,
-					Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, modelCell1}},
+					{
+						{95 VolumePercent, Model[Molecule, "Water"]},
+						{5 VolumePercent, modelCell1}
+					},
+					Name -> "Bacterial sample model for resolveManualFrameworkFunction tests " <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,
@@ -8091,8 +8094,11 @@ DefineTests[
 
 				(* Make a test Model[Sample] *)
 				modelSample1 = UploadSampleModel[
-					"Bacterial sample model for resolvePotentialWorkCells tests " <> $SessionUUID,
-					Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, modelCell1}},
+					{
+						{95 VolumePercent, Model[Molecule, "Water"]},
+						{5 VolumePercent, modelCell1}
+					},
+					Name -> "Bacterial sample model for resolvePotentialWorkCells tests " <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,

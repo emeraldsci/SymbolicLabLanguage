@@ -143,6 +143,26 @@ DefineTests[
 			ObjectP[Model[Container, Plate]],
 			Stubs :> {$PersonID = Object[User, "id:n0k9mG8AXZP6"]}
 		],
+		Example[{Additional, "User is allowed to supply a Model[Sample] as the ProductInformation input. In that case, ECL personnel will attempt to find the corresponding product in the verification process later:"},
+			UploadContainerModel[
+				"Tube or bottle",
+				Model[Sample, "Methanol"]
+			],
+			ObjectP[Model[Container, Vessel]],
+			Stubs :> {$PersonID = Object[User, "id:n0k9mG8AXZP6"]}
+		],
+		Example[{"When creating a new Model[Container, Vessel], as long as the OpenContainer != True and PermanentlySealed != True, a cover model will be auto-created:"},
+			packets = UploadContainerModel[
+				Model[Container, Vessel],
+				Object[EmeraldCloudFile, "Test documentation file for UploadContainerModel unit tests "<>$SessionUUID],
+				PermanentlySealed -> False,
+				Upload -> False
+			];
+			MemberQ[packets, PacketP[Model[Item, Cap]]],
+			True,
+			Variables :> {packets},
+			Stubs :> {$PersonID = Object[User, "id:n0k9mG8AXZP6"], $AllowAutoNewModelCreation = True}
+		],
 		Example[{Messages, "RequiredOptionsForNoProduct", "When creating a new Model[Container] which is not commercially available and no product-related options supplied, The minimal required options must be provided, otherwise an error will be thrown:"},
 			UploadContainerModel[
 				Model[Container, Vessel],
@@ -194,7 +214,7 @@ DefineTests[
 				Upload[
 					<|
 						Type -> Model[Container, Vessel],
-						DeveloperObject -> False,
+						DeveloperObject -> True,
 						Name -> "50 mL Glass Vessel created on "<>DateString[Now, {"Month", "Day", "Year"}]
 					|>
 				]
@@ -322,6 +342,15 @@ DefineTests[
 			Messages :> {Error::SameProductAlreadyExist, Error::InvalidInput},
 			Stubs :> {$PersonID = Object[User, "id:n0k9mG8AXZP6"], $DeveloperSearch = True, $AllowDuplicateProductModel = False}
 		],
+		Example[{Messages, "MissingMaxCentrifugationForce", "If the footprint is centrifugeable but the MaxCentrifugationForce is not informed, throw an error:"},
+			UploadContainerModel[
+				Model[Container, Vessel, "Test valid container 1 for UploadContainerModel unit tests "<>$SessionUUID],
+				Footprint -> Conical15mLTube
+			],
+			$Failed,
+			Messages :> {Error::MissingMaxCentrifugationForce, Error::InvalidOption},
+			Stubs :> {$PersonID = Object[User, Emerald, Developer, "id:xRO9n3BleWNZ"]}
+		],
 		Test["When creating a new container model providing ProductInformation input, if there is existing public product in database, function will throw an error:",
 			UploadContainerModel[
 				Model[Container, Vessel],
@@ -331,6 +360,17 @@ DefineTests[
 			$Failed,
 			Messages :> {Error::SameProductAlreadyExist, Error::InvalidInput},
 			Stubs :> {$PersonID = Object[User, "id:n0k9mG8AXZP6"], $AllowDuplicateProductModel = False}
+		],
+		Test["Specifying the NumberOfPositions option when creating Model[Container, Rack]:",
+			containerModel = UploadContainerModel[
+				Model[Container, Rack],
+				Object[EmeraldCloudFile, "Test documentation file for UploadContainerModel unit tests "<>$SessionUUID],
+				NumberOfPositions -> 1
+			];
+			Download[containerModel, NumberOfPositions],
+			1,
+			Stubs :> {$PersonID = Object[User, "id:n0k9mG8AXZP6"], $AllowDuplicateProductModel = False},
+			Variables :> {containerModel}
 		],
 		Test["When creating a new container model providing ProductInformation input, if there is existing public product in database, and user did not intend to make any changes, output that model:",
 			UploadContainerModel[
@@ -549,6 +589,42 @@ DefineTests[
 			Stubs :> {$PersonID = Object[User, "id:n0k9mG8AXZP6"]},
 			Variables :> {container}
 		],
+		Example[{Options, ExposedSurfaces, "Indicate that sensitive portions of this container are open to the external environment and prone to contamination:"},
+			container = UploadContainerModel[
+				Model[Container, Vessel],
+				Object[EmeraldCloudFile, "Test documentation file for UploadContainerModel unit tests "<>$SessionUUID],
+				Name -> Null,
+				ExposedSurfaces -> True
+			];
+			Download[container, ExposedSurfaces],
+			True,
+			Stubs :> {$PersonID = Object[User, "id:n0k9mG8AXZP6"]},
+			Variables :> {container}
+		],
+		Example[{Options, DefaultStorageCondition, "If ExposedSurfaces is True, DefaultStorageCondition automatically resolves to Ambient Storage, Lined Enclosed:"},
+			container = UploadContainerModel[
+				Model[Container, Vessel],
+				Object[EmeraldCloudFile, "Test documentation file for UploadContainerModel unit tests "<>$SessionUUID],
+				Name -> Null,
+				ExposedSurfaces -> True
+			];
+			Download[container, DefaultStorageCondition],
+			ObjectP[Model[StorageCondition, "Ambient Storage, Lined Enclosed"]],
+			Stubs :> {$PersonID = Object[User, "id:n0k9mG8AXZP6"]},
+			Variables :> {container}
+		],
+		Example[{Options, DefaultStorageCondition, "If ExposedSurfaces is False, DefaultStorageCondition automatically resolves to Ambient Storage:"},
+			container = UploadContainerModel[
+				Model[Container, Vessel],
+				Object[EmeraldCloudFile, "Test documentation file for UploadContainerModel unit tests "<>$SessionUUID],
+				Name -> Null,
+				ExposedSurfaces -> False
+			];
+			Download[container, DefaultStorageCondition],
+			ObjectP[Model[StorageCondition, "Ambient Storage"]],
+			Stubs :> {$PersonID = Object[User, "id:n0k9mG8AXZP6"]},
+			Variables :> {container}
+		],
 		Test["When developers are running this function, if resulted model doesn't pass ValidObjectQ due to certain options missing, Error::RequiredOptions will be thrown once:",
 			UploadContainerModel[
 				Model[Container, Vessel, "Test valid container 1 for UploadContainerModel unit tests "<>$SessionUUID],
@@ -646,7 +722,9 @@ DefineTests[
 			],
 			$Failed,
 			Stubs :> {$PersonID = Object[User, Emerald, Developer, "id:xRO9n3BleWNZ"]},
-			Messages :> {Error::NotAllowedPositionName, Error::InvalidOption}
+			Messages :> {Error::NotAllowedPositionName, Error::InvalidOption},
+			SetUp :> {Upload[<| Object -> Model[Container, Vessel, "Test valid container 1 for UploadContainerModel unit tests "<>$SessionUUID], PendingParameterization -> True |>]},
+			TearDown :> {Upload[<| Object -> Model[Container, Vessel, "Test valid container 1 for UploadContainerModel unit tests "<>$SessionUUID], PendingParameterization -> False |>]}
 		],
 		Test["When developers are running this function, if resulted model doesn't pass ValidObjectQ due to relative magnitude of certain options are incorrect, Error::ConflictingOptionsMagnitude will be thrown once:",
 			UploadContainerModel[
@@ -660,11 +738,11 @@ DefineTests[
 			Stubs :> {$PersonID = Object[User, Emerald, Developer, "id:xRO9n3BleWNZ"]},
 			Messages :> {Error::ConflictingOptionsMagnitude, Error::InvalidOption}
 		],
-		Test["Ensure that "<>ToString[Model[Container, Vessel, "Test valid container 1 for UploadContainerModel unit tests "<>$SessionUUID]]<>" created in SymbolSetUp passes VOQ:",
+		Test["Ensure that Vessel model created in SymbolSetUp passes VOQ:",
 			ValidObjectQ[Model[Container, Vessel, "Test valid container 1 for UploadContainerModel unit tests "<>$SessionUUID]],
 			True
 		],
-		Test["Ensure that "<>ToString[Model[Container, Plate, "Test valid plate 1 for UploadContainerModel unit tests "<>$SessionUUID]]<>" created in SymbolSetUp passes VOQ:",
+		Test["Ensure that Plate model created in SymbolSetUp passes VOQ:",
 			ValidObjectQ[Model[Container, Plate, "Test valid plate 1 for UploadContainerModel unit tests "<>$SessionUUID]],
 			True
 		],
@@ -750,9 +828,23 @@ DefineTests[
 			{"Missing", ObjectP[Object[EmeraldCloudFile, "Test documentation file for UploadContainerModel unit tests "<>$SessionUUID]], {LDPE, Aluminum}, "Missing"},
 			Stubs :> {$PersonID = Object[User, Emerald, Developer, "id:xRO9n3BleWNZ"]},
 			Variables :> {containerModelPacket, packets}
+		],
+		Test["When developers are running this function to create a new Model[Container, Vessel], as long as the OpenContainer != True and PermanentlySealed != True, a cover model will be auto-created, and a warning will be thrown:",
+			packets = UploadContainerModel[
+				Model[Container, Vessel],
+				Object[EmeraldCloudFile, "Test documentation file for UploadContainerModel unit tests "<>$SessionUUID],
+				PermanentlySealed -> False,
+				Strict -> False,
+				Upload -> False
+			];
+			MemberQ[packets, PacketP[Model[Item, Cap]]],
+			True,
+			Variables :> {packets},
+			Stubs :> {$PersonID = Object[User, Emerald, Developer, "id:xRO9n3BleWNZ"], $AllowAutoNewModelCreation = True},
+			Messages :> {Warning::AutocreatedObjectsNeedVerification}
 		]
 	},
-	Stubs :> {$AllowUserInvalidObjectUploads = True, $AllowDuplicateProductModel = True, $IgnorePropertyDuplicateModel = True},
+	Stubs :> {$AllowUserInvalidObjectUploads = True, $AllowDuplicateProductModel = True, $IgnorePropertyDuplicateModel = True, $AllowAutoNewModelCreation = False, $DeveloperUpload = True, $DeveloperSearch = True},
 	SetUp :> {$CreatedObjects = {}},
 	TearDown :> (
 		EraseObject[PickList[$CreatedObjects, DatabaseMemberQ[$CreatedObjects]], Force -> True];
@@ -867,95 +959,100 @@ DefineTests[
 				|>
 			}];
 
-			UploadContainerModel[
-				Model[Container, Vessel],
-				Name -> "Test valid container 1 for UploadContainerModel unit tests "<>$SessionUUID,
-				ImageFile -> Object[EmeraldCloudFile, "Test documentation file for UploadContainerModel unit tests "<>$SessionUUID],
-				ProductDocumentation -> Object[EmeraldCloudFile, "Test documentation file for UploadContainerModel unit tests "<>$SessionUUID],
-				MinVolume -> 1 Milliliter,
-				MaxVolume -> 50 Milliliter,
-				MinTemperature -> -80 Celsius,
-				MaxTemperature -> 200 Celsius,
-				Ampoule -> False,
-				Reusable -> False,
-				Squeezable -> False,
-				Opaque -> False,
-				Positions -> {{"A1", Open, 30 Millimeter, 30 Millimeter, 120 Millimeter}},
-				PositionPlotting -> {{"A1", 15 Millimeter, 15 Millimeter, 60 Millimeter, Circle, 0}},
-				SelfStanding -> True,
-				PreferredBalance -> Analytical,
-				CrossSectionalShape -> Circle,
-				InternalBottomShape -> FlatBottom,
-				PreferredCamera -> Medium,
-				Sterile -> False,
-				Stocked -> False,
-				Fragile -> False,
-				RNaseFree -> False,
-				PyrogenFree -> False,
-				DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
-				ContainerMaterials -> {{Glass}},
-				DefaultStickerModel -> Model[Item, Sticker, "id:mnk9jO3dexZY"],
-				Dimensions -> {40 Millimeter, 40 Millimeter, 150 Millimeter},
-				CoverTypes -> {{Screw}},
-				CoverFootprints -> {{CapScrewTube35x13}},
-				InternalDepth -> 120 Millimeter,
-				InternalDiameter -> 30 Millimeter,
-				Aperture -> 30 Millimeter,
-				Force -> True
+			Block[{$DeveloperUpload = True},
+				UploadContainerModel[
+					Model[Container, Vessel],
+					Name -> "Test valid container 1 for UploadContainerModel unit tests "<>$SessionUUID,
+					ImageFile -> Object[EmeraldCloudFile, "Test documentation file for UploadContainerModel unit tests "<>$SessionUUID],
+					ProductDocumentation -> Object[EmeraldCloudFile, "Test documentation file for UploadContainerModel unit tests "<>$SessionUUID],
+					MinVolume -> 1 Milliliter,
+					MaxVolume -> 50 Milliliter,
+					MinTemperature -> -80 Celsius,
+					MaxTemperature -> 200 Celsius,
+					Ampoule -> False,
+					Reusable -> False,
+					Squeezable -> False,
+					Opaque -> False,
+					Positions -> {{"A1", Open, 30 Millimeter, 30 Millimeter, 120 Millimeter}},
+					PositionPlotting -> {{"A1", 15 Millimeter, 15 Millimeter, 60 Millimeter, Circle, 0}},
+					SelfStanding -> True,
+					PreferredBalance -> Analytical,
+					CrossSectionalShape -> Circle,
+					InternalBottomShape -> FlatBottom,
+					PreferredCamera -> Medium,
+					Sterile -> False,
+					Stocked -> False,
+					Fragile -> False,
+					RNaseFree -> False,
+					PyrogenFree -> False,
+					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
+					ContainerMaterials -> {{Glass}},
+					DefaultStickerModel -> Model[Item, Sticker, "id:mnk9jO3dexZY"],
+					Dimensions -> {40 Millimeter, 40 Millimeter, 150 Millimeter},
+					CoverTypes -> {{Screw}},
+					CoverFootprints -> {{CapScrewTube35x13}},
+					InternalDepth -> 120 Millimeter,
+					InternalDiameter -> 30 Millimeter,
+					Aperture -> 30 Millimeter,
+					Force -> True
+				]
 			];
 
-			UploadContainerModel[
-				Model[Container, Plate],
-				Name -> "Test valid plate 1 for UploadContainerModel unit tests "<>$SessionUUID,
-				ImageFile -> Object[EmeraldCloudFile, "Test documentation file for UploadContainerModel unit tests "<>$SessionUUID],
-				ProductDocumentation -> Object[EmeraldCloudFile, "Test documentation file for UploadContainerModel unit tests "<>$SessionUUID],
-				MinVolume -> 1 Milliliter,
-				MaxVolume -> 50 Milliliter,
-				MinTemperature -> -80 Celsius,
-				MaxTemperature -> 200 Celsius,
-				Ampoule -> False,
-				Reusable -> False,
-				Squeezable -> False,
-				Opaque -> False,
-				Positions -> Automatic,
-				PositionPlotting -> Automatic,
-				SelfStanding -> True,
-				PreferredBalance -> Analytical,
-				CrossSectionalShape -> Circle,
-				PreferredCamera -> Medium,
-				Sterile -> False,
-				Fragile -> False,
-				RNaseFree -> False,
-				PyrogenFree -> False,
-				DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
-				ContainerMaterials -> {{Glass}},
-				DefaultStickerModel -> Model[Item, Sticker, "id:mnk9jO3dexZY"],
-				Dimensions -> {40 Millimeter, 40 Millimeter, 150 Millimeter},
-				CoverTypes -> {{Place}},
-				CoverFootprints -> {{LidPlace8x126}},
-				PlateColor -> Clear,
-				WellColor -> Clear,
-				Columns -> 12,
-				Rows -> 8,
-				NumberOfWells -> 96,
-				WellDiameter -> 5 Millimeter,
-				Treatment -> NonTreated,
-				HorizontalMargin -> 1 Millimeter,
-				VerticalMargin -> 1 Millimeter,
-				DepthMargin -> 1 Millimeter,
-				WellDepth -> 2 Millimeter,
-				WellBottom -> FlatBottom,
-				HorizontalOffset -> 1 Millimeter,
-				VerticalOffset -> 1 Millimeter,
-				Skirted -> False,
-				StorageOrientation -> Upright,
-				Footprint -> Plate,
-				TransportStable -> True,
-				HorizontalPitch -> 1 Millimeter,
-				VerticalPitch -> 1 Millimeter,
-				AspectRatio -> 1.5,
-				CavityCrossSectionalShape -> Circle,
-				Force -> True
+			Block[{$DeveloperUpload = True},
+				UploadContainerModel[
+					Model[Container, Plate],
+					Name -> "Test valid plate 1 for UploadContainerModel unit tests "<>$SessionUUID,
+					ImageFile -> Object[EmeraldCloudFile, "Test documentation file for UploadContainerModel unit tests "<>$SessionUUID],
+					ProductDocumentation -> Object[EmeraldCloudFile, "Test documentation file for UploadContainerModel unit tests "<>$SessionUUID],
+					MinVolume -> 1 Milliliter,
+					MaxVolume -> 50 Milliliter,
+					MinTemperature -> -80 Celsius,
+					MaxTemperature -> 200 Celsius,
+					Ampoule -> False,
+					Reusable -> False,
+					Squeezable -> False,
+					Opaque -> False,
+					Positions -> Automatic,
+					PositionPlotting -> Automatic,
+					SelfStanding -> True,
+					PreferredBalance -> Analytical,
+					CrossSectionalShape -> Circle,
+					PreferredCamera -> Medium,
+					Sterile -> False,
+					Fragile -> False,
+					RNaseFree -> False,
+					PyrogenFree -> False,
+					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
+					ContainerMaterials -> {{Glass}},
+					DefaultStickerModel -> Model[Item, Sticker, "id:mnk9jO3dexZY"],
+					Dimensions -> {40 Millimeter, 40 Millimeter, 150 Millimeter},
+					CoverTypes -> {{Place}},
+					CoverFootprints -> {{LidPlace8x126}},
+					PlateColor -> Clear,
+					WellColor -> Clear,
+					Columns -> 12,
+					Rows -> 8,
+					NumberOfWells -> 96,
+					WellDiameter -> 5 Millimeter,
+					Treatment -> NonTreated,
+					HorizontalMargin -> 1 Millimeter,
+					VerticalMargin -> 1 Millimeter,
+					DepthMargin -> 1 Millimeter,
+					WellDepth -> 2 Millimeter,
+					WellBottom -> FlatBottom,
+					HorizontalOffset -> 1 Millimeter,
+					VerticalOffset -> 1 Millimeter,
+					Skirted -> False,
+					StorageOrientation -> Upright,
+					Footprint -> Plate,
+					TransportStable -> True,
+					HorizontalPitch -> 1 Millimeter,
+					VerticalPitch -> 1 Millimeter,
+					AspectRatio -> 1.5,
+					CavityCrossSectionalShape -> Circle,
+          MaxCentrifugationForce -> 0 GravitationalAcceleration,
+					Force -> True
+				]
 			];
 
 			Upload[{
@@ -965,7 +1062,8 @@ DefineTests[
 					Material -> Glass,
 					Fragile -> True,
 					MinTemperature -> -30 Celsius,
-					MaxTemperature -> 500 Celsius
+					MaxTemperature -> 500 Celsius,
+					DeveloperObject -> False
 				|>
 			}];
 			(* Clear the current materialInformation *)
@@ -1042,10 +1140,22 @@ DefineTests[UploadVerifiedContainerModel,
 			Quiet[UploadVerifiedContainerModel[Model[Container, Vessel, "Test invalid container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID], Verify -> True, Strict -> False]],
 			$Failed
 		],
-		Example[{Messages, "InteralOnlyFunction", "This function is meant for ECL internal personnel only. When external user run this function, Error::InteralOnlyFunction will be thrown:"},
+		Example[{Additional, "If the container model is only missing properties that can be measured from in-lab parameterization, function will apply the changes to options and PendingParameterization -> True:"},
+			UploadVerifiedContainerModel[
+				Model[Container, Vessel, "Test need parameterization container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
+				Verify -> True,
+				MaxTemperature -> 250 Celsius
+			];
+			Download[Model[Container, Vessel, "Test need parameterization container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID], {MaxTemperature, PendingParameterization}],
+			{
+				EqualP[250 Celsius],
+				True
+			}
+		],
+		Example[{Messages, "InternalOnlyFunction", "This function is meant for ECL internal personnel only. When external user run this function, Error::InternalOnlyFunction will be thrown:"},
 			UploadVerifiedContainerModel[Model[Container, Vessel, "Test valid container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID]],
 			$Failed,
-			Messages :> {Error::InteralOnlyFunction},
+			Messages :> {Error::InternalOnlyFunction},
 			Stubs :> {$PersonID = Object[User, "id:n0k9mG8AXZP6"]}
 		],
 		Test["Assert the vessel model created in SymbolSetUp passes VOQ:",
@@ -1055,6 +1165,64 @@ DefineTests[UploadVerifiedContainerModel,
 		Test["Assert the plate model created in SymbolSetUp passes VOQ:",
 			ValidObjectQ[Model[Container, Plate, "Test valid plate 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID]],
 			True
+		],
+		Example[{Options, NewType, "If the original container model is not in correct Type, developer can use NewType option to create a replacement model in the correct type:"},
+			UploadVerifiedContainerModel[
+				Model[Container, Vessel, "Test invalid container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
+				Name -> "Test corrected plate 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID,
+				NewType -> Model[Container, Plate],
+				ImageFile -> Object[EmeraldCloudFile, "Test documentation file for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
+				ProductDocumentation -> Object[EmeraldCloudFile, "Test documentation file for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
+				MinVolume -> 1 Milliliter,
+				MaxVolume -> 50 Milliliter,
+				MinTemperature -> -80 Celsius,
+				MaxTemperature -> 200 Celsius,
+				Ampoule -> False,
+				Reusable -> False,
+				Squeezable -> False,
+				Opaque -> False,
+				Positions -> Automatic,
+				PositionPlotting -> Automatic,
+				SelfStanding -> True,
+				PreferredBalance -> Analytical,
+				CrossSectionalShape -> Circle,
+				PreferredCamera -> Medium,
+				Sterile -> False,
+				Fragile -> False,
+				RNaseFree -> False,
+				PyrogenFree -> False,
+				DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
+				ContainerMaterials -> {{Glass}},
+				DefaultStickerModel -> Model[Item, Sticker, "id:mnk9jO3dexZY"],
+				Dimensions -> {40 Millimeter, 40 Millimeter, 150 Millimeter},
+				CoverTypes -> {{Place}},
+				CoverFootprints -> {{LidPlace8x126}},
+				PlateColor -> Clear,
+				WellColor -> Clear,
+				Columns -> 12,
+				Rows -> 8,
+				NumberOfWells -> 96,
+				WellDiameter -> 5 Millimeter,
+				Treatment -> NonTreated,
+				HorizontalMargin -> 1 Millimeter,
+				VerticalMargin -> 1 Millimeter,
+				DepthMargin -> 1 Millimeter,
+				WellDepth -> 2 Millimeter,
+				WellBottom -> FlatBottom,
+				HorizontalOffset -> 1 Millimeter,
+				VerticalOffset -> 1 Millimeter,
+				Skirted -> False,
+				StorageOrientation -> Upright,
+				Footprint -> Plate,
+				MaxCentrifugationForce -> 0 GravitationalAcceleration,
+				TransportStable -> True,
+				HorizontalPitch -> 1 Millimeter,
+				VerticalPitch -> 1 Millimeter,
+				AspectRatio -> 1.5,
+				CavityCrossSectionalShape -> Circle,
+				Verify -> True
+			],
+			ObjectP[Model[Container, Plate, "Test corrected plate 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID]]
 		],
 		Example[{Messages, "UnableToFindInfo", "If any options are required in order to pass VOQ, but it's missing, Error::UnableToFindInfo will be thrown:"},
 			UploadVerifiedContainerModel[Model[Container, Vessel, "Test valid container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID], Verify -> False],
@@ -1400,7 +1568,8 @@ DefineTests[UploadVerifiedContainerModel,
 				}
 			],
 			{_Rule..},
-			Messages :> {Error::MultiplePositions, Error::InvalidOption, Warning::NotYetVerified}
+			Messages :> {Error::MultiplePositions, Error::InvalidOption, Warning::NotYetVerified},
+			SetUp :> {Upload[<| Object -> Model[Container, Vessel, "Test valid container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID], PendingParameterization -> Null |>]}
 		],
 		Example[{Messages, "MultiplePositionsFromExistingObject", "Vessels cannot have more than 1 entry for Positions and PositionsPlottings field. If the existing model contains more than 1 entry for these options, Error::MultiplePositionsFromExistingObject will be thrown:"},
 			Upload[<|
@@ -1428,7 +1597,8 @@ DefineTests[UploadVerifiedContainerModel,
 				Replace[PositionPlotting] -> {
 					<|Name -> "A1", XOffset -> 15 Millimeter, YOffset -> 15 Millimeter, ZOffset -> 60 Millimeter, CrossSectionalShape -> Circle, Rotation -> 0|>
 				}
-			|>]
+			|>],
+			SetUp :> {Upload[<| Object -> Model[Container, Vessel, "Test valid container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID], PendingParameterization -> Null |>]}
 		],
 		Example[{Messages, "NotAllowedPositionName", "For vessels the position name of Positions and PositionsPlottings field must be \"A1\". If the provided position name is not A1, Error::NotAllowedPositionName will be thrown:"},
 			UploadVerifiedContainerModel[
@@ -1442,7 +1612,8 @@ DefineTests[UploadVerifiedContainerModel,
 				}
 			],
 			{_Rule..},
-			Messages :> {Error::NotAllowedPositionName, Error::InvalidOption, Warning::NotYetVerified}
+			Messages :> {Error::NotAllowedPositionName, Error::InvalidOption, Warning::NotYetVerified},
+			SetUp :> {Upload[<| Object -> Model[Container, Vessel, "Test valid container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID], PendingParameterization -> Null |>]}
 		],
 		Example[{Messages, "NotAllowedPositionNameFromExistingObject", "For vessels the position name of Positions and PositionsPlottings field must be \"A1\". If currently the container model's position name is not A1, Error::NotAllowedPositionNameFromExistingObject will be thrown:"},
 			Upload[<|
@@ -1468,7 +1639,8 @@ DefineTests[UploadVerifiedContainerModel,
 				Replace[PositionPlotting] -> {
 					<|Name -> "A1", XOffset -> 15 Millimeter, YOffset -> 15 Millimeter, ZOffset -> 60 Millimeter, CrossSectionalShape -> Circle, Rotation -> 0|>
 				}
-			|>]
+			|>],
+			SetUp :> {Upload[<| Object -> Model[Container, Vessel, "Test valid container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID], PendingParameterization -> Null |>]}
 		],
 		Example[{Messages, "ConflictingDimensionsEntry", "If the container has CrossSectionalShape -> Circle, the first two entries of Dimensions option (i.e., X and Y dimensions) are expected to be the same. If CrossSectionalShape is set to Circle but unequal x and y dimensions are specified, Error::ConflictingDimensionsEntry will be thrown:"},
 			UploadVerifiedContainerModel[
@@ -1692,8 +1864,11 @@ DefineTests[UploadVerifiedContainerModel,
 		Module[{allObjects, existingObejcts},
 			allObjects = {
 				Model[Container, Vessel, "Test invalid container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
+				Model[Container, Plate, "Test corrected plate 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
+				Model[Container, Plate, "Test corrected plate 2 for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
 				Model[Container, Vessel, "Test valid container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
 				Model[Container, Plate, "Test valid plate 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
+				Model[Container, Vessel, "Test need parameterization container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
 				Object[EmeraldCloudFile, "Test documentation file for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
 				Model[Container, Vessel, "Unknown Volume Unknown Material Vessel created on "<>DateString[Now, {"Month", "Day", "Year"}]],
 				Model[Container, Vessel, "Test valid container 2 for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
@@ -1750,9 +1925,105 @@ DefineTests[UploadVerifiedContainerModel,
 				DeveloperObject -> True
 			|>];
 
+			Block[{$DeveloperUpload = True},
+				UploadContainerModel[
+					Model[Container, Vessel],
+					Name -> "Test valid container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID,
+					ImageFile -> Object[EmeraldCloudFile, "Test documentation file for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
+					ProductDocumentation -> Object[EmeraldCloudFile, "Test documentation file for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
+					MinVolume -> 1 Milliliter,
+					MaxVolume -> 50 Milliliter,
+					MinTemperature -> -80 Celsius,
+					MaxTemperature -> 200 Celsius,
+					Ampoule -> False,
+					Reusable -> False,
+					Squeezable -> False,
+					Opaque -> False,
+					Positions -> {{"A1", Open, 30 Millimeter, 30 Millimeter, 120 Millimeter}},
+					PositionPlotting -> {{"A1", 15 Millimeter, 15 Millimeter, 60 Millimeter, Circle, 0}},
+					SelfStanding -> True,
+					PreferredBalance -> Analytical,
+					CrossSectionalShape -> Circle,
+					InternalBottomShape -> FlatBottom,
+					PreferredCamera -> Medium,
+					Sterile -> False,
+					Stocked -> False,
+					Fragile -> False,
+					RNaseFree -> False,
+					PyrogenFree -> False,
+					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
+					ContainerMaterials -> {{Glass}},
+					DefaultStickerModel -> Model[Item, Sticker, "id:mnk9jO3dexZY"],
+					Dimensions -> {40 Millimeter, 40 Millimeter, 150 Millimeter},
+					CoverTypes -> {{Screw}},
+					CoverFootprints -> {{CapScrewTube35x13}},
+					InternalDepth -> 120 Millimeter,
+					InternalDiameter -> 30 Millimeter,
+					Aperture -> 30 Millimeter,
+					Force -> True
+				];
+			];
+
+			Block[{$DeveloperUpload = True},
+				UploadContainerModel[
+					Model[Container, Plate],
+					Name -> "Test valid plate 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID,
+					ImageFile -> Object[EmeraldCloudFile, "Test documentation file for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
+					ProductDocumentation -> Object[EmeraldCloudFile, "Test documentation file for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
+					MinVolume -> 1 Milliliter,
+					MaxVolume -> 50 Milliliter,
+					MinTemperature -> -80 Celsius,
+					MaxTemperature -> 200 Celsius,
+					Ampoule -> False,
+					Reusable -> False,
+					Squeezable -> False,
+					Opaque -> False,
+					Positions -> Automatic,
+					PositionPlotting -> Automatic,
+					SelfStanding -> True,
+					PreferredBalance -> Analytical,
+					CrossSectionalShape -> Circle,
+					PreferredCamera -> Medium,
+					Sterile -> False,
+					Fragile -> False,
+					RNaseFree -> False,
+					PyrogenFree -> False,
+					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
+					ContainerMaterials -> {{Glass}},
+					DefaultStickerModel -> Model[Item, Sticker, "id:mnk9jO3dexZY"],
+					Dimensions -> {40 Millimeter, 40 Millimeter, 150 Millimeter},
+					CoverTypes -> {{Place}},
+					CoverFootprints -> {{LidPlace8x126}},
+					PlateColor -> Clear,
+					WellColor -> Clear,
+					Columns -> 12,
+					Rows -> 8,
+					NumberOfWells -> 96,
+					WellDiameter -> 5 Millimeter,
+					Treatment -> NonTreated,
+					HorizontalMargin -> 1 Millimeter,
+					VerticalMargin -> 1 Millimeter,
+					DepthMargin -> 1 Millimeter,
+					WellDepth -> 2 Millimeter,
+					WellBottom -> FlatBottom,
+					HorizontalOffset -> 1 Millimeter,
+					VerticalOffset -> 1 Millimeter,
+					Skirted -> False,
+					StorageOrientation -> Upright,
+					Footprint -> Plate,
+					TransportStable -> True,
+					HorizontalPitch -> 1 Millimeter,
+					VerticalPitch -> 1 Millimeter,
+					AspectRatio -> 1.5,
+					CavityCrossSectionalShape -> Circle,
+          MaxCentrifugationForce -> 0 GravitationalAcceleration,
+					Force -> True
+				]
+			];
+
 			UploadContainerModel[
 				Model[Container, Vessel],
-				Name -> "Test valid container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID,
+				Name -> "Test need parameterization container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID,
 				ImageFile -> Object[EmeraldCloudFile, "Test documentation file for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
 				ProductDocumentation -> Object[EmeraldCloudFile, "Test documentation file for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
 				MinVolume -> 1 Milliliter,
@@ -1778,66 +2049,8 @@ DefineTests[UploadVerifiedContainerModel,
 				DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 				ContainerMaterials -> {{Glass}},
 				DefaultStickerModel -> Model[Item, Sticker, "id:mnk9jO3dexZY"],
-				Dimensions -> {40 Millimeter, 40 Millimeter, 150 Millimeter},
 				CoverTypes -> {{Screw}},
 				CoverFootprints -> {{CapScrewTube35x13}},
-				InternalDepth -> 120 Millimeter,
-				InternalDiameter -> 30 Millimeter,
-				Aperture -> 30 Millimeter,
-				Force -> True
-			];
-
-			UploadContainerModel[
-				Model[Container, Plate],
-				Name -> "Test valid plate 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID,
-				ImageFile -> Object[EmeraldCloudFile, "Test documentation file for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
-				ProductDocumentation -> Object[EmeraldCloudFile, "Test documentation file for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
-				MinVolume -> 1 Milliliter,
-				MaxVolume -> 50 Milliliter,
-				MinTemperature -> -80 Celsius,
-				MaxTemperature -> 200 Celsius,
-				Ampoule -> False,
-				Reusable -> False,
-				Squeezable -> False,
-				Opaque -> False,
-				Positions -> Automatic,
-				PositionPlotting -> Automatic,
-				SelfStanding -> True,
-				PreferredBalance -> Analytical,
-				CrossSectionalShape -> Circle,
-				PreferredCamera -> Medium,
-				Sterile -> False,
-				Fragile -> False,
-				RNaseFree -> False,
-				PyrogenFree -> False,
-				DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
-				ContainerMaterials -> {{Glass}},
-				DefaultStickerModel -> Model[Item, Sticker, "id:mnk9jO3dexZY"],
-				Dimensions -> {40 Millimeter, 40 Millimeter, 150 Millimeter},
-				CoverTypes -> {{Place}},
-				CoverFootprints -> {{LidPlace8x126}},
-				PlateColor -> Clear,
-				WellColor -> Clear,
-				Columns -> 12,
-				Rows -> 8,
-				NumberOfWells -> 96,
-				WellDiameter -> 5 Millimeter,
-				Treatment -> NonTreated,
-				HorizontalMargin -> 1 Millimeter,
-				VerticalMargin -> 1 Millimeter,
-				DepthMargin -> 1 Millimeter,
-				WellDepth -> 2 Millimeter,
-				WellBottom -> FlatBottom,
-				HorizontalOffset -> 1 Millimeter,
-				VerticalOffset -> 1 Millimeter,
-				Skirted -> False,
-				StorageOrientation -> Upright,
-				Footprint -> Plate,
-				TransportStable -> True,
-				HorizontalPitch -> 1 Millimeter,
-				VerticalPitch -> 1 Millimeter,
-				AspectRatio -> 1.5,
-				CavityCrossSectionalShape -> Circle,
 				Force -> True
 			];
 
@@ -1847,8 +2060,11 @@ DefineTests[UploadVerifiedContainerModel,
 		Module[{allObjects, existingObejcts},
 			allObjects = {
 				Model[Container, Vessel, "Test invalid container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
+				Model[Container, Plate, "Test corrected plate 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
+				Model[Container, Plate, "Test corrected plate 2 for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
 				Model[Container, Vessel, "Test valid container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
 				Model[Container, Plate, "Test valid plate 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
+				Model[Container, Vessel, "Test need parameterization container 1 for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
 				Object[EmeraldCloudFile, "Test documentation file for UploadVerifiedContainerModel unit tests "<>$SessionUUID],
 				Model[Container, Vessel, "Unknown Volume Unknown Material Vessel created on "<>DateString[Now, {"Month", "Day", "Year"}]],
 				Model[Container, Vessel, "Test valid container 2 for UploadVerifiedContainerModel unit tests "<>$SessionUUID],

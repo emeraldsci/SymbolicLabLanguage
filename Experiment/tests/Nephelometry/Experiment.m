@@ -1918,7 +1918,7 @@ DefineTests[ExperimentNephelometry,
 			ExperimentNephelometry[
 				Object[Sample,"ExperimentNephelometry test sample 2 (cell)"<>$SessionUUID],
 				Method->CellCount,
-				Analyte->Model[Cell,"ExperimentNephelometry test cell Analyte no StandardCurves"<>$SessionUUID]
+				Analyte->Model[Cell,Mammalian,"ExperimentNephelometry test cell Analyte no StandardCurves"<>$SessionUUID]
 			],
 			$Failed,
 			SetUp:>($CreatedObjects={}),
@@ -2553,6 +2553,14 @@ DefineTests[ExperimentNephelometry,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentNephelometry[Object[Sample, "ExperimentNephelometry test sample 1"<>$SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		(*Note: Put your sample in a 2mL tube for the following test*)
 		Example[{Options,CentrifugeInstrument,"The centrifuge that will be used to spin the provided samples prior to starting the experiment:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample in 2mL tube"<>$SessionUUID],CentrifugeInstrument->Model[Instrument,Centrifuge,"Microfuge 16"],Output->Options];
@@ -2593,21 +2601,21 @@ DefineTests[ExperimentNephelometry,
 			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FiltrationType,"The type of filtration method that should be used to perform the filtration:"},
-			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],FiltrationType->Syringe,Output->Options];
+			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample in 50mL tube"<>$SessionUUID],FiltrationType->Syringe,Output->Options];
 			Lookup[options,FiltrationType],
 			Syringe,
 			Variables:>{options},
 			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterInstrument,"The instrument that should be used to perform the filtration:"},
-			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],FilterInstrument->Model[Instrument,SyringePump,"NE-1010 Syringe Pump"],Output->Options];
+			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample in 50mL tube"<>$SessionUUID],FilterInstrument->Model[Instrument,SyringePump,"NE-1010 Syringe Pump"],Output->Options];
 			Lookup[options,FilterInstrument],
 			ObjectP[Model[Instrument,SyringePump,"NE-1010 Syringe Pump"]],
 			Variables:>{options},
 			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,Filter,"The filter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
-			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],Filter->Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"],Output->Options];
+			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample in 50mL tube"<>$SessionUUID],Filter->Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"],Output->Options];
 			Lookup[options,Filter],
 			ObjectP[Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"]],
 			Variables:>{options},
@@ -2644,7 +2652,7 @@ DefineTests[ExperimentNephelometry,
 			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterSyringe,"The syringe used to force that sample through a filter:"},
-			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],FiltrationType->Syringe,FilterSyringe->Model[Container,Syringe,"20mL All-Plastic Disposable Luer-Lock Syringe"],Output->Options];
+			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample in 50mL tube"<>$SessionUUID],FiltrationType->Syringe,FilterSyringe->Model[Container,Syringe,"20mL All-Plastic Disposable Luer-Lock Syringe"],Output->Options];
 			Lookup[options,FilterSyringe],
 			ObjectP[Model[Container,Syringe,"20mL All-Plastic Disposable Luer-Lock Syringe"]],
 			Variables:>{options},
@@ -2732,6 +2740,14 @@ DefineTests[ExperimentNephelometry,
 			5*Microliter,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentNephelometry[Object[Sample, "ExperimentNephelometry test sample 1"<>$SessionUUID], AliquotAmount -> 5.001 Microliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			5 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,AssayVolume,"The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options=ExperimentNephelometry[Object[Sample,"ExperimentNephelometry test sample 1"<>$SessionUUID],AssayVolume->5*Microliter,Output->Options];
@@ -2861,8 +2877,8 @@ DefineTests[ExperimentNephelometry,
 
 				Object[Analysis,StandardCurve,"ExperimentNephelometry fake standard curve for testing"<>$SessionUUID],
 				Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID],
-				Model[Cell,"ExperimentNephelometry test cell Analyte with StandardCurves"<>$SessionUUID],
-				Model[Cell,"ExperimentNephelometry test cell Analyte no StandardCurves"<>$SessionUUID],
+				Model[Cell,Mammalian,"ExperimentNephelometry test cell Analyte with StandardCurves"<>$SessionUUID],
+				Model[Cell,Mammalian,"ExperimentNephelometry test cell Analyte no StandardCurves"<>$SessionUUID],
 
 				Model[Sample,"ExperimentNephelometry test DNA sample"<>$SessionUUID],
 				Model[Sample,"ExperimentNephelometry test DNA sample (Deprecated)"<>$SessionUUID],
@@ -2988,12 +3004,12 @@ DefineTests[ExperimentNephelometry,
 				(* Make cell identity models *)
 				testCells=Upload[{
 					<|
-						Type->Model[Cell],
+						Type->Model[Cell,Mammalian],
 						Name->"ExperimentNephelometry test cell Analyte with StandardCurves"<>$SessionUUID,
 						Replace[StandardCurves]->{Link[Object[Analysis,StandardCurve,"ExperimentNephelometry fake standard curve for testing"<>$SessionUUID]]}
 					|>,
 					<|
-						Type->Model[Cell],
+						Type->Model[Cell,Mammalian],
 						Name->"ExperimentNephelometry test cell Analyte no StandardCurves"<>$SessionUUID
 					|>
 				}];
@@ -3013,7 +3029,7 @@ DefineTests[ExperimentNephelometry,
 							{{10 Micromolar,Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
 							{{Null,Null}},
 							{{10 Micromolar,Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID]},{10 Micromolar,Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID]}},
-							{{10 Micromolar,Model[Cell,"ExperimentNephelometry test cell Analyte with StandardCurves"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}}
+							{{10 Micromolar,Model[Cell,Mammalian,"ExperimentNephelometry test cell Analyte with StandardCurves"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}}
 						},
 					IncompatibleMaterials->ConstantArray[{None},5],
 					Expires->ConstantArray[True,5],
@@ -3149,8 +3165,8 @@ DefineTests[ExperimentNephelometry,
 
 				Object[Analysis,StandardCurve,"ExperimentNephelometry fake standard curve for testing"<>$SessionUUID],
 				Model[Molecule,Oligomer,"ExperimentNephelometry test DNA molecule"<>$SessionUUID],
-				Model[Cell,"ExperimentNephelometry test cell Analyte with StandardCurves"<>$SessionUUID],
-				Model[Cell,"ExperimentNephelometry test cell Analyte no StandardCurves"<>$SessionUUID],
+				Model[Cell,Mammalian,"ExperimentNephelometry test cell Analyte with StandardCurves"<>$SessionUUID],
+				Model[Cell,Mammalian,"ExperimentNephelometry test cell Analyte no StandardCurves"<>$SessionUUID],
 
 				Model[Sample,"ExperimentNephelometry test DNA sample"<>$SessionUUID],
 				Model[Sample,"ExperimentNephelometry test DNA sample (Deprecated)"<>$SessionUUID],
@@ -3295,8 +3311,8 @@ DefineTests[Nephelometry,
 			testOligomer=UploadOligomer["Nephelometry test DNA molecule "<>$SessionUUID,Molecule->Strand[RandomSequence[500]],PolymerType->DNA];
 
 			testSampleModel=UploadSampleModel[
-				"Nephelometry test DNA sample model "<>$SessionUUID,
-				Composition->{{10 Micromolar,testOligomer},{100 VolumePercent,Model[Molecule,"Water"]}},
+				{{10 Micromolar,testOligomer},{100 VolumePercent,Model[Molecule,"Water"]}},
+				Name -> "Nephelometry test DNA sample model "<>$SessionUUID,
 				IncompatibleMaterials->{None},
 				Expires->True,
 				ShelfLife->2 Year,

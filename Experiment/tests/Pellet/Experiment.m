@@ -174,7 +174,7 @@ DefineTests[ExperimentPellet,
 					Object[Sample,"Test cell sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID]
 				},
 				AliquotAmount -> 8.6 Milliliter,
-				AliquotContainer -> Model[Container, Vessel, "id:GmzlKjPen8z4"]
+				AliquotContainer -> Model[Container, Vessel, "id:bq9LA0dBGGR6"](* "50mL Tube"*)
 			];
 			Download[protocol,SterileTechnique],
 			{True},
@@ -723,6 +723,17 @@ DefineTests[ExperimentPellet,
 			Variables:>{options}
 		],
 		Example[
+			{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentPellet[{Object[Sample, "Test water sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID]},
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
+		Example[
 			{Options,CentrifugeTime,"Specify the amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options=ExperimentPellet[{Object[Sample, "Test water sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID]},
 				CentrifugeTime->11Minute,
@@ -866,7 +877,7 @@ DefineTests[ExperimentPellet,
 			{Options,FilterSyringe,"Specify the syringe used to force that sample through a filter:"},
 			options=ExperimentPellet[{Object[Sample, "Test water sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID]},
 				FilterMaterial -> PES, Filtration->True,
-				FilterAliquot -> 100*Microliter,
+				FilterAliquot -> 800*Microliter,
 				FilterPoreSize->0.22Micrometer,
 				FilterSyringe->Model[Container, Syringe, "id:AEqRl9Kz1VD1"],
 				Output->Options
@@ -879,7 +890,7 @@ DefineTests[ExperimentPellet,
 			{Options,FilterHousing,"Specify the filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane:"},
 			options=ExperimentPellet[{Object[Sample, "Test water sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID]},
 				FilterMaterial -> PES, Filtration->True,
-				FilterAliquot -> 100*Microliter,
+				FilterAliquot -> 800*Microliter,
 				FilterPoreSize->0.22Micrometer,
 				FilterSyringe->Model[Container, Syringe, "id:AEqRl9Kz1VD1"],
 				FilterHousing->Null,
@@ -1004,6 +1015,19 @@ DefineTests[ExperimentPellet,
 			Lookup[options,AliquotAmount],
 			RangeP[0.9 Milliliter, 1.1 Milliliter],
 			Variables:>{options}
+		],
+		Example[
+			{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentPellet[
+				{Object[Sample, "Test water sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID]},
+				AliquotAmount -> 1.0001 Milliliter,
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			1 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[
 			{Options,TargetConcentration,"Specify the desired final concentration of analyte in the AliquotSamples after dilution of aliquots of SamplesIn with the ConcentratedBuffer and BufferDiluent which should be used in lieu of the SamplesIn for the experiment:"},
@@ -1481,7 +1505,7 @@ DefineTests[ExperimentPellet,
 					Model[Sample,"Milli-Q water"],
 					Model[Sample,"Milli-Q water"],
 					Model[Sample,"Milli-Q water"],
-					{{100 VolumePercent, Model[Cell, Mammalian, "HEK293"]}}
+					{{100 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}}
 				},
 				{
 					{"A1", emptyContainer1},
@@ -1510,14 +1534,14 @@ DefineTests[ExperimentPellet,
 					Null,
 					Null,
 					Null,
-					Mammalian
+					Bacterial
 				},
 				CultureAdhesion -> {
 					Null,
 					Null,
 					Null,
 					Null,
-					Suspension
+					Automatic
 				},
 				State -> Liquid,
 				FastTrack -> True

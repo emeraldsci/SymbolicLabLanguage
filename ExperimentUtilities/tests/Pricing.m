@@ -1909,7 +1909,7 @@ DefineTests[
 						Object[Protocol, ManualSamplePreparation, "Test Protocol MSP 2 for Old PriceWaste unit tests " <> $SessionUUID],
 						Object[Instrument, Centrifuge, "Test Instrument Centrifuge 1 for Old PriceWaste unit tests " <> $SessionUUID],
 						Object[Instrument, Centrifuge, "Test Instrument Centrifuge 2 for Old PriceWaste unit tests " <> $SessionUUID],
-						Object[Instrument, FumeHood, "Test Instrument FumeHood 1 for Old PriceWaste unit tests " <> $SessionUUID],
+						Object[Instrument, HandlingStation, FumeHood, "Test Instrument FumeHood 1 for Old PriceWaste unit tests " <> $SessionUUID],
 						Object[Instrument, HPLC, "Test Instrument HPLC 1 for Old PriceWaste unit tests " <> $SessionUUID],
 						Object[Instrument, HPLC, "Test Instrument HPLC 2 for Old PriceWaste unit tests " <> $SessionUUID],
 						Object[Container, Plate, "Test Container Plate 1 for Old PriceWaste unit tests " <> $SessionUUID],
@@ -2120,7 +2120,7 @@ DefineTests[
 						Object[Instrument, Centrifuge],
 						Object[Instrument, Centrifuge],
 						Object[Instrument, Centrifuge],
-						Object[Instrument, FumeHood],
+						Object[Instrument, HandlingStation, FumeHood],
 						Object[Instrument, HPLC],
 						Object[Instrument, HPLC],
 						Object[Instrument, HPLC],
@@ -2352,9 +2352,9 @@ DefineTests[
 					|>,
 					<|
 						Object -> instrumentFumeHood1,
-						Type -> Object[Instrument, FumeHood],
+						Type -> Object[Instrument, HandlingStation, FumeHood],
 						Name -> "Test Instrument FumeHood 1 for Old PriceWaste unit tests " <> $SessionUUID,
-						Model -> Link[Model[Instrument, FumeHood, "id:R8e1PjprvYOK"], Objects],
+						Model -> Link[First[Experiment`Private`commonFumeHoodHandlingStationModels["Memoization"]], Objects],
 						Site -> Link[containerSite1],
 						DeveloperObject -> True
 					|>,
@@ -3018,7 +3018,7 @@ DefineTests[
 					Object[Protocol, ManualSamplePreparation, "Test Protocol MSP 2 for Old PriceWaste unit tests " <> $SessionUUID],
 					Object[Instrument, Centrifuge, "Test Instrument Centrifuge 1 for Old PriceWaste unit tests " <> $SessionUUID],
 					Object[Instrument, Centrifuge, "Test Instrument Centrifuge 2 for Old PriceWaste unit tests " <> $SessionUUID],
-					Object[Instrument, FumeHood, "Test Instrument FumeHood 1 for Old PriceWaste unit tests " <> $SessionUUID],
+					Object[Instrument, HandlingStation, FumeHood, "Test Instrument FumeHood 1 for Old PriceWaste unit tests " <> $SessionUUID],
 					Object[Instrument, HPLC, "Test Instrument HPLC 1 for Old PriceWaste unit tests " <> $SessionUUID],
 					Object[Instrument, HPLC, "Test Instrument HPLC 2 for Old PriceWaste unit tests " <> $SessionUUID],
 					Object[Container, Plate, "Test Container Plate 1 for Old PriceWaste unit tests " <> $SessionUUID],
@@ -6398,12 +6398,8 @@ DefineTests[
 			{
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol 2 in PriceCleaning test (refunded)"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
-				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
-				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
 				ObjectP[Object[Protocol, Incubate, "Test Incubate Protocol in PriceCleaning test"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol 2 in PriceCleaning test (refunded)"<>$SessionUUID]],
-				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
-				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
 				ObjectP[Object[Protocol, Incubate, "Test Incubate Protocol in PriceCleaning test"<>$SessionUUID]]
 			},
@@ -6420,13 +6416,9 @@ DefineTests[
 			Lookup[outputAssociation, Protocol],
 			{
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
-				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
-				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol 2 in PriceCleaning test (refunded)"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol 4 in PriceCleaning test (different notebook; same team)"<>$SessionUUID]],
 				ObjectP[Object[Protocol, Incubate, "Test Incubate Protocol in PriceCleaning test"<>$SessionUUID]],
-				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
-				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol 2 in PriceCleaning test (refunded)"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol 4 in PriceCleaning test (different notebook; same team)"<>$SessionUUID]],
@@ -6582,7 +6574,7 @@ DefineTests[
 				},
 				OutputFormat -> TotalPrice
 			],
-			Quantity[24.00, "USDollars"]
+			Quantity[8.00, "USDollars"]
 		],
 		Test["Specifying the date range excludes protocols that fall outside that range:",
 			PriceCleaning[
@@ -7243,7 +7235,6 @@ DefineTests[PriceStocking,
 				Download[
 					{
 						Object[Protocol, FPLC, "Test FPLC Protocol 2 in PriceStocking test (refunded)"<>$SessionUUID],
-						Object[Protocol, FPLC, "Test FPLC Protocol in PriceStocking test"<>$SessionUUID],
 						Object[Protocol, FPLC, "Test FPLC Protocol in PriceStocking test"<>$SessionUUID],
 						Object[Protocol, Incubate, "Test Incubate Protocol in PriceStocking test"<>$SessionUUID]
 					},
@@ -9189,7 +9180,7 @@ DefineTests[
 				OutputFormat -> TotalPrice
 			], 0.1 USD],
 			(* we decided not to include PriceProtocol in SummaryPrice *)
-			RangeP[Quantity[142.30, "USDollars"], Quantity[142.50, "USDollars"]]
+			RangeP[Quantity[170.30, "USDollars"], Quantity[170.50, "USDollars"]]
 		],
 		Test["If a date range is not specified, then get all the protocols within the last month:",
 			DeleteDuplicates[Lookup[
@@ -9588,7 +9579,8 @@ DefineTests[
 					},
 					Replace[WastePricing] -> {
 						{Chemical, 7 USD / Kilogram},
-						{Biohazard, 7 USD / Kilogram}
+						{Biohazard, 7 USD / Kilogram},
+						{Sharps, 7 USD / Kilogram}
 					},
 					Replace[StoragePricing] -> {
 						{Link@Model[StorageCondition, "Ambient Storage"], 0.1 USD / (Centimeter)^3 / Month},

@@ -514,6 +514,14 @@ DefineTests[ExperimentNMR2D,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentNMR2D[Object[Sample, "ExperimentNMR2D New Test Chemical 1 (100 uL)" <> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options, CentrifugeTime, "Set the CentrifugeTime option:"},
 			options = ExperimentNMR2D[Object[Sample,"ExperimentNMR2D New Test Chemical 1 (100 uL)" <> $SessionUUID], CentrifugeTime -> 40*Minute, Output -> Options];
 			Lookup[options, CentrifugeTime],
@@ -556,19 +564,19 @@ DefineTests[ExperimentNMR2D,
 			Variables :> {options}
 		],
 		Example[{Options, FiltrationType, "Set the FiltrationType option:"},
-			options = ExperimentNMR2D[Object[Sample,"ExperimentNMR2D New Test Chemical 1 (100 uL)" <> $SessionUUID], FiltrationType -> Syringe, Output -> Options];
+			options = ExperimentNMR2D[Object[Sample,"ExperimentNMR2D New Test Chemical 8 (1.5 mL)" <> $SessionUUID], FiltrationType -> Syringe, Output -> Options];
 			Lookup[options, FiltrationType],
 			Syringe,
 			Variables :> {options}
 		],
 		Example[{Options, FilterInstrument, "Set the FilterInstrument option:"},
-			options = ExperimentNMR2D[Object[Sample,"ExperimentNMR2D New Test Chemical 1 (100 uL)" <> $SessionUUID], FilterInstrument -> Model[Instrument, SyringePump, "NE-1010 Syringe Pump"], Output -> Options];
+			options = ExperimentNMR2D[Object[Sample,"ExperimentNMR2D New Test Chemical 8 (1.5 mL)" <> $SessionUUID], FilterInstrument -> Model[Instrument, SyringePump, "NE-1010 Syringe Pump"], Output -> Options];
 			Lookup[options, FilterInstrument],
 			ObjectP[Model[Instrument, SyringePump, "NE-1010 Syringe Pump"]],
 			Variables :> {options}
 		],
 		Example[{Options, Filter, "Set the Filter option:"},
-			options = ExperimentNMR2D[Object[Sample,"ExperimentNMR2D New Test Chemical 1 (100 uL)" <> $SessionUUID], Filter -> Model[Item, Filter, "Disk Filter, PES, 0.22um, 30mm"], Output -> Options];
+			options = ExperimentNMR2D[Object[Sample,"ExperimentNMR2D New Test Chemical 8 (1.5 mL)" <> $SessionUUID], Filter -> Model[Item, Filter, "Disk Filter, PES, 0.22um, 30mm"], Output -> Options];
 			Lookup[options, Filter],
 			ObjectP[Model[Item, Filter, "Disk Filter, PES, 0.22um, 30mm"]],
 			Variables :> {options}
@@ -598,7 +606,7 @@ DefineTests[ExperimentNMR2D,
 			Variables :> {options}
 		],
 		Example[{Options, FilterSyringe, "Set the FilterSyringe option:"},
-			options = ExperimentNMR2D[Object[Sample,"ExperimentNMR2D New Test Chemical 1 (100 uL)" <> $SessionUUID], FiltrationType -> Syringe, FilterSyringe -> Model[Container, Syringe, "20mL All-Plastic Disposable Luer-Lock Syringe"], Output -> Options];
+			options = ExperimentNMR2D[Object[Sample,"ExperimentNMR2D New Test Chemical 8 (1.5 mL)" <> $SessionUUID], FiltrationType -> Syringe, FilterSyringe -> Model[Container, Syringe, "20mL All-Plastic Disposable Luer-Lock Syringe"], Output -> Options];
 			Lookup[options, FilterSyringe],
 			ObjectP[Model[Container, Syringe, "20mL All-Plastic Disposable Luer-Lock Syringe"]],
 			Variables :> {options}
@@ -674,6 +682,15 @@ DefineTests[ExperimentNMR2D,
 			0.08*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentNMR2D[Object[Sample, "ExperimentNMR2D New Test Chemical 1 (100 uL)" <> $SessionUUID], AliquotAmount -> 0.08101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			81 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision},
+			TimeConstraint -> 500
 		],
 		Example[{Options, AssayVolume, "Set the AssayVolume option:"},
 			options = ExperimentNMR2D[Object[Sample,"ExperimentNMR2D New Test Chemical 1 (100 uL)" <> $SessionUUID], AssayVolume -> 0.08*Milliliter, Output -> Options];

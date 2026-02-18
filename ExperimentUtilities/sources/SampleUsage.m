@@ -72,7 +72,7 @@ Error::NoValidObjectsToUse="There is no valid object to use for usage amount cal
 Warning::ExcessDestinationVolume="The primitive at index `1` has Destination volume of `2` that exceeds the specified FinalVolume.";
 Warning::SamplesMarkedForDisposal="The following object(s) specified are flagged for disposal: `1`. If you don't wish to dispose of these samples, please run CancelDiscardSamples on them.";
 Warning::DiscardedSamples="The following object(s) specified are discarded: `1`.";
-Warning::ExpiredSamples="The following sample objects are marked expired: `1`.";
+Warning::ExpiredSamples="The following sample objects are marked expired: `1`. Their expirations dates are `2`. These samples are able to still be used in the protocol, but may negatively affect your results. Please cancel the protocol if you would not like to use these samples.";
 Warning::SamplesWithDeprecatedModels="The following sample object(s) specified have models that are deprecated: `1`. Please check the Deprecated field for the models in question, or provide samples with alternative models.";
 Warning::DeprecatedSpecifiedModels="The following model object(s) specified are deprecated: `1`.  Please check the Deprecated field for the models in question, or provide non-deprecated models.";
 Warning::SamplesNotOwned="The following object(s) specified are not part of a Notebook financed by one of the current financing teams: `1`. Please check the Notebook field of these objects and the Financers field of that Notebook; if they are public, please purchase these items before directly requesting them in an Experiment.";
@@ -901,7 +901,7 @@ SampleUsage[myPrimitives:{SampleManipulationP..}, ops:OptionsPattern[]]:=Module[
 
 	(* Throw a message for the expired samples *)
 	If[messages && Not[MatchQ[expiredSamples, {}]],
-		Message[Warning::ExpiredSamples, Lookup[expiredSamples, Object]]
+		Message[Warning::ExpiredSamples, Lookup[expiredSamples, Object], Lookup[expiredSamples, ExpirationDate]]
 	];
 
 	(* --- Are the model for a given sample and the Model[Sample] specified by the user deprecated? *)

@@ -180,11 +180,11 @@ DefineObjectType[Object[Part], {
 		},
 		RestrictedLog -> {
 			Format -> Multiple,
-			Class -> {Date, Boolean, Link},
-			Pattern :> {_?DateObjectQ, BooleanP, _Link},
-			Relation -> {Null, Null, Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification]},
+			Class -> {Date, Boolean, Link, String},
+			Pattern :> {_?DateObjectQ, BooleanP, _Link, _String},
+			Relation -> {Null, Null, Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification], Null},
 			Description -> "A log of changes made to this part's restricted status.",
-			Headers -> {"Date", "Restricted", "Responsible Party"},
+			Headers -> {"Date", "Restricted", "Responsible Party", "Reason"},
 			Category -> "Organizational Information"
 		},
 		DishwashLog -> {
@@ -202,6 +202,24 @@ DefineObjectType[Object[Part], {
 			Class -> Boolean,
 			Pattern :> BooleanP,
 			Description -> "Indicates if this object currently meets the requirements for Good Manufacturing Practices.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		PrintStickersLog -> {
+			Format -> Multiple,
+			Class -> {Date, Link},
+			Pattern :> {_?DateObjectQ, _Link},
+			Relation -> {Null, Alternatives[Object[User], Object[Protocol], Object[Maintenance], Object[Qualification]]},
+			Description -> "Indicates times at which stickers were printed for this part.",
+			Headers -> {"Date", "Responsible Party"},
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		PermanentSticker -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the object is labeled with a durable sticker that does not easily detach.",
 			Category -> "Organizational Information",
 			Developer -> True
 		},
@@ -275,6 +293,14 @@ DefineObjectType[Object[Part], {
 			Pattern :> _Link,
 			Relation -> Object[Maintenance, ReceiveInventory][Items],
 			Description -> "The MaintenanceReceiveInventory in which this part was received.",
+			Category -> "Inventory"
+		},
+		BarcodeInventory -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Maintenance, BarcodeInventory][BarcodedItems],
+			Description -> "The MaintenanceBarcodeInventory in which the SLL object sticker of this part is affixed.",
 			Category -> "Inventory"
 		},
 
@@ -400,6 +426,13 @@ DefineObjectType[Object[Part], {
 			Description -> "The location history of the part. Lines recording a movement to container and position of Null, Null respectively indicate the item being discarded.",
 			Category -> "Storage Information",
 			Headers ->  {"Date","In or Out","Container moved into or out of","Position moved into or out Of", "Person who moved the part"}
+		},
+		DateLastMoved->{
+			Format->Single,
+			Class->Date,
+			Pattern:>_?DateObjectQ,
+			Description->"Date this part was moved to a different container or instrument.",
+			Category->"Storage Information"
 		},
 		Site -> {
 			Format -> Single,

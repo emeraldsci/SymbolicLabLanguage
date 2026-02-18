@@ -54,7 +54,7 @@ UploadName[myObjects:ListableP[ObjectP[]], myNames:ListableP[_String], myOptions
 		databaseMembers, type, databaseCheck, duplicateNameCheck, allTypes, namesWithSameType,
 		nameTests, validNameChecks, validNameBool, badObjects, badNames,
 		packetsToUpload, alreadyUploadedSynonyms, synonymsToUpload,
-		optionsRule, previewRule, testsRule, resultRule
+		optionsRule, previewRule, testsRule, resultRule, uploadQ
 	},
 
 	(* Make sure the inputs are lists *)
@@ -86,6 +86,8 @@ UploadName[myObjects:ListableP[ObjectP[]], myNames:ListableP[_String], myOptions
 			Preview -> Null
 		}]
 	];
+
+	uploadQ = Lookup[safeOptions,Upload];
 
 	(* Call ValidOptionLengthsQ to make sure all options are the right length *)
 	(* Silence the missing option errors *)
@@ -264,9 +266,13 @@ UploadName[myObjects:ListableP[ObjectP[]], myNames:ListableP[_String], myOptions
 
 	(* Prepare the standard result if we were asked for it and can safely do so *)
 	resultRule=Result -> If[MemberQ[output, Result],
-		If[!validNameBool,
-			$Failed,
-			Upload[packetsToUpload]
+		Which[
+			(* if we can't have these names - fail *)
+			!validNameBool, $Failed,
+			(* if we are uploading - do the uploads *)
+			uploadQ, Upload[packetsToUpload],
+			(* nothing else - return the packets *)
+			True, packetsToUpload
 		],
 		Null
 	];

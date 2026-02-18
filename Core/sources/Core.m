@@ -953,8 +953,8 @@ KeyReplace[assoc_Association, rules:{_Rule...}] := KeyMap[ReplaceAll[rules], ass
 
 (* Other Input Formats *)
 KeyReplace[assoc_Association, rule_Rule] := KeyReplace[assoc, {rule}];
-KeyReplace[assoc:{_Association..}, rule:_Rule] := KeyReplace[#, {rule}]& /@ assoc;
-KeyReplace[assoc:{_Association..}, rules:{_Rule...}] := KeyReplace[#, rules]& /@ assoc;
+KeyReplace[assoc:{_Association...}, rule:_Rule] := KeyReplace[#, {rule}]& /@ assoc;
+KeyReplace[assoc:{_Association...}, rules:{_Rule...}] := KeyReplace[#, rules]& /@ assoc;
 
 (* ::Subsection::Closed:: *)
 (*Geometry and Trigonometry*)
@@ -1218,7 +1218,12 @@ $ObjectBuilders=<|
 	Model[Item, Column] -> UploadColumn,
 	Model[Container, Vessel] -> UploadContainerModel,
 	Model[Container, Plate] -> UploadContainerModel,
-	Model[Container, ExtractionCartridge] -> UploadContainerModel
+	Model[Container, ExtractionCartridge] -> UploadContainerModel,
+	Model[Container] -> UploadContainerModel,
+	Model[Item, Cap] -> UploadCoverModel,
+	Model[Item, Lid] -> UploadCoverModel,
+	Model[Item, PlateSeal] -> UploadCoverModel,
+	Model[ProprietaryFormulation] -> UploadProprietaryFormulation
 |>;
 
 
@@ -1352,6 +1357,7 @@ $CommandBuilderFunctions = <|
 			"ExperimentCoulterCount",
 			"ExperimentCyclicVoltammetry",
 			"ExperimentDynamicFoamAnalysis",
+			"ExperimentKarlFischerTitration",
 			"ExperimentImageSample",
 			"ExperimentMeasureConductivity",
 			"ExperimentMeasureContactAngle",
@@ -1486,11 +1492,12 @@ $CommandBuilderFunctions = <|
 			"PlotDigitalPCR"
 		},
 		"Sample Preparation and Diagnostics" -> {
-			"PlotConductivity",
 			"PlotpH",
-			"PlotSensor",
-			"PlotVacuumEvaporation",
 			"PlotVolume",
+			"PlotSensor",
+			"PlotWeighingTimeline",
+			"PlotConductivity",
+			"PlotVacuumEvaporation",
 			"PlotDissolvedOxygen",
 			"PlotCoulterCount"
 		},
@@ -1535,7 +1542,6 @@ $CommandBuilderFunctions = <|
 	"Analysis" -> <|
 		"Numerics" -> {
 			"AnalyzePeaks",
-			"AdvancedAnalyzePeaks",
 			"AnalyzeFit",
 			"AnalyzeClusters",
 			"AnalyzeSmoothing",
@@ -1603,7 +1609,8 @@ $CommandBuilderFunctions = <|
 			"DefineTags",
 			"DefineComposition",
 			"DefineSolvent",
-			"DefineEHSInformation"
+			"DefineEHSInformation",
+			"UploadSampleProperties"
 		},
 		"Defining Model Fulfillment" -> {
 			"UploadSampleModel",
@@ -1777,6 +1784,7 @@ $CommandBuilderFunctionsDev = <|
 			"ExperimentCoulterCount",
 			"ExperimentCyclicVoltammetry",
 			"ExperimentDynamicFoamAnalysis",
+			"ExperimentKarlFischerTitration",
 			"ExperimentImageSample",
 			"ExperimentMeasureConductivity",
 			"ExperimentMeasureContactAngle",
@@ -1910,11 +1918,12 @@ $CommandBuilderFunctionsDev = <|
 			"PlotDigitalPCR"
 		},
 		"Sample Preparation and Diagnostics" -> {
-			"PlotConductivity",
 			"PlotpH",
-			"PlotSensor",
-			"PlotVacuumEvaporation",
 			"PlotVolume",
+			"PlotSensor",
+			"PlotWeighingTimeline",
+			"PlotConductivity",
+			"PlotVacuumEvaporation",
 			"PlotDissolvedOxygen",
 			"PlotCoulterCount"
 		},
@@ -1961,7 +1970,6 @@ $CommandBuilderFunctionsDev = <|
 	"Analysis" -> <|
 		"Numerics" -> {
 			"AnalyzePeaks",
-			"AdvancedAnalyzePeaks",
 			"AnalyzeFit",
 			"AnalyzeClusters",
 			"AnalyzeSmoothing",
@@ -2030,7 +2038,8 @@ $CommandBuilderFunctionsDev = <|
 			"DefineTags",
 			"DefineComposition",
 			"DefineSolvent",
-			"DefineEHSInformation"
+			"DefineEHSInformation",
+			"UploadSampleProperties"
 		},
 		"Defining Model Fulfillment" -> {
 			"UploadSampleModel",
@@ -2043,7 +2052,8 @@ $CommandBuilderFunctionsDev = <|
 			"UploadCompanySupplier",
 			"UploadCompanyService",
 			"UploadReferenceElectrodeModel",
-			"UploadContainerModel"
+			"UploadContainerModel",
+			"UploadCoverModel"
 		},
 		"Defining Sample Components" -> {
 			"UploadMolecule",
@@ -2075,7 +2085,11 @@ $CommandBuilderFunctionsDev = <|
 		},
 		"Defining Manifold Jobs" -> {"Compute"},
 		"Verifying User-Created Objects" -> {
-			"UploadVerifiedContainerModel"
+			"VerifyObjects",
+			"UploadVerifiedContainerModel",
+			"UploadVerifiedCoverModel",
+			"UploadVerifiedSampleModel",
+			"UploadVerifiedMolecule"
 		}
 	|>,
 	"Search" -> <||>

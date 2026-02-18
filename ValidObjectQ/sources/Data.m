@@ -3374,6 +3374,16 @@ validDataIRSpectroscopyQTests[packet : PacketP[Object[Data, IRSpectroscopy]]] :=
 
 
 validDataKarlFischerTitrationQTests[packet:PacketP[Object[Data, KarlFischerTitration]]]:={
+	Test["If Technique is Volumetric, then DateSampleAdded must be populated; if Technique is Coulometric, then it must be Null:",
+		With[{technique = Lookup[packet, Technique], dateSampleAdded = Lookup[packet, DateSampleAdded]},
+			Or[
+				MatchQ[technique, Volumetric] && Not[NullQ[dateSampleAdded]],
+				Not[MatchQ[technique, Volumetric]] && NullQ[dateSampleAdded]
+			]
+		],
+		True
+	]
+
 };
 
 (* ::Subsection::Closed:: *)

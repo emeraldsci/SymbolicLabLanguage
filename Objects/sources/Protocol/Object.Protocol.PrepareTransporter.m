@@ -12,7 +12,14 @@ DefineObjectType[Object[Protocol, PrepareTransporter], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Alternatives[Object[Instrument, PortableHeater], Object[Instrument, PortableCooler], Model[Instrument, PortableCooler], Model[Instrument, PortableHeater]],
+			Relation -> Alternatives[
+				Object[Instrument, PortableHeater],
+				Object[Instrument, PortableCooler],
+				Model[Instrument, PortableCooler],
+				Model[Instrument, PortableHeater],
+				Object[Container, Rack],
+				Model[Container, Rack]
+			],
 			Description -> "The portable devices, such as heaters and coolers, configured in this protocol.",
 			Category -> "Method Information"
 		},
@@ -40,8 +47,8 @@ DefineObjectType[Object[Protocol, PrepareTransporter], {
 			Class -> {Link, Link},
 			Pattern :> {_Link, _Link},
 			Relation -> {
-				Alternatives[Object[Resource, Sample], Model[Container], Object[Container], Model[Item], Object[Item], Object[Sample]],
-				Alternatives[Object[Instrument, PortableHeater], Object[Instrument, PortableCooler], Model[Instrument, PortableCooler], Model[Instrument, PortableHeater]]
+				Alternatives[Object[Resource, Sample], Model[Container], Object[Container], Model[Item], Object[Item], Object[Part], Model[Part], Object[Sample]],
+				Alternatives[Object[Instrument, PortableHeater], Object[Instrument, PortableCooler], Model[Instrument, PortableCooler], Model[Instrument, PortableHeater], Object[Container, Rack], Model[Container, Rack]]
 			},
 			Description -> "Indicate how the resources should be placed after this protocol completes and returns to resource picking of parent protocol.",
 			Headers -> {"Resources", "Portable Transporter"},
@@ -51,8 +58,17 @@ DefineObjectType[Object[Protocol, PrepareTransporter], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Container]| Model[Container] | Object[Sample] | Object[Resource, Sample] | Model[Item] | Object[Item],
+			Relation -> Object[Container]| Model[Container] | Object[Sample] | Object[Resource, Sample] | Model[Item] | Object[Item] | Model[Part] | Object[Part],
 			Description -> "Resources that needs temperature control during transport and will be pre-picked in this protocol.",
+			Category -> "General",
+			Developer -> True
+		},
+		ResourcesOnLiner -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container]| Model[Container] | Object[Sample] | Object[Resource, Sample] | Model[Item] | Object[Item] | Model[Part] | Object[Part],
+			Description -> "Resources that needs lined surface during transport.",
 			Category -> "General",
 			Developer -> True
 		},
@@ -108,7 +124,7 @@ DefineObjectType[Object[Protocol, PrepareTransporter], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Alternatives[Object[Instrument, FumeHood], Model[Instrument, FumeHood]],
+			Relation -> Alternatives[Object[Instrument, FumeHood], Model[Instrument, FumeHood], Object[Instrument, HandlingStation, FumeHood], Model[Instrument, HandlingStation, FumeHood]],
 			Description -> "FumeHood in which operator configures portable heater.",
 			Category -> "General"
 		},
@@ -119,6 +135,15 @@ DefineObjectType[Object[Protocol, PrepareTransporter], {
 			Relation -> Alternatives[Object[Wiring, Cable], Model[Wiring, Cable]],
 			Description -> "For each member of Transporters, the associated power cable.",
 			Category -> "General",
+			IndexMatching -> Transporters
+		},
+		Liners -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Item, Liner], Model[Item, Liner]],
+			Description -> "For each member of Transporters, indicates the protective insert that is currently positioned within or on top of this container.",
+			Category -> "Compatibility",
 			IndexMatching -> Transporters
 		}
 	}

@@ -44,7 +44,6 @@ ItemSelector[items : {__}, myOptions : OptionsPattern[ItemSelector]] := Module[
 					Row[{Button["OK", DialogReturn[selection], Enabled -> If[allowNullSelectionQ, True, Dynamic[!MatchQ[selection, Alternatives["", Null, {}]], TrackedSymbols :> {selection}]]], CancelButton[]}, Spacer[5]]
 				}]
 			],
-			Modal -> True, (* Window should hold the kernel *)
 			WindowFloating -> True,
 			WindowTitle -> windowTitleOption,
 

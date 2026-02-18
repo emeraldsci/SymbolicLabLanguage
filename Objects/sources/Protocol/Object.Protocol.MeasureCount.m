@@ -38,6 +38,17 @@ DefineObjectType[Object[Protocol, MeasureCount], {
 			Category -> "Weighing",
 			Abstract -> True
 		},
+		HandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Instrument, HandlingStation],
+				Model[Instrument, HandlingStation]
+			],
+			Description -> "The environment in which tablets are weighed.",
+			Category -> "Weighing"
+		},
 		Reservoirs -> {
 			Format -> Multiple,
 			Class -> Link,

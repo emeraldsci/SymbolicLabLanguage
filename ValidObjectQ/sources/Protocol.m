@@ -4227,7 +4227,6 @@ validProtocolKarlFischerTitrationQTests[packet : PacketP[Object[Protocol, KarlFi
 	]
 
 }];
-
 (* ::Subsection::Closed:: *)
 (*validProtocolIRSpectroscopyQTests*)
 

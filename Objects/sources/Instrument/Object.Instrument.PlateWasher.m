@@ -143,6 +143,42 @@ DefineObjectType[Object[Instrument, PlateWasher], {
 			Relation -> Object[Instrument, LiquidHandler][IntegratedPlateWasher],
 			Description -> "The liquid handler that is connected to this washer such that samples may be passed between the two instruments robotically.",
 			Category -> "Integrations"
+		},
+		StorageBufferA -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The solution in which the instrument buffer line A is stored in when the instrument is not in use.",
+			Developer -> True,
+			Category -> "Cleaning"
+		},
+		StorageBufferB -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The solution in which the instrument buffer line B is stored in when the instrument is not in use.",
+			Developer -> True,
+			Category -> "Cleaning"
+		},
+		StorageBufferC -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The solution in which the instrument buffer line C is stored in when the instrument is not in use.",
+			Developer -> True,
+			Category -> "Cleaning"
+		},
+		StorageBufferD -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The solution in which the instrument buffer line D is stored in when the instrument is not in use.",
+			Developer -> True,
+			Category -> "Cleaning"
 		}
 	}
 }];

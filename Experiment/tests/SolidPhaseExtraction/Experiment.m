@@ -3162,6 +3162,22 @@ DefineTests[ExperimentSolidPhaseExtraction,
 			1000 RPM
 		],
 		Example[
+			{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			Lookup[Quiet[ExperimentSolidPhaseExtraction[
+				{
+					{
+						Object[Sample, "Test Sample 1 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID],
+						Object[Sample, "Test Sample 2 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID]
+					},
+					Object[Sample, "Test Sample 6 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID]
+				},
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			], Warning::SampleStowaways], CentrifugeIntensity],
+			1000 RPM,
+			Messages :> {Warning::CentrifugePrecision}
+		],
+		Example[
 			{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			Lookup[Quiet[ExperimentSolidPhaseExtraction[
 				{

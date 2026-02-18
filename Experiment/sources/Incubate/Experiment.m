@@ -637,6 +637,14 @@ DefineOptions[
 				Description -> "Indicates if the incubation position is brought to Temperature before exposing the Sample to it. This option can only be set if Preparation->Robotic.",
 				ResolutionDescription -> "Automatically set to False if Preparation->Robotic."
 			},
+			{
+				OptionName -> CurrentHandlingEnvironment,
+				Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Object[Instrument, HandlingStation]}]],
+				AllowNull -> True,
+				Default -> Null,
+				Category -> "Hidden",
+				Description -> "Used for passing the current handling station from a parent protocol. If possible, the current handling station will be used for any incubate/mixing operations."
+			},
 			(* Transform-specific options *)
 			{
 				OptionName -> Transform,
@@ -1451,7 +1459,7 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 			MatchQ[Lookup[resolvedOptions, Aliquot], {False..}]
 		],
 			Module[{primitive, nonHiddenOptions, experimentFunction},
-				(* Create our transfer primitive to feed into RoboticSamplePreparation. *)
+				(* Create our transfer primitive to feed into ManualSamplePreparation. *)
 				primitive=Incubate@@Join[
 					{
 						Sample->myInputs
@@ -1461,7 +1469,7 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 
 				(* Remove any hidden options before returning. *)
 				(* We need to pass the resolved AlternateInstruments to incubate primitive *)
-				nonHiddenOptions=RemoveHiddenOptions[ExperimentIncubate,collapsedResolvedOptions, Exclude -> AlternateInstruments];
+				nonHiddenOptions=RemoveHiddenOptions[ExperimentIncubate,collapsedResolvedOptions, Exclude -> {CurrentHandlingEnvironment, AlternateInstruments}];
 
 				(* Memoize the value of ExperimentIncubate so the framework doesn't spend time resolving it again. *)
 				Internal`InheritedBlock[{ExperimentIncubate, $PrimitiveFrameworkResolverOutputCache},
@@ -4091,7 +4099,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 							Invert
 						],
 					(* Is any temperature related option set to non-Automatic? *)
-					MatchQ[Lookup[myMapThreadOptions,AnnealingTime],Except[Null|Automatic]]||MatchQ[Lookup[myMapThreadOptions,Temperature],Except[Automatic]],
+					MatchQ[Lookup[myMapThreadOptions,AnnealingTime],Except[Null|Automatic]]||MatchQ[Lookup[myMapThreadOptions,Temperature],Except[Null|Automatic|Ambient]],
 						Module[{resolvedTemperature,footprintCompatibleInstruments,aliquotInstrumentResult},
 							(* Is Temperature set? *)
 							resolvedTemperature=If[MatchQ[Lookup[myMapThreadOptions,Temperature],Except[Automatic]],
@@ -7429,6 +7437,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								fastAssocLookup[fastAssoc, instrument, {Model, Object}] /. {$Failed | NullP -> Null}
 							];
 
+							(* Set nutatorPacket to use in downstream logic *)
+							nutatorPacket = fetchPacketFromFastAssoc[instrumentModel, fastAssoc];
+
 							(* Did the user supply a rate? *)
 							rate=If[MatchQ[Lookup[myMapThreadOptions,MixRate],Automatic],
 								If[
@@ -7437,9 +7448,8 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										!NullQ[Lookup[samplePacket,ThawMixRate]]
 									],
 									Lookup[samplePacket,ThawMixRate],
-									(* Resolve to the average RPM of the set instrument. *)
-									nutatorPacket = fetchPacketFromFastAssoc[instrumentModel, fastAssoc];
 
+									(* Resolve to the average RPM of the set instrument. *)
 									(* Round to the nearest RPM. *)
 									Round[Mean[Lookup[nutatorPacket,{MinRotationRate,MaxRotationRate},1RPM]],1RPM]
 								],
@@ -7535,6 +7545,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 							(* Are there instruments that can currently support the footprint of our sample? *)
 							instrument=If[Length[potentialInstruments]>0,
 								(* Resolve rate (if we have to) to be the average rate of our first instrument. *)
+
 								rate=If[MatchQ[preResolvedRate,Automatic],
 									(* Resolve to the average RPM of the set instrument. *)
 									nutatorPacket = fetchPacketFromFastAssoc[First[potentialInstruments], fastAssoc];
@@ -9944,7 +9955,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 					(* Switch based off of this mix type. *)
 					Switch[mixType,
 						Invert|Pipette,
-							(* We can choose any container to invert since it's by an indivial container basis. *)
+							(* We can choose any container to invert since it's by an individual container basis. *)
 							(* potentialAliquotContainers is ordered from smallest to largest so take the first. *)
 							({First[potentialAliquotContainersList[[#]]],Null,Null,#}&)/@aliquotInformation[[All,2]],
 						Vortex|Shake|Roll|Stir|Sonicate|Homogenize,
@@ -10946,13 +10957,15 @@ DefineOptions[incubateNewResourcePackets,
 
 
 incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{___Rule},myResolvedOptions:{___Rule},myCollapsedResolvedOptions:{___Rule},myOptions:OptionsPattern[]]:=Module[
-	{experimentFunction,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,cache,simulatedSamples,mixTypes,mapThreadFriendlyOptions,originalSampleObjects,sampleObjects,groupedSamples,
-	protocolFields,mixType,samples,options,thawFields,thawParameters,
-	simulatedContainers,sampleGroupingIndices,sampleGroupingLengths,estimatedThawTime,estimatedMixTime,multiIncubateFields,
-	transformCoolerResource,transformCoolerPowerCableLink, transformBiosafetyCabinetResource, transformBiosafetyWasteBinResource, transformBiosafetyWasteBagResource, transformRecoveryPipetteResource, transformRecoveryTipResources, transformRecoveryMediaResources,
+	{
+		experimentFunction, resolvedOptionsNoHidden, outputSpecification, output, gatherTests, cache, simulatedSamples, mixTypes,
+		currentHandlingStation, mapThreadFriendlyOptions, originalSampleObjects, sampleObjects, groupedSamples,
+		protocolFields,mixType,samples,options,thawFields,thawParameters,
+		simulatedContainers,sampleGroupingIndices,sampleGroupingLengths,estimatedThawTime,estimatedMixTime,multiIncubateFields,
+		transformCoolerResource,transformCoolerPowerCableLink, transformBiosafetyCabinetResource, transformBiosafetyWasteBinResource, transformBiosafetyWasteBagResource, transformRecoveryPipetteResource, transformRecoveryTipResources, transformRecoveryMediaResources,
 		result,allResourceBlobs,fulfillable,frqTests,messages,simulation,updatedSimulation,samplePackets,containerPackets,containerModelPackets,preparation,
 		sampleLabelResources,sampleContainerLabelResources,instrumentResources,tipResources,unitOperationPacket,unitOperationPacketWithLabeledObjects,mySamplePackets,
-	previewRule,optionsRule,testsRule,resultRule,rawResourceBlobs,resourcesWithoutName,resourceToNameReplaceRules,protocolPacket, unitOperationPackets,handlingEnvironmentResource,fastAssoc},
+		previewRule,optionsRule,testsRule,resultRule,rawResourceBlobs,resourcesWithoutName,resourceToNameReplaceRules,protocolPacket, unitOperationPackets,handlingEnvironmentResource,fastAssoc},
 
 	(* get the experiment function *)
 	experimentFunction=Lookup[myResolvedOptions,ExperimentFunction];
@@ -11019,10 +11032,15 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 		MatchQ[preparation,Manual],
 
 		(*-- Get the types of each of our instruments. --*)
-		mixTypes=Lookup[myResolvedOptions,MixType];
+		{mixTypes, currentHandlingStation} = Lookup[myResolvedOptions, {MixType, CurrentHandlingEnvironment}];
 		
 		(* lets create one handling environment resource, we only need one resource that can be shared if we are inverting or swirling, otherwise, no need to create one at all *)
-		handlingEnvironmentResource = If[MemberQ[mixTypes, Invert | Swirl],
+		handlingEnvironmentResource = Which[
+			(* If we are hand mixing and were given a handling station to use (such as by a transfer parent protocol) use that. *)
+			MemberQ[mixTypes, Invert | Swirl] && MatchQ[currentHandlingStation, ObjectP[]],
+			Resource[Instrument -> Download[currentHandlingStation, Object], Time -> 5 Minute * Count[mixTypes, Invert | Swirl]],
+			(* If we are mixing and no handling station was passed to the function, use any handling station with a camera for mixing. *)
+			MemberQ[mixTypes, Invert | Swirl],
 			Module[{allAmbientHandlingStations, allAmbientHandlingStationsWithMixingZones},
 				(* get all ambient handling stations from a memoized search *)
 				allAmbientHandlingStations = Cases[transferModelsSearch["Memoization"][[23]], ObjectP[Model[Instrument, HandlingStation, Ambient]]];
@@ -11036,6 +11054,8 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 				(* make one resource *)
 				Resource[Instrument -> allAmbientHandlingStationsWithMixingZones, Time -> 5 Minute * Count[mixTypes, Invert | Swirl]]
 			],
+			(* Otherwise, no mixing by hand is employed and no handling station resource is required. *)
+			True,
 			Null
 		];
 
@@ -13379,7 +13399,7 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 					Model[Instrument, PortableCooler, "id:eGakldJdO9le"] (* "ICECO GO12" *)
 				}],
 				Link@Model[Wiring, Cable, "Portable cooler power cable for Transform"][Objects][[1]],
-				Link@Resource[Instrument -> Model[Instrument, HandlingStation, BiosafetyCabinet, "Biosafety Cabinet Handling Station for Microbiology"]], (* "Biosafety Cabinet Handling Station for Microbiology" *)
+				Link@Resource[Instrument -> microbialBSCModels["Memoization"]], (* "Biosafety Cabinet Handling Station for Microbiology" *)
 				Link@Resource[Sample -> Model[Container, WasteBin, "id:7X104v1DJmX6"]], (* "Biohazard Waste Container, BSC" *)
 				Link@Resource[Sample -> Model[Item, Consumable, "id:7X104v6oeYNJ"]], (* "Biohazard Waste Bags, 8x12" *)
 				Link@Resource[Instrument -> Model[Instrument, Pipette, "id:GmzlKjP3boWe"]], (* "Eppendorf Research Plus P1000, Microbial" *)
@@ -15771,7 +15791,7 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 								compatibleInstruments
 						],
 					Homogenize,
-						If[MatchQ[sampleContainerModel,ObjectP[Model[Container,Vessel,VolumetricFlask]]],
+						If[MatchQ[sampleContainerModel,ObjectP[Model[Container,Vessel,VolumetricFlask]]]&&!MemberQ[output,Containers],
 							(* No Homogenize for volumetric flask *)
 							{},
 							(* Make sure that for each compatible instrument, there is an sonication horn that is compatible with our container. *)
@@ -15829,14 +15849,13 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 								]
 							]
 						],
-					Disrupt|Nutate,
-						If[MatchQ[sampleContainerModel,ObjectP[Model[Container,Vessel,VolumetricFlask]]],
-							(* No Disrupt|Nutate for volumetric flask *)
+					_,
+						(* No Mix for volumetric flask except Shake/Sonicate mentioned above *)
+						(* If we are considering aliquot, we may allow other mix types *)
+						If[MatchQ[sampleContainerModel,ObjectP[Model[Container,Vessel,VolumetricFlask]]]&&!MemberQ[output,Containers],
 							{},
 							compatibleInstruments
-						],
-					_,
-						compatibleInstruments
+						]
 				];
 
 				(* Were we asked to compute potentialAliquotContainers? *)

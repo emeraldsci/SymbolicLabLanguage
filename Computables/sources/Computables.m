@@ -705,7 +705,8 @@ getMicroscopeObjectives[ contents:NullP | {{LocationPositionP, ObjectP[{Object[S
 
 partsCurrentComputable[contentsLog:Null | {{_?DateObjectQ | Null, In | Out | Null, ObjectP[{Object[Sample], Object[Container], Object[Instrument], Object[Part], Object[Item], Object[Plumbing], Object[Wiring], Object[Sensor]}] | Null, _String | Null, ObjectP[{Object[User], Object[Qualification], Object[Maintenance], Object[Protocol]}] | Null}...}, contents:{{LocationPositionP | Null, LinkP[] | Null}...}]:=Module[
 	{
-		currentParts, partsContentsLog, partInstalledPairs, numberOfHours, partTriples
+		currentParts, partsContentsLog, partInstalledPairs, numberOfHours, partTriples,
+		validPartQs, validPartInstalledPairs, validPartsNumberOfHours
 	},
 
 	If[
@@ -727,6 +728,11 @@ partsCurrentComputable[contentsLog:Null | {{_?DateObjectQ | Null, In | Out | Nul
 
 			numberOfHours=Download[currentParts,NumberOfHours];
 
+			(* Filter out the invalid tuples in partInstalledPairs and numberOfHours, so that the MapThread below does not freak out when a part is in the Contents, but not the ContentsLog. Instead of breaking the computable field, it will cause VoQ failure. *)
+			validPartQs = MatchQ[#, {ObjectReferenceP[Object[Part]], _?DateObjectQ}]& /@ partInstalledPairs;
+			validPartInstalledPairs = PickList[partInstalledPairs, validPartQs, True];
+			validPartsNumberOfHours = PickList[numberOfHours, validPartQs, True];
+
 			(* get the part triples, {part, install time, how long it's been installed}
 			  If the part has NumberOfHours uploaded (e.g. for lamps), the install time will be the usage time *)
 			partTriples = MapThread[
@@ -741,7 +747,7 @@ partsCurrentComputable[contentsLog:Null | {{_?DateObjectQ | Null, In | Out | Nul
 						#1
 					}
 				] &,
-				{numberOfHours, partInstalledPairs}
+				{validPartsNumberOfHours, validPartInstalledPairs}
 			];
 
 			(* return Null if empty *)

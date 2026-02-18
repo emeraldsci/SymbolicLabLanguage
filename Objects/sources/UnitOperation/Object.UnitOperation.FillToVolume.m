@@ -232,6 +232,7 @@ DefineObjectType[Object[UnitOperation, FillToVolume], {
 				Model[Item, TransferTube],
 				Model[Item, ChippingHammer],
 				Model[Item, Scissors],
+				Model[Container, Vessel],
 
 				Object[Container, Syringe],
 				Object[Container, GraduatedCylinder],
@@ -241,12 +242,20 @@ DefineObjectType[Object[UnitOperation, FillToVolume], {
 				Object[Item, Tweezer],
 				Object[Item, TransferTube],
 				Object[Item, ChippingHammer],
-				Object[Item, Scissors]
+				Object[Item, Scissors],
+				Object[Container, Vessel]
 			],
 			Description -> "For each member of SolventLink, the instrument used to move the sample from the source container (or from the intermediate container if IntermediateDecant->True) to the destination container.",
 			Category -> "General",
 			Abstract -> True,
 			IndexMatching -> SolventLink
+		},
+		TransferTechnique ->{
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> TransferTechniqueP,
+			Description -> "Indicates the type of instrument used to transfer the sample from the source container (or from the intermediate container if IntermediateDecant->True) to the destination container.",
+			Category -> "General"
 		},
 		TransferEnvironment -> {
 			Format -> Multiple,
@@ -699,6 +708,22 @@ DefineObjectType[Object[UnitOperation, FillToVolume], {
 			Class -> Boolean,
 			Pattern :> BooleanP,
 			Description -> "For each member of SolventLink, indicates that RNase free technique should be followed when performing the transfer (spraying RNase away on surfaces, using RNaseFree tips, etc).",
+			Category -> "General",
+			IndexMatching -> SolventLink
+		},
+		OvenDryGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of SolventLink, indicates whether any glassware introduced in this unit operation (including, if relevant, any funnels or intermediate containers) are oven dried before use.",
+			Category -> "General",
+			IndexMatching -> SolventLink
+		},
+		DepyrogenateGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of SolventLink, indicates whether any glassware introduced in this unit operation (including, if relevant, any solvent preparatory containers, funnels, or intermediate containers) are oven dried before use.",
 			Category -> "General",
 			IndexMatching -> SolventLink
 		},

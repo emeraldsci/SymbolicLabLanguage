@@ -3557,8 +3557,8 @@ DefineTests[ExperimentInoculateLiquidMedia,
     Example[{Messages, "InvalidModelSampleInoculationSourceType", "If the input samples contain Model[Sample] and the model is evaluated to be of InoculationSource type of SolidMedia or LiquidMedia, throw an error:"},
       ExperimentInoculateLiquidMedia[
         {
-          Model[Sample, "ExperimentInoculateLiquidMedia test liquid e.coli culture model " <> $SessionUUID],
-          Object[Sample, "ExperimentInoculateLiquidMedia test liquid e.coli culture 1 in dwp " <> $SessionUUID]
+          Model[Sample, "ExperimentInoculateLiquidMedia test e.coli and LB agar sample Model " <> $SessionUUID],
+          Object[Sample, "ExperimentInoculateLiquidMedia test e.coli sample 1 in omniTray " <> $SessionUUID]
         }
       ],
       $Failed,
@@ -3568,22 +3568,22 @@ DefineTests[ExperimentInoculateLiquidMedia,
       },
       SetUp :> {
         UploadProduct[
-          Name -> "ExperimentInoculateLiquidMedia test liquid e.coli culture model Product " <> $SessionUUID,
+          Name -> "ExperimentInoculateLiquidMedia test solid e.coli culture model Product " <> $SessionUUID,
           Packaging -> Single,
           SampleType -> Plate,
-          ProductModel -> Model[Sample, "ExperimentInoculateLiquidMedia test liquid e.coli culture model " <> $SessionUUID],
+          ProductModel -> Model[Sample, "ExperimentInoculateLiquidMedia test e.coli and LB agar sample Model " <> $SessionUUID],
           NumberOfItems -> 1,
-          Amount -> 5 Milliliter,
-          DefaultContainerModel -> Model[Container, Plate, "id:jLq9jXY4kkMq"], (* Model[Container, Plate, "24-well Round Bottom Deep Well Plate"] *)
+          Amount -> 50 Gram,
+          DefaultContainerModel -> Model[Container, Plate, "id:O81aEBZjRXvx"], (* Model[Container, Plate, "Omni Tray Sterile Media Plate"] *)
           CatalogNumber -> "88888",
           Supplier -> Object[Company, Supplier, "Sigma Aldrich"],
           Price -> 100 USD,
-          CatalogDescription -> "Test Ecoli LiquidMedia product"
+          CatalogDescription -> "Test Ecoli SolidMedia product"
         ],
-        UploadNotebook[Object[Product, "ExperimentInoculateLiquidMedia test liquid e.coli culture model Product " <> $SessionUUID], Null]
+        UploadNotebook[Object[Product, "ExperimentInoculateLiquidMedia test solid e.coli culture model Product " <> $SessionUUID], Null]
       },
       TearDown :> (EraseObject[
-        {Object[Product, "ExperimentInoculateLiquidMedia test liquid e.coli culture model Product " <> $SessionUUID]},
+        {Object[Product, "ExperimentInoculateLiquidMedia test solid e.coli culture model Product " <> $SessionUUID]},
         Force -> True,
         Verbose -> False
       ])
@@ -5427,6 +5427,11 @@ inoculateLiquidMediaObjectErasure[functionName_String, tearDownBool: BooleanP] :
       (* Colony Handler *)
       Model[Instrument, ColonyHandler, "Test Colony Handler Instrument Model Shell for " <> functionName <> " " <> $SessionUUID],
 
+      (* Pipettes *)
+      Object[Instrument, Pipette, "Test Instrument Pipette 1 for " <> functionName <> " unit tests " <> $SessionUUID],
+      Object[Instrument, Pipette, "Test Instrument Pipette 2 for " <> functionName <> " unit tests " <> $SessionUUID],
+      Object[Instrument, Pipette, "Test Instrument Pipette 3 for " <> functionName <> " unit tests " <> $SessionUUID],
+
       (* Containers *)
       Object[Container, Plate, functionName <> " test dwp 1 " <> $SessionUUID],
       Object[Container, Plate, functionName <> " test dwp 2 " <> $SessionUUID],
@@ -5617,6 +5622,57 @@ inoculateLiquidMediaSymbolSetUp[functionName_String] := Block[{$DeveloperUpload 
       Type -> Model[Instrument, ColonyHandler],
       Name -> "Test Colony Handler Instrument Model Shell for " <> functionName <> " " <> $SessionUUID
     |>];
+
+    (* Create some test pipettes to make sure our tests don't rely on in lab objects *)
+    Upload[{
+      <|
+        Type -> Object[Instrument, Pipette],
+        Name -> "Test Instrument Pipette 1 for " <> functionName <> " unit tests " <> $SessionUUID,
+        Model -> Link[Model[Instrument, Pipette, "id:4pO6dM51ljY5"], Objects],
+        Cost -> 545.88 USD,
+        DateInstalled -> DateObject[{2025, 8, 29, 10, 55, 54.}, "Instant", "Gregorian", -8.],
+        DateMissing -> DateObject[{2025, 10, 25, 16, 37, 46.}, "Instant", "Gregorian", -8.],
+        DatePurchased -> DateObject[{2025, 8, 22, 10, 55, 54.}, "Instant", "Gregorian", -8.],
+        DateRetired -> DateObject[{2025, 12, 1, 12, 39, 16.}, "Instant", "Gregorian", -8.],
+        Missing -> True,
+        Mobile -> True,
+        NewStickerPrinted -> True,
+        Qualified -> True,
+        Site -> Link[$Site],
+        Status -> Retired,
+        Replace[SerialNumbers] -> {{Instrument, 82505050}},
+        DeveloperObject -> True
+      |>,
+      <|
+        Type -> Object[Instrument, Pipette],
+        Name -> "Test Instrument Pipette 2 for " <> functionName <> " unit tests " <> $SessionUUID,
+        Model -> Link[Model[Instrument, Pipette, "id:O81aEB1j6nPo"], Objects],
+        Cost -> 545.88 USD,
+        DateInstalled -> DateObject[{2024, 8, 13, 11, 53, 35.}, "Instant", "Gregorian", -8.],
+        DatePurchased -> DateObject[{2024, 8, 6, 11, 53, 35.}, "Instant", "Gregorian", -8.],
+        Mobile -> True,
+        NewStickerPrinted -> True,
+        Qualified -> True,
+        Site -> Link[$Site],
+        Status -> Running,
+        Replace[SerialNumbers] -> {{Instrument, 82405211}},
+        DeveloperObject -> True
+      |>,
+      <|
+        Type -> Object[Instrument, Pipette],
+        Name -> "Test Instrument Pipette 3 for " <> functionName <> " unit tests " <> $SessionUUID,
+        Model -> Link[Model[Instrument, Pipette, "id:KBL5DvwK6REk"], Objects],
+        Cost -> 545.88 USD,
+        DateInstalled -> DateObject[{2023, 2, 1, 10, 48, 13.}, "Instant", "Gregorian", -8.],
+        DatePurchased -> DateObject[{2023, 2, 1, 10, 48, 13.}, "Instant", "Gregorian", -8.],
+        Mobile -> True,
+        NewStickerPrinted -> True,
+        Site -> Link[$Site],
+        Status -> Available,
+        Replace[SerialNumbers] -> {{Instrument, 82209336}},
+        DeveloperObject -> True
+      |>
+    }];
 
     (* Set up test containers for our samples *)
     {

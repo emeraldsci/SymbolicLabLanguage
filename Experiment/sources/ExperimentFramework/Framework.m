@@ -37,10 +37,10 @@ SamplePreparationCacheFields[type_,ops:OptionsPattern[]]:=Module[{fields, safeOp
 	fields = Switch[type,
 		Object[Sample],
 			{
-				Object, Type, Name, State, BiosafetyLevel, CellType, CultureAdhesion, SampleHandling, Composition,
+				Object, Type, Name, State, BiosafetyLevel, CellType, CultureAdhesion, BiohazardDisposal, SampleHandling, Composition,
 				Analytes, Solvent, MassConcentration, Concentration, Volume, Mass, Count, Status, Model, Position,
 				Container, Living, Sterile, StorageCondition, MeltingPoint, ThawTime, ThawTemperature, MaxThawTime, ThawMixType,
-				ThawMixRate, ThawMixTime, ThawNumberOfMixes, TransportTemperature, Tablet, Sachet, SolidUnitWeight,
+				ThawMixRate, ThawMixTime, ThawNumberOfMixes, TransportTemperature, Tablet, Capsule, Sachet, SolidUnitWeight,
 				LiquidHandlerIncompatible, Site, RequestedResources, Conductivity, IncompatibleMaterials, pH, KitComponents,
 				AsepticHandling, Density, Fuming, InertHandling, ParticleWeight, PipettingMethod, Pyrophoric,
 				ReversePipetting, RNaseFree, TransferTemperature, TransportCondition, Ventilated, Well, SurfaceTension,
@@ -50,7 +50,7 @@ SamplePreparationCacheFields[type_,ops:OptionsPattern[]]:=Module[{fields, safeOp
 			{
 				Conductivity, IncompatibleMaterials, pH, KitComponents, RequestedResources, Products, KitProducts,
 				MaxThawTime, Solvent, SampleHandling, CellType, CultureAdhesion, BiosafetyLevel, Composition, Analytes, TransportTemperature,
-				Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, Sachet, SolidUnitWeight, State, MolecularWeight, MeltingPoint,
+				Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, Capsule, Sachet, SolidUnitWeight, State, MolecularWeight, MeltingPoint,
 				ThawTime, ThawTemperature, Dimensions, ExtinctionCoefficients, UsedAsSolvent, AsepticHandling, Density, Fuming, InertHandling,
 				ParticleWeight, PipettingMethod, Pyrophoric, ReversePipetting, RNaseFree, TransferTemperature, TransportCondition, Ventilated, SurfaceTension,
 				Parafilm, AluminumFoil, Living, Flammable, DOTHazardClass
@@ -296,8 +296,9 @@ DefineOptions[checkObjectsInOptions,
 ];
 (* Message *)
 
-Warning::OptionContainsUnusableObject = "The following options contain specified object instances that have a
-defective state and will require troubleshooting in the lab:`1` To avoid potential delays in processing, please consider using a Model instead.";
+Warning::OptionContainsUnsuitableObject = "The following options contain specified object instances that have a
+problematic state and might require troubleshooting in the lab:`1`. These samples may be either missing or expired. If expired, the samples can still be used in the protocol, but may negatively affect your results.
+To avoid potential delays in processing, please consider using a Model instead.";
 
 checkObjectsInOptions[myOptions:{_Rule...}, mySimulationOps: Rule[Simulation, _]] := Module[
 	{typesToCheck, optionObjects, simulation, objectPackets, defectiveOptionClauses},
@@ -374,8 +375,8 @@ checkObjectsInOptions[myOptions:{_Rule...}, mySimulationOps: Rule[Simulation, _]
 		myOptions
 	];
 	(* If we have any defective object in options, join all clauses *)
-	If[MatchQ[defectiveOptionClauses, {(_String)..}],
-		Message[Warning::OptionContainsUnusableObject, StringJoin[Sequence@@defectiveOptionClauses]]
+	If[MatchQ[defectiveOptionClauses, {(_String)..}] && !MatchQ[$ECLApplication, Engine],
+		Message[Warning::OptionContainsUnsuitableObject, StringJoin[Sequence@@defectiveOptionClauses]]
 	]
 ];
 
@@ -1807,7 +1808,7 @@ simulateSamplePreparationPacketsNew[myFunction_Symbol,mySamples:ListableP[Listab
 	(* Experiments should call sanitizeInput first by itself. Do not throw the message again *)
 	{samplesByID, experimentOptionsByIDWithPreparedModel} = Quiet[
 		sanitizeInputs[mySamples, flatOptions, Simulation -> simulation],
-		Warning::OptionContainsUnusableObject
+		Warning::OptionContainsUnsuitableObject
 	];
 
 	(* sanitizeInputs will throw the message itself; just need to return $Failed here  *)
@@ -5370,7 +5371,7 @@ resolveAliquotOptions[myFunction_,mySamples:{ListableP[NonSelfContainedSampleP].
 	output = ToList[outputSpecification];
 
 	(* get the NumberOfReplicates option from myOptions; if it isn't there, then resolve to 1 *)
-	numReplicates = Lookup[mySamplePrepOptions, NumberOfReplicates, 1] /. {Null -> 1};
+	numReplicates = Lookup[mySamplePrepOptions, NumberOfReplicates, 1] /. {Null|Automatic -> 1};
 
 	(* figure out if we are gathering tests or not *)
 	gatherTests = MemberQ[output, Tests];
@@ -6105,10 +6106,70 @@ resolveAliquotOptions[myFunction_,mySamples:{ListableP[NonSelfContainedSampleP].
 	StartUniqueLabelsSession[];
 
 	(* call the ExperimentAliquot resolver *)
+	(* Quiet AliquotAmountPrecision and rethrow this warning if needed *)
 	{resolvedAliquotedAliquotOptions, aliquotResolutionTests} = Which[
-		MatchQ[aliquotedSamples, {}], {{}, {}},
-		gatherTests, ExperimentAliquot[aliquotedSamples, ReplaceRule[renamedAliquotOptions, {Output -> {Options, Tests}, Cache -> cache, Simulation -> updatedSimulation, EnableSamplePreparation -> True}]],
-		True, {ExperimentAliquot[aliquotedSamples, ReplaceRule[renamedAliquotOptions, {Output -> Options, Cache -> cache, Simulation -> updatedSimulation, EnableSamplePreparation -> True}]], Null}
+		MatchQ[aliquotedSamples, {}],
+			{{}, {}},
+		gatherTests,
+			ExperimentAliquot[
+				aliquotedSamples,
+				ReplaceRule[renamedAliquotOptions, {Output -> {Options, Tests}, Cache -> cache, Simulation -> updatedSimulation, EnableSamplePreparation -> True}]
+			],
+		True,
+			{
+				Quiet[
+					ExperimentAliquot[
+						aliquotedSamples,
+						ReplaceRule[renamedAliquotOptions, {Output -> Options, Cache -> cache, Simulation -> updatedSimulation, EnableSamplePreparation -> True}]
+					],
+					{Warning::AliquotAmountPrecision}
+				],
+				Null
+			}
+	];
+
+	If[!MatchQ[aliquotedSamples, {}] && !gatherTests && !MatchQ[$ECLApplication, Engine],
+		Module[{flattenedInputAmounts, flattenedResolvedAmounts, roundedAmountWarningQs},
+			flattenedInputAmounts = Flatten@Lookup[renamedAliquotOptions, Amount, Automatic];
+			flattenedResolvedAmounts = Flatten@Lookup[resolvedAliquotedAliquotOptions, Amount];
+			roundedAmountWarningQs = If[Length[flattenedInputAmounts] == Length[flattenedResolvedAmounts],
+				MapThread[
+					Function[{amount, roundedAmount},
+						Which[
+							!MassQ[amount] && !VolumeQ[amount],
+								False,
+							MatchQ[amount, Except[Automatic|All]] && MatchQ[roundedAmount, Except[All]] && EqualQ[amount, roundedAmount],
+								False,
+							True,
+								Module[{achievalbeResolution},
+									achievalbeResolution = Quiet[Check[AchievableResolution[amount], $Failed,Error::MinimumAmount], {Error::MinimumAmount, Warning::AmountRounded}];
+									If[MatchQ[achievalbeResolution, $Failed],
+										(* If we are throwing min amount warning, no need to throw AliquotAmountPrecision warning as well*)
+										False,
+										True
+									]
+							]
+						]
+					],
+					{flattenedInputAmounts, flattenedResolvedAmounts}
+				],
+				(* If samples are pooled, do not throw warning *)
+				{False}
+			];
+			(* Note:this warning is essentially the same as what ExperimentAliquot throws. We quiet the warning in ExperimentAliquot and throw it here so we can have the correct option name *)
+			If[MemberQ[roundedAmountWarningQs, True],
+				Message[
+					Warning::AliquotAmountPrecision,
+					(*1*)StringJoin[
+						"AliquotAmount ",
+						isOrAre[DeleteDuplicates[PickList[flattenedInputAmounts, roundedAmountWarningQs]]]
+					],
+					(*2*)Experiment`Private`joinClauses[PickList[flattenedInputAmounts, roundedAmountWarningQs]],
+					(*3*)pluralize[DeleteDuplicates[PickList[flattenedInputAmounts, roundedAmountWarningQs]], "exceeds", "exceed"],
+					(*4*)Experiment`Private`joinClauses[PickList[flattenedResolvedAmounts, roundedAmountWarningQs]]
+				]
+			]
+		]
 	];
 
 	(* End the new label session. *)
@@ -6530,6 +6591,80 @@ expandNumberOfReplicates[myFunction_Symbol,mySamples_List,myOptions_List]:=Modul
 		(* Return our expanded samples and options. *)
 		{expandedSamples,expandedOptions}
 	]
+];
+
+(*expandNumberOfReplicates*)
+
+(* This error is useful for developers. Ideally the user will never see this, but in the event of a bug in an Experiment function return a user-facing apprioriate error message. *)
+Error::InvalidReplicatePositions = "Replicate positions are either missing or repeated. Please contact ECL personnel for support.";
+
+(* Given myFunction, mySamples, and myOptions: returns a list of expanded samples and options, according to indicated positions of replicates. *)
+(* Assumes the myOptions is already expanded and that the only index-matching of inputs is to the samples. *)
+expandNumberOfReplicates[myFunction_Symbol, mySamplesAndReplicatePositions:{{_, {__Integer}}..},myOptions_List]:=Module[
+	{mySamples, myReplicatePositions, optionDefinitions,expandedOptions,optionDefinition,inputMatchedBoolean,expandedSamples,expansionLength, expandedOption},
+
+	(* Parse the samples and positions from the mySamplesAndReplicatePositions input. *)
+	mySamples = mySamplesAndReplicatePositions[[All, 1]];
+	myReplicatePositions = mySamplesAndReplicatePositions[[All, 2]];
+
+	(* Find the largest position to expand to. *)
+	expansionLength = Max[Flatten[myReplicatePositions]];
+
+	(* Quick check for errors to ensure all the placeholder values below will be replaced and they won't be replaced more than once. *)
+	If[!MatchQ[Sort[Flatten[myReplicatePositions]], Range[expansionLength]],
+		Message[Error::InvalidReplicatePositions];
+		(* Do not expand if the replicate position inputs are invalid. *)
+		Return[{mySamples, myOptions}]
+	];
+
+	(* Expand the Samples *)
+
+	(* Initialize a placeholder list for the expanded samples. *)
+	expandedSamples = ConstantArray[PlaceholderForExpandNumberOfReplicates, expansionLength];
+
+	(* For each sample and replicate position list: *)
+	MapThread[Function[{sample, replicatePositions},
+		(* Overwrite the placeholder value with the sample at the indicated positions. *)
+		Map[(expandedSamples[[#]] = sample)&, replicatePositions]
+	],
+		{mySamples, myReplicatePositions}
+	];
+
+	(* Expand the index matched options. *)
+
+	(* Get the option definition for myFunction. *)
+	optionDefinitions=OptionDefinition[myFunction];
+
+	(* For each option: *)
+	expandedOptions=Function[{option},
+		(* Lookup the option definition. *)
+		optionDefinition=SelectFirst[optionDefinitions,MatchQ[#["OptionSymbol"],option[[1]]]&];
+
+		(* Check if the option is index matched. *)
+		inputMatchedBoolean=MatchQ[Lookup[optionDefinition,"IndexMatchingInput"],_String];
+
+		(* If our option is index matched to the input (assume it's the samples), then expand them. *)
+		If[inputMatchedBoolean,
+			(* To expand, initialize a placeholder list for the expanded option values. *)
+			expandedOption = ConstantArray[PlaceholderForExpandNumberOfReplicates, expansionLength];
+
+			(* For each sample and replicate position list: *)
+			MapThread[Function[{optionValue, replicatePositions},
+				(* Overwrite the placeholder value with the optional value at the indicated positions. *)
+				Map[(expandedOption[[#]] = optionValue)&, replicatePositions]
+			],
+				{option[[2]], myReplicatePositions}
+			];
+
+			(* Return a rule with the option key pointing to the expanded option values. *)
+			option[[1]] -> expandedOption,
+			(* If the option was not index-matching, do nothing. *)
+			option
+		]
+	] /@ myOptions;
+
+	(* Return our expanded samples and options. *)
+	{expandedSamples, expandedOptions}
 ];
 
 

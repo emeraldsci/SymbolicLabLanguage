@@ -2338,6 +2338,20 @@ DefineTests[ExperimentCrossFlowFiltration,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
+
+		Example[
+			{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentCrossFlowFiltration[
+				Object[Sample, "Cross Flow Test Sample (VII) "<> $SessionUUID],
+				AliquotAmount -> 239.9 Milliliter,
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			240 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
+		],
 		
 		Example[
 			{Options,AliquotSampleLabel,"Specify a label for the aliquoted sample:"},
@@ -2589,6 +2603,21 @@ DefineTests[ExperimentCrossFlowFiltration,
 			EquivalenceFunction->Equal,
 			Variables:>{options},
 			Messages:>{Warning::AliquotRequired}
+		],
+
+		Example[
+			{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentCrossFlowFiltration[
+				Object[Sample, "Cross Flow Test Sample (V) "<> $SessionUUID],
+				PrimaryConcentrationTarget -> 1.1,
+				CentrifugeIntensity -> 952 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			950 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotRequired, Warning::CentrifugePrecision}
 		],
 		
 		(* Note: CentrifugeTime cannot go above 5 Minute without restricting the types of centrifuges that can be used. *)
@@ -3595,26 +3624,6 @@ DefineTests[ExperimentCrossFlowFiltration,
 				Block[{$AllowPublicObjects = True},
 					UploadSampleModel[
 						{
-							"Cross Flow Test Sample "<> $SessionUUID,
-							"Cross Flow Bacteria Test Sample "<> $SessionUUID,
-							"Cross Flow Yeast Test Sample "<> $SessionUUID,
-							"Cross Flow Mammalian Cell Test Sample "<> $SessionUUID,
-							"Cross Flow Test Sample Single Component "<> $SessionUUID,
-
-							(* Non-aqueous solutions *)
-							"Cross Flow Test Sample in Acetone "<> $SessionUUID,
-							"Cross Flow Test Sample in Acetic Acid "<> $SessionUUID,
-							(* Sample without density *)
-							"Cross Flow Test Sample Without Density "<> $SessionUUID,
-
-							(* Samples with specified solvent field *)
-							"Cross Flow Test Sample With Single Solvent "<> $SessionUUID,
-							"Cross Flow Test Sample With Multiple Solvents "<> $SessionUUID,
-
-							"Cross Flow Mixed Test Sample "<> $SessionUUID,
-							"Cross Flow Test Sample Without Molecular Weight "<> $SessionUUID
-						},
-						Composition -> {
 							{
 								{100 VolumePercent,Link[Model[Molecule,"Water"]]},
 								{1 Molar,Link[Model[Molecule,Oligomer,"Test 40mer (Test for ExperimentCrossFlowFiltration) " <> $SessionUUID]]},
@@ -3672,6 +3681,26 @@ DefineTests[ExperimentCrossFlowFiltration,
 								{99 VolumePercent,Link[Model[Molecule,"Water"]]},
 								{1 VolumePercent,Link[Model[Molecule,"Solvent Without Density (Test for ExperimentCrossFlowFiltration) " <> $SessionUUID]]}
 							}
+						},
+						Name -> {
+							"Cross Flow Test Sample "<> $SessionUUID,
+							"Cross Flow Bacteria Test Sample "<> $SessionUUID,
+							"Cross Flow Yeast Test Sample "<> $SessionUUID,
+							"Cross Flow Mammalian Cell Test Sample "<> $SessionUUID,
+							"Cross Flow Test Sample Single Component "<> $SessionUUID,
+
+							(* Non-aqueous solutions *)
+							"Cross Flow Test Sample in Acetone "<> $SessionUUID,
+							"Cross Flow Test Sample in Acetic Acid "<> $SessionUUID,
+							(* Sample without density *)
+							"Cross Flow Test Sample Without Density "<> $SessionUUID,
+
+							(* Samples with specified solvent field *)
+							"Cross Flow Test Sample With Single Solvent "<> $SessionUUID,
+							"Cross Flow Test Sample With Multiple Solvents "<> $SessionUUID,
+
+							"Cross Flow Mixed Test Sample "<> $SessionUUID,
+							"Cross Flow Test Sample Without Molecular Weight "<> $SessionUUID
 						},
 						IncompatibleMaterials -> {
 							{None},

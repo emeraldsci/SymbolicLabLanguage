@@ -45,7 +45,7 @@ DefineObjectType[Model[Container, Vessel], {
 			(* Intentionally leave this open to negative values for cases where wells protrude beyond skirt (e.g., filter tubes) *)
 			Pattern :> DistanceP,
 			Units -> Meter Milli,
-			Description -> "Vertical height distance from the bottom of the plate to the bottom of the first contents-holding cavity.",
+			Description -> "Distance from the bottom of the vessel to the inside bottom of its contents-holding position.",
 			Category -> "Container Specifications"
 		},
 		InternalDimensions -> {

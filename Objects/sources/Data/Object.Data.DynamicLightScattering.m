@@ -45,14 +45,14 @@ DefineObjectType[Object[Data, DynamicLightScattering], {
       Class->Link,
       Pattern:>_Link,
       Relation->Alternatives[Object[Container,Plate]],
-      Description->"The capillary strips or plates that the samples are assayed in.",
+      Description->"The capillary strip or plate that the samples are assayed in.",
       Category->"Sample Loading"
     },
     AssayPosition->{
       Format->Single,
       Class->String,
       Pattern:>_String,
-      Description->"For each member of AssayContainers, the well positions of the sample dilutions.",
+      Description->"The well position of the sample measurement.",
       Category->"Sample Loading"
     },
     AssayContainers->{
@@ -230,7 +230,7 @@ DefineObjectType[Object[Data, DynamicLightScattering], {
       Class->Link,
       Pattern:>_Link,
       Relation->Object[Sample]|Model[Sample],
-      Description->"The sample that is used as a 0 mg/mL blank in ColloidalStability assays, to determine the diffusion coefficient at infinite dilution.",
+      Description->"The sample that is used as a 0 mg/mL blank in ColloidalStability assays, to determine the diffusion coefficient at infinite dilution and for measuring solvent offset when collecting Static Light Scattering data.",
       Category->"Sample Dilution"
     },
     (* Isothermal Stability Fields *)
@@ -695,6 +695,13 @@ DefineObjectType[Object[Data, DynamicLightScattering], {
       Relation->Object[EmeraldCloudFile],
       Description->"Images of the bottom of the well plate containing samples.",
       Category->"Analysis & Reports"
+    },
+    SampleType->{
+      Format->Single,
+      Class->Expression,
+      Pattern:>LightScatteringSampleTypeP,
+      Description->"Indicates the type of sample that the measurement was taken on; either an input sample, solvent blank, calibration standard, or missing a sample link.",
+      Category->"General"
     }
   }
 }];

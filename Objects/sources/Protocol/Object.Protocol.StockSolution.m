@@ -728,7 +728,9 @@ DefineObjectType[Object[Protocol, StockSolution], {
 				MembraneMaterial -> Expression,
 				PoreSize -> Real,
 				Syringe -> Link,
-				FilterHousing -> Link
+				FilterHousing -> Link,
+				OvenDryGlassware -> Boolean,
+				DepyrogenateGlassware -> Boolean
 			},
 			Pattern :> {
 				Type -> FiltrationTypeP,
@@ -737,7 +739,9 @@ DefineObjectType[Object[Protocol, StockSolution], {
 				MembraneMaterial -> FilterMembraneMaterialP,
 				PoreSize -> FilterSizeP,
 				Syringe -> _Link,
-				FilterHousing -> _Link
+				FilterHousing -> _Link,
+				OvenDryGlassware -> BooleanP,
+				DepyrogenateGlassware -> BooleanP
 			},
 			Units -> {
 				Type -> None,
@@ -746,7 +750,9 @@ DefineObjectType[Object[Protocol, StockSolution], {
 				MembraneMaterial -> None,
 				PoreSize -> Micrometer,
 				Syringe -> None,
-				FilterHousing -> None
+				FilterHousing -> None,
+				OvenDryGlassware -> None,
+				DepyrogenateGlassware -> None
 			},
 			Relation -> {
 				Type -> Null,
@@ -755,7 +761,9 @@ DefineObjectType[Object[Protocol, StockSolution], {
 				MembraneMaterial -> Null,
 				PoreSize -> Null,
 				Syringe -> Alternatives[Object[Container],Model[Container]],
-				FilterHousing -> Alternatives[Object[Instrument,FilterHousing],Model[Instrument,FilterHousing]]
+				FilterHousing -> Alternatives[Object[Instrument,FilterHousing],Model[Instrument,FilterHousing]],
+				OvenDryGlassware -> Null,
+				DepyrogenateGlassware -> Null
 			},
 			IndexMatching -> FiltrationSamples,
 			Description -> "For each member of FiltrationSamples, parameters describing how the stock solution should be filtered following component combination, filling to volume with solvent, mixing, and pH titration.",
@@ -791,6 +799,22 @@ DefineObjectType[Object[Protocol, StockSolution], {
 			Category -> "Sample Preparation",
 			Developer -> True
 		},
+		OvenDryGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of StockSolutionModels, indicates whether any glassware introduced in this protocol (including, if relevant, any transfer destination containers and filtration apparatuses) are oven dried before use.",
+			Category -> "Sample Preparation",
+			IndexMatching -> StockSolutionModels
+		},
+		DepyrogenateGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of StockSolutionModels, indicates whether any glassware introduced in this protocol (including, if relevant, any transfer destination containers and filtration apparatuses) are oven dried before use.",
+			Category -> "Sample Preparation",
+			IndexMatching -> StockSolutionModels
+		},
 
 		(* --- Autoclaving --- *)
 		AutoclaveSamples -> {
@@ -822,6 +846,17 @@ DefineObjectType[Object[Protocol, StockSolution], {
 			Units -> None,
 			Relation -> Null,
 			Description -> "The length of each of our autoclave batches.",
+			Category -> "Autoclaving",
+			Developer->True
+		},
+		AutoclaveSkipCoolings -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Units -> None,
+			Relation -> Null,
+			IndexMatching -> AutoclaveSamples,
+			Description -> "For each member of AutoclaveSamples, indicates if the autoclaved solution gets resource picked into a transporter right after the completion of the autoclave program, instead of doing a post-autoclave cooling.",
 			Category -> "Autoclaving",
 			Developer->True
 		},

@@ -530,6 +530,34 @@ DefineTests[
 			{{GreaterP[115*4/3*Microliter]}, {GreaterP[115*4/3*Microliter]}},
 			Variables :> {protocol}
 		],
+		Example[{Additional},"If preparing a sterile model with Autoclave -> True, the preparatory container is preferred to be the ContainerOut if it is autoclaveable, not necessarily sterile:",
+			protocol = ExperimentStockSolution[
+				Model[Sample, Media, "LB Broth, Miller"],
+				ContainerOut -> Model[Container, Vessel, "id:J8AY5jwzPPR7"], (*"250mL Glass Bottle"*)
+				Volume -> 115 * Milliliter,
+				Autoclave -> True
+			];
+			Download[protocol, {PreparatoryContainers, PreparatoryContainers[Sterile]}],
+			{
+				{ObjectP[Model[Container, Vessel, "id:J8AY5jwzPPR7"]]},
+				{False}
+			},
+			Variables :> {protocol}
+		],
+		Example[{Additional},"If preparing a liquid form model of a solid media, resolve to skip autoclave cooling:",
+			model = Download[
+				Model[Sample, Media, "id:N80DNjvrZqBA"],(*Model[Sample, Media, "LB Agar Preparable"]*)
+				LiquidMedia[[1]][Object]
+			];
+			protocol = ExperimentStockSolution[
+				model,
+				Volume -> 120 * Milliliter,
+				Autoclave -> True
+			];
+			Download[protocol, AutoclaveSkipCoolings],
+			{True},
+			Variables :> {model, protocol}
+		],
 		Example[{Additional, "Can specify a specific sample in the formula overload and populate SamplesIn:"},
 			(
 				ExperimentStockSolution[{{ 100*Microliter,Object[Sample, "Example water for ExperimentStockSolution unit tests"]}, { 50*Milliliter,Model[Sample,"Acetonitrile, Biosynthesis Grade"]}}, Name -> "Example StockSolution Protocol with one Sample "<>$SessionUUID];
@@ -2093,7 +2121,9 @@ DefineTests[
 						MembraneMaterial->FilterMembraneMaterialP,
 						PoreSize->GreaterP[0 Micron],
 						Syringe->Null,
-						FilterHousing->ObjectP[Model[Instrument,FilterHousing]]
+						FilterHousing->ObjectP[Model[Instrument,FilterHousing]],
+						OvenDryGlassware->False,
+						DepyrogenateGlassware->False
 					|>
 				}
 			},
@@ -2265,7 +2295,7 @@ DefineTests[
 				FilterSyringe->Model[Container,Syringe,"20mL All-Plastic Disposable Luer-Lock Syringe"]
 			],
 			$Failed,
-			Messages:>{Error::InvalidOption,Error::VolumeTooLargeForSyringe,Error::NoFilterAvailable,Error::FilterMaxVolume},
+			Messages:>{Error::InvalidOption,Error::VolumeTooLargeForSyringe,Error::InvalidFiltrationTypeForVolume,Error::FilterMaxVolume},
 			TimeConstraint -> 80
 		],
 		Example[{Options,FilterHousing,"Specify a filter housing that should be used to hold the filter membrane through which the stock solution is filtered following component combination, filling to volume with solvent, mixing, and/or pH titration:"},
@@ -3708,7 +3738,9 @@ DefineTests[
 						MembraneMaterial->PTFE,
 						PoreSize->0.22 Micrometer,
 						Syringe->Null,
-						FilterHousing->ObjectP[Model[Instrument,FilterHousing]]
+						FilterHousing->ObjectP[Model[Instrument,FilterHousing]],
+						OvenDryGlassware->False,
+						DepyrogenateGlassware->False
 					|>
 				}
 			},

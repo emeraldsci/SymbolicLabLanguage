@@ -43,13 +43,6 @@ DefineObjectType[Model[Maintenance, Replace], {
 			],
 			Description -> "The tools required for maintenance.",
 			Category -> "General"
-		},
-		DeveloperOnly -> {
-			Format -> Single,
-			Class -> Expression,
-			Pattern :> Alternatives[Null, BooleanP],
-			Description -> "Indicates if the maintenance should be performed by a developer or a trained engineer.",
-			Category -> "General"
 		}
 	}
 }];

@@ -486,7 +486,7 @@ DefineOptions[UploadColumn,
 				Default -> Automatic,
 				AllowNull -> False,
 				Description -> "The condition in which this model columns are stored when not in use by an experiment.",
-				ResolutionDescription -> "If creating a new object, resolves to Model[StorageCondition, \"Ambient Storage\"]. For existing objects, Automatic resolves to the current field value.",
+				ResolutionDescription -> "If creating a new object and ExposedSurfaces is True, resolves to Model[StorageCondition, \"Ambient Storage, Lined Enclosed\"]. Otherwise resolves to Model[StorageCondition, \"Ambient Storage\"]. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Storage Information",
 				Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[StorageCondition]]]
 			},
@@ -498,6 +498,15 @@ DefineOptions[UploadColumn,
 				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
 				Category -> "Storage Information",
 				Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Model[Sample]}]]
+			},
+			{
+				OptionName -> ExposedSurfaces,
+				Default -> Automatic,
+				AllowNull -> False,
+				Description -> "Indicates if any sensitive portions of this column are open to the external environment and prone to contamination.",
+				ResolutionDescription -> "If creating a new object, resolves to False. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Storage Information",
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP]
 			}
 		]
 	},
@@ -528,7 +537,7 @@ resolveUploadColumnOptions[myType_, myInput:{___}, myOptions_, rawOptions_] := M
 resolveUploadColumnOptions[myType_, myName_String, myOptions_, rawOptions_]:=Module[
 	{
 		myOptionsAssociation, myOptionsWithName, myOptionsWithSynonyms, optionsToMatchCartridge, cartridgeOptionUpdates, optionsWithCartridgeUpdates,
-		storageCapsUpdate, connectorTypeUpdate, defaultStorageConditionUpdate, finalizedOptions
+		exposedSurfacesUpdate, storageCapsUpdate, connectorTypeUpdate, defaultStorageConditionUpdate, finalizedOptions
 	},
 	
 	(* Convert the options to an association. *)
@@ -587,8 +596,29 @@ resolveUploadColumnOptions[myType_, myName_String, myOptions_, rawOptions_]:=Mod
 	(* ConnectorType, default female-female *)
 	connectorTypeUpdate = ConnectorType -> Replace[Lookup[myOptionsWithSynonyms, ConnectorType], Automatic -> FemaleFemale];
 
-	(* DefaultStorageCondition, default ambient *)
-	defaultStorageConditionUpdate = DefaultStorageCondition -> Replace[Lookup[myOptionsWithSynonyms, DefaultStorageCondition], Automatic -> Model[StorageCondition, "Ambient Storage"]];
+	(* ExposedSurfaces, default False *)
+	exposedSurfacesUpdate = ExposedSurfaces -> Replace[Lookup[myOptionsWithSynonyms, ExposedSurfaces], Automatic -> False];
+
+	(* DefaultStorageCondition, conditional on ExposedSurfaces *)
+	defaultStorageConditionUpdate = If[!MatchQ[Lookup[myOptionsWithSynonyms, DefaultStorageCondition], Automatic],
+		(* User specified a value, use it *)
+		DefaultStorageCondition -> Lookup[myOptionsWithSynonyms, DefaultStorageCondition],
+
+		(* Otherwise, resolve based on ExposedSurfaces *)
+		Module[{exposedSurfaces, resolvedStorageCondition},
+
+			(* Get the resolved ExposedSurfaces value *)
+			exposedSurfaces = Last[exposedSurfacesUpdate];
+
+			(* Resolve storage condition based on ExposedSurfaces - lined if it has exposed surfaces *)
+			resolvedStorageCondition = If[TrueQ[exposedSurfaces],
+				Model[StorageCondition, "Ambient Storage, Lined Enclosed"],
+				Model[StorageCondition, "Ambient Storage"]
+			];
+
+			DefaultStorageCondition -> resolvedStorageCondition
+		]
+	];
 	
 	(* Replace the manually resolved options *)
 	optionsWithCartridgeUpdates=ReplaceRule[
@@ -598,6 +628,7 @@ resolveUploadColumnOptions[myType_, myName_String, myOptions_, rawOptions_]:=Mod
 			{
 				storageCapsUpdate,
 				connectorTypeUpdate,
+				exposedSurfacesUpdate,
 				defaultStorageConditionUpdate
 			}
 		]

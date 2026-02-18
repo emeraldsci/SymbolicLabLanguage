@@ -73,6 +73,7 @@ DefineObjectType[Object[Protocol, Transfer], {
 				Model[Item, TransferTube],
 				Model[Item, ChippingHammer],
 				Model[Item, Scissors],
+				Model[Container,Vessel],
 
 				Object[Container,Syringe],
 				Object[Container,GraduatedCylinder],
@@ -82,9 +83,18 @@ DefineObjectType[Object[Protocol, Transfer], {
 				Object[Item, Tweezer],
 				Object[Item, TransferTube],
 				Object[Item, ChippingHammer],
-				Object[Item, Scissors]
+				Object[Item, Scissors],
+				Object[Container,Vessel]
 			],
 			Description -> "The instruments used to transfer the sample from the source container (or from the intermediate container if IntermediateDecant->True) to the destination container.",
+			Category -> "General",
+			Abstract -> True
+		},
+		TransferTechniques ->{
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> TransferTechniqueP,
+			Description -> "Indicates the type of instrument used to transfer the sample from the source container (or from the intermediate container if IntermediateDecant->True) to the destination container.",
 			Category -> "General",
 			Abstract -> True
 		},
@@ -478,15 +488,15 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Format -> Multiple,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates if mixing occurs during aspiration from the source sample.",
-			Category->"Mixing"
+			Description -> "Indicates if mixing ocurrs immediately prior to or during aspiration from the source sample.",
+			Category -> "Mixing"
 		},
 		AspirationMixTypes->{
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> Swirl|Pipette|Tilt,
-			Description -> "For each member of AspirationMix, the type of mixing that occurs during aspiration.",
-			Category->"Mixing",
+			Pattern :>  MixTypeP|Tilt,
+			Description -> "For each member of AspirationMix, the type of mixing that occurs immediately prior to or during aspiration of the source sample. Except for Swirl, Pipette, and Tilt the mixing will be fulfilled by an AspirationMixSubprotocol in the BatchedUnitOperations.",
+			Category -> "Mixing",
 			IndexMatching -> AspirationMix
 		},
 		AspirationMixVolumes -> {
@@ -494,16 +504,17 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Class -> Real,
 			Pattern :> GreaterP[0 Microliter],
 			Units -> Microliter,
-			Description -> "The volume quickly aspirated and dispensed to mix the source sample before it is aspirated.",
-			Category->"Mixing"
+			Description -> "For each member of AspirationMix, the volume quickly aspirated and dispensed to mix the source sample before it is aspirated.",
+			Category -> "Mixing",
+			IndexMatching -> AspirationMix
 		},
 		NumberOfAspirationMixes->{
 			Format -> Multiple,
 			Class -> Integer,
 			Pattern :> GreaterEqualP[0],
 			Units -> None,
-			Description -> "For each member of AspirationMix, the number of times that the source sample was mixed during aspiration.",
-			Category->"Mixing",
+			Description -> "For each member of AspirationMix, the number of times that the source sample was mixed immediately prior to or during aspiration.",
+			Category -> "Mixing",
 			IndexMatching -> AspirationMix
 		},
 		MaxNumberOfAspirationMixes->{
@@ -511,8 +522,17 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Class -> Integer,
 			Pattern :> GreaterEqualP[0],
 			Units -> None,
-			Description -> "For each member of AspirationMix, the maximum number of times that the source sample was mixed during aspiration in order to achieve a homogeneous solution before the transfer.",
-			Category -> "General",
+			Description -> "For each member of AspirationMix, the maximum number of times that the source sample was mixed immediately prior to or during aspiration in order to achieve a homogeneous solution before the transfer.",
+			Category -> "Mixing",
+			IndexMatching -> AspirationMix
+		},
+		AspirationMixTimes -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Minute],
+			Units -> Minute,
+			Description -> "For each member of AspirationMix, the time for which the sample is to be mixed immediately prior to or during aspiration.",
+			Category -> "Mixing",
 			IndexMatching -> AspirationMix
 		},
 		DispenseMix->{
@@ -520,14 +540,14 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Class -> Boolean,
 			Pattern :> BooleanP,
 			Description -> "Indicates if mixing occurs after the sample is dispensed into the destination container.",
-			Category->"Mixing"
+			Category -> "Mixing"
 		},
 		DispenseMixTypes->{
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> Swirl|Pipette|Tilt,
-			Description -> "For each member of DispenseMix, the type of mixing that occurs after the sample is dispensed into the destination container.",
-			Category->"Mixing",
+			Pattern :> MixTypeP|Tilt,
+			Description -> "For each member of DispenseMix, the type of mixing that occurs after the sample is dispensed into the destination container. Except for Swirl, Pipette, and Tilt the mixing will be fulfilled by a DispenseMixSubprotocol in the BatchedUnitOperations.",
+			Category -> "Mixing",
 			IndexMatching -> DispenseMix
 		},
 		DispenseMixVolumes -> {
@@ -543,8 +563,17 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Class -> Integer,
 			Pattern :> GreaterEqualP[0],
 			Units -> None,
-			Description -> "For each member of DispenseMix, the number of times that the source sample was mixed after the sample is dispensed into the destination container.",
-			Category->"Mixing",
+			Description -> "For each member of DispenseMix, the number of times that the destination sample was mixed after the sample is dispensed into the destination container.",
+			Category -> "Mixing",
+			IndexMatching -> DispenseMix
+		},
+		DispenseMixTimes -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Minute],
+			Units -> Minute,
+			Description -> "For each member of DispenseMix, the time for which to mix the destination sample after the source sample is dispensed into the destination container.",
+			Category -> "Mixing",
 			IndexMatching -> DispenseMix
 		},
 		IntermediateDecant->{
@@ -773,11 +802,20 @@ DefineObjectType[Object[Protocol, Transfer], {
 		},
 		AspirationMixRates -> {
 			Format -> Multiple,
+			Class -> VariableUnit,
+			Pattern :> Alternatives[GreaterP[0 Microliter/Second], GreaterP[0 RPM], GreaterP[0 GravitationalAcceleration]],
+			Units -> None,
+			Description -> "The frequency or speed at which liquid is mixed before it is aspirated. For robotic transfers, AspirationMixRate is a volumetric flow rate.",
+			Category -> "Mixing"
+		},
+		AspirationMixFlowRates -> {
+			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterP[0 Microliter/Second],
 			Units -> Microliter/Second,
-			Description -> "The speed at which liquid is aspirated and dispensed in a liquid before it is aspirated.",
-			Category -> "Pipetting Parameters"
+			Description -> "The frequency or speed at which liquid is mixed before it is aspirated. For robotic transfers, AspirationMixRate is a volumetric flow rate.",
+			Category -> "Pipetting Parameters",
+			Developer -> True
 		},
 		AspirationPositions -> {
 			Format -> Multiple,
@@ -838,11 +876,20 @@ DefineObjectType[Object[Protocol, Transfer], {
 		},
 		DispenseMixRates -> {
 			Format -> Multiple,
+			Class -> VariableUnit,
+			Pattern :> Alternatives[GreaterP[0 Microliter/Second], GreaterP[0 RPM], GreaterP[0 GravitationalAcceleration]],
+			Units -> None,
+			Description -> "The frequency or speed at which the destination liquid is mixed after dispensing a source sample into it. For robotic transfers, DispenseMixRate is a volumetric flow rate.",
+			Category -> "Mixing"
+		},
+		DispenseMixFlowRates -> {
+			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterP[0 Microliter/Second],
 			Units -> Microliter/Second,
-			Description -> "The speed at which liquid is aspirated and dispensed in a liquid after a dispense.",
-			Category -> "Pipetting Parameters"
+			Description -> "The frequency or speed at which the destination liquid is mixed after dispensing a source sample into it. For robotic transfers, DispenseMixRate is a volumetric flow rate.",
+			Category -> "Pipetting Parameters",
+			Developer -> True
 		},
 		DispensePositions -> {
 			Format -> Multiple,
@@ -882,15 +929,6 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Pattern :> BooleanP,
 			Description -> "Indicates if droplet formation was prevented during liquid transfer. Only use this option for solvents that have high vapor pressure.",
 			Category -> "Pipetting Parameters"
-		},
-		ContainersToCover -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Container],
-			Description -> "The source and destination containers that are covered at the beginning of the protocol. These are usually empty containers that don't have a cover to begin with, covering them at the start of the protocol makes sure that we don't have to resource pick a cover in the middle of the transfer.",
-			Category -> "Container Covering",
-			Developer -> True
 		},
 		AllowSourceContainerReCover->{
 			Format -> Multiple,
@@ -1307,6 +1345,18 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Developer -> True
 		},
 
+		SyringeRacks ->{
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container, Rack],
+				Object[Container, Rack]
+			],
+			Description -> "The rack on which to place the syringe for weight measurements, if the transfer was specified as PreciseTransfer.",
+			Category->"Instrument Specifications"
+		},
+
 		(* NOTE: These developer fields are here for speed -- previously there was a loop insertion to figure out how to individually *)
 		(* queue or discard these samples in the procedure. We now figure this out in the parser and call one queue and one discard task *)
 		(* at the end of the procedure. *)
@@ -1402,6 +1452,226 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Pattern :> Alternatives[Wet,Dry],
 			Description ->  "Indicates the type of cleaning performed on the balance right before a weighing instance if the operator indicates presence of stray material. Dry indicates the balance pan surface and the balance floor outside of the balance pan is cleared of any stray material using soft and lint-free non-woven wipes. Wet indicates the balance pan surface and the balance floor outside of the balance pan is first cleaned with Dry method, followed by wiping with DI-water moistened wipes, IPA-moistened wipes, and a final dry wipe. None indicates no cleaning is performed prior to initial setup.",
 			Category -> "Cleaning"
+		},
+		WaterBasedCleaningWipes -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item,Consumable],
+				Model[Item,Consumable]
+			],
+			Description -> "The wipes used to wipe off any stray material from the balance.",
+			Category -> "Cleaning"
+		},
+		AlcoholBasedCleaningWipes -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item,Consumable],
+				Model[Item,Consumable]
+			],
+			Description -> "The wipes used to wipe off any stray material from the balance.",
+			Category -> "Cleaning"
+		},
+		BalanceCleaningBrush -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item,Consumable],
+				Model[Item,Consumable]
+			],
+			Description -> "The brush used to dust off any stray material from the balance.",
+			Category -> "Cleaning"
+		},
+		ReplaceAlcoholBasedCleaningWipes -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if alcohol based cleaning wipes has been emptied out and needs replacement.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		ReplaceWaterBasedCleaningWipes -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if water based cleaning wipes has been emptied out and needs replacement.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		BalanceReblankings ->{
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> Alternatives[Always,AsNecessary,None],
+			Description -> "Indicates the type of re-weighing performed on the balance if material loss is detected or stray material is present. Always indicates weighing container replacement whenever there is any material loss detected OR there is stray material on the outside. AsNecessary indicates weighing container replacement when there is stray material on the outside and cleaning without replacement when the outside is clean and only something is on the balance. None indicates cleaning of weighing container whenever there is any material loss detected OR there is stray material on the outside.",
+			Category -> "General"
+		},
+		PreRinseLabware->{
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if labware used with the Source sample is rinsed with PreRinseSolution, NumberOfPreRinses times, prior to use.",
+			Category->"PreRinse Labware"
+		},
+		NumberOfPreRinses->{
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0],
+			Units -> None,
+			Description -> "The number of times labware used with source sample is rinsed with PreRinseSolution before use with the source sample.",
+			Category->"PreRinse Labware"
+		},
+		PreRinseVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The total volume of the PreRinseSolution that is used to rinse labware (Destination, IntermediateContainer, Instrument (graduated cylinder, syringe), Funnel, IntermediateFunnel, Tips, QuantitativeTransferWashTips), NumberOfPreRinses times, to rinse off possible contaminants and prepare the labware for use.",
+			Category->"PreRinse Labware"
+		},
+		PreRinseSolutions->{
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Sample],
+				Object[Sample]
+			],
+			Description -> "The solution that is used to rinse labware (Destination, IntermediateContainer, Instrument (graduated cylinder, syringe), Funnel, IntermediateFunnel, QuantitativeTransferWashTips), NumberOfPreRinses times, to rinse off possible contaminants and prepare the labware for use.",
+			Category -> "General",
+			Migration->SplitField
+		},
+		PreRinseIntermediateContainers->{
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container],
+				Object[Container]
+			],
+			Description -> "The container that is used to hold the PreRinseSolution prior to rinsing of labware, NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"PreRinse Labware"
+		},
+		PreRinseWasteContainers->{
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container],
+				Object[Container]
+			],
+			Description -> "The container that is used to hold the waste generated in rinsing labware with PreRinseSolution, NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"PreRinse Labware"
+		},
+		PreRinseIntermediateContainerVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The volume of the PreRinseSolution that is used to rinse PreRinseIntermediateContainer, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"PreRinse Labware"
+		},
+		DestinationPreRinseVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The volume of the PreRinseSolution that is used to rinse destination container, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"PreRinse Labware"
+		},
+		IntermediateContainerPreRinseVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The volume of the PreRinseSolution that is used to rinse the intermediate container, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"PreRinse Labware"
+		},
+		InstrumentPreRinseVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The volume of the PreRinseSolution that is used to rinse the instrument (graduated cylinder or syringe), per wash amd NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"PreRinse Labware"
+		},
+		TipsPreRinseVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The volume of the PreRinseSolution that is used to rinse tips, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"PreRinse Labware"
+		},
+		FunnelPreRinseVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The volume of the PreRinseSolution that is used to rinse Funnel, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"PreRinse Labware"
+		},
+		IntermediateFunnelPreRinseVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The volume of the PreRinseSolution that is used to rinse IntermediateFunnel, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"PreRinse Labware"
+		},
+		HandPumpPreRinseVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The volume of the PreRinseSolution that is used to rinse HandPump, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"PreRinse Labware"
+		},
+		QuantitativeTransferTipsPreRinseVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The volume of the PreRinseSolution that is used to rinse QuantitativeTransferTips, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"PreRinse Labware"
+		},
+		PreOvenDryDestinationContainer->{
+		  Format -> Multiple,
+		  Class -> Boolean,
+		  Pattern :> BooleanP,
+		  Description -> "For each member of SamplesIn, indicates if the destination glassware is dried in an oven prior to transfer.",
+		  Category->"Oven Drying",
+				IndexMatching -> SamplesIn
+		},
+		PreDepyrogenateDestinationContainer->{
+		  Format -> Multiple,
+		  Class -> Boolean,
+		  Pattern :> BooleanP,
+		  Description -> "For each member of SamplesIn, indicates if the destination glassware is depyrogenated in an oven prior to transfer.",
+		  Category->"Oven Drying",
+				IndexMatching -> SamplesIn
+		},
+		PostOvenDryDestination->{
+		  Format -> Multiple,
+		  Class -> Boolean,
+		  Pattern :> BooleanP,
+		  Description -> "For each member of SamplesIn, indicates if the destination sample is dried in an oven after transfer.",
+		  Category->"Oven Drying",
+				IndexMatching -> SamplesIn
+		},
+		PreRinseTips->{
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Tips],
+				Object[Item, Tips]
+			],
+			Description -> "The transfer pipettes that will be used to transfer the wash solution to rinse the beaker, NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category -> "General"
 		}
 	}
 }];

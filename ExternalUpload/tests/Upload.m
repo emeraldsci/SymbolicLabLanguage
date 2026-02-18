@@ -284,1438 +284,849 @@ DefineTests[
 (* ::Subsubsection::Closed:: *)
 (*UploadProduct*)
 
-
 DefineTests[
 	UploadProduct,
 	{
-		Example[{Basic, "Upload a new Object[Product] of Methanol, anhydrous, 99.8% purity using its Sigma-Aldrich product URL:"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.sigmaaldrich.com/catalog/product/sial/322415?lang=en&region=US",
-						Name->"Methanol, anhydrous, 99.8% | CH3OH (test)"<>$SessionUUID,
-						ProductModel->Model[Sample,"Methanol, anhydrous, 99.8% | CH3OH"<>$SessionUUID],
-						DefaultContainerModel->Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
-						SampleType->Vial,
-						CatalogDescription->"High purity methanol"
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
+		Example[{Basic, "Upload a new Object[Product] of Methanol from Sigma-Aldrich using its URL and an existing ProductModel as input:"},
+			UploadProduct[
+				"https://www.sigmaaldrich.com/catalog/product/sial/322415?lang=en&region=US",
+				ProductModel -> Model[Sample,"Test Methanol, anhydrous, 99.8% | CH3OH for UploadProduct unit test "<>$SessionUUID],
+				Name -> "Methanol, anhydrous, 99.8% | CH3OH (test)"<>$SessionUUID
 			],
-			ObjectP[Object[Product]]|Warning::APIConnection,
-			Stubs :> {
-				(* stub the response of the api call to sigma website since they like to block us once in a while *)
-				HTTPRequestJSON[
-					<|
-						"URL" ->
-							"https://www.sigmaaldrich.com/catalog/product/sial/322415?lang=en&region=US", "Method" -> "GET",
-						"Headers" -> <|
-							"accept" -> "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-							"user-agent" -> "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
-						|>
-					|>
-				] = ImportCloudFile[EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "shard2/7d3a0e3c125ce4884b948b96cc7aead7.txt", ""]],
-				(* stub the response of the reverse-engineered api call to get price info from sigma website since they like to block us once in a while *)
-				HTTPRequestJSON[
-					<|
-						"URL" -> "https://www.sigmaaldrich.com/api?operation=PricingAndAvailability",
-						"Method" -> "POST",
-						"Headers" -> <|
-							"accept" -> "*/*",
-							"user-agent" -> "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
-							"x-gql-operation-name" -> "PricingAndAvailability",
-							"x-gql-access-token" -> "ea816e21-7d19-11ef-90f5-8321289a8c21",
-							"x-gql-country" -> "US"
-						|>,
-						"Body" -> <|
-							"operationName" -> "PricingAndAvailability",
-							"query" -> "query PricingAndAvailability($productNumber:String!,$brand:String,$quantity:Int!,$materialIds:[String!]) {
-							getPricingForProduct(input:{productNumber:$productNumber,brand:$brand,quantity:$quantity,materialIds:$materialIds}) {
-								materialPricing {
-									packageSize
-									price
-								}
-							}
-						}",
-							"variables" -> <|
-								"brand" -> "SIAL",
-								"materialIds" -> {"322415-VAR", "322415-PZ", "322415-900ML", "322415-8L", "322415-6L", "322415-1L", "322415-200L", "322415-200L-P2", "322415-200L-P2-SA", "322415-20L", "322415-20L-P2", "322415-250ML", "322415-2L", "322415-4X2L", "322415-6X1L", "322415-18L-P1", "322415-18L", "322415-12X100ML", "QR-028-1L", "322415-100ML", "322415-1250L-P1"},
-								"productNumber" -> "322415",
-								"quantity" -> 1
-							|>
-						|>
-					|>
-				] = ToExpression[ImportCloudFile[EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "shard2/3ef849f6ab315a079d12676414b00bd3.txt", ""]]],
-				$UsePyeclProductParser = False
+			ObjectP[Object[Product]]
+		],
+		Example[{Basic, "Upload a new Object[Product] of NaCl from Thermo Fisher using its URL and an existing ProductModel as input:"},
+			UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/012314.A9",
+				ProductModel -> Model[Sample, "id:BYDOjv1VA88z"],
+				Name -> "Test Sodium Chloride, ACS 99.0% for UploadProduct"<>$SessionUUID
+			],
+			ObjectP[Object[Product]]
+		],
+		Example[{Basic, "Upload a new Object[Product] with URL using Type as ProductModelObject input to also create a new model:"},
+			UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/012314.A9",
+				ProductModel -> Model[Container, Vessel],
+				Name -> "Test New Product 1 UploadProduct "<>$SessionUUID
+			],
+			ObjectP[Object[Product]]
+		],
+		Example[{Basic, "Upload a new Object[Product] with URL using user-friendly String as ProductModelObject input to also create a new model:"},
+			UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/012314.A9",
+				ProductModel -> "Tube or bottle",
+				Name -> "Test New Product 2 UploadProduct "<>$SessionUUID
+			],
+			ObjectP[Object[Product]]
+		],
+		Example[{Basic, "Upload a new Object[Product] of Methanol using a ProductModel input only:"},
+			UploadProduct[
+				ProductModel -> Model[Sample,"Test Methanol, anhydrous, 99.8% | CH3OH for UploadProduct unit test "<>$SessionUUID],
+				Name -> "Methanol, anhydrous, 99.8% | CH3OH (test)"<>$SessionUUID
+			],
+			ObjectP[Object[Product]]
+		],
+		Example[{Basic, "Modify an existing Object[Product] according to specified options:"},
+			UploadProduct[
+				Object[Product, "Test Template Product for UploadProduct unit test " <> $SessionUUID],
+				Price -> 300 USD
+			];
+			Download[Object[Product, "Test Template Product for UploadProduct unit test " <> $SessionUUID], Price],
+			EqualP[300 USD]
+		],
+		Example[{Basic, "Function can create multiple products simultaneously from a list of inputs:"},
+			UploadProduct[
+				{
+					"https://www.sigmaaldrich.com/catalog/product/sial/322415?lang=en&region=US",
+					"https://www.thermofisher.com/order/catalog/product/012314.A9"
+				},
+				ProductModel -> {
+					Model[Sample,"Test Methanol, anhydrous, 99.8% | CH3OH for UploadProduct unit test "<>$SessionUUID],
+					Model[Sample, "id:BYDOjv1VA88z"]
+				},
+				Name -> {
+					"Methanol, anhydrous, 99.8% | CH3OH (test)"<>$SessionUUID,
+					"Test Sodium Chloride, ACS 99.0% for UploadProduct"<>$SessionUUID
+				}
+			],
+			{
+				ObjectP[Object[Product]],
+				ObjectP[Object[Product]]
 			}
 		],
-		Example[{Basic, "Upload a new Object[Product] of DMSO (LC-MS Grade) using its ThermoFisher product URL:"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190",
-						Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID,
-						Packaging->Single,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"50mL tall sloping shoulder amber glass bottle"],
-						CatalogDescription->"High purity DMSO",
-						Amount -> 50 Milliliter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection,
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Basic, "Upload a new Object[Product] of Diethylene glycol methyl ether manually (without scraping from a product URL) :"},
+		Example[{Messages, "CannotSpecifyTemplate", "Template option is not allowed when modifying existing Object[Product]:"},
 			UploadProduct[
-				Name -> "Diethylene glycol methyl ether 99% (test)" <> $SessionUUID,
-				Packaging -> Single,
-				ProductModel -> Model[Sample, "Diethylene glycol methyl ether 99%"],
-				NumberOfItems -> 1,
-				SampleType -> Vial,
-				DefaultContainerModel -> Model[Container, Vessel, "50mL tall sloping shoulder amber glass bottle"],
-				Supplier -> Object[Company, Supplier, "Sigma Aldrich"],
-				CatalogDescription -> "High purity diethylene glycol methyl ether",
-				CatalogNumber -> "1",
-				Amount -> 50 Milliliter,
-				Price -> 1 USD
+				Object[Product, "Test Template Product for UploadProduct unit test " <> $SessionUUID],
+				Template -> Object[Product, "Test Template Product for UploadProduct unit test " <> $SessionUUID],
+				Price -> 300 USD
+			],
+			$Failed,
+			Messages :> {Error::CannotSpecifyTemplate, Error::InvalidOption}
+		],
+		Example[{Messages, "RedundantProductURL", "If an URL is used as input but ProductURL option is also specified, a warning will be thrown and the ProductURL option will be ignored:"},
+			UploadProduct[
+				"https://www.sigmaaldrich.com/catalog/product/sial/322415?lang=en&region=US",
+				ProductModel -> Model[Sample,"Test Methanol, anhydrous, 99.8% | CH3OH for UploadProduct unit test "<>$SessionUUID],
+				ProductURL -> "www.emeraldcloudlab.com"
 			],
 			ObjectP[Object[Product]],
-			Stubs:>{$AllowPublicObjects=True}
+			Messages :> {Warning::RedundantProductURL}
+		],
+		Example[{Messages, "InvalidFileURL", "If a URL is provided as the ImageFile option, but the url does not point to a downloadable image, an error will be thrown:"},
+			UploadProduct[
+				"https://www.sigmaaldrich.com/catalog/product/sial/322415?lang=en&region=US",
+				ProductModel -> Model[Sample,"Test Methanol, anhydrous, 99.8% | CH3OH for UploadProduct unit test "<>$SessionUUID],
+				Name -> "Methanol, anhydrous, 99.8% | CH3OH (test)"<>$SessionUUID,
+				ImageFile -> "www.emeraldcloudlab.com"
+			],
+			$Failed,
+			Messages :> {Error::InvalidFileURL, Error::InvalidOption}
+		],
+		Example[{Messages, "InvalidFileDirectory", "If a file path is provided as the ImageFile option, but that file either does not exist or it's not an image, an error will be thrown:"},
+			UploadProduct[
+				"https://www.sigmaaldrich.com/catalog/product/sial/322415?lang=en&region=US",
+				ProductModel -> Model[Sample,"Test Methanol, anhydrous, 99.8% | CH3OH for UploadProduct unit test "<>$SessionUUID],
+				Name -> "Methanol, anhydrous, 99.8% | CH3OH (test)"<>$SessionUUID,
+				ImageFile -> FileNameJoin[{$TemporaryDirectory, $SessionUUID<>"non-existing image.jpg"}]
+			],
+			$Failed,
+			Messages :> {Error::InvalidFileDirectory, Error::InvalidLocalFile, Error::InvalidOption}
 		],
 		Example[{Options, "Name", "Use the Name option to specify the name of the uploaded Object[Product]:"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/268270040",
-						Name->"Acetonitrile for HPLC-GC, >=99.8% (GC) (test)"<>$SessionUUID,
-						Packaging->Single,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"2.5L Wide Neck Amber Glass Bottle"],
-						CatalogDescription->"Acetonitrile recommended for HPLC use",
-						Amount -> 2.5 Liter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection,
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "Synonyms", "Use the Synonyms option to specify the synonyms of the uploaded Object[Product]:"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.fishersci.com/shop/products/methyl-ethyl-ketone-certified-acs-fisher-chemical-6/M2091",
-						Synonyms->{"Ethyl methyl ketone (test)"<>$SessionUUID,"MEK","Methyl ethyl ketone"},
-						Name->"Ethyl methyl ketone (test)"<>$SessionUUID,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
-						CatalogDescription->"Ethyl methyl ketone",
-						Price -> 1 USD,
-						Amount -> 50 Milliliter,
-						Packaging -> Single,
-						Supplier -> Object[Company, Supplier, "Fisher Scientific"],
-						CatalogNumber -> "M2091"
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection,
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "ProductModel", "Use the ProductModel option to specify the model of the uploaded Object[Product]. This field can be a Model[Sample], Model[Container], Model[Sensor], Model[Part], Model[Plumbing], or Model[Wiring]:"},
-			Quiet[
-				Check[
-					Block[{$Notebook=Object[LaboratoryNotebook,"id:4pO6dM5wEaLB"]},
-						UploadProduct[
-							"https://www.thermofisher.com/order/catalog/product/022920.K2",
-							ProductModel->Model[Sample,"Chloroform, for HPLC, =99.8%, contains 0.5-1.0% ethanol as stabilizer - multiple sizes available"],
-							Name->"Chloroform (test)"<>$SessionUUID,
-							NumberOfItems->1,
-							SampleType->Vial,
-							DefaultContainerModel->Model[Container,Vessel,"4L disposable amber glass bottle for inventory chemicals"],
-							CatalogDescription->"Chloroform",
-							Packaging->Single,
-							Amount->4Liter,
-							Price->1USD,
-							Supplier -> Object[Company, Supplier, "Thermo Fisher Scientific"],
-							CatalogNumber -> "022920.K2"
-						]
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection
-		],
-		Example[{Options, "ImageFile", "Use the ImageFile option to specify an image of the product of the uploaded Object[Product]. This should be a URL of an image file:"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190",
-						ImageFile->"https://assets.thermofisher.com/TFS-Assets/LSG/product-images/85190-DMSO.jpg-250.jpg",
-						Name->"Dimethyl sulfoxide (test)"<>$SessionUUID,
-						Packaging->Single,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"50mL tall sloping shoulder amber glass bottle"],
-						CatalogDescription->"Dimethyl sulfoxide",
-						Amount -> 50 Milliliter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection,
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Test["Use the ImageFile option to specify an image of the product of the uploaded Object[Product], and make sure this actually makes a cloud file:",
-			Quiet[
-				Check[
-					prod=UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190",
-						ImageFile->"https://assets.thermofisher.com/TFS-Assets/LSG/product-images/85190-DMSO.jpg-250.jpg",
-						Name->"Dimethyl sulfoxide (test)"<>$SessionUUID,
-						Packaging->Single,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"50mL tall sloping shoulder amber glass bottle"],
-						CatalogDescription->"Dimethyl sulfoxide",
-						Amount -> 50 Milliliter
-					];Download[prod,ImageFile],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[EmeraldCloudFile]]|Warning::APIConnection,
-			Variables :> {prod},
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "ProductListing", "Use the ProductListing option to specify the full name under which the product is listed:"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190",
-						ProductListing->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade",
-						Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID,
-						CatalogDescription->"50mL glass bottle of Dimethylsulfoxide",
-						Packaging->Single,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"50mL tall sloping shoulder amber glass bottle"],
-						Amount -> 50 Milliliter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection,
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "CatalogDescription", "Use the CatalogDescription option to specify the full description of the item as it is listed in the supplier's catalog including any relevant information on the number of samples per item, the sample type, and/or the amount per sample if that information is included in the suppliers catalog list and necessary to place an order for the correct unit of the item which this product represents:"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190",
-						ProductListing->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade",
-						CatalogDescription->"1 50 mL Vial of Pierce Dimethylsulfoxide (DMSO), LC-MS grade",
-						Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID,
-						Packaging->Single,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"50mL tall sloping shoulder amber glass bottle"],
-						Amount -> 50 Milliliter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection,
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "KitComponents", "Use the KitComponents option to specify all the components of the given kit:"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/4336948",
-						ProductListing->"310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1"<>$SessionUUID,
-						CatalogDescription->"1 Kit of 310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1",
-						Name->"310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1"<>$SessionUUID,
-						Packaging->Single,
-						SampleType->Kit,
-						NumberOfItems->1,
-						KitComponents->{
-							{1,Model[Sample,"Test Matrix Standard 1"<>$SessionUUID],Model[Container,Vessel,"Test Container Model For UploadProduct 1"<>$SessionUUID],200*Microliter,"A1",1,Model[Item,Cap,"Test Cover Model For UploadProduct 1"<>$SessionUUID],False},
-							{1,Model[Sample,"Test Matrix Standard 2"<>$SessionUUID],Null,200*Microliter,"A1",2,Null,False},
-							{1,Model[Sample,"Test Matrix Standard 3"<>$SessionUUID],Null,200*Microliter,"A1",3,Null,False},
-							{1,Model[Sample,"Test Matrix Standard 4"<>$SessionUUID],Null,200*Microliter,"A1",4,Null,False}
-						},
-						Price -> 100 USD,
-						Supplier -> Object[Company, Supplier, "Thermo Fisher Scientific"],
-						CatalogNumber -> "4336948"
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection
-		],
-		Example[{Options, "Supplier", "Use the Supplier option to specify the company that supplies this product. All Object[Company,Supplier] objects can be found by performing a search (Search[Object[Company,Supplier]]):"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190",
-						Supplier->Object[Company,Supplier,"Sigma Aldrich"],
-						Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID,
-						Packaging->Single,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"50mL tall sloping shoulder amber glass bottle"],
-						CatalogDescription->"50mL glass bottle of Dimethylsulfoxide",
-						Amount -> 50 Milliliter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection,
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "CatalogNumber", "Use the CatalogNumber option to specify the catalog number, as given by the supplier, of this product:"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190",
-						CatalogNumber->"85190",
-						Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID,
-						Packaging->Single,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"50mL tall sloping shoulder amber glass bottle"],
-						CatalogDescription->"50mL glass bottle of Dimethylsulfoxide",
-						Amount -> 50 Milliliter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection,
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "Manufacturer", "Use the Manufacturer option to specify the Object[Company,Supplier] that manufactured this product:"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
-						Manufacturer->Object[Company,Supplier,"Sigma Aldrich"],
-						Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID,
-						ManufacturerCatalogNumber->"34861",
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
-						CatalogDescription->"50mL glass bottle of Dimethylsulfoxide",
-						Packaging->Single,
-						Amount -> 50 Milliliter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection,
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "ManufacturerCatalogNumber", "Use the ManufacturerCatalogNumber to specify the Manufacturer's catalog number for this product:"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
-						Manufacturer->Object[Company,Supplier,"Sigma Aldrich"],
-						Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID,
-						ManufacturerCatalogNumber->"34861",
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
-						CatalogDescription->"50mL glass bottle of Dimethylsulfoxide",
-						Packaging->Single,
-						Amount -> 50 Milliliter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection,
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "ProductURL", "Use the ProductURL to specify the Product URL of this product:"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
-						Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						Packaging->Single,
-						DefaultContainerModel->Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
-						CatalogDescription->"50mL glass bottle of Dimethylsulfoxide",
-						Amount -> 50 Milliliter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection,
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "Packaging", "Use the Packaging to specify if this product is a Case or an Item:"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
-						Packaging->Single,
-						Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
-						CatalogDescription->"50mL glass bottle of Dimethylsulfoxide",
-						Amount -> 50 Milliliter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection,
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "SampleType", "Use the SampleType to specify the type of sample that this product is. The valid values of this option can be found by evaluating SampleDescriptionP:"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
-						SampleType->Vial,
-						Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID,
-						Packaging->Single,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						DefaultContainerModel->Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
-						CatalogDescription->"50mL glass bottle of Dimethylsulfoxide",
-						Amount -> 50 Milliliter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection,
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "NumberOfItems", "Use the NumberOfItems option to specify the number of samples in each order of one unit of this product. If this product is an item, NumberOfItems->1. If it is a Case, NumberOfItems should be the number of items in the case:"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
-						NumberOfItems->1,
-						Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID,
-						Packaging->Single,
-						ProductModel->Model[Sample,"Methanol, anhydrous, 99.8% | CH3OH"<>$SessionUUID],
-						DefaultContainerModel->Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
-						SampleType->Vial,
-						CatalogDescription->"50mL glass bottle of Dimethylsulfoxide",
-						Amount -> 50 Milliliter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection
-		],
-		Example[{Options, "DefaultContainerModel", "Use the DefaultContainerModel option to specify the container that the product arrives in from the manufacturer:"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
-						DefaultContainerModel->Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
-						Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID,
-						ProductModel->Model[Sample,"Methanol, anhydrous, 99.8% | CH3OH"<>$SessionUUID],
-						SampleType->Vial,
-						Packaging->Single,
-						NumberOfItems->1,
-						CatalogDescription->"50mL glass bottle of Dimethylsulfoxide",
-						Amount -> 50 Milliliter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection
-		],
-		Example[{Options, "Amount", "Use the Amount option to specify amount of substance per sample. For example, if the product contained 100 mL, then Amount ->100 * Milliliter:"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
-						Amount->100 Milliliter,
-						Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID,
-						ProductModel->Model[Sample,"Methanol, anhydrous, 99.8% | CH3OH"<>$SessionUUID],
-						DefaultContainerModel->Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
-						SampleType->Vial,
-						NumberOfItems->1,
-						Packaging->Single,
-						CatalogDescription->"50mL glass bottle of Dimethylsulfoxide"
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection
-		],
-		Example[{Options, "CountPerSample", "Use the CountPerSample option to specify the initial count for all objects made from this product. Here, a product for a tub of weigh boats is created. This tub has 20 individual dishes and we create one Object[Item] with Count->100 when this product is received. This option should not be specified with Amount:"},
-			UploadProduct[
-				Supplier->Object[Company,Supplier,"Sigma Aldrich"],
-				CountPerSample->20,
-				Name->"Aluminum Round Micro Weigh Dishes with Handle" <> $SessionUUID,
-				(* NOTE: This 'Counted' version of this model in the lab, but using it as a test 'Counted' object should be OK. *)
-				ProductModel->Model[Item, WeighBoat, "Aluminum Round Micro Weigh Dish"],
-				SampleType->Tub,
-				Packaging->Single,
-				CatalogDescription->"1 tub of weigh dishes",
-				NumberOfItems->1,
-				CatalogNumber -> "1",
-				Price -> 1 USD
-			],
-			ObjectP[Object[Product]],
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "ShippedClean", "Use the ShippedClean option to specify that samples of this product arrive ready to be used without needing to be dishwashed:"},
-			Quiet[
-				Check[
-					UploadProduct["https://www.thermofisher.com/order/catalog/product/329-1000?SID=srch-srp-329-1000",
-						ProductModel -> Model[Container, Vessel, "100 mL Glass Bottle"],
-						ShippedClean -> True,
-						SampleType -> Bottle,
-						Packaging -> Single,
-						NumberOfItems -> 1,
-						CatalogDescription -> "100mL glass bottle",
-						Name -> "100mL Bottle (UploadProtocol test)" <> $SessionUUID,
-						Amount -> Null
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection,
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "Sterile", "Use the Sterile option to specify that samples of this product arrive sterile from the manufacturer:"},
-			UploadProduct[
-				ProductModel -> Model[Container, Plate, "4-well V-bottom 75mL Deep Well Plate Sterile"],
-				Sterile -> True,
-				SampleType -> Plate,
-				Packaging -> Single,
-				NumberOfItems -> 25,
-				CatalogDescription -> "1 Case of 25 x Plates",
-				AsepticShippingContainerType -> Individual,
-				Name -> "4-well V-bottom 75mL Deep Well Plate Sterile (UploadProtocol test) " <> $SessionUUID,
-				Supplier -> Object[Company, Supplier, "Sigma Aldrich"],
-				CatalogNumber -> "AE123",
-				Price -> 100 USD
-			],
-			ObjectP[Object[Product]],
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "Price", "Use the Price option to specify the price for one unit of this product:"},
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
-						Price->225 USD,
-						Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID,
-						CatalogDescription->"50mL glass bottle of Dimethylsulfoxide",
-						Packaging->Single,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"2.5L Wide Neck Amber Glass Bottle"],
-						Amount -> 50 Milliliter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection,
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "SealedContainer", "Use the SealedContainer option to specify whether a product arrives in a sealed container:"},
-			Quiet[
-				Check[
-					product=UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
-						Name->"Pierce Dimethylsulfoxide (DMSO), 75 mL, LC-MS Grade (test)"<>$SessionUUID,
-						CatalogDescription->"75mL glass bottle of Dimethylsulfoxide",
-						Packaging->Single,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"2.5L Wide Neck Amber Glass Bottle"],
-						SealedContainer->True,
-						Amount -> 50 Milliliter
-					];Download[product,SealedContainer],
-					True,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			True|Warning::APIConnection,
-			Variables :> {product},
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "AsepticShippingContainerType", "Use the AsepticShippingContainerType option to specify the manner in which an aseptic product is packed and shipped by the manufacturer:"},
-			Quiet[
-				Check[
-					product=UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
-						Name->"Pierce Dimethylsulfoxide (DMSO), 100mL, LC-MS Grade (test)"<>$SessionUUID,
-						CatalogDescription->"100mL glass bottle of Dimethylsulfoxide",
-						Packaging->Single,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"2.5L Wide Neck Amber Glass Bottle"],
-						AsepticShippingContainerType->ResealableBulk,
-						Amount -> 50 Milliliter
-					];Download[product,AsepticShippingContainerType],
-					ResealableBulk,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ResealableBulk|Warning::APIConnection,
-			Variables :> {product},
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "AsepticRebaggingContainerType", "Use the AsepticRebaggingContainerType option to specify the type of container items of this product will be transferred to if they arrive in a non-resealable aseptic shipping container.:"},
-			Quiet[
-				Check[
-					product=UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
-						Name->"Pierce Dimethylsulfoxide (DMSO), 150mL, LC-MS Grade (test)"<>$SessionUUID,
-						CatalogDescription->"150mL glass bottle of Dimethylsulfoxide",
-						Packaging->Single,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"2.5L Wide Neck Amber Glass Bottle"],
-						AsepticShippingContainerType -> NonResealableBulk,
-						AsepticRebaggingContainerType->Individual,
-						Amount -> 50 Milliliter
-					];Download[product,AsepticRebaggingContainerType],
-					Individual,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			Individual|Warning::APIConnection,
-			Variables :> {product},
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Options, "Density", "Use Density to specify Density of the Product:"},
-			Quiet[
-				Check[
-					product=UploadProduct[
-						"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
-						Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID,
-						CatalogDescription->"50mL glass bottle of Dimethylsulfoxide",
-						Packaging->Single,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"2.5L Wide Neck Amber Glass Bottle"],
-						Density->1.1 Gram/Milliliter,
-						Amount -> 50 Milliliter
-					];Download[product,Density],
-					1.1 Gram/Milliliter,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			1.1 Gram / Milliliter,
-			Variables :> {product},
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Test["Use the UsageFrequency option to provide an estimate of how often this product is purchased from ECL's inventory for use in experiments. The valid value of this option can be found by evaluating UsageFrequencyP:",
-			Quiet[
-				Check[
-					UploadProduct[
-						"https://www.fishersci.com/shop/products/acetonitrile-optima-fisher-chemical-6/A9961#?keyword=Acetonitrile%20for%20HPLC-GC,%20&gt;=99.8%%20(GC",
-						Name->"Acetonitrile for HPLC-GC, >=99.8% (GC)"<>$SessionUUID,
-						CatalogDescription->"1 bottle of Acetonitrile for HPLC-GC, >=99.8% (GC)",
-						UsageFrequency->High,
-						Packaging->Single,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						Price->1 USD,
-						DefaultContainerModel->Model[Container,Vessel,"2.5L Wide Neck Amber Glass Bottle"],
-						Amount -> 100 Milliliter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			ObjectP[Object[Product]]|Warning::APIConnection,
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Messages, "NonUniqueName", "An Object[Product] cannot be uploaded if another Object[Product] already exists in Constellation with the same name. In the following example, there is already a product in the database with the name \"Methanol, anhydrous, 99.8%\":"},
-			UploadProduct[
-				Name -> "Methanol, anhydrous, 99.8% (test)" <> $SessionUUID,
-				CatalogDescription -> "1 bottle of Methanol, anhydrous, 99.8% (test)",
-				ProductModel -> Model[Sample, "Methanol, anhydrous, 99.8% | CH3OH" <> $SessionUUID],
-				DefaultContainerModel -> Model[Container, Vessel, "100mL Rectangular LDPE Media Bottle"],
-				SampleType -> Vial,
-				NumberOfItems -> 1,
-				Packaging -> Single,
-				Supplier -> Object[Company, Supplier, "Sigma Aldrich"],
-				CatalogNumber -> "1",
-				Amount -> 100 Milliliter,
-				Price -> 1 USD
-			],
-			Null,
-			Messages :> {
-				Error::NonUniqueName,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "RequiredOptions", "An Object[Product] cannot be uploaded without certain key information. If a key field is set to Null, an error will be thrown. In the following example, Name is set to Null:"},
-			UploadProduct[
-				Name -> Null,
-				ProductModel -> Model[Sample, "Methanol, anhydrous, 99.8% | CH3OH" <> $SessionUUID],
-				DefaultContainerModel -> Model[Container, Vessel, "100mL Rectangular LDPE Media Bottle"],
-				SampleType -> Vial,
-				CatalogDescription -> "100mL of Methanol, anhydrous, 99.8%",
-				Packaging -> Single,
-				NumberOfItems -> 1,
-				Supplier -> Object[Company, Supplier, "Sigma Aldrich"],
-				CatalogNumber -> "1",
-				Amount -> 100 Milliliter,
-				Price -> 1 USD
-			],
-			Null,
-			Messages :> {
-				Error::RequiredOptions,
-				Error::NameIsPartOfSynonyms,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "CountedProduct", "CountPerSample must be provided if the underlying product model is marked as Counted:"},
-			UploadProduct[
-				Supplier->Object[Company,Supplier,"Sigma Aldrich"],
-				Name->"Aluminum Round Micro Weigh Dishes with Handle" <> $SessionUUID,
-				(* NOTE: This 'Counted' version of this model in the lab, but using it as a test 'Counted' object should be OK. *)
-				ProductModel->Model[Item, WeighBoat, "Aluminum Round Micro Weigh Dish"],
-				SampleType->Tub,
-				Packaging->Single,
-				CatalogDescription->"1 tub of weigh dishes",
-				NumberOfItems->1,
-				CatalogNumber -> "1",
-				Price -> 1 USD
-			],
-			Null,
-			Messages :> {
-				Error::CountedProduct,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "ManufacturerOptions", "The options Manufacturer and ManufacturerCatalogNumber must either both be specified or both set to Null. In the following example, ManufacturerCatalogNumber is set but Manufacturer is set to Null:"},
-			UploadProduct[
-				Name -> "Methanol, anhydrous, 99.8% | CH3OH (test)" <> $SessionUUID,
-				CatalogDescription -> "1 bottle of Methanol, anhydrous, 99.8% | CH3OH (test)",
-				ProductModel -> Model[Sample, "Methanol, anhydrous, 99.8% | CH3OH" <> $SessionUUID],
-				DefaultContainerModel -> Model[Container, Vessel, "100mL Rectangular LDPE Media Bottle"],
-				SampleType -> Vial,
-				ManufacturerCatalogNumber -> "322415",
-				Manufacturer -> Null,
-				Supplier -> Object[Company, Supplier, "Sigma Aldrich"],
-				Packaging -> Single,
-				NumberOfItems -> 1,
-				CatalogNumber -> "1",
-				Amount -> 100 Milliliter,
-				Price -> 1 USD
-			],
-			Null,
-			Messages :> {
-				Error::RequiredTogetherOptions,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "EmeraldSuppliedProductSamples", "If Emerald Cloud Lab is the supplier of this product, NumberOfItems must be 1. In the following example, the ECL is set as the supplier of the product, but NumberOfItems is set to 2:"},
-			UploadProduct[
-				Name -> "Methanol, anhydrous, 99.8% | CH3OH (test)" <> $SessionUUID,
-				CatalogDescription -> "1 bottle of Methanol, anhydrous, 99.8% | CH3OH (test)",
-				Supplier -> Object[Company, Supplier, "Emerald Cloud Lab"],
-				ProductModel -> Model[Sample, "Methanol, anhydrous, 99.8% | CH3OH" <> $SessionUUID],
-				DefaultContainerModel -> Model[Container, Vessel, "100 mL Glass Bottle"],
-				SampleType -> Vial,
-				NumberOfItems -> 2,
-				Packaging -> Single,
-				CatalogNumber -> "1",
-				Amount -> 100 Milliliter,
-				Price -> 1 USD
-			],
-			Null,
-			Messages :> {
-				Error::EmeraldSuppliedProductSamples,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "AmountUnitState", "The option Amount must match the model's state of matter. In the following example, the ProductModel of Methanol has State->Liquid. Therefore, Amount cannot be set to 3 Gram:"},
-			UploadProduct[
-				Name -> "Methanol, anhydrous, 99.8% | CH3OH (test)" <> $SessionUUID,
-				CatalogDescription -> "1 bottle of Methanol, anhydrous, 99.8% | CH3OH (test)",
-				ProductModel -> Model[Sample, "Methanol, anhydrous, 99.8% | CH3OH" <> $SessionUUID],
-				DefaultContainerModel -> Model[Container, Vessel, "100mL Rectangular LDPE Media Bottle"],
-				SampleType -> Vial,
-				Amount -> 3 Gram,
-				Supplier -> Object[Company, Supplier, "Sigma Aldrich"],
-				Packaging -> Single,
-				NumberOfItems -> 1,
-				CatalogNumber -> "1",
-				Price -> 1 USD
-			],
-			Null,
-			Messages :> {
-				Error::AmountUnitState,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "PricePerUnitRequired", "If this product is not supplied by Emerald Cloud Lab, the Price option must be specified. In the following example, the column is not provided by the ECL so Price must be specified:"},
-			UploadProduct[
-				Supplier->Object[Company,Supplier,"Sigma Aldrich"],
-				Name->"HiTrap Q HP Column (test)" <> $SessionUUID,
-				CatalogDescription->"1 bottle of HiTrap Q HP Column (test)",
-				ProductModel->Model[Item,Column,"HiTrap Q HP 5x1mL Column"],
-				SampleType->Column,
-				Packaging->Single,
-				NumberOfItems->1,
-				CatalogNumber->"1"
-			],
-			Null,
-			Messages :> {
-				Error::InvalidOption,
-				Error::PricePerUnitRequired
-			},
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Example[{Messages, "ProductAmount", "If this product is self contained, Amount must not be specified. If this product is not self contained, Amount must be specified. In the following example, the product is not self contained but Amount is set to Null."},
-			UploadProduct[
-				Name -> "Methanol, anhydrous, 99.8% | CH3OH (test)" <> $SessionUUID,
-				CatalogDescription -> "1 bottle of Methanol, anhydrous, 99.8% | CH3OH (test)",
-				ProductModel -> Model[Sample, "Methanol, anhydrous, 99.8% | CH3OH" <> $SessionUUID],
-				DefaultContainerModel -> Model[Container, Vessel, "100mL Rectangular LDPE Media Bottle"],
-				SampleType -> Vial,
-				Amount -> Null,
-				Supplier -> Object[Company, Supplier, "Sigma Aldrich"],
-				Packaging -> Single,
-				NumberOfItems -> 1,
-				CatalogNumber -> "1",
-				Price -> 1 USD
-			],
-			Null,
-			Messages :> {
-				Error::ProductAmount,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "TabletFields", "The options Amount and CountPerSample cannot both be informed at the same time, unless the product model is a Model[Sample] that is a Tablet. In the following example, CountPerSample is set to 1 and Amount were automatically populated by the Sigma Aldrich website:"},
-			UploadProduct[
-				Name -> "Methanol, anhydrous, 99.8% | CH3OH (test)" <> $SessionUUID,
-				CatalogDescription -> "1 bottle of Methanol, anhydrous, 99.8% | CH3OH (test)",
-				ProductModel -> Model[Sample, "Methanol, anhydrous, 99.8% | CH3OH" <> $SessionUUID],
-				DefaultContainerModel -> Model[Container, Vessel, "100mL Rectangular LDPE Media Bottle"],
-				SampleType -> Vial,
-				CountPerSample -> 1,
-				Amount -> 100 Milliliter,
-				Supplier -> Object[Company, Supplier, "Sigma Aldrich"],
-				Packaging -> Single,
-				NumberOfItems -> 1,
-				CatalogNumber -> "1",
-				Price -> 1 USD
-			],
-			Null,
-			Messages :> {
-				Error::TabletSachetFields,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "InvalidSampleType", "If KitComponents is specified, SampleType must be Kit:"},
-			UploadProduct[
-				ProductListing->"310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1"<>$SessionUUID,
-				CatalogDescription->"1 Kit of 310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1",
-				Name->"310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1"<>$SessionUUID,
-				NumberOfItems->1,
-				Packaging->Single,
-				Supplier->Object[Company,Supplier,"Thermo Fisher Scientific"],				SampleType->ExquisiteGoatHairBrush,
-				KitComponents->{
-					{1,Model[Sample,"Test Matrix Standard 1"<>$SessionUUID],Null,200*Microliter,"A1",1,Null,False},
-					{1,Model[Sample,"Test Matrix Standard 2"<>$SessionUUID],Null,200*Microliter,"A1",2,Null,False},
-					{1,Model[Sample,"Test Matrix Standard 3"<>$SessionUUID],Null,200*Microliter,"A1",3,Null,False},
-					{1,Model[Sample,"Test Matrix Standard 4"<>$SessionUUID],Null,200*Microliter,"A1",4,Null,False}
-				},
-				CatalogNumber -> "1",
-				Price -> 1 USD
-			],
-			Null,
-			Messages :> {
-				Error::InvalidSampleType,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "InvalidKitOptions", "If KitComponents is specified, ProductModel, DefaultContainerModel, NumberOfItems, CountPerSample, and Amount must all be Null:"},
-			UploadProduct[
-				ProductListing->"310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1"<>$SessionUUID,
-				CatalogDescription->"1 Kit of 310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1",
-				Name->"310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1"<>$SessionUUID,
-				Packaging->Single,
-				SampleType->Kit,
-				NumberOfItems->1,
-				Supplier->Object[Company,Supplier,"Thermo Fisher Scientific"],				ProductModel->Model[Sample,"Test Matrix Standard 2"<>$SessionUUID],
-				KitComponents->{
-					{1,Model[Sample,"Test Matrix Standard 1"<>$SessionUUID],Null,200*Microliter,"A1",1,Null,False},
-					{1,Model[Sample,"Test Matrix Standard 2"<>$SessionUUID],Null,200*Microliter,"A1",2,Null,False},
-					{1,Model[Sample,"Test Matrix Standard 3"<>$SessionUUID],Null,200*Microliter,"A1",3,Null,False},
-					{1,Model[Sample,"Test Matrix Standard 4"<>$SessionUUID],Null,200*Microliter,"A1",4,Null,False}
-				},
-				CatalogNumber -> "1",
-				Price -> 1 USD
-			],
-			Null,
-			Messages :> {
-				Error::InvalidKitOptions,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "SingleKitComponent", "If KitComponents is specified, at least two components must be specified:"},
-			UploadProduct[
-				ProductListing->"310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1"<>$SessionUUID,
-				CatalogDescription->"1 Kit of 310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1",
-				Name->"310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1"<>$SessionUUID,
-				Packaging->Single,
-				SampleType->Kit,
-				NumberOfItems->1,
-				Supplier->Object[Company,Supplier,"Thermo Fisher Scientific"],				KitComponents->{
-					{1,Model[Sample,"Test Matrix Standard 1"<>$SessionUUID],Null,200*Microliter,"A1",1,Null,False}
-				},
-				CatalogNumber -> "1",
-				Price -> 1 USD
-			],
-			Null,
-			Messages :> {
-				Error::SingleKitComponent,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "InvalidContainerIndexPosition", "If KitComponents is specified, ContainerIndex and Position must not be Null for NonSelfContainedSampleModels (and must be Null for all others):"},
-			UploadProduct[
-				ProductListing->"310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1"<>$SessionUUID,
-				CatalogDescription->"1 Kit of 310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1",
-				Name->"310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1"<>$SessionUUID,
-				Packaging->Single,
-				SampleType->Kit,
-				NumberOfItems->1,
-				Supplier->Object[Company,Supplier,"Thermo Fisher Scientific"],				KitComponents->{
-					{1,Model[Sample,"Test Matrix Standard 1"<>$SessionUUID],Null,200*Microliter,"A1",1,Null,False},
-					{1,Model[Sample,"Test Matrix Standard 2"<>$SessionUUID],Null,200*Microliter,Null,2,Null,False},
-					{1,Model[Sample,"Test Matrix Standard 3"<>$SessionUUID],Null,200*Microliter,"A1",Null,Null,False},
-					{1,Model[Sample,"Test Matrix Standard 4"<>$SessionUUID],Null,200*Microliter,"A1",4,Null,False}
-				},
-				CatalogNumber -> "1",
-				Price -> 1 USD
-			],
-			Null,
-			Messages :> {
-				Error::InvalidContainerIndexPosition,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "RepeatedContainerIndex", "If KitComponents is specified, all components whose Containers are specified as Model[Container,Vessel] must have unique container indices:"},
-			UploadProduct[
-				CatalogDescription->"Fluorescent standard",
-				CatalogNumber->"P3088",
-				KitComponents->{
-					{1,Model[Sample,"Test Fluorescence Standard For UploadProduct 1"<>$SessionUUID],Model[Container,Vessel,"Test Container Model For UploadProduct 1"<>$SessionUUID],15 Milliliter,"A1",1,Null,False},
-					{1,Model[Sample,"Test Fluorescence Standard For UploadProduct 2"<>$SessionUUID],Model[Container,Vessel,"Test Container Model For UploadProduct 2"<>$SessionUUID],8 Milliliter,"A1",2,Null,False},
-					{1,Model[Sample,"Test Fluorescence Standard For UploadProduct 3"<>$SessionUUID],Model[Container,Vessel,"Test Container Model For UploadProduct 2"<>$SessionUUID],4 Milliliter,"A1",2,Null,False}
-				},
-				Name->"Test Fluorescence Polarization Kit"<>$SessionUUID,
-				NumberOfItems->1,
-				Packaging->Single,
-				Price->1 USD,
-				ProductListing->"Test Fluorescence Polarization Kit"<>$SessionUUID,
-				SampleType->Kit,
-				Supplier->Object[Company,Supplier,"id:D8KAEvdq1RB3"]
-			],
-			Null,
-			Messages :> {Error::RepeatedContainerIndex, Error::InvalidOption}
-		],
-		Example[{Messages,"UnsupportedAsepticReceiving","If Sterile is True, SealedContainer is False, and AsepticShippingContainerType is Null, an error is thrown:"},
-			UploadProduct[
-				Name->"Milli-Q water (test 2)"<>$SessionUUID,
-				Supplier -> Object[Company,Supplier,"id:D8KAEvdq1RB3"],
-				CatalogNumber -> "ABCD",
-				Amount -> 500 Milliliter,
-				Price -> 1 USD,
-				CatalogDescription->"1 bottle of Milli-Q water (test)",
-				Packaging->Single,
-				ProductModel->Model[Sample,"Milli-Q water"],
-				NumberOfItems->1,
-				SampleType->Vial,
-				DefaultContainerModel->Model[Container,Vessel,"2.5L Wide Neck Amber Glass Bottle"],
-				Sterile -> True,
-				SealedContainer -> False,
-				AsepticShippingContainerType -> Null
-			],
-			Null,
-			Messages :> {Error::UnsupportedAsepticReceiving, Error::InvalidOption}
-		],
-		Example[{Messages,"UnsupportedAsepticReceiving","If Sterile is False, SealedContainer is True, and AsepticShippingContainerType is Individual, an error is thrown:"},
-			UploadProduct[
-				Name->"Milli-Q water (test 3)"<>$SessionUUID,
-				Supplier -> Object[Company,Supplier,"id:D8KAEvdq1RB3"],
-				CatalogNumber -> "ABCD",
-				Amount -> 500 Milliliter,
-				Price -> 1 USD,
-				CatalogDescription->"1 bottle of Milli-Q water (test)",
-				Packaging->Single,
-				ProductModel->Model[Sample,"Milli-Q water"],
-				NumberOfItems->1,
-				SampleType->Vial,
-				DefaultContainerModel->Model[Container,Vessel,"2.5L Wide Neck Amber Glass Bottle"],
-				Sterile -> False,
-				SealedContainer -> True,
-				AsepticShippingContainerType -> Individual
-			],
-			Null,
-			Messages :> {Error::UnsupportedAsepticReceiving, Error::InvalidOption}
-		],
-		Example[{Messages,"IncompatibleAsepticShippingAndReceiving","If AsepticShippingContainerType is Individual, AsepticRebaggingContainerType cannot be specified:"},
-			UploadProduct[
-				Name->"Milli-Q water (test 4)"<>$SessionUUID,
-				Supplier -> Object[Company,Supplier,"id:D8KAEvdq1RB3"],
-				CatalogNumber -> "ABCD",
-				Amount -> 500 Milliliter,
-				Price -> 1 USD,
-				CatalogDescription->"1 bottle of Milli-Q water (test)",
-				Packaging->Single,
-				ProductModel->Model[Sample,"Milli-Q water"],
-				NumberOfItems->1,
-				SampleType->Vial,
-				DefaultContainerModel->Model[Container,Vessel,"2.5L Wide Neck Amber Glass Bottle"],
-				SealedContainer -> False,
-				Sterile -> True,
-				AsepticShippingContainerType -> Individual,
-				AsepticRebaggingContainerType -> Individual
-			],
-			Null,
-			Messages :> {Error::IncompatibleAsepticShippingAndReceiving, Error::InvalidOption}
-		],
-		Example[{Messages,"IncompatibleAsepticShippingAndReceiving","If AsepticShippingContainerType is ResealableBulk, AsepticRebaggingContainerType cannot be specified:"},
-			UploadProduct[
-				Name->"Milli-Q water (test 5)"<>$SessionUUID,
-				Supplier -> Object[Company,Supplier,"id:D8KAEvdq1RB3"],
-				CatalogNumber -> "ABCD",
-				Amount -> 500 Milliliter,
-				Price -> 1 USD,
-				CatalogDescription->"1 bottle of Milli-Q water (test)",
-				Packaging->Single,
-				ProductModel->Model[Sample,"Milli-Q water"],
-				NumberOfItems->1,
-				SampleType->Vial,
-				DefaultContainerModel->Model[Container,Vessel,"2.5L Wide Neck Amber Glass Bottle"],
-				SealedContainer -> False,
-				Sterile -> True,
-				AsepticShippingContainerType -> ResealableBulk,
-				AsepticRebaggingContainerType -> Individual
-			],
-			Null,
-			Messages :> {Error::IncompatibleAsepticShippingAndReceiving, Error::InvalidOption}
-		],
-		Example[{Messages,"IncompatibleAsepticShippingAndReceiving","If AsepticShippingContainerType is NonResealableBulk, AsepticRebaggingContainerType cannot be Null:"},
-			UploadProduct[
-				Name->"Milli-Q water (test 6)"<>$SessionUUID,
-				Supplier -> Object[Company,Supplier,"id:D8KAEvdq1RB3"],
-				CatalogNumber -> "ABCD",
-				Amount -> 500 Milliliter,
-				Price -> 1 USD,
-				CatalogDescription->"1 bottle of Milli-Q water (test)",
-				Packaging->Single,
-				ProductModel->Model[Sample,"Milli-Q water"],
-				NumberOfItems->1,
-				SampleType->Vial,
-				DefaultContainerModel->Model[Container,Vessel,"2.5L Wide Neck Amber Glass Bottle"],
-				SealedContainer -> False,
-				Sterile -> True,
-				AsepticShippingContainerType -> NonResealableBulk,
-				AsepticRebaggingContainerType -> Null
-			],
-			Null,
-			Messages :> {Error::AsepticRebaggingContainerTypeRequired, Error::InvalidOption}
-		],
-		Example[{Messages,"IncompatibleAsepticShippingAndReceiving","If AsepticShippingContainerType is None, AsepticRebaggingContainerType cannot be Null:"},
-			UploadProduct[
-				Name->"Milli-Q water (test 7)"<>$SessionUUID,
-				Supplier -> Object[Company,Supplier,"id:D8KAEvdq1RB3"],
-				CatalogNumber -> "ABCD",
-				Amount -> 500 Milliliter,
-				Price -> 1 USD,
-				CatalogDescription->"1 bottle of Milli-Q water (test)",
-				Packaging->Single,
-				ProductModel->Model[Sample,"Milli-Q water"],
-				NumberOfItems->1,
-				SampleType->Vial,
-				DefaultContainerModel->Model[Container,Vessel,"2.5L Wide Neck Amber Glass Bottle"],
-				SealedContainer -> False,
-				Sterile -> True,
-				AsepticShippingContainerType -> None,
-				AsepticRebaggingContainerType -> Null
-			],
-			Null,
-			Messages :> {Error::AsepticRebaggingContainerTypeRequired, Error::InvalidOption}
-		],
-		Test["Density field is populated automatically if informed in the Model:",
-			Quiet[
-				Check[
-					product=UploadProduct[
-						"https://www.fishersci.com/shop/products/acetonitrile-optima-fisher-chemical-6/A9961#?keyword=Acetonitrile%20for%20HPLC-GC,%20&gt;=99.8%%20(GC",
-						Name->"Milli-Q water (test)"<>$SessionUUID,
-						CatalogDescription->"1 bottle of Milli-Q water (test)",
-						ProductModel->Model[Sample,"Milli-Q water"],
-						DefaultContainerModel->Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
-						SampleType->Vial,
-						Price->1 USD,
-						Amount -> 100 Milliliter,
-						Packaging -> Single,
-						NumberOfItems -> 1
-					];Download[product,Density],
-					Download[Model[Sample, "Milli-Q water"], Density],
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			Download[Model[Sample, "Milli-Q water"], Density],
-			Variables :> {product},
-			Stubs:>{$AllowPublicObjects=True}
-		],
-		Test["Make sure DateCreated is populated:",
-			Quiet[
-				Check[
-					product=UploadProduct[
-						"https://www.fishersci.com/shop/products/methanol-99-8-extra-dry-anhydrous-sc-acroseal-thermo-scientific/AC610981000#?keyword=Methanol,%20anhydrous,%2099.8%%20|%20CH3OH",
-						Name->"Methanol, anhydrous, 99.8% | CH3OH (test)"<>$SessionUUID,
-						CatalogDescription->"1 bottle of Methanol, anhydrous, 99.8% | CH3OH (test)",
-						ProductModel->Model[Sample,"Methanol, anhydrous, 99.8% | CH3OH"<>$SessionUUID],
-						DefaultContainerModel->Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
-						SampleType->Vial,
-						Price->1 USD,
-						Amount -> 100 Milliliter,
-						Packaging -> Single,
-						NumberOfItems -> 1
-					];Download[product,DateCreated],
-					Now,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption}
-			],
-			_?DateObjectQ,
+			product = UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/268270040",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				Name->"Acetonitrile for HPLC-GC, >=99.8% (GC) (test)"<>$SessionUUID
+			];
+			Download[product, Name],
+			"Acetonitrile for HPLC-GC, >=99.8% (GC) (test)"<>$SessionUUID,
 			Variables :> {product}
 		],
-		Test["If no information can be retrieved from the supplied productURL, continue to upload the product object with any information available from the options:",
+		Example[{Options, "Synonyms", "Use the Synonyms option to specify the synonyms of the uploaded Object[Product]:"},
+			product = UploadProduct[
+				"https://www.fishersci.com/shop/products/methyl-ethyl-ketone-certified-acs-fisher-chemical-6/M2091",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				Synonyms->{"Ethyl methyl ketone (test)"<>$SessionUUID,"MEK","Methyl ethyl ketone"},
+				Name->"Ethyl methyl ketone (test)"<>$SessionUUID
+			];
+			Download[product, Synonyms],
+			{"Ethyl methyl ketone (test)"<>$SessionUUID,"MEK","Methyl ethyl ketone"},
+			Variables :> {product}
+		],
+		Example[{Options, "Synonyms", "If the Name of product object is not already in the provided Synonyms option, it will be added:"},
+			product = UploadProduct[
+				"https://www.fishersci.com/shop/products/methyl-ethyl-ketone-certified-acs-fisher-chemical-6/M2091",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				Synonyms->{"MEK"},
+				Name->"Ethyl methyl ketone (test)"<>$SessionUUID
+			];
+			Download[product, Synonyms],
+			{"Ethyl methyl ketone (test)"<>$SessionUUID,"MEK"},
+			Variables :> {product}
+		],
+		Example[{Options, "ImageFile", "Use the ImageFile option to specify an image of the product of the uploaded Object[Product]. This can be a URL of an image file:"},
 			UploadProduct[
-				"https://www.sigmaaldrich.com/catalog/"<>$SessionUUID,
-				Name -> "Diethylene glycol methyl ether 99% (test)" <> $SessionUUID,
-				Packaging -> Single,
-				ProductModel -> Model[Sample, "Diethylene glycol methyl ether 99%"],
-				NumberOfItems -> 1,
-				SampleType -> Vial,
-				DefaultContainerModel -> Model[Container, Vessel, "50mL tall sloping shoulder amber glass bottle"],
-				CatalogNumber -> "109908",
-				Supplier -> Object[Company, Supplier, "Sigma Aldrich"],
-				Amount -> 50 Milliliter,
-				Price -> 57.50 USD,
-				CatalogDescription -> "High purity diethylene glycol methyl ether"
+				"https://www.thermofisher.com/order/catalog/product/85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				ImageFile->"https://assets.thermofisher.com/TFS-Assets/LSG/product-images/85190-DMSO.jpg-250.jpg",
+				Name->"Dimethyl sulfoxide (test)"<>$SessionUUID
 			],
-			ObjectP[Object[Product]],
-			Messages :> {Warning::APIConnection},
-			Stubs:>{$AllowPublicObjects=True, $UsePyeclProductParser = False}
+			ObjectP[Object[Product]]
+		],
+		Example[{Options, "ImageFile", "Use the ImageFile option to specify an image of the product of the uploaded Object[Product]. This can be a local directory of an image file:"},
+			UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				ImageFile->FileNameJoin[{$TemporaryDirectory, "product_test_image.jpg"}],
+				Name->"Dimethyl sulfoxide (test)"<>$SessionUUID
+			],
+			ObjectP[Object[Product]]
+		],
+		Example[{Options, "ImageFile", "Use the ImageFile option to specify an image of the product of the uploaded Object[Product]. This can be an EmeraldCloudFile object:"},
+			UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				ImageFile->Object[EmeraldCloudFile, "Test product image for UploadProduct "<>$SessionUUID],
+				Name->"Dimethyl sulfoxide (test)"<>$SessionUUID
+			],
+			ObjectP[Object[Product]]
+		],
+		Example[{Options, "ProductListing", "Use the ProductListing option to specify the full name under which the product is listed:"},
+			product = UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				ProductListing->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade",
+				Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID
+			];
+			Download[product, ProductListing],
+			"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade",
+			Variables :> {product}
+		],
+		Example[{Options, "CatalogDescription", "Use the CatalogDescription option to specify the full description of the item as it is listed in the supplier's catalog including any relevant information on the number of samples per item, the sample type, and/or the amount per sample if that information is included in the suppliers catalog list and necessary to place an order for the correct unit of the item which this product represents:"},
+			product = UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				CatalogDescription->"1 50 mL Vial of Pierce Dimethylsulfoxide (DMSO), LC-MS grade",
+				Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID
+			];
+			Download[product, CatalogDescription],
+			"1 50 mL Vial of Pierce Dimethylsulfoxide (DMSO), LC-MS grade",
+			Variables :> {product}
+		],
+		Example[{Options, "KitComponents", "Use the KitComponents option to specify all the components of the given kit:"},
+			UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/4336948",
+				ProductModel -> Kit,
+				Name->"310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1"<>$SessionUUID,
+				KitComponents->{{
+					{1,Model[Sample,"Test Matrix Standard 1 for UploadProduct unit test "<>$SessionUUID],Model[Container,Vessel,"Test Container Model For UploadProduct 1"<>$SessionUUID],200*Microliter,"A1",1,Model[Item,Cap,"Test Cover Model For UploadProduct 1"<>$SessionUUID],False},
+					{1,Model[Sample,"Test Matrix Standard 2 for UploadProduct unit test "<>$SessionUUID],Null,200*Microliter,"A1",2,Null,False},
+					{1,Model[Sample,"Test Matrix Standard 3 for UploadProduct unit test "<>$SessionUUID],Null,200*Microliter,"A1",3,Null,False},
+					{1,Model[Sample,"Test Matrix Standard 4 for UploadProduct unit test "<>$SessionUUID],Null,200*Microliter,"A1",4,Null,False}
+				}}
+			],
+			ObjectP[Object[Product]]
+		],
+		Example[{Options, "KitComponents", "One can supply Type instead of object as ProductModel, DefaultContainerModel and/or DefaultCoverModel subentries of KitComponents option. In that case, new models of the corresponding type will be created:"},
+			product = UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/35050?SID=srch-srp-35050",
+				ProductModel -> Kit,
+				Name->"Fast Western Blot Kit, ECL Substrate"<>$SessionUUID,
+				KitComponents->{{
+					{1,Model[Sample],Model[Container,Vessel],200*Microliter,"A1",1,Model[Item,Cap],False},
+					{1,Model[Sample],Model[Container,Vessel],200*Microliter,"A1",2,Model[Item,Cap],False}
+				}}
+			];
+			Download[product, KitComponents],
+			{
+				AssociationMatchP[<|
+					NumberOfItems -> 1,
+					ProductModel -> (LinkP[Model[Sample]] | Null),
+					DefaultContainerModel -> LinkP[Model[Container, Vessel]],
+					Amount -> EqualP[200 Microliter],
+					Position -> "A1",
+					ContainerIndex -> 1,
+					DefaultCoverModel -> LinkP[Model[Item, Cap]],
+					OpenContainer -> False
+				|>],
+				AssociationMatchP[<|
+					NumberOfItems -> 1,
+					ProductModel -> (LinkP[Model[Sample]] | Null),
+					DefaultContainerModel -> LinkP[Model[Container, Vessel]],
+					Amount -> EqualP[200 Microliter],
+					Position -> "A1",
+					ContainerIndex -> 2,
+					DefaultCoverModel -> LinkP[Model[Item, Cap]],
+					OpenContainer -> False
+				|>],
+				AssociationMatchP[<|
+					NumberOfItems -> 1,
+					ProductModel -> LinkP[Model[Container, Vessel]],
+					DefaultContainerModel -> Null,
+					Amount -> Null,
+					Position -> Null,
+					ContainerIndex -> Null,
+					DefaultCoverModel -> Null,
+					OpenContainer -> False
+				|>],
+				AssociationMatchP[<|
+					NumberOfItems -> 1,
+					ProductModel -> LinkP[Model[Container, Vessel]],
+					DefaultContainerModel -> Null,
+					Amount -> Null,
+					Position -> Null,
+					ContainerIndex -> Null,
+					DefaultCoverModel -> Null,
+					OpenContainer -> False
+				|>]
+			},
+			Variables :> {product}
+		],
+		Example[{Options, "Supplier", "Use the Supplier option to specify the company that supplies this product. All Object[Company,Supplier] objects can be found by performing a search (Search[Object[Company,Supplier]]):"},
+			product = UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				Supplier->Object[Company,Supplier,"Sigma Aldrich"],
+				Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID
+			];
+			Download[product, Supplier],
+			ObjectP[Object[Company,Supplier,"Sigma Aldrich"]],
+			Variables :> {product}
+		],
+		Example[{Options, "Supplier", "One can provide supplier name instead of Object[Company, Supplier] as the Supplier option:"},
+			product = UploadProduct[
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				Supplier->"sigma",
+				Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID
+			];
+			Download[product, Supplier],
+			ObjectP[Object[Company,Supplier,"Sigma Aldrich"]],
+			Variables :> {product}
+		],
+		Example[{Options, "Supplier", "One can provide supplier homepage website instead of Object[Company, Supplier] as the Supplier option:"},
+			product = UploadProduct[
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				Supplier->"www.sigmaaldrich.com",
+				Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID
+			];
+			Download[product, Supplier],
+			ObjectP[Object[Company,Supplier,"Sigma Aldrich"]],
+			Variables :> {product}
+		],
+		Example[{Options, "CatalogNumber", "Use the CatalogNumber option to specify the catalog number, as given by the supplier, of this product:"},
+			product = UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				CatalogNumber->"96548",
+				Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID
+			];
+			Download[product, CatalogNumber],
+			"96548",
+			Variables :> {product}
+		],
+		Example[{Options, "Manufacturer", "Use the Manufacturer option to specify the Object[Company,Supplier] that manufactured this product:"},
+			product = UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				Manufacturer->Object[Company,Supplier,"Sigma Aldrich"],
+				Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID
+			];
+			Download[product, Manufacturer],
+			ObjectP[Object[Company,Supplier,"Sigma Aldrich"]],
+			Variables :> {product}
+		],
+		Example[{Options, "ManufacturerCatalogNumber", "Use the ManufacturerCatalogNumber to specify the Manufacturer's catalog number for this product:"},
+			product = UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID,
+				ManufacturerCatalogNumber->"34861"
+			];
+			Download[product, ManufacturerCatalogNumber],
+			"34861",
+			Variables :> {product}
+		],
+		Example[{Options, "Packaging", "Use the Packaging to specify if this product is a Case or an Item:"},
+			UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				Packaging->Single,
+				Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID
+			],
+			ObjectP[Object[Product]]
+		],
+		Example[{Options, "SampleType", "Use the SampleType to specify the type of sample that this product is. The valid values of this option can be found by evaluating SampleDescriptionP:"},
+			UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				SampleType->Vial,
+				Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID
+			],
+			ObjectP[Object[Product]]
+		],
+		Example[{Options, "NumberOfItems", "Use the NumberOfItems option to specify the number of samples in each order of one unit of this product. If this product is an item, NumberOfItems->1. If it is a Case, NumberOfItems should be the number of items in the case:"},
+			UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				NumberOfItems->1,
+				Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID
+			],
+			ObjectP[Object[Product]]
+		],
+		Example[{Options, "DefaultContainerModel", "Use the DefaultContainerModel option to specify the container that the product arrives in from the manufacturer:"},
+			product = UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
+				ProductModel -> Model[Sample,"Test Methanol, anhydrous, 99.8% | CH3OH for UploadProduct unit test "<>$SessionUUID],
+				DefaultContainerModel -> Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
+				Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID
+			];
+			Download[product, DefaultContainerModel],
+			ObjectP[Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"]],
+			Variables :> {product}
+		],
+		Example[{Options, "DefaultContainerModel", "Use a Type instead of Object as DefaultContainerModel option value to auto-create a Model[Container] as the DefaultContainerModel of the new product object:"},
+			product = UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190",
+				ProductModel -> Model[Sample,"Test Methanol, anhydrous, 99.8% | CH3OH for UploadProduct unit test "<>$SessionUUID],
+				DefaultContainerModel -> Model[Container,Vessel],
+				Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID
+			];
+			Download[product, DefaultContainerModel],
+			ObjectP[Model[Container,Vessel]],
+			Variables :> {product}
+		],
+		Example[{Options, "Amount", "Use the Amount option to specify amount of substance per sample. For example, if the product contained 100 mL, then Amount ->100 * Milliliter:"},
+			product = UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
+				ProductModel -> Model[Sample,"Test Methanol, anhydrous, 99.8% | CH3OH for UploadProduct unit test "<>$SessionUUID],
+				Amount -> 100 Milliliter,
+				Name -> "Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID
+			];
+			Download[product, Amount],
+			EqualP[100 Milliliter],
+			Variables :> {product}
+		],
+		Example[{Options, "CountPerSample", "Use the CountPerSample option to specify the initial count for all objects made from this product. Here, a product for a tub of weigh boats is created. This tub has 20 individual dishes and we create one Object[Item] with Count->100 when this product is received. This option should not be specified with Amount:"},
+			product = UploadProduct[
+				(* NOTE: This 'Counted' version of this model in the lab, but using it as a test 'Counted' object should be OK. *)
+				ProductModel -> Model[Item, WeighBoat, "Aluminum Round Micro Weigh Dish"],
+				CatalogNumber -> "xxx",
+				Supplier -> Object[Company,Supplier,"Sigma Aldrich"],
+				CountPerSample -> 20,
+				Name->"Aluminum Round Micro Weigh Dishes with Handle" <> $SessionUUID
+			];
+			Download[product, CountPerSample],
+			20,
+			Variables :> {product}
+		],
+		Example[{Options, "ShippedClean", "Use the ShippedClean option to specify that samples of this product arrive ready to be used without needing to be dishwashed:"},
+			product = UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/329-1000?SID=srch-srp-329-1000",
+				ProductModel -> Model[Container, Vessel, "100 mL Glass Bottle"],
+				ShippedClean -> True,
+				Name -> "100mL Bottle (UploadProduct test)" <> $SessionUUID
+			];
+			Download[product, ShippedClean],
+			True,
+			Variables :> {product}
+		],
+		Example[{Options, "Sterile", "Use the Sterile option to specify that samples of this product arrive sterile from the manufacturer:"},
+			product = UploadProduct[
+				ProductModel -> Model[Container, Plate, "4-well V-bottom 75mL Deep Well Plate Sterile"],
+				Sterile -> True,
+				Name -> "4-well V-bottom 75mL Deep Well Plate Sterile (UploadProduct test) " <> $SessionUUID,
+				CatalogNumber -> "xxx",
+				Supplier -> Object[Company,Supplier,"Sigma Aldrich"]
+			];
+			Download[product, Sterile],
+			True,
+			Variables :> {product}
+		],
+		Example[{Options, "Price", "Use the Price option to specify the price for one unit of this product:"},
+			product = UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				Price->225 USD,
+				Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID
+			];
+			Download[product, Price],
+			EqualP[225 USD],
+			Variables :> {product}
+		],
+		Example[{Options, "SealedContainer", "Use the SealedContainer option to specify whether a product arrives in a sealed container:"},
+			product=UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				Name->"Pierce Dimethylsulfoxide (DMSO), 75 mL, LC-MS Grade (test)"<>$SessionUUID,
+				DefaultContainerModel->Model[Container,Vessel,"2.5L Wide Neck Amber Glass Bottle"],
+				SealedContainer->True
+			];
+			Download[product,SealedContainer],
+			True,
+			Variables :> {product}
+		],
+		Example[{Options, "AsepticShippingContainerType", "Use the AsepticShippingContainerType option to specify the manner in which an aseptic product is packed and shipped by the manufacturer:"},
+			product=UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				Name -> "Pierce Dimethylsulfoxide (DMSO), 150mL, LC-MS Grade (test)"<>$SessionUUID,
+				AsepticShippingContainerType->ResealableBulk
+			];
+			Download[product,AsepticShippingContainerType],
+			ResealableBulk,
+			Variables :> {product}
+		],
+		Example[{Options, "AsepticRebaggingContainerType", "Use the AsepticRebaggingContainerType option to specify the type of container items of this product will be transferred to if they arrive in a non-resealable aseptic shipping container.:"},
+			product=UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				Name->"Pierce Dimethylsulfoxide (DMSO), 150mL, LC-MS Grade (test)"<>$SessionUUID,
+				AsepticShippingContainerType -> NonResealableBulk,
+				AsepticRebaggingContainerType->Individual
+			];
+			Download[product,AsepticRebaggingContainerType],
+			Individual,
+			Variables :> {product}
+		],
+		Example[{Options, "Density", "Use Density to specify Density of the Product:"},
+			product=UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				Name->"Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)"<>$SessionUUID,
+				Density->1.1 Gram/Milliliter
+			];
+			Download[product,Density],
+			EqualP[1.1 Gram / Milliliter],
+			Variables :> {product}
+		],
+		Example[{Options, "StoreInOriginalContainer", "Use StoreInOriginalContainer to indicate if the bulk items should be stored in its original package:"},
+			product=UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190?SID=srch-srp-85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				Name -> "Pierce Dimethylsulfoxide (DMSO), 150mL, LC-MS Grade (test)"<>$SessionUUID,
+				StoreInOriginalContainer->True
+			];
+			Download[product,StoreInOriginalContainer],
+			True,
+			Variables :> {product}
+		],
+		Example[{Options, "StoreInOriginalContainer", "StoreInOriginalContainer is automatically set to True if the DefaultContainerModel is an ampoule:"},
+			product=UploadProduct[
+				"https://www.thermofisher.com/order/catalog/product/85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				Name -> "Pierce Dimethylsulfoxide (DMSO), 150mL, LC-MS Grade (test)"<>$SessionUUID,
+				DefaultContainerModel -> Model[Container, Vessel, "1mL clear glass ampule"]
+			];
+			Download[product,StoreInOriginalContainer],
+			True,
+			Variables :> {product}
 		]
 	},
-	Stubs :> {findProductPriceAgain[___] := 1.0, $UseAIProductParser = False} (* If the price couldn't be found, set to 1.0 USD *),
+	Stubs :> {
+		(* If the price couldn't be found, set to 1.0 USD *)
+		findProductPriceAgain[___] := 1.0,
+		(* A few stubs needs to be applied in order for the test to work. Most of the tests share the same stubs, with a few exceptions *)
+		(* All those stubs will become the default settings and thus can be omitted once the SampleIntake and Verification system is fully online, but not now *)
+
+		(* $AllowUserInvalidObjectUploads to bypass VOQ checks as we will do for users *)
+		$AllowUserInvalidObjectUploads = True,
+		(* $AllowAutoNewModelCreation to allow automatic creation of ProductModel, DefaultContainerModel, DefaultCoverModel and KitComponents models *)
+		(* Currently this is disabled in codebase because we are not ready to deal with shell objects from user *)
+		$AllowAutoNewModelCreation = True,
+		(* stub the $PersonID so we ensure we are testing the behavior of function run by external user *)
+		$PersonID = Object[User, "id:n0k9mG8AXZP6"],
+		(* Disable AI parser in unit test to conserve Gemini quota *)
+		$UseAIProductParser = False,
+		(* Stub the parseProductURL outputs for each URLs so we don't trigger error on PyECL endpoint *)
+		parseProductURL["https://www.sigmaaldrich.com/catalog/product/sial/322415?lang=en&region=US"] := <|
+			Name -> "Methanol Methyl alcohol",
+			CatalogNumber -> "322415",
+			CatalogDescription -> "99.8%, anhydrous, suitable for tissue processing",
+			ImageFile -> Null,
+			Price -> 100 USD,
+			Amount -> Quantity[1, "Milliliters"],
+			NumberOfItems -> 1,
+			ProductURL -> "https://www.sigmaaldrich.com/catalog/product/sial/322415?lang=en&region=US",
+			Supplier -> Object[Company, Supplier, "id:6V0npvK6Gxba"],
+			SampleType -> Null,
+			Packaging -> Single
+		|>,
+		parseProductURL["https://www.thermofisher.com/order/catalog/product/012314.A9"] := <|
+			Name -> "Sodium chloride, ACS, 99.0% min 10 kg",
+			CatalogNumber -> "012314.A9",
+			CatalogDescription -> "Sodium chloride is widely used as a food additive, and a preservative.",
+			ImageFile -> Null,
+			Price -> 182.65 USD,
+			Amount -> 10 Kilogram,
+			NumberOfItems -> 1,
+			ProductURL -> "https://www.thermofisher.com/order/catalog/product/012314.A9",
+			Supplier -> Object[Company, Supplier, "id:D8KAEvdq1RB3"],
+			SampleType -> Item,
+			Packaging -> Case
+		|>,
+		parseProductURL["https://www.thermofisher.com/order/catalog/product/268270040"] := <|
+			Name -> "Acetonitrile, 99.8%, for HPLC 4 L",
+			CatalogNumber -> "268270040",
+			CatalogDescription -> "This Thermo Scientific Chemicals brand product was originally part of the Acros Organics product portfolio.",
+			ImageFile -> Null,
+			Price -> 465.65 USD,
+			Amount -> 4 Liter,
+			NumberOfItems -> 4,
+			ProductURL -> "https://www.thermofisher.com/order/catalog/product/268270040",
+			Supplier -> Object[Company, Supplier, "id:D8KAEvdq1RB3"],
+			SampleType -> Item,
+			Packaging -> Case
+		|>,
+		parseProductURL["https://www.fishersci.com/shop/products/methyl-ethyl-ketone-certified-acs-fisher-chemical-6/M2091"] := <|
+			Name -> "Methyl Ethyl Ketone (ACS), Fisher Chemical 1 L",
+			CatalogNumber -> "M2091",
+			CatalogDescription -> "This product(s) resides on a Fisher Scientific GSA or VA contract.",
+			ImageFile -> "https://assets.fishersci.com/TFS-Assets/CCG/Chemical-Structures/chemical-structure-cas-78-93-3.jpg-250.jpg",
+			Price -> 244.65 USD,
+			Amount -> 1 Liter,
+			NumberOfItems -> 1,
+			ProductURL -> "https://www.fishersci.com/shop/products/methyl-ethyl-ketone-certified-acs-fisher-chemical-6/M2091",
+			Supplier -> Object[Company, Supplier, "id:wqW9BP7JADxA"],
+			SampleType -> Can,
+			Packaging -> Single
+		|>,
+		parseProductURL["https://www.thermofisher.com/order/catalog/product/85190"] := <|
+			Name -> "Pierce Dimethylsulfoxide (DMSO), LC-MS Grade 50 mL",
+			CatalogNumber -> "85190",
+			CatalogDescription -> "Thermo Scientific Pierce Dimethylsulfoxide (DMSO) is a sequencing-grade preparation.",
+			ImageFile -> "https://www.thermofisher.com/TFS-Assets/LSG/product-images/85190-dmso.jpg-250.jpg",
+			Price -> 71.65 USD,
+			Amount -> Null,
+			NumberOfItems -> 50,
+			ProductURL -> "https://www.thermofisher.com/order/catalog/product/85190",
+			Supplier -> Object[Company, Supplier, "id:D8KAEvdq1RB3"],
+			SampleType -> Null,
+			Packaging -> Case
+		|>,
+		parseProductURL["https://www.thermofisher.com/order/catalog/product/35050?SID=srch-srp-35050"] := <|
+			Name -> "Pierce Fast Western Blot Kit, ECL Substrate 1 L Kit",
+			CatalogNumber -> "35050",
+			CatalogDescription -> "The Thermo Scientific Pierce Fast Western Blot Kit",
+			ImageFile -> "https://www.thermofisher.com/TFS-Assets/LSG/product-images/35050-fast-western-ecl.jpg-250.jpg",
+			Price -> 322.65 USD,
+			Amount -> Null,
+			NumberOfItems -> 1,
+			ProductURL -> "https://www.thermofisher.com/order/catalog/product/35050?SID=srch-srp-35050",
+			Supplier -> Object[Company, Supplier, "id:D8KAEvdq1RB3"],
+			SampleType -> Kit,
+			Packaging -> Single
+		|>,
+		parseProductURL[___] := $Failed
+	},
 	SetUp :> (
-		$CreatedObjects = {}
+		SetCreatedObjectsCheckpoint["UploadProduct unit test"];
+		ClearMemoization[];
 	),
 	TearDown :> (
-		EraseObject[$CreatedObjects, Force -> True];
-		Unset[$CreatedObjects]
+		EraseCreatedObjects["UploadProduct unit test"];
 	),
-	SymbolSetUp :> (
-		Off[Upload::Warning];
-		Module[{objs, existingObjs},
-			objs = {
-				Model[Sample, "Methanol, anhydrous, 99.8% | CH3OH" <> $SessionUUID],
-				(* These are from the SetUp of tests themselves, so remove them from there *)
-				Model[Sample, "Test Matrix Standard 1" <> $SessionUUID],
-				Model[Sample, "Test Matrix Standard 2" <> $SessionUUID],
-				Model[Sample, "Test Matrix Standard 3" <> $SessionUUID],
-				Model[Sample, "Test Matrix Standard 4" <> $SessionUUID],
-				Object[Product, "Template Product" <> $SessionUUID],
-				Model[Sample, "Test Fluorescence Standard For UploadProduct 1" <> $SessionUUID],
-				Model[Sample, "Test Fluorescence Standard For UploadProduct 2" <> $SessionUUID],
-				Model[Sample, "Test Fluorescence Standard For UploadProduct 3" <> $SessionUUID],
-				Model[Container, Vessel, "Test Container Model For UploadProduct 1" <> $SessionUUID],
-				Model[Container, Vessel, "Test Container Model For UploadProduct 2" <> $SessionUUID],
-				Model[Item, Cap, "Test Cover Model For UploadProduct 1" <> $SessionUUID],
-				Object[Product, "Methanol, anhydrous, 99.8% (test)" <> $SessionUUID],				(* these are the products that are generated by the tests themselves *)
-				Object[Product, "Methanol, anhydrous, 99.8% | CH3OH (test)" <> $SessionUUID],
-				Object[Product, "Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)" <> $SessionUUID],
-				Object[Product, "Diethylene glycol methyl ether 99% (test)" <> $SessionUUID],
-				Object[Product, "Acetonitrile for HPLC-GC, >=99.8% (GC) (test)" <> $SessionUUID],
-				Object[Product, "Ethyl methyl ketone (test)" <> $SessionUUID],
-				Object[Product, "Chloroform (test)" <> $SessionUUID],
-				Object[Product, "Dimethyl sulfoxide (test)" <> $SessionUUID],
-				Object[Product, "310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1" <> $SessionUUID],
-				Object[Product, "Acetonitrile for HPLC-GC, >=99.8% (GC)" <> $SessionUUID],
-				Object[Product, "HiTrap Q HP Column (test)" <> $SessionUUID],
-				Object[Product, "Test Fluorescence Polarization Kit" <> $SessionUUID],
-				Object[Product, "Milli-Q water (test)" <> $SessionUUID]			};
-			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
-			EraseObject[existingObjs, Force -> True, Verbose -> False];
-		];
-		Module[{methanol, matrix1, matrix2, matrix3, matrix4, templateProd, kitComponent1, kitComponent2,
-			kitComponent3, containerModel1, containerModel2, coverModel, existingProd},
+	SymbolSetUp :> Module[{methanol, matrix1, matrix2, matrix3, matrix4, templateProd, kitComponent1, kitComponent2,
+		kitComponent3, containerModel1, containerModel2, coverModel, existingProd, user, developer, imageFile,
+		existingObjs, objs},
 
-			{
-				methanol,
-				matrix1,
-				matrix2,
-				matrix3,
-				matrix4,
-				templateProd,
-				kitComponent1,
-				kitComponent2,
-				kitComponent3,
-				containerModel1,
-				containerModel2,
-				coverModel,
-				existingProd
-			} = CreateID[{
-				Model[Sample],
-				Model[Sample],
-				Model[Sample],
-				Model[Sample],
-				Model[Sample],
-				Object[Product],
-				Model[Sample],
-				Model[Sample],
-				Model[Sample],
-				Model[Container, Vessel],
-				Model[Container, Vessel],
-				Model[Item, Cap],
-				Object[Product]
-			}];
+		objs = {
+			Model[Sample, "Test Methanol, anhydrous, 99.8% | CH3OH for UploadProduct unit test " <> $SessionUUID],
+			(* These are from the SetUp of tests themselves, so remove them from there *)
+			Model[Sample, "Test Matrix Standard 1 for UploadProduct unit test " <> $SessionUUID],
+			Model[Sample, "Test Matrix Standard 2 for UploadProduct unit test " <> $SessionUUID],
+			Model[Sample, "Test Matrix Standard 3 for UploadProduct unit test " <> $SessionUUID],
+			Model[Sample, "Test Matrix Standard 4 for UploadProduct unit test " <> $SessionUUID],
+			Object[Product, "Test Template Product for UploadProduct unit test " <> $SessionUUID],
+			Model[Sample, "Test Fluorescence Standard For UploadProduct 1" <> $SessionUUID],
+			Model[Sample, "Test Fluorescence Standard For UploadProduct 2" <> $SessionUUID],
+			Model[Sample, "Test Fluorescence Standard For UploadProduct 3" <> $SessionUUID],
+			Model[Container, Vessel, "Test Container Model For UploadProduct 1" <> $SessionUUID],
+			Model[Container, Vessel, "Test Container Model For UploadProduct 2" <> $SessionUUID],
+			Model[Container, Vessel, "100mL Bottle (UploadProduct test)" <> $SessionUUID],
+			Model[Item, Cap, "Test Cover Model For UploadProduct 1" <> $SessionUUID],
+			Object[Product, "Methanol, anhydrous, 99.8% (test)" <> $SessionUUID],				(* these are the products that are generated by the tests themselves *)
+			Object[Product, "Methanol, anhydrous, 99.8% | CH3OH (test)" <> $SessionUUID],
+			Object[Product, "Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)" <> $SessionUUID],
+			Object[Product, "Diethylene glycol methyl ether 99% (test)" <> $SessionUUID],
+			Object[Product, "Acetonitrile for HPLC-GC, >=99.8% (GC) (test)" <> $SessionUUID],
+			Object[Product, "Ethyl methyl ketone (test)" <> $SessionUUID],
+			Object[Product, "Chloroform (test)" <> $SessionUUID],
+			Object[Product, "Dimethyl sulfoxide (test)" <> $SessionUUID],
+			Object[Product, "310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1" <> $SessionUUID],
+			Object[Product, "Acetonitrile for HPLC-GC, >=99.8% (GC)" <> $SessionUUID],
+			Object[Product, "HiTrap Q HP Column (test)" <> $SessionUUID],
+			Object[Product, "Test Fluorescence Polarization Kit" <> $SessionUUID],
+			Object[Product, "Milli-Q water (test)" <> $SessionUUID],
+			Object[Product, "Test Sodium Chloride, ACS 99.0% for UploadProduct"<>$SessionUUID],
+			Object[EmeraldCloudFile, "Test product image for UploadProduct "<>$SessionUUID],
+			Object[Product, "Methanol, anhydrous, 99.8% | CH3OH (test)"<>$SessionUUID],
+			Object[Product, "Test New Product 1 UploadProduct "<>$SessionUUID],
+			Object[Product, "Test New Product 2 UploadProduct "<>$SessionUUID],
+			Model[Container, Vessel, "ProductModel of Test New Product 1 UploadProduct "<>$SessionUUID],
+			Model[Container, Vessel, "ProductModel of Test New Product 2 UploadProduct "<>$SessionUUID],
+			Object[Product, "Fast Western Blot Kit, ECL Substrate"<>$SessionUUID],
+			Object[Product, "Aluminum Round Micro Weigh Dishes with Handle" <> $SessionUUID],
+			Object[Product, "4-well V-bottom 75mL Deep Well Plate Sterile (UploadProduct test) " <> $SessionUUID]
+		};
+		existingObjs = PickList[objs, DatabaseMemberQ[objs]];
+		EraseObject[existingObjs, Force -> True, Verbose -> False];
 
-			Upload[{
-				<|
-					Object -> methanol,
-					DeveloperObject -> True,
-					Name -> "Methanol, anhydrous, 99.8% | CH3OH" <> $SessionUUID,
-					Replace[Synonyms] -> {
-						"Alcohol, Methyl",
-						"Alcohol, Wood",
-						"Carbinol",
-						"Methanol",
-						"Methoxide, Sodium",
-						"Methyl Alcohol",
-						"Sodium Methoxide",
-						"Wood Alcohol",
-						"Methanol, anhydrous, 99.8% | CH3OH",
-						"Methanol, anhydrous, 99.8% | CH3OH" <> $SessionUUID
-					},
-					Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Methanol"]]}},
-					Solvent -> Link[Model[Sample, "Methanol - LCMS grade"]],
-					UsedAsSolvent -> True,
-					Replace[Authors] -> {Link[$PersonID]},
-					UNII -> "Y4S76JWI15",
-					State -> Liquid,
-					MeltingPoint -> -97.6 Celsius,
-					BoilingPoint -> 64.7 Celsius,
-					Replace[pKa] -> 15.3,
-					Expires -> False,
-					DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage, Flammable"]],
-					Radioactive -> False,
-					Ventilated -> True,
-					Flammable -> True,
-					Pyrophoric -> False,
-					WaterReactive -> False,
-					Fuming -> True,
-					ParticularlyHazardousSubstance -> True,
-					MSDSRequired -> True,
-					NFPA -> {Health -> 1, Flammability -> 3, Reactivity -> 0, Special -> {}},
-					DOTHazardClass -> "Class 3 Flammable Liquids Hazard",
-					BiosafetyLevel -> "BSL-1",
-					Replace[IncompatibleMaterials] -> {ABS, Polyurethane},
-					Replace[LiquidHandlerIncompatible] -> True
-				|>,
-				<|
-					Object -> matrix1,
-					DeveloperObject -> True,
-					Name -> "Test Matrix Standard 1" <> $SessionUUID
-				|>,
-				<|
-					Object -> matrix2,
-					DeveloperObject -> True,
-					Name -> "Test Matrix Standard 2" <> $SessionUUID
-				|>,
-				<|
-					Object -> matrix3,
-					DeveloperObject -> True,
-					Name -> "Test Matrix Standard 3" <> $SessionUUID
-				|>,
-				<|
-					Object -> matrix4,
-					DeveloperObject -> True,
-					Name -> "Test Matrix Standard 4" <> $SessionUUID
-				|>,
-				<|
-					Object -> templateProd,
-					Name -> "Template Product" <> $SessionUUID,
-					Amount -> 50.` Milliliter,
-					CatalogNumber -> "id:J8AY5jwzPdaB-50ML",
-					Price -> Quantity[100., "USDollars"],
-					ProductModel -> Link[Model[Sample, "1X PBS, pH 7.4"], Products],
-					ProductListing -> "1x PBS from 10X stock, 50 mL",
-					NumberOfItems -> 1,
-					SampleType -> Bottle,
-					Supplier -> Link[Object[Company, Supplier, "Emerald Cloud Lab"], Products],
-					UsageFrequency -> Low,
-					Packaging -> Single
-				|>,
-				<|
-					Object -> kitComponent1,
-					DeveloperObject -> True,
-					Name -> "Test Fluorescence Standard For UploadProduct 1" <> $SessionUUID
-				|>,
-				<|
-					Object -> kitComponent2,
-					DeveloperObject -> True,
-					Name -> "Test Fluorescence Standard For UploadProduct 2" <> $SessionUUID
-				|>,
-				<|
-					Object -> kitComponent3,
-					DeveloperObject -> True,
-					Name -> "Test Fluorescence Standard For UploadProduct 3" <> $SessionUUID
-				|>,
-				<|
-					Object -> containerModel1,
-					DeveloperObject -> True,
-					Name -> "Test Container Model For UploadProduct 1" <> $SessionUUID
-				|>,
-				<|
-					Object -> containerModel2,
-					DeveloperObject -> True,
-					Name -> "Test Container Model For UploadProduct 2" <> $SessionUUID
-				|>,
-				<|
-					Object -> coverModel,
-					DeveloperObject -> True,
-					Name -> "Test Cover Model For UploadProduct 1" <> $SessionUUID
-				|>,
-				<|
-					Object -> existingProd,
-					DeveloperObject -> True,
-					Name -> "Methanol, anhydrous, 99.8% (test)" <> $SessionUUID
-				|>
-			}];
-			(* parseProductURL results are memoized. Clear memoization in case previous results are still stored *)
-			ClearMemoization[]
-		]
-	),
-	SymbolTearDown :> (
-		On[Upload::Warning];
-		Module[{objs, existingObjs},
-			objs = {
-				Model[Sample, "Methanol, anhydrous, 99.8% | CH3OH" <> $SessionUUID],
-				(* These are from the SetUp of tests themselves, so remove them from there *)
-				Model[Sample, "Test Matrix Standard 1" <> $SessionUUID],
-				Model[Sample, "Test Matrix Standard 2" <> $SessionUUID],
-				Model[Sample, "Test Matrix Standard 3" <> $SessionUUID],
-				Model[Sample, "Test Matrix Standard 4" <> $SessionUUID],
-				Object[Product, "Template Product" <> $SessionUUID],
-				Model[Sample, "Test Fluorescence Standard For UploadProduct 1" <> $SessionUUID],
-				Model[Sample, "Test Fluorescence Standard For UploadProduct 2" <> $SessionUUID],
-				Model[Sample, "Test Fluorescence Standard For UploadProduct 3" <> $SessionUUID],
-				Model[Container, Vessel, "Test Container Model For UploadProduct 1" <> $SessionUUID],
-				Model[Container, Vessel, "Test Container Model For UploadProduct 2" <> $SessionUUID],
-				Model[Item, Cap, "Test Cover Model For UploadProduct 1" <> $SessionUUID],
-				Object[Product, "Methanol, anhydrous, 99.8% (test)" <> $SessionUUID],				(* these are the products that are generated by the tests themselves *)
-				Object[Product, "Methanol, anhydrous, 99.8% | CH3OH (test)" <> $SessionUUID],
-				Object[Product, "Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)" <> $SessionUUID],
-				Object[Product, "Diethylene glycol methyl ether 99% (test)" <> $SessionUUID],
-				Object[Product, "Acetonitrile for HPLC-GC, >=99.8% (GC) (test)" <> $SessionUUID],
-				Object[Product, "Ethyl methyl ketone (test)" <> $SessionUUID],
-				Object[Product, "Chloroform (test)" <> $SessionUUID],
-				Object[Product, "Dimethyl sulfoxide (test)" <> $SessionUUID],
-				Object[Product, "310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1" <> $SessionUUID],
-				Object[Product, "Acetonitrile for HPLC-GC, >=99.8% (GC)" <> $SessionUUID],
-				Object[Product, "HiTrap Q HP Column (test)" <> $SessionUUID],
-				Object[Product, "Test Fluorescence Polarization Kit" <> $SessionUUID],
-				Object[Product, "Milli-Q water (test)" <> $SessionUUID]			};
-			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
-			EraseObject[existingObjs, Force -> True, Verbose -> False];
-		]
-	)
+		{
+			methanol,
+			matrix1,
+			matrix2,
+			matrix3,
+			matrix4,
+			templateProd,
+			kitComponent1,
+			kitComponent2,
+			kitComponent3,
+			containerModel1,
+			containerModel2,
+			coverModel,
+			existingProd
+		} = CreateID[{
+			Model[Sample],
+			Model[Sample],
+			Model[Sample],
+			Model[Sample],
+			Model[Sample],
+			Object[Product],
+			Model[Sample],
+			Model[Sample],
+			Model[Sample],
+			Model[Container, Vessel],
+			Model[Container, Vessel],
+			Model[Item, Cap],
+			Object[Product]
+		}];
+
+		DownloadCloudFile[EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "shard3/5d1f29b61bc52d6b77534d4eef0cdf87.jpg", ""], FileNameJoin[{$TemporaryDirectory, "product_test_image.jpg"}]];
+
+		imageFile = UploadCloudFile[FileNameJoin[{$TemporaryDirectory, "product_test_image.jpg"}]];
+
+		Upload[{
+			<|
+				Object -> imageFile,
+				Name -> "Test product image for UploadProduct "<>$SessionUUID,
+				DeveloperObject -> True
+			|>,
+			<|
+				Object -> methanol,
+				DeveloperObject -> True,
+				Name -> "Test Methanol, anhydrous, 99.8% | CH3OH for UploadProduct unit test " <> $SessionUUID,
+				Replace[Synonyms] -> {
+					"Alcohol, Methyl",
+					"Alcohol, Wood",
+					"Carbinol",
+					"Methanol",
+					"Methoxide, Sodium",
+					"Methyl Alcohol",
+					"Sodium Methoxide",
+					"Wood Alcohol",
+					"Methanol, anhydrous, 99.8% | CH3OH",
+					"Test Methanol, anhydrous, 99.8% | CH3OH for UploadProduct unit test " <> $SessionUUID
+				},
+				Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Methanol"]]}},
+				Solvent -> Link[Model[Sample, "Methanol - LCMS grade"]],
+				UsedAsSolvent -> True,
+				Replace[Authors] -> {Link[$PersonID]},
+				UNII -> "Y4S76JWI15",
+				State -> Liquid,
+				MeltingPoint -> -97.6 Celsius,
+				BoilingPoint -> 64.7 Celsius,
+				Replace[pKa] -> 15.3,
+				Expires -> False,
+				DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage, Flammable"]],
+				Radioactive -> False,
+				Ventilated -> True,
+				Flammable -> True,
+				Pyrophoric -> False,
+				WaterReactive -> False,
+				Fuming -> True,
+				ParticularlyHazardousSubstance -> True,
+				MSDSRequired -> True,
+				NFPA -> {Health -> 1, Flammability -> 3, Reactivity -> 0, Special -> {}},
+				DOTHazardClass -> "Class 3 Flammable Liquids Hazard",
+				BiosafetyLevel -> "BSL-1",
+				Replace[IncompatibleMaterials] -> {ABS, Polyurethane},
+				Replace[LiquidHandlerIncompatible] -> True
+			|>,
+			<|
+				Object -> matrix1,
+				DeveloperObject -> True,
+				Name -> "Test Matrix Standard 1 for UploadProduct unit test " <> $SessionUUID
+			|>,
+			<|
+				Object -> matrix2,
+				DeveloperObject -> True,
+				Name -> "Test Matrix Standard 2 for UploadProduct unit test " <> $SessionUUID
+			|>,
+			<|
+				Object -> matrix3,
+				DeveloperObject -> True,
+				Name -> "Test Matrix Standard 3 for UploadProduct unit test " <> $SessionUUID
+			|>,
+			<|
+				Object -> matrix4,
+				DeveloperObject -> True,
+				Name -> "Test Matrix Standard 4 for UploadProduct unit test " <> $SessionUUID
+			|>,
+			<|
+				Object -> templateProd,
+				Name -> "Test Template Product for UploadProduct unit test " <> $SessionUUID,
+				Amount -> 50.` Milliliter,
+				CatalogNumber -> "id:J8AY5jwzPdaB-50ML",
+				Price -> 100 USD,
+				ProductModel -> Link[Model[Sample, "1X PBS, pH 7.4"], Products],
+				ProductListing -> "1x PBS from 10X stock, 50 mL",
+				NumberOfItems -> 1,
+				SampleType -> Bottle,
+				Supplier -> Link[Object[Company, Supplier, "Emerald Cloud Lab"], Products],
+				UsageFrequency -> Low,
+				Packaging -> Single
+			|>,
+			<|
+				Object -> kitComponent1,
+				DeveloperObject -> True,
+				Name -> "Test Fluorescence Standard For UploadProduct 1" <> $SessionUUID
+			|>,
+			<|
+				Object -> kitComponent2,
+				DeveloperObject -> True,
+				Name -> "Test Fluorescence Standard For UploadProduct 2" <> $SessionUUID
+			|>,
+			<|
+				Object -> kitComponent3,
+				DeveloperObject -> True,
+				Name -> "Test Fluorescence Standard For UploadProduct 3" <> $SessionUUID
+			|>,
+			<|
+				Object -> containerModel1,
+				DeveloperObject -> True,
+				Name -> "Test Container Model For UploadProduct 1" <> $SessionUUID
+			|>,
+			<|
+				Object -> containerModel2,
+				DeveloperObject -> True,
+				Name -> "Test Container Model For UploadProduct 2" <> $SessionUUID
+			|>,
+			<|
+				Object -> coverModel,
+				DeveloperObject -> True,
+				Name -> "Test Cover Model For UploadProduct 1" <> $SessionUUID
+			|>,
+			<|
+				Object -> existingProd,
+				DeveloperObject -> True,
+				Name -> "Methanol, anhydrous, 99.8% (test)" <> $SessionUUID
+			|>
+		}];
+	],
+	SymbolTearDown :> Module[{objs, existingObjs},
+		objs = {
+			Model[Sample, "Test Methanol, anhydrous, 99.8% | CH3OH for UploadProduct unit test " <> $SessionUUID],
+			(* These are from the SetUp of tests themselves, so remove them from there *)
+			Model[Sample, "Test Matrix Standard 1 for UploadProduct unit test " <> $SessionUUID],
+			Model[Sample, "Test Matrix Standard 2 for UploadProduct unit test " <> $SessionUUID],
+			Model[Sample, "Test Matrix Standard 3 for UploadProduct unit test " <> $SessionUUID],
+			Model[Sample, "Test Matrix Standard 4 for UploadProduct unit test " <> $SessionUUID],
+			Object[Product, "Test Template Product for UploadProduct unit test " <> $SessionUUID],
+			Model[Sample, "Test Fluorescence Standard For UploadProduct 1" <> $SessionUUID],
+			Model[Sample, "Test Fluorescence Standard For UploadProduct 2" <> $SessionUUID],
+			Model[Sample, "Test Fluorescence Standard For UploadProduct 3" <> $SessionUUID],
+			Model[Container, Vessel, "Test Container Model For UploadProduct 1" <> $SessionUUID],
+			Model[Container, Vessel, "Test Container Model For UploadProduct 2" <> $SessionUUID],
+			Model[Container, Vessel, "100mL Bottle (UploadProduct test)" <> $SessionUUID],
+			Model[Item, Cap, "Test Cover Model For UploadProduct 1" <> $SessionUUID],
+			Object[Product, "Methanol, anhydrous, 99.8% (test)" <> $SessionUUID],				(* these are the products that are generated by the tests themselves *)
+			Object[Product, "Methanol, anhydrous, 99.8% | CH3OH (test)" <> $SessionUUID],
+			Object[Product, "Pierce Dimethylsulfoxide (DMSO), LC-MS Grade (test)" <> $SessionUUID],
+			Object[Product, "Diethylene glycol methyl ether 99% (test)" <> $SessionUUID],
+			Object[Product, "Acetonitrile for HPLC-GC, >=99.8% (GC) (test)" <> $SessionUUID],
+			Object[Product, "Ethyl methyl ketone (test)" <> $SessionUUID],
+			Object[Product, "Chloroform (test)" <> $SessionUUID],
+			Object[Product, "Dimethyl sulfoxide (test)" <> $SessionUUID],
+			Object[Product, "310 Genetic Analyzer Matrix Standards, BigDye Terminator v3.1" <> $SessionUUID],
+			Object[Product, "Acetonitrile for HPLC-GC, >=99.8% (GC)" <> $SessionUUID],
+			Object[Product, "HiTrap Q HP Column (test)" <> $SessionUUID],
+			Object[Product, "Test Fluorescence Polarization Kit" <> $SessionUUID],
+			Object[Product, "Milli-Q water (test)" <> $SessionUUID],
+			Object[Product, "Test Sodium Chloride, ACS 99.0% for UploadProduct"<>$SessionUUID],
+			Object[EmeraldCloudFile, "Test product image for UploadProduct "<>$SessionUUID],
+			Object[Product, "Methanol, anhydrous, 99.8% | CH3OH (test)"<>$SessionUUID],
+			Object[Product, "Test New Product 1 UploadProduct "<>$SessionUUID],
+			Object[Product, "Test New Product 2 UploadProduct "<>$SessionUUID],
+			Model[Container, Vessel, "ProductModel of Test New Product 1 UploadProduct "<>$SessionUUID],
+			Model[Container, Vessel, "ProductModel of Test New Product 2 UploadProduct "<>$SessionUUID],
+			Object[Product, "Fast Western Blot Kit, ECL Substrate"<>$SessionUUID],
+			Object[Product, "Aluminum Round Micro Weigh Dishes with Handle" <> $SessionUUID],
+			Object[Product, "4-well V-bottom 75mL Deep Well Plate Sterile (UploadProduct test) " <> $SessionUUID]
+		};
+		existingObjs = PickList[objs, DatabaseMemberQ[objs]];
+		EraseObject[existingObjs, Force -> True, Verbose -> False];
+	]
 ];
-
-
 
 (* ::Subsubsection::Closed:: *)
 (*UploadProductOptions*)
@@ -1724,14 +1135,11 @@ DefineTests[
 DefineTests[
 	UploadProductOptions,
 	{
-		Example[{Basic, "Inspect the resolved options when uploading a Object[Product] of Methanol, anhydrous, 99.8% purity using its Sigma-Aldrich product URL:"},
+		Example[{Basic, "Inspect the resolved options when uploading an Object[Product] of Methanol, anhydrous, 99.8% purity using its Sigma-Aldrich product URL:"},
 			UploadProductOptions[
 				"https://www.sigmaaldrich.com/catalog/product/sial/322415?lang=en&region=US",
+				ProductModel -> Model[Sample,"Methanol, anhydrous, 99.8% | CH3OH"],
 				Name->"Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID,
-				CatalogDescription->"100mL bottle of Methanol, anhydrous, 99.8%",
-				ProductModel->Model[Sample,"Methanol, anhydrous, 99.8% | CH3OH"],
-				DefaultContainerModel->Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
-				SampleType->Vial,
 				OutputFormat->List
 			],
 			{Rule[_Symbol, Except[Automatic | $Failed]]..},
@@ -1744,75 +1152,22 @@ DefineTests[
 				If[DatabaseMemberQ[Object[Product,  "Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID]],
 					EraseObject[Object[Product,  "Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
-			},
-			Stubs :> {
-				$AllowPublicObjects = True,
-				(* stub the response of the api call to sigma website since they like to block us once in a while *)
-				HTTPRequestJSON[
-					<|
-						"URL" ->
-							"https://www.sigmaaldrich.com/catalog/product/sial/322415?lang=en&region=US", "Method" -> "GET",
-						"Headers" -> <|
-							"accept" -> "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-							"user-agent" -> "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
-						|>
-					|>
-				] = ImportCloudFile[EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "shard2/7d3a0e3c125ce4884b948b96cc7aead7.txt", ""]],
-				(* stub the response of the reverse-engineered api call to get price info from sigma website since they like to block us once in a while *)
-				HTTPRequestJSON[
-					<|
-						"URL" -> "https://www.sigmaaldrich.com/api?operation=PricingAndAvailability",
-						"Method" -> "POST",
-						"Headers" -> <|
-							"accept" -> "*/*",
-							"user-agent" -> "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
-							"x-gql-operation-name" -> "PricingAndAvailability",
-							"x-gql-access-token" -> "ea816e21-7d19-11ef-90f5-8321289a8c21",
-							"x-gql-country" -> "US"
-						|>,
-						"Body" -> <|
-							"operationName" -> "PricingAndAvailability",
-							"query" -> "query PricingAndAvailability($productNumber:String!,$brand:String,$quantity:Int!,$materialIds:[String!]) {
-							getPricingForProduct(input:{productNumber:$productNumber,brand:$brand,quantity:$quantity,materialIds:$materialIds}) {
-								materialPricing {
-									packageSize
-									price
-								}
-							}
-						}",
-							"variables" -> <|
-								"brand" -> "SIAL",
-								"materialIds" -> {"322415-VAR", "322415-PZ", "322415-900ML", "322415-8L", "322415-6L", "322415-1L", "322415-200L", "322415-200L-P2", "322415-200L-P2-SA", "322415-20L", "322415-20L-P2", "322415-250ML", "322415-2L", "322415-4X2L", "322415-6X1L", "322415-18L-P1", "322415-18L", "322415-12X100ML", "QR-028-1L", "322415-100ML", "322415-1250L-P1"},
-								"productNumber" -> "322415",
-								"quantity" -> 1
-							|>
-						|>
-					|>
-				] = ToExpression[ImportCloudFile[EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "shard2/3ef849f6ab315a079d12676414b00bd3.txt", ""]]],
-				$UsePyeclProductParser = False
 			}
 		],
-		Example[{Basic, "Inspect the resolved options when uploading a Object[Product] of DMSO (LC-MS Grade) using its ThermoFisher product URL:"},
-			Quiet[
-				Check[
-					UploadProductOptions[
-						"https://www.thermofisher.com/order/catalog/product/85190",
-						Name->"Dimethyl sulfoxide (example) "<>$SessionUUID,
-						CatalogDescription->"50mL bottle of Dimethyl sulfoxide",
-						Packaging->Single,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"50mL tall sloping shoulder amber glass bottle"],
-						OutputFormat->List,
-						Amount -> 50 Milliliter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption,Error::ProductAmount,Error::PricePerUnitRequired}
+		Example[{Basic, "Inspect the resolved options when uploading an Object[Product] of DMSO (LC-MS Grade) using its ThermoFisher product URL:"},
+			UploadProductOptions[
+				"https://www.thermofisher.com/order/catalog/product/85190",
+				ProductModel -> Model[Sample,"Dimethyl sulfoxide"],
+				Name->"Dimethyl sulfoxide (example) "<>$SessionUUID,
+				CatalogDescription->"50mL bottle of Dimethyl sulfoxide",
+				Packaging->Single,
+				NumberOfItems->1,
+				SampleType->Vial,
+				DefaultContainerModel->Model[Container,Vessel,"50mL tall sloping shoulder amber glass bottle"],
+				OutputFormat->List,
+				Amount -> 50 Milliliter
 			],
-			{Rule[_Symbol, Except[Automatic | $Failed]]..}|Warning::APIConnection,
+			{Rule[_Symbol, Except[Automatic | $Failed]]..},
 			SetUp :> {
 				If[DatabaseMemberQ[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID]],
 					EraseObject[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID], Force -> True, Verbose -> False]
@@ -1822,13 +1177,12 @@ DefineTests[
 				If[DatabaseMemberQ[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID]],
 					EraseObject[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
-			},
-			Stubs:>{$AllowPublicObjects=True, $UseAIProductParser = False}
+			}
 		],
-		Example[{Basic, "Inspect the resolved options when uploading a Object[Product] of Diethylene glycol methyl ether manually (without scraping from a product URL) :"},
+		Example[{Basic, "Inspect the resolved options when uploading an Object[Product] of Diethylene glycol methyl ether manually (without scraping from a product URL) :"},
 			UploadProductOptions[
-				Packaging -> Single,
 				ProductModel -> Model[Sample, "Diethylene glycol methyl ether 99%"],
+				Packaging -> Single,
 				NumberOfItems -> 1,
 				SampleType -> Vial,
 				DefaultContainerModel -> Model[Container, Vessel, "50mL tall sloping shoulder amber glass bottle"],
@@ -1850,27 +1204,19 @@ DefineTests[
 				If[DatabaseMemberQ[Object[Product, "Diethylene glycol methyl ether 99% (example) "<>$SessionUUID]],
 					EraseObject[Object[Product, "Diethylene glycol methyl ether 99% (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
-			},
-			Stubs:>{$AllowPublicObjects=True, $UseAIProductParser = False}
+			}
 		],
 		Example[{Options, OutputFormat, "Return the resolved options as a list:"},
-			Quiet[
-				Check[
-					UploadProductOptions[
-						"https://www.fishersci.com/shop/products/methanol-99-8-extra-dry-anhydrous-sc-acroseal-thermo-scientific/AC610981000#?keyword=Methanol,%20anhydrous,%2099.8%%20|%20CH3OH",
-						ProductModel->Model[Sample,"Methanol, anhydrous, 99.8% | CH3OH"],
-						Name->"Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID,
-						DefaultContainerModel->Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
-						CatalogDescription->"100mL bottle of Methanol, anhydrous, 99.8%",
-						SampleType->Vial,
-						OutputFormat->List
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption,Error::ProductAmount,Error::PricePerUnitRequired}
+			UploadProductOptions[
+				"https://www.fishersci.com/shop/products/methanol-99-8-extra-dry-anhydrous-sc-acroseal-thermo-scientific/AC610981000#?keyword=Methanol,%20anhydrous,%2099.8%%20|%20CH3OH",
+				ProductModel -> Model[Sample,"Methanol, anhydrous, 99.8% | CH3OH"],
+				Name->"Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID,
+				DefaultContainerModel->Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
+				CatalogDescription->"100mL bottle of Methanol, anhydrous, 99.8%",
+				SampleType->Vial,
+				OutputFormat->List
 			],
-			{Rule[_Symbol, Except[Automatic | $Failed]]..}|Warning::APIConnection,
+			{Rule[_Symbol, Except[Automatic | $Failed]]..},
 			SetUp :> {
 				If[DatabaseMemberQ[Object[Product, "Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID]],
 					EraseObject[Object[Product, "Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID], Force -> True, Verbose -> False]
@@ -1880,26 +1226,18 @@ DefineTests[
 				If[DatabaseMemberQ[Object[Product, "Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID]],
 					EraseObject[Object[Product, "Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
-			},
-			Stubs:>{$AllowPublicObjects=True, $UseAIProductParser = False}
+			}
 		],
 		Example[{Options, OutputFormat, "Return the resolved options as a table:"},
-			Quiet[
-				Check[
-					UploadProductOptions[
-						"https://www.fishersci.com/shop/products/methanol-99-8-extra-dry-anhydrous-sc-acroseal-thermo-scientific/AC610981000#?keyword=Methanol,%20anhydrous,%2099.8%%20|%20CH3OH",
-						ProductModel->Model[Sample,"Methanol, anhydrous, 99.8% | CH3OH"],
-						Name->"Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID,
-						CatalogDescription->"100mL bottle of Methanol, anhydrous, 99.8%",
-						DefaultContainerModel->Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
-						SampleType->Vial
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection,Error::RequiredOptions,Error::InvalidOption,Error::ProductAmount,Error::PricePerUnitRequired}
+			UploadProductOptions[
+				"https://www.fishersci.com/shop/products/methanol-99-8-extra-dry-anhydrous-sc-acroseal-thermo-scientific/AC610981000#?keyword=Methanol,%20anhydrous,%2099.8%%20|%20CH3OH",
+				ProductModel->Model[Sample,"Methanol, anhydrous, 99.8% | CH3OH"],
+				Name->"Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID,
+				CatalogDescription->"100mL bottle of Methanol, anhydrous, 99.8%",
+				DefaultContainerModel->Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
+				SampleType->Vial
 			],
-			Graphics_|Warning::APIConnection,
+			Graphics_,
 			SetUp :> {
 				If[DatabaseMemberQ[Object[Product, "Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID]],
 					EraseObject[Object[Product, "Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID], Force -> True, Verbose -> False]
@@ -1909,9 +1247,17 @@ DefineTests[
 				If[DatabaseMemberQ[Object[Product, "Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID]],
 					EraseObject[Object[Product, "Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
-			},
-			Stubs:>{$AllowPublicObjects=True, $UseAIProductParser = False}
+			}
 		]
+	},
+	Stubs :> {
+		$AllowUserInvalidObjectUploads = True,
+		$AllowAutoNewModelCreation = True,
+		$PersonID = Object[User, "id:n0k9mG8AXZP6"],
+		$AllowPublicObjects=True,
+		$UseAIProductParser = False,
+		(* Do not try to parse anything *)
+		parseProductURL[_] = $Failed
 	}
 ];
 
@@ -1924,14 +1270,20 @@ DefineTests[
 DefineTests[
 	ValidUploadProductQ,
 	{
-		Example[{Basic, "Determine if the uploaded Object[Product] of Methanol, anhydrous, 99.8% purity will be valid when uploaded:"},
+		Example[{Basic, "Determine if the Object[Product] of Methanol, anhydrous, 99.8% purity will be valid when uploaded:"},
 			ValidUploadProductQ[
 				"https://www.sigmaaldrich.com/catalog/product/sial/322415?lang=en&region=US",
-				Name->"Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID,
 				ProductModel->Model[Sample,"Methanol, anhydrous, 99.8% | CH3OH"],
+				Name->"Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID,
 				DefaultContainerModel->Model[Container,Vessel,"100mL Rectangular LDPE Media Bottle"],
 				SampleType->Vial,
-				CatalogDescription->"1 Vial of Methanol, anhydrous, 99.8% | CH3OH"
+				CatalogDescription->"1 Vial of Methanol, anhydrous, 99.8% | CH3OH",
+				Packaging -> Single,
+				NumberOfItems -> 1,
+				Supplier -> Object[Company, Supplier, "Sigma Aldrich"],
+				CatalogNumber -> "1",
+				Amount -> 50 Milliliter,
+				Price -> 1 USD
 			],
 			True,
 			SetUp :> {
@@ -1943,76 +1295,22 @@ DefineTests[
 				If[DatabaseMemberQ[Object[Product, "Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID]],
 					EraseObject[Object[Product, "Methanol, anhydrous, 99.8% | CH3OH (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
-			},
-			Stubs:>{
-				$AllowPublicObjects=True,
-				(* stub the response of the api call to sigma website since they like to block us once in a while *)
-				HTTPRequestJSON[
-					<|
-						"URL" ->
-							"https://www.sigmaaldrich.com/catalog/product/sial/322415?lang=en&region=US", "Method" -> "GET",
-						"Headers" -> <|
-							"accept" -> "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-							"user-agent" -> "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
-						|>
-					|>
-				] = ImportCloudFile[EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "shard2/7d3a0e3c125ce4884b948b96cc7aead7.txt", ""]],
-				(* stub the response of the reverse-engineered api call to get price info from sigma website since they like to block us once in a while *)
-				HTTPRequestJSON[
-					<|
-						"URL" -> "https://www.sigmaaldrich.com/api?operation=PricingAndAvailability",
-						"Method" -> "POST",
-						"Headers" -> <|
-							"accept" -> "*/*",
-							"user-agent" -> "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
-							"x-gql-operation-name" -> "PricingAndAvailability",
-							"x-gql-access-token" -> "ea816e21-7d19-11ef-90f5-8321289a8c21",
-							"x-gql-country" -> "US"
-						|>,
-						"Body" -> <|
-							"operationName" -> "PricingAndAvailability",
-							"query" -> "query PricingAndAvailability($productNumber:String!,$brand:String,$quantity:Int!,$materialIds:[String!]) {
-							getPricingForProduct(input:{productNumber:$productNumber,brand:$brand,quantity:$quantity,materialIds:$materialIds}) {
-								materialPricing {
-									packageSize
-									price
-								}
-							}
-						}",
-							"variables" -> <|
-								"brand" -> "SIAL",
-								"materialIds" -> {"322415-VAR", "322415-PZ", "322415-900ML", "322415-8L", "322415-6L", "322415-1L", "322415-200L", "322415-200L-P2", "322415-200L-P2-SA", "322415-20L", "322415-20L-P2", "322415-250ML", "322415-2L", "322415-4X2L", "322415-6X1L", "322415-18L-P1", "322415-18L", "322415-12X100ML", "QR-028-1L", "322415-100ML", "322415-1250L-P1"},
-								"productNumber" -> "322415",
-								"quantity" -> 1
-							|>
-						|>
-					|>
-				] = ToExpression[ImportCloudFile[EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "shard2/3ef849f6ab315a079d12676414b00bd3.txt", ""]]],
-				$UsePyeclProductParser = False
 			}
 		],
-		Example[{Basic, "Determine if the uploaded Object[Product] of DMSO (LC-MS Grade) will be valid when uploaded:"},
-			Quiet[
-				Check[
-					ValidUploadProductQ[
-						"https://www.thermofisher.com/order/catalog/product/85190",
-						Packaging->Single,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						Name->"Dimethyl sulfoxide (example) "<>$SessionUUID,
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"50mL tall sloping shoulder amber glass bottle"],
-						CatalogDescription->"1 Vial of Dimethyl sulfoxide (example)",
-						Amount -> 1 Milliliter,
-						Price -> 1 USD,
-						Amount -> 50 Milliliter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection}
+		Example[{Basic, "Determine if the Object[Product] of DMSO (LC-MS Grade) will be valid when uploaded:"},
+			ValidUploadProductQ[
+				"https://www.thermofisher.com/order/catalog/product/85190",
+				ProductModel->Model[Sample,"Dimethyl sulfoxide"],
+				Packaging->Single,
+				Name->"Dimethyl sulfoxide (example) "<>$SessionUUID,
+				NumberOfItems->1,
+				SampleType->Vial,
+				DefaultContainerModel->Model[Container,Vessel,"50mL tall sloping shoulder amber glass bottle"],
+				CatalogDescription->"1 Vial of Dimethyl sulfoxide (example)",
+				Price -> 1 USD,
+				Amount -> 50 Milliliter
 			],
-			True|Warning::APIConnection,
+			True,
 			SetUp :> {
 				If[DatabaseMemberQ[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID]],
 					EraseObject[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID], Force -> True, Verbose -> False]
@@ -2022,13 +1320,12 @@ DefineTests[
 				If[DatabaseMemberQ[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID]],
 					EraseObject[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
-			},
-			Stubs:>{$AllowPublicObjects=True, $UseAIProductParser = False}
+			}
 		],
-		Example[{Basic, "Determine if the uploaded Object[Product] of Diethylene glycol methyl ether will be valid when uploaded:"},
+		Example[{Basic, "Determine if the Object[Product] of Diethylene glycol methyl ether will be valid when uploaded:"},
 			ValidUploadProductQ[
+				ProductModel->Model[Sample, "Diethylene glycol methyl ether 99%"],
 				Packaging -> Single,
-				ProductModel -> Model[Sample, "Diethylene glycol methyl ether 99%"],
 				NumberOfItems -> 1,
 				SampleType -> Vial,
 				DefaultContainerModel -> Model[Container, Vessel, "50mL tall sloping shoulder amber glass bottle"],
@@ -2049,59 +1346,23 @@ DefineTests[
 				If[DatabaseMemberQ[Object[Product, "Diethylene glycol methyl ether 99% (example) "<>$SessionUUID]],
 					EraseObject[Object[Product, "Diethylene glycol methyl ether 99% (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
-			},
-			Stubs:>{$AllowPublicObjects=True, $UseAIProductParser = False}
-		],
-		Test["Determine if the uploaded Object[Product] of Diethylene glycol methyl ether will be valid when uploaded if some required options are missing:",
-			ValidUploadProductQ[
-				Packaging -> Single,
-				ProductModel -> Model[Sample, "Diethylene glycol methyl ether 99%"],
-				NumberOfItems -> 1,
-				SampleType -> Vial,
-				DefaultContainerModel -> Model[Container, Vessel, "50mL tall sloping shoulder amber glass bottle"],
-				Name -> "Diethylene glycol methyl ether 99% (example) "<>$SessionUUID,
-				Supplier -> Object[Company, Supplier, "Sigma Aldrich"],
-				CatalogDescription -> "1 Vial of 50 mL of Diethylene glycol methyl ether 99%",
-				CatalogNumber -> "1",
-				Amount -> 50 Milliliter
-			],
-			False,
-			Messages :> {Error::PricePerUnitRequired},
-			SetUp :> {
-				If[DatabaseMemberQ[Object[Product, "Diethylene glycol methyl ether 99% (example) "<>$SessionUUID]],
-					EraseObject[Object[Product, "Diethylene glycol methyl ether 99% (example) "<>$SessionUUID], Force -> True, Verbose -> False]
-				]
-			},
-			TearDown :> {
-				If[DatabaseMemberQ[Object[Product, "Diethylene glycol methyl ether 99% (example) "<>$SessionUUID]],
-					EraseObject[Object[Product, "Diethylene glycol methyl ether 99% (example) "<>$SessionUUID], Force -> True, Verbose -> False]
-				]
-			},
-			Stubs:>{$AllowPublicObjects=True, $UseAIProductParser = False}
+			}
 		],
 		Example[{Options, "Verbose", "Set Verbose->True to see all of the tests that ValidUploadProductQ is running. Valid values for this option are True|False|Failures:"},
-			Quiet[
-				Check[
-					ValidUploadProductQ[
-						"https://www.thermofisher.com/order/catalog/product/85190",
-						Packaging->Single,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						Name->"Dimethyl sulfoxide (example) "<>$SessionUUID,
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"50mL tall sloping shoulder amber glass bottle"],
-						CatalogDescription->"1 Vial of Dimethyl sulfoxide (example)",
-						Amount -> 1 Milliliter,
-						Price -> 1 USD,
-						Verbose->True,
-						Amount -> 50 Milliliter
-					],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection}
+			ValidUploadProductQ[
+				"https://www.thermofisher.com/order/catalog/product/85190",
+				ProductModel->Model[Sample,"Dimethyl sulfoxide"],
+				Packaging->Single,
+				Name->"Dimethyl sulfoxide (example) "<>$SessionUUID,
+				NumberOfItems->1,
+				SampleType->Vial,
+				DefaultContainerModel->Model[Container,Vessel,"50mL tall sloping shoulder amber glass bottle"],
+				CatalogDescription->"1 Vial of Dimethyl sulfoxide (example)",
+				Price -> 1 USD,
+				Verbose->True,
+				Amount -> 50 Milliliter
 			],
-			True|Warning::APIConnection,
+			True,
 			SetUp :> {
 				If[DatabaseMemberQ[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID]],
 					EraseObject[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID], Force -> True, Verbose -> False]
@@ -2111,32 +1372,23 @@ DefineTests[
 				If[DatabaseMemberQ[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID]],
 					EraseObject[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
-			},
-			Stubs:>{$AllowPublicObjects=True, $UseAIProductParser = False}
+			}
 		],
-		Example[{Options, "OutputFormat", "Set OutputFormat->TestSummary to have the function return a TestSummary object instead of a single Boolean. The dereferenceable keys form this object can be viewed by running Keys[...] on the test summary:"},
-			Quiet[
-				Check[
-					ValidUploadProductQ[
-						"https://www.thermofisher.com/order/catalog/product/85190",
-						Packaging->Single,
-						Name->"Dimethyl sulfoxide (example) "<>$SessionUUID,
-						ProductModel->Model[Sample,"Dimethyl sulfoxide"],
-						NumberOfItems->1,
-						SampleType->Vial,
-						DefaultContainerModel->Model[Container,Vessel,"50mL tall sloping shoulder amber glass bottle"],
-						CatalogDescription->"1 Vial of Dimethyl sulfoxide (example)",
-						Amount->1 Milliliter,
-						Price->1 USD,
-						OutputFormat->TestSummary,
-						Amount -> 50 Milliliter
-					]["Successes"],
-					Warning::APIConnection,
-					{Warning::APIConnection}
-				],
-				{Warning::APIConnection}
-			],
-			_List|Warning::APIConnection,
+		Example[{Options, "OutputFormat", "Set OutputFormat->TestSummary to have the function return a TestSummary object instead of a single Boolean. The dereferenceable keys from this object can be viewed by running Keys[...] on the test summary:"},
+			ValidUploadProductQ[
+				"https://www.thermofisher.com/order/catalog/product/85190",
+				ProductModel->Model[Sample,"Dimethyl sulfoxide"],
+				Packaging->Single,
+				Name->"Dimethyl sulfoxide (example) "<>$SessionUUID,
+				NumberOfItems->1,
+				SampleType->Vial,
+				DefaultContainerModel->Model[Container,Vessel,"50mL tall sloping shoulder amber glass bottle"],
+				CatalogDescription->"1 Vial of Dimethyl sulfoxide (example)",
+				Price->1 USD,
+				OutputFormat->TestSummary,
+				Amount -> 50 Milliliter
+			]["Successes"],
+			_List,
 			SetUp :> {
 				If[DatabaseMemberQ[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID]],
 					EraseObject[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID], Force -> True, Verbose -> False]
@@ -2146,8 +1398,608 @@ DefineTests[
 				If[DatabaseMemberQ[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID]],
 					EraseObject[Object[Product, "Dimethyl sulfoxide (example) "<>$SessionUUID], Force -> True, Verbose -> False]
 				]
-			},
-			Stubs:>{$AllowPublicObjects=True, $UseAIProductParser = False}
+			}
+		]
+	},
+	Stubs :> {
+		$AllowUserInvalidObjectUploads = True,
+		$AllowAutoNewModelCreation = True,
+		$PersonID = Object[User, "id:n0k9mG8AXZP6"],
+		(* Disable AI parser in unit test to conserve Gemini quota *)
+		$UseAIProductParser = False,
+		$AllowPublicObjects=True,
+		(* Do not try to parse anything *)
+		parseProductURL[_] = $Failed
+	}
+];
+
+(* ::Subsubsection::Closed:: *)
+(*UploadVerifiedProduct*)
+
+DefineTests[
+	UploadVerifiedProduct,
+	{
+		Test["Ensure the test valid product passes VOQ:",
+			ValidObjectQ[Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID]],
+			True
+		],
+		Test["Ensure the test valid kit product passes VOQ:",
+			ValidObjectQ[Object[Product, "Test Valid Kit Product for UploadVerifiedProduct "<> $SessionUUID]],
+			True
+		],
+		Test["Ensure the test valid container product passes VOQ:",
+			ValidObjectQ[Object[Product, "Test Valid 2mL Tube Product for UploadVerifiedProduct"<>$SessionUUID]],
+			True
+		],
+		Test["Ensure that the test invalid weigh boat product fails VOQ:",
+			ValidObjectQ[Object[Product, "Test Invalid WeighBoat Product for UploadVerifiedProduct "<>$SessionUUID]],
+			False
+		],
+		Test["Ensure the test invalid product fails VOQ:",
+			ValidObjectQ[Object[Product, "Test Invalid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID]],
+			False
+		],
+		Example[{Basic, "Upload Verified -> True for an existing product object if it passes ValidObjectQ, if Verify -> True:"},
+			UploadVerifiedProduct[Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Verify -> True];
+			Download[Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Verified],
+			True,
+			SetUp :> Upload[<|Object -> Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Verified -> Null|>],
+			TearDown :> Upload[<|Object -> Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Verified -> Null|>]
+		],
+		Example[{Basic, "If Verified -> True but the input product fails VOQ, output $Failed:"},
+			UploadVerifiedProduct[Object[Product, "Test Invalid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Verify -> True],
+			$Failed,
+			SetUp :> Upload[<|Object -> Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Verified -> Null|>],
+			TearDown :> Upload[<|Object -> Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Verified -> Null|>],
+			Messages :> {Error::ProductAmountFromExternalSource, Error::PricePerUnitRequiredFromExternalSource, Error::InvalidOption}
+		],
+		Example[{Basic, "If Verified -> False, function outputs options instead of uploading changes:"},
+			UploadVerifiedProduct[Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Verify -> False],
+			{_Rule..}
+		],
+		Example[{Messages, "RequiredTogetherOptions", "If the resulted product object fails VOQ because certain options are required together, but one is set to Null while the other is not, Error::RequiredTogetherOptions will be thrown:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False,
+				Manufacturer -> Null,
+				ManufacturerCatalogNumber -> "123"
+			],
+			{_Rule..},
+			Messages :> {Error::RequiredTogetherOptions, Error::InvalidOption}
+		],
+		Example[{Messages, "UnableToFindInfo", "If the resulted product object fails VOQ because certain options can't be found from supplier webpage, Error::UnableToFindInfo will be thrown:"},
+			Upload[<|Object -> Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], CatalogNumber -> Null|>];
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False
+			],
+			{_Rule..},
+			Messages :> {Error::UnableToFindInfo, Error::InvalidOption},
+			TearDown :> Upload[<|Object -> Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], CatalogNumber -> "012314.A9"|>]
+		],
+		Example[{Messages, "DefaultContainerModel", "If the product model is not a Model[Sample], but user attempts to set the DefaultContainerModel for this product, Error::DefaultContainerModel will be thrown:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid 2mL Tube Product for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False,
+				DefaultContainerModel -> Model[Container, Vessel, "2mL Tube"]
+			],
+			{_Rule..},
+			Messages :> {Error::DefaultContainerModel, Error::InvalidOption}
+		],
+		Example[{Messages, "ProductAmountFromExternalSource", "If the product model is a Model[Sample], but Amount can't be found from supplier webpage, Error::ProductAmountFromExternalSource will be thrown:"},
+			Upload[<|Object -> Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Amount -> Null|>];
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False
+			],
+			{_Rule..},
+			Messages :> {Error::ProductAmountFromExternalSource, Error::InvalidOption},
+			TearDown :> Upload[<|Object -> Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Amount -> 10 Kilogram|>]
+		],
+		Example[{Messages, "ProductAmount", "If the product model is a Model[Sample], but Amount is set to Null, Error::ProductAmount will be thrown:"},
+			Upload[<|Object -> Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Amount -> Null|>];
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False,
+				Amount -> Null
+			],
+			{_Rule..},
+			Messages :> {Error::ProductAmount, Error::InvalidOption},
+			TearDown :> Upload[<|Object -> Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Amount -> 10 Kilogram|>]
+		],
+		Example[{Messages, "EmeraldSuppliedProductSamples", "If ECL is the supplier of this product, NumberOfItems must be set to 1, otherwise Error::EmeraldSuppliedProductSamples will be thrown:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid 2mL Tube Product for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False,
+				Supplier -> Object[Company, Supplier, "id:eGakld01qrkB"]
+			],
+			{_Rule..},
+			Messages :> {Error::EmeraldSuppliedProductSamples, Error::InvalidOption}
+		],
+		Example[{Messages, "AmountUnitState", "If the ProductModel is solid but volume was supplied as Amount option, Error::AmountUnitState will be thrown:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False,
+				Amount -> 1 Liter
+			],
+			{_Rule..},
+			Messages :> {Error::AmountUnitState, Error::InvalidOption}
+		],
+		Example[{Messages, "AmountUnitStateFromExternalSource", "If the ProductModel is solid but webpage parser set volume value as Amount option, Error::AmountUnitStateFromExternalSource will be thrown:"},
+			Upload[<|Object -> Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Amount -> 1 Liter|>];
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False
+			],
+			{_Rule..},
+			Messages :> {Error::AmountUnitStateFromExternalSource, Error::InvalidOption},
+			Stubs :> {parseProductURL[_] = {Amount -> 1 Liter}},
+			TearDown :> Upload[<|Object -> Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Amount -> 10 Kilogram|>]
+		],
+		Example[{Messages, "PricePerUnitRequired", "Price is required as long as the product is not supplied by ECL. If the Price is set to Null by user, Error::PricePerUnitRequired will be thrown:"},
+			Upload[<|Object -> Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Price -> Null|>];
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False,
+				Price -> Null
+			],
+			{_Rule..},
+			Messages :> {Error::PricePerUnitRequired, Error::InvalidOption},
+			TearDown :> Upload[<|Object -> Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Price -> 100 USD|>]
+		],
+		Example[{Messages, "PricePerUnitRequiredFromExternalSource", "Price is required as long as the product is not supplied by ECL. If the Price cannot be found from supplier webpage, Error::PricePerUnitRequiredFromExternalSource will be thrown:"},
+			Upload[<|Object -> Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Price -> Null|>];
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False
+			],
+			{_Rule..},
+			Stubs :> {parseProductURL[_] = {Price -> Null}},
+			Messages :> {Error::PricePerUnitRequiredFromExternalSource, Error::InvalidOption},
+			TearDown :> Upload[<|Object -> Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Price -> 100 USD|>]
+		],
+		Example[{Messages, "TabletSachetFields", "Amount and CountPerSample option cannot be both informed, unless the product model is a sachet or tablet:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False,
+				CountPerSample -> 5
+			],
+			{_Rule..},
+			Messages :> {Error::TabletSachetFields, Error::InvalidOption}
+		],
+		Example[{Messages, "InvalidKitOptionsWithExternalSource", "If the product is a kit, DefaultContainerModel must not be specified; if user provided values for DefaultContainerModel, Error::InvalidKitOptionsWithExternalSource will be thrown:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Kit Product for UploadVerifiedProduct "<> $SessionUUID],
+				Verify -> False,
+				DefaultContainerModel -> Model[Container, Vessel, "2mL Tube"]
+			],
+			{_Rule..},
+			Messages :> {Error::InvalidKitOptionsWithExternalSource, Error::InvalidOption}
+		],
+		Example[{Messages, "InvalidKitOptions", "If the product is a kit, DefaultContainerModel must not be specified; if user provided values for DefaultContainerModel and setting the KitComponents, Error::InvalidKitOptions will be thrown:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Kit Product for UploadVerifiedProduct "<> $SessionUUID],
+				Verify -> False,
+				DefaultContainerModel -> Model[Container, Vessel, "2mL Tube"],
+				KitComponents -> {
+					{1, Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], 1 Milliliter, "A1", 1, Model[Item, Cap, "2mL cap"], False},
+					{1, Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], 2 Milliliter, "A1", 2, Model[Item, Cap, "2mL cap"], False},
+					{1, Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], 2 Milliliter, "A1", 3, Model[Item, Cap, "2mL cap"], False}
+				}
+			],
+			{_Rule..},
+			Messages :> {Error::InvalidKitOptions, Error::InvalidOption}
+		],
+		Example[{Messages, "InvalidKitOptionsFromExternalSource", "If user provided KitComponent option to an existing Object[Product] that already has DefaultContainerModel informed, Error::InvalidKitOptionsFromExternalSource will be thrown:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False,
+				KitComponents -> {
+					{1, Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], 1 Milliliter, "A1", 1, Model[Item, Cap, "2mL cap"], False},
+					{1, Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], 2 Milliliter, "A1", 2, Model[Item, Cap, "2mL cap"], False},
+					{1, Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], 2 Milliliter, "A1", 3, Model[Item, Cap, "2mL cap"], False}
+				},
+				SampleType -> Kit
+			],
+			{_Rule..},
+			Messages :> {Error::InvalidKitOptionsFromExternalSource, Error::InvalidOption, Error::MutuallyExclusiveOptionsWithExistingField}
+		],
+		Example[{Messages, "InvalidKitOptionsBetweenExternalSource", "If the product is a kit, DefaultContainerModel must not be specified; if the current Object[Product] has non-Null value for both KitComponents and DefaultContainerModel in database, Error::InvalidKitOptionsBetweenExternalSource will be thrown:"},
+			Upload[<|Object -> Object[Product, "Test Valid Kit Product for UploadVerifiedProduct "<> $SessionUUID], DefaultContainerModel -> Link[Model[Container, Vessel, "2mL Tube"], ProductsContained]|>];
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Kit Product for UploadVerifiedProduct "<> $SessionUUID],
+				Verify -> False
+			],
+			{_Rule..},
+			Messages :> {Error::InvalidKitOptionsBetweenExternalSource, Error::InvalidOption},
+			TearDown :> Upload[<|Object -> Object[Product, "Test Valid Kit Product for UploadVerifiedProduct "<> $SessionUUID], DefaultContainerModel -> Null|>]
+		],
+		Example[{Messages, "InvalidSampleType", "If the product is a kit, SampleType must be set to Kit. If user provided KitComponents option but also set SampleType to not Kit, Error::InvalidSampleType will be thrown:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Kit Product for UploadVerifiedProduct "<> $SessionUUID],
+				Verify -> False,
+				SampleType -> Bottle,
+				KitComponents -> {
+					{1, Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], 1 Milliliter, "A1", 1, Model[Item, Cap, "2mL cap"], False},
+					{1, Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], 2 Milliliter, "A1", 2, Model[Item, Cap, "2mL cap"], False},
+					{1, Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], 2 Milliliter, "A1", 3, Model[Item, Cap, "2mL cap"], False}
+				}
+			],
+			{_Rule..},
+			Messages :> {Error::InvalidSampleType, Error::InvalidOption}
+		],
+		Example[{Messages, "InvalidSampleTypeWithExternalSource", "If the product is a kit, SampleType must be set to Kit. If user set SampleType to not Kit, Error::InvalidSampleTypeWithExternalSource will be thrown:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Kit Product for UploadVerifiedProduct "<> $SessionUUID],
+				Verify -> False,
+				SampleType -> Bottle
+			],
+			{_Rule..},
+			Messages :> {Error::InvalidSampleTypeWithExternalSource, Error::InvalidOption}
+		],
+		Example[{Messages, "SingleKitComponent", "KitComponents option must has at least 2 entries. If there's only 1, Error::SingleKitComponent will be thrown:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Kit Product for UploadVerifiedProduct "<> $SessionUUID],
+				Verify -> False,
+				KitComponents -> {
+					{1, Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], 1 Milliliter, "A1", 1, Model[Item, Cap, "2mL cap"], False}
+				}
+			],
+			{_Rule..},
+			Messages :> {Error::SingleKitComponent, Error::InvalidOption}
+		],
+		Example[{Messages, "InvalidContainerIndexPosition", "For a kit product, sample components must have ContainerIndex and Position specified, while non-sample components must have both been empty. If this is not the case, Error::InvalidContainerIndexPosition will be thrown:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Kit Product for UploadVerifiedProduct "<> $SessionUUID],
+				Verify -> False,
+				KitComponents -> {
+					{1, Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], 1 Milliliter, "A1", Null, Model[Item, Cap, "2mL cap"], False},
+					{1, Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], 2 Milliliter, "A1", Null, Model[Item, Cap, "2mL cap"], False}
+				}
+			],
+			{_Rule..},
+			Messages :> {Error::InvalidContainerIndexPosition, Error::InvalidOption, Error::RepeatedContainerIndex}
+		],
+		Example[{Messages, "RepeatedContainerIndex", "For a kit product, different sample components must have non-repeating ContainerIndex as long as the DefaultContainerModel is Model[Container, Vessel]. If this is not the case, Error::RepeatedContainerIndex will be thrown:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Kit Product for UploadVerifiedProduct "<> $SessionUUID],
+				Verify -> False,
+				KitComponents -> {
+					{1, Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], 1 Milliliter, "A1", 1, Model[Item, Cap, "2mL cap"], False},
+					{1, Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], 2 Milliliter, "A1", 1, Model[Item, Cap, "2mL cap"], False}
+				}
+			],
+			{_Rule..},
+			Messages :> {Error::RepeatedContainerIndex, Error::InvalidOption}
+		],
+		Example[{Messages, "InvalidProductSite", "Site option must be one of the ECL experiment site. If user provided another Site, Error::InvalidProductSite will be thrown:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False,
+				Site -> Object[Container, Site, "id:GmzlKjz07oOm"] (* This is a random unused site object *)
+			],
+			{_Rule..},
+			Messages :> {Error::InvalidProductSite, Error::InvalidOption}
+		],
+		Example[{Messages, "InvalidProductSiteFromExternalSource", "Site option must be one of the ECL experiment site. If the current Site field value is not one of the ECL experiment sites, Error::InvalidProductSiteFromExternalSource will be thrown:"},
+			Upload[<|Object -> Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Site -> Link[Object[Container, Site, "id:GmzlKjz07oOm"]]|>];
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False
+			],
+			{_Rule..},
+			Messages :> {Error::InvalidProductSiteFromExternalSource, Error::InvalidOption},
+			TearDown :> Upload[<|Object -> Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID], Site -> Null|>]
+		],
+		Example[{Messages, "MissingCryoContainerCoverModel", "If the product is for a cryogenic sample and DefaultContainerModel and DefaultCoverModel are not specified to verified models, Error::MissingCryoContainerCoverModel will be thrown:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test HeLa product for UploadVerifiedProduct tests "<>$SessionUUID],
+				Verify -> False,
+				(* Unverified model container, no cover container *)
+				DefaultContainerModel -> Model[Container, Vessel, "id:6V0npvK611wE"](*"Placeholder modelContainer For New Products Only"*)
+			],
+			{_Rule..},
+			Messages :> {Error::MissingCryoContainerCoverModel, Error::InvalidOption}
+		],
+		Example[{Messages, "CryoSampleCoverBardode", "If the product is for a cryogenic sample, an error will be thrown if the DefaultCoverModel has Barcode -> True:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test HeLa product for UploadVerifiedProduct tests " <> $SessionUUID],
+				Verify -> False,
+				(* Unverified model container, no cover container *)
+				DefaultContainerModel -> Model[Container, Vessel, "id:vXl9j5qEnnOB"], (*"2mL Cryogenic Vial"*)
+				DefaultCoverModel -> Model[Item, Cap, "Test cover model for UploadVerifiedProduct " <> $SessionUUID]
+			],
+			{_Rule..},
+			Messages :> {Error::CryoSampleCoverBardode, Error::InvalidOption}
+		],
+		Example[{Messages, "CryoSampleKitNotSupported", "If the product is a kit, an error is thrown if it contains any component that needs cryogenic storage:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Kit Product for UploadVerifiedProduct " <> $SessionUUID],
+				Verify -> False,
+				KitComponents -> {
+					{1, Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], 1 Milliliter, "A1", 1, Model[Item, Cap, "2mL cap"], False},
+					{1, Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], 2 Milliliter, "A1", 2, Model[Item, Cap, "2mL cap"], False},
+					{1, Model[Sample, "id:qdkmxz0A88r3"], Model[Container, Vessel, "2mL Tube"], 1 Milliliter, "A1", 3, Model[Item, Cap, "2mL cap"], False}}
+			],
+			{_Rule..},
+			Messages :> {Error::CryoSampleKitNotSupported, Error::InvalidOption}
+		],
+		Example[{Messages, "DefaultContainerModelTooManyPositions", "A Model[Container,Plate] with more than 1 well cannot be specified as the DefaultContainerModel option:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False,
+				DefaultContainerModel -> Model[Container, Plate, "id:L8kPEjkmLbvW"]
+			],
+			{_Rule..},
+			Messages :> {Error::DefaultContainerModelTooManyPositions, Error::InvalidOption}
+		],
+		Example[{Messages, "UnsupportedAsepticReceiving", "If options in product indicate conflicting aseptic vs. regular receiving procedure, e.g., it has Sterile -> False but has non-Null AsepticShippingContainerType, Error::UnsupportedAsepticReceiving will be thrown:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False,
+				Sterile -> False,
+				AsepticShippingContainerType -> Individual
+			],
+			{_Rule..},
+			Messages :> {Error::UnsupportedAsepticReceiving, Error::InvalidOption}
+		],
+		Example[{Messages, "UnsupportedAsepticReceiving", "If options in product indicate conflicting aseptic vs. regular receiving procedure, e.g., it has Sterile -> True but AsepticRebaggingContainerType -> Null, Error::UnsupportedAsepticReceiving will be thrown:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False,
+				Sterile -> True,
+				AsepticRebaggingContainerType -> Null
+			],
+			{_Rule..},
+			Messages :> {Error::UnsupportedAsepticReceiving, Error::InvalidOption}
+		],
+		Example[{Messages, "IncompatibleAsepticShippingAndReceiving", "AsepticRebaggingContainerType should be set only if AsepticShippingContainerType is NonResealableBulk or None:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False,
+				Sterile -> True,
+				AsepticRebaggingContainerType -> Individual,
+				AsepticShippingContainerType -> Individual
+			],
+			{_Rule..},
+			Messages :> {Error::IncompatibleAsepticShippingAndReceiving, Error::InvalidOption}
+		],
+		Example[{Messages, "AsepticRebaggingContainerTypeRequired", "AsepticRebaggingContainerType should be set if AsepticShippingContainerType is NonResealableBulk or None:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False,
+				Sterile -> True,
+				AsepticRebaggingContainerType -> Null,
+				AsepticShippingContainerType -> NonResealableBulk
+			],
+			{_Rule..},
+			Messages :> {Error::AsepticRebaggingContainerTypeRequired, Error::InvalidOption}
+		],
+		Example[{Messages, "CountedProduct", "CountPerSample option must be specified if the ProductModel is marked as Counted. If user set CountPerSample -> Null, Error::CountedProduct will be thrown:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Invalid WeighBoat Product for UploadVerifiedProduct "<>$SessionUUID],
+				Verify -> False,
+				CountPerSample -> Null
+			],
+			{_Rule..},
+			Messages :> {Error::CountedProduct, Error::InvalidOption}
+		],
+		Example[{Messages, "CountedProductFromExternalSource", "CountPerSample option must be specified if the ProductModel is marked as Counted:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Invalid WeighBoat Product for UploadVerifiedProduct "<>$SessionUUID],
+				Verify -> False
+			],
+			{_Rule..},
+			Messages :> {Error::CountedProductFromExternalSource, Error::InvalidOption}
+		],
+		Example[{Messages, "NotCountedProduct", "CountPerSample option must not be specified if the ProductModel is not marked as Counted. If user set CountPerSample to non-Null, Error::CountedProduct will be thrown:"},
+			UploadVerifiedProduct[
+				Object[Product, "Test Valid 2mL Tube Product for UploadVerifiedProduct"<>$SessionUUID],
+				Verify -> False,
+				CountPerSample -> 100
+			],
+			{_Rule..},
+			Messages :> {Error::NotCountedProduct, Error::InvalidOption, Error::TabletSachetFields}
+		]
+	},
+	SetUp :> (
+		SetCreatedObjectsCheckpoint["UploadVerifiedProduct unit test"];
+		ClearMemoization[];
+	),
+	TearDown :> (
+		EraseCreatedObjects["UploadVerifiedProduct unit test"]
+	),
+	Stubs :> {
+		(* Do not try to parse anything *)
+		parseProductURL[_] = $Failed
+	},
+	SymbolSetUp :> {
+		Module[
+			{imageFile, existingObjs, objs, coverModel, validProduct, invalidProduct, validItemProduct, validKitProduct},
+
+			objs = {
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Object[EmeraldCloudFile, "Test product image for UploadVerifiedProduct "<>$SessionUUID],
+				Object[Product, "Test Invalid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Object[Product, "Test Valid 2mL Tube Product for UploadVerifiedProduct"<>$SessionUUID],
+				Object[Product, "Test Valid Kit Product for UploadVerifiedProduct "<> $SessionUUID],
+				Object[Product, "Test Invalid WeighBoat Product for UploadVerifiedProduct "<>$SessionUUID],
+				Object[Product, "Test HeLa product for UploadVerifiedProduct tests "<>$SessionUUID],
+				Model[Item, Cap, "Test cover model for UploadVerifiedProduct "<>$SessionUUID]
+			};
+			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
+			EraseObject[existingObjs, Force -> True, Verbose -> False];
+
+			DownloadCloudFile[EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "shard3/5d1f29b61bc52d6b77534d4eef0cdf87.jpg", ""], FileNameJoin[{$TemporaryDirectory, "product_test_image.jpg"}]];
+
+			imageFile = UploadCloudFile[FileNameJoin[{$TemporaryDirectory, "product_test_image.jpg"}]];
+
+			coverModel = UploadCoverModel[
+				Model[Item, Cap],
+				Name -> "Test cover model for UploadVerifiedProduct " <> $SessionUUID,
+				WettedMaterials -> {Polypropylene},
+				Sterile -> False,
+				Reusable -> False,
+				ImageFile -> imageFile,
+				CoverFootprint -> CapScrewTube13x6,
+				CoverType -> Screw,
+				Barcode -> True
+			];
+
+			Upload[{
+				<|
+					Object -> imageFile,
+					Name -> "Test product image for UploadVerifiedProduct "<>$SessionUUID,
+					DeveloperObject -> True
+				|>,
+				<|
+					Object -> coverModel,
+					VerifiedCoverModel -> True,
+					DeveloperObject -> True
+				|>
+			}];
+
+			(* Let parseProductURL fail so we don't have necessary info. Manually populate all necessary fields except price and amount *)
+			invalidProduct = Block[{parseProductURL, $AllowUserInvalidObjectUploads = True},
+				parseProductURL[_] = $Failed;
+				UploadProduct[
+					"https://www.thermofisher.com/order/catalog/product/012314.A9_dummy_invalid_url",
+					ProductModel -> Model[Sample, "Sodium Chloride"],
+					Name -> "Test Invalid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID,
+					Strict -> False,
+					CatalogNumber -> "012314.A9_replica",
+					CatalogDescription -> "xxx",
+					ImageFile -> imageFile,
+					NumberOfItems -> 1,
+					Supplier -> Object[Company, Supplier, "Thermo Fisher Scientific"],
+					SampleType -> Bottle,
+					Packaging -> Single
+				]
+			];
+
+			(* Let parseProductURL fail and we populate all info manually *)
+			validProduct = Block[{parseProductURL, $AllowUserInvalidObjectUploads = True},
+				parseProductURL[_] := $Failed;
+				UploadProduct[
+					"https://www.thermofisher.com/order/catalog/product/012314.A9",
+					ProductModel -> Model[Sample, "Sodium Chloride"],
+					Name -> "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID,
+					Strict -> True,
+					CatalogNumber -> "012314.A9",
+					CatalogDescription -> "xxx",
+					ImageFile -> imageFile,
+					Price -> 100 USD,
+					Amount -> 10 Kilogram,
+					NumberOfItems -> 1,
+					Supplier -> Object[Company, Supplier, "Thermo Fisher Scientific"],
+					SampleType -> Bottle,
+					Packaging -> Single
+				]
+			];
+
+			(* Let parseProductURL fail and we populate all info manually *)
+			validItemProduct = Block[{parseProductURL, $AllowUserInvalidObjectUploads = True},
+				parseProductURL[_] := $Failed;
+				UploadProduct[
+					"https://www.fishersci.com/shop/products/safe-lock-tubes-forensic-dna-grade-3/E0030123620",
+					ProductModel -> Model[Container, Vessel, "2mL Tube"],
+					Name -> "Test Valid 2mL Tube Product for UploadVerifiedProduct"<>$SessionUUID,
+					Strict -> True,
+					CatalogNumber -> "E0030123620",
+					CatalogDescription -> "xxx",
+					ImageFile -> imageFile,
+					Price -> 100 USD,
+					Amount -> 1,
+					NumberOfItems -> 500,
+					Supplier -> Object[Company, Supplier, "Fisher Scientific"],
+					SampleType -> Bottle,
+					Packaging -> Single
+				]
+			];
+
+			(* Let parseProductURL fail and we populate all info manually *)
+			validKitProduct = Block[{parseProductURL, $AllowUserInvalidObjectUploads = True},
+				parseProductURL[_] := $Failed;
+				UploadProduct[
+					"https://www.thermofisher.com/order/catalog/product/35055",
+					ProductModel -> Kit,
+					Name -> "Test Valid Kit Product for UploadVerifiedProduct "<> $SessionUUID,
+					Strict -> True,
+					CatalogNumber -> "35055",
+					CatalogDescription -> "xxx",
+					ImageFile -> imageFile,
+					Price -> 100 USD,
+					Supplier -> Object[Company, Supplier, "Fisher Scientific"],
+					SampleType -> Kit,
+					Packaging -> Single,
+					NumberOfItems -> 1,
+					KitComponents -> {
+						{1, Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], 1 Milliliter, "A1", 1, Model[Item, Cap, "2mL cap"], False},
+						{1, Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], 2 Milliliter, "A1", 2, Model[Item, Cap, "2mL cap"], False}
+					}
+				]
+			];
+
+			(* Let parseProductURL fail and we populate all info manually *)
+			Block[{parseProductURL, $AllowUserInvalidObjectUploads = True},
+				parseProductURL[_] := $Failed;
+				UploadProduct[
+					"https://www.thermofisher.com/order/catalog/product/35055-dummy",
+					ProductModel -> Model[Item, WeighBoat, "id:vXl9j57j0zpm"], (* Weigh boats, large *)
+					Name -> "Test Invalid WeighBoat Product for UploadVerifiedProduct "<>$SessionUUID,
+					Strict -> False,
+					CatalogNumber -> "35055-dummy",
+					CatalogDescription -> "xxx",
+					ImageFile -> imageFile,
+					Price -> 100 USD,
+					Supplier -> Object[Company, Supplier, "Fisher Scientific"],
+					SampleType -> WeightHandle,
+					Packaging -> Single,
+					NumberOfItems -> 1,
+					CountPerSample -> Null
+				]
+			];
+
+			(* Let parseProductURL fail and we populate all info manually *)
+			Block[{parseProductURL, $AllowUserInvalidObjectUploads = True},
+				parseProductURL[_] := $Failed;
+				UploadProduct[
+					ProductModel -> Model[Sample, "id:qdkmxz0A88r3"],(*"HeLa"*)
+					Name -> "Test HeLa product for UploadVerifiedProduct tests " <> $SessionUUID,
+					Amount -> 1 Milliliter,
+					Price -> 500 USD,
+					Strict -> False,
+					CatalogNumber -> "65890",
+					CatalogDescription -> "xxx",
+					ImageFile -> imageFile,
+					Supplier -> Object[Company, Supplier, "Fisher Scientific"],
+					SampleType -> Tube,
+					Packaging -> Single,
+					NumberOfItems -> 1
+				]
+			];
+
+			Off[Warning::NotYetVerified]
+		]
+	},
+	SymbolTearDown :> {
+		Module[
+			{existingObjs, objs},
+
+			objs = {
+				Object[Product, "Test Valid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Object[EmeraldCloudFile, "Test product image for UploadVerifiedProduct "<>$SessionUUID],
+				Object[Product, "Test Invalid Sodium Chloride, ACS 99.0% for UploadVerifiedProduct"<>$SessionUUID],
+				Object[Product, "Test Valid 2mL Tube Product for UploadVerifiedProduct"<>$SessionUUID],
+				Object[Product, "Test Valid Kit Product for UploadVerifiedProduct "<> $SessionUUID],
+				Object[Product, "Test Invalid WeighBoat Product for UploadVerifiedProduct "<>$SessionUUID],
+				Object[Product, "Test HeLa product for UploadVerifiedProduct tests "<>$SessionUUID],
+				Model[Item, Cap, "Test cover model for UploadVerifiedProduct "<>$SessionUUID]
+			};
+			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
+			EraseObject[existingObjs, Force -> True, Verbose -> False];
+
+			On[Warning::NotYetVerified]
 		]
 	}
 ];
@@ -2161,21 +2013,6 @@ DefineTests[
 DefineTests[
 	parseProductURL,
 	{
-		Test["Take a product url as input, output an association which contains information about this product:",
-			parseProductURL["https://www.fishersci.com/shop/products/falcon-50ml-conical-centrifuge-tubes-2/1443222"],
-			_Association,
-			Stubs :> {$UseAIProductParser = False}
-		],
-		Test["If the product url is not available (i.e., Null), return $Failed:",
-			parseProductURL[Null],
-			$Failed,
-			Stubs :> {$UseAIProductParser = False}
-		],
-		Test["If use of AI parser is not allowed, parser will always return $Failed if the webpage does not belong to one of these 3 vendors: thermo, fishersci, sigma:",
-			parseProductURL["https://www.avantorsciences.com/us/en/product/10073654/sodium-hydroxide-33-ww-in-aqueous-solution-vwr-chemicals-bdh"],
-			$Failed,
-			Stubs :> {$UseAIProductParser = False}
-		],
 		Test["When $UseAIProductParser is set to First, function will attempt to use AI parser first; if AI parser failed, function will then try conventional parser:",
 			(* Here's how this test works: ai parser will sow "used ai parser" but return $Failed, and conventional parser will return an association *)
 			(* If function only used AI parser, result would be $Failed; if function only used conventional parser, or used conventional parser first, nothing would be sown *)
@@ -2219,16 +2056,6 @@ DefineTests[
 				PyECLRequest["/ccd/ai/extract-product", ___] := <| "title" -> "50mL Tube", "price" -> 0.00, "catalog_number" -> "14-432-22" |>,
 				findProductPriceAgain["14-432-22", "fisher"] := 100
 			}
-		],
-		Test["Successfully parse information for a 2 ml tube product from fishersci:",
-			parseProductURL["https://www.fishersci.com/shop/products/2-0ml-micro-centrifuge-tube/50202026"],
-			_Association,
-			Stubs :> {$UseAIProductParser = False}
-		],
-		Test["Successfully parse information for a DNA product from thermo:",
-			parseProductURL["https://www.thermofisher.com/order/catalog/product/SM0241?SID=srch-srp-SM0241"],
-			_Association,
-			Stubs :> {$UseAIProductParser = False}
 		]
 	},
 	SetUp :> {ClearMemoization[]}
@@ -2443,141 +2270,6 @@ DefineTests[
 			EquivalenceFunction -> Equal,
 			Variables :> {inventories}
 		],
-		Example[{Options, Expires, "Specify whether the samples that are received in the course of automatic reordering have their Expires field set to True:"},
-			inventories=UploadInventory[
-				{
-					Object[Product, "Conventional Product for UploadInventory unit tests 2" <> $SessionUUID],
-					Model[Sample, StockSolution, "Stocked Salt Solution for UploadInventory unit tests 2" <> $SessionUUID]
-				},
-				Expires -> {False, True},
-				Site ->Object[Container, Site,  "ECL-2.01 " <> $SessionUUID]
-			];
-			Download[inventories, Expires],
-			{False, True},
-			Variables :> {inventories}
-		],
-		Example[{Options, Expires, "If left unspecified, automatically set to True if the model being ordered has Expired set to True, or if ShelfLife or UnsealedShelfLife are populated:"},
-			inventories=UploadInventory[
-				{
-					Object[Product, "Kit Product for UploadInventory unit tests 2" <> $SessionUUID],
-					Model[Sample, StockSolution, "Stocked Salt Solution for UploadInventory unit tests 2" <> $SessionUUID]
-				},
-				ModelStocked -> {
-					Model[Part, InformationTechnology, "Hard drive Dev5"],
-					Automatic
-				},
-				Site ->Object[Container, Site,  "ECL-2.01 " <> $SessionUUID]
-			];
-			Download[inventories, Expires],
-			{False, True},
-			Variables :> {inventories}
-		],
-		Example[{Options, ShelfLife, "Use the ShelfLife to indicate the length of time after automatically-restocked samples have been received at ECL that they are considered to have expired:"},
-			inventories=UploadInventory[
-				{
-					Object[Product, "Conventional Product for UploadInventory unit tests 2" <> $SessionUUID],
-					Model[Sample, StockSolution, "Stocked Salt Solution for UploadInventory unit tests 2" <> $SessionUUID]
-				},
-				ShelfLife -> {Null, 30 Day},
-				Site ->Object[Container, Site,  "ECL-2.01 " <> $SessionUUID]
-			];
-			Download[inventories, ShelfLife],
-			{Null, 30 Day},
-			Variables :> {inventories},
-			EquivalenceFunction -> Equal
-		],
-		Example[{Options, ShelfLife, "If left unspecified, automatically set to the value in the model's ShelfLife field:"},
-			inventories=UploadInventory[
-				{
-					Object[Product, "Kit Product for UploadInventory unit tests 2" <> $SessionUUID],
-					Model[Sample, StockSolution, "Stocked Salt Solution for UploadInventory unit tests 2" <> $SessionUUID]
-				},
-				ModelStocked -> {
-					Model[Part, InformationTechnology, "Hard drive Dev5"],
-					Automatic
-				},
-				Site ->Object[Container, Site,  "ECL-2.01 " <> $SessionUUID]
-			];
-			Download[inventories, ShelfLife],
-			{Null, 5 Year},
-			Variables :> {inventories},
-			EquivalenceFunction -> Equal
-		],
-		Example[{Options, UnsealedShelfLife, "Use the UnsealedShelfLife to indicate the length of time after automatically-restocked samples have been received at ECL that they are considered to have expired:"},
-			inventories=UploadInventory[
-				{
-					Object[Product, "Kit Product for UploadInventory unit tests 2" <> $SessionUUID],
-					Model[Sample, StockSolution, "Stocked Salt Solution for UploadInventory unit tests 2" <> $SessionUUID]
-				},
-				UnsealedShelfLife -> {Null, 30 Day},
-				ModelStocked -> {
-					Model[Part, InformationTechnology, "Hard drive Dev5"],
-					Automatic
-				},
-				Site ->Object[Container, Site,  "ECL-2.01 " <> $SessionUUID]
-			];
-			Download[inventories, UnsealedShelfLife],
-			{Null, 30 Day},
-			Variables :> {inventories},
-			EquivalenceFunction -> Equal
-		],
-		Example[{Options, UnsealedShelfLife, "If left unspecified, automatically set to the value in the model's UnsealedShelfLife field:"},
-			inventories=UploadInventory[
-				{
-					Object[Product, "Kit Product for UploadInventory unit tests 2" <> $SessionUUID],
-					Model[Sample, StockSolution, "Stocked Salt Solution for UploadInventory unit tests 2" <> $SessionUUID]
-				},
-				ModelStocked -> {
-					Model[Part, InformationTechnology, "Hard drive Dev5"],
-					Automatic
-				},
-				Site ->Object[Container, Site,  "ECL-2.01 " <> $SessionUUID]
-			];
-			Download[inventories, UnsealedShelfLife],
-			{Null, 365 Day},
-			Variables :> {inventories},
-			EquivalenceFunction -> Equal
-		],
-		Example[{Options, MaxNumberOfUses, "Use the MaxNumberOfUses option to specify how many times the sample being kept in stock can be used before it needs to be replaced:"},
-			inventory=UploadInventory[Object[Product, "Conventional Product for UploadInventory unit tests 2" <> $SessionUUID], MaxNumberOfUses -> 1000, Site ->Object[Container, Site,  "ECL-2.01 " <> $SessionUUID]];
-			Download[inventory, MaxNumberOfUses],
-			{1000},
-			Variables :> {inventory},
-			EquivalenceFunction -> Equal
-		],
-		Example[{Options, MaxNumberOfUses, "If left unspecified, automatically set to the MaxNumberOfUses field of the model being stocked, or Null if those do not exist:"},
-			inventories=UploadInventory[
-				{
-					Object[Product, "Conventional Product for UploadInventory unit tests 2" <> $SessionUUID],
-					Model[Sample, StockSolution, "Stocked Salt Solution for UploadInventory unit tests 2" <> $SessionUUID]
-				},
-				Site ->Object[Container, Site,  "ECL-2.01 " <> $SessionUUID]
-			];
-			Download[inventories, MaxNumberOfUses],
-			{200, Null},
-			Variables :> {inventories},
-			EquivalenceFunction -> Equal
-		],
-		Example[{Options, MaxNumberOfHours, "Use the MaxNumberOfHours option to specify how many long the sample being kept in stock can be usLed before it needs to be replaced:"},
-			inventory=UploadInventory[Object[Product, "Conventional Product for UploadInventory unit tests 3" <> $SessionUUID], MaxNumberOfHours -> 300 Hour, Site ->Object[Container, Site,  "ECL-2.01 " <> $SessionUUID]];
-			Download[inventory, MaxNumberOfHours],
-			{300 Hour},
-			Variables :> {inventory},
-			EquivalenceFunction -> Equal
-		],
-		Example[{Options, MaxNumberOfHours, "If left unspecified, automatically set to the MaxNumberOfUses field of the model being stocked, or Null if those do not exist:"},
-			inventory=UploadInventory[
-				{
-					Object[Product, "Conventional Product for UploadInventory unit tests 3" <> $SessionUUID],
-					Model[Sample, StockSolution, "Stocked Salt Solution for UploadInventory unit tests 2" <> $SessionUUID]
-				},
-				Site ->Object[Container, Site,  "ECL-2.01 " <> $SessionUUID]
-			];
-			Download[inventory, MaxNumberOfHours],
-			{1000 Hour, Null},
-			Variables :> {inventory},
-			EquivalenceFunction -> Equal
-		],
 		Example[{Options, Name, "Specify the based of the name of the Inventory objects that are created. The Site at which the inventory is stocked is automatically added for new inventory objects:"},
 			NamedObject[
 				UploadInventory[
@@ -2593,6 +2285,22 @@ DefineTests[
 			]
 			],
 			{Object[Inventory, Product, "New Product Inventory"<>" "<>"ECL-2.01 " <> $SessionUUID], Object[Inventory, StockSolution, "New StockSolution Inventory"<>" "<>"ECL-2.01 " <> $SessionUUID]}
+		],
+		Example[{Options, PreferredProduct, "Specify the PreferredProduct to use for an existing inventory object:"},
+			UploadInventory[
+				Object[Inventory, Product, "Existing Conventional Product Inventory for UploadInventory unit tests 1" <> $SessionUUID],
+				PreferredProduct -> Object[Product, "Conventional Product for UploadInventory unit tests 1"<>$SessionUUID]
+			];
+			Download[Object[Inventory, Product, "Existing Conventional Product Inventory for UploadInventory unit tests 1" <> $SessionUUID], PreferredProduct],
+			ObjectP[Object[Product, "Conventional Product for UploadInventory unit tests 1"<>$SessionUUID]]
+		],
+		Example[{Options, PreferredProduct, "When creating a new Inventory object, the input Product or Model object will be used as PreferredProduct by default:"},
+			inventories = UploadInventory[
+				Object[Product, "Conventional Product for UploadInventory unit tests 2" <> $SessionUUID]
+			];
+			Download[inventories, PreferredProduct],
+			{ObjectP[Object[Product, "Conventional Product for UploadInventory unit tests 2" <> $SessionUUID]]},
+			Variables :> {inventories}
 		],
 		Test["If Upload -> False, return a list of change packets:",
 			UploadInventory[
@@ -2715,41 +2423,6 @@ DefineTests[
 			$Failed,
 			Messages :> {Error::LowReorderAmount, Error::InvalidOption}
 		],
-		Example[{Messages, "ExpirationDateMismatch", "If Expires is set to True, then either ShelfLife or UnsealedShelfLife must be resolved to a time:"},
-			UploadInventory[
-				Model[Sample, StockSolution, "Stocked Salt Solution for UploadInventory unit tests 1" <> $SessionUUID],
-				Expires -> True,
-				ShelfLife -> Null,
-				UnsealedShelfLife -> Null
-			],
-			$Failed,
-			Messages :> {Error::ExpirationDateMismatch, Error::InvalidOption}
-		],
-		Example[{Messages, "ExpirationDateMismatch", "If Expires is set to False, then ShelfLife and UnsealedShelfLife cannot be specified:"},
-			UploadInventory[
-				Model[Sample, StockSolution, "Stocked Salt Solution for UploadInventory unit tests 1" <> $SessionUUID],
-				Expires -> False,
-				ShelfLife -> 1 Year
-			],
-			$Failed,
-			Messages :> {Error::ExpirationDateMismatch, Error::InvalidOption}
-		],
-		Example[{Messages, "MaxNumberOfUsesInvalid", "MaxNumberOfUses can only be specified for objects that have the MaxNumberOfUses fields:"},
-			UploadInventory[
-				Model[Sample, StockSolution, "Stocked Salt Solution for UploadInventory unit tests 1" <> $SessionUUID],
-				MaxNumberOfUses -> 10
-			],
-			$Failed,
-			Messages :> {Error::MaxNumberOfUsesInvalid, Error::InvalidOption}
-		],
-		Example[{Messages, "MaxNumberOfHoursInvalid", "MaxNumberOfHours can only be specified for objects that have the MaxNumberOfHours fields:"},
-			UploadInventory[
-				Model[Sample, StockSolution, "Stocked Salt Solution for UploadInventory unit tests 1" <> $SessionUUID],
-				MaxNumberOfHours -> 10 Hour
-			],
-			$Failed,
-			Messages :> {Error::MaxNumberOfHoursInvalid, Error::InvalidOption}
-		],
 
 		(* Site related errors *)
 		Example[{Messages, "IndividualSiteRequired", "Site cannot be specified as All when the input is an existing inventory object."},
@@ -2841,6 +2514,42 @@ DefineTests[
 				Error::InvalidOption
 			}
 		],
+
+		Example[{Messages, "InvalidPreferredProduct", "When Modifying existing Object[Inventory], PreferredProduct cannot be True or False:"},
+			UploadInventory[
+				Object[Inventory, Product, "Private Conventional Product Inventory for UploadInventory unit tests 1" <> $SessionUUID],
+				PreferredProduct -> True
+			],
+			$Failed,
+			Messages:>{
+				Error::InvalidPreferredProduct,
+				Error::InvalidOption
+			}
+		],
+
+		Example[{Messages, "InvalidPreferredProduct", "When creating new Object[Inventory], PreferredProduct cannot be an Object[Product]:"},
+			UploadInventory[
+				Object[Product, "Conventional Product for UploadInventory unit tests 2"<>$SessionUUID],
+				PreferredProduct -> Object[Product, "Conventional Product for UploadInventory unit tests 2"<>$SessionUUID]
+			],
+			$Failed,
+			Messages:>{
+				Error::InvalidPreferredProduct,
+				Error::InvalidOption
+			}
+		],
+
+		Example[{Messages, "InvalidPreferredProductObject", "When Modifying existing Object[Inventory], if PreferredProduct option is provided, it must be one of the current StockedInventory objects:"},
+			UploadInventory[
+				Object[Inventory, Product, "Existing Conventional Product Inventory for UploadInventory unit tests 1"<>$SessionUUID],
+				PreferredProduct -> Object[Product, "Conventional Product for UploadInventory unit tests 2"<>$SessionUUID]
+			],
+			$Failed,
+			Messages:>{
+				Error::InvalidPreferredProductObject,
+				Error::InvalidOption
+			}
+		],
 		(*this should make a single object for the product's site even though the team has other sites too*)
 		Example[{Additional, Site, "Site is automatically resolved for private objects based on Site and Notebook."},
 			inventory = UploadInventory[
@@ -2883,9 +2592,7 @@ DefineTests[
 					Replace[OutstandingAmountLog]->{Now,0 Milliliter},
 					ReorderAmount->2 Unit,
 					Replace[ReorderAmountLog]->{Now,2 Unit},
-					Expires->True,
-					ShelfLife->4 Year,
-					UnsealedShelfLife->0.5 Year
+					PreferredProduct -> Null
 				|>,
 				<|
 					Object->Object[Inventory, Product, "Existing Kit Product Inventory for UploadInventory unit tests 1"<>$SessionUUID],
@@ -2905,8 +2612,7 @@ DefineTests[
 					OutstandingAmount->0 Unit,
 					Replace[OutstandingAmountLog]->{Now,0 Unit},
 					ReorderAmount->4 Unit,
-					Replace[ReorderAmountLog]->{Now,4 Unit},
-					Expires->False
+					Replace[ReorderAmountLog]->{Now,4 Unit}
 				|>,
 				<|
 					Object->Object[Inventory, StockSolution, "Existing Stock Solution Inventory for UploadInventory unit tests 1"<>$SessionUUID],
@@ -2925,10 +2631,7 @@ DefineTests[
 					OutstandingAmount->2 Liter,
 					Replace[OutstandingAmountLog]->{Now,2 Liter},
 					ReorderAmount->10 Liter,
-					Replace[ReorderAmountLog]->{Now,10 Liter},
-					Expires->True,
-					ShelfLife->4 Year,
-					UnsealedShelfLife->0.5 Year
+					Replace[ReorderAmountLog]->{Now,10 Liter}
 				|>
 			}];
 			ClearMemoization[allECLSites];
@@ -3294,10 +2997,6 @@ DefineTests[
 						Replace[Synonyms]->{},
 						Replace[IncompatibleMaterials]->{None},
 						DefaultStorageCondition->Link[Model[StorageCondition, "Ambient Storage"]],
-						ShelfLife->5 Year,
-						Expires->True,
-						UnsealedShelfLife->365 Day,
-						ShelfLife->5 Year,
 						Notebook->Null
 					|>,
 					<|
@@ -3326,10 +3025,6 @@ DefineTests[
 						Replace[Synonyms]->{},
 						Replace[IncompatibleMaterials]->{None},
 						DefaultStorageCondition->Link[Model[StorageCondition, "Ambient Storage"]],
-						ShelfLife->5 Year,
-						Expires->True,
-						UnsealedShelfLife->365 Day,
-						ShelfLife->5 Year,
 						Notebook->Null
 					|>,
 					<|
@@ -3351,9 +3046,6 @@ DefineTests[
 						Replace[OutstandingAmountLog]->{Now,0 Milliliter},
 						ReorderAmount->2 Unit,
 						Replace[ReorderAmountLog]->{Now,2 Unit},
-						Expires->True,
-						ShelfLife->4 Year,
-						UnsealedShelfLife->0.5 Year,
 						Notebook->Null
 					|>,
 					<|
@@ -3375,9 +3067,6 @@ DefineTests[
 						Replace[OutstandingAmountLog]->{Now,0 Milliliter},
 						ReorderAmount->2 Unit,
 						Replace[ReorderAmountLog]->{Now,2 Unit},
-						Expires->True,
-						ShelfLife->4 Year,
-						UnsealedShelfLife->0.5 Year,
 						Notebook->Link[notebook, Objects]
 					|>,
 					<|
@@ -3399,7 +3088,6 @@ DefineTests[
 						Replace[OutstandingAmountLog]->{Now,0 Unit},
 						ReorderAmount->4 Unit,
 						Replace[ReorderAmountLog]->{Now,4 Unit},
-						Expires->False,
 						Notebook->Null
 					|>,
 					<|
@@ -3420,9 +3108,6 @@ DefineTests[
 						Replace[OutstandingAmountLog]->{Now,2 Liter},
 						ReorderAmount->10 Liter,
 						Replace[ReorderAmountLog]->{Now,10 Liter},
-						Expires->True,
-						ShelfLife->4 Year,
-						UnsealedShelfLife->0.5 Year,
 						Notebook->Null
 					|>,
 					<|
@@ -3596,10 +3281,7 @@ DefineTests[
 					OutstandingAmount->0 Milliliter,
 					Replace[OutstandingAmountLog]->{Now,0 Milliliter},
 					ReorderAmount->2 Unit,
-					Replace[ReorderAmountLog]->{Now,2 Unit},
-					Expires->True,
-					ShelfLife->4 Year,
-					UnsealedShelfLife->0.5 Year
+					Replace[ReorderAmountLog]->{Now,2 Unit}
 				|>,
 				<|
 					Object->Object[Inventory, Product, "Existing Kit Product Inventory for UploadInventoryOptions unit tests 1"<>$SessionUUID],
@@ -3619,8 +3301,7 @@ DefineTests[
 					OutstandingAmount->0 Unit,
 					Replace[OutstandingAmountLog]->{Now,0 Unit},
 					ReorderAmount->4 Unit,
-					Replace[ReorderAmountLog]->{Now,4 Unit},
-					Expires->False
+					Replace[ReorderAmountLog]->{Now,4 Unit}
 				|>,
 				<|
 					Object->Object[Inventory, StockSolution, "Existing Stock Solution Inventory for UploadInventoryOptions unit tests 1"<>$SessionUUID],
@@ -3639,10 +3320,7 @@ DefineTests[
 					OutstandingAmount->2 Liter,
 					Replace[OutstandingAmountLog]->{Now,2 Liter},
 					ReorderAmount->10 Liter,
-					Replace[ReorderAmountLog]->{Now,10 Liter},
-					Expires->True,
-					ShelfLife->4 Year,
-					UnsealedShelfLife->0.5 Year
+					Replace[ReorderAmountLog]->{Now,10 Liter}
 				|>
 			}]]
 	),
@@ -3858,11 +3536,7 @@ DefineTests[
 						MixTime->30 Minute,
 						Replace[Synonyms]->{},
 						Replace[IncompatibleMaterials]->{None},
-						DefaultStorageCondition->Link[Model[StorageCondition, "Ambient Storage"]],
-						ShelfLife->5 Year,
-						Expires->True,
-						UnsealedShelfLife->365 Day,
-						ShelfLife->5 Year
+						DefaultStorageCondition->Link[Model[StorageCondition, "Ambient Storage"]]
 					|>,
 					<|
 						Object->ss2,
@@ -3889,11 +3563,7 @@ DefineTests[
 						MixTime->30 Minute,
 						Replace[Synonyms]->{},
 						Replace[IncompatibleMaterials]->{None},
-						DefaultStorageCondition->Link[Model[StorageCondition, "Ambient Storage"]],
-						ShelfLife->5 Year,
-						Expires->True,
-						UnsealedShelfLife->365 Day,
-						ShelfLife->5 Year
+						DefaultStorageCondition->Link[Model[StorageCondition, "Ambient Storage"]]
 					|>,
 					<|
 						Object->normalProdInventory1,
@@ -3913,10 +3583,7 @@ DefineTests[
 						OutstandingAmount->0 Milliliter,
 						Replace[OutstandingAmountLog]->{Now,0 Milliliter},
 						ReorderAmount->2 Unit,
-						Replace[ReorderAmountLog]->{Now,2 Unit},
-						Expires->True,
-						ShelfLife->4 Year,
-						UnsealedShelfLife->0.5 Year
+						Replace[ReorderAmountLog]->{Now,2 Unit}
 					|>,
 					<|
 						Object->kitProdInventory1,
@@ -3936,8 +3603,7 @@ DefineTests[
 						OutstandingAmount->0 Unit,
 						Replace[OutstandingAmountLog]->{Now,0 Unit},
 						ReorderAmount->4 Unit,
-						Replace[ReorderAmountLog]->{Now,4 Unit},
-						Expires->False
+						Replace[ReorderAmountLog]->{Now,4 Unit}
 					|>,
 					<|
 						Object->ssInventory1,
@@ -3956,10 +3622,7 @@ DefineTests[
 						OutstandingAmount->2 Liter,
 						Replace[OutstandingAmountLog]->{Now,2 Liter},
 						ReorderAmount->10 Liter,
-						Replace[ReorderAmountLog]->{Now,10 Liter},
-						Expires->True,
-						ShelfLife->4 Year,
-						UnsealedShelfLife->0.5 Year
+						Replace[ReorderAmountLog]->{Now,10 Liter}
 					|>,
 					<|
 						Object->newSite,
@@ -4060,30 +3723,6 @@ DefineTests[
 		Example[{Messages, "ReorderStateMismatch", "ReorderThreshold and ReorderAmount must be compatible with the state of the samples:"},
 			ValidUploadInventoryQ[Object[Inventory, Product, "Existing Conventional Product Inventory for ValidUploadInventoryQ unit tests 1"<>$SessionUUID], ReorderThreshold -> 5 Gram],
 			False
-		],
-		Example[{Messages, "ExpirationDateMismatch", "If Expires is set to True, then either ShelfLife or UnsealedShelfLife must be resolved to a time:"},
-			ValidUploadInventoryQ[
-				Model[Sample, StockSolution, "Stocked Salt Solution for ValidUploadInventoryQ unit tests 1"<>$SessionUUID],
-				Expires -> True,
-				ShelfLife -> Null,
-				UnsealedShelfLife -> Null
-			],
-			False
-		],
-		Example[{Messages, "ExpirationDateMismatch", "If Expires is set to False, then ShelfLife and UnsealedShelfLife cannot be specified:"},
-			ValidUploadInventoryQ[
-				Model[Sample, StockSolution, "Stocked Salt Solution for ValidUploadInventoryQ unit tests 1"<>$SessionUUID],
-				Expires -> False,
-				ShelfLife -> 1 Year
-			],
-			False
-		],
-		Example[{Messages, "MaxNumberOfUsesInvalid", "MaxNumberOfUses can only be specified for objects that have the MaxNumberOfUses fields:"},
-			ValidUploadInventoryQ[
-				Model[Sample, StockSolution, "Stocked Salt Solution for ValidUploadInventoryQ unit tests 1"<>$SessionUUID],
-				MaxNumberOfUses -> 10
-			],
-			False
 		]
 	},
 	Stubs:>{$RequiredSearchName = $SessionUUID, $DeveloperSearch = True, $AllowPublicObjects = True, $Site = $site},
@@ -4109,10 +3748,7 @@ DefineTests[
 					OutstandingAmount->0 Milliliter,
 					Replace[OutstandingAmountLog]->{Now,0 Milliliter},
 					ReorderAmount->2 Unit,
-					Replace[ReorderAmountLog]->{Now,2 Unit},
-					Expires->True,
-					ShelfLife->4 Year,
-					UnsealedShelfLife->0.5 Year
+					Replace[ReorderAmountLog]->{Now,2 Unit}
 				|>,
 				<|
 					Object->Object[Inventory, Product, "Existing Kit Product Inventory for ValidUploadInventoryQ unit tests 1"<>$SessionUUID],
@@ -4132,8 +3768,7 @@ DefineTests[
 					OutstandingAmount->0 Unit,
 					Replace[OutstandingAmountLog]->{Now,0 Unit},
 					ReorderAmount->4 Unit,
-					Replace[ReorderAmountLog]->{Now,4 Unit},
-					Expires->False
+					Replace[ReorderAmountLog]->{Now,4 Unit}
 				|>,
 				<|
 					Object->Object[Inventory, StockSolution, "Existing Stock Solution Inventory for ValidUploadInventoryQ unit tests 1"<>$SessionUUID],
@@ -4152,10 +3787,7 @@ DefineTests[
 					OutstandingAmount->2 Liter,
 					Replace[OutstandingAmountLog]->{Now,2 Liter},
 					ReorderAmount->10 Liter,
-					Replace[ReorderAmountLog]->{Now,10 Liter},
-					Expires->True,
-					ShelfLife->4 Year,
-					UnsealedShelfLife->0.5 Year
+					Replace[ReorderAmountLog]->{Now,10 Liter}
 				|>
 			}]]
 	),
@@ -4371,11 +4003,7 @@ DefineTests[
 						MixTime->30 Minute,
 						Replace[Synonyms]->{},
 						Replace[IncompatibleMaterials]->{None},
-						DefaultStorageCondition->Link[Model[StorageCondition, "Ambient Storage"]],
-						ShelfLife->5 Year,
-						Expires->True,
-						UnsealedShelfLife->365 Day,
-						ShelfLife->5 Year
+						DefaultStorageCondition->Link[Model[StorageCondition, "Ambient Storage"]]
 					|>,
 					<|
 						Object->ss2,
@@ -4402,11 +4030,7 @@ DefineTests[
 						MixTime->30 Minute,
 						Replace[Synonyms]->{},
 						Replace[IncompatibleMaterials]->{None},
-						DefaultStorageCondition->Link[Model[StorageCondition, "Ambient Storage"]],
-						ShelfLife->5 Year,
-						Expires->True,
-						UnsealedShelfLife->365 Day,
-						ShelfLife->5 Year
+						DefaultStorageCondition->Link[Model[StorageCondition, "Ambient Storage"]]
 					|>,
 					<|
 						Object->normalProdInventory1,
@@ -4426,10 +4050,7 @@ DefineTests[
 						OutstandingAmount->0 Milliliter,
 						Replace[OutstandingAmountLog]->{Now,0 Milliliter},
 						ReorderAmount->2 Unit,
-						Replace[ReorderAmountLog]->{Now,2 Unit},
-						Expires->True,
-						ShelfLife->4 Year,
-						UnsealedShelfLife->0.5 Year
+						Replace[ReorderAmountLog]->{Now,2 Unit}
 					|>,
 					<|
 						Object->kitProdInventory1,
@@ -4449,8 +4070,7 @@ DefineTests[
 						OutstandingAmount->0 Unit,
 						Replace[OutstandingAmountLog]->{Now,0 Unit},
 						ReorderAmount->4 Unit,
-						Replace[ReorderAmountLog]->{Now,4 Unit},
-						Expires->False
+						Replace[ReorderAmountLog]->{Now,4 Unit}
 					|>,
 					<|
 						Object->ssInventory1,
@@ -4469,10 +4089,7 @@ DefineTests[
 						OutstandingAmount->2 Liter,
 						Replace[OutstandingAmountLog]->{Now,2 Liter},
 						ReorderAmount->10 Liter,
-						Replace[ReorderAmountLog]->{Now,10 Liter},
-						Expires->True,
-						ShelfLife->4 Year,
-						UnsealedShelfLife->0.5 Year
+						Replace[ReorderAmountLog]->{Now,10 Liter}
 					|>,
 					<|
 						Object->newSite,
@@ -6380,6 +5997,42 @@ DefineTests[
 				TearDown :> {EraseObject[newColumn, Force -> True]}
 			]
 		],
+		Module[{newColumn},
+			Example[{Options, DefaultStorageCondition, "If ExposedSurfaces is True and DefaultStorageCondition is Automatic, resolves to Ambient Storage, Lined Enclosed:"},
+				newColumn=UploadColumn[
+					"Dummy Column"<>$SessionUUID<>CreateUUID[],
+					ExposedSurfaces -> True,
+					WettedMaterials -> {CarbonSteel}, Dimensions -> {1Centimeter, 1Centimeter, 10Centimeter},
+					ColumnType -> Preparative, SeparationMode -> NormalPhase, PackingType -> Prepacked,
+					MaxNumberOfUses -> 500, Diameter -> 5 Centimeter,
+					MinFlowRate -> 1 Milliliter / Minute, MaxFlowRate -> 100 Milliliter / Minute,
+					MinPressure -> 1000 PSI, MaxPressure -> 5000 PSI,
+					Products -> {Object[Product, "UploadColumn Dummy Product"]}
+				];
+				Download[newColumn, DefaultStorageCondition],
+				ObjectP[Model[StorageCondition, "Ambient Storage, Lined Enclosed"]],
+				Stubs :> {$PersonID=Object[User, "Test user for notebook-less test protocols"]},
+				TearDown :> {EraseObject[newColumn, Force -> True]}
+			]
+		],
+		Module[{newColumn},
+			Example[{Options, DefaultStorageCondition, "If ExposedSurfaces is False and DefaultStorageCondition is Automatic, resolves to Ambient Storage:"},
+				newColumn=UploadColumn[
+					"Dummy Column"<>$SessionUUID<>CreateUUID[],
+					ExposedSurfaces -> False,
+					WettedMaterials -> {CarbonSteel}, Dimensions -> {1Centimeter, 1Centimeter, 10Centimeter},
+					ColumnType -> Preparative, SeparationMode -> NormalPhase, PackingType -> Prepacked,
+					MaxNumberOfUses -> 500, Diameter -> 5 Centimeter,
+					MinFlowRate -> 1 Milliliter / Minute, MaxFlowRate -> 100 Milliliter / Minute,
+					MinPressure -> 1000 PSI, MaxPressure -> 5000 PSI,
+					Products -> {Object[Product, "UploadColumn Dummy Product"]}
+				];
+				Download[newColumn, DefaultStorageCondition],
+				ObjectP[Model[StorageCondition, "Ambient Storage"]],
+				Stubs :> {$PersonID=Object[User, "Test user for notebook-less test protocols"]},
+				TearDown :> {EraseObject[newColumn, Force -> True]}
+			]
+		],
 		Example[{Options, StorageBuffer, "StorageBuffer allows specification of the preferred buffer used to keep the resin wet while the column is stored:"},
 			newColumn=UploadColumn[
 				"Dummy Column"<>$SessionUUID<>CreateUUID[],
@@ -6429,6 +6082,24 @@ DefineTests[
 				];
 				Download[newColumn, Dimensions],
 				{Quantity[0.12, "Meters"], Quantity[0.13, "Meters"], Quantity[0.14, "Meters"]},
+				Stubs :> {$PersonID=Object[User, "Test user for notebook-less test protocols"]},
+				TearDown :> {EraseObject[newColumn, Force -> True]}
+			]
+		],
+		Module[{newColumn},
+			Example[{Options, ExposedSurfaces, "Indicates if any sensitive portions of this column are open to the external environment and prone to contamination:"},
+				newColumn=UploadColumn[
+					"Dummy Column"<>$SessionUUID<>CreateUUID[],
+					ExposedSurfaces -> True,
+					ColumnType -> Preparative, SeparationMode -> NormalPhase, PackingType -> Prepacked,
+					MaxNumberOfUses -> 500, Diameter -> 5 Centimeter,
+					MinFlowRate -> 1 Milliliter / Minute, MaxFlowRate -> 100 Milliliter / Minute,
+					MinPressure -> 1000 PSI, MaxPressure -> 5000 PSI,
+					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"], WettedMaterials -> {CarbonSteel}, Dimensions -> {1Centimeter, 1Centimeter, 10Centimeter},
+					Products -> {Object[Product, "UploadColumn Dummy Product"]}
+				];
+				Download[newColumn, ExposedSurfaces],
+				True,
 				Stubs :> {$PersonID=Object[User, "Test user for notebook-less test protocols"]},
 				TearDown :> {EraseObject[newColumn, Force -> True]}
 			]
@@ -9982,9 +9653,9 @@ DefineTests[
 		],
 		Example[{Options,StorageOrientationImage,"Set the indended storage orientation of an item:"},
 			Module[{orientationImage},
-				
+
 				orientationImage = UploadCloudFile[Image[{{0., 1., 0.}, {1., 0., 1.}, {0., 1., 0.}}]];
-				
+
 				UploadStorageProperties[
 					Model[Item,Filter,"UploadStorageProperties test item 1 " <> $SessionUUID],
 					StorageOrientation -> Side,
@@ -10046,7 +9717,7 @@ DefineTests[
 			};
 			lurkers=PickList[namedObjects,DatabaseMemberQ[namedObjects],True];
 			EraseObject[lurkers,Force->True,Verbose->False];
-			
+
 			Upload[{
 				Association[
 					Type -> Model[Container,Rack],

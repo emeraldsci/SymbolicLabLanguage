@@ -139,7 +139,7 @@ DefineOptions[resolveLabelSamplePrimitive,
           ],
           "Count" -> Widget[
             Type -> Number,
-            Pattern :> GreaterEqualP[1, 1]
+            Pattern :> GreaterEqualP[0, 1]
           ],
           "Percent Tolerance" -> Widget[
             Type -> Quantity,
@@ -927,11 +927,13 @@ resolveLabelSamplePrimitiveOptions[myLabels:{_String..}, myOptions:{_Rule..}, my
         ];
 
         (* Resolve the Tolerance option. *)
-        resolvedTolerance=Which[
+        resolvedTolerance = Which[
           (* if user specified one, use it *)
           MatchQ[Lookup[mapThreadOptions, Tolerance], Except[Automatic]],
             Lookup[mapThreadOptions, Tolerance],
-          (* resolve to True if we have ExactAmount->True *)
+          (* resolve to 0 if we have ExactAmount -> True and Amount is a count *)
+          TrueQ[resolvedExactAmount] && MatchQ[resolvedAmount, UnitsP[Unit]], 0,
+          (* resolve to 0.01*the amount if we have ExactAmount->True *)
           MatchQ[resolvedExactAmount, True]&&MatchQ[resolvedAmount, UnitsP[]],
             0.01*resolvedAmount,
           (* otherwise, resolve to Null *)
@@ -2237,7 +2239,7 @@ simulateLabelSamplePrimitive[myUnitOperationPacket:PacketP[],myLabels:{_String..
       If[Length[specifiedEHSOptions]==0 || NullQ[sampleObject],
         Nothing,
         Module[{allChangePackets},
-          (* Sometimes generateChangePackets generates auxilliary cloud file packets if URLs are provided *)
+          (* Sometimes generateChangePackets generates auxiliary cloud file packets if URLs are provided *)
           allChangePackets=ExternalUpload`Private`generateChangePackets[Object[Sample],specifiedEHSOptions];
 
           Flatten[{

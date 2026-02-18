@@ -1999,8 +1999,8 @@ DefineTests[ExperimentDNASynthesis,
 			};
 
 			sampleModelsPacket = UploadSampleModel[
-				sampleModelNames,
-				Composition->Map[{{100 MassPercent, #}}&, oligomers],
+				Map[{{100 MassPercent, #}}&, oligomers],
+				Name -> sampleModelNames,
 				DefaultStorageCondition->Model[StorageCondition, "id:N80DNj1r04jW"], (* Model[StorageCondition, "Refrigerator"] *)
 				Expires->False,
 				ShelfLife->Null,

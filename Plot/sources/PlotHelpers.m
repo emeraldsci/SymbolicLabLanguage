@@ -2098,6 +2098,8 @@ convertBaselineFunctionUnits[QuantityFunction[blf_Function,{xU_},yU_],{xUNew_,yU
 	Function[x,(1/yScale)*blf[x*xScale]]
 ];
 
+convertBaselineFunctionUnits[QuantityFunction[Null, ___], ___] := Null;
+
 scaleUnitlessPeaksY[peakData_,scaleVal_]:=Module[{},
 	Association[ReplaceRule[Normal[peakData],{
 		Height->Times[Height/.peakData,scaleVal],

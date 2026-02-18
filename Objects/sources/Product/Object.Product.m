@@ -56,7 +56,7 @@ DefineObjectType[Object[Product], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Container,Site],
-			Description -> "The ECL site which can stock instances of this product.",
+			Description -> "The ECL facility at which the product can be purchased. Null indicates that the product can be purchased at any ECL location.",
 			Category -> "Organizational Information",
 			Abstract -> True
 		},
@@ -140,7 +140,7 @@ DefineObjectType[Object[Product], {
 				],
 				OpenContainer -> Null
 			},
-			Description -> "The identities, quantities, and containers of all items included in this kit product.",
+			Description -> "All information about the components of this kit product, i.e., a product contains multiple different components.  For every entry, the indices refer to 1.) The number of copies of the given kit component in the kit, 2.) The model for the samples that this component of the kit will generate, 3.) The model of the container that this kit component arrives in, 4.) The amount that comes with each sample, 5.) The position in the DefaultContainerModel in which this arrives, 6.) The index of the container in which it appears (such that if two different kit components share a ContainerIndex, they will go into the same container, like with a plate), 7) The model of the lid or cap the default container model accepts, and 8) whether the container can be covered.",
 			Category -> "Product Specifications",
 			Abstract -> True
 		},
@@ -180,7 +180,7 @@ DefineObjectType[Object[Product], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> AsepticShippingContainerTypeP,
-			Description -> "Describes the manner in which an aseptic product is packed and shipped by the manufacturer. A value of None indicates that the product is not shipped in any specifically aseptic packaging, while a value of Null indicates no available information.",
+			Description -> "The manner in which an aseptic product is packed and shipped by the manufacturer. A value of None indicates that the product is not shipped in any specifically aseptic packaging, while a value of Null indicates no available information.",
 			Category -> "Product Specifications",
 			Developer -> True
 		},
@@ -212,7 +212,7 @@ DefineObjectType[Object[Product], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Company, Supplier][Products],
-			Description -> "Company that supplies this product.",
+			Description -> "The company from which this product is ordered and purchased.",
 			Category -> "Product Specifications",
 			Abstract -> True
 		},
@@ -243,7 +243,7 @@ DefineObjectType[Object[Product], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Company, Supplier][Products],
-			Description -> "The company that manufactures this product, when different from the supplier.",
+			Description -> "The company that makes this product, if different from the supplier.",
 			Category -> "Product Specifications"
 		},
 		ManufacturerCatalogNumber -> {
@@ -264,7 +264,7 @@ DefineObjectType[Object[Product], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> PackagingP,
-			Description -> "The type of item for which this product specifies ordering information.",
+			Description -> "Specify whether this product comes in a case (which contains multiple items) or comes in a single item.",
 			Category -> "Product Specifications"
 		},
 		SampleType -> {
@@ -286,7 +286,7 @@ DefineObjectType[Object[Product], {
 			Class -> Integer,
 			Pattern :> GreaterP[0, 1],
 			Units -> None,
-			Description -> "Number of samples in each order of one unit of the catalog number, e.g. 24 (plates per case).",
+			Description -> "Number of samples in each order of one unit of the catalog number, e.g. if a plate product comes in case of 24 units, this options should be set to 24.",
 			Category -> "Product Specifications"
 		},
 		DefaultContainerModel -> {
@@ -303,7 +303,7 @@ DefineObjectType[Object[Product], {
 				Model[Container, Plate][ProductsContained],
 				Model[Container, MicroscopeSlide][ProductsContained]
 			],
-			Description -> "The model of the container that the sample arrives in upon delivery. If a plate is given, the sample will always be placed in A1.",
+			Description -> "The model of the container that the sample arrives in upon delivery. If a plate model is given, the plate must only have 1 well.",
 			Category -> "Product Specifications",
 			Abstract -> False
 		},
@@ -333,7 +333,7 @@ DefineObjectType[Object[Product], {
 			Format -> Single,
 			Class -> VariableUnit,
 			Pattern :> GreaterP[0*Milliliter] | GreaterP[0*Milligram] | GreaterP[0*Unit, 1*Unit],
-			Description -> "Amount that comes with each sample.",
+			Description -> "The quantity of material contained in each individual sample of this product.",
 			Category -> "Product Specifications",
 			Abstract -> True
 		},
@@ -342,7 +342,7 @@ DefineObjectType[Object[Product], {
 			Class -> Real,
 			Pattern :> GreaterP[(0 * Gram) / Liter],
 			Units -> Gram / (Liter Milli),
-			Description -> "Relation between mass of the product and volume.",
+			Description -> "For product of chemical samples, indicate the ratio between mass and volume. This option does not apply to other type of products.",
 			Category -> "Product Specifications"
 		},
 		CountPerSample -> {
@@ -350,7 +350,7 @@ DefineObjectType[Object[Product], {
 			Class -> Integer,
 			Pattern :> GreaterP[0],
 			Units -> None,
-			Description -> "Count of individual items that comes with each sample (e.g. 100 for a 100 frits in a bag).",
+			Description -> "The number of individual items that comes with each sample (e.g. 100 for a box of 100 pipette tips).",
 			Category -> "Product Specifications",
 			Abstract -> True
 		},
@@ -358,14 +358,14 @@ DefineObjectType[Object[Product], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates that samples of this product arrive ready to be used without needing to be dishwashed. If set to False, the samples of this product will be dishwashed before they can be used.",
+			Description -> "For product of empty containers, indicates that this product arrive ready to be used without needing to be dishwashed.",
 			Category -> "Inventory"
 		},
 		Sterile -> {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates that samples of this product arrive sterile from the manufacturer.",
+			Description -> "Indicates if samples of this product are free from microbial contamination when received from the supplier.",
 			Category -> "Product Specifications"
 		},
 		NucleicAcidFree -> {
@@ -419,7 +419,7 @@ DefineObjectType[Object[Product], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> UsageFrequencyP,
-			Description ->  "An estimate of how often this product is purchased from ECL's inventory for use in experiments and subsequently restocked. Products which are used more frequently carry smaller stocking fees as they must be stored in inventory for a shorter period of time then more rarely consumed items.",
+			Description -> "An estimate of how often this product is purchased from ECL's inventory for use in experiments and subsequently restocked. Products which are used more frequently carry smaller stocking fees as they must be stored in inventory for a shorter period of time then more rarely consumed items.",
 			Category -> "Pricing Information",
 			Abstract -> True
 		},
@@ -438,7 +438,7 @@ DefineObjectType[Object[Product], {
 			Class -> Boolean,
 			Pattern :> BooleanP,
 			Developer -> True,
-			Description -> "Indicates if this product has kit components that may be stickered in parallel such that all instances of component A in all the kits may be stickered together, and then all instances of component B (as opposed to stickering each kit of AB components together).",
+			Description -> "Indicate if the SLL object sticker of same component of all kits should be affixed together when multiple counts of kit were ordered in one run, instead of affixing all components from one kit, then move to the next kit.",
 			Category -> "Inventory"
 		},
 		NotForSale -> {
@@ -506,13 +506,21 @@ DefineObjectType[Object[Product], {
 			Description -> "If empirically determined, the bag model in which items of this product are stored.",
 			Category -> "Inventory"
 		},
+		StoreInOriginalContainer -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Developer -> True,
+			Description -> "Indicates if the product items should remain in the BulkContainer and be stored together, or if the contents should be moved out.",
+			Category -> "Inventory"
+		},
 		(* --- Replicate Products --- *)
 		Template -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Product][ProductsTemplated],
-			Description -> "The products whose field values were selected as the default values for this product.",
+			Description -> "An existing product object whose values will be used as defaults for any options not specified by the user.",
 			Category -> "Product Specifications"
 		},
 		ProductsTemplated -> {

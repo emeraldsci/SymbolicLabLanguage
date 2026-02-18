@@ -1558,14 +1558,15 @@ validModelInstrumentHandlingStationQTests[packet:PacketP[Model[Instrument,Handli
 	(* if balance type is populated, every objects should have the corresponding balance types! *)
 	Test["BalanceType of the model matches up with each instance's Field[Balances[Mode]]:",
 		Module[{balanceTypesToHave, instances, instanceTuples},
-			balanceTypesToHave = Lookup[packet, BalanceType];
+			(* make sure the balance type is well sorted *)
+			balanceTypesToHave = Sort[DeleteDuplicates[Lookup[packet, BalanceType]]];
 
 			(* get the objects *)
 			instances = Lookup[packet, Objects];
 			instanceTuples = Download[instances, {Status, Balances[Mode]}];
 
 			(* only check non-Retired instances *)
-			SubsetQ[balanceTypesToHave, #[[2]]]& /@ DeleteCases[instanceTuples, {Retired, _}]
+			MatchQ[balanceTypesToHave, Sort[DeleteDuplicates[#[[2]]]]]& /@ DeleteCases[instanceTuples, {Retired, _}]
 		],
 		{True...}
 	],
@@ -2884,6 +2885,29 @@ validModelInstrumentIonChromatographyQTests[packet:PacketP[Model[Instrument, Ion
 
 (* ::Subsection::Closed:: *)
 (*validModelInstrumentKarlFischerTiratorQTests*)
+
+(* ::Subsection::Closed:: *)
+(*validModelInstrumentKarlFischerTiratorQTests*)
+
+
+validModelInstrumentKarlFischerTiratorQTests[packet:PacketP[Model[Instrument, KarlFischerTitrator]]]:={
+	(* Shared fields which should be null *)
+
+	(* Shared fields which should NOT be null *)
+	NotNullFieldTest[packet,{
+			Positions,
+			PositionPlotting,
+			TitrationTechnique,
+			SamplingMethods,
+			ReactionVesselModel
+		}
+	],
+
+
+	(* Min/Max tests *)
+	FieldComparisonTest[packet, {MinTemperature,MaxTemperature}, LessEqual]
+};
+
 
 
 validModelInstrumentKarlFischerTiratorQTests[packet:PacketP[Model[Instrument, KarlFischerTitrator]]]:={
@@ -4250,6 +4274,8 @@ validModelInstrumentPlateWasherQTests[packet:PacketP[Model[Instrument,PlateWashe
 	NotNullFieldTest[packet, {Positions,PositionPlotting}],
 
 	RequiredTogetherTest[packet,{MinRotationRate,MaxRotationRate}],
+
+	RequiredTogetherTest[packet,{MaxXOffset,MaxYOffset,MaxZOffset,XOffsetConversion,YOffsetConversion,ZOffsetConversion}],
 
 	FieldComparisonTest[packet,{MaxRotationRate,MinRotationRate},GreaterEqual],
 

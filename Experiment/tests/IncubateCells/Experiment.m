@@ -3896,8 +3896,8 @@ DefineTests[
 				];
 				(* Create some bacteria and mammalian models *)
 				bacteriaModel = UploadSampleModel[
-					"Bacterial cells Model (for ExperimentIncubateCells)" <> $SessionUUID,
-					Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					{{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					Name -> "Bacterial cells Model (for ExperimentIncubateCells)" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,
@@ -3911,8 +3911,8 @@ DefineTests[
 				];
 				(* Create some bacteria and mammalian models *)
 				deprecatedBacteriaModel = UploadSampleModel[
-					"Bacterial cells Deprecated Model (for ExperimentIncubateCells)" <> $SessionUUID,
-					Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					{{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					Name -> "Bacterial cells Deprecated Model (for ExperimentIncubateCells)" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,
@@ -3925,8 +3925,8 @@ DefineTests[
 					Living -> True
 				];
 				mammalianModel = UploadSampleModel[
-					"Mammalian cells Model (for ExperimentIncubateCells)" <> $SessionUUID,
-					Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Mammalian, "HeLa"]}},
+					{{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Mammalian, "HeLa"]}},
+					Name -> "Mammalian cells Model (for ExperimentIncubateCells)" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,
@@ -3939,8 +3939,8 @@ DefineTests[
 					Living -> True
 				];
 				solidMediaBacteriaModel = UploadSampleModel[
-					"Solid Media Bacterial cells Model (for ExperimentIncubateCells)" <> $SessionUUID,
-					Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					{{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					Name -> "Solid Media Bacterial cells Model (for ExperimentIncubateCells)" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,
@@ -4559,8 +4559,8 @@ DefineTests[ExperimentIncubateCellsOptions,
 
 				(* Create some bacteria and mammalian models *)
 				bacteriaModel = UploadSampleModel[
-					"Bacterial cells Model (for ExperimentIncubateCellsOptions)" <> $SessionUUID,
-					Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					{{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					Name -> "Bacterial cells Model (for ExperimentIncubateCellsOptions)" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,
@@ -4572,8 +4572,8 @@ DefineTests[ExperimentIncubateCellsOptions,
 					CultureAdhesion -> Suspension,
 					Living -> True
 				];
-				mammalianModel = UploadSampleModel["Mammalian cells Model (for ExperimentIncubateCellsOptions)" <> $SessionUUID,
-					Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Mammalian, "HeLa"]}},
+				mammalianModel = UploadSampleModel[{{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Mammalian, "HeLa"]}},
+					Name -> "Mammalian cells Model (for ExperimentIncubateCellsOptions)" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,
@@ -4807,8 +4807,8 @@ DefineTests[ExperimentIncubateCellsPreview,
 
 				(* Create some bacteria and mammalian models *)
 				bacteriaModel = UploadSampleModel[
-					"Bacterial cells Model (for ExperimentIncubateCellsPreview)" <> $SessionUUID,
-					Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					{{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					Name -> "Bacterial cells Model (for ExperimentIncubateCellsPreview)" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,
@@ -4820,8 +4820,8 @@ DefineTests[ExperimentIncubateCellsPreview,
 					CultureAdhesion -> Suspension,
 					Living -> True
 				];
-				mammalianModel = UploadSampleModel["Mammalian cells Model (for ExperimentIncubateCellsPreview)" <> $SessionUUID,
-					Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Mammalian, "HeLa"]}},
+				mammalianModel = UploadSampleModel[{{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Mammalian, "HeLa"]}},
+					Name -> "Mammalian cells Model (for ExperimentIncubateCellsPreview)" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,
@@ -5692,8 +5692,8 @@ DefineTests[IncubateCells,
 
 				(* Create some bacteria and mammalian models *)
 				bacteriaModel = UploadSampleModel[
-					"Bacterial cells Model (for IncubateCells)" <> $SessionUUID,
-					Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					{{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					Name -> "Bacterial cells Model (for IncubateCells)" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,
@@ -5705,8 +5705,8 @@ DefineTests[IncubateCells,
 					CultureAdhesion -> Suspension,
 					Living -> True
 				];
-				mammalianModel = UploadSampleModel["Mammalian cells Model (for IncubateCells)" <> $SessionUUID,
-					Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Mammalian, "HeLa"]}},
+				mammalianModel = UploadSampleModel[{{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Mammalian, "HeLa"]}},
+					Name -> "Mammalian cells Model (for IncubateCells)" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,

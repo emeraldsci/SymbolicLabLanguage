@@ -99,6 +99,5 @@ DefineTests[PlotSensor,
 			PlotSensor[{Lookup[Download[Object[Data, RelativeHumidity, "id:4pO6dMWK1Wzo"]],RelativeHumidityLog],Lookup[Download[Object[Data, RelativeHumidity, "id:O81aEB4zD4wj"]],RelativeHumidityLog]}],
 			{_?ValidGraphicsQ,_?ValidGraphicsQ}
 		]
-	},
-	Skip->"File Server"
+	}
 ];

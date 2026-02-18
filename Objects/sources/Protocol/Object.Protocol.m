@@ -2058,6 +2058,15 @@ With[
 				Headers -> {"Date","ReadyCheck Result","State of Resources"},
 				Developer -> True
 			},
+			ScreenCaptures -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "Videos of activity on the instrument computer while the operator was accessing it via VNC.",
+				Category -> "Operations Information",
+				Developer -> True
+			},
 			(* --- Storage pricing --- *)
 			StoragePrice -> {
 				Format -> Single,
@@ -2488,6 +2497,14 @@ With[
 				Category -> "General",
 				Developer -> True
 			},
+			StreamTroubleshootRetryNumber -> {
+				Format -> Single,
+				Class -> Integer,
+				Pattern :> GreaterEqualP[0, 1],
+				Description -> "Number of attempts operator tried to troubleshoot the stream-related issues. When this exceeds certain limit, an error messsage will be thrown to request sci ops intervention.",
+				Category -> "General",
+				Developer -> True
+			},
 			Movements -> {
 				Format -> Multiple,
 				Class -> {Link, Link, String, String, Integer, Integer},
@@ -2674,12 +2691,13 @@ With[
 				Category -> "Health & Safety",
 				Developer -> True
 			},
-			ErrorRecoveryLog -> {
+			GuidedCorrectionLog -> {
 				Format -> Multiple,
 				Class -> {
 					Date -> Date,
 					Procedure -> String,
 					TaskID -> String,
+					CorrectionCategory -> Expression,
 					Subprotocol -> Link,
 					ResponsibleOperator -> Link
 				},
@@ -2687,6 +2705,7 @@ With[
 					Date -> _?DateObjectQ,
 					Procedure -> _String,
 					TaskID -> _String,
+					CorrectionCategory -> GuidedCorrectionCategoryP,
 					Subprotocol -> _Link,
 					ResponsibleOperator -> _Link
 				},
@@ -2694,10 +2713,11 @@ With[
 					Date -> Null,
 					Procedure -> Null,
 					TaskID -> Null,
+					CorrectionCategory -> Null,
 					Subprotocol -> Alternatives[Object[Protocol], Object[Maintenance], Object[Qualification]],
-					ResponsibleOperator -> Object[User, Emerald][ErrorRecoveryEvents, RootProtocol]
+					ResponsibleOperator -> Object[User, Emerald][GuidedCorrectionEvents, RootProtocol]
 				},
-				Description -> "The error recovery procedures triggered during execution of this protocol.",
+				Description -> "The guided correction procedures triggered during execution of this protocol.",
 				Category -> "Organizational Information"
 			},
 			insertMe

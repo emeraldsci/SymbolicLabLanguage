@@ -1853,6 +1853,15 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			Variables :> {options},
 			TimeConstraint -> 500
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000*RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			TimeConstraint -> 500,
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (1.5 mL)" <> $SessionUUID], CentrifugeTime -> 40*Minute, Instrument -> Model[Instrument, PlateReader, "Lunatic"], Output -> Options];
 			Lookup[options, CentrifugeTime],
@@ -1895,7 +1904,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			Messages :> {Warning::AliquotRequired}
 		],
 		Example[{Options, FiltrationType, "The type of filtration method that should be used to perform the filtration:"},
-			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID], FiltrationType -> Syringe, Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], Output -> Options];
+			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (1.5 mL)" <> $SessionUUID], FiltrationType -> Syringe, Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], Output -> Options];
 			Lookup[options, FiltrationType],
 			Syringe,
 			Variables :> {options},
@@ -1909,7 +1918,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			Messages :> {Warning::AliquotRequired}
 		],
 		Example[{Options, Filter, "The filter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID], Filter -> Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"], Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], Output -> Options];
+			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (1.5 mL)" <> $SessionUUID], Filter -> Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"], Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], Output -> Options];
 			Lookup[options, Filter],
 			ObjectP[Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"]],
 			Variables :> {options},
@@ -1966,7 +1975,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			Messages :> {Warning::AliquotRequired}
 		],
 		Example[{Options, FilterSyringe, "The syringe used to force the sample through a filter:"},
-			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID], FiltrationType -> Syringe, FilterSyringe -> Model[Container, Syringe, "20mL All-Plastic Disposable Luer-Lock Syringe"], Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], Output -> Options];
+			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (1.5 mL)" <> $SessionUUID], FiltrationType -> Syringe, FilterSyringe -> Model[Container, Syringe, "20mL All-Plastic Disposable Luer-Lock Syringe"], Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], Output -> Options];
 			Lookup[options, FilterSyringe],
 			ObjectP[Model[Container, Syringe, "20mL All-Plastic Disposable Luer-Lock Syringe"]],
 			Variables :> {options},
@@ -2069,6 +2078,15 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			0.08*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options},
+			TimeConstraint -> 500
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID], AliquotAmount -> 0.08101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			81 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision},
 			TimeConstraint -> 500
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},

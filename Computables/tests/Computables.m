@@ -292,6 +292,13 @@ DefineTests[
 				Download[Object[Instrument,HPLC,"Test Instrument HPLC 1 for partsCurrentComputable unit tests "<>$SessionUUID],Contents]
 			],
 			{{ObjectP[Object[Part]],_?DateObjectQ,_?TimeQ}..}
+		],
+		Test["Parts that does not have any entry in the ContentsLog does not break the function",
+			partsCurrentComputable[
+				Download[Object[Instrument,HPLC,"Test Instrument HPLC 1 for partsCurrentComputable unit tests "<>$SessionUUID],ContentsLog][[1;;-4]],
+				Download[Object[Instrument,HPLC,"Test Instrument HPLC 1 for partsCurrentComputable unit tests "<>$SessionUUID],Contents]
+			],
+			{{ObjectP[Object[Part]],_?DateObjectQ,_?TimeQ}..}
 		]
 	},
 	SymbolSetUp:>{

@@ -23,6 +23,22 @@ DefineObjectType[Object[Qualification,Training], {
 			Units -> Percent,
 			Description -> "The average deviation (%) from the expected values obtained by the user during their training qualification.",
 			Category -> "Experimental Results"
+		},
+		LabwareToClean -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Container],Object[Part, Funnel]],
+			Description -> "All regular objects that need to be in the final CleanUp Task of this Training. This field is set by the parser.",
+			Category -> "General"
+		},
+		TrainingLabware -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Container],Object[Part, Funnel]],
+			Description -> "All training objects that need to be emptied and then stored as Stocked at the end of this Training. This field is set by the parser.",
+			Category -> "General"
 		}
 	}
 }];

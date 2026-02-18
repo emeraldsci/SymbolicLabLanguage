@@ -5148,7 +5148,7 @@ washCellsResourcePackets[myFunction:(ExperimentWashCells|ExperimentChangeMedia),
           QueuePosition -> Lookup[expandedResolvedOptions, QueuePosition],
           CoverAtEnd -> False
         ],
-      Warning::ConflictingSourceAndDestinationAsepticHandling
+      {Warning::ConflictingSourceAndDestinationAsepticHandling, Warning::CentrifugePrecision}
     ];
 
     subRoboticUnitOperations = Download[Cases[Flatten[Lookup[roboticUnitOperationPackets, Replace[RoboticUnitOperations]]], ObjectP[]], Object];

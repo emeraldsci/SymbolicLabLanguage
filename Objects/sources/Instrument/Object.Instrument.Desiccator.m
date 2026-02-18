@@ -86,6 +86,14 @@ DefineObjectType[Object[Instrument, Desiccator], {
 			Description -> "The location in the instrument where desiccant is placed.",
 			Category -> "Instrument Specifications"
 		},
+		AssociatedOven -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Instrument, Oven][AssociatedDesiccators],
+			Description -> "The oven (located adjacent to the desiccator) in which samples are heated before being cooled in the desiccator.",
+			Category -> "Instrument Specifications"
+		},
 		PressureSensor -> {
 			Format -> Single,
 			Class -> Link,

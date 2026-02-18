@@ -186,6 +186,14 @@ With[
 				Category -> "Organizational Information",
 				Abstract -> True
 			},
+			Verification -> {
+				Format -> Single,
+				Class -> Expression,
+				Pattern :> BooleanP,
+				Description -> "Indicates if this qualification is performed as a daily check of instrument performance.",
+				Category -> "Organizational Information",
+				Developer -> True
+			},
 
 			(* Analysis & Reports *)
 			DeveloperQualification -> {
@@ -1551,6 +1559,14 @@ With[
 				Category -> "General",
 				Developer -> True
 			},
+			StreamTroubleshootRetryNumber -> {
+				Format -> Single,
+				Class -> Integer,
+				Pattern :> GreaterEqualP[0, 1],
+				Description -> "Number of attempts operator tried to troubleshoot the stream-related issues. When this exceeds certain limit, an error messsage will be thrown to request sci ops intervention.",
+				Category -> "General",
+				Developer -> True
+			},
 			AutomatedStorage -> {
 				Format -> Single,
 				Class -> Boolean,
@@ -1726,12 +1742,13 @@ With[
 				Developer -> True,
 				Category -> "Placements"
 			},
-			ErrorRecoveryLog -> {
+			GuidedCorrectionLog -> {
 				Format -> Multiple,
 				Class -> {
 					Date -> Date,
 					Procedure -> String,
 					TaskID -> String,
+					CorrectionCategory -> Expression,
 					Subprotocol -> Link,
 					ResponsibleOperator -> Link
 				},
@@ -1739,6 +1756,7 @@ With[
 					Date -> _?DateObjectQ,
 					Procedure -> _String,
 					TaskID -> _String,
+					CorrectionCategory -> GuidedCorrectionCategoryP,
 					Subprotocol -> _Link,
 					ResponsibleOperator -> _Link
 				},
@@ -1746,10 +1764,11 @@ With[
 					Date -> Null,
 					Procedure -> Null,
 					TaskID -> Null,
+					CorrectionCategory -> Null,
 					Subprotocol -> Alternatives[Object[Protocol], Object[Maintenance], Object[Qualification]],
-					ResponsibleOperator -> Object[User, Emerald][ErrorRecoveryEvents, RootProtocol]
+					ResponsibleOperator -> Object[User, Emerald][GuidedCorrectionEvents, RootProtocol]
 				},
-				Description -> "The error recovery procedures triggered during execution of this protocol.",
+				Description -> "The guided correction procedures triggered during execution of this protocol.",
 				Category -> "Organizational Information"
 			},
 			GloveChangeLog -> {

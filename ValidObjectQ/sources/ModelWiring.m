@@ -67,8 +67,8 @@ validModelWiringQTests[packet:PacketP[Model[Wiring]]] := {
 	],
 
 	Test["Every member of WiringConnectors also has a corresponding WiringDiameters entry:",
-		MatchQ[Length[Lookup[packet,WiringConnectors]],Length[Lookup[packet,Wiring]]],
-		{}
+		MatchQ[Length[Lookup[packet,WiringConnectors]],Length[Lookup[packet,WiringDiameters]]],
+		True
 	],
 
 	Test["If the StorageOrientation is Side|Face StorageOrientationImage must be populated:",
@@ -96,12 +96,12 @@ validModelWiringQTests[packet:PacketP[Model[Wiring]]] := {
 (* ::Subsection:: *)
 (*validModelWiringCableQTests*)
 
-validModelWiringCableQTests[packet:PacketP[Model[Wiring,CircuitBreaker]]]:={};
+validModelWiringCableQTests[packet: PacketP[Model[Wiring, Cable]]] := {};
 
 (* ::Subsection:: *)
 (*validModelWiringCableAdapterQTests*)
 
-validModelWiringCableAdapterQTests[packet:PacketP[Model[Wiring,CircuitBreaker]]]:={};
+validModelWiringCableAdapterQTests[packet: PacketP[Model[Wiring, CableAdapter]]] := {};
 
 (* ::Subsection:: *)
 (*validModelWiringCircuitBreakerQTests*)

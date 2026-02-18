@@ -9453,12 +9453,12 @@ incubateCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolved
 
 			(* Create a lookup from the cellType to the preferred BSC transfer environment. *)
 			cellTypeToBSC = {
-				(* Model[Instrument, HandlingStation, BiosafetyCabinet, "Biosafety Cabinet Handling Station for Microbiology"] *)
-				Bacterial -> Model[Instrument, HandlingStation, BiosafetyCabinet, "id:54n6evJ3G4nl"],
-				(* Model[Instrument, HandlingStation, BiosafetyCabinet, "Biosafety Cabinet Handling Station for Tissue Culture"] *)
-				Mammalian -> Model[Instrument, HandlingStation, BiosafetyCabinet, "id:AEqRl9xveX7p"],
-				(* Model[Instrument, HandlingStation, BiosafetyCabinet, "Biosafety Cabinet Handling Station for Microbiology"] *)
-				Yeast | Plant | Insect | Fungal -> Model[Instrument, HandlingStation, BiosafetyCabinet, "id:54n6evJ3G4nl"]
+				(* microbial BSC *)
+				Bacterial -> microbialBSCModels["Memoization"],
+				(* non microbial BSC *)
+				Mammalian -> nonMicrobialBSCModels["Memoization"],
+				(* microbial BSC *)
+				Yeast | Plant | Insect | Fungal -> microbialBSCModels["Memoization"]
 			};
 
 			(* Generate the primitive. *)
@@ -9467,7 +9467,7 @@ incubateCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolved
 				Destination -> quantificationAliquotContainerQAP,
 				Amount -> quantificationAliquotVolumeQAP,
 				DestinationWell -> destinationWellQAP,
-				TransferEnvironment -> cellTypes /. cellTypeToBSC,
+				EquivalentTransferEnvironments -> cellTypes /. cellTypeToBSC,
 				KeepSourceCovered -> True,
 				KeepDestinationCovered -> True,
 				SterileTechnique -> True,

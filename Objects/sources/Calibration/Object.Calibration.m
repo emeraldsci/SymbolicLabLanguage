@@ -42,6 +42,7 @@ DefineObjectType[Object[Calibration], {
 				Object[Maintenance, CalibrateVolume][VolumeCalibration],
 				Object[Maintenance, CalibratePathLength][PathLengthCalibration],
 				Object[Maintenance, CalibrateLLD][SensorCalibration],
+				Object[Maintenance, CalibrateThermocycler][CalibrationResults, 2],
 				Object[Protocol]
 			],
 			Description -> "The recurring maintenance that generated this calibration.",
